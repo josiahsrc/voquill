@@ -1,11 +1,15 @@
 import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
+import { createHelloRight } from "@repo/types";
 import "./App.css";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+
+  const a = createHelloRight();
+  console.log(a);
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
