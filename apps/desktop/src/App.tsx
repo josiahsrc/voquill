@@ -4,11 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { createHelloRight } from "@repo/types";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { listen } from "@tauri-apps/api/event";
 import "./App.css";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [altPressCount, setAltPressCount] = useState(0);
 
   const a = createHelloRight();
   console.log(a);
@@ -21,7 +23,8 @@ function App() {
   useEffect(() => {
     if (
       typeof window === "undefined" ||
-      !Object.prototype.hasOwnProperty.call(window, "__TAURI_IPC__")
+      (!Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__") &&
+        !Object.prototype.hasOwnProperty.call(window, "__TAURI_IPC__"))
     ) {
       return;
     }
@@ -44,6 +47,68 @@ function App() {
 
     return () => {
       canceled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      (!Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__") &&
+        !Object.prototype.hasOwnProperty.call(window, "__TAURI_IPC__"))
+    ) {
+      return;
+    }
+
+    let unlisten: (() => void) | undefined;
+    let canceled = false;
+
+    const attachListener = async () => {
+      try {
+        const stop = await listen<{ count: number } | number | string>(
+          "alt-pressed",
+          (event) => {
+            const payload = event.payload;
+            let nextCount: number | undefined;
+            if (typeof payload === "number") {
+              nextCount = payload;
+            } else if (typeof payload === "string") {
+              try {
+                const parsed = JSON.parse(payload);
+                if (typeof parsed?.count === "number") {
+                  nextCount = parsed.count;
+                }
+              } catch (err) {
+                console.error("Failed to parse alt-pressed payload", err);
+              }
+            } else if (typeof payload === "object" && payload) {
+              if (typeof (payload as { count?: unknown }).count === "number") {
+                nextCount = (payload as { count: number }).count;
+              }
+            }
+
+            if (typeof nextCount === "number") {
+              setAltPressCount(nextCount);
+            }
+          }
+        );
+
+        if (!canceled) {
+          unlisten = stop;
+        } else {
+          stop();
+        }
+      } catch (err) {
+        console.error("Failed to attach Alt key listener", err);
+      }
+    };
+
+    attachListener();
+
+    return () => {
+      canceled = true;
+      if (unlisten) {
+        unlisten();
+      }
     };
   }, []);
 
@@ -79,6 +144,7 @@ function App() {
         <button type="submit">Greet</button>
       </form>
       <p>{greetMsg}</p>
+      <p>{`Alt key pressed ${altPressCount} time${altPressCount === 1 ? "" : "s"}`}</p>
     </main>
   );
 }
