@@ -14,6 +14,7 @@ type RecordingStartedPayload = {
 type RecordingFinishedPayload = {
   duration_ms?: number;
   size_bytes?: number;
+  transcription?: string;
 };
 
 type RecordingErrorPayload = {
@@ -25,6 +26,7 @@ type RecordingState = {
   startedAtMs?: number;
   lastDurationMs?: number;
   lastSizeBytes?: number;
+  lastTranscription?: string;
   error?: string;
 };
 
@@ -185,6 +187,10 @@ function App() {
               data && typeof data.size_bytes === "number"
                 ? data.size_bytes
                 : undefined;
+            const transcription =
+              data && typeof data.transcription === "string"
+                ? data.transcription
+                : undefined;
 
             setRecordingState((prev) => {
               const fallbackDuration =
@@ -199,6 +205,8 @@ function App() {
                 startedAtMs: undefined,
                 lastDurationMs: fallbackDuration,
                 lastSizeBytes: size,
+                lastTranscription: transcription,
+                error: undefined,
               };
             });
           }
@@ -332,6 +340,11 @@ function App() {
       ) : (
         <p>Hold the Option key to start a new recording.</p>
       )}
+      {recordingState.lastTranscription ? (
+        <p>
+          <strong>Transcription:</strong> {recordingState.lastTranscription}
+        </p>
+      ) : null}
       {recordingState.error ? (
         <p style={{ color: "#d14343" }}>
           Recording error: {recordingState.error}

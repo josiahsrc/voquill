@@ -31,3 +31,4 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-r
 core-graphics = "0.24"
 core-foundation = "0.10"
 cpal = "0.15"
+whisper-rs = "0.15.1"

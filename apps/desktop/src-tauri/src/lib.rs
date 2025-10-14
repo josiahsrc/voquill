@@ -19,6 +19,11 @@ use cpal::{
     Device, SampleFormat, Stream, StreamConfig,
 };
 
+#[cfg(target_os = "macos")]
+use whisper_rs::{
+    FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
+};
+
 use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
 use tauri::{Manager, State};
 use tauri_plugin_sql::{Builder as SqlPluginBuilder, Migration, MigrationKind};
@@ -79,13 +84,152 @@ struct RecordingManager {
 struct ActiveRecording {
     _stream: Stream,
     start: Instant,
-    buffer: Arc<Mutex<Vec<u8>>>,
+    buffer: Arc<Mutex<Vec<f32>>>,
+    sample_rate: u32,
 }
 
 #[cfg(target_os = "macos")]
 struct RecordingMetrics {
     duration: std::time::Duration,
     size_bytes: u64,
+}
+
+#[cfg(target_os = "macos")]
+struct RecordedAudio {
+    samples: Vec<f32>,
+    sample_rate: u32,
+}
+
+#[cfg(target_os = "macos")]
+struct RecordingResult {
+    metrics: RecordingMetrics,
+    audio: RecordedAudio,
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Clone)]
+struct WhisperTranscriber {
+    context: Arc<WhisperContext>,
+}
+
+#[cfg(target_os = "macos")]
+impl WhisperTranscriber {
+    fn new(model_path: &std::path::Path) -> Result<Self, String> {
+        let model_path_string = model_path
+            .to_str()
+            .map(str::to_owned)
+            .ok_or_else(|| "Invalid Whisper model path".to_string())?;
+        let context = WhisperContext::new_with_params(
+            &model_path_string,
+            WhisperContextParameters::default(),
+        )
+        .map_err(|err| format!("Failed to load Whisper model: {err}"))?;
+        Ok(Self {
+            context: Arc::new(context),
+        })
+    }
+
+    fn transcribe(&self, samples: &[f32], sample_rate: u32) -> Result<String, String> {
+        const TARGET_SAMPLE_RATE: u32 = 16_000;
+
+        if samples.is_empty() {
+            return Err("No audio samples captured".to_string());
+        }
+        if sample_rate == 0 {
+            return Err("Invalid sample rate (0 Hz)".to_string());
+        }
+
+        let processed = if sample_rate == TARGET_SAMPLE_RATE {
+            samples.to_vec()
+        } else {
+            resample_to_sample_rate(samples, sample_rate, TARGET_SAMPLE_RATE)
+        };
+
+        if processed.is_empty() {
+            return Err("Resampled audio is empty".to_string());
+        }
+
+        let mut state = self
+            .context
+            .create_state()
+            .map_err(|err| format!("Failed to create Whisper state: {err}"))?;
+
+        let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+        params.set_language(Some("en"));
+        params.set_translate(false);
+        params.set_print_special(false);
+        params.set_print_progress(false);
+        params.set_print_realtime(false);
+        params.set_print_timestamps(false);
+        params.set_no_context(true);
+
+        state
+            .full(params, &processed)
+            .map_err(|err| format!("Failed to run Whisper inference: {err}"))?;
+
+        collect_transcription(&state)
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn resample_to_sample_rate(samples: &[f32], input_rate: u32, target_rate: u32) -> Vec<f32> {
+    if samples.is_empty() || input_rate == 0 || target_rate == 0 {
+        return Vec::new();
+    }
+
+    if input_rate == target_rate {
+        return samples.to_vec();
+    }
+
+    let ratio = f64::from(target_rate) / f64::from(input_rate);
+    let output_len = ((samples.len() as f64) * ratio).ceil().max(1.0) as usize;
+    let mut output = Vec::with_capacity(output_len);
+
+    for i in 0..output_len {
+        let src_pos = (i as f64) / ratio;
+        let base_index = src_pos.floor() as usize;
+        let frac = src_pos - base_index as f64;
+
+        let sample = if base_index + 1 < samples.len() {
+            let a = samples[base_index];
+            let b = samples[base_index + 1];
+            a + (b - a) * frac as f32
+        } else {
+            samples[base_index]
+        };
+
+        output.push(sample);
+    }
+
+    output
+}
+
+#[cfg(target_os = "macos")]
+fn collect_transcription(state: &whisper_rs::WhisperState) -> Result<String, String> {
+    let mut transcript = String::new();
+    for segment in state.as_iter() {
+        match segment.to_str() {
+            Ok(text) => {
+                if !transcript.is_empty() {
+                    transcript.push(' ');
+                }
+                transcript.push_str(text.trim());
+            }
+            Err(WhisperError::InvalidUtf8 { .. }) => {
+                if let Ok(text) = segment.to_str_lossy() {
+                    if !transcript.is_empty() {
+                        transcript.push(' ');
+                    }
+                    transcript.push_str(text.trim());
+                }
+            }
+            Err(err) => {
+                return Err(format!("Failed to read Whisper segment: {err}"));
+            }
+        }
+    }
+
+    Ok(transcript.trim().to_string())
 }
 
 #[cfg(target_os = "macos")]
@@ -155,8 +299,9 @@ impl RecordingManager {
 
         let sample_format = config.sample_format();
         let stream_config: StreamConfig = config.into();
+        let sample_rate = stream_config.sample_rate.0;
 
-        let buffer = Arc::new(Mutex::new(Vec::<u8>::new()));
+        let buffer = Arc::new(Mutex::new(Vec::<f32>::new()));
 
         let stream = match sample_format {
             SampleFormat::I16 => {
@@ -179,30 +324,45 @@ impl RecordingManager {
             _stream: stream,
             start: Instant::now(),
             buffer,
+            sample_rate,
         });
 
         Ok(())
     }
 
-    fn stop_recording(&self) -> Result<RecordingMetrics, RecordingError> {
+    fn stop_recording(&self) -> Result<RecordingResult, RecordingError> {
         let mut guard = self
             .inner
             .lock()
             .map_err(|_| RecordingError::NotRecording)?;
         let recording = guard.take().ok_or(RecordingError::NotRecording)?;
 
-        let duration = recording.start.elapsed();
-        let size_bytes = recording
+        let samples = recording
             .buffer
             .lock()
-            .map(|buffer| buffer.len() as u64)
-            .unwrap_or(0);
+            .map(|buffer| buffer.clone())
+            .unwrap_or_default();
+        let sample_rate = recording.sample_rate;
+        let fallback_duration = recording.start.elapsed();
+        let duration = if !samples.is_empty() && sample_rate > 0 {
+            let duration_secs = samples.len() as f64 / f64::from(sample_rate);
+            std::time::Duration::from_secs_f64(duration_secs)
+        } else {
+            fallback_duration
+        };
+        let size_bytes = samples.len() as u64 * std::mem::size_of::<f32>() as u64;
 
         drop(recording);
 
-        Ok(RecordingMetrics {
-            duration,
-            size_bytes,
+        Ok(RecordingResult {
+            metrics: RecordingMetrics {
+                duration,
+                size_bytes,
+            },
+            audio: RecordedAudio {
+                samples,
+                sample_rate,
+            },
         })
     }
 }
@@ -211,22 +371,42 @@ impl RecordingManager {
 fn build_input_stream<T>(
     device: &Device,
     config: &StreamConfig,
-    buffer: Arc<Mutex<Vec<u8>>>,
+    buffer: Arc<Mutex<Vec<f32>>>,
 ) -> Result<Stream, RecordingError>
 where
     T: cpal::Sample + cpal::SizedSample,
+    f32: cpal::FromSample<T>,
 {
-    let bytes_per_sample = std::mem::size_of::<T>();
+    let channel_count = std::cmp::max(config.channels as usize, 1);
     let callback_buffer = buffer.clone();
     device
         .build_input_stream(
             config,
             move |data: &[T], _| {
-                let byte_len = data.len() * bytes_per_sample;
-                let raw_bytes =
-                    unsafe { std::slice::from_raw_parts(data.as_ptr() as *const u8, byte_len) };
                 if let Ok(mut shared_buffer) = callback_buffer.lock() {
-                    shared_buffer.extend_from_slice(raw_bytes);
+                    if channel_count == 1 {
+                        for sample in data {
+                            shared_buffer.push((*sample).to_sample::<f32>());
+                        }
+                    } else {
+                        let mut index = 0;
+                        while index < data.len() {
+                            let mut sum = 0.0f32;
+                            let mut samples_in_frame = 0usize;
+                            for channel in 0..channel_count {
+                                let sample_index = index + channel;
+                                if sample_index >= data.len() {
+                                    break;
+                                }
+                                sum += data[sample_index].to_sample::<f32>();
+                                samples_in_frame += 1;
+                            }
+                            if samples_in_frame > 0 {
+                                shared_buffer.push(sum / samples_in_frame as f32);
+                            }
+                            index += channel_count;
+                        }
+                    }
                 }
             },
             |err| eprintln!("[recording] stream error: {err}"),
@@ -276,6 +456,16 @@ fn database_url(app: &tauri::AppHandle) -> io::Result<String> {
     Ok(format!("sqlite:{path_str}"))
 }
 
+#[cfg(target_os = "macos")]
+fn whisper_model_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
+    app.path()
+        .resolve(
+            "resources/models/ggml-base.en.bin",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|err| io::Error::new(io::ErrorKind::NotFound, err.to_string()))
+}
+
 async fn ensure_option_key_row(pool: SqlitePool) -> Result<u64, sqlx::Error> {
     sqlx::query(CREATE_USERS_TABLE_SQL).execute(&pool).await?;
     sqlx::query("INSERT OR IGNORE INTO users (id, option_key_count) VALUES (1, 0)")
@@ -308,18 +498,20 @@ async fn set_option_key_count(pool: SqlitePool, count: u64) -> Result<(), sqlx::
 }
 
 #[cfg(target_os = "macos")]
-fn type_hello_world_into_focused_field() -> Result<(), String> {
+fn type_text_into_focused_field(text: &str) -> Result<(), String> {
     use core_graphics::event::{CGEvent, CGEventTapLocation};
     use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 
-    const HELLO_WORLD_TEXT: &str = "Hello world!";
+    if text.trim().is_empty() {
+        return Ok(());
+    }
 
     let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
         .map_err(|_| "failed to create event source".to_string())?;
 
     let key_down = CGEvent::new_keyboard_event(source.clone(), 0, true)
         .map_err(|_| "failed to create key-down event".to_string())?;
-    key_down.set_string(HELLO_WORLD_TEXT);
+    key_down.set_string(text);
     key_down.post(CGEventTapLocation::HID);
 
     let key_up = CGEvent::new_keyboard_event(source, 0, false)
@@ -358,6 +550,7 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
     struct RecordingFinishedPayload {
         duration_ms: u64,
         size_bytes: u64,
+        transcription: Option<String>,
     }
 
     #[derive(Clone, Serialize)]
@@ -377,10 +570,15 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
     let db_pool = pool_state.pool();
     drop(pool_state);
 
+    let transcriber_state = app.state::<WhisperTranscriber>();
+    let transcriber_handle: WhisperTranscriber = (*transcriber_state).clone();
+    drop(transcriber_state);
+
     std::thread::spawn(move || {
         let is_alt_pressed = Arc::new(AtomicBool::new(false));
         let emit_handle = app_handle.clone();
         let recorder = RecordingManager::new();
+        let transcriber = transcriber_handle;
 
         let event_tap = match CGEventTap::new(
             CGEventTapLocation::Session,
@@ -506,23 +704,73 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                                 }
                             } else if !currently_pressed && was_pressed {
                                 match recorder.stop_recording() {
-                                    Ok(metrics) => {
-                                        let duration_ms =
-                                            metrics.duration.as_millis().min(u128::from(u64::MAX))
-                                                as u64;
-                                        let payload = RecordingFinishedPayload {
-                                            duration_ms,
-                                            size_bytes: metrics.size_bytes,
-                                        };
-                                        if let Err(emit_err) = emit_handle.emit_to(
-                                            EventTarget::any(),
-                                            "recording-finished",
-                                            payload,
-                                        ) {
-                                            eprintln!(
-                                                "Failed to emit recording-finished event: {emit_err}"
-                                            );
-                                        }
+                                    Ok(result) => {
+                                        let duration_ms = result
+                                            .metrics
+                                            .duration
+                                            .as_millis()
+                                            .min(u128::from(u64::MAX))
+                                            as u64;
+                                        let size_bytes = result.metrics.size_bytes;
+                                        let samples = result.audio.samples;
+                                        let sample_rate = result.audio.sample_rate;
+                                        let emit_finished = emit_handle.clone();
+                                        let emit_error = emit_handle.clone();
+                                        let transcriber_for_thread = transcriber.clone();
+
+                                        std::thread::spawn(move || {
+                                            let transcription_result = transcriber_for_thread
+                                                .transcribe(&samples, sample_rate);
+
+                                            let mut transcription: Option<String> = None;
+                                            if let Err(err) = transcription_result.as_ref() {
+                                                eprintln!("Transcription failed: {err}");
+                                                let payload = RecordingErrorPayload {
+                                                    message: err.clone(),
+                                                };
+                                                if let Err(emit_err) = emit_error.emit_to(
+                                                    EventTarget::any(),
+                                                    "recording-error",
+                                                    payload,
+                                                ) {
+                                                    eprintln!(
+                                                        "Failed to emit recording-error event: {emit_err}"
+                                                    );
+                                                }
+                                            }
+
+                                            if let Ok(text) = transcription_result {
+                                                let normalized = text.trim().to_string();
+                                                if !normalized.is_empty() {
+                                                    transcription = Some(normalized);
+                                                }
+                                            }
+
+                                            let payload = RecordingFinishedPayload {
+                                                duration_ms,
+                                                size_bytes,
+                                                transcription: transcription.clone(),
+                                            };
+                                            if let Err(emit_err) = emit_finished.emit_to(
+                                                EventTarget::any(),
+                                                "recording-finished",
+                                                payload,
+                                            ) {
+                                                eprintln!(
+                                                    "Failed to emit recording-finished event: {emit_err}"
+                                                );
+                                            }
+
+                                            if let Some(text) = transcription {
+                                                if let Err(err) =
+                                                    type_text_into_focused_field(&text)
+                                                {
+                                                    eprintln!(
+                                                        "Failed to type transcription into field: {err}"
+                                                    );
+                                                }
+                                            }
+                                        });
                                     }
                                     Err(RecordingError::NotRecording) => { /* no-op */ }
                                     Err(err) => {
@@ -540,11 +788,6 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                                             );
                                         }
                                     }
-                                }
-                                if let Err(err) = type_hello_world_into_focused_field() {
-                                    eprintln!(
-                                        "Failed to type Hello world! after Alt release: {err}"
-                                    );
                                 }
                             }
                         }
@@ -666,6 +909,14 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             {
                 let mac_handle = app.handle();
+                let model_path = whisper_model_path(&mac_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+                let transcriber = WhisperTranscriber::new(&model_path).map_err(
+                    |err| -> Box<dyn std::error::Error> {
+                        Box::new(io::Error::new(io::ErrorKind::Other, err))
+                    },
+                )?;
+                app.manage(transcriber);
                 spawn_alt_listener(&mac_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
