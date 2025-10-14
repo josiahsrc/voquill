@@ -7,9 +7,73 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
 import "./App.css";
 
+type RecordingStartedPayload = {
+  started_at_ms?: number;
+};
+
+type RecordingFinishedPayload = {
+  duration_ms?: number;
+  size_bytes?: number;
+};
+
+type RecordingErrorPayload = {
+  message?: string;
+};
+
+type RecordingState = {
+  isRecording: boolean;
+  startedAtMs?: number;
+  lastDurationMs?: number;
+  lastSizeBytes?: number;
+  error?: string;
+};
+
+const formatDuration = (ms: number) => {
+  if (!Number.isFinite(ms)) {
+    return "0 ms";
+  }
+  if (ms < 1000) {
+    return `${ms.toFixed(0)} ms`;
+  }
+  const seconds = ms / 1000;
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)} s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds - minutes * 60;
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m ${remainingSeconds.toFixed(0)}s`;
+  }
+  return `${minutes}m ${remainingSeconds.toFixed(0)}s`;
+};
+
+const formatSize = (bytes: number) => {
+  if (!Number.isFinite(bytes)) {
+    return "0 B";
+  }
+  if (bytes < 1024) {
+    return `${bytes.toFixed(0)} B`;
+  }
+  const kilobytes = bytes / 1024;
+  if (kilobytes < 1024) {
+    return `${kilobytes.toFixed(1)} KB`;
+  }
+  const megabytes = kilobytes / 1024;
+  if (megabytes < 1024) {
+    return `${megabytes.toFixed(2)} MB`;
+  }
+  const gigabytes = megabytes / 1024;
+  return `${gigabytes.toFixed(2)} GB`;
+};
+
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [recordingState, setRecordingState] = useState<RecordingState>({
+    isRecording: false,
+  });
   const [altPressCount, setAltPressCount] = useState(0);
 
   const a = createHelloRight();
@@ -19,36 +83,6 @@ function App() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
-
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      (!Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__") &&
-        !Object.prototype.hasOwnProperty.call(window, "__TAURI_IPC__"))
-    ) {
-      return;
-    }
-
-    let canceled = false;
-
-    const runAutoUpdate = async () => {
-      try {
-        const update = await check();
-        if (!canceled && update?.available) {
-          await update.downloadAndInstall();
-          await relaunch();
-        }
-      } catch (err) {
-        console.error("Auto-update check failed", err);
-      }
-    };
-
-    runAutoUpdate();
-
-    return () => {
-      canceled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (
@@ -72,6 +106,19 @@ function App() {
       }
     };
 
+    const runAutoUpdate = async () => {
+      try {
+        const update = await check();
+        if (!canceled && update?.available) {
+          await update.downloadAndInstall();
+          await relaunch();
+        }
+      } catch (err) {
+        console.error("Auto-update check failed", err);
+      }
+    };
+
+    runAutoUpdate();
     loadPersistedCount();
 
     return () => {
@@ -88,12 +135,91 @@ function App() {
       return;
     }
 
-    let unlisten: (() => void) | undefined;
     let canceled = false;
+    const unlistenFns: Array<() => void> = [];
 
-    const attachListener = async () => {
+    const parsePayload = (payload: unknown): Record<string, unknown> | null => {
+      if (typeof payload === "object" && payload !== null) {
+        return payload as Record<string, unknown>;
+      }
+      if (typeof payload === "string") {
+        try {
+          const parsed = JSON.parse(payload);
+          if (typeof parsed === "object" && parsed !== null) {
+            return parsed as Record<string, unknown>;
+          }
+        } catch (err) {
+          console.error("Failed to parse recording event payload", err);
+        }
+      }
+      return null;
+    };
+
+    const attachListeners = async () => {
       try {
-        const stop = await listen<{ count: number } | number | string>(
+        const startedListener = await listen<RecordingStartedPayload>(
+          "recording-started",
+          (event) => {
+            const data = parsePayload(event.payload);
+            const startedAt =
+              data && typeof data.started_at_ms === "number"
+                ? data.started_at_ms
+                : Date.now();
+            setRecordingState((prev) => ({
+              ...prev,
+              isRecording: true,
+              startedAtMs: startedAt,
+              error: undefined,
+            }));
+          }
+        );
+        const finishedListener = await listen<RecordingFinishedPayload>(
+          "recording-finished",
+          (event) => {
+            const data = parsePayload(event.payload);
+            const duration =
+              data && typeof data.duration_ms === "number"
+                ? data.duration_ms
+                : undefined;
+            const size =
+              data && typeof data.size_bytes === "number"
+                ? data.size_bytes
+                : undefined;
+
+            setRecordingState((prev) => {
+              const fallbackDuration =
+                typeof duration === "number"
+                  ? duration
+                  : prev.startedAtMs
+                    ? Math.max(0, Date.now() - prev.startedAtMs)
+                    : undefined;
+              return {
+                ...prev,
+                isRecording: false,
+                startedAtMs: undefined,
+                lastDurationMs: fallbackDuration,
+                lastSizeBytes: size,
+              };
+            });
+          }
+        );
+        const errorListener = await listen<RecordingErrorPayload>(
+          "recording-error",
+          (event) => {
+            const data = parsePayload(event.payload);
+            const message =
+              data && typeof data.message === "string"
+                ? data.message
+                : "Recording error";
+            setRecordingState((prev) => ({
+              ...prev,
+              isRecording: false,
+              startedAtMs: undefined,
+              error: message,
+            }));
+          }
+        );
+        const altListener = await listen<{ count: number } | number | string>(
           "alt-pressed",
           (event) => {
             const payload = event.payload;
@@ -121,25 +247,50 @@ function App() {
           }
         );
 
-        if (!canceled) {
-          unlisten = stop;
+        if (canceled) {
+          startedListener();
+          finishedListener();
+          errorListener();
+          altListener();
         } else {
-          stop();
+          unlistenFns.push(
+            startedListener,
+            finishedListener,
+            errorListener,
+            altListener
+          );
         }
       } catch (err) {
-        console.error("Failed to attach Alt key listener", err);
+        console.error("Failed to attach recording listeners", err);
       }
     };
 
-    attachListener();
+    attachListeners();
 
     return () => {
       canceled = true;
-      if (unlisten) {
-        unlisten();
+      while (unlistenFns.length > 0) {
+        const stop = unlistenFns.pop();
+        if (typeof stop === "function") {
+          stop();
+        }
       }
     };
   }, []);
+
+  const lastRecordingParts: string[] = [];
+  if (recordingState.lastDurationMs !== undefined) {
+    lastRecordingParts.push(
+      `lasted ${formatDuration(recordingState.lastDurationMs)}`
+    );
+  }
+  if (recordingState.lastSizeBytes !== undefined) {
+    lastRecordingParts.push(`used ${formatSize(recordingState.lastSizeBytes)}`);
+  }
+  const lastRecordingSummary =
+    lastRecordingParts.length > 0
+      ? `Last recording ${lastRecordingParts.join(" and ")}.`
+      : null;
 
   return (
     <main className="container">
@@ -174,6 +325,18 @@ function App() {
       </form>
       <p>{greetMsg}</p>
       <p>{`Alt key pressed ${altPressCount} time${altPressCount === 1 ? "" : "s"}`}</p>
+      {recordingState.isRecording ? (
+        <p>Recording in progress... release the Option key to stop.</p>
+      ) : lastRecordingSummary ? (
+        <p>{lastRecordingSummary}</p>
+      ) : (
+        <p>Hold the Option key to start a new recording.</p>
+      )}
+      {recordingState.error ? (
+        <p style={{ color: "#d14343" }}>
+          Recording error: {recordingState.error}
+        </p>
+      ) : null}
     </main>
   );
 }

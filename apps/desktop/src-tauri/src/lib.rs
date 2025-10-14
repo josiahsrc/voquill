@@ -7,6 +7,18 @@ use std::{
     },
 };
 
+#[cfg(target_os = "macos")]
+use std::{
+    sync::Mutex,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
+
+#[cfg(target_os = "macos")]
+use cpal::{
+    traits::{DeviceTrait, HostTrait, StreamTrait},
+    Device, SampleFormat, Stream, StreamConfig,
+};
+
 use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
 use tauri::{Manager, State};
 use tauri_plugin_sql::{Builder as SqlPluginBuilder, Migration, MigrationKind};
@@ -55,6 +67,172 @@ impl OptionKeyDatabase {
     fn pool(&self) -> SqlitePool {
         self.0.clone()
     }
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Clone)]
+struct RecordingManager {
+    inner: Arc<Mutex<Option<ActiveRecording>>>,
+}
+
+#[cfg(target_os = "macos")]
+struct ActiveRecording {
+    _stream: Stream,
+    start: Instant,
+    buffer: Arc<Mutex<Vec<u8>>>,
+}
+
+#[cfg(target_os = "macos")]
+struct RecordingMetrics {
+    duration: std::time::Duration,
+    size_bytes: u64,
+}
+
+#[cfg(target_os = "macos")]
+#[derive(Debug)]
+enum RecordingError {
+    AlreadyRecording,
+    InputDeviceUnavailable,
+    StreamConfig(String),
+    StreamBuild(String),
+    StreamPlay(String),
+    NotRecording,
+    UnsupportedFormat(SampleFormat),
+}
+
+#[cfg(target_os = "macos")]
+impl std::fmt::Display for RecordingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RecordingError::AlreadyRecording => write!(f, "Recording is already in progress"),
+            RecordingError::InputDeviceUnavailable => {
+                write!(f, "No default input device available")
+            }
+            RecordingError::StreamConfig(err) => {
+                write!(f, "Failed to read input device configuration: {err}")
+            }
+            RecordingError::StreamBuild(err) => {
+                write!(f, "Failed to build input stream: {err}")
+            }
+            RecordingError::StreamPlay(err) => write!(f, "Failed to start input stream: {err}"),
+            RecordingError::NotRecording => write!(f, "No active recording to stop"),
+            RecordingError::UnsupportedFormat(format) => {
+                write!(f, "Unsupported sample format: {format:?}")
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl std::error::Error for RecordingError {}
+
+#[cfg(target_os = "macos")]
+impl RecordingManager {
+    fn new() -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    fn start_recording(&self) -> Result<(), RecordingError> {
+        let mut guard = self
+            .inner
+            .lock()
+            .map_err(|_| RecordingError::AlreadyRecording)?;
+
+        if guard.is_some() {
+            return Err(RecordingError::AlreadyRecording);
+        }
+
+        let host = cpal::default_host();
+        let device = host
+            .default_input_device()
+            .ok_or(RecordingError::InputDeviceUnavailable)?;
+
+        let config = device
+            .default_input_config()
+            .map_err(|err| RecordingError::StreamConfig(err.to_string()))?;
+
+        let sample_format = config.sample_format();
+        let stream_config: StreamConfig = config.into();
+
+        let buffer = Arc::new(Mutex::new(Vec::<u8>::new()));
+
+        let stream = match sample_format {
+            SampleFormat::I16 => {
+                build_input_stream::<i16>(&device, &stream_config, buffer.clone())?
+            }
+            SampleFormat::U16 => {
+                build_input_stream::<u16>(&device, &stream_config, buffer.clone())?
+            }
+            SampleFormat::F32 => {
+                build_input_stream::<f32>(&device, &stream_config, buffer.clone())?
+            }
+            other => return Err(RecordingError::UnsupportedFormat(other)),
+        };
+
+        stream
+            .play()
+            .map_err(|err| RecordingError::StreamPlay(err.to_string()))?;
+
+        *guard = Some(ActiveRecording {
+            _stream: stream,
+            start: Instant::now(),
+            buffer,
+        });
+
+        Ok(())
+    }
+
+    fn stop_recording(&self) -> Result<RecordingMetrics, RecordingError> {
+        let mut guard = self
+            .inner
+            .lock()
+            .map_err(|_| RecordingError::NotRecording)?;
+        let recording = guard.take().ok_or(RecordingError::NotRecording)?;
+
+        let duration = recording.start.elapsed();
+        let size_bytes = recording
+            .buffer
+            .lock()
+            .map(|buffer| buffer.len() as u64)
+            .unwrap_or(0);
+
+        drop(recording);
+
+        Ok(RecordingMetrics {
+            duration,
+            size_bytes,
+        })
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn build_input_stream<T>(
+    device: &Device,
+    config: &StreamConfig,
+    buffer: Arc<Mutex<Vec<u8>>>,
+) -> Result<Stream, RecordingError>
+where
+    T: cpal::Sample + cpal::SizedSample,
+{
+    let bytes_per_sample = std::mem::size_of::<T>();
+    let callback_buffer = buffer.clone();
+    device
+        .build_input_stream(
+            config,
+            move |data: &[T], _| {
+                let byte_len = data.len() * bytes_per_sample;
+                let raw_bytes =
+                    unsafe { std::slice::from_raw_parts(data.as_ptr() as *const u8, byte_len) };
+                if let Ok(mut shared_buffer) = callback_buffer.lock() {
+                    shared_buffer.extend_from_slice(raw_bytes);
+                }
+            },
+            |err| eprintln!("[recording] stream error: {err}"),
+            None,
+        )
+        .map_err(|err| RecordingError::StreamBuild(err.to_string()))
 }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -148,6 +326,22 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
         count: u64,
     }
 
+    #[derive(Clone, Serialize)]
+    struct RecordingStartedPayload {
+        started_at_ms: u64,
+    }
+
+    #[derive(Clone, Serialize)]
+    struct RecordingFinishedPayload {
+        duration_ms: u64,
+        size_bytes: u64,
+    }
+
+    #[derive(Clone, Serialize)]
+    struct RecordingErrorPayload {
+        message: String,
+    }
+
     const LEFT_OPTION_KEYCODE: i64 = 58;
     const RIGHT_OPTION_KEYCODE: i64 = 61;
 
@@ -163,6 +357,7 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
     std::thread::spawn(move || {
         let is_alt_pressed = Arc::new(AtomicBool::new(false));
         let emit_handle = app_handle.clone();
+        let recorder = RecordingManager::new();
 
         let event_tap = match CGEventTap::new(
             CGEventTapLocation::Session,
@@ -174,6 +369,7 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                 let alt_state = is_alt_pressed.clone();
                 let emit_handle = emit_handle.clone();
                 let pool = db_pool.clone();
+                let recorder = recorder.clone();
                 move |_proxy, event_type, event| {
                     let keycode = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE);
                     if keycode == LEFT_OPTION_KEYCODE || keycode == RIGHT_OPTION_KEYCODE {
@@ -213,6 +409,42 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                             }
 
                             if currently_pressed && !was_pressed {
+                                match recorder.start_recording() {
+                                    Ok(()) => {
+                                        let started_at_ms = SystemTime::now()
+                                            .duration_since(UNIX_EPOCH)
+                                            .unwrap_or_default()
+                                            .as_millis()
+                                            .min(u128::from(u64::MAX))
+                                            as u64;
+                                        let payload = RecordingStartedPayload { started_at_ms };
+                                        if let Err(emit_err) = emit_handle.emit_to(
+                                            EventTarget::any(),
+                                            "recording-started",
+                                            payload,
+                                        ) {
+                                            eprintln!(
+                                                "Failed to emit recording-started event: {emit_err}"
+                                            );
+                                        }
+                                    }
+                                    Err(err) => {
+                                        eprintln!("Failed to start recording: {err}");
+                                        let payload = RecordingErrorPayload {
+                                            message: err.to_string(),
+                                        };
+                                        if let Err(emit_err) = emit_handle.emit_to(
+                                            EventTarget::any(),
+                                            "recording-error",
+                                            payload,
+                                        ) {
+                                            eprintln!(
+                                                "Failed to emit recording-error event: {emit_err}"
+                                            );
+                                        }
+                                    }
+                                }
+
                                 let new_count = match tauri::async_runtime::block_on(
                                     increment_option_key_count(pool.clone()),
                                 ) {
@@ -248,6 +480,43 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                                     emit_handle.emit_to(EventTarget::any(), "alt-pressed", payload)
                                 {
                                     eprintln!("Failed to emit alt-pressed event: {emit_err}");
+                                }
+                            } else if !currently_pressed && was_pressed {
+                                match recorder.stop_recording() {
+                                    Ok(metrics) => {
+                                        let duration_ms =
+                                            metrics.duration.as_millis().min(u128::from(u64::MAX))
+                                                as u64;
+                                        let payload = RecordingFinishedPayload {
+                                            duration_ms,
+                                            size_bytes: metrics.size_bytes,
+                                        };
+                                        if let Err(emit_err) = emit_handle.emit_to(
+                                            EventTarget::any(),
+                                            "recording-finished",
+                                            payload,
+                                        ) {
+                                            eprintln!(
+                                                "Failed to emit recording-finished event: {emit_err}"
+                                            );
+                                        }
+                                    }
+                                    Err(RecordingError::NotRecording) => { /* no-op */ }
+                                    Err(err) => {
+                                        eprintln!("Failed to stop recording: {err}");
+                                        let payload = RecordingErrorPayload {
+                                            message: err.to_string(),
+                                        };
+                                        if let Err(emit_err) = emit_handle.emit_to(
+                                            EventTarget::any(),
+                                            "recording-error",
+                                            payload,
+                                        ) {
+                                            eprintln!(
+                                                "Failed to emit recording-error event: {emit_err}"
+                                            );
+                                        }
+                                    }
                                 }
                             }
                         }

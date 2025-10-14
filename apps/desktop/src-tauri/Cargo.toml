@@ -30,3 +30,4 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-r
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"
 core-foundation = "0.10"
+cpal = "0.15"
