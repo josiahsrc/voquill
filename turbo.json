@@ -1,6 +1,7 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
+  "globalEnv": ["TAURI_PLATFORM", "VOQUILL_DESKTOP_PLATFORM"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

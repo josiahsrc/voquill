@@ -29,13 +29,13 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
           fetch-depth: 0
 
       - name: Read version and commit
         id: meta
         env:
-          BUMP: ${{ github.event_name == 'workflow_dispatch' && inputs.bump || 'patch' }}
+          BUMP: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.bump || 'patch' }}
         run: |
           git fetch --tags --force
           LAST_TAG="$(git tag --list 'desktop-v*' --sort=-v:refname | head -n 1)"
@@ -140,14 +140,20 @@ jobs:
             os: macos-14
             args: "--target universal-apple-darwin"
             rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+            tauri_platform: macos
+            node_platform: darwin
           - label: Linux
             os: ubuntu-22.04
             args: ""
             rust_targets: ""
+            tauri_platform: linux
+            node_platform: linux
           - label: Windows
             os: windows-latest
             args: ""
             rust_targets: ""
+            tauri_platform: windows
+            node_platform: win32
     runs-on: ${{ matrix.os }}
     env:
       TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -203,10 +209,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Turbo build desktop workspace
+        run: npm run build -- --filter=desktop...
+        env:
+          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
+          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
+          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
         with:
           projectPath: apps/desktop
           tauriScript: npm run --workspace desktop tauri
