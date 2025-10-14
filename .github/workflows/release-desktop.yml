@@ -1,9 +1,6 @@
 name: Release Desktop
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       bump:
