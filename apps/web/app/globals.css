@@ -19,6 +19,9 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-roboto), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-weight: 400;
 }
 
 * {
