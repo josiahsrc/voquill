@@ -1,13 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import SiteFooter from "./components/site-footer";
+import SiteHeader from "./components/site-header";
 import styles from "./page.module.css";
-
-const navLinks = [
-  { href: "#features", label: "Features" },
-  { href: "#security", label: "Security" },
-  { href: "#workflow", label: "Workflow" },
-  { href: "#cta", label: "Early Access" },
-];
 
 const heroStats = [
   { value: "4×", label: "Faster drafting than typing alone" },
@@ -55,28 +50,9 @@ const workflow = [
 ];
 
 export default function Home() {
-  const year = new Date().getFullYear();
-
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.logo}>Voquill</div>
-        <nav className={styles.nav} aria-label="Primary navigation">
-          {navLinks.map(({ href, label }) => (
-            <a key={href} href={href} className={styles.navLink}>
-              {label}
-            </a>
-          ))}
-        </nav>
-        <div className={styles.headerActions}>
-          <a className={styles.secondaryButton} href="#workflow">
-            See workflow
-          </a>
-          <a className={styles.primaryButton} href="#cta">
-            Request access
-          </a>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className={styles.main}>
         <section className={styles.heroSection} id="overview">
@@ -251,35 +227,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className={styles.footer} id="cta">
-        <div className={styles.footerInner}>
-          <span className={styles.badge}>Early access</span>
-          <h2>Experience Voquill before your competitors do.</h2>
-          <p>
-            We are onboarding a limited number of teams to refine dictation for
-            high-stakes workflows. Reserve your slot and we will share a
-            personalized setup.
-          </p>
-          <div className={styles.footerActions}>
-            <a className={styles.primaryButton} href="mailto:founder@voquill.com">
-              Request a private demo
-            </a>
-            <a className={styles.secondaryButton} href="https://cal.com">
-              Schedule a call
-            </a>
-          </div>
-        </div>
-        <div className={styles.footerMeta}>
-          <span>© {year} Voquill, Inc.</span>
-          <div className={styles.footerLinks}>
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/terms">Terms</Link>
-            <Link href="/docs">Docs</Link>
-            <Link href="/docs/security">Security</Link>
-            <a href="mailto:hello@voquill.com">Contact</a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

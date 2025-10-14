@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { getMarkdownContent } from "../../lib/markdown";
+import SiteFooter from "../components/site-footer";
+import { SiteHeader } from "../components/site-header";
+import layoutStyles from "../page.module.css";
 import styles from "../legal.module.css";
 
 export const metadata: Metadata = {
@@ -12,11 +15,15 @@ export default async function TermsPage() {
   const content = await getMarkdownContent("terms");
 
   return (
-    <div className={styles.legalPage}>
-      <article
-        className={styles.legalWrapper}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
+    <div className={layoutStyles.page}>
+      <SiteHeader />
+      <main className={styles.legalMain}>
+        <article
+          className={styles.legalContent}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      </main>
+      <SiteFooter />
     </div>
   );
 }
