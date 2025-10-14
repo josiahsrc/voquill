@@ -33,6 +33,9 @@
     ]
   },
   "plugins": {
+    "sql": {
+      "preload": ["sqlite:voquill.db"]
+    },
     "updater": {
       "endpoints": [
         "https://github.com/josiahsrc/voquill/releases/latest/download/latest.json"

@@ -59,6 +59,35 @@ function App() {
       return;
     }
 
+    let canceled = false;
+
+    const loadPersistedCount = async () => {
+      try {
+        const count = await invoke<number>("get_option_key_count");
+        if (!canceled && typeof count === "number") {
+          setAltPressCount(count);
+        }
+      } catch (err) {
+        console.error("Failed to load option key count", err);
+      }
+    };
+
+    loadPersistedCount();
+
+    return () => {
+      canceled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      (!Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__") &&
+        !Object.prototype.hasOwnProperty.call(window, "__TAURI_IPC__"))
+    ) {
+      return;
+    }
+
     let unlisten: (() => void) | undefined;
     let canceled = false;
 
