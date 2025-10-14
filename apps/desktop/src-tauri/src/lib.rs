@@ -308,6 +308,29 @@ async fn set_option_key_count(pool: SqlitePool, count: u64) -> Result<(), sqlx::
 }
 
 #[cfg(target_os = "macos")]
+fn type_hello_world_into_focused_field() -> Result<(), String> {
+    use core_graphics::event::{CGEvent, CGEventTapLocation};
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+
+    const HELLO_WORLD_TEXT: &str = "Hello world!";
+
+    let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
+        .map_err(|_| "failed to create event source".to_string())?;
+
+    let key_down = CGEvent::new_keyboard_event(source.clone(), 0, true)
+        .map_err(|_| "failed to create key-down event".to_string())?;
+    key_down.set_string(HELLO_WORLD_TEXT);
+    key_down.post(CGEventTapLocation::HID);
+
+    let key_up = CGEvent::new_keyboard_event(source, 0, false)
+        .map_err(|_| "failed to create key-up event".to_string())?;
+    key_up.set_string("");
+    key_up.post(CGEventTapLocation::HID);
+
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
 fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
     use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
     use core_graphics::event::{
@@ -517,6 +540,11 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                                             );
                                         }
                                     }
+                                }
+                                if let Err(err) = type_hello_world_into_focused_field() {
+                                    eprintln!(
+                                        "Failed to type Hello world! after Alt release: {err}"
+                                    );
                                 }
                             }
                         }
