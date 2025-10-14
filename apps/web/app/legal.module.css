@@ -1,0 +1,79 @@
+.legalPage {
+  padding: 120px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.legalWrapper {
+  width: min(840px, 100%);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(23, 23, 23, 0.08);
+  border-radius: 32px;
+  padding: clamp(32px, 6vw, 56px);
+  box-shadow: 0 24px 80px rgba(12, 12, 32, 0.14);
+  color: var(--foreground);
+  line-height: 1.75;
+}
+
+@media (prefers-color-scheme: dark) {
+  .legalWrapper {
+    background: rgba(18, 18, 32, 0.85);
+    border-color: rgba(237, 237, 237, 0.12);
+    box-shadow: 0 28px 80px rgba(6, 6, 16, 0.6);
+  }
+}
+
+.legalWrapper :global(h1) {
+  font-size: clamp(2.2rem, 4vw, 2.8rem);
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+.legalWrapper :global(h2) {
+  margin-top: 36px;
+  margin-bottom: 16px;
+  font-size: clamp(1.45rem, 2.6vw, 1.75rem);
+  letter-spacing: -0.01em;
+}
+
+.legalWrapper :global(h3) {
+  margin-top: 28px;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+
+.legalWrapper :global(p) {
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.legalWrapper :global(ul),
+.legalWrapper :global(ol) {
+  margin: 16px 0 16px 20px;
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+  opacity: 0.8;
+}
+
+.legalWrapper :global(a) {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.legalWrapper :global(em) {
+  opacity: 0.9;
+}
+
+@media (max-width: 600px) {
+  .legalPage {
+    padding: 96px 16px;
+  }
+
+  .legalWrapper {
+    border-radius: 24px;
+  }
+}

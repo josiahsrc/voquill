@@ -272,6 +272,8 @@ export default function Home() {
         <div className={styles.footerMeta}>
           <span>© {year} Voquill, Inc.</span>
           <div className={styles.footerLinks}>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
             <Link href="/docs">Docs</Link>
             <Link href="/docs/security">Security</Link>
             <a href="mailto:hello@voquill.com">Contact</a>
