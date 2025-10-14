@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import { createHelloRight } from "@repo/types";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import "./App.css";
 
 function App() {
@@ -15,6 +17,35 @@ function App() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !Object.prototype.hasOwnProperty.call(window, "__TAURI_IPC__")
+    ) {
+      return;
+    }
+
+    let canceled = false;
+
+    const runAutoUpdate = async () => {
+      try {
+        const update = await check();
+        if (!canceled && update?.available) {
+          await update.downloadAndInstall();
+          await relaunch();
+        }
+      } catch (err) {
+        console.error("Auto-update check failed", err);
+      }
+    };
+
+    runAutoUpdate();
+
+    return () => {
+      canceled = true;
+    };
+  }, []);
 
   return (
     <main className="container">

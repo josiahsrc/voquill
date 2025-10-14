@@ -31,5 +31,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/josiahsrc/voquill/releases/latest/download/latest.json"
+      ],
+      "pubkey": "__UPDATER_PUBLIC_KEY__"
+    }
   }
 }

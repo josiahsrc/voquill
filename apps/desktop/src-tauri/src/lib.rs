@@ -40,7 +40,16 @@ fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let updater_builder = match std::env::var("TAURI_UPDATER_PUBLIC_KEY") {
+        Ok(pubkey) if !pubkey.trim().is_empty() => {
+            tauri_plugin_updater::Builder::new().pubkey(pubkey)
+        }
+        _ => tauri_plugin_updater::Builder::new(),
+    };
+
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(updater_builder.build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             #[cfg(desktop)]
