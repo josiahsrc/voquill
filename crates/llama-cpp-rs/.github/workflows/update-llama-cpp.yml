@@ -1,0 +1,45 @@
+name: Update llama cpp nightly
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch: { }
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    name: Update llama cpp
+    steps:
+      - name: Set date
+        run: echo "DATE=$(date -I)" >> $GITHUB_ENV
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        name: Checkout latest
+        with:
+          submodules: recursive
+      - name: Create branch
+        run: git checkout -b update-llama-cpp-${{ env.DATE }}
+      - name: Update submodules
+        run: git submodule update --remote
+      - name: Config git
+        run: |
+          git config --global user.email "marcus@utilityai.ca"
+          git config --global user.name "Marcus Dunn"
+      - name: Commit
+        run: git commit -am "updated llama.cpp"
+      - name: Push
+        run: git push --set-upstream origin update-llama-cpp-${{ env.DATE }} --force
+      - name: Close any outdated PRs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list --json number,title --jq '.[] | select(.title | contains("Updated llama-cpp (bot)")) | .number' | xargs -I {} gh pr close {}
+      - name: Create open PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.LLAMA_CPP_RS_UPDATE_LLAMA_CPP_ACTION}}
+        run: |
+          unset GITHUB_TOKEN
+          echo ${{ secrets.LLAMA_CPP_RS_UPDATE_LLAMA_CPP_ACTION }} | gh auth login --with-token
+          gh pr create --fill --head update-llama-cpp-${{ env.DATE }} --title "Updated llama-cpp (bot)"

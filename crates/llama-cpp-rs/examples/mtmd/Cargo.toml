@@ -1,0 +1,22 @@
+[package]
+name = "mtmd"
+version = "0.1.86"
+edition = "2021"
+publish = false
+
+[dependencies]
+llama-cpp-2 = { path = "../../llama-cpp-2", version = "0.1.86", features = ["mtmd"] }
+clap = { workspace = true, features = ["derive"] }
+
+[features]
+cuda = ["llama-cpp-2/cuda"]
+metal = ["llama-cpp-2/metal"]
+native = ["llama-cpp-2/native"]
+vulkan = ["llama-cpp-2/vulkan"]
+
+[lints]
+workspace = true
+
+[[example]]
+name = "mtmd"
+path = "src/mtmd.rs"

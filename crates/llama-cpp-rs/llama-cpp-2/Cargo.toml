@@ -1,0 +1,50 @@
+[package]
+name = "llama-cpp-2"
+description = "llama.cpp bindings for Rust"
+version = "0.1.123"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/utilityai/llama-cpp-rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+enumflags2 = "0.7.12"
+llama-cpp-sys-2 = { path = "../llama-cpp-sys-2", version = "0.1.123" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-core = { workspace = true }
+
+[dev-dependencies]
+encoding_rs = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[features]
+default = ["openmp", "android-shared-stdcxx"]
+cuda = ["llama-cpp-sys-2/cuda"]
+cuda-no-vmm = ["cuda", "llama-cpp-sys-2/cuda-no-vmm"]
+metal = ["llama-cpp-sys-2/metal"]
+dynamic-link = ["llama-cpp-sys-2/dynamic-link"]
+vulkan = ["llama-cpp-sys-2/vulkan"]
+native = ["llama-cpp-sys-2/native"]
+openmp = ["llama-cpp-sys-2/openmp"]
+sampler = []
+# Only has an impact on Android.
+android-shared-stdcxx = ["llama-cpp-sys-2/shared-stdcxx"]
+mtmd = ["llama-cpp-sys-2/mtmd"]
+
+
+[target.'cfg(all(target_os = "macos", any(target_arch = "aarch64", target_arch = "arm64")))'.dependencies]
+llama-cpp-sys-2 = { path = "../llama-cpp-sys-2", version = "0.1.123", features = [
+    "metal",
+] }
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+features = ["sampler"]
+
+[[example]]
+name = "usage"
+path = "../examples/usage.rs"

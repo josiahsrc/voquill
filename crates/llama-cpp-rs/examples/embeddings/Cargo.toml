@@ -1,0 +1,20 @@
+[package]
+name = "embeddings"
+version = "0.1.123"
+edition = "2021"
+publish = false
+
+[dependencies]
+llama-cpp-2 = { path = "../../llama-cpp-2", version = "0.1.69" }
+hf-hub = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+anyhow = { workspace = true }
+
+[features]
+cuda = ["llama-cpp-2/cuda"]
+metal = ["llama-cpp-2/metal"]
+native = ["llama-cpp-2/native"]
+vulkan = ["llama-cpp-2/vulkan"]
+
+[lints]
+workspace = true

@@ -1,0 +1,30 @@
+name: Publish to Crates.io
+
+on:
+  release:
+    types:
+      - created
+    workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          submodules: recursive
+      - name: Publish crates for llama-cpp-sys-2
+        run: RUST_BACKTRACE=1 cargo publish --workspace --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --verbose
+      # Trigger the 'update-toml-version' workflow
+      - name: Dispatch Update TOML Version Event
+        if: success()  # Ensure this runs only if the previous steps were successful
+        run: |
+          curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+          -d '{"event_type": "trigger-update-toml-version"}'
