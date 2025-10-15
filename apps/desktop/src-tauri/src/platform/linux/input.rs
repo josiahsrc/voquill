@@ -5,8 +5,8 @@ use crate::domain::{
 };
 use crate::platform::{Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
-use enigo::{Enigo, KeyboardControllable};
-use rdev::{listen, EventType, Key};
+use enigo::{Enigo, Key, KeyboardControllable};
+use rdev::{listen, EventType, Key as RdevKey};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -191,15 +191,42 @@ fn emit_recording_error(app: &tauri::AppHandle, message: String) {
 }
 
 fn type_text_into_focused_field(text: &str) -> Result<(), String> {
-    if text.trim().is_empty() {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
         return Ok(());
     }
 
+    paste_via_clipboard(trimmed).or_else(|err| {
+        eprintln!("Clipboard paste failed ({err}). Falling back to simulated typing.");
+        let mut enigo = Enigo::new();
+        enigo.key_sequence(trimmed);
+        Ok(())
+    })
+}
+
+fn paste_via_clipboard(text: &str) -> Result<(), String> {
+    let mut clipboard =
+        arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
+    let previous = clipboard.get_text().ok();
+    clipboard
+        .set_text(text.to_string())
+        .map_err(|err| format!("failed to store clipboard text: {err}"))?;
+
     let mut enigo = Enigo::new();
-    enigo.key_sequence(text);
+    enigo.key_down(Key::Control);
+    enigo.key_click(Key::Layout('v'));
+    enigo.key_up(Key::Control);
+
+    if let Some(old) = previous {
+        let _ = clipboard.set_text(old);
+    }
+
     Ok(())
 }
 
-fn is_alt_key(key: Key) -> bool {
-    matches!(key, Key::Alt | Key::AltGr | Key::MetaLeft | Key::MetaRight)
+fn is_alt_key(key: RdevKey) -> bool {
+    matches!(
+        key,
+        RdevKey::Alt | RdevKey::AltGr | RdevKey::MetaLeft | RdevKey::MetaRight
+    )
 }

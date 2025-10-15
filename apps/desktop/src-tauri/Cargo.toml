@@ -17,6 +17,11 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[features]
+default = []
+linux-gpu = ["whisper-rs/vulkan"]
+mac-gpu = ["whisper-rs/metal"]
+
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-opener = "2"
@@ -29,7 +34,7 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-r
 thiserror = "1"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
 cpal = "0.15"
-whisper-rs = "0.15.1"
+whisper-rs = { version = "0.15.1", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"
@@ -38,3 +43,4 @@ core-foundation = "0.10"
 [target.'cfg(target_os = "linux")'.dependencies]
 rdev = "0.5"
 enigo = "0.1"
+arboard = "3"
