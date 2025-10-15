@@ -1,6 +1,5 @@
 import { AuthData } from "firebase-functions/tasks";
 import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { blaze, Nullable, path } from "../shared";
 import { UnauthenticatedError } from "../utils/error.utils";
 import { resizeBase64Image } from "../utils/image.utils";
 import { countWords } from "../utils/string.utils";
@@ -16,6 +15,8 @@ import {
 	incrementDemoUsage,
 	validateDemoUsageWithinLimits,
 } from "../utils/demo.util";
+import { Nullable } from "@repo/types";
+import { firemix } from "@firemix/mixed";
 
 export const transcribe = async ({
 	auth,
@@ -109,7 +110,7 @@ export const compose = async ({
 
 	const { ext } = validateAudioInput({ audioMimeType: input.audioMimeType });
 	await validateMemberWithinLimits({ auth });
-	const user = await blaze().get(path.users(auth.uid));
+	const user = await firemix().get(mixpath.users(auth.uid));
 
 	let transcript: string;
 	if (input.simulate) {

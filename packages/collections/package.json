@@ -1,0 +1,19 @@
+{
+  "name": "@repo/collections",
+  "version": "0.1.0",
+  "description": "Shared collection utilities",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {},
+  "devDependencies": {
+    "typescript": "5.9.2"
+  }
+}
