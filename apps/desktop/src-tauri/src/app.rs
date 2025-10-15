@@ -2,13 +2,7 @@ use sqlx::sqlite::SqlitePoolOptions;
 use tauri::Manager;
 
 pub fn build() -> tauri::Builder<tauri::Wry> {
-    let updater_builder = match std::env::var("TAURI_UPDATER_PUBLIC_KEY")
-        .ok()
-        .filter(|value| !value.trim().is_empty())
-    {
-        Some(pubkey) => tauri_plugin_updater::Builder::new().pubkey(pubkey),
-        None => tauri_plugin_updater::Builder::new(),
-    };
+    let updater_builder = tauri_plugin_updater::Builder::new();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
