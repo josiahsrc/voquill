@@ -41,7 +41,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 
-            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
             {
                 let app_handle = app.handle();
 
@@ -71,6 +71,14 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 #[cfg(target_os = "linux")]
                 crate::platform::linux::input::spawn_alt_listener(
+                    &app_handle,
+                    recorder.clone(),
+                    transcriber.clone(),
+                )
+                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                #[cfg(target_os = "windows")]
+                crate::platform::windows::input::spawn_alt_listener(
                     &app_handle,
                     recorder.clone(),
                     transcriber.clone(),
