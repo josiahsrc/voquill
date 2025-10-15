@@ -1,7 +1,5 @@
-#[cfg(target_os = "macos")]
 use cpal::SampleFormat;
 
-#[cfg(target_os = "macos")]
 #[derive(thiserror::Error, Debug)]
 pub enum RecordingError {
     #[error("already recording")]

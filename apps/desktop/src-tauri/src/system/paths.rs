@@ -22,7 +22,6 @@ pub fn database_url(app: &tauri::AppHandle) -> io::Result<String> {
     Ok(format!("sqlite:{path_str}"))
 }
 
-#[cfg(target_os = "macos")]
 pub fn whisper_model_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let mut path = models_dir(app)?;
     path.push(WHISPER_MODEL_FILENAME);

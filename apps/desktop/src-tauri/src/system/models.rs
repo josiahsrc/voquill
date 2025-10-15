@@ -4,14 +4,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[cfg(target_os = "macos")]
 const MODEL_URL_ENV: &str = "VOQUILL_WHISPER_MODEL_URL";
 
-#[cfg(target_os = "macos")]
 const DEFAULT_WHISPER_MODEL_URL: Option<&str> =
     Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin");
 
-#[cfg(target_os = "macos")]
 pub fn ensure_whisper_model(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let model_path = crate::system::paths::whisper_model_path(app)?;
 
@@ -24,7 +21,6 @@ pub fn ensure_whisper_model(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     Ok(model_path)
 }
 
-#[cfg(target_os = "macos")]
 fn resolve_model_url() -> io::Result<String> {
     if let Ok(value) = std::env::var(MODEL_URL_ENV) {
         let trimmed = value.trim();
@@ -46,7 +42,6 @@ fn resolve_model_url() -> io::Result<String> {
     ))
 }
 
-#[cfg(target_os = "macos")]
 fn download_model(url: &str, destination: &Path) -> io::Result<()> {
     let parent = destination
         .parent()

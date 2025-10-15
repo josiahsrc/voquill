@@ -2,8 +2,9 @@ use crate::domain::{RecordedAudio, RecordingMetrics, RecordingResult};
 use crate::errors::RecordingError;
 use crate::platform::Recorder;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{Device, SampleFormat, Stream, StreamConfig};
+use cpal::{Device, HostId, SampleFormat, Stream, StreamConfig};
 use std::cmp;
+use std::collections::HashSet;
 use std::sync::Mutex;
 use std::sync::{Arc, MutexGuard};
 use std::time::Instant;
@@ -48,61 +49,32 @@ impl RecordingManager {
             return Err(RecordingError::AlreadyRecording);
         }
 
-        let host = cpal::default_host();
-        let default_output_name = host
-            .default_output_device()
-            .and_then(|device| device.name().ok());
+        let mut last_err: Option<RecordingError> = None;
 
-        let mut device = host
-            .default_input_device()
-            .ok_or(RecordingError::InputDeviceUnavailable)?;
-        let selected_device_name = device.name().ok();
+        for host_id in ordered_host_ids() {
+            let host = match cpal::host_from_id(host_id) {
+                Ok(value) => value,
+                Err(err) => {
+                    eprintln!("[recording] failed to load host {host_id:?}: {err}");
+                    continue;
+                }
+            };
 
-        if should_avoid_input_device(&device, default_output_name.as_deref()) {
-            if let Some(fallback_device) =
-                find_preferred_input_device(&host, selected_device_name.as_deref())
-            {
-                let fallback_name = fallback_device.name().ok();
-                log_input_device_switch(selected_device_name.as_deref(), fallback_name.as_deref());
-                device = fallback_device;
+            match start_recording_on_host(&host) {
+                Ok(active) => {
+                    *guard = Some(active);
+                    return Ok(());
+                }
+                Err(err) => {
+                    eprintln!(
+                        "[recording] host {host_id:?} did not yield a usable input device: {err}"
+                    );
+                    last_err = Some(err);
+                }
             }
         }
 
-        let config = device
-            .default_input_config()
-            .map_err(|err| RecordingError::StreamConfig(err.to_string()))?;
-
-        let sample_format = config.sample_format();
-        let stream_config: StreamConfig = config.into();
-        let sample_rate = stream_config.sample_rate.0;
-
-        let buffer = Arc::new(Mutex::new(Vec::<f32>::new()));
-
-        let stream = match sample_format {
-            SampleFormat::I16 => {
-                build_input_stream::<i16>(&device, &stream_config, buffer.clone())?
-            }
-            SampleFormat::U16 => {
-                build_input_stream::<u16>(&device, &stream_config, buffer.clone())?
-            }
-            SampleFormat::F32 => {
-                build_input_stream::<f32>(&device, &stream_config, buffer.clone())?
-            }
-            other => return Err(RecordingError::UnsupportedFormat(other)),
-        };
-
-        stream
-            .play()
-            .map_err(|err| RecordingError::StreamPlay(err.to_string()))?;
-
-        *guard = Some(ActiveRecording {
-            _stream: stream,
-            start: Instant::now(),
-            buffer,
-            sample_rate,
-        });
-
-        Ok(())
+        Err(last_err.unwrap_or(RecordingError::InputDeviceUnavailable))
     }
 
     fn stop_recording(&self) -> Result<RecordingResult, RecordingError> {
@@ -198,38 +170,6 @@ fn should_avoid_input_device(device: &Device, default_output_name: Option<&str>)
     false
 }
 
-fn find_preferred_input_device(
-    host: &cpal::Host,
-    avoided_device_name: Option<&str>,
-) -> Option<Device> {
-    let devices = host.input_devices().ok()?;
-    let mut fallback: Option<Device> = None;
-
-    for device in devices {
-        let Ok(name) = device.name() else {
-            continue;
-        };
-
-        if Some(name.as_str()) == avoided_device_name {
-            continue;
-        }
-
-        if !is_preferred_input_device_name(&name) {
-            continue;
-        }
-
-        if is_builtin_microphone_name(&name) {
-            return Some(device);
-        }
-
-        if fallback.is_none() {
-            fallback = Some(device);
-        }
-    }
-
-    fallback
-}
-
 fn is_preferred_input_device_name(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     if LOW_QUALITY_INPUT_KEYWORDS
@@ -252,21 +192,196 @@ fn is_builtin_microphone_name(name: &str) -> bool {
         || lower.contains("mac studio")
 }
 
-fn log_input_device_switch(original: Option<&str>, replacement: Option<&str>) {
-    match (original, replacement) {
-        (Some(orig), Some(new_name)) => eprintln!(
-            "[recording] switching input device from '{orig}' to '{new_name}' to keep playback audio quality unchanged"
-        ),
-        (Some(orig), None) => eprintln!(
-            "[recording] switching input device away from '{orig}' to keep playback audio quality unchanged"
-        ),
-        (None, Some(new_name)) => eprintln!(
-            "[recording] switching input device to '{new_name}' to keep playback audio quality unchanged"
-        ),
-        (None, None) => eprintln!(
-            "[recording] switching input device to keep playback audio quality unchanged"
-        ),
+fn name_has_low_quality_keyword(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    LOW_QUALITY_INPUT_KEYWORDS
+        .iter()
+        .any(|keyword| lower.contains(keyword))
+}
+
+fn ordered_host_ids() -> Vec<HostId> {
+    let default_host = cpal::default_host();
+    let default_id = default_host.id();
+    let mut others: Vec<HostId> = cpal::available_hosts()
+        .into_iter()
+        .filter(|id| *id != default_id)
+        .collect();
+    others.sort_by_key(|id| host_rank(*id));
+
+    let mut ordered = Vec::with_capacity(others.len() + 1);
+    ordered.push(default_id);
+    ordered.extend(others);
+    ordered
+}
+
+#[cfg(target_os = "linux")]
+fn host_rank(id: HostId) -> u8 {
+    match id.name() {
+        "PulseAudio" => 0,
+        "ALSA" => 1,
+        "JACK" => 2,
+        _ => 10,
     }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn host_rank(_id: HostId) -> u8 {
+    0
+}
+
+fn start_recording_on_host(host: &cpal::Host) -> Result<ActiveRecording, RecordingError> {
+    let default_output_name = host
+        .default_output_device()
+        .and_then(|device| device.name().ok());
+
+    let mut candidates = device_candidates_for_host(host, default_output_name.as_deref());
+    candidates.sort_by_key(|candidate| candidate.priority);
+
+    let mut last_err: Option<RecordingError> = None;
+
+    for candidate in candidates {
+        let DeviceCandidate {
+            device,
+            name,
+            avoid_reason,
+            ..
+        } = candidate;
+        let label = name.as_deref().unwrap_or("<unknown>");
+
+        if let Some(reason) = avoid_reason {
+            eprintln!(
+                "[recording] deprioritising device '{label}' ({reason}); will try if others fail"
+            );
+        }
+
+        let config = match device.default_input_config() {
+            Ok(cfg) => cfg,
+            Err(err) => {
+                eprintln!("[recording] device '{label}' rejected default config: {err}");
+                last_err = Some(RecordingError::StreamConfig(err.to_string()));
+                continue;
+            }
+        };
+
+        let sample_format = config.sample_format();
+        let stream_config: StreamConfig = config.into();
+        let sample_rate = stream_config.sample_rate.0;
+        let buffer = Arc::new(Mutex::new(Vec::<f32>::new()));
+
+        let stream_result = match sample_format {
+            SampleFormat::I16 => build_input_stream::<i16>(&device, &stream_config, buffer.clone()),
+            SampleFormat::U16 => build_input_stream::<u16>(&device, &stream_config, buffer.clone()),
+            SampleFormat::F32 => build_input_stream::<f32>(&device, &stream_config, buffer.clone()),
+            other => {
+                eprintln!("[recording] device '{label}' has unsupported sample format: {other:?}");
+                last_err = Some(RecordingError::UnsupportedFormat(other));
+                continue;
+            }
+        };
+
+        let stream = match stream_result {
+            Ok(stream) => stream,
+            Err(err) => {
+                eprintln!("[recording] failed to build stream for '{label}': {err}");
+                last_err = Some(err);
+                continue;
+            }
+        };
+
+        if let Err(err) = stream.play() {
+            eprintln!("[recording] failed to start stream for '{label}': {err}");
+            last_err = Some(RecordingError::StreamPlay(err.to_string()));
+            continue;
+        }
+
+        eprintln!(
+            "[recording] using input device '{label}' via host {:?}",
+            host.id()
+        );
+
+        return Ok(ActiveRecording {
+            _stream: stream,
+            start: Instant::now(),
+            buffer,
+            sample_rate,
+        });
+    }
+
+    Err(last_err.unwrap_or(RecordingError::InputDeviceUnavailable))
+}
+
+struct DeviceCandidate {
+    device: Device,
+    name: Option<String>,
+    priority: u32,
+    avoid_reason: Option<String>,
+}
+
+fn device_candidates_for_host(
+    host: &cpal::Host,
+    default_output_name: Option<&str>,
+) -> Vec<DeviceCandidate> {
+    let mut candidates = Vec::new();
+    let mut seen = HashSet::new();
+
+    if let Some(default_device) = host.default_input_device() {
+        let name = default_device.name().ok();
+        let key = name
+            .as_deref()
+            .map(|value| value.to_ascii_lowercase())
+            .unwrap_or_else(|| "<unknown>".to_string());
+
+        let should_avoid = should_avoid_input_device(&default_device, default_output_name);
+        let priority = if should_avoid { 300 } else { 5 };
+        let avoid_reason = if should_avoid {
+            Some("avoiding low-quality default device".to_string())
+        } else {
+            None
+        };
+
+        seen.insert(key);
+        candidates.push(DeviceCandidate {
+            device: default_device,
+            name,
+            priority,
+            avoid_reason,
+        });
+    }
+
+    if let Ok(devices) = host.input_devices() {
+        for device in devices {
+            let name = device.name().ok();
+            let key = name
+                .as_deref()
+                .map(|value| value.to_ascii_lowercase())
+                .unwrap_or_else(|| "<unknown>".to_string());
+
+            if seen.contains(&key) {
+                continue;
+            }
+
+            let mut priority = 100;
+            if let Some(ref label) = name {
+                if is_builtin_microphone_name(label) {
+                    priority = 0;
+                } else if is_preferred_input_device_name(label) {
+                    priority = 10;
+                } else if name_has_low_quality_keyword(label) {
+                    priority = 250;
+                }
+            }
+
+            seen.insert(key);
+            candidates.push(DeviceCandidate {
+                device,
+                name,
+                priority,
+                avoid_reason: None,
+            });
+        }
+    }
+
+    candidates
 }
 
 fn build_input_stream<T>(

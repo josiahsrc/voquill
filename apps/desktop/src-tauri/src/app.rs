@@ -47,7 +47,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             {
                 let app_handle = app.handle();
 
@@ -58,16 +58,25 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
                 let transcriber: Arc<dyn Transcriber> = Arc::new(
-                    crate::platform::macos::whisper::WhisperTranscriber::new(&model_path).map_err(
+                    crate::platform::whisper::WhisperTranscriber::new(&model_path).map_err(
                         |err| -> Box<dyn std::error::Error> {
                             Box::new(std::io::Error::new(std::io::ErrorKind::Other, err))
                         },
                     )?,
                 );
                 let recorder: Arc<dyn Recorder> =
-                    Arc::new(crate::platform::macos::audio::RecordingManager::new());
+                    Arc::new(crate::platform::audio::RecordingManager::new());
 
+                #[cfg(target_os = "macos")]
                 crate::platform::macos::input::spawn_alt_listener(
+                    &app_handle,
+                    recorder.clone(),
+                    transcriber.clone(),
+                )
+                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                #[cfg(target_os = "linux")]
+                crate::platform::linux::input::spawn_alt_listener(
                     &app_handle,
                     recorder.clone(),
                     transcriber.clone(),
