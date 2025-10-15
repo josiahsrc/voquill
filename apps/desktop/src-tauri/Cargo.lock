@@ -931,6 +931,7 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-sql",
  "tauri-plugin-updater",
+ "thiserror 1.0.69",
  "whisper-rs",
 ]
 

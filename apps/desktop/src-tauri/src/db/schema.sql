@@ -1,0 +1,5 @@
+
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    option_key_count INTEGER NOT NULL DEFAULT 0
+);
