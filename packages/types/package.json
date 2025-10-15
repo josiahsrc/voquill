@@ -14,5 +14,8 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@firemix/core": "^0.1.3"
+  }
 }

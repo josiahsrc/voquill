@@ -1,13 +1,13 @@
-import { BlazeTimestamp } from "../blaze";
+import { FiremixTimestamp } from "@firemix/core";
 import type { Nullable } from "./common.types";
 
 export type User = {
-	id: string;
-	createdAt: BlazeTimestamp;
-	updatedAt: BlazeTimestamp;
-	name: string;
-	bio?: Nullable<string>;
-	onboarded: boolean;
-	onboardedAt: Nullable<BlazeTimestamp>;
-	timezone?: Nullable<string>;
+  id: string;
+  createdAt: FiremixTimestamp;
+  updatedAt: FiremixTimestamp;
+  name: string;
+  bio?: Nullable<string>;
+  onboarded: boolean;
+  onboardedAt: Nullable<FiremixTimestamp>;
+  timezone?: Nullable<string>;
 };

@@ -4,12 +4,12 @@ This Turborepo starter is maintained by the Turborepo core team.
 
 ## Desktop Release Process
 
-- The `Release Desktop` workflow now publishes binaries to Firebase Storage instead of GitHub Releases.
+- The `Release Desktop` workflow now publishes binaries to Google Cloud Storage instead of GitHub Releases.
 - Dev and prod binaries embed environment-specific updater endpoints so each channel tracks its own `latest.json`.
-- Pushes to `main` automatically bump the dev channel with a patch version and upload assets to `gs://<bucket>/desktop/dev/<version>/`.
-- To promote a build to production, run the same workflow manually with `environment: prod`; it reuses the latest dev tag and publishes to `gs://<bucket>/desktop/prod/<version>/`.
+- Pushes to `main` automatically bump the dev channel with a patch version and upload binaries to `gs://<binaries-bucket>/desktop/dev/<version>/` and manifests to `gs://<version-bucket>/desktop/dev/<version>/`.
+- To promote a build to production, run the same workflow manually with `environment: prod`; it reuses the latest dev tag and publishes to the prod folders in each bucket.
 - Manual prod promotions accept an optional `version` input; when supplied it promotes `desktop-dev-v<version>`, otherwise the most recent dev tag is used.
-- Workflow secrets required: `TAURI_PRIVATE_KEY`, `TAURI_PRIVATE_KEY_PASSWORD` (if used), `TAURI_UPDATER_PUBLIC_KEY`, `FIREBASE_STORAGE_BUCKET` (bucket name only), and `FIREBASE_SERVICE_ACCOUNT_B64` (base64-encoded service account JSON with write access to the bucket).
+- Workflow secrets required: `TAURI_PRIVATE_KEY`, `TAURI_PRIVATE_KEY_PASSWORD` (if used), `TAURI_UPDATER_PUBLIC_KEY`, `DESKTOP_VERSION_BUCKET`, `DESKTOP_BINARIES_BUCKET`, and `FIREBASE_SERVICE_ACCOUNT_B64` (base64-encoded service account JSON with write access to both buckets).
 - Release helpers live in `scripts/ci/` and prepare the Tauri configuration, collect platform bundles, merge updater manifests, and stage Firebase uploads.
 
 ## Using this example
