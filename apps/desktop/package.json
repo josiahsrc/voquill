@@ -16,6 +16,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@repo/functions": "*",
     "@repo/types": "*",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",

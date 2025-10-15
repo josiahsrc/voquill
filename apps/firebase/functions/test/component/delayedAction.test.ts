@@ -1,10 +1,6 @@
 import * as admin from "firebase-admin";
-import {
-	blaze,
-	DeleteAccountAction,
-	invokeHandler,
-	path,
-} from "../../src/shared";
+import { invokeHandler } from "@repo/functions";
+import { blaze, DeleteAccountAction, path } from "../../src/shared";
 import dayjs from "dayjs";
 import { createUserCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";

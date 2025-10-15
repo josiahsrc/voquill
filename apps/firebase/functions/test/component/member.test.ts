@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
-import { blaze, invokeHandler, path, retry } from "../../src/shared";
+import { invokeHandler } from "@repo/functions";
+import { blaze, path, retry } from "../../src/shared";
 import { buildMember } from "../../src/shared/entities";
 import { createUserCreds, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";

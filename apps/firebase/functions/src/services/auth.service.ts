@@ -1,13 +1,7 @@
 import * as admin from "firebase-admin";
 import { AuthData } from "firebase-functions/tasks";
-import {
-	blaze,
-	DeleteAccountAction,
-	HandlerInput,
-	HandlerOutput,
-	Nullable,
-	path,
-} from "../shared";
+import { HandlerInput, HandlerOutput } from "@repo/functions";
+import { blaze, DeleteAccountAction, Nullable, path } from "../shared";
 import { cancelAccountDeletionForUserId } from "../utils/auth.utils";
 import { UnauthenticatedError } from "../utils/error.utils";
 import { sendLoopsEvent } from "../utils/loops.utils";

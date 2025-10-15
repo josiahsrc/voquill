@@ -1,5 +1,6 @@
 import { getAuth, signInWithCustomToken } from "firebase/auth";
-import { blaze, invokeHandler, path, retry } from "../../src/shared";
+import { invokeHandler } from "@repo/functions";
+import { blaze, path, retry } from "../../src/shared";
 import {
 	createUserCreds,
 	deleteMyUser as deleteMyUserImmediate,

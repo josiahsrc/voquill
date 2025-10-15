@@ -1,5 +1,6 @@
 import { AuthData } from "firebase-functions/tasks";
-import { blaze, HandlerInput, HandlerOutput, Nullable, path } from "../shared";
+import { HandlerInput, HandlerOutput } from "@repo/functions";
+import { blaze, Nullable, path } from "../shared";
 import { UnauthenticatedError } from "../utils/error.utils";
 import { resizeBase64Image } from "../utils/image.utils";
 import { countWords } from "../utils/string.utils";

@@ -21,6 +21,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@repo/functions": "*",
     "@repo/types": "*",
     "dayjs": "^1.11.13",
     "env-var": "^7.4.1",

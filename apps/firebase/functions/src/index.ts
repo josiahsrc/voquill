@@ -24,7 +24,7 @@ import {
   transcribe,
   transcribeDemo,
 } from "./services/voice.service";
-import { HandlerInput, HandlerName } from "./shared/functions";
+import { HandlerInput, HandlerName } from "@repo/functions";
 import { getClientIp } from "./utils/demo.util";
 import {
   getStorageBucket,

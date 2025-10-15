@@ -1,12 +1,6 @@
 import { AuthData } from "firebase-functions/tasks";
-import {
-	blaze,
-	HandlerInput,
-	HandlerOutput,
-	Member,
-	Nullable,
-	path,
-} from "../shared";
+import { HandlerInput, HandlerOutput } from "@repo/functions";
+import { blaze, Member, Nullable, path } from "../shared";
 import { UnauthenticatedError } from "../utils/error.utils";
 import { tryInitializeMember } from "../utils/member.utils";
 import dayjs from "dayjs";

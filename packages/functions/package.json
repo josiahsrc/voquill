@@ -1,0 +1,22 @@
+{
+  "name": "@repo/functions",
+  "version": "0.1.0",
+  "description": "Shared callable function helpers for Voquill apps.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "firebase": "^11.1.0"
+  },
+  "devDependencies": {
+    "firebase": "^11.1.0",
+    "typescript": "5.9.2"
+  }
+}
