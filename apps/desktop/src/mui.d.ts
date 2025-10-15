@@ -64,7 +64,8 @@ declare module "@mui/material/styles" {
     labelSmall: React.CSSProperties;
   }
 
-  interface TypographyVariantsOptions extends TypographyVariants {}
+  /* eslint-disable @typescript-eslint/no-empty-object-type */
+  interface TypographyVariantsOptions extends TypographyVariants { }
 }
 
 declare module "@mui/material/Typography" {
