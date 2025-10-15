@@ -19,6 +19,7 @@
   "packageManager": "npm@10.8.2",
   "workspaces": [
     "apps/*",
+    "apps/firebase/functions",
     "packages/*"
   ]
 }

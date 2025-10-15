@@ -1,0 +1,15 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "declaration": false,
+    "declarationMap": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "lib",
+    "rootDir": ".",
+    "types": ["node"],
+    "verbatimModuleSyntax": false
+  },
+  "compileOnSave": true
+}

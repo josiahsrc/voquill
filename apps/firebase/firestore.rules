@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function hasAuth() {
+      return request.auth != null;
+    }
+
+    function hasMemberAccess(member) {
+      return member.userIds.hasAny([request.auth.uid]);
+    }
+
+    match /members/{memberId} {
+      allow list: if hasAuth() && hasMemberAccess(resource.data);
+    }
+
+    match /users/{userId} {
+      allow get, write: if hasAuth() && request.auth.uid == userId;
+    }
+
+    match /system/config {
+      allow get: if hasAuth();
+    }
+  }
+}

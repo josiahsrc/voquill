@@ -1,12 +1,18 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
-  "globalEnv": ["TAURI_PLATFORM", "VOQUILL_DESKTOP_PLATFORM"],
+  "globalEnv": [
+    "TAURI_PLATFORM",
+    "VOQUILL_DESKTOP_PLATFORM",
+    "FIRESTORE_EMULATOR_HOST",
+    "FIREBASE_AUTH_EMULATOR_HOST",
+    "GCLOUD_PROJECT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "lib/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]

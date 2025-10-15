@@ -1,0 +1,26 @@
+import { blaze, path } from "../shared";
+
+/** Transactional so that anyone can call this whenever they want */
+export const tryInitializeMember = async (userId: string): Promise<void> => {
+	await blaze().transaction(async (tx) => {
+		const member = await tx.get(path.members(userId));
+		if (member) {
+			console.log("member already exists, skipping initialization");
+			return;
+		}
+
+		tx.set(path.members(userId), {
+			id: userId,
+			createdAt: blaze().now(),
+			updatedAt: blaze().now(),
+			type: "user",
+			userIds: [userId],
+			plan: "free",
+			wordsToday: 0,
+			wordsTodayResetAt: blaze().now(),
+			wordsThisMonth: 0,
+			wordsThisMonthResetAt: blaze().now(),
+			wordsTotal: 0,
+		});
+	});
+};

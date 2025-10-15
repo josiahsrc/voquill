@@ -1,0 +1,7 @@
+{
+	"verbose": true,
+	"watch": ["src", "manifest.json"],
+	"ext": "ts",
+	"ignore": ["lib/*", "node_modules/*"],
+	"exec": "npm run build"
+}
