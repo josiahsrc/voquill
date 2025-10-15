@@ -31,5 +31,4 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-r
 core-graphics = "0.24"
 core-foundation = "0.10"
 cpal = "0.15"
-whisper-rs = { path = "../../../crates/whisper-rs", version = "0.15.1" }
-llama_cpp = { package = "llama-cpp-2", path = "../../../crates/llama-cpp-rs/llama-cpp-2", version = "0.1.123" }
+whisper-rs = "0.15.1"
