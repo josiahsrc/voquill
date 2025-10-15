@@ -105,16 +105,22 @@ for (const entry of artifactEntries) {
   }
 
   const updaterDir = path.join(bundleDir, "updater");
-  if (!(await pathExists(updaterDir))) {
-    throw new Error(
-      `Expected updater directory at ${path.relative(root, updaterDir)}`,
+  const updaterDirExists = await pathExists(updaterDir);
+  if (!updaterDirExists) {
+    console.warn(
+      `No dedicated updater directory at ${path.relative(
+        root,
+        updaterDir,
+      )}; scanning entire bundle instead.`,
     );
   }
 
-  const manifestFiles = await gatherLatestJsonFiles(updaterDir);
+  const manifestSearchRoot = updaterDirExists ? updaterDir : bundleDir;
+  const manifestFiles = await gatherLatestJsonFiles(manifestSearchRoot);
   if (manifestFiles.length === 0) {
+    const missingRoot = updaterDirExists ? updaterDir : bundleDir;
     throw new Error(
-      `No latest.json files found under ${path.relative(root, updaterDir)}`,
+      `No latest.json files found under ${path.relative(root, missingRoot)}`,
     );
   }
 
