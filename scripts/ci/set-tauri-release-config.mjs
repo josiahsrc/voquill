@@ -6,7 +6,7 @@ import path from "node:path";
 const root = process.cwd();
 const version = process.env.RELEASE_VERSION;
 const releaseEnv = process.env.RELEASE_ENV;
-const bucket = process.env.FIREBASE_STORAGE_BUCKET;
+const bucket = process.env.DESKTOP_VERSION_BUCKET;
 
 if (!version) {
   throw new Error("RELEASE_VERSION is not defined");
@@ -17,7 +17,7 @@ if (!releaseEnv) {
 }
 
 if (!bucket) {
-  throw new Error("FIREBASE_STORAGE_BUCKET is not defined");
+  throw new Error("DESKTOP_VERSION_BUCKET is not defined");
 }
 
 const endpoint = new URL(

@@ -193,7 +193,7 @@ jobs:
       TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
       TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
       TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
-      FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+      DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -263,7 +263,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish Firebase assets
+    name: Publish release assets
     needs:
       - metadata
       - build
@@ -271,7 +271,8 @@ jobs:
     env:
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
-      FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+      DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
+      DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -285,27 +286,27 @@ jobs:
         with:
           path: artifacts
 
-      - name: Prepare Firebase payload
+      - name: Prepare release payload
         run: node scripts/ci/prepare-tauri-release.mjs
         env:
           ARTIFACTS_DIR: artifacts
           OUTPUT_DIR: publish
           RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
           RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
-          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
 
       - name: Decode Firebase service account
         id: service-account
         shell: bash
         env:
-          FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}
+          HUB_STORAGE_SERVICE_ACCOUNT_B64: ${{ secrets.HUB_STORAGE_SERVICE_ACCOUNT_B64 }}
         run: |
           set -euo pipefail
-          if [[ -z "${FIREBASE_SERVICE_ACCOUNT_B64:-}" ]]; then
-            echo "FIREBASE_SERVICE_ACCOUNT_B64 secret is not configured." >&2
+          if [[ -z "${HUB_STORAGE_SERVICE_ACCOUNT_B64:-}" ]]; then
+            echo "HUB_STORAGE_SERVICE_ACCOUNT_B64 secret is not configured." >&2
             exit 1
           fi
-          JSON_CONTENT="$(echo "${FIREBASE_SERVICE_ACCOUNT_B64}" | base64 --decode)"
+          JSON_CONTENT="$(echo "${HUB_STORAGE_SERVICE_ACCOUNT_B64}" | base64 --decode)"
           echo "::add-mask::${JSON_CONTENT}"
           printf 'json=%s\n' "${JSON_CONTENT}" >> "$GITHUB_OUTPUT"
 
@@ -314,14 +315,20 @@ jobs:
         with:
           credentials_json: ${{ steps.service-account.outputs.json }}
 
-      - name: Upload versioned artifacts
+      - name: Upload release binaries
+        uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: publish/binaries/
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_BINARIES_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+
+      - name: Upload version manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/version/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.FIREBASE_STORAGE_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload latest manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/latest/
-          destination: ${{ format('gs://{0}/desktop/{1}', secrets.FIREBASE_STORAGE_BUCKET, needs.metadata.outputs.release_env) }}
+          destination: ${{ format('gs://{0}/desktop/{1}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env) }}

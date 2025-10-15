@@ -12,3 +12,9 @@ output "binaries_bucket_name" {
   description = "Bucket storing release binaries."
   value       = google_storage_bucket.binaries.name
 }
+
+output "desktop_release_service_account_key_json" {
+  description = "Service account email that has write access to both release buckets."
+  value       = google_service_account_key.desktop_release_key.private_key
+  sensitive   = true
+}
