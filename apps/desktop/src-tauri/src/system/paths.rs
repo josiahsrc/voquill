@@ -1,6 +1,9 @@
 use std::{fs, io, path::PathBuf};
 use tauri::Manager;
 
+const MODELS_DIR_NAME: &str = "models";
+pub const WHISPER_MODEL_FILENAME: &str = "ggml-base.en.bin";
+
 pub fn database_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let mut path = app
         .path()
@@ -21,10 +24,17 @@ pub fn database_url(app: &tauri::AppHandle) -> io::Result<String> {
 
 #[cfg(target_os = "macos")]
 pub fn whisper_model_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
-    app.path()
-        .resolve(
-            "resources/models/ggml-base.en.bin",
-            tauri::path::BaseDirectory::Resource,
-        )
-        .map_err(|err| io::Error::new(io::ErrorKind::NotFound, err.to_string()))
+    let mut path = models_dir(app)?;
+    path.push(WHISPER_MODEL_FILENAME);
+    Ok(path)
+}
+
+pub fn models_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
+    let mut path = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+    path.push(MODELS_DIR_NAME);
+    fs::create_dir_all(&path)?;
+    Ok(path)
 }

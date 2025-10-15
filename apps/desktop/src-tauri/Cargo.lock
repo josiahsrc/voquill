@@ -922,6 +922,7 @@ dependencies = [
  "core-foundation",
  "core-graphics",
  "cpal",
+ "reqwest",
  "serde",
  "serde_json",
  "sqlx",
@@ -3691,6 +3692,7 @@ checksum = "d429f34c8092b2d42c7c93cec323bb4adeb7c67698f70839adec842ec10c7ceb"
 dependencies = [
  "base64 0.22.1",
  "bytes",
+ "futures-channel",
  "futures-core",
  "futures-util",
  "http",

@@ -52,8 +52,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 let app_handle = app.handle();
 
                 use crate::platform::{Recorder, Transcriber};
+                use std::sync::Arc;
 
-                let model_path = crate::system::paths::whisper_model_path(&app_handle)
+                let model_path = crate::system::models::ensure_whisper_model(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
                 let transcriber: Arc<dyn Transcriber> = Arc::new(
