@@ -22,7 +22,7 @@ export const getClientStorageHost = () =>
 	env.get("CLIENT_STORAGE_HOST").default("127.0.0.1:9199").asString();
 
 export const getGcloudProject = () =>
-	env.get("GCLOUD_PROJECT").default("voquill-prod").asString();
+	env.get("GCLOUD_PROJECT").default("voquill-dev").asString();
 
 export const getShowWarnings = () =>
 	env.get("SHOW_WARNINGS").default("false").asBool();

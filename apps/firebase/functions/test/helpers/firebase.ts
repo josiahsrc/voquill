@@ -49,13 +49,13 @@ export async function initializeFirebase() {
   }
 
   const app = initializeApp({
-    apiKey: "AIzaSyD7qhMf7Ub6i3TdsMy6xz2jNYcFgwZnbs4",
-    authDomain: "voquill-prod.firebaseapp.com",
-    projectId: "voquill-prod",
-    storageBucket: "voquill-prod.firebasestorage.app",
-    messagingSenderId: "179397504991",
-    appId: "1:179397504991:web:ce2bc03b5f9aa458f85e6a",
-    measurementId: "G-3M3NTXKPTF",
+    apiKey: "AIzaSyCJ8C3ZW2bHjerneg5i0fr-b5uwuy7uULM",
+    authDomain: "voquill-dev.firebaseapp.com",
+    projectId: "voquill-dev",
+    storageBucket: "voquill-dev.firebasestorage.app",
+    messagingSenderId: "778214168359",
+    appId: "1:778214168359:web:66ee2ce5df76c8c2d77b02",
+    measurementId: "G-V6Y1RSFBQX"
   });
   initializeFirestore(getApp(), { ignoreUndefinedProperties: true });
 
