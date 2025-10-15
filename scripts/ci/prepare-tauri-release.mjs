@@ -8,7 +8,7 @@ const artifactsDir = path.resolve(root, process.env.ARTIFACTS_DIR ?? "artifacts"
 const outputRoot = path.resolve(root, process.env.OUTPUT_DIR ?? "publish");
 const releaseEnv = process.env.RELEASE_ENV;
 const releaseVersion = process.env.RELEASE_VERSION;
-const bucket = process.env.FIREBASE_STORAGE_BUCKET;
+const binariesBucket = process.env.DESKTOP_BINARIES_BUCKET;
 
 if (!releaseEnv) {
   throw new Error("RELEASE_ENV is not defined");
@@ -18,8 +18,8 @@ if (!releaseVersion) {
   throw new Error("RELEASE_VERSION is not defined");
 }
 
-if (!bucket) {
-  throw new Error("FIREBASE_STORAGE_BUCKET is not defined");
+if (!binariesBucket) {
+  throw new Error("DESKTOP_BINARIES_BUCKET is not defined");
 }
 
 async function pathExists(candidate) {
@@ -61,12 +61,14 @@ async function gatherLatestJsonFiles(startDir) {
 }
 
 await fs.rm(outputRoot, { recursive: true, force: true });
+const binariesDir = path.join(outputRoot, "binaries");
 const versionDir = path.join(outputRoot, "version");
 const latestDir = path.join(outputRoot, "latest");
+await fs.mkdir(binariesDir, { recursive: true });
 await fs.mkdir(versionDir, { recursive: true });
 await fs.mkdir(latestDir, { recursive: true });
 
-const bucketName = bucket.replace(/^gs:\/\//, "");
+const binariesBucketName = binariesBucket.replace(/^gs:\/\//, "");
 
 const finalManifest = {
   version: releaseVersion,
@@ -163,7 +165,7 @@ for (const entry of artifactEntries) {
       }
       usedAssetNames.add(assetName);
 
-      const destinationFile = path.join(versionDir, assetName);
+      const destinationFile = path.join(binariesDir, assetName);
       await fs.copyFile(sourceFile, destinationFile);
 
       const signatureFile = `${sourceFile}.sig`;
@@ -180,7 +182,7 @@ for (const entry of artifactEntries) {
 
       const finalUrl = new URL(
         path.posix.join("desktop", releaseEnv, releaseVersion, assetName),
-        `https://storage.googleapis.com/${bucketName}/`,
+        `https://storage.googleapis.com/${binariesBucketName}/`,
       ).toString();
 
       finalManifest.platforms[platformKey] = {
@@ -198,7 +200,7 @@ for (const entry of artifactEntries) {
   }
 
   const installersRoot = path.join(
-    versionDir,
+    binariesDir,
     "installers",
     artifactLabel.replace(/\s+/g, "-").toLowerCase(),
   );
@@ -222,7 +224,7 @@ await fs.writeFile(path.join(versionDir, "latest.json"), manifestJson, "utf8");
 await fs.writeFile(path.join(latestDir, "latest.json"), manifestJson, "utf8");
 
 await fs.writeFile(
-  path.join(outputRoot, "summary.json"),
+  path.join(versionDir, "summary.json"),
   `${JSON.stringify(
     {
       releaseEnv,
