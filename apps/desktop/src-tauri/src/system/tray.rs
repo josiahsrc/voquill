@@ -18,7 +18,7 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
 
     let tray_icon_image = Image::from_bytes(TRAY_ICON_BYTES)?;
 
-    let mut tray_builder = TrayIconBuilder::new()
+    let tray_builder = TrayIconBuilder::new()
         .menu(&menu)
         .tooltip("Atari")
         .icon(tray_icon_image);
