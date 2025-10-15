@@ -1,10 +1,11 @@
-import { blaze, BlazeBatchDelegate, path } from "../shared";
+import { firemix, FiremixBatchDelegate } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
 
 export const cancelAccountDeletionForUserId = async (args: {
 	userId: string;
 }): Promise<void> => {
 	const actions = await firemix().query(
-		path.delayedActions(),
+		mixpath.delayedActions(),
 		["type", "==", "deleteAccount"],
 		["status", "==", "pending"]
 	);
@@ -14,10 +15,10 @@ export const cancelAccountDeletionForUserId = async (args: {
 		return;
 	}
 
-	const delegates: BlazeBatchDelegate[] = [];
+	const delegates: FiremixBatchDelegate[] = [];
 	for (const action of actions) {
 		delegates.push((b) => {
-			b.delete(path.delayedActions(action.id));
+			b.delete(mixpath.delayedActions(action.id));
 		});
 	}
 

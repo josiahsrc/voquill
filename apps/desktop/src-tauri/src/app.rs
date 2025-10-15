@@ -1,5 +1,4 @@
 use sqlx::sqlite::SqlitePoolOptions;
-use std::sync::Arc;
 use tauri::Manager;
 
 pub fn build() -> tauri::Builder<tauri::Wry> {

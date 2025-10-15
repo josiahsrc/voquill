@@ -1,5 +1,19 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
+import { FullConfig, Member } from "@repo/types";
+import { getWordLimit } from "./config.utils";
+
+export const getMemberExceedsWordLimit = (
+	member: Member,
+	config: FullConfig
+): boolean => {
+	const limits = getWordLimit(config, member.plan);
+	return (
+		member.wordsToday >= limits.perDay ||
+		member.wordsThisMonth >= limits.perMonth
+	);
+};
+
 
 /** Transactional so that anyone can call this whenever they want */
 export const tryInitializeMember = async (userId: string): Promise<void> => {

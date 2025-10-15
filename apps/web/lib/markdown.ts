@@ -6,8 +6,6 @@ import { marked } from "marked";
 marked.setOptions({
   gfm: true,
   breaks: true,
-  headerIds: true,
-  mangle: false,
 });
 
 const contentDirectory = path.join(process.cwd(), "content");

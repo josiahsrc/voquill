@@ -1,9 +1,11 @@
 import * as v1 from "firebase-functions/v1";
 import { cancelUserSubscriptions } from "../services/stripe.service";
-import { blaze, path } from "../shared";
 import { LOOPS_API_KEY_VAR } from "../utils/env.utils";
 import { createLoopsContact, deleteLoopsContact } from "../utils/loops.utils";
 import { tryInitializeMember } from "../utils/member.utils";
+import { mixpath } from "@repo/firemix";
+import { firemix } from "@firemix/mixed";
+
 
 export const onCreate = v1
 	.runWith({
@@ -45,13 +47,13 @@ export const onDelete = v1
 		});
 
 		await firemix()
-			.delete(path.users(event.uid))
+			.delete(mixpath.users(event.uid))
 			.catch((err) => {
 				console.error("error deleting user document for user", event.uid, err);
 			});
 
 		await firemix()
-			.delete(path.members(event.uid))
+			.delete(mixpath.members(event.uid))
 			.catch((err) => {
 				console.error(
 					"error deleting member document for user",
