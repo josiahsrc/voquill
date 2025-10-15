@@ -7,9 +7,13 @@ use crate::platform::{Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use enigo::{Enigo, Key, KeyboardControllable};
 use rdev::{listen, EventType, Key as RdevKey};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    env,
+    sync::atomic::{AtomicBool, Ordering},
+    sync::Arc,
+    thread,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 use tauri::{Emitter, EventTarget, Manager};
 
 pub fn spawn_alt_listener(
@@ -28,21 +32,35 @@ pub fn spawn_alt_listener(
     drop(pool_state);
 
     std::thread::spawn(move || {
-        let is_alt_pressed = Arc::new(AtomicBool::new(false));
+        let is_hotkey_active = Arc::new(AtomicBool::new(false));
+        let ctrl_pressed = Arc::new(AtomicBool::new(false));
+        let shift_pressed = Arc::new(AtomicBool::new(false));
+        let f8_pressed = Arc::new(AtomicBool::new(false));
+
         let emit_handle = app_handle.clone();
         let recorder_handle = recorder.clone();
         let transcriber_handle = transcriber.clone();
 
         let result = listen({
-            let alt_state = is_alt_pressed.clone();
+            let hotkey_state = is_hotkey_active.clone();
+            let ctrl_state = ctrl_pressed.clone();
+            let shift_state = shift_pressed.clone();
+            let f8_state = f8_pressed.clone();
+
             let emit_handle = emit_handle.clone();
             let db_pool = db_pool.clone();
+            let recorder = recorder_handle.clone();
+            let transcriber = transcriber_handle.clone();
             let press_counter = press_counter.clone();
+
             move |event| match event.event_type {
-                EventType::KeyPress(key) if is_alt_key(key) => {
-                    let was_pressed = alt_state.swap(true, Ordering::SeqCst);
-                    if !was_pressed {
-                        match recorder_handle.start() {
+                EventType::KeyPress(key) => {
+                    update_hotkey_state_for_key(key, true, &ctrl_state, &shift_state, &f8_state);
+
+                    if hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
+                        && !hotkey_state.swap(true, Ordering::SeqCst)
+                    {
+                        match recorder.start() {
                             Ok(()) => {
                                 let started_at_ms = SystemTime::now()
                                     .duration_since(UNIX_EPOCH)
@@ -60,7 +78,7 @@ pub fn spawn_alt_listener(
                             Err(err) => {
                                 eprintln!("Failed to start recording: {err}");
                                 emit_recording_error(&emit_handle, err.to_string());
-                                alt_state.store(false, Ordering::SeqCst);
+                                hotkey_state.store(false, Ordering::SeqCst);
                                 return;
                             }
                         }
@@ -73,15 +91,13 @@ pub fn spawn_alt_listener(
                                 count
                             }
                             Err(err) => {
-                                eprintln!("Failed to update option key count in database: {err}");
+                                eprintln!("Failed to update hotkey count in database: {err}");
                                 let fallback_count =
                                     press_counter.fetch_add(1, Ordering::SeqCst) + 1;
                                 if let Err(sync_err) = tauri::async_runtime::block_on(
                                     db::queries::set_count(db_pool.clone(), fallback_count),
                                 ) {
-                                    eprintln!(
-                                        "Failed to sync fallback option key count: {sync_err}"
-                                    );
+                                    eprintln!("Failed to sync fallback hotkey count: {sync_err}");
                                 }
                                 fallback_count
                             }
@@ -90,17 +106,20 @@ pub fn spawn_alt_listener(
                         if let Err(err) =
                             emit_handle.emit_to(EventTarget::any(), EVT_ALT_PRESSED, payload)
                         {
-                            eprintln!("Failed to emit alt-pressed event: {err}");
+                            eprintln!("Failed to emit hotkey-pressed event: {err}");
                         }
                     }
                 }
-                EventType::KeyRelease(key) if is_alt_key(key) => {
-                    let was_pressed = alt_state.swap(false, Ordering::SeqCst);
-                    if was_pressed {
-                        match recorder_handle.stop() {
+                EventType::KeyRelease(key) => {
+                    update_hotkey_state_for_key(key, false, &ctrl_state, &shift_state, &f8_state);
+
+                    if !hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
+                        && hotkey_state.swap(false, Ordering::SeqCst)
+                    {
+                        match recorder.stop() {
                             Ok(result) => handle_recording_success(
                                 emit_handle.clone(),
-                                transcriber_handle.clone(),
+                                transcriber.clone(),
                                 result,
                             ),
                             Err(err) => {
@@ -125,7 +144,7 @@ pub fn spawn_alt_listener(
         });
 
         if let Err(err) = result {
-            eprintln!("Failed to listen for Alt key events: {err:?}");
+            eprintln!("Failed to listen for hotkey events: {err:?}");
         }
     });
 
@@ -196,10 +215,21 @@ fn type_text_into_focused_field(text: &str) -> Result<(), String> {
         return Ok(());
     }
 
-    paste_via_clipboard(trimmed).or_else(|err| {
+    let override_text = env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
+    let target = override_text.as_deref().unwrap_or(trimmed);
+    eprintln!(
+        "[voquill] attempting to inject text ({} chars)",
+        target.chars().count()
+    );
+
+    paste_via_clipboard(target).or_else(|err| {
         eprintln!("Clipboard paste failed ({err}). Falling back to simulated typing.");
         let mut enigo = Enigo::new();
-        enigo.key_sequence(trimmed);
+        enigo.key_up(Key::Shift);
+        enigo.key_up(Key::Control);
+        enigo.key_up(Key::Alt);
+        thread::sleep(Duration::from_millis(30));
+        enigo.key_sequence(target);
         Ok(())
     })
 }
@@ -212,21 +242,51 @@ fn paste_via_clipboard(text: &str) -> Result<(), String> {
         .set_text(text.to_string())
         .map_err(|err| format!("failed to store clipboard text: {err}"))?;
 
+    thread::sleep(Duration::from_millis(40));
+
     let mut enigo = Enigo::new();
+    enigo.key_up(Key::Shift);
+    enigo.key_up(Key::Control);
+    enigo.key_up(Key::Alt);
+    thread::sleep(Duration::from_millis(30));
     enigo.key_down(Key::Control);
-    enigo.key_click(Key::Layout('v'));
+    enigo.key_down(Key::Layout('v'));
+    thread::sleep(Duration::from_millis(15));
+    enigo.key_up(Key::Layout('v'));
     enigo.key_up(Key::Control);
 
     if let Some(old) = previous {
-        let _ = clipboard.set_text(old);
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(800));
+            if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                let _ = clipboard.set_text(old);
+            }
+        });
     }
 
     Ok(())
 }
 
-fn is_alt_key(key: RdevKey) -> bool {
-    matches!(
-        key,
-        RdevKey::Alt | RdevKey::AltGr | RdevKey::MetaLeft | RdevKey::MetaRight
-    )
+fn update_hotkey_state_for_key(
+    key: RdevKey,
+    pressed: bool,
+    ctrl: &Arc<AtomicBool>,
+    shift: &Arc<AtomicBool>,
+    f8: &Arc<AtomicBool>,
+) {
+    let value = pressed;
+    match key {
+        RdevKey::ControlLeft | RdevKey::ControlRight => ctrl.store(value, Ordering::SeqCst),
+        RdevKey::ShiftLeft | RdevKey::ShiftRight => shift.store(value, Ordering::SeqCst),
+        RdevKey::F8 => f8.store(value, Ordering::SeqCst),
+        _ => {}
+    }
+}
+
+fn hotkey_combo_active(
+    ctrl: &Arc<AtomicBool>,
+    shift: &Arc<AtomicBool>,
+    f8: &Arc<AtomicBool>,
+) -> bool {
+    f8.load(Ordering::SeqCst) || (ctrl.load(Ordering::SeqCst) && shift.load(Ordering::SeqCst))
 }

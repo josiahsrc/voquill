@@ -1,5 +1,7 @@
-const TRAY_ICON_BYTES: &[u8] =
-    include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/icons/tray/menu-item-36.png"));
+const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/icons/tray/menu-item-36.png"
+));
 
 #[cfg(desktop)]
 pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {

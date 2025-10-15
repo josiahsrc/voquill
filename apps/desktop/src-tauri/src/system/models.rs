@@ -7,7 +7,7 @@ use std::{
 const MODEL_URL_ENV: &str = "VOQUILL_WHISPER_MODEL_URL";
 
 const DEFAULT_WHISPER_MODEL_URL: Option<&str> =
-    Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin");
+    Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin");
 
 pub fn ensure_whisper_model(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let model_path = crate::system::paths::whisper_model_path(app)?;
