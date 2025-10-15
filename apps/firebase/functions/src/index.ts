@@ -29,7 +29,6 @@ import { getClientIp } from "./utils/demo.util";
 import {
   getStorageBucket,
   GROQ_API_KEY_VAR,
-  HASH_SECRET_VAR,
   isEmulated,
   LOOPS_API_KEY_VAR,
   STRIPE_SECRET_KEY_VAR,
@@ -71,7 +70,6 @@ export type HandlerRequest = {
 export const handler = onCall(
   {
     secrets: [
-      HASH_SECRET_VAR,
       STRIPE_SECRET_KEY_VAR,
       GROQ_API_KEY_VAR,
       LOOPS_API_KEY_VAR,

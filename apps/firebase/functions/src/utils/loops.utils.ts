@@ -1,7 +1,9 @@
 import * as admin from "firebase-admin";
 import { ContactProperties, EventProperties, LoopsClient } from "loops";
-import { blaze, Contact, getFirstAndLastName, Nullable, path } from "../shared";
 import { getLoopsApiKey } from "./env.utils";
+import { firemix, Nullable } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
+import { Contact } from "@repo/types";
 
 const loops = (): Nullable<LoopsClient> => {
 	const apiKey = getLoopsApiKey();
@@ -23,6 +25,19 @@ const getEmailForUserId = async (userId: string): Promise<Nullable<string>> => {
 	return auth.email ?? null;
 };
 
+const getFirstAndLastName = (
+	name: string,
+): { firstName: Nullable<string>; lastName: Nullable<string> } => {
+	const parts = name.trim().split(" ");
+	if (parts.length === 0) {
+		return { firstName: null, lastName: null };
+	} else if (parts.length === 1) {
+		return { firstName: parts[0] ?? null, lastName: null };
+	} else {
+		return { firstName: parts[0] ?? null, lastName: parts.slice(1).join(" ") ?? null };
+	}
+};
+
 const upsertLoopsContact = async (userId: string, create: boolean) => {
 	const email = await getEmailForUserId(userId);
 	if (!email) {
@@ -30,8 +45,8 @@ const upsertLoopsContact = async (userId: string, create: boolean) => {
 		return;
 	}
 
-	const user = await firemix().get(path.users(userId));
-	const member = await firemix().get(path.members(userId));
+	const user = await firemix().get(mixpath.users(userId));
+	const member = await firemix().get(mixpath.members(userId));
 	const nameParts = getFirstAndLastName(user?.data.name ?? "");
 	const isPaying = member && member.data.plan && member.data.plan !== "free";
 
@@ -64,14 +79,14 @@ const upsertLoopsContact = async (userId: string, create: boolean) => {
 			createdAt,
 			subscribed: true,
 		});
-		await firemix().merge(path.contacts(userId), {
+		await firemix().merge(mixpath.contacts(userId), {
 			...dbContactProps,
 			userGroup,
 			createdAt,
 		});
 	} else {
 		await loops()?.updateContact(email, contactProperties);
-		await firemix().merge(path.contacts(userId), dbContactProps);
+		await firemix().merge(mixpath.contacts(userId), dbContactProps);
 	}
 
 	console.log("upserted loops contact for user", userId);
@@ -87,7 +102,7 @@ export const updateLoopsContact = async (userId: string) => {
 
 export const deleteLoopsContact = async (userId: string) => {
 	await loops()?.deleteContact({ userId });
-	await firemix().delete(path.contacts(userId));
+	await firemix().delete(mixpath.contacts(userId));
 };
 
 export type LoopsEventName =

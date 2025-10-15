@@ -1,7 +1,9 @@
 import stripe from "stripe";
-import { blaze, Member, Nullable, path } from "../shared";
 import { getStripeSecretKey } from "./env.utils";
 import { ClientError } from "./error.utils";
+import { Member, Nullable } from "@repo/types";
+import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
 
 export const getStripe = () => {
   const secret = getStripeSecretKey();
@@ -26,7 +28,7 @@ export const getMember = async (
     throw new ClientError("no userId provided");
   }
 
-  const member = await firemix().get(path.members(userId));
+  const member = await firemix().get(mixpath.members(userId));
   if (!member) {
     console.log("no member found for userId", userId);
     throw new Error("member not found");
