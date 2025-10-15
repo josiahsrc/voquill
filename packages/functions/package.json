@@ -12,6 +12,9 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@repo/types": "*"
+  },
   "peerDependencies": {
     "firebase": "^11.1.0"
   },
