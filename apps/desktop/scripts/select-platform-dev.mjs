@@ -11,7 +11,11 @@ const PLATFORM_SCRIPTS = {
 };
 
 const resolvedPlatform = platformOverride || process.platform;
-const selectedScript = PLATFORM_SCRIPTS[resolvedPlatform];
+const preferGpu = true;
+let selectedScript = PLATFORM_SCRIPTS[resolvedPlatform];
+if (resolvedPlatform === 'linux' && preferGpu) {
+  selectedScript = 'dev:linux:gpu';
+}
 
 if (!selectedScript) {
   console.error(

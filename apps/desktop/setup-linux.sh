@@ -79,6 +79,34 @@ install_with_zypper() {
     dbus-1
 }
 
+install_gpu_prereqs() {
+  echo "[INFO] Installing Vulkan build dependencies for GPU-accelerated Whisper."
+  if command_exists apt-get; then
+    sudo apt-get install -y \
+      libvulkan-dev \
+      vulkan-utils \
+      shaderc
+  elif command_exists pacman; then
+    sudo pacman -Syu --needed \
+      vulkan-icd-loader \
+      vulkan-tools \
+      shaderc
+  elif command_exists dnf; then
+    sudo dnf install -y \
+      vulkan-loader-devel \
+      vulkan-tools \
+      shaderc
+  elif command_exists zypper; then
+    sudo zypper install -y \
+      vulkan-devel \
+      vulkan-tools \
+      shaderc
+  else
+    echo "[WARN] Unable to auto-install Vulkan dependencies; please install libvulkan headers, shaderc (glslc), and the Vulkan loader manually." >&2
+    return 1
+  fi
+}
+
 if command_exists apt-get; then
   install_with_apt
 elif command_exists pacman; then
@@ -99,6 +127,11 @@ else
   - libxkbcommon development headers
 EOF
   exit 1
+fi
+
+if [[ "${VOQUILL_ENABLE_GPU:-}" == "1" ]]; then
+  install_gpu_prereqs
+  echo "[INFO] Rebuild the desktop app with the cargo feature 'linux-gpu' to enable Vulkan acceleration."
 fi
 
 echo "[OK] Linux dependencies installed. You can now run the desktop app with:"

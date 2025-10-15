@@ -4,6 +4,9 @@ use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
 };
 
+#[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+use whisper_rs::vulkan;
+
 pub struct WhisperTranscriber {
     context: Arc<WhisperContext>,
 }
@@ -14,11 +17,50 @@ impl WhisperTranscriber {
             .to_str()
             .map(str::to_owned)
             .ok_or_else(|| "Invalid Whisper model path".to_string())?;
-        let context = WhisperContext::new_with_params(
-            &model_path_string,
-            WhisperContextParameters::default(),
-        )
-        .map_err(|err| format!("Failed to load Whisper model: {err}"))?;
+        #[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+        let context = {
+            let mut params = WhisperContextParameters::default();
+            params.use_gpu(false);
+            let gpu_attempt = configure_linux_gpu(&mut params);
+
+            match WhisperContext::new_with_params(&model_path_string, params) {
+                Ok(ctx) => {
+                    if gpu_attempt.attempted {
+                        if let Some(name) = gpu_attempt.device_name.as_deref() {
+                            eprintln!("[whisper] GPU initialised successfully on '{name}'");
+                        }
+                    }
+                    ctx
+                }
+                Err(err) => {
+                    if gpu_attempt.attempted {
+                        eprintln!(
+                            "[whisper] GPU initialisation failed ({err}). Falling back to CPU inference."
+                        );
+                        let mut cpu_params = WhisperContextParameters::default();
+                        cpu_params.use_gpu(false);
+                        WhisperContext::new_with_params(&model_path_string, cpu_params).map_err(
+                            |cpu_err| {
+                                format!(
+                                    "Failed to load Whisper model using GPU ({err}) \
+                                     and CPU fallback also failed: {cpu_err}"
+                                )
+                            },
+                        )?
+                    } else {
+                        return Err(format!("Failed to load Whisper model: {err}"));
+                    }
+                }
+            }
+        };
+
+        #[cfg(not(all(target_os = "linux", feature = "linux-gpu")))]
+        let context = {
+            let params = WhisperContextParameters::default();
+            WhisperContext::new_with_params(&model_path_string, params)
+                .map_err(|err| format!("Failed to load Whisper model: {err}"))?
+        };
+
         Ok(Self {
             context: Arc::new(context),
         })
@@ -125,6 +167,73 @@ fn resample_to_sample_rate(samples: &[f32], input_rate: u32, target_rate: u32) -
     }
 
     output
+}
+
+#[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+struct LinuxGpuAttempt {
+    attempted: bool,
+    device_name: Option<String>,
+}
+
+#[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+fn configure_linux_gpu(params: &mut WhisperContextParameters) -> LinuxGpuAttempt {
+    use std::env;
+    use std::panic;
+
+    const DISABLE_ENV: &str = "VOQUILL_WHISPER_DISABLE_GPU";
+
+    if env::var(DISABLE_ENV)
+        .map(|value| {
+            let trimmed = value.trim();
+            trimmed == "1" || trimmed.eq_ignore_ascii_case("true")
+        })
+        .unwrap_or(false)
+    {
+        eprintln!("[whisper] GPU usage disabled via {DISABLE_ENV}; using CPU.");
+        return LinuxGpuAttempt {
+            attempted: false,
+            device_name: None,
+        };
+    }
+
+    let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
+        Ok(devs) => devs,
+        Err(_) => {
+            eprintln!("[whisper] Vulkan device enumeration panicked; falling back to CPU.");
+            return LinuxGpuAttempt {
+                attempted: false,
+                device_name: None,
+            };
+        }
+    };
+
+    if devices.is_empty() {
+        eprintln!("[whisper] No Vulkan-capable GPU detected; using CPU.");
+        return LinuxGpuAttempt {
+            attempted: false,
+            device_name: None,
+        };
+    }
+
+    let selected = devices
+        .into_iter()
+        .max_by(|left, right| left.vram.free.cmp(&right.vram.free))
+        .unwrap();
+
+    params.use_gpu(true);
+    params.gpu_device(selected.id);
+
+    let device_name = selected.name.clone();
+    let free_gib = selected.vram.free as f64 / (1024.0 * 1024.0 * 1024.0);
+    eprintln!(
+        "[whisper] attempting GPU inference on '{}' (≈{free_gib:.2} GiB free VRAM)",
+        device_name
+    );
+
+    LinuxGpuAttempt {
+        attempted: true,
+        device_name: Some(selected.name),
+    }
 }
 
 #[cfg(test)]
