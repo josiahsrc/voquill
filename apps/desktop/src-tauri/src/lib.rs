@@ -24,9 +24,6 @@ use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
 };
 
-use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
-use tauri::{Manager, State};
-use tauri_plugin_sql::{Builder as SqlPluginBuilder, Migration, MigrationKind};
 #[cfg(target_os = "macos")]
 use llama_cpp::llama_backend::LlamaBackend;
 #[cfg(target_os = "macos")]
@@ -37,6 +34,9 @@ use llama_cpp::model::{AddBos, Special};
 use llama_cpp::standard_sampler::StandardSampler;
 #[cfg(target_os = "macos")]
 use llama_cpp::{LlamaModel, LlamaParams, SessionParams};
+use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
+use tauri::{Manager, State};
+use tauri_plugin_sql::{Builder as SqlPluginBuilder, Migration, MigrationKind};
 
 const DB_FILENAME: &str = "voquill.db";
 const DB_CONNECTION: &str = "sqlite:voquill.db";
@@ -232,8 +232,8 @@ impl LlamaResponder {
             .map_err(|_| "Prompt is too long to process".to_string())?;
 
         for (index, token) in tokens.iter().copied().enumerate() {
-            let position = i32::try_from(index)
-                .map_err(|_| "Prompt is too long to process".to_string())?;
+            let position =
+                i32::try_from(index).map_err(|_| "Prompt is too long to process".to_string())?;
             let is_last = position == last_index;
             batch
                 .add(token, position, &[0], is_last)
@@ -400,9 +400,24 @@ impl RecordingManager {
         }
 
         let host = cpal::default_host();
-        let device = host
+        let default_output_name = host
+            .default_output_device()
+            .and_then(|device| device.name().ok());
+
+        let mut device = host
             .default_input_device()
             .ok_or(RecordingError::InputDeviceUnavailable)?;
+        let selected_device_name = device.name().ok();
+
+        if should_avoid_input_device(&device, default_output_name.as_deref()) {
+            if let Some(fallback_device) =
+                find_preferred_input_device(&host, selected_device_name.as_deref())
+            {
+                let fallback_name = fallback_device.name().ok();
+                log_input_device_switch(selected_device_name.as_deref(), fallback_name.as_deref());
+                device = fallback_device;
+            }
+        }
 
         let config = device
             .default_input_config()
@@ -475,6 +490,129 @@ impl RecordingManager {
                 sample_rate,
             },
         })
+    }
+}
+
+#[cfg(target_os = "macos")]
+const LOW_QUALITY_INPUT_KEYWORDS: &[&str] = &[
+    "airpods",
+    "beats",
+    "bluetooth",
+    "earbud",
+    "hands-free",
+    "headset",
+    "hfp",
+    "hsp",
+    "sony wh-",
+];
+
+#[cfg(target_os = "macos")]
+fn should_avoid_input_device(device: &Device, default_output_name: Option<&str>) -> bool {
+    let device_name = device.name().ok();
+    let name_match = device_name
+        .as_deref()
+        .map(|name| {
+            let lower = name.to_ascii_lowercase();
+            LOW_QUALITY_INPUT_KEYWORDS
+                .iter()
+                .any(|keyword| lower.contains(keyword))
+        })
+        .unwrap_or(false);
+
+    let output_match = default_output_name
+        .map(|name| {
+            let lower = name.to_ascii_lowercase();
+            LOW_QUALITY_INPUT_KEYWORDS
+                .iter()
+                .any(|keyword| lower.contains(keyword))
+        })
+        .unwrap_or(false);
+
+    if name_match && output_match {
+        return true;
+    }
+
+    if let Ok(config) = device.default_input_config() {
+        if config.sample_rate().0 <= 16_000 {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[cfg(target_os = "macos")]
+fn find_preferred_input_device(
+    host: &cpal::Host,
+    avoided_device_name: Option<&str>,
+) -> Option<Device> {
+    let devices = host.input_devices().ok()?;
+    let mut fallback: Option<Device> = None;
+
+    for device in devices {
+        let Ok(name) = device.name() else {
+            continue;
+        };
+
+        if Some(name.as_str()) == avoided_device_name {
+            continue;
+        }
+
+        if !is_preferred_input_device_name(&name) {
+            continue;
+        }
+
+        if is_builtin_microphone_name(&name) {
+            return Some(device);
+        }
+
+        if fallback.is_none() {
+            fallback = Some(device);
+        }
+    }
+
+    fallback
+}
+
+#[cfg(target_os = "macos")]
+fn is_preferred_input_device_name(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    if LOW_QUALITY_INPUT_KEYWORDS
+        .iter()
+        .any(|keyword| lower.contains(keyword))
+    {
+        return false;
+    }
+
+    lower.contains("microphone") || lower.contains(" mic") || lower.ends_with("mic")
+}
+
+#[cfg(target_os = "macos")]
+fn is_builtin_microphone_name(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    lower.contains("built-in")
+        || lower.contains("builtin")
+        || lower.contains("macbook")
+        || lower.contains("mac mini")
+        || lower.contains("imac")
+        || lower.contains("mac studio")
+}
+
+#[cfg(target_os = "macos")]
+fn log_input_device_switch(original: Option<&str>, replacement: Option<&str>) {
+    match (original, replacement) {
+        (Some(orig), Some(new_name)) => eprintln!(
+            "[recording] switching input device from '{orig}' to '{new_name}' to keep playback audio quality unchanged"
+        ),
+        (Some(orig), None) => eprintln!(
+            "[recording] switching input device away from '{orig}' to keep playback audio quality unchanged"
+        ),
+        (None, Some(new_name)) => eprintln!(
+            "[recording] switching input device to '{new_name}' to keep playback audio quality unchanged"
+        ),
+        (None, None) => eprintln!(
+            "[recording] switching input device to keep playback audio quality unchanged"
+        ),
     }
 }
 
@@ -891,25 +1029,25 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                                             eprintln!("Recording finished");
                                             if let Some(text) = transcription {
                                                 let mut text_to_type = text.clone();
-                                                match responder_for_thread
-                                                    .answer_question(&text)
-                                                {
-                                                    Ok(answer) => {
-                                                        let trimmed = answer.trim();
-                                                        if !trimmed.is_empty() {
-                                                            text_to_type = trimmed.to_string();
-                                                        } else {
-                                                            eprintln!(
-                                                                "LLM provided empty answer, falling back to transcription"
-                                                            );
-                                                        }
-                                                    }
-                                                    Err(err) => {
-                                                        eprintln!(
-                                                            "LLM inference failed: {err}. Falling back to transcription."
-                                                        );
-                                                    }
-                                                }
+                                                // match responder_for_thread
+                                                //     .answer_question(&text)
+                                                // {
+                                                //     Ok(answer) => {
+                                                //         let trimmed = answer.trim();
+                                                //         if !trimmed.is_empty() {
+                                                //             text_to_type = trimmed.to_string();
+                                                //         } else {
+                                                //             eprintln!(
+                                                //                 "LLM provided empty answer, falling back to transcription"
+                                                //             );
+                                                //         }
+                                                //     }
+                                                //     Err(err) => {
+                                                //         eprintln!(
+                                                //             "LLM inference failed: {err}. Falling back to transcription."
+                                                //         );
+                                                //     }
+                                                // }
                                                 if let Err(err) =
                                                     type_text_into_focused_field(&text_to_type)
                                                 {
