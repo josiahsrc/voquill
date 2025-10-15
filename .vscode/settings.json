@@ -1,6 +1,0 @@
-{
-  "search.exclude": {
-    "crates/llama-cpp-rs": true,
-    "crates/whisper-rs": true
-  }
-}
