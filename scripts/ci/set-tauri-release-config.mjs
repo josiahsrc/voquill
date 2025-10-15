@@ -86,8 +86,10 @@ const resolvedUpdaterPublicKey = resolveUpdaterPublicKey(updaterPublicKeyInput);
 
 if (resolvedUpdaterPublicKey) {
   data.plugins.updater.pubkey = resolvedUpdaterPublicKey;
+  console.log("Set updater public key from environment variable.");
 } else if (data.plugins.updater.pubkey === "__UPDATER_PUBLIC_KEY__") {
   delete data.plugins.updater.pubkey;
+  console.log("Removed placeholder updater public key.");
 }
 
 fs.writeFileSync(configPath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
