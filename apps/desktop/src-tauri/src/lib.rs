@@ -27,6 +27,16 @@ use whisper_rs::{
 use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
 use tauri::{Manager, State};
 use tauri_plugin_sql::{Builder as SqlPluginBuilder, Migration, MigrationKind};
+#[cfg(target_os = "macos")]
+use llama_cpp::llama_backend::LlamaBackend;
+#[cfg(target_os = "macos")]
+use llama_cpp::llama_batch::LlamaBatch;
+#[cfg(target_os = "macos")]
+use llama_cpp::model::{AddBos, Special};
+#[cfg(target_os = "macos")]
+use llama_cpp::standard_sampler::StandardSampler;
+#[cfg(target_os = "macos")]
+use llama_cpp::{LlamaModel, LlamaParams, SessionParams};
 
 const DB_FILENAME: &str = "voquill.db";
 const DB_CONNECTION: &str = "sqlite:voquill.db";
@@ -113,6 +123,13 @@ struct WhisperTranscriber {
 }
 
 #[cfg(target_os = "macos")]
+#[derive(Clone)]
+struct LlamaResponder {
+    backend: Arc<LlamaBackend>,
+    model: Arc<LlamaModel>,
+}
+
+#[cfg(target_os = "macos")]
 impl WhisperTranscriber {
     fn new(model_path: &std::path::Path) -> Result<Self, String> {
         let model_path_string = model_path
@@ -168,6 +185,100 @@ impl WhisperTranscriber {
             .map_err(|err| format!("Failed to run Whisper inference: {err}"))?;
 
         collect_transcription(&state)
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl LlamaResponder {
+    fn new(model_path: &std::path::Path) -> Result<Self, String> {
+        let backend = LlamaBackend::init()
+            .map_err(|err| format!("Failed to initialize Llama backend: {err}"))?;
+        let model_params = LlamaParams::default();
+        let model = LlamaModel::load_from_file(&backend, model_path, &model_params)
+            .map_err(|err| format!("Failed to load Llama model: {err}"))?;
+        Ok(Self {
+            backend: Arc::new(backend),
+            model: Arc::new(model),
+        })
+    }
+
+    fn answer_question(&self, transcript: &str) -> Result<String, String> {
+        let trimmed = transcript.trim();
+        if trimmed.is_empty() {
+            return Err("No transcription provided for LLM".to_string());
+        }
+
+        let prompt = format!(
+            "You are a concise assistant.\nTranscript:\n{trimmed}\n\nQuestion: What is the answer?\nAnswer:"
+        );
+
+        let ctx_params = SessionParams::default();
+        let mut ctx = self
+            .model
+            .new_context(&self.backend, ctx_params)
+            .map_err(|err| format!("Failed to create Llama context: {err}"))?;
+
+        let tokens = self
+            .model
+            .str_to_token(&prompt, AddBos::Always)
+            .map_err(|err| format!("Failed to tokenize prompt for LLM: {err}"))?;
+
+        if tokens.is_empty() {
+            return Err("Tokenized prompt is empty".to_string());
+        }
+
+        let mut batch = LlamaBatch::new(512, 1);
+        let last_index = i32::try_from(tokens.len() - 1)
+            .map_err(|_| "Prompt is too long to process".to_string())?;
+
+        for (index, token) in tokens.iter().copied().enumerate() {
+            let position = i32::try_from(index)
+                .map_err(|_| "Prompt is too long to process".to_string())?;
+            let is_last = position == last_index;
+            batch
+                .add(token, position, &[0], is_last)
+                .map_err(|err| format!("Failed to add prompt token to batch: {err}"))?;
+        }
+
+        ctx.decode(&mut batch)
+            .map_err(|err| format!("Failed to process prompt tokens: {err}"))?;
+
+        let mut sampler = StandardSampler::greedy();
+        let mut answer = String::new();
+        let mut n_cur = batch.n_tokens();
+        let max_tokens = n_cur + 128;
+        let eos = self.model.token_eos();
+
+        while n_cur < max_tokens {
+            let token = sampler.sample(&ctx, batch.n_tokens() - 1);
+            sampler.accept(token);
+
+            if token == eos {
+                break;
+            }
+
+            let piece = self
+                .model
+                .token_to_str(token, Special::Tokenize)
+                .map_err(|err| format!("Failed to decode generated token: {err}"))?;
+            answer.push_str(&piece);
+
+            batch.clear();
+            batch
+                .add(token, n_cur, &[0], true)
+                .map_err(|err| format!("Failed to add generated token to batch: {err}"))?;
+            n_cur += 1;
+
+            ctx.decode(&mut batch)
+                .map_err(|err| format!("Failed during model inference: {err}"))?;
+        }
+
+        let final_answer = answer.trim().to_string();
+        if final_answer.is_empty() {
+            Err("LLM returned empty answer".to_string())
+        } else {
+            Ok(final_answer)
+        }
     }
 }
 
@@ -466,6 +577,16 @@ fn whisper_model_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
         .map_err(|err| io::Error::new(io::ErrorKind::NotFound, err.to_string()))
 }
 
+#[cfg(target_os = "macos")]
+fn llama_model_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
+    app.path()
+        .resolve(
+            "resources/models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|err| io::Error::new(io::ErrorKind::NotFound, err.to_string()))
+}
+
 async fn ensure_option_key_row(pool: SqlitePool) -> Result<u64, sqlx::Error> {
     sqlx::query(CREATE_USERS_TABLE_SQL).execute(&pool).await?;
     sqlx::query("INSERT OR IGNORE INTO users (id, option_key_count) VALUES (1, 0)")
@@ -574,11 +695,16 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
     let transcriber_handle: WhisperTranscriber = (*transcriber_state).clone();
     drop(transcriber_state);
 
+    let responder_state = app.state::<LlamaResponder>();
+    let responder_handle: LlamaResponder = (*responder_state).clone();
+    drop(responder_state);
+
     std::thread::spawn(move || {
         let is_alt_pressed = Arc::new(AtomicBool::new(false));
         let emit_handle = app_handle.clone();
         let recorder = RecordingManager::new();
         let transcriber = transcriber_handle;
+        let responder = responder_handle;
 
         let event_tap = match CGEventTap::new(
             CGEventTapLocation::Session,
@@ -717,6 +843,7 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                                         let emit_finished = emit_handle.clone();
                                         let emit_error = emit_handle.clone();
                                         let transcriber_for_thread = transcriber.clone();
+                                        let responder_for_thread = responder.clone();
 
                                         std::thread::spawn(move || {
                                             let transcription_result = transcriber_for_thread
@@ -761,12 +888,33 @@ fn spawn_alt_listener(app: &tauri::AppHandle) -> tauri::Result<()> {
                                                 );
                                             }
 
+                                            eprintln!("Recording finished");
                                             if let Some(text) = transcription {
+                                                let mut text_to_type = text.clone();
+                                                match responder_for_thread
+                                                    .answer_question(&text)
+                                                {
+                                                    Ok(answer) => {
+                                                        let trimmed = answer.trim();
+                                                        if !trimmed.is_empty() {
+                                                            text_to_type = trimmed.to_string();
+                                                        } else {
+                                                            eprintln!(
+                                                                "LLM provided empty answer, falling back to transcription"
+                                                            );
+                                                        }
+                                                    }
+                                                    Err(err) => {
+                                                        eprintln!(
+                                                            "LLM inference failed: {err}. Falling back to transcription."
+                                                        );
+                                                    }
+                                                }
                                                 if let Err(err) =
-                                                    type_text_into_focused_field(&text)
+                                                    type_text_into_focused_field(&text_to_type)
                                                 {
                                                     eprintln!(
-                                                        "Failed to type transcription into field: {err}"
+                                                        "Failed to type result into field: {err}"
                                                     );
                                                 }
                                             }
@@ -909,14 +1057,22 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             {
                 let mac_handle = app.handle();
-                let model_path = whisper_model_path(&mac_handle)
+                let whisper_path = whisper_model_path(&mac_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-                let transcriber = WhisperTranscriber::new(&model_path).map_err(
+                let transcriber = WhisperTranscriber::new(&whisper_path).map_err(
                     |err| -> Box<dyn std::error::Error> {
                         Box::new(io::Error::new(io::ErrorKind::Other, err))
                     },
                 )?;
                 app.manage(transcriber);
+                let llama_path = llama_model_path(&mac_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+                let responder = LlamaResponder::new(&llama_path).map_err(
+                    |err| -> Box<dyn std::error::Error> {
+                        Box::new(io::Error::new(io::ErrorKind::Other, err))
+                    },
+                )?;
+                app.manage(responder);
                 spawn_alt_listener(&mac_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }

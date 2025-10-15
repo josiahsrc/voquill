@@ -25,7 +25,8 @@
     "active": true,
     "targets": "all",
     "resources": [
-      "resources/models/ggml-base.en.bin"
+      "resources/models/ggml-base.en.bin",
+      "resources/models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
     ],
     "icon": [
       "icons/32x32.png",
