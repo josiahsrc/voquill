@@ -1,9 +1,11 @@
+const TRAY_ICON_BYTES: &[u8] =
+    include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/icons/tray/menu-item-36.png"));
+
 #[cfg(desktop)]
 pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
+    use tauri::image::Image;
     use tauri::menu::{MenuBuilder, MenuItem};
     use tauri::tray::TrayIconBuilder;
-
-    let icon = app.default_window_icon().cloned();
 
     let open_item = MenuItem::with_id(app, "atari-open", "Open Atari", true, None::<&str>)?;
     let placeholder_item =
@@ -14,17 +16,16 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&placeholder_item)
         .build()?;
 
-    let mut tray_builder = TrayIconBuilder::new().menu(&menu).tooltip("Atari");
+    let tray_icon_image = Image::from_bytes(TRAY_ICON_BYTES)?;
 
-    if let Some(icon) = icon {
-        #[cfg(target_os = "macos")]
-        {
-            tray_builder = tray_builder.icon(icon).icon_as_template(true);
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            tray_builder = tray_builder.icon(icon);
-        }
+    let mut tray_builder = TrayIconBuilder::new()
+        .menu(&menu)
+        .tooltip("Atari")
+        .icon(tray_icon_image);
+
+    #[cfg(target_os = "macos")]
+    {
+        tray_builder = tray_builder.icon_as_template(true);
     }
 
     let _tray_icon = tray_builder.build(app)?;
