@@ -230,14 +230,20 @@ jobs:
         run: npm ci
 
       - name: Turbo build desktop workspace
-        run: npm run build -- --filter=desktop...
+        if: matrix.os == 'macos-14'
         env:
+          MACOSX_DEPLOYMENT_TARGET: '13.3'
+          CMAKE_OSX_DEPLOYMENT_TARGET: '13.3'
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+        run: npm run build -- --filter=desktop...
 
       - name: Build desktop bundle
+        if: matrix.os == 'macos-14'
         shell: bash
         env:
+          MACOSX_DEPLOYMENT_TARGET: '13.3'
+          CMAKE_OSX_DEPLOYMENT_TARGET: '13.3'
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
           TAURI_BUILD_ARGS: ${{ matrix.args }}
