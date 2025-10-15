@@ -8,8 +8,8 @@ export const validateDemoUsageWithinLimits = async (args: {
 	ip: string;
 }): Promise<void> => {
 	const [ipUsage, browserUsage] = await Promise.all([
-		blaze().get(path.usageByIp(args.ip)),
-		blaze().get(path.usageByBrowserId(args.browserId)),
+		firemix().get(path.usageByIp(args.ip)),
+		firemix().get(path.usageByBrowserId(args.browserId)),
 	]);
 
 	if (ipUsage) {
@@ -55,8 +55,8 @@ export const incrementDemoUsage = async (args: {
 	words: number;
 }): Promise<void> => {
 	const [ipUsage, browserUsage] = await Promise.all([
-		blaze().get(path.usageByIp(args.ip)),
-		blaze().get(path.usageByBrowserId(args.browserId)),
+		firemix().get(path.usageByIp(args.ip)),
+		firemix().get(path.usageByBrowserId(args.browserId)),
 	]);
 
 	const today = new Date().toISOString().split("T")[0];
@@ -91,8 +91,8 @@ export const incrementDemoUsage = async (args: {
 	};
 
 	await Promise.all([
-		blaze().set(path.usageByIp(args.ip), updatedIpUsage),
-		blaze().set(path.usageByBrowserId(args.browserId), updatedBrowserUsage),
+		firemix().set(path.usageByIp(args.ip), updatedIpUsage),
+		firemix().set(path.usageByBrowserId(args.browserId), updatedBrowserUsage),
 	]);
 };
 

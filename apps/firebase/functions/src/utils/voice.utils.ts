@@ -23,7 +23,7 @@ export const validateAudioInput = (args: {
 export const validateMemberWithinLimits = async (args: {
   auth: AuthData;
 }): Promise<{ member: Member }> => {
-  const member = await blaze().get(path.members(args.auth.uid));
+  const member = await firemix().get(path.members(args.auth.uid));
   if (!member) {
     console.warn("no member found for user", args.auth.uid);
     throw new ClientError("You must be a member");
@@ -69,11 +69,11 @@ export const incrementWordCount = async (args: {
   count: number;
 }): Promise<void> => {
   const roundedInt = Math.max(0, Math.round(args.count));
-  await blaze().update(path.members(args.auth.uid), {
-    wordsToday: blaze().increment(roundedInt),
-    wordsThisMonth: blaze().increment(roundedInt),
-    wordsTotal: blaze().increment(roundedInt),
-    updatedAt: blaze().now(),
+  await firemix().update(path.members(args.auth.uid), {
+    wordsToday: firemix().increment(roundedInt),
+    wordsThisMonth: firemix().increment(roundedInt),
+    wordsTotal: firemix().increment(roundedInt),
+    updatedAt: firemix().now(),
   });
 };
 

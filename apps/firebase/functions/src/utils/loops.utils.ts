@@ -30,8 +30,8 @@ const upsertLoopsContact = async (userId: string, create: boolean) => {
 		return;
 	}
 
-	const user = await blaze().get(path.users(userId));
-	const member = await blaze().get(path.members(userId));
+	const user = await firemix().get(path.users(userId));
+	const member = await firemix().get(path.members(userId));
 	const nameParts = getFirstAndLastName(user?.data.name ?? "");
 	const isPaying = member && member.data.plan && member.data.plan !== "free";
 
@@ -64,14 +64,14 @@ const upsertLoopsContact = async (userId: string, create: boolean) => {
 			createdAt,
 			subscribed: true,
 		});
-		await blaze().merge(path.contacts(userId), {
+		await firemix().merge(path.contacts(userId), {
 			...dbContactProps,
 			userGroup,
 			createdAt,
 		});
 	} else {
 		await loops()?.updateContact(email, contactProperties);
-		await blaze().merge(path.contacts(userId), dbContactProps);
+		await firemix().merge(path.contacts(userId), dbContactProps);
 	}
 
 	console.log("upserted loops contact for user", userId);
@@ -87,7 +87,7 @@ export const updateLoopsContact = async (userId: string) => {
 
 export const deleteLoopsContact = async (userId: string) => {
 	await loops()?.deleteContact({ userId });
-	await blaze().delete(path.contacts(userId));
+	await firemix().delete(path.contacts(userId));
 };
 
 export type LoopsEventName =

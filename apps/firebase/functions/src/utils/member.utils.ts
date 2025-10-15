@@ -2,7 +2,7 @@ import { blaze, path } from "../shared";
 
 /** Transactional so that anyone can call this whenever they want */
 export const tryInitializeMember = async (userId: string): Promise<void> => {
-	await blaze().transaction(async (tx) => {
+	await firemix().transaction(async (tx) => {
 		const member = await tx.get(path.members(userId));
 		if (member) {
 			console.log("member already exists, skipping initialization");
@@ -11,15 +11,15 @@ export const tryInitializeMember = async (userId: string): Promise<void> => {
 
 		tx.set(path.members(userId), {
 			id: userId,
-			createdAt: blaze().now(),
-			updatedAt: blaze().now(),
+			createdAt: firemix().now(),
+			updatedAt: firemix().now(),
 			type: "user",
 			userIds: [userId],
 			plan: "free",
 			wordsToday: 0,
-			wordsTodayResetAt: blaze().now(),
+			wordsTodayResetAt: firemix().now(),
 			wordsThisMonth: 0,
-			wordsThisMonthResetAt: blaze().now(),
+			wordsThisMonthResetAt: firemix().now(),
 			wordsTotal: 0,
 		});
 	});

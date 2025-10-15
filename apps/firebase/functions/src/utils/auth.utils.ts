@@ -3,7 +3,7 @@ import { blaze, BlazeBatchDelegate, path } from "../shared";
 export const cancelAccountDeletionForUserId = async (args: {
 	userId: string;
 }): Promise<void> => {
-	const actions = await blaze().query(
+	const actions = await firemix().query(
 		path.delayedActions(),
 		["type", "==", "deleteAccount"],
 		["status", "==", "pending"]
@@ -21,5 +21,5 @@ export const cancelAccountDeletionForUserId = async (args: {
 		});
 	}
 
-	await blaze().executeBatchWrite(delegates);
+	await firemix().executeBatchWrite(delegates);
 };

@@ -1,7 +1,7 @@
 {
-  "name": "@repo/collections",
+  "name": "@repo/pricing",
   "version": "0.1.0",
-  "description": "Shared collection utilities",
+  "description": "Shared pricing utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

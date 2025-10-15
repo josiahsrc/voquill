@@ -26,7 +26,7 @@ export const getMember = async (
     throw new ClientError("no userId provided");
   }
 
-  const member = await blaze().get(path.members(userId));
+  const member = await firemix().get(path.members(userId));
   if (!member) {
     console.log("no member found for userId", userId);
     throw new Error("member not found");

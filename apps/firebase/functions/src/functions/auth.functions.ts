@@ -44,13 +44,13 @@ export const onDelete = v1
 			console.error("error deleting loops contact for user", event.uid, err);
 		});
 
-		await blaze()
+		await firemix()
 			.delete(path.users(event.uid))
 			.catch((err) => {
 				console.error("error deleting user document for user", event.uid, err);
 			});
 
-		await blaze()
+		await firemix()
 			.delete(path.members(event.uid))
 			.catch((err) => {
 				console.error(

@@ -1,6 +1,6 @@
 
 import { Contact, DelayedAction, Member, Nullable, PartialConfig, Usage, User } from "@repo/types";
-import { listify } from "@repo/collections";
+import { listify } from "@repo/utilities";
 import { FiremixPath } from "@firemix/core";
 
 export const members = (memberId?: Nullable<string>): FiremixPath<Member> => {

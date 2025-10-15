@@ -1,10 +1,13 @@
 import { AuthData } from "firebase-functions/tasks";
 import stripe from "stripe";
 import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { blaze, getRec, Nullable, path } from "../shared";
-import { priceKeyById } from "../shared/pricing";
 import { ClientError, UnauthenticatedError } from "../utils/error.utils";
 import { getMember, getStripe } from "../utils/stripe.utils";
+import { firemix } from "@firemix/mixed";
+import { Nullable } from "@repo/types";
+import { mixpath } from "@repo/firemix";
+import { getRec } from "@repo/utilities";
+import { priceKeyById } from "@repo/pricing";
 
 export const createCheckoutSession = async (args: {
   auth: Nullable<AuthData>;
@@ -122,9 +125,9 @@ export const handleSubscriptionCreated = async (
   }
 
   console.log("subscribing member", member.id, "to price", priceId);
-  await blaze().update(path.members(member.id), {
+  await firemix().update(mixpath.members(member.id), {
     plan: "pro",
-    updatedAt: blaze().now(),
+    updatedAt: firemix().now(),
     priceId,
     stripeCustomerId: event.data.object.customer as string,
   });
@@ -134,10 +137,10 @@ export const handleSubscriptionDeleted = async (
   event: stripe.CustomerSubscriptionDeletedEvent
 ) => {
   const member = await getMember(event.data.object.metadata);
-  await blaze().update(path.members(member.id), {
+  await firemix().update(mixpath.members(member.id), {
     plan: "free",
     priceId: null,
-    updatedAt: blaze().now(),
+    updatedAt: firemix().now(),
   });
 };
 

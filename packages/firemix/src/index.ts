@@ -1,1 +1,1 @@
-export * as mixpath from "./path";
+export * as mixpath from "./mixpath";

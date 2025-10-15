@@ -7,6 +7,7 @@ import { sendLoopsEvent } from "../utils/loops.utils";
 import dayjs from "dayjs";
 import { DeleteAccountAction, Nullable } from "@repo/types";
 import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
 
 export const createCustomToken = async (args: {
   auth: Nullable<AuthData>;

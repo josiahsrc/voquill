@@ -2,158 +2,158 @@ import * as admin from "firebase-admin";
 import * as adminFirestore from "firebase-admin/firestore";
 import { getApp, initializeApp } from "firebase/app";
 import {
-	connectAuthEmulator,
-	createUserWithEmailAndPassword,
-	getAuth,
-	signInWithEmailAndPassword,
-	signOut,
+  connectAuthEmulator,
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 import {
-	connectFirestoreEmulator,
-	getFirestore,
-	initializeFirestore,
-	terminate,
+  connectFirestoreEmulator,
+  getFirestore,
+  initializeFirestore,
+  terminate,
 } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, getStorage } from "firebase/storage";
 import { nanoid } from "nanoid";
 import {
-	getClientFirebaseAuthEmulatorUrl,
-	getClientFirestoreHost,
-	getClientFunctionsHost,
-	getClientStorageHost,
-	getFirebaseAuthEmulatorHost,
-	getFirebaseFunctionsEndpoint,
-	getFirestoreEmulatorHost,
-	getGcloudProject,
-	getShowWarnings,
+  getClientFirebaseAuthEmulatorUrl,
+  getClientFirestoreHost,
+  getClientFunctionsHost,
+  getClientStorageHost,
+  getFirebaseAuthEmulatorHost,
+  getFirebaseFunctionsEndpoint,
+  getFirestoreEmulatorHost,
+  getGcloudProject,
+  getShowWarnings,
 } from "./env";
 
 export async function initializeFirebase() {
-	process.env.FIRESTORE_EMULATOR_HOST = getFirestoreEmulatorHost();
-	process.env.FIREBASE_AUTH_EMULATOR_HOST = getFirebaseAuthEmulatorHost();
-	process.env.GCLOUD_PROJECT = getGcloudProject();
+  process.env.FIRESTORE_EMULATOR_HOST = getFirestoreEmulatorHost();
+  process.env.FIREBASE_AUTH_EMULATOR_HOST = getFirebaseAuthEmulatorHost();
+  process.env.GCLOUD_PROJECT = getGcloudProject();
 
-	admin.initializeApp();
-	adminFirestore.getFirestore().settings({ ignoreUndefinedProperties: true });
+  admin.initializeApp();
+  adminFirestore.getFirestore().settings({ ignoreUndefinedProperties: true });
 
-	// enable warnings if the SHOW_WARNINGS env variable is set
-	if (!getShowWarnings()) {
-		const originalWarn = console.warn;
-		console.warn = (message: string): void => {
-			if (message.includes("@firebase/firestore")) {
-				return;
-			}
-			originalWarn(message);
-		};
-	}
+  // enable warnings if the SHOW_WARNINGS env variable is set
+  if (!getShowWarnings()) {
+    const originalWarn = console.warn;
+    console.warn = (message: string): void => {
+      if (message.includes("@firebase/firestore")) {
+        return;
+      }
+      originalWarn(message);
+    };
+  }
 
-	const app = initializeApp({
-		apiKey: "AIzaSyD7qhMf7Ub6i3TdsMy6xz2jNYcFgwZnbs4",
-		authDomain: "voquill-prod.firebaseapp.com",
-		projectId: "voquill-prod",
-		storageBucket: "voquill-prod.firebasestorage.app",
-		messagingSenderId: "179397504991",
-		appId: "1:179397504991:web:ce2bc03b5f9aa458f85e6a",
-		measurementId: "G-3M3NTXKPTF",
-	});
-	initializeFirestore(getApp(), { ignoreUndefinedProperties: true });
+  const app = initializeApp({
+    apiKey: "AIzaSyD7qhMf7Ub6i3TdsMy6xz2jNYcFgwZnbs4",
+    authDomain: "voquill-prod.firebaseapp.com",
+    projectId: "voquill-prod",
+    storageBucket: "voquill-prod.firebasestorage.app",
+    messagingSenderId: "179397504991",
+    appId: "1:179397504991:web:ce2bc03b5f9aa458f85e6a",
+    measurementId: "G-3M3NTXKPTF",
+  });
+  initializeFirestore(getApp(), { ignoreUndefinedProperties: true });
 
-	const auth = getAuth(app);
-	connectAuthEmulator(auth, getClientFirebaseAuthEmulatorUrl(), {
-		disableWarnings: !getShowWarnings(),
-	});
+  const auth = getAuth(app);
+  connectAuthEmulator(auth, getClientFirebaseAuthEmulatorUrl(), {
+    disableWarnings: !getShowWarnings(),
+  });
 
-	const firestore = getFirestore(app);
-	const firestoreParts = getClientFirestoreHost().split(":");
-	connectFirestoreEmulator(
-		firestore,
-		firestoreParts[0],
-		parseInt(firestoreParts[1])
-	);
+  const firestore = getFirestore(app);
+  const firestoreParts = getClientFirestoreHost().split(":");
+  connectFirestoreEmulator(
+    firestore,
+    firestoreParts[0] ?? "",
+    parseInt(firestoreParts[1] ?? "")
+  );
 
-	const functions = getFunctions(app);
-	const functionsParts = getClientFunctionsHost().split(":");
-	connectFunctionsEmulator(
-		functions,
-		functionsParts[0],
-		parseInt(functionsParts[1])
-	);
+  const functions = getFunctions(app);
+  const functionsParts = getClientFunctionsHost().split(":");
+  connectFunctionsEmulator(
+    functions,
+    functionsParts[0] ?? "",
+    parseInt(functionsParts[1] ?? "")
+  );
 
-	const storage = getStorage(app);
-	const storageParts = getClientStorageHost().split(":");
-	connectStorageEmulator(storage, storageParts[0], parseInt(storageParts[1]));
+  const storage = getStorage(app);
+  const storageParts = getClientStorageHost().split(":");
+  connectStorageEmulator(storage, storageParts[0] ?? "", parseInt(storageParts[1] ?? ""));
 }
 
 export async function closeFirebase() {
-	await admin.firestore().terminate();
-	await admin.app().delete();
-	await terminate(getFirestore());
+  await admin.firestore().terminate();
+  await admin.app().delete();
+  await terminate(getFirestore());
 }
 
 export type UserCreds = {
-	id: string;
-	email: string;
-	password: string;
+  id: string;
+  email: string;
+  password: string;
 };
 
 export async function createUserCreds(opts?: {
-	email?: string;
-	firstName?: string;
-	lastName?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
 }): Promise<UserCreds> {
-	const email = opts?.email ?? `test-${nanoid().toLowerCase()}@example.com`;
-	const password = "password";
+  const email = opts?.email ?? `test-${nanoid().toLowerCase()}@example.com`;
+  const password = "password";
 
-	const auth = getAuth();
-	const user = await createUserWithEmailAndPassword(auth, email, password);
+  const auth = getAuth();
+  const user = await createUserWithEmailAndPassword(auth, email, password);
 
-	return {
-		id: user.user.uid,
-		email,
-		password,
-	};
+  return {
+    id: user.user.uid,
+    email,
+    password,
+  };
 }
 
 export async function signInWithCreds(creds: UserCreds) {
-	const auth = getAuth();
-	await signInWithEmailAndPassword(auth, creds.email, creds.password);
-	if (!auth.currentUser) {
-		throw new Error("User not signed in");
-	}
+  const auth = getAuth();
+  await signInWithEmailAndPassword(auth, creds.email, creds.password);
+  if (!auth.currentUser) {
+    throw new Error("User not signed in");
+  }
 
-	return auth.currentUser;
+  return auth.currentUser;
 }
 
 export async function signOutUser() {
-	const auth = getAuth();
-	await signOut(auth);
+  const auth = getAuth();
+  await signOut(auth);
 }
 
 export async function callFunctionHttp<I, O>(
-	name: string,
-	data: I
+  name: string,
+  data: I
 ): Promise<O> {
-	const url = `${getFirebaseFunctionsEndpoint()}/${name}`;
-	const res = await fetch(url, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(data),
-	});
+  const url = `${getFirebaseFunctionsEndpoint()}/${name}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
 
-	if (!res.ok) {
-		throw new Error(await res.text());
-	}
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
 
-	return res.json();
+  return res.json();
 }
 
 export const deleteMyUser = async () => {
-	const auth = getAuth();
-	const user = auth.currentUser;
-	if (user) {
-		await user.delete();
-	}
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (user) {
+    await user.delete();
+  }
 };
