@@ -20,6 +20,7 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
 
     let tray_icon_image = Image::from_bytes(TRAY_ICON_BYTES)?;
 
+    #[allow(unused_mut)]
     let mut tray_builder = TrayIconBuilder::new()
         .menu(&menu)
         .tooltip("Atari")

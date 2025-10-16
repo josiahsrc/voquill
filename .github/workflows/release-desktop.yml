@@ -327,16 +327,16 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/binaries/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_BINARIES_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', replace(secrets.DESKTOP_BINARIES_BUCKET, 'gs://', ''), needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload version manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/version/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', replace(secrets.DESKTOP_VERSION_BUCKET, 'gs://', ''), needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload latest manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/latest/
-          destination: ${{ format('gs://{0}/desktop/{1}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env) }}
+          destination: ${{ format('gs://{0}/desktop/{1}', replace(secrets.DESKTOP_VERSION_BUCKET, 'gs://', ''), needs.metadata.outputs.release_env) }}
