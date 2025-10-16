@@ -53,5 +53,5 @@ if (updaterPublicKeyInput) {
 fs.writeFileSync(configPath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 
 console.log(
-  `Updated tauri.conf.json with version ${version} for ${releaseEnv} (endpoint ${endpoint}).`,
+  `Updated tauri.conf.json with version ${version} for ${releaseEnv} release.`,
 );
