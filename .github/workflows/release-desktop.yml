@@ -321,69 +321,26 @@ jobs:
         with:
           credentials_json: ${{ steps.service-account.outputs.json }}
 
-      - name: Normalize bucket names
-        id: buckets
-        shell: bash
-        env:
-          DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
-          DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
-        run: |
-          set -euo pipefail
-
-          sanitize() {
-            local value="${1:-}"
-
-            # Trim whitespace
-            value="${value#"${value%%[![:space:]]*}"}"
-            value="${value%"${value##*[![:space:]]}"}"
-
-            # Strip gs://, gs:/, gs:
-            value="${value#gs://}"
-            value="${value#gs:/}"
-            value="${value#gs:}"
-
-            # Remove all leading/trailing slashes and colons
-            while [[ "$value" == /* || "$value" == :* ]]; do value="${value#[/:]}"; done
-            while [[ "$value" == */ || "$value" == *: ]]; do value="${value%[/:]}"; done
-
-            # Keep only the first path segment (bucket only, no object path)
-            value="${value%%/*}"
-
-            # Validate non-empty and DNS-compliant bucket (no underscores)
-            if [[ -z "$value" ]]; then
-              echo "Bucket value cannot be empty after sanitization." >&2
-              exit 1
-            fi
-            if [[ ! "$value" =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]]; then
-              echo "Invalid GCS bucket name '$value'. Use lowercase letters, digits, '-' or '.' only." >&2
-              exit 1
-            fi
-
-            printf '%s\n' "$value"
-          }
-
-          BINARIES_BUCKET="$(sanitize "${DESKTOP_BINARIES_BUCKET:-}")"
-          VERSION_BUCKET="$(sanitize "${DESKTOP_VERSION_BUCKET:-}")"
-
-          {
-            echo "binaries=${BINARIES_BUCKET}"
-            echo "version=${VERSION_BUCKET}"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Upload release binaries
         uses: google-github-actions/upload-cloud-storage@v1
+        env:
+          DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
         with:
           path: publish/binaries/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', steps.buckets.outputs.binaries, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', env.DESKTOP_BINARIES_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload version manifest
         uses: google-github-actions/upload-cloud-storage@v1
+        env:
+          DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
         with:
           path: publish/version/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', steps.buckets.outputs.version, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', env.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload latest manifest
         uses: google-github-actions/upload-cloud-storage@v1
+        env:
+          DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
         with:
           path: publish/latest/
-          destination: ${{ format('gs://{0}/desktop/{1}', steps.buckets.outputs.version, needs.metadata.outputs.release_env) }}
+          destination: ${{ format('gs://{0}/desktop/{1}', env.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env) }}
