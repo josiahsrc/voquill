@@ -19,13 +19,13 @@ variable "bucket_location" {
 variable "version_bucket_name" {
   description = "Name of the bucket that stores the latest release metadata JSON."
   type        = string
-  default     = "voquill_version_us"
+  default     = "voquill-version-us"
 }
 
 variable "binaries_bucket_name" {
   description = "Name of the bucket that stores release binaries."
   type        = string
-  default     = "voquill_binaries_us"
+  default     = "voquill-binaries-us"
 }
 
 variable "desktop_release_service_account_id" {

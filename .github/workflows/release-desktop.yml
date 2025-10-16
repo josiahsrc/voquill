@@ -45,6 +45,7 @@ jobs:
           INPUT_ENVIRONMENT: ${{ github.event.inputs.environment || '' }}
           INPUT_VERSION: ${{ github.event.inputs.version || '' }}
         run: |
+          set -euo pipefail
           git fetch --tags --force
 
           if [[ "${EVENT_NAME}" == "push" ]]; then
