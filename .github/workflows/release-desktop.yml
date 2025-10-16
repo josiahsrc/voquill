@@ -45,8 +45,6 @@ jobs:
           INPUT_ENVIRONMENT: ${{ github.event.inputs.environment || '' }}
           INPUT_VERSION: ${{ github.event.inputs.version || '' }}
         run: |
-          set -euo pipefail
-
           git fetch --tags --force
 
           if [[ "${EVENT_NAME}" == "push" ]]; then
@@ -246,7 +244,6 @@ jobs:
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
           TAURI_BUILD_ARGS: ${{ matrix.args }}
         run: |
-          set -euo pipefail
           if [[ -n "${TAURI_BUILD_ARGS}" ]]; then
             npm run --workspace desktop tauri build -- ${TAURI_BUILD_ARGS}
           else
@@ -323,20 +320,53 @@ jobs:
         with:
           credentials_json: ${{ steps.service-account.outputs.json }}
 
+      - name: Normalize bucket names
+        id: buckets
+        shell: bash
+        env:
+          DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
+          DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
+        run: |
+          sanitize() {
+            local value="${1:-}"
+            value="${value#gs://}"
+            value="${value#gs:/}"
+            value="${value#gs:}"
+            while [[ "${value}" == /* ]]; do
+              value="${value#/}"
+            done
+            while [[ "${value}" == */ ]]; do
+              value="${value%/}"
+            done
+            if [[ -z "${value}" ]]; then
+              echo "Bucket value cannot be empty after sanitization." >&2
+              exit 1
+            fi
+            printf '%s\n' "${value}"
+          }
+
+          BINARIES_BUCKET="$(sanitize "${DESKTOP_BINARIES_BUCKET}")"
+          VERSION_BUCKET="$(sanitize "${DESKTOP_VERSION_BUCKET}")"
+
+          {
+            echo "binaries=${BINARIES_BUCKET}"
+            echo "version=${VERSION_BUCKET}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Upload release binaries
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/binaries/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_BINARIES_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', steps.buckets.outputs.binaries, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload version manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/version/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', steps.buckets.outputs.version, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload latest manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/latest/
-          destination: ${{ format('gs://{0}/desktop/{1}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env) }}
+          destination: ${{ format('gs://{0}/desktop/{1}', steps.buckets.outputs.version, needs.metadata.outputs.release_env) }}
