@@ -123,13 +123,46 @@ function platformKeysForAsset(platformType, archHint) {
 
 function assetWeight(platformType, filePath) {
   const lower = filePath.toLowerCase();
-  if (platformType === "windows") {
-    if (lower.includes("nsis")) return 3;
-    if (lower.includes("msi")) return 2;
-  } else if (platformType === "linux") {
-    if (lower.includes("appimage")) return 2;
+  let weight = 0;
+
+  switch (platformType) {
+    case "windows": {
+      if (lower.includes("nsis")) weight = 3;
+      else if (lower.includes("msi")) weight = 2;
+      if (lower.endsWith(".zip")) weight += 2;
+      else if (lower.endsWith(".exe")) weight += 1;
+      else if (lower.endsWith(".msi")) weight += 1;
+      break;
+    }
+    case "linux": {
+      if (lower.includes("appimage")) weight = 2;
+      if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) weight += 1;
+      else if (lower.endsWith(".appimage")) weight += 1;
+      break;
+    }
+    case "darwin": {
+      if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) weight = 3;
+      break;
+    }
+    default:
+      break;
   }
-  return 0;
+
+  return weight;
+}
+
+const ARCHIVE_EXTENSIONS = [
+  ".tar.gz",
+  ".tgz",
+  ".zip",
+  ".exe",
+  ".msi",
+  ".appimage",
+];
+
+function hasValidExtension(fileName) {
+  const lower = fileName.toLowerCase();
+  return ARCHIVE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
 async function collectUpdaterArchives(startDir) {
@@ -158,15 +191,12 @@ async function collectUpdaterArchives(startDir) {
 
       const lower = entry.name.toLowerCase();
       if (lower.endsWith(".sig")) continue;
-      if (
-        lower.endsWith(".tar.gz") ||
-        lower.endsWith(".tgz") ||
-        lower.endsWith(".zip")
-      ) {
-        // Skip obvious tooling/support assets that are unrelated to updater bundles.
-        if (entryPath.includes(`${path.sep}share${path.sep}`)) continue;
-        results.push(entryPath);
-      }
+      if (!hasValidExtension(entry.name)) continue;
+
+      // Skip obvious tooling/support assets that are unrelated to updater bundles.
+      if (entryPath.includes(`${path.sep}share${path.sep}`)) continue;
+
+      results.push(entryPath);
     }
   }
 
