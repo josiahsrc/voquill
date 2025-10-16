@@ -31,5 +31,5 @@ variable "binaries_bucket_name" {
 variable "desktop_release_service_account_id" {
   description = "Service account ID (without domain suffix) that will be granted write access to desktop release buckets."
   type        = string
-  default     = "desktop-release-publisher"
+  default     = "desktop-release-publish"
 }
