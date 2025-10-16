@@ -303,18 +303,24 @@ jobs:
         env:
           HUB_STORAGE_SERVICE_ACCOUNT_B64: ${{ secrets.HUB_STORAGE_SERVICE_ACCOUNT_B64 }}
         run: |
+          set -euo pipefail
+
           if [[ -z "${HUB_STORAGE_SERVICE_ACCOUNT_B64:-}" ]]; then
             echo "HUB_STORAGE_SERVICE_ACCOUNT_B64 secret is not configured." >&2
             exit 1
           fi
-          tmp_json="$(mktemp)"
-          echo "${HUB_STORAGE_SERVICE_ACCOUNT_B64}" | base64 --decode > "${tmp_json}"
+          if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
+            echo "GITHUB_OUTPUT is not available." >&2
+            exit 1
+          fi
+
+          decoded_json="$(printf '%s' "${HUB_STORAGE_SERVICE_ACCOUNT_B64}" | base64 --decode)"
           {
-            echo 'json<<EOF'
-            cat "${tmp_json}"
-            echo 'EOF'
+            printf 'json<<EOF\n'
+            printf '%s\n' "${decoded_json}"
+            printf 'EOF\n'
           } >> "$GITHUB_OUTPUT"
-          rm -f "${tmp_json}"
+          unset decoded_json
 
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
