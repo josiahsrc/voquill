@@ -327,26 +327,42 @@ jobs:
           DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
           DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
         run: |
+          set -euo pipefail
+
           sanitize() {
             local value="${1:-}"
+
+            # Trim whitespace
+            value="${value#"${value%%[![:space:]]*}"}"
+            value="${value%"${value##*[![:space:]]}"}"
+
+            # Strip gs://, gs:/, gs:
             value="${value#gs://}"
             value="${value#gs:/}"
             value="${value#gs:}"
-            while [[ "${value}" == /* ]]; do
-              value="${value#/}"
-            done
-            while [[ "${value}" == */ ]]; do
-              value="${value%/}"
-            done
-            if [[ -z "${value}" ]]; then
+
+            # Remove all leading/trailing slashes and colons
+            while [[ "$value" == /* || "$value" == :* ]]; do value="${value#[/:]}"; done
+            while [[ "$value" == */ || "$value" == *: ]]; do value="${value%[/:]}"; done
+
+            # Keep only the first path segment (bucket only, no object path)
+            value="${value%%/*}"
+
+            # Validate non-empty and DNS-compliant bucket (no underscores)
+            if [[ -z "$value" ]]; then
               echo "Bucket value cannot be empty after sanitization." >&2
               exit 1
             fi
-            printf '%s\n' "${value}"
+            if [[ ! "$value" =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]]; then
+              echo "Invalid GCS bucket name '$value'. Use lowercase letters, digits, '-' or '.' only." >&2
+              exit 1
+            fi
+
+            printf '%s\n' "$value"
           }
 
-          BINARIES_BUCKET="$(sanitize "${DESKTOP_BINARIES_BUCKET}")"
-          VERSION_BUCKET="$(sanitize "${DESKTOP_VERSION_BUCKET}")"
+          BINARIES_BUCKET="$(sanitize "${DESKTOP_BINARIES_BUCKET:-}")"
+          VERSION_BUCKET="$(sanitize "${DESKTOP_VERSION_BUCKET:-}")"
 
           {
             echo "binaries=${BINARIES_BUCKET}"
