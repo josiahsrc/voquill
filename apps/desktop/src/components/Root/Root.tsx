@@ -39,7 +39,7 @@ export default function Root() {
     <HeaderPortalProvider>
       <ErrorBoundary FallbackComponent={ErrorFallback}>
         <Suspense fallback={<LoadingApp />}>
-          <Box sx={{ width: "100vw", height: "100vh" }}>
+          <Box sx={{ width: "100%", height: "100%" }}>
             <Outlet />
           </Box>
         </Suspense>

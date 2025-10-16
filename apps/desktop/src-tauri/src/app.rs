@@ -12,6 +12,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 .build(),
         )
         .plugin(updater_builder.build())
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let db_url = {

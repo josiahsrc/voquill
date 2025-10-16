@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "desktop",
+  "productName": "Voquill",
   "version": "0.1.0",
   "identifier": "com.voquill.desktop",
   "build": {
@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "desktop",
-        "width": 800,
-        "height": 600
+        "title": "Voquill",
+        "width": 900,
+        "height": 610,
+        "minWidth": 800,
+        "minHeight": 600
       }
     ],
     "security": {
