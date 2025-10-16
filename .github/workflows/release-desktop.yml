@@ -334,6 +334,7 @@ jobs:
         with:
           path: publish/binaries/
           destination: ${{ env.DESKTOP_BINARIES_BUCKET }}/desktop/${{ env.RELEASE_ENV }}/${{ env.RELEASE_VERSION }}
+          process_gcloudignore: false
 
       - name: Upload version manifest
         uses: google-github-actions/upload-cloud-storage@v1
@@ -342,6 +343,7 @@ jobs:
         with:
           path: publish/version/
           destination: ${{ env.DESKTOP_VERSION_BUCKET }}/desktop/${{ env.RELEASE_ENV }}/${{ env.RELEASE_VERSION }}
+          process_gcloudignore: false
 
       - name: Upload latest manifest
         uses: google-github-actions/upload-cloud-storage@v1
@@ -350,3 +352,4 @@ jobs:
         with:
           path: publish/latest/
           destination: ${{ env.DESKTOP_VERSION_BUCKET }}/desktop/${{ env.RELEASE_ENV }}
+          process_gcloudignore: false
