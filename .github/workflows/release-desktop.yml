@@ -231,8 +231,8 @@ jobs:
 
       - name: Turbo build desktop workspace
         env:
-          MACOSX_DEPLOYMENT_TARGET: '13.3'
-          CMAKE_OSX_DEPLOYMENT_TARGET: '13.3'
+          MACOSX_DEPLOYMENT_TARGET: "13.3"
+          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
         run: npm run build -- --filter=desktop...
@@ -240,8 +240,8 @@ jobs:
       - name: Build desktop bundle
         shell: bash
         env:
-          MACOSX_DEPLOYMENT_TARGET: '13.3'
-          CMAKE_OSX_DEPLOYMENT_TARGET: '13.3'
+          MACOSX_DEPLOYMENT_TARGET: "13.3"
+          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
           TAURI_BUILD_ARGS: ${{ matrix.args }}
@@ -327,16 +327,16 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/binaries/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_BINARIES_BUCKET), needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_BINARIES_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload version manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/version/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_VERSION_BUCKET), needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: ${{ format('gs://{0}/desktop/{1}/{2}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
 
       - name: Upload latest manifest
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: publish/latest/
-          destination: ${{ format('gs://{0}/desktop/{1}', secrets.DESKTOP_VERSION_BUCKET), needs.metadata.outputs.release_env) }}
+          destination: ${{ format('gs://{0}/desktop/{1}', secrets.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env) }}
