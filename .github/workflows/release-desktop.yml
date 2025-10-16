@@ -327,7 +327,7 @@ jobs:
           DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
         with:
           path: publish/binaries/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', env.DESKTOP_BINARIES_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: gs://${{ env.DESKTOP_BINARIES_BUCKET }}/desktop/${{ env.RELEASE_ENV }}/${{ env.RELEASE_VERSION }}
 
       - name: Upload version manifest
         uses: google-github-actions/upload-cloud-storage@v1
@@ -335,7 +335,7 @@ jobs:
           DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
         with:
           path: publish/version/
-          destination: ${{ format('gs://{0}/desktop/{1}/{2}', env.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env, needs.metadata.outputs.version) }}
+          destination: gs://${{ env.DESKTOP_VERSION_BUCKET }}/desktop/${{ env.RELEASE_ENV }}/${{ env.RELEASE_VERSION }}
 
       - name: Upload latest manifest
         uses: google-github-actions/upload-cloud-storage@v1
@@ -343,4 +343,4 @@ jobs:
           DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
         with:
           path: publish/latest/
-          destination: ${{ format('gs://{0}/desktop/{1}', env.DESKTOP_VERSION_BUCKET, needs.metadata.outputs.release_env) }}
+          destination: gs://${{ env.DESKTOP_VERSION_BUCKET }}/desktop/${{ env.RELEASE_ENV }}
