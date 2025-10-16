@@ -60,6 +60,198 @@ async function gatherLatestJsonFiles(startDir) {
   return results;
 }
 
+function inferPlatformFromLabel(label) {
+  const lower = label.toLowerCase();
+  if (lower.includes("mac")) return "darwin";
+  if (lower.includes("win")) return "windows";
+  if (lower.includes("linux")) return "linux";
+  return null;
+}
+
+async function inferPlatformFromBundleDir(bundleDir) {
+  try {
+    const entries = await fs.readdir(bundleDir, { withFileTypes: true });
+    const names = entries.map((entry) => entry.name.toLowerCase());
+    if (names.some((name) => ["macos", "dmg"].includes(name))) {
+      return "darwin";
+    }
+    if (names.some((name) => ["nsis", "msi", "windows"].includes(name))) {
+      return "windows";
+    }
+    if (names.some((name) => ["appimage", "deb", "rpm", "linux"].includes(name))) {
+      return "linux";
+    }
+  } catch {
+    // ignore discovery errors; caller will handle missing platform.
+  }
+
+  return null;
+}
+
+function inferArchFromName(fileName) {
+  const lower = fileName.toLowerCase();
+  if (lower.includes("aarch64") || lower.includes("arm64")) return "aarch64";
+  if (lower.includes("universal")) return "universal";
+  if (lower.includes("x86_64") || lower.includes("amd64") || lower.includes("x64")) {
+    return "x86_64";
+  }
+  if (lower.includes("armv7")) return "armv7";
+  if (lower.includes("i686") || lower.includes("x86")) return "i686";
+  return null;
+}
+
+function platformKeysForAsset(platformType, archHint) {
+  switch (platformType) {
+    case "darwin": {
+      if (archHint === "aarch64") return ["darwin-aarch64"];
+      if (archHint === "x86_64") return ["darwin-x86_64"];
+      // Treat universal or unknown as a universal bundle for both desktop architectures.
+      return ["darwin-aarch64", "darwin-x86_64"];
+    }
+    case "linux": {
+      const arch = archHint && archHint !== "universal" ? archHint : "x86_64";
+      return [`linux-${arch}`];
+    }
+    case "windows": {
+      const arch = archHint && archHint !== "universal" ? archHint : "x86_64";
+      return [`windows-${arch}`];
+    }
+    default:
+      return [];
+  }
+}
+
+function assetWeight(platformType, filePath) {
+  const lower = filePath.toLowerCase();
+  if (platformType === "windows") {
+    if (lower.includes("nsis")) return 3;
+    if (lower.includes("msi")) return 2;
+  } else if (platformType === "linux") {
+    if (lower.includes("appimage")) return 2;
+  }
+  return 0;
+}
+
+async function collectUpdaterArchives(startDir) {
+  const results = [];
+  const queue = [startDir];
+
+  while (queue.length > 0) {
+    const current = queue.pop();
+    if (!current) continue;
+
+    let entries = [];
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const entryPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        queue.push(entryPath);
+        continue;
+      }
+
+      if (!entry.isFile()) continue;
+
+      const lower = entry.name.toLowerCase();
+      if (lower.endsWith(".sig")) continue;
+      if (
+        lower.endsWith(".tar.gz") ||
+        lower.endsWith(".tgz") ||
+        lower.endsWith(".zip")
+      ) {
+        // Skip obvious tooling/support assets that are unrelated to updater bundles.
+        if (entryPath.includes(`${path.sep}share${path.sep}`)) continue;
+        results.push(entryPath);
+      }
+    }
+  }
+
+  return results;
+}
+
+async function synthesizeManifestFromBundle(artifactLabel, bundleDir) {
+  const platformType =
+    inferPlatformFromLabel(artifactLabel) ??
+    (await inferPlatformFromBundleDir(bundleDir));
+
+  if (!platformType) {
+    console.warn(
+      `Unable to determine platform for artifact '${artifactLabel}' (bundle ${path.relative(
+        root,
+        bundleDir,
+      )}).`,
+    );
+    return null;
+  }
+
+  const archives = await collectUpdaterArchives(bundleDir);
+  if (archives.length === 0) {
+    return null;
+  }
+
+  const platformEntries = new Map();
+
+  for (const archivePath of archives) {
+    const relativePath = path
+      .relative(bundleDir, archivePath)
+      .split(path.sep)
+      .join(path.posix.sep);
+
+    const archHint = inferArchFromName(path.basename(archivePath));
+    const platformKeys = platformKeysForAsset(platformType, archHint);
+    if (platformKeys.length === 0) continue;
+
+    const signaturePath = `${archivePath}.sig`;
+    const signature = (await pathExists(signaturePath))
+      ? (await fs.readFile(signaturePath, "utf8")).trim()
+      : undefined;
+
+    const descriptor = {
+      relativePath,
+      absolutePath: archivePath,
+      signature,
+      weight: assetWeight(platformType, archivePath),
+    };
+
+    for (const platformKey of platformKeys) {
+      const existing = platformEntries.get(platformKey);
+      if (!existing || descriptor.weight > existing.weight) {
+        platformEntries.set(platformKey, descriptor);
+      }
+    }
+  }
+
+  if (platformEntries.size === 0) {
+    return null;
+  }
+
+  const platforms = {};
+  for (const [platformKey, descriptor] of platformEntries.entries()) {
+    platforms[platformKey] = {
+      url: descriptor.relativePath,
+      ...(descriptor.signature ? { signature: descriptor.signature } : {}),
+    };
+  }
+
+  console.warn(
+    `Synthesized updater manifest for '${artifactLabel}' from bundle ${path.relative(
+      root,
+      bundleDir,
+    )}.`,
+  );
+
+  return {
+    version: releaseVersion,
+    notes: null,
+    pub_date: new Date().toISOString(),
+    platforms,
+  };
+}
+
 await fs.rm(outputRoot, { recursive: true, force: true });
 const binariesDir = path.join(outputRoot, "binaries");
 const versionDir = path.join(outputRoot, "version");
@@ -79,6 +271,7 @@ const finalManifest = {
 
 const assetRecords = [];
 const usedAssetNames = new Set();
+const assetNameBySource = new Map();
 
 const artifactEntries = await fs.readdir(artifactsDir, { withFileTypes: true });
 
@@ -117,15 +310,40 @@ for (const entry of artifactEntries) {
 
   const manifestSearchRoot = updaterDirExists ? updaterDir : bundleDir;
   const manifestFiles = await gatherLatestJsonFiles(manifestSearchRoot);
+  const manifestSources = [];
+
   if (manifestFiles.length === 0) {
-    const missingRoot = updaterDirExists ? updaterDir : bundleDir;
-    throw new Error(
-      `No latest.json files found under ${path.relative(root, missingRoot)}`,
+    const synthesized = await synthesizeManifestFromBundle(
+      artifactLabel,
+      bundleDir,
     );
+    if (!synthesized) {
+      const missingRoot = updaterDirExists ? updaterDir : bundleDir;
+      throw new Error(
+        `No updater manifest data found under ${path.relative(
+          root,
+          missingRoot,
+        )}`,
+      );
+    }
+
+    manifestSources.push({
+      manifestPath: path.join(bundleDir, "__generated_latest.json"),
+      manifest: synthesized,
+      sourceDir: bundleDir,
+    });
+  } else {
+    for (const manifestPath of manifestFiles) {
+      const manifest = await readJson(manifestPath);
+      manifestSources.push({
+        manifestPath,
+        manifest,
+        sourceDir: path.dirname(manifestPath),
+      });
+    }
   }
 
-  for (const manifestPath of manifestFiles) {
-    const manifest = await readJson(manifestPath);
+  for (const { manifestPath, manifest, sourceDir } of manifestSources) {
     if (manifest.version && manifest.version !== releaseVersion) {
       console.warn(
         `Manifest version ${manifest.version} from ${path.relative(
@@ -167,18 +385,45 @@ for (const entry of artifactEntries) {
 
       let assetName = path.basename(sourceFile);
       if (usedAssetNames.has(assetName)) {
-        assetName = `${platformKey}-${assetName}`;
+        const cached = assetNameBySource.get(sourceFile);
+        if (cached) {
+          assetName = cached.assetName;
+        } else {
+          const parsed = path.parse(assetName);
+          let counter = 1;
+          let candidate = assetName;
+          while (usedAssetNames.has(candidate)) {
+            const suffix = `${parsed.name}-${counter}`;
+            candidate = parsed.ext
+              ? `${suffix}${parsed.ext}`
+              : `${assetName}-${counter}`;
+            counter += 1;
+          }
+          assetName = candidate;
+        }
       }
       usedAssetNames.add(assetName);
 
-      const destinationFile = path.join(binariesDir, assetName);
-      await fs.copyFile(sourceFile, destinationFile);
+      const existing = assetNameBySource.get(sourceFile);
+      let destinationFile;
+      if (existing) {
+        destinationFile = existing.destinationFile;
+      } else {
+        destinationFile = path.join(binariesDir, assetName);
+        await fs.copyFile(sourceFile, destinationFile);
 
-      const signatureFile = `${sourceFile}.sig`;
-      if (await pathExists(signatureFile)) {
-        await fs.copyFile(signatureFile, `${destinationFile}.sig`);
+        const signatureSourceFile = `${sourceFile}.sig`;
+        if (await pathExists(signatureSourceFile)) {
+          await fs.copyFile(signatureSourceFile, `${destinationFile}.sig`);
+        }
+
+        assetNameBySource.set(sourceFile, {
+          assetName,
+          destinationFile,
+        });
       }
 
+      const signatureFile = `${sourceFile}.sig`;
       const signature =
         typeof platformInfo.signature === "string"
           ? platformInfo.signature.trim()
