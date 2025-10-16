@@ -1,20 +1,25 @@
 import {
-  DashboardCustomizeOutlined,
-  HistoryOutlined,
+  HomeOutlined,
+  LogoutOutlined,
+  PersonOutlined,
 } from "@mui/icons-material";
-import {
-  Box,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Stack,
-} from "@mui/material";
+import { Box, List, Stack } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ListTile } from "../Common/ListTile";
 
-const navItems = [
-  { label: "Dashboard", path: "/", icon: <DashboardCustomizeOutlined /> },
-  { label: "Legacy", path: "/legacy", icon: <HistoryOutlined /> },
+type NavItem = {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+};
+
+const navItems: NavItem[] = [
+  { label: "Home", path: "/dashboard", icon: <HomeOutlined /> },
+  {
+    label: "Account",
+    path: "/dashboard/account",
+    icon: <PersonOutlined />,
+  },
 ];
 
 export type DashboardMenuProps = {
@@ -23,66 +28,47 @@ export type DashboardMenuProps = {
 
 export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const nav = useNavigate();
 
-  const handleNavigate = (path: string) => {
-    navigate(path);
+  const onChooseHandler = (path: string) => {
     onChoose?.();
+    nav(path);
   };
+
+  const handleSignOut = () => {
+    onChoose?.();
+    // signOut();
+  };
+
+  const list = (
+    <List
+      sx={{
+        px: { xs: 1, sm: 2 },
+        pt: { xs: 2, sm: 0 },
+        pb: 8,
+      }}
+    >
+      {navItems.map(({ label, path, icon }) => (
+        <ListTile
+          key={path}
+          onClick={() => onChooseHandler(path)}
+          selected={location.pathname === path}
+          leading={icon}
+          title={label}
+        />
+      ))}
+    </List>
+  );
 
   return (
     <Stack alignItems="stretch" sx={{ height: "100%" }}>
-      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-        <List
-          sx={{
-            px: { xs: 1, sm: 2 },
-            pt: { xs: 2, sm: 0 },
-            pb: 8,
-            display: "flex",
-            flexDirection: "column",
-            gap: 1,
-          }}
-        >
-          {navItems.map(({ label, path, icon }) => {
-            const selected =
-              path === "/"
-                ? location.pathname === path
-                : location.pathname.startsWith(path);
-            return (
-              <ListItemButton
-                key={path}
-                onClick={() => handleNavigate(path)}
-                selected={selected}
-                sx={{
-                  borderRadius: 2,
-                  "&.Mui-selected": (theme) => ({
-                    backgroundColor: theme.palette.goldBg,
-                    color: theme.palette.goldFg,
-                    "& .MuiListItemIcon-root": {
-                      color: theme.palette.goldFg,
-                    },
-                    "&:hover": {
-                      backgroundColor: theme.palette.goldBg,
-                    },
-                  }),
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    color: "inherit",
-                    minWidth: 40,
-                  }}
-                >
-                  {icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={label}
-                  primaryTypographyProps={{ fontWeight: 600 }}
-                />
-              </ListItemButton>
-            );
-          })}
-        </List>
+      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>{list}</Box>
+      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, py: 1 }}>
+        <ListTile
+          onClick={handleSignOut}
+          leading={<LogoutOutlined />}
+          title="Sign out"
+        />
       </Box>
     </Stack>
   );

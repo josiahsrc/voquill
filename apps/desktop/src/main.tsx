@@ -1,9 +1,21 @@
-import React from "react";
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
 import ReactDOM from "react-dom/client";
-import App from "./App";
+import React from "react";
+import { CssBaseline } from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
+import { theme } from "./theme";
+import { SnackbarEmitter } from "./components/Root/SnackbarEmitter";
+import { AppWithLoading } from "./components/Root/AppWithLoading";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+    <ThemeProvider theme={theme}>
+      <SnackbarEmitter />
+      <CssBaseline />
+      <AppWithLoading />
+    </ThemeProvider>
+  </React.StrictMode>
 );

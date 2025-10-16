@@ -8,6 +8,8 @@ declare module "@mui/material/styles" {
   interface Palette {
     goldBg: string;
     goldFg: string;
+    shadow: string;
+    blue: string;
 
     level0: string;
     level1: string;
@@ -17,6 +19,8 @@ declare module "@mui/material/styles" {
   interface PaletteOptions {
     goldBg?: string;
     goldFg?: string;
+    shadow?: string;
+    blue?: string;
 
     level0?: string;
     level1?: string;

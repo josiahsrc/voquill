@@ -1,38 +1,43 @@
 import { createTheme, type Shadows } from "@mui/material/styles";
 
-declare module "@mui/material/styles" {
-  interface Palette {
-    goldFg: string;
-    goldBg: string;
-    level0: string;
-    level1: string;
-    level2: string;
-    level3: string;
-  }
-
-  interface PaletteOptions {
-    goldFg?: string;
-    goldBg?: string;
-    level0?: string;
-    level1?: string;
-    level2?: string;
-    level3?: string;
-  }
-}
-
 export const theme = createTheme({
-  palette: {
-    mode: "light",
-    primary: { main: "#12151C" },
-    secondary: { main: "#404040" },
+  cssVariables: {
+    cssVarPrefix: "app",
+  },
 
-    goldFg: "rgb(104, 48, 9)",
-    goldBg: "rgba(255, 193, 7, 0.6)",
+  colorSchemes: {
+    light: {
+      palette: {
+        primary: { main: "#12151C" },
+        secondary: { main: "#404040" },
 
-    level0: "#FFFFFF",
-    level1: "#F5F5F5",
-    level2: "#E0E0E0",
-    level3: "#D0D0D0",
+        goldFg: "rgb(104, 48, 9)",
+        goldBg: "rgba(255, 193, 7, 0.6)",
+        shadow: "rgba(0, 0, 0, 0.18)",
+        blue: "#1b8af8ff",
+
+        level0: "#FFFFFF",
+        level1: "#F5F5F5",
+        level2: "#E0E0E0",
+        level3: "#D0D0D0",
+      },
+    },
+    dark: {
+      palette: {
+        primary: { main: "#FFFFFF", light: "#E0E0E0" },
+        secondary: { main: "#B3B3B3" },
+
+        goldFg: "#FFD700",
+        goldBg: "rgba(255, 215, 0, 0.2)",
+        shadow: "rgba(0, 0, 0, 0.46)",
+        blue: "#3198ffff",
+
+        level0: "#121212",
+        level1: "#1C1C1C",
+        level2: "#2D2D2D",
+        level3: "#3E3E3E",
+      },
+    },
   },
 
   shape: { borderRadius: 12 },
@@ -69,10 +74,10 @@ export const theme = createTheme({
 
   components: {
     MuiCssBaseline: {
-      styleOverrides: (theme) => ({
+      styleOverrides: (themeParam) => ({
         body: {
-          backgroundColor: theme.palette.level0,
-          color: theme.palette.text?.primary,
+          backgroundColor: themeParam.vars.palette.level0,
+          color: themeParam.vars.palette.text?.primary,
           transition: "background-color 0.3s ease",
         },
       }),
@@ -81,7 +86,7 @@ export const theme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: ({ theme }) => ({
-          backgroundColor: theme.palette.level0,
+          backgroundColor: theme.vars.palette.level0,
         }),
       },
     },
@@ -100,17 +105,6 @@ export const theme = createTheme({
           padding: theme.spacing(3),
           paddingTop: theme.spacing(2),
           paddingBottom: theme.spacing(2),
-        }),
-      },
-    },
-
-    MuiAppBar: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          backgroundColor: theme.palette.level0,
-          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          transition: "background-color 0.3s ease",
         }),
       },
     },
@@ -134,6 +128,13 @@ export const theme = createTheme({
           "& .MuiSvgIcon-root": {
             fontSize: 28,
           },
+          "&.MuiFab-info": {
+            backgroundColor: theme.vars.palette.level2,
+            color: theme.vars.palette.text.primary,
+            "&:hover": {
+              backgroundColor: theme.vars.palette.level3,
+            },
+          },
         }),
       },
     },
@@ -141,7 +142,7 @@ export const theme = createTheme({
     MuiAccordion: {
       styleOverrides: {
         root: ({ theme }) => ({
-          backgroundColor: theme.palette.level1,
+          backgroundColor: theme.vars.palette.level1,
           borderRadius: theme.shape.borderRadius,
           boxShadow: "none",
           "&:before": {
@@ -157,11 +158,20 @@ export const theme = createTheme({
       },
     },
 
+    MuiPopover: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          backgroundColor: theme.vars.palette.level1,
+          boxShadow: `0px 8px 16px ${theme.vars?.palette.shadow}`,
+        }),
+      },
+    },
+
     MuiAccordionSummary: {
       styleOverrides: {
         root: ({ theme }) => ({
           fontSize: theme.typography.pxToRem(16),
-          color: theme.palette.text.primary,
+          color: theme.vars.palette.text.primary,
         }),
       },
     },
@@ -170,7 +180,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: ({ theme }) => ({
           fontSize: theme.typography.pxToRem(16),
-          color: theme.palette.text.secondary,
+          color: theme.vars.palette.text.secondary,
         }),
       },
     },
@@ -189,20 +199,20 @@ export const theme = createTheme({
           },
         }),
         text: ({ theme }) => ({
-          color: theme.palette.primary.main,
+          color: theme.vars.palette.primary.main,
           "&:hover": {
-            backgroundColor: theme.palette.level1,
+            backgroundColor: theme.vars.palette.level1,
           },
           "&:active": {
-            backgroundColor: theme.palette.level0,
+            backgroundColor: theme.vars.palette.level0,
           },
         }),
         contained: ({ theme }) => ({
           "&:hover": {
-            backgroundColor: theme.palette.primary.light,
+            backgroundColor: theme.vars.palette.primary.light,
           },
           "&:active": {
-            backgroundColor: theme.palette.primary.main,
+            backgroundColor: theme.vars.palette.primary.main,
           },
         }),
       },
@@ -210,13 +220,13 @@ export const theme = createTheme({
         {
           props: { variant: "flat" },
           style: ({ theme }) => ({
-            backgroundColor: theme.palette.level1,
-            color: theme.palette.primary.main,
+            backgroundColor: theme.vars.palette.level1,
+            color: theme.vars.palette.primary.main,
             "&:hover": {
-              backgroundColor: theme.palette.level2,
+              backgroundColor: theme.vars.palette.level2,
             },
             "&:active": {
-              backgroundColor: theme.palette.level3,
+              backgroundColor: theme.vars.palette.level3,
             },
             fontSize: theme.typography.pxToRem(18),
             "& .MuiButton-startIcon > .MuiSvgIcon-root, \
@@ -232,15 +242,15 @@ export const theme = createTheme({
       defaultProps: { elevation: 0, variant: "flat" },
       styleOverrides: {
         outlined: ({ theme }) => ({
-          backgroundColor: theme.palette.level0,
-          border: `1px solid ${theme.palette.primary.main}`,
+          backgroundColor: theme.vars.palette.level0,
+          border: `1px solid ${theme.vars.palette.primary}`,
         }),
       },
       variants: [
         {
           props: { variant: "flat" },
           style: ({ theme }) => ({
-            backgroundColor: theme.palette.level1,
+            backgroundColor: theme.vars.palette.level1,
           }),
         },
       ],
@@ -249,11 +259,11 @@ export const theme = createTheme({
     MuiStepLabel: {
       styleOverrides: {
         root: ({ theme }) => ({
-          backgroundColor: theme.palette.level0,
+          backgroundColor: theme.vars.palette.level0,
           fontSize: theme.typography.pxToRem(18),
         }),
         vertical: ({ theme }) => ({
-          backgroundColor: theme.palette.level0,
+          backgroundColor: theme.vars.palette.level0,
           fontSize: theme.typography.pxToRem(18),
         }),
       },
@@ -262,7 +272,7 @@ export const theme = createTheme({
     MuiIconButton: {
       styleOverrides: {
         root: ({ theme }) => ({
-          color: theme.palette.text.primary,
+          color: theme.vars.palette.text.primary,
         }),
       },
     },
@@ -273,7 +283,7 @@ export const theme = createTheme({
         {
           props: { variant: "flat" },
           style: ({ theme }) => ({
-            backgroundColor: theme.palette.level1,
+            backgroundColor: theme.vars.palette.level1,
           }),
         },
       ],
@@ -291,15 +301,6 @@ export const theme = createTheme({
       styleOverrides: {
         root: () => ({
           textTransform: "none",
-        }),
-      },
-    },
-
-    MuiDrawer: {
-      styleOverrides: {
-        paper: ({ theme }) => ({
-          backgroundColor: theme.palette.level0,
-          color: theme.palette.text.primary,
         }),
       },
     },
