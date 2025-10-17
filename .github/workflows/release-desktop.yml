@@ -30,6 +30,7 @@ jobs:
       tag_name: ${{ steps.meta.outputs.tag_name }}
       commit_sha: ${{ steps.meta.outputs.commit_sha }}
       release_env: ${{ steps.meta.outputs.release_env }}
+      release_suffix: ${{ steps.meta.outputs.release_suffix }}
       release_flavor: ${{ steps.meta.outputs.release_flavor }}
       channel_release_tag: ${{ steps.meta.outputs.channel_release_tag }}
       version_path: ${{ steps.meta.outputs.version_path }}
@@ -131,13 +132,16 @@ jobs:
           if [[ "${RELEASE_ENV}" == "dev" ]]; then
             CHANNEL_RELEASE_TAG="desktop-dev"
             RELEASE_FLAVOR="dev"
+            RELEASE_SUFFIX="-dev"
           else
             CHANNEL_RELEASE_TAG="desktop-prod"
             RELEASE_FLAVOR="prod"
+            RELEASE_SUFFIX=""
           fi
 
           {
             echo "release_env=${RELEASE_ENV}"
+            echo "release_suffix=${RELEASE_SUFFIX}"
             echo "version=${VERSION}"
             echo "tag_name=${TAG_NAME}"
             echo "commit_sha=${COMMIT_SHA}"
@@ -202,6 +206,7 @@ jobs:
     env:
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      RELEASE_SUFFIX: ${{ needs.metadata.outputs.release_suffix }}
       RELEASE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       VOQUILL_BUILD_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
@@ -267,7 +272,7 @@ jobs:
           tauriScript: npm run --workspace desktop tauri
           args: ${{ matrix.args }}
           tagName: ${{ needs.metadata.outputs.tag_name }}
-          releaseName: Desktop${{ needs.metadata.outputs.release_env == 'prod' && '' || ' Dev' }} v${{ needs.metadata.outputs.version }}
+          releaseName: desktop${{ needs.metadata.outputs.release_suffix }} v${{ needs.metadata.outputs.version }}
           releaseBody: Automated ${{ needs.metadata.outputs.release_env }} channel build for version ${{ needs.metadata.outputs.version }}.
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
