@@ -11,6 +11,11 @@ type LocalTranscription = {
   timestamp: number;
 };
 
+export type ListTranscriptionsParams = {
+  limit?: number;
+  offset?: number;
+};
+
 const toLocalTranscription = (
   transcription: Transcription
 ): LocalTranscription => ({
@@ -31,6 +36,7 @@ const fromLocalTranscription = (
 
 export abstract class BaseTranscriptionRepo extends BaseRepo {
   abstract createTranscription(transcription: Transcription): Promise<Transcription>;
+  abstract listTranscriptions(params?: ListTranscriptionsParams): Promise<Transcription[]>;
 }
 
 export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
@@ -42,5 +48,19 @@ export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
     });
 
     return fromLocalTranscription(stored);
+  }
+
+  async listTranscriptions(
+    params: ListTranscriptionsParams = {}
+  ): Promise<Transcription[]> {
+    const limit = Math.max(0, Math.trunc(params.limit ?? 20));
+    const offset = Math.max(0, Math.trunc(params.offset ?? 0));
+
+    const transcriptions = await invoke<LocalTranscription[]>(
+      "transcription_list",
+      { limit, offset }
+    );
+
+    return transcriptions.map(fromLocalTranscription);
   }
 }

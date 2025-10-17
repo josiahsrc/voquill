@@ -35,6 +35,20 @@ pub async fn transcription_create(
 }
 
 #[tauri::command]
+pub async fn transcription_list(
+    limit: Option<u32>,
+    offset: Option<u32>,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Transcription>, String> {
+    let limit = limit.unwrap_or(20);
+    let offset = offset.unwrap_or(0);
+
+    crate::db::transcription_queries::fetch_transcriptions(database.pool(), limit, offset)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn get_option_key_count(
     counter: State<'_, crate::state::OptionKeyCounter>,
     database: State<'_, crate::state::OptionKeyDatabase>,
