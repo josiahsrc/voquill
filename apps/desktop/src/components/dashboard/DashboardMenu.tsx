@@ -41,7 +41,6 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
     <List
       sx={{
         px: 2,
-        pt: 2,
         pb: 8,
       }}
     >
