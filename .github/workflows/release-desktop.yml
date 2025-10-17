@@ -168,107 +168,126 @@ jobs:
               sha: targetSha,
             });
 
-  build:
-    name: Build ${{ matrix.label }}
-    needs: metadata
-    runs-on: ${{ matrix.os }}
+  # build:
+  #   name: Build ${{ matrix.label }}
+  #   needs: metadata
+  #   runs-on: ${{ matrix.os }}
+  #   permissions:
+  #     contents: write
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - label: macOS (universal)
+  #           os: macos-14
+  #           args: "--target universal-apple-darwin"
+  #           rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+  #           tauri_platform: macos
+  #           node_platform: darwin
+  #           artifact_name: desktop-macos
+  #         - label: Linux
+  #           os: ubuntu-22.04
+  #           args: ""
+  #           rust_targets: ""
+  #           tauri_platform: linux
+  #           node_platform: linux
+  #           artifact_name: desktop-linux
+  #         - label: Windows
+  #           os: windows-latest
+  #           args: ""
+  #           rust_targets: ""
+  #           tauri_platform: windows
+  #           node_platform: win32
+  #           artifact_name: desktop-windows
+  #   env:
+  #     RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+  #     RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+  #     RELEASE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+  #     FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+  #     VOQUILL_BUILD_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+  #     VOQUILL_DESKTOP_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+  #     TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  #     TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+  #     TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  #     TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+  #     TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ needs.metadata.outputs.commit_sha }}
+
+  #     - name: Setup Node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 24.10.0
+  #         cache: npm
+  #         cache-dependency-path: package-lock.json
+
+  #     - name: Sync Tauri release configuration
+  #       run: node scripts/ci/set-tauri-release-config.mjs
+
+  #     - name: Install Rust toolchain
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         targets: ${{ matrix.rust_targets }}
+
+  #     - name: Cache cargo
+  #       uses: Swatinem/rust-cache@v2
+  #       with:
+  #         workspaces: |
+  #           apps/desktop/src-tauri -> target
+
+  #     - name: Install system dependencies (Linux)
+  #       if: matrix.os == 'ubuntu-22.04'
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y build-essential libwebkit2gtk-4.1-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf
+
+  #     - name: Install dependencies
+  #       run: npm ci
+
+  #     - name: Turbo build desktop workspace
+  #       env:
+  #         MACOSX_DEPLOYMENT_TARGET: "13.3"
+  #         CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+  #         TAURI_PLATFORM: ${{ matrix.tauri_platform }}
+  #         VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+  #       run: npm run build -- --filter=desktop...
+
+  #     - name: Build and publish
+  #       uses: tauri-apps/tauri-action@v0
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         TAURI_PLATFORM: ${{ matrix.tauri_platform }}
+  #         VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+  #         MACOSX_DEPLOYMENT_TARGET: "13.3"
+  #         CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+  #       with:
+  #         projectPath: apps/desktop
+  #         tauriScript: npm run --workspace desktop tauri
+  #         args: ${{ matrix.args }}
+  #         tagName: ${{ needs.metadata.outputs.tag_name }}
+  #         releaseName: Desktop${{ needs.metadata.outputs.release_env == 'prod' && '' || ' Dev' }} v${{ needs.metadata.outputs.version }}
+  #         releaseBody: Automated ${{ needs.metadata.outputs.release_env }} channel build for version ${{ needs.metadata.outputs.version }}.
+  #         releaseDraft: false
+  #         prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
+  #         includeUpdaterJson: true
+
+  update-channel:
+    name: Update channel release asset
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - label: macOS (universal)
-            os: macos-14
-            args: "--target universal-apple-darwin"
-            rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
-            tauri_platform: macos
-            node_platform: darwin
-            artifact_name: desktop-macos
-          - label: Linux
-            os: ubuntu-22.04
-            args: ""
-            rust_targets: ""
-            tauri_platform: linux
-            node_platform: linux
-            artifact_name: desktop-linux
-          - label: Windows
-            os: windows-latest
-            args: ""
-            rust_targets: ""
-            tauri_platform: windows
-            node_platform: win32
-            artifact_name: desktop-windows
     env:
-      RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
-      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
-      RELEASE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
-      FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
-      VOQUILL_BUILD_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
-      VOQUILL_DESKTOP_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
-      TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-      TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
-      TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHANNEL_TAG: ${{ needs.metadata.outputs.channel_release_tag }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.metadata.outputs.commit_sha }}
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.10.0
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Sync Tauri release configuration
-        run: node scripts/ci/set-tauri-release-config.mjs
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_targets }}
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            apps/desktop/src-tauri -> target
-
-      - name: Install system dependencies (Linux)
-        if: matrix.os == 'ubuntu-22.04'
+      - name: Prepare latest.json
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libwebkit2gtk-4.1-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Turbo build desktop workspace
-        env:
-          MACOSX_DEPLOYMENT_TARGET: "13.3"
-          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
-          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
-          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
-        run: npm run build -- --filter=desktop...
-
-      - name: Build and publish
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
-          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
-          MACOSX_DEPLOYMENT_TARGET: "13.3"
-          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
-        with:
-          projectPath: apps/desktop
-          tauriScript: npm run --workspace desktop tauri
-          args: ${{ matrix.args }}
-          tagName: ${{ needs.metadata.outputs.tag_name }}
-          releaseName: Desktop${{ needs.metadata.outputs.release_env == 'prod' && '' || ' Dev' }} v${{ needs.metadata.outputs.version }}
-          releaseBody: Automated ${{ needs.metadata.outputs.release_env }} channel build for version ${{ needs.metadata.outputs.version }}.
-          releaseDraft: false
-          prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
-          includeUpdaterJson: true
+          mkdir -p dist
+          echo '{"version":"${{ needs.metadata.outputs.version }}"}' > dist/latest.json
+      - name: Upload to channel
+        run: |
+          gh release upload "$CHANNEL_TAG" dist/latest.json --clobber
