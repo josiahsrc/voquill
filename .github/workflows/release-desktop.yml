@@ -30,6 +30,8 @@ jobs:
       tag_name: ${{ steps.meta.outputs.tag_name }}
       commit_sha: ${{ steps.meta.outputs.commit_sha }}
       release_env: ${{ steps.meta.outputs.release_env }}
+      release_flavor: ${{ steps.meta.outputs.release_flavor }}
+      channel_release_tag: ${{ steps.meta.outputs.channel_release_tag }}
       version_path: ${{ steps.meta.outputs.version_path }}
       dev_tag_name: ${{ steps.meta.outputs.dev_tag_name }}
     steps:
@@ -126,6 +128,13 @@ jobs:
           fi
 
           VERSION_PATH="desktop/${RELEASE_ENV}/${VERSION}"
+          if [[ "${RELEASE_ENV}" == "dev" ]]; then
+            CHANNEL_RELEASE_TAG="desktop-dev"
+            RELEASE_FLAVOR="dev"
+          else
+            CHANNEL_RELEASE_TAG="desktop-prod"
+            RELEASE_FLAVOR="prod"
+          fi
 
           {
             echo "release_env=${RELEASE_ENV}"
@@ -134,6 +143,8 @@ jobs:
             echo "commit_sha=${COMMIT_SHA}"
             echo "dev_tag_name=${DEV_TAG_NAME}"
             echo "version_path=${VERSION_PATH}"
+            echo "channel_release_tag=${CHANNEL_RELEASE_TAG}"
+            echo "release_flavor=${RELEASE_FLAVOR}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Create release tag
@@ -189,10 +200,13 @@ jobs:
     env:
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      RELEASE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      VOQUILL_BUILD_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      VOQUILL_DESKTOP_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
       TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
-      DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -273,8 +287,12 @@ jobs:
     env:
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
-      DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
-      DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
+      RELEASE_TAG_NAME: ${{ needs.metadata.outputs.tag_name }}
+      CHANNEL_RELEASE_TAG: ${{ needs.metadata.outputs.channel_release_tag }}
+      RELEASE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      VOQUILL_BUILD_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      VOQUILL_DESKTOP_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
     steps:
       - uses: actions/checkout@v4
 
@@ -295,61 +313,454 @@ jobs:
           OUTPUT_DIR: publish
           RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
           RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
-          DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
+          RELEASE_TAG_NAME: ${{ needs.metadata.outputs.tag_name }}
+          CHANNEL_RELEASE_TAG: ${{ needs.metadata.outputs.channel_release_tag }}
 
-      - name: Decode Firebase service account
-        id: service-account
-        shell: bash
+      - name: Create or update version release
+        id: version_release
+        uses: actions/github-script@v7
         env:
-          HUB_STORAGE_SERVICE_ACCOUNT_B64: ${{ secrets.HUB_STORAGE_SERVICE_ACCOUNT_B64 }}
-        run: |
-          set -euo pipefail
-
-          if [[ -z "${HUB_STORAGE_SERVICE_ACCOUNT_B64:-}" ]]; then
-            echo "HUB_STORAGE_SERVICE_ACCOUNT_B64 secret is not configured." >&2
-            exit 1
-          fi
-          if [[ -z "${GITHUB_OUTPUT:-}" ]]; then
-            echo "GITHUB_OUTPUT is not available." >&2
-            exit 1
-          fi
-
-          decoded_json="$(printf '%s' "${HUB_STORAGE_SERVICE_ACCOUNT_B64}" | base64 --decode)"
-          {
-            printf 'json<<EOF\n'
-            printf '%s\n' "${decoded_json}"
-            printf 'EOF\n'
-          } >> "$GITHUB_OUTPUT"
-          unset decoded_json
-
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v2
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
         with:
-          credentials_json: ${{ steps.service-account.outputs.json }}
+          script: |
+            const releaseTag = process.env.RELEASE_TAG;
+            const releaseEnv = process.env.RELEASE_ENV;
+            const releaseVersion = process.env.RELEASE_VERSION;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const releaseName =
+              releaseEnv === "dev"
+                ? `Desktop Dev ${releaseVersion}`
+                : `Desktop ${releaseVersion}`;
+            const body = `Automated ${releaseEnv === "dev" ? "dev" : "prod"} channel build for version ${releaseVersion}.`;
 
-      - name: Upload release binaries
-        uses: google-github-actions/upload-cloud-storage@v1
+            async function upsertRelease() {
+              try {
+                const existing = await github.rest.repos.getReleaseByTag({
+                  owner,
+                  repo,
+                  tag: releaseTag,
+                });
+                core.info(`Updating release ${existing.data.id} for tag ${releaseTag}.`);
+                const updated = await github.rest.repos.updateRelease({
+                  owner,
+                  repo,
+                  release_id: existing.data.id,
+                  tag_name: releaseTag,
+                  name: releaseName,
+                  body,
+                  draft: false,
+                  prerelease: releaseEnv !== "prod",
+                });
+                return updated.data;
+              } catch (error) {
+                if (error.status === 404) {
+                  core.info(`Creating release for tag ${releaseTag}.`);
+                  const created = await github.rest.repos.createRelease({
+                    owner,
+                    repo,
+                    tag_name: releaseTag,
+                    name: releaseName,
+                    body,
+                    draft: false,
+                    prerelease: releaseEnv !== "prod",
+                  });
+                  return created.data;
+                }
+                throw error;
+              }
+            }
+
+            const release = await upsertRelease();
+            core.setOutput("release_id", String(release.id));
+            core.info(`Version release ready at ${release.html_url}.`);
+
+      - name: Upload version binaries
+        if: steps.version_release.outputs.release_id != ''
+        uses: actions/github-script@v7
         env:
-          DESKTOP_BINARIES_BUCKET: ${{ secrets.DESKTOP_BINARIES_BUCKET }}
+          RELEASE_ID: ${{ steps.version_release.outputs.release_id }}
+          ASSET_ROOT: publish/binaries
+          NAME_STRATEGY: flatten
+          ASSET_PREFIX: ""
         with:
-          path: publish/binaries/
-          destination: ${{ env.DESKTOP_BINARIES_BUCKET }}/desktop/${{ env.RELEASE_ENV }}/${{ env.RELEASE_VERSION }}
-          process_gcloudignore: false
+          script: |
+            const fs = require("node:fs");
+            const path = require("node:path");
 
-      - name: Upload version manifest
-        uses: google-github-actions/upload-cloud-storage@v1
-        env:
-          DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
-        with:
-          path: publish/version/
-          destination: ${{ env.DESKTOP_VERSION_BUCKET }}/desktop/${{ env.RELEASE_ENV }}/${{ env.RELEASE_VERSION }}
-          process_gcloudignore: false
+            const releaseId = Number(process.env.RELEASE_ID);
+            const assetRoot = process.env.ASSET_ROOT;
+            const nameStrategy = process.env.NAME_STRATEGY || "flatten";
+            const assetPrefix = process.env.ASSET_PREFIX || "";
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
 
-      - name: Upload latest manifest
-        uses: google-github-actions/upload-cloud-storage@v1
+            if (!assetRoot || !fs.existsSync(assetRoot)) {
+              core.info(`Asset root '${assetRoot}' not found; skipping upload.`);
+              return;
+            }
+
+            async function collectFiles(dir) {
+              const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+              const files = [];
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  files.push(...await collectFiles(fullPath));
+                } else if (entry.isFile()) {
+                  files.push(fullPath);
+                }
+              }
+              return files;
+            }
+
+            function contentTypeFor(name) {
+              const lower = name.toLowerCase();
+              if (lower.endsWith(".json")) return "application/json";
+              if (lower.endsWith(".zip")) return "application/zip";
+              if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz")) return "application/gzip";
+              if (lower.endsWith(".dmg")) return "application/x-apple-diskimage";
+              if (lower.endsWith(".msi")) return "application/x-msi";
+              if (lower.endsWith(".exe")) return "application/vnd.microsoft.portable-executable";
+              return "application/octet-stream";
+            }
+
+            function buildAssetName(filePath) {
+              const relative = path.relative(assetRoot, filePath);
+              if (nameStrategy === "basename") {
+                return `${assetPrefix}${path.basename(filePath)}`;
+              }
+              const flattened = relative
+                .split(path.sep)
+                .filter(Boolean)
+                .join("-");
+              const base = flattened || path.basename(filePath);
+              return `${assetPrefix}${base}`;
+            }
+
+            const files = await collectFiles(assetRoot);
+            if (files.length === 0) {
+              core.info(`No files found under '${assetRoot}'.`);
+              return;
+            }
+
+            const existingAssets = await github.paginate(
+              github.rest.repos.listReleaseAssets,
+              {
+                owner,
+                repo,
+                release_id: releaseId,
+                per_page: 100,
+              },
+            );
+            const existingByName = new Map(
+              existingAssets.map((asset) => [asset.name, asset.id]),
+            );
+
+            for (const filePath of files) {
+              const assetName = buildAssetName(filePath);
+              const stat = await fs.promises.stat(filePath);
+
+              const existingId = existingByName.get(assetName);
+              if (existingId) {
+                core.info(`Deleting existing asset '${assetName}' (id ${existingId}).`);
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id: existingId,
+                });
+                existingByName.delete(assetName);
+              }
+
+              core.info(`Uploading '${assetName}' from ${filePath}.`);
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: releaseId,
+                name: assetName,
+                data: fs.createReadStream(filePath),
+                headers: {
+                  "content-type": contentTypeFor(assetName),
+                  "content-length": stat.size,
+                },
+              });
+            }
+
+            core.info(`Uploaded ${files.length} assets to release ${releaseId}.`);
+
+      - name: Upload version metadata
+        if: steps.version_release.outputs.release_id != ''
+        uses: actions/github-script@v7
         env:
-          DESKTOP_VERSION_BUCKET: ${{ secrets.DESKTOP_VERSION_BUCKET }}
+          RELEASE_ID: ${{ steps.version_release.outputs.release_id }}
+          ASSET_ROOT: publish/version
+          NAME_STRATEGY: basename
+          ASSET_PREFIX: ""
         with:
-          path: publish/latest/
-          destination: ${{ env.DESKTOP_VERSION_BUCKET }}/desktop/${{ env.RELEASE_ENV }}
-          process_gcloudignore: false
+          script: |
+            const fs = require("node:fs");
+            const path = require("node:path");
+
+            const releaseId = Number(process.env.RELEASE_ID);
+            const assetRoot = process.env.ASSET_ROOT;
+            const nameStrategy = process.env.NAME_STRATEGY || "basename";
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            if (!assetRoot || !fs.existsSync(assetRoot)) {
+              core.info(`Asset root '${assetRoot}' not found; skipping upload.`);
+              return;
+            }
+
+            async function collectFiles(dir) {
+              const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+              const files = [];
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  files.push(...await collectFiles(fullPath));
+                } else if (entry.isFile()) {
+                  files.push(fullPath);
+                }
+              }
+              return files;
+            }
+
+            function contentTypeFor(name) {
+              const lower = name.toLowerCase();
+              if (lower.endsWith(".json")) return "application/json";
+              return "application/octet-stream";
+            }
+
+            function buildAssetName(filePath) {
+              if (nameStrategy === "basename") {
+                return path.basename(filePath);
+              }
+              const relative = path.relative(assetRoot, filePath);
+              return relative.split(path.sep).join("-");
+            }
+
+            const files = await collectFiles(assetRoot);
+            if (files.length === 0) {
+              core.info(`No files found under '${assetRoot}'.`);
+              return;
+            }
+
+            const existingAssets = await github.paginate(
+              github.rest.repos.listReleaseAssets,
+              {
+                owner,
+                repo,
+                release_id: releaseId,
+                per_page: 100,
+              },
+            );
+            const existingByName = new Map(
+              existingAssets.map((asset) => [asset.name, asset.id]),
+            );
+
+            for (const filePath of files) {
+              const assetName = buildAssetName(filePath);
+              const stat = await fs.promises.stat(filePath);
+
+              const existingId = existingByName.get(assetName);
+              if (existingId) {
+                core.info(`Deleting existing asset '${assetName}' (id ${existingId}).`);
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id: existingId,
+                });
+                existingByName.delete(assetName);
+              }
+
+              core.info(`Uploading '${assetName}' from ${filePath}.`);
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: releaseId,
+                name: assetName,
+                data: fs.createReadStream(filePath),
+                headers: {
+                  "content-type": contentTypeFor(assetName),
+                  "content-length": stat.size,
+                },
+              });
+            }
+
+            core.info(`Uploaded ${files.length} metadata files to release ${releaseId}.`);
+
+      - name: Update channel tag and release
+        id: channel_release
+        uses: actions/github-script@v7
+        env:
+          CHANNEL_TAG: ${{ needs.metadata.outputs.channel_release_tag }}
+          TARGET_COMMIT_SHA: ${{ needs.metadata.outputs.commit_sha }}
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_TAG_NAME: ${{ needs.metadata.outputs.tag_name }}
+        with:
+          script: |
+            const channelTag = process.env.CHANNEL_TAG;
+            const targetSha = process.env.TARGET_COMMIT_SHA;
+            const releaseEnv = process.env.RELEASE_ENV;
+            const releaseVersion = process.env.RELEASE_VERSION;
+            const releaseTagName = process.env.RELEASE_TAG_NAME;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const releaseName =
+              releaseEnv === "dev" ? "Desktop Dev Channel" : "Desktop Prod Channel";
+            const body = `Latest ${releaseEnv === "dev" ? "dev" : "prod"} manifest for version ${releaseVersion} (tag ${releaseTagName}).`;
+
+            async function ensureTag() {
+              try {
+                await github.rest.git.updateRef({
+                  owner,
+                  repo,
+                  ref: `tags/${channelTag}`,
+                  sha: targetSha,
+                  force: true,
+                });
+                core.info(`Updated tag '${channelTag}' to ${targetSha}.`);
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.git.createRef({
+                    owner,
+                    repo,
+                    ref: `refs/tags/${channelTag}`,
+                    sha: targetSha,
+                  });
+                  core.info(`Created tag '${channelTag}' at ${targetSha}.`);
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+            async function upsertRelease() {
+              try {
+                const existing = await github.rest.repos.getReleaseByTag({
+                  owner,
+                  repo,
+                  tag: channelTag,
+                });
+                const updated = await github.rest.repos.updateRelease({
+                  owner,
+                  repo,
+                  release_id: existing.data.id,
+                  tag_name: channelTag,
+                  name: releaseName,
+                  body,
+                  draft: false,
+                  prerelease: releaseEnv === "dev",
+                });
+                return updated.data;
+              } catch (error) {
+                if (error.status === 404) {
+                  const created = await github.rest.repos.createRelease({
+                    owner,
+                    repo,
+                    tag_name: channelTag,
+                    target_commitish: targetSha,
+                    name: releaseName,
+                    body,
+                    draft: false,
+                    prerelease: releaseEnv === "dev",
+                  });
+                  return created.data;
+                }
+                throw error;
+              }
+            }
+
+            await ensureTag();
+            const release = await upsertRelease();
+            core.setOutput("release_id", String(release.id));
+            core.info(`Channel release ready at ${release.html_url}.`);
+
+      - name: Upload channel manifest
+        if: steps.channel_release.outputs.release_id != ''
+        uses: actions/github-script@v7
+        env:
+          RELEASE_ID: ${{ steps.channel_release.outputs.release_id }}
+          ASSET_ROOT: publish/latest
+          NAME_STRATEGY: basename
+        with:
+          script: |
+            const fs = require("node:fs");
+            const path = require("node:path");
+
+            const releaseId = Number(process.env.RELEASE_ID);
+            const assetRoot = process.env.ASSET_ROOT;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            if (!assetRoot || !fs.existsSync(assetRoot)) {
+              core.info(`Asset root '${assetRoot}' not found; skipping upload.`);
+              return;
+            }
+
+            async function collectFiles(dir) {
+              const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+              const files = [];
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  files.push(...await collectFiles(fullPath));
+                } else if (entry.isFile()) {
+                  files.push(fullPath);
+                }
+              }
+              return files;
+            }
+
+            const files = await collectFiles(assetRoot);
+            if (files.length === 0) {
+              core.info(`No files found under '${assetRoot}'.`);
+              return;
+            }
+
+            const existingAssets = await github.paginate(
+              github.rest.repos.listReleaseAssets,
+              {
+                owner,
+                repo,
+                release_id: releaseId,
+                per_page: 100,
+              },
+            );
+            const existingByName = new Map(
+              existingAssets.map((asset) => [asset.name, asset.id]),
+            );
+
+            for (const filePath of files) {
+              const assetName = path.basename(filePath);
+              const stat = await fs.promises.stat(filePath);
+
+              const existingId = existingByName.get(assetName);
+              if (existingId) {
+                core.info(`Deleting existing asset '${assetName}' (id ${existingId}).`);
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id: existingId,
+                });
+              }
+
+              core.info(`Uploading '${assetName}' from ${filePath}.`);
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: releaseId,
+                name: assetName,
+                data: fs.createReadStream(filePath),
+                headers: {
+                  "content-type": "application/json",
+                  "content-length": stat.size,
+                },
+              });
+            }
+
+            core.info(`Uploaded ${files.length} channel manifest file(s) to release ${releaseId}.`);

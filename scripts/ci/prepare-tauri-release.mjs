@@ -8,7 +8,9 @@ const artifactsDir = path.resolve(root, process.env.ARTIFACTS_DIR ?? "artifacts"
 const outputRoot = path.resolve(root, process.env.OUTPUT_DIR ?? "publish");
 const releaseEnv = process.env.RELEASE_ENV;
 const releaseVersion = process.env.RELEASE_VERSION;
-const binariesBucket = process.env.DESKTOP_BINARIES_BUCKET;
+const repository = process.env.GITHUB_REPOSITORY;
+const releaseTagName = process.env.RELEASE_TAG_NAME;
+const channelReleaseTagInput = process.env.CHANNEL_RELEASE_TAG;
 
 if (!releaseEnv) {
   throw new Error("RELEASE_ENV is not defined");
@@ -18,8 +20,31 @@ if (!releaseVersion) {
   throw new Error("RELEASE_VERSION is not defined");
 }
 
-if (!binariesBucket) {
-  throw new Error("DESKTOP_BINARIES_BUCKET is not defined");
+if (!repository) {
+  throw new Error("GITHUB_REPOSITORY is not defined");
+}
+
+if (!releaseTagName) {
+  throw new Error("RELEASE_TAG_NAME is not defined");
+}
+
+const [owner, repo] = repository.split("/");
+if (!owner || !repo) {
+  throw new Error(
+    `GITHUB_REPOSITORY must be in 'owner/repo' format (received '${repository}')`,
+  );
+}
+
+const channelReleaseTag =
+  channelReleaseTagInput ??
+  (releaseEnv === "prod" ? "desktop-prod" : "desktop-dev");
+
+function githubDownloadUrl(tag, fileName) {
+  const encodedName = fileName
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return `https://github.com/${owner}/${repo}/releases/download/${tag}/${encodedName}`;
 }
 
 async function pathExists(candidate) {
@@ -290,8 +315,6 @@ await fs.mkdir(binariesDir, { recursive: true });
 await fs.mkdir(versionDir, { recursive: true });
 await fs.mkdir(latestDir, { recursive: true });
 
-const binariesBucketName = binariesBucket.replace(/^gs:\/\//, "");
-
 const finalManifest = {
   version: releaseVersion,
   notes: null,
@@ -461,10 +484,7 @@ for (const entry of artifactEntries) {
           ? (await fs.readFile(signatureFile, "utf8")).trim()
           : undefined;
 
-      const finalUrl = new URL(
-        path.posix.join("desktop", releaseEnv, releaseVersion, assetName),
-        `https://storage.googleapis.com/${binariesBucketName}/`,
-      ).toString();
+      const finalUrl = githubDownloadUrl(releaseTagName, assetName);
 
       finalManifest.platforms[platformKey] = {
         ...platformInfo,
@@ -510,6 +530,8 @@ await fs.writeFile(
     {
       releaseEnv,
       releaseVersion,
+      releaseTagName,
+      channelReleaseTag,
       assets: assetRecords,
     },
     null,
@@ -519,7 +541,7 @@ await fs.writeFile(
 );
 
 console.log(
-  `Prepared release manifest with ${Object.keys(finalManifest.platforms).length} platform entries for ${releaseEnv}/${releaseVersion}.`,
+  `Prepared release manifest with ${Object.keys(finalManifest.platforms).length} platform entries for ${releaseEnv}/${releaseVersion} (tag ${releaseTagName}, channel ${channelReleaseTag}).`,
 );
 for (const record of assetRecords) {
   console.log(

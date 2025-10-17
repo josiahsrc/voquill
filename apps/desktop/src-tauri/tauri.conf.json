@@ -42,7 +42,7 @@
     },
     "updater": {
       "endpoints": [
-        "https://github.com/josiahsrc/voquill/releases/latest/download/latest.json"
+        "https://github.com/josiahsrc/voquill/releases/download/desktop-prod/latest.json"
       ],
       "pubkey": "__UPDATER_PUBLIC_KEY__"
     }

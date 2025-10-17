@@ -6,8 +6,8 @@ import path from "node:path";
 const root = process.cwd();
 const version = process.env.RELEASE_VERSION;
 const releaseEnv = process.env.RELEASE_ENV;
-const bucket = process.env.DESKTOP_VERSION_BUCKET;
 const updaterPublicKeyInput = process.env.TAURI_UPDATER_PUBLIC_KEY;
+const repository = process.env.GITHUB_REPOSITORY;
 
 if (!version) {
   throw new Error("RELEASE_VERSION is not defined");
@@ -17,13 +17,21 @@ if (!releaseEnv) {
   throw new Error("RELEASE_ENV is not defined");
 }
 
-if (!bucket) {
-  throw new Error("DESKTOP_VERSION_BUCKET is not defined");
+if (!repository) {
+  throw new Error("GITHUB_REPOSITORY is not defined");
 }
 
+const [owner, repo] = repository.split("/");
+if (!owner || !repo) {
+  throw new Error(
+    `GITHUB_REPOSITORY must be in 'owner/repo' format (received '${repository}')`,
+  );
+}
+
+const channelTag = releaseEnv === "prod" ? "desktop-prod" : "desktop-dev";
 const endpoint = new URL(
-  path.posix.join("desktop", releaseEnv, "latest.json"),
-  `https://storage.googleapis.com/${bucket.replace(/^gs:\/\//, "")}/`,
+  `${channelTag}/latest.json`,
+  `https://github.com/${owner}/${repo}/releases/download/`,
 ).toString();
 
 const configPath = path.join(
@@ -53,5 +61,5 @@ if (updaterPublicKeyInput) {
 fs.writeFileSync(configPath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 
 console.log(
-  `Updated tauri.conf.json with version ${version} for ${releaseEnv} release.`,
+  `Updated tauri.conf.json with version ${version} for ${releaseEnv} release (endpoint ${endpoint}).`,
 );
