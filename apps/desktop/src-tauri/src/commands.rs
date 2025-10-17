@@ -25,6 +25,16 @@ pub async fn user_get_one(
 }
 
 #[tauri::command]
+pub async fn transcription_create(
+    transcription: crate::domain::Transcription,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Transcription, String> {
+    crate::db::transcription_queries::insert_transcription(database.pool(), &transcription)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn get_option_key_count(
     counter: State<'_, crate::state::OptionKeyCounter>,
     database: State<'_, crate::state::OptionKeyDatabase>,

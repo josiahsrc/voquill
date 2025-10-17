@@ -7,6 +7,7 @@ import { LoadingApp } from "./LoadingApp";
 import { usePageName } from "../../hooks/navigation.hooks";
 import { useKeyDownHandler } from "../../hooks/helper.hooks";
 import { getIsDevMode } from "../../utils/env.utils";
+import { RootSideEffects } from "./RootSideEffects";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -36,14 +37,17 @@ export default function Root() {
   });
 
   return (
-    <HeaderPortalProvider>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <Suspense fallback={<LoadingApp />}>
-          <Box sx={{ width: "100%", height: "100%" }}>
-            <Outlet />
-          </Box>
-        </Suspense>
-      </ErrorBoundary>
-    </HeaderPortalProvider>
+    <>
+      <RootSideEffects />
+      <HeaderPortalProvider>
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          <Suspense fallback={<LoadingApp />}>
+            <Box sx={{ width: "100%", height: "100%" }}>
+              <Outlet />
+            </Box>
+          </Suspense>
+        </ErrorBoundary>
+      </HeaderPortalProvider>
+    </>
   );
 }

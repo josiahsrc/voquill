@@ -3,9 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { Nullable, User } from "@repo/types";
 import { BaseRepo } from "./base.repo";
 
-const USER_SET_ONE_COMMAND = "user_set_one";
-const USER_GET_ONE_COMMAND = "user_get_one";
-
 type LocalUser = {
   id: string;
   name: string;
@@ -44,7 +41,7 @@ export abstract class BaseUserRepo extends BaseRepo {
 
 export class LocalUserRepo extends BaseUserRepo {
   async setUser(user: User): Promise<User> {
-    const stored = await invoke<LocalUser>(USER_SET_ONE_COMMAND, {
+    const stored = await invoke<LocalUser>("user_set_one", {
       user: toLocalUser(user),
     });
 
@@ -52,7 +49,7 @@ export class LocalUserRepo extends BaseUserRepo {
   }
 
   async getUser(): Promise<Nullable<User>> {
-    const user = await invoke<Nullable<LocalUser>>(USER_GET_ONE_COMMAND);
+    const user = await invoke<Nullable<LocalUser>>("user_get_one");
 
     return user ? fromLocalUser(user) : null;
   }

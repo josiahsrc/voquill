@@ -1,7 +1,8 @@
 use crate::db;
 use crate::domain::{
     AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingResult,
-    RecordingStartedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR, EVT_REC_FINISH, EVT_REC_START,
+    RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR,
+    EVT_REC_FINISH, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
 };
 use crate::platform::{Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
@@ -166,6 +167,7 @@ fn handle_recording_success(
     let sample_rate = result.audio.sample_rate;
     let emit_finished = emit_handle.clone();
     let emit_error = emit_handle.clone();
+    let emit_transcription = emit_handle.clone();
 
     std::thread::spawn(move || {
         let transcription_result = transcriber.transcribe(&samples, sample_rate);
@@ -193,6 +195,13 @@ fn handle_recording_success(
         }
 
         if let Some(text) = transcription {
+            let payload = TranscriptionReceivedPayload { text: text.clone() };
+            if let Err(err) =
+                emit_transcription.emit_to(EventTarget::any(), EVT_TRANSCRIPTION_RECEIVED, payload)
+            {
+                eprintln!("Failed to emit transcription-received event: {err}");
+            }
+
             if let Err(err) = type_text_into_focused_field(&text) {
                 eprintln!("Failed to type transcription into field: {err}");
             }

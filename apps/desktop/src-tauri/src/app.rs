@@ -94,5 +94,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_option_key_count,
             crate::commands::user_get_one,
             crate::commands::user_set_one,
+            crate::commands::transcription_create,
         ])
 }
