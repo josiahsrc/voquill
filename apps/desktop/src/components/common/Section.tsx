@@ -25,7 +25,7 @@ export const Section = ({
   const headerEnabled = !blocked;
 
   const content = (
-    <Stack mb={2}>
+    <Stack mb={4}>
       <Stack
         direction="row"
         alignItems="center"
