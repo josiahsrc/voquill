@@ -1,18 +1,10 @@
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
-import {
-  Box,
-  Container,
-  Divider,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Divider, IconButton, Stack, Typography } from "@mui/material";
 import dayjs from "dayjs";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Virtuoso } from "react-virtuoso";
+import { useMemo, useState } from "react";
 import { TypographyWithMore } from "../common/TypographyWithMore";
-import { lerp } from "@repo/utilities";
+import { VirtualizedListPage } from "../common/VirtualizedListPage";
 
 type Transcript = {
   id: string;
@@ -80,44 +72,6 @@ export default function TranscriptionsPage() {
   const initialTranscripts = useMemo(() => [...MOCK_TRANSCRIPTS], []);
   const [transcripts, setTranscripts] =
     useState<Transcript[]>(initialTranscripts);
-  const [scrollerNode, setScrollerNode] = useState<HTMLElement | Window | null>(
-    null
-  );
-  const [collapseProgress, setCollapseProgress] = useState(0);
-
-  useEffect(() => {
-    if (!scrollerNode || scrollerNode instanceof Window) {
-      return;
-    }
-
-    let rafId: number | null = null;
-
-    const handleScroll = () => {
-      if (rafId !== null) {
-        return;
-      }
-
-      rafId = requestAnimationFrame(() => {
-        const progress = Math.min(scrollerNode.scrollTop / 96, 1);
-        setCollapseProgress(progress);
-        rafId = null;
-      });
-    };
-
-    handleScroll();
-    scrollerNode.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      scrollerNode.removeEventListener("scroll", handleScroll);
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, [scrollerNode]);
-
-  const handleScrollerRef = useCallback((node: HTMLElement | Window | null) => {
-    setScrollerNode(node);
-  }, []);
 
   const handleCopyTranscript = async (content: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -135,120 +89,51 @@ export default function TranscriptionsPage() {
     );
   };
 
-  const headerPaddingTop = 1 - collapseProgress;
-  const headerPaddingBottom = 2 + (1 - collapseProgress) * 3;
-  const headerGap = 1 + (1 - collapseProgress);
-  const titleFontSizePx = 34 - (34 - 22) * collapseProgress;
-  const subtitleOpacity = Math.min(lerp(0, 1, 1 - collapseProgress * 2), 1);
-
-  // Calculate the height that the header shrinks by
-  // This will be used to offset the content so it doesn't scroll until header is collapsed
-  const headerShrinkAmount = 96 * (1 - collapseProgress);
-
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        overflow: "hidden",
-      }}
-    >
-      <Box
-        sx={(theme) => ({
-          pr: 2,
-          backdropFilter: "blur(8px)",
-          position: "sticky",
-          top: 0,
-          zIndex: theme.zIndex.appBar,
-        })}
-      >
-        <Container
-          maxWidth="sm"
-          sx={{
-            pt: headerPaddingTop,
-            pb: headerPaddingBottom,
-            position: "relative",
-          }}
-        >
-          <Stack spacing={headerGap}>
-            <Typography
-              variant="h4"
-              fontWeight={700}
-              sx={(theme) => ({
-                fontSize: theme.typography.pxToRem(titleFontSizePx),
-                lineHeight: theme.typography.pxToRem(titleFontSizePx * 1.15),
-              })}
-            >
-              History
+    <VirtualizedListPage
+      title="History"
+      subtitle={`Number of Transcripts: ${transcripts.length}`}
+      items={transcripts}
+      computeItemKey={(transcript) => transcript.id}
+      renderItem={(transcript, index) => (
+        <>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            spacing={1}
+          >
+            <Typography variant="subtitle2" color="text.secondary">
+              {dayjs(transcript.createdAt).format(TRANSCRIPT_DATE_FORMAT)}
             </Typography>
-            <Typography
-              variant="subtitle1"
-              color="text.secondary"
-              sx={{
-                opacity: subtitleOpacity,
-                position: "absolute",
-                bottom: 0,
-                transform: `translateY(${subtitleOpacity * 4}px)`,
-              }}
-            >
-              Number of Transcripts: {transcripts.length}
-            </Typography>
+            <Stack direction="row" spacing={1}>
+              <IconButton
+                aria-label="Copy transcript"
+                onClick={() => handleCopyTranscript(transcript.content)}
+                size="small"
+              >
+                <ContentCopyRoundedIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                aria-label="Delete transcript"
+                onClick={() => handleDeleteTranscript(transcript.id)}
+                size="small"
+              >
+                <DeleteOutlineRoundedIcon fontSize="small" />
+              </IconButton>
+            </Stack>
           </Stack>
-        </Container>
-      </Box>
-      <Virtuoso
-        data={transcripts}
-        scrollerRef={handleScrollerRef}
-        style={{ flex: 1 }}
-        components={{
-          Header: () => <Box sx={{ height: headerShrinkAmount / 2 }} />,
-        }}
-        itemContent={(index, transcript) => (
-          <Container maxWidth="sm">
-            <Box sx={{ py: 2 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                spacing={1}
-              >
-                <Typography variant="subtitle2" color="text.secondary">
-                  {dayjs(transcript.createdAt).format(TRANSCRIPT_DATE_FORMAT)}
-                </Typography>
-                <Stack direction="row" spacing={1}>
-                  <IconButton
-                    aria-label="Copy transcript"
-                    onClick={() => handleCopyTranscript(transcript.content)}
-                    size="small"
-                  >
-                    <ContentCopyRoundedIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    aria-label="Delete transcript"
-                    onClick={() => handleDeleteTranscript(transcript.id)}
-                    size="small"
-                  >
-                    <DeleteOutlineRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-              </Stack>
-              <TypographyWithMore
-                variant="body2"
-                color="text.primary"
-                maxLines={3}
-                sx={{ mt: 1 }}
-              >
-                {transcript.content}
-              </TypographyWithMore>
-              {index < transcripts.length - 1 ? (
-                <Divider sx={{ mt: 2 }} />
-              ) : null}
-            </Box>
-          </Container>
-        )}
-      />
-    </Box>
+          <TypographyWithMore
+            variant="body2"
+            color="text.primary"
+            maxLines={3}
+            sx={{ mt: 1 }}
+          >
+            {transcript.content}
+          </TypographyWithMore>
+          {index < transcripts.length - 1 ? <Divider sx={{ mt: 2 }} /> : null}
+        </>
+      )}
+    />
   );
 }

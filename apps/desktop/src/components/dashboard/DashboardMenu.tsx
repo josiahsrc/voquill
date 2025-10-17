@@ -1,4 +1,5 @@
 import {
+  ClassOutlined,
   HistoryOutlined,
   HomeOutlined,
   SettingsOutlined,
@@ -21,6 +22,11 @@ const navItems: NavItem[] = [
     label: "History",
     path: "/dashboard/transcriptions",
     icon: <HistoryOutlined />,
+  },
+  {
+    label: "Dictionary",
+    path: "/dashboard/dictionary",
+    icon: <ClassOutlined />,
   },
 ];
 
