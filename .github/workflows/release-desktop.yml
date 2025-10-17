@@ -19,10 +19,6 @@ on:
         required: false
         type: string
 
-concurrency:
-  group: release-desktop-${{ coalesce(github.event.inputs.environment, github.ref) }}
-  cancel-in-progress: false
-
 jobs:
   metadata:
     name: Determine release metadata
