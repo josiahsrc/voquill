@@ -25,9 +25,15 @@ export type VirtualizedListPageProps<Item> = {
   contentMaxWidth?: ContainerProps["maxWidth"];
   itemWrapperSx?: SxProps<Theme>;
   itemContainerSx?: SxProps<Theme>;
+  heightMult?: number;
   virtuosoProps?: Omit<
     VirtuosoProps<Item, unknown>,
-    "data" | "itemContent" | "components" | "scrollerRef" | "style" | "computeItemKey"
+    | "data"
+    | "itemContent"
+    | "components"
+    | "scrollerRef"
+    | "style"
+    | "computeItemKey"
   >;
 };
 
@@ -42,8 +48,11 @@ export function VirtualizedListPage<Item>({
   itemWrapperSx,
   itemContainerSx,
   virtuosoProps,
+  heightMult = 3,
 }: VirtualizedListPageProps<Item>) {
-  const [scrollerNode, setScrollerNode] = useState<HTMLElement | Window | null>(null);
+  const [scrollerNode, setScrollerNode] = useState<HTMLElement | Window | null>(
+    null
+  );
   const [collapseProgress, setCollapseProgress] = useState(0);
 
   useEffect(() => {
@@ -59,7 +68,10 @@ export function VirtualizedListPage<Item>({
       }
 
       rafId = requestAnimationFrame(() => {
-        const progress = Math.min(scrollerNode.scrollTop / COLLAPSE_DISTANCE_PX, 1);
+        const progress = Math.min(
+          scrollerNode.scrollTop / COLLAPSE_DISTANCE_PX,
+          1
+        );
         setCollapseProgress(progress);
         rafId = null;
       });
@@ -81,16 +93,13 @@ export function VirtualizedListPage<Item>({
   }, []);
 
   const headerPaddingTop = 1 - collapseProgress;
-  const headerPaddingBottom = 2 + (1 - collapseProgress) * 3;
+  const headerPaddingBottom = 2 + (1 - collapseProgress) * heightMult;
   const headerGap = 1 + (1 - collapseProgress);
   const titleFontSizePx =
     TITLE_FONT_SIZE_EXPANDED -
     (TITLE_FONT_SIZE_EXPANDED - TITLE_FONT_SIZE_COLLAPSED) * collapseProgress;
   const subtitleOpacity = Math.min(lerp(0, 1, 1 - collapseProgress * 2), 1);
   const headerShrinkAmount = COLLAPSE_DISTANCE_PX * (1 - collapseProgress);
-  const itemWrapperStyles: SxProps<Theme> = itemWrapperSx
-    ? ([{ py: 2 }, itemWrapperSx] as SxProps<Theme>)
-    : { py: 2 };
 
   return (
     <Box
@@ -161,7 +170,7 @@ export function VirtualizedListPage<Item>({
         }}
         itemContent={(index, item) => (
           <Container maxWidth={contentMaxWidth} sx={itemContainerSx}>
-            <Box sx={itemWrapperStyles}>{renderItem(item, index)}</Box>
+            <Box sx={itemWrapperSx}>{renderItem(item, index)}</Box>
           </Container>
         )}
         {...(virtuosoProps ?? {})}

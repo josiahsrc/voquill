@@ -37,6 +37,7 @@ const fromLocalTranscription = (
 export abstract class BaseTranscriptionRepo extends BaseRepo {
   abstract createTranscription(transcription: Transcription): Promise<Transcription>;
   abstract listTranscriptions(params?: ListTranscriptionsParams): Promise<Transcription[]>;
+  abstract deleteTranscription(id: string): Promise<void>;
 }
 
 export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
@@ -62,5 +63,9 @@ export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
     );
 
     return transcriptions.map(fromLocalTranscription);
+  }
+
+  async deleteTranscription(id: string): Promise<void> {
+    await invoke<void>("transcription_delete", { id });
   }
 }

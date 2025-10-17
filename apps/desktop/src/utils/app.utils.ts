@@ -1,4 +1,4 @@
-import { User } from "@repo/types";
+import { Transcription, User } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -24,3 +24,12 @@ export const registerUsers = (draft: AppState, users: User[]): void => {
     draft.userById[user.id] = user;
   }
 };
+
+export const registerTranscriptions = (
+  draft: AppState,
+  transcriptions: Transcription[],
+): void => {
+  for (const transcription of transcriptions) {
+    draft.transcriptionById[transcription.id] = transcription;
+  }
+}

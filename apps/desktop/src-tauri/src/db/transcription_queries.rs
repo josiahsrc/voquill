@@ -46,3 +46,18 @@ pub async fn fetch_transcriptions(
 
     Ok(transcriptions)
 }
+
+pub async fn delete_transcription(
+    pool: SqlitePool,
+    id: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "DELETE FROM transcriptions
+         WHERE id = ?1",
+    )
+    .bind(id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
