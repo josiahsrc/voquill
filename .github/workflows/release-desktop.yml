@@ -284,6 +284,8 @@ jobs:
       - metadata
       - build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
