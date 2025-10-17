@@ -275,7 +275,7 @@ jobs:
 
   update-channel:
     name: Update channel release asset
-    needs: [metadata, build]
+    needs: [metadata]
     runs-on: ubuntu-latest
     permissions:
       contents: write
