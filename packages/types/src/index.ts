@@ -8,3 +8,4 @@ export * from "./user.types";
 export * from "./usage.types";
 export * from "./contact.types";
 export * from "./transcription.types";
+export * from "./term.types";

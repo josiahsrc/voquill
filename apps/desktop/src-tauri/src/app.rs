@@ -97,5 +97,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::transcription_create,
             crate::commands::transcription_list,
             crate::commands::transcription_delete,
+            crate::commands::term_create,
+            crate::commands::term_update,
+            crate::commands::term_list,
+            crate::commands::term_delete,
         ])
 }

@@ -1,4 +1,4 @@
-import { Transcription, User } from "@repo/types";
+import { Term, Transcription, User } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -32,4 +32,10 @@ export const registerTranscriptions = (
   for (const transcription of transcriptions) {
     draft.transcriptionById[transcription.id] = transcription;
   }
-}
+};
+
+export const registerTerms = (draft: AppState, terms: Term[]): void => {
+  for (const term of terms) {
+    draft.termById[term.id] = term;
+  }
+};

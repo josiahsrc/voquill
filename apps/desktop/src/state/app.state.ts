@@ -1,9 +1,10 @@
-import { Member, Nullable, PartialConfig, Transcription, User } from "@repo/types";
+import { Member, Nullable, PartialConfig, Term, Transcription, User } from "@repo/types";
 import {
   INITIAL_ONBOARDING_STATE,
   type OnboardingState,
 } from "./onboarding.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
+import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -13,11 +14,13 @@ export type AppState = {
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
+  termById: Record<string, Term>;
   transcriptionById: Record<string, Transcription>;
   config: Nullable<PartialConfig>;
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
+  dictionary: DictionaryState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -29,6 +32,7 @@ export type AppState = {
 export const INITIAL_APP_STATE: AppState = {
   memberById: {},
   userById: {},
+  termById: {},
   transcriptionById: {},
   currentUserId: null,
   config: null,
@@ -39,4 +43,5 @@ export const INITIAL_APP_STATE: AppState = {
   snackbarTransitionDuration: undefined,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
+  dictionary: INITIAL_DICTIONARY_STATE,
 };

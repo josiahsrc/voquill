@@ -59,6 +59,45 @@ pub async fn transcription_delete(
 }
 
 #[tauri::command]
+pub async fn term_create(
+    term: crate::domain::Term,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Term, String> {
+    crate::db::term_queries::insert_term(database.pool(), &term)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn term_update(
+    term: crate::domain::Term,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Term, String> {
+    crate::db::term_queries::update_term(database.pool(), &term)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn term_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Term>, String> {
+    crate::db::term_queries::fetch_terms(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn term_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::term_queries::delete_term(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn get_option_key_count(
     counter: State<'_, crate::state::OptionKeyCounter>,
     database: State<'_, crate::state::OptionKeyDatabase>,

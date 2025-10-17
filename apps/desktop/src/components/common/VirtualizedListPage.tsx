@@ -16,7 +16,8 @@ const TITLE_FONT_SIZE_EXPANDED = 34;
 const TITLE_FONT_SIZE_COLLAPSED = 22;
 
 export type VirtualizedListPageProps<Item> = {
-  title: string;
+  title: ReactNode;
+  action?: ReactNode;
   subtitle?: ReactNode;
   items: readonly Item[];
   renderItem: (item: Item, index: number) => ReactNode;
@@ -26,6 +27,7 @@ export type VirtualizedListPageProps<Item> = {
   itemWrapperSx?: SxProps<Theme>;
   itemContainerSx?: SxProps<Theme>;
   heightMult?: number;
+  emptyState?: ReactNode;
   virtuosoProps?: Omit<
     VirtuosoProps<Item, unknown>,
     | "data"
@@ -39,6 +41,7 @@ export type VirtualizedListPageProps<Item> = {
 
 export function VirtualizedListPage<Item>({
   title,
+  action,
   subtitle,
   items,
   renderItem,
@@ -49,6 +52,7 @@ export function VirtualizedListPage<Item>({
   itemContainerSx,
   virtuosoProps,
   heightMult = 3,
+  emptyState,
 }: VirtualizedListPageProps<Item>) {
   const [scrollerNode, setScrollerNode] = useState<HTMLElement | Window | null>(
     null
@@ -129,16 +133,24 @@ export function VirtualizedListPage<Item>({
           }}
         >
           <Stack spacing={headerGap}>
-            <Typography
-              variant="h4"
-              fontWeight={700}
-              sx={(theme) => ({
-                fontSize: theme.typography.pxToRem(titleFontSizePx),
-                lineHeight: theme.typography.pxToRem(titleFontSizePx * 1.15),
-              })}
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="flex-start"
+              justifyContent="space-between"
             >
-              {title}
-            </Typography>
+              <Typography
+                variant="h4"
+                fontWeight={700}
+                sx={(theme) => ({
+                  fontSize: theme.typography.pxToRem(titleFontSizePx),
+                  lineHeight: theme.typography.pxToRem(titleFontSizePx * 1.15),
+                })}
+              >
+                {title}
+              </Typography>
+              {action}
+            </Stack>
             {subtitle ? (
               <Typography
                 variant="subtitle1"
@@ -156,25 +168,50 @@ export function VirtualizedListPage<Item>({
           </Stack>
         </Container>
       </Box>
-      <Virtuoso
-        data={items}
-        style={{ flex: 1 }}
-        scrollerRef={handleScrollerRef}
-        computeItemKey={
-          computeItemKey
-            ? (index, item) => computeItemKey(item, index)
-            : undefined
-        }
-        components={{
-          Header: () => <Box sx={{ height: headerShrinkAmount / 2 }} />,
-        }}
-        itemContent={(index, item) => (
-          <Container maxWidth={contentMaxWidth} sx={itemContainerSx}>
-            <Box sx={itemWrapperSx}>{renderItem(item, index)}</Box>
+      {items.length === 0 ? (
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "auto",
+          }}
+        >
+          <Container maxWidth={contentMaxWidth} sx={{ pb: 8 }}>
+            {emptyState || (
+              <Stack spacing={1} alignItems="center">
+                <Typography variant="h6" color="text.secondary">
+                  It's quiet in here
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  There are no items to display.
+                </Typography>
+              </Stack>
+            )}
           </Container>
-        )}
-        {...(virtuosoProps ?? {})}
-      />
+        </Box>
+      ) : (
+        <Virtuoso
+          data={items}
+          style={{ flex: 1 }}
+          scrollerRef={handleScrollerRef}
+          computeItemKey={
+            computeItemKey
+              ? (index, item) => computeItemKey(item, index)
+              : undefined
+          }
+          components={{
+            Header: () => <Box sx={{ height: headerShrinkAmount / 2 }} />,
+          }}
+          itemContent={(index, item) => (
+            <Container maxWidth={contentMaxWidth} sx={itemContainerSx}>
+              <Box sx={itemWrapperSx}>{renderItem(item, index)}</Box>
+            </Container>
+          )}
+          {...(virtuosoProps ?? {})}
+        />
+      )}
     </Box>
   );
 }
