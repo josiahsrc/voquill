@@ -6,7 +6,7 @@ export const getMyUserId = (state: AppState): string =>
   state.currentUserId ?? "local-user-id";
 
 export const getMyUser = (state: AppState): Nullable<User> => {
-  return getRec(state.userById, state.currentUserId) ?? null;
+  return getRec(state.userById, getMyUserId(state)) ?? null;
 };
 
 export const getMyUserName = (state: AppState): string => {
