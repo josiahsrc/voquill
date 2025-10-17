@@ -1,12 +1,15 @@
 import { Check } from "@mui/icons-material";
 import { Button, Stack, TextField, Typography } from "@mui/material";
-import { advancePage } from "../../actions/onboarding.actions";
+import {
+  advancePage,
+  submitOnboarding,
+} from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { FormContainer } from "./OnboardingShared";
-import { showSnackbar } from "../../actions/app.actions";
 
 export const NameForm = () => {
   const name = useAppStore((state) => state.onboarding.name);
+  const submitting = useAppStore((state) => state.onboarding.submitting);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     produceAppState((draft) => {
@@ -21,7 +24,7 @@ export const NameForm = () => {
   };
 
   const handleSubmit = () => {
-    showSnackbar("Onboarding complete! (not really)");
+    void submitOnboarding();
   };
 
   return (
@@ -50,7 +53,7 @@ export const NameForm = () => {
         <Button onClick={() => advancePage(-1)}>Back</Button>
         <Button
           variant="contained"
-          disabled={!name}
+          disabled={!name || submitting}
           endIcon={<Check />}
           onClick={handleSubmit}
         >

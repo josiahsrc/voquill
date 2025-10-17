@@ -1,42 +1,57 @@
-import { produceAppState } from "../store";
+import { firemix } from "@firemix/client";
+import { User } from "@repo/types";
+import { getUserRepo } from "../repos";
+import { getAppState, produceAppState } from "../store";
+import { registerUsers } from "../utils/app.utils";
+import { getMyUserId } from "../utils/user.utils";
+import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
 export const advancePage = (delta = 1) => {
-	produceAppState((draft) => {
-		draft.onboarding.page += delta;
-	});
+  produceAppState((draft) => {
+    draft.onboarding.page += delta;
+  });
 };
 
 export const submitOnboarding = async () => {
-	// try {
-	// 	produceAppState((draft) => {
-	// 		draft.onboarding.submitting = true;
-	// 	});
+  const state = getAppState();
+  const trimmedName = state.onboarding.name.trim();
 
-	// 	const id = getAppState().auth!.uid;
-	// 	await blaze().set(path.users(id), {
-	// 		id,
-	// 		createdAt: blaze().now(),
-	// 		updatedAt: blaze().now(),
-	// 		name: getAppState().onboarding.name,
-	// 		onboarded: false,
-	// 		onboardedAt: null,
-	// 	});
-	// } catch (err) {
-	// 	showErrorSnackbar(err);
-	// } finally {
-	// 	produceAppState((draft) => {
-	// 		draft.onboarding.submitting = false;
-	// 	});
-	// }
-};
+  produceAppState((draft) => {
+    draft.onboarding.submitting = true;
+    draft.onboarding.name = trimmedName;
+  });
 
-export const finishOnboarding = async () => {
-	// try {
-	// 	await blaze().update(path.users(getAppState().auth!.uid), {
-	// 		onboarded: true,
-	// 		onboardedAt: blaze().now(),
-	// 	});
-	// } catch (err) {
-	// 	showErrorSnackbar(err);
-	// }
+  try {
+    const repo = getUserRepo();
+    const now = firemix().now();
+    const userId = getMyUserId(state);
+
+    const user: User = {
+      id: userId,
+      createdAt: now,
+      updatedAt: now,
+      name: trimmedName,
+      bio: null,
+      onboarded: true,
+      onboardedAt: now,
+      timezone: null,
+    };
+
+    const savedUser = await repo.setUser(user);
+
+    produceAppState((draft) => {
+      registerUsers(draft, [savedUser]);
+      draft.currentUserId = savedUser.id;
+      draft.onboarding.submitting = false;
+      draft.onboarding.name = savedUser.name;
+    });
+
+    showSnackbar("You're all set! Onboarding complete.");
+    return savedUser;
+  } catch (err) {
+    produceAppState((draft) => {
+      draft.onboarding.submitting = false;
+    });
+    showErrorSnackbar(err);
+  }
 };

@@ -36,7 +36,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
 
 export abstract class BaseUserRepo extends BaseRepo {
   abstract setUser(user: User): Promise<User>;
-  abstract getUser(): Promise<Nullable<User>>;
+  abstract getUser(id: string): Promise<Nullable<User>>;
 }
 
 export class LocalUserRepo extends BaseUserRepo {
