@@ -6,6 +6,25 @@ pub fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
+pub async fn user_set_one(
+    user: crate::domain::User,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::User, String> {
+    crate::db::user_queries::upsert_user(database.pool(), &user)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn user_get_one(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Option<crate::domain::User>, String> {
+    crate::db::user_queries::fetch_user(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn get_option_key_count(
     counter: State<'_, crate::state::OptionKeyCounter>,
     database: State<'_, crate::state::OptionKeyDatabase>,

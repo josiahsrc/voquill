@@ -33,17 +33,14 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 tauri::async_runtime::block_on(crate::db::queries::ensure_row(pool.clone()))
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-            app.manage(crate::state::OptionKeyDatabase::new(pool));
+            app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
             app.manage(crate::state::OptionKeyCounter::new(initial_count));
 
             #[cfg(desktop)]
             {
                 crate::system::tray::setup_tray(app)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            }
 
-            #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
-            {
                 let app_handle = app.handle();
 
                 use crate::platform::{Recorder, Transcriber};
@@ -94,6 +91,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         })
         .invoke_handler(tauri::generate_handler![
             crate::commands::greet,
-            crate::commands::get_option_key_count
+            crate::commands::get_option_key_count,
+            crate::commands::user_get_one,
+            crate::commands::user_set_one,
         ])
 }
