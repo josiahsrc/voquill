@@ -45,11 +45,11 @@ export const Section = ({
       </Stack>
       <Box sx={{ opacity: fieldEnabled ? 1 : 0.3 }}>
         {description && (
-          <Typography variant="body2" color="textSecondary">
+          <Typography variant="body2" color="textSecondary" mt={1}>
             {description}
           </Typography>
         )}
-        {children}
+        <Box sx={{ mt: 2 }}>{children}</Box>
       </Box>
     </Stack>
   );

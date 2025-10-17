@@ -1,11 +1,13 @@
 import {
+  HistoryOutlined,
   HomeOutlined,
-  LogoutOutlined,
-  PersonOutlined,
+  SettingsOutlined,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ListTile } from "../Common/ListTile";
+
+const settingsPath = "/dashboard/settings";
 
 type NavItem = {
   label: string;
@@ -16,9 +18,9 @@ type NavItem = {
 const navItems: NavItem[] = [
   { label: "Home", path: "/dashboard", icon: <HomeOutlined /> },
   {
-    label: "Account",
-    path: "/dashboard/account",
-    icon: <PersonOutlined />,
+    label: "History",
+    path: "/dashboard/transcriptions",
+    icon: <HistoryOutlined />,
   },
 ];
 
@@ -35,16 +37,11 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
     nav(path);
   };
 
-  const handleSignOut = () => {
-    onChoose?.();
-    // signOut();
-  };
-
   const list = (
     <List
       sx={{
-        px: { xs: 1, sm: 2 },
-        pt: { xs: 2, sm: 0 },
+        px: 2,
+        pt: 2,
         pb: 8,
       }}
     >
@@ -63,11 +60,13 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
   return (
     <Stack alignItems="stretch" sx={{ height: "100%" }}>
       <Box sx={{ flexGrow: 1, overflowY: "auto" }}>{list}</Box>
-      <Box sx={{ mt: 2, px: { xs: 1, sm: 2 }, py: 1 }}>
+      <Box sx={{ mt: 2, p: 2 }}>
         <ListTile
-          onClick={handleSignOut}
-          leading={<LogoutOutlined />}
-          title="Sign out"
+          key={settingsPath}
+          onClick={() => onChooseHandler(settingsPath)}
+          selected={location.pathname === settingsPath}
+          leading={<SettingsOutlined />}
+          title="Settings"
         />
       </Box>
     </Stack>

@@ -172,7 +172,7 @@ export const createCustomerPortalSession = async (args: {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: member.stripeCustomerId,
-    return_url: `${args.origin}/account`,
+    return_url: `${args.origin}/settings`,
   });
 
   return { url: session.url };

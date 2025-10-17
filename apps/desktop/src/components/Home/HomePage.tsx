@@ -4,6 +4,7 @@ import { useAppStore } from "../../store";
 import { getMyUser, getMyUserName } from "../../utils/user.utils";
 import { Section } from "../Common/Section";
 import { Stat } from "./Stat";
+import { DashboardEntryLayout } from "../Dashboard/DashboardEntryLayout";
 
 export default function HomePage() {
   const user = useAppStore(getMyUser);
@@ -89,12 +90,14 @@ export default function HomePage() {
   );
 
   return (
-    <Stack direction="column">
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
-        Welcome, {userName}
-      </Typography>
-      <Box sx={{ my: 8 }}>{stats}</Box>
-      {aboutYou}
-    </Stack>
+    <DashboardEntryLayout>
+      <Stack direction="column">
+        <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
+          Welcome, {userName}
+        </Typography>
+        <Box sx={{ my: 8 }}>{stats}</Box>
+        {aboutYou}
+      </Stack>
+    </DashboardEntryLayout>
   );
 }

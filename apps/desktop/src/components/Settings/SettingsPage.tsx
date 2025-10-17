@@ -1,7 +1,8 @@
 import { Stack, Typography } from "@mui/material";
 import { Section } from "../Common/Section";
+import { DashboardEntryLayout } from "../Dashboard/DashboardEntryLayout";
 
-export default function AccountPage() {
+export default function SettingsPage() {
   const advanced = (
     <Section
       title="Advanced"
@@ -39,12 +40,14 @@ export default function AccountPage() {
   );
 
   return (
-    <Stack direction="column">
-      <Typography variant="h4" fontWeight={700} sx={{ marginBottom: 4 }}>
-        Account Settings
-      </Typography>
-      {advanced}
-      {dangerZone}
-    </Stack>
+    <DashboardEntryLayout>
+      <Stack direction="column">
+        <Typography variant="h4" fontWeight={700} sx={{ marginBottom: 4 }}>
+          Account Settings
+        </Typography>
+        {advanced}
+        {dangerZone}
+      </Stack>
+    </DashboardEntryLayout>
   );
 }

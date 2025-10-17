@@ -1,5 +1,5 @@
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
-import AccountPage from "./components/Account/AccountPage.tsx";
+import SettingsPage from "./components/Settings/SettingsPage.tsx";
 import { PageLayout } from "./components/Common/PageLayout.tsx";
 import HomePage from "./components/Home/HomePage.tsx";
 import OnboardingPage from "./components/Onboarding/OnboardingPage.tsx";
@@ -9,6 +9,7 @@ import Root from "./components/Root/Root.tsx";
 import { Guard } from "./components/Routing/Guard.tsx";
 import { Redirect } from "./components/Routing/Redirectors.tsx";
 import DashboardPage from "./components/Dashboard/DashboardPage.tsx";
+import TranscriptionsPage from "./components/Transcriptions/TranscriptionsPage.tsx";
 
 const AppWrapper = () => {
   return (
@@ -57,8 +58,12 @@ const router = createBrowserRouter([
                 element: <HomePage />,
               },
               {
-                path: "account",
-                element: <AccountPage />,
+                path: "settings",
+                element: <SettingsPage />,
+              },
+              {
+                path: "transcriptions",
+                element: <TranscriptionsPage />,
               },
             ],
           },
