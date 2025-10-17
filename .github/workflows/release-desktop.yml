@@ -19,6 +19,10 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: release-desktop-${{ coalesce(github.event.inputs.environment, github.ref) }}
+  cancel-in-progress: false
+
 jobs:
   metadata:
     name: Determine release metadata
@@ -627,7 +631,7 @@ jobs:
                 });
                 core.info(`Updated tag '${channelTag}' to ${targetSha}.`);
               } catch (error) {
-                if (error.status === 404) {
+                if (error.status === 404 || error.status === 422) {
                   await github.rest.git.createRef({
                     owner,
                     repo,
