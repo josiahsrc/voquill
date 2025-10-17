@@ -7,8 +7,8 @@ import React from "react";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme";
-import { SnackbarEmitter } from "./components/Root/SnackbarEmitter";
-import { AppWithLoading } from "./components/Root/AppWithLoading";
+import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
+import { AppWithLoading } from "./components/root/AppWithLoading";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

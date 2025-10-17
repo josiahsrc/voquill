@@ -5,7 +5,7 @@ import {
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ListTile } from "../Common/ListTile";
+import { ListTile } from "../common/ListTile";
 
 const settingsPath = "/dashboard/settings";
 

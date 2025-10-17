@@ -1,6 +1,6 @@
 import { Stack, Typography } from "@mui/material";
-import { Section } from "../Common/Section";
-import { DashboardEntryLayout } from "../Dashboard/DashboardEntryLayout";
+import { Section } from "../common/Section";
+import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 
 export default function SettingsPage() {
   const advanced = (

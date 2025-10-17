@@ -14,11 +14,11 @@ import { useIsOnboarded } from "../../hooks/user.hooks";
 import { useAppStore } from "../../store";
 import { getInitials } from "../../utils/string.utils";
 import { getMyUser } from "../../utils/user.utils";
-import { LogoWithText } from "../Common/LogoWithText";
+import { LogoWithText } from "../common/LogoWithText";
 import {
   MenuPopoverBuilder,
   type MenuPopoverItem,
-} from "../Common/MenuPopover";
+} from "../common/MenuPopover";
 
 export type BaseHeaderProps = {
   logo?: React.ReactNode;

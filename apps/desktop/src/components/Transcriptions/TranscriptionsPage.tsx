@@ -11,7 +11,7 @@ import {
 import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Virtuoso } from "react-virtuoso";
-import { TypographyWithMore } from "../Common/TypographyWithMore";
+import { TypographyWithMore } from "../common/TypographyWithMore";
 import { lerp } from "@repo/utilities";
 
 type Transcript = {

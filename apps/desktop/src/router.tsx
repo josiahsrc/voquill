@@ -1,15 +1,15 @@
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
-import SettingsPage from "./components/Settings/SettingsPage.tsx";
-import { PageLayout } from "./components/Common/PageLayout.tsx";
-import HomePage from "./components/Home/HomePage.tsx";
-import OnboardingPage from "./components/Onboarding/OnboardingPage.tsx";
-import ErrorBoundary from "./components/Root/ErrorBoundary.tsx";
-import { AppHeader } from "./components/Root/Header.tsx";
-import Root from "./components/Root/Root.tsx";
-import { Guard } from "./components/Routing/Guard.tsx";
-import { Redirect } from "./components/Routing/Redirectors.tsx";
-import DashboardPage from "./components/Dashboard/DashboardPage.tsx";
-import TranscriptionsPage from "./components/Transcriptions/TranscriptionsPage.tsx";
+import SettingsPage from "./components/settings/SettingsPage.tsx";
+import { PageLayout } from "./components/common/PageLayout.tsx";
+import HomePage from "./components/home/HomePage.tsx";
+import OnboardingPage from "./components/onboarding/OnboardingPage.tsx";
+import ErrorBoundary from "./components/root/ErrorBoundary.tsx";
+import { AppHeader } from "./components/root/Header.tsx";
+import Root from "./components/root/Root.tsx";
+import { Guard } from "./components/routing/Guard.tsx";
+import { Redirect } from "./components/routing/Redirectors.tsx";
+import DashboardPage from "./components/dashboard/DashboardPage.tsx";
+import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.tsx";
 
 const AppWrapper = () => {
   return (

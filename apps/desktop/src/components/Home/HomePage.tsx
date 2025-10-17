@@ -2,9 +2,9 @@ import { Box, Stack, TextField, Typography } from "@mui/material";
 import { useMemo, useState } from "react";
 import { useAppStore } from "../../store";
 import { getMyUser, getMyUserName } from "../../utils/user.utils";
-import { Section } from "../Common/Section";
+import { Section } from "../common/Section";
 import { Stat } from "./Stat";
-import { DashboardEntryLayout } from "../Dashboard/DashboardEntryLayout";
+import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 
 export default function HomePage() {
   const user = useAppStore(getMyUser);
