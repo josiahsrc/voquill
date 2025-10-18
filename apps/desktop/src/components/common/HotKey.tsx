@@ -132,7 +132,7 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
     >
       <Typography
         variant="body2"
-        color={empty ? "text.disabled" : "text.primary"}
+        color={empty ? "text.secondary" : "text.primary"}
       >
         {label}
       </Typography>

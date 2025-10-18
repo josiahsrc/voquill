@@ -8,6 +8,7 @@ import { usePageName } from "../../hooks/navigation.hooks";
 import { useKeyDownHandler } from "../../hooks/helper.hooks";
 import { getIsDevMode } from "../../utils/env.utils";
 import { RootSideEffects } from "./RootSideEffects";
+import { RootDialogs } from "./RootDialogs";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -39,6 +40,7 @@ export default function Root() {
   return (
     <>
       <RootSideEffects />
+      <RootDialogs />
       <HeaderPortalProvider>
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Suspense fallback={<LoadingApp />}>
