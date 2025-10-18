@@ -1,8 +1,5 @@
 use sqlx::sqlite::SqlitePoolOptions;
-use tauri::{Manager, WebviewUrl, WindowEvent};
-
-const OVERLAY_WINDOW_WIDTH: f64 = 360.0;
-const OVERLAY_WINDOW_HEIGHT: f64 = 80.0;
+use tauri::{Manager, WindowEvent};
 
 pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
@@ -124,14 +121,18 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         ])
 }
 
-fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    use tauri::WebviewWindowBuilder;
-
-    if app.get_webview_window("recording-overlay").is_some() {
+fn ensure_overlay_window(_app: &tauri::AppHandle) -> tauri::Result<()> {
+    #[cfg(not(target_os = "macos"))]
+    {
+      use tauri::WebviewWindowBuilder;
+      if _app.get_webview_window("recording-overlay").is_some() {
         return Ok(());
-    }
+      }
 
-    WebviewWindowBuilder::new(app, "recording-overlay", overlay_webview_url(app)?)
+      const OVERLAY_WINDOW_WIDTH: f64 = 360.0;
+      const OVERLAY_WINDOW_HEIGHT: f64 = 80.0;
+
+      WebviewWindowBuilder::new(_app, "recording-overlay", overlay_webview_url(_app)?)
         .decorations(false)
         .always_on_top(true)
         .transparent(true)
@@ -140,11 +141,13 @@ fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .shadow(false)
         .inner_size(OVERLAY_WINDOW_WIDTH, OVERLAY_WINDOW_HEIGHT)
         .build()?;
+    }
 
     Ok(())
 }
 
-fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<WebviewUrl> {
+#[cfg(not(target_os = "macos"))]
+fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
     #[cfg(debug_assertions)]
     {
         if let Some(mut dev_url) = app.config().build.dev_url.clone() {
@@ -153,9 +156,9 @@ fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<WebviewUrl> {
                 _ => "overlay=1".to_string(),
             };
             dev_url.set_query(Some(&query));
-            return Ok(WebviewUrl::External(dev_url));
+            return Ok(tauri::WebviewUrl::External(dev_url));
         }
     }
 
-    Ok(WebviewUrl::App("index.html?overlay=1".into()))
+    Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
 }
