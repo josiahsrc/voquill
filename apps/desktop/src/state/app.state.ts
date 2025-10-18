@@ -9,6 +9,7 @@ export type SnackbarMode = "info" | "success" | "error";
 export type AppState = {
   initialized: boolean;
   currentUserId: Nullable<string>;
+  keysHeld: string[];
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -35,6 +36,7 @@ export const INITIAL_APP_STATE: AppState = {
   transcriptionById: {},
   currentUserId: null,
   config: null,
+  keysHeld: [],
   initialized: false,
   snackbarCounter: 0,
   snackbarMode: "info",

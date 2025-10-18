@@ -4,7 +4,10 @@ use crate::domain::{
     RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR,
     EVT_REC_FINISH, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
 };
-use crate::platform::{Recorder, Transcriber};
+use crate::platform::{
+    key_state::{emit_keys_snapshot, new_pressed_keys_state, update_pressed_keys_state},
+    Recorder, Transcriber,
+};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use enigo::{Enigo, Key, KeyboardControllable};
 use rdev::{listen, EventType, Key as RdevKey};
@@ -37,6 +40,7 @@ pub fn spawn_alt_listener(
         let ctrl_pressed = Arc::new(AtomicBool::new(false));
         let shift_pressed = Arc::new(AtomicBool::new(false));
         let f8_pressed = Arc::new(AtomicBool::new(false));
+        let pressed_keys = new_pressed_keys_state();
 
         let emit_handle = app_handle.clone();
         let recorder_handle = recorder.clone();
@@ -47,6 +51,7 @@ pub fn spawn_alt_listener(
             let ctrl_state = ctrl_pressed.clone();
             let shift_state = shift_pressed.clone();
             let f8_state = f8_pressed.clone();
+            let pressed_keys_state = pressed_keys.clone();
 
             let emit_handle = emit_handle.clone();
             let db_pool = db_pool.clone();
@@ -56,6 +61,12 @@ pub fn spawn_alt_listener(
 
             move |event| match event.event_type {
                 EventType::KeyPress(key) => {
+                    if let Some(snapshot) =
+                        update_pressed_keys_state(&pressed_keys_state, key, true)
+                    {
+                        emit_keys_snapshot(&emit_handle, snapshot);
+                    }
+
                     update_hotkey_state_for_key(key, true, &ctrl_state, &shift_state, &f8_state);
 
                     if hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
@@ -112,6 +123,12 @@ pub fn spawn_alt_listener(
                     }
                 }
                 EventType::KeyRelease(key) => {
+                    if let Some(snapshot) =
+                        update_pressed_keys_state(&pressed_keys_state, key, false)
+                    {
+                        emit_keys_snapshot(&emit_handle, snapshot);
+                    }
+
                     update_hotkey_state_for_key(key, false, &ctrl_state, &shift_state, &f8_state);
 
                     if !hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)

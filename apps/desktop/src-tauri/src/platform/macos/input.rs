@@ -5,7 +5,10 @@ use crate::domain::{
     EVT_REC_FINISH, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED, LEFT_OPTION_KEYCODE,
     RIGHT_OPTION_KEYCODE,
 };
-use crate::platform::{Recorder, Transcriber};
+use crate::platform::{
+    key_state::{emit_keys_snapshot, new_pressed_keys_state, update_pressed_keys_state},
+    Recorder, Transcriber,
+};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
 use core_graphics::event::{
@@ -13,6 +16,7 @@ use core_graphics::event::{
     CGEventType, EventField,
 };
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+use rdev::{listen, EventType};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -175,6 +179,43 @@ pub fn spawn_alt_listener(
         current_loop.add_source(&run_loop_source, unsafe { kCFRunLoopCommonModes });
         event_tap.enable();
         CFRunLoop::run_current();
+    });
+
+    Ok(())
+}
+
+pub fn spawn_keys_held_emitter(app: &tauri::AppHandle) -> tauri::Result<()> {
+    let app_handle = app.clone();
+
+    std::thread::spawn(move || {
+        let pressed_keys = new_pressed_keys_state();
+        let emit_handle = app_handle.clone();
+
+        let result = listen({
+            let pressed_keys_state = pressed_keys.clone();
+
+            move |event| match event.event_type {
+                EventType::KeyPress(key) => {
+                    if let Some(snapshot) =
+                        update_pressed_keys_state(&pressed_keys_state, key, true)
+                    {
+                        emit_keys_snapshot(&emit_handle, snapshot);
+                    }
+                }
+                EventType::KeyRelease(key) => {
+                    if let Some(snapshot) =
+                        update_pressed_keys_state(&pressed_keys_state, key, false)
+                    {
+                        emit_keys_snapshot(&emit_handle, snapshot);
+                    }
+                }
+                _ => {}
+            }
+        });
+
+        if let Err(err) = result {
+            eprintln!("Failed to listen for keys-held events: {err:?}");
+        }
     });
 
     Ok(())

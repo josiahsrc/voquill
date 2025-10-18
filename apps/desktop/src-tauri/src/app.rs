@@ -67,6 +67,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 )
                 .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
+                crate::platform::macos::input::spawn_keys_held_emitter(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
                 #[cfg(target_os = "linux")]
                 crate::platform::linux::input::spawn_alt_listener(
                     &app_handle,
