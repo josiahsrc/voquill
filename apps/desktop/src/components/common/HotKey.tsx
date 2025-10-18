@@ -1,185 +1,170 @@
 import * as React from "react";
-import { useEffect, useRef, useState } from "react";
-import { Button, Chip, Tooltip, Stack } from "@mui/material";
-import KeyboardIcon from "@mui/icons-material/Keyboard";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ClickAwayListener,
+  Stack,
+  Paper,
+  Typography,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { useAppStore } from "../../store";
+import { getPrettyKeyName } from "../../utils/keyboard.utils";
 
-export type HotKeyProps = {
-  /** Current selected combo, e.g. "Ctrl+Shift+K" */
-  value?: string;
-  /** Called with the newly recorded combo */
-  onChange: (combo: string) => void;
-  /** Optional button label */
-  label?: string;
-  /** Optional disabled state */
-  disabled?: boolean;
-  className?: string;
+type HotKeyProps = {
+  value?: string[];
+  onChange: (combo: string[]) => void;
 };
 
-export const HotKey: React.FC<HotKeyProps> = ({
-  value,
-  onChange,
-  label = "Set Hotkey",
-  disabled,
-  className,
-}) => {
+function normalizeKeys(keys: string[] | undefined) {
+  return [...(keys ?? [])].sort();
+}
+
+export const HotKey: React.FC<HotKeyProps> = ({ value, onChange }) => {
+  const theme = useTheme();
   const [recording, setRecording] = useState(false);
-  const detachRef = useRef<() => void>(null);
+  const [focused, setFocused] = useState(false);
+  const keysHeld = useAppStore((s) => s.keysHeld) as string[]; // e.g., ["LeftShift","KeyA"]
+  const normalizedHeld = useMemo(() => normalizeKeys(keysHeld), [keysHeld]);
 
-  const isMac =
-    typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+  // Track the last full set before any key was released.
+  const lastFullSetRef = useRef<string[]>([]);
+  const prevHeldRef = useRef<string[]>([]);
 
-  // Normalizes the non-modifier key into a readable label
-  const normalizeKey = (e: KeyboardEvent): string | null => {
-    const k = e.key;
-    if (!k) return null;
+  // Focus management
+  const boxRef = useRef<HTMLDivElement | null>(null);
 
-    // Ignore pure modifier presses
-    if (["Shift", "Control", "Alt", "Meta"].includes(k)) return null;
+  // Start recording on click/focus. Clear current value.
+  const beginRecording = () => {
+    setRecording(true);
+    setFocused(true);
+    lastFullSetRef.current = [];
+    prevHeldRef.current = [];
+    onChange([]); // reset to empty at start
+    // move focus for Escape handling
+    boxRef.current?.focus();
+  };
 
-    // Map whitespace and common named keys
-    const named: Record<string, string> = {
-      " ": "Space",
-      ArrowUp: "ArrowUp",
-      ArrowDown: "ArrowDown",
-      ArrowLeft: "ArrowLeft",
-      ArrowRight: "ArrowRight",
-      Escape: "Esc",
-      Esc: "Esc",
-      Enter: "Enter",
-      Tab: "Tab",
-      Backspace: "Backspace",
-      Delete: "Delete",
-      Home: "Home",
-      End: "End",
-      PageUp: "PageUp",
-      PageDown: "PageDown",
-      PrintScreen: "PrintScreen",
-      ContextMenu: "ContextMenu",
-    };
+  const endRecording = () => {
+    setRecording(false);
+    setFocused(false);
+  };
 
-    if (named[k]) return named[k];
+  // Handle keys during recording
+  useEffect(() => {
+    if (!recording) return;
 
-    // Function keys
-    if (/^F\d{1,2}$/i.test(k)) return k.toUpperCase();
+    const prev = prevHeldRef.current;
+    const curr = normalizedHeld;
 
-    // Single character keys
-    if (k.length === 1) {
-      // Keep digits and symbols as-is, letters uppercased
-      const upper = k.toUpperCase();
-      return upper;
+    // If the set grew or changed size equal but different, update last full set.
+    const grew = curr.length > prev.length;
+    const sameSizeDifferent =
+      curr.length === prev.length &&
+      (curr.length !== 0 || prev.length !== 0) &&
+      curr.join(",") !== prev.join(",");
+
+    if (grew || sameSizeDifferent) {
+      lastFullSetRef.current = curr;
     }
 
-    // Fallback to code when key is ambiguous
-    const code = (e.code || "").replace("Key", "").replace("Digit", "");
-    if (code) return code.toUpperCase();
+    // If any key was released (set shrank), emit the previous full set and stop.
+    const shrank = curr.length < prev.length;
+    if (shrank) {
+      const combo = lastFullSetRef.current;
+      onChange(combo);
+      endRecording();
+    }
 
-    return k;
-  };
+    prevHeldRef.current = curr;
+  }, [normalizedHeld, recording, onChange]);
 
-  const buildCombo = (e: KeyboardEvent): string | null => {
-    const parts: string[] = [];
-    if (e.ctrlKey) parts.push("Ctrl");
-    if (e.altKey) parts.push("Alt");
-    if (e.shiftKey) parts.push("Shift");
-    if (e.metaKey) parts.push(isMac ? "Cmd" : "Meta");
-
-    const key = normalizeKey(e);
-    if (!key) return null; // wait for a non-modifier key
-
-    parts.push(key);
-    return parts.join("+");
-  };
-
-  const startRecording = () => {
-    if (recording || disabled) return;
-    setRecording(true);
+  // Escape cancels/unfocus
+  useEffect(() => {
+    if (!recording) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // Cancel with Escape
       if (e.key === "Escape") {
-        e.preventDefault();
         e.stopPropagation();
-        stopRecording();
-        return;
+        endRecording();
       }
-
-      const combo = buildCombo(e);
-      if (!combo) {
-        // Only modifiers so far. Keep listening.
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-      onChange(combo);
-      stopRecording();
     };
 
-    // Capture globally so inputs do not consume the event during recording
     window.addEventListener("keydown", onKeyDown, { capture: true });
-    detachRef.current = () => {
+    return () =>
       window.removeEventListener("keydown", onKeyDown, {
         capture: true,
       } as any);
-    };
-  };
-
-  const stopRecording = () => {
-    setRecording(false);
-    if (detachRef.current) {
-      detachRef.current();
-      detachRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      // Cleanup on unmount
-      if (detachRef.current) {
-        detachRef.current();
-      }
-    };
-  }, []);
+  }, [recording]);
 
   return (
-    <Stack
-      direction="row"
-      spacing={1}
-      alignItems="center"
-      className={className}
+    <ClickAwayListener
+      onClickAway={() => {
+        if (recording) endRecording();
+        else setFocused(false);
+      }}
     >
-      <Tooltip
-        title={
-          recording
-            ? "Recording… Press a key combo. Esc to cancel."
-            : "Click to record a new hotkey"
-        }
-        arrow
-        placement="top"
+      <Paper
+        ref={boxRef}
+        role="button"
+        tabIndex={0}
+        elevation={0}
+        onClick={beginRecording}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={(e) => {
+          // Allow keyboard users to start recording with Enter or Space
+          if (!recording && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            beginRecording();
+          }
+          // Also honor Escape here if focus is on the box
+          if (recording && e.key === "Escape") {
+            e.preventDefault();
+            endRecording();
+          }
+        }}
+        sx={{
+          px: 1.5,
+          py: 1,
+          minHeight: 48,
+          display: "flex",
+          alignItems: "center",
+          cursor: "pointer",
+          borderRadius: 1.5,
+          border:
+            recording || focused
+              ? `2px solid ${theme.palette.primary.main}`
+              : `2px solid transparent`,
+          boxShadow: recording || focused ? theme.shadows[4] : theme.shadows[0],
+          transition: "box-shadow 120ms ease-in",
+          userSelect: "none",
+        }}
+        aria-pressed={recording ? "true" : "false"}
+        aria-label="Hotkey recorder"
       >
-        <span>
-          <Button
-            variant={recording ? "contained" : "outlined"}
-            color={recording ? "warning" : "primary"}
-            size="small"
-            startIcon={recording ? <FiberManualRecordIcon /> : <KeyboardIcon />}
-            onClick={recording ? stopRecording : startRecording}
-            disabled={disabled}
-          >
-            {recording ? "Recording…" : label}
-          </Button>
-        </span>
-      </Tooltip>
-
-      <Chip
-        label={value ? value : "Unassigned"}
-        variant={value ? "filled" : "outlined"}
-        size="small"
-        sx={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
-      />
-    </Stack>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ width: "100%", flexWrap: "wrap", rowGap: 0.5 }}
+        >
+          {recording ? (
+            normalizedHeld.length ? (
+              normalizedHeld.map(getPrettyKeyName).join("+")
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Press keys…
+              </Typography>
+            )
+          ) : (value?.length ?? 0) > 0 ? (
+            value?.map(getPrettyKeyName).join("+")
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Click to record
+            </Typography>
+          )}
+        </Stack>
+      </Paper>
+    </ClickAwayListener>
   );
 };

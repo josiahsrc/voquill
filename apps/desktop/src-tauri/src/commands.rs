@@ -98,6 +98,25 @@ pub async fn term_delete(
 }
 
 #[tauri::command]
+pub async fn hotkey_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Hotkey>, String> {
+    crate::db::hotkey_queries::fetch_hotkeys(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn hotkey_save(
+    hotkey: crate::domain::Hotkey,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Hotkey, String> {
+    crate::db::hotkey_queries::upsert_hotkey(database.pool(), &hotkey)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn get_option_key_count(
     counter: State<'_, crate::state::OptionKeyCounter>,
     database: State<'_, crate::state::OptionKeyDatabase>,

@@ -1,4 +1,4 @@
-import { Member, Nullable, PartialConfig, Term, Transcription, User } from "@repo/types";
+import { Hotkey, Member, Nullable, PartialConfig, Term, Transcription, User } from "@repo/types";
 import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
@@ -15,6 +15,7 @@ export type AppState = {
   userById: Record<string, User>;
   termById: Record<string, Term>;
   transcriptionById: Record<string, Transcription>;
+  hotkeyById: Record<string, Hotkey>;
   config: Nullable<PartialConfig>;
 
   onboarding: OnboardingState;
@@ -34,6 +35,7 @@ export const INITIAL_APP_STATE: AppState = {
   userById: {},
   termById: {},
   transcriptionById: {},
+  hotkeyById: {},
   currentUserId: null,
   config: null,
   keysHeld: [],

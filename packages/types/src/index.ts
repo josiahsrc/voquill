@@ -9,3 +9,4 @@ export * from "./usage.types";
 export * from "./contact.types";
 export * from "./transcription.types";
 export * from "./term.types";
+export * from "./hotkey.types";
