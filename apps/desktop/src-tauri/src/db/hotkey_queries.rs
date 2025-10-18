@@ -48,3 +48,12 @@ pub async fn fetch_hotkeys(pool: SqlitePool) -> Result<Vec<Hotkey>, sqlx::Error>
         })
         .collect()
 }
+
+pub async fn delete_hotkey(pool: SqlitePool, id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM hotkeys WHERE id = ?1")
+        .bind(id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}

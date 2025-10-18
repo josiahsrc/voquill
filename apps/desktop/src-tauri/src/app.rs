@@ -106,5 +106,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::term_delete,
             crate::commands::hotkey_list,
             crate::commands::hotkey_save,
+            crate::commands::hotkey_delete,
         ])
 }

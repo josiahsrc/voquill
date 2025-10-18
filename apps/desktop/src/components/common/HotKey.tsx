@@ -85,14 +85,14 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
     }
   }, [keysHeld, focused, onChange, hasInteracted]);
 
-  const label = useMemo(() => {
+  const [empty, label] = useMemo(() => {
     if (focused && !hasInteracted) {
-      return "Listening...";
+      return [true, "Listening..."];
     }
     const v = value ?? [];
     return v.length > 0
-      ? v.map((k) => getPrettyKeyName(k)).join(" + ")
-      : "Add hotkey";
+      ? [false, v.map((k) => getPrettyKeyName(k)).join(" + ")]
+      : [true, "Change hotkey"];
   }, [value, focused, hasInteracted]);
 
   return (
@@ -124,7 +124,12 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
         },
       }}
     >
-      <Typography variant="body2">{label}</Typography>
+      <Typography
+        variant="body2"
+        color={empty ? "text.disabled" : "text.primary"}
+      >
+        {label}
+      </Typography>
     </Box>
   );
 };
