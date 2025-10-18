@@ -7,11 +7,10 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   IconButton,
   Stack,
-  Typography,
+  Typography
 } from "@mui/material";
 import type { Hotkey } from "@repo/types";
 import { showErrorSnackbar } from "../../actions/app.actions";
