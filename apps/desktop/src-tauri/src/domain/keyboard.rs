@@ -1,4 +1,4 @@
-use serde::{Serialize};
+use serde::Serialize;
 
 pub const EVT_KEYS_HELD: &str = "keys_held";
 
