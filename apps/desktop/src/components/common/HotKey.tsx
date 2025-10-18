@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { keyframes } from "@mui/material/styles";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import { getPrettyKeyName } from "../../utils/keyboard.utils";
 
 type HotKeyProps = {
@@ -29,6 +29,12 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
   useEffect(() => {
     lastEmittedRef.current = value;
   }, [value]);
+
+  useEffect(() => {
+    produceAppState((draft) => {
+      draft.isRecordingHotkey = focused;
+    });
+  }, [focused]);
 
   const previousKeysHeldRef = useRef<string[]>([]);
 

@@ -10,6 +10,7 @@ export type AppState = {
   initialized: boolean;
   currentUserId: Nullable<string>;
   keysHeld: string[];
+  isRecordingHotkey: boolean;
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -31,6 +32,7 @@ export type AppState = {
 };
 
 export const INITIAL_APP_STATE: AppState = {
+  isRecordingHotkey: false,
   memberById: {},
   userById: {},
   termById: {},

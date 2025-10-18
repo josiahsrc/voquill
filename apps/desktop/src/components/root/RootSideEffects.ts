@@ -10,6 +10,8 @@ import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMyUserId } from "../../utils/user.utils";
+import { useAsyncEffect } from "../../hooks/async.hooks";
+import { loadHotkeys } from "../../actions/hotkey.actions";
 
 type TranscriptionReceivedPayload = {
   text: string;
@@ -22,10 +24,24 @@ type KeysHeldPayload = {
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
   const stopPendingRef = useRef<Promise<void> | null>(null);
-  const commandActiveRef = useRef(false);
+  const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
 
+  useAsyncEffect(async () => {
+    await loadHotkeys();
+  }, []);
+
   const startRecording = useCallback(async () => {
+    const isHotkeyRecording = getAppState().isRecordingHotkey;
+    if (isHotkeyRecording) {
+      return;
+    }
+
+    if (isRecordingRef.current) {
+      return;
+    }
+
+    isRecordingRef.current = true;
     if (startPendingRef.current) {
       await startPendingRef.current;
       return;
@@ -38,7 +54,6 @@ export const RootSideEffects = () => {
         console.error("Failed to start recording via hotkey", error);
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
-        commandActiveRef.current = false;
       } finally {
         startPendingRef.current = null;
       }
@@ -49,6 +64,10 @@ export const RootSideEffects = () => {
   }, []);
 
   const stopRecording = useCallback(async () => {
+    if (!isRecordingRef.current) {
+      return;
+    }
+
     if (stopPendingRef.current) {
       await stopPendingRef.current;
       return;
@@ -76,6 +95,8 @@ export const RootSideEffects = () => {
 
     stopPendingRef.current = promise;
     await promise;
+
+    isRecordingRef.current = false;
   }, []);
 
   useHotkeyHold({

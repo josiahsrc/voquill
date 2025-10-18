@@ -14,12 +14,13 @@ import {
 } from "@mui/material";
 import type { Hotkey } from "@repo/types";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { loadHotkeys } from "../../actions/hotkey.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { registerHotkeys } from "../../utils/app.utils";
-import { HotKey } from "../common/HotKey";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import { HotKey } from "../common/HotKey";
 
 type HotkeySettingProps = {
   title: React.ReactNode;
@@ -130,25 +131,7 @@ export const ShortcutsDialog = () => {
       return;
     }
 
-    produceAppState((draft) => {
-      draft.settings.hotkeysStatus = "loading";
-    });
-
-    try {
-      const hotkeys = await getHotkeyRepo().listHotkeys();
-
-      produceAppState((draft) => {
-        registerHotkeys(draft, hotkeys);
-        draft.settings.hotkeyIds = hotkeys.map((hotkey) => hotkey.id);
-        draft.settings.hotkeysStatus = "success";
-      });
-    } catch (error) {
-      console.error("Failed to load hotkeys", error);
-      produceAppState((draft) => {
-        draft.settings.hotkeysStatus = "error";
-      });
-      showErrorSnackbar("Failed to load hotkeys. Please try again.");
-    }
+    await loadHotkeys();
   }, [open, hotkeysStatus]);
 
   const handleClose = () => {
