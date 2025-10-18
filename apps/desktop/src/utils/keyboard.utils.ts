@@ -1,5 +1,7 @@
 import { getPlatform } from "./platform.utils";
 
+export const DICTATE_HOTKEY = "dictate";
+
 export const getPrettyKeyName = (key: string): string => {
   const lower = key.toLowerCase();
   if (lower.startsWith("key")) {

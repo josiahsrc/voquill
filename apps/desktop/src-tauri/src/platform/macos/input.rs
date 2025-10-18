@@ -180,7 +180,7 @@ pub fn spawn_alt_listener(
     Ok(())
 }
 
-fn handle_recording_success(
+pub(crate) fn handle_recording_success(
     emit_handle: tauri::AppHandle,
     transcriber: Arc<dyn Transcriber>,
     result: RecordingResult,
@@ -237,7 +237,7 @@ fn handle_recording_success(
     });
 }
 
-fn emit_recording_error(app: &tauri::AppHandle, message: String) {
+pub(crate) fn emit_recording_error(app: &tauri::AppHandle, message: String) {
     let payload = RecordingErrorPayload {
         message: message.clone(),
     };

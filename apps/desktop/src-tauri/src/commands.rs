@@ -1,4 +1,24 @@
-use tauri::State;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::{AppHandle, Emitter, EventTarget, State};
+
+use crate::domain::{RecordingStartedPayload, EVT_REC_START};
+
+#[cfg(target_os = "linux")]
+use crate::platform::linux::input::{
+    emit_recording_error as platform_emit_recording_error,
+    handle_recording_success as platform_handle_recording_success,
+};
+#[cfg(target_os = "macos")]
+use crate::platform::macos::input::{
+    emit_recording_error as platform_emit_recording_error,
+    handle_recording_success as platform_handle_recording_success,
+};
+#[cfg(target_os = "windows")]
+use crate::platform::windows::input::{
+    emit_recording_error as platform_emit_recording_error,
+    handle_recording_success as platform_handle_recording_success,
+};
 
 #[tauri::command]
 pub fn greet(name: &str) -> String {
@@ -124,6 +144,71 @@ pub async fn hotkey_delete(
     crate::db::hotkey_queries::delete_hotkey(database.pool(), &id)
         .await
         .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub fn start_recording(
+    app: AppHandle,
+    recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
+) -> Result<(), String> {
+    match recorder.start() {
+        Ok(()) => {
+            let started_at_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis()
+                .min(u128::from(u64::MAX)) as u64;
+            let payload = RecordingStartedPayload { started_at_ms };
+            if let Err(err) = app.emit_to(EventTarget::any(), EVT_REC_START, payload) {
+                eprintln!("Failed to emit recording-started event: {err}");
+            }
+            Ok(())
+        }
+        Err(err) => {
+            let already_recording = (&*err)
+                .downcast_ref::<crate::errors::RecordingError>()
+                .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
+                .unwrap_or(false);
+
+            if already_recording {
+                return Ok(());
+            }
+
+            let message = err.to_string();
+            eprintln!("Failed to start recording via command: {message}");
+            platform_emit_recording_error(&app, message.clone());
+            Err(message)
+        }
+    }
+}
+
+#[tauri::command]
+pub fn stop_recording(
+    app: AppHandle,
+    recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
+    transcriber: State<'_, Arc<dyn crate::platform::Transcriber>>,
+) -> Result<(), String> {
+    match recorder.stop() {
+        Ok(result) => {
+            platform_handle_recording_success(app.clone(), transcriber.inner().clone(), result);
+            Ok(())
+        }
+        Err(err) => {
+            let not_recording = (&*err)
+                .downcast_ref::<crate::errors::RecordingError>()
+                .map(|inner| matches!(inner, crate::errors::RecordingError::NotRecording))
+                .unwrap_or(false);
+
+            if not_recording {
+                return Ok(());
+            }
+
+            let message = err.to_string();
+            eprintln!("Failed to stop recording via command: {message}");
+            platform_emit_recording_error(&app, message.clone());
+            Err(message)
+        }
+    }
 }
 
 #[tauri::command]

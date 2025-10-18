@@ -10,7 +10,7 @@ import {
   DialogTitle,
   IconButton,
   Stack,
-  Typography
+  Typography,
 } from "@mui/material";
 import type { Hotkey } from "@repo/types";
 import { showErrorSnackbar } from "../../actions/app.actions";
@@ -19,6 +19,7 @@ import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { registerHotkeys } from "../../utils/app.utils";
 import { HotKey } from "../common/HotKey";
+import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 
 type HotkeySettingProps = {
   title: React.ReactNode;
@@ -185,7 +186,7 @@ export const ShortcutsDialog = () => {
         <HotkeySetting
           title="Start/stop dictating"
           description="Start recording audio and transcribe your speech into text with AI."
-          actionName="dictate"
+          actionName={DICTATE_HOTKEY}
         />
       </Stack>
     );
