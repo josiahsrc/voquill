@@ -1,7 +1,8 @@
 use crate::domain::{KeysHeldPayload, EVT_KEYS_HELD};
-use rdev::Key as RdevKey;
+use crate::platform::keyboard;
+use rdev::{EventType, Key as RdevKey};
 use std::collections::HashSet;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Once};
 use tauri::{AppHandle, Emitter, EventTarget};
 
 pub(crate) type PressedKeys = Arc<Mutex<HashSet<String>>>;
@@ -46,4 +47,30 @@ fn key_to_label(key: RdevKey) -> String {
         RdevKey::Unknown(code) => format!("Unknown({code})"),
         _ => format!("{key:?}"),
     }
+}
+
+pub(crate) fn spawn_keys_held_emitter(app: &AppHandle) -> tauri::Result<()> {
+    static KEYS_HELD_EMITTER: Once = Once::new();
+    let app_handle = app.clone();
+
+    KEYS_HELD_EMITTER.call_once(|| {
+        let pressed_keys = new_pressed_keys_state();
+        let emit_handle = app_handle.clone();
+
+        keyboard::register_handler(move |event| match event.event_type {
+            EventType::KeyPress(key) => {
+                if let Some(snapshot) = update_pressed_keys_state(&pressed_keys, key, true) {
+                    emit_keys_snapshot(&emit_handle, snapshot);
+                }
+            }
+            EventType::KeyRelease(key) => {
+                if let Some(snapshot) = update_pressed_keys_state(&pressed_keys, key, false) {
+                    emit_keys_snapshot(&emit_handle, snapshot);
+                }
+            }
+            _ => {}
+        });
+    });
+
+    Ok(())
 }

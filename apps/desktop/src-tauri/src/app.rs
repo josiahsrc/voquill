@@ -65,6 +65,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 let recorder: Arc<dyn Recorder> =
                     Arc::new(crate::platform::audio::RecordingManager::new());
 
+                crate::platform::key_state::spawn_keys_held_emitter(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
                 #[cfg(target_os = "macos")]
                 crate::platform::macos::input::spawn_alt_listener(
                     &app_handle,
@@ -72,9 +75,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     transcriber.clone(),
                 )
                 .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
-                crate::platform::macos::input::spawn_keys_held_emitter(&app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
                 #[cfg(target_os = "linux")]
                 crate::platform::linux::input::spawn_alt_listener(

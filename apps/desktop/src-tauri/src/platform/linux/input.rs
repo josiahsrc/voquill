@@ -4,13 +4,10 @@ use crate::domain::{
     RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR,
     EVT_REC_FINISH, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
 };
-use crate::platform::{
-    key_state::{emit_keys_snapshot, new_pressed_keys_state, update_pressed_keys_state},
-    Recorder, Transcriber,
-};
+use crate::platform::{keyboard, Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use enigo::{Enigo, Key, KeyboardControllable};
-use rdev::{listen, EventType, Key as RdevKey};
+use rdev::{EventType, Key as RdevKey};
 use std::{
     env,
     sync::atomic::{AtomicBool, Ordering},
@@ -35,135 +32,110 @@ pub fn spawn_alt_listener(
     let db_pool = pool_state.pool();
     drop(pool_state);
 
-    std::thread::spawn(move || {
-        let is_hotkey_active = Arc::new(AtomicBool::new(false));
-        let ctrl_pressed = Arc::new(AtomicBool::new(false));
-        let shift_pressed = Arc::new(AtomicBool::new(false));
-        let f8_pressed = Arc::new(AtomicBool::new(false));
-        let pressed_keys = new_pressed_keys_state();
+    let is_hotkey_active = Arc::new(AtomicBool::new(false));
+    let ctrl_pressed = Arc::new(AtomicBool::new(false));
+    let shift_pressed = Arc::new(AtomicBool::new(false));
+    let f8_pressed = Arc::new(AtomicBool::new(false));
 
-        let emit_handle = app_handle.clone();
-        let recorder_handle = recorder.clone();
-        let transcriber_handle = transcriber.clone();
+    let hotkey_state = is_hotkey_active.clone();
+    let ctrl_state = ctrl_pressed.clone();
+    let shift_state = shift_pressed.clone();
+    let f8_state = f8_pressed.clone();
+    let emit_handle = app_handle.clone();
+    let db_pool_handle = db_pool.clone();
+    let recorder_handle = recorder.clone();
+    let transcriber_handle = transcriber.clone();
+    let press_counter_handle = press_counter.clone();
 
-        let result = listen({
-            let hotkey_state = is_hotkey_active.clone();
-            let ctrl_state = ctrl_pressed.clone();
-            let shift_state = shift_pressed.clone();
-            let f8_state = f8_pressed.clone();
-            let pressed_keys_state = pressed_keys.clone();
+    keyboard::register_handler(move |event| match event.event_type {
+        EventType::KeyPress(key) => {
+            update_hotkey_state_for_key(key, true, &ctrl_state, &shift_state, &f8_state);
 
-            let emit_handle = emit_handle.clone();
-            let db_pool = db_pool.clone();
-            let recorder = recorder_handle.clone();
-            let transcriber = transcriber_handle.clone();
-            let press_counter = press_counter.clone();
-
-            move |event| match event.event_type {
-                EventType::KeyPress(key) => {
-                    if let Some(snapshot) =
-                        update_pressed_keys_state(&pressed_keys_state, key, true)
-                    {
-                        emit_keys_snapshot(&emit_handle, snapshot);
-                    }
-
-                    update_hotkey_state_for_key(key, true, &ctrl_state, &shift_state, &f8_state);
-
-                    if hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
-                        && !hotkey_state.swap(true, Ordering::SeqCst)
-                    {
-                        match recorder.start() {
-                            Ok(()) => {
-                                let started_at_ms = SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .unwrap_or_default()
-                                    .as_millis()
-                                    .min(u128::from(u64::MAX))
-                                    as u64;
-                                let payload = RecordingStartedPayload { started_at_ms };
-                                if let Err(err) =
-                                    emit_handle.emit_to(EventTarget::any(), EVT_REC_START, payload)
-                                {
-                                    eprintln!("Failed to emit recording-started event: {err}");
-                                }
-                            }
-                            Err(err) => {
-                                eprintln!("Failed to start recording: {err}");
-                                emit_recording_error(&emit_handle, err.to_string());
-                                hotkey_state.store(false, Ordering::SeqCst);
-                                return;
-                            }
-                        }
-
-                        let new_count = match tauri::async_runtime::block_on(
-                            db::queries::increment_count(db_pool.clone()),
-                        ) {
-                            Ok(count) => {
-                                press_counter.store(count, Ordering::SeqCst);
-                                count
-                            }
-                            Err(err) => {
-                                eprintln!("Failed to update hotkey count in database: {err}");
-                                let fallback_count =
-                                    press_counter.fetch_add(1, Ordering::SeqCst) + 1;
-                                if let Err(sync_err) = tauri::async_runtime::block_on(
-                                    db::queries::set_count(db_pool.clone(), fallback_count),
-                                ) {
-                                    eprintln!("Failed to sync fallback hotkey count: {sync_err}");
-                                }
-                                fallback_count
-                            }
-                        };
-                        let payload = AltEventPayload { count: new_count };
+            if hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
+                && !hotkey_state.swap(true, Ordering::SeqCst)
+            {
+                let recorder = recorder_handle.clone();
+                match recorder.start() {
+                    Ok(()) => {
+                        let started_at_ms = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_millis()
+                            .min(u128::from(u64::MAX))
+                            as u64;
+                        let payload = RecordingStartedPayload { started_at_ms };
                         if let Err(err) =
-                            emit_handle.emit_to(EventTarget::any(), EVT_ALT_PRESSED, payload)
+                            emit_handle.emit_to(EventTarget::any(), EVT_REC_START, payload)
                         {
-                            eprintln!("Failed to emit hotkey-pressed event: {err}");
+                            eprintln!("Failed to emit recording-started event: {err}");
                         }
                     }
-                }
-                EventType::KeyRelease(key) => {
-                    if let Some(snapshot) =
-                        update_pressed_keys_state(&pressed_keys_state, key, false)
-                    {
-                        emit_keys_snapshot(&emit_handle, snapshot);
+                    Err(err) => {
+                        eprintln!("Failed to start recording: {err}");
+                        emit_recording_error(&emit_handle, err.to_string());
+                        hotkey_state.store(false, Ordering::SeqCst);
+                        return;
                     }
+                }
 
-                    update_hotkey_state_for_key(key, false, &ctrl_state, &shift_state, &f8_state);
-
-                    if !hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
-                        && hotkey_state.swap(false, Ordering::SeqCst)
-                    {
-                        match recorder.stop() {
-                            Ok(result) => handle_recording_success(
-                                emit_handle.clone(),
-                                transcriber.clone(),
-                                result,
-                            ),
-                            Err(err) => {
-                                let is_not_recording = (&*err)
-                                    .downcast_ref::<crate::errors::RecordingError>()
-                                    .map(|inner| {
-                                        matches!(inner, crate::errors::RecordingError::NotRecording)
-                                    })
-                                    .unwrap_or(false);
-
-                                if !is_not_recording {
-                                    let message = err.to_string();
-                                    eprintln!("Failed to stop recording: {message}");
-                                    emit_recording_error(&emit_handle, message);
-                                }
-                            }
+                let db_pool = db_pool_handle.clone();
+                let press_counter = press_counter_handle.clone();
+                let new_count = match tauri::async_runtime::block_on(db::queries::increment_count(
+                    db_pool.clone(),
+                )) {
+                    Ok(count) => {
+                        press_counter.store(count, Ordering::SeqCst);
+                        count
+                    }
+                    Err(err) => {
+                        eprintln!("Failed to update hotkey count in database: {err}");
+                        let fallback_count = press_counter.fetch_add(1, Ordering::SeqCst) + 1;
+                        if let Err(sync_err) = tauri::async_runtime::block_on(
+                            db::queries::set_count(db_pool.clone(), fallback_count),
+                        ) {
+                            eprintln!("Failed to sync fallback hotkey count: {sync_err}");
                         }
+                        fallback_count
                     }
+                };
+                let payload = AltEventPayload { count: new_count };
+                if let Err(err) = emit_handle.emit_to(EventTarget::any(), EVT_ALT_PRESSED, payload)
+                {
+                    eprintln!("Failed to emit hotkey-pressed event: {err}");
                 }
-                _ => {}
             }
-        });
-
-        if let Err(err) = result {
-            eprintln!("Failed to listen for hotkey events: {err:?}");
         }
+        EventType::KeyRelease(key) => {
+            update_hotkey_state_for_key(key, false, &ctrl_state, &shift_state, &f8_state);
+
+            if !hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
+                && hotkey_state.swap(false, Ordering::SeqCst)
+            {
+                let recorder = recorder_handle.clone();
+                match recorder.stop() {
+                    Ok(result) => handle_recording_success(
+                        emit_handle.clone(),
+                        transcriber_handle.clone(),
+                        result,
+                    ),
+                    Err(err) => {
+                        let is_not_recording = (&*err)
+                            .downcast_ref::<crate::errors::RecordingError>()
+                            .map(|inner| {
+                                matches!(inner, crate::errors::RecordingError::NotRecording)
+                            })
+                            .unwrap_or(false);
+
+                        if !is_not_recording {
+                            let message = err.to_string();
+                            eprintln!("Failed to stop recording: {message}");
+                            emit_recording_error(&emit_handle, message);
+                        }
+                    }
+                }
+            }
+        }
+        _ => {}
     });
 
     Ok(())

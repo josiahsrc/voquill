@@ -10,6 +10,8 @@ pub mod whisper;
 
 #[cfg(desktop)]
 pub(crate) mod key_state;
+#[cfg(desktop)]
+pub(crate) mod keyboard;
 
 pub trait Recorder: Send + Sync {
     fn start(&self) -> Result<(), Box<dyn std::error::Error>>;
