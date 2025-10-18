@@ -97,21 +97,15 @@ export default function SettingsPage() {
   );
 
   return (
-    <>
-      <MicrophoneDialog />
-      <AudioDialog />
-      <ShortcutsDialog />
-      <ClearLocalDataDialog />
-      <DashboardEntryLayout>
-        <Stack direction="column">
-          <Typography variant="h4" fontWeight={700} sx={{ marginBottom: 4 }}>
-            Settings
-          </Typography>
-          {general}
-          {advanced}
-          {dangerZone}
-        </Stack>
-      </DashboardEntryLayout>
-    </>
+    <DashboardEntryLayout>
+      <Stack direction="column">
+        <Typography variant="h4" fontWeight={700} sx={{ marginBottom: 4 }}>
+          Settings
+        </Typography>
+        {general}
+        {advanced}
+        {dangerZone}
+      </Stack>
+    </DashboardEntryLayout>
   );
 }
