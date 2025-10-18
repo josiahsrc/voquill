@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAppStore } from "../store";
+import { getHotkeyCombosForAction } from "../utils/keyboard.utils";
 
 const LOCK_MS = 400;
 
@@ -9,11 +10,8 @@ export const useHotkeyHold = (args: {
   onDeactivate?: () => void;
 }) => {
   const keysHeld = useAppStore((s) => s.keysHeld);
-  const combos = useAppStore((s) =>
-    Object.values(s.hotkeyById).filter(
-      (h) => h.actionName === args.actionName && h.keys.length > 0,
-    ),
-  );
+  const availableCombos = useAppStore((state) => getHotkeyCombosForAction(state, args.actionName));
+  console.log("Available combos for", args.actionName, availableCombos, keysHeld);
 
   const onActivateRef = useRef(args.onActivate);
   const onDeactivateRef = useRef(args.onDeactivate);
@@ -75,7 +73,7 @@ export const useHotkeyHold = (args: {
   }, [clearPendingDeactivation, deactivate]);
 
   useEffect(() => {
-    if (combos.length === 0) {
+    if (availableCombos.length === 0) {
       ignoreActivationRef.current = false;
       wasPressedRef.current = false;
       lastReleaseRef.current = null;
@@ -106,8 +104,8 @@ export const useHotkeyHold = (args: {
       return required.every((key) => heldSet.has(key));
     };
 
-    const isPressed = combos.some((combo) =>
-      matchesCombo(keysHeld, combo.keys),
+    const isPressed = availableCombos.some((combo) =>
+      matchesCombo(keysHeld, combo),
     );
     const wasPressed = wasPressedRef.current;
 
@@ -173,7 +171,7 @@ export const useHotkeyHold = (args: {
     }
 
     wasPressedRef.current = isPressed;
-  }, [keysHeld, combos, activate, deactivate, clearPendingDeactivation]);
+  }, [keysHeld, availableCombos, activate, deactivate, clearPendingDeactivation]);
 };
 
 export const useHotkeyFire = (args: {
@@ -181,12 +179,7 @@ export const useHotkeyFire = (args: {
   onFire?: () => void;
 }) => {
   const keysHeld = useAppStore((state) => state.keysHeld);
-  const availableCombos = useAppStore((state) =>
-    Object.values(state.hotkeyById).filter(
-      (hotkey) =>
-        hotkey.actionName === args.actionName && hotkey.keys.length > 0,
-    ),
-  );
+  const availableCombos = useAppStore((state) => getHotkeyCombosForAction(state, args.actionName));
 
   const previousKeysHeldRef = useRef<string[]>([]);
 
@@ -198,10 +191,10 @@ export const useHotkeyFire = (args: {
       if (combo.keys.length === 0) return false;
 
       // Check if all keys in the combo are NOW held
-      const allKeysNowHeld = combo.keys.every((key) => keysHeld.includes(key));
+      const allKeysNowHeld = combo.every((key) => keysHeld.includes(key));
 
       // Check if NOT all keys were held previously
-      const notAllKeysPreviouslyHeld = !combo.keys.every((key) =>
+      const notAllKeysPreviouslyHeld = !combo.every((key) =>
         previousKeysHeld.includes(key),
       );
 

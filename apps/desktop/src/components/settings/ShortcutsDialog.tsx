@@ -2,6 +2,7 @@ import { firemix } from "@firemix/client";
 import { Add, Close } from "@mui/icons-material";
 import {
   Alert,
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -19,7 +20,11 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { registerHotkeys } from "../../utils/app.utils";
-import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import {
+  DICTATE_HOTKEY,
+  getDefaultHotkeyCombosForAction,
+  getPrettyKeyName,
+} from "../../utils/keyboard.utils";
 import { HotKey } from "../common/HotKey";
 
 type HotkeySettingProps = {
@@ -33,10 +38,15 @@ const HotkeySetting = ({
   description,
   actionName,
 }: HotkeySettingProps) => {
-  const hotkeys = useAppStore((state) => {
-    return Object.values(state.hotkeyById).filter(
+  const [hotkeys, defaultCombos] = useAppStore((state) => {
+    const res = Object.values(state.hotkeyById).filter(
       (hotkey) => hotkey.actionName === actionName
     );
+
+    const defaultCombos =
+      res.length === 0 ? getDefaultHotkeyCombosForAction(actionName) : [];
+
+    return [res, defaultCombos];
   });
 
   const saveKey = async (id?: string, keys?: string[]) => {
@@ -104,15 +114,44 @@ const HotkeySetting = ({
             </IconButton>
           </Stack>
         ))}
+        {defaultCombos.length > 0 && (
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            maxWidth={200}
+            textAlign="right"
+          >
+            <span>Using default hotkey </span>
+            {defaultCombos
+              .map((combo) => combo.map(getPrettyKeyName).join(" + "))
+              .map((combo, index) => (
+                <>
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "inline-block",
+                      fontWeight: "bold",
+                      border: "1px solid",
+                      borderRadius: 0.5,
+                      px: 0.5,
+                    }}
+                  >
+                    {combo}
+                  </Box>
+                  {index < defaultCombos.length - 1 && ", "}
+                </>
+              ))}
+          </Typography>
+        )}
         <Button
           variant="text"
-          startIcon={<Add />}
+          startIcon={defaultCombos.length > 0 ? undefined : <Add />}
           size="small"
           sx={{ py: 0.5 }}
           onClick={() => saveKey()}
         >
           <Typography variant="body2" fontWeight={500}>
-            {hotkeys.length === 0 ? "Set hotkey" : "Add another"}
+            {defaultCombos.length > 0 ? "Change hotkey" : hotkeys.length === 0 ? "Set hotkey" : "Add another"}
           </Typography>
         </Button>
       </Stack>
