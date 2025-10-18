@@ -8,7 +8,7 @@ use crate::domain::{
 use crate::platform::{keyboard, Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use enigo::{Enigo, Key, KeyboardControllable};
-use rdev::{listen, EventType, Key as RdevKey};
+use rdev::{EventType, Key as RdevKey};
 use serde::Serialize;
 use std::{
     env,

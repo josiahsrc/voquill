@@ -141,11 +141,6 @@ fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .inner_size(OVERLAY_WINDOW_WIDTH, OVERLAY_WINDOW_HEIGHT)
         .build()?;
 
-    #[cfg(debug_assertions)]
-    if let Some(overlay) = app.get_webview_window("recording-overlay") {
-        overlay.open_devtools();
-    }
-
     Ok(())
 }
 
