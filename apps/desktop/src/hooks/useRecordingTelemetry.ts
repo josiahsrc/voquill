@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { listen } from "@tauri-apps/api/event";
+import {
+  listen,
+  type EventTarget as TauriEventTarget,
+} from "@tauri-apps/api/event";
 
 export type RecordingStartedPayload = {
   started_at_ms?: number;
@@ -14,17 +17,25 @@ export type RecordingFinishedPayload = {
   transcription?: string;
 };
 
+export type RecordingProcessingPayload = {
+  duration_ms?: number;
+  size_bytes?: number;
+};
+
 export type RecordingErrorPayload = {
   message?: string;
 };
 
 export type RecordingState = {
   isRecording: boolean;
+  isProcessing: boolean;
   startedAtMs?: number;
   lastDurationMs?: number;
   lastSizeBytes?: number;
   lastTranscription?: string;
   error?: string;
+  lastEvent?: string;
+  phase: "idle" | "listening" | "processing" | "done";
 };
 
 const isTauriEnvironment = () =>
@@ -32,16 +43,33 @@ const isTauriEnvironment = () =>
   (Object.prototype.hasOwnProperty.call(window, "__TAURI_INTERNALS__") ||
     Object.prototype.hasOwnProperty.call(window, "__TAURI_IPC__"));
 
+const getOverlayEventTarget = (): TauriEventTarget | undefined => {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("overlay") === "1") {
+    return { kind: "WebviewWindow", label: "recording-overlay" };
+  }
+  return undefined;
+};
+
 export const useRecordingTelemetry = () => {
   const [recordingState, setRecordingState] = useState<RecordingState>({
     isRecording: false,
+    isProcessing: false,
+    lastEvent: "idle",
+    phase: "idle",
   });
   const [altPressCount, setAltPressCount] = useState(0);
 
   const isTauri = useMemo(() => isTauriEnvironment(), []);
+  const overlayTarget = useMemo(() => getOverlayEventTarget(), []);
+  const isOverlay = overlayTarget !== undefined;
+  const finishTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    if (!isTauri) {
+    if (!isTauri || isOverlay) {
       return;
     }
 
@@ -76,7 +104,7 @@ export const useRecordingTelemetry = () => {
     return () => {
       canceled = true;
     };
-  }, [isTauri]);
+  }, [isTauri, isOverlay]);
 
   useEffect(() => {
     if (!isTauri) {
@@ -118,6 +146,7 @@ export const useRecordingTelemetry = () => {
             if (canceled) {
               return;
             }
+            console.log("Starting...")
             const parsed = parsePayload(payload) as
               | Record<string, unknown>
               | null;
@@ -125,9 +154,16 @@ export const useRecordingTelemetry = () => {
             setRecordingState((prev) => ({
               ...prev,
               isRecording: true,
+              isProcessing: false,
               startedAtMs: typedPayload.started_at_ms,
               error: undefined,
+              lastEvent: "recording-started",
+              phase: "listening",
             }));
+            if (finishTimerRef.current !== undefined) {
+              clearTimeout(finishTimerRef.current);
+              finishTimerRef.current = undefined;
+            }
           },
         },
         {
@@ -142,12 +178,55 @@ export const useRecordingTelemetry = () => {
             const typedPayload = (parsed ?? {}) as RecordingFinishedPayload;
             setRecordingState({
               isRecording: false,
+              isProcessing: false,
               startedAtMs: undefined,
               lastDurationMs: typedPayload.duration_ms,
               lastSizeBytes: typedPayload.size_bytes,
               lastTranscription: typedPayload.transcription,
               error: undefined,
+              lastEvent: "recording-finished",
+              phase: "done",
             });
+
+            if (finishTimerRef.current !== undefined) {
+              clearTimeout(finishTimerRef.current);
+            }
+            finishTimerRef.current = window.setTimeout(() => {
+              setRecordingState((prev) => ({
+                ...prev,
+                isRecording: false,
+                isProcessing: false,
+                lastEvent: "idle",
+                phase: "idle",
+              }));
+              finishTimerRef.current = undefined;
+            }, 250);
+          },
+        },
+        {
+          event: "recording-processing",
+          handler: (payload) => {
+            if (canceled) {
+              return;
+            }
+            const parsed = parsePayload(payload) as
+              | Record<string, unknown>
+              | null;
+            const typedPayload = (parsed ?? {}) as RecordingProcessingPayload;
+            setRecordingState((prev) => ({
+              ...prev,
+              isRecording: false,
+              isProcessing: true,
+              startedAtMs: undefined,
+              lastDurationMs: typedPayload.duration_ms ?? prev.lastDurationMs,
+              lastSizeBytes: typedPayload.size_bytes ?? prev.lastSizeBytes,
+              lastEvent: "recording-processing",
+              phase: "processing",
+            }));
+            if (finishTimerRef.current !== undefined) {
+              clearTimeout(finishTimerRef.current);
+              finishTimerRef.current = undefined;
+            }
           },
         },
         {
@@ -163,8 +242,15 @@ export const useRecordingTelemetry = () => {
             setRecordingState((prev) => ({
               ...prev,
               isRecording: false,
+              isProcessing: false,
               error: typedPayload.message ?? "Recording error",
+              lastEvent: "recording-error",
+              phase: "idle",
             }));
+            if (finishTimerRef.current !== undefined) {
+              clearTimeout(finishTimerRef.current);
+              finishTimerRef.current = undefined;
+            }
           },
         },
         {
@@ -179,9 +265,23 @@ export const useRecordingTelemetry = () => {
       ];
 
       const listeners = await Promise.all(
-        listenerMap.map(async ({ event, handler }) =>
-          listen(event, (payload) => handler(payload.payload)),
-        ),
+        listenerMap.map(async ({ event, handler }) => {
+          try {
+            const register = overlayTarget
+              ? await listen(
+                  event,
+                  (payload) => handler(payload.payload),
+                  { target: overlayTarget },
+                )
+              : await listen(event, (payload) =>
+                  handler(payload.payload),
+                );
+            return register;
+          } catch (err) {
+            console.error("[overlay] failed to listen to event", event, err);
+            throw err;
+          }
+        }),
       );
 
       listeners.forEach((unlisten) => {
@@ -198,6 +298,10 @@ export const useRecordingTelemetry = () => {
     return () => {
       canceled = true;
       unlistenFns.forEach((unlisten) => unlisten());
+      if (finishTimerRef.current !== undefined) {
+        clearTimeout(finishTimerRef.current);
+        finishTimerRef.current = undefined;
+      }
     };
   }, [isTauri]);
 

@@ -9,6 +9,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { AppWithLoading } from "./components/root/AppWithLoading";
+import { OverlayRoot } from "./components/root/OverlayRoot";
 import { initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import {
@@ -54,12 +55,30 @@ if (getIsEmulators()) {
   connectStorageEmulator(storage, "localhost", 9199);
 }
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <SnackbarEmitter />
-      <CssBaseline />
-      <AppWithLoading />
-    </ThemeProvider>
-  </React.StrictMode>
-);
+const isOverlayWindow =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("overlay") === "1";
+
+const rootElement = document.getElementById("root") as HTMLElement;
+const root = ReactDOM.createRoot(rootElement);
+
+if (isOverlayWindow) {
+  root.render(
+    <React.StrictMode>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <OverlayRoot />
+      </ThemeProvider>
+    </React.StrictMode>,
+  );
+} else {
+  root.render(
+    <React.StrictMode>
+      <ThemeProvider theme={theme}>
+        <SnackbarEmitter />
+        <CssBaseline />
+        <AppWithLoading />
+      </ThemeProvider>
+    </React.StrictMode>,
+  );
+}

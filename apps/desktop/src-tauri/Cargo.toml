@@ -45,6 +45,7 @@ core-foundation = "0.10"
 rdev = "0.5"
 enigo = "0.1"
 arboard = "3"
+rodio = "0.17"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 rdev = "0.5"

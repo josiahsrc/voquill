@@ -1,13 +1,15 @@
+use super::feedback::{play_recording_start_tone, play_recording_stop_tone};
 use crate::db;
 use crate::domain::{
-    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingResult,
-    RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR,
-    EVT_REC_FINISH, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
+    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingProcessingPayload,
+    RecordingResult, RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED,
+    EVT_REC_ERROR, EVT_REC_FINISH, EVT_REC_PROCESSING, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
 };
 use crate::platform::{Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use enigo::{Enigo, Key, KeyboardControllable};
 use rdev::{listen, EventType, Key as RdevKey};
+use serde::Serialize;
 use std::{
     env,
     sync::atomic::{AtomicBool, Ordering},
@@ -15,7 +17,7 @@ use std::{
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tauri::{Emitter, EventTarget, Manager};
+use tauri::{Emitter, Manager};
 
 pub fn spawn_alt_listener(
     app: &tauri::AppHandle,
@@ -63,6 +65,7 @@ pub fn spawn_alt_listener(
                     {
                         match recorder.start() {
                             Ok(()) => {
+                                play_recording_start_tone();
                                 let started_at_ms = SystemTime::now()
                                     .duration_since(UNIX_EPOCH)
                                     .unwrap_or_default()
@@ -70,11 +73,7 @@ pub fn spawn_alt_listener(
                                     .min(u128::from(u64::MAX))
                                     as u64;
                                 let payload = RecordingStartedPayload { started_at_ms };
-                                if let Err(err) =
-                                    emit_handle.emit_to(EventTarget::any(), EVT_REC_START, payload)
-                                {
-                                    eprintln!("Failed to emit recording-started event: {err}");
-                                }
+                                emit_overlay_event(&emit_handle, EVT_REC_START, payload);
                             }
                             Err(err) => {
                                 eprintln!("Failed to start recording: {err}");
@@ -104,11 +103,7 @@ pub fn spawn_alt_listener(
                             }
                         };
                         let payload = AltEventPayload { count: new_count };
-                        if let Err(err) =
-                            emit_handle.emit_to(EventTarget::any(), EVT_ALT_PRESSED, payload)
-                        {
-                            eprintln!("Failed to emit hotkey-pressed event: {err}");
-                        }
+                        emit_overlay_event(&emit_handle, EVT_ALT_PRESSED, payload);
                     }
                 }
                 EventType::KeyRelease(key) => {
@@ -118,11 +113,14 @@ pub fn spawn_alt_listener(
                         && hotkey_state.swap(false, Ordering::SeqCst)
                     {
                         match recorder.stop() {
-                            Ok(result) => handle_recording_success(
-                                emit_handle.clone(),
-                                transcriber.clone(),
-                                result,
-                            ),
+                            Ok(result) => {
+                                play_recording_stop_tone();
+                                handle_recording_success(
+                                    emit_handle.clone(),
+                                    transcriber.clone(),
+                                    result,
+                                )
+                            }
                             Err(err) => {
                                 let is_not_recording = (&*err)
                                     .downcast_ref::<crate::errors::RecordingError>()
@@ -165,9 +163,16 @@ fn handle_recording_success(
     let size_bytes = result.metrics.size_bytes;
     let samples = result.audio.samples;
     let sample_rate = result.audio.sample_rate;
+    let emit_processing = emit_handle.clone();
     let emit_finished = emit_handle.clone();
     let emit_error = emit_handle.clone();
     let emit_transcription = emit_handle.clone();
+
+    let processing_payload = RecordingProcessingPayload {
+        duration_ms,
+        size_bytes,
+    };
+    emit_overlay_event(&emit_processing, EVT_REC_PROCESSING, processing_payload);
 
     std::thread::spawn(move || {
         let transcription_result = transcriber.transcribe(&samples, sample_rate);
@@ -190,17 +195,11 @@ fn handle_recording_success(
             size_bytes,
             transcription: transcription.clone(),
         };
-        if let Err(err) = emit_finished.emit_to(EventTarget::any(), EVT_REC_FINISH, payload) {
-            eprintln!("Failed to emit recording-finished event: {err}");
-        }
+        emit_overlay_event(&emit_finished, EVT_REC_FINISH, payload);
 
         if let Some(text) = transcription {
             let payload = TranscriptionReceivedPayload { text: text.clone() };
-            if let Err(err) =
-                emit_transcription.emit_to(EventTarget::any(), EVT_TRANSCRIPTION_RECEIVED, payload)
-            {
-                eprintln!("Failed to emit transcription-received event: {err}");
-            }
+            emit_overlay_event(&emit_transcription, EVT_TRANSCRIPTION_RECEIVED, payload);
 
             if let Err(err) = type_text_into_focused_field(&text) {
                 eprintln!("Failed to type transcription into field: {err}");
@@ -213,9 +212,7 @@ fn emit_recording_error(app: &tauri::AppHandle, message: String) {
     let payload = RecordingErrorPayload {
         message: message.clone(),
     };
-    if let Err(err) = app.emit_to(EventTarget::any(), EVT_REC_ERROR, payload) {
-        eprintln!("Failed to emit recording-error event: {err}");
-    }
+    emit_overlay_event(app, EVT_REC_ERROR, payload);
 }
 
 fn type_text_into_focused_field(text: &str) -> Result<(), String> {
@@ -241,6 +238,25 @@ fn type_text_into_focused_field(text: &str) -> Result<(), String> {
         enigo.key_sequence(target);
         Ok(())
     })
+}
+
+fn emit_overlay_event<T>(app: &tauri::AppHandle, event: &str, payload: T)
+where
+    T: Serialize + Clone,
+{
+    match app.emit(event, payload.clone()) {
+        Ok(()) => eprintln!("[overlay-debug] emitted {event} to all windows"),
+        Err(err) => eprintln!("Failed to emit {event} event to all windows: {err}"),
+    }
+
+    if let Some(overlay) = app.get_webview_window("recording-overlay") {
+        match overlay.emit(event, payload) {
+            Ok(()) => eprintln!("[overlay-debug] emitted {event} directly to overlay window"),
+            Err(err) => eprintln!("Failed to emit {event} to overlay window: {err}"),
+        }
+    } else {
+        eprintln!("[overlay-debug] overlay window not available for {event}");
+    }
 }
 
 fn paste_via_clipboard(text: &str) -> Result<(), String> {

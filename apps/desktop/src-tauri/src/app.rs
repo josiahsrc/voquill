@@ -1,5 +1,8 @@
 use sqlx::sqlite::SqlitePoolOptions;
-use tauri::Manager;
+use tauri::{Manager, WebviewUrl};
+
+const OVERLAY_WINDOW_WIDTH: f64 = 360.0;
+const OVERLAY_WINDOW_HEIGHT: f64 = 80.0;
 
 pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
@@ -85,6 +88,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 app.manage(recorder);
                 app.manage(transcriber);
+
+                ensure_overlay_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 
             Ok(())
@@ -102,4 +108,45 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::term_list,
             crate::commands::term_delete,
         ])
+}
+
+fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::WebviewWindowBuilder;
+
+    if app.get_webview_window("recording-overlay").is_some() {
+        return Ok(());
+    }
+
+    WebviewWindowBuilder::new(app, "recording-overlay", overlay_webview_url(app)?)
+        .decorations(false)
+        .always_on_top(true)
+        .transparent(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .inner_size(OVERLAY_WINDOW_WIDTH, OVERLAY_WINDOW_HEIGHT)
+        .build()?;
+
+    #[cfg(debug_assertions)]
+    if let Some(overlay) = app.get_webview_window("recording-overlay") {
+        overlay.open_devtools();
+    }
+
+    Ok(())
+}
+
+fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<WebviewUrl> {
+    #[cfg(debug_assertions)]
+    {
+        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
+            let query = match dev_url.query() {
+                Some(existing) if !existing.is_empty() => format!("{existing}&overlay=1"),
+                _ => "overlay=1".to_string(),
+            };
+            dev_url.set_query(Some(&query));
+            return Ok(WebviewUrl::External(dev_url));
+        }
+    }
+
+    Ok(WebviewUrl::App("index.html?overlay=1".into()))
 }
