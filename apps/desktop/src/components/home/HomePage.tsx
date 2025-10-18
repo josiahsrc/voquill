@@ -3,8 +3,8 @@ import { useMemo, useState } from "react";
 import { useAppStore } from "../../store";
 import { getMyUser, getMyUserName } from "../../utils/user.utils";
 import { Section } from "../common/Section";
-import { Stat } from "./Stat";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
+import { Stat } from "./Stat";
 
 export default function HomePage() {
   const user = useAppStore(getMyUser);

@@ -1,4 +1,4 @@
-import { Term, Transcription, User } from "@repo/types";
+import { Hotkey, Term, Transcription, User } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -37,5 +37,11 @@ export const registerTranscriptions = (
 export const registerTerms = (draft: AppState, terms: Term[]): void => {
   for (const term of terms) {
     draft.termById[term.id] = term;
+  }
+};
+
+export const registerHotkeys = (draft: AppState, hotkeys: Hotkey[]): void => {
+  for (const hotkey of hotkeys) {
+    draft.hotkeyById[hotkey.id] = hotkey;
   }
 };

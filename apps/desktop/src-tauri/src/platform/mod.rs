@@ -8,6 +8,11 @@ pub mod windows;
 pub mod audio;
 pub mod whisper;
 
+#[cfg(desktop)]
+pub(crate) mod key_state;
+#[cfg(desktop)]
+pub(crate) mod keyboard;
+
 pub trait Recorder: Send + Sync {
     fn start(&self) -> Result<(), Box<dyn std::error::Error>>;
     fn stop(&self) -> Result<crate::domain::RecordingResult, Box<dyn std::error::Error>>;

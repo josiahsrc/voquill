@@ -1,5 +1,5 @@
 use sqlx::sqlite::SqlitePoolOptions;
-use tauri::{Manager, WebviewUrl};
+use tauri::{Manager, WebviewUrl, WindowEvent};
 
 const OVERLAY_WINDOW_WIDTH: f64 = 360.0;
 const OVERLAY_WINDOW_HEIGHT: f64 = 80.0;
@@ -17,6 +17,12 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .plugin(updater_builder.build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .setup(|app| {
             let db_url = {
                 let handle = app.handle();
@@ -62,6 +68,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 let recorder: Arc<dyn Recorder> =
                     Arc::new(crate::platform::audio::RecordingManager::new());
 
+                crate::platform::key_state::spawn_keys_held_emitter(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
                 #[cfg(target_os = "macos")]
                 crate::platform::macos::input::spawn_alt_listener(
                     &app_handle,
@@ -100,6 +109,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_option_key_count,
             crate::commands::user_get_one,
             crate::commands::user_set_one,
+            crate::commands::start_recording,
+            crate::commands::stop_recording,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
             crate::commands::transcription_delete,
@@ -107,6 +118,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::term_update,
             crate::commands::term_list,
             crate::commands::term_delete,
+            crate::commands::hotkey_list,
+            crate::commands::hotkey_save,
+            crate::commands::hotkey_delete,
         ])
 }
 

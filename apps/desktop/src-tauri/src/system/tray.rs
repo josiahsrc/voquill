@@ -8,14 +8,14 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     use tauri::image::Image;
     use tauri::menu::{MenuBuilder, MenuItem};
     use tauri::tray::TrayIconBuilder;
+    use tauri::Manager;
 
-    let open_item = MenuItem::with_id(app, "atari-open", "Open Atari", true, None::<&str>)?;
-    let placeholder_item =
-        MenuItem::with_id(app, "atari-placeholder", "More Options", true, None::<&str>)?;
+    let open_item = MenuItem::with_id(app, "open-dashboard", "Open Dashboard", true, None::<&str>)?;
+    let quit_item = MenuItem::with_id(app, "quit-voquill", "Quit Voquill", true, None::<&str>)?;
 
     let menu = MenuBuilder::new(app)
         .item(&open_item)
-        .item(&placeholder_item)
+        .item(&quit_item)
         .build()?;
 
     let tray_icon_image = Image::from_bytes(TRAY_ICON_BYTES)?;
@@ -23,8 +23,19 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     #[allow(unused_mut)]
     let mut tray_builder = TrayIconBuilder::new()
         .menu(&menu)
-        .tooltip("Atari")
-        .icon(tray_icon_image);
+        .tooltip("Voquill")
+        .icon(tray_icon_image)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "open-dashboard" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            "quit-voquill" => app.exit(0),
+            _ => {}
+        });
 
     #[cfg(target_os = "macos")]
     {
