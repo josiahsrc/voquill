@@ -20,6 +20,14 @@ struct ActiveRecording {
     sample_rate: u32,
 }
 
+impl Drop for ActiveRecording {
+    fn drop(&mut self) {
+        if let Err(err) = self._stream.pause() {
+            eprintln!("[recording] failed to pause input stream: {err}");
+        }
+    }
+}
+
 // cpal::Stream is not Send/Sync across every platform, but we only ever create,
 // use, and drop it on the dedicated event tap thread. The interior mutex prevents
 // concurrent access, so it is safe for our usage to share the manager/type
