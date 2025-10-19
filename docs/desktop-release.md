@@ -23,8 +23,20 @@
 | `TAURI_PRIVATE_KEY` | Tauri signing key used for bundle signing. | Generate with `npx tauri signer generate` (store the private key PEM output). |
 | `TAURI_PRIVATE_KEY_PASSWORD` | Optional password for the signing key. Leave blank if the key is unencrypted. | Use the password you set when generating the key. |
 | `TAURI_UPDATER_PUBLIC_KEY` | Public key that the desktop app uses to verify update signatures. | Output from `tauri signer generate` (the `public key` line). |
+| `APPLE_ID` | Apple Developer account email used for signing and notarization. | Sign in to https://appleid.apple.com/ or App Store Connect. |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password used by `notarytool` during notarization. | Generate under Apple ID → Sign-In & Security → App-Specific Passwords. |
+| `APPLE_TEAM_ID` | Ten-character Apple Developer Team ID. | Found in App Store Connect → Membership details. |
+| `APPLE_CERTIFICATE` | Base64-encoded `Developer ID Application` certificate (`.p12`). | Export the certificate from Keychain Access and encode with `base64 < certificate.p12`. |
+| `APPLE_CERTIFICATE_PASSWORD` | Password that protects the exported certificate. | Set during the Keychain export; store the same value as a secret. |
+| `APPLE_SIGNING_IDENTITY` | Full signing identity string (for example `Developer ID Application: Example Corp (ABCDE12345)`). | Visible in Keychain Access after importing the Developer ID certificate. |
+| `KEYCHAIN_PASSWORD` | Throwaway password for the temporary CI keychain that stores the signing cert. | Create a strong random string and add it as a secret. |
 
 No additional storage credentials are required—the workflow publishes directly to GitHub releases using the provided `GITHUB_TOKEN`.
+
+## macOS Signing & Permissions
+- The desktop bundle enables Hardened Runtime with custom entitlements at `apps/desktop/src-tauri/macos/Voquill.entitlements`. Keep the Developer ID certificate in sync with these capabilities if you adjust microphone or keyboard monitoring features.
+- macOS now prompts for microphone access (`NSMicrophoneUsageDescription`) and input monitoring (`NSInputMonitoringUsageDescription`) the first time the app runs. These strings live in `apps/desktop/src-tauri/tauri.conf.json`.
+- Local `npm run build:mac` builds require `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_PRIVATE_KEY` to be present when `createUpdaterArtifacts` is enabled. Export the private key PEM generated during setup and load it into your shell (for example `export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.config/voquill/tauri-private-key.pem)"`).
 
 ## Verifying a Dev Release
 1. Push to `main` and wait for the **Release Desktop** workflow to finish.
