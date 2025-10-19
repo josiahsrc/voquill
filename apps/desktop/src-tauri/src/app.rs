@@ -96,27 +96,30 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         ])
 }
 
-fn ensure_overlay_window(_app: &tauri::AppHandle) -> tauri::Result<()> {
-    #[cfg(not(target_os = "macos"))]
-    {
-        use tauri::WebviewWindowBuilder;
-        if _app.get_webview_window("recording-overlay").is_some() {
-            return Ok(());
-        }
+#[cfg(target_os = "macos")]
+fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    crate::platform::macos::notch_overlay::ensure_overlay_visible(app)
+}
 
-        const OVERLAY_WINDOW_WIDTH: f64 = 360.0;
-        const OVERLAY_WINDOW_HEIGHT: f64 = 80.0;
-
-        WebviewWindowBuilder::new(_app, "recording-overlay", overlay_webview_url(_app)?)
-            .decorations(false)
-            .always_on_top(true)
-            .transparent(true)
-            .skip_taskbar(true)
-            .resizable(false)
-            .shadow(false)
-            .inner_size(OVERLAY_WINDOW_WIDTH, OVERLAY_WINDOW_HEIGHT)
-            .build()?;
+#[cfg(not(target_os = "macos"))]
+fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::WebviewWindowBuilder;
+    if app.get_webview_window("recording-overlay").is_some() {
+        return Ok(());
     }
+
+    const OVERLAY_WINDOW_WIDTH: f64 = 360.0;
+    const OVERLAY_WINDOW_HEIGHT: f64 = 80.0;
+
+    WebviewWindowBuilder::new(app, "recording-overlay", overlay_webview_url(app)?)
+        .decorations(false)
+        .always_on_top(true)
+        .transparent(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .inner_size(OVERLAY_WINDOW_WIDTH, OVERLAY_WINDOW_HEIGHT)
+        .build()?;
 
     Ok(())
 }
