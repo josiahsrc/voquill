@@ -1,19 +1,59 @@
-import { alpha, useTheme } from "@mui/material/styles";
 import { Box } from "@mui/material";
-import { keyframes } from "@mui/system";
-import { useRef } from "react";
+import { alpha, useTheme } from "@mui/material/styles";
+import { useEffect, useRef } from "react";
 import { useAppStore } from "../../store";
 
-const BAR_COUNT = 6;
+const VIEWBOX_WIDTH = 120;
+const VIEWBOX_HEIGHT = 36;
+const TAU = Math.PI * 2;
 
-const pulse = keyframes`
-  0%, 100% {
-    transform: scaleY(0.3);
+const LEVEL_SMOOTHING = 0.18;
+const TARGET_DECAY_PER_FRAME = 0.985;
+const WAVE_BASE_PHASE_STEP = 0.11;
+const WAVE_PHASE_GAIN = 0.32;
+const MIN_AMPLITUDE = 0.03;
+const MAX_AMPLITUDE = 1.3;
+const PROCESSING_BASE_LEVEL = 0.16;
+
+type WaveConfig = {
+  frequency: number;
+  multiplier: number;
+  phaseOffset: number;
+  opacity: number;
+};
+
+const WAVE_CONFIG: WaveConfig[] = [
+  { frequency: 0.8, multiplier: 1.6, phaseOffset: 0, opacity: 1 },
+  { frequency: 1.0, multiplier: 1.35, phaseOffset: 0.85, opacity: 0.78 },
+  { frequency: 1.25, multiplier: 1.05, phaseOffset: 1.7, opacity: 0.56 },
+];
+
+type AnimationState = {
+  phase: number;
+  currentLevel: number;
+  targetLevel: number;
+};
+
+const createWavePath = (
+  width: number,
+  baseline: number,
+  amplitude: number,
+  frequency: number,
+  phase: number
+): string => {
+  const segments = Math.max(72, Math.floor(width / 2));
+  let path = `M 0 ${baseline + amplitude * Math.sin(phase)}`;
+
+  for (let index = 1; index <= segments; index += 1) {
+    const t = index / segments;
+    const x = width * t;
+    const theta = frequency * t * TAU + phase;
+    const y = baseline + amplitude * Math.sin(theta);
+    path += ` L ${x} ${y}`;
   }
-  50% {
-    transform: scaleY(1);
-  }
-`;
+
+  return path;
+};
 
 export const RecordingStatusWidget = () => {
   const theme = useTheme();
@@ -22,37 +62,127 @@ export const RecordingStatusWidget = () => {
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
 
-  // Track the maximum level seen in each frequency bin for adaptive normalization
-  const maxLevelsRef = useRef<number[]>(Array(BAR_COUNT).fill(0.001)); // Start with small non-zero
-  
-  // Map each bar to different frequency ranges from the levels array
-  const getBarLevel = (barIndex: number) => {
-    if (levels.length === 0) return 0;
-    
-    // Divide the frequency spectrum into segments for each bar
-    const segmentSize = Math.max(1, Math.floor(levels.length / BAR_COUNT));
-    const startIdx = barIndex * segmentSize;
-    const endIdx = Math.min(levels.length, startIdx + segmentSize);
-    
-    // Get average for this frequency range
-    const segment = levels.slice(startIdx, endIdx);
-    const avg = segment.reduce((sum, level) => sum + level, 0) / segment.length;
-    
-    // Start with aggressive amplification
-    const initialAmplification = 30;
-    const amplified = avg * initialAmplification;
-    
-    // Track the max level seen in this bin
-    const currentMax = maxLevelsRef.current[barIndex];
-    if (amplified > currentMax) {
-      maxLevelsRef.current[barIndex] = amplified;
+  const waveRefs = useRef<(SVGPathElement | null)[]>([]);
+  const animationFrameRef = useRef<number>(null);
+  const animationStateRef = useRef<AnimationState>({
+    phase: 0,
+    currentLevel: 0,
+    targetLevel: 0,
+  });
+  const phaseStateRef = useRef({ isListening, isProcessing });
+
+  phaseStateRef.current.isListening = isListening;
+  phaseStateRef.current.isProcessing = isProcessing;
+
+  useEffect(() => {
+    const state = animationStateRef.current;
+    if (!isListening) {
+      state.targetLevel = isProcessing
+        ? Math.max(state.targetLevel, PROCESSING_BASE_LEVEL)
+        : 0;
+      if (!isProcessing) {
+        state.currentLevel *= 0.4;
+      }
     }
-    
-    // Normalize based on the max we've seen, so 1.0 = loudest sound in this bin
-    const normalized = currentMax > 0 ? Math.min(1, amplified / currentMax) : 0;
-    
-    return normalized;
-  };
+  }, [isListening, isProcessing]);
+
+  useEffect(() => {
+    if (!isListening || levels.length === 0) {
+      return;
+    }
+
+    const sum = levels.reduce((acc, value) => acc + value, 0);
+    const average = sum / levels.length;
+    const peak = levels.reduce((acc, value) => (value > acc ? value : acc), 0);
+    const combined = Math.min(1, average * 0.9 + peak * 0.85);
+    const boosted = Math.min(1, Math.sqrt(combined) * 1.35);
+
+    const state = animationStateRef.current;
+    state.targetLevel = Math.min(1, state.targetLevel * 0.25 + boosted * 0.75);
+  }, [levels, isListening]);
+
+  useEffect(() => {
+    const baseline = VIEWBOX_HEIGHT / 2;
+    const defaultPath = `M 0 ${baseline} L ${VIEWBOX_WIDTH} ${baseline}`;
+    waveRefs.current.forEach((path) => {
+      if (path) {
+        path.setAttribute("d", defaultPath);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!(isListening || isProcessing)) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    const step = () => {
+      const state = animationStateRef.current;
+
+      state.currentLevel +=
+        (state.targetLevel - state.currentLevel) * LEVEL_SMOOTHING;
+      if (state.currentLevel < 0.0002) {
+        state.currentLevel = 0;
+      }
+
+      state.targetLevel *= TARGET_DECAY_PER_FRAME;
+      if (state.targetLevel < 0.0005) {
+        state.targetLevel = 0;
+      }
+
+      const phaseState = phaseStateRef.current;
+      const baseLevel =
+        phaseState.isProcessing && !phaseState.isListening
+          ? PROCESSING_BASE_LEVEL
+          : 0;
+      const level = Math.max(baseLevel, state.currentLevel);
+
+      const advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * level;
+      state.phase = (state.phase + advance) % TAU;
+
+      const baseline = VIEWBOX_HEIGHT / 2;
+      const height = VIEWBOX_HEIGHT;
+      const width = VIEWBOX_WIDTH;
+
+      waveRefs.current.forEach((path, index) => {
+        if (!path) {
+          return;
+        }
+        const config =
+          WAVE_CONFIG[index] ?? WAVE_CONFIG[WAVE_CONFIG.length - 1];
+        const amplitudeFactor = Math.min(
+          MAX_AMPLITUDE,
+          Math.max(MIN_AMPLITUDE, level * config.multiplier)
+        );
+        const amplitude = Math.max(1, height * 0.75 * amplitudeFactor);
+        const phase = state.phase + config.phaseOffset;
+        const pathD = createWavePath(
+          width,
+          baseline,
+          amplitude,
+          config.frequency,
+          phase
+        );
+        path.setAttribute("d", pathD);
+        path.setAttribute("opacity", config.opacity.toString());
+      });
+
+      animationFrameRef.current = requestAnimationFrame(step);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [isListening, isProcessing]);
 
   return (
     <Box
@@ -62,107 +192,58 @@ export const RecordingStatusWidget = () => {
         alignItems: "center",
         justifyContent: "center",
         padding: `${theme.spacing(0.75)} ${theme.spacing(2)}`,
-        borderRadius: theme.spacing(1.5),
-        backgroundColor: alpha(theme.palette.common.white, 0.98),
-        backdropFilter: "blur(12px)",
-        boxShadow: `0 2px 12px ${alpha(theme.palette.common.black, 0.08)}`,
-        minWidth: theme.spacing(10),
-        height: theme.spacing(3.5),
+        borderRadius: theme.spacing(2.25),
+        backgroundColor: alpha(theme.palette.common.black, 0.92),
+        backdropFilter: "blur(14px)",
+        boxShadow: `0 10px 35px ${alpha(theme.palette.common.black, 0.36)}`,
+        minWidth: theme.spacing(16),
+        height: theme.spacing(4),
         pointerEvents: "none",
-        overflow: "visible",
+        overflow: "hidden",
       }}
     >
-      {isListening ? (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: theme.spacing(0.75),
-            height: "100%",
-          }}
+      <Box
+        sx={{
+          position: "relative",
+          width: theme.spacing(16),
+          height: theme.spacing(3),
+        }}
+      >
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+          preserveAspectRatio="none"
         >
-          {Array.from({ length: BAR_COUNT }).map((_, index) => {
-            const barLevel = getBarLevel(index);
-            
-            // Map level to height: minimum 15%, maximum 100%
-            const minHeight = 0.3;
-            const heightPercent = minHeight + barLevel * (1 - minHeight);
-            
-            // Vary transition speed slightly per bar for more organic movement
-            const transitionSpeed = 80 + (index % 3) * 10;
-            
-            return (
-              <Box
-                key={index}
-                sx={{
-                  width: theme.spacing(0.5),
-                  height: "100%",
-                  borderRadius: theme.spacing(0.75),
-                  backgroundColor: theme.palette.common.black,
-                  transformOrigin: "center",
-                  transform: `scaleY(${heightPercent})`,
-                  transition: `transform ${transitionSpeed}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-                }}
-              />
-            );
-          })}
-        </Box>
-      ) : isProcessing ? (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: theme.spacing(0.75),
-            height: "100%",
-          }}
-        >
-          {Array.from({ length: BAR_COUNT }).map((_, index) => {
-            // Stagger the animation for each bar
-            const delay = index * 100;
-            
-            return (
-              <Box
-                key={index}
-                sx={{
-                  width: theme.spacing(0.5),
-                  height: "100%",
-                  borderRadius: theme.spacing(0.75),
-                  backgroundColor: theme.palette.common.black,
-                  transformOrigin: "center",
-                  animation: `${pulse} 600ms ease-in-out infinite`,
-                  animationDelay: `${delay}ms`,
-                }}
-              />
-            );
-          })}
-        </Box>
-      ) : (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: theme.spacing(0.75),
-            height: "100%",
-          }}
-        >
-          {Array.from({ length: BAR_COUNT }).map((_, index) => (
-            <Box
-              key={index}
-              sx={{
-                width: theme.spacing(0.5),
-                height: "100%",
-                borderRadius: theme.spacing(0.75),
-                backgroundColor: theme.palette.common.black,
-                transformOrigin: "center",
-                transform: "scaleY(0.3)",
+          {WAVE_CONFIG.map((config, index) => (
+            <path
+              key={config.frequency}
+              ref={(node) => {
+                waveRefs.current[index] = node;
               }}
+              fill="none"
+              stroke={theme.palette.common.white}
+              strokeWidth={1.6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           ))}
-        </Box>
-      )}
+        </svg>
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background: `linear-gradient(90deg, ${alpha(
+              theme.palette.common.black,
+              0.9
+            )} 0%, transparent 18%, transparent 85%, ${alpha(
+              theme.palette.common.black,
+              0.9
+            )} 100%)`,
+          }}
+        />
+      </Box>
     </Box>
   );
 };
