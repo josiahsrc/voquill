@@ -11,4 +11,5 @@ export type User = {
   onboardedAt: Nullable<FiremixTimestamp>;
   timezone?: Nullable<string>;
   preferredMicrophone?: Nullable<string>;
+  playInteractionChime: boolean;
 };

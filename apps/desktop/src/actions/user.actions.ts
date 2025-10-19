@@ -6,39 +6,60 @@ import { registerUsers } from "../utils/app.utils";
 import { getMyUser } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 
+const updateUser = async (
+  updateCallback: (user: User) => void,
+  errorMessage: string,
+  saveErrorMessage: string,
+): Promise<void> => {
+  const state = getAppState();
+  const existing = getMyUser(state);
+  if (!existing) {
+    showErrorSnackbar(errorMessage);
+    return;
+  }
+
+  const repo = getUserRepo();
+  const now = firemix().now();
+  const payload: User = {
+    ...existing,
+    updatedAt: now,
+  };
+
+  updateCallback(payload);
+
+  try {
+    const saved = await repo.setUser(payload);
+    produceAppState((draft) => {
+      registerUsers(draft, [saved]);
+    });
+  } catch (error) {
+    console.error("Failed to update user", error);
+    showErrorSnackbar(saveErrorMessage);
+    throw error;
+  }
+};
+
 export const setPreferredMicrophone = async (
-	preferredMicrophone: Nullable<string>,
+  preferredMicrophone: Nullable<string>,
 ) => {
-	const state = getAppState();
-	const existing = getMyUser(state);
-	if (!existing) {
-		showErrorSnackbar("Unable to update microphone preference. User not found.");
-		return;
-	}
+  const trimmed = preferredMicrophone?.trim() ?? null;
+  const normalized = trimmed && trimmed.length > 0 ? trimmed : null;
 
-	const trimmed = preferredMicrophone?.trim() ?? null;
-	const normalized = trimmed && trimmed.length > 0 ? trimmed : null;
-	const currentPreference = existing.preferredMicrophone ?? null;
-	if (currentPreference === normalized) {
-		return;
-	}
+  await updateUser(
+    (user) => {
+      user.preferredMicrophone = normalized;
+    },
+    "Unable to update microphone preference. User not found.",
+    "Failed to save microphone preference. Please try again.",
+  );
+};
 
-	const repo = getUserRepo();
-	const now = firemix().now();
-	const payload: User = {
-		...existing,
-		updatedAt: now,
-		preferredMicrophone: normalized,
-	};
-
-	try {
-		const saved = await repo.setUser(payload);
-		produceAppState((draft) => {
-			registerUsers(draft, [saved]);
-		});
-	} catch (error) {
-		console.error("Failed to update preferred microphone", error);
-		showErrorSnackbar("Failed to save microphone preference. Please try again.");
-		throw error;
-	}
+export const setInteractionChimeEnabled = async (enabled: boolean) => {
+  await updateUser(
+    (user) => {
+      user.playInteractionChime = enabled;
+    },
+    "Unable to update interaction chime. User not found.",
+    "Failed to save interaction chime preference. Please try again.",
+  );
 };

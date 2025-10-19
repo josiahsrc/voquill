@@ -30,5 +30,6 @@ export const buildUser = (overrides?: Partial<User>): User => ({
   onboarded: false,
   onboardedAt: null,
   preferredMicrophone: null,
+  playInteractionChime: true,
   ...overrides,
 });

@@ -25,6 +25,7 @@ import { setPreferredMicrophone } from "../../actions/user.actions";
 import { useMyUser } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import { AudioWaveform } from "../common/AudioWaveform";
+import { SettingSection } from "../common/SettingSection";
 
 const AUTO_OPTION_VALUE = "__microphone_auto__";
 
@@ -436,15 +437,11 @@ export const MicrophoneDialog = () => {
       <DialogContent dividers>
         <Stack spacing={3} sx={{ paddingTop: 0.5 }}>
           <Stack spacing={1.5}>
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Preferred microphone
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Choose which microphone Voquill should use when recording.
-                Automatic picks the best available device each time.
-              </Typography>
-            </Box>
+            <SettingSection
+              title="Preferred microphone"
+              description="Choose which microphone Voquill should use when recording. Automatic picks the best available device each time."
+              sx={{ pb: 0.5 }}
+            />
             <FormControl fullWidth size="small" disabled={loadingDevices}>
               <InputLabel id="microphone-select-label">Microphone</InputLabel>
               <Select
@@ -532,15 +529,10 @@ export const MicrophoneDialog = () => {
           <Divider />
 
           <Stack spacing={1.5}>
-            <Box>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                Test your microphone
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Start a short test to see live audio levels and play back what
-                was recorded.
-              </Typography>
-            </Box>
+            <SettingSection
+              title="Test your microphone"
+              description="Start a short test to see live audio levels and play back what was recorded."
+            />
             <Box
               sx={{
                 position: "relative",

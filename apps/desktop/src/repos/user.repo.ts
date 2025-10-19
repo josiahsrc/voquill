@@ -9,6 +9,7 @@ type LocalUser = {
   bio: string;
   onboarded: boolean;
   preferredMicrophone: string | null;
+  playInteractionChime?: boolean;
 };
 
 const toLocalUser = (user: User): LocalUser => ({
@@ -17,12 +18,15 @@ const toLocalUser = (user: User): LocalUser => ({
   bio: user.bio ?? "",
   onboarded: user.onboarded,
   preferredMicrophone: user.preferredMicrophone ?? null,
+  playInteractionChime: user.playInteractionChime,
 });
 
 const fromLocalUser = (localUser: LocalUser): User => {
   const now = firemix().now();
   const bio = localUser.bio;
   const isOnboarded = localUser.onboarded;
+  const playInteractionChime =
+    localUser.playInteractionChime == null ? true : localUser.playInteractionChime;
 
   return {
     id: localUser.id,
@@ -34,6 +38,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     onboardedAt: isOnboarded ? now : null,
     timezone: null,
     preferredMicrophone: localUser.preferredMicrophone ?? null,
+    playInteractionChime,
   };
 };
 

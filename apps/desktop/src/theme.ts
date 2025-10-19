@@ -110,6 +110,24 @@ export const theme = createTheme({
       },
     },
 
+    MuiSwitch: {
+      styleOverrides: {
+        switchBase: ({ theme }) => ({
+          "&.Mui-checked": {
+            color: theme.vars.palette.blue,
+            "& + .MuiSwitch-track": {
+              backgroundColor: theme.vars.palette.blue,
+            },
+          },
+        }),
+        track: ({ theme }) => ({
+          ".Mui-checked.Mui-checked + &": {
+            backgroundColor: theme.vars.palette.blue,
+          },
+        }),
+      },
+    },
+
     MuiFab: {
       styleOverrides: {
         root: ({ theme }) => ({

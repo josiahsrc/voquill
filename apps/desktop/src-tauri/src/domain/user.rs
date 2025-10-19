@@ -9,4 +9,10 @@ pub struct User {
     pub onboarded: bool,
     #[serde(default)]
     pub preferred_microphone: Option<String>,
+    #[serde(default = "default_play_interaction_chime")]
+    pub play_interaction_chime: bool,
+}
+
+const fn default_play_interaction_chime() -> bool {
+    true
 }

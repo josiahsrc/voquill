@@ -30,13 +30,14 @@ export const submitOnboarding = async () => {
       id: userId,
       createdAt: now,
       updatedAt: now,
-    name: trimmedName,
-    bio: null,
-    onboarded: true,
-    onboardedAt: now,
-    timezone: null,
-    preferredMicrophone: null,
-  };
+      name: trimmedName,
+      bio: null,
+      onboarded: true,
+      onboardedAt: now,
+      timezone: null,
+      preferredMicrophone: null,
+      playInteractionChime: true,
+    };
 
     const savedUser = await repo.setUser(user);
 

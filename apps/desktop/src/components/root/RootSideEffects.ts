@@ -111,7 +111,9 @@ export const RootSideEffects = () => {
       return;
     }
 
-    const preferredMicrophone = getMyUser(state)?.preferredMicrophone ?? null;
+    const user = getMyUser(state);
+    const preferredMicrophone = user?.preferredMicrophone ?? null;
+    const playInteractionChime = user?.playInteractionChime ?? true;
 
     const promise = (async () => {
       try {
@@ -119,7 +121,9 @@ export const RootSideEffects = () => {
         await invoke<void>("start_recording", {
           args: { preferredMicrophone },
         });
-        await invoke<void>("play_audio", { clip: "start_recording_clip" });
+        if (playInteractionChime) {
+          await invoke<void>("play_audio", { clip: "start_recording_clip" });
+        }
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
         await invoke<void>("set_phase", { phase: "idle" });
@@ -158,7 +162,11 @@ export const RootSideEffects = () => {
       try {
         await invoke<void>("set_phase", { phase: "loading" });
         audio = await invoke<StopRecordingResponse>("stop_recording");
-        await invoke<void>("play_audio", { clip: "stop_recording_clip" });
+        const playInteractionChime =
+          getMyUser(getAppState())?.playInteractionChime ?? true;
+        if (playInteractionChime) {
+          await invoke<void>("play_audio", { clip: "stop_recording_clip" });
+        }
       } catch (error) {
         console.error("Failed to stop recording via hotkey", error);
         showErrorSnackbar("Unable to stop recording. Please try again.");
