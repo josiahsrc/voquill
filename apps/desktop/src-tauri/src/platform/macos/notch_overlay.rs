@@ -62,7 +62,7 @@ const WAVE_RIGHT_PADDING: f64 = 12.0;
 const WAVE_VERTICAL_PADDING: f64 = 4.0;
 const WAVE_BASE_PHASE_STEP: f64 = 0.11;
 const WAVE_PHASE_GAIN: f64 = 0.32;
-const WAVE_CONTAINER_WIDTH: f64 = 48.0;
+const WAVE_CONTAINER_WIDTH: f64 = 33.6;
 const WAVE_FREQUENCIES: [f64; WAVE_COUNT] = [0.8, 1.0, 1.25];
 const WAVE_AMPLITUDE_MULTIPLIERS: [f64; WAVE_COUNT] = [1.6, 1.35, 1.05];
 const WAVE_PHASE_OFFSETS: [f64; WAVE_COUNT] = [0.0, 0.85, 1.7];
@@ -73,7 +73,6 @@ const LEVEL_SMOOTHING: f64 = 0.18;
 
 const ICON_SIZE: f64 = 20.0;
 const ICON_LEFT_PADDING: f64 = 8.0;
-const ICON_LABEL_GAP: f64 = 8.0;
 
 thread_local! {
     static OVERLAY_STATE: RefCell<Option<OverlayState>> = RefCell::new(None);
@@ -364,7 +363,7 @@ unsafe fn configure_overlay_contents(
         NSSize::new(OVERLAY_WIDTH, LABEL_HEIGHT),
     );
     let label: id = NSTextField::initWithFrame_(NSTextField::alloc(nil), label_rect);
-    let label_text = NSString::alloc(nil).init_str("Voquill is listening");
+    let label_text = NSString::alloc(nil).init_str("");
     NSTextField::setStringValue_(label, label_text);
     let _: () = msg_send![label_text, release];
     NSTextField::setEditable_(label, NO);
@@ -382,6 +381,7 @@ unsafe fn configure_overlay_contents(
     let font: id = msg_send![class!(NSFont), systemFontOfSize: 12.0];
     let _: () = msg_send![label, setFont: font];
     let _: () = msg_send![content_view, addSubview: label];
+    let _: () = msg_send![label, setHidden: YES];
 
     let waves_height =
         (OVERLAY_HEIGHT - LABEL_HEIGHT - LABEL_TOP_MARGIN - WAVE_VERTICAL_PADDING * 2.0).max(10.0);
@@ -523,22 +523,8 @@ unsafe fn position_icon(state: &OverlayState, width: f64) {
 
 unsafe fn position_label(state: &OverlayState, width: f64) {
     let label = state.label();
-    let icon_right = ICON_LEFT_PADDING + ICON_SIZE + ICON_LABEL_GAP;
-    let label_x = icon_right.min(width * 0.4);
-    let reserved_right = wave_container_width(width) + WAVE_RIGHT_PADDING;
-    let mut available = width - reserved_right - label_x;
-    if available < 18.0 {
-        available = 18.0;
-    }
-    let max_available = (width - label_x).max(0.0);
-    if available > max_available {
-        available = max_available;
-    }
-    let label_rect = NSRect::new(
-        NSPoint::new(label_x, OVERLAY_HEIGHT - LABEL_HEIGHT - LABEL_TOP_MARGIN),
-        NSSize::new(available, LABEL_HEIGHT),
-    );
-    let _: () = msg_send![label, setFrame: label_rect];
+    let _ = width;
+    let _: () = msg_send![label, setHidden: YES];
 }
 
 unsafe fn position_waves_container(state: &OverlayState, width: f64) {
@@ -558,8 +544,17 @@ unsafe fn update_gradient_layers(state: &OverlayState) {
     let bounds: NSRect = msg_send![container, bounds];
     let left = state.gradient_left();
     let right = state.gradient_right();
-    let _: () = msg_send![left, setFrame: bounds];
-    let _: () = msg_send![right, setFrame: bounds];
+    let expanded = NSRect::new(
+        NSPoint::new(bounds.origin.x - 2.0, bounds.origin.y),
+        NSSize::new(bounds.size.width + 4.0, bounds.size.height),
+    );
+    let left_frame = expanded;
+    let right_frame = NSRect::new(
+        NSPoint::new(bounds.origin.x - 2.0, bounds.origin.y),
+        NSSize::new(bounds.size.width + 4.0, bounds.size.height),
+    );
+    let _: () = msg_send![left, setFrame: left_frame];
+    let _: () = msg_send![right, setFrame: right_frame];
 }
 
 unsafe fn update_wave_paths(state: &OverlayState) {
