@@ -7,11 +7,17 @@ use crate::domain::{
 use crate::platform::LevelCallback;
 
 #[cfg(target_os = "linux")]
-use crate::platform::linux::input::handle_recording_success as platform_handle_recording_success;
+use crate::platform::linux::input::paste_text_into_focused_field as platform_paste_text;
 #[cfg(target_os = "macos")]
-use crate::platform::macos::input::handle_recording_success as platform_handle_recording_success;
+use crate::platform::macos::input::paste_text_into_focused_field as platform_paste_text;
 #[cfg(target_os = "windows")]
-use crate::platform::windows::input::handle_recording_success as platform_handle_recording_success;
+use crate::platform::windows::input::paste_text_into_focused_field as platform_paste_text;
+
+#[derive(serde::Serialize)]
+pub struct StopRecordingResponse {
+    pub samples: Vec<f32>,
+    pub sample_rate: u32,
+}
 
 #[tauri::command]
 pub async fn user_set_one(
@@ -168,14 +174,16 @@ pub fn start_recording(
 
 #[tauri::command]
 pub fn stop_recording(
-    app: AppHandle,
+    _app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
-    transcriber: State<'_, Arc<dyn crate::platform::Transcriber>>,
-) -> Result<(), String> {
+) -> Result<StopRecordingResponse, String> {
     match recorder.stop() {
         Ok(result) => {
-            platform_handle_recording_success(app.clone(), transcriber.inner().clone(), result);
-            Ok(())
+            let audio = result.audio;
+            Ok(StopRecordingResponse {
+                samples: audio.samples,
+                sample_rate: audio.sample_rate,
+            })
         }
         Err(err) => {
             let not_recording = (&*err)
@@ -184,11 +192,84 @@ pub fn stop_recording(
                 .unwrap_or(false);
 
             if not_recording {
-                return Ok(());
+                return Ok(StopRecordingResponse {
+                    samples: Vec::new(),
+                    sample_rate: 0,
+                });
             }
 
             let message = err.to_string();
             eprintln!("Failed to stop recording via command: {message}");
+            Err(message)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn transcribe_audio(
+    samples: Vec<f64>,
+    sample_rate: u32,
+    transcriber: State<'_, Arc<dyn crate::platform::Transcriber>>,
+) -> Result<String, String> {
+    let transcriber = transcriber.inner().clone();
+    let join_result = tauri::async_runtime::spawn_blocking(move || {
+        let original_len = samples.len();
+        let mut filtered = Vec::with_capacity(original_len);
+        for sample in samples {
+            if sample.is_finite() {
+                filtered.push(sample as f32);
+            }
+        }
+
+        if filtered.len() != original_len {
+            eprintln!(
+                "Discarded {} non-finite audio samples before transcription",
+                original_len - filtered.len()
+            );
+        }
+
+        if filtered.is_empty() {
+            return Err("No usable audio samples provided".to_string());
+        }
+
+        transcriber
+            .transcribe(filtered.as_slice(), sample_rate)
+            .map(|text| text.trim().to_string())
+    })
+    .await;
+
+    match join_result {
+        Ok(result) => {
+            if let Err(err) = result.as_ref() {
+                eprintln!("Transcription failed: {err}");
+            }
+
+            result
+        }
+        Err(err) => {
+            let message = format!("Transcription task join error: {err}");
+            eprintln!("{message}");
+            Err(message)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn paste(text: String) -> Result<(), String> {
+    let join_result =
+        tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text)).await;
+
+    match join_result {
+        Ok(result) => {
+            if let Err(err) = result.as_ref() {
+                eprintln!("Paste failed: {err}");
+            }
+
+            result
+        }
+        Err(err) => {
+            let message = format!("Paste task join error: {err}");
+            eprintln!("{message}");
             Err(message)
         }
     }

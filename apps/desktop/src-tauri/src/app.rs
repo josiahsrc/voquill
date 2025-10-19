@@ -77,6 +77,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::user_set_one,
             crate::commands::start_recording,
             crate::commands::stop_recording,
+            crate::commands::transcribe_audio,
+            crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
             crate::commands::transcription_delete,

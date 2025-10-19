@@ -13,8 +13,9 @@ import { getMyUserId } from "../../utils/user.utils";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 
-type TranscriptionReceivedPayload = {
-  text: string;
+type StopRecordingResponse = {
+  samples: number[] | Float32Array;
+  sample_rate?: number;
 };
 
 type KeysHeldPayload = {
@@ -23,12 +24,66 @@ type KeysHeldPayload = {
 
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
-  const stopPendingRef = useRef<Promise<void> | null>(null);
+  const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(null);
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
 
   useAsyncEffect(async () => {
     await loadHotkeys();
+  }, []);
+
+  const handleRecordedAudio = useCallback(async (payload: StopRecordingResponse) => {
+    const payloadSamples = Array.isArray(payload.samples)
+      ? payload.samples
+      : Array.from(payload.samples ?? []);
+    const rate = payload.sample_rate;
+
+    if (rate == null || Number.isNaN(rate)) {
+      console.error("Received audio payload without sample rate", payload);
+      showErrorSnackbar("Recording missing sample rate. Please try again.");
+      return;
+    }
+
+    if (rate <= 0 || payloadSamples.length === 0) {
+      return;
+    }
+
+    let transcript: string;
+
+    try {
+      transcript = await invoke<string>("transcribe_audio", {
+        samples: payloadSamples,
+        sampleRate: rate,
+      });
+    } catch (error) {
+      console.error("Failed to transcribe audio", error);
+      const message =
+        error instanceof Error ? error.message : "Unable to transcribe audio. Please try again.";
+      showErrorSnackbar(message);
+      return;
+    }
+
+    const normalizedTranscript = transcript.trim();
+    if (!normalizedTranscript) {
+      return;
+    }
+
+    const transcription: Transcription = {
+      id: crypto.randomUUID(),
+      transcript: normalizedTranscript,
+      createdAt: firemix().now(),
+      createdByUserId: getMyUserId(getAppState()),
+      isDeleted: false,
+    };
+
+    await getTranscriptionRepo().createTranscription(transcription);
+
+    try {
+      await invoke<void>("paste", { text: normalizedTranscript });
+    } catch (error) {
+      console.error("Failed to paste transcription", error);
+      showErrorSnackbar("Unable to paste transcription.");
+    }
   }, []);
 
   const startRecording = useCallback(async () => {
@@ -75,7 +130,7 @@ export const RootSideEffects = () => {
       return;
     }
 
-    const promise = (async () => {
+    const promise = (async (): Promise<StopRecordingResponse | null> => {
       if (startPendingRef.current) {
         try {
           await startPendingRef.current;
@@ -84,9 +139,11 @@ export const RootSideEffects = () => {
         }
       }
 
+      let audio: StopRecordingResponse | null = null;
+
       try {
         await invoke<void>("set_phase", { phase: "loading" });
-        await invoke<void>("stop_recording");
+        audio = await invoke<StopRecordingResponse>("stop_recording");
       } catch (error) {
         console.error("Failed to stop recording via hotkey", error);
         showErrorSnackbar("Unable to stop recording. Please try again.");
@@ -95,39 +152,25 @@ export const RootSideEffects = () => {
         await invoke<void>("set_phase", { phase: "idle" });
         stopPendingRef.current = null;
       }
+
+      return audio;
     })();
 
     stopPendingRef.current = promise;
-    await promise;
+    const audio = await promise;
 
     isRecordingRef.current = false;
-  }, []);
+
+    if (audio) {
+      await handleRecordedAudio(audio);
+    }
+  }, [handleRecordedAudio]);
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
     onActivate: startRecording,
     onDeactivate: stopRecording,
   });
-
-  useTauriListen<TranscriptionReceivedPayload>(
-    "transcription_received",
-    async (payload) => {
-      const normalizedTranscript = payload.text.trim();
-      if (!normalizedTranscript) {
-        return;
-      }
-
-      const transcription: Transcription = {
-        id: crypto.randomUUID(),
-        transcript: normalizedTranscript,
-        createdAt: firemix().now(),
-        createdByUserId: getMyUserId(getAppState()),
-        isDeleted: false,
-      };
-
-      await getTranscriptionRepo().createTranscription(transcription);
-    },
-  );
 
   useTauriListen<KeysHeldPayload>("keys_held", (payload) => {
     const existing = getAppState().keysHeld;

@@ -13,5 +13,5 @@ pub use recording::{
     RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult, EVT_REC_LEVEL,
 };
 pub use term::Term;
-pub use transcription::{Transcription, TranscriptionReceivedPayload, EVT_TRANSCRIPTION_RECEIVED};
+pub use transcription::Transcription;
 pub use user::User;
