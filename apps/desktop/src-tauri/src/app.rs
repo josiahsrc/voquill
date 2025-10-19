@@ -98,7 +98,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
 #[cfg(target_os = "macos")]
 fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    crate::platform::macos::notch_overlay::ensure_overlay_visible(app)
+    crate::platform::macos::notch_overlay::prepare_overlay(app)
 }
 
 #[cfg(not(target_os = "macos"))]
