@@ -166,6 +166,10 @@ pub fn start_recording(
             if let Err(err) = app.emit_to(EventTarget::any(), EVT_REC_START, payload) {
                 eprintln!("Failed to emit recording-started event: {err}");
             }
+            #[cfg(target_os = "macos")]
+            if let Err(err) = crate::platform::macos::notch_overlay::show_overlay() {
+                eprintln!("Failed to show recording overlay: {err}");
+            }
             Ok(())
         }
         Err(err) => {
@@ -194,6 +198,10 @@ pub fn stop_recording(
 ) -> Result<(), String> {
     match recorder.stop() {
         Ok(result) => {
+            #[cfg(target_os = "macos")]
+            if let Err(err) = crate::platform::macos::notch_overlay::hide_overlay() {
+                eprintln!("Failed to hide recording overlay: {err}");
+            }
             platform_handle_recording_success(app.clone(), transcriber.inner().clone(), result);
             Ok(())
         }
@@ -204,11 +212,19 @@ pub fn stop_recording(
                 .unwrap_or(false);
 
             if not_recording {
+                #[cfg(target_os = "macos")]
+                if let Err(err) = crate::platform::macos::notch_overlay::hide_overlay() {
+                    eprintln!("Failed to hide recording overlay: {err}");
+                }
                 return Ok(());
             }
 
             let message = err.to_string();
             eprintln!("Failed to stop recording via command: {message}");
+            #[cfg(target_os = "macos")]
+            if let Err(err) = crate::platform::macos::notch_overlay::hide_overlay() {
+                eprintln!("Failed to hide recording overlay: {err}");
+            }
             platform_emit_recording_error(&app, message.clone());
             Err(message)
         }

@@ -1032,10 +1032,13 @@ name = "desktop"
 version = "0.1.0"
 dependencies = [
  "arboard",
+ "cocoa",
  "core-foundation 0.10.1",
  "core-graphics 0.24.0",
  "cpal",
+ "dispatch",
  "enigo",
+ "objc",
  "rdev",
  "reqwest",
  "rodio",

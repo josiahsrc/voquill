@@ -8,6 +8,9 @@ use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
+#[cfg(target_os = "macos")]
+use crate::platform::macos::notch_overlay;
+
 pub struct RecordingManager {
     inner: Arc<Mutex<Option<ActiveRecording>>>,
 }
@@ -506,10 +509,58 @@ where
             config,
             move |data: &[T], _| {
                 let mut mono_samples = Vec::with_capacity(data.len() / channel_count + 1);
+                #[cfg(target_os = "macos")]
+                let mut sum_squares = 0.0f64;
+                #[cfg(target_os = "macos")]
+                let mut sample_count = 0usize;
+                #[cfg(target_os = "macos")]
+                let mut peak = 0.0f64;
 
-                if channel_count == 1 {
-                    for sample in data {
-                        mono_samples.push((*sample).to_sample::<f32>());
+                if let Ok(mut shared_buffer) = callback_buffer.lock() {
+                    if channel_count == 1 {
+                        for sample in data {
+                            mono_samples.push((*sample).to_sample::<f32>());
+                            let value = (*sample).to_sample::<f32>();
+                            #[cfg(target_os = "macos")]
+                            {
+                                let sample64 = value as f64;
+                                sum_squares += sample64 * sample64;
+                                sample_count += 1;
+                                if sample64.abs() > peak {
+                                    peak = sample64.abs();
+                                }
+                            }
+                            shared_buffer.push(value);
+                        }
+                    } else {
+                        let mut index = 0;
+                        while index < data.len() {
+                            let mut sum = 0.0f32;
+                            let mut samples_in_frame = 0usize;
+                            for channel in 0..channel_count {
+                                let sample_index = index + channel;
+                                if sample_index >= data.len() {
+                                    break;
+                                }
+                                let sample_value = data[sample_index].to_sample::<f32>();
+                                sum += sample_value;
+                                samples_in_frame += 1;
+                                #[cfg(target_os = "macos")]
+                                {
+                                    let sample64 = sample_value as f64;
+                                    sum_squares += sample64 * sample64;
+                                    sample_count += 1;
+                                    if sample64.abs() > peak {
+                                        peak = sample64.abs();
+                                    }
+                                }
+                            }
+                            if samples_in_frame > 0 {
+                                let averaged = sum / samples_in_frame as f32;
+                                shared_buffer.push(averaged);
+                            }
+                            index += channel_count;
+                        }
                     }
                 } else {
                     let mut index = 0;
@@ -537,6 +588,15 @@ where
 
                 if let Ok(mut shared_buffer) = callback_buffer.lock() {
                     shared_buffer.extend_from_slice(&mono_samples);
+                }
+
+                #[cfg(target_os = "macos")]
+                {
+                    if sample_count > 0 {
+                        let rms = (sum_squares / sample_count as f64).sqrt();
+                        let amplitude = (rms * 0.9 + peak * 0.85).min(1.5);
+                        notch_overlay::register_amplitude(amplitude.min(1.0));
+                    }
                 }
             },
             |err| eprintln!("[recording] stream error: {err}"),
