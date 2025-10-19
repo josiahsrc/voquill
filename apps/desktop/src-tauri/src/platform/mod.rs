@@ -8,6 +8,7 @@ pub mod macos;
 pub mod windows;
 
 pub mod audio;
+pub mod permissions;
 pub mod whisper;
 
 #[cfg(desktop)]
