@@ -1,25 +1,17 @@
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, EventTarget, State};
 
-use crate::domain::{RecordingLevelPayload, OverlayPhase, OverlayPhasePayload, RecordingStartedPayload, EVT_OVERLAY_PHASE, EVT_REC_START, EVT_REC_LEVEL};
+use crate::domain::{
+    OverlayPhase, OverlayPhasePayload, RecordingLevelPayload, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
+};
 use crate::platform::LevelCallback;
 
 #[cfg(target_os = "linux")]
-use crate::platform::linux::input::{
-    emit_recording_error as platform_emit_recording_error,
-    handle_recording_success as platform_handle_recording_success,
-};
+use crate::platform::linux::input::handle_recording_success as platform_handle_recording_success;
 #[cfg(target_os = "macos")]
-use crate::platform::macos::input::{
-    emit_recording_error as platform_emit_recording_error,
-    handle_recording_success as platform_handle_recording_success,
-};
+use crate::platform::macos::input::handle_recording_success as platform_handle_recording_success;
 #[cfg(target_os = "windows")]
-use crate::platform::windows::input::{
-    emit_recording_error as platform_emit_recording_error,
-    handle_recording_success as platform_handle_recording_success,
-};
+use crate::platform::windows::input::handle_recording_success as platform_handle_recording_success;
 
 #[tauri::command]
 pub async fn user_set_one(
@@ -151,23 +143,12 @@ pub fn start_recording(
     let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
         let payload = RecordingLevelPayload { levels };
         if let Err(err) = level_emit_handle.emit_to(EventTarget::any(), EVT_REC_LEVEL, payload) {
-            eprintln!("Failed to emit recording-level event: {err}");
+            eprintln!("Failed to emit recording_level event: {err}");
         }
     });
 
     match recorder.start(Some(level_emitter)) {
-        Ok(()) => {
-            let started_at_ms = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis()
-                .min(u128::from(u64::MAX)) as u64;
-            let payload = RecordingStartedPayload { started_at_ms };
-            if let Err(err) = app.emit_to(EventTarget::any(), EVT_REC_START, payload) {
-                eprintln!("Failed to emit recording-started event: {err}");
-            }
-            Ok(())
-        }
+        Ok(()) => Ok(()),
         Err(err) => {
             let already_recording = (&*err)
                 .downcast_ref::<crate::errors::RecordingError>()
@@ -180,7 +161,6 @@ pub fn start_recording(
 
             let message = err.to_string();
             eprintln!("Failed to start recording via command: {message}");
-            platform_emit_recording_error(&app, message.clone());
             Err(message)
         }
     }
@@ -209,7 +189,6 @@ pub fn stop_recording(
 
             let message = err.to_string();
             eprintln!("Failed to stop recording via command: {message}");
-            platform_emit_recording_error(&app, message.clone());
             Err(message)
         }
     }
@@ -231,21 +210,4 @@ pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
 
     app.emit_to(EventTarget::any(), EVT_OVERLAY_PHASE, payload)
         .map_err(|err| err.to_string())
-}
-
-#[tauri::command]
-pub async fn get_option_key_count(
-    counter: State<'_, crate::state::OptionKeyCounter>,
-    database: State<'_, crate::state::OptionKeyDatabase>,
-) -> Result<u64, String> {
-    match crate::db::queries::fetch_count(database.pool()).await {
-        Ok(count) => {
-            counter.store(count);
-            Ok(count)
-        }
-        Err(err) => {
-            eprintln!("db read failed: {err}");
-            Ok(counter.load())
-        }
-    }
 }

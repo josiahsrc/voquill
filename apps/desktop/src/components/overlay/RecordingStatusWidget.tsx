@@ -3,7 +3,6 @@ import { Box } from "@mui/material";
 import { keyframes } from "@mui/system";
 import { useRef } from "react";
 import { useAppStore } from "../../store";
-import { useRecordingTelemetry } from "../../hooks/useRecordingTelemetry";
 
 const BAR_COUNT = 6;
 
@@ -19,7 +18,7 @@ const pulse = keyframes`
 export const RecordingStatusWidget = () => {
   const theme = useTheme();
   const phase = useAppStore((state) => state.overlayPhase);
-  const { recordingState } = useRecordingTelemetry();
+  const levels = useAppStore((state) => state.audioLevels);
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
 
@@ -28,7 +27,6 @@ export const RecordingStatusWidget = () => {
   
   // Map each bar to different frequency ranges from the levels array
   const getBarLevel = (barIndex: number) => {
-    const levels = recordingState.levels;
     if (levels.length === 0) return 0;
     
     // Divide the frequency spectrum into segments for each bar

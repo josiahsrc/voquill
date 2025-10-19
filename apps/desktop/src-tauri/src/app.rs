@@ -35,12 +35,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             })
             .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-            let initial_count =
-                tauri::async_runtime::block_on(crate::db::queries::ensure_row(pool.clone()))
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
-            app.manage(crate::state::OptionKeyCounter::new(initial_count));
 
             #[cfg(desktop)]
             {
@@ -78,7 +73,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            crate::commands::get_option_key_count,
             crate::commands::user_get_one,
             crate::commands::user_set_one,
             crate::commands::start_recording,

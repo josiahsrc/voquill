@@ -13,6 +13,7 @@ export type AppState = {
   keysHeld: string[];
   isRecordingHotkey: boolean;
   overlayPhase: OverlayPhase;
+  audioLevels: number[];
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -40,6 +41,7 @@ export const INITIAL_APP_STATE: AppState = {
   termById: {},
   transcriptionById: {},
   overlayPhase: "idle",
+  audioLevels: [],
   hotkeyById: {},
   currentUserId: null,
   config: null,
