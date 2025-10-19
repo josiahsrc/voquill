@@ -1,4 +1,3 @@
-use crate::db;
 use crate::domain::{
     AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingLevelPayload,
     RecordingResult, RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED,
@@ -11,9 +10,14 @@ use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
 use core_graphics::event::{
     CGEventFlags, CGEventTap, CGEventTapLocation, CGEventTapOptions, CGEventTapPlacement,
     CGEventType, EventField,
+    RecordingErrorPayload, RecordingFinishedPayload, RecordingResult, TranscriptionReceivedPayload,
+    EVT_REC_ERROR, EVT_REC_FINISH, EVT_TRANSCRIPTION_RECEIVED,
 };
-use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
-use std::sync::atomic::{AtomicBool, Ordering};
+use crate::platform::Transcriber;
+use core_graphics::{
+    event::CGEventTapLocation,
+    event_source::{CGEventSource, CGEventSourceStateID},
+};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, EventTarget, Manager};
@@ -194,6 +198,7 @@ pub fn spawn_alt_listener(
 
     Ok(())
 }
+use tauri::{Emitter, EventTarget};
 
 pub(crate) fn handle_recording_success(
     emit_handle: tauri::AppHandle,

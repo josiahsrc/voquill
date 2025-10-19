@@ -53,14 +53,14 @@ export const OverlayRoot = () => {
               }
               const withinX =
                 cursor.x >= monitor.position.x &&
-                cursor.x <
-                  monitor.position.x + monitor.size.width;
+                cursor.x < monitor.position.x + monitor.size.width;
               const withinY =
                 cursor.y >= monitor.position.y &&
-                cursor.y <
-                  monitor.position.y + monitor.size.height;
+                cursor.y < monitor.position.y + monitor.size.height;
               return withinX && withinY;
-            }) ?? monitors?.[0];
+            }) ??
+            monitors?.[0] ??
+            null;
 
           if (!targetMonitor) {
             targetMonitor = await currentMonitor().catch(() => null);
@@ -76,14 +76,14 @@ export const OverlayRoot = () => {
             const logicalX = Math.round(
               targetMonitor.position.x / scaleFactor +
                 logicalWidth / 2 -
-                OVERLAY_WIDTH / 2,
+                OVERLAY_WIDTH / 2
             );
             const logicalY = Math.round(
-              targetMonitor.position.y / scaleFactor + TOP_MARGIN,
+              targetMonitor.position.y / scaleFactor + TOP_MARGIN
             );
 
             await windowRef.setPosition(
-              new LogicalPosition(logicalX, logicalY),
+              new LogicalPosition(logicalX, logicalY)
             );
           }
 

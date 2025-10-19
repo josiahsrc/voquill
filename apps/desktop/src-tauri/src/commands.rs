@@ -22,11 +22,6 @@ use crate::platform::windows::input::{
 };
 
 #[tauri::command]
-pub fn greet(name: &str) -> String {
-    format!("Hello, {name}! You've been greeted from Rust!")
-}
-
-#[tauri::command]
 pub async fn user_set_one(
     user: crate::domain::User,
     database: State<'_, crate::state::OptionKeyDatabase>,
