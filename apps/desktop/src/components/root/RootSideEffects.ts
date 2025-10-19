@@ -106,6 +106,7 @@ export const RootSideEffects = () => {
       try {
         await invoke<void>("set_phase", { phase: "recording" });
         await invoke<void>("start_recording");
+        await invoke<void>("play_audio", { clip: "start_recording_clip" });
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
         await invoke<void>("set_phase", { phase: "idle" });
@@ -144,6 +145,7 @@ export const RootSideEffects = () => {
       try {
         await invoke<void>("set_phase", { phase: "loading" });
         audio = await invoke<StopRecordingResponse>("stop_recording");
+        await invoke<void>("play_audio", { clip: "stop_recording_clip" });
       } catch (error) {
         console.error("Failed to stop recording via hotkey", error);
         showErrorSnackbar("Unable to stop recording. Please try again.");

@@ -19,6 +19,14 @@ pub struct StopRecordingResponse {
     pub sample_rate: u32,
 }
 
+#[derive(serde::Deserialize)]
+pub enum AudioClip {
+    #[serde(rename = "start_recording_clip")]
+    StartRecordingClip,
+    #[serde(rename = "stop_recording_clip")]
+    StopRecordingClip,
+}
+
 #[tauri::command]
 pub async fn user_set_one(
     user: crate::domain::User,
@@ -138,6 +146,16 @@ pub async fn hotkey_delete(
     crate::db::hotkey_queries::delete_hotkey(database.pool(), &id)
         .await
         .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub fn play_audio(clip: AudioClip) -> Result<(), String> {
+    match clip {
+        AudioClip::StartRecordingClip => crate::system::audio_feedback::play_start_recording_clip(),
+        AudioClip::StopRecordingClip => crate::system::audio_feedback::play_stop_recording_clip(),
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

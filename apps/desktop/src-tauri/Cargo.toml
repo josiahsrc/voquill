@@ -37,6 +37,7 @@ cpal = "0.15"
 whisper-rs = { version = "0.15.1", default-features = false }
 tauri-plugin-os = "2.3.1"
 rdev = { git = "https://github.com/josiahsrc/rdev" }
+rodio = "0.17"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"
@@ -48,7 +49,6 @@ dispatch = "0.2"
 [target.'cfg(target_os = "linux")'.dependencies]
 enigo = "0.1"
 arboard = "3"
-rodio = "0.17"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 enigo = "0.1"
