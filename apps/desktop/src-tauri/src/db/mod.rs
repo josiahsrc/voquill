@@ -12,6 +12,8 @@ pub const TRANSCRIPTIONS_MIGRATION_SQL: &str = include_str!("migrations/002_tran
 pub const TERMS_MIGRATION_SQL: &str = include_str!("migrations/003_terms.sql");
 pub const HOTKEYS_MIGRATION_SQL: &str = include_str!("migrations/004_hotkeys.sql");
 pub const DROP_USERS_MIGRATION_SQL: &str = include_str!("migrations/005_drop_users.sql");
+pub const USER_PREFERRED_MICROPHONE_MIGRATION_SQL: &str =
+    include_str!("migrations/006_user_preferred_microphone.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -49,6 +51,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 6,
             description: "drop_users_table",
             sql: DROP_USERS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 7,
+            description: "add_user_preferred_microphone",
+            sql: USER_PREFERRED_MICROPHONE_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

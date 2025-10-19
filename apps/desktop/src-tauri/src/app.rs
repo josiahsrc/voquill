@@ -75,6 +75,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .invoke_handler(tauri::generate_handler![
             crate::commands::user_get_one,
             crate::commands::user_set_one,
+            crate::commands::list_microphones,
             crate::commands::start_recording,
             crate::commands::stop_recording,
             crate::commands::transcribe_audio,

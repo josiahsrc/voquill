@@ -4,17 +4,19 @@ use crate::domain::User;
 
 pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Error> {
     sqlx::query(
-        "INSERT INTO user_profiles (id, name, bio, onboarded)
-         VALUES (?1, ?2, ?3, ?4)
+        "INSERT INTO user_profiles (id, name, bio, onboarded, preferred_microphone)
+         VALUES (?1, ?2, ?3, ?4, ?5)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
-            onboarded = excluded.onboarded",
+            onboarded = excluded.onboarded,
+            preferred_microphone = excluded.preferred_microphone",
     )
     .bind(&user.id)
     .bind(&user.name)
     .bind(&user.bio)
     .bind(if user.onboarded { 1 } else { 0 })
+    .bind(&user.preferred_microphone)
     .execute(&pool)
     .await?;
 
@@ -22,7 +24,9 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
 }
 
 pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
-    let row = sqlx::query("SELECT id, name, bio, onboarded FROM user_profiles LIMIT 1")
+    let row = sqlx::query(
+        "SELECT id, name, bio, onboarded, preferred_microphone FROM user_profiles LIMIT 1",
+    )
         .fetch_optional(&pool)
         .await?;
 
@@ -34,6 +38,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 name: row.get::<String, _>("name"),
                 bio: row.get::<String, _>("bio"),
                 onboarded: onboarded_raw != 0,
+                preferred_microphone: row.get::<Option<String>, _>("preferred_microphone"),
             })
         }
         None => None,

@@ -14,6 +14,7 @@ use crate::platform::macos::input::paste_text_into_focused_field as platform_pas
 use crate::platform::windows::input::paste_text_into_focused_field as platform_paste_text;
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StopRecordingResponse {
     pub samples: Vec<f32>,
     pub sample_rate: u32,
@@ -25,6 +26,12 @@ pub enum AudioClip {
     StartRecordingClip,
     #[serde(rename = "stop_recording_clip")]
     StopRecordingClip,
+}
+
+#[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StartRecordingArgs {
+    pub preferred_microphone: Option<String>,
 }
 
 #[tauri::command]
@@ -44,6 +51,11 @@ pub async fn user_get_one(
     crate::db::user_queries::fetch_user(database.pool())
         .await
         .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub fn list_microphones() -> Vec<crate::platform::audio::InputDeviceDescriptor> {
+    crate::platform::audio::list_input_devices()
 }
 
 #[tauri::command]
@@ -162,7 +174,12 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
 pub fn start_recording(
     app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
+    args: Option<StartRecordingArgs>,
 ) -> Result<(), String> {
+    let options = args.unwrap_or_default();
+
+    recorder.set_preferred_input_device(options.preferred_microphone.clone());
+
     let level_emit_handle = app.clone();
     let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
         let payload = RecordingLevelPayload { levels };

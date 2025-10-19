@@ -9,17 +9,26 @@ import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
-import { getMyUserId } from "../../utils/user.utils";
+import { getMyUser, getMyUserId } from "../../utils/user.utils";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { loadHotkeys } from "../../actions/hotkey.actions";
+import { OverlayPhase } from "../../types/overlay.types";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
-  sample_rate?: number;
+  sampleRate?: number;
 };
 
 type KeysHeldPayload = {
   keys: string[];
+};
+
+type OverlayPhasePayload = {
+  phase: OverlayPhase;
+};
+
+type RecordingLevelPayload = {
+  levels?: number[];
 };
 
 export const RootSideEffects = () => {
@@ -36,7 +45,7 @@ export const RootSideEffects = () => {
     const payloadSamples = Array.isArray(payload.samples)
       ? payload.samples
       : Array.from(payload.samples ?? []);
-    const rate = payload.sample_rate;
+    const rate = payload.sampleRate;
 
     if (rate == null || Number.isNaN(rate)) {
       console.error("Received audio payload without sample rate", payload);
@@ -87,8 +96,8 @@ export const RootSideEffects = () => {
   }, []);
 
   const startRecording = useCallback(async () => {
-    const isHotkeyRecording = getAppState().isRecordingHotkey;
-    if (isHotkeyRecording) {
+    const state = getAppState();
+    if (state.isRecordingHotkey) {
       return;
     }
 
@@ -102,10 +111,14 @@ export const RootSideEffects = () => {
       return;
     }
 
+    const preferredMicrophone = getMyUser(state)?.preferredMicrophone ?? null;
+
     const promise = (async () => {
       try {
         await invoke<void>("set_phase", { phase: "recording" });
-        await invoke<void>("start_recording");
+        await invoke<void>("start_recording", {
+          args: { preferredMicrophone },
+        });
         await invoke<void>("play_audio", { clip: "start_recording_clip" });
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
@@ -182,6 +195,26 @@ export const RootSideEffects = () => {
 
     produceAppState((draft) => {
       draft.keysHeld = payload.keys;
+    });
+  });
+
+  useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
+    produceAppState((draft) => {
+      draft.overlayPhase = payload.phase;
+      if (payload.phase !== "recording") {
+        draft.audioLevels = [];
+      }
+    });
+  });
+
+  useTauriListen<RecordingLevelPayload>("recording_level", (payload) => {
+    const raw = Array.isArray(payload.levels) ? payload.levels : [];
+    const sanitized = raw.map((value) =>
+      typeof value === "number" && Number.isFinite(value) ? value : 0,
+    );
+
+    produceAppState((draft) => {
+      draft.audioLevels = sanitized;
     });
   });
 

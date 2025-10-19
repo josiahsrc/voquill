@@ -3,8 +3,9 @@ use crate::errors::RecordingError;
 use crate::platform::{LevelCallback, Recorder};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, HostId, SampleFormat, Stream, StreamConfig};
+use serde::Serialize;
 use std::cmp;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
@@ -13,6 +14,7 @@ use crate::platform::macos::notch_overlay;
 
 pub struct RecordingManager {
     inner: Arc<Mutex<Option<ActiveRecording>>>,
+    preferred_input_name: Arc<Mutex<Option<String>>>,
 }
 
 struct ActiveRecording {
@@ -116,6 +118,7 @@ impl RecordingManager {
     pub fn new() -> Self {
         Self {
             inner: Arc::new(Mutex::new(None)),
+            preferred_input_name: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -126,6 +129,22 @@ impl RecordingManager {
     }
 
     fn start_recording(&self, level_callback: Option<LevelCallback>) -> Result<(), RecordingError> {
+        let preferred_label = {
+            let guard = match self.preferred_input_name.lock() {
+                Ok(guard) => guard,
+                Err(poisoned) => poisoned.into_inner(),
+            };
+            guard.clone()
+        };
+        let preferred_trimmed = preferred_label
+            .as_ref()
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .map(|value| value.to_string());
+        let preferred_normalized = preferred_trimmed
+            .as_ref()
+            .map(|value| value.to_ascii_lowercase());
+
         let mut guard = self.guard()?;
 
         if guard.is_some() {
@@ -144,7 +163,12 @@ impl RecordingManager {
                 }
             };
 
-            match start_recording_on_host(&host, emitter.clone()) {
+            match start_recording_on_host(
+                &host,
+                emitter.clone(),
+                preferred_trimmed.as_deref(),
+                preferred_normalized.as_deref(),
+            ) {
                 Ok(active) => {
                     *guard = Some(active);
                     return Ok(());
@@ -209,6 +233,21 @@ impl Recorder for RecordingManager {
 
     fn stop(&self) -> Result<RecordingResult, Box<dyn std::error::Error>> {
         self.stop_recording().map_err(|err| Box::new(err) as _)
+    }
+
+    fn set_preferred_input_device(&self, name: Option<String>) {
+        let sanitized = name
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+
+        match self.preferred_input_name.lock() {
+            Ok(mut guard) => {
+                *guard = sanitized;
+            }
+            Err(poisoned) => {
+                *poisoned.into_inner() = sanitized;
+            }
+        }
     }
 }
 
@@ -320,12 +359,18 @@ fn host_rank(_id: HostId) -> u8 {
 fn start_recording_on_host(
     host: &cpal::Host,
     level_emitter: Option<Arc<LevelEmitter>>,
+    preferred_label: Option<&str>,
+    preferred_normalized: Option<&str>,
 ) -> Result<ActiveRecording, RecordingError> {
     let default_output_name = host
         .default_output_device()
         .and_then(|device| device.name().ok());
 
-    let mut candidates = device_candidates_for_host(host, default_output_name.as_deref());
+    let mut candidates = device_candidates_for_host(
+        host,
+        default_output_name.as_deref(),
+        preferred_normalized,
+    );
     candidates.sort_by_key(|candidate| candidate.priority);
 
     let mut last_err: Option<RecordingError> = None;
@@ -335,9 +380,11 @@ fn start_recording_on_host(
             device,
             name,
             avoid_reason,
+            matches_preferred,
             ..
         } = candidate;
         let label = name.as_deref().unwrap_or("<unknown>");
+        let fallback_preferred = preferred_label.or(preferred_normalized);
 
         if let Some(reason) = avoid_reason {
             eprintln!(
@@ -400,10 +447,22 @@ fn start_recording_on_host(
             continue;
         }
 
-        eprintln!(
-            "[recording] using input device '{label}' via host {:?}",
-            host.id()
-        );
+        if matches_preferred {
+            eprintln!(
+                "[recording] using preferred input device '{label}' via host {:?}",
+                host.id()
+            );
+        } else if let Some(preferred) = fallback_preferred {
+            eprintln!(
+                "[recording] preferred input '{preferred}' not available; using '{label}' via host {:?}",
+                host.id()
+            );
+        } else {
+            eprintln!(
+                "[recording] using input device '{label}' via host {:?}",
+                host.id()
+            );
+        }
 
         return Ok(ActiveRecording {
             _stream: stream,
@@ -420,75 +479,166 @@ fn start_recording_on_host(
 struct DeviceCandidate {
     device: Device,
     name: Option<String>,
+    normalized_name: Option<String>,
     priority: u32,
     avoid_reason: Option<String>,
+    matches_preferred: bool,
+    is_default: bool,
 }
 
 fn device_candidates_for_host(
     host: &cpal::Host,
     default_output_name: Option<&str>,
+    preferred_name: Option<&str>,
 ) -> Vec<DeviceCandidate> {
     let mut candidates = Vec::new();
     let mut seen = HashSet::new();
+    let preferred_lower = preferred_name.map(|value| value.trim().to_ascii_lowercase());
 
     if let Some(default_device) = host.default_input_device() {
         let name = default_device.name().ok();
-        let key = name
+        let normalized_name = name
             .as_deref()
-            .map(|value| value.to_ascii_lowercase())
+            .map(|value| value.trim().to_ascii_lowercase());
+        let key = normalized_name
+            .clone()
             .unwrap_or_else(|| "<unknown>".to_string());
 
+        let matches_preferred = preferred_lower
+            .as_ref()
+            .map(|pref| normalized_name.as_ref().map(|label| label == pref).unwrap_or(false))
+            .unwrap_or(false);
+
         let should_avoid = should_avoid_input_device(&default_device, default_output_name);
-        let priority = if should_avoid { 300 } else { 5 };
+        let mut priority = if matches_preferred { 0 } else { 5 };
+        if should_avoid {
+            priority = if matches_preferred { 1 } else { 300 };
+        }
         let avoid_reason = if should_avoid {
             Some("avoiding low-quality default device".to_string())
         } else {
             None
         };
 
-        seen.insert(key);
+        seen.insert(key.clone());
         candidates.push(DeviceCandidate {
             device: default_device,
             name,
+            normalized_name: Some(key),
             priority,
             avoid_reason,
+            matches_preferred,
+            is_default: true,
         });
     }
 
     if let Ok(devices) = host.input_devices() {
         for device in devices {
             let name = device.name().ok();
-            let key = name
+            let normalized_name = name
                 .as_deref()
-                .map(|value| value.to_ascii_lowercase())
+                .map(|value| value.trim().to_ascii_lowercase());
+            let key = normalized_name
+                .clone()
                 .unwrap_or_else(|| "<unknown>".to_string());
 
             if seen.contains(&key) {
                 continue;
             }
 
-            let mut priority = 100;
+            let matches_preferred = preferred_lower
+                .as_ref()
+                .map(|pref| normalized_name.as_ref().map(|label| label == pref).unwrap_or(false))
+                .unwrap_or(false);
+
+            let mut priority = if matches_preferred { 0 } else { 100 };
+            let mut avoid_reason = None;
             if let Some(ref label) = name {
                 if is_builtin_microphone_name(label) {
                     priority = 0;
                 } else if is_preferred_input_device_name(label) {
-                    priority = 10;
+                    priority = cmp::min(priority, 10);
                 } else if name_has_low_quality_keyword(label) {
-                    priority = 250;
+                    priority = cmp::max(priority, 250);
+                    avoid_reason = Some("potential low-quality input".to_string());
                 }
             }
 
-            seen.insert(key);
+            seen.insert(key.clone());
             candidates.push(DeviceCandidate {
                 device,
                 name,
+                normalized_name: Some(key),
                 priority,
-                avoid_reason: None,
+                avoid_reason,
+                matches_preferred,
+                is_default: false,
             });
         }
     }
 
     candidates
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct InputDeviceDescriptor {
+    pub label: String,
+    pub is_default: bool,
+    pub caution: bool,
+}
+
+pub fn list_input_devices() -> Vec<InputDeviceDescriptor> {
+    let mut devices: HashMap<String, InputDeviceDescriptor> = HashMap::new();
+
+    for host_id in ordered_host_ids() {
+        let host = match cpal::host_from_id(host_id) {
+            Ok(value) => value,
+            Err(err) => {
+                eprintln!("[recording] failed to enumerate host {host_id:?}: {err}");
+                continue;
+            }
+        };
+
+        let default_output_name = host
+            .default_output_device()
+            .and_then(|device| device.name().ok());
+
+        let candidates = device_candidates_for_host(&host, default_output_name.as_deref(), None);
+
+        for candidate in candidates {
+            let label = candidate
+                .name
+                .as_ref()
+                .map(|value| value.trim().to_string())
+                .unwrap_or_else(|| "<unknown>".to_string());
+            let key = candidate
+                .normalized_name
+                .clone()
+                .unwrap_or_else(|| label.to_ascii_lowercase());
+
+            let entry = devices.entry(key).or_insert_with(|| InputDeviceDescriptor {
+                label: label.clone(),
+                is_default: false,
+                caution: candidate.avoid_reason.is_some(),
+            });
+
+            entry.label = label;
+            if candidate.avoid_reason.is_some() {
+                entry.caution = true;
+            }
+            if candidate.is_default {
+                entry.is_default = true;
+            }
+        }
+    }
+
+    let mut list: Vec<_> = devices.into_values().collect();
+    list.sort_by(|a, b| {
+        b.is_default
+            .cmp(&a.is_default)
+            .then_with(|| a.label.to_ascii_lowercase().cmp(&b.label.to_ascii_lowercase()))
+    });
+    list
 }
 
 fn build_input_stream<T>(
@@ -516,50 +666,18 @@ where
                 #[cfg(target_os = "macos")]
                 let mut peak = 0.0f64;
 
-                if let Ok(mut shared_buffer) = callback_buffer.lock() {
-                    if channel_count == 1 {
-                        for sample in data {
-                            mono_samples.push((*sample).to_sample::<f32>());
-                            let value = (*sample).to_sample::<f32>();
-                            #[cfg(target_os = "macos")]
-                            {
-                                let sample64 = value as f64;
-                                sum_squares += sample64 * sample64;
-                                sample_count += 1;
-                                if sample64.abs() > peak {
-                                    peak = sample64.abs();
-                                }
+                if channel_count == 1 {
+                    for sample in data {
+                        let value = (*sample).to_sample::<f32>();
+                        mono_samples.push(value);
+                        #[cfg(target_os = "macos")]
+                        {
+                            let sample64 = value as f64;
+                            sum_squares += sample64 * sample64;
+                            sample_count += 1;
+                            if sample64.abs() > peak {
+                                peak = sample64.abs();
                             }
-                            shared_buffer.push(value);
-                        }
-                    } else {
-                        let mut index = 0;
-                        while index < data.len() {
-                            let mut sum = 0.0f32;
-                            let mut samples_in_frame = 0usize;
-                            for channel in 0..channel_count {
-                                let sample_index = index + channel;
-                                if sample_index >= data.len() {
-                                    break;
-                                }
-                                let sample_value = data[sample_index].to_sample::<f32>();
-                                sum += sample_value;
-                                samples_in_frame += 1;
-                                #[cfg(target_os = "macos")]
-                                {
-                                    let sample64 = sample_value as f64;
-                                    sum_squares += sample64 * sample64;
-                                    sample_count += 1;
-                                    if sample64.abs() > peak {
-                                        peak = sample64.abs();
-                                    }
-                                }
-                            }
-                            if samples_in_frame > 0 {
-                                let averaged = sum / samples_in_frame as f32;
-                                shared_buffer.push(averaged);
-                            }
-                            index += channel_count;
                         }
                     }
                 } else {
@@ -572,8 +690,18 @@ where
                             if sample_index >= data.len() {
                                 break;
                             }
-                            sum += data[sample_index].to_sample::<f32>();
+                            let sample_value = data[sample_index].to_sample::<f32>();
+                            sum += sample_value;
                             samples_in_frame += 1;
+                            #[cfg(target_os = "macos")]
+                            {
+                                let sample64 = sample_value as f64;
+                                sum_squares += sample64 * sample64;
+                                sample_count += 1;
+                                if sample64.abs() > peak {
+                                    peak = sample64.abs();
+                                }
+                            }
                         }
                         if samples_in_frame > 0 {
                             mono_samples.push(sum / samples_in_frame as f32);

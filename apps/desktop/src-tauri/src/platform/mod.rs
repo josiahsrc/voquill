@@ -23,6 +23,7 @@ pub trait Recorder: Send + Sync {
         level_callback: Option<LevelCallback>,
     ) -> Result<(), Box<dyn std::error::Error>>;
     fn stop(&self) -> Result<crate::domain::RecordingResult, Box<dyn std::error::Error>>;
+    fn set_preferred_input_device(&self, _name: Option<String>) {}
 }
 
 pub trait Transcriber: Send + Sync {

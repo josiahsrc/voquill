@@ -10,4 +10,5 @@ export type User = {
   onboarded: boolean;
   onboardedAt: Nullable<FiremixTimestamp>;
   timezone?: Nullable<string>;
+  preferredMicrophone?: Nullable<string>;
 };

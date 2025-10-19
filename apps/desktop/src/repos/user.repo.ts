@@ -8,6 +8,7 @@ type LocalUser = {
   name: string;
   bio: string;
   onboarded: boolean;
+  preferredMicrophone: string | null;
 };
 
 const toLocalUser = (user: User): LocalUser => ({
@@ -15,6 +16,7 @@ const toLocalUser = (user: User): LocalUser => ({
   name: user.name,
   bio: user.bio ?? "",
   onboarded: user.onboarded,
+  preferredMicrophone: user.preferredMicrophone ?? null,
 });
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -31,6 +33,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     onboarded: isOnboarded,
     onboardedAt: isOnboarded ? now : null,
     timezone: null,
+    preferredMicrophone: localUser.preferredMicrophone ?? null,
   };
 };
 

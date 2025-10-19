@@ -29,5 +29,6 @@ export const buildUser = (overrides?: Partial<User>): User => ({
   name: "Test User",
   onboarded: false,
   onboardedAt: null,
+  preferredMicrophone: null,
   ...overrides,
 });
