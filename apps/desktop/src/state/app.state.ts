@@ -1,4 +1,5 @@
 import { Hotkey, Member, Nullable, PartialConfig, Term, Transcription, User } from "@repo/types";
+import { PermissionMap } from "../types/permission.types";
 import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
@@ -14,6 +15,7 @@ export type AppState = {
   isRecordingHotkey: boolean;
   overlayPhase: OverlayPhase;
   audioLevels: number[];
+  permissions: PermissionMap;
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -42,6 +44,10 @@ export const INITIAL_APP_STATE: AppState = {
   transcriptionById: {},
   overlayPhase: "idle",
   audioLevels: [],
+  permissions: {
+    microphone: null,
+    "input-monitoring": null,
+  },
   hotkeyById: {},
   currentUserId: null,
   config: null,

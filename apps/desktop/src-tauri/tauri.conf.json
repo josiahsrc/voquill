@@ -34,11 +34,18 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": []
+    "resources": [],
+    "macOS": {
+      "hardenedRuntime": true,
+      "minimumSystemVersion": "13.3",
+      "entitlements": "macos/Voquill.entitlements"
+    }
   },
   "plugins": {
     "sql": {
-      "preload": ["sqlite:voquill.db"]
+      "preload": [
+        "sqlite:voquill.db"
+      ]
     },
     "updater": {
       "endpoints": [

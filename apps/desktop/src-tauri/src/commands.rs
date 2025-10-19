@@ -59,6 +59,16 @@ pub fn list_microphones() -> Vec<crate::platform::audio::InputDeviceDescriptor> 
 }
 
 #[tauri::command]
+pub fn ensure_microphone_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::ensure_microphone_permission()
+}
+
+#[tauri::command]
+pub fn ensure_input_monitor_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::ensure_input_monitor_permission()
+}
+
+#[tauri::command]
 pub async fn transcription_create(
     transcription: crate::domain::Transcription,
     database: State<'_, crate::state::OptionKeyDatabase>,

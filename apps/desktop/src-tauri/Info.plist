@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Voquill records your microphone so you can transcribe and insert speech anywhere.</string>
+    <key>NSInputMonitoringUsageDescription</key>
+    <string>Voquill needs input monitoring access to capture text from other applications for transcription</string>
+  </dict>
+</plist>

@@ -9,6 +9,7 @@ import { useKeyDownHandler } from "../../hooks/helper.hooks";
 import { getIsDevMode } from "../../utils/env.utils";
 import { RootSideEffects } from "./RootSideEffects";
 import { RootDialogs } from "./RootDialogs";
+import { PermissionSideEffects } from "./PermissionSideEffects";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -39,6 +40,7 @@ export default function Root() {
 
   return (
     <>
+      <PermissionSideEffects />
       <RootSideEffects />
       <RootDialogs />
       <HeaderPortalProvider>
