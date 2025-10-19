@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, EventTarget, State};
 
-use crate::domain::{RecordingLevelPayload, RecordingStartedPayload, EVT_REC_LEVEL, EVT_REC_START};
+use crate::domain::{RecordingLevelPayload, OverlayPhase, OverlayPhasePayload, RecordingStartedPayload, EVT_OVERLAY_PHASE, EVT_REC_START, EVT_REC_LEVEL};
 use crate::platform::LevelCallback;
 
 #[cfg(target_os = "linux")]
@@ -166,10 +166,6 @@ pub fn start_recording(
             if let Err(err) = app.emit_to(EventTarget::any(), EVT_REC_START, payload) {
                 eprintln!("Failed to emit recording-started event: {err}");
             }
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::platform::macos::notch_overlay::show_overlay() {
-                eprintln!("Failed to show recording overlay: {err}");
-            }
             Ok(())
         }
         Err(err) => {
@@ -198,10 +194,6 @@ pub fn stop_recording(
 ) -> Result<(), String> {
     match recorder.stop() {
         Ok(result) => {
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::platform::macos::notch_overlay::hide_overlay() {
-                eprintln!("Failed to hide recording overlay: {err}");
-            }
             platform_handle_recording_success(app.clone(), transcriber.inner().clone(), result);
             Ok(())
         }
@@ -212,23 +204,33 @@ pub fn stop_recording(
                 .unwrap_or(false);
 
             if not_recording {
-                #[cfg(target_os = "macos")]
-                if let Err(err) = crate::platform::macos::notch_overlay::hide_overlay() {
-                    eprintln!("Failed to hide recording overlay: {err}");
-                }
                 return Ok(());
             }
 
             let message = err.to_string();
             eprintln!("Failed to stop recording via command: {message}");
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::platform::macos::notch_overlay::hide_overlay() {
-                eprintln!("Failed to hide recording overlay: {err}");
-            }
             platform_emit_recording_error(&app, message.clone());
             Err(message)
         }
     }
+}
+
+#[tauri::command]
+pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
+    let resolved =
+        OverlayPhase::from_str(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
+
+    #[cfg(target_os = "macos")]
+    if let Err(err) = crate::platform::macos::notch_overlay::set_phase(resolved.clone()) {
+        eprintln!("Failed to set macOS overlay phase: {err}");
+    }
+
+    let payload = OverlayPhasePayload {
+        phase: resolved.clone(),
+    };
+
+    app.emit_to(EventTarget::any(), EVT_OVERLAY_PHASE, payload)
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]

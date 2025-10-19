@@ -2,11 +2,8 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { Box } from "@mui/material";
 import { keyframes } from "@mui/system";
 import { useRef } from "react";
-import type { RecordingState } from "../../hooks/useRecordingTelemetry";
-
-type RecordingStatusWidgetProps = {
-  recordingState: RecordingState;
-};
+import { useAppStore } from "../../store";
+import { useRecordingTelemetry } from "../../hooks/useRecordingTelemetry";
 
 const BAR_COUNT = 6;
 
@@ -19,13 +16,13 @@ const pulse = keyframes`
   }
 `;
 
-export const RecordingStatusWidget = ({
-  recordingState,
-}: RecordingStatusWidgetProps) => {
+export const RecordingStatusWidget = () => {
   const theme = useTheme();
-  const isListening = recordingState.phase === "listening";
-  const isProcessing = recordingState.phase === "processing";
-  
+  const phase = useAppStore((state) => state.overlayPhase);
+  const { recordingState } = useRecordingTelemetry();
+  const isListening = phase === "recording";
+  const isProcessing = phase === "loading";
+
   // Track the maximum level seen in each frequency bin for adaptive normalization
   const maxLevelsRef = useRef<number[]>(Array(BAR_COUNT).fill(0.001)); // Start with small non-zero
   

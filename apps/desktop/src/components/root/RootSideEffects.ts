@@ -49,9 +49,11 @@ export const RootSideEffects = () => {
 
     const promise = (async () => {
       try {
+        await invoke<void>("set_phase", { phase: "recording" });
         await invoke<void>("start_recording");
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
+        await invoke<void>("set_phase", { phase: "idle" });
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
       } finally {
@@ -83,12 +85,14 @@ export const RootSideEffects = () => {
       }
 
       try {
+        await invoke<void>("set_phase", { phase: "loading" });
         await invoke<void>("stop_recording");
       } catch (error) {
         console.error("Failed to stop recording via hotkey", error);
         showErrorSnackbar("Unable to stop recording. Please try again.");
         suppressUntilRef.current = Date.now() + 700;
       } finally {
+        await invoke<void>("set_phase", { phase: "idle" });
         stopPendingRef.current = null;
       }
     })();

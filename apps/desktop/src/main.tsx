@@ -2,23 +2,23 @@ import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
-import ReactDOM from "react-dom/client";
-import React from "react";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import { theme } from "./theme";
-import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
-import { AppWithLoading } from "./components/root/AppWithLoading";
-import { OverlayRoot } from "./components/root/OverlayRoot";
 import { initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import {
-	connectFirestoreEmulator,
-	getFirestore,
-	initializeFirestore,
+  connectFirestoreEmulator,
+  getFirestore,
+  initializeFirestore,
 } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, getStorage } from "firebase/storage";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { OverlayRoot } from "./components/overlay/OverlayRoot";
+import { AppWithLoading } from "./components/root/AppWithLoading";
+import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
+import { theme } from "./theme";
 import { getIsEmulators } from "./utils/env.utils";
 
 const config = {
@@ -62,23 +62,32 @@ const isOverlayWindow =
 const rootElement = document.getElementById("root") as HTMLElement;
 const root = ReactDOM.createRoot(rootElement);
 
-if (isOverlayWindow) {
-  root.render(
+type MainProps = {
+  children: React.ReactNode;
+};
+
+const Main = ({ children }: MainProps) => {
+  return (
     <React.StrictMode>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <OverlayRoot />
+        {children}
       </ThemeProvider>
-    </React.StrictMode>,
+    </React.StrictMode>
+  );
+};
+
+if (isOverlayWindow) {
+  root.render(
+    <Main>
+      <OverlayRoot />
+    </Main>
   );
 } else {
   root.render(
-    <React.StrictMode>
-      <ThemeProvider theme={theme}>
-        <SnackbarEmitter />
-        <CssBaseline />
-        <AppWithLoading />
-      </ThemeProvider>
-    </React.StrictMode>,
+    <Main>
+      <SnackbarEmitter />
+      <AppWithLoading />
+    </Main>
   );
 }

@@ -7,17 +7,19 @@ use std::ops::Deref;
 use std::ptr;
 use std::time::Duration;
 
+use crate::domain::OverlayPhase;
 use cocoa::appkit::{
-    NSColor, NSImageView, NSMainMenuWindowLevel, NSPanel, NSScreen, NSTextField, NSView,
-    NSViewWidthSizable, NSWindow, NSWindowCollectionBehavior, NSWindowStyleMask, NSBackingStoreType,
+    NSBackingStoreType, NSColor, NSImageView, NSMainMenuWindowLevel, NSPanel, NSScreen,
+    NSTextField, NSView, NSViewWidthSizable, NSWindow, NSWindowCollectionBehavior,
+    NSWindowStyleMask,
 };
 use cocoa::base::{id, nil, NO, YES};
 use cocoa::foundation::{NSArray, NSPoint, NSRect, NSSize, NSString};
-use core_graphics::geometry::CGAffineTransform;
 use core_foundation::base::CFRelease;
+use core_graphics::geometry::CGAffineTransform;
 use dispatch::Queue;
-use objc::{class, msg_send, sel, sel_impl};
 use objc::rc::StrongPtr;
+use objc::{class, msg_send, sel, sel_impl};
 
 #[link(name = "CoreGraphics", kind = "framework")]
 extern "C" {
@@ -93,6 +95,7 @@ struct OverlayState {
     is_visible: bool,
     animation_id: u64,
     wave_motion_id: u64,
+    phase_kind: OverlayPhase,
 }
 
 impl OverlayState {
@@ -125,6 +128,7 @@ impl OverlayState {
                 is_visible: false,
                 animation_id: 0,
                 wave_motion_id: 0,
+                phase_kind: OverlayPhase::Idle,
             };
 
             apply_overlay_progress(&state, 0.0);
@@ -187,8 +191,11 @@ pub fn prepare_overlay(_app: &tauri::AppHandle) -> tauri::Result<()> {
             state.current_level = 0.0;
             state.target_level = 0.0;
             state.phase = 0.0;
+            state.phase_kind = OverlayPhase::Idle;
             state.next_wave_motion();
-            unsafe { update_active_app_icon(state); }
+            unsafe {
+                update_active_app_icon(state);
+            }
             let panel = state.panel();
             unsafe {
                 apply_overlay_progress(state, 0.0);
@@ -209,17 +216,26 @@ pub fn show_overlay() -> tauri::Result<()> {
             let panel = state.panel();
             let already_visible = state.is_visible;
             state.is_visible = true;
-            state.target_level = state.target_level.max(0.05);
+            if matches!(state.phase_kind, OverlayPhase::Loading) {
+                state.target_level = 0.0;
+                state.current_level *= 0.4;
+            } else {
+                state.target_level = state.target_level.max(0.05);
+            }
             let animation_id = state.next_animation();
             let motion_id = state.next_wave_motion();
-            unsafe { update_active_app_icon(state); }
+            unsafe {
+                update_active_app_icon(state);
+            }
             (panel, already_visible, animation_id, motion_id)
         });
 
         if already_visible {
             OVERLAY_STATE.with(|cell| {
                 if let Some(state) = cell.borrow().as_ref() {
-                    unsafe { apply_overlay_progress(state, 1.0); }
+                    unsafe {
+                        apply_overlay_progress(state, 1.0);
+                    }
                 }
             });
             unsafe {
@@ -229,7 +245,9 @@ pub fn show_overlay() -> tauri::Result<()> {
         } else {
             OVERLAY_STATE.with(|cell| {
                 if let Some(state) = cell.borrow().as_ref() {
-                    unsafe { apply_overlay_progress(state, 0.0); }
+                    unsafe {
+                        apply_overlay_progress(state, 0.0);
+                    }
                 }
             });
             unsafe {
@@ -241,7 +259,9 @@ pub fn show_overlay() -> tauri::Result<()> {
 
         OVERLAY_STATE.with(|cell| {
             if let Some(state) = cell.borrow().as_ref() {
-                unsafe { update_wave_paths(state); }
+                unsafe {
+                    update_wave_paths(state);
+                }
             }
         });
 
@@ -273,12 +293,55 @@ pub fn hide_overlay() -> tauri::Result<()> {
     Ok(())
 }
 
+pub fn set_phase(phase: OverlayPhase) -> tauri::Result<()> {
+    match phase {
+        OverlayPhase::Idle => {
+            run_on_main(|| {
+                OVERLAY_STATE.with(|cell| {
+                    if let Some(state) = cell.borrow_mut().as_mut() {
+                        state.phase_kind = OverlayPhase::Idle;
+                        state.target_level = 0.0;
+                        state.current_level *= 0.3;
+                    }
+                });
+            });
+            hide_overlay()
+        }
+        OverlayPhase::Recording => {
+            run_on_main(|| {
+                OVERLAY_STATE.with(|cell| {
+                    let mut entry = cell.borrow_mut();
+                    let state = entry.get_or_insert_with(OverlayState::new);
+                    state.phase_kind = OverlayPhase::Recording;
+                });
+            });
+            show_overlay()
+        }
+        OverlayPhase::Loading => {
+            run_on_main(|| {
+                OVERLAY_STATE.with(|cell| {
+                    let mut entry = cell.borrow_mut();
+                    let state = entry.get_or_insert_with(OverlayState::new);
+                    state.phase_kind = OverlayPhase::Loading;
+                    state.target_level = 0.0;
+                    state.current_level *= 0.4;
+                });
+            });
+            show_overlay()
+        }
+    }
+}
+
 pub fn register_amplitude(amplitude: f64) {
     let clamped = amplitude.clamp(0.0, 1.0);
     enqueue_on_main(move || {
         OVERLAY_STATE.with(|cell| {
             let mut entry = cell.borrow_mut();
             if let Some(state) = entry.as_mut() {
+                if !matches!(state.phase_kind, OverlayPhase::Recording) {
+                    state.target_level *= TARGET_DECAY_PER_FRAME;
+                    return;
+                }
                 let boosted = (clamped.powf(0.5) * 1.35).min(1.0);
                 state.target_level = (state.target_level * 0.25 + boosted * 0.75).min(1.0);
             }
@@ -375,8 +438,7 @@ unsafe fn configure_overlay_contents(
     let _: () = msg_send![label, setAlignment: 2_i64];
     let _: () = msg_send![label, setAutoresizingMask: NSViewWidthSizable];
 
-    let text_color: id =
-        NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.92, 0.92, 0.96, 1.0);
+    let text_color: id = NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.92, 0.92, 0.96, 1.0);
     let _: () = msg_send![label, setTextColor: text_color];
     let font: id = msg_send![class!(NSFont), systemFontOfSize: 12.0];
     let _: () = msg_send![label, setFont: font];
@@ -387,7 +449,10 @@ unsafe fn configure_overlay_contents(
         (OVERLAY_HEIGHT - LABEL_HEIGHT - LABEL_TOP_MARGIN - WAVE_VERTICAL_PADDING * 2.0).max(10.0);
     let initial_width = wave_container_width(OVERLAY_WIDTH);
     let waves_rect = NSRect::new(
-        NSPoint::new(OVERLAY_WIDTH - initial_width - WAVE_RIGHT_PADDING, WAVE_VERTICAL_PADDING),
+        NSPoint::new(
+            OVERLAY_WIDTH - initial_width - WAVE_RIGHT_PADDING,
+            WAVE_VERTICAL_PADDING,
+        ),
         NSSize::new(initial_width, waves_height),
     );
     let waves_container: id = NSView::initWithFrame_(NSView::alloc(nil), waves_rect);
@@ -423,11 +488,13 @@ unsafe fn configure_overlay_contents(
 
     let black_color: id = NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.0, 0.0, 0.0, 1.0);
     let black_cg: id = msg_send![black_color, CGColor];
-    let transparent_color: id = NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.0, 0.0, 0.0, 0.0);
+    let transparent_color: id =
+        NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.0, 0.0, 0.0, 0.0);
     let transparent_cg: id = msg_send![transparent_color, CGColor];
 
     // Left gradient colors and locations
-    let left_colors: id = NSArray::arrayWithObjects(nil, &[black_cg, transparent_cg, transparent_cg]);
+    let left_colors: id =
+        NSArray::arrayWithObjects(nil, &[black_cg, transparent_cg, transparent_cg]);
     let loc0: id = msg_send![class!(NSNumber), numberWithDouble: 0.0];
     let loc1: id = msg_send![class!(NSNumber), numberWithDouble: 0.25];
     let loc2: id = msg_send![class!(NSNumber), numberWithDouble: 1.0];
@@ -439,7 +506,8 @@ unsafe fn configure_overlay_contents(
     let _: () = msg_send![gradient_left, setZPosition: 5.0];
 
     // Right gradient colors and locations
-    let right_colors: id = NSArray::arrayWithObjects(nil, &[transparent_cg, transparent_cg, black_cg]);
+    let right_colors: id =
+        NSArray::arrayWithObjects(nil, &[transparent_cg, transparent_cg, black_cg]);
     let rloc0: id = msg_send![class!(NSNumber), numberWithDouble: 0.0];
     let rloc1: id = msg_send![class!(NSNumber), numberWithDouble: 0.75];
     let rloc2: id = msg_send![class!(NSNumber), numberWithDouble: 1.0];
@@ -537,6 +605,8 @@ unsafe fn position_waves_container(state: &OverlayState, width: f64) {
         NSSize::new(container_width, height.max(6.0)),
     );
     let _: () = msg_send![container, setFrame: rect];
+    let hidden = !matches!(state.phase_kind, OverlayPhase::Recording);
+    let _: () = msg_send![container, setHidden: if hidden { YES } else { NO }];
 }
 
 unsafe fn update_gradient_layers(state: &OverlayState) {
@@ -566,8 +636,8 @@ unsafe fn update_wave_paths(state: &OverlayState) {
 
     for index in 0..WAVE_COUNT {
         if let Some(layer) = state.wave_layer(index) {
-            let amplitude = (state.current_level * WAVE_AMPLITUDE_MULTIPLIERS[index])
-                .clamp(0.03, 1.3);
+            let amplitude =
+                (state.current_level * WAVE_AMPLITUDE_MULTIPLIERS[index]).clamp(0.03, 1.3);
             let vertical = (height * 0.75 * amplitude).max(1.0);
             let freq = WAVE_FREQUENCIES[index];
             let phase = state.phase + WAVE_PHASE_OFFSETS[index];

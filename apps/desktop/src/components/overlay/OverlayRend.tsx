@@ -1,23 +1,23 @@
-import { useEffect, useMemo } from "react";
 import { Box } from "@mui/material";
 import {
   availableMonitors,
-  cursorPosition,
   currentMonitor,
+  cursorPosition,
   getCurrentWindow,
   LogicalPosition,
 } from "@tauri-apps/api/window";
+import { useEffect, useMemo } from "react";
+import { useAppStore } from "../../store";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
-import { useRecordingTelemetry } from "../../hooks/useRecordingTelemetry";
 
 const OVERLAY_WIDTH = 360;
 const OVERLAY_HEIGHT = 40;
 const TOP_MARGIN = 0;
 
-export const OverlayRoot = () => {
+export const OverlayRend = () => {
   const windowRef = useMemo(() => getCurrentWindow(), []);
-  const { recordingState } = useRecordingTelemetry();
-  const isVisible = recordingState.phase !== "idle";
+  const phase = useAppStore((state) => state.overlayPhase);
+  const isVisible = phase !== "idle";
 
   useEffect(() => {
     document.body.style.backgroundColor = "transparent";
@@ -140,7 +140,7 @@ export const OverlayRoot = () => {
           justifyContent: "center",
         }}
       >
-        <RecordingStatusWidget recordingState={recordingState} />
+        <RecordingStatusWidget />
       </Box>
     </Box>
   );

@@ -3,6 +3,7 @@ import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.sta
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
+import { OverlayPhase } from "../types/overlay.types";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -11,6 +12,7 @@ export type AppState = {
   currentUserId: Nullable<string>;
   keysHeld: string[];
   isRecordingHotkey: boolean;
+  overlayPhase: OverlayPhase;
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -37,6 +39,7 @@ export const INITIAL_APP_STATE: AppState = {
   userById: {},
   termById: {},
   transcriptionById: {},
+  overlayPhase: "idle",
   hotkeyById: {},
   currentUserId: null,
   config: null,

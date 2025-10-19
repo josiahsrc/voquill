@@ -93,6 +93,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::hotkey_list,
             crate::commands::hotkey_save,
             crate::commands::hotkey_delete,
+            crate::commands::set_phase,
         ])
 }
 
