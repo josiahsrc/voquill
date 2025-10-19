@@ -366,11 +366,8 @@ fn start_recording_on_host(
         .default_output_device()
         .and_then(|device| device.name().ok());
 
-    let mut candidates = device_candidates_for_host(
-        host,
-        default_output_name.as_deref(),
-        preferred_normalized,
-    );
+    let mut candidates =
+        device_candidates_for_host(host, default_output_name.as_deref(), preferred_normalized);
     candidates.sort_by_key(|candidate| candidate.priority);
 
     let mut last_err: Option<RecordingError> = None;
@@ -506,7 +503,12 @@ fn device_candidates_for_host(
 
         let matches_preferred = preferred_lower
             .as_ref()
-            .map(|pref| normalized_name.as_ref().map(|label| label == pref).unwrap_or(false))
+            .map(|pref| {
+                normalized_name
+                    .as_ref()
+                    .map(|label| label == pref)
+                    .unwrap_or(false)
+            })
             .unwrap_or(false);
 
         let should_avoid = should_avoid_input_device(&default_device, default_output_name);
@@ -548,7 +550,12 @@ fn device_candidates_for_host(
 
             let matches_preferred = preferred_lower
                 .as_ref()
-                .map(|pref| normalized_name.as_ref().map(|label| label == pref).unwrap_or(false))
+                .map(|pref| {
+                    normalized_name
+                        .as_ref()
+                        .map(|label| label == pref)
+                        .unwrap_or(false)
+                })
                 .unwrap_or(false);
 
             let mut priority = if matches_preferred { 0 } else { 100 };
@@ -634,9 +641,11 @@ pub fn list_input_devices() -> Vec<InputDeviceDescriptor> {
 
     let mut list: Vec<_> = devices.into_values().collect();
     list.sort_by(|a, b| {
-        b.is_default
-            .cmp(&a.is_default)
-            .then_with(|| a.label.to_ascii_lowercase().cmp(&b.label.to_ascii_lowercase()))
+        b.is_default.cmp(&a.is_default).then_with(|| {
+            a.label
+                .to_ascii_lowercase()
+                .cmp(&b.label.to_ascii_lowercase())
+        })
     });
     list
 }

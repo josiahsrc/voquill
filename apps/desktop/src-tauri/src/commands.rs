@@ -161,6 +161,34 @@ pub async fn hotkey_delete(
 }
 
 #[tauri::command]
+pub async fn clear_local_data(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    use sqlx::Executor;
+
+    let pool = database.pool();
+    let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
+
+    const TABLES_TO_CLEAR: [&str; 4] = ["user_profiles", "transcriptions", "terms", "hotkeys"];
+
+    for table in TABLES_TO_CLEAR {
+        let statement = format!("DELETE FROM {table}");
+        sqlx::query(&statement)
+            .execute(&mut *transaction)
+            .await
+            .map_err(|err| err.to_string())?;
+    }
+
+    transaction.commit().await.map_err(|err| err.to_string())?;
+
+    if let Err(err) = sqlx::query("VACUUM").execute(&pool).await {
+        eprintln!("VACUUM failed after clearing local data: {err}");
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn play_audio(clip: AudioClip) -> Result<(), String> {
     match clip {
         AudioClip::StartRecordingClip => crate::system::audio_feedback::play_start_recording_clip(),

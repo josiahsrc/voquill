@@ -35,9 +35,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
     let user = match row {
         Some(row) => {
             let onboarded_raw = row.get::<i64, _>("onboarded");
-            let play_interaction_raw = row
-                .try_get::<i64, _>("play_interaction_chime")
-                .unwrap_or(1);
+            let play_interaction_raw = row.try_get::<i64, _>("play_interaction_chime").unwrap_or(1);
             Some(User {
                 id: row.get::<String, _>("id"),
                 name: row.get::<String, _>("name"),
