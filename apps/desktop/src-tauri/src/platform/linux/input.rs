@@ -5,11 +5,18 @@ use crate::domain::{
     EVT_REC_PROCESSING, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
 };
 use crate::platform::{keyboard, LevelCallback, Recorder, Transcriber};
+use crate::platform::linux::feedback::{play_recording_start_tone, play_recording_stop_tone};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
-use crate::platform::Transcriber;
+use crate::db;
 use enigo::{Enigo, Key, KeyboardControllable};
+use rdev::{EventType, Key as RdevKey};
 use serde::Serialize;
-use std::{env, sync::Arc, thread, time::Duration};
+use std::{
+    env,
+    sync::{atomic::AtomicBool, atomic::Ordering, Arc},
+    thread,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 use tauri::{Emitter, Manager};
 
 pub fn spawn_alt_listener(
@@ -276,4 +283,35 @@ fn paste_via_clipboard(text: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn update_hotkey_state_for_key(
+    key: RdevKey,
+    is_pressed: bool,
+    ctrl_state: &Arc<AtomicBool>,
+    shift_state: &Arc<AtomicBool>,
+    f8_state: &Arc<AtomicBool>,
+) {
+    match key {
+        RdevKey::ControlLeft | RdevKey::ControlRight => {
+            ctrl_state.store(is_pressed, Ordering::SeqCst);
+        }
+        RdevKey::ShiftLeft | RdevKey::ShiftRight => {
+            shift_state.store(is_pressed, Ordering::SeqCst);
+        }
+        RdevKey::F8 => {
+            f8_state.store(is_pressed, Ordering::SeqCst);
+        }
+        _ => {}
+    }
+}
+
+fn hotkey_combo_active(
+    ctrl_state: &Arc<AtomicBool>,
+    shift_state: &Arc<AtomicBool>,
+    f8_state: &Arc<AtomicBool>,
+) -> bool {
+    ctrl_state.load(Ordering::SeqCst)
+        && shift_state.load(Ordering::SeqCst)
+        && f8_state.load(Ordering::SeqCst)
 }

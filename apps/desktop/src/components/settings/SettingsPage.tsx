@@ -13,10 +13,6 @@ import { produceAppState } from "../../store";
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
-import { AudioDialog } from "./AudioDialog";
-import { ClearLocalDataDialog } from "./ClearLocalDataDialog";
-import { MicrophoneDialog } from "./MicrophoneDialog";
-import { ShortcutsDialog } from "./ShortcutsDialog";
 
 export default function SettingsPage() {
   const openMicrophoneDialog = () => {

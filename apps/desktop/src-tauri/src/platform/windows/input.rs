@@ -1,3 +1,4 @@
+use crate::db;
 use crate::domain::{
     AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingLevelPayload,
     RecordingResult, RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED,
@@ -5,7 +6,6 @@ use crate::domain::{
 };
 use crate::platform::{keyboard, LevelCallback, Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
-use tauri::{Emitter, EventTarget};
 use enigo::{Enigo, Key, KeyboardControllable};
 use rdev::{EventType, Key as RdevKey};
 use std::{
