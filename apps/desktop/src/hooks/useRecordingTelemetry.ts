@@ -26,6 +26,14 @@ export type RecordingErrorPayload = {
   message?: string;
 };
 
+export type RecordingLevelPayload = {
+  levels?: number[];
+};
+
+const LEVEL_BIN_COUNT = 12;
+const createEmptyLevels = () =>
+  Array.from({ length: LEVEL_BIN_COUNT }, () => 0);
+
 export type RecordingState = {
   isRecording: boolean;
   isProcessing: boolean;
@@ -36,6 +44,7 @@ export type RecordingState = {
   error?: string;
   lastEvent?: string;
   phase: "idle" | "listening" | "processing" | "done";
+  levels: number[];
 };
 
 const isTauriEnvironment = () =>
@@ -60,6 +69,7 @@ export const useRecordingTelemetry = () => {
     isProcessing: false,
     lastEvent: "idle",
     phase: "idle",
+    levels: createEmptyLevels(),
   });
   const [altPressCount, setAltPressCount] = useState(0);
 
@@ -146,7 +156,6 @@ export const useRecordingTelemetry = () => {
             if (canceled) {
               return;
             }
-            console.log("Starting...")
             const parsed = parsePayload(payload) as
               | Record<string, unknown>
               | null;
@@ -159,6 +168,7 @@ export const useRecordingTelemetry = () => {
               error: undefined,
               lastEvent: "recording-started",
               phase: "listening",
+              levels: createEmptyLevels(),
             }));
             if (finishTimerRef.current !== undefined) {
               clearTimeout(finishTimerRef.current);
@@ -186,6 +196,7 @@ export const useRecordingTelemetry = () => {
               error: undefined,
               lastEvent: "recording-finished",
               phase: "done",
+              levels: createEmptyLevels(),
             });
 
             if (finishTimerRef.current !== undefined) {
@@ -198,9 +209,59 @@ export const useRecordingTelemetry = () => {
                 isProcessing: false,
                 lastEvent: "idle",
                 phase: "idle",
+                levels: createEmptyLevels(),
               }));
               finishTimerRef.current = undefined;
             }, 250);
+          },
+        },
+        {
+          event: "recording-level",
+          handler: (payload) => {
+            if (canceled) {
+              return;
+            }
+            const parsed = parsePayload(payload) as
+              | Record<string, unknown>
+              | null;
+            const typedPayload = (parsed ?? {}) as RecordingLevelPayload;
+            const rawLevels = Array.isArray(typedPayload.levels)
+              ? typedPayload.levels
+              : null;
+            if (!rawLevels) {
+              return;
+            }
+            const normalized = rawLevels
+              .slice(0, LEVEL_BIN_COUNT)
+              .map((value) =>
+                typeof value === "number" && Number.isFinite(value)
+                  ? Math.max(0, Math.min(1, value))
+                  : 0,
+              );
+            while (normalized.length < LEVEL_BIN_COUNT) {
+              normalized.push(0);
+            }
+
+            setRecordingState((prev) => {
+              if (prev.phase !== "listening") {
+                return prev;
+              }
+
+              const prevLevels =
+                prev.levels.length === LEVEL_BIN_COUNT
+                  ? prev.levels
+                  : createEmptyLevels();
+              const smoothed = normalized.map((level, index) => {
+                const previous = prevLevels[index] ?? 0;
+                const mix = level >= previous ? 0.4 : 0.18;
+                return previous + (level - previous) * mix;
+              });
+
+              return {
+                ...prev,
+                levels: smoothed,
+              };
+            });
           },
         },
         {
@@ -222,6 +283,7 @@ export const useRecordingTelemetry = () => {
               lastSizeBytes: typedPayload.size_bytes ?? prev.lastSizeBytes,
               lastEvent: "recording-processing",
               phase: "processing",
+              levels: createEmptyLevels(),
             }));
             if (finishTimerRef.current !== undefined) {
               clearTimeout(finishTimerRef.current);
@@ -246,6 +308,7 @@ export const useRecordingTelemetry = () => {
               error: typedPayload.message ?? "Recording error",
               lastEvent: "recording-error",
               phase: "idle",
+              levels: createEmptyLevels(),
             }));
             if (finishTimerRef.current !== undefined) {
               clearTimeout(finishTimerRef.current);

@@ -1,10 +1,10 @@
 use crate::db;
 use crate::domain::{
-    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingResult,
-    RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR,
-    EVT_REC_FINISH, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
+    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingLevelPayload,
+    RecordingResult, RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED,
+    EVT_REC_ERROR, EVT_REC_FINISH, EVT_REC_LEVEL, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
 };
-use crate::platform::{keyboard, Recorder, Transcriber};
+use crate::platform::{keyboard, LevelCallback, Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use enigo::{Enigo, Key, KeyboardControllable};
 use rdev::{EventType, Key as RdevKey};
@@ -55,7 +55,17 @@ pub fn spawn_alt_listener(
                 && !hotkey_state.swap(true, Ordering::SeqCst)
             {
                 let recorder = recorder_handle.clone();
-                match recorder.start() {
+                let level_emit_handle = emit_handle.clone();
+                let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
+                    let payload = RecordingLevelPayload { levels };
+                    if let Err(err) =
+                        level_emit_handle.emit_to(EventTarget::any(), EVT_REC_LEVEL, payload)
+                    {
+                        eprintln!("Failed to emit recording-level event: {err}");
+                    }
+                });
+
+                match recorder.start(Some(level_emitter)) {
                     Ok(()) => {
                         let started_at_ms = SystemTime::now()
                             .duration_since(UNIX_EPOCH)

@@ -2,7 +2,8 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, EventTarget, State};
 
-use crate::domain::{RecordingStartedPayload, EVT_REC_START};
+use crate::domain::{RecordingLevelPayload, RecordingStartedPayload, EVT_REC_LEVEL, EVT_REC_START};
+use crate::platform::LevelCallback;
 
 #[cfg(target_os = "linux")]
 use crate::platform::linux::input::{
@@ -151,7 +152,15 @@ pub fn start_recording(
     app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
 ) -> Result<(), String> {
-    match recorder.start() {
+    let level_emit_handle = app.clone();
+    let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
+        let payload = RecordingLevelPayload { levels };
+        if let Err(err) = level_emit_handle.emit_to(EventTarget::any(), EVT_REC_LEVEL, payload) {
+            eprintln!("Failed to emit recording-level event: {err}");
+        }
+    });
+
+    match recorder.start(Some(level_emitter)) {
         Ok(()) => {
             let started_at_ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)

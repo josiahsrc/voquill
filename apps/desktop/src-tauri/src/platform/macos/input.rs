@@ -1,11 +1,11 @@
 use crate::db;
 use crate::domain::{
-    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingResult,
-    RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR,
-    EVT_REC_FINISH, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED, LEFT_OPTION_KEYCODE,
-    RIGHT_OPTION_KEYCODE,
+    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingLevelPayload,
+    RecordingResult, RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED,
+    EVT_REC_ERROR, EVT_REC_FINISH, EVT_REC_LEVEL, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
+    LEFT_OPTION_KEYCODE, RIGHT_OPTION_KEYCODE,
 };
-use crate::platform::{Recorder, Transcriber};
+use crate::platform::{LevelCallback, Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
 use core_graphics::event::{
@@ -67,7 +67,22 @@ pub fn spawn_alt_listener(
                             let was_pressed = alt_state.swap(currently_pressed, Ordering::SeqCst);
 
                             if currently_pressed && !was_pressed {
-                                match recorder.start() {
+                                let level_emit_handle = emit_handle.clone();
+                                let level_emitter: LevelCallback =
+                                    Arc::new(move |levels: Vec<f32>| {
+                                        let payload = RecordingLevelPayload { levels };
+                                        if let Err(err) = level_emit_handle.emit_to(
+                                            EventTarget::any(),
+                                            EVT_REC_LEVEL,
+                                            payload,
+                                        ) {
+                                            eprintln!(
+                                                "Failed to emit recording-level event: {err}"
+                                            );
+                                        }
+                                    });
+
+                                match recorder.start(Some(level_emitter)) {
                                     Ok(()) => {
                                         let started_at_ms = SystemTime::now()
                                             .duration_since(UNIX_EPOCH)

@@ -1,13 +1,12 @@
 use crate::domain::{RecordedAudio, RecordingMetrics, RecordingResult};
 use crate::errors::RecordingError;
-use crate::platform::Recorder;
+use crate::platform::{LevelCallback, Recorder};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, HostId, SampleFormat, Stream, StreamConfig};
 use std::cmp;
 use std::collections::HashSet;
-use std::sync::Mutex;
-use std::sync::{Arc, MutexGuard};
-use std::time::Instant;
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::{Duration, Instant};
 
 pub struct RecordingManager {
     inner: Arc<Mutex<Option<ActiveRecording>>>,
@@ -18,6 +17,79 @@ struct ActiveRecording {
     start: Instant,
     buffer: Arc<Mutex<Vec<f32>>>,
     sample_rate: u32,
+    _level_emitter: Option<Arc<LevelEmitter>>,
+}
+
+const LEVEL_BIN_COUNT: usize = 12;
+const LEVEL_DISPATCH_INTERVAL_MS: u64 = 48;
+
+struct LevelEmitter {
+    callback: LevelCallback,
+    throttle: Duration,
+    last_emit: Mutex<Option<Instant>>,
+}
+
+impl LevelEmitter {
+    fn new(callback: LevelCallback) -> Arc<Self> {
+        Arc::new(Self {
+            callback,
+            throttle: Duration::from_millis(LEVEL_DISPATCH_INTERVAL_MS),
+            last_emit: Mutex::new(None),
+        })
+    }
+
+    fn emit(&self, samples: &[f32]) {
+        if samples.is_empty() {
+            return;
+        }
+
+        let now = Instant::now();
+        let should_emit = {
+            let mut guard = match self.last_emit.lock() {
+                Ok(guard) => guard,
+                Err(poisoned) => poisoned.into_inner(),
+            };
+            let should_send = match *guard {
+                Some(last) => now.duration_since(last) >= self.throttle,
+                None => true,
+            };
+            if should_send {
+                *guard = Some(now);
+            }
+            should_send
+        };
+
+        if !should_emit {
+            return;
+        }
+
+        let levels = compute_level_bins(samples);
+        (self.callback)(levels);
+    }
+}
+
+fn compute_level_bins(samples: &[f32]) -> Vec<f32> {
+    if samples.is_empty() {
+        return vec![0.0; LEVEL_BIN_COUNT];
+    }
+
+    let frames_per_bin = cmp::max(1, samples.len() / LEVEL_BIN_COUNT);
+    let mut bins = vec![0.0f32; LEVEL_BIN_COUNT];
+    let mut counts = vec![0u32; LEVEL_BIN_COUNT];
+
+    for (index, sample) in samples.iter().enumerate() {
+        let bin_index = cmp::min(index / frames_per_bin, LEVEL_BIN_COUNT - 1);
+        bins[bin_index] += sample.abs();
+        counts[bin_index] += 1;
+    }
+
+    for (value, count) in bins.iter_mut().zip(counts.into_iter()) {
+        if count > 0 {
+            *value = (*value / count as f32).clamp(0.0, 1.0);
+        }
+    }
+
+    bins
 }
 
 impl Drop for ActiveRecording {
@@ -50,7 +122,7 @@ impl RecordingManager {
             .map_err(|_| RecordingError::AlreadyRecording)
     }
 
-    fn start_recording(&self) -> Result<(), RecordingError> {
+    fn start_recording(&self, level_callback: Option<LevelCallback>) -> Result<(), RecordingError> {
         let mut guard = self.guard()?;
 
         if guard.is_some() {
@@ -58,6 +130,7 @@ impl RecordingManager {
         }
 
         let mut last_err: Option<RecordingError> = None;
+        let emitter = level_callback.map(LevelEmitter::new);
 
         for host_id in ordered_host_ids() {
             let host = match cpal::host_from_id(host_id) {
@@ -68,7 +141,7 @@ impl RecordingManager {
                 }
             };
 
-            match start_recording_on_host(&host) {
+            match start_recording_on_host(&host, emitter.clone()) {
                 Ok(active) => {
                     *guard = Some(active);
                     return Ok(());
@@ -123,8 +196,12 @@ impl RecordingManager {
 }
 
 impl Recorder for RecordingManager {
-    fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
-        self.start_recording().map_err(|err| Box::new(err) as _)
+    fn start(
+        &self,
+        level_callback: Option<LevelCallback>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.start_recording(level_callback)
+            .map_err(|err| Box::new(err) as _)
     }
 
     fn stop(&self) -> Result<RecordingResult, Box<dyn std::error::Error>> {
@@ -237,7 +314,10 @@ fn host_rank(_id: HostId) -> u8 {
     0
 }
 
-fn start_recording_on_host(host: &cpal::Host) -> Result<ActiveRecording, RecordingError> {
+fn start_recording_on_host(
+    host: &cpal::Host,
+    level_emitter: Option<Arc<LevelEmitter>>,
+) -> Result<ActiveRecording, RecordingError> {
     let default_output_name = host
         .default_output_device()
         .and_then(|device| device.name().ok());
@@ -277,9 +357,24 @@ fn start_recording_on_host(host: &cpal::Host) -> Result<ActiveRecording, Recordi
         let buffer = Arc::new(Mutex::new(Vec::<f32>::new()));
 
         let stream_result = match sample_format {
-            SampleFormat::I16 => build_input_stream::<i16>(&device, &stream_config, buffer.clone()),
-            SampleFormat::U16 => build_input_stream::<u16>(&device, &stream_config, buffer.clone()),
-            SampleFormat::F32 => build_input_stream::<f32>(&device, &stream_config, buffer.clone()),
+            SampleFormat::I16 => build_input_stream::<i16>(
+                &device,
+                &stream_config,
+                buffer.clone(),
+                level_emitter.clone(),
+            ),
+            SampleFormat::U16 => build_input_stream::<u16>(
+                &device,
+                &stream_config,
+                buffer.clone(),
+                level_emitter.clone(),
+            ),
+            SampleFormat::F32 => build_input_stream::<f32>(
+                &device,
+                &stream_config,
+                buffer.clone(),
+                level_emitter.clone(),
+            ),
             other => {
                 eprintln!("[recording] device '{label}' has unsupported sample format: {other:?}");
                 last_err = Some(RecordingError::UnsupportedFormat(other));
@@ -312,6 +407,7 @@ fn start_recording_on_host(host: &cpal::Host) -> Result<ActiveRecording, Recordi
             start: Instant::now(),
             buffer,
             sample_rate,
+            _level_emitter: level_emitter.clone(),
         });
     }
 
@@ -396,6 +492,7 @@ fn build_input_stream<T>(
     device: &Device,
     config: &StreamConfig,
     buffer: Arc<Mutex<Vec<f32>>>,
+    level_emitter: Option<Arc<LevelEmitter>>,
 ) -> Result<Stream, RecordingError>
 where
     T: cpal::Sample + cpal::SizedSample,
@@ -403,34 +500,43 @@ where
 {
     let channel_count = cmp::max(config.channels as usize, 1);
     let callback_buffer = buffer.clone();
+    let emitter = level_emitter;
     device
         .build_input_stream(
             config,
             move |data: &[T], _| {
-                if let Ok(mut shared_buffer) = callback_buffer.lock() {
-                    if channel_count == 1 {
-                        for sample in data {
-                            shared_buffer.push((*sample).to_sample::<f32>());
-                        }
-                    } else {
-                        let mut index = 0;
-                        while index < data.len() {
-                            let mut sum = 0.0f32;
-                            let mut samples_in_frame = 0usize;
-                            for channel in 0..channel_count {
-                                let sample_index = index + channel;
-                                if sample_index >= data.len() {
-                                    break;
-                                }
-                                sum += data[sample_index].to_sample::<f32>();
-                                samples_in_frame += 1;
-                            }
-                            if samples_in_frame > 0 {
-                                shared_buffer.push(sum / samples_in_frame as f32);
-                            }
-                            index += channel_count;
-                        }
+                let mut mono_samples = Vec::with_capacity(data.len() / channel_count + 1);
+
+                if channel_count == 1 {
+                    for sample in data {
+                        mono_samples.push((*sample).to_sample::<f32>());
                     }
+                } else {
+                    let mut index = 0;
+                    while index < data.len() {
+                        let mut sum = 0.0f32;
+                        let mut samples_in_frame = 0usize;
+                        for channel in 0..channel_count {
+                            let sample_index = index + channel;
+                            if sample_index >= data.len() {
+                                break;
+                            }
+                            sum += data[sample_index].to_sample::<f32>();
+                            samples_in_frame += 1;
+                        }
+                        if samples_in_frame > 0 {
+                            mono_samples.push(sum / samples_in_frame as f32);
+                        }
+                        index += channel_count;
+                    }
+                }
+
+                if let Some(ref level_emitter) = emitter {
+                    level_emitter.emit(&mono_samples);
+                }
+
+                if let Ok(mut shared_buffer) = callback_buffer.lock() {
+                    shared_buffer.extend_from_slice(&mono_samples);
                 }
             },
             |err| eprintln!("[recording] stream error: {err}"),

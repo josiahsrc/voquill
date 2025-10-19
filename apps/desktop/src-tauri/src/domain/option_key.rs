@@ -6,6 +6,7 @@ pub const EVT_REC_START: &str = "recording-started";
 pub const EVT_REC_FINISH: &str = "recording-finished";
 pub const EVT_REC_ERROR: &str = "recording-error";
 pub const EVT_REC_PROCESSING: &str = "recording-processing";
+pub const EVT_REC_LEVEL: &str = "recording-level";
 
 #[cfg(target_os = "macos")]
 pub const LEFT_OPTION_KEYCODE: i64 = 58;
@@ -56,4 +57,9 @@ pub struct RecordingProcessingPayload {
 #[derive(Clone, Serialize)]
 pub struct RecordingErrorPayload {
     pub message: String,
+}
+
+#[derive(Clone, Serialize)]
+pub struct RecordingLevelPayload {
+    pub levels: Vec<f32>,
 }

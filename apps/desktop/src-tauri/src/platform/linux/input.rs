@@ -1,11 +1,12 @@
 use super::feedback::{play_recording_start_tone, play_recording_stop_tone};
 use crate::db;
 use crate::domain::{
-    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingProcessingPayload,
-    RecordingResult, RecordingStartedPayload, TranscriptionReceivedPayload, EVT_ALT_PRESSED,
-    EVT_REC_ERROR, EVT_REC_FINISH, EVT_REC_PROCESSING, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
+    AltEventPayload, RecordingErrorPayload, RecordingFinishedPayload, RecordingLevelPayload,
+    RecordingProcessingPayload, RecordingResult, RecordingStartedPayload,
+    TranscriptionReceivedPayload, EVT_ALT_PRESSED, EVT_REC_ERROR, EVT_REC_FINISH, EVT_REC_LEVEL,
+    EVT_REC_PROCESSING, EVT_REC_START, EVT_TRANSCRIPTION_RECEIVED,
 };
-use crate::platform::{keyboard, Recorder, Transcriber};
+use crate::platform::{keyboard, LevelCallback, Recorder, Transcriber};
 use crate::state::{OptionKeyCounter, OptionKeyDatabase};
 use enigo::{Enigo, Key, KeyboardControllable};
 use rdev::{EventType, Key as RdevKey};
@@ -56,7 +57,13 @@ pub fn spawn_alt_listener(
             if hotkey_combo_active(&ctrl_state, &shift_state, &f8_state)
                 && !hotkey_state.swap(true, Ordering::SeqCst)
             {
-                match recorder_handle.start() {
+                let level_emit_handle = emit_handle.clone();
+                let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
+                    let payload = RecordingLevelPayload { levels };
+                    emit_overlay_event(&level_emit_handle, EVT_REC_LEVEL, payload);
+                });
+
+                match recorder_handle.start(Some(level_emitter)) {
                     Ok(()) => {
                         play_recording_start_tone();
                         let started_at_ms = SystemTime::now()
@@ -76,9 +83,9 @@ pub fn spawn_alt_listener(
                     }
                 }
 
-                let new_count = match tauri::async_runtime::block_on(
-                    db::queries::increment_count(db_pool_handle.clone()),
-                ) {
+                let new_count = match tauri::async_runtime::block_on(db::queries::increment_count(
+                    db_pool_handle.clone(),
+                )) {
                     Ok(count) => {
                         press_counter_handle.store(count, Ordering::SeqCst);
                         count

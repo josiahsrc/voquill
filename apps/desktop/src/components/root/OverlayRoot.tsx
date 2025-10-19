@@ -11,8 +11,8 @@ import { RecordingStatusWidget } from "./RecordingStatusWidget";
 import { useRecordingTelemetry } from "../../hooks/useRecordingTelemetry";
 
 const OVERLAY_WIDTH = 360;
-const OVERLAY_HEIGHT = 80;
-const TOP_MARGIN = 18;
+const OVERLAY_HEIGHT = 40;
+const TOP_MARGIN = 0;
 
 export const OverlayRoot = () => {
   const windowRef = useMemo(() => getCurrentWindow(), []);
