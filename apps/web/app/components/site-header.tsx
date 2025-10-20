@@ -1,18 +1,20 @@
 import Link from "next/link";
+import DownloadButton from "./download-button";
+import GitHubButton from "./github-button";
+import LogoMark from "./logo-mark";
 import styles from "../page.module.css";
 
 const navLinks = [
   { href: "/#features", label: "Features" },
-  { href: "/#security", label: "Security" },
-  { href: "/#workflow", label: "Workflow" },
-  { href: "/#cta", label: "Early Access" },
+  { href: "/#privacy", label: "Privacy" },
 ];
 
 export function SiteHeader() {
   return (
     <header className={styles.header}>
       <Link href="/" className={styles.logo}>
-        Voquill
+        <LogoMark className={styles.logoMark} />
+        <span>Voquill</span>
       </Link>
       <nav className={styles.nav} aria-label="Primary navigation">
         {navLinks.map(({ href, label }) => (
@@ -22,12 +24,8 @@ export function SiteHeader() {
         ))}
       </nav>
       <div className={styles.headerActions}>
-        <Link className={styles.secondaryButton} href="/#workflow">
-          See workflow
-        </Link>
-        <Link className={styles.primaryButton} href="/#cta">
-          Request access
-        </Link>
+        <GitHubButton className={styles.headerCta} />
+        <DownloadButton className={styles.headerCta} />
       </div>
     </header>
   );

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import DownloadButton from "./components/download-button";
 import SiteFooter from "./components/site-footer";
 import SiteHeader from "./components/site-header";
 import styles from "./page.module.css";
@@ -43,6 +44,33 @@ const workflow = [
   },
 ];
 
+const partnerLogos = [
+  {
+    name: "Aurora Labs",
+    src: "https://picsum.photos/seed/voquill-logo-aurora/200/80",
+  },
+  {
+    name: "MicDrop",
+    src: "https://picsum.photos/seed/voquill-logo-micdrop/200/80",
+  },
+  {
+    name: "Glyph Studio",
+    src: "https://picsum.photos/seed/voquill-logo-glyph/200/80",
+  },
+  {
+    name: "House Nine",
+    src: "https://picsum.photos/seed/voquill-logo-house/200/80",
+  },
+  {
+    name: "Splitbeam",
+    src: "https://picsum.photos/seed/voquill-logo-splitbeam/200/80",
+  },
+  {
+    name: "Northwind",
+    src: "https://picsum.photos/seed/voquill-logo-northwind/200/80",
+  },
+];
+
 export default function Home() {
   return (
     <div className={styles.page}>
@@ -59,17 +87,7 @@ export default function Home() {
               your voice.
             </p>
             <div className={styles.heroActions}>
-              <a className={styles.primaryButton} href="#cta">
-                <svg
-                  aria-hidden="true"
-                  className={styles.buttonIcon}
-                  viewBox="0 0 24 24"
-                  focusable="false"
-                >
-                  <path d="M16.365 13.533c-.031-3.084 2.514-4.584 2.628-4.659-1.43-2.09-3.647-2.376-4.431-2.406-1.888-.19-3.68 1.109-4.636 1.109-.955 0-2.435-1.082-4.007-1.052-2.05.031-3.944 1.185-4.994 3.009-2.129 3.688-.542 9.164 1.528 12.166 1.013 1.463 2.221 3.109 3.809 3.048 1.528-.062 2.104-.986 3.96-.986 1.856 0 2.371.986 4.008.955 1.655-.031 2.706-1.494 3.719-2.957 1.166-1.701 1.647-3.348 1.678-3.439-.031-.031-3.216-1.24-3.247-4.788zM12.584 5.807c.834-1.008 1.396-2.412 1.24-3.807-1.201.047-2.648.801-3.5 1.809-.772.887-1.448 2.301-1.271 3.659 1.34.103 2.697-.683 3.531-1.661z" />
-                </svg>
-                <span>Download for free</span>
-              </a>
+              <DownloadButton />
             </div>
             <p className={styles.heroNote}>
               No credit card required, get started for free.
@@ -79,32 +97,28 @@ export default function Home() {
             <div className={styles.videoFrame} id="demo">
               <span>Placeholder demo video</span>
             </div>
-            <div className={styles.calloutCard}>
-              <p className={styles.calloutTitle}>Smart cleanup</p>
-              <p className={styles.calloutBody}>
-                “Replace filler words and tighten tone.” Voquill edits while you
-                speak, so drafts are ready to ship.
-              </p>
-            </div>
           </div>
         </section>
 
         <section className={styles.partnerSection} aria-label="Pilot partners">
           <p className={styles.partnerHeadline}>
-            Trusted pilots are already closing the gap between thought and text.
+            Trusted by professionals to let them write at the speed of thought.
           </p>
-          <div className={styles.partnerLogos}>
-            {[
-              "Aurora Labs",
-              "MicDrop",
-              "Glyph Studio",
-              "House Nine",
-              "Splitbeam",
-            ].map((name) => (
-              <span key={name} className={styles.partner}>
-                {name}
-              </span>
-            ))}
+          <div className={styles.partnerCarousel}>
+            <div className={styles.partnerTrack}>
+              {[...partnerLogos, ...partnerLogos].map(({ name, src }, index) => (
+                <div key={`${name}-${index}`} className={styles.partnerLogo}>
+                  <Image
+                    src={src}
+                    alt={`${name} logo`}
+                    width={200}
+                    height={80}
+                    className={styles.logoImage}
+                    loading={index < partnerLogos.length ? "eager" : "lazy"}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -129,7 +143,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={styles.splitSection} id="security">
+        <section className={styles.splitSection} id="privacy">
           <div className={styles.splitContent}>
             <span className={styles.badge}>Private by design</span>
             <h2>Nothing leaves your device unless you send it.</h2>
