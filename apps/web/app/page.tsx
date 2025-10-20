@@ -4,12 +4,6 @@ import SiteFooter from "./components/site-footer";
 import SiteHeader from "./components/site-header";
 import styles from "./page.module.css";
 
-const heroStats = [
-  { value: "4×", label: "Faster drafting than typing alone" },
-  { value: "100%", label: "Local transcription & storage" },
-  { value: "12ms", label: "Average response latency" },
-];
-
 const features = [
   {
     title: "Dictation that adapts to you",
@@ -57,31 +51,29 @@ export default function Home() {
       <main className={styles.main}>
         <section className={styles.heroSection} id="overview">
           <div className={styles.heroContent}>
-            <span className={styles.badge}>Local-first AI dictation</span>
             <h1 className={styles.heroTitle}>
-              Type 4× faster by speaking naturally.
+              Your keyboard is slowing you down.
             </h1>
             <p className={styles.heroSubtitle}>
-              Voquill turns your voice into polished prose in real time. Capture
-              meetings, brainstorms, and deep work sessions with zero cloud
-              exposure—everything runs on your machine.
+              Make your voice your new keyboard. Type four times faster with
+              your voice.
             </p>
             <div className={styles.heroActions}>
               <a className={styles.primaryButton} href="#cta">
-                Get early access
-              </a>
-              <a className={styles.ghostButton} href="#demo">
-                Watch a demo
+                <svg
+                  aria-hidden="true"
+                  className={styles.buttonIcon}
+                  viewBox="0 0 24 24"
+                  focusable="false"
+                >
+                  <path d="M16.365 13.533c-.031-3.084 2.514-4.584 2.628-4.659-1.43-2.09-3.647-2.376-4.431-2.406-1.888-.19-3.68 1.109-4.636 1.109-.955 0-2.435-1.082-4.007-1.052-2.05.031-3.944 1.185-4.994 3.009-2.129 3.688-.542 9.164 1.528 12.166 1.013 1.463 2.221 3.109 3.809 3.048 1.528-.062 2.104-.986 3.96-.986 1.856 0 2.371.986 4.008.955 1.655-.031 2.706-1.494 3.719-2.957 1.166-1.701 1.647-3.348 1.678-3.439-.031-.031-3.216-1.24-3.247-4.788zM12.584 5.807c.834-1.008 1.396-2.412 1.24-3.807-1.201.047-2.648.801-3.5 1.809-.772.887-1.448 2.301-1.271 3.659 1.34.103 2.697-.683 3.531-1.661z" />
+                </svg>
+                <span>Download for free</span>
               </a>
             </div>
-            <div className={styles.heroStats}>
-              {heroStats.map(({ value, label }) => (
-                <div key={label} className={styles.statCard}>
-                  <span className={styles.statValue}>{value}</span>
-                  <span className={styles.statLabel}>{label}</span>
-                </div>
-              ))}
-            </div>
+            <p className={styles.heroNote}>
+              No credit card required, get started for free.
+            </p>
           </div>
           <div className={styles.heroMedia}>
             <div className={styles.videoFrame} id="demo">

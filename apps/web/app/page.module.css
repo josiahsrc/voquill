@@ -1,23 +1,20 @@
 .page {
-  --surface: rgba(255, 255, 255, 0.08);
-  --border: rgba(23, 23, 23, 0.08);
-  --surface-strong: rgba(255, 255, 255, 0.15);
-  --shadow: 0 24px 80px rgba(15, 15, 30, 0.18);
-  --shadow-soft: 0 20px 50px rgba(15, 15, 30, 0.12);
+  --level0: #ffffff;
+  --level1: #f5f5f5;
+  --level2: #e0e0e0;
+  --level3: #d0d0d0;
+  --border: rgba(18, 21, 28, 0.1);
+  --shadow: 0 16px 48px rgba(18, 21, 28, 0.08);
+  --shadow-soft: 0 12px 32px rgba(18, 21, 28, 0.06);
+  --text-strong: #12151c;
+  --text-muted: #404040;
+  --primary-button-bg: #ffffff;
+  --primary-button-fg: #12151c;
+  --primary-button-border: rgba(18, 21, 28, 0.6);
 
   min-height: 100vh;
-  background: radial-gradient(
-      120% 140% at 80% -20%,
-      rgba(91, 100, 255, 0.22),
-      transparent 60%
-    ),
-    radial-gradient(
-      80% 120% at 0% 100%,
-      rgba(120, 76, 255, 0.15),
-      transparent 70%
-    ),
-    var(--background);
-  color: var(--foreground);
+  background: var(--level0);
+  color: var(--text-strong);
   display: flex;
   flex-direction: column;
   gap: 80px;
@@ -26,22 +23,18 @@
 
 @media (prefers-color-scheme: dark) {
   .page {
-    --surface: rgba(14, 14, 20, 0.6);
-    --border: rgba(237, 237, 237, 0.08);
-    --surface-strong: rgba(28, 28, 40, 0.85);
-    --shadow: 0 32px 80px rgba(6, 6, 16, 0.56);
-    --shadow-soft: 0 24px 60px rgba(10, 10, 20, 0.35);
-    background: radial-gradient(
-        130% 160% at 100% 0%,
-        rgba(104, 84, 255, 0.22),
-        transparent 60%
-      ),
-      radial-gradient(
-        100% 140% at 0% 80%,
-        rgba(63, 88, 248, 0.18),
-        transparent 70%
-      ),
-      var(--background);
+    --level0: #121212;
+    --level1: #1c1c1c;
+    --level2: #2d2d2d;
+    --level3: #3e3e3e;
+    --border: rgba(255, 255, 255, 0.12);
+    --shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --text-strong: #ffffff;
+    --text-muted: #b3b3b3;
+    --primary-button-bg: #ffffff;
+    --primary-button-fg: #12151c;
+    --primary-button-border: rgba(18, 21, 28, 0.6);
   }
 }
 
@@ -59,23 +52,14 @@
   gap: 24px;
   padding: 16px 24px;
   border-radius: 24px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.65),
-    rgba(255, 255, 255, 0.2)
-  );
+  background: var(--level1);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(18px);
 }
 
 @media (prefers-color-scheme: dark) {
   .header {
-    background: linear-gradient(
-      135deg,
-      rgba(22, 22, 34, 0.85),
-      rgba(14, 14, 24, 0.65)
-    );
+    background: var(--level1);
   }
 }
 
@@ -119,63 +103,75 @@
   font-size: 0.95rem;
   font-weight: 600;
   border: 1px solid transparent;
+  border: 1px solid var(--border);
   transition: transform 0.2s ease, box-shadow 0.2s ease,
-    background-color 0.2s ease, border-color 0.2s ease;
+    background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   cursor: pointer;
 }
 
 .primaryButton {
-  background: linear-gradient(120deg, #4b50ff, #8948ff);
-  color: #ffffff;
-  box-shadow: 0 10px 30px rgba(75, 80, 255, 0.3);
+  gap: 10px;
+  background: var(--primary-button-bg);
+  color: var(--primary-button-fg);
+  border-color: var(--primary-button-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .primaryButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 40px rgba(75, 80, 255, 0.4);
+  background: var(--primary-button-bg);
+  color: var(--primary-button-fg);
+  border-color: var(--text-strong);
+  box-shadow: var(--shadow);
 }
 
 .secondaryButton {
-  border-color: rgba(23, 23, 23, 0.08);
-  background: rgba(255, 255, 255, 0.7);
-  color: inherit;
+  border-color: var(--border);
+  background: var(--level1);
+  color: var(--text-strong);
 }
 
 .secondaryButton:hover {
-  border-color: rgba(23, 23, 23, 0.2);
+  border-color: var(--text-muted);
   transform: translateY(-1px);
 }
 
 @media (prefers-color-scheme: dark) {
   .secondaryButton {
-    background: rgba(20, 20, 28, 0.7);
-    border-color: rgba(237, 237, 237, 0.1);
+    background: var(--level2);
+    border-color: var(--border);
   }
 
   .secondaryButton:hover {
-    border-color: rgba(237, 237, 237, 0.25);
+    border-color: var(--text-muted);
   }
 }
 
 .ghostButton {
   background: transparent;
-  border-color: rgba(23, 23, 23, 0.08);
-  color: inherit;
+  border-color: var(--border);
+  color: var(--text-strong);
 }
 
 .ghostButton:hover {
   transform: translateY(-1px);
-  border-color: rgba(23, 23, 23, 0.2);
+  border-color: var(--text-muted);
 }
 
 @media (prefers-color-scheme: dark) {
   .ghostButton {
-    border-color: rgba(237, 237, 237, 0.1);
+    border-color: var(--border);
   }
 
   .ghostButton:hover {
-    border-color: rgba(237, 237, 237, 0.25);
+    border-color: var(--text-muted);
   }
+}
+
+.buttonIcon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 .main {
@@ -201,19 +197,12 @@
   align-self: flex-start;
   padding: 6px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(23, 23, 23, 0.12);
-  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
+  background: var(--level1);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-@media (prefers-color-scheme: dark) {
-  .badge {
-    background: rgba(14, 14, 20, 0.7);
-    border-color: rgba(237, 237, 237, 0.12);
-  }
 }
 
 .heroTitle {
@@ -225,7 +214,7 @@
 .heroSubtitle {
   font-size: 1.05rem;
   line-height: 1.7;
-  opacity: 0.72;
+  color: var(--text-muted);
   max-width: 48ch;
 }
 
@@ -236,39 +225,10 @@
   flex-wrap: wrap;
 }
 
-.heroStats {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.statCard {
-  background: rgba(255, 255, 255, 0.65);
-  border-radius: 20px;
-  padding: 18px 20px;
-  border: 1px solid rgba(23, 23, 23, 0.08);
-  min-width: 180px;
-}
-
-.statValue {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.statLabel {
-  display: block;
-  font-size: 0.9rem;
-  opacity: 0.65;
-  margin-top: 6px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .statCard {
-    background: rgba(20, 20, 28, 0.85);
-    border-color: rgba(237, 237, 237, 0.08);
-  }
+.heroNote {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-top: 8px;
 }
 
 .heroMedia {
@@ -281,15 +241,16 @@
   position: relative;
   border-radius: 28px;
   padding: 160px 24px;
-  background: linear-gradient(140deg, rgba(75, 80, 255, 0.48), rgba(26, 32, 70, 0.85));
-  color: #ffffff;
+  background: var(--level1);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.78rem;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
 }
 
 .calloutCard {
@@ -297,9 +258,9 @@
   max-width: 320px;
   padding: 20px 24px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(23, 23, 23, 0.08);
-  box-shadow: 0 12px 40px rgba(12, 12, 32, 0.18);
+  background: var(--level1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
 }
 
 .calloutTitle {
@@ -307,20 +268,14 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.7;
+  color: var(--text-muted);
 }
 
 .calloutBody {
   margin-top: 12px;
   font-size: 1rem;
   line-height: 1.6;
-}
-
-@media (prefers-color-scheme: dark) {
-  .calloutCard {
-    background: rgba(18, 18, 28, 0.9);
-    border-color: rgba(237, 237, 237, 0.08);
-  }
+  color: var(--text-strong);
 }
 
 .partnerSection {
@@ -332,7 +287,7 @@
 
 .partnerHeadline {
   font-size: 1.05rem;
-  opacity: 0.7;
+  color: var(--text-muted);
   margin: 0 auto;
   max-width: 56ch;
 }
@@ -346,19 +301,12 @@
 .partner {
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid rgba(23, 23, 23, 0.08);
-  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
+  background: var(--level1);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 0.8rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .partner {
-    border-color: rgba(237, 237, 237, 0.08);
-    background: rgba(18, 18, 28, 0.7);
-  }
 }
 
 .featuresSection {
@@ -383,7 +331,7 @@
 .sectionHeader p {
   font-size: 1.05rem;
   line-height: 1.75;
-  opacity: 0.72;
+  color: var(--text-muted);
 }
 
 .featureGrid {
@@ -395,13 +343,13 @@
 .featureCard {
   padding: 28px;
   border-radius: 24px;
-  border: 1px solid rgba(23, 23, 23, 0.08);
-  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border);
+  background: var(--level1);
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 240px;
-  box-shadow: 0 18px 45px rgba(12, 12, 32, 0.16);
+  box-shadow: var(--shadow-soft);
 }
 
 .featureCard h3 {
@@ -412,7 +360,7 @@
 .featureCard p {
   font-size: 1rem;
   line-height: 1.65;
-  opacity: 0.75;
+  color: var(--text-muted);
 }
 
 .featureHighlight {
@@ -421,14 +369,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  opacity: 0.7;
-}
-
-@media (prefers-color-scheme: dark) {
-  .featureCard {
-    border-color: rgba(237, 237, 237, 0.08);
-    background: rgba(18, 18, 32, 0.75);
-  }
+  color: var(--text-muted);
 }
 
 .splitSection {
@@ -467,12 +408,12 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4b50ff, #8948ff);
+  background: var(--text-strong);
 }
 
 .inlineLink {
   font-weight: 600;
-  opacity: 0.75;
+  color: var(--text-strong);
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
@@ -488,6 +429,7 @@
   overflow: hidden;
   box-shadow: var(--shadow);
   min-height: 420px;
+  border: 1px solid var(--border);
 }
 
 .mediaOverlay {
@@ -498,7 +440,7 @@
   padding: 18px 20px;
   border-radius: 16px;
   backdrop-filter: blur(14px);
-  background: rgba(14, 14, 24, 0.78);
+  background: rgba(18, 21, 28, 0.78);
   color: #ffffff;
 }
 
@@ -532,12 +474,12 @@
 .workflowCard {
   border-radius: 24px;
   padding: 26px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(23, 23, 23, 0.08);
+  background: var(--level1);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 18px 45px rgba(12, 12, 32, 0.14);
+  box-shadow: var(--shadow-soft);
 }
 
 .workflowCard h3 {
@@ -548,29 +490,17 @@
 .workflowCard p {
   font-size: 1rem;
   line-height: 1.6;
-  opacity: 0.75;
+  color: var(--text-muted);
 }
 
 .workflowMedia {
   position: relative;
   border-radius: 28px;
   overflow: hidden;
-  border: 1px solid rgba(23, 23, 23, 0.08);
-  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--border);
+  background: var(--level1);
   box-shadow: var(--shadow);
   min-height: 420px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .workflowCard {
-    background: rgba(18, 18, 32, 0.78);
-    border-color: rgba(237, 237, 237, 0.08);
-  }
-
-  .workflowMedia {
-    border-color: rgba(237, 237, 237, 0.08);
-    background: rgba(18, 18, 28, 0.7);
-  }
 }
 
 .mediaImage {
@@ -588,8 +518,8 @@
   width: min(760px, 100%);
   padding: 40px;
   border-radius: 32px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(23, 23, 23, 0.08);
+  background: var(--level1);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
@@ -614,7 +544,7 @@
 
 .avatar {
   border-radius: 50%;
-  box-shadow: 0 12px 30px rgba(12, 12, 32, 0.25);
+  box-shadow: var(--shadow-soft);
 }
 
 .authorName {
@@ -624,15 +554,8 @@
 
 .authorTitle {
   font-size: 0.9rem;
-  opacity: 0.65;
+  color: var(--text-muted);
   margin-top: 4px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .testimonialCard {
-    background: rgba(18, 18, 32, 0.85);
-    border-color: rgba(237, 237, 237, 0.08);
-  }
 }
 
 .footer {
@@ -641,8 +564,8 @@
   gap: 40px;
   padding: 48px;
   border-radius: 32px;
-  background: linear-gradient(135deg, rgba(75, 80, 255, 0.18), rgba(138, 72, 255, 0.14));
-  border: 1px solid rgba(23, 23, 23, 0.08);
+  background: var(--level1);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow);
 }
 
@@ -666,7 +589,7 @@
   flex-wrap: wrap;
   gap: 12px;
   font-size: 0.85rem;
-  opacity: 0.75;
+  color: var(--text-muted);
 }
 
 .footerLinks {
