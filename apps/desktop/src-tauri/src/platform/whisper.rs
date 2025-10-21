@@ -1,4 +1,4 @@
-use crate::platform::Transcriber;
+use crate::platform::{GpuDescriptor, Transcriber, TranscriptionDevice, TranscriptionRequest};
 use std::sync::Arc;
 use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
@@ -7,8 +7,18 @@ use whisper_rs::{
 #[cfg(all(target_os = "linux", feature = "linux-gpu"))]
 use whisper_rs::vulkan;
 
+#[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+const DISABLE_ENV: &str = "VOQUILL_WHISPER_DISABLE_GPU";
+
 pub struct WhisperTranscriber {
-    context: Arc<WhisperContext>,
+    model_path: String,
+    default_context: Arc<WhisperContext>,
+}
+
+enum ContextStrategy<'a> {
+    Auto,
+    Cpu,
+    Gpu(&'a GpuDescriptor),
 }
 
 impl WhisperTranscriber {
@@ -17,53 +27,146 @@ impl WhisperTranscriber {
             .to_str()
             .map(str::to_owned)
             .ok_or_else(|| "Invalid Whisper model path".to_string())?;
-        #[cfg(all(target_os = "linux", feature = "linux-gpu"))]
-        let context = {
-            let mut params = WhisperContextParameters::default();
-            params.use_gpu(false);
-            let gpu_attempt = configure_linux_gpu(&mut params);
+        let default_context = Self::load_context(&model_path_string, ContextStrategy::Auto)?;
 
-            match WhisperContext::new_with_params(&model_path_string, params) {
-                Ok(ctx) => {
-                    if gpu_attempt.attempted {
-                        if let Some(name) = gpu_attempt.device_name.as_deref() {
-                            eprintln!("[whisper] GPU initialised successfully on '{name}'");
+        Ok(Self {
+            model_path: model_path_string,
+            default_context,
+        })
+    }
+
+    fn context_for_request(
+        &self,
+        request: Option<&TranscriptionRequest>,
+    ) -> Result<Arc<WhisperContext>, String> {
+        match request.and_then(|req| req.device.as_ref()) {
+            None => Ok(self.default_context.clone()),
+            Some(TranscriptionDevice::Cpu) => {
+                Self::load_context(&self.model_path, ContextStrategy::Cpu)
+            }
+            Some(TranscriptionDevice::Gpu(descriptor)) => {
+                Self::load_context(&self.model_path, ContextStrategy::Gpu(descriptor))
+            }
+        }
+    }
+
+    fn load_context(
+        model_path: &str,
+        strategy: ContextStrategy,
+    ) -> Result<Arc<WhisperContext>, String> {
+        #[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+        {
+            return Self::load_context_with_linux_gpu(model_path, strategy);
+        }
+
+        #[cfg(not(all(target_os = "linux", feature = "linux-gpu")))]
+        {
+            Self::load_context_without_gpu(model_path, strategy)
+        }
+    }
+
+    #[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+    fn load_context_with_linux_gpu(
+        model_path: &str,
+        strategy: ContextStrategy,
+    ) -> Result<Arc<WhisperContext>, String> {
+        match strategy {
+            ContextStrategy::Auto => {
+                let mut params = WhisperContextParameters::default();
+                params.use_gpu(false);
+                let gpu_attempt = configure_linux_gpu_auto(&mut params);
+
+                match WhisperContext::new_with_params(model_path, params) {
+                    Ok(ctx) => {
+                        if gpu_attempt.attempted {
+                            if let Some(name) = gpu_attempt.device_name.as_deref() {
+                                eprintln!("[whisper] GPU initialised successfully on '{name}'");
+                            }
                         }
+                        Ok(Arc::new(ctx))
                     }
-                    ctx
-                }
-                Err(err) => {
-                    if gpu_attempt.attempted {
-                        eprintln!(
-                            "[whisper] GPU initialisation failed ({err}). Falling back to CPU inference."
-                        );
-                        let mut cpu_params = WhisperContextParameters::default();
-                        cpu_params.use_gpu(false);
-                        WhisperContext::new_with_params(&model_path_string, cpu_params).map_err(
-                            |cpu_err| {
+                    Err(err) => {
+                        if gpu_attempt.attempted {
+                            eprintln!(
+                                "[whisper] GPU initialisation failed ({err}). Falling back to CPU inference."
+                            );
+                            let mut cpu_params = WhisperContextParameters::default();
+                            cpu_params.use_gpu(false);
+                            let cpu_context = WhisperContext::new_with_params(
+                                model_path, cpu_params,
+                            )
+                            .map_err(|cpu_err| {
                                 format!(
                                     "Failed to load Whisper model using GPU ({err}) \
                                      and CPU fallback also failed: {cpu_err}"
                                 )
-                            },
-                        )?
-                    } else {
-                        return Err(format!("Failed to load Whisper model: {err}"));
+                            })?;
+
+                            return Ok(Arc::new(cpu_context));
+                        }
+
+                        Err(format!("Failed to load Whisper model: {err}"))
                     }
                 }
             }
-        };
+            ContextStrategy::Cpu => {
+                let mut params = WhisperContextParameters::default();
+                params.use_gpu(false);
+                WhisperContext::new_with_params(model_path, params)
+                    .map_err(|err| format!("Failed to load Whisper model on CPU: {err}"))
+                    .map(Arc::new)
+            }
+            ContextStrategy::Gpu(descriptor) => {
+                let mut params = WhisperContextParameters::default();
+                params.use_gpu(false);
+                let selected_name = configure_linux_gpu_selection(&mut params, descriptor)?;
 
-        #[cfg(not(all(target_os = "linux", feature = "linux-gpu")))]
-        let context = {
-            let params = WhisperContextParameters::default();
-            WhisperContext::new_with_params(&model_path_string, params)
-                .map_err(|err| format!("Failed to load Whisper model: {err}"))?
-        };
+                match WhisperContext::new_with_params(model_path, params) {
+                    Ok(ctx) => {
+                        eprintln!("[whisper] GPU initialised successfully on '{selected_name}'");
+                        Ok(Arc::new(ctx))
+                    }
+                    Err(err) => Err(format!(
+                        "Failed to load Whisper model on GPU '{selected_name}': {err}"
+                    )),
+                }
+            }
+        }
+    }
 
-        Ok(Self {
-            context: Arc::new(context),
-        })
+    #[cfg(not(all(target_os = "linux", feature = "linux-gpu")))]
+    fn load_context_without_gpu(
+        model_path: &str,
+        strategy: ContextStrategy,
+    ) -> Result<Arc<WhisperContext>, String> {
+        match strategy {
+            ContextStrategy::Gpu(descriptor) => {
+                let gpu_label = descriptor
+                    .name
+                    .as_deref()
+                    .map(|name| format!("'{name}'"))
+                    .or_else(|| descriptor.id.map(|id| format!("id {id}")))
+                    .unwrap_or_else(|| "unspecified GPU".to_string());
+
+                Err(format!(
+                    "GPU selection for {gpu_label} is not supported on this platform"
+                ))
+            }
+            ContextStrategy::Cpu => {
+                let mut params = WhisperContextParameters::default();
+                params.use_gpu(false);
+
+                WhisperContext::new_with_params(model_path, params)
+                    .map_err(|err| format!("Failed to load Whisper model on CPU: {err}"))
+                    .map(Arc::new)
+            }
+            ContextStrategy::Auto => WhisperContext::new_with_params(
+                model_path,
+                WhisperContextParameters::default(),
+            )
+            .map_err(|err| format!("Failed to load Whisper model: {err}"))
+            .map(Arc::new),
+        }
     }
 
     fn collect_transcription(state: &whisper_rs::WhisperState) -> Result<String, String> {
@@ -95,7 +198,12 @@ impl WhisperTranscriber {
 }
 
 impl Transcriber for WhisperTranscriber {
-    fn transcribe(&self, samples: &[f32], sample_rate: u32) -> Result<String, String> {
+    fn transcribe(
+        &self,
+        samples: &[f32],
+        sample_rate: u32,
+        request: Option<&TranscriptionRequest>,
+    ) -> Result<String, String> {
         const TARGET_SAMPLE_RATE: u32 = 16_000;
 
         if samples.is_empty() {
@@ -115,8 +223,8 @@ impl Transcriber for WhisperTranscriber {
             return Err("Resampled audio is empty".to_string());
         }
 
-        let mut state = self
-            .context
+        let context = self.context_for_request(request)?;
+        let mut state = context
             .create_state()
             .map_err(|err| format!("Failed to create Whisper state: {err}"))?;
 
@@ -176,19 +284,22 @@ struct LinuxGpuAttempt {
 }
 
 #[cfg(all(target_os = "linux", feature = "linux-gpu"))]
-fn configure_linux_gpu(params: &mut WhisperContextParameters) -> LinuxGpuAttempt {
+fn gpu_usage_disabled_via_env() -> bool {
     use std::env;
-    use std::panic;
 
-    const DISABLE_ENV: &str = "VOQUILL_WHISPER_DISABLE_GPU";
-
-    if env::var(DISABLE_ENV)
+    env::var(DISABLE_ENV)
         .map(|value| {
             let trimmed = value.trim();
             trimmed == "1" || trimmed.eq_ignore_ascii_case("true")
         })
         .unwrap_or(false)
-    {
+}
+
+#[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+fn configure_linux_gpu_auto(params: &mut WhisperContextParameters) -> LinuxGpuAttempt {
+    use std::panic;
+
+    if gpu_usage_disabled_via_env() {
         eprintln!("[whisper] GPU usage disabled via {DISABLE_ENV}; using CPU.");
         return LinuxGpuAttempt {
             attempted: false,
@@ -234,6 +345,71 @@ fn configure_linux_gpu(params: &mut WhisperContextParameters) -> LinuxGpuAttempt
         attempted: true,
         device_name: Some(selected.name),
     }
+}
+
+#[cfg(all(target_os = "linux", feature = "linux-gpu"))]
+fn configure_linux_gpu_selection(
+    params: &mut WhisperContextParameters,
+    descriptor: &GpuDescriptor,
+) -> Result<String, String> {
+    use std::panic;
+
+    if gpu_usage_disabled_via_env() {
+        return Err(format!(
+            "GPU usage disabled via {DISABLE_ENV}; unable to select GPU device"
+        ));
+    }
+
+    let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
+        Ok(devs) => devs,
+        Err(_) => {
+            return Err(
+                "Vulkan device enumeration panicked while selecting GPU; GPU inference unavailable"
+                    .to_string(),
+            );
+        }
+    };
+
+    if devices.is_empty() {
+        return Err("No Vulkan-capable GPU detected; unable to select GPU device".to_string());
+    }
+
+    let selected = descriptor
+        .id
+        .and_then(|id| devices.iter().find(|device| device.id == id as i32))
+        .or_else(|| {
+            descriptor.name.as_ref().and_then(|name| {
+                devices
+                    .iter()
+                    .find(|device| device.name.eq_ignore_ascii_case(name))
+            })
+        })
+        .ok_or_else(|| match (descriptor.id, descriptor.name.as_ref()) {
+            (Some(id), Some(name)) => {
+                format!("No GPU matching id {id} or name '{name}' was found for Whisper inference")
+            }
+            (Some(id), None) => {
+                format!("No GPU matching id {id} was found for Whisper inference")
+            }
+            (None, Some(name)) => {
+                format!("No GPU matching name '{name}' was found for Whisper inference")
+            }
+            (None, None) => {
+                "No GPU identifier provided for Whisper inference selection".to_string()
+            }
+        })?;
+
+    params.use_gpu(true);
+    params.gpu_device(selected.id);
+
+    let device_name = selected.name.clone();
+    let free_gib = selected.vram.free as f64 / (1024.0 * 1024.0 * 1024.0);
+    eprintln!(
+        "[whisper] attempting GPU inference on '{}' (≈{free_gib:.2} GiB free VRAM)",
+        device_name
+    );
+
+    Ok(device_name)
 }
 
 #[cfg(test)]

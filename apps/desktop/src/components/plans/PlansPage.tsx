@@ -1,5 +1,7 @@
 import KeyIcon from "@mui/icons-material/Key";
 import AddIcon from "@mui/icons-material/Add";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
 import {
   Box,
   Button,
@@ -8,16 +10,14 @@ import {
   Tab,
   Tabs,
   Typography,
-  Radio,
-  FormControlLabel,
-  Checkbox,
   FormControl,
   FormLabel,
-  RadioGroup,
   TextField,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 
 type ApiKey = {
@@ -26,6 +26,16 @@ type ApiKey = {
   provider: "groq";
   key: string;
 };
+
+type GpuInfo = {
+  name: string;
+  vendor: number;
+  device: number;
+  deviceType: string;
+  backend: string;
+};
+
+type GpuTestStatus = "idle" | "testing" | "success" | "failed";
 
 // Shared styles
 const SELECTED_BORDER_COLOR = "primary.main";
@@ -111,62 +121,6 @@ const EmptyState = ({ icon, title, description, actionLabel, onAction }: EmptySt
     </Button>
   </Box>
 );
-
-type CloudPlanCardProps = {
-  title: string;
-  features: string[];
-  selected: boolean;
-  onClick: () => void;
-};
-
-const CloudPlanCard = ({
-  title,
-  features,
-  selected,
-  onClick,
-}: CloudPlanCardProps) => {
-  return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: 3,
-        borderRadius: 2,
-        position: "relative",
-        overflow: "hidden",
-        borderWidth: selected ? 2 : 1,
-        borderColor: selected ? SELECTED_BORDER_COLOR : "divider",
-        transition: CARD_TRANSITION,
-        ...(selected && selectedCardSx),
-      }}
-    >
-      {selected && <SelectionRibbon />}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-          {title}
-        </Typography>
-        <Stack spacing={1}>
-          {features.map((feature) => (
-            <Box key={feature} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  bgcolor: "text.secondary",
-                  flexShrink: 0,
-                }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {feature}
-              </Typography>
-            </Box>
-          ))}
-        </Stack>
-      </Box>
-      {!selected && <SelectButton onClick={onClick} />}
-    </Paper>
-  );
-};
 
 type AddApiKeyCardProps = {
   onSave: (name: string, provider: "groq", key: string) => void;
@@ -274,25 +228,155 @@ const ApiKeyCard = ({ name, provider, selected, onClick }: ApiKeyCardProps) => {
   );
 };
 
+type GpuWithStatus = {
+  info: GpuInfo;
+  status: GpuTestStatus;
+  transcript?: string;
+  error?: string;
+};
+
 type LocalProcessingCardProps = {
   title: string;
   selected: boolean;
   onClick: () => void;
-  gpuAcceleration: boolean;
-  onGpuAccelerationChange: (enabled: boolean) => void;
   modelSize: string;
   onModelSizeChange: (size: string) => void;
 };
+
+const GPU_TEST_SAMPLE_RATE = 16_000;
+const GPU_TEST_SAMPLES = Array.from({ length: GPU_TEST_SAMPLE_RATE / 10 }, () => 0);
 
 const LocalProcessingCard = ({
   title,
   selected,
   onClick,
-  gpuAcceleration,
-  onGpuAccelerationChange,
   modelSize,
   onModelSizeChange,
 }: LocalProcessingCardProps) => {
+  const [gpus, setGpus] = useState<GpuWithStatus[]>([]);
+  const [selectedGpuIndex, setSelectedGpuIndex] = useState<number | null>(null);
+  const [loadingGpus, setLoadingGpus] = useState(true);
+  const [useCpu, setUseCpu] = useState(true);
+
+  useEffect(() => {
+    const loadGpus = async () => {
+      try {
+        const gpuList = await invoke<GpuInfo[]>("list_gpus");
+        const supportedGpus = gpuList.filter(
+          (info) =>
+            info.backend === "Vulkan" && info.deviceType === "DiscreteGpu"
+        );
+        setGpus(supportedGpus.map((info) => ({ info, status: "idle" })));
+      } catch (error) {
+        console.error("Failed to load GPUs:", error);
+        setGpus([]);
+      } finally {
+        setLoadingGpus(false);
+      }
+    };
+
+    loadGpus();
+  }, []);
+
+  const handleSelectCpu = () => {
+    setUseCpu(true);
+    setSelectedGpuIndex(null);
+  };
+
+  const handleSelectGpu = (index: number) => {
+    setUseCpu(false);
+    setSelectedGpuIndex(index);
+  };
+
+  const handleTestGpu = async (index: number) => {
+    const targetGpu = gpus[index];
+    if (!targetGpu) {
+      return;
+    }
+
+    setGpus((prev) =>
+      prev.map((gpu, i) =>
+        i === index
+          ? { ...gpu, status: "testing", error: undefined, transcript: undefined }
+          : gpu
+      )
+    );
+
+    try {
+      const transcript = await invoke<string>("transcribe_audio", {
+        samples: GPU_TEST_SAMPLES,
+        sampleRate: GPU_TEST_SAMPLE_RATE,
+        device: { deviceName: targetGpu.info.name },
+      });
+
+      const normalized = (transcript ?? "").trim();
+      const truncated =
+        normalized.length > 80 ? `${normalized.slice(0, 80)}…` : normalized;
+
+      setGpus((prev) =>
+        prev.map((gpu, i) =>
+          i === index
+            ? {
+                ...gpu,
+                status: "success",
+                transcript: truncated,
+                error: undefined,
+              }
+            : gpu
+        )
+      );
+    } catch (error) {
+      console.error("GPU test failed:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : "Transcription test failed";
+
+      setGpus((prev) =>
+        prev.map((gpu, i) =>
+          i === index
+            ? {
+                ...gpu,
+                status: "failed",
+                error: message,
+                transcript: undefined,
+              }
+            : gpu
+        )
+      );
+    }
+  };
+
+  const getStatusIcon = (status: GpuTestStatus) => {
+    switch (status) {
+      case "testing":
+        return <CircularProgress size={20} />;
+      case "success":
+        return <CheckCircleIcon sx={{ color: "success.main" }} />;
+      case "failed":
+        return <ErrorIcon sx={{ color: "error.main" }} />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusText = (gpu: GpuWithStatus) => {
+    switch (gpu.status) {
+      case "testing":
+        return "Testing...";
+      case "success":
+        return gpu.transcript
+          ? `Test passed — transcript: "${gpu.transcript}"`
+          : "Test passed";
+      case "failed":
+        return gpu.error || "Test failed";
+      default:
+        return "";
+    }
+  };
+
   return (
     <Paper
       variant="outlined"
@@ -321,71 +405,202 @@ const LocalProcessingCard = ({
       </Box>
 
       <Stack spacing={2.5} sx={{ mb: 3 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={gpuAcceleration}
-              onChange={(e) => onGpuAccelerationChange(e.target.checked)}
-              onClick={(e) => e.stopPropagation()}
-            />
-          }
-          label={
-            <Box>
-              <Typography variant="body2" fontWeight={500}>
-                GPU Acceleration
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Use GPU for faster processing (requires compatible hardware)
+        <FormControl>
+          <FormLabel sx={{ mb: 1.5, fontSize: "0.875rem", fontWeight: 500 }}>
+            Processing Device
+          </FormLabel>
+          {loadingGpus ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 2 }}>
+              <CircularProgress size={20} />
+              <Typography variant="body2" color="text.secondary">
+                Detecting GPUs...
               </Typography>
             </Box>
-          }
-        />
+          ) : (
+            <Stack spacing={1.5}>
+              {/* CPU Option */}
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderColor: useCpu ? "primary.main" : "divider",
+                  bgcolor: useCpu ? "action.selected" : "background.paper",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    bgcolor: useCpu ? "action.selected" : "action.hover",
+                  },
+                }}
+                onClick={handleSelectCpu}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" fontWeight={600}>
+                      CPU Processing
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Use CPU for audio processing {gpus.length === 0 ? "(default)" : ""}
+                    </Typography>
+                  </Box>
+                  {useCpu && (
+                    <CheckCircleIcon sx={{ color: "primary.main" }} />
+                  )}
+                </Box>
+              </Paper>
 
-        <FormControl>
+              {/* GPU Options */}
+              {gpus.length > 0 && (
+                <>
+                  {gpus.map((gpu, index) => (
+                    <Paper
+                      key={index}
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderColor:
+                          selectedGpuIndex === index && !useCpu
+                            ? "primary.main"
+                            : "divider",
+                        bgcolor:
+                          selectedGpuIndex === index && !useCpu
+                            ? "action.selected"
+                            : "background.paper",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {gpu.info.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {gpu.info.backend} • {gpu.info.deviceType}
+                          </Typography>
+                          {gpu.status !== "idle" && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                mt: 1,
+                              }}
+                            >
+                              {getStatusIcon(gpu.status)}
+                              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                                <Typography
+                                  variant="caption"
+                                  color={
+                                    gpu.status === "success"
+                                      ? "success.main"
+                                      : gpu.status === "failed"
+                                      ? "error.main"
+                                      : "text.secondary"
+                                  }
+                                >
+                                  {getStatusText(gpu)}
+                                </Typography>
+                                {gpu.status === "success" && !gpu.transcript && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Transcript was empty (silence detected).
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                          {selectedGpuIndex === index && !useCpu && (
+                            <CheckCircleIcon sx={{ color: "primary.main" }} />
+                          )}
+                          {gpu.status === "success" ? (
+                            <Button
+                              size="small"
+                              variant={selectedGpuIndex === index && !useCpu ? "contained" : "outlined"}
+                              onClick={() => handleSelectGpu(index)}
+                              sx={{ textTransform: "none", fontWeight: 600 }}
+                            >
+                              {selectedGpuIndex === index && !useCpu ? "Selected" : "Select"}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleTestGpu(index)}
+                              disabled={gpu.status === "testing"}
+                              sx={{ textTransform: "none", fontWeight: 600 }}
+                            >
+                              {gpu.status === "idle"
+                                ? "Test"
+                                : gpu.status === "failed"
+                                ? "Retry"
+                                : "Testing..."}
+                            </Button>
+                          )}
+                        </Box>
+                      </Box>
+                    </Paper>
+                  ))}
+                  <Typography variant="caption" color="text.secondary" sx={{ pt: 1 }}>
+                    Test a GPU to verify compatibility, then select it to use for processing
+                  </Typography>
+                </>
+              )}
+            </Stack>
+          )}
+        </FormControl>
+
+        <FormControl fullWidth>
           <FormLabel sx={{ mb: 1, fontSize: "0.875rem", fontWeight: 500 }}>
             Model Size
           </FormLabel>
-          <RadioGroup
+          <TextField
+            select
             value={modelSize}
             onChange={(e) => onModelSizeChange(e.target.value)}
+            size="small"
+            fullWidth
           >
-            <FormControlLabel
-              value="small"
-              control={<Radio onClick={(e) => e.stopPropagation()} />}
-              label={
-                <Box>
-                  <Typography variant="body2">Small (~400 MB)</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Faster processing, lower accuracy
-                  </Typography>
-                </Box>
-              }
-            />
-            <FormControlLabel
-              value="medium"
-              control={<Radio onClick={(e) => e.stopPropagation()} />}
-              label={
-                <Box>
-                  <Typography variant="body2">Medium (~1 GB)</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Balanced speed and accuracy
-                  </Typography>
-                </Box>
-              }
-            />
-            <FormControlLabel
-              value="large"
-              control={<Radio onClick={(e) => e.stopPropagation()} />}
-              label={
-                <Box>
-                  <Typography variant="body2">Large (~3 GB)</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Best accuracy, slower processing
-                  </Typography>
-                </Box>
-              }
-            />
-          </RadioGroup>
+            <MenuItem value="tiny">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Tiny (77 MB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Fastest, lowest accuracy — good for quick drafts
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="base">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Base (148 MB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Fast processing, decent accuracy
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="small">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Small (488 MB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Recommended with GPU acceleration
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="medium">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Medium (1.53 GB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Best with GPU — high accuracy, slower on CPU
+                </Typography>
+              </Box>
+            </MenuItem>
+          </TextField>
         </FormControl>
       </Stack>
 
@@ -416,12 +631,8 @@ const tabSx = {
 
 const PlansPage = () => {
   const [selectedTab, setSelectedTab] = useState(0);
-  const [selectedCloudPlan, setSelectedCloudPlan] = useState<"free" | "pro">(
-    "free"
-  );
   const [localProcessingSelected, setLocalProcessingSelected] = useState(true);
-  const [gpuAcceleration, setGpuAcceleration] = useState(false);
-  const [modelSize, setModelSize] = useState("medium");
+  const [modelSize, setModelSize] = useState("base");
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string | null>(null);
   const [showAddApiKeyCard, setShowAddApiKeyCard] = useState(false);
@@ -453,8 +664,7 @@ const PlansPage = () => {
           color="text.secondary"
           sx={{ maxWidth: 640 }}
         >
-          Voquill can process your audio locally, via an API, or through our
-          cloud backend. Choose the plan that fits your workflow.
+          Voquill can process your audio locally or via an API.
         </Typography>
       </Stack>
 
@@ -480,7 +690,6 @@ const PlansPage = () => {
             },
           }}
         >
-          <Tab label="Voquill Cloud" sx={tabSx} />
           <Tab label="Local Processing" sx={tabSx} />
           <Tab label="API Key" sx={tabSx} />
         </Tabs>
@@ -488,46 +697,17 @@ const PlansPage = () => {
 
       <Box sx={{ py: 2 }}>
         {selectedTab === 0 && (
-          <Stack spacing={2} sx={{ maxWidth: 600 }}>
-            <CloudPlanCard
-              title="Free Plan"
-              features={[
-                "2,000 words per week",
-                "Access to cloud transcription",
-                "Standard processing speed",
-                "Email support",
-              ]}
-              selected={selectedCloudPlan === "free"}
-              onClick={() => setSelectedCloudPlan("free")}
-            />
-            <CloudPlanCard
-              title="Pro Plan"
-              features={[
-                "Unlimited transcription",
-                "Priority processing speed",
-                "Advanced AI features",
-                "Priority support",
-                "Custom integrations",
-              ]}
-              selected={selectedCloudPlan === "pro"}
-              onClick={() => setSelectedCloudPlan("pro")}
-            />
-          </Stack>
-        )}
-        {selectedTab === 1 && (
           <Box sx={{ maxWidth: 600 }}>
             <LocalProcessingCard
               title="Local Processing"
               selected={localProcessingSelected}
               onClick={() => setLocalProcessingSelected(true)}
-              gpuAcceleration={gpuAcceleration}
-              onGpuAccelerationChange={setGpuAcceleration}
               modelSize={modelSize}
               onModelSizeChange={setModelSize}
             />
           </Box>
         )}
-        {selectedTab === 2 && (
+        {selectedTab === 1 && (
           <Box sx={{ maxWidth: 600 }}>
             {apiKeys.length === 0 && !showAddApiKeyCard ? (
               <EmptyState

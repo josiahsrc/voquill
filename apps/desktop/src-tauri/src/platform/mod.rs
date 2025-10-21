@@ -18,6 +18,23 @@ pub(crate) mod keyboard;
 
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
 
+#[derive(Clone, Debug, Default)]
+pub struct TranscriptionRequest {
+    pub device: Option<TranscriptionDevice>,
+}
+
+#[derive(Clone, Debug)]
+pub enum TranscriptionDevice {
+    Cpu,
+    Gpu(GpuDescriptor),
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct GpuDescriptor {
+    pub id: Option<u32>,
+    pub name: Option<String>,
+}
+
 pub trait Recorder: Send + Sync {
     fn start(
         &self,
@@ -28,5 +45,10 @@ pub trait Recorder: Send + Sync {
 }
 
 pub trait Transcriber: Send + Sync {
-    fn transcribe(&self, samples: &[f32], sample_rate: u32) -> Result<String, String>;
+    fn transcribe(
+        &self,
+        samples: &[f32],
+        sample_rate: u32,
+        request: Option<&TranscriptionRequest>,
+    ) -> Result<String, String>;
 }
