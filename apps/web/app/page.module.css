@@ -508,6 +508,30 @@
   border: 1px solid var(--border);
 }
 
+.iconShowcaseMedia {
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  background: transparent;
+}
+
+.privacyMedia {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .iconShowcaseMedia {
+    border: none;
+  }
+}
+
 .mediaOverlay {
   position: absolute;
   bottom: 24px;

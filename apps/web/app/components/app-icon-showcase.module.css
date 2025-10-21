@@ -1,0 +1,166 @@
+.stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 6vw, 44px);
+}
+
+.iconCloud {
+  position: relative;
+  width: min(100%, 480px);
+  aspect-ratio: 1;
+}
+
+.appIcon {
+  --x: 0%;
+  --y: 0%;
+  --glow: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(68px, 24vw, 104px);
+  aspect-ratio: 1;
+  border-radius: 28%;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)))
+    scale(0.94);
+  background: var(--icon-background, rgba(255, 255, 255, 0.8));
+  box-shadow:
+    0 18px 34px rgba(18, 21, 28, 0.16),
+    0 4px 10px rgba(18, 21, 28, 0.12);
+  animation: iconPulse 12s ease-in-out infinite;
+  animation-fill-mode: both;
+  transition: transform 0.4s ease, filter 0.4s ease;
+}
+
+.appIcon::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: 32%;
+  background: var(--icon-glow, rgba(255, 255, 255, 0.42));
+  opacity: calc(var(--glow) * 0.85);
+  filter: blur(22px);
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+
+.iconImage {
+  width: 58%;
+  height: 58%;
+  object-fit: contain;
+}
+
+.imessage {
+  --x: -54%;
+  --y: -88%;
+  --icon-glow: rgba(99, 224, 152, 0.65);
+  background: linear-gradient(135deg, #5ae37d, #20b44d);
+}
+
+.notes {
+  --x: 100%;
+  --y: -120%;
+  --icon-glow: rgba(255, 221, 130, 0.58);
+  background: linear-gradient(160deg, #fef6d0, #f5d37a);
+}
+
+.slack {
+  --x: -100%;
+  --y: 12%;
+  --icon-glow: rgba(255, 216, 230, 0.65);
+  background: linear-gradient(145deg, #fef7ff, #f8ddff);
+}
+
+.docs {
+  --x: -20%;
+  --y: 140%;
+  --icon-glow: rgba(132, 196, 255, 0.6);
+  background: linear-gradient(160deg, #e3f1ff, #89c4ff);
+}
+
+.github {
+  --x: 120%;
+  --y: 56%;
+  --icon-glow: rgba(120, 196, 255, 0.6);
+  background: linear-gradient(135deg, #d6f2ff, #7ec7ff);
+}
+
+.notion {
+  --x: 16%;
+  --y: -12%;
+  --icon-glow: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(145deg, #fcfcfc, #f0f0f0);
+  color: #121212;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@keyframes iconPulse {
+  0%,
+  16%,
+  100% {
+    --glow: 0;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)))
+      scale(0.92);
+    filter: saturate(0.9) brightness(0.96);
+  }
+  8% {
+    --glow: 1;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)))
+      scale(1.1);
+    filter: saturate(1.1) brightness(1.04);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .appIcon {
+    box-shadow:
+      0 20px 44px rgba(0, 0, 0, 0.55),
+      0 4px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .imessage {
+    background: linear-gradient(135deg, #3bd869, #159f3d);
+  }
+
+  .notes {
+    background: linear-gradient(160deg, #f0d783, #e7b34f);
+  }
+
+  .slack {
+    background: linear-gradient(145deg, #f4d9ff, #ebb8ff);
+  }
+
+  .docs {
+    background: linear-gradient(160deg, #b0d7ff, #5aa1ff);
+  }
+
+  .github {
+    background: linear-gradient(135deg, #a0e0ff, #46a8ff);
+  }
+
+  .notion {
+    background: linear-gradient(145deg, #1c1c1c, #2a2a2a);
+    color: #f5f5f5;
+  }
+}
+
+@media (max-width: 720px) {
+  .iconCloud {
+    width: min(100%, 320px);
+  }
+}

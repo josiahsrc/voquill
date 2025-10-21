@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import DownloadButton from "./components/download-button";
+import AppIconShowcase from "./components/app-icon-showcase";
+import PrivacyLock from "./components/privacy-lock";
 import SiteFooter from "./components/site-footer";
 import SiteHeader from "./components/site-header";
 import SpeedShowcase from "./components/speed-showcase";
+import TextCleanupShowcase from "./components/text-cleanup-showcase";
 import styles from "./page.module.css";
 
 const features = [
@@ -128,15 +131,8 @@ export default function Home() {
         <SpeedShowcase />
 
         <section className={styles.splitSection} id="features">
-          <div className={styles.splitMedia}>
-            <Image
-              src="https://picsum.photos/seed/voquill-any-app/960/720"
-              alt="Voquill working across multiple applications"
-              fill
-              className={styles.mediaImage}
-              loading="lazy"
-              sizes="(max-width: 960px) 100vw, 45vw"
-            />
+          <div className={`${styles.splitMedia} ${styles.iconShowcaseMedia}`}>
+            <AppIconShowcase />
           </div>
           <div className={styles.splitContent}>
             <span className={styles.badge}>Works on any app</span>
@@ -167,28 +163,14 @@ export default function Home() {
               GitHub Source Code →
             </a>
           </div>
-          <div className={styles.splitMedia}>
-            <Image
-              src="https://picsum.photos/seed/voquill-privacy/960/720"
-              alt="Local processing and encryption visualization"
-              fill
-              className={styles.mediaImage}
-              loading="lazy"
-              sizes="(max-width: 960px) 100vw, 45vw"
-            />
+          <div className={`${styles.splitMedia} ${styles.privacyMedia}`}>
+            <PrivacyLock />
           </div>
         </section>
 
         <section className={styles.splitSection}>
           <div className={styles.splitMedia}>
-            <Image
-              src="https://picsum.photos/seed/voquill-cleanup/960/720"
-              alt="AI-powered text cleanup interface"
-              fill
-              className={styles.mediaImage}
-              loading="lazy"
-              sizes="(max-width: 960px) 100vw, 45vw"
-            />
+            <TextCleanupShowcase />
           </div>
           <div className={styles.splitContent}>
             <span className={styles.badge}>Smart text cleanup</span>
