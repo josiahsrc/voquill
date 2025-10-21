@@ -52,7 +52,7 @@ jobs:
             exit 1
           fi
           echo "FIREBASE_PROJECT_ID=${PROJECT_ID}" >> "${GITHUB_ENV}"
-          echo "Config complete!"
+          echo "Config complete"
 
       - name: Deploy to Firebase Hosting
         working-directory: apps/web
