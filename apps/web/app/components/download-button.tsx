@@ -55,8 +55,7 @@ const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
   },
 };
 
-const RELEASE_MANIFEST_URL =
-  "https://github.com/josiahsrc/voquill/releases/download/desktop-prod/latest.json";
+const RELEASE_MANIFEST_ENDPOINT = "/api/desktop-release";
 
 function detectPlatform(): Platform {
   if (typeof window === "undefined") {
@@ -200,7 +199,7 @@ export default DownloadButton;
 
 async function fetchReleaseManifest(signal: AbortSignal) {
   try {
-    const response = await fetch(RELEASE_MANIFEST_URL, {
+    const response = await fetch(RELEASE_MANIFEST_ENDPOINT, {
       signal,
       cache: "no-cache",
     });
