@@ -278,6 +278,12 @@
   font-size: 0.78rem;
   box-shadow: var(--shadow-soft);
   border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.demoImage {
+  border-radius: 28px;
+  object-fit: cover;
 }
 
 .calloutCard {

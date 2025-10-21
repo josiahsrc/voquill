@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { type ComponentProps, useEffect, useState } from "react";
+import {
+  type ComponentProps,
+  type ReactElement,
+  useEffect,
+  useState,
+} from "react";
 import styles from "../page.module.css";
 
 type DownloadButtonProps = {
@@ -13,7 +18,7 @@ type Platform = "mac" | "windows" | "linux";
 
 type PlatformConfig = {
   label: string;
-  Icon: (props: IconProps) => JSX.Element;
+  Icon: (props: IconProps) => ReactElement;
 };
 
 type IconProps = {

@@ -60,12 +60,19 @@ export default function Home() {
           </div>
           <div className={styles.heroMedia}>
             <div className={styles.videoFrame} id="demo">
-              <span>Placeholder demo video</span>
+              <Image
+                src="/uphill-struggle.jpg"
+                alt="Demo of Voquill in action"
+                fill
+                className={styles.demoImage}
+                priority
+                style={{ objectFit: 'cover' }}
+              />
             </div>
           </div>
         </section>
 
-        <section className={styles.partnerSection} aria-label="Pilot partners">
+        {/* <section className={styles.partnerSection} aria-label="Pilot partners">
           <p className={styles.partnerHeadline}>
             Trusted by professionals to let them write at the speed of thought.
           </p>
@@ -87,7 +94,7 @@ export default function Home() {
               )}
             </div>
           </div>
-        </section>
+        </section> */}
 
         <SpeedShowcase />
 
