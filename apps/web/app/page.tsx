@@ -9,45 +9,6 @@ import SpeedShowcase from "./components/speed-showcase";
 import TextCleanupShowcase from "./components/text-cleanup-showcase";
 import styles from "./page.module.css";
 
-const features = [
-  {
-    title: "Dictation that adapts to you",
-    description:
-      "Voquill listens for personal vocabulary, meeting context, and project names so every draft sounds like you.",
-    highlight: "Custom voice models update after each session.",
-  },
-  {
-    title: "Command mode without the commands",
-    description:
-      "Natural-language shortcuts let you fix typos, add punctuation, and drop snippets without breaking your flow.",
-    highlight: "“Fix the last sentence” instantly rewrites your thought.",
-  },
-  {
-    title: "Live collaboration in any app",
-    description:
-      "Mirror the transcript into Google Docs, Notion, or your IDE while keeping your raw audio locked on-device.",
-    highlight: "Sync over a secure local bridge—never the cloud.",
-  },
-];
-
-const workflow = [
-  {
-    title: "Capture",
-    description:
-      "Start a recording with one keystroke. Voquill detects your microphone and begins a secure local stream.",
-  },
-  {
-    title: "Clarify",
-    description:
-      "Highlight sentences with your voice—“mark this for edit”—and watch Voquill tidy grammar or tone as you speak.",
-  },
-  {
-    title: "Commit",
-    description:
-      "Send the polished transcript anywhere with a single push, or export encrypted session logs for compliance.",
-  },
-];
-
 const partnerLogos = [
   {
     name: "Aurora Labs",
@@ -151,7 +112,7 @@ export default function Home() {
             <h2>Your data is yours. Period.</h2>
             <p>
               Process everything locally on your device, or bring your own API
-              key to connect to the Groq API. Don't believe us? See for
+              key to connect to the Groq API. Don&apos;t believe us? See for
               yourself. Voquill is fully open-source.
             </p>
             <a

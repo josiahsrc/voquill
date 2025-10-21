@@ -58,4 +58,7 @@ jobs:
         env:
           FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
           FIREBASE_CLI_EXPERIMENTS: webframeworks
-        run: npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --non-interactive --force
+        run: |
+          set -euo pipefail
+          echo "Deploying hosting for project: ${FIREBASE_PROJECT_ID}"
+          npx firebase-tools@latest deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --non-interactive --force --config firebase.json
