@@ -4,7 +4,7 @@ use tauri::{AppHandle, Emitter, EventTarget, State};
 use crate::domain::{
     OverlayPhase, OverlayPhasePayload, RecordingLevelPayload, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
 };
-use crate::platform::LevelCallback;
+use crate::platform::{GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest};
 
 #[cfg(target_os = "linux")]
 use crate::platform::linux::input::paste_text_into_focused_field as platform_paste_text;
@@ -32,6 +32,35 @@ pub enum AudioClip {
 #[serde(rename_all = "camelCase")]
 pub struct StartRecordingArgs {
     pub preferred_microphone: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscriptionDeviceSelectionDto {
+    #[serde(default)]
+    pub cpu: bool,
+    pub device_id: Option<u32>,
+    pub device_name: Option<String>,
+}
+
+impl TranscriptionDeviceSelectionDto {
+    fn into_request(self) -> TranscriptionRequest {
+        let mut request = TranscriptionRequest::default();
+
+        if self.cpu {
+            request.device = Some(TranscriptionDevice::Cpu);
+            return request;
+        }
+
+        if self.device_id.is_some() || self.device_name.is_some() {
+            request.device = Some(TranscriptionDevice::Gpu(GpuDescriptor {
+                id: self.device_id,
+                name: self.device_name,
+            }));
+        }
+
+        request
+    }
 }
 
 #[tauri::command]
@@ -287,8 +316,10 @@ pub fn stop_recording(
 pub async fn transcribe_audio(
     samples: Vec<f64>,
     sample_rate: u32,
+    device: Option<TranscriptionDeviceSelectionDto>,
     transcriber: State<'_, Arc<dyn crate::platform::Transcriber>>,
 ) -> Result<String, String> {
+    let request = device.map(|dto| dto.into_request());
     let transcriber = transcriber.inner().clone();
     let join_result = tauri::async_runtime::spawn_blocking(move || {
         let original_len = samples.len();
@@ -310,8 +341,9 @@ pub async fn transcribe_audio(
             return Err("No usable audio samples provided".to_string());
         }
 
+        let request_ref = request.as_ref();
         transcriber
-            .transcribe(filtered.as_slice(), sample_rate)
+            .transcribe(filtered.as_slice(), sample_rate, request_ref)
             .map(|text| text.trim().to_string())
     })
     .await;
