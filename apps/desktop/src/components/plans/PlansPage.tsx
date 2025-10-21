@@ -10,11 +10,8 @@ import {
   Tab,
   Tabs,
   Typography,
-  Radio,
-  FormControlLabel,
   FormControl,
   FormLabel,
-  RadioGroup,
   TextField,
   MenuItem,
   CircularProgress,
@@ -552,51 +549,58 @@ const LocalProcessingCard = ({
           )}
         </FormControl>
 
-        <FormControl>
+        <FormControl fullWidth>
           <FormLabel sx={{ mb: 1, fontSize: "0.875rem", fontWeight: 500 }}>
             Model Size
           </FormLabel>
-          <RadioGroup
+          <TextField
+            select
             value={modelSize}
             onChange={(e) => onModelSizeChange(e.target.value)}
+            size="small"
+            fullWidth
           >
-            <FormControlLabel
-              value="small"
-              control={<Radio onClick={(e) => e.stopPropagation()} />}
-              label={
-                <Box>
-                  <Typography variant="body2">Small (~400 MB)</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Faster processing, lower accuracy
-                  </Typography>
-                </Box>
-              }
-            />
-            <FormControlLabel
-              value="medium"
-              control={<Radio onClick={(e) => e.stopPropagation()} />}
-              label={
-                <Box>
-                  <Typography variant="body2">Medium (~1 GB)</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Balanced speed and accuracy
-                  </Typography>
-                </Box>
-              }
-            />
-            <FormControlLabel
-              value="large"
-              control={<Radio onClick={(e) => e.stopPropagation()} />}
-              label={
-                <Box>
-                  <Typography variant="body2">Large (~3 GB)</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Best accuracy, slower processing
-                  </Typography>
-                </Box>
-              }
-            />
-          </RadioGroup>
+            <MenuItem value="tiny">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Tiny (77 MB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Fastest, lowest accuracy — good for quick drafts
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="base">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Base (148 MB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Fast processing, decent accuracy
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="small">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Small (488 MB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Recommended with GPU acceleration
+                </Typography>
+              </Box>
+            </MenuItem>
+            <MenuItem value="medium">
+              <Box sx={{ py: 0.5 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Medium (1.53 GB)
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Best with GPU — high accuracy, slower on CPU
+                </Typography>
+              </Box>
+            </MenuItem>
+          </TextField>
         </FormControl>
       </Stack>
 
@@ -628,7 +632,7 @@ const tabSx = {
 const PlansPage = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [localProcessingSelected, setLocalProcessingSelected] = useState(true);
-  const [modelSize, setModelSize] = useState("medium");
+  const [modelSize, setModelSize] = useState("base");
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string | null>(null);
   const [showAddApiKeyCard, setShowAddApiKeyCard] = useState(false);
