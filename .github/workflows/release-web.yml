@@ -1,0 +1,61 @@
+name: Release Web
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/release-web.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and deploy web app
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.10.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web workspace
+        run: npm run build -- --filter=web...
+
+      - name: Configure Firebase credentials
+        env:
+          FIREBASE_ADMIN_BASE64: ${{ secrets.FIREBASE_ADMIN_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${FIREBASE_ADMIN_BASE64:-}" ]]; then
+            echo "FIREBASE_ADMIN_BASE64 GitHub secret is not configured." >&2
+            exit 1
+          fi
+
+          CREDENTIALS_PATH="${HOME}/firebase-admin.json"
+          echo "${FIREBASE_ADMIN_BASE64}" | base64 --decode > "${CREDENTIALS_PATH}"
+          chmod 600 "${CREDENTIALS_PATH}"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${CREDENTIALS_PATH}" >> "${GITHUB_ENV}"
+
+          PROJECT_ID="$(jq -r '.project_id // empty' "${CREDENTIALS_PATH}")"
+          if [[ -z "${PROJECT_ID}" ]]; then
+            echo "Unable to read project_id from decoded Firebase credentials." >&2
+            exit 1
+          fi
+          echo "FIREBASE_PROJECT_ID=${PROJECT_ID}" >> "${GITHUB_ENV}"
+
+      - name: Deploy to Firebase Hosting
+        working-directory: apps/web
+        env:
+          FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
+        run: npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --non-interactive --force
