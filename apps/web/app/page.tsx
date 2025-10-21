@@ -3,6 +3,7 @@ import Link from "next/link";
 import DownloadButton from "./components/download-button";
 import SiteFooter from "./components/site-footer";
 import SiteHeader from "./components/site-header";
+import SpeedShowcase from "./components/speed-showcase";
 import styles from "./page.module.css";
 
 const features = [
@@ -80,11 +81,11 @@ export default function Home() {
         <section className={styles.heroSection} id="overview">
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>
-              Your keyboard is slowing you down.
+              Your keyboard is holding you back.
             </h1>
             <p className={styles.heroSubtitle}>
-              Make your voice your new keyboard. Type four times faster with
-              your voice.
+              Make voice your new keyboard. Type four times faster by using your
+              voice.
             </p>
             <div className={styles.heroActions}>
               <DownloadButton />
@@ -106,21 +107,25 @@ export default function Home() {
           </p>
           <div className={styles.partnerCarousel}>
             <div className={styles.partnerTrack}>
-              {[...partnerLogos, ...partnerLogos].map(({ name, src }, index) => (
-                <div key={`${name}-${index}`} className={styles.partnerLogo}>
-                  <Image
-                    src={src}
-                    alt={`${name} logo`}
-                    width={200}
-                    height={80}
-                    className={styles.logoImage}
-                    loading={index < partnerLogos.length ? "eager" : "lazy"}
-                  />
-                </div>
-              ))}
+              {[...partnerLogos, ...partnerLogos].map(
+                ({ name, src }, index) => (
+                  <div key={`${name}-${index}`} className={styles.partnerLogo}>
+                    <Image
+                      src={src}
+                      alt={`${name} logo`}
+                      width={200}
+                      height={80}
+                      className={styles.logoImage}
+                      loading={index < partnerLogos.length ? "eager" : "lazy"}
+                    />
+                  </div>
+                )
+              )}
             </div>
           </div>
         </section>
+
+        <SpeedShowcase />
 
         <section className={styles.featuresSection} id="features">
           <div className={styles.sectionHeader}>

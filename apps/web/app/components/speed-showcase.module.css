@@ -1,0 +1,436 @@
+.speedShowcase {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.sectionIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 58ch;
+}
+
+.sectionIntro h2 {
+  font-size: clamp(2.2rem, 3.2vw, 3rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.sectionIntro p {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--text-muted);
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--level1);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+@media (prefers-color-scheme: dark) {
+  .badge {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.24);
+    color: rgba(255, 255, 255, 0.92);
+  }
+}
+
+.sectionNote {
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+@media (prefers-color-scheme: dark) {
+  .sectionNote {
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.showcaseGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.keyboardPane,
+.voicePane {
+  border-radius: 32px;
+  border: 1px solid rgba(18, 21, 28, 0.12);
+  background: var(--level1);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  .keyboardPane,
+  .voicePane {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .typingCaret {
+    color: rgba(255, 255, 255, 0.82);
+  }
+}
+
+.voicePane {
+  background: linear-gradient(135deg, rgba(191, 219, 254, 0.5), rgba(147, 197, 253, 0.3));
+  color: #1e293b;
+}
+
+@media (prefers-color-scheme: dark) {
+  .voicePane {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(8, 14, 40, 0.78));
+    color: #ffffff;
+  }
+}
+
+.paneHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.paneMetric {
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.paneMetricHot {
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+@media (prefers-color-scheme: dark) {
+  .paneMetricHot {
+    color: #dbeafe;
+  }
+}
+
+.keyboardVisual {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.keyDeck {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--level2);
+  border: 1px solid rgba(18, 21, 28, 0.12);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  box-shadow: 0 6px 12px rgba(18, 21, 28, 0.08);
+  animation: keyPress 3.2s linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.typingOutput {
+  position: relative;
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(18, 21, 28, 0.04), rgba(18, 21, 28, 0));
+  border: 1px solid rgba(18, 21, 28, 0.12);
+  font-family: "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  min-height: 110px;
+}
+
+.typingLine {
+  display: block;
+  white-space: normal;
+  letter-spacing: 0.04em;
+  font-size: 1rem;
+  line-height: 1.6;
+  word-break: break-word;
+  color: var(--text-strong);
+  min-height: 3.4em;
+}
+
+.typingCaret {
+  display: inline-block;
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--text-strong);
+  animation: typingCaretBlink 620ms steps(2, end) infinite;
+}
+
+.voiceVisual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-height: 260px;
+}
+
+.waveform {
+  position: relative;
+  height: 140px;
+  border-radius: 24px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(191, 219, 254, 0.4);
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  .waveform {
+    border: 1px solid rgba(115, 176, 255, 0.45);
+    background: rgba(37, 99, 235, 0.12);
+  }
+}
+
+.voiceOutput {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px 26px;
+  border-radius: 22px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(191, 219, 254, 0.5);
+  box-shadow: 0 18px 46px rgba(37, 99, 235, 0.15);
+  font-family: "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  .voiceOutput {
+    border: 1px solid rgba(115, 176, 255, 0.42);
+    background: rgba(37, 99, 235, 0.2);
+    box-shadow: 0 18px 46px rgba(37, 99, 235, 0.22);
+  }
+}
+
+.waveSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wavePath {
+  fill: none;
+  stroke: url(#waveGradient);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 140;
+  transform: translateX(-20px);
+}
+
+.waveSlow {
+  animation: waveScroll 7s linear infinite;
+}
+
+.waveMid {
+  animation: waveScroll 5s linear infinite;
+  opacity: 0.65;
+}
+
+.waveFast {
+  animation: waveScroll 3.6s linear infinite;
+  opacity: 0.4;
+}
+
+.waveGlow {
+  position: absolute;
+  inset: auto 12px 16px 12px;
+  height: 48px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.4), transparent 70%);
+  filter: blur(18px);
+  opacity: 0.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .waveGlow {
+    background: radial-gradient(circle, rgba(115, 176, 255, 0.5), transparent 70%);
+    opacity: 0.65;
+  }
+}
+
+.voiceLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+@media (prefers-color-scheme: dark) {
+  .voiceLine {
+    color: rgba(255, 255, 255, 0.92);
+  }
+}
+
+.voiceWord {
+  display: inline-flex;
+  opacity: 0;
+  transform: translateY(6px);
+  filter: blur(6px);
+  animation: voiceWordReveal 2.6s ease-out infinite;
+  animation-delay: var(--delay, 0s);
+  animation-fill-mode: forwards;
+}
+
+.voiceFooter {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #334155;
+  margin-top: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .voiceFooter {
+    color: rgba(221, 235, 255, 0.88);
+  }
+}
+
+.keyboardFooter {
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.72;
+  margin-top: auto;
+}
+
+@keyframes keyPress {
+  0%,
+  65%,
+  100% {
+    transform: translateY(0);
+    background: var(--level2);
+    color: var(--text-muted);
+    box-shadow: 0 6px 12px rgba(18, 21, 28, 0.08);
+  }
+  10%,
+  20% {
+    transform: translateY(3px);
+    background: var(--level3);
+    color: var(--text-strong);
+    box-shadow: 0 2px 6px rgba(18, 21, 28, 0.12);
+  }
+}
+
+@keyframes waveScroll {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -280;
+  }
+}
+
+@keyframes voiceWordReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(8px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(6px);
+  }
+}
+
+@keyframes typingCaretBlink {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 960px) {
+  .showcaseGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .keyboardPane,
+  .voicePane {
+    padding: 28px 24px;
+  }
+
+  .keyDeck {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .voiceWord {
+    animation-duration: 2.2s;
+  }
+}
+
+@media (max-width: 520px) {
+  .sectionIntro h2 {
+    font-size: clamp(2rem, 8vw, 2.5rem);
+  }
+
+  .keyDeck {
+    gap: 10px;
+  }
+
+  .key {
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .voiceOutput {
+    padding: 22px 20px;
+  }
+
+  .waveform {
+    height: 120px;
+  }
+}
