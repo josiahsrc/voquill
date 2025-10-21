@@ -9,33 +9,6 @@ import SpeedShowcase from "./components/speed-showcase";
 import TextCleanupShowcase from "./components/text-cleanup-showcase";
 import styles from "./page.module.css";
 
-const partnerLogos = [
-  {
-    name: "Aurora Labs",
-    src: "https://picsum.photos/seed/voquill-logo-aurora/200/80",
-  },
-  {
-    name: "MicDrop",
-    src: "https://picsum.photos/seed/voquill-logo-micdrop/200/80",
-  },
-  {
-    name: "Glyph Studio",
-    src: "https://picsum.photos/seed/voquill-logo-glyph/200/80",
-  },
-  {
-    name: "House Nine",
-    src: "https://picsum.photos/seed/voquill-logo-house/200/80",
-  },
-  {
-    name: "Splitbeam",
-    src: "https://picsum.photos/seed/voquill-logo-splitbeam/200/80",
-  },
-  {
-    name: "Northwind",
-    src: "https://picsum.photos/seed/voquill-logo-northwind/200/80",
-  },
-];
-
 export default function Home() {
   return (
     <div className={styles.page}>
@@ -66,7 +39,7 @@ export default function Home() {
                 fill
                 className={styles.demoImage}
                 priority
-                style={{ objectFit: 'cover' }}
+                style={{ objectFit: "cover" }}
               />
             </div>
           </div>

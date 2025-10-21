@@ -26,6 +26,18 @@ type IconProps = {
   size?: number;
 };
 
+type ReleaseManifest = {
+  version: string;
+  notes: string;
+  pub_date: string;
+  platforms: Record<string, ReleasePlatformDetails | undefined>;
+};
+
+type ReleasePlatformDetails = {
+  signature: string;
+  url: string;
+};
+
 const DEFAULT_PLATFORM: Platform = "mac";
 
 const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
@@ -42,6 +54,9 @@ const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
     Icon: LinuxIcon,
   },
 };
+
+const RELEASE_MANIFEST_URL =
+  "https://github.com/josiahsrc/voquill/releases/download/desktop-prod/latest.json";
 
 function detectPlatform(): Platform {
   if (typeof window === "undefined") {
@@ -80,14 +95,44 @@ export function DownloadButton({
   const classes = [styles.primaryButton, className].filter(Boolean).join(" ");
   const size = 20;
   const [platform, setPlatform] = useState<Platform>(DEFAULT_PLATFORM);
+  const [downloadHref, setDownloadHref] =
+    useState<ComponentProps<typeof Link>["href"]>(href);
   const { label, Icon } = PLATFORM_CONFIG[platform];
 
   useEffect(() => {
-    setPlatform(detectPlatform());
-  }, []);
+    let isCancelled = false;
+    const abortController = new AbortController();
+    const detectedPlatform = detectPlatform();
+
+    setPlatform(detectedPlatform);
+    setDownloadHref(href);
+
+    async function updateDownloadHref() {
+      try {
+        const manifest = await fetchReleaseManifest(abortController.signal);
+        if (isCancelled || !manifest) {
+          return;
+        }
+
+        const url = await selectPlatformUrl(manifest, detectedPlatform);
+        if (!isCancelled && url) {
+          setDownloadHref(url);
+        }
+      } catch (error) {
+        console.error("Failed to resolve download URL", error);
+      }
+    }
+
+    void updateDownloadHref();
+
+    return () => {
+      isCancelled = true;
+      abortController.abort();
+    };
+  }, [href]);
 
   return (
-    <Link href={href} className={classes}>
+    <Link href={downloadHref} className={classes} prefetch={false}>
       <Icon className={styles.buttonIcon} size={size} />
       <span>{label}</span>
     </Link>
@@ -152,3 +197,110 @@ function LinuxIcon({ className, size = 20 }: IconProps) {
 }
 
 export default DownloadButton;
+
+async function fetchReleaseManifest(signal: AbortSignal) {
+  try {
+    const response = await fetch(RELEASE_MANIFEST_URL, {
+      signal,
+      cache: "no-cache",
+    });
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const manifest = (await response.json()) as ReleaseManifest;
+    return manifest;
+  } catch {
+    return undefined;
+  }
+}
+
+async function selectPlatformUrl(
+  manifest: ReleaseManifest,
+  platform: Platform,
+) {
+  const preference = await buildPlatformPreference(platform);
+
+  for (const key of preference) {
+    const url = manifest.platforms[key]?.url;
+    if (url) {
+      return url;
+    }
+  }
+
+  return undefined;
+}
+
+async function buildPlatformPreference(platform: Platform) {
+  switch (platform) {
+    case "mac": {
+      const macKey = await detectMacManifestKey();
+      if (macKey === "darwin-aarch64") {
+        return ["darwin-aarch64", "darwin-x86_64"];
+      }
+
+      if (macKey === "darwin-x86_64") {
+        return ["darwin-x86_64", "darwin-aarch64"];
+      }
+
+      return ["darwin-aarch64", "darwin-x86_64"];
+    }
+    case "windows":
+      return ["windows-x86_64"];
+    case "linux":
+      return ["linux-x86_64"];
+    default:
+      return [];
+  }
+}
+
+async function detectMacManifestKey() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const { navigator } = window;
+  const ua = [
+    navigator.userAgent ?? "",
+    "userAgentData" in navigator
+      ? (navigator.userAgentData as { platform?: string }).platform ?? ""
+      : "",
+    navigator.platform ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (ua.includes("arm") || ua.includes("aarch") || ua.includes("apple silicon")) {
+    return "darwin-aarch64";
+  }
+
+  const userAgentData = (navigator as Navigator & {
+    userAgentData?: {
+      getHighEntropyValues?: (
+        hints: string[],
+      ) => Promise<{ architecture?: string }>;
+    };
+  }).userAgentData;
+
+  if (userAgentData?.getHighEntropyValues) {
+    try {
+      const { architecture } = await userAgentData.getHighEntropyValues([
+        "architecture",
+      ]);
+      const normalized = architecture?.toLowerCase() ?? "";
+
+      if (normalized.includes("arm") || normalized.includes("aarch")) {
+        return "darwin-aarch64";
+      }
+
+      if (normalized.includes("86") || normalized.includes("amd")) {
+        return "darwin-x86_64";
+      }
+    } catch {
+      // ignore failures and fall through to default preference order
+    }
+  }
+
+  return undefined;
+}

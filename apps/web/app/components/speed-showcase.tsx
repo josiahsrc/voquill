@@ -101,7 +101,7 @@ export default function SpeedShowcase() {
               </span>
             </div>
           </div>
-          <p className={styles.keyboardFooter}>Wow, that's slow.</p>
+          <p className={styles.keyboardFooter}>Wow, that&apos;s slow.</p>
         </article>
 
         <article className={styles.voicePane}>
