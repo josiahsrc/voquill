@@ -59,6 +59,11 @@ pub fn list_microphones() -> Vec<crate::platform::audio::InputDeviceDescriptor> 
 }
 
 #[tauri::command]
+pub fn list_gpus() -> Vec<crate::system::gpu::GpuAdapterInfo> {
+    crate::system::gpu::list_available_gpus()
+}
+
+#[tauri::command]
 pub fn ensure_microphone_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::ensure_microphone_permission()
 }
