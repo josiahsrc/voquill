@@ -127,118 +127,125 @@ export default function Home() {
 
         <SpeedShowcase />
 
-        <section className={styles.featuresSection} id="features">
-          <div className={styles.sectionHeader}>
-            <span className={styles.badge}>Why teams choose Voquill</span>
-            <h2>Speech-to-text that keeps up with your ideas.</h2>
-            <p>
-              Our local inference engine, ambient command detection, and privacy
-              guardrails deliver a dictation stack inspired by studio-grade
-              tools—without sacrificing convenience.
-            </p>
-          </div>
-          <div className={styles.featureGrid}>
-            {features.map(({ title, description, highlight }) => (
-              <article key={title} className={styles.featureCard}>
-                <h3>{title}</h3>
-                <p>{description}</p>
-                <span className={styles.featureHighlight}>{highlight}</span>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.splitSection} id="privacy">
-          <div className={styles.splitContent}>
-            <span className={styles.badge}>Private by design</span>
-            <h2>Nothing leaves your device unless you send it.</h2>
-            <p>
-              Voquill packages high-accuracy speech recognition, diarization,
-              and summarization into a local workspace. We never phone home, so
-              legal, healthcare, and product teams can dictate with confidence.
-            </p>
-            <ul className={styles.bulletList}>
-              <li>Encrypted local vault with automatic session cleanup.</li>
-              <li>Hardware-aware optimizations for Apple Silicon &amp; RTX.</li>
-              <li>Selectable retention policies for regulated teams.</li>
-            </ul>
-            <Link className={styles.inlineLink} href="/docs/security">
-              Explore the security architecture →
-            </Link>
-          </div>
+        <section className={styles.splitSection} id="features">
           <div className={styles.splitMedia}>
             <Image
-              src="https://picsum.photos/seed/voquill-security/960/720"
-              alt="Encrypted session log interface"
+              src="https://picsum.photos/seed/voquill-any-app/960/720"
+              alt="Voquill working across multiple applications"
               fill
               className={styles.mediaImage}
               loading="lazy"
               sizes="(max-width: 960px) 100vw, 45vw"
             />
             <div className={styles.mediaOverlay}>
-              <p className={styles.overlayTitle}>AES-256 encrypted session</p>
+              <p className={styles.overlayTitle}>Universal Compatibility</p>
               <p className={styles.overlayBody}>
-                Auto-expiring transcripts with tamper-evident audit trails.
+                Works seamlessly across all your favorite apps.
+              </p>
+            </div>
+          </div>
+          <div className={styles.splitContent}>
+            <span className={styles.badge}>Works on any app</span>
+            <h2>Your voice, everywhere you write.</h2>
+            <p>
+              VoQuill integrates seamlessly with any application on your system.
+              Whether you&apos;re drafting emails, writing code, or taking
+              notes, your voice works everywhere your keyboard does.
+            </p>
+            <ul className={styles.bulletList}>
+              <li>System-wide integration with zero configuration.</li>
+              <li>Works in browsers, IDEs, and native apps alike.</li>
+              <li>Instant activation with a single keyboard shortcut.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section className={styles.splitSection} id="privacy">
+          <div className={styles.splitContent}>
+            <span className={styles.badge}>Private and secure</span>
+            <h2>Your words stay yours. Forever.</h2>
+            <p>
+              Built on Voquill, the open-source voice engine you can trust.
+              Process everything locally on your device, or deploy to your own
+              infrastructure. No cloud required, no data shared.
+            </p>
+            <ul className={styles.bulletList}>
+              <li>100% local processing keeps your voice data private.</li>
+              <li>Open-source foundation ensures transparency.</li>
+              <li>Self-hosting option for complete control.</li>
+            </ul>
+            <Link className={styles.inlineLink} href="/privacy">
+              Read our privacy commitment →
+            </Link>
+          </div>
+          <div className={styles.splitMedia}>
+            <Image
+              src="https://picsum.photos/seed/voquill-privacy/960/720"
+              alt="Local processing and encryption visualization"
+              fill
+              className={styles.mediaImage}
+              loading="lazy"
+              sizes="(max-width: 960px) 100vw, 45vw"
+            />
+            <div className={styles.mediaOverlay}>
+              <p className={styles.overlayTitle}>Powered by Voquill</p>
+              <p className={styles.overlayBody}>
+                Open-source voice recognition that respects your privacy.
               </p>
             </div>
           </div>
         </section>
 
-        <section className={styles.workflowSection} id="workflow">
-          <div className={styles.sectionHeader}>
-            <span className={styles.badge}>Flow state, uninterrupted</span>
-            <h2>Designed to disappear into your writing routine.</h2>
-            <p>
-              When you are ready to go heads-down, Voquill orchestrates capture,
-              clean-up, and delivery without making you memorize scripts or
-              slash commands.
-            </p>
-          </div>
-          <div className={styles.workflowGrid}>
-            {workflow.map(({ title, description }) => (
-              <div key={title} className={styles.workflowCard}>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </div>
-            ))}
-          </div>
-          <div className={styles.workflowMedia}>
+        <section className={styles.splitSection}>
+          <div className={styles.splitMedia}>
             <Image
-              src="https://picsum.photos/seed/voquill-workflow/1280/720"
-              alt="Workflow overview storyboard"
+              src="https://picsum.photos/seed/voquill-cleanup/960/720"
+              alt="AI-powered text cleanup interface"
               fill
               className={styles.mediaImage}
               loading="lazy"
-              sizes="(max-width: 960px) 100vw, 70vw"
+              sizes="(max-width: 960px) 100vw, 45vw"
             />
-          </div>
-        </section>
-
-        <section className={styles.testimonialSection}>
-          <div className={styles.testimonialCard}>
-            <p className={styles.quote}>
-              “The first dictation tool that understands product requirements.
-              My engineers ship specs on the same call they brainstorm them.”
-            </p>
-            <div className={styles.quoteAuthor}>
-              <Image
-                src="https://picsum.photos/seed/voquill-people/96/96"
-                alt="Headshot of pilot customer"
-                width={72}
-                height={72}
-                className={styles.avatar}
-                loading="lazy"
-              />
-              <div>
-                <p className={styles.authorName}>Riley Patel</p>
-                <p className={styles.authorTitle}>Product Lead, Aurora Labs</p>
-              </div>
+            <div className={styles.mediaOverlay}>
+              <p className={styles.overlayTitle}>Intelligent Filtering</p>
+              <p className={styles.overlayBody}>
+                Automatically removes filler words and cleans up your text.
+              </p>
             </div>
+          </div>
+          <div className={styles.splitContent}>
+            <span className={styles.badge}>Smart text cleanup</span>
+            <h2>Say it naturally, get it perfectly.</h2>
+            <p>
+              VoQuill&apos;s intelligent cleanup engine removes filler words,
+              hesitations, and verbal tics automatically. Speak naturally and
+              let the AI handle the polish—your transcripts come out clean and
+              professional.
+            </p>
+            <ul className={styles.bulletList}>
+              <li>
+                Removes &quot;um,&quot; &quot;uh,&quot; and other filler words
+                automatically.
+              </li>
+              <li>Fixes repeated words and false starts in real-time.</li>
+              <li>Adjustable cleanup levels to match your style.</li>
+            </ul>
           </div>
         </section>
       </main>
 
       <SiteFooter />
+
+      <div className={styles.pageMeta}>
+        <span>© {new Date().getFullYear()} Handaptive LLC</span>
+        <div className={styles.pageLinks}>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/docs">Docs</Link>
+          <Link href="/docs/security">Security</Link>
+          <a href="mailto:hello@voquill.com">Contact</a>
+        </div>
+      </div>
     </div>
   );
 }

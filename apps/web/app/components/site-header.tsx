@@ -5,6 +5,8 @@ import LogoMark from "./logo-mark";
 import styles from "../page.module.css";
 
 const navLinks = [
+  { href: "/#demo", label: "Demo" },
+  { href: "/#speed", label: "Purpose" },
   { href: "/#features", label: "Features" },
   { href: "/#privacy", label: "Privacy" },
 ];

@@ -639,6 +639,7 @@
   flex-direction: column;
   gap: 40px;
   padding: 48px;
+  margin-top: 32px;
   border-radius: 32px;
   background: var(--level1);
   border: 1px solid var(--border);
@@ -648,8 +649,18 @@
 .footerInner {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   max-width: 60ch;
+  align-items: center;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.footerInner h2 {
+  font-size: 2.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  padding-bottom: 16px;
 }
 
 .footerActions {
@@ -658,7 +669,9 @@
   gap: 16px;
 }
 
-.footerMeta {
+.pageMeta {
+  width: min(1120px, 100%);
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -668,12 +681,12 @@
   color: var(--text-muted);
 }
 
-.footerLinks {
+.pageLinks {
   display: flex;
   gap: 16px;
 }
 
-.footerLinks a {
+.pageLinks a {
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
