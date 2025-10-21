@@ -137,46 +137,35 @@ export default function Home() {
               loading="lazy"
               sizes="(max-width: 960px) 100vw, 45vw"
             />
-            <div className={styles.mediaOverlay}>
-              <p className={styles.overlayTitle}>Universal Compatibility</p>
-              <p className={styles.overlayBody}>
-                Works seamlessly across all your favorite apps.
-              </p>
-            </div>
           </div>
           <div className={styles.splitContent}>
             <span className={styles.badge}>Works on any app</span>
             <h2>Your voice, everywhere you write.</h2>
             <p>
-              VoQuill integrates seamlessly with any application on your system.
+              Voquill integrates seamlessly with any application on your system.
               Whether you&apos;re drafting emails, writing code, or taking
               notes, your voice works everywhere your keyboard does.
             </p>
-            <ul className={styles.bulletList}>
-              <li>System-wide integration with zero configuration.</li>
-              <li>Works in browsers, IDEs, and native apps alike.</li>
-              <li>Instant activation with a single keyboard shortcut.</li>
-            </ul>
           </div>
         </section>
 
         <section className={styles.splitSection} id="privacy">
           <div className={styles.splitContent}>
             <span className={styles.badge}>Private and secure</span>
-            <h2>Your words stay yours. Forever.</h2>
+            <h2>Your data is yours. Period.</h2>
             <p>
-              Built on Voquill, the open-source voice engine you can trust.
-              Process everything locally on your device, or deploy to your own
-              infrastructure. No cloud required, no data shared.
+              Process everything locally on your device, or bring your own API
+              key to connect to the Groq API. Don't believe us? See for
+              yourself. Voquill is fully open-source.
             </p>
-            <ul className={styles.bulletList}>
-              <li>100% local processing keeps your voice data private.</li>
-              <li>Open-source foundation ensures transparency.</li>
-              <li>Self-hosting option for complete control.</li>
-            </ul>
-            <Link className={styles.inlineLink} href="/privacy">
-              Read our privacy commitment →
-            </Link>
+            <a
+              href="https://github.com/josiahsrc/voquill"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.inlineLink}
+            >
+              GitHub Source Code →
+            </a>
           </div>
           <div className={styles.splitMedia}>
             <Image
@@ -187,12 +176,6 @@ export default function Home() {
               loading="lazy"
               sizes="(max-width: 960px) 100vw, 45vw"
             />
-            <div className={styles.mediaOverlay}>
-              <p className={styles.overlayTitle}>Powered by Voquill</p>
-              <p className={styles.overlayBody}>
-                Open-source voice recognition that respects your privacy.
-              </p>
-            </div>
           </div>
         </section>
 
@@ -206,30 +189,15 @@ export default function Home() {
               loading="lazy"
               sizes="(max-width: 960px) 100vw, 45vw"
             />
-            <div className={styles.mediaOverlay}>
-              <p className={styles.overlayTitle}>Intelligent Filtering</p>
-              <p className={styles.overlayBody}>
-                Automatically removes filler words and cleans up your text.
-              </p>
-            </div>
           </div>
           <div className={styles.splitContent}>
             <span className={styles.badge}>Smart text cleanup</span>
-            <h2>Say it naturally, get it perfectly.</h2>
+            <h2>Uhh? Umm? Not anymore.</h2>
             <p>
-              VoQuill&apos;s intelligent cleanup engine removes filler words,
-              hesitations, and verbal tics automatically. Speak naturally and
-              let the AI handle the polish—your transcripts come out clean and
-              professional.
+              Voquill uses AI to clean up your transcripts. It removes filler
+              words, hesitations, false starts, etc. Speak naturally, Voquill
+              will handle the rest.
             </p>
-            <ul className={styles.bulletList}>
-              <li>
-                Removes &quot;um,&quot; &quot;uh,&quot; and other filler words
-                automatically.
-              </li>
-              <li>Fixes repeated words and false starts in real-time.</li>
-              <li>Adjustable cleanup levels to match your style.</li>
-            </ul>
           </div>
         </section>
       </main>
@@ -241,8 +209,6 @@ export default function Home() {
         <div className={styles.pageLinks}>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
-          <Link href="/docs">Docs</Link>
-          <Link href="/docs/security">Security</Link>
           <a href="mailto:hello@voquill.com">Contact</a>
         </div>
       </div>
