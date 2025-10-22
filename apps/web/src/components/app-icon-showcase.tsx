@@ -1,4 +1,3 @@
-import Image from "next/image";
 import styles from "./app-icon-showcase.module.css";
 
 type IconDefinition = {
@@ -35,13 +34,14 @@ export default function AppIconShowcase({ className }: AppIconShowcaseProps) {
             className={`${styles.appIcon} ${styles[id] ?? ""}`}
             style={{ animationDelay: `${delay}s` }}
           >
-            <Image
+            <img
               src={src}
               alt=""
               width={128}
               height={128}
               className={styles.iconImage}
               loading={delay === 0 ? "eager" : "lazy"}
+              decoding="async"
               aria-hidden="true"
             />
           </div>

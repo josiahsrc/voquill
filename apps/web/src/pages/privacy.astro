@@ -1,0 +1,24 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SiteFooter from "../components/site-footer";
+import SiteHeader from "../components/site-header";
+import layoutStyles from "../styles/page.module.css";
+import styles from "../styles/legal.module.css";
+import { getMarkdownContent } from "../lib/markdown";
+
+const content = await getMarkdownContent("privacy");
+---
+
+<BaseLayout
+  title="Privacy Policy | Voquill"
+  description="Learn how Voquill collects, processes, and protects information across our local-first AI dictation platform."
+>
+  <div class={layoutStyles.page}>
+    <SiteHeader client:load />
+    <main class={styles.legalMain}>
+      <article class={styles.legalContent} set:html={content} />
+    </main>
+    <SiteFooter client:load />
+  </div>
+</BaseLayout>
+

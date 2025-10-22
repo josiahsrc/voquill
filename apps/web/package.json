@@ -4,24 +4,26 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack --port 3000",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "dev": "astro dev --host --port 3000",
+    "build": "astro build",
+    "start": "astro preview --host --port 3000",
+    "lint": "eslint .",
+    "check-types": "astro check --typescript"
   },
   "dependencies": {
+    "@astrojs/react": "^4.4.0",
     "marked": "^16.4.0",
-    "next": "^15.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@astrojs/node": "^9.5.0",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@types/node": "^22.15.3",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.1",
+    "astro": "^5.14.8",
     "eslint": "^9.34.0",
     "typescript": "5.9.2"
   }

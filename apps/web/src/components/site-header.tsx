@@ -1,8 +1,7 @@
-import Link from "next/link";
 import DownloadButton from "./download-button";
 import GitHubButton from "./github-button";
 import LogoMark from "./logo-mark";
-import styles from "../page.module.css";
+import styles from "../styles/page.module.css";
 
 const navLinks = [
   { href: "/#demo", label: "Demo" },
@@ -14,15 +13,15 @@ const navLinks = [
 export function SiteHeader() {
   return (
     <header className={styles.header}>
-      <Link href="/" className={styles.logo}>
+      <a href="/" className={styles.logo}>
         <LogoMark className={styles.logoMark} />
         <span>Voquill</span>
-      </Link>
+      </a>
       <nav className={styles.nav} aria-label="Primary navigation">
         {navLinks.map(({ href, label }) => (
-          <Link key={href} href={href} className={styles.navLink}>
+          <a key={href} href={href} className={styles.navLink}>
             {label}
-          </Link>
+          </a>
         ))}
       </nav>
       <div className={styles.headerActions}>

@@ -1,20 +1,10 @@
 {
-  "extends": "@repo/typescript-config/nextjs.json",
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "baseUrl": ".",
+    "types": ["astro/client", "node"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "next-env.d.ts",
-    "next.config.js",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src", "astro.config.mjs"]
 }

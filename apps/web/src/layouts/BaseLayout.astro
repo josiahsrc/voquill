@@ -1,0 +1,30 @@
+---
+import "../styles/global.css";
+
+type Props = {
+  title?: string;
+  description?: string;
+};
+
+const {
+  title = "Voquill",
+  description = "Type four times faster with a voice-first keyboard.",
+} = Astro.props as Props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/app-icon.svg" />
+    <link rel="shortcut icon" href="/app-icon.svg" />
+    <link rel="apple-touch-icon" href="/app-icon.svg" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+

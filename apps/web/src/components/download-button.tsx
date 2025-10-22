@@ -1,16 +1,8 @@
-"use client";
-
-import Link from "next/link";
-import {
-  type ComponentProps,
-  type ReactElement,
-  useEffect,
-  useState,
-} from "react";
-import styles from "../page.module.css";
+import { type ReactElement, useEffect, useState } from "react";
+import styles from "../styles/page.module.css";
 
 type DownloadButtonProps = {
-  href?: ComponentProps<typeof Link>["href"];
+  href?: string;
   className?: string;
 };
 
@@ -94,8 +86,7 @@ export function DownloadButton({
   const classes = [styles.primaryButton, className].filter(Boolean).join(" ");
   const size = 20;
   const [platform, setPlatform] = useState<Platform>(DEFAULT_PLATFORM);
-  const [downloadHref, setDownloadHref] =
-    useState<ComponentProps<typeof Link>["href"]>(href);
+  const [downloadHref, setDownloadHref] = useState<string>(href);
   const { label, Icon } = PLATFORM_CONFIG[platform];
 
   useEffect(() => {
@@ -131,10 +122,10 @@ export function DownloadButton({
   }, [href]);
 
   return (
-    <Link href={downloadHref} className={classes} prefetch={false}>
+    <a href={downloadHref} className={classes}>
       <Icon className={styles.buttonIcon} size={size} />
       <span>{label}</span>
-    </Link>
+    </a>
   );
 }
 

@@ -282,6 +282,9 @@
 }
 
 .demoImage {
+  width: 100%;
+  height: 100%;
+  display: block;
   border-radius: 28px;
   object-fit: cover;
 }

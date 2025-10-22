@@ -1,5 +1,5 @@
 import DownloadButton from "./download-button";
-import styles from "../page.module.css";
+import styles from "../styles/page.module.css";
 
 export function SiteFooter() {
   return (

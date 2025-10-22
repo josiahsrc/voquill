@@ -1,4 +1,4 @@
-import styles from "../page.module.css";
+import styles from "../styles/page.module.css";
 
 type GitHubButtonProps = {
   className?: string;

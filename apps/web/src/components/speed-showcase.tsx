@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import styles from "./speed-showcase.module.css";
