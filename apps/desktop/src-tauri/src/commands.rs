@@ -208,8 +208,6 @@ pub async fn hotkey_delete(
 pub async fn clear_local_data(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<(), String> {
-    use sqlx::Executor;
-
     let pool = database.pool();
     let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
 
