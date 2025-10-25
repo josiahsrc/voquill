@@ -12,6 +12,7 @@ const DEFAULT_TRANSCRIPTION_MODEL = "whisper-large-v3-turbo";
 const DEFAULT_POST_PROCESS_MODEL =
   "meta-llama/llama-4-scout-17b-16e-instruct";
 const DEFAULT_TRANSCRIPTION_PROMPT = "Vocab: Voquill, Techcyte";
+const DEFAULT_GROQ_TEST_PROMPT = 'Reply with the single word "Hello."';
 
 const CLEANED_TRANSCRIPTION_SCHEMA = z.object({
   cleanedTranscription: z
@@ -230,6 +231,53 @@ export type GroqVoiceClient = {
   postProcess: (
     options: Omit<PostProcessTranscriptionArgs, "apiKey">,
   ) => Promise<string>;
+};
+
+export type TestGroqApiKeyArgs = {
+  apiKey: string;
+  prompt?: string;
+  model?: string;
+};
+
+export const testGroqApiKey = async (
+  args: TestGroqApiKeyArgs,
+): Promise<boolean> => {
+  const {
+    apiKey,
+    prompt = DEFAULT_GROQ_TEST_PROMPT,
+    model = DEFAULT_POST_PROCESS_MODEL,
+  } = args;
+
+  const client = buildGroqClient(apiKey);
+  const response = await client.chat.completions.create({
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: prompt,
+          },
+        ],
+      },
+    ],
+    model,
+    temperature: 0,
+    max_completion_tokens: 32,
+    top_p: 1,
+  });
+
+  if (!response.choices || response.choices.length === 0) {
+    throw new Error("No response from Groq");
+  }
+
+  const first = response.choices[0];
+  const content = contentToString(first?.message?.content);
+  if (!content) {
+    throw new Error("Response content is empty");
+  }
+
+  return content.toLowerCase().includes("hello");
 };
 
 export const createGroqVoiceClient = (apiKey: string): GroqVoiceClient => {

@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { testGroqApiKey } from "@repo/voice-ai";
 import { createApiKey, loadApiKeys } from "../../actions/api-key.actions";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { useAppStore } from "../../store";
@@ -122,13 +123,15 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
 
 const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
   if (!apiKey.keyFull) {
-    showErrorSnackbar("Cannot validate API key without the stored key value.");
-    return false;
+    throw new Error("The stored API key value is unavailable.");
   }
 
-  // TODO: Implement provider-specific validation using stored key material.
-  console.log("Testing API key with provider:", apiKey.provider);
-  return true;
+  switch (apiKey.provider) {
+    case "groq":
+      return testGroqApiKey({ apiKey: apiKey.keyFull });
+    default:
+      throw new Error("Testing is not available for this provider.");
+  }
 };
 
 const ApiKeyCard = ({
@@ -136,11 +139,13 @@ const ApiKeyCard = ({
   selected,
   onSelect,
   onTest,
+  testing,
 }: {
   apiKey: SettingsApiKey;
   selected: boolean;
   onSelect: () => void;
   onTest: () => void;
+  testing: boolean;
 }) => (
   <Paper
     variant="outlined"
@@ -184,8 +189,9 @@ const ApiKeyCard = ({
         event.stopPropagation();
         onTest();
       }}
+      disabled={testing}
     >
-      Test
+      {testing ? "Testing..." : "Test"}
     </Button>
   </Paper>
 );
@@ -200,6 +206,7 @@ export const ApiKeyList = ({
   const apiKeys = useAppStore((state) => state.settings.apiKeys);
   const status = useAppStore((state) => state.settings.apiKeysStatus);
   const [showAddCard, setShowAddCard] = useState(false);
+  const [testingApiKeyId, setTestingApiKeyId] = useState<string | null>(null);
 
   useEffect(() => {
     void loadApiKeys();
@@ -238,20 +245,26 @@ export const ApiKeyList = ({
     [onChange],
   );
 
-  const handleTestApiKey = useCallback(async (apiKey: SettingsApiKey) => {
-    try {
-      const success = await testApiKey(apiKey);
-      if (success) {
-        showSnackbar("Integration successful", { mode: "success" });
-      } else {
-        showErrorSnackbar("Integration failed. Provide a valid API key.");
+  const handleTestApiKey = useCallback(
+    async (apiKey: SettingsApiKey) => {
+      setTestingApiKeyId(apiKey.id);
+      try {
+        const success = await testApiKey(apiKey);
+        if (success) {
+          showSnackbar("Integration successful", { mode: "success" });
+        } else {
+          showErrorSnackbar("Integration failed. Provide a valid API key.");
+        }
+      } catch (error) {
+        showErrorSnackbar(
+          error instanceof Error ? error.message : "API key test failed.",
+        );
+      } finally {
+        setTestingApiKeyId(null);
       }
-    } catch (error) {
-      showErrorSnackbar(
-        error instanceof Error ? error.message : "API key test failed.",
-      );
-    }
-  }, []);
+    },
+    [],
+  );
 
   const handleRetryLoad = useCallback(() => {
     void loadApiKeys();
@@ -319,6 +332,7 @@ export const ApiKeyList = ({
                 selected={selectedApiKeyId === apiKey.id}
                 onSelect={() => onChange(apiKey.id)}
                 onTest={() => handleTestApiKey(apiKey)}
+                testing={testingApiKeyId === apiKey.id}
               />
             ))}
           </Stack>
