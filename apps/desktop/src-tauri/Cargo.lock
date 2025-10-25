@@ -1114,6 +1114,7 @@ name = "desktop"
 version = "0.1.0"
 dependencies = [
  "arboard",
+ "base64 0.21.7",
  "block",
  "cocoa",
  "core-foundation 0.10.1",
@@ -1123,11 +1124,13 @@ dependencies = [
  "enigo",
  "hound",
  "objc",
+ "rand 0.8.5",
  "rdev",
  "reqwest",
  "rodio",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "tauri",
  "tauri-build",

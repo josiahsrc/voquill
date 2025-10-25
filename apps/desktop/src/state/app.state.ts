@@ -1,4 +1,13 @@
-import { Hotkey, Member, Nullable, PartialConfig, Term, Transcription, User } from "@repo/types";
+import {
+  ApiKey,
+  Hotkey,
+  Member,
+  Nullable,
+  PartialConfig,
+  Term,
+  Transcription,
+  User,
+} from "@repo/types";
 import { PermissionMap } from "../types/permission.types";
 import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
@@ -22,6 +31,7 @@ export type AppState = {
   termById: Record<string, Term>;
   transcriptionById: Record<string, Transcription>;
   hotkeyById: Record<string, Hotkey>;
+  apiKeyById: Record<string, ApiKey>;
   config: Nullable<PartialConfig>;
 
   onboarding: OnboardingState;
@@ -42,6 +52,7 @@ export const INITIAL_APP_STATE: AppState = {
   userById: {},
   termById: {},
   transcriptionById: {},
+  apiKeyById: {},
   overlayPhase: "idle",
   audioLevels: [],
   permissions: {

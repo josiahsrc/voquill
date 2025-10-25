@@ -10,3 +10,4 @@ export * from "./contact.types";
 export * from "./transcription.types";
 export * from "./term.types";
 export * from "./hotkey.types";
+export * from "./apiKey.types";

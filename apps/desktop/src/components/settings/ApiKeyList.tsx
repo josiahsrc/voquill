@@ -2,19 +2,21 @@ import AddIcon from "@mui/icons-material/Add";
 import {
   Box,
   Button,
+  CircularProgress,
   MenuItem,
   Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
-import { produceAppState, useAppStore } from "../../store";
+import { useCallback, useEffect, useState } from "react";
+import { createApiKey, loadApiKeys } from "../../actions/api-key.actions";
+import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { useAppStore } from "../../store";
 import {
   SettingsApiKey,
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
-import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 
 type ApiKeyListProps = {
   selectedApiKeyId: string | null;
@@ -22,23 +24,37 @@ type ApiKeyListProps = {
 };
 
 type AddApiKeyCardProps = {
-  onSave: (name: string, provider: SettingsApiKeyProvider, key: string) => void;
+  onSave: (
+    name: string,
+    provider: SettingsApiKeyProvider,
+    key: string,
+  ) => Promise<void>;
   onCancel: () => void;
 };
 
 const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
   const [name, setName] = useState("");
-  const [provider, setProvider] = useState<SettingsApiKeyProvider>("groq");
+  const [provider, setProvider] =
+    useState<SettingsApiKeyProvider>("groq");
   const [key, setKey] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    if (!name || !key) {
+  const handleSave = useCallback(async () => {
+    if (!name || !key || saving) {
       return;
     }
-    onSave(name, provider, key);
-    setName("");
-    setKey("");
-  };
+
+    setSaving(true);
+    try {
+      await onSave(name, provider, key);
+      setName("");
+      setKey("");
+    } catch (error) {
+      console.error("Failed to save API key", error);
+    } finally {
+      setSaving(false);
+    }
+  }, [name, key, provider, onSave, saving]);
 
   return (
     <Paper
@@ -57,6 +73,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         placeholder="e.g., My Groq Key"
         size="small"
         fullWidth
+        disabled={saving}
       />
       <TextField
         select
@@ -67,6 +84,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         }
         size="small"
         fullWidth
+        disabled={saving}
       >
         <MenuItem value="groq">Groq</MenuItem>
       </TextField>
@@ -78,18 +96,24 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         size="small"
         fullWidth
         type="password"
+        disabled={saving}
       />
       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-        <Button variant="outlined" onClick={onCancel} size="small">
+        <Button
+          variant="outlined"
+          onClick={onCancel}
+          size="small"
+          disabled={saving}
+        >
           Cancel
         </Button>
         <Button
           variant="contained"
           size="small"
           onClick={handleSave}
-          disabled={!name || !key}
+          disabled={!name || !key || saving}
         >
-          Save
+          {saving ? "Saving..." : "Save"}
         </Button>
       </Box>
     </Paper>
@@ -97,8 +121,8 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
 };
 
 const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
-  // TODO: Actually test the API key against its provider.
-  console.log("Testing API key:", apiKey);
+  // TODO: Implement provider-specific validation using stored key material.
+  console.log("Testing API key by id:", apiKey.id);
   return true;
 };
 
@@ -142,6 +166,11 @@ const ApiKeyCard = ({
       <Typography variant="body2" color="text.secondary">
         {apiKey.provider.toUpperCase()}
       </Typography>
+      {apiKey.keySuffix ? (
+        <Typography variant="caption" color="text.secondary">
+          Ends with {apiKey.keySuffix}
+        </Typography>
+      ) : null}
     </Stack>
     <Button
       variant="outlined"
@@ -159,9 +188,17 @@ const ApiKeyCard = ({
 const generateApiKeyId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
+export const ApiKeyList = ({
+  selectedApiKeyId,
+  onChange,
+}: ApiKeyListProps) => {
   const apiKeys = useAppStore((state) => state.settings.apiKeys);
+  const status = useAppStore((state) => state.settings.apiKeysStatus);
   const [showAddCard, setShowAddCard] = useState(false);
+
+  useEffect(() => {
+    void loadApiKeys();
+  }, []);
 
   useEffect(() => {
     if (apiKeys.length === 0) {
@@ -177,27 +214,26 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
     }
   }, [apiKeys, selectedApiKeyId, onChange]);
 
-  const handleAddApiKey = (
-    name: string,
-    provider: SettingsApiKeyProvider,
-    key: string
-  ) => {
-    const newKey: SettingsApiKey = {
-      id: generateApiKeyId(),
-      name,
-      provider,
-      key,
-    };
+  const handleAddApiKey = useCallback(
+    async (
+      name: string,
+      provider: SettingsApiKeyProvider,
+      key: string,
+    ) => {
+      const created = await createApiKey({
+        id: generateApiKeyId(),
+        name,
+        provider,
+        key,
+      });
 
-    produceAppState((draft) => {
-      draft.settings.apiKeys.push(newKey);
-    });
+      onChange(created.id);
+      setShowAddCard(false);
+    },
+    [onChange],
+  );
 
-    onChange(newKey.id);
-    setShowAddCard(false);
-  };
-
-  const handleTestApiKey = async (apiKey: SettingsApiKey) => {
+  const handleTestApiKey = useCallback(async (apiKey: SettingsApiKey) => {
     try {
       const success = await testApiKey(apiKey);
       if (success) {
@@ -207,10 +243,37 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
       }
     } catch (error) {
       showErrorSnackbar(
-        error instanceof Error ? error.message : "API key test failed."
+        error instanceof Error ? error.message : "API key test failed.",
       );
     }
-  };
+  }, []);
+
+  const handleRetryLoad = useCallback(() => {
+    void loadApiKeys();
+  }, []);
+
+  const loadingState = (
+    <Stack spacing={1} alignItems="center">
+      <CircularProgress size={24} />
+      <Typography variant="body2" color="text.secondary">
+        Loading API keys…
+      </Typography>
+    </Stack>
+  );
+
+  const errorState = (
+    <Stack spacing={1.5} alignItems="flex-start">
+      <Typography variant="subtitle1" fontWeight={600}>
+        Failed to load API keys
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        We couldn&apos;t load your saved API keys. Please try again.
+      </Typography>
+      <Button variant="outlined" onClick={handleRetryLoad}>
+        Retry
+      </Button>
+    </Stack>
+  );
 
   const emptyState = (
     <Stack spacing={1.5} alignItems="flex-start">
@@ -230,29 +293,37 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
     </Stack>
   );
 
+  const shouldShowLoading = status === "loading" && apiKeys.length === 0;
+  const shouldShowError = status === "error" && apiKeys.length === 0;
+  const shouldShowEmpty = apiKeys.length === 0 && !showAddCard && !shouldShowLoading && !shouldShowError;
+
   return (
     <Stack spacing={2.5} sx={{ width: "100%" }}>
-      {apiKeys.length === 0 && !showAddCard ? (
-        emptyState
-      ) : (
-        <Stack spacing={1.5} alignItems="stretch" sx={{ width: "100%" }}>
-          {apiKeys.map((apiKey) => (
-            <ApiKeyCard
-              key={apiKey.id}
-              apiKey={apiKey}
-              selected={selectedApiKeyId === apiKey.id}
-              onSelect={() => onChange(apiKey.id)}
-              onTest={() => handleTestApiKey(apiKey)}
-            />
-          ))}
-        </Stack>
-      )}
+      {shouldShowLoading
+        ? loadingState
+        : shouldShowError
+        ? errorState
+        : shouldShowEmpty
+        ? emptyState
+        : (
+          <Stack spacing={1.5} alignItems="stretch" sx={{ width: "100%" }}>
+            {apiKeys.map((apiKey) => (
+              <ApiKeyCard
+                key={apiKey.id}
+                apiKey={apiKey}
+                selected={selectedApiKeyId === apiKey.id}
+                onSelect={() => onChange(apiKey.id)}
+                onTest={() => handleTestApiKey(apiKey)}
+              />
+            ))}
+          </Stack>
+        )}
       {showAddCard ? (
         <AddApiKeyCard
           onSave={handleAddApiKey}
           onCancel={() => setShowAddCard(false)}
         />
-      ) : apiKeys.length > 0 ? (
+      ) : apiKeys.length > 0 || shouldShowError ? (
         <Button
           variant="outlined"
           startIcon={<AddIcon />}

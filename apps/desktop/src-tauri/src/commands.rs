@@ -1,12 +1,15 @@
 use std::path::PathBuf;
+use std::convert::TryInto;
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, EventTarget, State};
 
 use crate::domain::{
-    OverlayPhase, OverlayPhasePayload, RecordingLevelPayload, TranscriptionAudioSnapshot,
-    EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
+    ApiKey, ApiKeyCreateRequest, ApiKeyView, OverlayPhase, OverlayPhasePayload, RecordingLevelPayload,
+    TranscriptionAudioSnapshot, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
 };
 use crate::platform::{GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest};
+use crate::system::crypto::protect_api_key;
 use sqlx::Row;
 
 #[cfg(target_os = "linux")]
@@ -307,6 +310,69 @@ pub async fn hotkey_delete(
         .map_err(|err| err.to_string())
 }
 
+fn current_timestamp_millis() -> Result<i64, String> {
+    let duration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?;
+
+    match duration.as_millis().try_into() {
+        Ok(value) => Ok(value),
+        Err(_) => Ok(i64::MAX),
+    }
+}
+
+#[tauri::command]
+pub async fn api_key_create(
+    api_key: ApiKeyCreateRequest,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<ApiKeyView, String> {
+    let ApiKeyCreateRequest {
+        id,
+        name,
+        provider,
+        key,
+    } = api_key;
+
+    let protected = protect_api_key(&key);
+    let created_at = current_timestamp_millis()?;
+
+    let stored = ApiKey {
+        id,
+        name,
+        provider,
+        created_at,
+        salt: protected.salt_b64,
+        key_hash: protected.hash_b64,
+        key_ciphertext: protected.ciphertext_b64,
+        key_suffix: protected.key_suffix,
+    };
+
+    crate::db::api_key_queries::insert_api_key(database.pool(), &stored)
+        .await
+        .map(ApiKeyView::from)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn api_key_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<ApiKeyView>, String> {
+    crate::db::api_key_queries::fetch_api_keys(database.pool())
+        .await
+        .map(|api_keys| api_keys.into_iter().map(ApiKeyView::from).collect())
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn api_key_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::api_key_queries::delete_api_key(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
 #[tauri::command]
 pub async fn clear_local_data(
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -314,7 +380,8 @@ pub async fn clear_local_data(
     let pool = database.pool();
     let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
 
-    const TABLES_TO_CLEAR: [&str; 4] = ["user_profiles", "transcriptions", "terms", "hotkeys"];
+    const TABLES_TO_CLEAR: [&str; 5] =
+        ["user_profiles", "transcriptions", "terms", "hotkeys", "api_keys"];
 
     for table in TABLES_TO_CLEAR {
         let statement = format!("DELETE FROM {table}");

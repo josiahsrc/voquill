@@ -7,15 +7,11 @@ import {
   type ProcessingMode,
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
+import { ApiKey, ApiKeyProvider } from "@repo/types";
 
-export type SettingsApiKeyProvider = "groq";
+export type SettingsApiKeyProvider = ApiKeyProvider;
 
-export type SettingsApiKey = {
-  id: string;
-  name: string;
-  provider: SettingsApiKeyProvider;
-  key: string;
-};
+export type SettingsApiKey = ApiKey;
 
 export type SettingsTranscriptionState = {
   mode: ProcessingMode;
@@ -39,6 +35,7 @@ export type SettingsState = {
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsPostProcessingState;
   apiKeys: SettingsApiKey[];
+  apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
   hotkeysStatus: ActionStatus;
 };
@@ -61,6 +58,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     selectedApiKeyId: null,
   },
   apiKeys: [],
+  apiKeysStatus: "idle",
   hotkeyIds: [],
   hotkeysStatus: "idle",
 };
