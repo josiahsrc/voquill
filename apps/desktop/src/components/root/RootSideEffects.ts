@@ -3,7 +3,6 @@ import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
-import { transcribeAudioWithGroq, postProcessTranscriptionWithGroq } from "@repo/voice-ai";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
@@ -13,10 +12,11 @@ import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import {
   getMyUser,
   getMyUserId,
-  getPostProcessingPreferenceFromState,
-  getTranscriptionPreferenceFromState,
 } from "../../utils/user.utils";
-import { buildWaveFile, ensureFloat32Array } from "../../utils/audio.utils";
+import {
+  transcribeAndPostProcessAudio,
+  TranscriptionError,
+} from "../../utils/transcription.utils";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 import { OverlayPhase } from "../../types/overlay.types";
@@ -64,136 +64,41 @@ export const RootSideEffects = () => {
       return;
     }
 
-    const state = getAppState();
-    const transcriptionSettings = state.settings.aiTranscription;
-    const transcriptionPreference = getTranscriptionPreferenceFromState(state);
-    const postProcessingSettings = state.settings.aiPostProcessing;
-    const postProcessingPreference = getPostProcessingPreferenceFromState(state);
+    let normalizedTranscript: string;
+    let warnings: string[] = [];
 
-    const shouldUseApiTranscription = transcriptionSettings.mode === "api";
-    let useGroqTranscription = false;
-    let groqTranscriptionKey: string | null = null;
-
-    if (shouldUseApiTranscription) {
-      if (
-        !transcriptionPreference ||
-        transcriptionPreference.mode !== "api" ||
-        !transcriptionPreference.apiKeyId
-      ) {
-        showErrorSnackbar("API transcription requires a configured key.");
-        return;
-      }
-
-      const apiKeyRecord = state.apiKeyById[transcriptionPreference.apiKeyId];
-      if (!apiKeyRecord) {
-        showErrorSnackbar("API transcription key not found.");
-        return;
-      }
-
-      if (apiKeyRecord.provider === "groq") {
-        const apiKeyValue = apiKeyRecord.keyFull?.trim();
-        if (!apiKeyValue) {
-          showErrorSnackbar("Groq transcription requires a valid API key.");
-          return;
-        }
-        useGroqTranscription = true;
-        groqTranscriptionKey = apiKeyValue;
-      } else {
-        showErrorSnackbar("Unsupported transcription provider.");
-        return;
-      }
-    }
-
-    let transcript: string;
-
-    if (useGroqTranscription && groqTranscriptionKey) {
-      try {
-        const floatSamples = ensureFloat32Array(payloadSamples);
-        const wavBuffer = buildWaveFile(floatSamples, rate);
-        transcript = await transcribeAudioWithGroq({
-          apiKey: groqTranscriptionKey,
-          audio: wavBuffer,
-          ext: "wav",
-        });
-      } catch (error) {
-        console.error("Failed to transcribe audio with Groq", error);
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Unable to transcribe audio with Groq. Please try again.";
-        showErrorSnackbar(message);
-        return;
-      }
-    } else {
-      try {
-        transcript = await invoke<string>("transcribe_audio", {
-          samples: payloadSamples,
-          sampleRate: rate,
-        });
-      } catch (error) {
-        console.error("Failed to transcribe audio", error);
-        const message =
-          error instanceof Error
+    try {
+      const result = await transcribeAndPostProcessAudio({
+        samples: payloadSamples,
+        sampleRate: rate,
+      });
+      normalizedTranscript = result.transcript;
+      warnings = result.warnings;
+    } catch (error) {
+      console.error("Failed to transcribe or post-process audio", error);
+      const message =
+        error instanceof TranscriptionError
+          ? error.message
+          : error instanceof Error
             ? error.message
             : "Unable to transcribe audio. Please try again.";
+      if (message) {
         showErrorSnackbar(message);
-        return;
       }
+      return;
     }
 
-    let normalizedTranscript = transcript.trim();
     if (!normalizedTranscript) {
       return;
     }
 
-    const shouldUseApiPostProcessing = postProcessingSettings.mode === "api";
-    let useGroqPostProcessing = false;
-    let groqPostProcessingKey: string | null = null;
-
-    if (shouldUseApiPostProcessing) {
-      if (
-        !postProcessingPreference ||
-        postProcessingPreference.mode !== "api" ||
-        !postProcessingPreference.apiKeyId
-      ) {
-        showErrorSnackbar("API post-processing requires a configured key.");
-      } else {
-        const postKeyRecord =
-          state.apiKeyById[postProcessingPreference.apiKeyId];
-        if (!postKeyRecord) {
-          showErrorSnackbar("API post-processing key not found.");
-        } else if (postKeyRecord.provider === "groq") {
-          const postKeyValue = postKeyRecord.keyFull?.trim();
-          if (!postKeyValue) {
-            showErrorSnackbar("Groq post-processing requires a valid API key.");
-          } else {
-            useGroqPostProcessing = true;
-            groqPostProcessingKey = postKeyValue;
-          }
-        } else {
-          showErrorSnackbar("Unsupported post-processing provider.");
-        }
+    if (warnings.length > 0) {
+      for (const warning of warnings) {
+        showErrorSnackbar(warning);
       }
     }
 
-    if (useGroqPostProcessing && groqPostProcessingKey) {
-      try {
-        normalizedTranscript = (
-          await postProcessTranscriptionWithGroq({
-            apiKey: groqPostProcessingKey,
-            transcript: normalizedTranscript,
-          })
-        ).trim();
-        if (!normalizedTranscript) {
-          return;
-        }
-      } catch (error) {
-        console.error("Failed to post-process transcription with Groq", error);
-        showErrorSnackbar(
-          "Post-processing failed. Using original transcript.",
-        );
-      }
-    }
+    const state = getAppState();
 
     const transcriptionId = crypto.randomUUID();
 
