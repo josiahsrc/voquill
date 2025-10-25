@@ -17,11 +17,7 @@ export const getMyUserName = (state: AppState): string => {
 
 
 const hasValidApiKey = (state: AppState, id: Nullable<string>): boolean => {
-  if (!id) {
-    return false;
-  }
-
-  return Boolean(state.apiKeyById[id]);
+  return Boolean(getRec(state.apiKeyById, id));
 };
 
 type TranscriptionPreference = {
@@ -40,11 +36,11 @@ export const getTranscriptionPreferenceFromState = (
   const { mode, selectedApiKeyId } = state.settings.aiTranscription;
 
   if (mode === "local") {
-    return { mode, apiKeyId: null };
+    return { mode: "local", apiKeyId: null };
   }
 
   if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {
-    return { mode, apiKeyId: selectedApiKeyId };
+    return { mode: "api", apiKeyId: selectedApiKeyId };
   }
 
   return null;
@@ -56,11 +52,11 @@ export const getPostProcessingPreferenceFromState = (
   const { mode, selectedApiKeyId } = state.settings.aiPostProcessing;
 
   if (mode === "none") {
-    return { mode, apiKeyId: null };
+    return { mode: "none", apiKeyId: null };
   }
 
   if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {
-    return { mode, apiKeyId: selectedApiKeyId };
+    return { mode: "api", apiKeyId: selectedApiKeyId };
   }
 
   return null;

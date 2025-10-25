@@ -1,33 +1,14 @@
-import { Groq, toFile } from "groq-sdk";
+import { Groq } from "groq-sdk";
 import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "groq-sdk/resources/chat/completions";
 import { getGroqApiKey } from "./env.utils";
-import { countWords } from "./string.utils";
 
 const groq = () => {
   return new Groq({
     apiKey: getGroqApiKey(),
   });
-};
-
-export const groqTranscribeAudio = async (
-  blob: Buffer,
-  ext: string
-): Promise<string> => {
-  const response = await groq().audio.transcriptions.create({
-    file: await toFile(blob, `audio.${ext}`),
-    model: "whisper-large-v3-turbo",
-    prompt: "Vocab: Voquill, Techcyte",
-  });
-
-  console.log("groq transcription usage:", countWords(response.text));
-  if (!response.text) {
-    throw new Error("Transcription failed");
-  }
-
-  return response.text;
 };
 
 type GroqGenerateResponseArgs = {

@@ -1,0 +1,23 @@
+{
+  "name": "@repo/voice-ai",
+  "version": "0.1.0",
+  "description": "Shared Groq voice transcription helpers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "groq-sdk": "^0.29.0",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2"
+  }
+}

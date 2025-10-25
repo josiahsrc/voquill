@@ -9,6 +9,7 @@ type LocalApiKey = {
   provider: ApiKeyProvider;
   createdAt: number;
   keySuffix?: string | null;
+  keyFull?: string | null;
 };
 
 const fromLocalApiKey = (apiKey: LocalApiKey): ApiKey => ({
@@ -17,6 +18,7 @@ const fromLocalApiKey = (apiKey: LocalApiKey): ApiKey => ({
   provider: apiKey.provider,
   createdAt: firemix().timestampFromMillis(apiKey.createdAt),
   keySuffix: apiKey.keySuffix ?? null,
+  keyFull: apiKey.keyFull ?? null,
 });
 
 export type CreateApiKeyPayload = {

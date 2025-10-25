@@ -121,8 +121,13 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
 };
 
 const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
+  if (!apiKey.keyFull) {
+    showErrorSnackbar("Cannot validate API key without the stored key value.");
+    return false;
+  }
+
   // TODO: Implement provider-specific validation using stored key material.
-  console.log("Testing API key by id:", apiKey.id);
+  console.log("Testing API key with provider:", apiKey.provider);
   return true;
 };
 

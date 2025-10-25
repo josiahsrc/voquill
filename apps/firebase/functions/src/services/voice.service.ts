@@ -4,7 +4,7 @@ import { UnauthenticatedError } from "../utils/error.utils";
 import { resizeBase64Image } from "../utils/image.utils";
 import { countWords } from "../utils/string.utils";
 import {
-  cleanTranscription,
+  postProcessTranscription,
   fulfillTranscriptionIntent,
   incrementWordCount,
   transcribeAudioFromBase64,
@@ -43,7 +43,7 @@ export const transcribe = async ({
       audioBase64: input.audioBase64,
       audioExt: ext,
     }));
-    transcript = await cleanTranscription(transcript);
+    transcript = await postProcessTranscription(transcript);
   }
 
   await incrementWordCount({
@@ -82,7 +82,7 @@ export const transcribeDemo = async ({
         audioBase64: input.audioBase64,
         audioExt: ext,
       }));
-    transcript = await cleanTranscription(transcript);
+    transcript = await postProcessTranscription(transcript);
   }
 
   await incrementDemoUsage({
