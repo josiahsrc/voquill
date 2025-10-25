@@ -14,6 +14,7 @@ import {
   SettingsApiKey,
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
+import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 
 type ApiKeyListProps = {
   selectedApiKeyId: string | null;
@@ -95,14 +96,22 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
   );
 };
 
+const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
+  // TODO: Actually test the API key against its provider.
+  console.log("Testing API key:", apiKey);
+  return true;
+};
+
 const ApiKeyCard = ({
   apiKey,
   selected,
   onSelect,
+  onTest,
 }: {
   apiKey: SettingsApiKey;
   selected: boolean;
   onSelect: () => void;
+  onTest: () => void;
 }) => (
   <Paper
     variant="outlined"
@@ -113,13 +122,20 @@ const ApiKeyCard = ({
       borderWidth: 1,
       cursor: "pointer",
       transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-      boxShadow: selected ? (theme) => `0 0 0 1px ${theme.palette.primary.main}` : "none",
+      boxShadow: selected
+        ? (theme) => `0 0 0 1px ${theme.palette.primary.main}`
+        : "none",
       ":hover": {
         borderColor: selected ? "primary.main" : "action.active",
       },
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 2,
+      width: "100%",
     }}
   >
-    <Stack spacing={0.5}>
+    <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
       <Typography variant="subtitle1" fontWeight={600}>
         {apiKey.name}
       </Typography>
@@ -127,16 +143,23 @@ const ApiKeyCard = ({
         {apiKey.provider.toUpperCase()}
       </Typography>
     </Stack>
+    <Button
+      variant="outlined"
+      size="small"
+      onClick={(event) => {
+        event.stopPropagation();
+        onTest();
+      }}
+    >
+      Test
+    </Button>
   </Paper>
 );
 
 const generateApiKeyId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-export const ApiKeyList = ({
-  selectedApiKeyId,
-  onChange,
-}: ApiKeyListProps) => {
+export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
   const apiKeys = useAppStore((state) => state.settings.apiKeys);
   const [showAddCard, setShowAddCard] = useState(false);
 
@@ -157,7 +180,7 @@ export const ApiKeyList = ({
   const handleAddApiKey = (
     name: string,
     provider: SettingsApiKeyProvider,
-    key: string,
+    key: string
   ) => {
     const newKey: SettingsApiKey = {
       id: generateApiKeyId(),
@@ -172,6 +195,21 @@ export const ApiKeyList = ({
 
     onChange(newKey.id);
     setShowAddCard(false);
+  };
+
+  const handleTestApiKey = async (apiKey: SettingsApiKey) => {
+    try {
+      const success = await testApiKey(apiKey);
+      if (success) {
+        showSnackbar("Integration successful", { mode: "success" });
+      } else {
+        showErrorSnackbar("Integration failed. Provide a valid API key.");
+      }
+    } catch (error) {
+      showErrorSnackbar(
+        error instanceof Error ? error.message : "API key test failed."
+      );
+    }
   };
 
   const emptyState = (
@@ -193,15 +231,18 @@ export const ApiKeyList = ({
   );
 
   return (
-    <Stack spacing={2.5}>
-      {apiKeys.length === 0 && !showAddCard ? emptyState : (
-        <Stack spacing={1.5}>
+    <Stack spacing={2.5} sx={{ width: "100%" }}>
+      {apiKeys.length === 0 && !showAddCard ? (
+        emptyState
+      ) : (
+        <Stack spacing={1.5} alignItems="stretch" sx={{ width: "100%" }}>
           {apiKeys.map((apiKey) => (
             <ApiKeyCard
               key={apiKey.id}
               apiKey={apiKey}
               selected={selectedApiKeyId === apiKey.id}
               onSelect={() => onChange(apiKey.id)}
+              onTest={() => handleTestApiKey(apiKey)}
             />
           ))}
         </Stack>
