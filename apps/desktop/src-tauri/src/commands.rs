@@ -1,15 +1,16 @@
-use std::path::PathBuf;
 use std::convert::TryInto;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, EventTarget, State};
 
 use crate::domain::{
-    ApiKey, ApiKeyCreateRequest, ApiKeyView, OverlayPhase, OverlayPhasePayload, RecordingLevelPayload,
-    TranscriptionAudioSnapshot, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
+    ApiKey, ApiKeyCreateRequest, ApiKeyView, OverlayPhase, OverlayPhasePayload,
+    RecordingLevelPayload, TranscriptionAudioSnapshot, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
 };
 use crate::platform::{GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest};
 use crate::system::crypto::protect_api_key;
+use crate::system::models::WhisperModelSize;
 use sqlx::Row;
 
 #[cfg(target_os = "linux")]
@@ -67,6 +68,14 @@ impl TranscriptionDeviceSelectionDto {
 
         request
     }
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscriptionOptionsDto {
+    #[serde(default)]
+    pub device: Option<TranscriptionDeviceSelectionDto>,
+    pub model_size: Option<String>,
 }
 
 const MAX_RETAINED_TRANSCRIPTION_AUDIO: usize = 20;
@@ -380,8 +389,13 @@ pub async fn clear_local_data(
     let pool = database.pool();
     let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
 
-    const TABLES_TO_CLEAR: [&str; 5] =
-        ["user_profiles", "transcriptions", "terms", "hotkeys", "api_keys"];
+    const TABLES_TO_CLEAR: [&str; 5] = [
+        "user_profiles",
+        "transcriptions",
+        "terms",
+        "hotkeys",
+        "api_keys",
+    ];
 
     for table in TABLES_TO_CLEAR {
         let statement = format!("DELETE FROM {table}");
@@ -522,12 +536,54 @@ pub async fn store_transcription_audio(
 
 #[tauri::command]
 pub async fn transcribe_audio(
+    app: AppHandle,
     samples: Vec<f64>,
     sample_rate: u32,
-    device: Option<TranscriptionDeviceSelectionDto>,
+    options: Option<TranscriptionOptionsDto>,
     transcriber: State<'_, Arc<dyn crate::platform::Transcriber>>,
 ) -> Result<String, String> {
-    let request = device.map(|dto| dto.into_request());
+    let mut request = TranscriptionRequest::default();
+    let mut model_size = WhisperModelSize::default();
+
+    if let Some(opts) = options {
+        if let Some(device_dto) = opts.device {
+            request = device_dto.into_request();
+        }
+
+        if let Some(size_value) = opts.model_size {
+            match size_value.parse::<WhisperModelSize>() {
+                Ok(parsed) => {
+                    model_size = parsed;
+                }
+                Err(_) => {
+                    eprintln!(
+                        "Unrecognised Whisper model size '{}'; falling back to default.",
+                        size_value
+                    );
+                }
+            }
+        }
+    }
+
+    let initial_path = crate::system::paths::whisper_model_path(&app, model_size)
+        .map_err(|err| err.to_string())?;
+
+    let model_path = if initial_path.exists() {
+        initial_path
+    } else {
+        let handle = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::system::models::ensure_whisper_model(&handle, model_size)
+                .map_err(|err| err.to_string())
+        })
+        .await
+        .map_err(|err| err.to_string())??
+    };
+
+    let model_path_string = model_path.to_string_lossy().into_owned();
+    request.model_path = Some(model_path_string);
+
+    let request = Some(request);
     let transcriber = transcriber.inner().clone();
     let join_result = tauri::async_runtime::spawn_blocking(move || {
         let original_len = samples.len();

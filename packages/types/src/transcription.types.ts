@@ -7,6 +7,8 @@ export type Transcription = {
   transcript: string;
   isDeleted: boolean;
   audio?: TranscriptionAudioSnapshot;
+  modelSize?: string | null;
+  inferenceDevice?: string | null;
 };
 
 export type TranscriptionAudioSnapshot = {

@@ -1,5 +1,6 @@
 use crate::platform::{GpuDescriptor, Transcriber, TranscriptionDevice, TranscriptionRequest};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
 };
@@ -13,12 +14,38 @@ const DISABLE_ENV: &str = "VOQUILL_WHISPER_DISABLE_GPU";
 pub struct WhisperTranscriber {
     model_path: String,
     default_context: Arc<WhisperContext>,
+    context_cache: Mutex<HashMap<ContextCacheKey, Arc<WhisperContext>>>,
 }
 
 enum ContextStrategy<'a> {
     Auto,
     Cpu,
     Gpu(&'a GpuDescriptor),
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+struct ContextCacheKey {
+    model_path: String,
+    variant: ContextCacheVariant,
+}
+
+impl ContextCacheKey {
+    fn new(model_path: &str, variant: ContextCacheVariant) -> Self {
+        Self {
+            model_path: model_path.to_string(),
+            variant,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+enum ContextCacheVariant {
+    Auto,
+    Cpu,
+    Gpu {
+        id: Option<u32>,
+        name: Option<String>,
+    },
 }
 
 impl WhisperTranscriber {
@@ -28,10 +55,16 @@ impl WhisperTranscriber {
             .map(str::to_owned)
             .ok_or_else(|| "Invalid Whisper model path".to_string())?;
         let default_context = Self::load_context(&model_path_string, ContextStrategy::Auto)?;
+        let mut cache = HashMap::new();
+        cache.insert(
+            ContextCacheKey::new(&model_path_string, ContextCacheVariant::Auto),
+            default_context.clone(),
+        );
 
         Ok(Self {
             model_path: model_path_string,
             default_context,
+            context_cache: Mutex::new(cache),
         })
     }
 
@@ -39,15 +72,52 @@ impl WhisperTranscriber {
         &self,
         request: Option<&TranscriptionRequest>,
     ) -> Result<Arc<WhisperContext>, String> {
-        match request.and_then(|req| req.device.as_ref()) {
-            None => Ok(self.default_context.clone()),
-            Some(TranscriptionDevice::Cpu) => {
-                Self::load_context(&self.model_path, ContextStrategy::Cpu)
+        let mut model_path_ref = self.model_path.as_str();
+        let mut strategy = ContextStrategy::Auto;
+        let mut cache_variant = ContextCacheVariant::Auto;
+
+        if let Some(req) = request {
+            if let Some(path) = req.model_path.as_deref() {
+                model_path_ref = path;
             }
-            Some(TranscriptionDevice::Gpu(descriptor)) => {
-                Self::load_context(&self.model_path, ContextStrategy::Gpu(descriptor))
+
+            if let Some(device) = req.device.as_ref() {
+                match device {
+                    TranscriptionDevice::Cpu => {
+                        strategy = ContextStrategy::Cpu;
+                        cache_variant = ContextCacheVariant::Cpu;
+                    }
+                    TranscriptionDevice::Gpu(descriptor) => {
+                        strategy = ContextStrategy::Gpu(descriptor);
+                        cache_variant = ContextCacheVariant::Gpu {
+                            id: descriptor.id,
+                            name: descriptor.name.clone(),
+                        };
+                    }
+                }
             }
         }
+
+        if model_path_ref == self.model_path && matches!(cache_variant, ContextCacheVariant::Auto) {
+            return Ok(self.default_context.clone());
+        }
+
+        let cache_key = ContextCacheKey::new(model_path_ref, cache_variant.clone());
+
+        if let Some(existing) = {
+            let cache = self.context_cache.lock().unwrap();
+            cache.get(&cache_key).cloned()
+        } {
+            return Ok(existing);
+        }
+
+        let context = Self::load_context(model_path_ref, strategy)?;
+
+        let mut cache = self.context_cache.lock().unwrap();
+        Ok(cache
+            .entry(cache_key)
+            .or_insert_with(|| context.clone())
+            .clone())
     }
 
     fn load_context(

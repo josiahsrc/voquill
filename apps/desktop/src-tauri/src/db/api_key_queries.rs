@@ -2,10 +2,7 @@ use sqlx::{Row, SqlitePool};
 
 use crate::domain::ApiKey;
 
-pub async fn insert_api_key(
-    pool: SqlitePool,
-    api_key: &ApiKey,
-) -> Result<ApiKey, sqlx::Error> {
+pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey, sqlx::Error> {
     sqlx::query(
         "INSERT INTO api_keys (id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",

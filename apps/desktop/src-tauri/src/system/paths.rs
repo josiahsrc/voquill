@@ -1,8 +1,9 @@
 use std::{fs, io, path::PathBuf};
 use tauri::Manager;
 
+use super::models::WhisperModelSize;
+
 const MODELS_DIR_NAME: &str = "models";
-pub const WHISPER_MODEL_FILENAME: &str = "ggml-base.en.bin";
 
 pub fn database_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let mut path = app
@@ -22,9 +23,9 @@ pub fn database_url(app: &tauri::AppHandle) -> io::Result<String> {
     Ok(format!("sqlite:{path_str}"))
 }
 
-pub fn whisper_model_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
+pub fn whisper_model_path(app: &tauri::AppHandle, size: WhisperModelSize) -> io::Result<PathBuf> {
     let mut path = models_dir(app)?;
-    path.push(WHISPER_MODEL_FILENAME);
+    path.push(size.filename());
     Ok(path)
 }
 

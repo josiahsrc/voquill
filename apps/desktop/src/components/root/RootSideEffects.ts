@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { loadHotkeys } from "../../actions/hotkey.actions";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
@@ -11,8 +12,11 @@ import { getAppState, produceAppState } from "../../store";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMyUser, getMyUserId } from "../../utils/user.utils";
 import { useAsyncEffect } from "../../hooks/async.hooks";
-import { loadHotkeys } from "../../actions/hotkey.actions";
 import { OverlayPhase } from "../../types/overlay.types";
+import {
+  resolveTranscriptionOptions,
+  type TranscriptionOptionsPayload,
+} from "../../utils/transcription.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -59,10 +63,20 @@ export const RootSideEffects = () => {
 
     let transcript: string;
 
+    let options: TranscriptionOptionsPayload | undefined;
+
     try {
+      options = await resolveTranscriptionOptions();
+
+      const transcribeOptions = {
+        modelSize: options.modelSize,
+        device: options.device,
+      };
+
       transcript = await invoke<string>("transcribe_audio", {
         samples: payloadSamples,
         sampleRate: rate,
+        options: transcribeOptions,
       });
     } catch (error) {
       console.error("Failed to transcribe audio", error);
@@ -97,6 +111,8 @@ export const RootSideEffects = () => {
       createdByUserId: getMyUserId(getAppState()),
       isDeleted: false,
       audio: audioSnapshot,
+      modelSize: options?.modelSize ?? null,
+      inferenceDevice: options?.deviceLabel ?? null,
     };
 
     let storedTranscription: Transcription;
