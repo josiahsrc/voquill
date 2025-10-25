@@ -32,6 +32,8 @@ pub struct ApiKeyView {
     pub created_at: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_suffix: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_full: Option<String>,
 }
 
 impl From<ApiKey> for ApiKeyView {
@@ -42,6 +44,14 @@ impl From<ApiKey> for ApiKeyView {
             provider: api_key.provider,
             created_at: api_key.created_at,
             key_suffix: api_key.key_suffix,
+            key_full: None,
         }
+    }
+}
+
+impl ApiKeyView {
+    pub fn with_full_key(mut self, key: Option<String>) -> Self {
+        self.key_full = key;
+        self
     }
 }

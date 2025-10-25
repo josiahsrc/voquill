@@ -9,7 +9,7 @@ use crate::domain::{
     RecordingLevelPayload, TranscriptionAudioSnapshot, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
 };
 use crate::platform::{GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest};
-use crate::system::crypto::protect_api_key;
+use crate::system::crypto::{protect_api_key, reveal_api_key};
 use crate::system::models::WhisperModelSize;
 use sqlx::Row;
 
@@ -358,7 +358,7 @@ pub async fn api_key_create(
 
     crate::db::api_key_queries::insert_api_key(database.pool(), &stored)
         .await
-        .map(ApiKeyView::from)
+        .map(|saved| ApiKeyView::from(saved).with_full_key(Some(key)))
         .map_err(|err| err.to_string())
 }
 
@@ -368,7 +368,20 @@ pub async fn api_key_list(
 ) -> Result<Vec<ApiKeyView>, String> {
     crate::db::api_key_queries::fetch_api_keys(database.pool())
         .await
-        .map(|api_keys| api_keys.into_iter().map(ApiKeyView::from).collect())
+        .map(|api_keys| {
+            api_keys
+                .into_iter()
+                .map(|api_key| {
+                    let full_key = reveal_api_key(&api_key.salt, &api_key.key_ciphertext)
+                        .map_err(|err| {
+                            eprintln!("Failed to reveal API key {}: {}", api_key.id, err);
+                            err
+                        })
+                        .ok();
+                    ApiKeyView::from(api_key).with_full_key(full_key)
+                })
+                .collect()
+        })
         .map_err(|err| err.to_string())
 }
 

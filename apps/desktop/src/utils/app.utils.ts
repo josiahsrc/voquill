@@ -31,15 +31,15 @@ const applyAiPreferencesFromUser = (draft: AppState, user: User): void => {
     return;
   }
 
-  const transcriptionMode = user.preferredTranscriptionMode ?? DEFAULT_PROCESSING_MODE;
+  const transcriptionMode =
+    user.preferredTranscriptionMode ?? DEFAULT_PROCESSING_MODE;
   draft.settings.aiTranscription.mode = transcriptionMode;
-  draft.settings.aiTranscription.selectedApiKeyId =
-    transcriptionMode === "api" ? user.preferredTranscriptionApiKeyId ?? null : null;
+  draft.settings.aiTranscription.selectedApiKeyId = user.preferredTranscriptionApiKeyId ?? null;
 
-  const postProcessingMode = user.preferredPostProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;
+  const postProcessingMode =
+    user.preferredPostProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;
   draft.settings.aiPostProcessing.mode = postProcessingMode;
-  draft.settings.aiPostProcessing.selectedApiKeyId =
-    postProcessingMode === "api" ? user.preferredPostProcessingApiKeyId ?? null : null;
+  draft.settings.aiPostProcessing.selectedApiKeyId = user.preferredPostProcessingApiKeyId ?? null;
 };
 
 export const registerUsers = (draft: AppState, users: User[]): void => {

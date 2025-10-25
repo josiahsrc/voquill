@@ -8,4 +8,5 @@ export type ApiKey = {
   provider: ApiKeyProvider;
   createdAt: FiremixTimestamp;
   keySuffix?: string | null;
+  keyFull?: string | null;
 };

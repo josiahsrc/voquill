@@ -14,7 +14,6 @@ import {
   Typography,
 } from "@mui/material";
 import { getRec } from "@repo/utilities";
-import { invoke } from "@tauri-apps/api/core";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import {
@@ -29,7 +28,11 @@ import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { TypographyWithMore } from "../common/TypographyWithMore";
-import { resolveTranscriptionOptions } from "../../utils/transcription.utils";
+import {
+  transcribeAndPostProcessAudio,
+  TranscriptionError,
+  type TranscriptionMetadata,
+} from "../../utils/transcription.utils";
 
 export type TranscriptionRowProps = {
   id: string;
@@ -344,19 +347,21 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       const repo = getTranscriptionRepo();
       const audioData = await repo.loadTranscriptionAudio(id);
 
-      const options = await resolveTranscriptionOptions();
-      const transcribeOptions = {
-        modelSize: options.modelSize,
-        device: options.device,
-      };
-
-      const transcriptText = await invoke<string>("transcribe_audio", {
+      const {
+        transcript: normalizedTranscript,
+        warnings,
+        metadata,
+      } = await transcribeAndPostProcessAudio({
         samples: audioData.samples,
         sampleRate: audioData.sampleRate,
-        options: transcribeOptions,
       });
 
-      const normalizedTranscript = transcriptText.trim();
+      if (warnings.length > 0) {
+        for (const warning of warnings) {
+          showErrorSnackbar(warning);
+        }
+      }
+
       if (!normalizedTranscript) {
         showErrorSnackbar("Retranscription produced no text.");
         return;
@@ -365,8 +370,8 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       const updatedPayload = {
         ...transcription,
         transcript: normalizedTranscript,
-        modelSize: options.modelSize ?? null,
-        inferenceDevice: options.deviceLabel ?? null,
+        modelSize: metadata?.modelSize ?? null,
+        inferenceDevice: metadata?.inferenceDevice ?? null,
       };
 
       const updated = await repo.updateTranscription(updatedPayload);
@@ -376,7 +381,14 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       });
     } catch (error) {
       console.error("Failed to retranscribe audio", error);
-      showErrorSnackbar("Unable to retranscribe audio snippet.");
+      const fallbackMessage = "Unable to retranscribe audio snippet.";
+      const message =
+        error instanceof TranscriptionError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : fallbackMessage;
+      showErrorSnackbar(message || fallbackMessage);
     } finally {
       setIsRetranscribing(false);
     }

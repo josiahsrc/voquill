@@ -10,13 +10,17 @@ import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
-import { getMyUser, getMyUserId } from "../../utils/user.utils";
+import {
+  getMyUser,
+  getMyUserId,
+} from "../../utils/user.utils";
+import {
+  transcribeAndPostProcessAudio,
+  TranscriptionError,
+  type TranscriptionMetadata,
+} from "../../utils/transcription.utils";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { OverlayPhase } from "../../types/overlay.types";
-import {
-  resolveTranscriptionOptions,
-  type TranscriptionOptionsPayload,
-} from "../../utils/transcription.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -61,35 +65,43 @@ export const RootSideEffects = () => {
       return;
     }
 
-    let transcript: string;
-
-    let options: TranscriptionOptionsPayload | undefined;
+    let normalizedTranscript: string;
+    let warnings: string[] = [];
+    let metadata: TranscriptionMetadata | undefined;
 
     try {
-      options = await resolveTranscriptionOptions();
-
-      const transcribeOptions = {
-        modelSize: options.modelSize,
-        device: options.device,
-      };
-
-      transcript = await invoke<string>("transcribe_audio", {
+      const result = await transcribeAndPostProcessAudio({
         samples: payloadSamples,
         sampleRate: rate,
-        options: transcribeOptions,
       });
+      normalizedTranscript = result.transcript;
+      warnings = result.warnings;
+      metadata = result.metadata;
     } catch (error) {
-      console.error("Failed to transcribe audio", error);
+      console.error("Failed to transcribe or post-process audio", error);
       const message =
-        error instanceof Error ? error.message : "Unable to transcribe audio. Please try again.";
-      showErrorSnackbar(message);
+        error instanceof TranscriptionError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Unable to transcribe audio. Please try again.";
+      if (message) {
+        showErrorSnackbar(message);
+      }
       return;
     }
 
-    const normalizedTranscript = transcript.trim();
     if (!normalizedTranscript) {
       return;
     }
+
+    if (warnings.length > 0) {
+      for (const warning of warnings) {
+        showErrorSnackbar(warning);
+      }
+    }
+
+    const state = getAppState();
 
     const transcriptionId = crypto.randomUUID();
 
@@ -108,11 +120,11 @@ export const RootSideEffects = () => {
       id: transcriptionId,
       transcript: normalizedTranscript,
       createdAt: firemix().now(),
-      createdByUserId: getMyUserId(getAppState()),
+      createdByUserId: getMyUserId(state),
       isDeleted: false,
       audio: audioSnapshot,
-      modelSize: options?.modelSize ?? null,
-      inferenceDevice: options?.deviceLabel ?? null,
+      modelSize: metadata?.modelSize ?? null,
+      inferenceDevice: metadata?.inferenceDevice ?? null,
     };
 
     let storedTranscription: Transcription;
