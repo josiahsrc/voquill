@@ -100,10 +100,25 @@ export function TypographyWithMore({
   const toggleExpanded = () => setExpanded((prev) => !prev);
   const shouldClamp = isOverflowing && !expanded;
 
-  const typographySx = useMemo(
-    () => normalizeSxProp(clampStyles, shouldClamp, sx),
-    [clampStyles, shouldClamp, sx]
-  );
+  const typographySx = useMemo(() => {
+    const normalized = normalizeSxProp(clampStyles, shouldClamp, sx);
+
+    if (!shouldClamp) {
+      return normalized;
+    }
+
+    const paddingAdjustment = { pr: 6 } as const;
+
+    if (Array.isArray(normalized)) {
+      return [...normalized, paddingAdjustment];
+    }
+
+    if (normalized) {
+      return [normalized, paddingAdjustment];
+    }
+
+    return paddingAdjustment;
+  }, [clampStyles, shouldClamp, sx]);
   const hiddenTypographySx = useMemo(() => {
     const baseDisplay = { display: "block" } as const;
 
@@ -118,12 +133,65 @@ export function TypographyWithMore({
     return [baseDisplay, sx];
   }, [sx]);
 
+  const renderToggleButton = (inline: boolean) => (
+    <Button
+      size="small"
+      variant="text"
+      onClick={toggleExpanded}
+      sx={(theme) => {
+        const variantKey = typographyProps.variant ?? "body2";
+        const variantStyles =
+          (theme.typography as Record<string, any>)[variantKey] ?? theme.typography.body2;
+        const fontSize =
+          typeof typographyProps.fontSize !== "undefined"
+            ? typographyProps.fontSize
+            : variantStyles.fontSize;
+        const lineHeight =
+          typeof typographyProps.lineHeight !== "undefined"
+            ? typographyProps.lineHeight
+            : variantStyles.lineHeight ?? 1.35;
+
+        return {
+          px: 0,
+          minWidth: 0,
+          fontSize,
+          lineHeight,
+          textTransform: "none",
+          color: theme.vars?.palette.text.primary ?? theme.palette.text.primary,
+          ...(inline
+            ? {
+                position: "absolute" as const,
+                right: 0,
+                bottom: 0,
+                mt: 0,
+                py: 0,
+                borderRadius: 999,
+                backgroundColor:
+                  theme.vars?.palette.level0 ?? theme.palette.background.paper,
+                boxShadow: `-12px 0 12px ${
+                  theme.vars?.palette.level0 ?? theme.palette.background.paper
+                }`,
+              }
+            : {
+                mt: 0.5,
+                display: "block",
+                ml: "auto",
+              }),
+        };
+      }}
+    >
+      {expanded ? lessLabel : moreLabel}
+    </Button>
+  );
+
   return (
     <Box>
       <Box ref={containerRef} sx={{ position: "relative" }}>
         <Typography {...typographyProps} sx={typographySx}>
           {children}
         </Typography>
+
+        {isOverflowing && shouldClamp ? renderToggleButton(true) : null}
 
         <Box
           sx={{
@@ -147,16 +215,7 @@ export function TypographyWithMore({
           </Typography>
         </Box>
       </Box>
-      {isOverflowing ? (
-        <Button
-          size="small"
-          variant="text"
-          onClick={toggleExpanded}
-          sx={{ mt: 0.5, px: 0 }}
-        >
-          {expanded ? lessLabel : moreLabel}
-        </Button>
-      ) : null}
+      {isOverflowing && !shouldClamp ? renderToggleButton(false) : null}
     </Box>
   );
 }
