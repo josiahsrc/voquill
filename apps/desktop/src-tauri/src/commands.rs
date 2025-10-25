@@ -1,10 +1,13 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, EventTarget, State};
 
 use crate::domain::{
-    OverlayPhase, OverlayPhasePayload, RecordingLevelPayload, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
+    OverlayPhase, OverlayPhasePayload, RecordingLevelPayload, TranscriptionAudioSnapshot,
+    EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
 };
 use crate::platform::{GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest};
+use sqlx::Row;
 
 #[cfg(target_os = "linux")]
 use crate::platform::linux::input::paste_text_into_focused_field as platform_paste_text;
@@ -61,6 +64,38 @@ impl TranscriptionDeviceSelectionDto {
 
         request
     }
+}
+
+const MAX_RETAINED_TRANSCRIPTION_AUDIO: usize = 20;
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscriptionAudioData {
+    pub samples: Vec<f32>,
+    pub sample_rate: u32,
+}
+
+async fn delete_audio_entries(
+    app: AppHandle,
+    entries: Vec<(String, String)>,
+) -> Result<Vec<String>, String> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut removed = Vec::new();
+        for (id, path) in entries {
+            let file_path = PathBuf::from(&path);
+            if let Err(err) = crate::system::audio_store::delete_audio_file(&app, &file_path) {
+                eprintln!("Failed to delete audio file for transcription {id}: {err}");
+            }
+            removed.push(id);
+        }
+        removed
+    })
+    .await
+    .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -128,12 +163,80 @@ pub async fn transcription_list(
 
 #[tauri::command]
 pub async fn transcription_delete(
+    app: AppHandle,
     id: String,
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<(), String> {
-    crate::db::transcription_queries::delete_transcription(database.pool(), &id)
+    let pool = database.pool();
+
+    let audio_path: Option<String> = sqlx::query_scalar(
+        "SELECT audio_path
+         FROM transcriptions
+         WHERE id = ?1",
+    )
+    .bind(&id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|err| err.to_string())?;
+
+    if let Some(path) = audio_path {
+        delete_audio_entries(app.clone(), vec![(id.clone(), path)]).await?;
+    }
+
+    crate::db::transcription_queries::delete_transcription(pool, &id)
         .await
         .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn transcription_update(
+    transcription: crate::domain::Transcription,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Transcription, String> {
+    crate::db::transcription_queries::update_transcription(database.pool(), &transcription)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn transcription_audio_load(
+    app: AppHandle,
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<TranscriptionAudioData, String> {
+    let pool = database.pool();
+
+    let audio_path: Option<String> = sqlx::query_scalar(
+        "SELECT audio_path
+         FROM transcriptions
+         WHERE id = ?1",
+    )
+    .bind(&id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|err| err.to_string())?;
+
+    let audio_path = audio_path
+        .ok_or_else(|| "No audio snapshot available for this transcription".to_string())?;
+
+    let audio_dir = crate::system::audio_store::audio_dir(&app).map_err(|err| err.to_string())?;
+    let audio_path_buf = PathBuf::from(&audio_path);
+
+    if !audio_path_buf.starts_with(&audio_dir) {
+        return Err("Audio snapshot path is outside the managed directory".to_string());
+    }
+
+    let (samples, sample_rate) = tauri::async_runtime::spawn_blocking(move || {
+        crate::system::audio_store::load_audio_samples(&audio_path_buf)
+            .map_err(|err| err.to_string())
+    })
+    .await
+    .map_err(|err| err.to_string())??;
+
+    Ok(TranscriptionAudioData {
+        samples,
+        sample_rate,
+    })
 }
 
 #[tauri::command]
@@ -311,6 +414,46 @@ pub fn stop_recording(
 }
 
 #[tauri::command]
+pub async fn store_transcription_audio(
+    app: AppHandle,
+    id: String,
+    samples: Vec<f64>,
+    sample_rate: u32,
+) -> Result<TranscriptionAudioSnapshot, String> {
+    if sample_rate == 0 {
+        return Err("Audio sample rate must be greater than zero".to_string());
+    }
+
+    let mut filtered = Vec::with_capacity(samples.len());
+    for sample in samples {
+        if sample.is_finite() {
+            filtered.push(sample as f32);
+        }
+    }
+
+    if filtered.is_empty() {
+        return Err("No usable audio samples provided".to_string());
+    }
+
+    let handle = app.clone();
+    let audio_id = id.clone();
+
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        crate::system::audio_store::save_transcription_audio(
+            &handle,
+            &audio_id,
+            &filtered,
+            sample_rate,
+        )
+        .map_err(|err| err.to_string())
+    })
+    .await
+    .map_err(|err| err.to_string())?;
+
+    result
+}
+
+#[tauri::command]
 pub async fn transcribe_audio(
     samples: Vec<f64>,
     sample_rate: u32,
@@ -360,6 +503,60 @@ pub async fn transcribe_audio(
             Err(message)
         }
     }
+}
+
+#[tauri::command]
+pub async fn purge_stale_transcription_audio(
+    app: AppHandle,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<String>, String> {
+    let pool = database.pool();
+
+    let rows = sqlx::query(
+        "SELECT id, audio_path
+         FROM transcriptions
+         WHERE audio_path IS NOT NULL
+         ORDER BY timestamp DESC",
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|err| err.to_string())?;
+
+    let stale_entries: Vec<(String, String)> = rows
+        .into_iter()
+        .skip(MAX_RETAINED_TRANSCRIPTION_AUDIO)
+        .map(|row| {
+            (
+                row.get::<String, _>("id"),
+                row.get::<String, _>("audio_path"),
+            )
+        })
+        .collect();
+
+    if stale_entries.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let purged_ids = delete_audio_entries(app.clone(), stale_entries).await?;
+
+    if purged_ids.is_empty() {
+        return Ok(purged_ids);
+    }
+
+    for id in &purged_ids {
+        sqlx::query(
+            "UPDATE transcriptions
+             SET audio_path = NULL,
+                 audio_duration_ms = NULL
+             WHERE id = ?1",
+        )
+        .bind(id)
+        .execute(&pool)
+        .await
+        .map_err(|err| err.to_string())?;
+    }
+
+    Ok(purged_ids)
 }
 
 #[tauri::command]

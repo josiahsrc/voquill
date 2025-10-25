@@ -1,5 +1,5 @@
 import { firemix } from "@firemix/client";
-import { Transcription } from "@repo/types";
+import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
@@ -77,15 +77,61 @@ export const RootSideEffects = () => {
       return;
     }
 
+    const transcriptionId = crypto.randomUUID();
+
+    let audioSnapshot: TranscriptionAudioSnapshot | undefined;
+    try {
+      audioSnapshot = await invoke<TranscriptionAudioSnapshot>("store_transcription_audio", {
+        id: transcriptionId,
+        samples: payloadSamples,
+        sampleRate: rate,
+      });
+    } catch (error) {
+      console.error("Failed to persist audio snapshot", error);
+    }
+
     const transcription: Transcription = {
-      id: crypto.randomUUID(),
+      id: transcriptionId,
       transcript: normalizedTranscript,
       createdAt: firemix().now(),
       createdByUserId: getMyUserId(getAppState()),
       isDeleted: false,
+      audio: audioSnapshot,
     };
 
-    await getTranscriptionRepo().createTranscription(transcription);
+    let storedTranscription: Transcription;
+
+    try {
+      storedTranscription = await getTranscriptionRepo().createTranscription(transcription);
+    } catch (error) {
+      console.error("Failed to store transcription", error);
+      showErrorSnackbar("Unable to save transcription. Please try again.");
+      return;
+    }
+
+    produceAppState((draft) => {
+      draft.transcriptionById[storedTranscription.id] = storedTranscription;
+      const existingIds = draft.transcriptions.transcriptionIds.filter(
+        (identifier) => identifier !== storedTranscription.id,
+      );
+      draft.transcriptions.transcriptionIds = [storedTranscription.id, ...existingIds];
+    });
+
+    try {
+      const purgedIds = await getTranscriptionRepo().purgeStaleAudio();
+      if (purgedIds.length > 0) {
+        produceAppState((draft) => {
+          for (const purgedId of purgedIds) {
+            const purged = draft.transcriptionById[purgedId];
+            if (purged) {
+              delete purged.audio;
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Failed to purge stale audio snapshots", error);
+    }
 
     try {
       await invoke<void>("paste", { text: normalizedTranscript });

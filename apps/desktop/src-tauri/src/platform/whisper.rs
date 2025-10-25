@@ -160,12 +160,11 @@ impl WhisperTranscriber {
                     .map_err(|err| format!("Failed to load Whisper model on CPU: {err}"))
                     .map(Arc::new)
             }
-            ContextStrategy::Auto => WhisperContext::new_with_params(
-                model_path,
-                WhisperContextParameters::default(),
-            )
-            .map_err(|err| format!("Failed to load Whisper model: {err}"))
-            .map(Arc::new),
+            ContextStrategy::Auto => {
+                WhisperContext::new_with_params(model_path, WhisperContextParameters::default())
+                    .map_err(|err| format!("Failed to load Whisper model: {err}"))
+                    .map(Arc::new)
+            }
         }
     }
 

@@ -16,6 +16,8 @@ pub const USER_PREFERRED_MICROPHONE_MIGRATION_SQL: &str =
     include_str!("migrations/006_user_preferred_microphone.sql");
 pub const USER_PLAY_INTERACTION_CHIME_MIGRATION_SQL: &str =
     include_str!("migrations/007_user_interaction_chime.sql");
+pub const TRANSCRIPTION_AUDIO_MIGRATION_SQL: &str =
+    include_str!("migrations/008_transcription_audio.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -65,6 +67,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 8,
             description: "add_user_play_interaction_chime",
             sql: USER_PLAY_INTERACTION_CHIME_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 9,
+            description: "add_transcription_audio_columns",
+            sql: TRANSCRIPTION_AUDIO_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

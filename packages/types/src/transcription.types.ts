@@ -6,4 +6,10 @@ export type Transcription = {
   createdByUserId: string;
   transcript: string;
   isDeleted: boolean;
+  audio?: TranscriptionAudioSnapshot;
+};
+
+export type TranscriptionAudioSnapshot = {
+  filePath: string;
+  durationMs: number;
 };
