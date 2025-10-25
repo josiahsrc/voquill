@@ -3,7 +3,7 @@ import { User } from "@repo/types";
 import { getUserRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { registerUsers } from "../utils/app.utils";
-import { getMyUserId } from "../utils/user.utils";
+import { getMyUserId, getPostProcessingPreferenceFromState, getTranscriptionPreferenceFromState } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 import {
   DEFAULT_POST_PROCESSING_MODE,
@@ -19,6 +19,18 @@ export const advancePage = (delta = 1) => {
 export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
+
+  const transcriptionPreference =
+    getTranscriptionPreferenceFromState(state) ?? {
+      mode: DEFAULT_PROCESSING_MODE,
+      apiKeyId: null,
+    };
+
+  const postProcessingPreference =
+    getPostProcessingPreferenceFromState(state) ?? {
+      mode: DEFAULT_POST_PROCESSING_MODE,
+      apiKeyId: null,
+    };
 
   produceAppState((draft) => {
     draft.onboarding.submitting = true;
@@ -41,10 +53,10 @@ export const submitOnboarding = async () => {
       timezone: null,
       preferredMicrophone: null,
       playInteractionChime: true,
-      preferredTranscriptionMode: DEFAULT_PROCESSING_MODE,
-      preferredTranscriptionApiKeyId: null,
-      preferredPostProcessingMode: DEFAULT_POST_PROCESSING_MODE,
-      preferredPostProcessingApiKeyId: null,
+      preferredTranscriptionMode: transcriptionPreference.mode,
+      preferredTranscriptionApiKeyId: transcriptionPreference.apiKeyId,
+      preferredPostProcessingMode: postProcessingPreference.mode,
+      preferredPostProcessingApiKeyId: postProcessingPreference.apiKeyId,
     };
 
     const savedUser = await repo.setUser(user);

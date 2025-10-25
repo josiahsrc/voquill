@@ -1,15 +1,13 @@
 import { firemix } from "@firemix/client";
 import { Nullable, User } from "@repo/types";
 import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_PROCESSING_MODE,
   type PostProcessingMode,
   type ProcessingMode,
 } from "../types/ai.types";
 import { getUserRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { registerUsers } from "../utils/app.utils";
-import { getMyUser } from "../utils/user.utils";
+import { getMyUser, getPostProcessingPreferenceFromState, getTranscriptionPreferenceFromState } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 const updateUser = async (
@@ -70,14 +68,6 @@ export const setInteractionChimeEnabled = async (enabled: boolean) => {
   );
 };
 
-const hasValidApiKey = (state: ReturnType<typeof getAppState>, id: Nullable<string>): boolean => {
-  if (!id) {
-    return false;
-  }
-
-  return Boolean(state.apiKeyById[id]);
-};
-
 const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
   const user = getMyUser(state);
@@ -86,46 +76,18 @@ const persistAiPreferences = async (): Promise<void> => {
     return;
   }
 
-  const transcriptionMode = state.settings.aiTranscription.mode;
-  const transcriptionSelectedId = state.settings.aiTranscription.selectedApiKeyId;
-  const transcriptionHasValidKey = hasValidApiKey(state, transcriptionSelectedId);
+  const transcriptionPreference = getTranscriptionPreferenceFromState(state);
+  const postProcessingPreference = getPostProcessingPreferenceFromState(state);
 
-  let shouldUpdateTranscription = false;
-  let nextTranscriptionMode = user.preferredTranscriptionMode ?? DEFAULT_PROCESSING_MODE;
-  let nextTranscriptionKey = user.preferredTranscriptionApiKeyId ?? null;
+  const shouldUpdateTranscription =
+    transcriptionPreference !== null &&
+    (user.preferredTranscriptionMode !== transcriptionPreference.mode ||
+      user.preferredTranscriptionApiKeyId !== transcriptionPreference.apiKeyId);
 
-  if (transcriptionMode === "local") {
-    nextTranscriptionMode = "local";
-    nextTranscriptionKey = null;
-    shouldUpdateTranscription =
-      user.preferredTranscriptionMode !== "local" || user.preferredTranscriptionApiKeyId !== null;
-  } else if (transcriptionMode === "api" && transcriptionHasValidKey) {
-    nextTranscriptionMode = "api";
-    nextTranscriptionKey = transcriptionSelectedId;
-    shouldUpdateTranscription =
-      user.preferredTranscriptionMode !== "api" || user.preferredTranscriptionApiKeyId !== transcriptionSelectedId;
-  }
-
-  const postProcessingMode = state.settings.aiPostProcessing.mode;
-  const postProcessingSelectedId = state.settings.aiPostProcessing.selectedApiKeyId;
-  const postProcessingHasValidKey = hasValidApiKey(state, postProcessingSelectedId);
-
-  let shouldUpdatePostProcessing = false;
-  let nextPostProcessingMode = user.preferredPostProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;
-  let nextPostProcessingKey = user.preferredPostProcessingApiKeyId ?? null;
-
-  if (postProcessingMode === "none") {
-    nextPostProcessingMode = "none";
-    nextPostProcessingKey = null;
-    shouldUpdatePostProcessing =
-      user.preferredPostProcessingMode !== "none" || user.preferredPostProcessingApiKeyId !== null;
-  } else if (postProcessingMode === "api" && postProcessingHasValidKey) {
-    nextPostProcessingMode = "api";
-    nextPostProcessingKey = postProcessingSelectedId;
-    shouldUpdatePostProcessing =
-      user.preferredPostProcessingMode !== "api" ||
-      user.preferredPostProcessingApiKeyId !== postProcessingSelectedId;
-  }
+  const shouldUpdatePostProcessing =
+    postProcessingPreference !== null &&
+    (user.preferredPostProcessingMode !== postProcessingPreference.mode ||
+      user.preferredPostProcessingApiKeyId !== postProcessingPreference.apiKeyId);
 
   if (!shouldUpdateTranscription && !shouldUpdatePostProcessing) {
     return;
@@ -133,13 +95,13 @@ const persistAiPreferences = async (): Promise<void> => {
 
   await updateUser(
     (draft) => {
-      if (shouldUpdateTranscription) {
-        draft.preferredTranscriptionMode = nextTranscriptionMode;
-        draft.preferredTranscriptionApiKeyId = nextTranscriptionKey;
+      if (shouldUpdateTranscription && transcriptionPreference) {
+        draft.preferredTranscriptionMode = transcriptionPreference.mode;
+        draft.preferredTranscriptionApiKeyId = transcriptionPreference.apiKeyId;
       }
-      if (shouldUpdatePostProcessing) {
-        draft.preferredPostProcessingMode = nextPostProcessingMode;
-        draft.preferredPostProcessingApiKeyId = nextPostProcessingKey;
+      if (shouldUpdatePostProcessing && postProcessingPreference) {
+        draft.preferredPostProcessingMode = postProcessingPreference.mode;
+        draft.preferredPostProcessingApiKeyId = postProcessingPreference.apiKeyId;
       }
     },
     "Unable to update AI preferences. User not found.",

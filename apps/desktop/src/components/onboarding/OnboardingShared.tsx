@@ -5,5 +5,5 @@ export type FormContainerProps = {
 };
 
 export const FormContainer = ({ children }: FormContainerProps) => {
-  return <Stack sx={{ maxWidth: 400, width: "100%", p: 2 }}>{children}</Stack>;
+  return <Stack sx={{ maxWidth: 500, width: "100%", p: 2 }}>{children}</Stack>;
 };
