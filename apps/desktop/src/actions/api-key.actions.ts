@@ -3,6 +3,11 @@ import { getApiKeyRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { registerApiKeys } from "../utils/app.utils";
 import { showErrorSnackbar } from "./app.actions";
+import {
+  DEFAULT_POST_PROCESSING_MODE,
+  DEFAULT_PROCESSING_MODE,
+} from "../types/ai.types";
+import { syncAiPreferences } from "./user.actions";
 import type { CreateApiKeyPayload } from "../repos/api-key.repo";
 
 let loadApiKeysPromise: Promise<void> | null = null;
@@ -87,11 +92,15 @@ export const deleteApiKey = async (id: string): Promise<void> => {
       );
       if (draft.settings.aiTranscription.selectedApiKeyId === id) {
         draft.settings.aiTranscription.selectedApiKeyId = null;
+        draft.settings.aiTranscription.mode = DEFAULT_PROCESSING_MODE;
       }
       if (draft.settings.aiPostProcessing.selectedApiKeyId === id) {
         draft.settings.aiPostProcessing.selectedApiKeyId = null;
+        draft.settings.aiPostProcessing.mode = DEFAULT_POST_PROCESSING_MODE;
       }
     });
+
+    await syncAiPreferences();
   } catch (error) {
     console.error("Failed to delete API key", error);
     showErrorSnackbar(

@@ -12,4 +12,8 @@ export type User = {
   timezone?: Nullable<string>;
   preferredMicrophone?: Nullable<string>;
   playInteractionChime: boolean;
+  preferredTranscriptionMode?: Nullable<"local" | "api">;
+  preferredTranscriptionApiKeyId?: Nullable<string>;
+  preferredPostProcessingMode?: Nullable<"none" | "api">;
+  preferredPostProcessingApiKeyId?: Nullable<string>;
 };

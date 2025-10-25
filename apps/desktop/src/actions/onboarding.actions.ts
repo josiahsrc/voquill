@@ -5,6 +5,10 @@ import { getAppState, produceAppState } from "../store";
 import { registerUsers } from "../utils/app.utils";
 import { getMyUserId } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
+import {
+  DEFAULT_POST_PROCESSING_MODE,
+  DEFAULT_PROCESSING_MODE,
+} from "../types/ai.types";
 
 export const advancePage = (delta = 1) => {
   produceAppState((draft) => {
@@ -37,6 +41,10 @@ export const submitOnboarding = async () => {
       timezone: null,
       preferredMicrophone: null,
       playInteractionChime: true,
+      preferredTranscriptionMode: DEFAULT_PROCESSING_MODE,
+      preferredTranscriptionApiKeyId: null,
+      preferredPostProcessingMode: DEFAULT_POST_PROCESSING_MODE,
+      preferredPostProcessingApiKeyId: null,
     };
 
     const savedUser = await repo.setUser(user);

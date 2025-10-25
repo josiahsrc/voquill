@@ -1,9 +1,13 @@
 import { Stack, Typography } from "@mui/material";
 import { useCallback } from "react";
-import { produceAppState, useAppStore } from "../../store";
+import { useAppStore } from "../../store";
 import { type PostProcessingMode } from "../../types/ai.types";
 import { SegmentedControl } from "../common/SegmentedControl";
 import { ApiKeyList } from "./ApiKeyList";
+import {
+  setPreferredPostProcessingApiKeyId,
+  setPreferredPostProcessingMode,
+} from "../../actions/user.actions";
 
 export const AIPostProcessingConfiguration = () => {
   const postProcessing = useAppStore(
@@ -11,15 +15,11 @@ export const AIPostProcessingConfiguration = () => {
   );
 
   const handleModeChange = useCallback((mode: PostProcessingMode) => {
-    produceAppState((draft) => {
-      draft.settings.aiPostProcessing.mode = mode;
-    });
+    void setPreferredPostProcessingMode(mode);
   }, []);
 
   const handleApiKeyChange = useCallback((id: string | null) => {
-    produceAppState((draft) => {
-      draft.settings.aiPostProcessing.selectedApiKeyId = id;
-    });
+    void setPreferredPostProcessingApiKeyId(id);
   }, []);
 
   return (

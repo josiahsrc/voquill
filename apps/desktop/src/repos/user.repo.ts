@@ -10,6 +10,10 @@ type LocalUser = {
   onboarded: boolean;
   preferredMicrophone: string | null;
   playInteractionChime?: boolean;
+  preferredTranscriptionMode?: "local" | "api" | null;
+  preferredTranscriptionApiKeyId?: string | null;
+  preferredPostProcessingMode?: "none" | "api" | null;
+  preferredPostProcessingApiKeyId?: string | null;
 };
 
 const toLocalUser = (user: User): LocalUser => ({
@@ -19,6 +23,10 @@ const toLocalUser = (user: User): LocalUser => ({
   onboarded: user.onboarded,
   preferredMicrophone: user.preferredMicrophone ?? null,
   playInteractionChime: user.playInteractionChime,
+  preferredTranscriptionMode: user.preferredTranscriptionMode ?? null,
+  preferredTranscriptionApiKeyId: user.preferredTranscriptionApiKeyId ?? null,
+  preferredPostProcessingMode: user.preferredPostProcessingMode ?? null,
+  preferredPostProcessingApiKeyId: user.preferredPostProcessingApiKeyId ?? null,
 });
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -39,6 +47,10 @@ const fromLocalUser = (localUser: LocalUser): User => {
     timezone: null,
     preferredMicrophone: localUser.preferredMicrophone ?? null,
     playInteractionChime,
+    preferredTranscriptionMode: localUser.preferredTranscriptionMode ?? null,
+    preferredTranscriptionApiKeyId: localUser.preferredTranscriptionApiKeyId ?? null,
+    preferredPostProcessingMode: localUser.preferredPostProcessingMode ?? null,
+    preferredPostProcessingApiKeyId: localUser.preferredPostProcessingApiKeyId ?? null,
   };
 };
 

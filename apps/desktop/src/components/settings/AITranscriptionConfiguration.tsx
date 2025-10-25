@@ -17,6 +17,10 @@ import { buildDeviceLabel } from "../../types/gpu.types";
 import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { SegmentedControl } from "../common/SegmentedControl";
 import { ApiKeyList } from "./ApiKeyList";
+import {
+  setPreferredTranscriptionApiKeyId,
+  setPreferredTranscriptionMode,
+} from "../../actions/user.actions";
 
 type ModelOption = {
   value: string;
@@ -84,9 +88,7 @@ export const AITranscriptionConfiguration = () => {
   );
 
   const handleModeChange = useCallback((mode: ProcessingMode) => {
-    produceAppState((draft) => {
-      draft.settings.aiTranscription.mode = mode;
-    });
+    void setPreferredTranscriptionMode(mode);
   }, []);
 
   const handleDeviceChange = useCallback((device: string) => {
@@ -102,9 +104,7 @@ export const AITranscriptionConfiguration = () => {
   }, []);
 
   const handleApiKeyChange = useCallback((id: string | null) => {
-    produceAppState((draft) => {
-      draft.settings.aiTranscription.selectedApiKeyId = id;
-    });
+    void setPreferredTranscriptionApiKeyId(id);
   }, []);
 
   return (

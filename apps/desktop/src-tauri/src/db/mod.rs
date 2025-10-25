@@ -20,6 +20,8 @@ pub const USER_PLAY_INTERACTION_CHIME_MIGRATION_SQL: &str =
 pub const TRANSCRIPTION_AUDIO_MIGRATION_SQL: &str =
     include_str!("migrations/008_transcription_audio.sql");
 pub const API_KEYS_MIGRATION_SQL: &str = include_str!("migrations/009_api_keys.sql");
+pub const USER_AI_PREFERENCES_MIGRATION_SQL: &str =
+    include_str!("migrations/010_user_ai_preferences.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -81,6 +83,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 10,
             description: "create_api_keys_table",
             sql: API_KEYS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 11,
+            description: "add_user_ai_preferences",
+            sql: USER_AI_PREFERENCES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

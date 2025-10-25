@@ -4,14 +4,29 @@ use crate::domain::User;
 
 pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Error> {
     sqlx::query(
-        "INSERT INTO user_profiles (id, name, bio, onboarded, preferred_microphone, play_interaction_chime)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        "INSERT INTO user_profiles (
+             id,
+             name,
+             bio,
+             onboarded,
+             preferred_microphone,
+             play_interaction_chime,
+             preferred_transcription_mode,
+             preferred_transcription_api_key_id,
+             preferred_post_processing_mode,
+             preferred_post_processing_api_key_id
+         )
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
             onboarded = excluded.onboarded,
             preferred_microphone = excluded.preferred_microphone,
-            play_interaction_chime = excluded.play_interaction_chime",
+            play_interaction_chime = excluded.play_interaction_chime,
+            preferred_transcription_mode = excluded.preferred_transcription_mode,
+            preferred_transcription_api_key_id = excluded.preferred_transcription_api_key_id,
+            preferred_post_processing_mode = excluded.preferred_post_processing_mode,
+            preferred_post_processing_api_key_id = excluded.preferred_post_processing_api_key_id",
     )
     .bind(&user.id)
     .bind(&user.name)
@@ -19,6 +34,10 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(if user.onboarded { 1 } else { 0 })
     .bind(&user.preferred_microphone)
     .bind(if user.play_interaction_chime { 1 } else { 0 })
+    .bind(&user.preferred_transcription_mode)
+    .bind(&user.preferred_transcription_api_key_id)
+    .bind(&user.preferred_post_processing_mode)
+    .bind(&user.preferred_post_processing_api_key_id)
     .execute(&pool)
     .await?;
 
@@ -27,7 +46,19 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
 
 pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
     let row = sqlx::query(
-        "SELECT id, name, bio, onboarded, preferred_microphone, play_interaction_chime FROM user_profiles LIMIT 1",
+        "SELECT
+            id,
+            name,
+            bio,
+            onboarded,
+            preferred_microphone,
+            play_interaction_chime,
+            preferred_transcription_mode,
+            preferred_transcription_api_key_id,
+            preferred_post_processing_mode,
+            preferred_post_processing_api_key_id
+         FROM user_profiles
+         LIMIT 1",
     )
         .fetch_optional(&pool)
         .await?;
@@ -43,6 +74,18 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 onboarded: onboarded_raw != 0,
                 preferred_microphone: row.get::<Option<String>, _>("preferred_microphone"),
                 play_interaction_chime: play_interaction_raw != 0,
+                preferred_transcription_mode: row
+                    .try_get::<Option<String>, _>("preferred_transcription_mode")
+                    .unwrap_or(None),
+                preferred_transcription_api_key_id: row
+                    .try_get::<Option<String>, _>("preferred_transcription_api_key_id")
+                    .unwrap_or(None),
+                preferred_post_processing_mode: row
+                    .try_get::<Option<String>, _>("preferred_post_processing_mode")
+                    .unwrap_or(None),
+                preferred_post_processing_api_key_id: row
+                    .try_get::<Option<String>, _>("preferred_post_processing_api_key_id")
+                    .unwrap_or(None),
             })
         }
         None => None,
