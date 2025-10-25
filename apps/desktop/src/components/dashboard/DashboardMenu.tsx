@@ -3,7 +3,6 @@ import {
   HistoryOutlined,
   HomeOutlined,
   SettingsOutlined,
-  WorkspacePremiumOutlined,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -19,11 +18,6 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: "Home", path: "/dashboard", icon: <HomeOutlined /> },
-  {
-    label: "Plans",
-    path: "/dashboard/plans",
-    icon: <WorkspacePremiumOutlined />,
-  },
   {
     label: "History",
     path: "/dashboard/transcriptions",

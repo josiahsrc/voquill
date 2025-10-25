@@ -1,7 +1,9 @@
 import {
   ArrowOutwardRounded,
+  AutoFixHighOutlined,
   DeleteForeverOutlined,
   DescriptionOutlined,
+  GraphicEqOutlined,
   KeyboardAltOutlined,
   MicOutlined,
   PrivacyTipOutlined,
@@ -15,6 +17,18 @@ import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 
 export default function SettingsPage() {
+  const openTranscriptionDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.aiTranscriptionDialogOpen = true;
+    });
+  };
+
+  const openPostProcessingDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.aiPostProcessingDialogOpen = true;
+    });
+  };
+
   const openMicrophoneDialog = () => {
     produceAppState((draft) => {
       draft.settings.microphoneDialogOpen = true;
@@ -59,6 +73,24 @@ export default function SettingsPage() {
     </Section>
   );
 
+  const processing = (
+    <Section
+      title="Processing"
+      description="How Voquill should manage your transcriptions."
+    >
+      <ListTile
+        title="AI transcription"
+        leading={<GraphicEqOutlined />}
+        onClick={openTranscriptionDialog}
+      />
+      <ListTile
+        title="AI post processing"
+        leading={<AutoFixHighOutlined />}
+        onClick={openPostProcessingDialog}
+      />
+    </Section>
+  );
+
   const advanced = (
     <Section
       title="Advanced"
@@ -99,6 +131,7 @@ export default function SettingsPage() {
           Settings
         </Typography>
         {general}
+        {processing}
         {advanced}
         {dangerZone}
       </Stack>

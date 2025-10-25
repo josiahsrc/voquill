@@ -11,7 +11,6 @@ import { Redirect } from "./components/routing/Redirectors.tsx";
 import DashboardPage from "./components/dashboard/DashboardPage.tsx";
 import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.tsx";
 import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
-import PlansPage from "./components/plans/PlansPage.tsx";
 
 const AppWrapper = () => {
   return (
@@ -70,10 +69,6 @@ const router = createBrowserRouter([
               {
                 path: "dictionary",
                 element: <DictionaryPage />,
-              },
-              {
-                path: "plans",
-                element: <PlansPage />,
               },
             ],
           },
