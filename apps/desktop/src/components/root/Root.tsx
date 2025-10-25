@@ -1,15 +1,13 @@
 import { Box } from "@mui/material";
 import { Suspense, useEffect } from "react";
-import { Outlet } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
+import { Outlet } from "react-router-dom";
+import { usePageName } from "../../hooks/navigation.hooks";
 import { HeaderPortalProvider } from "./HeaderPortalContext";
 import { LoadingApp } from "./LoadingApp";
-import { usePageName } from "../../hooks/navigation.hooks";
-import { useKeyDownHandler } from "../../hooks/helper.hooks";
-import { getIsDevMode } from "../../utils/env.utils";
-import { RootSideEffects } from "./RootSideEffects";
-import { RootDialogs } from "./RootDialogs";
 import { PermissionSideEffects } from "./PermissionSideEffects";
+import { RootDialogs } from "./RootDialogs";
+import { RootSideEffects } from "./RootSideEffects";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -24,19 +22,8 @@ export default function Root() {
   const pageTitle = usePageName();
 
   useEffect(() => {
-    document.title = pageTitle ? `${pageTitle} - PineGo` : "PineGo";
+    document.title = pageTitle ? `${pageTitle} - Voquill` : "Voquill";
   }, [pageTitle]);
-
-  // You cannot refresh the page in Tauri, here's a hotkey to help with that
-  useKeyDownHandler({
-    keys: ["r"],
-    ctrl: true,
-    callback: () => {
-      if (getIsDevMode()) {
-        window.location.reload();
-      }
-    },
-  });
 
   return (
     <>

@@ -19,7 +19,8 @@ import { OverlayRoot } from "./components/overlay/OverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { theme } from "./theme";
-import { getIsEmulators } from "./utils/env.utils";
+import { getIsDevMode, getIsEmulators } from "./utils/env.utils";
+import { useKeyDownHandler } from "./hooks/helper.hooks";
 
 const config = {
   apiKey: "AIzaSyDlPI-o5piDSNIG39EvJZJEz0gXCGEGk-w",
@@ -62,11 +63,26 @@ const isOverlayWindow =
 const rootElement = document.getElementById("root") as HTMLElement;
 const root = ReactDOM.createRoot(rootElement);
 
-type MainProps = {
+type ChildrenProps = {
   children: React.ReactNode;
 };
 
-const Main = ({ children }: MainProps) => {
+const Refresher = ({ children }: ChildrenProps) => {
+  // You cannot refresh the page in Tauri, here's a hotkey to help with that
+  useKeyDownHandler({
+    keys: ["r"],
+    ctrl: true,
+    callback: () => {
+      if (getIsDevMode()) {
+        window.location.reload();
+      }
+    },
+  });
+
+  return <>{children}</>;
+};
+
+const Main = ({ children }: ChildrenProps) => {
   return (
     <React.StrictMode>
       <ThemeProvider theme={theme}>
@@ -86,8 +102,10 @@ if (isOverlayWindow) {
 } else {
   root.render(
     <Main>
-      <SnackbarEmitter />
-      <AppWithLoading />
+      <Refresher>
+        <SnackbarEmitter />
+        <AppWithLoading />
+      </Refresher>
     </Main>
   );
 }
