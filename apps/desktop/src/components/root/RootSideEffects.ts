@@ -43,6 +43,7 @@ export const RootSideEffects = () => {
   const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(null);
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
+  const overlayLoadingTokenRef = useRef<symbol | null>(null);
 
   useAsyncEffect(async () => {
     await loadHotkeys();
@@ -186,6 +187,7 @@ export const RootSideEffects = () => {
 
     const promise = (async () => {
       try {
+        overlayLoadingTokenRef.current = null;
         await invoke<void>("set_phase", { phase: "recording" });
         await invoke<void>("start_recording", {
           args: { preferredMicrophone },
@@ -217,6 +219,8 @@ export const RootSideEffects = () => {
       return;
     }
 
+    let loadingToken: symbol | null = null;
+
     const promise = (async (): Promise<StopRecordingResponse | null> => {
       if (startPendingRef.current) {
         try {
@@ -230,6 +234,8 @@ export const RootSideEffects = () => {
 
       try {
         await invoke<void>("set_phase", { phase: "loading" });
+        loadingToken = Symbol("overlay-loading");
+        overlayLoadingTokenRef.current = loadingToken;
         audio = await invoke<StopRecordingResponse>("stop_recording");
         const playInteractionChime =
           getMyUser(getAppState())?.playInteractionChime ?? true;
@@ -241,7 +247,6 @@ export const RootSideEffects = () => {
         showErrorSnackbar("Unable to stop recording. Please try again.");
         suppressUntilRef.current = Date.now() + 700;
       } finally {
-        await invoke<void>("set_phase", { phase: "idle" });
         stopPendingRef.current = null;
       }
 
@@ -253,8 +258,15 @@ export const RootSideEffects = () => {
 
     isRecordingRef.current = false;
 
-    if (audio) {
-      await handleRecordedAudio(audio);
+    try {
+      if (audio) {
+        await handleRecordedAudio(audio);
+      }
+    } finally {
+      if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
+        overlayLoadingTokenRef.current = null;
+        await invoke<void>("set_phase", { phase: "idle" });
+      }
     }
   }, [handleRecordedAudio]);
 
