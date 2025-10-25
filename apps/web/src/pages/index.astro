@@ -1,4 +1,5 @@
 ---
+import { renderToStaticMarkup } from "react-dom/server";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import AppIconShowcase from "../components/app-icon-showcase";
 import DownloadButton from "../components/download-button";
@@ -7,7 +8,19 @@ import SiteFooter from "../components/site-footer";
 import SiteHeader from "../components/site-header";
 import SpeedShowcase from "../components/speed-showcase";
 import TextCleanupShowcase from "../components/text-cleanup-showcase";
+import { PLATFORM_CONFIG, PLATFORM_ORDER } from "../lib/downloads";
 import styles from "../styles/page.module.css";
+
+const platformIcons = PLATFORM_ORDER.map((platform) => {
+  const { Icon, name, id } = PLATFORM_CONFIG[platform];
+  return {
+    id,
+    name,
+    markup: renderToStaticMarkup(
+      Icon({ className: styles.heroPlatformIcon, size: 24 }),
+    ),
+  };
+});
 
 const currentYear = new Date().getFullYear();
 ---
@@ -26,9 +39,28 @@ const currentYear = new Date().getFullYear();
         <div class={styles.heroActions}>
           <DownloadButton client:load />
         </div>
-        <p class={styles.heroNote}>
-          No credit card required, get started for free.
-        </p>
+        <div class={styles.heroMeta}>
+          <p class={styles.heroNote}>
+            No credit card required, get started for free.
+          </p>
+          <div class={styles.heroPlatformList} aria-label="Desktop downloads">
+            {platformIcons.map((icon) => (
+              <span
+                class={styles.heroPlatformBadge}
+                role="img"
+                aria-label={icon.name}
+                title={icon.name}
+                set:html={icon.markup}
+              />
+            ))}
+          </div>
+          <a
+            href="/download"
+            class={`${styles.inlineLink} ${styles.heroMoreLink}`}
+          >
+            More download options
+          </a>
+        </div>
       </section>
 
       <SpeedShowcase client:load />

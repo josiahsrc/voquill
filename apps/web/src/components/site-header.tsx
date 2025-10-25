@@ -1,13 +1,13 @@
-import DownloadButton from "./download-button";
-import GitHubButton from "./github-button";
-import LogoMark from "./logo-mark";
 import styles from "../styles/page.module.css";
+import DownloadButton from "./download-button.js";
+import GitHubButton from "./github-button.js";
+import LogoMark from "./logo-mark.js";
 
 const navLinks = [
   { href: "/#demo", label: "Demo" },
   { href: "/#speed", label: "Purpose" },
   { href: "/#features", label: "Features" },
-  { href: "/#privacy", label: "Privacy" },
+  { href: "/#privacy", label: "Security" },
 ];
 
 export function SiteHeader() {

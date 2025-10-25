@@ -1,4 +1,4 @@
-import DownloadButton from "./download-button";
+import DownloadButton from "./download-button.js";
 import styles from "../styles/page.module.css";
 
 export function SiteFooter() {

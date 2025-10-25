@@ -7,6 +7,7 @@ import styles from "../styles/legal.module.css";
 import { getMarkdownContent } from "../lib/markdown";
 
 const content = await getMarkdownContent("privacy");
+const currentYear = new Date().getFullYear();
 ---
 
 <BaseLayout
@@ -19,6 +20,13 @@ const content = await getMarkdownContent("privacy");
       <article class={styles.legalContent} set:html={content} />
     </main>
     <SiteFooter client:load />
+    <div class={layoutStyles.pageMeta}>
+      <span>© {currentYear} Handaptive LLC</span>
+      <div class={layoutStyles.pageLinks}>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="mailto:hello@voquill.com">Contact</a>
+      </div>
+    </div>
   </div>
 </BaseLayout>
-
