@@ -1,9 +1,6 @@
-import { Check } from "@mui/icons-material";
+import { ArrowForward } from "@mui/icons-material";
 import { Button, Stack, TextField, Typography } from "@mui/material";
-import {
-  advancePage,
-  submitOnboarding,
-} from "../../actions/onboarding.actions";
+import { advancePage } from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { FormContainer } from "./OnboardingShared";
 
@@ -23,8 +20,8 @@ export const NameForm = () => {
     });
   };
 
-  const handleSubmit = () => {
-    void submitOnboarding();
+  const handleContinue = () => {
+    advancePage();
   };
 
   return (
@@ -54,10 +51,10 @@ export const NameForm = () => {
         <Button
           variant="contained"
           disabled={!name || submitting}
-          endIcon={<Check />}
-          onClick={handleSubmit}
+          endIcon={<ArrowForward />}
+          onClick={handleContinue}
         >
-          Finish
+          Continue
         </Button>
       </Stack>
     </FormContainer>

@@ -1,6 +1,9 @@
 import { Stack } from "@mui/material";
 import { useAppStore } from "../../store";
 import { NameForm } from "./NameForm";
+import { PostProcessingMethodForm } from "./PostProcessingMethodForm";
+import { TranscriptionMethodForm } from "./TranscriptionMethodForm";
+import { TryItOutForm } from "./TryItOutForm";
 import { WelcomeForm } from "./WelcomeForm";
 import { useConsumeQueryParams } from "../../hooks/navigation.hooks";
 
@@ -17,6 +20,9 @@ export default function OnboardingPage() {
     >
       {page === 0 && <WelcomeForm />}
       {page === 1 && <NameForm />}
+      {page === 2 && <TranscriptionMethodForm />}
+      {page === 3 && <PostProcessingMethodForm />}
+      {page === 4 && <TryItOutForm />}
     </Stack>
   );
 }

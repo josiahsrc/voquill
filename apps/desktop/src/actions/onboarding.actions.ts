@@ -48,7 +48,7 @@ export const submitOnboarding = async () => {
       draft.onboarding.name = savedUser.name;
     });
 
-    showSnackbar("You're all set! Onboarding complete.");
+    showSnackbar("You're all set! Onboarding complete.", { mode: "success" });
     return savedUser;
   } catch (err) {
     produceAppState((draft) => {

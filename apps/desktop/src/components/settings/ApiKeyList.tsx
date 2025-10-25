@@ -44,7 +44,6 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
       variant="outlined"
       sx={{
         p: 2,
-        borderRadius: (theme) => theme.shape.borderRadius,
         display: "flex",
         flexDirection: "column",
         gap: 1.5,
@@ -110,7 +109,6 @@ const ApiKeyCard = ({
     onClick={onSelect}
     sx={{
       p: 2,
-      borderRadius: (theme) => theme.shape.borderRadius,
       borderColor: selected ? "primary.main" : "divider",
       borderWidth: 1,
       cursor: "pointer",
