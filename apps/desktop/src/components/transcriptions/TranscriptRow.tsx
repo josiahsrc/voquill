@@ -16,7 +16,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { showErrorSnackbar } from "../../actions/app.actions";
+import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { TypographyWithMore } from "../common/TypographyWithMore";
@@ -232,6 +232,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const handleCopyTranscript = useCallback(async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
+      showSnackbar("copied successful", { mode: "success" });
     } catch (error) {
       showErrorSnackbar(error);
     }
@@ -247,6 +248,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           );
       });
       await getTranscriptionRepo().deleteTranscription(id);
+      showSnackbar("Delete successful", { mode: "success" });
     } catch (error) {
       showErrorSnackbar(error);
     }
@@ -339,22 +341,26 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           )}
         </Typography>
         <Stack direction="row" spacing={1}>
-          <IconButton
-            aria-label="Copy transcript"
-            onClick={() =>
-              handleCopyTranscript(transcription?.transcript || "")
-            }
-            size="small"
-          >
-            <ContentCopyRoundedIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            aria-label="Delete transcript"
-            onClick={() => handleDeleteTranscript(id)}
-            size="small"
-          >
-            <DeleteOutlineRoundedIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Copy transcript" placement="top">
+            <IconButton
+              aria-label="Copy transcript"
+              onClick={() =>
+                handleCopyTranscript(transcription?.transcript || "")
+              }
+              size="small"
+            >
+              <ContentCopyRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete transcript" placement="top">
+            <IconButton
+              aria-label="Delete transcript"
+              onClick={() => handleDeleteTranscript(id)}
+              size="small"
+            >
+              <DeleteOutlineRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </Stack>
       <TypographyWithMore
