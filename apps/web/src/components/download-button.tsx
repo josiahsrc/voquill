@@ -34,15 +34,15 @@ const DEFAULT_PLATFORM: Platform = "mac";
 
 const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
   mac: {
-    label: "Download for macOS",
+    label: "Download for free",
     Icon: AppleIcon,
   },
   windows: {
-    label: "Download for Windows",
+    label: "Download for free",
     Icon: WindowsIcon,
   },
   linux: {
-    label: "Download for Linux",
+    label: "Download for free",
     Icon: LinuxIcon,
   },
 };

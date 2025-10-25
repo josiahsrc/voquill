@@ -17,26 +17,18 @@ const currentYear = new Date().getFullYear();
     <SiteHeader client:load />
 
     <main class={styles.main}>
-      <section class={styles.heroSection} id="overview">
-        <div class={styles.heroContent}>
-          <h1 class={styles.heroTitle}>Your keyboard is holding you back.</h1>
-          <p class={styles.heroSubtitle}>
-            Make voice your new keyboard. Type four times faster by using your
-            voice.
-          </p>
-          <div class={styles.heroActions}>
-            <DownloadButton client:load />
-          </div>
-          <p class={styles.heroNote}>
-            No credit card required, get started for free.
-          </p>
+      <section class={styles.heroContent} id="overview">
+        <h1 class={styles.heroTitle}>Your keyboard is holding you back.</h1>
+        <p class={styles.heroSubtitle}>
+          Make voice your new keyboard. Type four times faster by using your
+          voice.
+        </p>
+        <div class={styles.heroActions}>
+          <DownloadButton client:load />
         </div>
-        <img
-          src="/uphill-struggle.jpg"
-          alt="Demo of Voquill in action"
-          class={styles.demoImage}
-          loading="eager"
-        />
+        <p class={styles.heroNote}>
+          No credit card required, get started for free.
+        </p>
       </section>
 
       <SpeedShowcase client:load />

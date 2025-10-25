@@ -217,6 +217,9 @@
 .heroContent {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  align-items: center;
+  text-align: center;
   gap: 24px;
 }
 
@@ -242,7 +245,7 @@
   font-size: 1.05rem;
   line-height: 1.7;
   color: var(--text-strong);
-  max-width: 48ch;
+  max-width: 72ch;
 }
 
 .heroActions {
@@ -742,10 +745,6 @@
   .heroMedia,
   .calloutCard {
     align-self: stretch;
-  }
-
-  .heroContent {
-    order: 2;
   }
 
   .heroMedia {
