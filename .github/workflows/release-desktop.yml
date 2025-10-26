@@ -277,10 +277,10 @@ jobs:
         if: matrix.os == 'macos-14'
         run: |
           set -euo pipefail
-          keychain_path="${{ steps.import-macos-cert.outputs.keychain-path }}"
+          keychain_path="${{ steps.import-macos-cert.outputs['keychain-path'] }}"
           if [[ -z "${keychain_path}" ]]; then
-            echo "apple-actions/import-codesign-certs did not report a keychain path." >&2
-            exit 1
+            keychain_path="${HOME}/Library/Keychains/build.keychain-db"
+            echo "apple-actions/import-codesign-certs did not report a keychain path; falling back to ${keychain_path}." >&2
           fi
           output="$(security find-identity -v -p codesigning "${keychain_path}" || true)"
           printf '%s\n' "$output"
