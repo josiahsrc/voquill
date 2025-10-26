@@ -280,7 +280,7 @@ jobs:
           keychain_path="${{ steps.import-macos-cert.outputs['keychain-path'] }}"
           if [[ -z "${keychain_path}" ]]; then
             keychain_path="${HOME}/Library/Keychains/build.keychain-db"
-            echo "apple-actions/import-codesign-certs did not report a keychain path; falling back to ${keychain_path}." >&2
+            echo "apple-actions/import-codesign-certs did not report a keychain path; falling back to ${keychain_path}" >&2
           fi
           output="$(security find-identity -v -p codesigning "${keychain_path}" || true)"
           printf '%s\n' "$output"
@@ -289,8 +289,8 @@ jobs:
             summary_count="$(printf '%s\n' "$output" | awk '/^[[:space:]]*[0-9]+\)/ { count++ } END { print count+0 }')"
           fi
           if [[ "${summary_count:-0}" -eq 0 ]]; then
-            echo "No valid code signing identities were imported into ${keychain_path}." >&2
-            echo "Ensure APPLE_CERTIFICATE contains a base64-encoded .p12 export that includes the private key." >&2
+            echo "No valid code signing identities were imported into ${keychain_path}" >&2
+            echo "Ensure APPLE_CERTIFICATE contains a base64-encoded .p12 export that includes the private key" >&2
             exit 1
           fi
 
