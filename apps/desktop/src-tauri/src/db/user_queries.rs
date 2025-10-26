@@ -60,8 +60,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
          FROM user_profiles
          LIMIT 1",
     )
-        .fetch_optional(&pool)
-        .await?;
+    .fetch_optional(&pool)
+    .await?;
 
     let user = match row {
         Some(row) => {

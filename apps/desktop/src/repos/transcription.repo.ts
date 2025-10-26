@@ -12,6 +12,8 @@ type LocalTranscription = {
   transcript: string;
   timestamp: number;
   audio?: LocalTranscriptionAudio | null;
+  modelSize?: string | null;
+  inferenceDevice?: string | null;
 };
 
 export type TranscriptionAudioData = {
@@ -36,6 +38,8 @@ const toLocalTranscription = (
         durationMs: transcription.audio.durationMs,
       }
     : undefined,
+  modelSize: transcription.modelSize ?? null,
+  inferenceDevice: transcription.inferenceDevice ?? null,
 });
 
 const fromLocalTranscription = (
@@ -52,6 +56,8 @@ const fromLocalTranscription = (
         durationMs: transcription.audio.durationMs,
       }
     : undefined,
+  modelSize: transcription.modelSize ?? undefined,
+  inferenceDevice: transcription.inferenceDevice ?? undefined,
 });
 
 export abstract class BaseTranscriptionRepo extends BaseRepo {

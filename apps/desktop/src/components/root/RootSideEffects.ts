@@ -5,21 +5,19 @@ import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
-import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
-import { OverlayPhase } from "../../types/overlay.types";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
+  type TranscriptionMetadata,
 } from "../../utils/transcription.utils";
-import {
-  getMyUser,
-  getMyUserId,
-} from "../../utils/user.utils";
+import { useAsyncEffect } from "../../hooks/async.hooks";
+import { OverlayPhase } from "../../types/overlay.types";
+import { getMyUser, getMyUserId } from "../../utils/user.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -67,6 +65,7 @@ export const RootSideEffects = () => {
 
     let normalizedTranscript: string;
     let warnings: string[] = [];
+    let metadata: TranscriptionMetadata | undefined;
 
     try {
       const result = await transcribeAndPostProcessAudio({
@@ -75,6 +74,7 @@ export const RootSideEffects = () => {
       });
       normalizedTranscript = result.transcript;
       warnings = result.warnings;
+      metadata = result.metadata;
     } catch (error) {
       console.error("Failed to transcribe or post-process audio", error);
       const message =
@@ -121,6 +121,8 @@ export const RootSideEffects = () => {
       createdByUserId: getMyUserId(state),
       isDeleted: false,
       audio: audioSnapshot,
+      modelSize: metadata?.modelSize ?? null,
+      inferenceDevice: metadata?.inferenceDevice ?? null,
     };
 
     let storedTranscription: Transcription;

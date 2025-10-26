@@ -1,5 +1,6 @@
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
@@ -7,6 +8,7 @@ import {
   Box,
   Divider,
   IconButton,
+  Popover,
   Stack,
   Tooltip,
   Typography,
@@ -14,7 +16,14 @@ import {
 import { getRec } from "@repo/utilities";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
@@ -22,6 +31,7 @@ import { TypographyWithMore } from "../common/TypographyWithMore";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
+  type TranscriptionMetadata,
 } from "../../utils/transcription.utils";
 
 export type TranscriptionRowProps = {
@@ -37,6 +47,15 @@ const formatDuration = (durationMs?: number | null): string => {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
+const formatModelSizeLabel = (modelSize?: string | null): string => {
+  const value = modelSize?.trim();
+  if (!value) {
+    return "Unknown";
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
 const createSeededRandom = (seed: number) => {
@@ -93,6 +112,21 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     getRec(state.transcriptionById, id)
   );
 
+  const hasMetadata = useMemo(() => {
+    const model = transcription?.modelSize?.trim();
+    const device = transcription?.inferenceDevice?.trim();
+    return Boolean(model || device);
+  }, [transcription?.inferenceDevice, transcription?.modelSize]);
+
+  const modelSizeLabel = useMemo(
+    () => formatModelSizeLabel(transcription?.modelSize ?? null),
+    [transcription?.modelSize]
+  );
+  const deviceLabel = useMemo(() => {
+    const value = transcription?.inferenceDevice?.trim();
+    return value && value.length > 0 ? value : "Unknown";
+  }, [transcription?.inferenceDevice]);
+
   const audioSnapshot = transcription?.audio;
   const audioSrc = useMemo(() => {
     if (!audioSnapshot) {
@@ -114,6 +148,17 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [waveformWidth, setWaveformWidth] = useState(0);
   const waveformContainerRef = useRef<HTMLDivElement | null>(null);
+  const [detailsAnchorEl, setDetailsAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const isDetailsOpen = Boolean(detailsAnchorEl);
+
+  const handleDetailsOpen = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    const { currentTarget } = event;
+    setDetailsAnchorEl((previous) => (previous ? null : currentTarget));
+  }, []);
+
+  const handleDetailsClose = useCallback(() => {
+    setDetailsAnchorEl(null);
+  }, []);
 
   const desiredWaveformBarCount = useMemo(() => {
     if (waveformWidth <= 0) {
@@ -302,11 +347,14 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       const repo = getTranscriptionRepo();
       const audioData = await repo.loadTranscriptionAudio(id);
 
-      const { transcript: normalizedTranscript, warnings } =
-        await transcribeAndPostProcessAudio({
-          samples: audioData.samples,
-          sampleRate: audioData.sampleRate,
-        });
+      const {
+        transcript: normalizedTranscript,
+        warnings,
+        metadata,
+      } = await transcribeAndPostProcessAudio({
+        samples: audioData.samples,
+        sampleRate: audioData.sampleRate,
+      });
 
       if (warnings.length > 0) {
         for (const warning of warnings) {
@@ -319,10 +367,14 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         return;
       }
 
-      const updated = await repo.updateTranscription({
+      const updatedPayload = {
         ...transcription,
         transcript: normalizedTranscript,
-      });
+        modelSize: metadata?.modelSize ?? null,
+        inferenceDevice: metadata?.inferenceDevice ?? null,
+      };
+
+      const updated = await repo.updateTranscription(updatedPayload);
 
       produceAppState((draft) => {
         draft.transcriptionById[id] = updated;
@@ -357,6 +409,16 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           )}
         </Typography>
         <Stack direction="row" spacing={1}>
+          <Tooltip title="View transcription details" placement="top">
+            <IconButton
+              aria-label="View transcription details"
+              onClick={handleDetailsOpen}
+              size="small"
+              color={hasMetadata ? "primary" : "default"}
+            >
+              <InfoOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Copy transcript" placement="top">
             <IconButton
               aria-label="Copy transcript"
@@ -379,6 +441,39 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           </Tooltip>
         </Stack>
       </Stack>
+      <Popover
+        open={isDetailsOpen}
+        anchorEl={detailsAnchorEl}
+        onClose={handleDetailsClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        PaperProps={{ sx: { p: 2, maxWidth: 260 } }}
+      >
+        {hasMetadata ? (
+          <Stack spacing={1.25}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Model
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {modelSizeLabel}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Device
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {deviceLabel}
+              </Typography>
+            </Box>
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Metadata unavailable for this transcription.
+          </Typography>
+        )}
+      </Popover>
       <TypographyWithMore
         variant="body2"
         color="text.primary"
