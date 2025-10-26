@@ -27,6 +27,13 @@ pub struct StopRecordingResponse {
     pub sample_rate: u32,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentAppInfoResponse {
+    pub app_name: String,
+    pub icon_base64: String,
+}
+
 #[derive(serde::Deserialize)]
 pub enum AudioClip {
     #[serde(rename = "start_recording_clip")]
@@ -147,6 +154,16 @@ pub fn ensure_microphone_permission() -> Result<crate::domain::PermissionStatus,
 #[tauri::command]
 pub fn ensure_input_monitor_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::ensure_input_monitor_permission()
+}
+
+#[tauri::command]
+pub fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
+    crate::platform::app_info::get_current_app_info()
+        .map(|info| CurrentAppInfoResponse {
+            app_name: info.app_name,
+            icon_base64: info.icon_base64,
+        })
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]

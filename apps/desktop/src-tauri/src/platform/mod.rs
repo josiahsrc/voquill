@@ -7,6 +7,7 @@ pub mod macos;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
+pub mod app_info;
 pub mod audio;
 pub mod permissions;
 pub mod whisper;

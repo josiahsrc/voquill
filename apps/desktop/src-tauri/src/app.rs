@@ -81,6 +81,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::list_gpus,
             crate::commands::ensure_microphone_permission,
             crate::commands::ensure_input_monitor_permission,
+            crate::commands::get_current_app_info,
             crate::commands::start_recording,
             crate::commands::stop_recording,
             crate::commands::store_transcription_audio,
