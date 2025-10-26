@@ -23,8 +23,9 @@
 | `TAURI_PRIVATE_KEY` | Tauri signing key used for bundle signing. | Generate with `npx tauri signer generate` (store the private key PEM output). |
 | `TAURI_PRIVATE_KEY_PASSWORD` | Optional password for the signing key. Leave blank if the key is unencrypted. | Use the password you set when generating the key. |
 | `TAURI_UPDATER_PUBLIC_KEY` | Public key that the desktop app uses to verify update signatures. | Output from `tauri signer generate` (the `public key` line). |
-| `APPLE_ID` | Apple Developer account email used for signing and notarization. | Sign in to https://appleid.apple.com/ or App Store Connect. |
-| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password used by `notarytool` during notarization. | Generate under Apple ID → Sign-In & Security → App-Specific Passwords. |
+| `APPLE_API_KEY_BASE64` | Base64-encoded App Store Connect API key (`.p8`) used for notarization. | Create an API key in App Store Connect → Users and Access → Keys, download the `.p8`, and encode it with `base64`. |
+| `APPLE_API_KEY_ID` | 10-character identifier for the API key. | Displayed alongside the key in App Store Connect. |
+| `APPLE_API_ISSUER` | App Store Connect issuer ID (UUID). | Available in App Store Connect → Users and Access → Keys. |
 | `APPLE_TEAM_ID` | Ten-character Apple Developer Team ID. | Found in App Store Connect → Membership details. |
 | `APPLE_CERTIFICATE` | Base64-encoded `Developer ID Application` certificate (`.p12`). | Export the certificate from Keychain Access and encode with `base64 < certificate.p12`. |
 | `APPLE_CERTIFICATE_PASSWORD` | Password that protects the exported certificate. | Set during the Keychain export; store the same value as a secret. |
