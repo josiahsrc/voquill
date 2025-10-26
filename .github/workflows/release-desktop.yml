@@ -353,27 +353,50 @@ jobs:
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
 
-      - name: Staple and validate Gatekeeper (macOS)
+      - name: Notarize, staple, and validate (macOS)
         if: matrix.os == 'macos-14'
+        env:
+          KEY_ID: ${{ env.APPLE_API_KEY_ID }}
+          ISSUER_ID: ${{ env.APPLE_API_ISSUER }}
         run: |
           set -euo pipefail
           ROOT="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle"
           APP="$ROOT/macos/Voquill.app"
-          DMG="$(ls "$ROOT/dmg/"*.dmg | head -n1 || true)"
-          echo "Stapling app ticket"
-          xcrun stapler staple -v "$APP"
-          echo "Validate stapled app"
-          xcrun stapler validate "$APP"
-          echo "Gatekeeper assess app"
-          spctl --assess --type execute -vv "$APP"
-          if [[ -n "$DMG" ]]; then
-            echo "Stapling dmg ticket: $DMG"
-            xcrun stapler staple -v "$DMG"
-            echo "Validate stapled dmg"
-            xcrun stapler validate "$DMG"
-            echo "Gatekeeper assess dmg open"
-            spctl --assess --type open --context context:primary-signature -vv "$DMG"
+          DMG="$(ls "$ROOT/dmg/"*.dmg | head -n1)"
+
+          echo "Compute app CDHash to track what we staple"
+          APP_HASH="$(codesign -dv --verbose=4 "$APP" 2>&1 | awk -F'= ' '/CDHash=/{print $2; exit}')"
+          echo "App CDHash: $APP_HASH"
+
+          echo "Submit DMG to notarytool and wait"
+          SUBMIT_JSON="$(xcrun notarytool submit "$DMG" \
+            --key AuthKey.p8 \
+            --key-id "$KEY_ID" \
+            --issuer "$ISSUER_ID" \
+            --wait --output-format json)"
+          echo "$SUBMIT_JSON" | jq -r '.'
+          STATUS="$(echo "$SUBMIT_JSON" | jq -r '.status')"
+          ID="$(echo "$SUBMIT_JSON" | jq -r '.id')"
+          if [[ "$STATUS" != "Accepted" ]]; then
+            echo "Notarization failed or not accepted. id=$ID status=$STATUS" >&2
+            exit 1
           fi
+
+          echo "Staple ticket to app and dmg"
+          xcrun stapler staple -v "$APP"
+          xcrun stapler staple -v "$DMG"
+
+          echo "Validate staples"
+          xcrun stapler validate "$APP"
+          xcrun stapler validate "$DMG"
+
+          echo "Gatekeeper assessment"
+          spctl --assess --type execute -vv "$APP"
+          spctl --assess --type open --context context:primary-signature -vv "$DMG"
+
+          echo "Reconfirm CDHash didn’t change"
+          APP_HASH_AFTER="$(codesign -dv --verbose=4 "$APP" 2>&1 | awk -F'= ' '/CDHash=/{print $2; exit}')"
+          test "$APP_HASH" = "$APP_HASH_AFTER" || { echo "CDHash changed unexpectedly" >&2; exit 1; }
 
   update-channel:
     name: Update channel release asset
