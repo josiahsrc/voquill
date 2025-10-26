@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'apps/desktop/**'
-      - '.github/workflows/release-desktop.yml'
+      - "apps/desktop/**"
+      - ".github/workflows/release-desktop.yml"
   workflow_dispatch:
     inputs:
       environment:
@@ -220,9 +220,9 @@ jobs:
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
       TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
       APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-      APPLE_ID_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
     steps:
@@ -273,6 +273,24 @@ jobs:
           p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
           p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
+      - name: Assert Developer ID Application identity is present
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euo pipefail
+          out="$(security find-identity -v -p codesigning)"
+          echo "$out"
+          echo "$out" | grep -q "Developer ID Application" || {
+            echo "No 'Developer ID Application' identity found. Import a .p12 exported with its private key." >&2
+            exit 1
+          }
+
+      - name: Prepare Apple notary API key
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euo pipefail
+          echo "$APPLE_API_KEY_BASE64" | base64 -d > AuthKey.p8
+        shell: bash
+
       - name: Verify Apple signing identity
         if: matrix.os == 'macos-14'
         run: |
@@ -280,7 +298,7 @@ jobs:
           keychain_path="${{ steps.import-macos-cert.outputs['keychain-path'] }}"
           if [[ -z "${keychain_path}" ]]; then
             keychain_path="${HOME}/Library/Keychains/build.keychain-db"
-            echo "apple-actions/import-codesign-certs did not report a keychain path; falling back to ${keychain_path}" >&2
+            echo "apple-actions/import-codesign-certs did not report a keychain path; falling back to ${keychain_path}." >&2
           fi
           output="$(security find-identity -v -p codesigning "${keychain_path}" || true)"
           printf '%s\n' "$output"
@@ -289,8 +307,8 @@ jobs:
             summary_count="$(printf '%s\n' "$output" | awk '/^[[:space:]]*[0-9]+\)/ { count++ } END { print count+0 }')"
           fi
           if [[ "${summary_count:-0}" -eq 0 ]]; then
-            echo "No valid code signing identities were imported into ${keychain_path}" >&2
-            echo "Ensure APPLE_CERTIFICATE contains a base64-encoded .p12 export that includes the private key" >&2
+            echo "No valid code signing identities were imported into ${keychain_path}." >&2
+            echo "Ensure APPLE_CERTIFICATE contains a base64-encoded .p12 export that includes the private key." >&2
             exit 1
           fi
 
@@ -315,6 +333,9 @@ jobs:
           APPLE_PASSWORD: ${{ env.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
           APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY: AuthKey.p8
+          APPLE_API_KEY_ID: ${{ env.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
         with:
           projectPath: apps/desktop
           tauriScript: npm run --workspace desktop tauri
