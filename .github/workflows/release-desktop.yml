@@ -273,11 +273,11 @@ jobs:
         if: matrix.os == 'macos-14'
         run: |
           set -euo pipefail
-          output="$(security find-identity -v -p codesigning buildkeys || true)"
+          output="$(security find-identity -v -p codesigning buildkeys.keychain || true)"
           printf '%s\n' "$output"
           count="$(printf '%s\n' "$output" | grep -Ec '^[[:space:]][0-9]+\)')"
           if [[ "${count}" -eq 0 ]]; then
-            echo "No valid code signing identities were imported into buildkeys." >&2
+            echo "No valid code signing identities were imported into buildkeys.keychain." >&2
             echo "Ensure APPLE_CERTIFICATE contains a base64-encoded .p12 export that includes the private key." >&2
             exit 1
           fi
