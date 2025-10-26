@@ -27,12 +27,11 @@ import {
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
-import { TypographyWithMore } from "../common/TypographyWithMore";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
-  type TranscriptionMetadata,
 } from "../../utils/transcription.utils";
+import { TypographyWithMore } from "../common/TypographyWithMore";
 
 export type TranscriptionRowProps = {
   id: string;
@@ -148,13 +147,17 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [waveformWidth, setWaveformWidth] = useState(0);
   const waveformContainerRef = useRef<HTMLDivElement | null>(null);
-  const [detailsAnchorEl, setDetailsAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [detailsAnchorEl, setDetailsAnchorEl] =
+    useState<HTMLButtonElement | null>(null);
   const isDetailsOpen = Boolean(detailsAnchorEl);
 
-  const handleDetailsOpen = useCallback((event: MouseEvent<HTMLButtonElement>) => {
-    const { currentTarget } = event;
-    setDetailsAnchorEl((previous) => (previous ? null : currentTarget));
-  }, []);
+  const handleDetailsOpen = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const { currentTarget } = event;
+      setDetailsAnchorEl((previous) => (previous ? null : currentTarget));
+    },
+    []
+  );
 
   const handleDetailsClose = useCallback(() => {
     setDetailsAnchorEl(null);
