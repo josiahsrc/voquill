@@ -4,22 +4,22 @@ import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { loadHotkeys } from "../../actions/hotkey.actions";
+import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
+import { OverlayPhase } from "../../types/overlay.types";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
-import {
-  getMyUser,
-  getMyUserId,
-} from "../../utils/user.utils";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
 } from "../../utils/transcription.utils";
-import { useAsyncEffect } from "../../hooks/async.hooks";
-import { loadHotkeys } from "../../actions/hotkey.actions";
-import { OverlayPhase } from "../../types/overlay.types";
+import {
+  getMyUser,
+  getMyUserId,
+} from "../../utils/user.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -188,13 +188,13 @@ export const RootSideEffects = () => {
     const promise = (async () => {
       try {
         overlayLoadingTokenRef.current = null;
-        await invoke<void>("set_phase", { phase: "recording" });
-        await invoke<void>("start_recording", {
-          args: { preferredMicrophone },
-        });
-        if (playInteractionChime) {
-          await invoke<void>("play_audio", { clip: "start_recording_clip" });
-        }
+        await Promise.all([
+          invoke<void>("set_phase", { phase: "recording" }),
+          invoke<void>("start_recording", {
+            args: { preferredMicrophone },
+          }),
+          ...(playInteractionChime ? [invoke<void>("play_audio", { clip: "start_recording_clip" })] : []),
+        ]);
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
         await invoke<void>("set_phase", { phase: "idle" });
@@ -230,18 +230,20 @@ export const RootSideEffects = () => {
         }
       }
 
-      let audio: StopRecordingResponse | null = null;
+      const playInteractionChime =
+        getMyUser(getAppState())?.playInteractionChime ?? true;
 
+      let audio: StopRecordingResponse | null = null;
       try {
-        await invoke<void>("set_phase", { phase: "loading" });
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
-        audio = await invoke<StopRecordingResponse>("stop_recording");
-        const playInteractionChime =
-          getMyUser(getAppState())?.playInteractionChime ?? true;
-        if (playInteractionChime) {
-          await invoke<void>("play_audio", { clip: "stop_recording_clip" });
-        }
+        const [, outAudio] = await Promise.all([
+          await invoke<void>("set_phase", { phase: "loading" }),
+          await invoke<StopRecordingResponse>("stop_recording"),
+          (playInteractionChime ? invoke<void>("play_audio", { clip: "stop_recording_clip" }) : Promise.resolve()),
+        ]);
+
+        audio = outAudio;
       } catch (error) {
         console.error("Failed to stop recording via hotkey", error);
         showErrorSnackbar("Unable to stop recording. Please try again.");

@@ -2,7 +2,7 @@
 #![allow(unexpected_cfgs)]
 
 use std::cell::RefCell;
-use std::f64::consts::TAU;
+use std::f64::consts::{PI, TAU};
 use std::ops::Deref;
 use std::ptr;
 use std::time::Duration;
@@ -73,6 +73,14 @@ const WAVE_OPACITIES: [f64; WAVE_COUNT] = [1.0, 0.78, 0.56];
 const TARGET_DECAY_PER_FRAME: f64 = 0.985;
 const LEVEL_SMOOTHING: f64 = 0.18;
 
+const LOADING_FRAME_INTERVAL_MS: u64 = 16;
+const LOADING_LINE_THICKNESS: f64 = 2.0;
+const LOADING_PROGRESS_STEP: f64 = 0.03;
+const LOADING_HIGHLIGHT_WIDTH_RATIO: f64 = 0.35;
+const LOADING_TRACK_ALPHA: f64 = 0.24;
+const LOADING_HIGHLIGHT_ALPHA: f64 = 0.92;
+const LOADING_INITIAL_PROGRESS: f64 = 0.0;
+
 const ICON_SIZE: f64 = 20.0;
 const ICON_LEFT_PADDING: f64 = 8.0;
 
@@ -88,13 +96,18 @@ struct OverlayState {
     wave_layers: Vec<StrongPtr>,
     gradient_left: StrongPtr,
     gradient_right: StrongPtr,
+    loading_container: StrongPtr,
+    loading_track_layer: StrongPtr,
+    loading_highlight_layer: StrongPtr,
     background_layer: StrongPtr,
     current_level: f64,
     target_level: f64,
     phase: f64,
+    loading_progress: f64,
     is_visible: bool,
     animation_id: u64,
     wave_motion_id: u64,
+    loading_motion_id: u64,
     phase_kind: OverlayPhase,
 }
 
@@ -111,6 +124,9 @@ impl OverlayState {
                 wave_layers,
                 gradient_left,
                 gradient_right,
+                loading_container,
+                loading_track_layer,
+                loading_highlight_layer,
             ) = configure_overlay_contents(panel_ptr);
 
             let state = OverlayState {
@@ -121,13 +137,18 @@ impl OverlayState {
                 wave_layers,
                 gradient_left,
                 gradient_right,
+                loading_container,
+                loading_track_layer,
+                loading_highlight_layer,
                 background_layer,
                 current_level: 0.0,
                 target_level: 0.0,
                 phase: 0.0,
+                loading_progress: LOADING_INITIAL_PROGRESS,
                 is_visible: false,
                 animation_id: 0,
                 wave_motion_id: 0,
+                loading_motion_id: 0,
                 phase_kind: OverlayPhase::Idle,
             };
 
@@ -149,6 +170,11 @@ impl OverlayState {
         self.wave_motion_id
     }
 
+    fn next_loading_motion(&mut self) -> u64 {
+        self.loading_motion_id = self.loading_motion_id.wrapping_add(1);
+        self.loading_motion_id
+    }
+
     fn panel(&self) -> id {
         *self.panel.deref()
     }
@@ -163,6 +189,10 @@ impl OverlayState {
 
     fn waves_container(&self) -> id {
         *self.waves_container.deref()
+    }
+
+    fn loading_container(&self) -> id {
+        *self.loading_container.deref()
     }
 
     fn background_layer(&self) -> id {
@@ -180,6 +210,14 @@ impl OverlayState {
     fn gradient_right(&self) -> id {
         *self.gradient_right.deref()
     }
+
+    fn loading_track_layer(&self) -> id {
+        *self.loading_track_layer.deref()
+    }
+
+    fn loading_highlight_layer(&self) -> id {
+        *self.loading_highlight_layer.deref()
+    }
 }
 
 pub fn prepare_overlay(_app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -191,8 +229,10 @@ pub fn prepare_overlay(_app: &tauri::AppHandle) -> tauri::Result<()> {
             state.current_level = 0.0;
             state.target_level = 0.0;
             state.phase = 0.0;
+            state.loading_progress = LOADING_INITIAL_PROGRESS;
             state.phase_kind = OverlayPhase::Idle;
             state.next_wave_motion();
+            state.next_loading_motion();
             unsafe {
                 update_active_app_icon(state);
             }
@@ -210,7 +250,14 @@ pub fn prepare_overlay(_app: &tauri::AppHandle) -> tauri::Result<()> {
 
 pub fn show_overlay() -> tauri::Result<()> {
     run_on_main(|| {
-        let (panel, already_visible, animation_id, motion_id) = OVERLAY_STATE.with(|cell| {
+        let (
+            panel,
+            already_visible,
+            animation_id,
+            wave_motion_id,
+            loading_motion_id,
+            should_schedule_loading,
+        ) = OVERLAY_STATE.with(|cell| {
             let mut entry = cell.borrow_mut();
             let state = entry.get_or_insert_with(OverlayState::new);
             let panel = state.panel();
@@ -223,11 +270,20 @@ pub fn show_overlay() -> tauri::Result<()> {
                 state.target_level = state.target_level.max(0.05);
             }
             let animation_id = state.next_animation();
-            let motion_id = state.next_wave_motion();
+            let wave_motion_id = state.next_wave_motion();
+            let should_schedule_loading = matches!(state.phase_kind, OverlayPhase::Loading);
+            let loading_motion_id = state.next_loading_motion();
             unsafe {
                 update_active_app_icon(state);
             }
-            (panel, already_visible, animation_id, motion_id)
+            (
+                panel,
+                already_visible,
+                animation_id,
+                wave_motion_id,
+                loading_motion_id,
+                should_schedule_loading,
+            )
         });
 
         if already_visible {
@@ -261,11 +317,15 @@ pub fn show_overlay() -> tauri::Result<()> {
             if let Some(state) = cell.borrow().as_ref() {
                 unsafe {
                     update_wave_paths(state);
+                    update_loading_indicator(state);
                 }
             }
         });
 
-        schedule_wave_frame(motion_id);
+        schedule_wave_frame(wave_motion_id);
+        if should_schedule_loading {
+            schedule_loading_frame(loading_motion_id);
+        }
     });
 
     Ok(())
@@ -325,6 +385,7 @@ pub fn set_phase(phase: OverlayPhase) -> tauri::Result<()> {
                     state.phase_kind = OverlayPhase::Loading;
                     state.target_level = 0.0;
                     state.current_level *= 0.4;
+                    state.loading_progress = LOADING_INITIAL_PROGRESS;
                 });
             });
             show_overlay()
@@ -395,6 +456,9 @@ unsafe fn configure_overlay_contents(
     Vec<StrongPtr>,
     StrongPtr, // left gradient
     StrongPtr, // right gradient
+    StrongPtr, // loading container
+    StrongPtr, // loading track layer
+    StrongPtr, // loading highlight layer
 ) {
     let content_view = panel.contentView();
     let _: () = msg_send![content_view, setWantsLayer: YES];
@@ -482,6 +546,63 @@ unsafe fn configure_overlay_contents(
         wave_layers.push(StrongPtr::retain(wave_layer));
     }
 
+    let loading_container: id = NSView::initWithFrame_(NSView::alloc(nil), waves_rect);
+    let _: () = msg_send![loading_container, setWantsLayer: YES];
+    let loading_layer: id = msg_send![loading_container, layer];
+    let _: () = msg_send![loading_layer, setBackgroundColor: clear_ref];
+    let _: () = msg_send![loading_layer, setMasksToBounds: YES];
+
+    let track_layer: id = msg_send![class!(CALayer), layer];
+    let track_color: id =
+        NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 1.0, 1.0, 1.0, LOADING_TRACK_ALPHA);
+    let track_cg: id = msg_send![track_color, CGColor];
+    let _: () = msg_send![track_layer, setBackgroundColor: track_cg];
+    let _: () = msg_send![track_layer, setCornerRadius: LOADING_LINE_THICKNESS / 2.0];
+    let _: () = msg_send![loading_layer, addSublayer: track_layer];
+
+    let highlight_layer: id = msg_send![class!(CAGradientLayer), layer];
+    let highlight_clear: id =
+        NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 1.0, 1.0, 1.0, 0.0);
+    let highlight_soft: id = NSColor::colorWithSRGBRed_green_blue_alpha_(
+        nil,
+        1.0,
+        1.0,
+        1.0,
+        LOADING_HIGHLIGHT_ALPHA * 0.6,
+    );
+    let highlight_strong: id =
+        NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 1.0, 1.0, 1.0, LOADING_HIGHLIGHT_ALPHA);
+    let highlight_clear_cg: id = msg_send![highlight_clear, CGColor];
+    let highlight_soft_cg: id = msg_send![highlight_soft, CGColor];
+    let highlight_strong_cg: id = msg_send![highlight_strong, CGColor];
+    let highlight_colors: id = NSArray::arrayWithObjects(
+        nil,
+        &[
+            highlight_clear_cg,
+            highlight_soft_cg,
+            highlight_strong_cg,
+            highlight_soft_cg,
+            highlight_clear_cg,
+        ],
+    );
+    let hloc0: id = msg_send![class!(NSNumber), numberWithDouble: 0.0];
+    let hloc1: id = msg_send![class!(NSNumber), numberWithDouble: 0.2];
+    let hloc2: id = msg_send![class!(NSNumber), numberWithDouble: 0.5];
+    let hloc3: id = msg_send![class!(NSNumber), numberWithDouble: 0.8];
+    let hloc4: id = msg_send![class!(NSNumber), numberWithDouble: 1.0];
+    let highlight_locations: id =
+        NSArray::arrayWithObjects(nil, &[hloc0, hloc1, hloc2, hloc3, hloc4]);
+    let _: () = msg_send![highlight_layer, setColors: highlight_colors];
+    let _: () = msg_send![highlight_layer, setLocations: highlight_locations];
+    let _: () = msg_send![highlight_layer, setStartPoint: NSPoint::new(0.0, 0.5)];
+    let _: () = msg_send![highlight_layer, setEndPoint: NSPoint::new(1.0, 0.5)];
+    let _: () = msg_send![highlight_layer, setCornerRadius: LOADING_LINE_THICKNESS / 2.0];
+    let _: () = msg_send![highlight_layer, setZPosition: 1.0];
+    let _: () = msg_send![loading_layer, addSublayer: highlight_layer];
+
+    let _: () = msg_send![content_view, addSubview: loading_container];
+    let _: () = msg_send![loading_container, setHidden: YES];
+
     // Gradient overlays
     let gradient_left: id = msg_send![class!(CAGradientLayer), layer];
     let gradient_right: id = msg_send![class!(CAGradientLayer), layer];
@@ -529,6 +650,9 @@ unsafe fn configure_overlay_contents(
         wave_layers,
         StrongPtr::retain(gradient_left),
         StrongPtr::retain(gradient_right),
+        StrongPtr::new(loading_container),
+        StrongPtr::retain(track_layer),
+        StrongPtr::retain(highlight_layer),
     )
 }
 
@@ -558,8 +682,10 @@ unsafe fn layout_overlay_contents(state: &OverlayState, width: f64) {
     position_icon(state, width);
     position_label(state, width);
     position_waves_container(state, width);
+    position_loading_container(state, width);
     update_gradient_layers(state);
     update_wave_paths(state);
+    update_loading_indicator(state);
 }
 
 fn wave_container_width(width: f64) -> f64 {
@@ -609,6 +735,20 @@ unsafe fn position_waves_container(state: &OverlayState, width: f64) {
     let _: () = msg_send![container, setHidden: if hidden { YES } else { NO }];
 }
 
+unsafe fn position_loading_container(state: &OverlayState, width: f64) {
+    let container = state.loading_container();
+    let container_width = wave_container_width(width);
+    let x = (width - container_width - WAVE_RIGHT_PADDING).max(0.0);
+    let height = OVERLAY_HEIGHT - WAVE_VERTICAL_PADDING * 2.0;
+    let rect = NSRect::new(
+        NSPoint::new(x.max(0.0), WAVE_VERTICAL_PADDING),
+        NSSize::new(container_width, height.max(6.0)),
+    );
+    let _: () = msg_send![container, setFrame: rect];
+    let hidden = !matches!(state.phase_kind, OverlayPhase::Loading);
+    let _: () = msg_send![container, setHidden: if hidden { YES } else { NO }];
+}
+
 unsafe fn update_gradient_layers(state: &OverlayState) {
     let container = state.waves_container();
     let bounds: NSRect = msg_send![container, bounds];
@@ -650,6 +790,58 @@ unsafe fn update_wave_paths(state: &OverlayState) {
     }
 }
 
+unsafe fn update_loading_indicator(state: &OverlayState) {
+    let container = state.loading_container();
+    let bounds: NSRect = msg_send![container, bounds];
+    if bounds.size.width <= 0.0 {
+        return;
+    }
+
+    let track_layer = state.loading_track_layer();
+    let highlight_layer = state.loading_highlight_layer();
+
+    let thickness = LOADING_LINE_THICKNESS
+        .min(bounds.size.height)
+        .max(1.0);
+    let mid_y = bounds.size.height / 2.0;
+    let track_rect = NSRect::new(
+        NSPoint::new(0.0, mid_y - thickness / 2.0),
+        NSSize::new(bounds.size.width, thickness),
+    );
+    let _: () = msg_send![track_layer, setFrame: track_rect];
+    let _: () = msg_send![track_layer, setCornerRadius: thickness / 2.0];
+
+    let highlight_width = (bounds.size.width * LOADING_HIGHLIGHT_WIDTH_RATIO)
+        .max(thickness * 2.6)
+        .min(bounds.size.width.max(thickness * 2.6));
+    let progress = if matches!(state.phase_kind, OverlayPhase::Loading) {
+        state.loading_progress
+    } else {
+        0.0
+    };
+    let cycle = progress.rem_euclid(2.0);
+    let (phase, reverse) = if cycle <= 1.0 {
+        (cycle, false)
+    } else {
+        (cycle - 1.0, true)
+    };
+    let eased = ease_loading_progress(phase);
+    let normalized = if reverse { 1.0 - eased } else { eased };
+    let travel = bounds.size.width + highlight_width;
+    let x = normalized * travel - highlight_width;
+    let highlight_rect = NSRect::new(
+        NSPoint::new(x, mid_y - thickness / 2.0),
+        NSSize::new(highlight_width, thickness),
+    );
+    let _: () = msg_send![highlight_layer, setFrame: highlight_rect];
+    let _: () = msg_send![highlight_layer, setCornerRadius: thickness / 2.0];
+}
+
+fn ease_loading_progress(progress: f64) -> f64 {
+    let clamped = progress.clamp(0.0, 1.0);
+    0.5 - 0.5 * ((clamped * PI).cos())
+}
+
 fn animate_panel(opening: bool, animation_id: u64) {
     for step in 0..=ANIMATION_STEPS {
         let normalized = step as f64 / ANIMATION_STEPS as f64;
@@ -678,7 +870,7 @@ fn animate_panel(opening: bool, animation_id: u64) {
 }
 
 fn schedule_wave_frame(token: u64) {
-    Queue::main().exec_after(Duration::from_millis(16), move || {
+    Queue::main().exec_after(Duration::from_millis(LOADING_FRAME_INTERVAL_MS), move || {
         OVERLAY_STATE.with(|cell| {
             let mut entry = cell.borrow_mut();
             if let Some(state) = entry.as_mut() {
@@ -706,6 +898,37 @@ fn schedule_wave_frame(token: u64) {
             }
         });
     });
+}
+
+fn schedule_loading_frame(token: u64) {
+    Queue::main().exec_after(
+        Duration::from_millis(LOADING_FRAME_INTERVAL_MS),
+        move || {
+            OVERLAY_STATE.with(|cell| {
+                let mut entry = cell.borrow_mut();
+                if let Some(state) = entry.as_mut() {
+                    if state.loading_motion_id != token
+                        || !state.is_visible
+                        || !matches!(state.phase_kind, OverlayPhase::Loading)
+                    {
+                        return;
+                    }
+
+                    let mut progress = state.loading_progress + LOADING_PROGRESS_STEP;
+                    if progress >= 2.0 {
+                        progress -= 2.0;
+                    }
+                    state.loading_progress = progress;
+
+                    unsafe {
+                        update_loading_indicator(state);
+                    }
+
+                    schedule_loading_frame(token);
+                }
+            });
+        },
+    );
 }
 
 unsafe fn update_active_app_icon(state: &OverlayState) {

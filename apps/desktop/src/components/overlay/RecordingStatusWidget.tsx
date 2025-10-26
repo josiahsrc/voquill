@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, LinearProgress } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { AudioWaveform } from "../common/AudioWaveform";
 import { useAppStore } from "../../store";
@@ -35,14 +35,32 @@ export const RecordingStatusWidget = () => {
           height: theme.spacing(3),
         }}
       >
-        <AudioWaveform
-          levels={levels}
-          active={isListening}
-          processing={isProcessing}
-          strokeColor={theme.palette.common.white}
-          width={120}
-          height={36}
-        />
+        {isProcessing ? (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <LinearProgress sx={{ width: "100%", height: "2px" }} />
+          </Box>
+        ) : (
+          <AudioWaveform
+            levels={levels}
+            active={isListening}
+            processing={isProcessing}
+            strokeColor={theme.palette.common.white}
+            width={120}
+            height={36}
+            style={{
+              opacity: isProcessing ? 0 : 1,
+              transition: "opacity 160ms ease",
+            }}
+          />
+        )}
         <Box
           sx={{
             position: "absolute",
