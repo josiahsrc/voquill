@@ -224,6 +224,8 @@ jobs:
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      TAURI_LOG_LEVEL: debug
+      RUST_LOG: tauri_bundler=debug
     steps:
       - uses: actions/checkout@v4
         with:
@@ -272,6 +274,11 @@ jobs:
           p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
           p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
 
+      - name: Allow codesign access to private keys (CI keychain)
+        if: matrix.os == 'macos-14'
+        run: |
+          security set-key-partition-list -S apple-tool:,apple: -s -k "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain-db
+
       - name: Assert Developer ID Application identity is present
         if: matrix.os == 'macos-14'
         run: |
@@ -288,6 +295,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "$APPLE_API_KEY_BASE64" | base64 -d > AuthKey.p8
+          ls -l AuthKey.p8
         shell: bash
 
       - name: Verify Apple signing identity
@@ -332,6 +340,8 @@ jobs:
           APPLE_API_KEY: AuthKey.p8
           APPLE_API_KEY_ID: ${{ env.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
+          TAURI_LOG_LEVEL: ${{ env.TAURI_LOG_LEVEL }}
+          RUST_LOG: ${{ env.RUST_LOG }}
         with:
           projectPath: apps/desktop
           tauriScript: npm run --workspace desktop tauri
@@ -342,6 +352,28 @@ jobs:
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
+
+      - name: Staple and validate Gatekeeper (macOS)
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euo pipefail
+          ROOT="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle"
+          APP="$ROOT/macos/Voquill.app"
+          DMG="$(ls "$ROOT/dmg/"*.dmg | head -n1 || true)"
+          echo "Stapling app ticket"
+          xcrun stapler staple -v "$APP"
+          echo "Validate stapled app"
+          xcrun stapler validate "$APP"
+          echo "Gatekeeper assess app"
+          spctl --assess --type execute -vv "$APP"
+          if [[ -n "$DMG" ]]; then
+            echo "Stapling dmg ticket: $DMG"
+            xcrun stapler staple -v "$DMG"
+            echo "Validate stapled dmg"
+            xcrun stapler validate "$DMG"
+            echo "Gatekeeper assess dmg open"
+            spctl --assess --type open --context context:primary-signature -vv "$DMG"
+          fi
 
   update-channel:
     name: Update channel release asset
