@@ -1,7 +1,6 @@
 import { firemix } from "@firemix/client";
 import { Add, Close } from "@mui/icons-material";
 import {
-  Alert,
   Box,
   Button,
   CircularProgress,
@@ -15,8 +14,6 @@ import {
 } from "@mui/material";
 import type { Hotkey } from "@repo/types";
 import { showErrorSnackbar } from "../../actions/app.actions";
-import { loadHotkeys } from "../../actions/hotkey.actions";
-import { useAsyncEffect } from "../../hooks/async.hooks";
 import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { registerHotkeys } from "../../utils/app.utils";
@@ -151,7 +148,11 @@ const HotkeySetting = ({
           onClick={() => saveKey()}
         >
           <Typography variant="body2" fontWeight={500}>
-            {defaultCombos.length > 0 ? "Change hotkey" : hotkeys.length === 0 ? "Set hotkey" : "Add another"}
+            {defaultCombos.length > 0
+              ? "Change hotkey"
+              : hotkeys.length === 0
+                ? "Set hotkey"
+                : "Add another"}
           </Typography>
         </Button>
       </Stack>
@@ -165,18 +166,9 @@ export const ShortcutsDialog = () => {
     hotkeysStatus: state.settings.hotkeysStatus,
   }));
 
-  useAsyncEffect(async () => {
-    if (!open || hotkeysStatus !== "idle") {
-      return;
-    }
-
-    await loadHotkeys();
-  }, [open, hotkeysStatus]);
-
   const handleClose = () => {
     produceAppState((draft) => {
       draft.settings.shortcutsDialogOpen = false;
-      draft.settings.hotkeysStatus = "idle";
     });
   };
 
@@ -191,15 +183,6 @@ export const ShortcutsDialog = () => {
         >
           <CircularProgress size={24} />
         </Stack>
-      );
-    }
-
-    if (hotkeysStatus === "error") {
-      return (
-        <Alert severity="error" variant="outlined">
-          We could not load your hotkeys. Close and reopen the dialog to try
-          again.
-        </Alert>
       );
     }
 

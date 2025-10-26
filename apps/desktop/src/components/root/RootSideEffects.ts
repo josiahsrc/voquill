@@ -3,20 +3,21 @@ import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
+import { loadApiKeys } from "../../actions/api-key.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
+import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
+import { OverlayPhase } from "../../types/overlay.types";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
   type TranscriptionMetadata,
 } from "../../utils/transcription.utils";
-import { useAsyncEffect } from "../../hooks/async.hooks";
-import { OverlayPhase } from "../../types/overlay.types";
 import { getMyUser, getMyUserId } from "../../utils/user.utils";
 
 type StopRecordingResponse = {
@@ -44,7 +45,8 @@ export const RootSideEffects = () => {
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
 
   useAsyncEffect(async () => {
-    await loadHotkeys();
+    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys()];
+    await Promise.allSettled(loaders);
   }, []);
 
   const handleRecordedAudio = useCallback(async (payload: StopRecordingResponse) => {

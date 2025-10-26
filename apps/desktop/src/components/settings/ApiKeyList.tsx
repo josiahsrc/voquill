@@ -244,10 +244,6 @@ export const ApiKeyList = ({
   const [deletingApiKeyId, setDeletingApiKeyId] = useState<string | null>(null);
 
   useEffect(() => {
-    void loadApiKeys();
-  }, []);
-
-  useEffect(() => {
     if (apiKeys.length === 0) {
       return;
     }
