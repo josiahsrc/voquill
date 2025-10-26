@@ -318,6 +318,15 @@ jobs:
             exit 1
           fi
 
+      - name: Notary connectivity probe
+        if: matrix.os == 'macos-14'
+        run: |
+          xcrun notarytool history \
+            --key "${GITHUB_WORKSPACE}/AuthKey.p8" \
+            --key-id "${APPLE_API_KEY_ID}" \
+            --issuer "${APPLE_API_ISSUER}" \
+            --limit 1 --json
+
       - name: Turbo build desktop workspace
         env:
           MACOSX_DEPLOYMENT_TARGET: "13.3"
@@ -351,6 +360,34 @@ jobs:
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
+
+      - name: Staple artifacts
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euo pipefail
+          APP="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Voquill.app"
+          if [[ -d "$APP" ]]; then
+            xcrun stapler staple "$APP"
+            codesign --verify --deep --strict --verbose=2 "$APP"
+            spctl -a -vvv "$APP" || true
+          fi
+          DMG_DIR="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg"
+          if [[ -d "$DMG_DIR" ]]; then
+            find "$DMG_DIR" -type f -name "*.dmg" -maxdepth 1 -print0 | while IFS= read -r -d '' dmg; do
+              xcrun stapler staple "$dmg" || true
+              xcrun stapler validate "$dmg" || true
+            done
+          fi
+
+      - name: Gatekeeper assess
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euo pipefail
+          APP="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Voquill.app"
+          if [[ -d "$APP" ]]; then
+            spctl -a -vvv "$APP" | tee assess.txt
+            grep -q "source=Notarized Developer ID" assess.txt
+          fi
 
   update-channel:
     name: Update channel release asset
