@@ -284,7 +284,7 @@ jobs:
           fi
           output="$(security find-identity -v -p codesigning "${keychain_path}" || true)"
           printf '%s\n' "$output"
-          count="$(printf '%s\n' "$output" | grep -Ec '^[[:space:]][0-9]+\)')"
+          count="$(printf '%s\n' "$output" | awk '/^[[:space:]][0-9]+\)/ { count++ } END { print count+0 }')"
           if [[ "${count}" -eq 0 ]]; then
             echo "No valid code signing identities were imported into ${keychain_path}." >&2
             echo "Ensure APPLE_CERTIFICATE contains a base64-encoded .p12 export that includes the private key." >&2
