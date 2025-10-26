@@ -219,7 +219,6 @@ jobs:
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
       TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
       APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -328,9 +327,6 @@ jobs:
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
           MACOSX_DEPLOYMENT_TARGET: "13.3"
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
-          APPLE_ID: ${{ env.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ env.APPLE_ID_PASSWORD }}
-          APPLE_PASSWORD: ${{ env.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
           APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
           APPLE_API_KEY: AuthKey.p8
