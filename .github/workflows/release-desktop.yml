@@ -293,17 +293,6 @@ jobs:
             echo "Ensure APPLE_CERTIFICATE contains a base64-encoded .p12 export that includes the private key." >&2
             exit 1
           fi
-          developer_id_identity="$(printf '%s\n' "$output" | awk -F'"' '/Developer ID Application/ { print $2; exit }')"
-          if [[ -z "${developer_id_identity}" ]]; then
-            echo "No 'Developer ID Application' signing identity was found in ${keychain_path}." >&2
-            echo "Ensure APPLE_CERTIFICATE exports a Developer ID Application certificate from the Apple Developer portal (Keychain export as .p12)." >&2
-            exit 1
-          fi
-          echo "Detected Developer ID Application identity: ${developer_id_identity}"
-          {
-            echo "APPLE_SIGNING_IDENTITY=${developer_id_identity}"
-            echo "DETECTED_APPLE_SIGNING_IDENTITY=${developer_id_identity}"
-          } >> "$GITHUB_ENV"
 
       - name: Turbo build desktop workspace
         env:
