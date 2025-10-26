@@ -324,8 +324,7 @@ jobs:
           xcrun notarytool history \
             --key "${GITHUB_WORKSPACE}/AuthKey.p8" \
             --key-id "${APPLE_API_KEY_ID}" \
-            --issuer "${APPLE_API_ISSUER}" \
-            --limit 1 --json
+            --issuer "${APPLE_API_ISSUER}"
 
       - name: Turbo build desktop workspace
         env:
