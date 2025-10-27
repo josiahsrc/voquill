@@ -326,14 +326,6 @@ jobs:
             --key-id "${APPLE_API_KEY_ID}" \
             --issuer "${APPLE_API_ISSUER}"
 
-      - name: Turbo build desktop workspace
-        env:
-          MACOSX_DEPLOYMENT_TARGET: "13.3"
-          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
-          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
-          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
-        run: npm run build -- --filter=desktop...
-
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
         env:
@@ -344,7 +336,7 @@ jobs:
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
           APPLE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
           APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_KEY_ID: ${{ env.APPLE_API_KEY_ID }}
+          APPLE_API_KEY: ${{ env.APPLE_API_KEY_ID }}
           APPLE_API_KEY_PATH: ${{ github.workspace }}/AuthKey.p8
           APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
           TAURI_LOG_LEVEL: ${{ env.TAURI_LOG_LEVEL }}
@@ -359,34 +351,6 @@ jobs:
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
-
-      - name: Staple artifacts
-        if: matrix.os == 'macos-14'
-        run: |
-          set -euo pipefail
-          APP="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Voquill.app"
-          if [[ -d "$APP" ]]; then
-            xcrun stapler staple "$APP"
-            codesign --verify --deep --strict --verbose=2 "$APP"
-            spctl -a -vvv "$APP" || true
-          fi
-          DMG_DIR="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg"
-          if [[ -d "$DMG_DIR" ]]; then
-            find "$DMG_DIR" -type f -name "*.dmg" -maxdepth 1 -print0 | while IFS= read -r -d '' dmg; do
-              xcrun stapler staple "$dmg" || true
-              xcrun stapler validate "$dmg" || true
-            done
-          fi
-
-      - name: Gatekeeper assess
-        if: matrix.os == 'macos-14'
-        run: |
-          set -euo pipefail
-          APP="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/Voquill.app"
-          if [[ -d "$APP" ]]; then
-            spctl -a -vvv "$APP" | tee assess.txt
-            grep -q "source=Notarized Developer ID" assess.txt
-          fi
 
   update-channel:
     name: Update channel release asset
