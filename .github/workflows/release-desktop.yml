@@ -326,6 +326,14 @@ jobs:
             --key-id "${APPLE_API_KEY_ID}" \
             --issuer "${APPLE_API_ISSUER}"
 
+      - name: Turbo build desktop workspace
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "13.3"
+          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
+          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+        run: npm run build -- --filter=desktop...
+
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
         env:
