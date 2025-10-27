@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IDENTIFIER="com.voquill.desktop"
+FLAVOR=${1:-local}
+if [ "${FLAVOR}" = "local" ]; then
+  export IDENTIFIER="com.voquill.desktop.local"
+elif [ "${FLAVOR}" = "prod" ]; then
+  export IDENTIFIER="com.voquill.desktop"
+elif [ "${FLAVOR}" = "dev" ]; then
+  export IDENTIFIER="com.voquill.desktop.dev"
+else
+  echo "Unknown flavor: ${FLAVOR}" >&2
+  exit 1
+fi
+
 DB_FILENAME="voquill.db"
 
 resolve_config_dir() {

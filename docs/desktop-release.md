@@ -37,7 +37,6 @@ No additional storage credentials are required—the workflow publishes directly
 ## macOS Signing & Permissions
 - The desktop bundle enables Hardened Runtime with custom entitlements at `apps/desktop/src-tauri/macos/Voquill.entitlements`. Keep the Developer ID certificate in sync with these capabilities if you adjust microphone or keyboard monitoring features.
 - macOS now prompts for microphone access (`NSMicrophoneUsageDescription`) and input monitoring (`NSInputMonitoringUsageDescription`) the first time the app runs. These strings live in `apps/desktop/src-tauri/tauri.conf.json`.
-- Local `npm run build:mac` builds require `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_PRIVATE_KEY` to be present when `createUpdaterArtifacts` is enabled. Export the private key PEM generated during setup and load it into your shell (for example `export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.config/voquill/tauri-private-key.pem)"`).
 
 ## Verifying a Dev Release
 1. Push to `main` and wait for the **Release Desktop** workflow to finish.

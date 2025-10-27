@@ -326,6 +326,37 @@ jobs:
             --key-id "${APPLE_API_KEY_ID}" \
             --issuer "${APPLE_API_ISSUER}"
 
+      - name: Compute Tauri CLI args
+        id: tauri-cli-args
+        shell: bash
+        env:
+          MATRIX_ARGS: ${{ matrix.args }}
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+        run: |
+          set -euo pipefail
+          config_file="src-tauri/tauri.dev.conf.json"
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            config_file="src-tauri/tauri.prod.conf.json"
+          fi
+          config_flag="--config ${config_file}"
+          matrix_args="${MATRIX_ARGS}"
+          if [[ -z "${matrix_args}" ]]; then
+            combined_args="${config_flag}"
+          elif [[ "${matrix_args}" == *" -- "* ]]; then
+            before="${matrix_args%% -- *}"
+            after="${matrix_args#* -- }"
+            if [[ -n "${before}" ]]; then
+              combined_args="${before} ${config_flag} -- ${after}"
+            else
+              combined_args="${config_flag} -- ${after}"
+            fi
+          else
+            combined_args="${matrix_args} ${config_flag}"
+          fi
+          printf 'Using %s for %s release.\n' "${config_file}" "${RELEASE_ENV}"
+          echo "args=${combined_args}" >> "$GITHUB_OUTPUT"
+          echo "config=${config_file}" >> "$GITHUB_OUTPUT"
+
       - name: Turbo build desktop workspace
         env:
           MACOSX_DEPLOYMENT_TARGET: "13.3"
@@ -352,7 +383,7 @@ jobs:
         with:
           projectPath: apps/desktop
           tauriScript: npm run --workspace desktop tauri
-          args: ${{ matrix.args }}
+          args: ${{ steps.tauri-cli-args.outputs.args }}
           tagName: ${{ needs.metadata.outputs.tag_name }}
           releaseName: desktop${{ needs.metadata.outputs.release_suffix }} v${{ needs.metadata.outputs.version }}
           releaseBody: Automated ${{ needs.metadata.outputs.release_env }} channel build for version ${{ needs.metadata.outputs.version }}.

@@ -54,9 +54,7 @@
       ]
     },
     "updater": {
-      "endpoints": [
-        "https://github.com/josiahsrc/voquill/releases/download/desktop-prod/latest.json"
-      ],
+      "endpoints": [],
       "pubkey": "__UPDATER_PUBLIC_KEY__"
     }
   }

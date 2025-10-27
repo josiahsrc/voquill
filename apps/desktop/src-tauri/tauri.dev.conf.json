@@ -1,0 +1,11 @@
+{
+  "productName": "Voquill (dev)",
+  "identifier": "com.voquill.desktop.dev",
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/josiahsrc/voquill/releases/download/desktop-dev/latest.json"
+      ]
+    }
+  }
+}

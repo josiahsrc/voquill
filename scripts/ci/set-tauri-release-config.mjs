@@ -24,22 +24,16 @@ if (!repository) {
 const [owner, repo] = repository.split("/");
 if (!owner || !repo) {
   throw new Error(
-    `GITHUB_REPOSITORY must be in 'owner/repo' format (received '${repository}')`,
+    `GITHUB_REPOSITORY must be in 'owner/repo' format (received '${repository}')`
   );
 }
-
-const channelTag = releaseEnv === "prod" ? "desktop-prod" : "desktop-dev";
-const endpoint = new URL(
-  `${channelTag}/latest.json`,
-  `https://github.com/${owner}/${repo}/releases/download/`,
-).toString();
 
 const configPath = path.join(
   root,
   "apps",
   "desktop",
   "src-tauri",
-  "tauri.conf.json",
+  "tauri.conf.json"
 );
 
 const raw = fs.readFileSync(configPath, "utf8");
@@ -48,7 +42,6 @@ const data = JSON.parse(raw);
 data.version = version;
 data.plugins ??= {};
 data.plugins.updater ??= {};
-data.plugins.updater.endpoints = [endpoint];
 
 if (updaterPublicKeyInput) {
   data.plugins.updater.pubkey = updaterPublicKeyInput;
@@ -61,5 +54,5 @@ if (updaterPublicKeyInput) {
 fs.writeFileSync(configPath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 
 console.log(
-  `Updated tauri.conf.json with version ${version} for ${releaseEnv} release (endpoint ${endpoint}).`,
+  `Updated tauri.conf.json with version ${version} for ${releaseEnv} release.`
 );
