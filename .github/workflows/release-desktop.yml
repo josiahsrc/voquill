@@ -179,7 +179,7 @@ jobs:
     name: Build ${{ matrix.label }}
     needs: metadata
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 600
     permissions:
       contents: write
     strategy:
