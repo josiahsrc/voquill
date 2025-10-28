@@ -20,3 +20,4 @@
 
 ## Agent‑Specific Practices
 - Read the `docs` directory for more information about architecture, design patterns, tutorials, and conventions.
+- Do not run `turbo dev` or any command that hangs. Use `turbo build` instead so that you don't get stuck.
