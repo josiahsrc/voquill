@@ -1,6 +1,7 @@
 {
   "productName": "Voquill",
   "identifier": "com.voquill.desktop",
+  "mainBinaryName": "Voquill",
   "plugins": {
     "updater": {
       "endpoints": [
