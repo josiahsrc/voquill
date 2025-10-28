@@ -9,7 +9,6 @@ import { getAppState, produceAppState, useAppStore } from "../../store";
 import { getMyUserId } from "../../utils/user.utils";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { DictionaryRow } from "./DictionaryRow";
-import { DictionarySideEffects } from "./DictionarySideEffects";
 import { MenuPopoverBuilder } from "../common/MenuPopover";
 import { FindReplaceOutlined, SpellcheckOutlined } from "@mui/icons-material";
 
@@ -87,17 +86,14 @@ export default function DictionaryPage() {
   );
 
   return (
-    <>
-      <DictionarySideEffects />
-      <VirtualizedListPage
-        title="Dictionary"
-        subtitle="Voquill may misunderstand you on occasion. If you see certain words being missed frequently, you can define a replacement rule here to fix the spelling automatically."
-        action={addButton}
-        items={termIds}
-        computeItemKey={(id) => id}
-        heightMult={10}
-        renderItem={(id) => <DictionaryRow key={id} id={id} />}
-      />
-    </>
+    <VirtualizedListPage
+      title="Dictionary"
+      subtitle="Voquill may misunderstand you on occasion. If you see certain words being missed frequently, you can define a replacement rule here to fix the spelling automatically."
+      action={addButton}
+      items={termIds}
+      computeItemKey={(id) => id}
+      heightMult={10}
+      renderItem={(id) => <DictionaryRow key={id} id={id} />}
+    />
   );
 }

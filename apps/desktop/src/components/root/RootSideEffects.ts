@@ -19,6 +19,7 @@ import {
   type TranscriptionMetadata,
 } from "../../utils/transcription.utils";
 import { getMyUser, getMyUserId } from "../../utils/user.utils";
+import { loadDictionary } from "../../actions/dictionary.actions";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -45,7 +46,7 @@ export const RootSideEffects = () => {
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
 
   useAsyncEffect(async () => {
-    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys()];
+    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary()];
     await Promise.allSettled(loaders);
   }, []);
 
