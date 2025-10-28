@@ -3,6 +3,41 @@
 version = 4
 
 [[package]]
+name = "Voquill"
+version = "0.1.0"
+dependencies = [
+ "arboard",
+ "base64 0.21.7",
+ "block",
+ "cocoa",
+ "core-foundation 0.10.1",
+ "core-graphics 0.24.0",
+ "cpal",
+ "dispatch",
+ "enigo",
+ "hound",
+ "objc",
+ "rand 0.8.5",
+ "rdev",
+ "reqwest",
+ "rodio",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-process",
+ "tauri-plugin-sql",
+ "tauri-plugin-updater",
+ "thiserror 1.0.69",
+ "wgpu",
+ "whisper-rs",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1107,41 +1142,6 @@ dependencies = [
  "quote",
  "rustc_version",
  "syn 2.0.106",
-]
-
-[[package]]
-name = "desktop"
-version = "0.1.0"
-dependencies = [
- "arboard",
- "base64 0.21.7",
- "block",
- "cocoa",
- "core-foundation 0.10.1",
- "core-graphics 0.24.0",
- "cpal",
- "dispatch",
- "enigo",
- "hound",
- "objc",
- "rand 0.8.5",
- "rdev",
- "reqwest",
- "rodio",
- "serde",
- "serde_json",
- "sha2",
- "sqlx",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-process",
- "tauri-plugin-sql",
- "tauri-plugin-updater",
- "thiserror 1.0.69",
- "wgpu",
- "whisper-rs",
 ]
 
 [[package]]

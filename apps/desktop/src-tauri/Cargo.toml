@@ -1,7 +1,7 @@
 [package]
-name = "desktop"
+name = "Voquill"
 version = "0.1.0"
-description = "A Tauri App"
+description = "AI voice dictation"
 authors = ["you"]
 edition = "2021"
 
