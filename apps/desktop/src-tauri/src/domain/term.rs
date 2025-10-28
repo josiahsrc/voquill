@@ -8,5 +8,6 @@ pub struct Term {
     pub created_by_user_id: String,
     pub source_value: String,
     pub destination_value: String,
+    pub is_replacement: bool,
     pub is_deleted: bool,
 }

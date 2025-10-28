@@ -1,0 +1,2 @@
+ALTER TABLE terms
+ADD COLUMN is_replacement INTEGER NOT NULL DEFAULT 1;

@@ -17,6 +17,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
   const [destinationValue, setDestinationValue] = useState(
     term?.destinationValue ?? ""
   );
+  const isReplacement = term?.isReplacement ?? true;
 
   useEffect(() => {
     setSourceValue(term?.sourceValue ?? "");
@@ -108,26 +109,30 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
       <TextField
         variant="outlined"
         size="small"
-        placeholder="Original"
+        placeholder={isReplacement ? "Original" : "Glossary term"}
         value={sourceValue}
         onChange={handleFieldChange("source")}
         onBlur={handleCommit}
         sx={{ flex: 1 }}
         error={sourceValue.trim() === ""}
       />
-      <ArrowForwardRoundedIcon color="action" fontSize="small" />
-      <TextField
-        variant="outlined"
-        size="small"
-        placeholder="Replacement"
-        value={destinationValue}
-        onChange={handleFieldChange("destination")}
-        onBlur={handleCommit}
-        multiline
-        minRows={1}
-        sx={{ flex: 1 }}
-        error={destinationValue.trim() === ""}
-      />
+      {isReplacement ? (
+        <>
+          <ArrowForwardRoundedIcon color="action" fontSize="small" />
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Replacement"
+            value={destinationValue}
+            onChange={handleFieldChange("destination")}
+            onBlur={handleCommit}
+            multiline
+            minRows={1}
+            sx={{ flex: 1 }}
+            error={destinationValue.trim() === ""}
+          />
+        </>
+      ) : null}
       <IconButton
         aria-label={`Delete dictionary item ${term.sourceValue}`}
         onClick={handleDelete}

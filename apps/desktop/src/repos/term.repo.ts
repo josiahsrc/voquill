@@ -9,6 +9,7 @@ type LocalTerm = {
   createdByUserId: string;
   sourceValue: string;
   destinationValue: string;
+  isReplacement: boolean;
   isDeleted: boolean;
 };
 
@@ -18,6 +19,7 @@ const toLocalTerm = (term: Term): LocalTerm => ({
   createdByUserId: term.createdByUserId,
   sourceValue: term.sourceValue,
   destinationValue: term.destinationValue,
+  isReplacement: term.isReplacement,
   isDeleted: term.isDeleted,
 });
 
@@ -27,6 +29,7 @@ const fromLocalTerm = (term: LocalTerm): Term => ({
   createdByUserId: term.createdByUserId,
   sourceValue: term.sourceValue,
   destinationValue: term.destinationValue,
+  isReplacement: term.isReplacement,
   isDeleted: term.isDeleted,
 });
 

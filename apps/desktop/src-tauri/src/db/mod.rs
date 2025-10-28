@@ -24,6 +24,8 @@ pub const USER_AI_PREFERENCES_MIGRATION_SQL: &str =
     include_str!("migrations/010_user_ai_preferences.sql");
 pub const TRANSCRIPTION_INFERENCE_METADATA_MIGRATION_SQL: &str =
     include_str!("migrations/011_transcription_inference_metadata.sql");
+pub const TERMS_IS_REPLACEMENT_MIGRATION_SQL: &str =
+    include_str!("migrations/012_terms_is_replacement.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -97,6 +99,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 12,
             description: "add_transcription_inference_metadata",
             sql: TRANSCRIPTION_INFERENCE_METADATA_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 13,
+            description: "add_terms_is_replacement",
+            sql: TERMS_IS_REPLACEMENT_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

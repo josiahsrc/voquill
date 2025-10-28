@@ -10,17 +10,20 @@ import { getMyUserId } from "../../utils/user.utils";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { DictionaryRow } from "./DictionaryRow";
 import { DictionarySideEffects } from "./DictionarySideEffects";
+import { MenuPopoverBuilder } from "../common/MenuPopover";
+import { FindReplaceOutlined, SpellcheckOutlined } from "@mui/icons-material";
 
 export default function DictionaryPage() {
   const termIds = useAppStore((state) => state.dictionary.termIds);
 
-  const handleAddTerm = useCallback(async () => {
+  const handleAddTerm = useCallback(async (replacement: boolean) => {
     const newTerm: Term = {
       id: firemix().id(),
       createdAt: firemix().now(),
       createdByUserId: getMyUserId(getAppState()),
       sourceValue: "",
       destinationValue: "",
+      isReplacement: replacement,
       isDeleted: false,
     };
 
@@ -45,20 +48,51 @@ export default function DictionaryPage() {
     }
   }, []);
 
+  const addButton = (
+    <MenuPopoverBuilder
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      transformOrigin={{ vertical: "top", horizontal: "right" }}
+      items={[
+        {
+          kind: "listItem",
+          title: "Glossary term",
+          onClick: ({ close }) => {
+            handleAddTerm(false);
+            close();
+          },
+          leading: <SpellcheckOutlined />,
+        },
+        {
+          kind: "listItem",
+          title: "Replacement rule",
+          onClick: ({ close }) => {
+            handleAddTerm(true);
+            close();
+          },
+          leading: <FindReplaceOutlined />,
+        },
+      ]}
+    >
+      {(args) => (
+        <Button
+          variant="text"
+          startIcon={<AddRoundedIcon />}
+          onClick={args.open}
+          ref={args.ref}
+        >
+          Add
+        </Button>
+      )}
+    </MenuPopoverBuilder>
+  );
+
   return (
     <>
       <DictionarySideEffects />
       <VirtualizedListPage
         title="Dictionary"
         subtitle="Voquill may misunderstand you on occasion. If you see certain words being missed frequently, you can define a replacement rule here to fix the spelling automatically."
-        action={
-          <Button
-            startIcon={<AddRoundedIcon />}
-            onClick={handleAddTerm}
-          >
-            Add
-          </Button>
-        }
+        action={addButton}
         items={termIds}
         computeItemKey={(id) => id}
         heightMult={10}

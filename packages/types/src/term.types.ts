@@ -6,5 +6,6 @@ export type Term = {
   createdByUserId: string;
   sourceValue: string;
   destinationValue: string;
+  isReplacement: boolean;
   isDeleted: boolean;
 };
