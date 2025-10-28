@@ -10,6 +10,14 @@ const {
   title = "Voquill",
   description = "Type four times faster with a voice-first keyboard.",
 } = Astro.props as Props;
+
+const canonicalHref = Astro.site
+  ? new URL(Astro.url.pathname + Astro.url.search, Astro.site).toString()
+  : Astro.url.toString();
+
+const socialImage = Astro.site
+  ? new URL("/docs.png", Astro.site).toString()
+  : "/docs.png";
 ---
 
 <!DOCTYPE html>
@@ -19,6 +27,17 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalHref} />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalHref} />
+    <meta property="og:image" content={socialImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
     <link rel="icon" type="image/svg+xml" href="/app-icon.svg" />
     <link rel="shortcut icon" href="/app-icon.svg" />
     <link rel="apple-touch-icon" href="/app-icon.svg" />
@@ -27,4 +46,3 @@ const {
     <slot />
   </body>
 </html>
-
