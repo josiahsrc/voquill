@@ -200,6 +200,7 @@ jobs:
             tauri_platform: linux
             node_platform: linux
             artifact_name: desktop-linux
+            args: "--features linux-gpu"
           - label: Windows
             os: windows-latest
             args: ""
