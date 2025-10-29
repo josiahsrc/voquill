@@ -195,7 +195,6 @@ jobs:
             artifact_name: desktop-macos
           - label: Linux
             os: ubuntu-22.04
-            args: ""
             rust_targets: ""
             tauri_platform: linux
             node_platform: linux
