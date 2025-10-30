@@ -5,7 +5,7 @@ use cocoa::foundation::{NSAutoreleasePool, NSString};
 use objc::{class, msg_send, sel, sel_impl};
 use std::sync::{Arc, Condvar, Mutex};
 
-type Boolean = u8;
+type IOHIDAccessType = i32;
 
 const AUTH_STATUS_NOT_DETERMINED: i64 = 0;
 const AUTH_STATUS_RESTRICTED: i64 = 1;
@@ -13,15 +13,22 @@ const AUTH_STATUS_DENIED: i64 = 2;
 const AUTH_STATUS_AUTHORIZED: i64 = 3;
 
 const IO_HID_REQUEST_TYPE_LISTEN_EVENT: u32 = 1;
+const IO_HID_ACCESS_TYPE_GRANTED: IOHIDAccessType = 0;
+const IO_HID_ACCESS_TYPE_DENIED: IOHIDAccessType = 1;
+const IO_HID_ACCESS_TYPE_UNKNOWN: IOHIDAccessType = 2;
 
 #[link(name = "IOKit", kind = "framework")]
 extern "C" {
-    fn IOHIDCheckAccess(access_type: u32) -> Boolean;
-    fn IOHIDRequestAccess(access_type: u32) -> Boolean;
+    fn IOHIDCheckAccess(access_type: u32) -> IOHIDAccessType;
+    fn IOHIDRequestAccess(access_type: u32) -> bool;
 }
 
-fn boolean_to_bool(value: Boolean) -> bool {
-    value != 0
+fn access_type_to_state(access_type: IOHIDAccessType) -> PermissionState {
+    match access_type {
+        IO_HID_ACCESS_TYPE_GRANTED => PermissionState::Authorized,
+        IO_HID_ACCESS_TYPE_DENIED => PermissionState::Denied,
+        _ => PermissionState::NotDetermined,
+    }
 }
 
 pub fn ensure_microphone_permission() -> Result<PermissionStatus, String> {
@@ -93,19 +100,16 @@ pub fn ensure_microphone_permission() -> Result<PermissionStatus, String> {
 
 pub fn ensure_input_monitor_permission() -> Result<PermissionStatus, String> {
     unsafe {
-        let initial_granted = boolean_to_bool(IOHIDCheckAccess(IO_HID_REQUEST_TYPE_LISTEN_EVENT));
+        let initial_access = IOHIDCheckAccess(IO_HID_REQUEST_TYPE_LISTEN_EVENT);
         let mut prompt_shown = false;
 
-        if !initial_granted {
-            prompt_shown = boolean_to_bool(IOHIDRequestAccess(IO_HID_REQUEST_TYPE_LISTEN_EVENT));
+        if initial_access != IO_HID_ACCESS_TYPE_GRANTED {
+            prompt_shown = initial_access == IO_HID_ACCESS_TYPE_UNKNOWN;
+            let _ = IOHIDRequestAccess(IO_HID_REQUEST_TYPE_LISTEN_EVENT);
         }
 
-        let granted = boolean_to_bool(IOHIDCheckAccess(IO_HID_REQUEST_TYPE_LISTEN_EVENT));
-        let state = if granted {
-            PermissionState::Authorized
-        } else {
-            PermissionState::Denied
-        };
+        let final_access = IOHIDCheckAccess(IO_HID_REQUEST_TYPE_LISTEN_EVENT);
+        let state = access_type_to_state(final_access);
 
         Ok(PermissionStatus {
             kind: PermissionKind::InputMonitoring,

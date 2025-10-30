@@ -4,16 +4,17 @@ import {
   PendingOutlined,
 } from "@mui/icons-material";
 import {
+  Box,
+  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
   Stack,
   Typography,
-  Box,
-  Chip,
 } from "@mui/material";
 import { useMemo } from "react";
 import { useAppStore } from "../../store";
+import type { PermissionKind } from "../../types/permission.types";
 import {
   REQUIRED_PERMISSIONS,
   describePermissionState,
@@ -21,8 +22,6 @@ import {
   getPermissionLabel,
   isPermissionAuthorized,
 } from "../../utils/permission.utils";
-import type { PermissionKind } from "../../types/permission.types";
-import { getIsDevMode } from "../../utils/env.utils";
 
 const ICON_SIZE = 28;
 
@@ -120,10 +119,6 @@ export const PermissionsDialog = () => {
       return;
     }
   };
-
-  if (getIsDevMode()) {
-    return null;
-  }
 
   return (
     <Dialog
