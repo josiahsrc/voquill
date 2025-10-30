@@ -1,9 +1,11 @@
 import {
   CheckCircleOutline,
   HighlightOff,
+  OpenInNew,
   PendingOutlined,
 } from "@mui/icons-material";
 import {
+  Button,
   Box,
   Chip,
   Dialog,
@@ -12,8 +14,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useMemo } from "react";
-import { useAppStore } from "../../store";
+import { useCallback, useMemo, useState } from "react";
+import { produceAppState, useAppStore } from "../../store";
 import type { PermissionKind } from "../../types/permission.types";
 import {
   REQUIRED_PERMISSIONS,
@@ -21,12 +23,15 @@ import {
   getPermissionInstructions,
   getPermissionLabel,
   isPermissionAuthorized,
+  requestAccessibilityPermission,
+  requestMicrophonePermission,
 } from "../../utils/permission.utils";
 
 const ICON_SIZE = 28;
 
 const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
   const status = useAppStore((state) => state.permissions[kind]);
+  const [requesting, setRequesting] = useState(false);
 
   const { icon, color, chipColor, chipLabel } = useMemo(() => {
     if (!status) {
@@ -62,6 +67,31 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
   const description = status
     ? describePermissionState(status.state)
     : "Awaiting status";
+  const requestingDisabled = status
+    ? isPermissionAuthorized(status.state)
+    : false;
+
+  const handleRequest = useCallback(async () => {
+    if (requesting || requestingDisabled) {
+      return;
+    }
+
+    setRequesting(true);
+    try {
+      const requestFn =
+        kind === "microphone"
+          ? requestMicrophonePermission
+          : requestAccessibilityPermission;
+      const result = await requestFn();
+      produceAppState((draft) => {
+        draft.permissions[kind] = result;
+      });
+    } catch (error) {
+      console.error(`Failed to request ${kind} permission`, error);
+    } finally {
+      setRequesting(false);
+    }
+  }, [kind, requesting, requestingDisabled]);
 
   return (
     <Stack
@@ -83,6 +113,15 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
           {instructions}
         </Typography>
       </Stack>
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => void handleRequest()}
+        disabled={requesting || requestingDisabled}
+        endIcon={<OpenInNew />}
+      >
+        Enable
+      </Button>
     </Stack>
   );
 };

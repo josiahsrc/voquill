@@ -8,15 +8,23 @@ import type {
 
 export const REQUIRED_PERMISSIONS: PermissionKind[] = [
   "microphone",
-  "input-monitoring",
+  "accessibility",
 ];
 
-export const fetchMicrophonePermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("ensure_microphone_permission");
+export const checkMicrophonePermission = async (): Promise<PermissionStatus> => {
+  return invoke<PermissionStatus>("check_microphone_permission");
 };
 
-export const fetchInputMonitoringPermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("ensure_input_monitor_permission");
+export const requestMicrophonePermission = async (): Promise<PermissionStatus> => {
+  return invoke<PermissionStatus>("request_microphone_permission");
+};
+
+export const checkAccessibilityPermission = async (): Promise<PermissionStatus> => {
+  return invoke<PermissionStatus>("check_accessibility_permission");
+};
+
+export const requestAccessibilityPermission = async (): Promise<PermissionStatus> => {
+  return invoke<PermissionStatus>("request_accessibility_permission");
 };
 
 export const isPermissionAuthorized = (state: PermissionState): boolean => {
@@ -27,8 +35,8 @@ export const getPermissionLabel = (kind: PermissionKind): string => {
   switch (kind) {
     case "microphone":
       return "Microphone access";
-    case "input-monitoring":
-      return "Keyboard monitoring";
+    case "accessibility":
+      return "Accessibility control";
     default:
       return kind;
   }
@@ -48,12 +56,12 @@ export const getPermissionInstructions = (kind: PermissionKind): string => {
   }
 
   if (platform === "macos") {
-    return "System Settings → Privacy & Security → Input Monitoring";
+    return "System Settings → Privacy & Security → Accessibility";
   }
   if (platform === "windows") {
-    return "Enable Voquill under Settings → Privacy & security → Keyboard.";
+    return "Enable Voquill under Settings → Accessibility → Interaction → Keyboard.";
   }
-  return "Enable global keyboard access in your desktop environment settings.";
+  return "Allow accessibility control in your desktop environment settings.";
 };
 
 export const describePermissionState = (state: PermissionState): string => {

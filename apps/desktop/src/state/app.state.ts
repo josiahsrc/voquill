@@ -57,7 +57,7 @@ export const INITIAL_APP_STATE: AppState = {
   audioLevels: [],
   permissions: {
     microphone: null,
-    "input-monitoring": null,
+    accessibility: null,
   },
   hotkeyById: {},
   currentUserId: null,

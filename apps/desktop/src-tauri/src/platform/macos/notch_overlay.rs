@@ -561,8 +561,7 @@ unsafe fn configure_overlay_contents(
     let _: () = msg_send![loading_layer, addSublayer: track_layer];
 
     let highlight_layer: id = msg_send![class!(CAGradientLayer), layer];
-    let highlight_clear: id =
-        NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 1.0, 1.0, 1.0, 0.0);
+    let highlight_clear: id = NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 1.0, 1.0, 1.0, 0.0);
     let highlight_soft: id = NSColor::colorWithSRGBRed_green_blue_alpha_(
         nil,
         1.0,
@@ -800,9 +799,7 @@ unsafe fn update_loading_indicator(state: &OverlayState) {
     let track_layer = state.loading_track_layer();
     let highlight_layer = state.loading_highlight_layer();
 
-    let thickness = LOADING_LINE_THICKNESS
-        .min(bounds.size.height)
-        .max(1.0);
+    let thickness = LOADING_LINE_THICKNESS.min(bounds.size.height).max(1.0);
     let mid_y = bounds.size.height / 2.0;
     let track_rect = NSRect::new(
         NSPoint::new(0.0, mid_y - thickness / 2.0),
@@ -870,34 +867,38 @@ fn animate_panel(opening: bool, animation_id: u64) {
 }
 
 fn schedule_wave_frame(token: u64) {
-    Queue::main().exec_after(Duration::from_millis(LOADING_FRAME_INTERVAL_MS), move || {
-        OVERLAY_STATE.with(|cell| {
-            let mut entry = cell.borrow_mut();
-            if let Some(state) = entry.as_mut() {
-                if state.wave_motion_id != token || !state.is_visible {
-                    return;
-                }
+    Queue::main().exec_after(
+        Duration::from_millis(LOADING_FRAME_INTERVAL_MS),
+        move || {
+            OVERLAY_STATE.with(|cell| {
+                let mut entry = cell.borrow_mut();
+                if let Some(state) = entry.as_mut() {
+                    if state.wave_motion_id != token || !state.is_visible {
+                        return;
+                    }
 
-                state.current_level += (state.target_level - state.current_level) * LEVEL_SMOOTHING;
-                if state.current_level < 0.0002 {
-                    state.current_level = 0.0;
-                }
-                state.target_level *= TARGET_DECAY_PER_FRAME;
-                if state.target_level < 0.0005 {
-                    state.target_level = 0.0;
-                }
+                    state.current_level +=
+                        (state.target_level - state.current_level) * LEVEL_SMOOTHING;
+                    if state.current_level < 0.0002 {
+                        state.current_level = 0.0;
+                    }
+                    state.target_level *= TARGET_DECAY_PER_FRAME;
+                    if state.target_level < 0.0005 {
+                        state.target_level = 0.0;
+                    }
 
-                let advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * state.current_level;
-                state.phase = (state.phase + advance) % TAU;
+                    let advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * state.current_level;
+                    state.phase = (state.phase + advance) % TAU;
 
-                unsafe {
-                    update_wave_paths(state);
+                    unsafe {
+                        update_wave_paths(state);
+                    }
+
+                    schedule_wave_frame(token);
                 }
-
-                schedule_wave_frame(token);
-            }
-        });
-    });
+            });
+        },
+    );
 }
 
 fn schedule_loading_frame(token: u64) {

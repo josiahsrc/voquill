@@ -140,13 +140,23 @@ pub fn list_gpus() -> Vec<crate::system::gpu::GpuAdapterInfo> {
 }
 
 #[tauri::command]
-pub fn ensure_microphone_permission() -> Result<crate::domain::PermissionStatus, String> {
-    crate::platform::permissions::ensure_microphone_permission()
+pub fn check_microphone_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::check_microphone_permission()
 }
 
 #[tauri::command]
-pub fn ensure_input_monitor_permission() -> Result<crate::domain::PermissionStatus, String> {
-    crate::platform::permissions::ensure_input_monitor_permission()
+pub fn request_microphone_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::request_microphone_permission()
+}
+
+#[tauri::command]
+pub fn check_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::check_accessibility_permission()
+}
+
+#[tauri::command]
+pub fn request_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::request_accessibility_permission()
 }
 
 #[tauri::command]
