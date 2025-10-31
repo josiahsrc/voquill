@@ -21,7 +21,7 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
                     SetForegroundWindow(hwnd);
                     SetWindowPos(
                         hwnd,
-                        HWND_TOPMOST,
+                        Some(HWND_TOPMOST),
                         0,
                         0,
                         0,
@@ -30,7 +30,7 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
                     );
                     SetWindowPos(
                         hwnd,
-                        HWND_NOTOPMOST,
+                        Some(HWND_NOTOPMOST),
                         0,
                         0,
                         0,
