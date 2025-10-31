@@ -2,8 +2,8 @@ use std::sync::mpsc;
 use tauri::WebviewWindow;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, SetActiveWindow, SetFocus, SetForegroundWindow, SetWindowPos, ShowWindow,
-    HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW,
+    BringWindowToTop, SetForegroundWindow, SetWindowPos, ShowWindow, HWND_NOTOPMOST, HWND_TOPMOST,
+    SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW,
 };
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
@@ -19,8 +19,6 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
                     ShowWindow(hwnd, SW_RESTORE);
                     ShowWindow(hwnd, SW_SHOW);
                     SetForegroundWindow(hwnd);
-                    SetActiveWindow(hwnd);
-                    SetFocus(hwnd);
                     SetWindowPos(
                         hwnd,
                         HWND_TOPMOST,
