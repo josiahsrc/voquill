@@ -18,6 +18,14 @@ fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
         audio,
         model_size: row.try_get::<Option<String>, _>("model_size")?,
         inference_device: row.try_get::<Option<String>, _>("inference_device")?,
+        raw_transcript: row.try_get::<Option<String>, _>("raw_transcript")?,
+        transcription_prompt: row.try_get::<Option<String>, _>("transcription_prompt")?,
+        post_process_prompt: row.try_get::<Option<String>, _>("post_process_prompt")?,
+        transcription_api_key_id: row.try_get::<Option<String>, _>("transcription_api_key_id")?,
+        post_process_api_key_id: row.try_get::<Option<String>, _>("post_process_api_key_id")?,
+        transcription_mode: row.try_get::<Option<String>, _>("transcription_mode")?,
+        post_process_mode: row.try_get::<Option<String>, _>("post_process_mode")?,
+        post_process_device: row.try_get::<Option<String>, _>("post_process_device")?,
     })
 }
 
@@ -33,9 +41,17 @@ pub async fn insert_transcription(
              audio_path,
              audio_duration_ms,
              model_size,
-             inference_device
+             inference_device,
+             raw_transcript,
+             transcription_prompt,
+             post_process_prompt,
+             transcription_api_key_id,
+             post_process_api_key_id,
+             transcription_mode,
+             post_process_mode,
+             post_process_device
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
     )
     .bind(&transcription.id)
     .bind(&transcription.transcript)
@@ -49,6 +65,14 @@ pub async fn insert_transcription(
     .bind(transcription.audio.as_ref().map(|audio| audio.duration_ms))
     .bind(transcription.model_size.as_deref())
     .bind(transcription.inference_device.as_deref())
+    .bind(transcription.raw_transcript.as_deref())
+    .bind(transcription.transcription_prompt.as_deref())
+    .bind(transcription.post_process_prompt.as_deref())
+    .bind(transcription.transcription_api_key_id.as_deref())
+    .bind(transcription.post_process_api_key_id.as_deref())
+    .bind(transcription.transcription_mode.as_deref())
+    .bind(transcription.post_process_mode.as_deref())
+    .bind(transcription.post_process_device.as_deref())
     .execute(&pool)
     .await?;
 
@@ -67,7 +91,15 @@ pub async fn fetch_transcriptions(
                 audio_path,
                 audio_duration_ms,
                 model_size,
-                inference_device
+                inference_device,
+                raw_transcript,
+                transcription_prompt,
+                post_process_prompt,
+                transcription_api_key_id,
+                post_process_api_key_id,
+                transcription_mode,
+                post_process_mode,
+                post_process_device
          FROM transcriptions
          ORDER BY timestamp DESC
          LIMIT ?1 OFFSET ?2",
@@ -97,7 +129,15 @@ pub async fn update_transcription(
              audio_path = ?4,
              audio_duration_ms = ?5,
              model_size = ?6,
-             inference_device = ?7
+             inference_device = ?7,
+             raw_transcript = ?8,
+             transcription_prompt = ?9,
+             post_process_prompt = ?10,
+             transcription_api_key_id = ?11,
+             post_process_api_key_id = ?12,
+             transcription_mode = ?13,
+             post_process_mode = ?14,
+             post_process_device = ?15
          WHERE id = ?1",
     )
     .bind(&transcription.id)
@@ -112,6 +152,14 @@ pub async fn update_transcription(
     .bind(transcription.audio.as_ref().map(|audio| audio.duration_ms))
     .bind(transcription.model_size.as_deref())
     .bind(transcription.inference_device.as_deref())
+    .bind(transcription.raw_transcript.as_deref())
+    .bind(transcription.transcription_prompt.as_deref())
+    .bind(transcription.post_process_prompt.as_deref())
+    .bind(transcription.transcription_api_key_id.as_deref())
+    .bind(transcription.post_process_api_key_id.as_deref())
+    .bind(transcription.transcription_mode.as_deref())
+    .bind(transcription.post_process_mode.as_deref())
+    .bind(transcription.post_process_device.as_deref())
     .execute(&pool)
     .await?;
 
@@ -122,7 +170,15 @@ pub async fn update_transcription(
                 audio_path,
                 audio_duration_ms,
                 model_size,
-                inference_device
+                inference_device,
+                raw_transcript,
+                transcription_prompt,
+                post_process_prompt,
+                transcription_api_key_id,
+                post_process_api_key_id,
+                transcription_mode,
+                post_process_mode,
+                post_process_device
          FROM transcriptions
          WHERE id = ?1",
     )

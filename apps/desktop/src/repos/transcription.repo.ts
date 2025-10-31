@@ -14,6 +14,14 @@ type LocalTranscription = {
   audio?: LocalTranscriptionAudio | null;
   modelSize?: string | null;
   inferenceDevice?: string | null;
+  rawTranscript?: string | null;
+  transcriptionPrompt?: string | null;
+  postProcessPrompt?: string | null;
+  transcriptionApiKeyId?: string | null;
+  postProcessApiKeyId?: string | null;
+  transcriptionMode?: "local" | "api" | null;
+  postProcessMode?: "local" | "api" | null;
+  postProcessDevice?: string | null;
 };
 
 export type TranscriptionAudioData = {
@@ -40,6 +48,14 @@ const toLocalTranscription = (
     : undefined,
   modelSize: transcription.modelSize ?? null,
   inferenceDevice: transcription.inferenceDevice ?? null,
+  rawTranscript: transcription.rawTranscript ?? null,
+  transcriptionPrompt: transcription.transcriptionPrompt ?? null,
+  postProcessPrompt: transcription.postProcessPrompt ?? null,
+  transcriptionApiKeyId: transcription.transcriptionApiKeyId ?? null,
+  postProcessApiKeyId: transcription.postProcessApiKeyId ?? null,
+  transcriptionMode: transcription.transcriptionMode ?? null,
+  postProcessMode: transcription.postProcessMode ?? null,
+  postProcessDevice: transcription.postProcessDevice ?? null,
 });
 
 const fromLocalTranscription = (
@@ -58,6 +74,14 @@ const fromLocalTranscription = (
     : undefined,
   modelSize: transcription.modelSize ?? undefined,
   inferenceDevice: transcription.inferenceDevice ?? undefined,
+  rawTranscript: transcription.rawTranscript ?? undefined,
+  transcriptionPrompt: transcription.transcriptionPrompt ?? undefined,
+  postProcessPrompt: transcription.postProcessPrompt ?? undefined,
+  transcriptionApiKeyId: transcription.transcriptionApiKeyId ?? undefined,
+  postProcessApiKeyId: transcription.postProcessApiKeyId ?? undefined,
+  transcriptionMode: transcription.transcriptionMode ?? undefined,
+  postProcessMode: transcription.postProcessMode ?? undefined,
+  postProcessDevice: transcription.postProcessDevice ?? undefined,
 });
 
 export abstract class BaseTranscriptionRepo extends BaseRepo {
