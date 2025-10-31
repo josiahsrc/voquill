@@ -4,16 +4,20 @@ import { type GpuInfo } from "../types/gpu.types";
 
 export const useSupportedDiscreteGpus = (active: boolean) => {
   const [gpus, setGpus] = useState<GpuInfo[]>([]);
+  const [loading, setLoading] = useState(() => active);
 
   useEffect(() => {
     if (!active) {
       setGpus([]);
+      setLoading(false);
       return;
     }
 
     let cancelled = false;
 
     const loadGpus = async () => {
+      setLoading(true);
+
       try {
         const gpuList = await invoke<GpuInfo[]>("list_gpus");
         const supported = gpuList.filter(
@@ -28,6 +32,10 @@ export const useSupportedDiscreteGpus = (active: boolean) => {
         if (!cancelled) {
           setGpus([]);
         }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
@@ -38,6 +46,5 @@ export const useSupportedDiscreteGpus = (active: boolean) => {
     };
   }, [active]);
 
-  return gpus;
+  return { gpus, loading };
 };
-

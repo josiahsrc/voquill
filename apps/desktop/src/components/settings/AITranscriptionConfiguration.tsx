@@ -51,9 +51,13 @@ export const AITranscriptionConfiguration = () => {
   const transcription = useAppStore(
     (state) => state.settings.aiTranscription
   );
-  const gpus = useSupportedDiscreteGpus(true);
+  const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(true);
 
   useEffect(() => {
+    if (gpusLoading) {
+      return;
+    }
+
     if (gpus.length === 0) {
       if (transcription.device !== CPU_DEVICE_VALUE) {
         produceAppState((draft) => {
@@ -74,7 +78,7 @@ export const AITranscriptionConfiguration = () => {
         });
       }
     }
-  }, [gpus, transcription.device]);
+  }, [gpus, gpusLoading, transcription.device]);
 
   const deviceOptions = useMemo(
     () => [
