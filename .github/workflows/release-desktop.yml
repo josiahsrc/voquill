@@ -38,6 +38,8 @@ jobs:
       channel_release_tag: ${{ steps.meta.outputs.channel_release_tag }}
       version_path: ${{ steps.meta.outputs.version_path }}
       dev_tag_name: ${{ steps.meta.outputs.dev_tag_name }}
+      release_notes: ${{ steps.release_notes.outputs.release-notes }}
+      release_body: ${{ steps.release_body.outputs.release_body }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -72,6 +74,7 @@ jobs:
           INPUT_VERSION="${INPUT_VERSION:-}"
 
           LAST_DEV_TAG="$(git tag --list 'desktop-dev-v*' --sort=-v:refname | head -n 1)"
+          LAST_PROD_TAG="$(git tag --list 'desktop-v*' --sort=-v:refname | head -n 1)"
 
           if [[ "${RELEASE_ENV}" == "dev" ]]; then
             if [[ -n "${INPUT_VERSION}" ]]; then
@@ -133,6 +136,19 @@ jobs:
 
           VERSION_PATH="desktop/${RELEASE_ENV}/${VERSION}"
           if [[ "${RELEASE_ENV}" == "dev" ]]; then
+            PREVIOUS_TAG="${LAST_DEV_TAG}"
+          else
+            PREVIOUS_TAG="${LAST_PROD_TAG}"
+          fi
+          if [[ -n "${PREVIOUS_TAG}" ]]; then
+            RELEASE_NOTES_FROM="${PREVIOUS_TAG}"
+          else
+            ROOT_COMMIT="$(git rev-list --max-parents=0 "${COMMIT_SHA}" | tail -n 1)"
+            RELEASE_NOTES_FROM="${ROOT_COMMIT}"
+          fi
+          RELEASE_NOTES_TO="${COMMIT_SHA}"
+
+          if [[ "${RELEASE_ENV}" == "dev" ]]; then
             CHANNEL_RELEASE_TAG="desktop-dev"
             RELEASE_FLAVOR="dev"
             RELEASE_SUFFIX="-dev"
@@ -152,7 +168,39 @@ jobs:
             echo "version_path=${VERSION_PATH}"
             echo "channel_release_tag=${CHANNEL_RELEASE_TAG}"
             echo "release_flavor=${RELEASE_FLAVOR}"
+            echo "release_notes_from=${RELEASE_NOTES_FROM}"
+            echo "release_notes_to=${RELEASE_NOTES_TO}"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        id: release_notes
+        uses: josiahsrc/ai-release-notes-builder@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          prompt: |
+            Keep it short and high level, focusing on bug fixes and features. 
+            Use a single list of bullet points. Use emojis here and there. No 
+            header, just bullet points.
+          from: ${{ steps.meta.outputs.release_notes_from }}
+          to: ${{ steps.meta.outputs.release_notes_to }}
+
+      - name: Compose release body
+        id: release_body
+        env:
+          RELEASE_NOTES: ${{ steps.release_notes.outputs['release-notes'] }}
+          RELEASE_ENV: ${{ steps.meta.outputs.release_env }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          default_body="Automated ${RELEASE_ENV} channel build for version ${VERSION}."
+          notes="${RELEASE_NOTES}"
+          if [[ -n "${notes}" ]]; then
+            body="${notes}"
+          else
+            body="${default_body}"
+          fi
+          printf 'release_body<<EOF\n%s\nEOF\n' "$body" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag
         uses: actions/github-script@v7
@@ -406,7 +454,7 @@ jobs:
           args: ${{ steps.tauri-cli-args.outputs.args }}
           tagName: ${{ needs.metadata.outputs.tag_name }}
           releaseName: desktop${{ needs.metadata.outputs.release_suffix }} v${{ needs.metadata.outputs.version }}
-          releaseBody: Automated ${{ needs.metadata.outputs.release_env }} channel build for version ${{ needs.metadata.outputs.version }}.
+          releaseBody: ${{ needs.metadata.outputs.release_body }}
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
