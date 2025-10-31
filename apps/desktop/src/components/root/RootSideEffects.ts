@@ -21,6 +21,10 @@ import {
 import { getMyUser, getMyUserId } from "../../utils/user.utils";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
+import {
+  consumeSurfaceWindowFlag,
+  surfaceMainWindow,
+} from "../../utils/window.utils";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 
 type StopRecordingResponse = {
@@ -50,6 +54,12 @@ export const RootSideEffects = () => {
   useAsyncEffect(async () => {
     const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary()];
     await Promise.allSettled(loaders);
+  }, []);
+
+  useAsyncEffect(async () => {
+    if (consumeSurfaceWindowFlag()) {
+      await surfaceMainWindow();
+    }
   }, []);
 
   useIntervalAsync(60 * 1000, async () => {

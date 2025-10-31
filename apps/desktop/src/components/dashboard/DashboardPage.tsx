@@ -23,11 +23,11 @@ export default function DashboardPage() {
         variant="caption"
         sx={{
           position: "fixed",
-          bottom: 2,
+          bottom: 0,
           left: 8,
-          fontSize: "0.65rem",
+          fontSize: "0.55rem",
           color: "text.secondary",
-          opacity: 0.2,
+          opacity: 0.3,
         }}
       >
         {data.state === "success" ? `v${data.data}` : ""}
