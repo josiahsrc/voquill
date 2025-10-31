@@ -78,7 +78,7 @@ const buildGlossaryPrompt = (
 
   for (const termId of state.dictionary.termIds) {
     const term = state.termById[termId];
-    if (!term || term.isDeleted || term.isReplacement) {
+    if (!term || term.isDeleted) {
       continue;
     }
 
