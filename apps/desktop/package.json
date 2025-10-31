@@ -14,7 +14,8 @@
     "dev:vite": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test:webdriver": "wdio run webdriver/wdio.conf.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -55,6 +56,13 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "@wdio/cli": "^9.20.0",
+    "@wdio/globals": "^9.17.0",
+    "@wdio/local-runner": "^9.20.0",
+    "@wdio/mocha-framework": "^9.20.0",
+    "@wdio/spec-reporter": "^9.20.0",
+    "chromedriver": "^141.0.0",
+    "ts-node": "^10.9.2",
     "cross-env": "^7.0.3",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"

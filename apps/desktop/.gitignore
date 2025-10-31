@@ -1,3 +1,5 @@
+.tauri-driver
+
 # Logs
 logs
 *.log
