@@ -306,6 +306,16 @@ impl Transcriber for WhisperTranscriber {
         params.set_print_timestamps(false);
         params.set_no_context(true);
 
+        if let Some(req) = request {
+            if let Some(prompt) = req.initial_prompt.as_ref() {
+                let sanitized: String = prompt.chars().filter(|ch| *ch != '\0').collect();
+                let trimmed = sanitized.trim();
+                if !trimmed.is_empty() {
+                    params.set_initial_prompt(trimmed);
+                }
+            }
+        }
+
         state
             .full(params, &processed)
             .map_err(|err| format!("Failed to run Whisper inference: {err}"))?;

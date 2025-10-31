@@ -12,7 +12,6 @@ type FileInput = Parameters<typeof toFile>[0];
 const DEFAULT_TRANSCRIPTION_MODEL = "whisper-large-v3-turbo";
 const DEFAULT_POST_PROCESS_MODEL =
   "meta-llama/llama-4-scout-17b-16e-instruct";
-const DEFAULT_TRANSCRIPTION_PROMPT = "Vocab: Voquill, Techcyte";
 const DEFAULT_GROQ_TEST_PROMPT = 'Reply with the single word "Hello."';
 const DEFAULT_MAX_SEGMENT_DURATION_SECONDS = 120;
 
@@ -335,7 +334,7 @@ export const transcribeAudioWithGroq = async (
     audio,
     ext,
     fileName,
-    prompt = DEFAULT_TRANSCRIPTION_PROMPT,
+    prompt = "",
     model = DEFAULT_TRANSCRIPTION_MODEL,
     logUsage = true,
     maxSegmentDurationSeconds = DEFAULT_MAX_SEGMENT_DURATION_SECONDS,
