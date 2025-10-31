@@ -11,7 +11,6 @@ export const useHotkeyHold = (args: {
 }) => {
   const keysHeld = useAppStore((s) => s.keysHeld);
   const availableCombos = useAppStore((state) => getHotkeyCombosForAction(state, args.actionName));
-  console.log("Available combos for", args.actionName, availableCombos, keysHeld);
 
   const onActivateRef = useRef(args.onActivate);
   const onDeactivateRef = useRef(args.onDeactivate);

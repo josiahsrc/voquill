@@ -216,8 +216,6 @@ export const useInterval = (
 ) => {
   const savedCallback = useRef<IntervalCallback>(null);
   const intervalIdRef = useRef<NodeJS.Timeout>(null);
-  const timeoutIdRef = useRef<NodeJS.Timeout>(null);
-  const randomOffset = useRef(200 + delay);
 
   useEffect(() => {
     savedCallback.current = callback;
@@ -230,18 +228,13 @@ export const useInterval = (
       }
     }
 
+    tick();
+
     if (intervalIdRef.current) clearInterval(intervalIdRef.current);
-    if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
-
-    timeoutIdRef.current = setTimeout(() => {
-      tick();
-
-      intervalIdRef.current = setInterval(tick, delay);
-    }, randomOffset.current);
+    intervalIdRef.current = setInterval(tick, delay);
 
     return () => {
       if (intervalIdRef.current) clearInterval(intervalIdRef.current);
-      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
     };
   }, [delay, ...dependencies]);
 };

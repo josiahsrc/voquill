@@ -1,6 +1,8 @@
+import { ArrowUpwardOutlined } from "@mui/icons-material";
 import {
   Alert,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -8,7 +10,6 @@ import {
   LinearProgress,
   Stack,
   Typography,
-  CircularProgress,
 } from "@mui/material";
 import { useCallback, useMemo } from "react";
 import {
@@ -58,7 +59,7 @@ export const UpdateDialog = () => {
 
   const formattedDate = useMemo(
     () => formatReleaseDate(releaseDate),
-    [releaseDate],
+    [releaseDate]
   );
 
   const percent = useMemo(() => {
@@ -70,11 +71,7 @@ export const UpdateDialog = () => {
   }, [downloadProgress]);
 
   const progressLabel = useMemo(() => {
-    if (
-      downloadedBytes == null ||
-      totalBytes == null ||
-      totalBytes <= 0
-    ) {
+    if (downloadedBytes == null || totalBytes == null || totalBytes <= 0) {
       return null;
     }
     return `${formatSize(downloadedBytes)} of ${formatSize(totalBytes)}`;
@@ -161,8 +158,8 @@ export const UpdateDialog = () => {
 
           {status === "installing" && (
             <Alert severity="info" variant="outlined">
-              Installation in progress. Voquill may restart automatically
-              when finished.
+              Installation in progress. Voquill may restart automatically when
+              finished.
             </Alert>
           )}
 
@@ -175,17 +172,21 @@ export const UpdateDialog = () => {
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={isUpdating}>
-          Update later
+          Later
         </Button>
         <Button
           variant="contained"
           onClick={handleInstall}
           disabled={isUpdating}
-          startIcon={
-            isUpdating ? <CircularProgress size={16} color="inherit" /> : undefined
+          endIcon={
+            isUpdating ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : (
+              <ArrowUpwardOutlined />
+            )
           }
         >
-          Update now
+          Update
         </Button>
       </DialogActions>
     </Dialog>
