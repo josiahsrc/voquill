@@ -7,9 +7,7 @@ import {
 import { getAppState, produceAppState } from "../store";
 import { showErrorSnackbar } from "./app.actions";
 import {
-  getLastSurfacedUpdateVersion,
   markSurfaceWindowForNextLaunch,
-  setLastSurfacedUpdateVersion,
   surfaceMainWindow,
 } from "../utils/window.utils";
 
@@ -86,10 +84,14 @@ export const checkForAppUpdates = async (): Promise<void> => {
     availableUpdate = update;
 
     const updateVersion = update.version;
-    const lastSurfacedUpdateVersion = getLastSurfacedUpdateVersion();
+    const lastUpdateVersion = getAppState().updater.lastUpdateVersion;
+    if (updateVersion && updateVersion === lastUpdateVersion) {
+      return;
+    }
 
     produceAppState((draft) => {
       draft.updater.status = "ready";
+      draft.updater.lastUpdateVersion = lastUpdateVersion;
       draft.updater.dialogOpen = true;
       draft.updater.currentVersion = update.currentVersion;
       draft.updater.availableVersion = update.version;
@@ -101,14 +103,7 @@ export const checkForAppUpdates = async (): Promise<void> => {
       draft.updater.totalBytes = null;
     });
 
-    if (updateVersion && updateVersion === lastSurfacedUpdateVersion) {
-      return;
-    }
-
     await surfaceMainWindow();
-    if (updateVersion != null) {
-      setLastSurfacedUpdateVersion(updateVersion);
-    }
   };
 
   checkingPromise = run();

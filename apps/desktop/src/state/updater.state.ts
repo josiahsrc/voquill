@@ -9,6 +9,7 @@ export type UpdaterStatus =
 export type UpdaterState = {
   dialogOpen: boolean;
   status: UpdaterStatus;
+  lastUpdateVersion: string | null;
   currentVersion: string | null;
   availableVersion: string | null;
   releaseDate: string | null;
@@ -22,6 +23,7 @@ export type UpdaterState = {
 export const INITIAL_UPDATER_STATE: UpdaterState = {
   dialogOpen: false,
   status: "idle",
+  lastUpdateVersion: null,
   currentVersion: null,
   availableVersion: null,
   releaseDate: null,
