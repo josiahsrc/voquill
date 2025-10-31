@@ -14,6 +14,7 @@ import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcripti
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import { OverlayPhase } from "../types/overlay.types";
+import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -38,6 +39,7 @@ export type AppState = {
   transcriptions: TranscriptionsState;
   dictionary: DictionaryState;
   settings: SettingsState;
+  updater: UpdaterState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -72,4 +74,5 @@ export const INITIAL_APP_STATE: AppState = {
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,
   settings: INITIAL_SETTINGS_STATE,
+  updater: INITIAL_UPDATER_STATE,
 };

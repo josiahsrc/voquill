@@ -20,6 +20,8 @@ import {
 } from "../../utils/transcription.utils";
 import { getMyUser, getMyUserId } from "../../utils/user.utils";
 import { loadDictionary } from "../../actions/dictionary.actions";
+import { checkForAppUpdates } from "../../actions/updater.actions";
+import { useIntervalAsync } from "../../hooks/helper.hooks";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -48,6 +50,10 @@ export const RootSideEffects = () => {
   useAsyncEffect(async () => {
     const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary()];
     await Promise.allSettled(loaders);
+  }, []);
+
+  useIntervalAsync(60 * 1000, async () => {
+    await checkForAppUpdates();
   }, []);
 
   const handleRecordedAudio = useCallback(async (payload: StopRecordingResponse) => {
