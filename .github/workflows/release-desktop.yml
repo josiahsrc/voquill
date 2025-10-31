@@ -144,7 +144,12 @@ jobs:
           RELEASE_NOTES_FROM_REF=""
           if [[ -n "${PREVIOUS_TAG}" ]]; then
             RELEASE_NOTES_FROM_REF="${PREVIOUS_TAG}"
-            RELEASE_NOTES_FROM="$(git rev-parse "${PREVIOUS_TAG}^{commit}")"
+            FIRST_AFTER_PREVIOUS="$(git rev-list --ancestry-path --reverse "${PREVIOUS_TAG}..${COMMIT_SHA}" | head -n 1)"
+            if [[ -n "${FIRST_AFTER_PREVIOUS}" ]]; then
+              RELEASE_NOTES_FROM="${FIRST_AFTER_PREVIOUS}"
+            else
+              RELEASE_NOTES_FROM="${COMMIT_SHA}"
+            fi
           else
             RELEASE_NOTES_FROM="$(git rev-list --max-parents=0 "${COMMIT_SHA}" | tail -n 1)"
           fi
