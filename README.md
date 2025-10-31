@@ -1,135 +1,122 @@
-# Turborepo starter
+# Voquill
 
-This Turborepo starter is maintained by the Turborepo core team.
+Make voice your new keyboard. Voquill is an open-source, cross-platform speech-to-text workspace that lets you dictate into any desktop application, clean the transcript with AI, and keep your personal glossary in sync. The repo bundles the production desktop app, marketing site, Firebase backend, and all shared packages in a single Turborepo.
 
-## Using this example
+## Highlights
+- Voice input everywhere: overlay, hotkeys, and system integrations work across macOS, Windows, and Linux.
+- Choose your engine: run Whisper locally (with optional GPU acceleration) or point to Groq's hosted Whisper via your own API key.
+- AI text cleanup: remove filler words and false starts automatically with the post-processing pipeline in `@repo/voice-ai`.
+- Personal dictionary: create glossary terms and replacement rules so recurring names and phrases stay accurate.
+- Batteries included: Tauri auto-updates, Firebase functions for billing and demos, and shared utilities/types that keep every surface consistent.
 
-Run the following command:
+## Monorepo Layout
+| Path | Description |
+| --- | --- |
+| `apps/desktop` | Tauri desktop app (Vite + React + Zustand) controlling UI, state, and business logic. |
+| `apps/desktop/src-tauri` | Rust API layer invoked from TypeScript for native capabilities, SQLite storage, and Whisper inference. |
+| `apps/web` | Astro-powered marketing site hosted at voquill.com. |
+| `apps/firebase` | Firebase Functions project handling authentication, billing, demos, and Groq-powered server transcription. |
+| `packages/voice-ai` | Audio chunking + Groq client used for transcription and transcript cleanup. |
+| `packages/types` | Shared domain models (users, transcriptions, dictionary terms, etc.). |
+| `packages/functions`, `packages/firemix`, `packages/utilities`, `packages/pricing`, `packages/ui`, `packages/typescript-config`, `packages/eslint-config` | Reusable utilities, UI primitives, configuration, and Firemix helpers consumed by every app. |
+| `docs` | Architecture notes, release guides, and reference material. |
+| `scripts` | Automation and helper scripts (for example Linux dependency setup). |
 
+## Architecture Overview
+The desktop app follows a TypeScript-first design: Zustand maintains a single global store, while pure utility functions in `apps/desktop/src/utils` read and mutate state. Actions compose those utilities and may call out to repositories. Repos abstract whether persistence happens locally (SQLite through Tauri commands) or remotely (Firebase/Groq).
+
+```
+User input / system events
+        ↓
+React + Zustand state (TypeScript)
+        ↓
+Repos choose local vs. remote storage
+        ↓
+Tauri commands (Rust API bridge)
+        ↓
+SQLite, Whisper models, or external services
+```
+
+Rust stays focused on native integrations—audio capture, keyboard injection, updater, encryption, GPU enumeration, filesystem paths. TypeScript owns business logic, routing, and UI. The same shared packages are imported by the desktop app, Firebase functions, and the marketing site, which keeps the product vocabulary in sync.
+
+See `docs/desktop-architecture.md` for the full tour.
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+ (desktop/web) and npm 10+.
+- Rust toolchain with `cargo`, `rustup`, and the Tauri CLI (`cargo install tauri-cli`).
+- Platform dependencies for Tauri (GTK/WebKit/AppIndicator/etc.). On Linux you can run `apps/desktop/scripts/setup-linux.sh`.
+- A Groq API key if you plan to use hosted transcription or transcript cleanup (`GROQ_API_KEY`).
+- Firebase CLI (`npm install -g firebase-tools`) when working on the functions project.
+
+### Install dependencies
 ```sh
-npx create-turbo@latest
+npm install
 ```
 
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+### Build everything
+Use the prepared `turbo` task instead of manually invoking `turbo dev`.
+```sh
+npm run build
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Run the desktop app
+Pick the platform-specific script; avoid `turbo dev` since the desktop app manages its own watcher.
+```sh
+# Mac
+npm run dev:mac --workspace apps/desktop
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+# Windows
+npm run dev:windows --workspace apps/desktop
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+# Linux (CPU)
+npm run dev:linux --workspace apps/desktop
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+# Linux with Vulkan GPU acceleration
+npm run dev:linux:gpu --workspace apps/desktop
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+During local development you can override platform detection by exporting `VOQUILL_DESKTOP_PLATFORM` (`darwin`, `win32`, or `linux`). Set `VITE_USE_EMULATORS=true` to point at Firebase emulators.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+### Run the marketing site
+```sh
+npm run dev --workspace apps/web
 ```
 
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
+### Firebase Functions and emulators
+The Firebase workspace targets Node 20. Install its dependencies (`npm install` inside `apps/firebase/functions`) and start emulators with:
+```sh
+npm run dev --workspace apps/firebase/functions
 ```
-cd my-turborepo
+Secrets such as `GROQ_API_KEY` can be managed through `.secret.local` when using the emulator suite.
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+### Quality checks
+```sh
+npm run lint
+npm run check-types
+npm run test
 ```
+Individual workspaces expose the same commands if you need a narrower scope.
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## Environment Reference
+| Variable | Purpose |
+| --- | --- |
+| `VOQUILL_API_KEY_SECRET` | Secret used by the desktop app to encrypt API keys stored on disk (`apps/desktop/src-tauri/src/system/crypto.rs`). |
+| `VOQUILL_WHISPER_MODEL_URL` / `VOQUILL_WHISPER_MODEL_URL_<SIZE>` | Override download locations for Whisper models when running locally. |
+| `VOQUILL_WHISPER_DISABLE_GPU` | Force the desktop app to avoid GPU inference, useful for debugging. |
+| `VITE_USE_EMULATORS` | When set to `true`, the desktop app points to Firebase emulators instead of production services. |
+| `GROQ_API_KEY` | Enables Groq-backed transcription/cleanup in Firebase functions and in the desktop API transcription mode. |
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## Releases & CI
+- Desktop builds are produced by `.github/workflows/release-desktop.yml`. The workflow bumps a channel tag, builds all three platforms, and publishes assets plus `latest.json` manifests. Promo runs handle dev→prod promotion. See `docs/desktop-release.md` for step-by-step instructions.
+- Turbo caching is configured in `turbo.json`; CI jobs call `npm run build`, `npm run lint`, and other workspace-scoped commands.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+## Documentation
+- Desktop architecture: `docs/desktop-architecture.md`
+- Release playbook: `docs/desktop-release.md`
+- Additional resources and inspiration: `docs/resources.md`
+- Contributor conventions and workspace notes: `AGENTS.md`
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+## License
+Unless otherwise noted, Voquill is released under the AGPLv3. See `LICENCE` for the complete terms and third-party attributions.
