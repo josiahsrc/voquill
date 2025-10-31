@@ -1,18 +1,18 @@
 use crate::domain::{PermissionKind, PermissionState, PermissionStatus};
 
-pub fn check_microphone_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn check_microphone_permission() -> Result<PermissionStatus, String> {
     Ok(authorized_status(PermissionKind::Microphone))
 }
 
-pub fn request_microphone_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String> {
     check_microphone_permission()
 }
 
-pub fn check_accessibility_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn check_accessibility_permission() -> Result<PermissionStatus, String> {
     Ok(authorized_status(PermissionKind::Accessibility))
 }
 
-pub fn request_accessibility_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn request_accessibility_permission() -> Result<PermissionStatus, String> {
     check_accessibility_permission()
 }
 

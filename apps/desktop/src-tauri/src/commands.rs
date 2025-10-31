@@ -13,12 +13,7 @@ use crate::system::crypto::{protect_api_key, reveal_api_key};
 use crate::system::models::WhisperModelSize;
 use sqlx::Row;
 
-#[cfg(target_os = "linux")]
-use crate::platform::linux::input::paste_text_into_focused_field as platform_paste_text;
-#[cfg(target_os = "macos")]
-use crate::platform::macos::input::paste_text_into_focused_field as platform_paste_text;
-#[cfg(target_os = "windows")]
-use crate::platform::windows::input::paste_text_into_focused_field as platform_paste_text;
+use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]

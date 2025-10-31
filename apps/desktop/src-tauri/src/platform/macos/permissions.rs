@@ -22,7 +22,7 @@ extern "C" {
     static AVMediaTypeAudio: id;
 }
 
-pub fn check_microphone_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn check_microphone_permission() -> Result<PermissionStatus, String> {
     unsafe {
         let pool = NSAutoreleasePool::new(nil);
         let result = (|| {
@@ -42,7 +42,7 @@ pub fn check_microphone_permission() -> Result<PermissionStatus, String> {
     }
 }
 
-pub fn request_microphone_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String> {
     unsafe {
         let pool = NSAutoreleasePool::new(nil);
         let result = (|| {
@@ -138,7 +138,7 @@ pub fn request_microphone_permission() -> Result<PermissionStatus, String> {
     }
 }
 
-pub fn check_accessibility_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn check_accessibility_permission() -> Result<PermissionStatus, String> {
     unsafe {
         let trusted = AXIsProcessTrusted() != 0;
         let state = if trusted {
@@ -211,7 +211,7 @@ fn open_accessibility_privacy_settings() -> bool {
     }
 }
 
-pub fn request_accessibility_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn request_accessibility_permission() -> Result<PermissionStatus, String> {
     unsafe {
         eprintln!("[macos::permissions] request_accessibility_permission invoked");
         let initial_trusted = AXIsProcessTrusted() != 0;
