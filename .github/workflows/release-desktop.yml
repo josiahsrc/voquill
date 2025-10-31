@@ -187,10 +187,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           prompt: |
-            Keep it short, fun, and high level, focusing on bug fixes and features. 
+            Keep it short and high level, focusing on bug fixes and features. 
             Use a single list of bullet points. Use emojis here and there. No header, 
-            just bullet points. Don't use technical jargon, these release notes are
-            for end-users.
+            just bullet points.
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
 
