@@ -1,10 +1,11 @@
+import { relaunch } from "@tauri-apps/plugin-process";
 import {
   check,
   type DownloadEvent,
   type Update,
 } from "@tauri-apps/plugin-updater";
-import { showErrorSnackbar } from "./app.actions";
 import { getAppState, produceAppState } from "../store";
+import { showErrorSnackbar } from "./app.actions";
 
 let availableUpdate: Update | null = null;
 let checkingPromise: Promise<void> | null = null;
@@ -215,6 +216,7 @@ export const installAvailableUpdate = async (): Promise<void> => {
       }
       try {
         await availableUpdate?.close();
+        await relaunch();
       } catch (error) {
         console.error("Failed to close update resource", error);
       } finally {
