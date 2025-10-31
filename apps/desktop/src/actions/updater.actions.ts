@@ -1,18 +1,44 @@
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { relaunch } from "@tauri-apps/plugin-process";
 import {
   check,
   type DownloadEvent,
   type Update,
 } from "@tauri-apps/plugin-updater";
-import { showErrorSnackbar } from "./app.actions";
 import { getAppState, produceAppState } from "../store";
+import { showErrorSnackbar } from "./app.actions";
 
 let availableUpdate: Update | null = null;
 let checkingPromise: Promise<void> | null = null;
 let installingPromise: Promise<void> | null = null;
+let surfaceWindowPromise: Promise<void> | null = null;
 
 const isBusy = () => {
   const { status } = getAppState().updater;
   return status === "downloading" || status === "installing";
+};
+
+const surfaceMainWindow = async (): Promise<void> => {
+  if (!surfaceWindowPromise) {
+    surfaceWindowPromise = (async () => {
+      const window = getCurrentWindow();
+
+      if (await window.isMinimized()) {
+        await window.unminimize();
+      }
+
+      await window.show();
+      await window.setFocus();
+    })()
+      .catch((error) => {
+        console.error("Failed to surface main window", error);
+      })
+      .finally(() => {
+        surfaceWindowPromise = null;
+      });
+  }
+
+  await surfaceWindowPromise;
 };
 
 export const checkForAppUpdates = async (): Promise<void> => {
@@ -90,6 +116,8 @@ export const checkForAppUpdates = async (): Promise<void> => {
       draft.updater.downloadedBytes = null;
       draft.updater.totalBytes = null;
     });
+
+    await surfaceMainWindow();
   };
 
   checkingPromise = run();
@@ -215,6 +243,7 @@ export const installAvailableUpdate = async (): Promise<void> => {
       }
       try {
         await availableUpdate?.close();
+        await relaunch();
       } catch (error) {
         console.error("Failed to close update resource", error);
       } finally {
