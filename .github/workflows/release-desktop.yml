@@ -269,8 +269,13 @@ jobs:
             build-essential pkg-config cmake \
             libgtk-3-dev "$WEBKIT_PKG" \
             libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf \
-            libvulkan1 libvulkan-dev vulkan-tools \
-            shaderc libshaderc-dev
+            libvulkan1 libvulkan-dev vulkan-tools
+
+          # Install glslc from LunarG Vulkan SDK
+          wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
+          sudo apt-get update
+          sudo apt-get install -y vulkan-sdk
 
       - name: Install dependencies
         run: npm ci
