@@ -76,6 +76,7 @@ pub struct TranscriptionOptionsDto {
     #[serde(default)]
     pub device: Option<TranscriptionDeviceSelectionDto>,
     pub model_size: Option<String>,
+    pub initial_prompt: Option<String>,
 }
 
 const MAX_RETAINED_TRANSCRIPTION_AUDIO: usize = 20;
@@ -568,12 +569,25 @@ pub async fn transcribe_audio(
     let mut request = TranscriptionRequest::default();
     let mut model_size = WhisperModelSize::default();
 
-    if let Some(opts) = options {
-        if let Some(device_dto) = opts.device {
+    if let Some(TranscriptionOptionsDto {
+        device,
+        model_size: maybe_model_size,
+        initial_prompt,
+    }) = options
+    {
+        if let Some(device_dto) = device {
             request = device_dto.into_request();
         }
 
-        if let Some(size_value) = opts.model_size {
+        if let Some(prompt_value) = initial_prompt {
+            let sanitized: String = prompt_value.chars().filter(|ch| *ch != '\0').collect();
+            let trimmed = sanitized.trim();
+            if !trimmed.is_empty() {
+                request.initial_prompt = Some(trimmed.to_string());
+            }
+        }
+
+        if let Some(size_value) = maybe_model_size {
             match size_value.parse::<WhisperModelSize>() {
                 Ok(parsed) => {
                     model_size = parsed;

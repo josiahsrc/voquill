@@ -37,6 +37,7 @@ export type TranscriptionOptionsPayload = {
   modelSize: string;
   device?: TranscriptionDeviceSelection;
   deviceLabel: string;
+  initialPrompt: string | null;
 };
 
 export type TranscriptionMetadata = {
@@ -54,6 +55,33 @@ const normalizeSamples = (
   samples: number[] | Float32Array | null | undefined,
 ): number[] =>
   Array.isArray(samples) ? samples : Array.from(samples ?? []);
+
+const sanitizeGlossaryValue = (value: string): string =>
+  value.replace(/\0/g, "").replace(/\s+/g, " ").trim();
+
+const buildGlossaryPrompt = (
+  state: ReturnType<typeof getAppState>,
+): string | null => {
+  const uniqueTerms = new Set<string>();
+
+  for (const termId of state.dictionary.termIds) {
+    const term = state.termById[termId];
+    if (!term || term.isDeleted || term.isReplacement) {
+      continue;
+    }
+
+    const sanitized = sanitizeGlossaryValue(term.sourceValue);
+    if (sanitized) {
+      uniqueTerms.add(sanitized);
+    }
+  }
+
+  if (uniqueTerms.size === 0) {
+    return null;
+  }
+
+  return `Vocab: ${Array.from(uniqueTerms).join(", ")}`;
+};
 
 let cachedDiscreteGpus: GpuInfo[] | null = null;
 let loadingDiscreteGpus: Promise<GpuInfo[]> | null = null;
@@ -90,6 +118,7 @@ export const resolveTranscriptionOptions =
   async (): Promise<TranscriptionOptionsPayload> => {
     const state = getAppState();
     const { device, modelSize } = state.settings.aiTranscription;
+    const initialPrompt = buildGlossaryPrompt(state);
 
     const normalizedModelSize =
       modelSize?.trim().toLowerCase() || DEFAULT_MODEL_SIZE;
@@ -97,6 +126,7 @@ export const resolveTranscriptionOptions =
     const options: TranscriptionOptionsPayload = {
       modelSize: normalizedModelSize,
       deviceLabel: "CPU",
+      initialPrompt,
     };
 
     const ensureCpu = () => {
@@ -222,6 +252,7 @@ export const transcribeAndPostProcessAudio = async ({
         options: {
           modelSize: options.modelSize,
           device: options.device,
+          initialPrompt: options.initialPrompt ?? undefined,
         },
       });
       metadata = {

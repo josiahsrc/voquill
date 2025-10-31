@@ -22,6 +22,7 @@ pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
 pub struct TranscriptionRequest {
     pub device: Option<TranscriptionDevice>,
     pub model_path: Option<String>,
+    pub initial_prompt: Option<String>,
 }
 
 #[derive(Clone, Debug)]
