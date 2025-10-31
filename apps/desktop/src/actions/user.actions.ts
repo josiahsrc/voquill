@@ -119,6 +119,18 @@ export const setInteractionChimeEnabled = async (enabled: boolean) => {
   );
 };
 
+export const setUserName = async (name: string): Promise<void> => {
+  const normalized = name.trim();
+
+  await updateUser(
+    (user) => {
+      user.name = normalized;
+    },
+    "Unable to update username. User not found.",
+    "Failed to save username. Please try again.",
+  );
+};
+
 const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
   const user = getMyUser(state);

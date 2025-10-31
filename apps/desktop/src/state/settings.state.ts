@@ -30,6 +30,7 @@ export type SettingsState = {
   audioDialogOpen: boolean;
   shortcutsDialogOpen: boolean;
   clearLocalDataDialogOpen: boolean;
+  profileDialogOpen: boolean;
   aiTranscriptionDialogOpen: boolean;
   aiPostProcessingDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
@@ -45,6 +46,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   audioDialogOpen: false,
   shortcutsDialogOpen: false,
   clearLocalDataDialogOpen: false,
+  profileDialogOpen: false,
   aiTranscriptionDialogOpen: false,
   aiPostProcessingDialogOpen: false,
   aiTranscription: {

@@ -1,4 +1,4 @@
-import { LogoutOutlined, MoreVert } from "@mui/icons-material";
+import { AccountCircleOutlined, MoreVert } from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -11,7 +11,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useHeaderPortal } from "../../hooks/header.hooks";
 import { useIsOnboarded } from "../../hooks/user.hooks";
-import { useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import { getInitials } from "../../utils/string.utils";
 import { getMyUser } from "../../utils/user.utils";
 import { LogoWithText } from "../common/LogoWithText";
@@ -65,12 +65,14 @@ export const AppHeader = () => {
   const sharedRightMenuItems: MenuPopoverItem[] = [
     {
       kind: "listItem",
-      title: "Sign out",
+      title: "My profile",
       onClick: ({ close }) => {
-        // handleSignOut();
+        produceAppState((draft) => {
+          draft.settings.profileDialogOpen = true;
+        });
         close();
       },
-      leading: <LogoutOutlined />,
+      leading: <AccountCircleOutlined />,
     },
   ];
 

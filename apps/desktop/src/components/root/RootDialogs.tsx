@@ -3,6 +3,7 @@ import { AITranscriptionDialog } from "../settings/AITranscriptionDialog";
 import { AudioDialog } from "../settings/AudioDialog";
 import { ClearLocalDataDialog } from "../settings/ClearLocalDataDialog";
 import { MicrophoneDialog } from "../settings/MicrophoneDialog";
+import { ProfileDialog } from "../settings/ProfileDialog";
 import { ShortcutsDialog } from "../settings/ShortcutsDialog";
 import { PermissionsDialog } from "./PermissionsDialog";
 import { UpdateDialog } from "./UpdateDialog";
@@ -14,6 +15,7 @@ export const RootDialogs = () => {
       <PermissionsDialog />
       <AITranscriptionDialog />
       <AIPostProcessingDialog />
+      <ProfileDialog />
       <MicrophoneDialog />
       <AudioDialog />
       <ShortcutsDialog />
