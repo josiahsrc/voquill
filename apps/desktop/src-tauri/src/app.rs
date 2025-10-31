@@ -87,6 +87,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::stop_recording,
             crate::commands::store_transcription_audio,
             crate::commands::transcribe_audio,
+            crate::commands::surface_main_window,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,

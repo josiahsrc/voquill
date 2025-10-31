@@ -1,4 +1,4 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 
 const SURFACE_WINDOW_FLAG_KEY = "voquill:surface-main-window-on-launch";
 
@@ -19,18 +19,9 @@ const getLocalStorage = (): Storage | null => {
 
 export const surfaceMainWindow = async (): Promise<void> => {
   if (!surfaceWindowPromise) {
-    surfaceWindowPromise = (async () => {
-      const window = getCurrentWindow();
-
-      if (await window.isMinimized()) {
-        await window.unminimize();
-      }
-
-      await window.show();
-      await window.setFocus();
-    })()
-      .catch((error) => {
-        console.error("Failed to surface main window", error);
+    surfaceWindowPromise = invoke<void>("surface_main_window")
+      .catch(async (error) => {
+        console.error("Failed to surface main window via native command", error);
       })
       .finally(() => {
         surfaceWindowPromise = null;

@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, EventTarget, State};
+use tauri::{AppHandle, Emitter, EventTarget, Manager, State};
 
 use crate::domain::{
     ApiKey, ApiKeyCreateRequest, ApiKeyView, OverlayPhase, OverlayPhasePayload,
@@ -712,6 +712,15 @@ pub async fn purge_stale_transcription_audio(
     }
 
     Ok(purged_ids)
+}
+
+#[tauri::command]
+pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "main window not found".to_string())?;
+    crate::platform::window::surface_main_window(&window)?;
+    Ok(())
 }
 
 #[tauri::command]

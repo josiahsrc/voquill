@@ -6,6 +6,8 @@ pub mod linux;
 pub use linux::input;
 #[cfg(target_os = "linux")]
 pub use linux::permissions;
+#[cfg(target_os = "linux")]
+pub use linux::window;
 
 #[cfg(target_os = "macos")]
 pub mod macos;
@@ -13,6 +15,8 @@ pub mod macos;
 pub use macos::input;
 #[cfg(target_os = "macos")]
 pub use macos::permissions;
+#[cfg(target_os = "macos")]
+pub use macos::window;
 
 #[cfg(target_os = "windows")]
 pub mod windows;
@@ -20,6 +24,8 @@ pub mod windows;
 pub use windows::input;
 #[cfg(target_os = "windows")]
 pub use windows::permissions;
+#[cfg(target_os = "windows")]
+pub use windows::window;
 
 pub mod audio;
 pub mod whisper;
