@@ -62,7 +62,19 @@ const sanitizeGlossaryValue = (value: string): string =>
 const buildGlossaryPrompt = (
   state: ReturnType<typeof getAppState>,
 ): string | null => {
-  const uniqueTerms = new Set<string>();
+  const uniqueTerms = new Map<string, string>();
+
+  const addTerm = (candidate: string) => {
+    const sanitized = sanitizeGlossaryValue(candidate);
+    if (!sanitized) {
+      return;
+    }
+
+    const key = sanitized.toLowerCase();
+    if (!uniqueTerms.has(key)) {
+      uniqueTerms.set(key, sanitized);
+    }
+  };
 
   for (const termId of state.dictionary.termIds) {
     const term = state.termById[termId];
@@ -70,17 +82,14 @@ const buildGlossaryPrompt = (
       continue;
     }
 
-    const sanitized = sanitizeGlossaryValue(term.sourceValue);
-    if (sanitized) {
-      uniqueTerms.add(sanitized);
-    }
+    addTerm(term.sourceValue);
   }
 
   if (uniqueTerms.size === 0) {
     return null;
   }
 
-  return `Vocab: ${Array.from(uniqueTerms).join(", ")}`;
+  return `Vocab: ${Array.from(uniqueTerms.values()).join(", ")}`;
 };
 
 let cachedDiscreteGpus: GpuInfo[] | null = null;
@@ -189,6 +198,7 @@ export const transcribeAndPostProcessAudio = async ({
   const transcriptionSettings = state.settings.aiTranscription;
   const transcriptionPreference = getTranscriptionPreferenceFromState(state);
   const shouldUseApiTranscription = transcriptionSettings.mode === "api";
+  const glossaryPrompt = buildGlossaryPrompt(state);
 
   let transcript: string;
   let metadata: TranscriptionMetadata = {
@@ -230,6 +240,7 @@ export const transcribeAndPostProcessAudio = async ({
         apiKey: apiKeyValue,
         audio: wavBuffer,
         ext: "wav",
+        prompt: glossaryPrompt ?? undefined,
       });
       metadata = {
         modelSize: null,
