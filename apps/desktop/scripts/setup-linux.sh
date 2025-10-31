@@ -84,9 +84,7 @@ install_gpu_prereqs() {
   if command_exists apt-get; then
     sudo apt-get install -y \
       libvulkan-dev \
-      vulkan-utils \
-      glslc \
-      libshaderc-dev
+      vulkan-utils
   elif command_exists pacman; then
     sudo pacman -Syu --needed \
       vulkan-icd-loader \
