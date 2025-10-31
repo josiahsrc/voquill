@@ -1,4 +1,8 @@
-import { postProcessTranscriptionWithGroq, transcribeAudioWithGroq } from "@repo/voice-ai";
+import {
+  buildDefaultPostProcessPrompt,
+  postProcessTranscriptionWithGroq,
+  transcribeAudioWithGroq,
+} from "@repo/voice-ai";
 import { invoke } from "@tauri-apps/api/core";
 import { CPU_DEVICE_VALUE, DEFAULT_MODEL_SIZE } from "../types/ai.types";
 import type { GpuInfo } from "../types/gpu.types";
@@ -43,10 +47,19 @@ export type TranscriptionOptionsPayload = {
 export type TranscriptionMetadata = {
   modelSize?: string | null;
   inferenceDevice?: string | null;
+  rawTranscript?: string | null;
+  transcriptionPrompt?: string | null;
+  postProcessPrompt?: string | null;
+  transcriptionApiKeyId?: string | null;
+  postProcessApiKeyId?: string | null;
+  transcriptionMode?: "local" | "api" | null;
+  postProcessMode?: "local" | "api" | null;
+  postProcessDevice?: string | null;
 };
 
 export type TranscriptionResult = {
   transcript: string;
+  rawTranscript: string;
   warnings: string[];
   metadata: TranscriptionMetadata;
 };
@@ -59,20 +72,50 @@ const normalizeSamples = (
 const sanitizeGlossaryValue = (value: string): string =>
   value.replace(/\0/g, "").replace(/\s+/g, " ").trim();
 
-const buildGlossaryPrompt = (
-  state: ReturnType<typeof getAppState>,
-): string | null => {
-  const uniqueTerms = new Map<string, string>();
+type ReplacementRule = {
+  source: string;
+  destination: string;
+};
 
-  const addTerm = (candidate: string) => {
+type DictionaryEntries = {
+  sources: string[];
+  replacements: ReplacementRule[];
+};
+
+const collectDictionaryEntries = (
+  state: ReturnType<typeof getAppState>,
+): DictionaryEntries => {
+  const sources = new Map<string, string>();
+  const replacements = new Map<string, ReplacementRule>();
+
+  const recordSource = (candidate: string): string | null => {
     const sanitized = sanitizeGlossaryValue(candidate);
     if (!sanitized) {
-      return;
+      return null;
     }
 
     const key = sanitized.toLowerCase();
-    if (!uniqueTerms.has(key)) {
-      uniqueTerms.set(key, sanitized);
+    if (!sources.has(key)) {
+      sources.set(key, sanitized);
+    }
+
+    return sources.get(key) ?? sanitized;
+  };
+
+  const recordReplacement = (source: string, destination: string) => {
+    const sanitizedSource = recordSource(source);
+    const sanitizedDestination = sanitizeGlossaryValue(destination);
+
+    if (!sanitizedSource || !sanitizedDestination) {
+      return;
+    }
+
+    const key = `${sanitizedSource.toLowerCase()}→${sanitizedDestination.toLowerCase()}`;
+    if (!replacements.has(key)) {
+      replacements.set(key, {
+        source: sanitizedSource,
+        destination: sanitizedDestination,
+      });
     }
   };
 
@@ -82,14 +125,75 @@ const buildGlossaryPrompt = (
       continue;
     }
 
-    addTerm(term.sourceValue);
+    if (term.isReplacement) {
+      recordReplacement(term.sourceValue, term.destinationValue);
+    } else {
+      recordSource(term.sourceValue);
+    }
   }
 
-  if (uniqueTerms.size === 0) {
+  return {
+    sources: Array.from(sources.values()),
+    replacements: Array.from(replacements.values()),
+  };
+};
+
+const buildGlossaryPromptFromEntries = (
+  entries: DictionaryEntries,
+): string | null => {
+  if (entries.sources.length === 0) {
     return null;
   }
 
-  return `Vocab: ${Array.from(uniqueTerms.values()).join(", ")}`;
+  return `Vocab: ${entries.sources.join(", ")}`;
+};
+
+const buildDictionaryPostProcessingInstructions = (
+  entries: DictionaryEntries,
+): string | null => {
+  const sections: string[] = [];
+
+  if (entries.sources.length > 0) {
+    sections.push(
+      `Dictionary terms to preserve exactly as written: ${entries.sources.join(", ")}`,
+    );
+  }
+
+  if (entries.replacements.length > 0) {
+    const formattedRules = entries.replacements
+      .map(({ source, destination }) => `- ${source} -> ${destination}`)
+      .join("\n");
+
+    sections.push(
+      [
+        "Apply these replacement rules exactly before returning the transcript:",
+        formattedRules,
+        "Every occurrence of the source phrase must appear in the final transcript as the destination value.",
+      ].join("\n"),
+    );
+  }
+
+  if (sections.length === 0) {
+    return null;
+  }
+
+  sections.push("Do not mention these rules; simply return the cleaned transcript.");
+
+  return `Dictionary context for editing:\n${sections.join("\n\n")}`;
+};
+
+const buildPostProcessingPrompt = (
+  transcript: string,
+  entries: DictionaryEntries,
+): string => {
+  const base = buildDefaultPostProcessPrompt(transcript);
+  const dictionaryContext = buildDictionaryPostProcessingInstructions(entries);
+
+  if (!dictionaryContext) {
+    return base;
+  }
+
+  return `${dictionaryContext}\n\n${base}`;
 };
 
 let cachedDiscreteGpus: GpuInfo[] | null = null;
@@ -127,7 +231,8 @@ export const resolveTranscriptionOptions =
   async (): Promise<TranscriptionOptionsPayload> => {
     const state = getAppState();
     const { device, modelSize } = state.settings.aiTranscription;
-    const initialPrompt = buildGlossaryPrompt(state);
+    const dictionaryEntries = collectDictionaryEntries(state);
+    const initialPrompt = buildGlossaryPromptFromEntries(dictionaryEntries);
 
     const normalizedModelSize =
       modelSize?.trim().toLowerCase() || DEFAULT_MODEL_SIZE;
@@ -198,12 +303,22 @@ export const transcribeAndPostProcessAudio = async ({
   const transcriptionSettings = state.settings.aiTranscription;
   const transcriptionPreference = getTranscriptionPreferenceFromState(state);
   const shouldUseApiTranscription = transcriptionSettings.mode === "api";
-  const glossaryPrompt = buildGlossaryPrompt(state);
+  const dictionaryEntries = collectDictionaryEntries(state);
+  const glossaryPrompt = buildGlossaryPromptFromEntries(dictionaryEntries);
 
   let transcript: string;
-  let metadata: TranscriptionMetadata = {
+
+  const metadata: TranscriptionMetadata = {
     modelSize: null,
     inferenceDevice: null,
+    transcriptionPrompt: glossaryPrompt ?? null,
+    transcriptionMode: shouldUseApiTranscription ? "api" : "local",
+    transcriptionApiKeyId:
+      shouldUseApiTranscription &&
+      transcriptionPreference &&
+      transcriptionPreference.mode === "api"
+        ? transcriptionPreference.apiKeyId ?? null
+        : null,
   };
 
   if (shouldUseApiTranscription) {
@@ -242,10 +357,10 @@ export const transcribeAndPostProcessAudio = async ({
         ext: "wav",
         prompt: glossaryPrompt ?? undefined,
       });
-      metadata = {
-        modelSize: null,
-        inferenceDevice: "API · Groq",
-      };
+      metadata.modelSize = null;
+      metadata.inferenceDevice = "API · Groq";
+      metadata.transcriptionPrompt = glossaryPrompt ?? null;
+      metadata.transcriptionApiKeyId = transcriptionPreference.apiKeyId ?? null;
     } catch (error) {
       console.error("Failed to transcribe audio with Groq", error);
       const message =
@@ -255,6 +370,8 @@ export const transcribeAndPostProcessAudio = async ({
       throw new TranscriptionError(message, error);
     }
   } else {
+    metadata.transcriptionMode = "local";
+    metadata.transcriptionApiKeyId = null;
     try {
       const options = await resolveTranscriptionOptions();
       transcript = await invoke<string>("transcribe_audio", {
@@ -266,10 +383,10 @@ export const transcribeAndPostProcessAudio = async ({
           initialPrompt: options.initialPrompt ?? undefined,
         },
       });
-      metadata = {
-        modelSize: options.modelSize,
-        inferenceDevice: options.deviceLabel,
-      };
+      metadata.modelSize = options.modelSize;
+      metadata.inferenceDevice = options.deviceLabel;
+      metadata.transcriptionPrompt =
+        options.initialPrompt ?? glossaryPrompt ?? null;
     } catch (error) {
       console.error("Failed to transcribe audio", error);
       const message =
@@ -284,11 +401,23 @@ export const transcribeAndPostProcessAudio = async ({
   if (!normalizedTranscript) {
     throw new TranscriptionError("Transcription produced no text.");
   }
+  metadata.rawTranscript = normalizedTranscript;
 
   const warnings: string[] = [];
   const postProcessingSettings = state.settings.aiPostProcessing;
   const postProcessingPreference = getPostProcessingPreferenceFromState(state);
   const shouldUseApiPostProcessing = postProcessingSettings.mode === "api";
+  metadata.postProcessMode = shouldUseApiPostProcessing ? "api" : "local";
+  metadata.postProcessApiKeyId =
+    shouldUseApiPostProcessing &&
+    postProcessingPreference &&
+    postProcessingPreference.mode === "api"
+      ? postProcessingPreference.apiKeyId ?? null
+      : null;
+  metadata.postProcessDevice = shouldUseApiPostProcessing
+    ? "API · Groq"
+    : "Disabled";
+
   let groqPostProcessingKey: string | null = null;
 
   if (shouldUseApiPostProcessing) {
@@ -298,17 +427,21 @@ export const transcribeAndPostProcessAudio = async ({
       !postProcessingPreference.apiKeyId
     ) {
       warnings.push("API post-processing requires a configured key.");
+      metadata.postProcessDevice = "API · Groq (missing key)";
     } else {
       const postKeyRecord =
         state.apiKeyById[postProcessingPreference.apiKeyId];
       if (!postKeyRecord) {
         warnings.push("API post-processing key not found.");
+        metadata.postProcessDevice = "API · Groq (missing key)";
       } else if (postKeyRecord.provider !== "groq") {
         warnings.push("Unsupported post-processing provider.");
+        metadata.postProcessDevice = "API · Groq (unsupported provider)";
       } else {
         const postKeyValue = postKeyRecord.keyFull?.trim();
         if (!postKeyValue) {
           warnings.push("Groq post-processing requires a valid API key.");
+          metadata.postProcessDevice = "API · Groq (invalid key)";
         } else {
           groqPostProcessingKey = postKeyValue;
         }
@@ -320,9 +453,16 @@ export const transcribeAndPostProcessAudio = async ({
 
   if (groqPostProcessingKey) {
     try {
+      const postProcessingPrompt = buildPostProcessingPrompt(
+        normalizedTranscript,
+        dictionaryEntries,
+      );
+      metadata.postProcessPrompt = postProcessingPrompt;
+
       const processed = await postProcessTranscriptionWithGroq({
         apiKey: groqPostProcessingKey,
         transcript: normalizedTranscript,
+        prompt: postProcessingPrompt,
       });
       const trimmedProcessed = processed.trim();
       if (trimmedProcessed) {
@@ -340,6 +480,7 @@ export const transcribeAndPostProcessAudio = async ({
 
   return {
     transcript: finalTranscript,
+    rawTranscript: metadata.rawTranscript ?? normalizedTranscript,
     warnings,
     metadata,
   };

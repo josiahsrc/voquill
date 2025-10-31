@@ -72,7 +72,8 @@ export const RootSideEffects = () => {
       return;
     }
 
-    let normalizedTranscript: string;
+    let finalTranscript: string | null = null;
+    let rawTranscriptValue: string | null = null;
     let warnings: string[] = [];
     let metadata: TranscriptionMetadata | undefined;
 
@@ -81,7 +82,8 @@ export const RootSideEffects = () => {
         samples: payloadSamples,
         sampleRate: rate,
       });
-      normalizedTranscript = result.transcript;
+      finalTranscript = result.transcript;
+      rawTranscriptValue = result.rawTranscript;
       warnings = result.warnings;
       metadata = result.metadata;
     } catch (error) {
@@ -98,7 +100,7 @@ export const RootSideEffects = () => {
       return;
     }
 
-    if (!normalizedTranscript) {
+    if (!finalTranscript) {
       return;
     }
 
@@ -125,13 +127,21 @@ export const RootSideEffects = () => {
 
     const transcription: Transcription = {
       id: transcriptionId,
-      transcript: normalizedTranscript,
+      transcript: finalTranscript,
       createdAt: firemix().now(),
       createdByUserId: getMyUserId(state),
       isDeleted: false,
       audio: audioSnapshot,
       modelSize: metadata?.modelSize ?? null,
       inferenceDevice: metadata?.inferenceDevice ?? null,
+      rawTranscript: rawTranscriptValue ?? finalTranscript,
+      transcriptionPrompt: metadata?.transcriptionPrompt ?? null,
+      postProcessPrompt: metadata?.postProcessPrompt ?? null,
+      transcriptionApiKeyId: metadata?.transcriptionApiKeyId ?? null,
+      postProcessApiKeyId: metadata?.postProcessApiKeyId ?? null,
+      transcriptionMode: metadata?.transcriptionMode ?? null,
+      postProcessMode: metadata?.postProcessMode ?? null,
+      postProcessDevice: metadata?.postProcessDevice ?? null,
     };
 
     let storedTranscription: Transcription;
@@ -169,7 +179,7 @@ export const RootSideEffects = () => {
     }
 
     try {
-      await invoke<void>("paste", { text: normalizedTranscript });
+      await invoke<void>("paste", { text: finalTranscript });
     } catch (error) {
       console.error("Failed to paste transcription", error);
       showErrorSnackbar("Unable to paste transcription.");

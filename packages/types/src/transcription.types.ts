@@ -9,6 +9,14 @@ export type Transcription = {
   audio?: TranscriptionAudioSnapshot;
   modelSize?: string | null;
   inferenceDevice?: string | null;
+  rawTranscript?: string | null;
+  transcriptionPrompt?: string | null;
+  postProcessPrompt?: string | null;
+  transcriptionApiKeyId?: string | null;
+  postProcessApiKeyId?: string | null;
+  transcriptionMode?: "local" | "api" | null;
+  postProcessMode?: "local" | "api" | null;
+  postProcessDevice?: string | null;
 };
 
 export type TranscriptionAudioSnapshot = {
