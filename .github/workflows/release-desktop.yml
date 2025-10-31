@@ -193,20 +193,20 @@ jobs:
             tauri_platform: macos
             node_platform: darwin
             artifact_name: desktop-macos
-          # - label: Linux
-          #   os: ubuntu-22.04
-          #   rust_targets: ""
-          #   tauri_platform: linux
-          #   node_platform: linux
-          #   artifact_name: desktop-linux
-          #   args: "--features linux-gpu"
-          # - label: Windows
-          #   os: windows-latest
-          #   args: ""
-          #   rust_targets: ""
-          #   tauri_platform: windows
-          #   node_platform: win32
-          #   artifact_name: desktop-windows
+          - label: Linux
+            os: ubuntu-22.04
+            rust_targets: ""
+            tauri_platform: linux
+            node_platform: linux
+            artifact_name: desktop-linux
+            args: "--features linux-gpu"
+          - label: Windows
+            os: windows-latest
+            args: ""
+            rust_targets: ""
+            tauri_platform: windows
+            node_platform: win32
+            artifact_name: desktop-windows
     env:
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
