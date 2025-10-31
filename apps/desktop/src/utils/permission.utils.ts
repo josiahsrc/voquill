@@ -8,7 +8,7 @@ import type {
 
 export const REQUIRED_PERMISSIONS: PermissionKind[] = [
   "microphone",
-  "accessibility",
+  "input-monitoring",
 ];
 
 export const checkMicrophonePermission = async (): Promise<PermissionStatus> => {
@@ -19,12 +19,12 @@ export const requestMicrophonePermission = async (): Promise<PermissionStatus> =
   return invoke<PermissionStatus>("request_microphone_permission");
 };
 
-export const checkAccessibilityPermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("check_accessibility_permission");
+export const checkInputMonitoringPermission = async (): Promise<PermissionStatus> => {
+  return invoke<PermissionStatus>("check_input_monitoring_permission");
 };
 
-export const requestAccessibilityPermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("request_accessibility_permission");
+export const requestInputMonitoringPermission = async (): Promise<PermissionStatus> => {
+  return invoke<PermissionStatus>("request_input_monitoring_permission");
 };
 
 export const isPermissionAuthorized = (state: PermissionState): boolean => {
@@ -35,8 +35,8 @@ export const getPermissionLabel = (kind: PermissionKind): string => {
   switch (kind) {
     case "microphone":
       return "Microphone access";
-    case "accessibility":
-      return "Accessibility control";
+    case "input-monitoring":
+      return "Input monitoring";
     default:
       return kind;
   }
@@ -56,12 +56,12 @@ export const getPermissionInstructions = (kind: PermissionKind): string => {
   }
 
   if (platform === "macos") {
-    return "System Settings → Privacy & Security → Accessibility";
+    return "System Settings → Privacy & Security → Input Monitoring";
   }
   if (platform === "windows") {
-    return "Enable Voquill under Settings → Accessibility → Interaction → Keyboard.";
+    return "No additional permission required on Windows.";
   }
-  return "Allow accessibility control in your desktop environment settings.";
+  return "Allow input monitoring in your desktop environment settings.";
 };
 
 export const describePermissionState = (state: PermissionState): string => {

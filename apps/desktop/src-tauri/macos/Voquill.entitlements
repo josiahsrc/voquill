@@ -8,7 +8,7 @@
   <true/>
   <key>com.apple.security.device.microphone</key>
   <true/>
-  <key>com.apple.security.personal-information.accessibility</key>
+  <key>com.apple.security.personal-information.input-monitoring</key>
   <true/>
 </dict>
 </plist>

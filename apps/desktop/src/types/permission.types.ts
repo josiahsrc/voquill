@@ -1,6 +1,6 @@
 import { Nullable } from "@repo/types";
 
-export type PermissionKind = "microphone" | "accessibility";
+export type PermissionKind = "microphone" | "input-monitoring";
 
 export type PermissionState =
   | "authorized"

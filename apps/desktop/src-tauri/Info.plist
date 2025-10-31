@@ -4,7 +4,7 @@
   <dict>
     <key>NSMicrophoneUsageDescription</key>
     <string>Voquill records your microphone so you can transcribe and insert speech anywhere.</string>
-    <key>NSAccessibilityUsageDescription</key>
-    <string>Voquill needs accessibility access to control dictation hotkeys and interact with other applications.</string>
+    <key>NSInputMonitoringUsageDescription</key>
+    <string>Voquill needs input monitoring permission to detect your keyboard hotkeys.</string>
   </dict>
 </plist>

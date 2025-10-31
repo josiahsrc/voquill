@@ -146,13 +146,13 @@ pub fn request_microphone_permission() -> Result<crate::domain::PermissionStatus
 }
 
 #[tauri::command]
-pub fn check_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
-    crate::platform::permissions::check_accessibility_permission()
+pub fn check_input_monitoring_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::check_input_monitoring_permission()
 }
 
 #[tauri::command]
-pub fn request_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
-    crate::platform::permissions::request_accessibility_permission()
+pub fn request_input_monitoring_permission() -> Result<crate::domain::PermissionStatus, String> {
+    crate::platform::permissions::request_input_monitoring_permission()
 }
 
 #[tauri::command]

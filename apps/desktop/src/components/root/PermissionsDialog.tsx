@@ -23,11 +23,18 @@ import {
   getPermissionInstructions,
   getPermissionLabel,
   isPermissionAuthorized,
-  requestAccessibilityPermission,
+  requestInputMonitoringPermission,
   requestMicrophonePermission,
 } from "../../utils/permission.utils";
 
 const ICON_SIZE = 28;
+
+const purposeDescriptions: Record<PermissionKind, string> = {
+  microphone:
+    "Allows Voquill to capture audio from your microphone for transcription.",
+  "input-monitoring":
+    "Lets you trigger dictation hotkeys while using other applications.",
+};
 
 const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
   const status = useAppStore((state) => state.permissions[kind]);
@@ -58,15 +65,12 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       icon: <HighlightOff color="error" sx={{ fontSize: ICON_SIZE }} />,
       color: "error.main" as const,
       chipColor: "error" as const,
-      chipLabel: "Action required",
+      chipLabel: describePermissionState(status.state),
     };
   }, [status]);
 
   const instructions = getPermissionInstructions(kind);
   const title = getPermissionLabel(kind);
-  const description = status
-    ? describePermissionState(status.state)
-    : "Awaiting status";
   const requestingDisabled = status
     ? isPermissionAuthorized(status.state)
     : false;
@@ -81,7 +85,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       const requestFn =
         kind === "microphone"
           ? requestMicrophonePermission
-          : requestAccessibilityPermission;
+          : requestInputMonitoringPermission;
       const result = await requestFn();
       produceAppState((draft) => {
         draft.permissions[kind] = result;
@@ -106,11 +110,11 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
           <Typography variant="h6">{title}</Typography>
           <Chip size="small" color={chipColor} label={chipLabel} />
         </Stack>
-        <Typography variant="body2" color="text.secondary">
-          {description}
-        </Typography>
         <Typography variant="body2" sx={{ fontWeight: 500 }}>
           {instructions}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {purposeDescriptions[kind]}
         </Typography>
       </Stack>
       <Button
@@ -182,18 +186,14 @@ export const PermissionsDialog = () => {
       <DialogContent>
         <Stack spacing={3}>
           <Typography variant="body1">
-            Grant these permissions so Voquill can capture your microphone and
-            respond to your hotkey.
+            This dialog will close automatically after you have granted all
+            required permissions.
           </Typography>
           <Stack>
             {REQUIRED_PERMISSIONS.map((kind) => (
               <PermissionRow key={kind} kind={kind} />
             ))}
           </Stack>
-          <Typography variant="body2" color="text.secondary">
-            After enabling a permission, return to Voquill and the dialog will
-            disappear automatically.
-          </Typography>
         </Stack>
       </DialogContent>
     </Dialog>
