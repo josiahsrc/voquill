@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useMemo } from "react";
+import Markdown from "react-markdown";
 import {
   dismissUpdateDialog,
   installAvailableUpdate,
@@ -123,14 +124,8 @@ export const UpdateDialog = () => {
 
           {releaseNotes && (
             <Stack spacing={1}>
-              <Typography variant="subtitle2">What&apos;s new</Typography>
-              <Typography
-                variant="body2"
-                sx={{ whiteSpace: "pre-wrap" }}
-                color="text.secondary"
-              >
-                {releaseNotes}
-              </Typography>
+              <Typography variant="body1">What&apos;s new</Typography>
+              <Markdown>{releaseNotes}</Markdown>
             </Stack>
           )}
 

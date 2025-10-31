@@ -141,11 +141,12 @@ jobs:
           else
             PREVIOUS_TAG="${LAST_PROD_TAG}"
           fi
+          RELEASE_NOTES_FROM_REF=""
           if [[ -n "${PREVIOUS_TAG}" ]]; then
-            RELEASE_NOTES_FROM="${PREVIOUS_TAG}"
+            RELEASE_NOTES_FROM_REF="${PREVIOUS_TAG}"
+            RELEASE_NOTES_FROM="$(git rev-parse "${PREVIOUS_TAG}^{commit}")"
           else
-            ROOT_COMMIT="$(git rev-list --max-parents=0 "${COMMIT_SHA}" | tail -n 1)"
-            RELEASE_NOTES_FROM="${ROOT_COMMIT}"
+            RELEASE_NOTES_FROM="$(git rev-list --max-parents=0 "${COMMIT_SHA}" | tail -n 1)"
           fi
           RELEASE_NOTES_TO="${COMMIT_SHA}"
 
@@ -171,6 +172,7 @@ jobs:
             echo "release_flavor=${RELEASE_FLAVOR}"
             echo "release_notes_from=${RELEASE_NOTES_FROM}"
             echo "release_notes_to=${RELEASE_NOTES_TO}"
+            echo "release_notes_from_ref=${RELEASE_NOTES_FROM_REF}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes
