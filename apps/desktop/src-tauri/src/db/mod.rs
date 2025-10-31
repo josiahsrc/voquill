@@ -28,6 +28,8 @@ pub const TERMS_IS_REPLACEMENT_MIGRATION_SQL: &str =
     include_str!("migrations/012_terms_is_replacement.sql");
 pub const TRANSCRIPTION_PROCESSING_METADATA_MIGRATION_SQL: &str =
     include_str!("migrations/013_transcription_processing_metadata.sql");
+pub const USER_WORD_STATS_MIGRATION_SQL: &str =
+    include_str!("migrations/014_user_word_stats.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -113,6 +115,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 14,
             description: "add_transcription_processing_metadata",
             sql: TRANSCRIPTION_PROCESSING_METADATA_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 15,
+            description: "add_user_word_stats",
+            sql: USER_WORD_STATS_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

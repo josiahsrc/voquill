@@ -1,5 +1,6 @@
 import { firemix } from "@firemix/client";
 import { Nullable, User } from "@repo/types";
+import { listify } from "@repo/utilities";
 import {
   type PostProcessingMode,
   type ProcessingMode,
@@ -7,7 +8,12 @@ import {
 import { getUserRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { registerUsers } from "../utils/app.utils";
-import { getMyUser, getPostProcessingPreferenceFromState, getTranscriptionPreferenceFromState } from "../utils/user.utils";
+import {
+  getMyUser,
+  getMyUserId,
+  getPostProcessingPreferenceFromState,
+  getTranscriptionPreferenceFromState,
+} from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 const updateUser = async (
@@ -40,6 +46,51 @@ const updateUser = async (
     console.error("Failed to update user", error);
     showErrorSnackbar(saveErrorMessage);
     throw error;
+  }
+};
+
+const getCurrentUsageMonth = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  return `${year}-${month}`;
+};
+
+export const addWordsToCurrentUser = async (wordCount: number): Promise<void> => {
+  if (wordCount <= 0) {
+    return;
+  }
+
+  await updateUser(
+    (user) => {
+      const currentMonth = getCurrentUsageMonth();
+      if (user.wordsThisMonthMonth !== currentMonth) {
+        user.wordsThisMonth = 0;
+        user.wordsThisMonthMonth = currentMonth;
+      }
+
+      user.wordsThisMonth += wordCount;
+      user.wordsTotal += wordCount;
+    },
+    "Unable to update usage. User not found.",
+    "Failed to update usage metrics. Please try again.",
+  );
+};
+
+export const refreshCurrentUser = async (): Promise<void> => {
+  const state = getAppState();
+  const userId = getMyUserId(state);
+
+  try {
+    const user = await getUserRepo().getUser(userId);
+    produceAppState((draft) => {
+      registerUsers(draft, listify(user));
+      if (user) {
+        draft.currentUserId = user.id;
+      }
+    });
+  } catch (error) {
+    console.error("Failed to refresh user", error);
   }
 };
 

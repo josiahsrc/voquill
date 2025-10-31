@@ -1,12 +1,9 @@
 import { Box } from "@mui/material";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import Router from "../../router";
-import { getAppState, produceAppState, useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import { LoadingApp } from "./LoadingApp";
-import { getUserRepo } from "../../repos";
-import { getMyUserId } from "../../utils/user.utils";
-import { registerUsers } from "../../utils/app.utils";
-import { listify } from "@repo/utilities";
+import { refreshCurrentUser } from "../../actions/user.actions";
 
 export const AppWithLoading = () => {
   const initialized = useAppStore((state) => state.initialized);
@@ -16,14 +13,13 @@ export const AppWithLoading = () => {
       return;
     }
 
-    const state = getAppState();
-    const userId = getMyUserId(state);
-    const user = await getUserRepo().getUser(userId);
-
-    produceAppState((draft) => {
-      draft.initialized = true;
-      registerUsers(draft, listify(user));
-    });
+    try {
+      await refreshCurrentUser();
+    } finally {
+      produceAppState((draft) => {
+        draft.initialized = true;
+      });
+    }
   }, [initialized]);
 
   return (

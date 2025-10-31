@@ -9,6 +9,9 @@ type LocalUser = {
   bio: string;
   onboarded: boolean;
   preferredMicrophone: string | null;
+  wordsThisMonth: number;
+  wordsThisMonthMonth: string | null;
+  wordsTotal: number;
   playInteractionChime?: boolean;
   preferredTranscriptionMode?: "local" | "api" | null;
   preferredTranscriptionApiKeyId?: string | null;
@@ -22,6 +25,9 @@ const toLocalUser = (user: User): LocalUser => ({
   bio: user.bio ?? "",
   onboarded: user.onboarded,
   preferredMicrophone: user.preferredMicrophone ?? null,
+  wordsThisMonth: user.wordsThisMonth,
+  wordsThisMonthMonth: user.wordsThisMonthMonth ?? null,
+  wordsTotal: user.wordsTotal,
   playInteractionChime: user.playInteractionChime,
   preferredTranscriptionMode: user.preferredTranscriptionMode ?? null,
   preferredTranscriptionApiKeyId: user.preferredTranscriptionApiKeyId ?? null,
@@ -46,6 +52,9 @@ const fromLocalUser = (localUser: LocalUser): User => {
     onboardedAt: isOnboarded ? now : null,
     timezone: null,
     preferredMicrophone: localUser.preferredMicrophone ?? null,
+    wordsThisMonth: localUser.wordsThisMonth ?? 0,
+    wordsThisMonthMonth: localUser.wordsThisMonthMonth ?? null,
+    wordsTotal: localUser.wordsTotal ?? 0,
     playInteractionChime,
     preferredTranscriptionMode: localUser.preferredTranscriptionMode ?? null,
     preferredTranscriptionApiKeyId: localUser.preferredTranscriptionApiKeyId ?? null,

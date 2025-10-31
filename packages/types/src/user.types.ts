@@ -16,4 +16,7 @@ export type User = {
   preferredTranscriptionApiKeyId?: Nullable<string>;
   preferredPostProcessingMode?: Nullable<"none" | "api">;
   preferredPostProcessingApiKeyId?: Nullable<string>;
+  wordsThisMonth: number;
+  wordsThisMonthMonth: Nullable<string>;
+  wordsTotal: number;
 };

@@ -6,6 +6,7 @@ import { useCallback, useRef } from "react";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
+import { addWordsToCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
@@ -42,6 +43,11 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
+};
+
+const countWords = (text: string): number => {
+  const tokens = text.trim().split(/\s+/);
+  return tokens.filter((token) => token.length > 0).length;
 };
 
 export const RootSideEffects = () => {
@@ -171,6 +177,15 @@ export const RootSideEffects = () => {
       );
       draft.transcriptions.transcriptionIds = [storedTranscription.id, ...existingIds];
     });
+
+    const wordsAdded = countWords(finalTranscript);
+    if (wordsAdded > 0) {
+      try {
+        await addWordsToCurrentUser(wordsAdded);
+      } catch (error) {
+        console.error("Failed to update usage metrics", error);
+      }
+    }
 
     try {
       const purgedIds = await getTranscriptionRepo().purgeStaleAudio();

@@ -9,6 +9,12 @@ pub struct User {
     pub onboarded: bool,
     #[serde(default)]
     pub preferred_microphone: Option<String>,
+    #[serde(default)]
+    pub words_this_month: i64,
+    #[serde(default)]
+    pub words_this_month_month: Option<String>,
+    #[serde(default)]
+    pub words_total: i64,
     #[serde(default = "default_play_interaction_chime")]
     pub play_interaction_chime: bool,
     #[serde(default)]
