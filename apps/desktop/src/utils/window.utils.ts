@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 const SURFACE_WINDOW_FLAG_KEY = "voquill:surface-main-window-on-launch";
+const LAST_SURFACED_UPDATE_VERSION_KEY = "voquill:last-surfaced-update-version";
 
 let surfaceWindowPromise: Promise<void> | null = null;
 
@@ -41,6 +42,33 @@ export const markSurfaceWindowForNextLaunch = (): void => {
     storage.setItem(SURFACE_WINDOW_FLAG_KEY, "1");
   } catch (error) {
     console.error("Failed to mark surface window flag", error);
+  }
+};
+
+export const getLastSurfacedUpdateVersion = (): string | null => {
+  const storage = getLocalStorage();
+  if (!storage) {
+    return null;
+  }
+
+  try {
+    return storage.getItem(LAST_SURFACED_UPDATE_VERSION_KEY);
+  } catch (error) {
+    console.error("Failed to read last surfaced update version", error);
+    return null;
+  }
+};
+
+export const setLastSurfacedUpdateVersion = (version: string): void => {
+  const storage = getLocalStorage();
+  if (!storage) {
+    return;
+  }
+
+  try {
+    storage.setItem(LAST_SURFACED_UPDATE_VERSION_KEY, version);
+  } catch (error) {
+    console.error("Failed to persist last surfaced update version", error);
   }
 };
 
