@@ -60,6 +60,23 @@ const isOverlayWindow =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).get("overlay") === "1";
 
+if (!isOverlayWindow) {
+  const style = document.createElement("style");
+  style.textContent = `
+    @media (prefers-color-scheme: light) {
+      body {
+        background-color: #FFFFFF !important;
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #121212 !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 const rootElement = document.getElementById("root") as HTMLElement;
 const root = ReactDOM.createRoot(rootElement);
 
