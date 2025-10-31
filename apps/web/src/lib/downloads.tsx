@@ -145,8 +145,10 @@ export function extractDownloads(manifest: ReleaseManifest) {
         return [download];
       }
 
+      const fallbackPlatform =
+        inferPlatformFromManifestKey(key) ?? DEFAULT_PLATFORM;
       const fallback: PlatformDownload = {
-        platform: DEFAULT_PLATFORM,
+        platform: fallbackPlatform,
         key,
         label: formatManifestKey(key),
         url: details.url,
@@ -275,6 +277,34 @@ function formatManifestKey(key: string) {
   return key
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function inferPlatformFromManifestKey(key: string): Platform | undefined {
+  const normalized = key.toLowerCase();
+  const [segment = ""] = normalized.split(/[-_]/);
+
+  if (
+    segment === "darwin" ||
+    segment === "mac" ||
+    segment === "macos" ||
+    normalized.includes("darwin")
+  ) {
+    return "mac";
+  }
+
+  if (
+    segment === "win" ||
+    segment === "windows" ||
+    normalized.includes("windows")
+  ) {
+    return "windows";
+  }
+
+  if (segment === "linux" || normalized.includes("linux")) {
+    return "linux";
+  }
+
+  return undefined;
 }
 
 function createMaskIcon(path: string) {
