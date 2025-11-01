@@ -17,7 +17,6 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-import { testGroqApiKey } from "@repo/voice-ai";
 import {
   createApiKey,
   deleteApiKey,
@@ -29,6 +28,7 @@ import {
   SettingsApiKey,
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
+import { groqTestIntegration } from "@repo/voice-ai";
 
 type ApiKeyListProps = {
   selectedApiKeyId: string | null;
@@ -139,7 +139,7 @@ const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
 
   switch (apiKey.provider) {
     case "groq":
-      return testGroqApiKey({ apiKey: apiKey.keyFull });
+      return groqTestIntegration({ apiKey: apiKey.keyFull });
     default:
       throw new Error("Testing is not available for this provider.");
   }

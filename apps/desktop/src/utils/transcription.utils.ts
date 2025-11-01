@@ -1,11 +1,5 @@
-import {
-  buildDefaultPostProcessPrompt,
-  postProcessTranscriptionWithGroq,
-  transcribeAudioWithGroq,
-} from "@repo/voice-ai";
 import { invoke } from "@tauri-apps/api/core";
 import { CPU_DEVICE_VALUE, DEFAULT_MODEL_SIZE } from "../types/ai.types";
-import type { GpuInfo } from "../types/gpu.types";
 import { buildDeviceLabel } from "../types/gpu.types";
 import { getAppState } from "../store";
 import {
@@ -13,6 +7,9 @@ import {
   getTranscriptionPreferenceFromState,
 } from "./user.utils";
 import { buildWaveFile, ensureFloat32Array } from "./audio.utils";
+import { loadDiscreteGpus } from "./gpu.utils";
+import { buildGlossaryPromptFromEntries, buildPostProcessingPrompt, collectDictionaryEntries } from "./prompt.utils";
+import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
 
 export class TranscriptionError extends Error {
   cause?: unknown;
@@ -69,163 +66,7 @@ const normalizeSamples = (
 ): number[] =>
   Array.isArray(samples) ? samples : Array.from(samples ?? []);
 
-const sanitizeGlossaryValue = (value: string): string =>
-  value.replace(/\0/g, "").replace(/\s+/g, " ").trim();
 
-type ReplacementRule = {
-  source: string;
-  destination: string;
-};
-
-type DictionaryEntries = {
-  sources: string[];
-  replacements: ReplacementRule[];
-};
-
-const collectDictionaryEntries = (
-  state: ReturnType<typeof getAppState>,
-): DictionaryEntries => {
-  const sources = new Map<string, string>();
-  const replacements = new Map<string, ReplacementRule>();
-
-  const recordSource = (candidate: string): string | null => {
-    const sanitized = sanitizeGlossaryValue(candidate);
-    if (!sanitized) {
-      return null;
-    }
-
-    const key = sanitized.toLowerCase();
-    if (!sources.has(key)) {
-      sources.set(key, sanitized);
-    }
-
-    return sources.get(key) ?? sanitized;
-  };
-
-  const recordReplacement = (source: string, destination: string) => {
-    const sanitizedSource = recordSource(source);
-    const sanitizedDestination = sanitizeGlossaryValue(destination);
-
-    if (!sanitizedSource || !sanitizedDestination) {
-      return;
-    }
-
-    const key = `${sanitizedSource.toLowerCase()}→${sanitizedDestination.toLowerCase()}`;
-    if (!replacements.has(key)) {
-      replacements.set(key, {
-        source: sanitizedSource,
-        destination: sanitizedDestination,
-      });
-    }
-  };
-
-  for (const termId of state.dictionary.termIds) {
-    const term = state.termById[termId];
-    if (!term || term.isDeleted) {
-      continue;
-    }
-
-    if (term.isReplacement) {
-      recordReplacement(term.sourceValue, term.destinationValue);
-    } else {
-      recordSource(term.sourceValue);
-    }
-  }
-
-  return {
-    sources: Array.from(sources.values()),
-    replacements: Array.from(replacements.values()),
-  };
-};
-
-const buildGlossaryPromptFromEntries = (
-  entries: DictionaryEntries,
-): string | null => {
-  if (entries.sources.length === 0) {
-    return null;
-  }
-
-  return `Vocab: ${entries.sources.join(", ")}`;
-};
-
-const buildDictionaryPostProcessingInstructions = (
-  entries: DictionaryEntries,
-): string | null => {
-  const sections: string[] = [];
-
-  if (entries.sources.length > 0) {
-    sections.push(
-      `Dictionary terms to preserve exactly as written: ${entries.sources.join(", ")}`,
-    );
-  }
-
-  if (entries.replacements.length > 0) {
-    const formattedRules = entries.replacements
-      .map(({ source, destination }) => `- ${source} -> ${destination}`)
-      .join("\n");
-
-    sections.push(
-      [
-        "Apply these replacement rules exactly before returning the transcript:",
-        formattedRules,
-        "Every occurrence of the source phrase must appear in the final transcript as the destination value.",
-      ].join("\n"),
-    );
-  }
-
-  if (sections.length === 0) {
-    return null;
-  }
-
-  sections.push("Do not mention these rules; simply return the cleaned transcript.");
-
-  return `Dictionary context for editing:\n${sections.join("\n\n")}`;
-};
-
-const buildPostProcessingPrompt = (
-  transcript: string,
-  entries: DictionaryEntries,
-): string => {
-  const base = buildDefaultPostProcessPrompt(transcript);
-  const dictionaryContext = buildDictionaryPostProcessingInstructions(entries);
-
-  if (!dictionaryContext) {
-    return base;
-  }
-
-  return `${dictionaryContext}\n\n${base}`;
-};
-
-let cachedDiscreteGpus: GpuInfo[] | null = null;
-let loadingDiscreteGpus: Promise<GpuInfo[]> | null = null;
-
-const filterDiscreteGpus = (gpu: GpuInfo) =>
-  gpu.backend === "Vulkan" && gpu.deviceType === "DiscreteGpu";
-
-const loadDiscreteGpus = async (): Promise<GpuInfo[]> => {
-  if (cachedDiscreteGpus) {
-    return cachedDiscreteGpus;
-  }
-
-  if (!loadingDiscreteGpus) {
-    loadingDiscreteGpus = invoke<GpuInfo[]>("list_gpus")
-      .then((gpuList) => {
-        const discrete = gpuList.filter(filterDiscreteGpus);
-        cachedDiscreteGpus = discrete;
-        return discrete;
-      })
-      .catch((error) => {
-        console.error("Failed to load GPU descriptors", error);
-        cachedDiscreteGpus = [];
-        return [];
-      })
-      .finally(() => {
-        loadingDiscreteGpus = null;
-      });
-  }
-
-  return loadingDiscreteGpus;
-};
 
 export const resolveTranscriptionOptions =
   async (): Promise<TranscriptionOptionsPayload> => {
@@ -315,8 +156,8 @@ export const transcribeAndPostProcessAudio = async ({
     transcriptionMode: shouldUseApiTranscription ? "api" : "local",
     transcriptionApiKeyId:
       shouldUseApiTranscription &&
-      transcriptionPreference &&
-      transcriptionPreference.mode === "api"
+        transcriptionPreference &&
+        transcriptionPreference.mode === "api"
         ? transcriptionPreference.apiKeyId ?? null
         : null,
   };
@@ -351,9 +192,9 @@ export const transcribeAndPostProcessAudio = async ({
     try {
       const floatSamples = ensureFloat32Array(normalizedSamples);
       const wavBuffer = buildWaveFile(floatSamples, sampleRate);
-      transcript = await transcribeAudioWithGroq({
+      transcript = await groqTranscribeAudio({
         apiKey: apiKeyValue,
-        audio: wavBuffer,
+        blob: wavBuffer,
         ext: "wav",
         prompt: glossaryPrompt ?? undefined,
       });
@@ -410,8 +251,8 @@ export const transcribeAndPostProcessAudio = async ({
   metadata.postProcessMode = shouldUseApiPostProcessing ? "api" : "local";
   metadata.postProcessApiKeyId =
     shouldUseApiPostProcessing &&
-    postProcessingPreference &&
-    postProcessingPreference.mode === "api"
+      postProcessingPreference &&
+      postProcessingPreference.mode === "api"
       ? postProcessingPreference.apiKeyId ?? null
       : null;
   metadata.postProcessDevice = shouldUseApiPostProcessing
@@ -459,9 +300,8 @@ export const transcribeAndPostProcessAudio = async ({
       );
       metadata.postProcessPrompt = postProcessingPrompt;
 
-      const processed = await postProcessTranscriptionWithGroq({
+      const processed = await groqGenerateTextResponse({
         apiKey: groqPostProcessingKey,
-        transcript: normalizedTranscript,
         prompt: postProcessingPrompt,
       });
       const trimmedProcessed = processed.trim();
