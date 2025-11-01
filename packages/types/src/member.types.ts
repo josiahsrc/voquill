@@ -13,8 +13,11 @@ export type Member = {
   stripeCustomerId?: Nullable<string>;
   priceId?: Nullable<string>;
   wordsToday: number;
-  wordsTodayResetAt: FiremixTimestamp;
   wordsThisMonth: number;
-  wordsThisMonthResetAt: FiremixTimestamp;
   wordsTotal: number;
+  tokensToday: number;
+  tokensThisMonth: number;
+  tokensTotal: number;
+  todayResetAt: FiremixTimestamp;
+  thisMonthResetAt: FiremixTimestamp;
 };

@@ -1,15 +1,15 @@
+import { HandlerInput, HandlerName } from "@repo/functions";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
 import {
   cancelAccountDeletion,
-  createCustomToken,
   enqueueAccountDeletion,
 } from "./services/auth.service";
 import { processDelayedActions } from "./services/delayedAction.service";
 import {
-  handleResetWordsThisMonth,
-  handleResetWordsToday,
+  handleResetLimitsThisMonth,
+  handleResetLimitsToday,
   handleTryInitializeMember,
 } from "./services/member.service";
 import {
@@ -17,15 +17,6 @@ import {
   createCustomerPortalSession,
   handleGetPrices,
 } from "./services/stripe.service";
-import {
-  compose,
-  composeDemo,
-  demoAvailable,
-  transcribe,
-  transcribeDemo,
-} from "./services/voice.service";
-import { HandlerInput, HandlerName } from "@repo/functions";
-import { getClientIp } from "./utils/demo.util";
 import {
   getStorageBucket,
   GROQ_API_KEY_VAR,
@@ -107,11 +98,6 @@ export const handler = onCall(
           auth,
           origin: req.rawRequest.get("origin") ?? "",
         });
-      } else if (name === "auth/createCustomToken") {
-        data = await createCustomToken({
-          auth,
-          input: args as HandlerInput<"auth/createCustomToken">,
-        });
       } else if (name === "auth/deleteMyAccount") {
         data = await enqueueAccountDeletion({
           auth,
@@ -120,35 +106,10 @@ export const handler = onCall(
         data = await cancelAccountDeletion({
           auth,
         });
-      } else if (name === "voice/transcribe") {
-        data = await transcribe({
-          auth,
-          input: args as HandlerInput<"voice/transcribe">,
-        });
-      } else if (name === "voice/transcribeDemo") {
-        data = await transcribeDemo({
-          ip: getClientIp(req),
-          input: args as HandlerInput<"voice/transcribeDemo">,
-        });
-      } else if (name === "voice/demoAvailable") {
-        data = await demoAvailable({
-          input: args as HandlerInput<"voice/demoAvailable">,
-          ip: getClientIp(req),
-        });
-      } else if (name === "voice/compose") {
-        data = await compose({
-          auth,
-          input: args as HandlerInput<"voice/compose">,
-        });
-      } else if (name === "voice/composeDemo") {
-        data = await composeDemo({
-          ip: getClientIp(req),
-          input: args as HandlerInput<"voice/composeDemo">,
-        });
       } else if (name === "emulator/resetWordsToday") {
-        data = await handleResetWordsToday();
+        data = await handleResetLimitsToday();
       } else if (name === "emulator/resetWordsThisMonth") {
-        data = await handleResetWordsThisMonth();
+        data = await handleResetLimitsThisMonth();
       } else if (name === "emulator/processDelayedActions") {
         data = await processDelayedActions();
       } else {

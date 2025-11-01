@@ -192,12 +192,12 @@ export const transcribeAndPostProcessAudio = async ({
     try {
       const floatSamples = ensureFloat32Array(normalizedSamples);
       const wavBuffer = buildWaveFile(floatSamples, sampleRate);
-      transcript = await groqTranscribeAudio({
+      ({ text: transcript } = await groqTranscribeAudio({
         apiKey: apiKeyValue,
         blob: wavBuffer,
         ext: "wav",
         prompt: glossaryPrompt ?? undefined,
-      });
+      }));
       metadata.modelSize = null;
       metadata.inferenceDevice = "API · Groq";
       metadata.transcriptionPrompt = glossaryPrompt ?? null;
@@ -304,7 +304,7 @@ export const transcribeAndPostProcessAudio = async ({
         apiKey: groqPostProcessingKey,
         prompt: postProcessingPrompt,
       });
-      const trimmedProcessed = processed.trim();
+      const trimmedProcessed = processed.text.trim();
       if (trimmedProcessed) {
         finalTranscript = trimmedProcessed;
       } else {
