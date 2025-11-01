@@ -5,10 +5,12 @@ import {
   cursorPosition,
   getCurrentWindow,
   LogicalPosition,
+  PhysicalPosition,
 } from "@tauri-apps/api/window";
 import { useEffect, useMemo } from "react";
 import { useAppStore } from "../../store";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
+import { getPlatform } from "../../utils/platform.utils";
 
 const OVERLAY_WIDTH = 360;
 const OVERLAY_HEIGHT = 40;
@@ -71,20 +73,41 @@ export const OverlayRend = () => {
           }
 
           if (targetMonitor) {
+            const platform = getPlatform();
             const scaleFactor = targetMonitor.scaleFactor ?? 1;
-            const logicalWidth = targetMonitor.size.width / scaleFactor;
-            const logicalX = Math.round(
-              targetMonitor.position.x / scaleFactor +
-                logicalWidth / 2 -
-                OVERLAY_WIDTH / 2
-            );
-            const logicalY = Math.round(
-              targetMonitor.position.y / scaleFactor + TOP_MARGIN
-            );
 
-            await windowRef.setPosition(
-              new LogicalPosition(logicalX, logicalY)
-            );
+            if (platform === "windows") {
+              // Use physical coordinates on Windows to avoid DPI/scale
+              // conversion issues across mixed-DPI multi-monitor setups.
+              const physicalOverlayWidth = Math.round(OVERLAY_WIDTH * scaleFactor);
+              const physicalX = Math.round(
+                targetMonitor.position.x +
+                  targetMonitor.size.width / 2 -
+                  physicalOverlayWidth / 2
+              );
+              const physicalY = Math.round(
+                targetMonitor.position.y + TOP_MARGIN * scaleFactor
+              );
+
+              await windowRef.setPosition(
+                new PhysicalPosition(physicalX, physicalY)
+              );
+            } else {
+              // Other platforms: keep using logical coordinates.
+              const logicalWidth = targetMonitor.size.width / scaleFactor;
+              const logicalX = Math.round(
+                targetMonitor.position.x / scaleFactor +
+                  logicalWidth / 2 -
+                  OVERLAY_WIDTH / 2
+              );
+              const logicalY = Math.round(
+                targetMonitor.position.y / scaleFactor + TOP_MARGIN
+              );
+
+              await windowRef.setPosition(
+                new LogicalPosition(logicalX, logicalY)
+              );
+            }
           }
 
           if (canceled) {
