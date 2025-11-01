@@ -7,6 +7,7 @@
     "dev": "node scripts/select-platform-dev.mjs",
     "dev:mac": "cross-env TAURI_PLATFORM=macos npm run dev:tauri",
     "dev:windows": "cross-env TAURI_PLATFORM=windows npm run dev:tauri",
+    "dev:windows:gpu": "cross-env TAURI_PLATFORM=windows tauri dev --config src-tauri/tauri.local.conf.json -- --features windows-gpu",
     "dev:linux": "cross-env TAURI_PLATFORM=linux npm run dev:tauri",
     "dev:linux:gpu": "cross-env TAURI_PLATFORM=linux npm run dev:tauri:gpu",
     "dev:tauri": "tauri dev --config src-tauri/tauri.local.conf.json",
