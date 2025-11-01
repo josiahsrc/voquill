@@ -13,8 +13,12 @@ const PLATFORM_SCRIPTS = {
 const resolvedPlatform = platformOverride || process.platform;
 const preferGpu = true;
 let selectedScript = PLATFORM_SCRIPTS[resolvedPlatform];
-if (resolvedPlatform === 'linux' && preferGpu) {
-  selectedScript = 'dev:linux:gpu';
+if (preferGpu) {
+  if (resolvedPlatform === 'linux') {
+    selectedScript = 'dev:linux:gpu';
+  } else if (resolvedPlatform === 'win32') {
+    selectedScript = 'dev:windows:gpu';
+  }
 }
 
 if (!selectedScript) {
