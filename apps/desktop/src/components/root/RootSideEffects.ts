@@ -11,11 +11,9 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
-import { getAppState, produceAppState, useAppStore } from "../../store";
+import { getAppState, produceAppState } from "../../store";
 import { OverlayPhase } from "../../types/overlay.types";
-import { DICTATE_HOTKEY, getHotkeyCombosForAction } from "../../utils/keyboard.utils";
-import { getPlatform } from "../../utils/platform.utils";
-import { register as registerGlobalShortcut, unregisterAll as unregisterAllGlobalShortcuts } from "@tauri-apps/plugin-global-shortcut";
+import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
@@ -326,78 +324,7 @@ export const RootSideEffects = () => {
     onDeactivate: stopRecording,
   });
 
-  // On Windows, also register global shortcuts for activation as a fallback.
-  // This toggles recording on press when the OS hook can't deliver keyup reliably.
-  const dictationCombosSignature = useAppStore((state) =>
-    JSON.stringify(getHotkeyCombosForAction(state, DICTATE_HOTKEY)),
-  );
-
-  useAsyncEffect(async () => {
-    if (getPlatform() !== "windows") return;
-
-    // Build accelerators from current hotkey combos
-    const state = getAppState();
-    const combos = getHotkeyCombosForAction(state, DICTATE_HOTKEY);
-
-    const toAccelerator = (combo: string[]): string | null => {
-      const mods: string[] = [];
-      let key: string | null = null;
-
-      for (const k of combo) {
-        const lower = k.toLowerCase();
-        if (lower.startsWith("shift")) mods.push("SHIFT");
-        else if (lower.startsWith("control")) mods.push("CTRL");
-        else if (lower.startsWith("alt") || lower.startsWith("option")) mods.push("ALT");
-        else if (lower.startsWith("meta")) mods.push("SUPER");
-        else if (lower.startsWith("key") && k.length === 4) key = k.slice(3).toUpperCase();
-        else if (lower.startsWith("digit") && k.length >= 6) key = k.slice(5);
-        else if (/^f\d{1,2}$/i.test(k)) key = k.toUpperCase();
-        else if (k.length === 1) key = k.toUpperCase();
-        else key = k.toUpperCase();
-      }
-
-      if (!key) return null;
-      return [...mods, key].join("+");
-    };
-
-    try {
-      await unregisterAllGlobalShortcuts();
-    } catch {}
-
-    const accelerators = Array.from(
-      new Set(
-        combos
-          .map(toAccelerator)
-          .filter((a): a is string => Boolean(a))
-      )
-    );
-
-    for (const acc of accelerators) {
-      try {
-        await registerGlobalShortcut(acc, async () => {
-          if (isRecordingRef.current) {
-            await stopRecording();
-          } else {
-            await startRecording();
-          }
-        });
-      } catch (err) {
-        console.warn("Failed to register global shortcut", acc, err);
-      }
-    }
-
-    return async () => {
-      try { await unregisterAllGlobalShortcuts(); } catch {}
-    };
-  }, [startRecording, stopRecording, dictationCombosSignature]);
-
   useTauriListen<KeysHeldPayload>("keys_held", (payload) => {
-    // When recording a hotkey in the UI, prefer the UI's key tracking
-    // and ignore backend global key events to avoid conflicts.
-    if (getAppState().isRecordingHotkey) {
-      return;
-    }
-
     const existing = getAppState().keysHeld;
     if (isEqual(existing, payload.keys)) {
       return;

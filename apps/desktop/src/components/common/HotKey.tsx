@@ -39,61 +39,6 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
   const previousKeysHeldRef = useRef<string[]>([]);
 
   useEffect(() => {
-    // While focused, fall back to DOM key events so Windows users
-    // can record hotkeys even if the global hook is unavailable.
-    if (!focused) {
-      return;
-    }
-
-    const pressed = new Set<string>();
-
-    const emitSnapshot = () => {
-      const snapshot = Array.from(pressed.values()).sort();
-      produceAppState((draft) => {
-        draft.keysHeld = snapshot;
-      });
-    };
-
-    const codeFromEvent = (e: KeyboardEvent): string => {
-      // Prefer physical key location to match rdev labels (e.code like 'ShiftLeft', 'F8', 'KeyA').
-      return e.code || e.key;
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const code = codeFromEvent(e);
-      if (!code) return;
-      if (e.repeat && pressed.has(code)) return;
-      pressed.add(code);
-      emitSnapshot();
-      // Prevent default so space/enter don't scroll while capturing
-      e.preventDefault();
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      const code = codeFromEvent(e);
-      if (!code) return;
-      pressed.delete(code);
-      emitSnapshot();
-      e.preventDefault();
-    };
-
-    const handleWindowBlur = () => {
-      pressed.clear();
-      emitSnapshot();
-    };
-
-    window.addEventListener("keydown", handleKeyDown, { capture: true });
-    window.addEventListener("keyup", handleKeyUp, { capture: true });
-    window.addEventListener("blur", handleWindowBlur);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown, { capture: true } as any);
-      window.removeEventListener("keyup", handleKeyUp, { capture: true } as any);
-      window.removeEventListener("blur", handleWindowBlur);
-    };
-  }, [focused]);
-
-  useEffect(() => {
     if (!focused) {
       previousKeysHeldRef.current = [];
       return;
