@@ -6,8 +6,8 @@ import {
 	trySend1000WordsEvent,
 	tryUpdateMemberLoopsContact,
 } from "../services/member.service";
-import { Member, Nullable } from "../shared";
 import { LOOPS_API_KEY_VAR } from "../utils/env.utils";
+import { Member, Nullable } from "@repo/types";
 
 // Every hour
 export const resetWordsTodayCron = onSchedule("0 * * * *", async () => {
