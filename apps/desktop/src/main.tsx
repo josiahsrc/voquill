@@ -4,7 +4,7 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import { initializeApp } from "firebase/app";
+import { FirebaseOptions, initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import {
   connectFirestoreEmulator,
@@ -22,17 +22,27 @@ import { theme } from "./theme";
 import { getIsDevMode, getIsEmulators } from "./utils/env.utils";
 import { useKeyDownHandler } from "./hooks/helper.hooks";
 
-const config = {
-  apiKey: "AIzaSyDlPI-o5piDSNIG39EvJZJEz0gXCGEGk-w",
-  authDomain: "voquill-prod.firebaseapp.com",
-  projectId: "voquill-prod",
-  storageBucket: "voquill-prod.firebasestorage.app",
-  messagingSenderId: "777461284594",
-  appId: "1:777461284594:web:d431c9557d3e02395e5a6b",
-  measurementId: "G-LKHEH0DPND",
+const firebaseConfig: FirebaseOptions = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = initializeApp(config);
+const missingFirebaseConfigKeys = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingFirebaseConfigKeys.length > 0) {
+  throw new Error(
+    `Missing Firebase configuration values: ${missingFirebaseConfigKeys.join(", ")}`
+  );
+}
+
+const app = initializeApp(firebaseConfig);
 
 initializeFirestore(app, { ignoreUndefinedProperties: true });
 
