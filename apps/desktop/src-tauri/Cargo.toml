@@ -21,6 +21,7 @@ tauri-build = { version = "2", features = [] }
 default = []
 linux-gpu = ["whisper-rs/vulkan"]
 mac-gpu = ["whisper-rs/metal"]
+windows-gpu = ["whisper-rs/vulkan"]
 
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png"] }
