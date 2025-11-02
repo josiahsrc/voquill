@@ -10,5 +10,9 @@ export default defineConfig({
     include: ["src/**/*.test.ts", "test/**/*.test.ts"],
     testTimeout: 10_000,
     hookTimeout: 10_000,
+
+    // Firebase emulator only handles one function at a time, so run specs sequentially.
+    fileParallelism: false,
+    maxConcurrency: 3,
   }
 });
