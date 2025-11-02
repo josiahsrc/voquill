@@ -6,18 +6,20 @@
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --outdir=lib --tsconfig=tsconfig.build.json",
     "check-types": "npm run type-check",
-    "dev": "firebase emulators:start --config ../firebase.json",
+    "dev": "concurrently \"npm run watch\" \"npm run dev:emulators\"",
+    "dev:emulators": "firebase emulators:start --config ../firebase.json",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "test": "jest --config jest.config.js --runInBand --watchman=false --detectOpenHandles",
-    "test:component": "npm run test -- --testPathPattern test/component",
-    "test:integration": "npm run test -- --testPathPattern test/integration",
-    "test:unit": "npm run test -- --testPathPattern src",
+    "test": "vitest run",
+    "test:component": "vitest run test/component",
+    "test:integration": "vitest run test/integration",
+    "test:unit": "vitest run src",
+    "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "watch": "nodemon --exec \"npm run build\""
   },
   "engines": {
-    "node": ">=20"
+    "node": "20"
   },
   "main": "lib/index.js",
   "dependencies": {
@@ -50,7 +52,6 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@types/jest": "^29.5.12",
     "@types/node": "^22.15.3",
     "@types/sharp": "^0.31.1",
     "@types/stripe": "^8.0.416",
@@ -58,10 +59,11 @@
     "esbuild": "^0.25.8",
     "eslint": "^9.34.0",
     "firebase-tools": "^13.34.0",
-    "jest": "^29.7.0",
+    "concurrently": "^9.1.2",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",
-    "ts-jest": "^29.1.2",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vite": "^7.1.12",
+    "vitest": "^4.0.6"
   }
 }

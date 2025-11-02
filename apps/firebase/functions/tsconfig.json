@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node", "jest"]
+    "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "test", "jest.config.js"]
+  "include": ["src", "test", "vitest.config.ts"]
 }

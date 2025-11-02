@@ -13,3 +13,4 @@ node_modules/
 # secrets
 .secret*
 !.secret.local.sample
+!.env.local

@@ -4,7 +4,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "test", "jest.config.js"]
+  "include": ["src", "test", "vitest.config.ts"]
 }
