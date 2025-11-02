@@ -258,7 +258,7 @@ jobs:
             args: "--features linux-gpu"
           - label: Windows
             os: windows-latest
-            args: ""
+            args: "--features windows-gpu"
             rust_targets: ""
             tauri_platform: windows
             node_platform: win32
@@ -335,6 +335,32 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install toolchain for whisper (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # 1) LLVM / Clang (for bindgen)
+          choco install -y llvm
+
+          # 2) CMake (GitHub runners usually have it, but let's be explicit)
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+
+          # 3) Vulkan SDK (for GPU build)
+          choco install -y vulkan-sdk
+
+          # Pick the newest Vulkan SDK folder and export it
+          $vk = Get-ChildItem 'C:\VulkanSDK' | Sort-Object Name -Descending | Select-Object -First 1
+          if ($vk) {
+            "VULKAN_SDK=$($vk.FullName)" >> $env:GITHUB_ENV
+            "$($vk.FullName)\Bin" >> $env:GITHUB_PATH
+            "$($vk.FullName)\Lib" >> $env:GITHUB_PATH
+          }
+
+          # Wire clang up like you did locally
+          "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+          "CLANG_PATH=C:\Program Files\LLVM\bin\clang.exe" >> $env:GITHUB_ENV
+          "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
       - name: Import Apple signing certificate
         if: matrix.os == 'macos-14'
