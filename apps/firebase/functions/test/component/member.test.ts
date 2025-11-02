@@ -95,8 +95,8 @@ describe("resetWordsTodayCron", () => {
         );
         expect(notExpiredMemberSnap?.data.wordsToday).toBe(50);
         expect(
-          notExpiredMemberSnap?.data.thisMonthResetAt.toMillis()
-        ).toEqual(notExpiredMember.thisMonthResetAt.toMillis());
+          notExpiredMemberSnap?.data.thisMonthResetAt?.toMillis()
+        ).toEqual(notExpiredMember.thisMonthResetAt?.toMillis());
       },
       retries: 10,
       delay: 1000
