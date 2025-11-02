@@ -1,5 +1,5 @@
 import { Stack } from "@mui/material";
-import { useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import { OnboardingLoginForm } from "./OnboardingLoginForm";
 import { NameForm } from "./NameForm";
 import { PlanSelectionForm } from "./PlanSelectionForm";
@@ -7,9 +7,16 @@ import { PostProcessingMethodForm } from "./PostProcessingMethodForm";
 import { TranscriptionMethodForm } from "./TranscriptionMethodForm";
 import { TryItOutForm } from "./TryItOutForm";
 import { WelcomeForm } from "./WelcomeForm";
+import { useEffect } from "react";
 
 export default function OnboardingPage() {
   const currentPage = useAppStore((state) => state.onboarding.currentPage);
+
+  useEffect(() => {
+    produceAppState((draft) => {
+      draft.login.mode = "signUp";
+    });
+  }, []);
 
   return (
     <Stack

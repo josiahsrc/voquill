@@ -1,7 +1,7 @@
 
-import { Contact, DelayedAction, Member, Nullable, PartialConfig, Usage, User } from "@repo/types";
-import { listify } from "@repo/utilities";
 import { FiremixPath } from "@firemix/core";
+import { Contact, DelayedAction, Member, Nullable, PartialConfig, Term, Transcription, User } from "@repo/types";
+import { listify } from "@repo/utilities";
 
 export const members = (memberId?: Nullable<string>): FiremixPath<Member> => {
   return ["members", ...listify(memberId)];
@@ -25,12 +25,10 @@ export const delayedActions = (
   return ["delayedActions", ...listify(delayedActionId)];
 };
 
-export const usageByIp = (ip?: Nullable<string>): FiremixPath<Usage> => {
-  return ["demoUsageByIp", ...listify(ip)];
-};
+export const transcriptions = (transcriptionId?: Nullable<string>): FiremixPath<Transcription> => {
+  return ["transcriptions", ...listify(transcriptionId)];
+}
 
-export const usageByBrowserId = (
-  browserId?: Nullable<string>
-): FiremixPath<Usage> => {
-  return ["demoUsageByBrowserId", ...listify(browserId)];
-};
+export const terms = (transcriptionId?: Nullable<string>): FiremixPath<Term> => {
+  return ["terms", ...listify(transcriptionId)];
+}

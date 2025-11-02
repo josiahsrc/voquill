@@ -17,7 +17,7 @@ export const getMyCloudUserId = (state: AppState): Nullable<string> => state.aut
 export const getMyEffectiveUserId = (draft: AppState): string => getMyCloudUserId(draft) ?? "local-user-id";
 
 export const getMyUser = (state: AppState): Nullable<User> => {
-  return getRec(state.userById, getMyCloudUserId(state)) ?? null;
+  return getRec(state.userById, getMyEffectiveUserId(state)) ?? null;
 };
 
 export const getMyUserName = (state: AppState): string => {
