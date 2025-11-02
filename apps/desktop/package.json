@@ -50,7 +50,9 @@
     "react-virtuoso": "^4.12.8",
     "rxjs": "^7.8.2",
     "vite-plugin-svgr": "^4.5.0",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.4.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

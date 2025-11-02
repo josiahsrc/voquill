@@ -2,13 +2,12 @@ import { firemix } from "@firemix/client";
 import { User } from "@repo/types";
 import { getUserRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
-import { registerUsers } from "../utils/app.utils";
-import { getMyUserId, getPostProcessingPreferenceFromState, getTranscriptionPreferenceFromState } from "../utils/user.utils";
-import { showErrorSnackbar, showSnackbar } from "./app.actions";
 import {
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_PROCESSING_MODE,
 } from "../types/ai.types";
+import { getMyUserId, getPostProcessingPreferenceFromState, getTranscriptionPreferenceFromState, setCurrentUser } from "../utils/user.utils";
+import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
 export const advancePage = (delta = 1) => {
   produceAppState((draft) => {
@@ -65,8 +64,7 @@ export const submitOnboarding = async () => {
     const savedUser = await repo.setUser(user);
 
     produceAppState((draft) => {
-      registerUsers(draft, [savedUser]);
-      draft.currentUserId = savedUser.id;
+      setCurrentUser(draft, savedUser);
       draft.onboarding.submitting = false;
       draft.onboarding.name = savedUser.name;
     });

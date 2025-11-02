@@ -1,3 +1,4 @@
+import { HandlerOutput } from "@repo/functions";
 import {
   ApiKey,
   Hotkey,
@@ -8,15 +9,19 @@ import {
   Transcription,
   User,
 } from "@repo/types";
-import { PermissionMap } from "../types/permission.types";
-import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.state";
-import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
-import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
-import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import { OverlayPhase } from "../types/overlay.types";
+import { PermissionMap } from "../types/permission.types";
+import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
+import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.state";
+import { INITIAL_PAYMENT_STATE, PaymentState } from "./payment.state";
+import { INITIAL_PRICING_STATE, PricingState } from "./pricing.state";
+import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
+import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
+
+export type PriceValue = HandlerOutput<"stripe/getPrices">["prices"];
 
 export type AppState = {
   initialized: boolean;
@@ -34,12 +39,15 @@ export type AppState = {
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
   config: Nullable<PartialConfig>;
+  priceValueByKey: Record<string, PriceValue>;
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
   dictionary: DictionaryState;
   settings: SettingsState;
   updater: UpdaterState;
+  payment: PaymentState;
+  pricing: PricingState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -54,6 +62,7 @@ export const INITIAL_APP_STATE: AppState = {
   userById: {},
   termById: {},
   transcriptionById: {},
+  priceValueByKey: {},
   apiKeyById: {},
   overlayPhase: "idle",
   audioLevels: [],
@@ -75,4 +84,6 @@ export const INITIAL_APP_STATE: AppState = {
   dictionary: INITIAL_DICTIONARY_STATE,
   settings: INITIAL_SETTINGS_STATE,
   updater: INITIAL_UPDATER_STATE,
+  payment: INITIAL_PAYMENT_STATE,
+  pricing: INITIAL_PRICING_STATE,
 };

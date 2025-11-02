@@ -369,6 +369,8 @@ jobs:
             echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${messaging_sender_id}"
             echo "VITE_FIREBASE_APP_ID=${app_id}"
             echo "VITE_FIREBASE_MEASUREMENT_ID=${measurement_id}"
+            echo "VITE_USE_EMULATORS=false"
+            echo "VITE_FLAVOR=${RELEASE_FLAVOR}"
           } >> "$GITHUB_ENV"
 
       - name: Install GPU build deps (Windows)

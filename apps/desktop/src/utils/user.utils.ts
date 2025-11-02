@@ -2,6 +2,8 @@ import { Nullable, User } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
 import { PostProcessingMode, ProcessingMode } from "../types/ai.types";
+import { registerUsers } from "./app.utils";
+import { applyAiPreferencesFromUser } from "./ai.utils";
 
 export const getMyUserId = (state: AppState): string =>
   state.currentUserId ?? "local-user-id";
@@ -61,3 +63,9 @@ export const getPostProcessingPreferenceFromState = (
 
   return null;
 };
+
+export const setCurrentUser = (draft: AppState, user: User) => {
+  registerUsers(draft, [user]);
+  applyAiPreferencesFromUser(draft, user);
+  draft.currentUserId = user.id;
+}

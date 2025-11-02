@@ -21,14 +21,24 @@ import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { theme } from "./theme";
 import { getIsDevMode, getIsEmulators } from "./utils/env.utils";
 import { useKeyDownHandler } from "./hooks/helper.hooks";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 
 const firebaseConfig: FirebaseOptions = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCJ8C3ZW2bHjerneg5i0fr-b5uwuy7uULM",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "voquill-dev.firebaseapp.com",
+  apiKey:
+    import.meta.env.VITE_FIREBASE_API_KEY ||
+    "AIzaSyCJ8C3ZW2bHjerneg5i0fr-b5uwuy7uULM",
+  authDomain:
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "voquill-dev.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "voquill-dev",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "voquill-dev.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "778214168359",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:778214168359:web:66ee2ce5df76c8c2d77b02",
+  storageBucket:
+    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
+    "voquill-dev.firebasestorage.app",
+  messagingSenderId:
+    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "778214168359",
+  appId:
+    import.meta.env.VITE_FIREBASE_APP_ID ||
+    "1:778214168359:web:66ee2ce5df76c8c2d77b02",
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-V6Y1RSFBQX",
 };
 
@@ -110,12 +120,18 @@ if (isOverlayWindow) {
     </Main>
   );
 } else {
-  root.render(
-    <Main>
-      <Refresher>
-        <SnackbarEmitter />
-        <AppWithLoading />
-      </Refresher>
-    </Main>
+  let content = (
+    <Refresher>
+      <SnackbarEmitter />
+      <AppWithLoading />
+    </Refresher>
   );
+
+  const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+  if (stripePublicKey) {
+    const stripePromise = loadStripe(stripePublicKey);
+    content = <Elements stripe={stripePromise}>{content}</Elements>;
+  }
+
+  root.render(<Main>{content}</Main>);
 }

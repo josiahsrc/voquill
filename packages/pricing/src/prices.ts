@@ -1,5 +1,6 @@
 export type PriceInfo = {
   sandboxId: string;
+  devId: string;
   prodId: string;
 };
 
@@ -21,6 +22,7 @@ export type PriceKey = (typeof PRICE_KEYS)[number];
 export const Prices: Record<PriceKey, PriceInfo> = {
   pro_monthly: {
     sandboxId: "price_1RlrYhRRNItZsxS6QxXfp7XK",
+    devId: "",
     prodId: "price_1Rm1JRIp7DaYKUgMvex8GJIv",
   },
 };

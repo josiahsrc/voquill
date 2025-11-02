@@ -1,3 +1,4 @@
+import { PaymentDialog } from "../payment/PaymentDialog";
 import { AIPostProcessingDialog } from "../settings/AIPostProcessingDialog";
 import { AITranscriptionDialog } from "../settings/AITranscriptionDialog";
 import { AudioDialog } from "../settings/AudioDialog";
@@ -20,6 +21,7 @@ export const RootDialogs = () => {
       <AudioDialog />
       <ShortcutsDialog />
       <ClearLocalDataDialog />
+      <PaymentDialog />
     </>
   );
 };
