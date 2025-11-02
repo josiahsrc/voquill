@@ -5,15 +5,42 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tauri + React + Typescript</title>
-  </head>
-
-  <body>
-    <div id="root"></div>
+    <script>
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("overlay") === "1") {
+          document.documentElement.dataset.overlay = "true";
+        }
+      })();
+    </script>
     <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      body {
+        margin: 0;
+        background-color: #121212;
+      }
+
+      @media (prefers-color-scheme: light) {
+        body {
+          background-color: #fff;
+        }
+      }
+
+      :root[data-overlay="true"] body {
+        background-color: transparent;
+      }
+
       .firebase-emulator-warning {
         display: none !important;
       }
     </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
