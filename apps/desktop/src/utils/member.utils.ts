@@ -3,12 +3,12 @@ import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
 
 export const getMyMember = (state: AppState): Nullable<Member> => {
-  return getRec(state.memberById, state.currentUserId) ?? null;
+  return getRec(state.memberById, state.auth?.uid) ?? null;
 };
 
 export const planToDisplayName = (plan: MemberPlan): string => {
   if (plan === "free") {
-    return "Trial";
+    return "Community";
   } else {
     return "Pro";
   }

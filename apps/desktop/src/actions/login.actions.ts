@@ -105,8 +105,6 @@ export const setMode = (mode: LoginMode): void => {
   produceAppState((state) => {
     state.login.mode = mode;
     state.login.status = "idle";
-    state.login.password = "";
-    state.login.confirmPassword = "";
     state.login.hasSubmittedRegistration = false;
     state.login.errorMessage = "";
   });

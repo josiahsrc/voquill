@@ -7,11 +7,11 @@ import {
   type ProcessingMode,
 } from "../types/ai.types";
 import {
+  getMyEffectiveUserId,
   getMyUser,
-  getMyUserId,
   getPostProcessingPreferenceFromState,
   getTranscriptionPreferenceFromState,
-  setCurrentUser,
+  setCurrentUser
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 
@@ -78,7 +78,7 @@ export const addWordsToCurrentUser = async (wordCount: number): Promise<void> =>
 
 export const refreshCurrentUser = async (): Promise<void> => {
   const state = getAppState();
-  const userId = getMyUserId(state);
+  const userId = getMyEffectiveUserId(state);
 
   try {
     const user = await getUserRepo().getUser(userId);

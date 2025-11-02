@@ -6,7 +6,7 @@ import { useCallback } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
-import { getMyUserId } from "../../utils/user.utils";
+import { getMyCloudUserId } from "../../utils/user.utils";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { DictionaryRow } from "./DictionaryRow";
 import { MenuPopoverBuilder } from "../common/MenuPopover";
@@ -19,7 +19,7 @@ export default function DictionaryPage() {
     const newTerm: Term = {
       id: firemix().id(),
       createdAt: firemix().now(),
-      createdByUserId: getMyUserId(getAppState()),
+      createdByUserId: getMyCloudUserId(getAppState()),
       sourceValue: "",
       destinationValue: "",
       isReplacement: replacement,

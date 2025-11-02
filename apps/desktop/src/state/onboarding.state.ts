@@ -16,7 +16,7 @@ export type OnboardingState = {
   history: OnboardingPageKey[];
   submitting: boolean;
   tryItOutInput: string;
-  plan: MemberPlan | null;
+  selectedPlan: MemberPlan | null;
   loggingIn: boolean;
 };
 
@@ -26,7 +26,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   history: [],
   submitting: false,
   tryItOutInput: "",
-  plan: null,
+  selectedPlan: null,
   loggingIn: false,
 };
 

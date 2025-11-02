@@ -11,10 +11,10 @@ import {
   DEFAULT_PROCESSING_MODE,
 } from "../types/ai.types";
 import {
-  getMyUserId,
+  getMyEffectiveUserId,
   getPostProcessingPreferenceFromState,
   getTranscriptionPreferenceFromState,
-  setCurrentUser,
+  setCurrentUser
 } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
@@ -47,7 +47,7 @@ export const goToOnboardingPage = (nextPage: OnboardingPageKey) => {
 
 export const selectOnboardingPlan = (plan: MemberPlan) => {
   produceAppState((draft) => {
-    draft.onboarding.plan = plan;
+    draft.onboarding.selectedPlan = plan;
 
     const targetPageKey: OnboardingPageKey =
       plan === "pro" ? "login" : "transcription";
@@ -55,7 +55,6 @@ export const selectOnboardingPlan = (plan: MemberPlan) => {
     navigateToOnboardingPage(draft.onboarding, targetPageKey);
   });
 };
-
 
 export const submitOnboarding = async () => {
   const state = getAppState();
@@ -81,7 +80,7 @@ export const submitOnboarding = async () => {
   try {
     const repo = getUserRepo();
     const now = firemix().now();
-    const userId = getMyUserId(state);
+    const userId = getMyEffectiveUserId(state);
 
     const user: User = {
       id: userId,

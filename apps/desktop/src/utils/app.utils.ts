@@ -1,4 +1,4 @@
-import { ApiKey, Hotkey, Nullable, Term, Transcription, User } from "@repo/types";
+import { ApiKey, Hotkey, Member, Term, Transcription, User } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -18,14 +18,6 @@ export const setSnackbar = (
   draft.snackbarDuration = opts?.duration ?? 3000;
   draft.snackbarTransitionDuration = opts?.transitionDuration;
 };
-
-export const getIsSignedIn = (state: AppState): boolean => !!state.currentUserId;
-
-export const getMyUserId = (state: AppState): Nullable<string> =>
-  state.currentUserId;
-
-
-export const getLocalUserId = (draft: AppState): string => getMyUserId(draft) ?? "local-user-id";
 
 export const registerUsers = (draft: AppState, users: User[]): void => {
   for (const user of users) {
@@ -59,3 +51,9 @@ export const registerApiKeys = (draft: AppState, apiKeys: ApiKey[]): void => {
     draft.apiKeyById[apiKey.id] = apiKey;
   }
 };
+
+export const registerMembers = (draft: AppState, members: Member[]): void => {
+  for (const member of members) {
+    draft.memberById[member.id] = member;
+  }
+}

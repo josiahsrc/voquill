@@ -5,11 +5,19 @@ import { PostProcessingMode, ProcessingMode } from "../types/ai.types";
 import { registerUsers } from "./app.utils";
 import { applyAiPreferencesFromUser } from "./ai.utils";
 
-export const getMyUserId = (state: AppState): string =>
-  state.currentUserId ?? "local-user-id";
+export const getHasEmailProvider = (state: AppState): boolean => {
+  const auth = state.auth;
+  const providers = auth?.providerData ?? [];
+  const providerIds = providers.map((p) => p.providerId);
+  return providerIds.includes("password");
+};
+
+export const getMyCloudUserId = (state: AppState): Nullable<string> => state.auth?.uid ?? null;
+
+export const getMyEffectiveUserId = (draft: AppState): string => getMyCloudUserId(draft) ?? "local-user-id";
 
 export const getMyUser = (state: AppState): Nullable<User> => {
-  return getRec(state.userById, getMyUserId(state)) ?? null;
+  return getRec(state.userById, getMyCloudUserId(state)) ?? null;
 };
 
 export const getMyUserName = (state: AppState): string => {
@@ -17,6 +25,9 @@ export const getMyUserName = (state: AppState): string => {
   return user?.name || "Guest";
 };
 
+export const getIsSignedIn = (state: AppState): boolean => {
+  return !!state.auth;
+}
 
 const hasValidApiKey = (state: AppState, id: Nullable<string>): boolean => {
   return Boolean(getRec(state.apiKeyById, id));
@@ -75,5 +86,4 @@ export const getPostProcessingPreferenceFromState = (
 export const setCurrentUser = (draft: AppState, user: User) => {
   registerUsers(draft, [user]);
   applyAiPreferencesFromUser(draft, user);
-  draft.currentUserId = user.id;
 }

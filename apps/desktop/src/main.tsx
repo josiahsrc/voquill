@@ -4,6 +4,8 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { FirebaseOptions, initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import {
@@ -19,14 +21,7 @@ import { OverlayRoot } from "./components/overlay/OverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { theme } from "./theme";
-import {
-  getIsDevMode,
-  getIsEmulators,
-  getStripePublicKey,
-} from "./utils/env.utils";
-import { useKeyDownHandler } from "./hooks/helper.hooks";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
+import { getIsEmulators, getStripePublicKey } from "./utils/env.utils";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey:
@@ -91,21 +86,6 @@ type ChildrenProps = {
   children: React.ReactNode;
 };
 
-const Refresher = ({ children }: ChildrenProps) => {
-  // You cannot refresh the page in Tauri, here's a hotkey to help with that
-  useKeyDownHandler({
-    keys: ["r"],
-    ctrl: true,
-    callback: () => {
-      if (getIsDevMode()) {
-        window.location.reload();
-      }
-    },
-  });
-
-  return <>{children}</>;
-};
-
 const Main = ({ children }: ChildrenProps) => {
   return (
     <React.StrictMode>
@@ -128,10 +108,8 @@ if (isOverlayWindow) {
   root.render(
     <Main>
       <Elements stripe={stripePromise}>
-        <Refresher>
-          <SnackbarEmitter />
-          <AppWithLoading />
-        </Refresher>
+        <SnackbarEmitter />
+        <AppWithLoading />
       </Elements>
     </Main>
   );

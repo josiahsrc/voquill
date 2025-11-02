@@ -12,6 +12,7 @@ import {
   MenuPopoverBuilder,
   type MenuPopoverItem,
 } from "../common/MenuPopover";
+import { getMyMember, planToDisplayName } from "../../utils/member.utils";
 
 export type BaseHeaderProps = {
   logo?: React.ReactNode;
@@ -43,6 +44,9 @@ export const AppHeader = () => {
   const nav = useNavigate();
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
+  const planName = useAppStore((state) =>
+    planToDisplayName(getMyMember(state)?.plan ?? "free")
+  );
 
   const myName = useAppStore((state) => {
     const user = getMyUser(state);
@@ -107,7 +111,7 @@ export const AppHeader = () => {
                 color="textSecondary"
                 lineHeight={1}
               >
-                Basic
+                {planName}
               </Typography>
             </Stack>
           </Button>

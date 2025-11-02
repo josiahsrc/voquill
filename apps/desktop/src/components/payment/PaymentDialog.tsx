@@ -8,6 +8,7 @@ import {
 import { useCallback } from "react";
 import { useOnExit } from "../../hooks/helper.hooks";
 import { produceAppState, useAppStore } from "../../store";
+import { delayed } from "@repo/utilities";
 
 export const PaymentDialog = () => {
   const open = useAppStore((state) => state.payment.open);
@@ -27,6 +28,10 @@ export const PaymentDialog = () => {
     });
   };
 
+  const delayClose = async () => {
+    await delayed(3000).then(handleClose);
+  };
+
   useOnExit(() => {
     handleClose();
   });
@@ -39,6 +44,7 @@ export const PaymentDialog = () => {
           stripe={stripe}
           options={{
             fetchClientSecret,
+            onComplete: delayClose,
           }}
         >
           <EmbeddedCheckout />

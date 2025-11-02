@@ -30,6 +30,7 @@
     "@repo/functions": "*",
     "@repo/types": "*",
     "@repo/utilities": "*",
+    "@repo/firemix": "*",
     "@repo/voice-ai": "*",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.4.0",

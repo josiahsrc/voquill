@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
 import { BaseRepo } from "./base.repo";
 import { firemix } from "@firemix/client";
-import { getMyUserId } from "../utils/user.utils";
+import { getMyCloudUserId } from "../utils/user.utils";
 import { getAppState } from "../store";
 
 type LocalTranscriptionAudio = TranscriptionAudioSnapshot;
@@ -64,7 +64,7 @@ const fromLocalTranscription = (
   id: transcription.id,
   transcript: transcription.transcript,
   createdAt: firemix().timestampFromMillis(transcription.timestamp),
-  createdByUserId: getMyUserId(getAppState()),
+  createdByUserId: getMyCloudUserId(getAppState()),
   isDeleted: false,
   audio: transcription.audio
     ? {

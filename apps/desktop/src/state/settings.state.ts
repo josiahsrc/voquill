@@ -26,6 +26,8 @@ export type SettingsPostProcessingState = {
 };
 
 export type SettingsState = {
+  changePasswordDialogOpen: boolean;
+  deleteAccountDialog: boolean;
   microphoneDialogOpen: boolean;
   audioDialogOpen: boolean;
   shortcutsDialogOpen: boolean;
@@ -42,6 +44,8 @@ export type SettingsState = {
 };
 
 export const INITIAL_SETTINGS_STATE: SettingsState = {
+  changePasswordDialogOpen: false,
+  deleteAccountDialog: false,
   microphoneDialogOpen: false,
   audioDialogOpen: false,
   shortcutsDialogOpen: false,

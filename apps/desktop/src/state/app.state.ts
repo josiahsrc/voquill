@@ -19,6 +19,7 @@ import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
+import { AuthUser } from "../types/auth.types";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -26,7 +27,7 @@ export type PriceValue = HandlerOutput<"stripe/getPrices">["prices"];
 
 export type AppState = {
   initialized: boolean;
-  currentUserId: Nullable<string>;
+  auth: Nullable<AuthUser>;
   keysHeld: string[];
   isRecordingHotkey: boolean;
   overlayPhase: OverlayPhase;
@@ -71,9 +72,9 @@ export const INITIAL_APP_STATE: AppState = {
   permissions: {
     microphone: null,
     "input-monitoring": null,
-  } satisfies PermissionMap,
+  },
   hotkeyById: {},
-  currentUserId: null,
+  auth: null,
   config: null,
   keysHeld: [],
   initialized: false,
