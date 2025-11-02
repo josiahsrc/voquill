@@ -19,7 +19,11 @@ import { OverlayRoot } from "./components/overlay/OverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { theme } from "./theme";
-import { getIsDevMode, getIsEmulators } from "./utils/env.utils";
+import {
+  getIsDevMode,
+  getIsEmulators,
+  getStripePublicKey,
+} from "./utils/env.utils";
 import { useKeyDownHandler } from "./hooks/helper.hooks";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
@@ -120,18 +124,15 @@ if (isOverlayWindow) {
     </Main>
   );
 } else {
-  let content = (
-    <Refresher>
-      <SnackbarEmitter />
-      <AppWithLoading />
-    </Refresher>
+  const stripePromise = loadStripe(getStripePublicKey());
+  root.render(
+    <Main>
+      <Elements stripe={stripePromise}>
+        <Refresher>
+          <SnackbarEmitter />
+          <AppWithLoading />
+        </Refresher>
+      </Elements>
+    </Main>
   );
-
-  const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-  if (stripePublicKey) {
-    const stripePromise = loadStripe(stripePublicKey);
-    content = <Elements stripe={stripePromise}>{content}</Elements>;
-  }
-
-  root.render(<Main>{content}</Main>);
 }

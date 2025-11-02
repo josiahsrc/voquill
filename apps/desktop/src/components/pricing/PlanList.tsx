@@ -57,7 +57,7 @@ const PlanCard = ({
   return (
     <Card
       sx={{
-        width: { xs: "100%", sm: 400 },
+        width: { xs: "100%", sm: 350 },
         border: "3px solid",
         borderColor: color ?? "transparent",
         backgroundColor: "level0",
@@ -139,7 +139,7 @@ export const PlanList = ({
       <CheckmarkRow>Unlimited words</CheckmarkRow>
       <CheckmarkRow>Custom API keys</CheckmarkRow>
       <CheckmarkRow disabled>Manual setup</CheckmarkRow>
-      <CheckmarkRow disabled>Data not synced between devices</CheckmarkRow>
+      <CheckmarkRow disabled>Data stored on-device</CheckmarkRow>
     </PlanCard>
   );
 
@@ -160,7 +160,7 @@ export const PlanList = ({
       }
     >
       <CheckmarkRow>Everything community has</CheckmarkRow>
-      <CheckmarkRow>Data is synced between devices</CheckmarkRow>
+      <CheckmarkRow>Cross-device data storage</CheckmarkRow>
       <CheckmarkRow>No setup needed</CheckmarkRow>
       <CheckmarkRow>Priority support</CheckmarkRow>
       <CheckmarkRow>Supports the devs ❤️</CheckmarkRow>

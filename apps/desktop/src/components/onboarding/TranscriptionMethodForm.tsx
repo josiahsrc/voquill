@@ -1,5 +1,8 @@
 import { Button, Stack, Typography } from "@mui/material";
-import { advancePage } from "../../actions/onboarding.actions";
+import {
+  goBackOnboardingPage,
+  goToOnboardingPage,
+} from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import { AITranscriptionConfiguration } from "../settings/AITranscriptionConfiguration";
 import { FormContainer } from "./OnboardingShared";
@@ -24,10 +27,10 @@ export const TranscriptionMethodForm = () => {
       <AITranscriptionConfiguration />
 
       <Stack direction="row" justifyContent="space-between" mt={4}>
-        <Button onClick={() => advancePage(-1)}>Back</Button>
+        <Button onClick={() => goBackOnboardingPage()}>Back</Button>
         <Button
           variant="contained"
-          onClick={() => advancePage()}
+          onClick={() => goToOnboardingPage("postProcessing")}
           disabled={!canContinue}
         >
           Continue

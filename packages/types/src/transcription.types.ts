@@ -14,8 +14,8 @@ export type Transcription = {
   postProcessPrompt?: string | null;
   transcriptionApiKeyId?: string | null;
   postProcessApiKeyId?: string | null;
-  transcriptionMode?: "local" | "api" | null;
-  postProcessMode?: "local" | "api" | null;
+  transcriptionMode?: "local" | "api" | "cloud" | null;
+  postProcessMode?: "none" | "api" | "cloud" | null;
   postProcessDevice?: string | null;
 };
 

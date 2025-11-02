@@ -1,6 +1,6 @@
 import { ArrowForward } from "@mui/icons-material";
 import { Button, Typography } from "@mui/material";
-import { advancePage } from "../../actions/onboarding.actions";
+import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { FormContainer } from "./OnboardingShared";
 
 export const WelcomeForm = () => {
@@ -16,7 +16,7 @@ export const WelcomeForm = () => {
       <Button
         variant="contained"
         endIcon={<ArrowForward />}
-        onClick={() => advancePage()}
+        onClick={() => goToOnboardingPage("name")}
       >
         Let's do this
       </Button>

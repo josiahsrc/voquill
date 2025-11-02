@@ -1,17 +1,33 @@
+import { MemberPlan } from "@repo/types";
 import { getIsDevMode } from "../utils/env.utils";
+
+export type OnboardingPageKey =
+  | "welcome"
+  | "name"
+  | "plan"
+  | "login"
+  | "transcription"
+  | "postProcessing"
+  | "tryItOut";
 
 export type OnboardingState = {
   name: string;
-  page: number;
+  currentPage: OnboardingPageKey;
+  history: OnboardingPageKey[];
   submitting: boolean;
   tryItOutInput: string;
+  plan: MemberPlan | null;
+  loggingIn: boolean;
 };
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   name: "",
-  page: 0,
+  currentPage: "welcome",
+  history: [],
   submitting: false,
   tryItOutInput: "",
+  plan: null,
+  loggingIn: false,
 };
 
 if (getIsDevMode()) {

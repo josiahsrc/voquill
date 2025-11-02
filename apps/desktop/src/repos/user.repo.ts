@@ -13,9 +13,9 @@ type LocalUser = {
   wordsThisMonthMonth: string | null;
   wordsTotal: number;
   playInteractionChime?: boolean;
-  preferredTranscriptionMode?: "local" | "api" | null;
+  preferredTranscriptionMode?: "local" | "api" | "cloud" | null;
   preferredTranscriptionApiKeyId?: string | null;
-  preferredPostProcessingMode?: "none" | "api" | null;
+  preferredPostProcessingMode?: "none" | "api" | "cloud" | null;
   preferredPostProcessingApiKeyId?: string | null;
 };
 

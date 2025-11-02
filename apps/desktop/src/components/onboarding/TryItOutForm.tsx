@@ -1,7 +1,7 @@
 import { Check } from "@mui/icons-material";
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import {
-  advancePage,
+  goBackOnboardingPage,
   submitOnboarding,
 } from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
@@ -46,7 +46,7 @@ export const TryItOutForm = () => {
       />
 
       <Stack direction="row" justifyContent="space-between" mt={4}>
-        <Button onClick={() => advancePage(-1)} disabled={submitting}>
+        <Button onClick={() => goBackOnboardingPage()} disabled={submitting}>
           Back
         </Button>
         <Button
@@ -61,4 +61,3 @@ export const TryItOutForm = () => {
     </FormContainer>
   );
 };
-

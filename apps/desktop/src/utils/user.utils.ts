@@ -41,6 +41,10 @@ export const getTranscriptionPreferenceFromState = (
     return { mode: "local", apiKeyId: null };
   }
 
+  if (mode === "cloud") {
+    return { mode: "cloud", apiKeyId: null };
+  }
+
   if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {
     return { mode: "api", apiKeyId: selectedApiKeyId };
   }
@@ -55,6 +59,10 @@ export const getPostProcessingPreferenceFromState = (
 
   if (mode === "none") {
     return { mode: "none", apiKeyId: null };
+  }
+
+  if (mode === "cloud") {
+    return { mode: "cloud", apiKeyId: null };
   }
 
   if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {

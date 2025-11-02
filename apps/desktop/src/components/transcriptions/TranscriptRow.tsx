@@ -20,13 +20,7 @@ import {
 import { getRec } from "@repo/utilities";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
@@ -155,6 +149,9 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     if (transcription?.transcriptionMode === "api") {
       return "API";
     }
+    if (transcription?.transcriptionMode === "cloud") {
+      return "Voquill Cloud";
+    }
     if (transcription?.transcriptionMode === "local") {
       return "Local";
     }
@@ -170,14 +167,10 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     if (transcription?.postProcessMode === "api") {
       return "API";
     }
-    if (transcription?.postProcessMode === "local") {
-      return transcription?.postProcessDevice === "Disabled"
-        ? "Disabled"
-        : "Local";
+    if (transcription?.postProcessMode === "cloud") {
+      return "Voquill Cloud";
     }
-    return transcription?.postProcessDevice === "Disabled"
-      ? "Disabled"
-      : "Unknown";
+    return "Disabled";
   }, [transcription?.postProcessDevice, transcription?.postProcessMode]);
 
   const postProcessDeviceLabel = useMemo(() => {
@@ -257,8 +250,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               p: 1,
               borderRadius: 1,
               bgcolor:
-                theme.vars?.palette.level1 ??
-                theme.palette.background.default,
+                theme.vars?.palette.level1 ?? theme.palette.background.default,
             })}
           >
             <Typography

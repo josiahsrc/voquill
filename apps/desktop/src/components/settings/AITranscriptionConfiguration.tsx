@@ -21,6 +21,7 @@ import {
   setPreferredTranscriptionApiKeyId,
   setPreferredTranscriptionMode,
 } from "../../actions/user.actions";
+import { getIsPaying } from "../../utils/member.utils";
 
 type ModelOption = {
   value: string;
@@ -51,6 +52,7 @@ export const AITranscriptionConfiguration = () => {
   const transcription = useAppStore(
     (state) => state.settings.aiTranscription
   );
+  const isPro = useAppStore(getIsPaying);
   const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(true);
 
   useEffect(() => {
@@ -79,6 +81,14 @@ export const AITranscriptionConfiguration = () => {
       }
     }
   }, [gpus, gpusLoading, transcription.device]);
+
+  useEffect(() => {
+    if (!isPro && transcription.mode === "cloud") {
+      produceAppState((draft) => {
+        draft.settings.aiTranscription.mode = "local";
+      });
+    }
+  }, [isPro, transcription.mode]);
 
   const deviceOptions = useMemo(
     () => [
@@ -117,13 +127,14 @@ export const AITranscriptionConfiguration = () => {
         value={transcription.mode}
         onChange={handleModeChange}
         options={[
+          { value: "cloud", label: "Voquill Cloud", disabled: !isPro },
           { value: "local", label: "Local processing" },
           { value: "api", label: "API key" },
         ]}
         ariaLabel="Processing mode"
       />
 
-      {transcription.mode === "local" ? (
+      {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
           <FormControl fullWidth size="small">
             <InputLabel id="processing-device-label">
@@ -170,11 +181,26 @@ export const AITranscriptionConfiguration = () => {
             </Select>
           </FormControl>
         </Stack>
-      ) : (
+      )}
+
+      {transcription.mode === "api" && (
         <ApiKeyList
           selectedApiKeyId={transcription.selectedApiKeyId}
           onChange={handleApiKeyChange}
         />
+      )}
+
+      {transcription.mode === "cloud" && (
+        <Stack spacing={1.5} sx={{ width: "100%" }}>
+          <Typography variant="body1">
+            Voquill Cloud handles transcription for you—no downloads, no manual
+            setup.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Record on any device and we&apos;ll keep your data secure, synced,
+            and ready everywhere.
+          </Typography>
+        </Stack>
       )}
     </Stack>
   );
