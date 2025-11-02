@@ -46,7 +46,7 @@ See `docs/desktop-architecture.md` for the full tour.
 ### Prerequisites
 - Node.js 18+ (desktop/web) and npm 10+.
 - Rust toolchain with `cargo`, `rustup`, and the Tauri CLI (`cargo install tauri-cli`).
-- Platform dependencies for Tauri (GTK/WebKit/AppIndicator/etc.). On Linux you can run `apps/desktop/scripts/setup-linux.sh`.
+- Platform dependencies for Tauri (GTK/WebKit/AppIndicator/etc.). On Linux you can run `apps/desktop/scripts/setup-linux.sh`. On Windows use `powershell -ExecutionPolicy Bypass -File apps/desktop/scripts/setup-windows.ps1` (add `-EnableGpu` to pull the Vulkan SDK for GPU builds).
 - A Groq API key if you plan to use hosted transcription or transcript cleanup (`GROQ_API_KEY`).
 - Firebase CLI (`npm install -g firebase-tools`) when working on the functions project.
 
