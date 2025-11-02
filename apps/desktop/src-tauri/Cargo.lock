@@ -26,6 +26,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "sqlx",
+ "strum",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",

@@ -72,7 +72,7 @@ export const RootSideEffects = () => {
     await checkForAppUpdates();
   }, []);
 
-  const handleRecordedAudio = useCallback(async (payload: StopRecordingResponse) => {
+  const handleRecordedAudio = useCallback(async (payload: StopRecordingResponse): Promise<string | null> => {
     const payloadSamples = Array.isArray(payload.samples)
       ? payload.samples
       : Array.from(payload.samples ?? []);
@@ -81,11 +81,11 @@ export const RootSideEffects = () => {
     if (rate == null || Number.isNaN(rate)) {
       console.error("Received audio payload without sample rate", payload);
       showErrorSnackbar("Recording missing sample rate. Please try again.");
-      return;
+      return null;
     }
 
     if (rate <= 0 || payloadSamples.length === 0) {
-      return;
+      return null;
     }
 
     let finalTranscript: string | null = null;
@@ -113,11 +113,11 @@ export const RootSideEffects = () => {
       if (message) {
         showErrorSnackbar(message);
       }
-      return;
+      return null;
     }
 
     if (!finalTranscript) {
-      return;
+      return null;
     }
 
     if (warnings.length > 0) {
@@ -167,7 +167,7 @@ export const RootSideEffects = () => {
     } catch (error) {
       console.error("Failed to store transcription", error);
       showErrorSnackbar("Unable to save transcription. Please try again.");
-      return;
+      return null;
     }
 
     produceAppState((draft) => {
@@ -203,12 +203,7 @@ export const RootSideEffects = () => {
       console.error("Failed to purge stale audio snapshots", error);
     }
 
-    try {
-      await invoke<void>("paste", { text: finalTranscript });
-    } catch (error) {
-      console.error("Failed to paste transcription", error);
-      showErrorSnackbar("Unable to paste transcription.");
-    }
+    return finalTranscript;
   }, []);
 
   const startRecording = useCallback(async () => {
@@ -306,14 +301,29 @@ export const RootSideEffects = () => {
 
     isRecordingRef.current = false;
 
+    let finalTranscriptText: string | null = null;
     try {
       if (audio) {
-        await handleRecordedAudio(audio);
+        finalTranscriptText = await handleRecordedAudio(audio);
       }
     } finally {
       if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
         overlayLoadingTokenRef.current = null;
         await invoke<void>("set_phase", { phase: "idle" });
+      }
+
+      const trimmedTranscript = finalTranscriptText?.trim();
+      if (trimmedTranscript) {
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 20);
+        });
+
+        try {
+          await invoke<void>("paste", { text: trimmedTranscript });
+        } catch (error) {
+          console.error("Failed to paste transcription", error);
+          showErrorSnackbar("Unable to paste transcription.");
+        }
       }
     }
   }, [handleRecordedAudio]);
