@@ -23,13 +23,13 @@ import { getIsDevMode, getIsEmulators } from "./utils/env.utils";
 import { useKeyDownHandler } from "./hooks/helper.hooks";
 
 const firebaseConfig: FirebaseOptions = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCJ8C3ZW2bHjerneg5i0fr-b5uwuy7uULM",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "voquill-dev.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "voquill-dev",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "voquill-dev.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "778214168359",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:778214168359:web:66ee2ce5df76c8c2d77b02",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-V6Y1RSFBQX",
 };
 
 const missingFirebaseConfigKeys = Object.entries(firebaseConfig)

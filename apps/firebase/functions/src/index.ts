@@ -25,6 +25,7 @@ import {
   STRIPE_SECRET_KEY_VAR,
 } from "./utils/env.utils";
 import { NotFoundError, wrapAsync } from "./utils/error.utils";
+import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
 
 // Emulators default to appspot.com for the storage bucket. If we
 // try to change that, we get cors errors on the frontend.
@@ -112,6 +113,16 @@ export const handler = onCall(
         data = await handleResetLimitsThisMonth();
       } else if (name === "emulator/processDelayedActions") {
         data = await processDelayedActions();
+      } else if (name === "ai/transcribeAudio") {
+        data = await runTranscribeAudio({
+          auth,
+          input: args as HandlerInput<"ai/transcribeAudio">,
+        });
+      } else if (name === "ai/generateText") {
+        data = await runGenerateText({
+          auth,
+          input: args as HandlerInput<"ai/generateText">,
+        });
       } else {
         throw new NotFoundError(`unknown handler: ${name}`);
       }

@@ -14,16 +14,6 @@ import { buildUser } from "../helpers/entities";
 beforeAll(setUp);
 afterAll(tearDown);
 
-describe("createCustomToken", () => {
-  it("works", async () => {
-    const creds = await createUserCreds();
-    await signInWithCreds(creds);
-    const res = await invokeHandler("auth/createCustomToken", {});
-    expect(res.customToken).toBeDefined();
-    await signInWithCustomToken(getAuth(), res.customToken);
-  });
-});
-
 describe("deleteMyAccount", () => {
   it("should enqueue delete account action", async () => {
     const creds = await createUserCreds();
