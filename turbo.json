@@ -39,6 +39,14 @@
       "dependsOn": [
         "^test"
       ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.*",
+        "src/**",
+        "test/**",
+        "package.json",
+        "tsconfig.*"
+      ],
       "outputs": []
     },
     "dev": {
