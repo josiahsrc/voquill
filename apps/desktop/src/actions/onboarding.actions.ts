@@ -1,8 +1,10 @@
 import { firemix } from "@firemix/client";
 import { MemberPlan, User } from "@repo/types";
-import { FirebaseError } from "firebase/app";
-import { GoogleAuthProvider, getAuth, signInWithPopup } from "firebase/auth";
 import { getUserRepo } from "../repos";
+import {
+  OnboardingPageKey,
+  OnboardingState,
+} from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
 import {
   DEFAULT_POST_PROCESSING_MODE,
@@ -15,11 +17,6 @@ import {
   setCurrentUser,
 } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
-import { tryOpenPaymentDialogForPlan } from "./payment.actions";
-import {
-  OnboardingPageKey,
-  OnboardingState,
-} from "../state/onboarding.state";
 
 const navigateToOnboardingPage = (
   onboarding: OnboardingState,
@@ -59,41 +56,6 @@ export const selectOnboardingPlan = (plan: MemberPlan) => {
   });
 };
 
-export const loginWithGoogleForOnboarding = async (): Promise<void> => {
-  const { onboarding } = getAppState();
-  if (onboarding.loggingIn) {
-    return;
-  }
-
-  produceAppState((draft) => {
-    draft.onboarding.loggingIn = true;
-  });
-
-  try {
-    const auth = getAuth();
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-
-    await signInWithPopup(auth, provider);
-
-    tryOpenPaymentDialogForPlan("pro");
-    produceAppState((draft) => {
-      draft.onboarding.loggingIn = false;
-    });
-    goToOnboardingPage("transcription");
-  } catch (error) {
-    produceAppState((draft) => {
-      draft.onboarding.loggingIn = false;
-    });
-
-    if (error instanceof FirebaseError && error.code === "auth/popup-closed-by-user") {
-      return;
-    }
-
-    showErrorSnackbar("Failed to sign in. Please try again.");
-    console.error("Failed to sign in during onboarding", error);
-  }
-};
 
 export const submitOnboarding = async () => {
   const state = getAppState();

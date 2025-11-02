@@ -31,6 +31,8 @@
     "@repo/types": "*",
     "@repo/utilities": "*",
     "@repo/voice-ai": "*",
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.4.0",
     "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-os": "^2.3.1",
@@ -47,12 +49,11 @@
     "react-error-boundary": "^6.0.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.29.0",
+    "react-transition-group": "^4.4.5",
     "react-virtuoso": "^4.12.8",
     "rxjs": "^7.8.2",
     "vite-plugin-svgr": "^4.5.0",
-    "zustand": "^4.5.2",
-    "@stripe/react-stripe-js": "^3.7.0",
-    "@stripe/stripe-js": "^7.4.0"
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

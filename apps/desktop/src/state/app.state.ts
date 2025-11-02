@@ -18,6 +18,7 @@ import { INITIAL_PRICING_STATE, PricingState } from "./pricing.state";
 import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
+import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -48,6 +49,7 @@ export type AppState = {
   updater: UpdaterState;
   payment: PaymentState;
   pricing: PricingState;
+  login: LoginState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -86,4 +88,5 @@ export const INITIAL_APP_STATE: AppState = {
   updater: INITIAL_UPDATER_STATE,
   payment: INITIAL_PAYMENT_STATE,
   pricing: INITIAL_PRICING_STATE,
+  login: INITIAL_LOGIN_STATE,
 };

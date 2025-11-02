@@ -1,8 +1,13 @@
+import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
 import { BaseTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseTranscriptionRepo, LocalTranscriptionRepo } from "./transcription.repo";
 import { BaseUserRepo, LocalUserRepo } from "./user.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
+
+export const getAuthRepo = (): BaseAuthRepo => {
+  return new CloudAuthRepo();
+};
 
 export const getUserRepo = (): BaseUserRepo => {
   return new LocalUserRepo();

@@ -1,6 +1,6 @@
 import { Stack } from "@mui/material";
 import { useAppStore } from "../../store";
-import { LoginForm } from "./LoginForm";
+import { OnboardingLoginForm } from "./OnboardingLoginForm";
 import { NameForm } from "./NameForm";
 import { PlanSelectionForm } from "./PlanSelectionForm";
 import { PostProcessingMethodForm } from "./PostProcessingMethodForm";
@@ -21,7 +21,7 @@ export default function OnboardingPage() {
       {currentPage === "welcome" && <WelcomeForm />}
       {currentPage === "name" && <NameForm />}
       {currentPage === "plan" && <PlanSelectionForm />}
-      {currentPage === "login" && <LoginForm />}
+      {currentPage === "login" && <OnboardingLoginForm />}
       {currentPage === "transcription" && <TranscriptionMethodForm />}
       {currentPage === "postProcessing" && <PostProcessingMethodForm />}
       {currentPage === "tryItOut" && <TryItOutForm />}

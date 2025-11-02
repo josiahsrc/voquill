@@ -1,12 +1,5 @@
-import { AccountCircleOutlined, MoreVert } from "@mui/icons-material";
-import {
-  Avatar,
-  Box,
-  Button,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { AccountCircleOutlined } from "@mui/icons-material";
+import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useHeaderPortal } from "../../hooks/header.hooks";
@@ -118,20 +111,6 @@ export const AppHeader = () => {
               </Typography>
             </Stack>
           </Button>
-        )}
-      </MenuPopoverBuilder>
-    );
-  } else {
-    rightContent = (
-      <MenuPopoverBuilder
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        items={[...sharedRightMenuItems]}
-      >
-        {({ ref, open }) => (
-          <IconButton ref={ref} onClick={open} size="small" color="primary">
-            <MoreVert />
-          </IconButton>
         )}
       </MenuPopoverBuilder>
     );
