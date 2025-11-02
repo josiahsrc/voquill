@@ -2,6 +2,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
+    if std::env::var("VOQUILL_KEYBOARD_LISTENER").as_deref() == Ok("1") {
+        if let Err(err) = desktop_lib::platform::keyboard::run_listener_process() {
+            eprintln!("Keyboard listener process failed: {err}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     desktop_lib::app::build()
         .run(tauri::generate_context!())
         .expect("tauri runtime failure");

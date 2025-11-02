@@ -38,6 +38,7 @@ cpal = "0.15"
 whisper-rs = { version = "0.15.1", default-features = false }
 tauri-plugin-os = "2.3.1"
 rdev = { git = "https://github.com/josiahsrc/rdev" }
+strum = "0.24"
 rodio = "0.17"
 wgpu = "0.20"
 hound = "3.5"
