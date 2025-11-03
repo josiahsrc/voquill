@@ -264,8 +264,6 @@ jobs:
             node_platform: win32
             artifact_name: desktop-windows
     env:
-      CARGO_TARGET_DIR: D:\cargo
-      WHISPER_CMAKE_ARGS: "-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w"
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
       RELEASE_SUFFIX: ${{ needs.metadata.outputs.release_suffix }}
@@ -308,6 +306,14 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri -> target
+
+      - name: Set Windows-only build environment
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Shorten build and install paths for whisper + Vulkan
+          echo "CARGO_TARGET_DIR=D:\cargo" >> $env:GITHUB_ENV
+          echo "WHISPER_CMAKE_ARGS=-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w" >> $env:GITHUB_ENV
 
       - name: Install system dependencies (Linux)
         if: matrix.os == 'ubuntu-22.04'
