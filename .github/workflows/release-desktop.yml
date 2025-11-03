@@ -263,9 +263,9 @@ jobs:
             tauri_platform: windows
             node_platform: win32
             artifact_name: desktop-windows
-            cargo_target_dir: "D:\\ct"
-            temp_dir: "D:\\ct\\tmp"
     env:
+      CARGO_TARGET_DIR: D:\cargo
+      WHISPER_CMAKE_ARGS: "-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w"
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
       RELEASE_SUFFIX: ${{ needs.metadata.outputs.release_suffix }}
@@ -470,17 +470,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+          MACOSX_DEPLOYMENT_TARGET: "13.3"
+          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+          APPLE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY: ${{ env.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_PATH: ${{ github.workspace }}/AuthKey.p8
+          APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
           TAURI_LOG_LEVEL: ${{ env.TAURI_LOG_LEVEL }}
           RUST_LOG: ${{ env.RUST_LOG }}
-
-          # these will be empty on mac/linux, which is fine
-          CARGO_TARGET_DIR: ${{ matrix.cargo_target_dir }}
-          TEMP: ${{ matrix.temp_dir }}
-          TMP: ${{ matrix.temp_dir }}
         with:
           projectPath: apps/desktop
           tauriScript: npm run --workspace desktop tauri
-          args: ${{ matrix.args }}
+          args: ${{ steps.tauri-cli-args.outputs.args }}
           tagName: ${{ needs.metadata.outputs.tag_name }}
           releaseName: desktop${{ needs.metadata.outputs.release_suffix }} v${{ needs.metadata.outputs.version }}
           releaseBody: ${{ needs.metadata.outputs.release_body }}
