@@ -235,7 +235,7 @@ jobs:
     name: Build ${{ matrix.label }}
     needs: metadata
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 600
+    timeout-minutes: 60
     permissions:
       contents: write
     strategy:
@@ -307,6 +307,14 @@ jobs:
           workspaces: |
             apps/desktop/src-tauri -> target
 
+      - name: Set Windows-only build environment
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Shorten build and install paths for whisper + Vulkan
+          echo "CARGO_TARGET_DIR=D:\cargo" >> $env:GITHUB_ENV
+          echo "WHISPER_CMAKE_ARGS=-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w" >> $env:GITHUB_ENV
+
       - name: Install system dependencies (Linux)
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
@@ -373,11 +381,26 @@ jobs:
             echo "VITE_FLAVOR=${RELEASE_FLAVOR}"
           } >> "$GITHUB_ENV"
 
+      - name: Install Vulkan SDK (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: jakoch/install-vulkan-sdk-action@v1
+        with:
+          version: "1.3.290.0"        
+          cache: true                 
+          runtime: true               
+
       - name: Install GPU build deps (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          & "${{ github.workspace }}\apps\desktop\scripts\setup-windows.ps1" -EnableGpu
+          # 1) LLVM / Clang (for bindgen / whisper-rs-sys)
+          choco install -y llvm
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress
+
+          # 2) Wire up clang
+          "LIBCLANG_PATH=C:\Program Files\LLVM\bin"         >> $env:GITHUB_ENV
+          "CLANG_PATH=C:\Program Files\LLVM\bin\clang.exe"  >> $env:GITHUB_ENV
+          "C:\Program Files\LLVM\bin"                       >> $env:GITHUB_PATH
 
       - name: Import Apple signing certificate
         if: matrix.os == 'macos-14'
