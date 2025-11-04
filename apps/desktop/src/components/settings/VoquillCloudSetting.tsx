@@ -8,7 +8,7 @@ export const VoquillCloudSetting = () => {
   const isPro = useAppStore(getIsPaying);
 
   return (
-    <Stack spacing={1}  alignItems="flex-start">
+    <Stack spacing={1} alignItems="flex-start">
       <Typography variant="body1">Use Voquill Cloud</Typography>
       <Typography variant="body2" color="text.secondary">
         No downloads or manual setup. Record on any device and we&apos;ll keep
@@ -30,7 +30,7 @@ export const VoquillCloudSetting = () => {
           }}
           endIcon={<ArrowUpwardOutlined />}
         >
-          Upgrade
+          Upgrade to Pro
         </Button>
       )}
     </Stack>
