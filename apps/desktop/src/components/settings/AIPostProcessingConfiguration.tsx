@@ -1,5 +1,9 @@
 import { Stack, Typography } from "@mui/material";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
+import {
+  setPreferredPostProcessingApiKeyId,
+  setPreferredPostProcessingMode,
+} from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { type PostProcessingMode } from "../../types/ai.types";
 import {
@@ -7,11 +11,7 @@ import {
   SegmentedControlOption,
 } from "../common/SegmentedControl";
 import { ApiKeyList } from "./ApiKeyList";
-import {
-  setPreferredPostProcessingApiKeyId,
-  setPreferredPostProcessingMode,
-} from "../../actions/user.actions";
-import { getIsPaying } from "../../utils/member.utils";
+import { VoquillCloudSetting } from "./VoquillCloudSetting";
 
 type AIPostProcessingConfigurationProps = {
   hideCloudOption?: boolean;
@@ -27,13 +27,6 @@ export const AIPostProcessingConfiguration = ({
   const postProcessing = useAppStore(
     (state) => state.settings.aiPostProcessing
   );
-  const isPro = useAppStore(getIsPaying);
-
-  useEffect(() => {
-    if (!isPro && postProcessing.mode === "cloud") {
-      void setPreferredPostProcessingMode("none");
-    }
-  }, [isPro, postProcessing.mode]);
 
   const handleModeChange = useCallback((mode: PostProcessingMode) => {
     void setPreferredPostProcessingMode(mode);
@@ -77,12 +70,7 @@ export const AIPostProcessingConfiguration = ({
         />
       )}
 
-      {postProcessing.mode === "cloud" && (
-        <Typography variant="body2" color="text.secondary">
-          Voquill Cloud tidies up transcripts automatically—no prompts or API
-          keys required.
-        </Typography>
-      )}
+      {postProcessing.mode === "cloud" && <VoquillCloudSetting />}
     </Stack>
   );
 };

@@ -6,6 +6,10 @@ export const getMyMember = (state: AppState): Nullable<Member> => {
   return getRec(state.memberById, state.auth?.uid) ?? null;
 };
 
+export const getEffectivePlan = (state: AppState): MemberPlan => {
+  return getMyMember(state)?.plan ?? "free";
+}
+
 export const planToDisplayName = (plan: MemberPlan): string => {
   if (plan === "free") {
     return "Community";

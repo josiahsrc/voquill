@@ -1,8 +1,6 @@
 import { Stack } from "@mui/material";
 import { useEffect } from "react";
 import { loadPrices } from "../../actions/pricing.actions";
-import { useOnExit } from "../../hooks/helper.hooks";
-import { INITIAL_LOGIN_STATE } from "../../state/login.state";
 import { produceAppState, useAppStore } from "../../store";
 import { getMyMember } from "../../utils/member.utils";
 import { HotkeySelectionForm } from "./HotkeySelectionForm";
@@ -27,12 +25,6 @@ export default function OnboardingPage() {
       }
     });
   }, []);
-
-  useOnExit(() => {
-    produceAppState((draft) => {
-      draft.login = INITIAL_LOGIN_STATE;
-    });
-  });
 
   return (
     <Stack

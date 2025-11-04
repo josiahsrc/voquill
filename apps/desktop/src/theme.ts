@@ -15,6 +15,9 @@ export const theme = createTheme({
         goldBg: "rgba(255, 193, 7, 0.6)",
         shadow: "rgba(0, 0, 0, 0.18)",
         blue: "#1b8af8ff",
+        blueHover: "#1a7cd4ff",
+        blueActive: "#166bbf",
+        onBlue: "#FFFFFF",
 
         level0: "#FFFFFF",
         level1: "#F5F5F5",
@@ -31,6 +34,9 @@ export const theme = createTheme({
         goldBg: "rgba(255, 215, 0, 0.2)",
         shadow: "rgba(0, 0, 0, 0.46)",
         blue: "#3198ffff",
+        blueHover: "#2787e6ff",
+        blueActive: "#1f76cc",
+        onBlue: "#FFFFFF",
 
         level0: "#121212",
         level1: "#1C1C1C",

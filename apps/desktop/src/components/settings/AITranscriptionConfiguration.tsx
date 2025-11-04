@@ -16,13 +16,13 @@ import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import { CPU_DEVICE_VALUE, type ProcessingMode } from "../../types/ai.types";
 import { buildDeviceLabel } from "../../types/gpu.types";
-import { getIsPaying } from "../../utils/member.utils";
 import {
   SegmentedControl,
   SegmentedControlOption,
 } from "../common/SegmentedControl";
 import { maybeArrayElements } from "./AIPostProcessingConfiguration";
 import { ApiKeyList } from "./ApiKeyList";
+import { VoquillCloudSetting } from "./VoquillCloudSetting";
 
 type ModelOption = {
   value: string;
@@ -57,7 +57,6 @@ export const AITranscriptionConfiguration = ({
   hideCloudOption,
 }: AITranscriptionConfigurationProps) => {
   const transcription = useAppStore((state) => state.settings.aiTranscription);
-  const isPro = useAppStore(getIsPaying);
   const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(true);
 
   useEffect(() => {
@@ -86,14 +85,6 @@ export const AITranscriptionConfiguration = ({
       }
     }
   }, [gpus, gpusLoading, transcription.device]);
-
-  useEffect(() => {
-    if (!isPro && transcription.mode === "cloud") {
-      produceAppState((draft) => {
-        draft.settings.aiTranscription.mode = "local";
-      });
-    }
-  }, [isPro, transcription.mode]);
 
   const deviceOptions = useMemo(
     () => [
@@ -203,18 +194,7 @@ export const AITranscriptionConfiguration = ({
         />
       )}
 
-      {transcription.mode === "cloud" && (
-        <Stack spacing={1.5} sx={{ width: "100%" }}>
-          <Typography variant="body1">
-            Voquill Cloud handles transcription for you—no downloads, no manual
-            setup.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Record on any device and we&apos;ll keep your data secure, synced,
-            and ready everywhere.
-          </Typography>
-        </Stack>
-      )}
+      {transcription.mode === "cloud" && <VoquillCloudSetting />}
     </Stack>
   );
 };

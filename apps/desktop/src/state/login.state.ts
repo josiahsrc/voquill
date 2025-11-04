@@ -22,7 +22,7 @@ export const INITIAL_LOGIN_STATE: LoginState = {
 	password: "",
 	confirmPassword: "",
 	status: "idle",
-	mode: "signIn",
+	mode: "signUp",
 	hasSubmittedRegistration: false,
 	errorMessage: "",
 };

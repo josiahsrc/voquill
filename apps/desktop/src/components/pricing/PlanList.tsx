@@ -8,12 +8,12 @@ import {
   Typography,
   type SxProps,
 } from "@mui/material";
+import { MemberPlan } from "@repo/types";
 import { loadPrices } from "../../actions/pricing.actions";
 import { useOnEnter } from "../../hooks/helper.hooks";
 import { useAppStore } from "../../store";
-import { MemberPlan } from "@repo/types";
+import { getEffectivePlan } from "../../utils/member.utils";
 import { getDollarPriceFromKey } from "../../utils/price.utils";
-import { getMyMember } from "../../utils/member.utils";
 
 type CheckmarkRowProps = {
   children?: React.ReactNode;
@@ -97,7 +97,7 @@ export const PlanList = ({
   disabled,
   ignoreCurrentPlan,
 }: PlanListProps) => {
-  const member = useAppStore(getMyMember);
+  const effectivePlan = useAppStore(getEffectivePlan);
 
   const proPrice = useAppStore((state) =>
     getDollarPriceFromKey(state, "pro_monthly")
@@ -108,7 +108,7 @@ export const PlanList = ({
   });
 
   const getText = (plan: MemberPlan) => {
-    if (member?.plan === plan && !ignoreCurrentPlan) {
+    if (effectivePlan === plan && !ignoreCurrentPlan) {
       return { text: "Current plan", disabled: true };
     }
 

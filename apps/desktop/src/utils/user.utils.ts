@@ -2,8 +2,9 @@ import { Nullable, User } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
 import { PostProcessingMode, ProcessingMode } from "../types/ai.types";
-import { registerUsers } from "./app.utils";
 import { applyAiPreferencesFromUser } from "./ai.utils";
+import { registerUsers } from "./app.utils";
+import { getMyMember } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
 
@@ -14,9 +15,20 @@ export const getHasEmailProvider = (state: AppState): boolean => {
   return providerIds.includes("password");
 };
 
+export const getHasCloudAccess = (state: AppState): boolean => {
+  return getMyMember(state)?.plan === "pro";
+}
+
 export const getMyCloudUserId = (state: AppState): Nullable<string> => state.auth?.uid ?? null;
 
-export const getMyEffectiveUserId = (draft: AppState): string => getMyCloudUserId(draft) ?? LOCAL_USER_ID;
+export const getMyEffectiveUserId = (state: AppState): string => {
+  const isCloud = getHasCloudAccess(state);
+  if (isCloud) {
+    return getMyCloudUserId(state) ?? LOCAL_USER_ID;
+  }
+
+  return LOCAL_USER_ID;
+}
 
 export const getMyUser = (state: AppState): Nullable<User> => {
   return getRec(state.userById, getMyEffectiveUserId(state)) ?? null;

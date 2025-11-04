@@ -1,8 +1,9 @@
 import { Collapse, Stack, Typography } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import { TransitionGroup } from "react-transition-group";
+import { useOnExit } from "../../hooks/helper.hooks";
 import { useConsumeQueryParams } from "../../hooks/navigation.hooks";
-import { LoginMode } from "../../state/login.state";
+import { INITIAL_LOGIN_STATE, LoginMode } from "../../state/login.state";
 import { produceAppState, useAppStore } from "../../store";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 import { ResetSentForm } from "./ResetSentForm";
@@ -25,6 +26,12 @@ const useMode = () => {
 export const LoginForm = () => {
   const mode = useMode();
   const errorMessage = useAppStore((state) => state.login.errorMessage);
+
+  useOnExit(() => {
+    produceAppState((draft) => {
+      draft.login = INITIAL_LOGIN_STATE;
+    });
+  });
 
   useConsumeQueryParams(["mode"], ([mode]) => {
     produceAppState((draft) => {
