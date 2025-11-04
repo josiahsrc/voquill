@@ -1,0 +1,99 @@
+name: Release Server
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/firebase/**"
+      - ".github/workflows/release-server.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deploy target environment"
+        required: true
+        type: choice
+        default: prod
+        options:
+          - prod
+          - dev
+
+jobs:
+  deploy:
+    name: Deploy Firebase backend
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && 'dev' || (github.event.inputs.environment || 'prod') }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Determine deployment environment
+        id: env
+        env:
+          DISPATCH_ENVIRONMENT: ${{ github.event.inputs.environment }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            DEPLOY_ENV="dev"
+          else
+            TARGET_ENV="${DISPATCH_ENVIRONMENT:-prod}"
+            case "${TARGET_ENV}" in
+              dev|prod)
+                DEPLOY_ENV="${TARGET_ENV}"
+                ;;
+              *)
+                echo "Unsupported environment '${TARGET_ENV}'" >&2
+                exit 1
+                ;;
+            esac
+          fi
+
+          echo "Deploying to environment: ${DEPLOY_ENV}"
+          echo "DEPLOY_ENV=${DEPLOY_ENV}" >> "${GITHUB_ENV}"
+          echo "deploy_env=${DEPLOY_ENV}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Firebase functions
+        run: npm run build --workspace apps/firebase/functions
+
+      - name: Configure Firebase credentials
+        env:
+          FIREBASE_CREDENTIALS_BASE64: ${{ steps.env.outputs.deploy_env == 'prod' && secrets.FIREBASE_ADMIN_BASE64 || secrets.FIREBASE_ADMIN_DEV_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${FIREBASE_CREDENTIALS_BASE64:-}" ]]; then
+            echo "Firebase credentials secret is not configured for environment '${DEPLOY_ENV}'." >&2
+            exit 1
+          fi
+
+          CREDENTIALS_PATH="${HOME}/firebase-admin.json"
+          echo "${FIREBASE_CREDENTIALS_BASE64}" | base64 --decode > "${CREDENTIALS_PATH}"
+          chmod 600 "${CREDENTIALS_PATH}"
+
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${CREDENTIALS_PATH}" >> "${GITHUB_ENV}"
+
+          PROJECT_ID="$(jq -r '.project_id // empty' "${CREDENTIALS_PATH}")"
+          if [[ -z "${PROJECT_ID}" ]]; then
+            echo "Unable to read project_id from decoded Firebase credentials." >&2
+            exit 1
+          fi
+
+          echo "FIREBASE_PROJECT_ID=${PROJECT_ID}" >> "${GITHUB_ENV}"
+
+      - name: Deploy Firebase resources
+        working-directory: apps/firebase
+        env:
+          DEPLOY_ENV: ${{ steps.env.outputs.deploy_env }}
+        run: |
+          set -euo pipefail
+          echo "Deploying Firebase backend to '${DEPLOY_ENV}' (${FIREBASE_PROJECT_ID})..."
+          npx firebase-tools@latest deploy --only functions,firestore,storage --project "${DEPLOY_ENV}" --non-interactive --force
