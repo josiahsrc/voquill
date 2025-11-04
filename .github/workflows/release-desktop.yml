@@ -360,6 +360,7 @@ jobs:
             messaging_sender_id="777461284594"
             app_id="1:777461284594:web:d431c9557d3e02395e5a6b"
             measurement_id="G-LKHEH0DPND"
+            stripe_public_key="pk_live_51RlrUuIp7DaYKUgM8imeVxfuYKM9ukKXYc4I4tbj465hfAF7CnIFxiKRknUK5jEhpwWulDWUWNY4pyICZBLvrAP700EuGSiz9V"
           else
             api_key="AIzaSyCJ8C3ZW2bHjerneg5i0fr-b5uwuy7uULM"
             auth_domain="voquill-dev.firebaseapp.com"
@@ -368,6 +369,7 @@ jobs:
             messaging_sender_id="778214168359"
             app_id="1:778214168359:web:66ee2ce5df76c8c2d77b02"
             measurement_id="G-V6Y1RSFBQX"
+            stripe_public_key="pk_test_51RlrUuIp7DaYKUgM2NNrnSAXoGGRljxaaVKOUnfMnSWaa0SaBBMn4Ix5HOygKgmDbOYTKImqvEf4k1IB8snpDcWn0006igeOH9"
           fi
 
           {
@@ -380,6 +382,7 @@ jobs:
             echo "VITE_FIREBASE_MEASUREMENT_ID=${measurement_id}"
             echo "VITE_USE_EMULATORS=false"
             echo "VITE_FLAVOR=${RELEASE_FLAVOR}"
+            echo "VITE_STRIPE_PUBLIC_KEY=${stripe_public_key}"
           } >> "$GITHUB_ENV"
 
       - name: Install Vulkan SDK (Windows)

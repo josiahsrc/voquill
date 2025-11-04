@@ -1,5 +1,10 @@
 import * as env from "env-var";
 
+const getOptionalString = (varName: string): string | undefined => {
+  const value = env.get(varName).asString();
+  return value === "empty" ? undefined : value;
+}
+
 export const PROJECT_DISPLAY_NAME_VAR = "PROJECT_DISPLAY_NAME";
 export const getProjectDisplayName = () =>
   env.get(PROJECT_DISPLAY_NAME_VAR).required().asString();
@@ -29,11 +34,11 @@ export const getGroqApiKey = () =>
 
 export const STRIPE_SECRET_KEY_VAR = "STRIPE_SECRET_KEY";
 export const getStripeSecretKey = () =>
-  env.get(STRIPE_SECRET_KEY_VAR).asString();
+  env.get(STRIPE_SECRET_KEY_VAR).required().asString();
 
 export const STRIPE_WEBHOOK_SECRET_VAR = "STRIPE_WEBHOOK_SECRET";
 export const getStripeWebhookSecret = () =>
-  env.get(STRIPE_WEBHOOK_SECRET_VAR).asString();
+  env.get(STRIPE_WEBHOOK_SECRET_VAR).required().asString();
 
 export const LOOPS_API_KEY_VAR = "LOOPS_API_KEY";
-export const getLoopsApiKey = () => env.get(LOOPS_API_KEY_VAR).asString();
+export const getLoopsApiKey = () => getOptionalString(LOOPS_API_KEY_VAR);
