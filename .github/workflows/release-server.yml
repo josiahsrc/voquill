@@ -64,7 +64,7 @@ jobs:
         run: npm ci
 
       - name: Build Firebase functions
-        run: npm run build --workspace apps/firebase/functions
+        run: npm run build -- --filter=firebase...
 
       - name: Configure Firebase credentials
         env:
