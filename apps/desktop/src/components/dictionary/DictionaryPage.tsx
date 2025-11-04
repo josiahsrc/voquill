@@ -1,4 +1,5 @@
 import { firemix } from "@firemix/client";
+import { FindReplaceOutlined, SpellcheckOutlined } from "@mui/icons-material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { Button } from "@mui/material";
 import { Term } from "@repo/types";
@@ -6,11 +7,10 @@ import { useCallback } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
-import { getMyCloudUserId } from "../../utils/user.utils";
+import { getMyEffectiveUserId } from "../../utils/user.utils";
+import { MenuPopoverBuilder } from "../common/MenuPopover";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { DictionaryRow } from "./DictionaryRow";
-import { MenuPopoverBuilder } from "../common/MenuPopover";
-import { FindReplaceOutlined, SpellcheckOutlined } from "@mui/icons-material";
 
 export default function DictionaryPage() {
   const termIds = useAppStore((state) => state.dictionary.termIds);
@@ -19,7 +19,7 @@ export default function DictionaryPage() {
     const newTerm: Term = {
       id: firemix().id(),
       createdAt: firemix().now(),
-      createdByUserId: getMyCloudUserId(getAppState()),
+      createdByUserId: getMyEffectiveUserId(getAppState()),
       sourceValue: "",
       destinationValue: "",
       isReplacement: replacement,

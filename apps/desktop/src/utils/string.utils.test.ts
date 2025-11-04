@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { getFirstAndLastName, getInitials } from "./string.utils";
 
 describe("getFirstAndLastName", () => {

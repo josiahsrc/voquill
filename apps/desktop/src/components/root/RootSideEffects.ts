@@ -1,5 +1,6 @@
 import { firemix } from "@firemix/client";
 import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
+import { countWords } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
@@ -16,14 +17,13 @@ import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import { OverlayPhase } from "../../types/overlay.types";
-import { countWords } from "@repo/utilities";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
   type TranscriptionMetadata,
 } from "../../utils/transcription.utils";
-import { getMyUser, getMyCloudUserId } from "../../utils/user.utils";
+import { getMyEffectiveUserId, getMyUser } from "../../utils/user.utils";
 import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
@@ -141,7 +141,7 @@ export const RootSideEffects = () => {
       id: transcriptionId,
       transcript: finalTranscript,
       createdAt: firemix().now(),
-      createdByUserId: getMyCloudUserId(state),
+      createdByUserId: getMyEffectiveUserId(state),
       isDeleted: false,
       audio: audioSnapshot,
       modelSize: metadata?.modelSize ?? null,

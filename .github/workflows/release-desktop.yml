@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "apps/desktop/**"
+      - "packages/**"
       - ".github/workflows/release-desktop.yml"
   workflow_dispatch:
     inputs:
