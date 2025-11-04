@@ -1,18 +1,20 @@
-import { CircularProgress, Stack, Typography, Button } from "@mui/material";
+import { Check } from "@mui/icons-material";
+import { Button, CircularProgress, Stack, Typography } from "@mui/material";
 import {
   goBackOnboardingPage,
-  goToOnboardingPage,
+  submitOnboarding,
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import {
   DICTATE_HOTKEY,
   getDefaultHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import { getMyMember } from "../../utils/member.utils";
 import { HotkeySetting } from "../settings/HotkeySetting";
 import { FormContainer } from "./OnboardingShared";
-import { getMyMember } from "../../utils/member.utils";
 
 export const HotkeySelectionForm = () => {
+  const submitting = useAppStore((state) => state.onboarding.submitting);
   const { status, savedHotkeyCount } = useAppStore((state) => ({
     status: state.settings.hotkeysStatus,
     savedHotkeyCount: Object.values(state.hotkeyById).filter(
@@ -26,8 +28,12 @@ export const HotkeySelectionForm = () => {
   });
 
   const defaultHotkeys = getDefaultHotkeyCombosForAction(DICTATE_HOTKEY);
-  const canContinue =
+  const canFinish =
     status !== "loading" && (savedHotkeyCount > 0 || defaultHotkeys.length > 0);
+
+  const handleFinish = () => {
+    void submitOnboarding();
+  };
 
   return (
     <FormContainer>
@@ -70,10 +76,11 @@ export const HotkeySelectionForm = () => {
         )}
         <Button
           variant="contained"
-          onClick={() => goToOnboardingPage("tryItOut")}
-          disabled={!canContinue}
+          endIcon={<Check />}
+          onClick={handleFinish}
+          disabled={submitting || !canFinish}
         >
-          Continue
+          Finish
         </Button>
       </Stack>
     </FormContainer>

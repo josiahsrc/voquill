@@ -11,7 +11,6 @@ import { OnboardingLoginForm } from "./OnboardingLoginForm";
 import { PlanSelectionForm } from "./PlanSelectionForm";
 import { PostProcessingMethodForm } from "./PostProcessingMethodForm";
 import { TranscriptionMethodForm } from "./TranscriptionMethodForm";
-import { TryItOutForm } from "./TryItOutForm";
 import { WelcomeForm } from "./WelcomeForm";
 
 export default function OnboardingPage() {
@@ -49,7 +48,6 @@ export default function OnboardingPage() {
       {currentPage === "transcription" && <TranscriptionMethodForm />}
       {currentPage === "postProcessing" && <PostProcessingMethodForm />}
       {currentPage === "hotkeys" && <HotkeySelectionForm />}
-      {currentPage === "tryItOut" && <TryItOutForm />}
     </Stack>
   );
 }

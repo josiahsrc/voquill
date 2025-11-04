@@ -8,8 +8,7 @@ export type OnboardingPageKey =
   | "login"
   | "transcription"
   | "postProcessing"
-  | "hotkeys"
-  | "tryItOut";
+  | "hotkeys";
 
 export type OnboardingState = {
   name: string;
