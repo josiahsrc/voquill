@@ -1,19 +1,29 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { FullConfig, Member } from "@repo/types";
-import { getWordLimit } from "./config.utils";
+import { getTokenLimit, getWordLimit } from "./config.utils";
 
 export const getMemberExceedsWordLimit = (
-	member: Member,
-	config: FullConfig
+  member: Member,
+  config: FullConfig
 ): boolean => {
-	const limits = getWordLimit(config, member.plan);
-	return (
-		member.wordsToday >= limits.perDay ||
-		member.wordsThisMonth >= limits.perMonth
-	);
+  const limits = getWordLimit(config, member.plan);
+  return (
+    member.wordsToday >= limits.perDay ||
+    member.wordsThisMonth >= limits.perMonth
+  );
 };
 
+export const getMemberExceedsTokenLimit = (
+  member: Member,
+  config: FullConfig
+): boolean => {
+  const limits = getTokenLimit(config, member.plan);
+  return (
+    member.tokensToday >= limits.perDay ||
+    member.tokensThisMonth >= limits.perMonth
+  );
+}
 
 /** Transactional so that anyone can call this whenever they want */
 export const tryInitializeMember = async (userId: string): Promise<void> => {
@@ -31,11 +41,14 @@ export const tryInitializeMember = async (userId: string): Promise<void> => {
       type: "user",
       userIds: [userId],
       plan: "free",
+      todayResetAt: firemix().now(),
+      thisMonthResetAt: firemix().now(),
       wordsToday: 0,
-      wordsTodayResetAt: firemix().now(),
       wordsThisMonth: 0,
-      wordsThisMonthResetAt: firemix().now(),
       wordsTotal: 0,
+      tokensToday: 0,
+      tokensThisMonth: 0,
+      tokensTotal: 0,
     });
   });
 };

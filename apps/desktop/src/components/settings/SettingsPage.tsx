@@ -5,18 +5,40 @@ import {
   DescriptionOutlined,
   GraphicEqOutlined,
   KeyboardAltOutlined,
+  LockOutlined,
+  LogoutOutlined,
   MicOutlined,
+  PaymentOutlined,
+  PersonRemoveOutlined,
   PrivacyTipOutlined,
   VolumeUpOutlined,
 } from "@mui/icons-material";
 import { Stack, Typography } from "@mui/material";
+import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { produceAppState } from "../../store";
+import { useState } from "react";
+import { showErrorSnackbar } from "../../actions/app.actions";
+import { getAuthRepo } from "../../repos";
+import { produceAppState, useAppStore } from "../../store";
+import { getIsPaying } from "../../utils/member.utils";
+import { getHasEmailProvider, getIsSignedIn } from "../../utils/user.utils";
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 
 export default function SettingsPage() {
+  const hasEmailProvider = useAppStore(getHasEmailProvider);
+  const isPaying = useAppStore(getIsPaying);
+  const [manageSubscriptionLoading, setManageSubscriptionLoading] =
+    useState(false);
+  const isSignedIn = useAppStore(getIsSignedIn);
+
+  const openChangePasswordDialog = () => {
+    produceAppState((state) => {
+      state.settings.changePasswordDialogOpen = true;
+    });
+  };
+
   const openTranscriptionDialog = () => {
     produceAppState((draft) => {
       draft.settings.aiTranscriptionDialogOpen = true;
@@ -51,6 +73,31 @@ export default function SettingsPage() {
     produceAppState((draft) => {
       draft.settings.clearLocalDataDialogOpen = true;
     });
+  };
+
+  const openDeleteAccountDialog = () => {
+    produceAppState((state) => {
+      state.settings.deleteAccountDialog = true;
+    });
+  };
+
+  const handleManageSubscription = async () => {
+    setManageSubscriptionLoading(true);
+    try {
+      const data = await invokeHandler(
+        "stripe/createCustomerPortalSession",
+        {}
+      );
+      openUrl(data.url);
+    } catch (error) {
+      showErrorSnackbar(error);
+    } finally {
+      setManageSubscriptionLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await getAuthRepo().signOut();
   };
 
   const general = (
@@ -96,6 +143,22 @@ export default function SettingsPage() {
       title="Advanced"
       description="Manage your account preferences and settings."
     >
+      {hasEmailProvider && (
+        <ListTile
+          title="Change password"
+          leading={<LockOutlined />}
+          onClick={openChangePasswordDialog}
+        />
+      )}
+      {isPaying && (
+        <ListTile
+          title="Manage subscription"
+          leading={<PaymentOutlined />}
+          onClick={handleManageSubscription}
+          disabled={manageSubscriptionLoading}
+          trailing={<ArrowOutwardRounded />}
+        />
+      )}
       <ListTile
         title="Terms & conditions"
         onClick={() => openUrl("https://voquill.com/terms")}
@@ -108,6 +171,13 @@ export default function SettingsPage() {
         trailing={<ArrowOutwardRounded />}
         leading={<PrivacyTipOutlined />}
       />
+      {isSignedIn && (
+        <ListTile
+          title="Sign out"
+          leading={<LogoutOutlined />}
+          onClick={handleSignOut}
+        />
+      )}
     </Section>
   );
 
@@ -121,6 +191,14 @@ export default function SettingsPage() {
         leading={<DeleteForeverOutlined />}
         onClick={openClearLocalDataDialog}
       />
+      {isSignedIn && (
+        <ListTile
+          sx={{ mt: 1 }}
+          title="Delete account"
+          leading={<PersonRemoveOutlined />}
+          onClick={openDeleteAccountDialog}
+        />
+      )}
     </Section>
   );
 

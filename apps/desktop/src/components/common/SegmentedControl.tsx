@@ -1,9 +1,10 @@
 import { Box, Tab, Tabs } from "@mui/material";
 import { SyntheticEvent } from "react";
 
-type SegmentedControlOption<Value extends string> = {
+export type SegmentedControlOption<Value extends string> = {
   value: Value;
   label: string;
+  disabled?: boolean;
 };
 
 export type SegmentedControlProps<Value extends string> = {
@@ -40,14 +41,22 @@ export const SegmentedControl = <Value extends string>({
   onChange,
   ariaLabel,
 }: SegmentedControlProps<Value>) => {
-  const activeIndex = Math.max(
-    0,
-    options.findIndex((option) => option.value === value),
+  const activeIndexCandidate = options.findIndex(
+    (option) => option.value === value && !option.disabled,
   );
+  const fallbackIndex = options.findIndex((option) => !option.disabled);
+  const activeIndex =
+    activeIndexCandidate >= 0
+      ? activeIndexCandidate
+      : Math.max(0, fallbackIndex);
 
   const handleChange = (_event: SyntheticEvent, index: number) => {
     const option = options[index];
     if (!option) {
+      return;
+    }
+
+    if (option.disabled) {
       return;
     }
 
@@ -80,7 +89,12 @@ export const SegmentedControl = <Value extends string>({
         }}
       >
         {options.map((option) => (
-          <Tab key={option.value} label={option.label} sx={tabSx} />
+          <Tab
+            key={option.value}
+            label={option.label}
+            sx={tabSx}
+            disabled={option.disabled}
+          />
         ))}
       </Tabs>
     </Box>

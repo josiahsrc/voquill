@@ -1,5 +1,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import {
   Box,
   Button,
@@ -9,6 +10,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Link,
   MenuItem,
   Paper,
   Stack,
@@ -39,15 +41,14 @@ type AddApiKeyCardProps = {
   onSave: (
     name: string,
     provider: SettingsApiKeyProvider,
-    key: string,
+    key: string
   ) => Promise<void>;
   onCancel: () => void;
 };
 
 const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
   const [name, setName] = useState("");
-  const [provider, setProvider] =
-    useState<SettingsApiKeyProvider>("groq");
+  const [provider, setProvider] = useState<SettingsApiKeyProvider>("groq");
   const [key, setKey] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -231,16 +232,14 @@ const ApiKeyCard = ({
 const generateApiKeyId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-export const ApiKeyList = ({
-  selectedApiKeyId,
-  onChange,
-}: ApiKeyListProps) => {
+export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
   const apiKeys = useAppStore((state) => state.settings.apiKeys);
   const status = useAppStore((state) => state.settings.apiKeysStatus);
   const [showAddCard, setShowAddCard] = useState(false);
   const [testingApiKeyId, setTestingApiKeyId] = useState<string | null>(null);
-  const [apiKeyToDelete, setApiKeyToDelete] =
-    useState<SettingsApiKey | null>(null);
+  const [apiKeyToDelete, setApiKeyToDelete] = useState<SettingsApiKey | null>(
+    null
+  );
   const [deletingApiKeyId, setDeletingApiKeyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -260,11 +259,7 @@ export const ApiKeyList = ({
   }, [apiKeys, selectedApiKeyId, onChange]);
 
   const handleAddApiKey = useCallback(
-    async (
-      name: string,
-      provider: SettingsApiKeyProvider,
-      key: string,
-    ) => {
+    async (name: string, provider: SettingsApiKeyProvider, key: string) => {
       const created = await createApiKey({
         id: generateApiKeyId(),
         name,
@@ -275,29 +270,26 @@ export const ApiKeyList = ({
       onChange(created.id);
       setShowAddCard(false);
     },
-    [onChange],
+    [onChange]
   );
 
-  const handleTestApiKey = useCallback(
-    async (apiKey: SettingsApiKey) => {
-      setTestingApiKeyId(apiKey.id);
-      try {
-        const success = await testApiKey(apiKey);
-        if (success) {
-          showSnackbar("Integration successful", { mode: "success" });
-        } else {
-          showErrorSnackbar("Integration failed. Provide a valid API key.");
-        }
-      } catch (error) {
-        showErrorSnackbar(
-          error instanceof Error ? error.message : "API key test failed.",
-        );
-      } finally {
-        setTestingApiKeyId(null);
+  const handleTestApiKey = useCallback(async (apiKey: SettingsApiKey) => {
+    setTestingApiKeyId(apiKey.id);
+    try {
+      const success = await testApiKey(apiKey);
+      if (success) {
+        showSnackbar("Integration successful", { mode: "success" });
+      } else {
+        showErrorSnackbar("Integration failed. Provide a valid API key.");
       }
-    },
-    [],
-  );
+    } catch (error) {
+      showErrorSnackbar(
+        error instanceof Error ? error.message : "API key test failed."
+      );
+    } finally {
+      setTestingApiKeyId(null);
+    }
+  }, []);
 
   const handleRequestDelete = useCallback((apiKey: SettingsApiKey) => {
     setApiKeyToDelete(apiKey);
@@ -374,32 +366,54 @@ export const ApiKeyList = ({
 
   const shouldShowLoading = status === "loading" && apiKeys.length === 0;
   const shouldShowError = status === "error" && apiKeys.length === 0;
-  const shouldShowEmpty = apiKeys.length === 0 && !showAddCard && !shouldShowLoading && !shouldShowError;
+  const shouldShowEmpty =
+    apiKeys.length === 0 &&
+    !showAddCard &&
+    !shouldShowLoading &&
+    !shouldShowError;
 
   return (
-    <Stack spacing={2.5} sx={{ width: "100%" }}>
-      {shouldShowLoading
-        ? loadingState
-        : shouldShowError
-        ? errorState
-        : shouldShowEmpty
-        ? emptyState
-        : (
-          <Stack spacing={1.5} alignItems="stretch" sx={{ width: "100%" }}>
-            {apiKeys.map((apiKey) => (
-              <ApiKeyCard
-                key={apiKey.id}
-                apiKey={apiKey}
-                selected={selectedApiKeyId === apiKey.id}
-                onSelect={() => onChange(apiKey.id)}
-                onTest={() => handleTestApiKey(apiKey)}
-                testing={testingApiKeyId === apiKey.id}
-                onDelete={() => handleRequestDelete(apiKey)}
-                deleting={deletingApiKeyId === apiKey.id}
-              />
-            ))}
-          </Stack>
-        )}
+    <Stack spacing={1} sx={{ width: "100%" }}>
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        <Typography variant="body2" color="text.secondary">
+          Grab an API key from the
+        </Typography>
+        <Link
+          href="https://console.groq.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.5,
+          }}
+        >
+          Groq Console
+          <OpenInNewIcon sx={{ fontSize: 16 }} />
+        </Link>
+      </Stack>
+      {shouldShowLoading ? (
+        loadingState
+      ) : shouldShowError ? (
+        errorState
+      ) : shouldShowEmpty ? (
+        emptyState
+      ) : (
+        <Stack spacing={1.5} alignItems="stretch" sx={{ width: "100%" }}>
+          {apiKeys.map((apiKey) => (
+            <ApiKeyCard
+              key={apiKey.id}
+              apiKey={apiKey}
+              selected={selectedApiKeyId === apiKey.id}
+              onSelect={() => onChange(apiKey.id)}
+              onTest={() => handleTestApiKey(apiKey)}
+              testing={testingApiKeyId === apiKey.id}
+              onDelete={() => handleRequestDelete(apiKey)}
+              deleting={deletingApiKeyId === apiKey.id}
+            />
+          ))}
+        </Stack>
+      )}
       {showAddCard ? (
         <AddApiKeyCard
           onSave={handleAddApiKey}
@@ -430,11 +444,7 @@ export const ApiKeyList = ({
             </Box>
             ?
           </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 1 }}
-          >
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Removing the key signs you out of that provider on this device.
           </Typography>
         </DialogContent>

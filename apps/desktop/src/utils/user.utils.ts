@@ -2,12 +2,36 @@ import { Nullable, User } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
 import { PostProcessingMode, ProcessingMode } from "../types/ai.types";
+import { applyAiPreferencesFromUser } from "./ai.utils";
+import { registerUsers } from "./app.utils";
+import { getMyMember } from "./member.utils";
 
-export const getMyUserId = (state: AppState): string =>
-  state.currentUserId ?? "local-user-id";
+export const LOCAL_USER_ID = "local-user-id";
+
+export const getHasEmailProvider = (state: AppState): boolean => {
+  const auth = state.auth;
+  const providers = auth?.providerData ?? [];
+  const providerIds = providers.map((p) => p.providerId);
+  return providerIds.includes("password");
+};
+
+export const getHasCloudAccess = (state: AppState): boolean => {
+  return getMyMember(state)?.plan === "pro";
+}
+
+export const getMyCloudUserId = (state: AppState): Nullable<string> => state.auth?.uid ?? null;
+
+export const getMyEffectiveUserId = (state: AppState): string => {
+  const isCloud = getHasCloudAccess(state);
+  if (isCloud) {
+    return getMyCloudUserId(state) ?? LOCAL_USER_ID;
+  }
+
+  return LOCAL_USER_ID;
+}
 
 export const getMyUser = (state: AppState): Nullable<User> => {
-  return getRec(state.userById, getMyUserId(state)) ?? null;
+  return getRec(state.userById, getMyEffectiveUserId(state)) ?? null;
 };
 
 export const getMyUserName = (state: AppState): string => {
@@ -15,6 +39,9 @@ export const getMyUserName = (state: AppState): string => {
   return user?.name || "Guest";
 };
 
+export const getIsSignedIn = (state: AppState): boolean => {
+  return !!state.auth;
+}
 
 const hasValidApiKey = (state: AppState, id: Nullable<string>): boolean => {
   return Boolean(getRec(state.apiKeyById, id));
@@ -39,6 +66,10 @@ export const getTranscriptionPreferenceFromState = (
     return { mode: "local", apiKeyId: null };
   }
 
+  if (mode === "cloud") {
+    return { mode: "cloud", apiKeyId: null };
+  }
+
   if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {
     return { mode: "api", apiKeyId: selectedApiKeyId };
   }
@@ -55,9 +86,18 @@ export const getPostProcessingPreferenceFromState = (
     return { mode: "none", apiKeyId: null };
   }
 
+  if (mode === "cloud") {
+    return { mode: "cloud", apiKeyId: null };
+  }
+
   if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {
     return { mode: "api", apiKeyId: selectedApiKeyId };
   }
 
   return null;
 };
+
+export const setCurrentUser = (draft: AppState, user: User) => {
+  registerUsers(draft, [user]);
+  applyAiPreferencesFromUser(draft, user);
+}

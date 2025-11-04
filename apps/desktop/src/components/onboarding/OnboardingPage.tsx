@@ -1,15 +1,30 @@
 import { Stack } from "@mui/material";
-import { useAppStore } from "../../store";
+import { useEffect } from "react";
+import { loadPrices } from "../../actions/pricing.actions";
+import { produceAppState, useAppStore } from "../../store";
+import { getMyMember } from "../../utils/member.utils";
+import { HotkeySelectionForm } from "./HotkeySelectionForm";
 import { NameForm } from "./NameForm";
+import { OnboardingLoginForm } from "./OnboardingLoginForm";
+import { PlanSelectionForm } from "./PlanSelectionForm";
 import { PostProcessingMethodForm } from "./PostProcessingMethodForm";
 import { TranscriptionMethodForm } from "./TranscriptionMethodForm";
-import { TryItOutForm } from "./TryItOutForm";
 import { WelcomeForm } from "./WelcomeForm";
-import { useConsumeQueryParams } from "../../hooks/navigation.hooks";
 
 export default function OnboardingPage() {
-  const page = useAppStore((state) => state.onboarding.page);
-  useConsumeQueryParams(["plan"], () => {});
+  const currentPage = useAppStore((state) => state.onboarding.currentPage);
+
+  useEffect(() => {
+    loadPrices();
+    produceAppState((draft) => {
+      draft.login.mode = "signUp";
+
+      const member = getMyMember(draft);
+      if (member?.plan === "pro") {
+        draft.onboarding.currentPage = "hotkeys";
+      }
+    });
+  }, []);
 
   return (
     <Stack
@@ -18,11 +33,13 @@ export default function OnboardingPage() {
       justifyContent="center"
       sx={{ height: "100%", pb: 4 }}
     >
-      {page === 0 && <WelcomeForm />}
-      {page === 1 && <NameForm />}
-      {page === 2 && <TranscriptionMethodForm />}
-      {page === 3 && <PostProcessingMethodForm />}
-      {page === 4 && <TryItOutForm />}
+      {currentPage === "welcome" && <WelcomeForm />}
+      {currentPage === "name" && <NameForm />}
+      {currentPage === "plan" && <PlanSelectionForm />}
+      {currentPage === "login" && <OnboardingLoginForm />}
+      {currentPage === "transcription" && <TranscriptionMethodForm />}
+      {currentPage === "postProcessing" && <PostProcessingMethodForm />}
+      {currentPage === "hotkeys" && <HotkeySelectionForm />}
     </Stack>
   );
 }

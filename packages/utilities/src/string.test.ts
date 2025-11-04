@@ -1,4 +1,5 @@
-import { countWords } from "./string.utils";
+import { describe, expect, it } from "vitest";
+import { countWords } from "./string";
 
 describe("countWords", () => {
   it("should count words in a normal sentence", () => {

@@ -1,3 +1,4 @@
+import { PaymentDialog } from "../payment/PaymentDialog";
 import { AIPostProcessingDialog } from "../settings/AIPostProcessingDialog";
 import { AITranscriptionDialog } from "../settings/AITranscriptionDialog";
 import { AudioDialog } from "../settings/AudioDialog";
@@ -5,6 +6,7 @@ import { ClearLocalDataDialog } from "../settings/ClearLocalDataDialog";
 import { MicrophoneDialog } from "../settings/MicrophoneDialog";
 import { ProfileDialog } from "../settings/ProfileDialog";
 import { ShortcutsDialog } from "../settings/ShortcutsDialog";
+import { UpgradePlanDialog } from "../pricing/UpgradePlanDialog";
 import { PermissionsDialog } from "./PermissionsDialog";
 import { UpdateDialog } from "./UpdateDialog";
 
@@ -20,6 +22,8 @@ export const RootDialogs = () => {
       <AudioDialog />
       <ShortcutsDialog />
       <ClearLocalDataDialog />
+      <UpgradePlanDialog />
+      <PaymentDialog />
     </>
   );
 };

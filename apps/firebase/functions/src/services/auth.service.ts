@@ -1,37 +1,12 @@
-import * as admin from "firebase-admin";
+import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
+import { HandlerOutput } from "@repo/functions";
+import { DeleteAccountAction, Nullable } from "@repo/types";
+import dayjs from "dayjs";
 import { AuthData } from "firebase-functions/tasks";
-import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { cancelAccountDeletionForUserId } from "../utils/auth.utils";
 import { UnauthenticatedError } from "../utils/error.utils";
 import { sendLoopsEvent } from "../utils/loops.utils";
-import dayjs from "dayjs";
-import { DeleteAccountAction, Nullable } from "@repo/types";
-import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-
-export const createCustomToken = async (args: {
-  auth: Nullable<AuthData>;
-  input: HandlerInput<"auth/createCustomToken">;
-}): Promise<HandlerOutput<"auth/createCustomToken">> => {
-  if (!args.auth) {
-    console.log("missing auth data");
-    throw new UnauthenticatedError("You must be authenticated");
-  }
-
-  const { uid } = args.auth;
-  const user = await admin.auth().getUser(uid);
-  if (!user) {
-    console.log("no refresh token provided");
-    throw new UnauthenticatedError("User not found");
-  }
-
-  console.log("creating custom token for user:", uid);
-  const customToken = await admin.auth().createCustomToken(uid);
-
-  return {
-    customToken,
-  };
-};
 
 export const cancelAccountDeletion = async (args: {
   auth: Nullable<AuthData>;

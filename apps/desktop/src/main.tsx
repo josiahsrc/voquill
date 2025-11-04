@@ -4,7 +4,9 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import { initializeApp } from "firebase/app";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { FirebaseOptions, initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import {
   connectFirestoreEmulator,
@@ -19,20 +21,37 @@ import { OverlayRoot } from "./components/overlay/OverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { theme } from "./theme";
-import { getIsDevMode, getIsEmulators } from "./utils/env.utils";
-import { useKeyDownHandler } from "./hooks/helper.hooks";
+import { getIsEmulators, getStripePublicKey } from "./utils/env.utils";
 
-const config = {
-  apiKey: "AIzaSyDlPI-o5piDSNIG39EvJZJEz0gXCGEGk-w",
-  authDomain: "voquill-prod.firebaseapp.com",
-  projectId: "voquill-prod",
-  storageBucket: "voquill-prod.firebasestorage.app",
-  messagingSenderId: "777461284594",
-  appId: "1:777461284594:web:d431c9557d3e02395e5a6b",
-  measurementId: "G-LKHEH0DPND",
+const firebaseConfig: FirebaseOptions = {
+  apiKey:
+    import.meta.env.VITE_FIREBASE_API_KEY ||
+    "AIzaSyCJ8C3ZW2bHjerneg5i0fr-b5uwuy7uULM",
+  authDomain:
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "voquill-dev.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "voquill-dev",
+  storageBucket:
+    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
+    "voquill-dev.firebasestorage.app",
+  messagingSenderId:
+    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "778214168359",
+  appId:
+    import.meta.env.VITE_FIREBASE_APP_ID ||
+    "1:778214168359:web:66ee2ce5df76c8c2d77b02",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-V6Y1RSFBQX",
 };
 
-const app = initializeApp(config);
+const missingFirebaseConfigKeys = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingFirebaseConfigKeys.length > 0) {
+  throw new Error(
+    `Missing Firebase configuration values: ${missingFirebaseConfigKeys.join(", ")}`
+  );
+}
+
+const app = initializeApp(firebaseConfig);
 
 initializeFirestore(app, { ignoreUndefinedProperties: true });
 
@@ -67,21 +86,6 @@ type ChildrenProps = {
   children: React.ReactNode;
 };
 
-const Refresher = ({ children }: ChildrenProps) => {
-  // You cannot refresh the page in Tauri, here's a hotkey to help with that
-  useKeyDownHandler({
-    keys: ["r"],
-    ctrl: true,
-    callback: () => {
-      if (getIsDevMode()) {
-        window.location.reload();
-      }
-    },
-  });
-
-  return <>{children}</>;
-};
-
 const Main = ({ children }: ChildrenProps) => {
   return (
     <React.StrictMode>
@@ -100,12 +104,13 @@ if (isOverlayWindow) {
     </Main>
   );
 } else {
+  const stripePromise = loadStripe(getStripePublicKey());
   root.render(
     <Main>
-      <Refresher>
+      <Elements stripe={stripePromise}>
         <SnackbarEmitter />
         <AppWithLoading />
-      </Refresher>
+      </Elements>
     </Main>
   );
 }

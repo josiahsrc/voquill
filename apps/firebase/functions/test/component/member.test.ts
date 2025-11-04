@@ -52,7 +52,7 @@ describe("resetWordsTodayCron", () => {
     const expiredMember = buildMember({
       id: firemix().id(),
       wordsToday: 100,
-      wordsTodayResetAt: firemix().timestampFromDate(
+      todayResetAt: firemix().timestampFromDate(
         dayjs().subtract(1, "day").toDate()
       ),
     });
@@ -60,7 +60,7 @@ describe("resetWordsTodayCron", () => {
     const notExpiredMember = buildMember({
       id: firemix().id(),
       wordsToday: 50,
-      wordsTodayResetAt: firemix().timestampFromDate(
+      todayResetAt: firemix().timestampFromDate(
         dayjs().add(1, "day").toDate()
       ),
     });
@@ -79,12 +79,12 @@ describe("resetWordsTodayCron", () => {
         // expired member should be reset
         expect(expiredMemberSnap?.data.wordsToday).toBe(0);
         expect(
-          expiredMemberSnap?.data.wordsTodayResetAt.toMillis()
+          expiredMemberSnap?.data.todayResetAt.toMillis()
         ).toBeGreaterThanOrEqual(
           dayjs().add(1, "day").subtract(1, "minute").toDate().getTime()
         );
         expect(
-          expiredMemberSnap?.data.wordsTodayResetAt.toMillis()
+          expiredMemberSnap?.data.todayResetAt.toMillis()
         ).toBeLessThanOrEqual(
           dayjs().add(1, "day").add(1, "minute").toDate().getTime()
         );
@@ -95,8 +95,8 @@ describe("resetWordsTodayCron", () => {
         );
         expect(notExpiredMemberSnap?.data.wordsToday).toBe(50);
         expect(
-          notExpiredMemberSnap?.data.wordsThisMonthResetAt.toMillis()
-        ).toEqual(notExpiredMember.wordsThisMonthResetAt.toMillis());
+          notExpiredMemberSnap?.data.thisMonthResetAt?.toMillis()
+        ).toEqual(notExpiredMember.thisMonthResetAt?.toMillis());
       },
       retries: 10,
       delay: 1000
@@ -109,7 +109,7 @@ describe("resetWordsThisMonthCron", () => {
     const expiredMember = buildMember({
       id: firemix().id(),
       wordsThisMonth: 5000,
-      wordsThisMonthResetAt: firemix().timestampFromDate(
+      thisMonthResetAt: firemix().timestampFromDate(
         dayjs().subtract(1, "month").toDate()
       ),
     });
@@ -117,7 +117,7 @@ describe("resetWordsThisMonthCron", () => {
     const notExpiredMember = buildMember({
       id: firemix().id(),
       wordsThisMonth: 2500,
-      wordsThisMonthResetAt: firemix().timestampFromDate(
+      thisMonthResetAt: firemix().timestampFromDate(
         dayjs().add(1, "month").toDate()
       ),
     });
@@ -136,12 +136,12 @@ describe("resetWordsThisMonthCron", () => {
         // expired member should be reset
         expect(expiredMemberSnap?.data.wordsThisMonth).toBe(0);
         expect(
-          expiredMemberSnap?.data.wordsThisMonthResetAt.toMillis()
+          expiredMemberSnap?.data.thisMonthResetAt.toMillis()
         ).toBeGreaterThanOrEqual(
           dayjs().add(1, "month").subtract(1, "minute").toDate().getTime()
         );
         expect(
-          expiredMemberSnap?.data.wordsThisMonthResetAt.toMillis()
+          expiredMemberSnap?.data.thisMonthResetAt.toMillis()
         ).toBeLessThanOrEqual(
           dayjs().add(1, "month").add(1, "minute").toDate().getTime()
         );
@@ -152,8 +152,8 @@ describe("resetWordsThisMonthCron", () => {
         );
         expect(notExpiredMemberSnap?.data.wordsThisMonth).toBe(2500);
         expect(
-          notExpiredMemberSnap?.data.wordsThisMonthResetAt.toMillis()
-        ).toEqual(notExpiredMember.wordsThisMonthResetAt.toMillis());
+          notExpiredMemberSnap?.data.thisMonthResetAt.toMillis()
+        ).toEqual(notExpiredMember.thisMonthResetAt.toMillis());
       },
       retries: 10,
       delay: 1000

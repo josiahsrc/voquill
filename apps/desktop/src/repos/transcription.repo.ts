@@ -1,9 +1,9 @@
-import { invoke } from "@tauri-apps/api/core";
-import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
-import { BaseRepo } from "./base.repo";
 import { firemix } from "@firemix/client";
-import { getMyUserId } from "../utils/user.utils";
+import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
+import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
+import { getMyEffectiveUserId } from "../utils/user.utils";
+import { BaseRepo } from "./base.repo";
 
 type LocalTranscriptionAudio = TranscriptionAudioSnapshot;
 
@@ -19,8 +19,8 @@ type LocalTranscription = {
   postProcessPrompt?: string | null;
   transcriptionApiKeyId?: string | null;
   postProcessApiKeyId?: string | null;
-  transcriptionMode?: "local" | "api" | null;
-  postProcessMode?: "local" | "api" | null;
+  transcriptionMode?: "local" | "api" | "cloud" | null;
+  postProcessMode?: "none" | "api" | "cloud" | null;
   postProcessDevice?: string | null;
 };
 
@@ -42,9 +42,9 @@ const toLocalTranscription = (
   timestamp: transcription.createdAt.toMillis(),
   audio: transcription.audio
     ? {
-        filePath: transcription.audio.filePath,
-        durationMs: transcription.audio.durationMs,
-      }
+      filePath: transcription.audio.filePath,
+      durationMs: transcription.audio.durationMs,
+    }
     : undefined,
   modelSize: transcription.modelSize ?? null,
   inferenceDevice: transcription.inferenceDevice ?? null,
@@ -64,13 +64,13 @@ const fromLocalTranscription = (
   id: transcription.id,
   transcript: transcription.transcript,
   createdAt: firemix().timestampFromMillis(transcription.timestamp),
-  createdByUserId: getMyUserId(getAppState()),
+  createdByUserId: getMyEffectiveUserId(getAppState()),
   isDeleted: false,
   audio: transcription.audio
     ? {
-        filePath: transcription.audio.filePath,
-        durationMs: transcription.audio.durationMs,
-      }
+      filePath: transcription.audio.filePath,
+      durationMs: transcription.audio.durationMs,
+    }
     : undefined,
   modelSize: transcription.modelSize ?? undefined,
   inferenceDevice: transcription.inferenceDevice ?? undefined,

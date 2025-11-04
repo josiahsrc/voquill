@@ -14,7 +14,7 @@ import {
 import { useState } from "react";
 import { produceAppState, useAppStore } from "../../store";
 
-const CONFIRMATION_PHRASE = "clear local data";
+const CONFIRMATION_PHRASE = "clear";
 
 export const ClearLocalDataDialog = () => {
   const open = useAppStore((state) => state.settings.clearLocalDataDialogOpen);

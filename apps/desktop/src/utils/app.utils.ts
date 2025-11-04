@@ -1,9 +1,5 @@
-import { ApiKey, Hotkey, Term, Transcription, User } from "@repo/types";
+import { ApiKey, Hotkey, Member, Term, Transcription, User } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
-import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_PROCESSING_MODE,
-} from "../types/ai.types";
 
 export type ShowSnackbarOpts = {
   duration?: number;
@@ -23,29 +19,9 @@ export const setSnackbar = (
   draft.snackbarTransitionDuration = opts?.transitionDuration;
 };
 
-const getLocalUserId = (draft: AppState): string => draft.currentUserId ?? "local-user-id";
-
-const applyAiPreferencesFromUser = (draft: AppState, user: User): void => {
-  const myUserId = getLocalUserId(draft);
-  if (user.id !== myUserId) {
-    return;
-  }
-
-  const transcriptionMode =
-    user.preferredTranscriptionMode ?? DEFAULT_PROCESSING_MODE;
-  draft.settings.aiTranscription.mode = transcriptionMode;
-  draft.settings.aiTranscription.selectedApiKeyId = user.preferredTranscriptionApiKeyId ?? null;
-
-  const postProcessingMode =
-    user.preferredPostProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;
-  draft.settings.aiPostProcessing.mode = postProcessingMode;
-  draft.settings.aiPostProcessing.selectedApiKeyId = user.preferredPostProcessingApiKeyId ?? null;
-};
-
 export const registerUsers = (draft: AppState, users: User[]): void => {
   for (const user of users) {
     draft.userById[user.id] = user;
-    applyAiPreferencesFromUser(draft, user);
   }
 };
 
@@ -75,3 +51,9 @@ export const registerApiKeys = (draft: AppState, apiKeys: ApiKey[]): void => {
     draft.apiKeyById[apiKey.id] = apiKey;
   }
 };
+
+export const registerMembers = (draft: AppState, members: Member[]): void => {
+  for (const member of members) {
+    draft.memberById[member.id] = member;
+  }
+}

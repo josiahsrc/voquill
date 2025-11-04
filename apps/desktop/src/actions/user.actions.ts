@@ -1,18 +1,17 @@
 import { firemix } from "@firemix/client";
 import { Nullable, User } from "@repo/types";
-import { listify } from "@repo/utilities";
+import { getUserRepo } from "../repos";
+import { getAppState, produceAppState } from "../store";
 import {
   type PostProcessingMode,
   type ProcessingMode,
 } from "../types/ai.types";
-import { getUserRepo } from "../repos";
-import { getAppState, produceAppState } from "../store";
-import { registerUsers } from "../utils/app.utils";
 import {
+  getMyEffectiveUserId,
   getMyUser,
-  getMyUserId,
   getPostProcessingPreferenceFromState,
   getTranscriptionPreferenceFromState,
+  setCurrentUser
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 
@@ -40,7 +39,7 @@ const updateUser = async (
   try {
     const saved = await repo.setUser(payload);
     produceAppState((draft) => {
-      registerUsers(draft, [saved]);
+      setCurrentUser(draft, saved);
     });
   } catch (error) {
     console.error("Failed to update user", error);
@@ -79,14 +78,13 @@ export const addWordsToCurrentUser = async (wordCount: number): Promise<void> =>
 
 export const refreshCurrentUser = async (): Promise<void> => {
   const state = getAppState();
-  const userId = getMyUserId(state);
+  const userId = getMyEffectiveUserId(state);
 
   try {
     const user = await getUserRepo().getUser(userId);
     produceAppState((draft) => {
-      registerUsers(draft, listify(user));
       if (user) {
-        draft.currentUserId = user.id;
+        setCurrentUser(draft, user);
       }
     });
   } catch (error) {

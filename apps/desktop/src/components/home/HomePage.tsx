@@ -5,6 +5,7 @@ import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 import { Stat } from "./Stat";
 import { HomeSideEffects } from "./HomeSideEffects";
+import { DictationInstruction } from "../common/DictationInstruction";
 
 export default function HomePage() {
   const user = useAppStore(getMyUser);
@@ -32,9 +33,12 @@ export default function HomePage() {
           </Stack>
         </Box>
         <Section
-          title="Try out Voquill"
+          title="Try it out"
           description="Use this space to type or paste anything and see how Voquill handles it. Nothing you write here is saved."
         >
+          <Box sx={{ mb: 2 }}>
+            <DictationInstruction />
+          </Box>
           <TextField
             variant="outlined"
             fullWidth

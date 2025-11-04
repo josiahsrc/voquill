@@ -9,8 +9,8 @@ import {
   type SxProps,
 } from "@mui/material";
 import { forwardRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { OverflowTypography } from "./OverflowTypography";
-import { isDefined } from "@repo/utilities";
 
 type HoverButtonProps = {
   idle?: React.ReactNode;
@@ -85,6 +85,8 @@ export type ListTileProps = {
   onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
   selected?: boolean;
   sx?: SxProps;
+  href?: string;
+  disabled?: boolean;
 };
 
 export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
@@ -101,10 +103,13 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
       onClick,
       selected = false,
       sx,
+      href,
+      disabled,
     },
     ref
   ) => {
     const [hovered, setHovered] = useState(false);
+    const nav = useNavigate();
 
     const onMouseEnter = () => {
       setHovered(true);
@@ -124,6 +129,19 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
       trailingOnClick?.(event);
     };
 
+    const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+      if (href) {
+        if (event.metaKey || event.ctrlKey) {
+          window.open(href, "_blank");
+        } else {
+          event.preventDefault();
+          nav(href);
+        }
+      }
+
+      onClick?.(event);
+    };
+
     return (
       <ListItem
         ref={ref}
@@ -133,9 +151,13 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
         onMouseLeave={onMouseLeave}
         sx={sx}
       >
-        <ListItemButton selected={selected} onClick={onClick}>
+        <ListItemButton
+          selected={selected}
+          onClick={handleClick}
+          disabled={disabled}
+        >
           <Stack direction="row" alignItems="center" width="100%">
-            {isDefined(leading) && (
+            {Boolean(leading) && (
               <HoverButton
                 idle={leading}
                 hover={leadingHover}
@@ -150,7 +172,7 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
                 secondary={subtitle}
               />
             </Box>
-            {isDefined(trailing) && (
+            {Boolean(trailing) && (
               <HoverButton
                 idle={trailing}
                 hover={trailingHover}

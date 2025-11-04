@@ -1,18 +1,58 @@
 import { firemix } from "@firemix/client";
-import { User } from "@repo/types";
+import { MemberPlan, User } from "@repo/types";
 import { getUserRepo } from "../repos";
+import {
+  OnboardingPageKey,
+  OnboardingState,
+} from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
-import { registerUsers } from "../utils/app.utils";
-import { getMyUserId, getPostProcessingPreferenceFromState, getTranscriptionPreferenceFromState } from "../utils/user.utils";
-import { showErrorSnackbar, showSnackbar } from "./app.actions";
 import {
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_PROCESSING_MODE,
 } from "../types/ai.types";
+import {
+  getMyEffectiveUserId,
+  getPostProcessingPreferenceFromState,
+  getTranscriptionPreferenceFromState,
+  setCurrentUser
+} from "../utils/user.utils";
+import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
-export const advancePage = (delta = 1) => {
+const navigateToOnboardingPage = (
+  onboarding: OnboardingState,
+  nextPage: OnboardingPageKey,
+) => {
+  if (onboarding.currentPage === nextPage) {
+    return;
+  }
+
+  onboarding.history.push(onboarding.currentPage);
+  onboarding.currentPage = nextPage;
+};
+
+export const goBackOnboardingPage = () => {
   produceAppState((draft) => {
-    draft.onboarding.page += delta;
+    const previousPage = draft.onboarding.history.pop();
+    if (previousPage) {
+      draft.onboarding.currentPage = previousPage;
+    }
+  });
+};
+
+export const goToOnboardingPage = (nextPage: OnboardingPageKey) => {
+  produceAppState((draft) => {
+    navigateToOnboardingPage(draft.onboarding, nextPage);
+  });
+};
+
+export const selectOnboardingPlan = (plan: MemberPlan) => {
+  produceAppState((draft) => {
+    draft.onboarding.selectedPlan = plan;
+
+    const targetPageKey: OnboardingPageKey =
+      plan === "pro" ? "login" : "transcription";
+
+    navigateToOnboardingPage(draft.onboarding, targetPageKey);
   });
 };
 
@@ -40,7 +80,7 @@ export const submitOnboarding = async () => {
   try {
     const repo = getUserRepo();
     const now = firemix().now();
-    const userId = getMyUserId(state);
+    const userId = getMyEffectiveUserId(state);
 
     const user: User = {
       id: userId,
@@ -65,8 +105,7 @@ export const submitOnboarding = async () => {
     const savedUser = await repo.setUser(user);
 
     produceAppState((draft) => {
-      registerUsers(draft, [savedUser]);
-      draft.currentUserId = savedUser.id;
+      setCurrentUser(draft, savedUser);
       draft.onboarding.submitting = false;
       draft.onboarding.name = savedUser.name;
     });

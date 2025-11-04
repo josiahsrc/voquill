@@ -1,17 +1,19 @@
-import { AccountCircleOutlined, MoreVert } from "@mui/icons-material";
 import {
-  Avatar,
-  Box,
-  Button,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
+  AccountCircleOutlined,
+  ArrowUpwardOutlined,
+} from "@mui/icons-material";
+import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { useHeaderPortal } from "../../hooks/header.hooks";
 import { useIsOnboarded } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
+import {
+  getIsPaying,
+  getMyMember,
+  planToDisplayName,
+} from "../../utils/member.utils";
 import { getInitials } from "../../utils/string.utils";
 import { getMyUser } from "../../utils/user.utils";
 import { LogoWithText } from "../common/LogoWithText";
@@ -19,6 +21,7 @@ import {
   MenuPopoverBuilder,
   type MenuPopoverItem,
 } from "../common/MenuPopover";
+import { maybeArrayElements } from "../settings/AIPostProcessingConfiguration";
 
 export type BaseHeaderProps = {
   logo?: React.ReactNode;
@@ -50,6 +53,10 @@ export const AppHeader = () => {
   const nav = useNavigate();
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
+  const planName = useAppStore((state) =>
+    planToDisplayName(getMyMember(state)?.plan ?? "free")
+  );
+  const isPaying = useAppStore(getIsPaying);
 
   const myName = useAppStore((state) => {
     const user = getMyUser(state);
@@ -74,6 +81,17 @@ export const AppHeader = () => {
       },
       leading: <AccountCircleOutlined />,
     },
+    ...maybeArrayElements<MenuPopoverItem>(!isPaying, [
+      {
+        kind: "listItem",
+        title: "Upgrade to Pro",
+        onClick: ({ close }) => {
+          openUpgradePlanDialog();
+          close();
+        },
+        leading: <ArrowUpwardOutlined />,
+      },
+    ]),
   ];
 
   let rightContent: React.ReactNode;
@@ -114,24 +132,10 @@ export const AppHeader = () => {
                 color="textSecondary"
                 lineHeight={1}
               >
-                Basic
+                {planName}
               </Typography>
             </Stack>
           </Button>
-        )}
-      </MenuPopoverBuilder>
-    );
-  } else {
-    rightContent = (
-      <MenuPopoverBuilder
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        items={[...sharedRightMenuItems]}
-      >
-        {({ ref, open }) => (
-          <IconButton ref={ref} onClick={open} size="small" color="primary">
-            <MoreVert />
-          </IconButton>
         )}
       </MenuPopoverBuilder>
     );

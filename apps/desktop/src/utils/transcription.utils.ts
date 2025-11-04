@@ -49,8 +49,8 @@ export type TranscriptionMetadata = {
   postProcessPrompt?: string | null;
   transcriptionApiKeyId?: string | null;
   postProcessApiKeyId?: string | null;
-  transcriptionMode?: "local" | "api" | null;
-  postProcessMode?: "local" | "api" | null;
+  transcriptionMode?: "local" | "api" | "cloud" | null;
+  postProcessMode?: "none" | "api" | "cloud" | null;
   postProcessDevice?: string | null;
 };
 
@@ -142,6 +142,7 @@ export const transcribeAndPostProcessAudio = async ({
 
   const state = getAppState();
   const transcriptionSettings = state.settings.aiTranscription;
+  const selectedTranscriptionMode = transcriptionSettings.mode;
   const transcriptionPreference = getTranscriptionPreferenceFromState(state);
   const shouldUseApiTranscription = transcriptionSettings.mode === "api";
   const dictionaryEntries = collectDictionaryEntries(state);
@@ -153,7 +154,12 @@ export const transcribeAndPostProcessAudio = async ({
     modelSize: null,
     inferenceDevice: null,
     transcriptionPrompt: glossaryPrompt ?? null,
-    transcriptionMode: shouldUseApiTranscription ? "api" : "local",
+    transcriptionMode:
+      selectedTranscriptionMode === "api"
+        ? "api"
+        : selectedTranscriptionMode === "cloud"
+        ? "cloud"
+        : "local",
     transcriptionApiKeyId:
       shouldUseApiTranscription &&
         transcriptionPreference &&
@@ -192,12 +198,12 @@ export const transcribeAndPostProcessAudio = async ({
     try {
       const floatSamples = ensureFloat32Array(normalizedSamples);
       const wavBuffer = buildWaveFile(floatSamples, sampleRate);
-      transcript = await groqTranscribeAudio({
+      ({ text: transcript } = await groqTranscribeAudio({
         apiKey: apiKeyValue,
         blob: wavBuffer,
         ext: "wav",
         prompt: glossaryPrompt ?? undefined,
-      });
+      }));
       metadata.modelSize = null;
       metadata.inferenceDevice = "API · Groq";
       metadata.transcriptionPrompt = glossaryPrompt ?? null;
@@ -211,7 +217,9 @@ export const transcribeAndPostProcessAudio = async ({
       throw new TranscriptionError(message, error);
     }
   } else {
-    metadata.transcriptionMode = "local";
+    if (selectedTranscriptionMode !== "cloud") {
+      metadata.transcriptionMode = "local";
+    }
     metadata.transcriptionApiKeyId = null;
     try {
       const options = await resolveTranscriptionOptions();
@@ -247,8 +255,15 @@ export const transcribeAndPostProcessAudio = async ({
   const warnings: string[] = [];
   const postProcessingSettings = state.settings.aiPostProcessing;
   const postProcessingPreference = getPostProcessingPreferenceFromState(state);
-  const shouldUseApiPostProcessing = postProcessingSettings.mode === "api";
-  metadata.postProcessMode = shouldUseApiPostProcessing ? "api" : "local";
+  const postProcessingMode = postProcessingSettings.mode;
+  const shouldUseApiPostProcessing = postProcessingMode === "api";
+
+  metadata.postProcessMode =
+    postProcessingMode === "api"
+      ? "api"
+      : postProcessingMode === "cloud"
+      ? "cloud"
+      : "none";
   metadata.postProcessApiKeyId =
     shouldUseApiPostProcessing &&
       postProcessingPreference &&
@@ -257,6 +272,8 @@ export const transcribeAndPostProcessAudio = async ({
       : null;
   metadata.postProcessDevice = shouldUseApiPostProcessing
     ? "API · Groq"
+    : postProcessingMode === "cloud"
+    ? "Voquill Cloud"
     : "Disabled";
 
   let groqPostProcessingKey: string | null = null;
@@ -304,7 +321,7 @@ export const transcribeAndPostProcessAudio = async ({
         apiKey: groqPostProcessingKey,
         prompt: postProcessingPrompt,
       });
-      const trimmedProcessed = processed.trim();
+      const trimmedProcessed = processed.text.trim();
       if (trimmedProcessed) {
         finalTranscript = trimmedProcessed;
       } else {

@@ -1,22 +1,22 @@
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import {
-	handleResetWordsThisMonth,
-	handleResetWordsToday,
+	handleResetLimitsThisMonth,
+	handleResetLimitsToday,
 	trySend1000WordsEvent,
 	tryUpdateMemberLoopsContact,
 } from "../services/member.service";
-import { Member, Nullable } from "../shared";
 import { LOOPS_API_KEY_VAR } from "../utils/env.utils";
+import { Member, Nullable } from "@repo/types";
 
 // Every hour
 export const resetWordsTodayCron = onSchedule("0 * * * *", async () => {
-	await handleResetWordsToday();
+	await handleResetLimitsToday();
 });
 
 // Every hour
 export const resetWordsThisMonthCron = onSchedule("0 * * * *", async () => {
-	await handleResetWordsThisMonth();
+	await handleResetLimitsThisMonth();
 });
 
 export const onWrite = onDocumentWritten(

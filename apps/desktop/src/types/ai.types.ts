@@ -1,5 +1,5 @@
-export type ProcessingMode = "local" | "api";
-export type PostProcessingMode = "none" | "api";
+export type ProcessingMode = "local" | "api" | "cloud";
+export type PostProcessingMode = "none" | "api" | "cloud";
 
 export const DEFAULT_PROCESSING_MODE: ProcessingMode = "local";
 export const DEFAULT_MODEL_SIZE = "base";

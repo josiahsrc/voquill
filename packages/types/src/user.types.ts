@@ -12,9 +12,9 @@ export type User = {
   timezone?: Nullable<string>;
   preferredMicrophone?: Nullable<string>;
   playInteractionChime: boolean;
-  preferredTranscriptionMode?: Nullable<"local" | "api">;
+  preferredTranscriptionMode?: Nullable<"local" | "api" | "cloud">;
   preferredTranscriptionApiKeyId?: Nullable<string>;
-  preferredPostProcessingMode?: Nullable<"none" | "api">;
+  preferredPostProcessingMode?: Nullable<"none" | "api" | "cloud">;
   preferredPostProcessingApiKeyId?: Nullable<string>;
   wordsThisMonth: number;
   wordsThisMonthMonth: Nullable<string>;

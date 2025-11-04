@@ -5,14 +5,5 @@ export default [
   ...baseConfig,
   {
     ignores: ["lib/**", "assets/**", "node_modules/**"]
-  },
-  {
-    files: ["jest.config.js"],
-    languageOptions: {
-      globals: {
-        module: "readonly",
-        require: "readonly"
-      }
-    }
   }
 ];

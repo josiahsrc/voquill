@@ -1,6 +1,7 @@
 import Groq, { toFile } from "groq-sdk/index";
 import { ChatCompletionContentPart, ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { retry } from "@repo/utilities/src/async";
+import { countWords } from "@repo/utilities/src/string";
 
 export const GENERATE_TEXT_MODELS = ["meta-llama/llama-4-scout-17b-16e-instruct"] as const;
 export type GenerateTextModel = (typeof GENERATE_TEXT_MODELS)[number];
@@ -45,13 +46,18 @@ export type GroqTranscriptionArgs = {
   prompt?: string;
 }
 
+export type GroqTranscribeAudioOutput = {
+  text: string;
+  wordsUsed: number;
+}
+
 export const groqTranscribeAudio = async ({
   apiKey,
   model = "whisper-large-v3-turbo",
   blob,
   ext,
   prompt,
-}: GroqTranscriptionArgs): Promise<string> => {
+}: GroqTranscriptionArgs): Promise<GroqTranscribeAudioOutput> => {
   return retry({
     retries: 3,
     fn: async () => {
@@ -68,7 +74,7 @@ export const groqTranscribeAudio = async ({
         throw new Error("Transcription failed");
       }
 
-      return response.text;
+      return { text: response.text, wordsUsed: countWords(response.text) };
     },
   });
 }
@@ -86,6 +92,11 @@ export type GroqGenerateTextArgs = {
   };
 }
 
+export type GroqGenerateResponseOutput = {
+  text: string;
+  tokensUsed: number;
+}
+
 export const groqGenerateTextResponse = async ({
   apiKey,
   model = "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -93,7 +104,7 @@ export const groqGenerateTextResponse = async ({
   prompt,
   imageUrls = [],
   jsonResponse,
-}: GroqGenerateTextArgs): Promise<string> => {
+}: GroqGenerateTextArgs): Promise<GroqGenerateResponseOutput> => {
   return retry({
     retries: 3,
     fn: async () => {
@@ -143,7 +154,11 @@ export const groqGenerateTextResponse = async ({
         throw new Error("Content is empty");
       }
 
-      return result.trim();
+      const content = contentToString(result);
+      return {
+        text: content,
+        tokensUsed: response.usage?.total_tokens ?? countWords(content),
+      };
     },
   });
 }

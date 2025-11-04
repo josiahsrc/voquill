@@ -344,6 +344,43 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Configure Firebase client environment
+        shell: bash
+        env:
+          RELEASE_FLAVOR: ${{ env.RELEASE_FLAVOR }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${RELEASE_FLAVOR}" == "prod" ]]; then
+            api_key="AIzaSyDlPI-o5piDSNIG39EvJZJEz0gXCGEGk-w"
+            auth_domain="voquill-prod.firebaseapp.com"
+            project_id="voquill-prod"
+            storage_bucket="voquill-prod.firebasestorage.app"
+            messaging_sender_id="777461284594"
+            app_id="1:777461284594:web:d431c9557d3e02395e5a6b"
+            measurement_id="G-LKHEH0DPND"
+          else
+            api_key="AIzaSyCJ8C3ZW2bHjerneg5i0fr-b5uwuy7uULM"
+            auth_domain="voquill-dev.firebaseapp.com"
+            project_id="voquill-dev"
+            storage_bucket="voquill-dev.firebasestorage.app"
+            messaging_sender_id="778214168359"
+            app_id="1:778214168359:web:66ee2ce5df76c8c2d77b02"
+            measurement_id="G-V6Y1RSFBQX"
+          fi
+
+          {
+            echo "VITE_FIREBASE_API_KEY=${api_key}"
+            echo "VITE_FIREBASE_AUTH_DOMAIN=${auth_domain}"
+            echo "VITE_FIREBASE_PROJECT_ID=${project_id}"
+            echo "VITE_FIREBASE_STORAGE_BUCKET=${storage_bucket}"
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${messaging_sender_id}"
+            echo "VITE_FIREBASE_APP_ID=${app_id}"
+            echo "VITE_FIREBASE_MEASUREMENT_ID=${measurement_id}"
+            echo "VITE_USE_EMULATORS=false"
+            echo "VITE_FLAVOR=${RELEASE_FLAVOR}"
+          } >> "$GITHUB_ENV"
+
       - name: Install Vulkan SDK (Windows)
         if: matrix.os == 'windows-latest'
         uses: jakoch/install-vulkan-sdk-action@v1

@@ -1,5 +1,8 @@
 import { Button, Stack, Typography } from "@mui/material";
-import { advancePage } from "../../actions/onboarding.actions";
+import {
+  goBackOnboardingPage,
+  goToOnboardingPage,
+} from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import { AIPostProcessingConfiguration } from "../settings/AIPostProcessingConfiguration";
 import { FormContainer } from "./OnboardingShared";
@@ -21,13 +24,13 @@ export const PostProcessingMethodForm = () => {
         are transcribed.
       </Typography>
 
-      <AIPostProcessingConfiguration />
+      <AIPostProcessingConfiguration hideCloudOption={true} />
 
-      <Stack direction="row" justifyContent="space-between" mt={4}>
-        <Button onClick={() => advancePage(-1)}>Back</Button>
+      <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
+        <Button onClick={() => goBackOnboardingPage()}>Back</Button>
         <Button
           variant="contained"
-          onClick={() => advancePage()}
+          onClick={() => goToOnboardingPage("hotkeys")}
           disabled={!canContinue}
         >
           Continue

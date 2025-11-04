@@ -22,13 +22,13 @@ export const handleTryInitializeMember = async (args: {
   return {};
 };
 
-export const handleResetWordsToday = async (): Promise<void> => {
+export const handleResetLimitsToday = async (): Promise<void> => {
   const now = firemix().now();
   const expiration = dayjs().add(1, "day").toDate();
 
   const members = await firemix().query(mixpath.members(), [
     "where",
-    "wordsTodayResetAt",
+    "todayResetAt",
     "<=",
     now,
   ]);
@@ -38,19 +38,20 @@ export const handleResetWordsToday = async (): Promise<void> => {
       (member) => (b) =>
         b.update(mixpath.members(member.id), {
           wordsToday: 0,
-          wordsTodayResetAt: firemix().timestampFromDate(expiration),
+          tokensToday: 0,
+          todayResetAt: firemix().timestampFromDate(expiration),
         })
     )
   );
 };
 
-export const handleResetWordsThisMonth = async (): Promise<void> => {
+export const handleResetLimitsThisMonth = async (): Promise<void> => {
   const now = firemix().now();
   const expiration = dayjs().add(1, "month").toDate();
 
   const members = await firemix().query(mixpath.members(), [
     "where",
-    "wordsThisMonthResetAt",
+    "thisMonthResetAt",
     "<=",
     now,
   ]);
@@ -60,7 +61,8 @@ export const handleResetWordsThisMonth = async (): Promise<void> => {
       (member) => (b) =>
         b.update(mixpath.members(member.id), {
           wordsThisMonth: 0,
-          wordsThisMonthResetAt: firemix().timestampFromDate(expiration),
+          tokensThisMonth: 0,
+          thisMonthResetAt: firemix().timestampFromDate(expiration),
         })
     )
   );

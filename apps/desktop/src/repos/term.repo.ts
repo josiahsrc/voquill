@@ -1,4 +1,5 @@
 import { firemix } from "@firemix/client";
+import { mixpath } from "@repo/firemix";
 import { Term } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { BaseRepo } from "./base.repo";
@@ -62,5 +63,26 @@ export class LocalTermRepo extends BaseTermRepo {
 
   async deleteTerm(id: string): Promise<void> {
     await invoke<void>("term_delete", { id });
+  }
+}
+
+export class CloudTermRepo extends BaseTermRepo {
+  async listTerms(): Promise<Term[]> {
+    const results = await firemix().query(mixpath.terms(), ["limit", 1000]);
+    return results.map((r) => r.data);
+  }
+
+  async createTerm(term: Term): Promise<Term> {
+    await firemix().set(mixpath.terms(term.id), term);
+    return term;
+  }
+
+  async updateTerm(term: Term): Promise<Term> {
+    await firemix().set(mixpath.terms(term.id), term);
+    return term;
+  }
+
+  async deleteTerm(id: string): Promise<void> {
+    await firemix().delete(mixpath.terms(id));
   }
 }

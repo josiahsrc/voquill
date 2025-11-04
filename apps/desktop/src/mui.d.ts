@@ -10,6 +10,9 @@ declare module "@mui/material/styles" {
     goldFg: string;
     shadow: string;
     blue: string;
+    blueHover: string;
+    blueActive: string;
+    onBlue: string;
 
     level0: string;
     level1: string;
@@ -21,6 +24,9 @@ declare module "@mui/material/styles" {
     goldFg?: string;
     shadow?: string;
     blue?: string;
+    blueHover?: string;
+    blueActive?: string;
+    onBlue?: string;
 
     level0?: string;
     level1?: string;

@@ -5,28 +5,29 @@ import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
+import { checkForAppUpdates } from "../../actions/updater.actions";
 import { addWordsToCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
+import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import { OverlayPhase } from "../../types/overlay.types";
+import { countWords } from "@repo/utilities";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import {
   transcribeAndPostProcessAudio,
   TranscriptionError,
   type TranscriptionMetadata,
 } from "../../utils/transcription.utils";
-import { getMyUser, getMyUserId } from "../../utils/user.utils";
-import { loadDictionary } from "../../actions/dictionary.actions";
-import { checkForAppUpdates } from "../../actions/updater.actions";
+import { getMyUser, getMyCloudUserId } from "../../utils/user.utils";
 import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
 } from "../../utils/window.utils";
-import { useIntervalAsync } from "../../hooks/helper.hooks";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -43,11 +44,6 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
-};
-
-const countWords = (text: string): number => {
-  const tokens = text.trim().split(/\s+/);
-  return tokens.filter((token) => token.length > 0).length;
 };
 
 export const RootSideEffects = () => {
@@ -145,7 +141,7 @@ export const RootSideEffects = () => {
       id: transcriptionId,
       transcript: finalTranscript,
       createdAt: firemix().now(),
-      createdByUserId: getMyUserId(state),
+      createdByUserId: getMyCloudUserId(state),
       isDeleted: false,
       audio: audioSnapshot,
       modelSize: metadata?.modelSize ?? null,

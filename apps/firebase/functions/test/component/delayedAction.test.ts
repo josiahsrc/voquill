@@ -6,6 +6,7 @@ import { setUp, tearDown } from "../helpers/setup";
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { DeleteAccountAction } from "@repo/types";
+import { retry } from "@repo/utilities";
 
 beforeAll(setUp);
 afterAll(tearDown);

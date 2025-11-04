@@ -1,7 +1,9 @@
 import { firemix } from "@firemix/client";
-import { invoke } from "@tauri-apps/api/core";
+import { mixpath } from "@repo/firemix";
 import { Nullable, User } from "@repo/types";
+import { invoke } from "@tauri-apps/api/core";
 import { BaseRepo } from "./base.repo";
+import { LOCAL_USER_ID } from "../utils/user.utils";
 
 type LocalUser = {
   id: string;
@@ -13,9 +15,9 @@ type LocalUser = {
   wordsThisMonthMonth: string | null;
   wordsTotal: number;
   playInteractionChime?: boolean;
-  preferredTranscriptionMode?: "local" | "api" | null;
+  preferredTranscriptionMode?: "local" | "api" | "cloud" | null;
   preferredTranscriptionApiKeyId?: string | null;
-  preferredPostProcessingMode?: "none" | "api" | null;
+  preferredPostProcessingMode?: "none" | "api" | "cloud" | null;
   preferredPostProcessingApiKeyId?: string | null;
 };
 
@@ -43,7 +45,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     localUser.playInteractionChime == null ? true : localUser.playInteractionChime;
 
   return {
-    id: localUser.id,
+    id: LOCAL_USER_ID,
     createdAt: now,
     updatedAt: now,
     name: localUser.name,
@@ -81,5 +83,17 @@ export class LocalUserRepo extends BaseUserRepo {
     const user = await invoke<Nullable<LocalUser>>("user_get_one");
 
     return user ? fromLocalUser(user) : null;
+  }
+}
+
+export class CloudUserRepo extends BaseUserRepo {
+  async setUser(user: User): Promise<User> {
+    await firemix().set(mixpath.users(user.id), user);
+    return user;
+  }
+
+  async getUser(id: string): Promise<Nullable<User>> {
+    const result = await firemix().get(mixpath.users(id));
+    return result?.data ?? null;
   }
 }

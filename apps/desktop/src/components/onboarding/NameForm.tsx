@@ -1,6 +1,9 @@
 import { ArrowForward } from "@mui/icons-material";
 import { Button, Stack, TextField, Typography } from "@mui/material";
-import { advancePage } from "../../actions/onboarding.actions";
+import {
+  goBackOnboardingPage,
+  goToOnboardingPage,
+} from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { FormContainer } from "./OnboardingShared";
 
@@ -21,7 +24,7 @@ export const NameForm = () => {
   };
 
   const handleContinue = () => {
-    advancePage();
+    goToOnboardingPage("plan");
   };
 
   return (
@@ -47,7 +50,7 @@ export const NameForm = () => {
         }}
       />
       <Stack direction="row" justifyContent="space-between" mt={4}>
-        <Button onClick={() => advancePage(-1)}>Back</Button>
+        <Button onClick={() => goBackOnboardingPage()}>Back</Button>
         <Button
           variant="contained"
           disabled={!name || submitting}

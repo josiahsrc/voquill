@@ -1,15 +1,29 @@
 import { Stack, Typography } from "@mui/material";
 import { useCallback } from "react";
-import { useAppStore } from "../../store";
-import { type PostProcessingMode } from "../../types/ai.types";
-import { SegmentedControl } from "../common/SegmentedControl";
-import { ApiKeyList } from "./ApiKeyList";
 import {
   setPreferredPostProcessingApiKeyId,
   setPreferredPostProcessingMode,
 } from "../../actions/user.actions";
+import { useAppStore } from "../../store";
+import { type PostProcessingMode } from "../../types/ai.types";
+import {
+  SegmentedControl,
+  SegmentedControlOption,
+} from "../common/SegmentedControl";
+import { ApiKeyList } from "./ApiKeyList";
+import { VoquillCloudSetting } from "./VoquillCloudSetting";
 
-export const AIPostProcessingConfiguration = () => {
+type AIPostProcessingConfigurationProps = {
+  hideCloudOption?: boolean;
+};
+
+export function maybeArrayElements<T>(visible: boolean, values: T[]): T[] {
+  return visible ? values : [];
+}
+
+export const AIPostProcessingConfiguration = ({
+  hideCloudOption,
+}: AIPostProcessingConfigurationProps) => {
   const postProcessing = useAppStore(
     (state) => state.settings.aiPostProcessing
   );
@@ -28,22 +42,35 @@ export const AIPostProcessingConfiguration = () => {
         value={postProcessing.mode}
         onChange={handleModeChange}
         options={[
-          { value: "none", label: "None" },
+          ...maybeArrayElements<SegmentedControlOption<PostProcessingMode>>(
+            !hideCloudOption,
+            [
+              {
+                value: "cloud",
+                label: "Voquill Cloud",
+              },
+            ]
+          ),
+          { value: "none", label: "Disabled" },
           { value: "api", label: "API key" },
         ]}
         ariaLabel="Post-processing mode"
       />
 
-      {postProcessing.mode === "none" ? (
+      {postProcessing.mode === "none" && (
         <Typography variant="body2" color="text.secondary">
           No AI post-processing will run on new transcripts.
         </Typography>
-      ) : (
+      )}
+
+      {postProcessing.mode === "api" && (
         <ApiKeyList
           selectedApiKeyId={postProcessing.selectedApiKeyId}
           onChange={handleApiKeyChange}
         />
       )}
+
+      {postProcessing.mode === "cloud" && <VoquillCloudSetting />}
     </Stack>
   );
 };
