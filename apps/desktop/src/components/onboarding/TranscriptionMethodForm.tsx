@@ -24,9 +24,9 @@ export const TranscriptionMethodForm = () => {
         an API-powered service.
       </Typography>
 
-      <AITranscriptionConfiguration />
+      <AITranscriptionConfiguration hideCloudOption={true} />
 
-      <Stack direction="row" justifyContent="space-between" mt={4}>
+      <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
         <Button onClick={() => goBackOnboardingPage()}>Back</Button>
         <Button
           variant="contained"

@@ -2,7 +2,10 @@ import { Stack, Typography } from "@mui/material";
 import { useCallback, useEffect } from "react";
 import { useAppStore } from "../../store";
 import { type PostProcessingMode } from "../../types/ai.types";
-import { SegmentedControl } from "../common/SegmentedControl";
+import {
+  SegmentedControl,
+  SegmentedControlOption,
+} from "../common/SegmentedControl";
 import { ApiKeyList } from "./ApiKeyList";
 import {
   setPreferredPostProcessingApiKeyId,
@@ -10,7 +13,17 @@ import {
 } from "../../actions/user.actions";
 import { getIsPaying } from "../../utils/member.utils";
 
-export const AIPostProcessingConfiguration = () => {
+type AIPostProcessingConfigurationProps = {
+  hideCloudOption?: boolean;
+};
+
+export function maybeArrayElements<T>(visible: boolean, values: T[]): T[] {
+  return visible ? values : [];
+}
+
+export const AIPostProcessingConfiguration = ({
+  hideCloudOption,
+}: AIPostProcessingConfigurationProps) => {
   const postProcessing = useAppStore(
     (state) => state.settings.aiPostProcessing
   );
@@ -36,9 +49,17 @@ export const AIPostProcessingConfiguration = () => {
         value={postProcessing.mode}
         onChange={handleModeChange}
         options={[
-          { value: "cloud", label: "Voquill Cloud", disabled: !isPro },
-          { value: "api", label: "API key" },
+          ...maybeArrayElements<SegmentedControlOption<PostProcessingMode>>(
+            !hideCloudOption,
+            [
+              {
+                value: "cloud",
+                label: "Voquill Cloud",
+              },
+            ]
+          ),
           { value: "none", label: "Disabled" },
+          { value: "api", label: "API key" },
         ]}
         ariaLabel="Post-processing mode"
       />

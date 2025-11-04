@@ -8,20 +8,21 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo } from "react";
-import { produceAppState, useAppStore } from "../../store";
-import {
-  CPU_DEVICE_VALUE,
-  type ProcessingMode,
-} from "../../types/ai.types";
-import { buildDeviceLabel } from "../../types/gpu.types";
-import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
-import { SegmentedControl } from "../common/SegmentedControl";
-import { ApiKeyList } from "./ApiKeyList";
 import {
   setPreferredTranscriptionApiKeyId,
   setPreferredTranscriptionMode,
 } from "../../actions/user.actions";
+import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
+import { produceAppState, useAppStore } from "../../store";
+import { CPU_DEVICE_VALUE, type ProcessingMode } from "../../types/ai.types";
+import { buildDeviceLabel } from "../../types/gpu.types";
 import { getIsPaying } from "../../utils/member.utils";
+import {
+  SegmentedControl,
+  SegmentedControlOption,
+} from "../common/SegmentedControl";
+import { maybeArrayElements } from "./AIPostProcessingConfiguration";
+import { ApiKeyList } from "./ApiKeyList";
 
 type ModelOption = {
   value: string;
@@ -48,10 +49,14 @@ const MODEL_OPTIONS: ModelOption[] = [
   },
 ];
 
-export const AITranscriptionConfiguration = () => {
-  const transcription = useAppStore(
-    (state) => state.settings.aiTranscription
-  );
+export type AITranscriptionConfigurationProps = {
+  hideCloudOption?: boolean;
+};
+
+export const AITranscriptionConfiguration = ({
+  hideCloudOption,
+}: AITranscriptionConfigurationProps) => {
+  const transcription = useAppStore((state) => state.settings.aiTranscription);
   const isPro = useAppStore(getIsPaying);
   const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(true);
 
@@ -127,7 +132,15 @@ export const AITranscriptionConfiguration = () => {
         value={transcription.mode}
         onChange={handleModeChange}
         options={[
-          { value: "cloud", label: "Voquill Cloud", disabled: !isPro },
+          ...maybeArrayElements<SegmentedControlOption<ProcessingMode>>(
+            !hideCloudOption,
+            [
+              {
+                value: "cloud",
+                label: "Voquill Cloud",
+              },
+            ]
+          ),
           { value: "local", label: "Local processing" },
           { value: "api", label: "API key" },
         ]}

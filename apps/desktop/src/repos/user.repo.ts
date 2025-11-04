@@ -3,6 +3,7 @@ import { mixpath } from "@repo/firemix";
 import { Nullable, User } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { BaseRepo } from "./base.repo";
+import { LOCAL_USER_ID } from "../utils/user.utils";
 
 type LocalUser = {
   id: string;
@@ -44,7 +45,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     localUser.playInteractionChime == null ? true : localUser.playInteractionChime;
 
   return {
-    id: localUser.id,
+    id: LOCAL_USER_ID,
     createdAt: now,
     updatedAt: now,
     name: localUser.name,

@@ -1,164 +1,16 @@
-import { firemix } from "@firemix/client";
-import { Add, Close } from "@mui/icons-material";
 import {
-  Box,
   Button,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   Stack,
   Typography,
 } from "@mui/material";
-import type { Hotkey } from "@repo/types";
-import { showErrorSnackbar } from "../../actions/app.actions";
-import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
-import { registerHotkeys } from "../../utils/app.utils";
-import {
-  DICTATE_HOTKEY,
-  getDefaultHotkeyCombosForAction,
-  getPrettyKeyName,
-} from "../../utils/keyboard.utils";
-import { HotKey } from "../common/HotKey";
-
-type HotkeySettingProps = {
-  title: React.ReactNode;
-  description: React.ReactNode;
-  actionName: string;
-};
-
-const HotkeySetting = ({
-  title,
-  description,
-  actionName,
-}: HotkeySettingProps) => {
-  const [hotkeys, defaultCombos] = useAppStore((state) => {
-    const res = Object.values(state.hotkeyById).filter(
-      (hotkey) => hotkey.actionName === actionName
-    );
-
-    const defaultCombos =
-      res.length === 0 ? getDefaultHotkeyCombosForAction(actionName) : [];
-
-    return [res, defaultCombos];
-  });
-
-  const saveKey = async (id?: string, keys?: string[]) => {
-    const newValue: Hotkey = {
-      id: id ?? firemix().id(),
-      actionName,
-      keys: keys ?? [],
-    };
-
-    try {
-      produceAppState((draft) => {
-        registerHotkeys(draft, [newValue]);
-        if (!draft.settings.hotkeyIds.includes(newValue.id)) {
-          draft.settings.hotkeyIds.push(newValue.id);
-        }
-        draft.settings.hotkeysStatus = "success";
-      });
-      await getHotkeyRepo().saveHotkey(newValue);
-    } catch (error) {
-      console.error("Failed to save hotkey", error);
-      showErrorSnackbar("Failed to save hotkey. Please try again.");
-    }
-  };
-
-  const handleDeleteHotkey = async (id: string) => {
-    try {
-      produceAppState((draft) => {
-        delete draft.hotkeyById[id];
-        draft.settings.hotkeyIds = draft.settings.hotkeyIds.filter(
-          (hid) => hid !== id
-        );
-      });
-      await getHotkeyRepo().deleteHotkey(id);
-    } catch (error) {
-      console.error("Failed to delete hotkey", error);
-      showErrorSnackbar("Failed to delete hotkey. Please try again.");
-    }
-  };
-
-  return (
-    <Stack direction="row" spacing={2} alignItems="flex-start">
-      <Stack spacing={1} flex={1}>
-        <Typography variant="body1" fontWeight="bold">
-          {title}
-        </Typography>
-        <Typography variant="body2">{description}</Typography>
-      </Stack>
-      <Stack spacing={1} alignItems="flex-end">
-        {hotkeys.map((hotkey) => (
-          <Stack
-            key={hotkey.id}
-            direction="row"
-            spacing={1}
-            alignItems="center"
-          >
-            <HotKey
-              value={hotkey.keys}
-              onChange={(keys) => saveKey(hotkey.id, keys)}
-            />
-            <IconButton
-              size="small"
-              onClick={() => handleDeleteHotkey(hotkey.id)}
-            >
-              <Close color="disabled" />
-            </IconButton>
-          </Stack>
-        ))}
-        {defaultCombos.length > 0 && (
-          <Typography
-            variant="body2"
-            color="textSecondary"
-            maxWidth={200}
-            textAlign="right"
-          >
-            <span>Using default hotkey </span>
-            {defaultCombos
-              .map((combo) => combo.map(getPrettyKeyName).join(" + "))
-              .map((combo, index) => (
-                <>
-                  <Box
-                    key={index}
-                    sx={{
-                      display: "inline-block",
-                      fontWeight: "bold",
-                      border: "1px solid",
-                      borderRadius: 0.5,
-                      px: 0.5,
-                    }}
-                  >
-                    {combo}
-                  </Box>
-                  {index < defaultCombos.length - 1 && ", "}
-                </>
-              ))}
-          </Typography>
-        )}
-        <Button
-          variant="text"
-          startIcon={defaultCombos.length > 0 ? undefined : <Add />}
-          size="small"
-          sx={{ py: 0.5 }}
-          onClick={() => saveKey()}
-        >
-          <Typography variant="body2" fontWeight={500}>
-            {defaultCombos.length > 0
-              ? "Change hotkey"
-              : hotkeys.length === 0
-                ? "Set hotkey"
-                : "Add another"}
-          </Typography>
-        </Button>
-      </Stack>
-    </Stack>
-  );
-};
+import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {
   const { open, hotkeysStatus } = useAppStore((state) => ({

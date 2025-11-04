@@ -3,7 +3,7 @@ import { Button, Card, Stack, Typography } from "@mui/material";
 import { useEffect } from "react";
 import {
   goBackOnboardingPage,
-  submitOnboarding,
+  goToOnboardingPage,
 } from "../../actions/onboarding.actions";
 import { openPaymentDialog } from "../../actions/payment.actions";
 import { useAppStore } from "../../store";
@@ -29,7 +29,7 @@ export const OnboardingLoginForm = () => {
 
   useEffect(() => {
     if (memberPlan === "pro") {
-      submitOnboarding();
+      goToOnboardingPage("hotkeys");
     }
   }, [memberPlan]);
 

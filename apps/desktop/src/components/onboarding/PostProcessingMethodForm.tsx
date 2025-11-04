@@ -24,13 +24,13 @@ export const PostProcessingMethodForm = () => {
         are transcribed.
       </Typography>
 
-      <AIPostProcessingConfiguration />
+      <AIPostProcessingConfiguration hideCloudOption={true} />
 
-      <Stack direction="row" justifyContent="space-between" mt={4}>
+      <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
         <Button onClick={() => goBackOnboardingPage()}>Back</Button>
         <Button
           variant="contained"
-          onClick={() => goToOnboardingPage("tryItOut")}
+          onClick={() => goToOnboardingPage("hotkeys")}
           disabled={!canContinue}
         >
           Continue

@@ -7,6 +7,7 @@ import { PostProcessingMethodForm } from "./PostProcessingMethodForm";
 import { TranscriptionMethodForm } from "./TranscriptionMethodForm";
 import { TryItOutForm } from "./TryItOutForm";
 import { WelcomeForm } from "./WelcomeForm";
+import { HotkeySelectionForm } from "./HotkeySelectionForm";
 import { useEffect } from "react";
 
 export default function OnboardingPage() {
@@ -31,6 +32,7 @@ export default function OnboardingPage() {
       {currentPage === "login" && <OnboardingLoginForm />}
       {currentPage === "transcription" && <TranscriptionMethodForm />}
       {currentPage === "postProcessing" && <PostProcessingMethodForm />}
+      {currentPage === "hotkeys" && <HotkeySelectionForm />}
       {currentPage === "tryItOut" && <TryItOutForm />}
     </Stack>
   );

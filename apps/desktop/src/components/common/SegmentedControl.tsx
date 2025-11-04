@@ -1,7 +1,7 @@
 import { Box, Tab, Tabs } from "@mui/material";
 import { SyntheticEvent } from "react";
 
-type SegmentedControlOption<Value extends string> = {
+export type SegmentedControlOption<Value extends string> = {
   value: Value;
   label: string;
   disabled?: boolean;

@@ -5,6 +5,8 @@ import { PostProcessingMode, ProcessingMode } from "../types/ai.types";
 import { registerUsers } from "./app.utils";
 import { applyAiPreferencesFromUser } from "./ai.utils";
 
+export const LOCAL_USER_ID = "local-user-id";
+
 export const getHasEmailProvider = (state: AppState): boolean => {
   const auth = state.auth;
   const providers = auth?.providerData ?? [];
@@ -14,7 +16,7 @@ export const getHasEmailProvider = (state: AppState): boolean => {
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> => state.auth?.uid ?? null;
 
-export const getMyEffectiveUserId = (draft: AppState): string => getMyCloudUserId(draft) ?? "local-user-id";
+export const getMyEffectiveUserId = (draft: AppState): string => getMyCloudUserId(draft) ?? LOCAL_USER_ID;
 
 export const getMyUser = (state: AppState): Nullable<User> => {
   return getRec(state.userById, getMyEffectiveUserId(state)) ?? null;

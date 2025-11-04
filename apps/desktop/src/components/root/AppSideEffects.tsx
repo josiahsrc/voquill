@@ -70,7 +70,6 @@ export const AppSideEffects = () => {
       const [members, user] = results;
 
       produceAppState((draft) => {
-        draft.initialized = true;
         registerUsers(draft, listify(user?.data));
         registerMembers(
           draft,
