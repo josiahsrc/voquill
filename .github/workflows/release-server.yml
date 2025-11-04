@@ -53,6 +53,31 @@ jobs:
           echo "DEPLOY_ENV=${DEPLOY_ENV}" >> "${GITHUB_ENV}"
           echo "deploy_env=${DEPLOY_ENV}" >> "${GITHUB_OUTPUT}"
 
+      - name: Configure Firebase environment
+        shell: bash
+        env:
+          DEPLOY_ENV: ${{ steps.env.outputs.deploy_env }}
+        run: |
+          set -euo pipefail
+
+          case "${DEPLOY_ENV}" in
+            prod)
+              FIREBASE_PROJECT_ID="voquill-prod"
+              ;;
+            dev)
+              FIREBASE_PROJECT_ID="voquill-dev"
+              ;;
+            *)
+              echo "Unsupported deploy environment '${DEPLOY_ENV}'" >&2
+              exit 1
+              ;;
+          esac
+
+          {
+            echo "FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}"
+            echo "GOOGLE_CLOUD_PROJECT=${FIREBASE_PROJECT_ID}"
+          } >> "${GITHUB_ENV}"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -81,14 +106,10 @@ jobs:
           chmod 600 "${CREDENTIALS_PATH}"
 
           echo "GOOGLE_APPLICATION_CREDENTIALS=${CREDENTIALS_PATH}" >> "${GITHUB_ENV}"
-
-          PROJECT_ID="$(jq -r '.project_id // empty' "${CREDENTIALS_PATH}")"
-          if [[ -z "${PROJECT_ID}" ]]; then
-            echo "Unable to read project_id from decoded Firebase credentials." >&2
+          if [[ -z "${FIREBASE_PROJECT_ID:-}" ]]; then
+            echo "FIREBASE_PROJECT_ID is not configured." >&2
             exit 1
           fi
-
-          echo "FIREBASE_PROJECT_ID=${PROJECT_ID}" >> "${GITHUB_ENV}"
 
       - name: Deploy Firebase resources
         working-directory: apps/firebase
@@ -96,5 +117,10 @@ jobs:
           DEPLOY_ENV: ${{ steps.env.outputs.deploy_env }}
         run: |
           set -euo pipefail
+          if [[ -z "${FIREBASE_PROJECT_ID:-}" ]]; then
+            echo "FIREBASE_PROJECT_ID is not configured." >&2
+            exit 1
+          fi
+
           echo "Deploying Firebase backend to '${DEPLOY_ENV}' (${FIREBASE_PROJECT_ID})..."
-          npx firebase-tools@latest deploy --only functions,firestore,storage --project "${DEPLOY_ENV}" --non-interactive --force
+          npx firebase-tools@latest deploy --only functions,firestore,storage --project "${FIREBASE_PROJECT_ID}" --non-interactive --force

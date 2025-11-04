@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-ENVIRONMENT=${1:-"prod"}
+ENVIRONMENT=${1:-"dev"}
 echo "Deploying to environment: $ENVIRONMENT"
 
 cd functions
