@@ -1,22 +1,13 @@
 import { firemix } from "@firemix/client";
-import { Add, Close } from "@mui/icons-material";
-import {
-  Box,
-  Button,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Add, Close, RestartAlt } from "@mui/icons-material";
+import { Button, IconButton, Stack, Typography } from "@mui/material";
 import type { Hotkey } from "@repo/types";
 import type { ReactNode } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { registerHotkeys } from "../../utils/app.utils";
-import {
-  getDefaultHotkeyCombosForAction,
-  getPrettyKeyName,
-} from "../../utils/keyboard.utils";
+import { getDefaultHotkeyCombosForAction } from "../../utils/keyboard.utils";
 import { HotKey } from "../common/HotKey";
 
 export type HotkeySettingProps = {
@@ -26,22 +17,24 @@ export type HotkeySettingProps = {
   buttonSize?: "small" | "medium";
 };
 
+const areCombosEqual = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((key, index) => key === b[index]);
+
 export const HotkeySetting = ({
   title,
   description,
   actionName,
   buttonSize = "small",
 }: HotkeySettingProps) => {
-  const [hotkeys, defaultCombos] = useAppStore((state) => {
-    const res = Object.values(state.hotkeyById).filter(
-      (hotkey) => hotkey.actionName === actionName
-    );
-
-    const defaults =
-      res.length === 0 ? getDefaultHotkeyCombosForAction(actionName) : [];
-
-    return [res, defaults];
-  });
+  const hotkeys = useAppStore((state) =>
+    state.settings.hotkeyIds
+      .map((id) => state.hotkeyById[id])
+      .filter(
+        (hotkey): hotkey is Hotkey =>
+          Boolean(hotkey) && hotkey.actionName === actionName
+      )
+  );
+  const defaultCombos = getDefaultHotkeyCombosForAction(actionName);
 
   const saveKey = async (id?: string, keys?: string[]) => {
     const newValue: Hotkey = {
@@ -80,6 +73,34 @@ export const HotkeySetting = ({
     }
   };
 
+  const [primaryHotkey, ...additionalHotkeys] = hotkeys;
+  const showDefaultAsPrimary = !primaryHotkey && defaultCombos.length > 0;
+  const primaryValue =
+    primaryHotkey?.keys ?? (showDefaultAsPrimary ? defaultCombos[0] : []);
+  const isPrimaryUsingDefault =
+    primaryHotkey != null &&
+    defaultCombos.some((combo) => areCombosEqual(combo, primaryHotkey.keys));
+
+  const handlePrimaryChange = (keys: string[]) => {
+    if (primaryHotkey) {
+      void saveKey(primaryHotkey.id, keys);
+      return;
+    }
+    void saveKey(undefined, keys);
+  };
+
+  const handleRevertPrimary = () => {
+    if (!primaryHotkey || defaultCombos.length === 0) {
+      return;
+    }
+    void saveKey(primaryHotkey.id, defaultCombos[0]);
+  };
+
+  const buttonLabel =
+    hotkeys.length === 0 && defaultCombos.length === 0
+      ? "Set hotkey"
+      : "Add another";
+
   return (
     <Stack direction="row" spacing={2} alignItems="flex-start">
       <Stack spacing={1} flex={1}>
@@ -89,7 +110,29 @@ export const HotkeySetting = ({
         <Typography variant="body2">{description}</Typography>
       </Stack>
       <Stack spacing={1} alignItems="flex-end">
-        {hotkeys.map((hotkey) => (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <HotKey value={primaryValue} onChange={handlePrimaryChange} />
+          {primaryHotkey && defaultCombos.length === 0 && (
+            <IconButton
+              size="small"
+              onClick={() => handleDeleteHotkey(primaryHotkey.id)}
+            >
+              <Close color="disabled" />
+            </IconButton>
+          )}
+          {primaryHotkey &&
+            defaultCombos.length > 0 &&
+            !isPrimaryUsingDefault && (
+              <IconButton
+                size="small"
+                aria-label="Revert to default hotkey"
+                onClick={handleRevertPrimary}
+              >
+                <RestartAlt color="disabled" />
+              </IconButton>
+            )}
+        </Stack>
+        {additionalHotkeys.map((hotkey) => (
           <Stack
             key={hotkey.id}
             direction="row"
@@ -108,49 +151,15 @@ export const HotkeySetting = ({
             </IconButton>
           </Stack>
         ))}
-        {defaultCombos.length > 0 && (
-          <Typography
-            variant="body2"
-            color="textSecondary"
-            maxWidth={200}
-            textAlign="right"
-            component="div"
-          >
-            <span>Using default hotkey </span>
-            {defaultCombos.map((combo, index) => {
-              const pretty = combo.map(getPrettyKeyName).join(" + ");
-              return (
-                <Box
-                  key={pretty}
-                  component="span"
-                  sx={{
-                    display: "inline-block",
-                    fontWeight: "bold",
-                    border: "1px solid",
-                    borderRadius: 0.5,
-                    px: 0.5,
-                    ml: index === 0 ? 0 : 0.5,
-                  }}
-                >
-                  {pretty}
-                </Box>
-              );
-            })}
-          </Typography>
-        )}
         <Button
           variant="text"
-          startIcon={defaultCombos.length > 0 ? undefined : <Add />}
+          startIcon={<Add />}
           size={buttonSize}
           sx={{ py: 0.5 }}
           onClick={() => saveKey()}
         >
           <Typography variant="body2" fontWeight={500}>
-            {defaultCombos.length > 0
-              ? "Change hotkey"
-              : hotkeys.length === 0
-                ? "Set hotkey"
-                : "Add another"}
+            {buttonLabel}
           </Typography>
         </Button>
       </Stack>
