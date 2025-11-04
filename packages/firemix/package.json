@@ -20,6 +20,8 @@
     "typescript": "5.9.2"
   },
   "dependencies": {
-    "@firemix/core": "^0.1.3"
+    "@firemix/core": "^0.1.3",
+    "@repo/types": "*",
+    "@repo/utilities": "*"
   }
 }
