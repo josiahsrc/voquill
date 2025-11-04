@@ -11,6 +11,11 @@ import { getMyMember } from "../../utils/member.utils";
 import { getPriceIdFromKey } from "../../utils/price.utils";
 import { LoginForm } from "../login/LoginForm";
 import { FormContainer } from "./OnboardingShared";
+import { useAsyncEffect } from "../../hooks/async.hooks";
+import {
+  setPreferredPostProcessingMode,
+  setPreferredTranscriptionMode,
+} from "../../actions/user.actions";
 
 export const OnboardingLoginForm = () => {
   const loggingIn = useAppStore((state) => state.onboarding.loggingIn);
@@ -22,14 +27,16 @@ export const OnboardingLoginForm = () => {
   };
 
   useEffect(() => {
-    if (currentUserId) {
+    if (currentUserId && memberPlan === "free") {
       handleOpenPaymentDialog();
     }
   }, [currentUserId]);
 
-  useEffect(() => {
+  useAsyncEffect(async () => {
     if (memberPlan === "pro") {
       goToOnboardingPage("hotkeys");
+      setPreferredPostProcessingMode("cloud");
+      setPreferredTranscriptionMode("cloud");
     }
   }, [memberPlan]);
 
