@@ -4,9 +4,13 @@ import {
   goToOnboardingPage,
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
-import { DICTATE_HOTKEY, getDefaultHotkeyCombosForAction } from "../../utils/keyboard.utils";
+import {
+  DICTATE_HOTKEY,
+  getDefaultHotkeyCombosForAction,
+} from "../../utils/keyboard.utils";
 import { HotkeySetting } from "../settings/HotkeySetting";
 import { FormContainer } from "./OnboardingShared";
+import { getMyMember } from "../../utils/member.utils";
 
 export const HotkeySelectionForm = () => {
   const { status, savedHotkeyCount } = useAppStore((state) => ({
@@ -16,10 +20,14 @@ export const HotkeySelectionForm = () => {
     ).length,
   }));
 
+  const hideBackButton = useAppStore((state) => {
+    const myMember = getMyMember(state);
+    return myMember?.plan === "pro" || !state.onboarding.history.length;
+  });
+
   const defaultHotkeys = getDefaultHotkeyCombosForAction(DICTATE_HOTKEY);
   const canContinue =
-    status !== "loading" &&
-    (savedHotkeyCount > 0 || defaultHotkeys.length > 0);
+    status !== "loading" && (savedHotkeyCount > 0 || defaultHotkeys.length > 0);
 
   return (
     <FormContainer>
@@ -50,9 +58,16 @@ export const HotkeySelectionForm = () => {
       )}
 
       <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
-        <Button onClick={() => goBackOnboardingPage()} disabled={status === "loading"}>
-          Back
-        </Button>
+        {hideBackButton ? (
+          <div />
+        ) : (
+          <Button
+            onClick={() => goBackOnboardingPage()}
+            disabled={status === "loading"}
+          >
+            Back
+          </Button>
+        )}
         <Button
           variant="contained"
           onClick={() => goToOnboardingPage("tryItOut")}

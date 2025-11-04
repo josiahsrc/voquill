@@ -28,7 +28,7 @@ export const INITIAL_LOGIN_STATE: LoginState = {
 };
 
 if (isEmulators()) {
-	INITIAL_LOGIN_STATE.email = "emulator@assetpack.ai";
-	INITIAL_LOGIN_STATE.password = "ASSetP@k!";
-	INITIAL_LOGIN_STATE.confirmPassword = "ASSetP@k!";
+	INITIAL_LOGIN_STATE.email = "emulator@voquill.com";
+	INITIAL_LOGIN_STATE.password = "P@ssw0rd!";
+	INITIAL_LOGIN_STATE.confirmPassword = "P@ssw0rd!";
 }

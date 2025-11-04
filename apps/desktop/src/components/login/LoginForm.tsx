@@ -1,14 +1,13 @@
+import { Collapse, Stack, Typography } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
-import { INITIAL_LOGIN_STATE, LoginMode } from "../../state/login.state";
-import { produceAppState, useAppStore } from "../../store";
-import { useOnExit } from "../../hooks/helper.hooks";
+import { TransitionGroup } from "react-transition-group";
 import { useConsumeQueryParams } from "../../hooks/navigation.hooks";
-import { Stack, Typography, Collapse } from "@mui/material";
+import { LoginMode } from "../../state/login.state";
+import { produceAppState, useAppStore } from "../../store";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 import { ResetSentForm } from "./ResetSentForm";
 import { SignInForm } from "./SignInForm";
 import { SignUpForm } from "./SignUpForm";
-import { TransitionGroup } from "react-transition-group";
 
 const mapMode = (mode: string | null): LoginMode | null => {
   if (mode === "register") return "signUp";
@@ -26,12 +25,6 @@ const useMode = () => {
 export const LoginForm = () => {
   const mode = useMode();
   const errorMessage = useAppStore((state) => state.login.errorMessage);
-
-  useOnExit(() => {
-    produceAppState((draft) => {
-      draft.login = INITIAL_LOGIN_STATE;
-    });
-  });
 
   useConsumeQueryParams(["mode"], ([mode]) => {
     produceAppState((draft) => {
