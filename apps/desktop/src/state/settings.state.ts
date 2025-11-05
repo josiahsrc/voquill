@@ -41,6 +41,8 @@ export type SettingsState = {
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
   hotkeysStatus: ActionStatus;
+  autoLaunchEnabled: boolean;
+  autoLaunchStatus: ActionStatus;
 };
 
 export const INITIAL_SETTINGS_STATE: SettingsState = {
@@ -67,4 +69,6 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   apiKeysStatus: "idle",
   hotkeyIds: [],
   hotkeysStatus: "idle",
+  autoLaunchEnabled: false,
+  autoLaunchStatus: "idle",
 };

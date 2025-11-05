@@ -6,6 +6,7 @@ import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
@@ -56,6 +57,10 @@ export const RootSideEffects = () => {
   useAsyncEffect(async () => {
     const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary()];
     await Promise.allSettled(loaders);
+  }, []);
+
+  useAsyncEffect(async () => {
+    await syncAutoLaunchSetting();
   }, []);
 
   useAsyncEffect(async () => {
