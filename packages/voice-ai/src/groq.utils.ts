@@ -2,6 +2,7 @@ import Groq, { toFile } from "groq-sdk/index";
 import { ChatCompletionContentPart, ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { retry } from "@repo/utilities/src/async";
 import { countWords } from "@repo/utilities/src/string";
+import type { JsonResponse } from "@repo/types";
 
 export const GENERATE_TEXT_MODELS = ["meta-llama/llama-4-scout-17b-16e-instruct"] as const;
 export type GenerateTextModel = (typeof GENERATE_TEXT_MODELS)[number];
@@ -85,11 +86,7 @@ export type GroqGenerateTextArgs = {
   system?: string;
   prompt: string;
   imageUrls?: string[];
-  jsonResponse?: {
-    name: string;
-    description?: string;
-    schema: { [key: string]: unknown };
-  };
+  jsonResponse?: JsonResponse;
 }
 
 export type GroqGenerateResponseOutput = {

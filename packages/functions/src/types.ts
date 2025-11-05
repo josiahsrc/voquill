@@ -1,4 +1,4 @@
-import type { EmptyObject, Nullable } from "@repo/types";
+import type { EmptyObject, JsonResponse, Nullable } from "@repo/types";
 
 type HandlerDefinitions = {
   // emulator
@@ -48,11 +48,7 @@ type HandlerDefinitions = {
       system?: Nullable<string>;
       prompt: string;
       simulate?: Nullable<boolean>;
-      jsonResponse?: {
-        name: string;
-        description?: string;
-        schema: { [key: string]: unknown };
-      };
+      jsonResponse?: JsonResponse;
     };
     output: {
       text: string;
