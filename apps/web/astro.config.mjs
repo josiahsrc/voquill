@@ -4,7 +4,7 @@ import netlify from "@astrojs/netlify";
 
 export default defineConfig({
   site: "https://voquill.com",
-  output: "static",
+  output: "server",
   integrations: [react()],
   adapter: netlify(),
 });
