@@ -1,7 +1,7 @@
-import { Nullable, User } from "@repo/types";
+import { Nullable, User, UserPreferences } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
-import { applyAiPreferencesFromUser } from "./ai.utils";
+import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import { getMyMember } from "./member.utils";
 
@@ -33,6 +33,10 @@ export const getMyUser = (state: AppState): Nullable<User> => {
   return getRec(state.userById, getMyEffectiveUserId(state)) ?? null;
 };
 
+export const getMyUserPreferences = (state: AppState): Nullable<UserPreferences> => {
+  return getRec(state.userPreferencesById, getMyEffectiveUserId(state)) ?? null;
+};
+
 export const getMyUserName = (state: AppState): string => {
   const user = getMyUser(state);
   return user?.name || "Guest";
@@ -42,10 +46,19 @@ export const getIsSignedIn = (state: AppState): boolean => {
   return !!state.auth;
 }
 
-export const setCurrentUser = (draft: AppState, user: User) => {
+export const setCurrentUser = (draft: AppState, user: User): void => {
   registerUsers(draft, [user]);
-  applyAiPreferencesFromUser(draft, user);
-}
+};
+
+export const registerUserPreferences = (
+  draft: AppState,
+  preferences: UserPreferences[],
+): void => {
+  for (const pref of preferences) {
+    draft.userPreferencesById[pref.userId] = pref;
+    applyAiPreferences(draft, pref);
+  }
+};
 
 type BaseTranscriptionPrefs = {
   warnings: string[];

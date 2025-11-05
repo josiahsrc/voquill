@@ -5,6 +5,7 @@ import {
   Member,
   Nullable,
   PartialConfig,
+  UserPreferences,
   Term,
   Transcription,
   User,
@@ -36,6 +37,7 @@ export type AppState = {
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
+  userPreferencesById: Record<string, UserPreferences>;
   termById: Record<string, Term>;
   transcriptionById: Record<string, Transcription>;
   hotkeyById: Record<string, Hotkey>;
@@ -63,6 +65,7 @@ export const INITIAL_APP_STATE: AppState = {
   isRecordingHotkey: false,
   memberById: {},
   userById: {},
+  userPreferencesById: {},
   termById: {},
   transcriptionById: {},
   priceValueByKey: {},

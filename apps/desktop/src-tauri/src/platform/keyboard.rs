@@ -45,9 +45,7 @@ fn child_store() -> &'static Mutex<Option<Child>> {
 fn start_in_process_listener(handlers: Arc<Mutex<Vec<Handler>>>) {
     thread::spawn(move || {
         if let Err(err) = rdev::listen(move |event| dispatch_event(&handlers, &event)) {
-            eprintln!(
-                "Failed to listen for global key events in-process: {err:?}"
-            );
+            eprintln!("Failed to listen for global key events in-process: {err:?}");
         }
     });
 }
@@ -80,24 +78,22 @@ fn start_external_listener(handlers: Arc<Mutex<Vec<Handler>>>) -> Result<(), Str
         .port();
 
     let listener_handlers = handlers.clone();
-    thread::spawn(move || {
-        loop {
-            if let Err(err) = ensure_listener_child(port) {
-                eprintln!("Keyboard listener child error: {err}");
-                std::thread::sleep(std::time::Duration::from_millis(500));
-                continue;
-            }
+    thread::spawn(move || loop {
+        if let Err(err) = ensure_listener_child(port) {
+            eprintln!("Keyboard listener child error: {err}");
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            continue;
+        }
 
-            match listener.accept() {
-                Ok((stream, _addr)) => {
-                    if let Err(err) = pump_stream(stream, listener_handlers.clone()) {
-                        eprintln!("Keyboard listener stream error: {err}");
-                    }
+        match listener.accept() {
+            Ok((stream, _addr)) => {
+                if let Err(err) = pump_stream(stream, listener_handlers.clone()) {
+                    eprintln!("Keyboard listener stream error: {err}");
                 }
-                Err(err) => {
-                    eprintln!("Keyboard listener accept error: {err}");
-                    std::thread::sleep(std::time::Duration::from_millis(200));
-                }
+            }
+            Err(err) => {
+                eprintln!("Keyboard listener accept error: {err}");
+                std::thread::sleep(std::time::Duration::from_millis(200));
             }
         }
     });
@@ -270,9 +266,7 @@ where
     START_LISTENER.call_once(|| {
         let handlers = handler_store();
         if let Err(err) = start_external_listener(handlers.clone()) {
-            eprintln!(
-                "Falling back to in-process keyboard listener: {err}"
-            );
+            eprintln!("Falling back to in-process keyboard listener: {err}");
             start_in_process_listener(handlers);
         }
     });

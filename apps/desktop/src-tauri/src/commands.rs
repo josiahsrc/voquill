@@ -74,6 +74,12 @@ pub struct TranscriptionOptionsDto {
     pub initial_prompt: Option<String>,
 }
 
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserPreferencesGetArgs {
+    pub user_id: String,
+}
+
 const MAX_RETAINED_TRANSCRIPTION_AUDIO: usize = 20;
 
 #[derive(serde::Serialize)]
@@ -121,6 +127,26 @@ pub async fn user_get_one(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Option<crate::domain::User>, String> {
     crate::db::user_queries::fetch_user(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn user_preferences_set(
+    preferences: crate::domain::UserPreferences,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::UserPreferences, String> {
+    crate::db::preferences_queries::upsert_user_preferences(database.pool(), &preferences)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn user_preferences_get(
+    args: UserPreferencesGetArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Option<crate::domain::UserPreferences>, String> {
+    crate::db::preferences_queries::fetch_user_preferences(database.pool(), &args.user_id)
         .await
         .map_err(|err| err.to_string())
 }
@@ -408,12 +434,13 @@ pub async fn clear_local_data(
     let pool = database.pool();
     let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
 
-    const TABLES_TO_CLEAR: [&str; 5] = [
+    const TABLES_TO_CLEAR: [&str; 6] = [
         "user_profiles",
         "transcriptions",
         "terms",
         "hotkeys",
         "api_keys",
+        "user_preferences",
     ];
 
     for table in TABLES_TO_CLEAR {

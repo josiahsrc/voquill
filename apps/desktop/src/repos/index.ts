@@ -9,6 +9,7 @@ import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseTranscribeAudioRepo, CloudTranscribeAudioRepo, GroqTranscribeAudioRepo, LocalTranscribeAudioRepo } from "./transcribe-audio.repo";
 import { BaseTranscriptionRepo, LocalTranscriptionRepo } from "./transcription.repo";
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
+import { BaseUserPreferencesRepo, LocalUserPreferencesRepo } from "./preferences.repo";
 
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
@@ -18,6 +19,10 @@ export const getAuthRepo = (): BaseAuthRepo => {
 
 export const getUserRepo = (): BaseUserRepo => {
   return shouldUseCloud() ? new CloudUserRepo() : new LocalUserRepo();
+};
+
+export const getUserPreferencesRepo = (): BaseUserPreferencesRepo => {
+  return new LocalUserPreferencesRepo();
 };
 
 export const getTranscriptionRepo = (): BaseTranscriptionRepo => {

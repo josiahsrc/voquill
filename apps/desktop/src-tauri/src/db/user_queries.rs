@@ -13,13 +13,9 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              words_this_month,
              words_this_month_month,
              words_total,
-             play_interaction_chime,
-             preferred_transcription_mode,
-             preferred_transcription_api_key_id,
-             preferred_post_processing_mode,
-             preferred_post_processing_api_key_id
+             play_interaction_chime
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
@@ -28,11 +24,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
             words_this_month = excluded.words_this_month,
             words_this_month_month = excluded.words_this_month_month,
             words_total = excluded.words_total,
-            play_interaction_chime = excluded.play_interaction_chime,
-            preferred_transcription_mode = excluded.preferred_transcription_mode,
-            preferred_transcription_api_key_id = excluded.preferred_transcription_api_key_id,
-            preferred_post_processing_mode = excluded.preferred_post_processing_mode,
-            preferred_post_processing_api_key_id = excluded.preferred_post_processing_api_key_id",
+            play_interaction_chime = excluded.play_interaction_chime",
     )
     .bind(&user.id)
     .bind(&user.name)
@@ -43,10 +35,6 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(&user.words_this_month_month)
     .bind(&user.words_total)
     .bind(if user.play_interaction_chime { 1 } else { 0 })
-    .bind(&user.preferred_transcription_mode)
-    .bind(&user.preferred_transcription_api_key_id)
-    .bind(&user.preferred_post_processing_mode)
-    .bind(&user.preferred_post_processing_api_key_id)
     .execute(&pool)
     .await?;
 
@@ -64,11 +52,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             words_this_month,
             words_this_month_month,
             words_total,
-            play_interaction_chime,
-            preferred_transcription_mode,
-            preferred_transcription_api_key_id,
-            preferred_post_processing_mode,
-            preferred_post_processing_api_key_id
+            play_interaction_chime
          FROM user_profiles
          LIMIT 1",
     )
@@ -91,18 +75,6 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                     .unwrap_or(None),
                 words_total: row.try_get::<i64, _>("words_total").unwrap_or(0),
                 play_interaction_chime: play_interaction_raw != 0,
-                preferred_transcription_mode: row
-                    .try_get::<Option<String>, _>("preferred_transcription_mode")
-                    .unwrap_or(None),
-                preferred_transcription_api_key_id: row
-                    .try_get::<Option<String>, _>("preferred_transcription_api_key_id")
-                    .unwrap_or(None),
-                preferred_post_processing_mode: row
-                    .try_get::<Option<String>, _>("preferred_post_processing_mode")
-                    .unwrap_or(None),
-                preferred_post_processing_api_key_id: row
-                    .try_get::<Option<String>, _>("preferred_post_processing_api_key_id")
-                    .unwrap_or(None),
             })
         }
         None => None,

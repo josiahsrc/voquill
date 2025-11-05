@@ -1,5 +1,6 @@
-export type TranscriptionMode = "local" | "api" | "cloud";
-export type PostProcessingMode = "none" | "api" | "cloud";
+import type { PostProcessingMode, TranscriptionMode } from "@repo/types";
+
+export type { PostProcessingMode, TranscriptionMode };
 
 export const DEFAULT_TRANSCRIPTION_MODE: TranscriptionMode = "local";
 export const DEFAULT_MODEL_SIZE = "base";

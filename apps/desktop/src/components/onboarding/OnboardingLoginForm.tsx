@@ -30,7 +30,7 @@ export const OnboardingLoginForm = () => {
     if (currentUserId && memberPlan === "free") {
       handleOpenPaymentDialog();
     }
-  }, [currentUserId]);
+  }, [currentUserId, memberPlan]);
 
   useAsyncEffect(async () => {
     if (memberPlan === "pro") {

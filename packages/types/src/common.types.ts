@@ -7,3 +7,7 @@ export type JsonResponse = {
   description?: string;
   schema: Record<string, unknown>;
 };
+
+export type TranscriptionMode = "local" | "api" | "cloud";
+
+export type PostProcessingMode = "none" | "api" | "cloud";

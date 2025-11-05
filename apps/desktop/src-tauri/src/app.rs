@@ -89,6 +89,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .invoke_handler(tauri::generate_handler![
             crate::commands::user_get_one,
             crate::commands::user_set_one,
+            crate::commands::user_preferences_get,
+            crate::commands::user_preferences_set,
             crate::commands::list_microphones,
             crate::commands::list_gpus,
             crate::commands::check_microphone_permission,

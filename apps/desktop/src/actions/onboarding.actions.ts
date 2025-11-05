@@ -1,6 +1,6 @@
 import { firemix } from "@firemix/client";
-import { MemberPlan, User } from "@repo/types";
-import { getUserRepo } from "../repos";
+import { MemberPlan, User, UserPreferences } from "@repo/types";
+import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import {
   OnboardingPageKey,
   OnboardingState,
@@ -15,6 +15,7 @@ import {
   getGenerativePrefs,
   getMyEffectiveUserId,
   getTranscriptionPrefs,
+  registerUserPreferences,
   setCurrentUser,
   TranscriptionPrefs
 } from "../utils/user.utils";
@@ -81,6 +82,7 @@ export const submitOnboarding = async () => {
 
   try {
     const repo = getUserRepo();
+    const preferencesRepo = getUserPreferencesRepo();
     const now = firemix().now();
     const userId = getMyEffectiveUserId(state);
 
@@ -98,16 +100,30 @@ export const submitOnboarding = async () => {
       wordsThisMonthMonth: null,
       wordsTotal: 0,
       playInteractionChime: true,
-      preferredTranscriptionMode: transcriptionPreference.mode,
-      preferredTranscriptionApiKeyId: transcriptionPreference.mode === "api" ? transcriptionPreference.apiKeyId : null,
-      preferredPostProcessingMode: postProcessingPreference.mode,
-      preferredPostProcessingApiKeyId: postProcessingPreference.mode === "api" ? postProcessingPreference.apiKeyId : null,
     };
 
-    const savedUser = await repo.setUser(user);
+    const preferences: UserPreferences = {
+      userId,
+      transcriptionMode: transcriptionPreference.mode,
+      transcriptionApiKeyId:
+        transcriptionPreference.mode === "api"
+          ? transcriptionPreference.apiKeyId
+          : null,
+      postProcessingMode: postProcessingPreference.mode,
+      postProcessingApiKeyId:
+        postProcessingPreference.mode === "api"
+          ? postProcessingPreference.apiKeyId
+          : null,
+    };
+
+    const [savedUser, savedPreferences] = await Promise.all([
+      repo.setUser(user),
+      preferencesRepo.setUserPreferences(preferences),
+    ]);
 
     produceAppState((draft) => {
       setCurrentUser(draft, savedUser);
+      registerUserPreferences(draft, [savedPreferences]);
       draft.onboarding.submitting = false;
       draft.onboarding.name = savedUser.name;
     });

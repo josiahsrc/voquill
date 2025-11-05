@@ -15,27 +15,7 @@ type LocalUser = {
   wordsThisMonthMonth: string | null;
   wordsTotal: number;
   playInteractionChime?: boolean;
-  preferredTranscriptionMode?: "local" | "api" | "cloud" | null;
-  preferredTranscriptionApiKeyId?: string | null;
-  preferredPostProcessingMode?: "none" | "api" | "cloud" | null;
-  preferredPostProcessingApiKeyId?: string | null;
 };
-
-const toLocalUser = (user: User): LocalUser => ({
-  id: user.id,
-  name: user.name,
-  bio: user.bio ?? "",
-  onboarded: user.onboarded,
-  preferredMicrophone: user.preferredMicrophone ?? null,
-  wordsThisMonth: user.wordsThisMonth,
-  wordsThisMonthMonth: user.wordsThisMonthMonth ?? null,
-  wordsTotal: user.wordsTotal,
-  playInteractionChime: user.playInteractionChime,
-  preferredTranscriptionMode: user.preferredTranscriptionMode ?? null,
-  preferredTranscriptionApiKeyId: user.preferredTranscriptionApiKeyId ?? null,
-  preferredPostProcessingMode: user.preferredPostProcessingMode ?? null,
-  preferredPostProcessingApiKeyId: user.preferredPostProcessingApiKeyId ?? null,
-});
 
 const fromLocalUser = (localUser: LocalUser): User => {
   const now = firemix().now();
@@ -45,7 +25,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     localUser.playInteractionChime == null ? true : localUser.playInteractionChime;
 
   return {
-    id: LOCAL_USER_ID,
+    id: localUser.id,
     createdAt: now,
     updatedAt: now,
     name: localUser.name,
@@ -58,12 +38,21 @@ const fromLocalUser = (localUser: LocalUser): User => {
     wordsThisMonthMonth: localUser.wordsThisMonthMonth ?? null,
     wordsTotal: localUser.wordsTotal ?? 0,
     playInteractionChime,
-    preferredTranscriptionMode: localUser.preferredTranscriptionMode ?? null,
-    preferredTranscriptionApiKeyId: localUser.preferredTranscriptionApiKeyId ?? null,
-    preferredPostProcessingMode: localUser.preferredPostProcessingMode ?? null,
-    preferredPostProcessingApiKeyId: localUser.preferredPostProcessingApiKeyId ?? null,
   };
 };
+
+const toLocalUser = (user: User): LocalUser => ({
+  id: LOCAL_USER_ID,
+  name: user.name,
+  bio: user.bio ?? "",
+  onboarded: user.onboarded,
+  preferredMicrophone: user.preferredMicrophone ?? null,
+  wordsThisMonth: user.wordsThisMonth,
+  wordsThisMonthMonth: user.wordsThisMonthMonth ?? null,
+  wordsTotal: user.wordsTotal,
+  playInteractionChime: user.playInteractionChime,
+});
+
 
 export abstract class BaseUserRepo extends BaseRepo {
   abstract setUser(user: User): Promise<User>;

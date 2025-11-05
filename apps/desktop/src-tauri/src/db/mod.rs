@@ -1,5 +1,6 @@
 pub mod api_key_queries;
 pub mod hotkey_queries;
+pub mod preferences_queries;
 pub mod term_queries;
 pub mod transcription_queries;
 pub mod user_queries;
@@ -29,6 +30,8 @@ pub const TERMS_IS_REPLACEMENT_MIGRATION_SQL: &str =
 pub const TRANSCRIPTION_PROCESSING_METADATA_MIGRATION_SQL: &str =
     include_str!("migrations/013_transcription_processing_metadata.sql");
 pub const USER_WORD_STATS_MIGRATION_SQL: &str = include_str!("migrations/014_user_word_stats.sql");
+pub const USER_PREFERENCES_MIGRATION_SQL: &str =
+    include_str!("migrations/015_user_preferences.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -120,6 +123,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 15,
             description: "add_user_word_stats",
             sql: USER_WORD_STATS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 16,
+            description: "create_user_preferences",
+            sql: USER_PREFERENCES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

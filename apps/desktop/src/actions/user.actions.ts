@@ -1,15 +1,19 @@
 import { firemix } from "@firemix/client";
-import { Nullable, User } from "@repo/types";
-import { getUserRepo } from "../repos";
+import { Nullable, User, UserPreferences } from "@repo/types";
+import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import {
+  DEFAULT_POST_PROCESSING_MODE,
+  DEFAULT_TRANSCRIPTION_MODE,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
 import {
   getMyEffectiveUserId,
   getMyUser,
-  setCurrentUser
+  getMyUserPreferences,
+  registerUserPreferences,
+  setCurrentUser,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 
@@ -41,6 +45,37 @@ const updateUser = async (
     });
   } catch (error) {
     console.error("Failed to update user", error);
+    showErrorSnackbar(saveErrorMessage);
+    throw error;
+  }
+};
+
+const buildDefaultPreferences = (userId: string): UserPreferences => ({
+  userId,
+  transcriptionMode: DEFAULT_TRANSCRIPTION_MODE,
+  transcriptionApiKeyId: null,
+  postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
+  postProcessingApiKeyId: null,
+});
+
+const updateUserPreferences = async (
+  updateCallback: (preferences: UserPreferences) => void,
+  saveErrorMessage: string,
+): Promise<void> => {
+  const state = getAppState();
+  const myUserId = getMyEffectiveUserId(state);
+
+  const existing = getMyUserPreferences(state) ?? buildDefaultPreferences(myUserId);
+  const payload: UserPreferences = { ...existing, userId: myUserId };
+  updateCallback(payload);
+
+  try {
+    const saved = await getUserPreferencesRepo().setUserPreferences(payload);
+    produceAppState((draft) => {
+      registerUserPreferences(draft, [saved]);
+    });
+  } catch (error) {
+    console.error("Failed to update user preferences", error);
     showErrorSnackbar(saveErrorMessage);
     throw error;
   }
@@ -79,10 +114,19 @@ export const refreshCurrentUser = async (): Promise<void> => {
   const userId = getMyEffectiveUserId(state);
 
   try {
-    const user = await getUserRepo().getUser(userId);
+    const [user, preferences] = await Promise.all([
+      getUserRepo().getUser(userId),
+      getUserPreferencesRepo().getUserPreferences(userId),
+    ]);
     produceAppState((draft) => {
       if (user) {
         setCurrentUser(draft, user);
+      }
+
+      if (preferences) {
+        registerUserPreferences(draft, [preferences]);
+      } else {
+        delete draft.userPreferencesById[userId];
       }
     });
   } catch (error) {
@@ -129,21 +173,13 @@ export const setUserName = async (name: string): Promise<void> => {
 
 const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
-  const user = getMyUser(state);
-
-  if (!user) {
-    return;
-  }
-
-  await updateUser(
-    (draft) => {
-      draft.preferredPostProcessingMode = state.settings.aiPostProcessing.mode;
-      draft.preferredPostProcessingApiKeyId = state.settings.aiPostProcessing.selectedApiKeyId;
-
-      draft.preferredTranscriptionMode = state.settings.aiTranscription.mode;
-      draft.preferredTranscriptionApiKeyId = state.settings.aiTranscription.selectedApiKeyId;
+  await updateUserPreferences(
+    (preferences) => {
+      preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
+      preferences.postProcessingApiKeyId = state.settings.aiPostProcessing.selectedApiKeyId ?? null;
+      preferences.transcriptionMode = state.settings.aiTranscription.mode;
+      preferences.transcriptionApiKeyId = state.settings.aiTranscription.selectedApiKeyId ?? null;
     },
-    "Unable to update AI preferences. User not found.",
     "Failed to save AI preferences. Please try again.",
   );
 };
