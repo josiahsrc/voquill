@@ -78,11 +78,13 @@ export const tryUpdateMemberLoopsContact = async (args: {
     return;
   }
 
-  const userIds = args.after?.userIds ?? [];
-  for (const userId of userIds) {
-    await updateLoopsContact(userId);
-    console.log("updated loops contact name for user", userId);
+  const userId = args.after?.id ?? args.before?.id;
+  if (!userId) {
+    return;
   }
+
+  await updateLoopsContact(userId);
+  console.log("updated loops contact name for user", userId);
 };
 
 export const trySend1000WordsEvent = async (args: {
@@ -95,12 +97,15 @@ export const trySend1000WordsEvent = async (args: {
     return;
   }
 
-  const userIds = args.after?.userIds ?? [];
-  for (const userId of userIds) {
-    await sendLoopsEvent({
-      userId: userId,
-      eventName: "dictated-1000-words",
-    });
-    console.log("sent dictated-1000-words event for user", userId);
+  const userId = args.after?.id ?? args.before?.id;
+  if (!userId) {
+    return;
   }
+
+  await sendLoopsEvent({
+    userId: userId,
+    eventName: "dictated-1000-words",
+  });
+
+  console.log("sent dictated-1000-words event for user", userId);
 };

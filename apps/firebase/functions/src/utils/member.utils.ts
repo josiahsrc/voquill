@@ -39,7 +39,6 @@ export const tryInitializeMember = async (userId: string): Promise<void> => {
       createdAt: firemix().now(),
       updatedAt: firemix().now(),
       type: "user",
-      userIds: [userId],
       plan: "free",
       todayResetAt: firemix().now(),
       thisMonthResetAt: firemix().now(),

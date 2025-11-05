@@ -8,7 +8,6 @@ export const buildMember = (overrides?: Partial<Member>): Member => ({
   updatedAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
   stripeCustomerId: "123",
   priceId: null,
-  userIds: ["defaultUserId"],
   plan: "free",
   tokensToday: 0,
   tokensThisMonth: 0,

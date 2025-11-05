@@ -6,7 +6,6 @@ export type MemberPlan = "free" | "pro";
 export type Member = {
   id: string;
   type: "user";
-  userIds: string[];
   createdAt: FiremixTimestamp;
   updatedAt: FiremixTimestamp;
   plan: MemberPlan;

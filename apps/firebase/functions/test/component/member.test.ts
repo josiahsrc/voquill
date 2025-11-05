@@ -168,38 +168,28 @@ describe("firestore rules", () => {
     const creds = await createUserCreds();
     const user = await signInWithCreds(creds);
 
-    const member = buildMember({ id: user.uid, userIds: [user.uid] });
+    const member = buildMember({ id: user.uid });
     await firemix().set(mixpath.members(user.uid), member);
 
     userId = user.uid;
   });
 
-  it("lets me read my memberships", async () => {
+  it("lets me read my membership", async () => {
     await expect(
-      firemix("client").query(mixpath.members(), [
-        "where",
-        "userIds",
-        "array-contains",
-        userId,
-      ])
+      firemix("client").get(mixpath.members(userId))
     ).resolves.not.toThrow();
   });
 
   it("prevents listing other members", async () => {
     await expect(
-      firemix("client").query(mixpath.members(), [
-        "where",
-        "userIds",
-        "array-contains",
-        "differentUserId",
-      ])
+      firemix("client").get(mixpath.members("differentUserId"))
     ).rejects.toThrow();
   });
 
   it("prevents me from spoofing my membership", async () => {
     await expect(
       firemix("client").update(mixpath.members(userId), {
-        userIds: ["differentUserId"],
+        id: "differentUserId",
       })
     ).rejects.toThrow();
     await expect(

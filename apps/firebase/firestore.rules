@@ -6,12 +6,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function hasMemberAccess(member) {
-      return member.userIds.hasAny([request.auth.uid]);
-    }
-
-    match /members/{memberId} {
-      allow list: if hasAuth() && hasMemberAccess(resource.data);
+    match /members/{userId} {
+      allow get: if hasAuth() && request.auth.uid == userId;
     }
 
     match /terms/{userId} {
