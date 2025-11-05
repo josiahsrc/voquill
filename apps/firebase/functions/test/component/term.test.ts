@@ -1,8 +1,8 @@
 import { firemix, firemixSdkZoneSync } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
+import { buildTerm } from "../helpers/entities";
 import { createUserCreds, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
-import { buildTerm, buildUser } from "../helpers/entities";
-import { mixpath } from "@repo/firemix";
 
 beforeAll(setUp);
 afterAll(tearDown);
