@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { marked } from "marked";
 
 marked.setOptions({
@@ -8,28 +5,47 @@ marked.setOptions({
   breaks: true,
 });
 
-const contentDirectory = join(
-  fileURLToPath(new URL("../../content", import.meta.url)),
-);
-
 type LegalSlug = "terms" | "privacy";
 
 const markdownCache = new Map<LegalSlug, string>();
+const rawMarkdownFiles = import.meta.glob<string>("../../content/*.md", {
+  import: "default",
+  query: "?raw",
+  eager: true,
+});
 
-export async function getMarkdownContent(slug: LegalSlug) {
-  if (markdownCache.has(slug)) {
-    return markdownCache.get(slug)!;
+const legalSlugs: LegalSlug[] = ["terms", "privacy"];
+
+const isLegalSlug = (value: string): value is LegalSlug => {
+  return legalSlugs.includes(value as LegalSlug);
+};
+
+for (const [path, raw] of Object.entries(rawMarkdownFiles)) {
+  const fileName = path.split("/").pop();
+
+  if (!fileName) {
+    continue;
   }
 
-  const filePath = join(contentDirectory, `${slug}.md`);
-  const file = await readFile(filePath, "utf-8");
-  const rendered = marked.parse(file);
+  const slug = fileName.replace(".md", "");
+
+  if (!isLegalSlug(slug)) {
+    continue;
+  }
+
+  const rendered = marked.parse(raw);
 
   if (typeof rendered !== "string") {
     throw new Error(`Failed to render markdown for ${slug}`);
   }
 
   markdownCache.set(slug, rendered);
-  return rendered;
 }
 
+export async function getMarkdownContent(slug: LegalSlug) {
+  if (markdownCache.has(slug)) {
+    return markdownCache.get(slug)!;
+  }
+
+  throw new Error(`Missing markdown content for ${slug}`);
+}
