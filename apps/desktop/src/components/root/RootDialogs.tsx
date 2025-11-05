@@ -9,6 +9,7 @@ import { ShortcutsDialog } from "../settings/ShortcutsDialog";
 import { UpgradePlanDialog } from "../pricing/UpgradePlanDialog";
 import { PermissionsDialog } from "./PermissionsDialog";
 import { UpdateDialog } from "./UpdateDialog";
+import { DeleteAccountDialog } from "../settings/DeleteAccountDialog";
 
 export const RootDialogs = () => {
   return (
@@ -24,6 +25,7 @@ export const RootDialogs = () => {
       <ClearLocalDataDialog />
       <UpgradePlanDialog />
       <PaymentDialog />
+      <DeleteAccountDialog />
     </>
   );
 };
