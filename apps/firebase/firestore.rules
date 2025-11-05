@@ -14,12 +14,12 @@ service cloud.firestore {
       allow list: if hasAuth() && hasMemberAccess(resource.data);
     }
 
+    match /terms/{userId} {
+      allow get, write: if hasAuth() && request.auth.uid == userId;
+    }
+
     match /users/{userId} {
       allow get, write: if hasAuth() && request.auth.uid == userId;
-
-      match /terms/{termId} {
-        allow read, write: if hasAuth() && request.auth.uid == userId;
-      }
     }
 
     match /system/config {

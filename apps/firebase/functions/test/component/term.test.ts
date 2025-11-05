@@ -1,8 +1,8 @@
 import { firemix, firemixSdkZoneSync } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
-import { buildTerm } from "../helpers/entities";
 import { createUserCreds, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
+import { buildTermDoc } from "../helpers/entities";
 
 beforeAll(setUp);
 afterAll(tearDown);
@@ -17,21 +17,21 @@ describe("firestore rules", () => {
   });
 
   it("lets me read/write my terms", async () => {
-    const term = firemixSdkZoneSync("client", () => buildTerm({ createdByUserId: userId }));
-    await firemix("client").set(mixpath.terms(userId, term.id), term);
+    const term = firemixSdkZoneSync("client", () => buildTermDoc({ id: userId }));
+    await firemix("client").set(mixpath.terms(term.id), term);
     await expect(
-      firemix("client").get(mixpath.terms(userId, term.id))
+      firemix("client").get(mixpath.terms(term.id))
     ).resolves.not.toThrow();
   });
 
   it("prevents me from accessing other users", async () => {
-    const term = firemixSdkZoneSync("client", () => buildTerm({ createdByUserId: userId }));
-    await expect(firemix("client").query(mixpath.terms("differentUserId"))).rejects.toThrow();
+    const term = firemixSdkZoneSync("client", () => buildTermDoc({ id: "differentUserId" }));
+    await expect(firemix("client").query(mixpath.terms(term.id))).rejects.toThrow();
     await expect(
-      firemix("client").get(mixpath.terms("differentUserId", term.id))
+      firemix("client").get(mixpath.terms(term.id))
     ).rejects.toThrow();
     await expect(
-      firemix("client").set(mixpath.terms("differentUserId", term.id), term)
+      firemix("client").set(mixpath.terms(term.id), term)
     ).rejects.toThrow();
   });
 });

@@ -1,6 +1,7 @@
 import { firemix } from "@firemix/client";
 import { mixpath } from "@repo/firemix";
 import { Term } from "@repo/types";
+import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { BaseRepo } from "./base.repo";
 
@@ -17,28 +18,26 @@ type LocalTerm = {
 const toLocalTerm = (term: Term): LocalTerm => ({
   id: term.id,
   createdAt: term.createdAt.toMillis(),
-  createdByUserId: term.createdByUserId,
+  createdByUserId: "",
   sourceValue: term.sourceValue,
   destinationValue: term.destinationValue,
   isReplacement: term.isReplacement,
-  isDeleted: term.isDeleted,
+  isDeleted: false,
 });
 
 const fromLocalTerm = (term: LocalTerm): Term => ({
   id: term.id,
   createdAt: firemix().timestampFromMillis(term.createdAt),
-  createdByUserId: term.createdByUserId,
   sourceValue: term.sourceValue,
   destinationValue: term.destinationValue,
   isReplacement: term.isReplacement,
-  isDeleted: term.isDeleted,
 });
 
 export abstract class BaseTermRepo extends BaseRepo {
   abstract listTerms(userId: string): Promise<Term[]>;
-  abstract createTerm(term: Term): Promise<Term>;
-  abstract updateTerm(term: Term): Promise<Term>;
-  abstract deleteTerm(id: string): Promise<void>;
+  abstract createTerm(userId: string, term: Term): Promise<Term>;
+  abstract updateTerm(userId: string, term: Term): Promise<Term>;
+  abstract deleteTerm(userId: string, termId: string): Promise<void>;
 }
 
 export class LocalTermRepo extends BaseTermRepo {
@@ -47,42 +46,59 @@ export class LocalTermRepo extends BaseTermRepo {
     return terms.map(fromLocalTerm);
   }
 
-  async createTerm(term: Term): Promise<Term> {
+  async createTerm(_: string, term: Term): Promise<Term> {
     const created = await invoke<LocalTerm>("term_create", {
       term: toLocalTerm(term),
     });
     return fromLocalTerm(created);
   }
 
-  async updateTerm(term: Term): Promise<Term> {
+  async updateTerm(_: string, term: Term): Promise<Term> {
     const updated = await invoke<LocalTerm>("term_update", {
       term: toLocalTerm(term),
     });
     return fromLocalTerm(updated);
   }
 
-  async deleteTerm(id: string): Promise<void> {
-    await invoke<void>("term_delete", { id });
+  async deleteTerm(_: string, termId: string): Promise<void> {
+    await invoke<void>("term_delete", { id: termId });
   }
 }
 
 export class CloudTermRepo extends BaseTermRepo {
   async listTerms(userId: string): Promise<Term[]> {
-    const results = await firemix().query(mixpath.terms(userId), ["limit", 1000]);
-    return results.map((r) => r.data);
+    const doc = await firemix().get(mixpath.terms(userId));
+    const termIds = doc?.data.termIds ?? [];
+    const terms = termIds.map((id) => getRec(doc?.data.termById, id));
+    return terms.filter(Boolean).map((t) => t as Term);
   }
 
-  async createTerm(term: Term): Promise<Term> {
-    await firemix().set(mixpath.terms(term.id), term);
+  async createTerm(userId: string, term: Term): Promise<Term> {
+    await firemix().merge(mixpath.terms(term.id), {
+      id: userId,
+      termIds: firemix().arrayUnion([term.id]),
+      termById: {
+        [term.id]: term,
+      },
+    });
     return term;
   }
 
-  async updateTerm(term: Term): Promise<Term> {
-    await firemix().set(mixpath.terms(term.id), term);
+  async updateTerm(userId: string, term: Term): Promise<Term> {
+    await firemix().merge(mixpath.terms(userId), {
+      termById: {
+        [term.id]: term,
+      },
+    });
     return term;
   }
 
-  async deleteTerm(id: string): Promise<void> {
-    await firemix().delete(mixpath.terms(id));
+  async deleteTerm(userId: string, termId: string): Promise<void> {
+    await firemix().merge(mixpath.terms(userId), {
+      termIds: firemix().arrayRemove([termId]),
+      termById: {
+        [termId]: firemix().deleteField(),
+      },
+    });
   }
 }

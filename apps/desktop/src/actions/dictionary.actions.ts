@@ -11,7 +11,6 @@ export const loadDictionary = async (): Promise<void> => {
   const terms = await getTermRepo().listTerms(userId);
 
   const activeTerms = terms
-    .filter((term) => !term.isDeleted)
     .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
 
   produceAppState((draft) => {

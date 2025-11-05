@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
+import { getMyEffectiveUserId } from "../../utils/user.utils";
 
 export type DictionaryRowProps = {
   id: string;
@@ -58,7 +59,10 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
     });
 
     try {
-      await getTermRepo().updateTerm(updatedTerm);
+      await getTermRepo().updateTerm(
+        getMyEffectiveUserId(getAppState()),
+        updatedTerm
+      );
     } catch (error) {
       produceAppState((draft) => {
         draft.termById[id] = previousTerm;
@@ -78,17 +82,13 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
     const previousIds = [...getAppState().dictionary.termIds];
 
     produceAppState((draft) => {
-      const record = draft.termById[id];
-      if (record) {
-        record.isDeleted = true;
-      }
       draft.dictionary.termIds = draft.dictionary.termIds.filter(
         (termId) => termId !== id
       );
     });
 
     try {
-      await getTermRepo().deleteTerm(id);
+      await getTermRepo().deleteTerm(getMyEffectiveUserId(getAppState()), id);
     } catch (error) {
       produceAppState((draft) => {
         draft.termById[id] = previousTerm;
@@ -100,7 +100,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
     }
   }, [id, term]);
 
-  if (!term || term.isDeleted) {
+  if (!term) {
     return null;
   }
 

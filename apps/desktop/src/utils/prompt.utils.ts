@@ -59,7 +59,7 @@ export const collectDictionaryEntries = (
 
   for (const termId of state.dictionary.termIds) {
     const term = state.termById[termId];
-    if (!term || term.isDeleted) {
+    if (!term) {
       continue;
     }
 

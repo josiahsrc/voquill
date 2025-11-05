@@ -7,10 +7,10 @@ import { useCallback } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
-import { getMyEffectiveUserId } from "../../utils/user.utils";
 import { MenuPopoverBuilder } from "../common/MenuPopover";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { DictionaryRow } from "./DictionaryRow";
+import { getMyEffectiveUserId } from "../../utils/user.utils";
 
 export default function DictionaryPage() {
   const termIds = useAppStore((state) => state.dictionary.termIds);
@@ -19,11 +19,9 @@ export default function DictionaryPage() {
     const newTerm: Term = {
       id: firemix().id(),
       createdAt: firemix().now(),
-      createdByUserId: getMyEffectiveUserId(getAppState()),
       sourceValue: "",
       destinationValue: "",
       isReplacement: replacement,
-      isDeleted: false,
     };
 
     produceAppState((draft) => {
@@ -32,7 +30,10 @@ export default function DictionaryPage() {
     });
 
     try {
-      const created = await getTermRepo().createTerm(newTerm);
+      const created = await getTermRepo().createTerm(
+        getMyEffectiveUserId(getAppState()),
+        newTerm
+      );
       produceAppState((draft) => {
         draft.termById[created.id] = created;
       });
