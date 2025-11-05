@@ -3,7 +3,7 @@ import type { APIRoute } from "astro";
 const RELEASE_MANIFEST_URL =
   "https://github.com/josiahsrc/voquill/releases/download/desktop-prod/latest.json";
 
-export const prerender = true;
+export const prerender = false;
 
 export const GET: APIRoute = async () => {
   try {
