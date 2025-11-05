@@ -91,6 +91,9 @@ jobs:
       - name: Build Firebase functions
         run: npm run build -- --filter=functions...
 
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@latest
+
       - name: Configure Firebase credentials
         env:
           FIREBASE_CREDENTIALS_BASE64: ${{ steps.env.outputs.deploy_env == 'prod' && secrets.FIREBASE_ADMIN_BASE64 || secrets.FIREBASE_ADMIN_DEV_BASE64 }}
