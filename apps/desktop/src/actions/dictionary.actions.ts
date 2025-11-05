@@ -1,9 +1,14 @@
 import { getTermRepo } from "../repos";
-import { produceAppState } from "../store";
+import { getAppState, produceAppState } from "../store";
 import { registerTerms } from "../utils/app.utils";
 
 export const loadDictionary = async (): Promise<void> => {
-  const terms = await getTermRepo().listTerms();
+  const userId = getAppState().auth?.uid;
+  if (!userId) {
+    return;
+  }
+
+  const terms = await getTermRepo().listTerms(userId);
 
   const activeTerms = terms
     .filter((term) => !term.isDeleted)

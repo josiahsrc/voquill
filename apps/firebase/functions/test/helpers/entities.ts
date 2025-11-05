@@ -1,5 +1,5 @@
 import { firemix } from "@firemix/mixed";
-import { Member, User } from "@repo/types";
+import { Member, Term, User } from "@repo/types";
 
 export const buildMember = (overrides?: Partial<Member>): Member => ({
   id: "defaultMemberId",
@@ -10,14 +10,17 @@ export const buildMember = (overrides?: Partial<Member>): Member => ({
   priceId: null,
   userIds: ["defaultUserId"],
   plan: "free",
+  tokensToday: 0,
+  tokensThisMonth: 0,
+  tokensTotal: 0,
+  thisMonthResetAt: firemix().timestampFromDate(
+    new Date("2023-01-01T00:00:00Z")
+  ),
   wordsToday: 0,
-  wordsTodayResetAt: firemix().timestampFromDate(
+  todayResetAt: firemix().timestampFromDate(
     new Date("2023-01-01T00:00:00Z")
   ),
   wordsThisMonth: 0,
-  wordsThisMonthResetAt: firemix().timestampFromDate(
-    new Date("2023-01-01T00:00:00Z")
-  ),
   wordsTotal: 0,
   ...overrides,
 });
@@ -31,5 +34,19 @@ export const buildUser = (overrides?: Partial<User>): User => ({
   onboardedAt: null,
   preferredMicrophone: null,
   playInteractionChime: true,
+  wordsThisMonth: 0,
+  wordsThisMonthMonth: 'yyyy-MM',
+  wordsTotal: 0,
+  ...overrides,
+});
+
+export const buildTerm = (overrides?: Partial<Term>): Term => ({
+  id: "defaultTermId",
+  createdByUserId: "defaultUserId",
+  createdAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
+  sourceValue: "default source",
+  destinationValue: "default destination",
+  isReplacement: true,
+  isDeleted: false,
   ...overrides,
 });

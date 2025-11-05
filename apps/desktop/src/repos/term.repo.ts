@@ -35,7 +35,7 @@ const fromLocalTerm = (term: LocalTerm): Term => ({
 });
 
 export abstract class BaseTermRepo extends BaseRepo {
-  abstract listTerms(): Promise<Term[]>;
+  abstract listTerms(userId: string): Promise<Term[]>;
   abstract createTerm(term: Term): Promise<Term>;
   abstract updateTerm(term: Term): Promise<Term>;
   abstract deleteTerm(id: string): Promise<void>;
@@ -67,8 +67,8 @@ export class LocalTermRepo extends BaseTermRepo {
 }
 
 export class CloudTermRepo extends BaseTermRepo {
-  async listTerms(): Promise<Term[]> {
-    const results = await firemix().query(mixpath.terms(), ["limit", 1000]);
+  async listTerms(userId: string): Promise<Term[]> {
+    const results = await firemix().query(mixpath.terms(userId), ["limit", 1000]);
     return results.map((r) => r.data);
   }
 

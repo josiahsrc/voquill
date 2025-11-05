@@ -29,6 +29,6 @@ export const transcriptions = (transcriptionId?: Nullable<string>): FiremixPath<
   return ["transcriptions", ...listify(transcriptionId)];
 }
 
-export const terms = (transcriptionId?: Nullable<string>): FiremixPath<Term> => {
-  return ["terms", ...listify(transcriptionId)];
+export const terms = (userId: string, termId?: Nullable<string>): FiremixPath<Term> => {
+  return ["users", userId, "terms", ...listify(termId)];
 }
