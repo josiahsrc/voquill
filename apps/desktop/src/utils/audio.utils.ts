@@ -1,3 +1,5 @@
+import { AudioSamples } from "../types/audio.types";
+
 const writeString = (view: DataView, offset: number, text: string) => {
   for (let index = 0; index < text.length; index += 1) {
     view.setUint8(offset + index, text.charCodeAt(index));
@@ -46,3 +48,8 @@ export const buildWaveFile = (
   floatTo16BitPCM(view, 44, samples);
   return buffer;
 };
+
+export const normalizeSamples = (
+  samples: AudioSamples,
+): number[] =>
+  Array.isArray(samples) ? samples : Array.from(samples ?? []);

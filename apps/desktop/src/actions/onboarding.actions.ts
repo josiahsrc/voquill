@@ -8,13 +8,15 @@ import {
 import { getAppState, produceAppState } from "../store";
 import {
   DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_PROCESSING_MODE,
+  DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
 import {
+  GenerativePrefs,
+  getGenerativePrefs,
   getMyEffectiveUserId,
-  getPostProcessingPreferenceFromState,
-  getTranscriptionPreferenceFromState,
-  setCurrentUser
+  getTranscriptionPrefs,
+  setCurrentUser,
+  TranscriptionPrefs
 } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
@@ -60,14 +62,14 @@ export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
 
-  const transcriptionPreference =
-    getTranscriptionPreferenceFromState(state) ?? {
-      mode: DEFAULT_PROCESSING_MODE,
+  const transcriptionPreference: TranscriptionPrefs =
+    getTranscriptionPrefs(state) ?? {
+      mode: DEFAULT_TRANSCRIPTION_MODE,
       apiKeyId: null,
     };
 
-  const postProcessingPreference =
-    getPostProcessingPreferenceFromState(state) ?? {
+  const postProcessingPreference: GenerativePrefs =
+    getGenerativePrefs(state) ?? {
       mode: DEFAULT_POST_PROCESSING_MODE,
       apiKeyId: null,
     };
@@ -97,9 +99,9 @@ export const submitOnboarding = async () => {
       wordsTotal: 0,
       playInteractionChime: true,
       preferredTranscriptionMode: transcriptionPreference.mode,
-      preferredTranscriptionApiKeyId: transcriptionPreference.apiKeyId,
+      preferredTranscriptionApiKeyId: transcriptionPreference.mode === "api" ? transcriptionPreference.apiKeyId : null,
       preferredPostProcessingMode: postProcessingPreference.mode,
-      preferredPostProcessingApiKeyId: postProcessingPreference.apiKeyId,
+      preferredPostProcessingApiKeyId: postProcessingPreference.mode === "api" ? postProcessingPreference.apiKeyId : null,
     };
 
     const savedUser = await repo.setUser(user);

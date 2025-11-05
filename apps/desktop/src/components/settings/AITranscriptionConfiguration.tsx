@@ -14,7 +14,7 @@ import {
 } from "../../actions/user.actions";
 import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { produceAppState, useAppStore } from "../../store";
-import { CPU_DEVICE_VALUE, type ProcessingMode } from "../../types/ai.types";
+import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
 import { buildDeviceLabel } from "../../types/gpu.types";
 import {
   SegmentedControl,
@@ -97,7 +97,7 @@ export const AITranscriptionConfiguration = ({
     [gpus]
   );
 
-  const handleModeChange = useCallback((mode: ProcessingMode) => {
+  const handleModeChange = useCallback((mode: TranscriptionMode) => {
     void setPreferredTranscriptionMode(mode);
   }, []);
 
@@ -119,11 +119,11 @@ export const AITranscriptionConfiguration = ({
 
   return (
     <Stack spacing={3} alignItems="flex-start" sx={{ width: "100%" }}>
-      <SegmentedControl<ProcessingMode>
+      <SegmentedControl<TranscriptionMode>
         value={transcription.mode}
         onChange={handleModeChange}
         options={[
-          ...maybeArrayElements<SegmentedControlOption<ProcessingMode>>(
+          ...maybeArrayElements<SegmentedControlOption<TranscriptionMode>>(
             !hideCloudOption,
             [
               {

@@ -1,7 +1,6 @@
 import { Nullable, User } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
-import { PostProcessingMode, ProcessingMode } from "../types/ai.types";
 import { applyAiPreferencesFromUser } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import { getMyMember } from "./member.utils";
@@ -43,61 +42,103 @@ export const getIsSignedIn = (state: AppState): boolean => {
   return !!state.auth;
 }
 
-const hasValidApiKey = (state: AppState, id: Nullable<string>): boolean => {
-  return Boolean(getRec(state.apiKeyById, id));
-};
-
-type TranscriptionPreference = {
-  mode: ProcessingMode;
-  apiKeyId: Nullable<string>;
-};
-
-type PostProcessingPreference = {
-  mode: PostProcessingMode;
-  apiKeyId: Nullable<string>;
-};
-
-export const getTranscriptionPreferenceFromState = (
-  state: AppState,
-): TranscriptionPreference | null => {
-  const { mode, selectedApiKeyId } = state.settings.aiTranscription;
-
-  if (mode === "local") {
-    return { mode: "local", apiKeyId: null };
-  }
-
-  if (mode === "cloud") {
-    return { mode: "cloud", apiKeyId: null };
-  }
-
-  if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {
-    return { mode: "api", apiKeyId: selectedApiKeyId };
-  }
-
-  return null;
-};
-
-export const getPostProcessingPreferenceFromState = (
-  state: AppState,
-): PostProcessingPreference | null => {
-  const { mode, selectedApiKeyId } = state.settings.aiPostProcessing;
-
-  if (mode === "none") {
-    return { mode: "none", apiKeyId: null };
-  }
-
-  if (mode === "cloud") {
-    return { mode: "cloud", apiKeyId: null };
-  }
-
-  if (mode === "api" && hasValidApiKey(state, selectedApiKeyId)) {
-    return { mode: "api", apiKeyId: selectedApiKeyId };
-  }
-
-  return null;
-};
-
 export const setCurrentUser = (draft: AppState, user: User) => {
   registerUsers(draft, [user]);
   applyAiPreferencesFromUser(draft, user);
+}
+
+type BaseTranscriptionPrefs = {
+  warnings: string[];
+}
+
+export type CloudTranscriptionPrefs = BaseTranscriptionPrefs & {
+  mode: "cloud";
+}
+
+export type LocalTranscriptionPrefs = BaseTranscriptionPrefs & {
+  mode: "local";
+}
+
+export type ApiTranscriptionPrefs = BaseTranscriptionPrefs & {
+  mode: "api";
+  apiKeyId: string;
+  apiKeyValue: string;
+}
+
+export type TranscriptionPrefs =
+  | CloudTranscriptionPrefs
+  | LocalTranscriptionPrefs
+  | ApiTranscriptionPrefs;
+
+export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
+  const config = state.settings.aiTranscription;
+  const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
+  const cloudAvailable = getHasCloudAccess(state);
+  const warnings: string[] = [];
+
+  if (config.mode === "cloud") {
+    if (cloudAvailable) {
+      return { mode: "cloud", warnings };
+    } else {
+      warnings.push("Cloud post-processing is not available. Please check your subscription.");
+    }
+  }
+
+  if (config.mode === "api") {
+    if (apiKey) {
+      return { mode: "api", apiKeyId: config.selectedApiKeyId!, apiKeyValue: apiKey, warnings };
+    } else {
+      warnings.push("No API key configured for API post-processing.");
+    }
+  }
+
+  return { mode: "local", warnings };
+}
+
+type BaseGenerativePrefs = {
+  warnings: string[];
+}
+
+export type CloudGenerativePrefs = BaseGenerativePrefs & {
+  mode: "cloud";
+}
+
+export type ApiGenerativePrefs = BaseGenerativePrefs & {
+  mode: "api";
+  apiKeyId: string;
+  apiKeyValue: string;
+}
+
+export type NoneGenerativePrefs = BaseGenerativePrefs & {
+  mode: "none";
+}
+
+export type GenerativePrefs =
+  | CloudGenerativePrefs
+  | ApiGenerativePrefs
+  | NoneGenerativePrefs;
+
+export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
+  const config = state.settings.aiPostProcessing;
+  const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
+  const cloudAvailable = getHasCloudAccess(state);
+  const warnings: string[] = [];
+
+  if (config.mode === "cloud") {
+    if (cloudAvailable) {
+      return { mode: "cloud", warnings };
+    } else {
+      warnings.push("Cloud post-processing is not available. Please check your subscription.");
+    }
+  }
+
+  if (config.mode === "api") {
+    if (apiKey) {
+      return { mode: "api", apiKeyId: config.selectedApiKeyId!, apiKeyValue: apiKey, warnings };
+    } else {
+      warnings.push("No API key configured for API post-processing.");
+    }
+  }
+
+  return { mode: "none", warnings };
 }

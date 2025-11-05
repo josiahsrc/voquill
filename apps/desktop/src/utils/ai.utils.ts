@@ -1,6 +1,6 @@
 import { User } from "@repo/types";
 import { AppState } from "../state/app.state";
-import { DEFAULT_POST_PROCESSING_MODE, DEFAULT_PROCESSING_MODE } from "../types/ai.types";
+import { DEFAULT_POST_PROCESSING_MODE, DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { getMyEffectiveUserId } from "./user.utils";
 
 export const applyAiPreferencesFromUser = (draft: AppState, user: User): void => {
@@ -10,7 +10,7 @@ export const applyAiPreferencesFromUser = (draft: AppState, user: User): void =>
   }
 
   const transcriptionMode =
-    user.preferredTranscriptionMode ?? DEFAULT_PROCESSING_MODE;
+    user.preferredTranscriptionMode ?? DEFAULT_TRANSCRIPTION_MODE;
   draft.settings.aiTranscription.mode = transcriptionMode;
   draft.settings.aiTranscription.selectedApiKeyId = user.preferredTranscriptionApiKeyId ?? null;
 

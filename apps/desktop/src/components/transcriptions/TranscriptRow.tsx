@@ -24,11 +24,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
-import {
-  transcribeAndPostProcessAudio,
-  TranscriptionError,
-} from "../../utils/transcription.utils";
 import { TypographyWithMore } from "../common/TypographyWithMore";
+import { transcribeAndPostProcessAudio } from "../../actions/transcription.actions";
 
 export type TranscriptionRowProps = {
   id: string;
@@ -506,12 +503,8 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     } catch (error) {
       console.error("Failed to retranscribe audio", error);
       const fallbackMessage = "Unable to retranscribe audio snippet.";
-      const message =
-        error instanceof TranscriptionError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : fallbackMessage;
+      const message = (error =
+        error instanceof Error ? error.message : fallbackMessage);
       showErrorSnackbar(message || fallbackMessage);
     } finally {
       setIsRetranscribing(false);

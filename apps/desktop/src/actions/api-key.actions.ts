@@ -5,7 +5,7 @@ import { registerApiKeys } from "../utils/app.utils";
 import { showErrorSnackbar } from "./app.actions";
 import {
   DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_PROCESSING_MODE,
+  DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
 import { syncAiPreferences } from "./user.actions";
 import type { CreateApiKeyPayload } from "../repos/api-key.repo";
@@ -92,7 +92,7 @@ export const deleteApiKey = async (id: string): Promise<void> => {
       );
       if (draft.settings.aiTranscription.selectedApiKeyId === id) {
         draft.settings.aiTranscription.selectedApiKeyId = null;
-        draft.settings.aiTranscription.mode = DEFAULT_PROCESSING_MODE;
+        draft.settings.aiTranscription.mode = DEFAULT_TRANSCRIPTION_MODE;
       }
       if (draft.settings.aiPostProcessing.selectedApiKeyId === id) {
         draft.settings.aiPostProcessing.selectedApiKeyId = null;

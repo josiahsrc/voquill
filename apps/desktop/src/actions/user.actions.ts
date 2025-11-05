@@ -4,13 +4,11 @@ import { getUserRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import {
   type PostProcessingMode,
-  type ProcessingMode,
+  type TranscriptionMode,
 } from "../types/ai.types";
 import {
   getMyEffectiveUserId,
   getMyUser,
-  getPostProcessingPreferenceFromState,
-  getTranscriptionPreferenceFromState,
   setCurrentUser
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
@@ -137,33 +135,13 @@ const persistAiPreferences = async (): Promise<void> => {
     return;
   }
 
-  const transcriptionPreference = getTranscriptionPreferenceFromState(state);
-  const postProcessingPreference = getPostProcessingPreferenceFromState(state);
-
-  const shouldUpdateTranscription =
-    transcriptionPreference !== null &&
-    (user.preferredTranscriptionMode !== transcriptionPreference.mode ||
-      user.preferredTranscriptionApiKeyId !== transcriptionPreference.apiKeyId);
-
-  const shouldUpdatePostProcessing =
-    postProcessingPreference !== null &&
-    (user.preferredPostProcessingMode !== postProcessingPreference.mode ||
-      user.preferredPostProcessingApiKeyId !== postProcessingPreference.apiKeyId);
-
-  if (!shouldUpdateTranscription && !shouldUpdatePostProcessing) {
-    return;
-  }
-
   await updateUser(
     (draft) => {
-      if (shouldUpdateTranscription && transcriptionPreference) {
-        draft.preferredTranscriptionMode = transcriptionPreference.mode;
-        draft.preferredTranscriptionApiKeyId = transcriptionPreference.apiKeyId;
-      }
-      if (shouldUpdatePostProcessing && postProcessingPreference) {
-        draft.preferredPostProcessingMode = postProcessingPreference.mode;
-        draft.preferredPostProcessingApiKeyId = postProcessingPreference.apiKeyId;
-      }
+      draft.preferredPostProcessingMode = state.settings.aiPostProcessing.mode;
+      draft.preferredPostProcessingApiKeyId = state.settings.aiPostProcessing.selectedApiKeyId;
+
+      draft.preferredTranscriptionMode = state.settings.aiTranscription.mode;
+      draft.preferredTranscriptionApiKeyId = state.settings.aiTranscription.selectedApiKeyId;
     },
     "Unable to update AI preferences. User not found.",
     "Failed to save AI preferences. Please try again.",
@@ -171,7 +149,7 @@ const persistAiPreferences = async (): Promise<void> => {
 };
 
 export const setPreferredTranscriptionMode = async (
-  mode: ProcessingMode,
+  mode: TranscriptionMode,
 ): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiTranscription.mode = mode;

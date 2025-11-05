@@ -19,16 +19,12 @@ import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import { OverlayPhase } from "../../types/overlay.types";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
-import {
-  transcribeAndPostProcessAudio,
-  TranscriptionError,
-  type TranscriptionMetadata,
-} from "../../utils/transcription.utils";
 import { getMyEffectiveUserId, getMyUser } from "../../utils/user.utils";
 import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
 } from "../../utils/window.utils";
+import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -110,11 +106,9 @@ export const RootSideEffects = () => {
     } catch (error) {
       console.error("Failed to transcribe or post-process audio", error);
       const message =
-        error instanceof TranscriptionError
+        error = error instanceof Error
           ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Unable to transcribe audio. Please try again.";
+          : "Unable to transcribe audio. Please try again.";
       if (message) {
         showErrorSnackbar(message);
       }

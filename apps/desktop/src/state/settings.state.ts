@@ -2,9 +2,9 @@ import {
   CPU_DEVICE_VALUE,
   DEFAULT_MODEL_SIZE,
   DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_PROCESSING_MODE,
+  DEFAULT_TRANSCRIPTION_MODE,
   type PostProcessingMode,
-  type ProcessingMode,
+  type TranscriptionMode,
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
 import { ApiKey, ApiKeyProvider } from "@repo/types";
@@ -14,7 +14,7 @@ export type SettingsApiKeyProvider = ApiKeyProvider;
 export type SettingsApiKey = ApiKey;
 
 export type SettingsTranscriptionState = {
-  mode: ProcessingMode;
+  mode: TranscriptionMode;
   modelSize: string;
   device: string;
   selectedApiKeyId: string | null;
@@ -56,7 +56,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiTranscriptionDialogOpen: false,
   aiPostProcessingDialogOpen: false,
   aiTranscription: {
-    mode: DEFAULT_PROCESSING_MODE,
+    mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,
     device: CPU_DEVICE_VALUE,
     selectedApiKeyId: null,
