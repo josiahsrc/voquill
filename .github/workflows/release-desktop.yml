@@ -75,8 +75,10 @@ jobs:
           SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
           INPUT_VERSION="${INPUT_VERSION:-}"
 
-          LAST_DEV_TAG="$(git tag --list 'desktop-dev-v*' --sort=-v:refname | head -n 1)"
-          LAST_PROD_TAG="$(git tag --list 'desktop-v*' --sort=-v:refname | head -n 1)"
+          mapfile -t DEV_TAGS < <(git tag --list 'desktop-dev-v*' --sort=-v:refname)
+          mapfile -t PROD_TAGS < <(git tag --list 'desktop-v*' --sort=-v:refname)
+          LAST_DEV_TAG="${DEV_TAGS[0]:-}"
+          LAST_PROD_TAG="${PROD_TAGS[0]:-}"
 
           if [[ "${RELEASE_ENV}" == "dev" ]]; then
             if [[ -n "${INPUT_VERSION}" ]]; then
@@ -145,14 +147,22 @@ jobs:
           RELEASE_NOTES_FROM_REF=""
           if [[ -n "${PREVIOUS_TAG}" ]]; then
             RELEASE_NOTES_FROM_REF="${PREVIOUS_TAG}"
-            FIRST_AFTER_PREVIOUS="$(git rev-list --ancestry-path --reverse "${PREVIOUS_TAG}..${COMMIT_SHA}" | head -n 1)"
+            mapfile -t COMMITS_AFTER_PREVIOUS < <(git rev-list --ancestry-path --reverse "${PREVIOUS_TAG}..${COMMIT_SHA}")
+            FIRST_AFTER_PREVIOUS="${COMMITS_AFTER_PREVIOUS[0]:-}"
             if [[ -n "${FIRST_AFTER_PREVIOUS}" ]]; then
               RELEASE_NOTES_FROM="${FIRST_AFTER_PREVIOUS}"
             else
               RELEASE_NOTES_FROM="${COMMIT_SHA}"
             fi
           else
-            RELEASE_NOTES_FROM="$(git rev-list --max-parents=0 "${COMMIT_SHA}" | tail -n 1)"
+            mapfile -t ROOT_COMMITS < <(git rev-list --max-parents=0 "${COMMIT_SHA}")
+            ROOT_COUNT=${#ROOT_COMMITS[@]}
+            if (( ROOT_COUNT > 0 )); then
+              ROOT_INDEX=$((ROOT_COUNT - 1))
+              RELEASE_NOTES_FROM="${ROOT_COMMITS[ROOT_INDEX]}"
+            else
+              RELEASE_NOTES_FROM="${COMMIT_SHA}"
+            fi
           fi
           RELEASE_NOTES_TO="${COMMIT_SHA}"
 
