@@ -13,7 +13,7 @@ jobs:
   deploy:
     name: Build and deploy web app
     runs-on: ubuntu-latest
-    environment: production
+    environment: web
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
