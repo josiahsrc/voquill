@@ -11,13 +11,15 @@ import {
   PaymentOutlined,
   PersonRemoveOutlined,
   PrivacyTipOutlined,
+  RocketLaunchOutlined,
   VolumeUpOutlined,
 } from "@mui/icons-material";
-import { Stack, Typography } from "@mui/material";
+import { Stack, Switch, Typography } from "@mui/material";
 import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { getAuthRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { getIsPaying } from "../../utils/member.utils";
@@ -32,6 +34,11 @@ export default function SettingsPage() {
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
+  const [autoLaunchEnabled, autoLaunchStatus] = useAppStore((state) => [
+    state.settings.autoLaunchEnabled,
+    state.settings.autoLaunchStatus,
+  ]);
+  const autoLaunchLoading = autoLaunchStatus === "loading";
 
   const openChangePasswordDialog = () => {
     produceAppState((state) => {
@@ -81,6 +88,11 @@ export default function SettingsPage() {
     });
   };
 
+  const handleToggleAutoLaunch = (event: ChangeEvent<HTMLInputElement>) => {
+    const enabled = event.target.checked;
+    void setAutoLaunchEnabled(enabled);
+  };
+
   const handleManageSubscription = async () => {
     setManageSubscriptionLoading(true);
     try {
@@ -102,6 +114,18 @@ export default function SettingsPage() {
 
   const general = (
     <Section title="General">
+      <ListTile
+        title="Start on system startup"
+        leading={<RocketLaunchOutlined />}
+        trailing={
+          <Switch
+            edge="end"
+            checked={autoLaunchEnabled}
+            disabled={autoLaunchLoading}
+            onChange={handleToggleAutoLaunch}
+          />
+        }
+      />
       <ListTile
         title="Microphone"
         leading={<MicOutlined />}

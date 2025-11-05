@@ -1,10 +1,16 @@
 use sqlx::sqlite::SqlitePoolOptions;
 use tauri::{Manager, WindowEvent};
 
+const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
+
 pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![AUTOSTART_HIDDEN_ARG.into()]),
+        ))
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_sql::Builder::new()
@@ -39,6 +45,12 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             #[cfg(desktop)]
             {
+                if std::env::args().any(|arg| arg == AUTOSTART_HIDDEN_ARG) {
+                    if let Some(main_window) = app.get_webview_window("main") {
+                        let _ = main_window.hide();
+                    }
+                }
+
                 crate::system::tray::setup_tray(app)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
