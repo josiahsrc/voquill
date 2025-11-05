@@ -3,7 +3,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 ENVIRONMENT=${1:-"dev"}
 echo "Deploying to environment: $ENVIRONMENT"
@@ -27,5 +26,3 @@ fi
 
 echo "Deploying from pruned workspace at $PRUNED_FIREBASE_DIR"
 (cd "$PRUNED_FIREBASE_DIR" && firebase deploy --only functions,firestore,storage --project "$ENVIRONMENT")
-
-"$REPO_ROOT/party.sh" "Deployment complete"
