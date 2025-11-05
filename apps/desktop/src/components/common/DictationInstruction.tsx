@@ -1,7 +1,10 @@
 import { Fragment } from "react";
 import { Typography } from "@mui/material";
 import { useAppStore } from "../../store";
-import { DICTATE_HOTKEY, getHotkeyCombosForAction } from "../../utils/keyboard.utils";
+import {
+  DICTATE_HOTKEY,
+  getHotkeyCombosForAction,
+} from "../../utils/keyboard.utils";
 import { HotkeyBadge } from "./HotkeyBadge";
 
 export const DictationInstruction = () => {
@@ -14,7 +17,7 @@ export const DictationInstruction = () => {
   }
 
   return (
-    <Typography variant="body2" color="text.secondary">
+    <Typography variant="body2" color="text.secondary" component="div">
       Press {combos.length > 1 ? "one of " : ""}
       {combos.map((combo, index) => {
         const key = combo.join("|");

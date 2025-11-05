@@ -1,6 +1,6 @@
 import { firemix } from "@firemix/client";
 import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
-import { countWords } from "@repo/utilities";
+import { countWords, delayed } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
@@ -52,11 +52,15 @@ export const RootSideEffects = () => {
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
+  const userId = getAppState().auth?.uid;
 
   useAsyncEffect(async () => {
+    // TODO: Figure out why terms don't load if this isn't delayed
+    await delayed(200);
+
     const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary()];
     await Promise.allSettled(loaders);
-  }, []);
+  }, [userId]);
 
   useAsyncEffect(async () => {
     if (consumeSurfaceWindowFlag()) {

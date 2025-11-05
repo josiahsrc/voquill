@@ -12,6 +12,7 @@ export const loadDictionary = async (): Promise<void> => {
 
   const activeTerms = terms
     .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+  console.log("activeTerms", activeTerms);
 
   produceAppState((draft) => {
     registerTerms(draft, terms);

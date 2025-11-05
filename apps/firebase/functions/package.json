@@ -23,7 +23,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@firemix/mixed": "^0.1.3",
+    "@firemix/mixed": "^0.1.7",
     "@repo/firemix": "*",
     "@repo/functions": "*",
     "@repo/pricing": "*",

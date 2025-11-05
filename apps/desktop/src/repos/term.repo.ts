@@ -74,9 +74,9 @@ export class CloudTermRepo extends BaseTermRepo {
   }
 
   async createTerm(userId: string, term: Term): Promise<Term> {
-    await firemix().merge(mixpath.terms(term.id), {
+    await firemix().merge(mixpath.terms(userId), {
       id: userId,
-      termIds: firemix().arrayUnion([term.id]),
+      termIds: firemix().arrayUnion(term.id),
       termById: {
         [term.id]: term,
       },
@@ -95,7 +95,7 @@ export class CloudTermRepo extends BaseTermRepo {
 
   async deleteTerm(userId: string, termId: string): Promise<void> {
     await firemix().merge(mixpath.terms(userId), {
-      termIds: firemix().arrayRemove([termId]),
+      termIds: firemix().arrayRemove(termId),
       termById: {
         [termId]: firemix().deleteField(),
       },
