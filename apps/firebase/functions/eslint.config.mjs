@@ -4,6 +4,6 @@ import { config as baseConfig } from "@repo/eslint-config/base";
 export default [
   ...baseConfig,
   {
-    ignores: ["lib/**", "assets/**", "node_modules/**"]
+    ignores: ["lib/**", "assets/**", "node_modules/**", ".repo-packages/**"]
   }
 ];

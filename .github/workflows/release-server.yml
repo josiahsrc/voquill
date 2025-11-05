@@ -122,5 +122,5 @@ jobs:
             exit 1
           fi
 
-          echo "Deploying Firebase backend to '${DEPLOY_ENV}' (${FIREBASE_PROJECT_ID})..."
-          npx firebase-tools@latest deploy --only functions,firestore,storage --project "${FIREBASE_PROJECT_ID}" --non-interactive --force
+          echo "Deploying Firebase backend to '${DEPLOY_ENV}' (${FIREBASE_PROJECT_ID}) using deploy.sh..."
+          ./deploy.sh "${DEPLOY_ENV}"
