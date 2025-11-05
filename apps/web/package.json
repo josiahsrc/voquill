@@ -11,7 +11,6 @@
     "check-types": "astro check --typescript"
   },
   "dependencies": {
-    "@astrojs/netlify": "^6.6.0",
     "@astrojs/react": "^4.4.0",
     "marked": "^16.4.0",
     "react": "^19.1.0",
