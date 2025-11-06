@@ -3,7 +3,7 @@ import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
-import { getMyMember } from "./member.utils";
+import { getMemberExceedsLimitsFromState, getMyMember } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
 
@@ -87,11 +87,16 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const config = state.settings.aiTranscription;
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const cloudAvailable = getHasCloudAccess(state);
+  const exceedsLimits = getMemberExceedsLimitsFromState(state);
   const warnings: string[] = [];
 
   if (config.mode === "cloud") {
     if (cloudAvailable) {
-      return { mode: "cloud", warnings };
+      if (exceedsLimits) {
+        warnings.push("Cloud limit exceeded.");
+      } else {
+        return { mode: "cloud", warnings };
+      }
     } else {
       warnings.push("Cloud post-processing is not available. Please check your subscription.");
     }
@@ -134,12 +139,17 @@ export type GenerativePrefs =
 export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
   const config = state.settings.aiPostProcessing;
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
+  const exceedsLimits = getMemberExceedsLimitsFromState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
 
   if (config.mode === "cloud") {
     if (cloudAvailable) {
-      return { mode: "cloud", warnings };
+      if (exceedsLimits) {
+        warnings.push("Cloud limit exceeded.");
+      } else {
+        return { mode: "cloud", warnings };
+      }
     } else {
       warnings.push("Cloud post-processing is not available. Please check your subscription.");
     }
