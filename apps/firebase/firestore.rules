@@ -6,16 +6,23 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isPaid() {
+      let member = get(/databases/$(database)/documents/members/$(request.auth.uid)).data;
+      return member != null && member.plan != 'free';
+    }
+
     match /members/{userId} {
       allow get: if hasAuth() && request.auth.uid == userId;
     }
 
     match /terms/{userId} {
-      allow get, write: if hasAuth() && request.auth.uid == userId;
+      allow get: if hasAuth() && request.auth.uid == userId;
+      allow write: if hasAuth() && request.auth.uid == userId && isPaid();
     }
 
     match /users/{userId} {
-      allow get, write: if hasAuth() && request.auth.uid == userId;
+      allow get: if hasAuth() && request.auth.uid == userId;
+      allow write: if hasAuth() && request.auth.uid == userId && isPaid();
     }
 
     match /system/config {
