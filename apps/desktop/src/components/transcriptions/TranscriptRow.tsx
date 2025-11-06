@@ -4,24 +4,13 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import {
-  Button,
-  Box,
-  Divider,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { getRec } from "@repo/utilities";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { openTranscriptionDetailsDialog } from "../../actions/transcriptions.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { TypographyWithMore } from "../common/TypographyWithMore";
@@ -40,15 +29,6 @@ const formatDuration = (durationMs?: number | null): string => {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-};
-
-const formatModelSizeLabel = (modelSize?: string | null): string => {
-  const value = modelSize?.trim();
-  if (!value) {
-    return "Unknown";
-  }
-
-  return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
 const createSeededRandom = (seed: number) => {
@@ -104,98 +84,12 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const transcription = useAppStore((state) =>
     getRec(state.transcriptionById, id)
   );
-  const apiKeysById = useAppStore((state) => state.apiKeyById);
-
-  const resolveApiKeyLabel = useCallback(
-    (apiKeyId?: string | null) => {
-      if (!apiKeyId) {
-        return "None";
-      }
-
-      const record = apiKeysById[apiKeyId];
-      if (!record) {
-        return "Unknown";
-      }
-
-      const suffix = record.keySuffix?.trim();
-      if (suffix && suffix.length > 0) {
-        return `${record.name} (••••${suffix})`;
-      }
-
-      return record.name;
-    },
-    [apiKeysById]
-  );
 
   const hasMetadata = useMemo(() => {
     const model = transcription?.modelSize?.trim();
     const device = transcription?.inferenceDevice?.trim();
     return Boolean(model || device);
   }, [transcription?.inferenceDevice, transcription?.modelSize]);
-
-  const modelSizeLabel = useMemo(
-    () => formatModelSizeLabel(transcription?.modelSize ?? null),
-    [transcription?.modelSize]
-  );
-  const deviceLabel = useMemo(() => {
-    const value = transcription?.inferenceDevice?.trim();
-    return value && value.length > 0 ? value : "Unknown";
-  }, [transcription?.inferenceDevice]);
-
-  const transcriptionModeLabel = useMemo(() => {
-    if (transcription?.transcriptionMode === "api") {
-      return "API";
-    }
-    if (transcription?.transcriptionMode === "cloud") {
-      return "Voquill Cloud";
-    }
-    if (transcription?.transcriptionMode === "local") {
-      return "Local";
-    }
-    return "Unknown";
-  }, [transcription?.transcriptionMode]);
-
-  const transcriptionApiKeyLabel = useMemo(
-    () => resolveApiKeyLabel(transcription?.transcriptionApiKeyId),
-    [resolveApiKeyLabel, transcription?.transcriptionApiKeyId]
-  );
-
-  const postProcessModeLabel = useMemo(() => {
-    if (transcription?.postProcessMode === "api") {
-      return "API";
-    }
-    if (transcription?.postProcessMode === "cloud") {
-      return "Voquill Cloud";
-    }
-    return "Disabled";
-  }, [transcription?.postProcessDevice, transcription?.postProcessMode]);
-
-  const postProcessDeviceLabel = useMemo(() => {
-    const value = transcription?.postProcessDevice?.trim();
-    return value && value.length > 0 ? value : "Unknown";
-  }, [transcription?.postProcessDevice]);
-
-  const postProcessApiKeyLabel = useMemo(
-    () => resolveApiKeyLabel(transcription?.postProcessApiKeyId),
-    [resolveApiKeyLabel, transcription?.postProcessApiKeyId]
-  );
-
-  const transcriptionPrompt = useMemo(() => {
-    const prompt = transcription?.transcriptionPrompt?.trim();
-    return prompt && prompt.length > 0 ? prompt : null;
-  }, [transcription?.transcriptionPrompt]);
-
-  const postProcessPrompt = useMemo(() => {
-    const prompt = transcription?.postProcessPrompt?.trim();
-    return prompt && prompt.length > 0 ? prompt : null;
-  }, [transcription?.postProcessPrompt]);
-
-  const rawTranscriptText = useMemo(
-    () => transcription?.rawTranscript ?? transcription?.transcript ?? "",
-    [transcription?.rawTranscript, transcription?.transcript]
-  );
-
-  const finalTranscriptText = transcription?.transcript ?? "";
 
   const audioSnapshot = transcription?.audio;
   const audioSrc = useMemo(() => {
@@ -218,59 +112,9 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [waveformWidth, setWaveformWidth] = useState(0);
   const waveformContainerRef = useRef<HTMLDivElement | null>(null);
-  const [isDetailsDialogOpen, setDetailsDialogOpen] = useState(false);
-
   const handleDetailsOpen = useCallback(() => {
-    setDetailsDialogOpen(true);
-  }, []);
-
-  const handleDetailsClose = useCallback(() => {
-    setDetailsDialogOpen(false);
-  }, []);
-
-  const renderTextBlock = (
-    label: string,
-    value: string | null | undefined,
-    options?: { placeholder?: string; monospace?: boolean }
-  ) => {
-    const normalized = value?.trim();
-
-    return (
-      <Box>
-        <Typography variant="caption" color="text.secondary">
-          {label}
-        </Typography>
-        {normalized ? (
-          <Box
-            sx={(theme) => ({
-              mt: 0.5,
-              p: 1,
-              borderRadius: 1,
-              bgcolor:
-                theme.vars?.palette.level1 ?? theme.palette.background.default,
-            })}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                fontFamily: options?.monospace
-                  ? '"Roboto Mono", monospace'
-                  : undefined,
-              }}
-            >
-              {normalized}
-            </Typography>
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            {options?.placeholder ?? "Not provided."}
-          </Typography>
-        )}
-      </Box>
-    );
-  };
+    openTranscriptionDetailsDialog(id);
+  }, [id]);
 
   const desiredWaveformBarCount = useMemo(() => {
     if (waveformWidth <= 0) {
@@ -558,126 +402,6 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           </Tooltip>
         </Stack>
       </Stack>
-      <Dialog
-        open={isDetailsDialogOpen}
-        onClose={handleDetailsClose}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Transcription Details</DialogTitle>
-        <DialogContent dividers>
-          {transcription ? (
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="overline" color="text.secondary">
-                  Transcription Step
-                </Typography>
-                <Stack spacing={1.25} sx={{ mt: 1 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Mode
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {transcriptionModeLabel}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Device
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {deviceLabel}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Model Size
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {modelSizeLabel}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      API Key
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {transcriptionApiKeyLabel}
-                    </Typography>
-                  </Box>
-                  {renderTextBlock("Prompt", transcriptionPrompt, {
-                    placeholder: "No custom prompt applied.",
-                    monospace: true,
-                  })}
-                </Stack>
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Typography variant="overline" color="text.secondary">
-                  Post-processing Step
-                </Typography>
-                <Stack spacing={1.25} sx={{ mt: 1 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Mode
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {postProcessModeLabel}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Processor
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {postProcessDeviceLabel}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      API Key
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {postProcessApiKeyLabel}
-                    </Typography>
-                  </Box>
-                  {renderTextBlock("Prompt", postProcessPrompt, {
-                    placeholder: "No LLM post-processing was applied.",
-                    monospace: true,
-                  })}
-                </Stack>
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Typography variant="overline" color="text.secondary">
-                  Outputs
-                </Typography>
-                <Stack spacing={1.25} sx={{ mt: 1 }}>
-                  {renderTextBlock("Raw transcription", rawTranscriptText, {
-                    placeholder: "Raw transcript unavailable.",
-                    monospace: true,
-                  })}
-                  {renderTextBlock("Final transcription", finalTranscriptText, {
-                    placeholder: "Final transcript unavailable.",
-                    monospace: true,
-                  })}
-                </Stack>
-              </Box>
-            </Stack>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Metadata unavailable for this transcription.
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDetailsClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
       <TypographyWithMore
         variant="body2"
         color="text.primary"
