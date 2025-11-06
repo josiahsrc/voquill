@@ -32,6 +32,8 @@ pub const TRANSCRIPTION_PROCESSING_METADATA_MIGRATION_SQL: &str =
 pub const USER_WORD_STATS_MIGRATION_SQL: &str = include_str!("migrations/014_user_word_stats.sql");
 pub const USER_PREFERENCES_MIGRATION_SQL: &str =
     include_str!("migrations/015_user_preferences.sql");
+pub const TRANSCRIPTION_WARNINGS_MIGRATION_SQL: &str =
+    include_str!("migrations/016_transcription_warnings.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -129,6 +131,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 16,
             description: "create_user_preferences",
             sql: USER_PREFERENCES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 17,
+            description: "add_transcription_warnings",
+            sql: TRANSCRIPTION_WARNINGS_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

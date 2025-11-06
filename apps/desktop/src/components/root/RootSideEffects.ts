@@ -119,12 +119,6 @@ export const RootSideEffects = () => {
       return null;
     }
 
-    if (warnings.length > 0) {
-      for (const warning of warnings) {
-        showErrorSnackbar(warning);
-      }
-    }
-
     const state = getAppState();
 
     const transcriptionId = crypto.randomUUID();
@@ -157,6 +151,7 @@ export const RootSideEffects = () => {
       transcriptionMode: metadata?.transcriptionMode ?? null,
       postProcessMode: metadata?.postProcessMode ?? null,
       postProcessDevice: metadata?.postProcessDevice ?? null,
+      warnings: warnings.length > 0 ? warnings : null,
     };
 
     let storedTranscription: Transcription;

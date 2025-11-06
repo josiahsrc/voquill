@@ -22,6 +22,7 @@ type LocalTranscription = {
   transcriptionMode?: "local" | "api" | "cloud" | null;
   postProcessMode?: "none" | "api" | "cloud" | null;
   postProcessDevice?: string | null;
+  warnings?: string[] | null;
 };
 
 export type TranscriptionAudioData = {
@@ -56,6 +57,7 @@ const toLocalTranscription = (
   transcriptionMode: transcription.transcriptionMode ?? null,
   postProcessMode: transcription.postProcessMode ?? null,
   postProcessDevice: transcription.postProcessDevice ?? null,
+  warnings: transcription.warnings ?? null,
 });
 
 const fromLocalTranscription = (
@@ -82,6 +84,7 @@ const fromLocalTranscription = (
   transcriptionMode: transcription.transcriptionMode ?? undefined,
   postProcessMode: transcription.postProcessMode ?? undefined,
   postProcessDevice: transcription.postProcessDevice ?? undefined,
+  warnings: transcription.warnings ?? undefined,
 });
 
 export abstract class BaseTranscriptionRepo extends BaseRepo {

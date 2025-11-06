@@ -26,3 +26,16 @@ export function chunkify<T>(values: T[], size: number): T[][] {
   }
   return chunks;
 }
+
+export function dedup<T>(values: T[]): T[] {
+  const seen = new Set<T>();
+  const deduped: T[] = [];
+  for (const value of values) {
+    if (!seen.has(value)) {
+      seen.add(value);
+      deduped.push(value);
+    }
+  }
+
+  return deduped;
+}

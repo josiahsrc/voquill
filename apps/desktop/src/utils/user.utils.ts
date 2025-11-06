@@ -93,12 +93,12 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   if (config.mode === "cloud") {
     if (cloudAvailable) {
       if (exceedsLimits) {
-        warnings.push("Cloud limit exceeded.");
+        warnings.push("Cloud transcription limit exceeded.");
       } else {
         return { mode: "cloud", warnings };
       }
     } else {
-      warnings.push("Cloud post-processing is not available. Please check your subscription.");
+      warnings.push("Cloud transcription is not available. Please check your subscription.");
     }
   }
 
@@ -106,7 +106,7 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
     if (apiKey) {
       return { mode: "api", apiKeyId: config.selectedApiKeyId!, apiKeyValue: apiKey, warnings };
     } else {
-      warnings.push("No API key configured for API post-processing.");
+      warnings.push("No API key configured for API transcription.");
     }
   }
 
@@ -146,7 +146,7 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
   if (config.mode === "cloud") {
     if (cloudAvailable) {
       if (exceedsLimits) {
-        warnings.push("Cloud limit exceeded.");
+        warnings.push("Cloud post-processing limit exceeded.");
       } else {
         return { mode: "cloud", warnings };
       }

@@ -17,6 +17,7 @@ export type Transcription = {
   transcriptionMode?: "local" | "api" | "cloud" | null;
   postProcessMode?: "none" | "api" | "cloud" | null;
   postProcessDevice?: string | null;
+  warnings?: string[] | null;
 };
 
 export type TranscriptionAudioSnapshot = {

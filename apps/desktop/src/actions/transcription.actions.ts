@@ -1,3 +1,4 @@
+import { dedup } from "@repo/utilities";
 import { getGenerateTextRepo, getTranscribeAudioRepo } from "../repos";
 import { getAppState } from "../store";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
@@ -38,13 +39,14 @@ export const transcribeAndPostProcessAudio = async ({
   const metadata: TranscriptionMetadata = {};
   const warnings: string[] = [];
 
-  const transcriptionPrompt = buildGlossaryPromptFromEntries(collectDictionaryEntries(state));
   const { repo: transcribeRepo, apiKeyId: transcriptionApiKeyId, warnings: transcribeWarnings } = getTranscribeAudioRepo();
+  warnings.push(...transcribeWarnings);
 
   const { repo: genRepo, apiKeyId: genApiKeyId, warnings: genWarnings } = getGenerateTextRepo();
   warnings.push(...genWarnings);
 
   // transcribe the audio
+  const transcriptionPrompt = buildGlossaryPromptFromEntries(collectDictionaryEntries(state));
   const transcribeOutput = await transcribeRepo.transcribeAudio({
     samples,
     sampleRate,
@@ -57,7 +59,6 @@ export const transcribeAndPostProcessAudio = async ({
   metadata.transcriptionPrompt = transcriptionPrompt || null;
   metadata.transcriptionApiKeyId = transcriptionApiKeyId;
   metadata.transcriptionMode = transcribeOutput.metadata?.transcriptionMode || null;
-  warnings.push(...transcribeWarnings);
 
   // post-process the transcription
   let processedTranscript = rawTranscript;
@@ -83,7 +84,7 @@ export const transcribeAndPostProcessAudio = async ({
   return {
     transcript: processedTranscript,
     rawTranscript: rawTranscript,
-    warnings,
+    warnings: dedup(warnings),
     metadata,
   };
 };

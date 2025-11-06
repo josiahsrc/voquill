@@ -313,12 +313,6 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         sampleRate: audioData.sampleRate,
       });
 
-      if (warnings.length > 0) {
-        for (const warning of warnings) {
-          showErrorSnackbar(warning);
-        }
-      }
-
       if (!finalTranscript) {
         showErrorSnackbar("Retranscription produced no text.");
         return;
@@ -337,6 +331,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         transcriptionMode: metadata?.transcriptionMode ?? null,
         postProcessMode: metadata?.postProcessMode ?? null,
         postProcessDevice: metadata?.postProcessDevice ?? null,
+        warnings: warnings.length > 0 ? warnings : null,
       };
 
       const updated = await repo.updateTranscription(updatedPayload);

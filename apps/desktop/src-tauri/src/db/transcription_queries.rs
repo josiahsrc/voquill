@@ -2,14 +2,28 @@ use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
 
 use crate::domain::{Transcription, TranscriptionAudioSnapshot};
 
+fn serialize_warnings(warnings: &Option<Vec<String>>) -> Option<String> {
+    warnings
+        .as_ref()
+        .and_then(|list| serde_json::to_string(list).ok())
+}
+
 fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
     let audio_path: Option<String> = row.try_get("audio_path")?;
     let audio_duration: Option<i64> = row.try_get("audio_duration_ms")?;
+    let warnings_json: Option<String> = row.try_get("warnings_json")?;
 
     let audio = audio_path.map(|file_path| TranscriptionAudioSnapshot {
         file_path,
         duration_ms: audio_duration.unwrap_or_default(),
     });
+    let warnings = match warnings_json {
+        Some(json) => match serde_json::from_str::<Vec<String>>(&json) {
+            Ok(parsed) => Some(parsed),
+            Err(_) => None,
+        },
+        None => None,
+    };
 
     Ok(Transcription {
         id: row.get::<String, _>("id"),
@@ -26,6 +40,7 @@ fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
         transcription_mode: row.try_get::<Option<String>, _>("transcription_mode")?,
         post_process_mode: row.try_get::<Option<String>, _>("post_process_mode")?,
         post_process_device: row.try_get::<Option<String>, _>("post_process_device")?,
+        warnings,
     })
 }
 
@@ -49,9 +64,10 @@ pub async fn insert_transcription(
              post_process_api_key_id,
              transcription_mode,
              post_process_mode,
-             post_process_device
+             post_process_device,
+             warnings_json
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
     )
     .bind(&transcription.id)
     .bind(&transcription.transcript)
@@ -73,6 +89,7 @@ pub async fn insert_transcription(
     .bind(transcription.transcription_mode.as_deref())
     .bind(transcription.post_process_mode.as_deref())
     .bind(transcription.post_process_device.as_deref())
+    .bind(serialize_warnings(&transcription.warnings))
     .execute(&pool)
     .await?;
 
@@ -99,7 +116,8 @@ pub async fn fetch_transcriptions(
                 post_process_api_key_id,
                 transcription_mode,
                 post_process_mode,
-                post_process_device
+                post_process_device,
+                warnings_json
          FROM transcriptions
          ORDER BY timestamp DESC
          LIMIT ?1 OFFSET ?2",
@@ -137,7 +155,8 @@ pub async fn update_transcription(
              post_process_api_key_id = ?12,
              transcription_mode = ?13,
              post_process_mode = ?14,
-             post_process_device = ?15
+             post_process_device = ?15,
+             warnings_json = ?16
          WHERE id = ?1",
     )
     .bind(&transcription.id)
@@ -160,6 +179,7 @@ pub async fn update_transcription(
     .bind(transcription.transcription_mode.as_deref())
     .bind(transcription.post_process_mode.as_deref())
     .bind(transcription.post_process_device.as_deref())
+    .bind(serialize_warnings(&transcription.warnings))
     .execute(&pool)
     .await?;
 
@@ -178,7 +198,8 @@ pub async fn update_transcription(
                 post_process_api_key_id,
                 transcription_mode,
                 post_process_mode,
-                post_process_device
+                post_process_device,
+                warnings_json
          FROM transcriptions
          WHERE id = ?1",
     )

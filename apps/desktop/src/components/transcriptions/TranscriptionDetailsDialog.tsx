@@ -162,6 +162,14 @@ export const TranscriptionDetailsDialog = () => {
   );
 
   const finalTranscriptText = transcription?.transcript ?? "";
+  const warnings = useMemo(() => {
+    if (!transcription?.warnings) {
+      return [];
+    }
+    return transcription.warnings
+      .map((warning) => warning.trim())
+      .filter((warning) => warning.length > 0);
+  }, [transcription?.warnings]);
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -266,6 +274,44 @@ export const TranscriptionDetailsDialog = () => {
                   placeholder: "Final transcript unavailable.",
                   monospace: true,
                 })}
+              </Stack>
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="overline" color="text.secondary">
+                Warnings
+              </Typography>
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                {warnings.length > 0 ? (
+                  warnings.map((warning, index) => (
+                    <Box
+                      key={`warning-${index}`}
+                      sx={(theme) => ({
+                        p: 1,
+                        borderRadius: 1,
+                        bgcolor:
+                          theme.vars?.palette.level1 ?? theme.palette.background.default,
+                      })}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={(theme) => ({
+                          color:
+                            theme.vars?.palette.warning?.main ??
+                            theme.palette.warning.main,
+                        })}
+                      >
+                        {warning}
+                      </Typography>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No warnings recorded for this transcription.
+                  </Typography>
+                )}
               </Stack>
             </Box>
           </Stack>
