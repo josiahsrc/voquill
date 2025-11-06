@@ -1,4 +1,11 @@
-import { HandlerInput, HandlerName } from "@repo/functions";
+import {
+  HandlerName,
+  AiGenerateTextInputZod,
+  AiTranscribeAudioInputZod,
+  EmptyObjectZod,
+  StripeCreateCheckoutSessionInputZod,
+  StripeGetPricesInputZod,
+} from "@repo/functions";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
@@ -26,6 +33,7 @@ import {
 } from "./utils/env.utils";
 import { NotFoundError, wrapAsync } from "./utils/error.utils";
 import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
+import { validateData } from "./utils/zod.utils";
 
 // Emulators default to appspot.com for the storage bucket. If we
 // try to change that, we get cors errors on the frontend.
@@ -83,45 +91,51 @@ export const handler = onCall(
         data = await createCheckoutSession({
           auth,
           origin: req.rawRequest.get("origin") ?? "",
-          input: args as HandlerInput<"stripe/createCheckoutSession">,
+          input: validateData(StripeCreateCheckoutSessionInputZod, args),
         });
       } else if (name === "member/tryInitialize") {
         data = await handleTryInitializeMember({
           auth,
-          input: args as HandlerInput<"member/tryInitialize">,
+          input: validateData(EmptyObjectZod, args ?? {}),
         });
       } else if (name === "stripe/getPrices") {
         data = await handleGetPrices({
-          input: args as HandlerInput<"stripe/getPrices">,
+          input: validateData(StripeGetPricesInputZod, args),
         });
       } else if (name === "stripe/createCustomerPortalSession") {
+        validateData(EmptyObjectZod, args ?? {});
         data = await createCustomerPortalSession({
           auth,
           origin: req.rawRequest.get("origin") ?? "",
         });
       } else if (name === "auth/deleteMyAccount") {
+        validateData(EmptyObjectZod, args ?? {});
         data = await enqueueAccountDeletion({
           auth,
         });
       } else if (name === "auth/cancelAccountDeletion") {
+        validateData(EmptyObjectZod, args ?? {});
         data = await cancelAccountDeletion({
           auth,
         });
       } else if (name === "emulator/resetWordsToday") {
+        validateData(EmptyObjectZod, args ?? {});
         data = await handleResetLimitsToday();
       } else if (name === "emulator/resetWordsThisMonth") {
+        validateData(EmptyObjectZod, args ?? {});
         data = await handleResetLimitsThisMonth();
       } else if (name === "emulator/processDelayedActions") {
+        validateData(EmptyObjectZod, args ?? {});
         data = await processDelayedActions();
       } else if (name === "ai/transcribeAudio") {
         data = await runTranscribeAudio({
           auth,
-          input: args as HandlerInput<"ai/transcribeAudio">,
+          input: validateData(AiTranscribeAudioInputZod, args),
         });
       } else if (name === "ai/generateText") {
         data = await runGenerateText({
           auth,
-          input: args as HandlerInput<"ai/generateText">,
+          input: validateData(AiGenerateTextInputZod, args),
         });
       } else {
         throw new NotFoundError(`unknown handler: ${name}`);

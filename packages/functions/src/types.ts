@@ -1,4 +1,5 @@
 import type { EmptyObject, JsonResponse, Nullable } from "@repo/types";
+import { z } from "zod";
 
 type HandlerDefinitions = {
   // emulator
@@ -97,3 +98,45 @@ export type HandlerOutput<N extends HandlerName> =
 export const HANDLER_NAMES: string[] = Object.keys(
   {} as HandlerDefinitions
 ) as Array<HandlerName>;
+
+export const EmptyObjectZod = z.object({}).strict();
+
+export const JsonResponseZod = z
+  .object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    schema: z.record(z.unknown()),
+  })
+  .strict() satisfies z.ZodType<JsonResponse>;
+
+export const AiTranscribeAudioInputZod = z
+  .object({
+    prompt: z.string().nullable().optional(),
+    audioBase64: z.string().min(1),
+    audioMimeType: z.string().min(1),
+    simulate: z.boolean().nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"ai/transcribeAudio">>;
+
+export const AiGenerateTextInputZod = z
+  .object({
+    system: z.string().nullable().optional(),
+    prompt: z.string().min(1),
+    simulate: z.boolean().nullable().optional(),
+    jsonResponse: JsonResponseZod.optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"ai/generateText">>;
+
+export const StripeCreateCheckoutSessionInputZod = z
+  .object({
+    priceId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<
+    HandlerInput<"stripe/createCheckoutSession">
+  >;
+
+export const StripeGetPricesInputZod = z
+  .object({
+    priceIds: z.array(z.string().min(1)),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"stripe/getPrices">>;
