@@ -1,6 +1,6 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
-import { FullConfig, MemberPlan } from "@repo/types";
+import { FullConfig } from "@repo/types";
 import { getFullConfig } from "@repo/utilities";
 
 export const loadFullConfig = async (): Promise<FullConfig> => {
