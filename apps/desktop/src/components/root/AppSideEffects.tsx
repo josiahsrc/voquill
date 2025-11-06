@@ -98,5 +98,16 @@ export const AppSideEffects = () => {
     },
   });
 
+  // Hotkey to open settings (Cmd+, on macOS)
+  useKeyDownHandler({
+    keys: [","],
+    meta: true,
+    callback: () => {
+      if (window.location.pathname !== "/dashboard/settings") {
+        window.location.href = "/dashboard/settings";
+      }
+    },
+  });
+
   return null;
 };
