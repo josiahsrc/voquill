@@ -1,4 +1,8 @@
-import { HandlerInput, HandlerOutput } from "@repo/functions";
+import {
+  AI_MAX_AUDIO_DURATION_SECONDS,
+  HandlerInput,
+  HandlerOutput,
+} from "@repo/functions";
 import { Nullable } from "@repo/types";
 import { countWords } from "@repo/utilities/src/string";
 import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
@@ -6,6 +10,7 @@ import { AuthData } from "firebase-functions/tasks";
 import { getGroqApiKey } from "../utils/env.utils";
 import { UnauthenticatedError } from "../utils/error.utils";
 import {
+  ensureAudioDurationWithinLimit,
   incrementTokenCount,
   incrementWordCount,
   validateAudioInput,
@@ -27,6 +32,12 @@ export const runTranscribeAudio = async ({
   const { ext } = validateAudioInput({ audioMimeType: input.audioMimeType });
   await validateMemberWithinLimits({ auth });
 
+  const blob = Buffer.from(input.audioBase64, "base64");
+  const durationSeconds = ensureAudioDurationWithinLimit({
+    audioBuffer: blob,
+    maxDurationSeconds: AI_MAX_AUDIO_DURATION_SECONDS,
+  });
+
   let transcript: string;
   let wordsUsed: number;
   if (input.simulate) {
@@ -34,9 +45,16 @@ export const runTranscribeAudio = async ({
     transcript = "Simulated response";
     wordsUsed = countWords(transcript);
   } else {
-    const blob = Buffer.from(input.audioBase64, "base64");
     const mb = blob.length / (1024 * 1024);
-    console.log("Processing", mb.toFixed(2), "MB of", ext, "audio");
+    console.log(
+      "Processing",
+      mb.toFixed(2),
+      "MB of",
+      ext,
+      "audio lasting",
+      durationSeconds.toFixed(2),
+      "seconds"
+    );
     ({ text: transcript, wordsUsed } = await groqTranscribeAudio({
       apiKey: getGroqApiKey(),
       blob,

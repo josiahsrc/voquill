@@ -4,6 +4,7 @@ import { invokeHandler } from "@repo/functions";
 import { mixpath } from "@repo/firemix";
 import { retry } from "@repo/utilities";
 import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import { buildSilenceWavBase64 } from "../helpers/audio";
 import { setUp, tearDown } from "../helpers/setup";
 
 beforeAll(setUp);
@@ -19,6 +20,9 @@ const config = {
   proTokensPerDay: 20_000,
   proTokensPerMonth: 200_000,
 };
+
+const SHORT_AUDIO_BASE64 = buildSilenceWavBase64(5, 8_000);
+const LONG_AUDIO_BASE64 = buildSilenceWavBase64(301, 16_000);
 
 const createMember = async () => {
   const creds = await createUserCreds();
@@ -47,7 +51,7 @@ describe("ai/transcribeAudio", () => {
 
     await expect(
       invokeHandler("ai/transcribeAudio", {
-        audioBase64: "dGVzdA==",
+        audioBase64: SHORT_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
       })
@@ -69,7 +73,7 @@ describe("ai/transcribeAudio", () => {
 
     await expect(
       invokeHandler("ai/transcribeAudio", {
-        audioBase64: "dGVzdA==",
+        audioBase64: SHORT_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
       })
@@ -92,7 +96,7 @@ describe("ai/transcribeAudio", () => {
     });
 
     const res = await invokeHandler("ai/transcribeAudio", {
-      audioBase64: "dGVzdA==",
+      audioBase64: SHORT_AUDIO_BASE64,
       audioMimeType: "audio/wav",
       simulate: true,
     });
@@ -104,6 +108,32 @@ describe("ai/transcribeAudio", () => {
     expect(member?.data.wordsToday).toBe(12);
     expect(member?.data.wordsThisMonth).toBe(102);
     expect(member?.data.wordsTotal).toBe(1002);
+  });
+
+  it("rejects audio longer than three minutes", async () => {
+    await createMember();
+
+    await expect(
+      invokeHandler("ai/transcribeAudio", {
+        audioBase64: LONG_AUDIO_BASE64,
+        audioMimeType: "audio/wav",
+        simulate: true,
+      })
+    ).rejects.toThrow("Audio duration must be 3 minutes or less");
+  });
+
+  it("rejects prompts longer than allowed length", async () => {
+    await createMember();
+    const longPrompt = "a".repeat(10_001);
+
+    await expect(
+      invokeHandler("ai/transcribeAudio", {
+        prompt: longPrompt,
+        audioBase64: SHORT_AUDIO_BASE64,
+        audioMimeType: "audio/wav",
+        simulate: true,
+      })
+    ).rejects.toThrow(/String must contain at most 10000 character\(s\)/);
   });
 });
 
@@ -177,6 +207,18 @@ describe("ai/generateText", () => {
     expect(member?.data.tokensToday).toBe(8);
     expect(member?.data.tokensThisMonth).toBe(53);
     expect(member?.data.tokensTotal).toBe(503);
+  });
+
+  it("rejects prompts longer than allowed length", async () => {
+    await createMember();
+    const longPrompt = "a".repeat(10_001);
+
+    await expect(
+      invokeHandler("ai/generateText", {
+        prompt: longPrompt,
+        simulate: true,
+      })
+    ).rejects.toThrow(/String must contain at most 10000 character\(s\)/);
   });
 });
 

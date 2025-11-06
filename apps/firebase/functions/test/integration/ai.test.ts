@@ -4,6 +4,7 @@ import { invokeHandler } from "@repo/functions";
 import { mixpath } from "@repo/firemix";
 import { retry } from "@repo/utilities";
 import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import { buildSilenceWavBase64 } from "../helpers/audio";
 import { setUp, tearDown } from "../helpers/setup";
 
 beforeAll(setUp);
@@ -19,6 +20,8 @@ const config = {
   proTokensPerDay: 20_000,
   proTokensPerMonth: 200_000,
 };
+
+const SHORT_AUDIO_BASE64 = buildSilenceWavBase64(5, 8_000);
 
 type MemberCreds = {
   id: string;
@@ -58,7 +61,7 @@ describe("ai endpoints integration", () => {
 
   it("updates usage counters across transcription and generation and supports resets", async () => {
     const transcription = await invokeHandler("ai/transcribeAudio", {
-      audioBase64: "dGVzdA==",
+      audioBase64: SHORT_AUDIO_BASE64,
       audioMimeType: "audio/wav",
       simulate: true,
     });
@@ -138,7 +141,7 @@ describe("ai endpoints integration", () => {
 
     await expect(
       invokeHandler("ai/transcribeAudio", {
-        audioBase64: "dGVzdA==",
+        audioBase64: SHORT_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
       })
