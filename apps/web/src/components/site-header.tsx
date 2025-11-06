@@ -1,7 +1,8 @@
+import { Link } from "react-router-dom";
 import styles from "../styles/page.module.css";
-import DownloadButton from "./download-button.js";
-import GitHubButton from "./github-button.js";
-import LogoMark from "./logo-mark.js";
+import DownloadButton from "./download-button";
+import GitHubButton from "./github-button";
+import LogoMark from "./logo-mark";
 
 const navLinks = [
   { href: "/#demo", label: "Demo" },
@@ -13,15 +14,15 @@ const navLinks = [
 export function SiteHeader() {
   return (
     <header className={styles.header}>
-      <a href="/" className={styles.logo}>
+      <Link to="/" className={styles.logo}>
         <LogoMark className={styles.logoMark} />
         <span>Voquill</span>
-      </a>
+      </Link>
       <nav className={styles.nav} aria-label="Primary navigation">
         {navLinks.map(({ href, label }) => (
-          <a key={href} href={href} className={styles.navLink}>
+          <Link key={href} to={href} className={styles.navLink}>
             {label}
-          </a>
+          </Link>
         ))}
       </nav>
       <div className={styles.headerActions}>

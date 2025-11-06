@@ -2,9 +2,10 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "react",
     "baseUrl": ".",
-    "types": ["astro/client", "node"]
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["vite/client", "node"]
   },
-  "include": ["src", "astro.config.mjs"]
+  "include": ["src"]
 }

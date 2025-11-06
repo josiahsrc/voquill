@@ -6,7 +6,7 @@ import {
   PLATFORM_CONFIG,
   selectPlatformUrl,
   type Platform,
-} from "../lib/downloads.js";
+} from "../lib/downloads";
 import styles from "../styles/page.module.css";
 
 type DownloadButtonProps = {

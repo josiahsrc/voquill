@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import DownloadButton from "./download-button.js";
+import DownloadButton from "./download-button";
 import styles from "../styles/page.module.css";
 import {
   DEFAULT_PLATFORM,
@@ -12,7 +12,7 @@ import {
   type Platform,
   type PlatformDownload,
   type ReleaseManifest,
-} from "../lib/downloads.js";
+} from "../lib/downloads";
 
 const OPTIONS_SECTION_ID = "download-options";
 

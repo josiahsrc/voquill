@@ -5,7 +5,7 @@ marked.setOptions({
   breaks: true,
 });
 
-type LegalSlug = "terms" | "privacy";
+export type LegalSlug = "terms" | "privacy";
 
 const markdownCache = new Map<LegalSlug, string>();
 const rawMarkdownFiles = import.meta.glob<string>("../../content/*.md", {
@@ -42,7 +42,7 @@ for (const [path, raw] of Object.entries(rawMarkdownFiles)) {
   markdownCache.set(slug, rendered);
 }
 
-export async function getMarkdownContent(slug: LegalSlug) {
+export function getMarkdownContent(slug: LegalSlug): string {
   if (markdownCache.has(slug)) {
     return markdownCache.get(slug)!;
   }

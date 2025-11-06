@@ -37,7 +37,8 @@ export type PlatformDownload = {
 
 export const DEFAULT_PLATFORM: Platform = "mac";
 
-export const RELEASE_MANIFEST_ENDPOINT = "/api/desktop-release";
+export const RELEASE_API_URL =
+  "https://api.github.com/repos/josiahsrc/voquill/releases/latest";
 
 export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
   mac: {
@@ -91,19 +92,72 @@ const MANIFEST_KEY_DETAILS: Record<
 
 export const PLATFORM_ORDER: Platform[] = ["mac", "windows", "linux"];
 
+type GithubReleaseAsset = {
+  name: string;
+  browser_download_url: string;
+  content_type?: string;
+  size?: number;
+};
+
+type GithubRelease = {
+  tag_name?: string;
+  name?: string;
+  body?: string;
+  published_at?: string;
+  assets?: GithubReleaseAsset[];
+};
+
+const ASSET_KEY_MAPPINGS: Array<{
+  match: (name: string, contentType?: string) => boolean;
+  keys: string[];
+}> = [
+  {
+    match: (name) => /\.AppImage$/i.test(name),
+    keys: ["linux-x86_64", "linux-x86_64-appimage"],
+  },
+  {
+    match: (name) => /\.deb$/i.test(name),
+    keys: ["linux-x86_64-deb"],
+  },
+  {
+    match: (name) => /\.rpm$/i.test(name),
+    keys: ["linux-x86_64-rpm"],
+  },
+  {
+    match: (name) => /darwin.*\.app\.tar\.gz$/i.test(name),
+    keys: [
+      "darwin-aarch64",
+      "darwin-x86_64",
+      "darwin-aarch64-app",
+      "darwin-x86_64-app",
+    ],
+  },
+  {
+    match: (name) => /\.msi$/i.test(name),
+    keys: ["windows-x86_64", "windows-x86_64-msi"],
+  },
+  {
+    match: (name) => /x64.*setup.*\.exe$/i.test(name),
+    keys: ["windows-x86_64-nsis"],
+  },
+];
+
 export async function fetchReleaseManifest(signal?: AbortSignal) {
   try {
-    const response = await fetch(RELEASE_MANIFEST_ENDPOINT, {
+    const response = await fetch(RELEASE_API_URL, {
       signal,
-      cache: "no-cache",
+      headers: {
+        Accept: "application/vnd.github+json",
+      },
     });
 
     if (!response.ok) {
       return undefined;
     }
 
-    const manifest = (await response.json()) as ReleaseManifest;
-    return manifest;
+    const data = (await response.json()) as GithubRelease;
+    const manifest = transformGithubRelease(data);
+    return manifest ?? undefined;
   } catch {
     return undefined;
   }
@@ -164,6 +218,86 @@ export function extractDownloads(manifest: ReleaseManifest) {
 
       return a.label.localeCompare(b.label);
     });
+}
+
+function transformGithubRelease(release: GithubRelease): ReleaseManifest | undefined {
+  const assets = release.assets ?? [];
+  const platforms: Record<string, ReleasePlatformDetails | undefined> = {};
+
+  for (const asset of assets) {
+    const keys = resolveManifestKeys(asset);
+    if (!keys?.length) {
+      continue;
+    }
+
+    for (const key of keys) {
+      if (!platforms[key]) {
+        platforms[key] = {
+          url: asset.browser_download_url,
+          signature: "",
+        };
+      }
+    }
+  }
+
+  if (Object.keys(platforms).length === 0) {
+    return undefined;
+  }
+
+  return {
+    version: normalizeVersion(release.tag_name ?? release.name),
+    notes: release.body ?? "",
+    pub_date: release.published_at ?? new Date().toISOString(),
+    platforms,
+  };
+}
+
+function resolveManifestKeys(asset: GithubReleaseAsset) {
+  const name = asset.name.toLowerCase();
+  for (const { match, keys } of ASSET_KEY_MAPPINGS) {
+    if (match(name, asset.content_type)) {
+      return keys;
+    }
+  }
+
+  if (name.endsWith(".json")) {
+    return undefined;
+  }
+
+  if (name.includes("darwin") || name.includes("mac")) {
+    return ["darwin-aarch64", "darwin-x86_64"];
+  }
+
+  if (name.includes("windows") || name.includes("win")) {
+    return ["windows-x86_64"];
+  }
+
+  if (name.includes("linux")) {
+    return ["linux-x86_64"];
+  }
+
+  return undefined;
+}
+
+function normalizeVersion(tag?: string) {
+  if (!tag) {
+    return "latest";
+  }
+
+  const trimmed = tag.trim();
+  if (!trimmed) {
+    return "latest";
+  }
+
+  if (/^desktop[-v]/i.test(trimmed)) {
+    return trimmed.replace(/^desktop[-v]*/i, "");
+  }
+
+  if (/^v\d/i.test(trimmed)) {
+    return trimmed.replace(/^v/i, "");
+  }
+
+  return trimmed;
 }
 
 export function detectPlatform(): Platform {
