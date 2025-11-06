@@ -52,7 +52,7 @@ type HandlerDefinitions = {
       system?: Nullable<string>;
       prompt: string;
       simulate?: Nullable<boolean>;
-      jsonResponse?: JsonResponse;
+      jsonResponse?: Nullable<JsonResponse>;
     };
     output: {
       text: string;
@@ -126,7 +126,7 @@ export const AiGenerateTextInputZod = z
     system: z.string().nullable().optional(),
     prompt: z.string().max(AI_PROMPT_MAX_CHARACTERS),
     simulate: z.boolean().nullable().optional(),
-    jsonResponse: JsonResponseZod.optional(),
+    jsonResponse: JsonResponseZod.nullable().optional(),
   })
   .strict() satisfies z.ZodType<HandlerInput<"ai/generateText">>;
 
