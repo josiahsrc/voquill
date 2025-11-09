@@ -26,8 +26,8 @@ export const buildMember = (overrides?: Partial<Member>): Member => ({
 
 export const buildUser = (overrides?: Partial<User>): User => ({
   id: "defaultUserId",
-  createdAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
-  updatedAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
+  createdAt: "2023-01-01T00:00:00Z",
+  updatedAt: "2023-01-01T00:00:00Z",
   name: "Test User",
   onboarded: false,
   onboardedAt: null,

@@ -42,3 +42,6 @@ export const getStripeWebhookSecret = () =>
 
 export const LOOPS_API_KEY_VAR = "LOOPS_API_KEY";
 export const getLoopsApiKey = () => getOptionalString(LOOPS_API_KEY_VAR);
+
+export const DATABASE_URL_VAR = "DATABASE_URL";
+export const getDatabaseUrl = () => env.get(DATABASE_URL_VAR).asString();

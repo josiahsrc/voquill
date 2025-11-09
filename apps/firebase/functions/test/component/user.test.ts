@@ -47,3 +47,21 @@ describe("firestore rules", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("api", () => {
+  it("lets me manage my user", async () => {
+    const creds = await createUserCreds();
+    await signInWithCreds(creds);
+
+    const nothing = await invokeHandler("user/getMyUser", {});
+    expect(nothing).toBeNull();
+
+    const testUser = buildUser();
+    await invokeHandler("user/setMyUser", { value: testUser });
+
+    const myUser = await invokeHandler("user/getMyUser", {});
+    expect(myUser).not.toBeNull();
+    expect(myUser?.id).toBe(creds.id);
+    expect(myUser?.name).toBe(testUser.name);
+  });
+});

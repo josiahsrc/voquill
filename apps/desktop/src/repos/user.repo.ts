@@ -1,9 +1,9 @@
-import { firemix } from "@firemix/client";
-import { mixpath } from "@repo/firemix";
+import { invokeHandler } from "@repo/functions";
 import { Nullable, User } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { BaseRepo } from "./base.repo";
+import { nowIso } from "../utils/date.utils";
 import { LOCAL_USER_ID } from "../utils/user.utils";
+import { BaseRepo } from "./base.repo";
 
 type LocalUser = {
   id: string;
@@ -18,7 +18,6 @@ type LocalUser = {
 };
 
 const fromLocalUser = (localUser: LocalUser): User => {
-  const now = firemix().now();
   const bio = localUser.bio;
   const isOnboarded = localUser.onboarded;
   const playInteractionChime =
@@ -26,12 +25,12 @@ const fromLocalUser = (localUser: LocalUser): User => {
 
   return {
     id: localUser.id,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
     name: localUser.name,
     bio: bio.length > 0 ? bio : null,
     onboarded: isOnboarded,
-    onboardedAt: isOnboarded ? now : null,
+    onboardedAt: isOnboarded ? nowIso() : null,
     timezone: null,
     preferredMicrophone: localUser.preferredMicrophone ?? null,
     wordsThisMonth: localUser.wordsThisMonth ?? 0,
@@ -77,12 +76,12 @@ export class LocalUserRepo extends BaseUserRepo {
 
 export class CloudUserRepo extends BaseUserRepo {
   async setUser(user: User): Promise<User> {
-    await firemix().set(mixpath.users(user.id), user);
+    await invokeHandler("user/setMyUser", { value: user });
     return user;
   }
 
-  async getUser(id: string): Promise<Nullable<User>> {
-    const result = await firemix().get(mixpath.users(id));
-    return result?.data ?? null;
+  async getUser(): Promise<Nullable<User>> {
+    const user = await invokeHandler("user/getMyUser", {});
+    return user;
   }
 }

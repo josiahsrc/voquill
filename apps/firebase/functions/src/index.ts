@@ -1,14 +1,17 @@
+import * as admin from "firebase-admin";
 import {
-  HandlerName,
   AiGenerateTextInputZod,
   AiTranscribeAudioInputZod,
   EmptyObjectZod,
+  HandlerName,
+  SetMyUserInputZod,
   StripeCreateCheckoutSessionInputZod,
   StripeGetPricesInputZod,
 } from "@repo/functions";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
+import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
 import {
   cancelAccountDeletion,
   enqueueAccountDeletion,
@@ -19,35 +22,37 @@ import {
   handleResetLimitsToday,
   handleTryInitializeMember,
 } from "./services/member.service";
+import { clearRateLimits } from "./services/rateLimit.service";
 import {
   createCheckoutSession,
   createCustomerPortalSession,
   handleGetPrices,
 } from "./services/stripe.service";
+import { getMyUser, setMyUser } from "./services/user.service";
 import {
+  getDatabaseUrl,
   getStorageBucket,
   GROQ_API_KEY_VAR,
   isEmulated,
   LOOPS_API_KEY_VAR,
-  STRIPE_SECRET_KEY_VAR,
+  STRIPE_SECRET_KEY_VAR
 } from "./utils/env.utils";
 import { NotFoundError, wrapAsync } from "./utils/error.utils";
-import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
 import { validateData } from "./utils/zod.utils";
 
 // Emulators default to appspot.com for the storage bucket. If we
 // try to change that, we get cors errors on the frontend.
-if (getStorageBucket()) {
-  initializeApp({ storageBucket: getStorageBucket() });
-} else {
-  initializeApp();
-}
+initializeApp({
+  storageBucket: getStorageBucket(),
+  databaseURL: getDatabaseUrl(),
+});
 
 getFirestore().settings({ ignoreUndefinedProperties: true });
 
 export * as auth from "./functions/auth.functions";
 export * as delayedAction from "./functions/delayedAction.functions";
 export * as member from "./functions/member.functions";
+export * as rateLimit from "./functions/rateLimit.functions";
 export * as stripe from "./functions/stripe.functions";
 export * as user from "./functions/user.functions";
 
@@ -75,16 +80,24 @@ export const handler = onCall(
       LOOPS_API_KEY_VAR,
     ],
     memory: "1GiB",
+    maxInstances: 16,
   },
   async (req: CallableRequest<HandlerRequest>) => {
     return await wrapAsync(async () => {
       const { name, args } = req.data;
-      const auth = req.auth ?? null;
 
+      // deny disabled users
+      const auth = req.auth ?? null;
+      if (auth) {
+        await admin.auth().verifyIdToken(auth.rawToken, true);
+      }
+
+      // omit emulator-only handlers when not emulated
       if (name.startsWith("emulator/") && !isEmulated()) {
         throw new NotFoundError(`unknown handler: ${name}`);
       }
 
+      // handlers
       console.log("handler called", name);
       let data: unknown;
       if (name === "stripe/createCheckoutSession") {
@@ -127,6 +140,9 @@ export const handler = onCall(
       } else if (name === "emulator/processDelayedActions") {
         validateData(EmptyObjectZod, args ?? {});
         data = await processDelayedActions();
+      } else if (name === "emulator/clearRateLimits") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = await clearRateLimits();
       } else if (name === "ai/transcribeAudio") {
         data = await runTranscribeAudio({
           auth,
@@ -136,6 +152,16 @@ export const handler = onCall(
         data = await runGenerateText({
           auth,
           input: validateData(AiGenerateTextInputZod, args),
+        });
+      } else if (name === "user/setMyUser") {
+        data = await setMyUser({
+          auth,
+          data: validateData(SetMyUserInputZod, args).value,
+        });
+      } else if (name === "user/getMyUser") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = await getMyUser({
+          auth,
         });
       } else {
         throw new NotFoundError(`unknown handler: ${name}`);

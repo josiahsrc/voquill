@@ -1,5 +1,9 @@
 import { Nullable, User } from "@repo/types";
 import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
+import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
+import { AuthData } from "firebase-functions/tasks";
+import { checkPaidAccess } from "../utils/check.utils";
 
 export const tryUpdateUserLoopsContact = async (args: {
   userId: string;
@@ -34,5 +38,27 @@ export const trySendFinishedOnboardingEvent = async (args: {
   await sendLoopsEvent({
     userId: args.userId,
     eventName: "finished-onboarding",
+  });
+};
+
+export const getMyUser = async (args: {
+  auth: Nullable<AuthData>;
+}): Promise<Nullable<User>> => {
+  const access = await checkPaidAccess(args.auth);
+  const user = await firemix().get(mixpath.users(access.auth.uid));
+  return user?.data ?? null;
+};
+
+export const setMyUser = async (args: {
+  auth: Nullable<AuthData>;
+  data: User;
+}): Promise<void> => {
+  const access = await checkPaidAccess(args.auth);
+  const userId = access.auth.uid;
+  const data = args.data;
+  await firemix().set(mixpath.users(userId), {
+    ...data,
+    id: userId,
+    updatedAt: firemix().now(),
   });
 };

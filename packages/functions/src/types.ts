@@ -1,4 +1,4 @@
-import type { EmptyObject, JsonResponse, Nullable } from "@repo/types";
+import { UserZod, type EmptyObject, type JsonResponse, type Nullable, type User } from "@repo/types";
 import { z } from "zod";
 
 export const AI_MAX_AUDIO_DURATION_SECONDS = 3 * 60;
@@ -15,6 +15,10 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
   "emulator/processDelayedActions": {
+    input: EmptyObject;
+    output: EmptyObject;
+  };
+  "emulator/clearRateLimits": {
     input: EmptyObject;
     output: EmptyObject;
   };
@@ -57,6 +61,18 @@ type HandlerDefinitions = {
     output: {
       text: string;
     };
+  };
+
+  // user
+  "user/setMyUser": {
+    input: {
+      value: Partial<User>;
+    };
+    output: void;
+  };
+  "user/getMyUser": {
+    input: EmptyObject;
+    output: Nullable<User>;
   };
 
   // stripe
@@ -143,3 +159,9 @@ export const StripeGetPricesInputZod = z
     priceIds: z.array(z.string().min(1)),
   })
   .strict() satisfies z.ZodType<HandlerInput<"stripe/getPrices">>;
+
+export const SetMyUserInputZod = z
+  .object({
+    value: UserZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/setMyUser">>;

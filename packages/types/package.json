@@ -16,6 +16,7 @@
     "dist"
   ],
   "dependencies": {
-    "@firemix/core": "^0.1.7"
+    "@firemix/core": "^0.1.7",
+    "zod": "^3.25.76"
   }
 }
