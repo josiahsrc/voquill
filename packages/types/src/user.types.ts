@@ -1,21 +1,24 @@
+import { FiremixTimestamp } from "@firemix/core";
 import z from "zod";
-import type { Nullable } from "./common.types";
+import type { Nullable, Replace } from "./common.types";
 
-export type User = {
+export type DatabaseUser = {
   id: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: FiremixTimestamp;
+  updatedAt: FiremixTimestamp;
   name: string;
   bio?: Nullable<string>;
   onboarded: boolean;
-  onboardedAt: Nullable<string>;
+  onboardedAt: Nullable<FiremixTimestamp>;
   timezone?: Nullable<string>;
   preferredMicrophone?: Nullable<string>;
   playInteractionChime: boolean;
   wordsThisMonth: number;
   wordsThisMonthMonth: Nullable<string>;
   wordsTotal: number;
-};
+}
+
+export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
 
 export const UserZod = z.object({
   id: z.string(),

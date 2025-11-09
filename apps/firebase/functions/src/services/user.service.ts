@@ -4,6 +4,7 @@ import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { AuthData } from "firebase-functions/tasks";
 import { checkPaidAccess } from "../utils/check.utils";
+import { userFromDatabase, userToDatabase } from "../utils/type.utils";
 
 export const tryUpdateUserLoopsContact = async (args: {
   userId: string;
@@ -46,7 +47,7 @@ export const getMyUser = async (args: {
 }): Promise<Nullable<User>> => {
   const access = await checkPaidAccess(args.auth);
   const user = await firemix().get(mixpath.users(access.auth.uid));
-  return user?.data ?? null;
+  return user?.data ? userFromDatabase(user.data) : null;
 };
 
 export const setMyUser = async (args: {
@@ -57,7 +58,7 @@ export const setMyUser = async (args: {
   const userId = access.auth.uid;
   const data = args.data;
   await firemix().set(mixpath.users(userId), {
-    ...data,
+    ...userToDatabase(data),
     id: userId,
     updatedAt: firemix().now(),
   });

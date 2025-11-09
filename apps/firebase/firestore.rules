@@ -20,11 +20,6 @@ service cloud.firestore {
       allow write: if hasAuth() && request.auth.uid == userId && isPaid();
     }
 
-    match /users/{userId} {
-      allow get: if hasAuth() && request.auth.uid == userId;
-      allow write: if hasAuth() && request.auth.uid == userId && isPaid();
-    }
-
     match /system/config {
       allow get: if hasAuth();
     }

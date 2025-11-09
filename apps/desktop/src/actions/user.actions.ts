@@ -1,4 +1,3 @@
-import { firemix } from "@firemix/client";
 import { Nullable, User, UserPreferences } from "@repo/types";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
@@ -30,10 +29,9 @@ const updateUser = async (
   }
 
   const repo = getUserRepo();
-  const now = firemix().now();
   const payload: User = {
     ...existing,
-    updatedAt: now,
+    updatedAt: new Date().toISOString(),
   };
 
   updateCallback(payload);
