@@ -21,16 +21,15 @@ export function BaseLayout({
   const location = useLocation();
 
   const canonicalUrl = useMemo(() => {
-    if (typeof window !== "undefined") {
-      const { origin, pathname, search } = window.location;
-      return `${origin}${pathname}${search}`;
-    }
-
+    // Always use the fallback origin to ensure consistent canonical URLs
     const baseUrl = new URL(FALLBACK_CANONICAL_ORIGIN);
+    
+    // Use React Router location for the path (client-side routing)
     baseUrl.pathname = location.pathname;
-    baseUrl.search = location.search;
+    
+    // Don't include search params in canonical URL to avoid duplicate content
     return baseUrl.toString();
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (typeof document === "undefined") {
