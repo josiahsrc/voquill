@@ -17,11 +17,7 @@ import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 
 type StreamRet = Nullable<
-  [
-    Nullable<FiremixResult<Member>>,
-    Nullable<User>,
-    Nullable<FiremixResult<PartialConfig>>,
-  ]
+  [Nullable<Member>, Nullable<User>, Nullable<FiremixResult<PartialConfig>>]
 >;
 
 export const AppSideEffects = () => {
@@ -57,7 +53,7 @@ export const AppSideEffects = () => {
       }
 
       return combineLatest([
-        firemix().watch(mixpath.members(userId)),
+        from(invokeHandler("member/getMyMember", {}).catch(() => null)),
         from(invokeHandler("user/getMyUser", {}).catch(() => null)),
         firemix().watch(mixpath.systemConfig()),
       ]);
@@ -71,7 +67,7 @@ export const AppSideEffects = () => {
       const [members, user, config] = results;
       produceAppState((draft) => {
         registerUsers(draft, listify(user));
-        registerMembers(draft, listify(members?.data));
+        registerMembers(draft, listify(members));
         draft.config = config?.data ?? null;
       });
     },

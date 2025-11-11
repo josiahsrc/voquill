@@ -1,9 +1,9 @@
 
 import { FiremixPath } from "@firemix/core";
-import { Contact, DatabaseUser, DelayedAction, Member, Nullable, PartialConfig, TermDoc, Transcription } from "@repo/types";
+import { Contact, DatabaseMember, DatabaseUser, DelayedAction, Nullable, PartialConfig, TermDoc, Transcription } from "@repo/types";
 import { listify } from "@repo/utilities";
 
-export const members = (memberId?: Nullable<string>): FiremixPath<Member> => {
+export const members = (memberId?: Nullable<string>): FiremixPath<DatabaseMember> => {
   return ["members", ...listify(memberId)];
 };
 

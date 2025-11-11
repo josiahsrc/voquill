@@ -7,6 +7,8 @@ import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
 import { firemix } from "@firemix/mixed";
 import { Member, Nullable } from "@repo/types";
 import { mixpath } from "@repo/firemix";
+import { checkPaidAccess } from "../utils/check.utils";
+import { memberFromDatabase } from "../utils/type.utils";
 
 export const handleTryInitializeMember = async (args: {
   auth: Nullable<AuthData>;
@@ -108,4 +110,12 @@ export const trySend1000WordsEvent = async (args: {
   });
 
   console.log("sent dictated-1000-words event for user", userId);
+};
+
+export const getMyMember = async (args: {
+  auth: Nullable<AuthData>;
+}): Promise<Nullable<Member>> => {
+  const access = await checkPaidAccess(args.auth);
+  const member = await firemix().get(mixpath.members(access.auth.uid));
+  return member?.data ? memberFromDatabase(member.data) : null;
 };

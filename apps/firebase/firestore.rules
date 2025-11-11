@@ -11,10 +11,6 @@ service cloud.firestore {
       return member != null && member.plan != 'free';
     }
 
-    match /members/{userId} {
-      allow get: if hasAuth() && request.auth.uid == userId;
-    }
-
     match /terms/{userId} {
       allow get: if hasAuth() && request.auth.uid == userId;
       allow write: if hasAuth() && request.auth.uid == userId && isPaid();

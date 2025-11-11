@@ -4,21 +4,17 @@ import { Member, TermDoc, User } from "@repo/types";
 export const buildMember = (overrides?: Partial<Member>): Member => ({
   id: "defaultMemberId",
   type: "user",
-  createdAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
-  updatedAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
+  createdAt: "2023-01-01T00:00:00Z",
+  updatedAt: "2023-01-01T00:00:00Z",
   stripeCustomerId: "123",
   priceId: null,
   plan: "free",
   tokensToday: 0,
   tokensThisMonth: 0,
   tokensTotal: 0,
-  thisMonthResetAt: firemix().timestampFromDate(
-    new Date("2023-01-01T00:00:00Z")
-  ),
+  thisMonthResetAt: "2023-01-01T00:00:00Z",
   wordsToday: 0,
-  todayResetAt: firemix().timestampFromDate(
-    new Date("2023-01-01T00:00:00Z")
-  ),
+  todayResetAt: "2023-01-01T00:00:00Z",
   wordsThisMonth: 0,
   wordsTotal: 0,
   ...overrides,

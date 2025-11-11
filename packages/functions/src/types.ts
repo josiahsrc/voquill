@@ -1,4 +1,4 @@
-import { UserZod, type EmptyObject, type JsonResponse, type Nullable, type User } from "@repo/types";
+import { Member, UserZod, type EmptyObject, type JsonResponse, type Nullable, type User } from "@repo/types";
 import { z } from "zod";
 
 export const AI_MAX_AUDIO_DURATION_SECONDS = 3 * 60;
@@ -37,6 +37,10 @@ type HandlerDefinitions = {
   "member/tryInitialize": {
     input: EmptyObject;
     output: EmptyObject;
+  };
+  "member/getMyMember": {
+    input: EmptyObject;
+    output: Nullable<Member>;
   };
 
   // ai

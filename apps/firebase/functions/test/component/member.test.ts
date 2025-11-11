@@ -6,6 +6,7 @@ import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { retry } from "@repo/utilities";
 import { buildMember } from "../helpers/entities";
+import { memberToDatabase } from "../../src/utils/type.utils";
 
 beforeAll(setUp);
 afterAll(tearDown);
@@ -49,21 +50,17 @@ describe("tryInitializeMember", () => {
 
 describe("resetWordsTodayCron", () => {
   it("should work", async () => {
-    const expiredMember = buildMember({
+    const expiredMember = memberToDatabase(buildMember({
       id: firemix().id(),
       wordsToday: 100,
-      todayResetAt: firemix().timestampFromDate(
-        dayjs().subtract(1, "day").toDate()
-      ),
-    });
+      todayResetAt: dayjs().subtract(1, "day").toISOString(),
+    }));
 
-    const notExpiredMember = buildMember({
+    const notExpiredMember = memberToDatabase(buildMember({
       id: firemix().id(),
       wordsToday: 50,
-      todayResetAt: firemix().timestampFromDate(
-        dayjs().add(1, "day").toDate()
-      ),
-    });
+      todayResetAt: dayjs().add(1, "day").toISOString(),
+    }));
 
     await firemix().set(mixpath.members(expiredMember.id), expiredMember);
     await firemix().set(mixpath.members(notExpiredMember.id), notExpiredMember);
@@ -95,8 +92,8 @@ describe("resetWordsTodayCron", () => {
         );
         expect(notExpiredMemberSnap?.data.wordsToday).toBe(50);
         expect(
-          notExpiredMemberSnap?.data.thisMonthResetAt?.toMillis()
-        ).toEqual(notExpiredMember.thisMonthResetAt?.toMillis());
+          notExpiredMemberSnap?.data.thisMonthResetAt?.toDate().toISOString()
+        ).toEqual(notExpiredMember.thisMonthResetAt);
       },
       retries: 10,
       delay: 1000
@@ -106,21 +103,17 @@ describe("resetWordsTodayCron", () => {
 
 describe("resetWordsThisMonthCron", () => {
   it("should work", async () => {
-    const expiredMember = buildMember({
+    const expiredMember = memberToDatabase(buildMember({
       id: firemix().id(),
       wordsThisMonth: 5000,
-      thisMonthResetAt: firemix().timestampFromDate(
-        dayjs().subtract(1, "month").toDate()
-      ),
-    });
+      thisMonthResetAt: dayjs().subtract(1, "month").toISOString(),
+    }));
 
-    const notExpiredMember = buildMember({
+    const notExpiredMember = memberToDatabase(buildMember({
       id: firemix().id(),
       wordsThisMonth: 2500,
-      thisMonthResetAt: firemix().timestampFromDate(
-        dayjs().add(1, "month").toDate()
-      ),
-    });
+      thisMonthResetAt: dayjs().add(1, "month").toISOString(),
+    }));
 
     await firemix().set(mixpath.members(expiredMember.id), expiredMember);
     await firemix().set(mixpath.members(notExpiredMember.id), notExpiredMember);
@@ -152,8 +145,8 @@ describe("resetWordsThisMonthCron", () => {
         );
         expect(notExpiredMemberSnap?.data.wordsThisMonth).toBe(2500);
         expect(
-          notExpiredMemberSnap?.data.thisMonthResetAt.toMillis()
-        ).toEqual(notExpiredMember.thisMonthResetAt.toMillis());
+          notExpiredMemberSnap?.data.thisMonthResetAt.toDate().toISOString()
+        ).toEqual(notExpiredMember.thisMonthResetAt);
       },
       retries: 10,
       delay: 1000
@@ -168,7 +161,7 @@ describe("firestore rules", () => {
     const creds = await createUserCreds();
     const user = await signInWithCreds(creds);
 
-    const member = buildMember({ id: user.uid });
+    const member = memberToDatabase(buildMember({ id: user.uid }));
     await firemix().set(mixpath.members(user.uid), member);
 
     userId = user.uid;
@@ -197,5 +190,15 @@ describe("firestore rules", () => {
         plan: "pro",
       })
     ).rejects.toThrow();
+  });
+});
+
+describe("api", () => {
+  it("lets me manage my member", async () => {
+    const creds = await createUserCreds();
+    await signInWithCreds(creds);
+    const myMember = await invokeHandler("member/getMyMember", {});
+    expect(myMember).not.toBeNull();
+    expect(myMember?.id).toBe(creds.id);
   });
 });

@@ -62,5 +62,6 @@ describe("rate limiting", () => {
 
     await runTest(() => invokeHandler("user/getMyUser", {}));
     await runTest(() => invokeHandler("user/setMyUser", { value: buildUser() }));
+    await runTest(() => invokeHandler("member/getMyMember", {}));
   });
 });

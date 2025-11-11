@@ -1,4 +1,3 @@
-import * as admin from "firebase-admin";
 import {
   AiGenerateTextInputZod,
   AiTranscribeAudioInputZod,
@@ -8,6 +7,7 @@ import {
   StripeCreateCheckoutSessionInputZod,
   StripeGetPricesInputZod,
 } from "@repo/functions";
+import * as admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
@@ -18,6 +18,7 @@ import {
 } from "./services/auth.service";
 import { processDelayedActions } from "./services/delayedAction.service";
 import {
+  getMyMember,
   handleResetLimitsThisMonth,
   handleResetLimitsToday,
   handleTryInitializeMember,
@@ -152,6 +153,11 @@ export const handler = onCall(
         data = await runGenerateText({
           auth,
           input: validateData(AiGenerateTextInputZod, args),
+        });
+      } else if (name === "member/getMyMember") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = await getMyMember({
+          auth,
         });
       } else if (name === "user/setMyUser") {
         data = await setMyUser({
