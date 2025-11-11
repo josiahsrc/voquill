@@ -139,7 +139,6 @@ export const PlanList = ({
       <CheckmarkRow>Unlimited words</CheckmarkRow>
       <CheckmarkRow>Custom API keys</CheckmarkRow>
       <CheckmarkRow disabled>Manual setup</CheckmarkRow>
-      <CheckmarkRow disabled>Data stored on-device</CheckmarkRow>
     </PlanCard>
   );
 
@@ -163,7 +162,6 @@ export const PlanList = ({
       <CheckmarkRow>Cross-device data storage</CheckmarkRow>
       <CheckmarkRow>No setup needed</CheckmarkRow>
       <CheckmarkRow>Priority support</CheckmarkRow>
-      <CheckmarkRow>Supports the devs ❤️</CheckmarkRow>
     </PlanCard>
   );
 

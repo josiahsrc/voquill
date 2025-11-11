@@ -1,6 +1,5 @@
 export * from "./common.types";
 export * from "./config.types";
-export * from "./delayedAction.types";
 export * from "./member.types";
 export * from "./user.types";
 export * from "./contact.types";

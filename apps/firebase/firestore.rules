@@ -2,31 +2,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function hasAuth() {
-      return request.auth != null;
-    }
-
-    function isPaid() {
-      let member = get(/databases/$(database)/documents/members/$(request.auth.uid)).data;
-      return member != null && member.plan != 'free';
-    }
-
-    match /members/{userId} {
-      allow get: if hasAuth() && request.auth.uid == userId;
-    }
-
-    match /terms/{userId} {
-      allow get: if hasAuth() && request.auth.uid == userId;
-      allow write: if hasAuth() && request.auth.uid == userId && isPaid();
-    }
-
-    match /users/{userId} {
-      allow get: if hasAuth() && request.auth.uid == userId;
-      allow write: if hasAuth() && request.auth.uid == userId && isPaid();
-    }
-
-    match /system/config {
-      allow get: if hasAuth();
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

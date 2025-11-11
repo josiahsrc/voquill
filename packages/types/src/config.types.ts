@@ -8,5 +8,3 @@ export type FullConfig = {
   proTokensPerDay: number;
   proTokensPerMonth: number;
 };
-
-export type PartialConfig = Partial<FullConfig>;

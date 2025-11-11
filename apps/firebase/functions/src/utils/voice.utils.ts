@@ -4,8 +4,9 @@ import { AI_MAX_AUDIO_DURATION_SECONDS } from "@repo/functions";
 import { Member } from "@repo/types";
 import { getMemberExceedsTokenLimit, getMemberExceedsWordLimit } from "@repo/utilities";
 import { AuthData } from "firebase-functions/tasks";
-import { loadFullConfig } from "./config.utils";
 import { ClientError } from "./error.utils";
+import { getFullConfig } from "./config.utils";
+import { memberFromDatabase } from "./type.utils";
 
 export const validateAudioInput = (args: {
   audioMimeType: string;
@@ -28,18 +29,18 @@ export const validateMemberWithinLimits = async (args: {
     throw new ClientError("You must be a member");
   }
 
-  const config = await loadFullConfig();
-  if (getMemberExceedsWordLimit(member.data, config)) {
+  const config = getFullConfig();
+  if (getMemberExceedsWordLimit(memberFromDatabase(member.data), config)) {
     console.warn("member exceeds word limit", member.data);
     throw new ClientError("You have exceeded your word limit");
   }
 
-  if (getMemberExceedsTokenLimit(member.data, config)) {
+  if (getMemberExceedsTokenLimit(memberFromDatabase(member.data), config)) {
     console.warn("member exceeds token limit", member.data);
     throw new ClientError("You have exceeded your token limit");
   }
 
-  return { member: member.data };
+  return { member: memberFromDatabase(member.data) };
 };
 
 export const incrementWordCount = async (args: {

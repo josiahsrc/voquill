@@ -1,13 +1,15 @@
+import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
+import { HandlerInput, HandlerOutput } from "@repo/functions";
+import { priceKeyById } from "@repo/pricing";
+import { Nullable } from "@repo/types";
+import { dedup, getRec } from "@repo/utilities";
 import { AuthData } from "firebase-functions/tasks";
 import stripe from "stripe";
-import { HandlerInput, HandlerOutput } from "@repo/functions";
+import * as admin from "firebase-admin";
+import { checkPaidAccess } from "../utils/check.utils";
 import { ClientError, UnauthenticatedError } from "../utils/error.utils";
-import { getMember, getStripe } from "../utils/stripe.utils";
-import { firemix } from "@firemix/mixed";
-import { Nullable } from "@repo/types";
-import { mixpath } from "@repo/firemix";
-import { getRec } from "@repo/utilities";
-import { priceKeyById } from "@repo/pricing";
+import { getStripe, getOrCreateStripeDatabaseMember } from "../utils/stripe.utils";
 
 export const createCheckoutSession = async (args: {
   auth: Nullable<AuthData>;
@@ -92,8 +94,14 @@ export const handleGetPrices = async (args: {
     return { prices: {} };
   }
 
+  const notFoundPriceIds = args.input.priceIds.filter((priceId) => !priceKeyById[priceId]);
+  if (notFoundPriceIds.length > 0) {
+    throw new ClientError("Invalid price IDs provided: " + notFoundPriceIds.join(", "));
+  }
+
+  const dedupedIds = dedup(args.input.priceIds);
   const stripePrices = await Promise.all(
-    args.input.priceIds.map((priceId) => stripe.prices.retrieve(priceId))
+    dedupedIds.map((priceId) => stripe.prices.retrieve(priceId))
   );
 
   const priceMap: Record<
@@ -116,7 +124,7 @@ export const handleGetPrices = async (args: {
 export const handleSubscriptionCreated = async (
   event: stripe.CustomerSubscriptionCreatedEvent
 ) => {
-  const member = await getMember(event.data.object.metadata);
+  const member = await getOrCreateStripeDatabaseMember(event.data.object.metadata);
 
   const priceId = event.data.object.items.data[0]?.price?.id;
   if (!priceId) {
@@ -131,16 +139,28 @@ export const handleSubscriptionCreated = async (
     priceId,
     stripeCustomerId: event.data.object.customer as string,
   });
+
+  console.log("adding custom claims to user", member.id);
+  await admin.auth().setCustomUserClaims(member.id, {
+    subscribed: true,
+  });
 };
 
 export const handleSubscriptionDeleted = async (
   event: stripe.CustomerSubscriptionDeletedEvent
 ) => {
-  const member = await getMember(event.data.object.metadata);
+  const member = await getOrCreateStripeDatabaseMember(event.data.object.metadata);
+
+  console.log("handling subscription deleted event");
   await firemix().update(mixpath.members(member.id), {
     plan: "free",
     priceId: null,
     updatedAt: firemix().now(),
+  });
+
+  console.log("removing custom claims from user", member.id);
+  await admin.auth().setCustomUserClaims(member.id, {
+    subscribed: false,
   });
 };
 
@@ -148,20 +168,17 @@ export const createCustomerPortalSession = async (args: {
   origin: string;
   auth: Nullable<AuthData>;
 }): Promise<HandlerOutput<"stripe/createCustomerPortalSession">> => {
+  const access = await checkPaidAccess(args.auth);
+
   const stripe = getStripe();
   if (!stripe) {
     console.log("no stripe secret key provided");
     throw new Error("Stripe is not configured");
   }
 
-  if (!args.auth) {
-    console.log("no auth data provided");
-    throw new UnauthenticatedError("You must be authenticated");
-  }
-
-  const member = await getMember({ userId: args.auth.uid });
+  const member = await getOrCreateStripeDatabaseMember({ userId: access.auth.uid });
   if (!member) {
-    console.log("no member found for user", args.auth.uid);
+    console.log("no member found for user", access.auth.uid);
     throw new ClientError("No member found for user");
   }
 
@@ -187,7 +204,7 @@ export const cancelUserSubscriptions = async (args: {
     throw new Error("Stripe is not configured");
   }
 
-  const member = await getMember({ userId: args.userId });
+  const member = await getOrCreateStripeDatabaseMember({ userId: args.userId });
   if (!member) {
     console.log("no member found for user", args.userId);
     return;

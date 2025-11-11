@@ -1,10 +1,9 @@
-import { firemix, FiremixResult, Nullable } from "@firemix/client";
-import { mixpath } from "@repo/firemix";
-import { Member, PartialConfig, User } from "@repo/types";
+import { invokeHandler } from "@repo/functions";
+import { FullConfig, Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
 import { getAuth } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { combineLatest, Observable, of } from "rxjs";
+import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { refreshCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
@@ -16,11 +15,7 @@ import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 
 type StreamRet = Nullable<
-  [
-    Nullable<FiremixResult<Member>>,
-    Nullable<FiremixResult<User>>,
-    Nullable<FiremixResult<PartialConfig>>,
-  ]
+  [Nullable<Member>, Nullable<User>, Nullable<FullConfig>]
 >;
 
 export const AppSideEffects = () => {
@@ -56,9 +51,21 @@ export const AppSideEffects = () => {
       }
 
       return combineLatest([
-        firemix().watch(mixpath.members(userId)),
-        firemix().watch(mixpath.users(userId)),
-        firemix().watch(mixpath.systemConfig()),
+        from(
+          invokeHandler("member/getMyMember", {})
+            .then((res) => res.member)
+            .catch(() => null)
+        ),
+        from(
+          invokeHandler("user/getMyUser", {})
+            .then((res) => res.user)
+            .catch(() => null)
+        ),
+        from(
+          invokeHandler("config/getFullConfig", {})
+            .then((res) => res.config)
+            .catch(() => null)
+        ),
       ]);
     },
     onSuccess: (results) => {
@@ -69,9 +76,9 @@ export const AppSideEffects = () => {
 
       const [members, user, config] = results;
       produceAppState((draft) => {
-        registerUsers(draft, listify(user?.data));
-        registerMembers(draft, listify(members?.data));
-        draft.config = config?.data ?? null;
+        registerUsers(draft, listify(user));
+        registerMembers(draft, listify(members));
+        draft.config = config;
       });
     },
     dependencies: [userId, authReady],

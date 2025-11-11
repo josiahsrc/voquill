@@ -1,49 +1,29 @@
-import { firemix, firemixSdkZoneSync } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { createUserCreds, signInWithCreds } from "../helpers/firebase";
-import { setUp, tearDown } from "../helpers/setup";
-import { buildTermDoc } from "../helpers/entities";
 import { invokeHandler } from "@repo/functions";
+import { buildTerm } from "../helpers/entities";
+import { createUserCreds, markUserAsSubscribed, signInWithCreds } from "../helpers/firebase";
+import { setUp, tearDown } from "../helpers/setup";
 
 beforeAll(setUp);
 afterAll(tearDown);
 
-describe("firestore rules", () => {
-  let userId: string;
-
-  beforeEach(async () => {
+describe("api", () => {
+  it("lets me manage my terms", async () => {
     const creds = await createUserCreds();
-    const user = await signInWithCreds(creds);
-    await invokeHandler("member/tryInitialize", {});
-    userId = user.uid;
-  });
+    await signInWithCreds(creds);
+    await markUserAsSubscribed();
 
-  it("lets me read/write my terms if I'm a paid user", async () => {
-    const term = firemixSdkZoneSync("client", () => buildTermDoc({ id: userId }));
-    await firemix("admin").update(mixpath.members(userId), { plan: "pro" });
-    await firemix("client").set(mixpath.terms(term.id), term);
-    await expect(
-      firemix("client").get(mixpath.terms(term.id))
-    ).resolves.not.toThrow();
-  });
+    const firstList = await invokeHandler("term/listMyTerms", {});
+    expect(firstList.terms).toBeDefined();
 
-  it("prevents me from me writing my terms if I'm a free user", async () => {
-    const term = firemixSdkZoneSync("client", () => buildTermDoc({ id: userId }));
-    await expect(firemix("client").set(mixpath.terms(term.id), term)).rejects.toThrow();
-    await expect(
-      firemix("client").get(mixpath.terms(term.id))
-    ).resolves.not.toThrow();
-  });
+    await invokeHandler("term/upsertMyTerm", { term: buildTerm({ id: "term1" }) });
 
-  it("prevents me from accessing other users", async () => {
-    const term = firemixSdkZoneSync("client", () => buildTermDoc({ id: "differentUserId" }));
-    await firemix("admin").update(mixpath.members(userId), { plan: "pro" });
-    await expect(firemix("client").query(mixpath.terms(term.id))).rejects.toThrow();
-    await expect(
-      firemix("client").get(mixpath.terms(term.id))
-    ).rejects.toThrow();
-    await expect(
-      firemix("client").set(mixpath.terms(term.id), term)
-    ).rejects.toThrow();
+    const secondList = await invokeHandler("term/listMyTerms", {});
+    expect(secondList.terms.length).toBe(1);
+    expect(secondList.terms[0]?.id).toBe("term1");
+
+    await invokeHandler("term/deleteMyTerm", { termId: "term1" });
+
+    const thirdList = await invokeHandler("term/listMyTerms", {});
+    expect(thirdList.terms.length).toBe(0);
   });
 });

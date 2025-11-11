@@ -3,5 +3,4 @@ export * from "./async";
 export * from "./equality";
 export * from "./math";
 export * from "./string";
-export * from "./config";
 export * from "./member";

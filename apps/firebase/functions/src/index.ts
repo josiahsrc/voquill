@@ -1,53 +1,57 @@
 import {
-  HandlerName,
   AiGenerateTextInputZod,
   AiTranscribeAudioInputZod,
+  DeleteTermInputZod,
   EmptyObjectZod,
+  HandlerName,
+  SetMyUserInputZod,
   StripeCreateCheckoutSessionInputZod,
   StripeGetPricesInputZod,
+  UpsertTermInputZod,
 } from "@repo/functions";
+import * as admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
+import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
+import { getFullConfigResp } from "./services/config.service";
 import {
-  cancelAccountDeletion,
-  enqueueAccountDeletion,
-} from "./services/auth.service";
-import { processDelayedActions } from "./services/delayedAction.service";
-import {
+  getMyMember,
   handleResetLimitsThisMonth,
   handleResetLimitsToday,
   handleTryInitializeMember,
 } from "./services/member.service";
+import { clearRateLimits } from "./services/rateLimit.service";
 import {
   createCheckoutSession,
   createCustomerPortalSession,
   handleGetPrices,
 } from "./services/stripe.service";
+import { deleteMyTerm, listMyTerms, upsertMyTerm } from "./services/term.service";
+import { getMyUser, setMyUser } from "./services/user.service";
 import {
+  getDatabaseUrl,
   getStorageBucket,
   GROQ_API_KEY_VAR,
   isEmulated,
   LOOPS_API_KEY_VAR,
-  STRIPE_SECRET_KEY_VAR,
+  STRIPE_SECRET_KEY_VAR
 } from "./utils/env.utils";
 import { NotFoundError, wrapAsync } from "./utils/error.utils";
-import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
 import { validateData } from "./utils/zod.utils";
 
 // Emulators default to appspot.com for the storage bucket. If we
 // try to change that, we get cors errors on the frontend.
-if (getStorageBucket()) {
-  initializeApp({ storageBucket: getStorageBucket() });
-} else {
-  initializeApp();
-}
+initializeApp({
+  storageBucket: getStorageBucket(),
+  databaseURL: getDatabaseUrl(),
+});
 
 getFirestore().settings({ ignoreUndefinedProperties: true });
 
 export * as auth from "./functions/auth.functions";
-export * as delayedAction from "./functions/delayedAction.functions";
 export * as member from "./functions/member.functions";
+export * as rateLimit from "./functions/rateLimit.functions";
 export * as stripe from "./functions/stripe.functions";
 export * as user from "./functions/user.functions";
 
@@ -75,17 +79,25 @@ export const handler = onCall(
       LOOPS_API_KEY_VAR,
     ],
     memory: "1GiB",
+    maxInstances: 16,
   },
   async (req: CallableRequest<HandlerRequest>) => {
     return await wrapAsync(async () => {
       const { name, args } = req.data;
-      const auth = req.auth ?? null;
+      console.log("handler called", name);
 
+      // deny disabled users
+      const auth = req.auth ?? null;
+      if (auth) {
+        await admin.auth().verifyIdToken(auth.rawToken, true);
+      }
+
+      // omit emulator-only handlers when not emulated
       if (name.startsWith("emulator/") && !isEmulated()) {
         throw new NotFoundError(`unknown handler: ${name}`);
       }
 
-      console.log("handler called", name);
+      // handlers
       let data: unknown;
       if (name === "stripe/createCheckoutSession") {
         data = await createCheckoutSession({
@@ -108,25 +120,15 @@ export const handler = onCall(
           auth,
           origin: req.rawRequest.get("origin") ?? "",
         });
-      } else if (name === "auth/deleteMyAccount") {
-        validateData(EmptyObjectZod, args ?? {});
-        data = await enqueueAccountDeletion({
-          auth,
-        });
-      } else if (name === "auth/cancelAccountDeletion") {
-        validateData(EmptyObjectZod, args ?? {});
-        data = await cancelAccountDeletion({
-          auth,
-        });
       } else if (name === "emulator/resetWordsToday") {
         validateData(EmptyObjectZod, args ?? {});
         data = await handleResetLimitsToday();
       } else if (name === "emulator/resetWordsThisMonth") {
         validateData(EmptyObjectZod, args ?? {});
         data = await handleResetLimitsThisMonth();
-      } else if (name === "emulator/processDelayedActions") {
+      } else if (name === "emulator/clearRateLimits") {
         validateData(EmptyObjectZod, args ?? {});
-        data = await processDelayedActions();
+        data = await clearRateLimits();
       } else if (name === "ai/transcribeAudio") {
         data = await runTranscribeAudio({
           auth,
@@ -136,6 +138,39 @@ export const handler = onCall(
         data = await runGenerateText({
           auth,
           input: validateData(AiGenerateTextInputZod, args),
+        });
+      } else if (name === "member/getMyMember") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = await getMyMember({
+          auth,
+        });
+      } else if (name === "user/setMyUser") {
+        data = await setMyUser({
+          auth,
+          data: validateData(SetMyUserInputZod, args).value,
+        });
+      } else if (name === "user/getMyUser") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = await getMyUser({
+          auth,
+        });
+      } else if (name === "config/getFullConfig") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = getFullConfigResp();
+      } else if (name === "term/deleteMyTerm") {
+        data = await deleteMyTerm({
+          auth,
+          input: validateData(DeleteTermInputZod, args),
+        });
+      } else if (name === "term/upsertMyTerm") {
+        data = await upsertMyTerm({
+          auth,
+          input: validateData(UpsertTermInputZod, args),
+        });
+      } else if (name === "term/listMyTerms") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = await listMyTerms({
+          auth,
         });
       } else {
         throw new NotFoundError(`unknown handler: ${name}`);

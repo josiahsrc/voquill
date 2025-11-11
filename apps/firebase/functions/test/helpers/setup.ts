@@ -1,9 +1,19 @@
 import { closeFirebase, initializeFirebase } from "./firebase";
 
 export const setUp = async () => {
-	await initializeFirebase();
+  try {
+    await initializeFirebase();
+  } catch (e) {
+    console.error("Error during Firebase initialization in setUp:", e);
+    throw e;
+  }
 };
 
 export const tearDown = async () => {
-	await closeFirebase();
+  try {
+    await closeFirebase();
+  } catch (e) {
+    console.error("Error during Firebase closure in tearDown:", e);
+    throw e;
+  }
 };

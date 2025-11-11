@@ -1,42 +1,54 @@
 import { ArrowForward } from "@mui/icons-material";
 import { Button, Card, Stack, Typography } from "@mui/material";
-import { useEffect } from "react";
+import { invokeHandler } from "@repo/functions";
 import {
   goBackOnboardingPage,
   goToOnboardingPage,
 } from "../../actions/onboarding.actions";
 import { openPaymentDialog } from "../../actions/payment.actions";
+import {
+  setPreferredPostProcessingMode,
+  setPreferredTranscriptionMode,
+} from "../../actions/user.actions";
+import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useAppStore } from "../../store";
 import { getMyMember } from "../../utils/member.utils";
 import { getPriceIdFromKey } from "../../utils/price.utils";
 import { LoginForm } from "../login/LoginForm";
 import { FormContainer } from "./OnboardingShared";
-import { useAsyncEffect } from "../../hooks/async.hooks";
-import {
-  setPreferredPostProcessingMode,
-  setPreferredTranscriptionMode,
-} from "../../actions/user.actions";
 
 export const OnboardingLoginForm = () => {
   const loggingIn = useAppStore((state) => state.onboarding.loggingIn);
   const currentUserId = useAppStore((state) => state.auth?.uid);
   const memberPlan = useAppStore((state) => getMyMember(state)?.plan);
 
-  const handleOpenPaymentDialog = () => {
-    openPaymentDialog(getPriceIdFromKey("pro_monthly"));
+  const goToNextPage = () => {
+    goToOnboardingPage("hotkeys");
+    setPreferredPostProcessingMode("cloud");
+    setPreferredTranscriptionMode("cloud");
   };
 
-  useEffect(() => {
-    if (currentUserId && memberPlan === "free") {
+  const handleOpenPaymentDialog = async () => {
+    const member = await invokeHandler("member/getMyMember", {})
+      .then((res) => res.member)
+      .catch(() => null);
+    if (member?.plan !== "pro") {
+      openPaymentDialog(getPriceIdFromKey("pro_monthly"));
+    } else {
+      goToNextPage();
+    }
+  };
+
+  useAsyncEffect(async () => {
+    console.log("currentUserId changed:", currentUserId);
+    if (currentUserId) {
       handleOpenPaymentDialog();
     }
-  }, [currentUserId, memberPlan]);
+  }, [currentUserId]);
 
   useAsyncEffect(async () => {
     if (memberPlan === "pro") {
-      goToOnboardingPage("hotkeys");
-      setPreferredPostProcessingMode("cloud");
-      setPreferredTranscriptionMode("cloud");
+      goToNextPage();
     }
   }, [memberPlan]);
 

@@ -9,7 +9,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { invokeHandler } from "@repo/functions";
 import { useState } from "react";
 import { showSnackbar } from "../../actions/app.actions";
 import { getAuthRepo } from "../../repos";
@@ -35,13 +34,9 @@ export const DeleteAccountDialog = () => {
     }
 
     try {
-      await invokeHandler("auth/deleteMyAccount", {});
-      await getAuthRepo().signOut();
+      await getAuthRepo().deleteMyAccount();
       setConfirmationEmail("");
-      showSnackbar(
-        "Your account deletion request has been received. For security reasons, it will be processed after 30 days. Signing in before then will cancel the deletion.",
-        { duration: 15000 }
-      );
+      showSnackbar("You account has been deleted", { duration: 15000 });
       produceAppState((state) => {
         state.settings.deleteAccountDialog = false;
       });
@@ -66,7 +61,7 @@ export const DeleteAccountDialog = () => {
       <DialogContent>
         <Alert severity="warning" sx={{ mb: 2 }}>
           This action cannot be undone. All your data will be permanently
-          deleted after 30 days unless you sign back in.
+          deleted.
         </Alert>
         <Typography variant="body1" component="div" sx={{ mb: 2 }}>
           Are you sure you want to delete your account? This will:

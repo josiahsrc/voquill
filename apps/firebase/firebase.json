@@ -6,6 +6,9 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "database": {
+    "rules": "database.rules.json"
+  },
   "functions": [
     {
       "source": "functions",
@@ -42,6 +45,10 @@
     },
     "storage": {
       "port": 9199,
+      "host": "0.0.0.0"
+    },
+    "database": {
+      "port": 9000,
       "host": "0.0.0.0"
     },
     "singleProjectMode": true

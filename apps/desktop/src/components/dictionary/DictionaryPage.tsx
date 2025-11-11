@@ -1,24 +1,24 @@
-import { firemix } from "@firemix/client";
 import { FindReplaceOutlined, SpellcheckOutlined } from "@mui/icons-material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { Button } from "@mui/material";
 import { Term } from "@repo/types";
+import dayjs from "dayjs";
 import { useCallback } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
-import { getAppState, produceAppState, useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
+import { createId } from "../../utils/id.utils";
 import { MenuPopoverBuilder } from "../common/MenuPopover";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { DictionaryRow } from "./DictionaryRow";
-import { getMyEffectiveUserId } from "../../utils/user.utils";
 
 export default function DictionaryPage() {
   const termIds = useAppStore((state) => state.dictionary.termIds);
 
   const handleAddTerm = useCallback(async (replacement: boolean) => {
     const newTerm: Term = {
-      id: firemix().id(),
-      createdAt: firemix().now(),
+      id: createId(),
+      createdAt: dayjs().toISOString(),
       sourceValue: "",
       destinationValue: "",
       isReplacement: replacement,
@@ -30,10 +30,7 @@ export default function DictionaryPage() {
     });
 
     try {
-      const created = await getTermRepo().createTerm(
-        getMyEffectiveUserId(getAppState()),
-        newTerm
-      );
+      const created = await getTermRepo().createTerm(newTerm);
       produceAppState((draft) => {
         draft.termById[created.id] = created;
       });

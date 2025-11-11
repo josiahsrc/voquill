@@ -1,4 +1,3 @@
-import { firemix } from "@firemix/client";
 import { MemberPlan, User, UserPreferences } from "@repo/types";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import {
@@ -83,7 +82,7 @@ export const submitOnboarding = async () => {
   try {
     const repo = getUserRepo();
     const preferencesRepo = getUserPreferencesRepo();
-    const now = firemix().now();
+    const now = new Date().toISOString();
     const userId = getMyEffectiveUserId(state);
 
     const user: User = {

@@ -1,24 +1,19 @@
-import { firemix } from "@firemix/mixed";
-import { Member, TermDoc, User } from "@repo/types";
+import { Member, Term, User } from "@repo/types";
 
 export const buildMember = (overrides?: Partial<Member>): Member => ({
   id: "defaultMemberId",
   type: "user",
-  createdAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
-  updatedAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
+  createdAt: "2023-01-01T00:00:00Z",
+  updatedAt: "2023-01-01T00:00:00Z",
   stripeCustomerId: "123",
   priceId: null,
   plan: "free",
   tokensToday: 0,
   tokensThisMonth: 0,
   tokensTotal: 0,
-  thisMonthResetAt: firemix().timestampFromDate(
-    new Date("2023-01-01T00:00:00Z")
-  ),
+  thisMonthResetAt: "2023-01-01T00:00:00Z",
   wordsToday: 0,
-  todayResetAt: firemix().timestampFromDate(
-    new Date("2023-01-01T00:00:00Z")
-  ),
+  todayResetAt: "2023-01-01T00:00:00Z",
   wordsThisMonth: 0,
   wordsTotal: 0,
   ...overrides,
@@ -26,8 +21,8 @@ export const buildMember = (overrides?: Partial<Member>): Member => ({
 
 export const buildUser = (overrides?: Partial<User>): User => ({
   id: "defaultUserId",
-  createdAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
-  updatedAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
+  createdAt: "2023-01-01T00:00:00Z",
+  updatedAt: "2023-01-01T00:00:00Z",
   name: "Test User",
   onboarded: false,
   onboardedAt: null,
@@ -39,17 +34,11 @@ export const buildUser = (overrides?: Partial<User>): User => ({
   ...overrides,
 });
 
-export const buildTermDoc = (overrides?: Partial<TermDoc>): TermDoc => ({
+export const buildTerm = (overrides?: Partial<Term>): Term => ({
   id: "defaultTermId",
-  termIds: ["term1"],
-  termById: {
-    term1: {
-      createdAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
-      sourceValue: "default source",
-      destinationValue: "default destination",
-      isReplacement: true,
-      id: "term1"
-    }
-  },
+  createdAt: "2023-01-01T00:00:00Z",
+  sourceValue: "default source",
+  destinationValue: "default destination",
+  isReplacement: true,
   ...overrides,
 });

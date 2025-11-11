@@ -1,6 +1,6 @@
-import { firemix } from "@firemix/client";
 import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
+import dayjs from "dayjs";
 import { getAppState } from "../store";
 import { getMyEffectiveUserId } from "../utils/user.utils";
 import { BaseRepo } from "./base.repo";
@@ -40,7 +40,7 @@ const toLocalTranscription = (
 ): LocalTranscription => ({
   id: transcription.id,
   transcript: transcription.transcript,
-  timestamp: transcription.createdAt.toMillis(),
+  timestamp: dayjs(transcription.createdAt).valueOf(),
   audio: transcription.audio
     ? {
       filePath: transcription.audio.filePath,
@@ -65,7 +65,7 @@ const fromLocalTranscription = (
 ): Transcription => ({
   id: transcription.id,
   transcript: transcription.transcript,
-  createdAt: firemix().timestampFromMillis(transcription.timestamp),
+  createdAt: dayjs(transcription.timestamp).toISOString(),
   createdByUserId: getMyEffectiveUserId(getAppState()),
   isDeleted: false,
   audio: transcription.audio

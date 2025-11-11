@@ -3,23 +3,13 @@ import { firemix } from "@firemix/mixed";
 import { invokeHandler } from "@repo/functions";
 import { mixpath } from "@repo/firemix";
 import { retry } from "@repo/utilities";
-import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import { createUserCreds, markUserAsSubscribed, signInWithCreds } from "../helpers/firebase";
 import { buildSilenceWavBase64 } from "../helpers/audio";
 import { setUp, tearDown } from "../helpers/setup";
+import { getFullConfig } from "../../src/utils/config.utils";
 
 beforeAll(setUp);
 afterAll(tearDown);
-
-const config = {
-  freeWordsPerDay: 1000,
-  freeWordsPerMonth: 10_000,
-  proWordsPerDay: 10_000,
-  proWordsPerMonth: 100_000,
-  freeTokensPerDay: 2_000,
-  freeTokensPerMonth: 20_000,
-  proTokensPerDay: 20_000,
-  proTokensPerMonth: 200_000,
-};
 
 const SHORT_AUDIO_BASE64 = buildSilenceWavBase64(5, 8_000);
 
@@ -30,13 +20,10 @@ type MemberCreds = {
 const createMember = async (): Promise<MemberCreds> => {
   const creds = await createUserCreds();
   await signInWithCreds(creds);
+  await markUserAsSubscribed();
   await invokeHandler("member/tryInitialize", {});
   return { id: creds.id };
 };
-
-beforeAll(async () => {
-  await firemix().set(mixpath.systemConfig(), config);
-});
 
 describe("ai endpoints integration", () => {
   let member: MemberCreds;
@@ -44,6 +31,7 @@ describe("ai endpoints integration", () => {
   beforeEach(async () => {
     member = await createMember();
     await firemix().update(mixpath.members(member.id), {
+      plan: "pro",
       wordsToday: 5,
       wordsThisMonth: 50,
       wordsTotal: 500,
@@ -135,8 +123,8 @@ describe("ai endpoints integration", () => {
 
   it("prevents usage when limits are exceeded", async () => {
     await firemix().update(mixpath.members(member.id), {
-      wordsToday: config.freeWordsPerDay,
-      tokensToday: 0,
+      wordsToday: getFullConfig().proWordsPerDay,
+      tokensToday: -1,
     });
 
     await expect(
@@ -148,8 +136,8 @@ describe("ai endpoints integration", () => {
     ).rejects.toThrow("You have exceeded your word limit");
 
     await firemix().update(mixpath.members(member.id), {
-      wordsToday: 0,
-      tokensToday: config.freeTokensPerDay,
+      wordsToday: -1,
+      tokensToday: getFullConfig().proTokensPerDay,
     });
 
     await expect(

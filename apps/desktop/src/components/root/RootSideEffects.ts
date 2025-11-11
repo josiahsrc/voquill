@@ -1,14 +1,15 @@
-import { firemix } from "@firemix/client";
 import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
 import { countWords, delayed } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import dayjs from "dayjs";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
-import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
+import { syncAutoLaunchSetting } from "../../actions/settings.actions";
+import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { addWordsToCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
@@ -24,7 +25,6 @@ import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
 } from "../../utils/window.utils";
-import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -137,7 +137,7 @@ export const RootSideEffects = () => {
     const transcription: Transcription = {
       id: transcriptionId,
       transcript: finalTranscript,
-      createdAt: firemix().now(),
+      createdAt: dayjs().toISOString(),
       createdByUserId: getMyEffectiveUserId(state),
       isDeleted: false,
       audio: audioSnapshot,

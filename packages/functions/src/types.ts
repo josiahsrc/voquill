@@ -1,4 +1,4 @@
-import type { EmptyObject, JsonResponse, Nullable } from "@repo/types";
+import { FullConfig, Member, Term, TermZod, UserZod, type EmptyObject, type JsonResponse, type Nullable, type User } from "@repo/types";
 import { z } from "zod";
 
 export const AI_MAX_AUDIO_DURATION_SECONDS = 3 * 60;
@@ -14,18 +14,28 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: EmptyObject;
   };
-  "emulator/processDelayedActions": {
+  "emulator/clearRateLimits": {
     input: EmptyObject;
     output: EmptyObject;
   };
 
-  // auth
-  "auth/deleteMyAccount": {
+  // term
+  "term/listMyTerms": {
     input: EmptyObject;
+    output: {
+      terms: Term[];
+    };
+  };
+  "term/upsertMyTerm": {
+    input: {
+      term: Term;
+    };
     output: EmptyObject;
   };
-  "auth/cancelAccountDeletion": {
-    input: EmptyObject;
+  "term/deleteMyTerm": {
+    input: {
+      termId: string;
+    };
     output: EmptyObject;
   };
 
@@ -33,6 +43,12 @@ type HandlerDefinitions = {
   "member/tryInitialize": {
     input: EmptyObject;
     output: EmptyObject;
+  };
+  "member/getMyMember": {
+    input: EmptyObject;
+    output: {
+      member: Nullable<Member>;
+    }
   };
 
   // ai
@@ -56,6 +72,20 @@ type HandlerDefinitions = {
     };
     output: {
       text: string;
+    };
+  };
+
+  // user
+  "user/setMyUser": {
+    input: {
+      value: Partial<User>;
+    };
+    output: EmptyObject;
+  };
+  "user/getMyUser": {
+    input: EmptyObject;
+    output: {
+      user: Nullable<User>;
     };
   };
 
@@ -88,6 +118,14 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: {
       url: string;
+    };
+  };
+
+  // config
+  "config/getFullConfig": {
+    input: EmptyObject;
+    output: {
+      config: FullConfig;
     };
   };
 };
@@ -143,3 +181,21 @@ export const StripeGetPricesInputZod = z
     priceIds: z.array(z.string().min(1)),
   })
   .strict() satisfies z.ZodType<HandlerInput<"stripe/getPrices">>;
+
+export const SetMyUserInputZod = z
+  .object({
+    value: UserZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/setMyUser">>;
+
+export const UpsertTermInputZod = z
+  .object({
+    term: TermZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"term/upsertMyTerm">>;
+
+export const DeleteTermInputZod = z
+  .object({
+    termId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"term/deleteMyTerm">>;

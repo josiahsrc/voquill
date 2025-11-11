@@ -1,9 +1,9 @@
 import { FiremixTimestamp } from "@firemix/core";
-import type { Nullable } from "./common.types";
+import type { Nullable, Replace } from "./common.types";
 
 export type MemberPlan = "free" | "pro";
 
-export type Member = {
+export type DatabaseMember = {
   id: string;
   type: "user";
   createdAt: FiremixTimestamp;
@@ -20,3 +20,5 @@ export type Member = {
   todayResetAt: FiremixTimestamp;
   thisMonthResetAt: FiremixTimestamp;
 };
+
+export type Member = Replace<DatabaseMember, FiremixTimestamp, string>;

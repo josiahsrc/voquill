@@ -1,4 +1,3 @@
-import { firemix } from "@firemix/client";
 import { Add, Close, RestartAlt } from "@mui/icons-material";
 import { Button, IconButton, Stack, Typography } from "@mui/material";
 import type { Hotkey } from "@repo/types";
@@ -7,6 +6,7 @@ import { showErrorSnackbar } from "../../actions/app.actions";
 import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { registerHotkeys } from "../../utils/app.utils";
+import { createId } from "../../utils/id.utils";
 import { getDefaultHotkeyCombosForAction } from "../../utils/keyboard.utils";
 import { HotKey } from "../common/HotKey";
 
@@ -38,7 +38,7 @@ export const HotkeySetting = ({
 
   const saveKey = async (id?: string, keys?: string[]) => {
     const newValue: Hotkey = {
-      id: id ?? firemix().id(),
+      id: id ?? createId(),
       actionName,
       keys: keys ?? [],
     };

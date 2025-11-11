@@ -8,6 +8,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
+import { connectDatabaseEmulator, getDatabase } from "firebase/database";
 import {
   connectFirestoreEmulator,
   getFirestore,
@@ -22,10 +23,12 @@ import {
   getClientFirestoreHost,
   getClientFunctionsHost,
   getClientStorageHost,
+  getEmulatorDatabaseUrl,
   getFirebaseAuthEmulatorHost,
   getFirebaseFunctionsEndpoint,
   getFirestoreEmulatorHost,
   getGcloudProject,
+  getRealtimeDatabaseEmulatorHost,
   getShowWarnings,
 } from "./env";
 
@@ -33,8 +36,11 @@ export async function initializeFirebase() {
   process.env.FIRESTORE_EMULATOR_HOST = getFirestoreEmulatorHost();
   process.env.FIREBASE_AUTH_EMULATOR_HOST = getFirebaseAuthEmulatorHost();
   process.env.GCLOUD_PROJECT = getGcloudProject();
+  process.env.REALTIME_DATABASE_EMULATOR_HOST = getRealtimeDatabaseEmulatorHost();
 
-  admin.initializeApp();
+  admin.initializeApp({
+    databaseURL: getEmulatorDatabaseUrl(),
+  });
   adminFirestore.getFirestore().settings({ ignoreUndefinedProperties: true });
 
   // enable warnings if the SHOW_WARNINGS env variable is set
@@ -83,6 +89,14 @@ export async function initializeFirebase() {
   const storage = getStorage(app);
   const storageParts = getClientStorageHost().split(":");
   connectStorageEmulator(storage, storageParts[0] ?? "", parseInt(storageParts[1] ?? ""));
+
+  const rtdb = getDatabase(app);
+  const rtdbParts = getRealtimeDatabaseEmulatorHost().split(":");
+  connectDatabaseEmulator(
+    rtdb,
+    rtdbParts[0] ?? "",
+    parseInt(rtdbParts[1] ?? "")
+  );
 }
 
 export async function closeFirebase() {
@@ -123,6 +137,20 @@ export async function signInWithCreds(creds: UserCreds) {
   }
 
   return auth.currentUser;
+}
+
+export async function markUserAsSubscribed() {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("no user signed in");
+  }
+
+  await admin.auth().setCustomUserClaims(user.uid, {
+    subscribed: true,
+  });
+
+  await user.getIdToken(true);
 }
 
 export async function signOutUser() {

@@ -9,12 +9,13 @@ import {
 } from "../types/ai.types";
 import { syncAiPreferences } from "./user.actions";
 import type { CreateApiKeyPayload } from "../repos/api-key.repo";
+import dayjs from "dayjs";
 
 let loadApiKeysPromise: Promise<void> | null = null;
 
 const sortApiKeys = (apiKeys: ApiKey[]): ApiKey[] =>
   [...apiKeys].sort(
-    (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis(),
+    (a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf(),
   );
 
 export const loadApiKeys = async (): Promise<void> => {

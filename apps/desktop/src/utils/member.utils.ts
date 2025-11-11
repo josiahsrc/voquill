@@ -1,5 +1,5 @@
 import { Member, MemberPlan, Nullable } from "@repo/types";
-import { getFullConfig, getMemberExceedsLimits, getRec } from "@repo/utilities";
+import { getMemberExceedsLimits, getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
 
 export const getMyMember = (state: AppState): Nullable<Member> => {
@@ -19,9 +19,9 @@ export const planToDisplayName = (plan: MemberPlan): string => {
 };
 
 export const getMemberExceedsLimitsFromState = (state: AppState): boolean => {
-  const config = getFullConfig(state.config);
+  const config = state.config;
   const member = getMyMember(state);
-  if (!member) {
+  if (!member || !config) {
     return true;
   }
 

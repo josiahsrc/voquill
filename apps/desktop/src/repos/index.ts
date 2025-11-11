@@ -5,11 +5,11 @@ import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
 import { BaseGenerateTextRepo, CloudGenerateTextRepo, GroqGenerateTextRepo } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
+import { BaseUserPreferencesRepo, LocalUserPreferencesRepo } from "./preferences.repo";
 import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseTranscribeAudioRepo, CloudTranscribeAudioRepo, GroqTranscribeAudioRepo, LocalTranscribeAudioRepo } from "./transcribe-audio.repo";
 import { BaseTranscriptionRepo, LocalTranscriptionRepo } from "./transcription.repo";
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
-import { BaseUserPreferencesRepo, LocalUserPreferencesRepo } from "./preferences.repo";
 
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
