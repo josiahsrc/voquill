@@ -84,6 +84,7 @@ export const handler = onCall(
   async (req: CallableRequest<HandlerRequest>) => {
     return await wrapAsync(async () => {
       const { name, args } = req.data;
+      console.log("handler called", name);
 
       // deny disabled users
       const auth = req.auth ?? null;
@@ -97,7 +98,6 @@ export const handler = onCall(
       }
 
       // handlers
-      console.log("handler called", name);
       let data: unknown;
       if (name === "stripe/createCheckoutSession") {
         data = await createCheckoutSession({

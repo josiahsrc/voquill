@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { invokeHandler } from "@repo/functions";
-import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import { createUserCreds, markUserAsSubscribed, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
@@ -14,6 +14,7 @@ afterAll(tearDown);
 describe("tryInitializeMember", () => {
   it("works", async () => {
     const creds = await createUserCreds();
+    await markUserAsSubscribed();
     await signInWithCreds(creds);
 
     // auth creates the member as a fallback

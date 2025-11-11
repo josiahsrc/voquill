@@ -7,6 +7,7 @@ import { buildUser } from "../helpers/entities";
 import {
   createUserCreds,
   deleteMyUser as deleteMyUserImmediate,
+  markUserAsSubscribed,
   signInWithCreds,
 } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
@@ -18,6 +19,7 @@ describe("onDelete", () => {
   it("should delete user resources", async () => {
     const creds = await createUserCreds();
     await signInWithCreds(creds);
+    await markUserAsSubscribed();
 
     await invokeHandler("member/tryInitialize", {});
     await firemix().set(

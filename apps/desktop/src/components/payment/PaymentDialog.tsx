@@ -6,6 +6,7 @@ import {
   EmbeddedCheckoutProvider,
   useStripe,
 } from "@stripe/react-stripe-js";
+import { getAuth } from "firebase/auth";
 import { useCallback } from "react";
 import { useOnExit } from "../../hooks/helper.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -33,10 +34,24 @@ export const PaymentDialog = () => {
     // retrieve the member (process is async so we retry a few times)
     retry({
       fn: async () => {
-        const member = await invokeHandler("member/getMyMember", {})
-          .then((res) => res.member)
-          .catch(() => null);
-          console.log("retrieved member after payment:", member);
+        const user = getAuth().currentUser;
+        if (!user) {
+          console.log("no user signed in after payment");
+          throw new Error("no user signed in");
+        }
+
+        const claims = await user.getIdTokenResult(true);
+        const subscribed = claims.claims.subscribed === true;
+        if (!subscribed) {
+          console.log("user not subscribed yet, will retry");
+          throw new Error("user not subscribed yet");
+        }
+
+        const member = await invokeHandler("member/getMyMember", {}).then(
+          (res) => res.member
+        );
+
+        console.log("retrieved member after payment:", member);
         if (member) {
           produceAppState((draft) => {
             registerMembers(draft, [member]);

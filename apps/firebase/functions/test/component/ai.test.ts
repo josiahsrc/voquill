@@ -5,7 +5,7 @@ import { retry } from "@repo/utilities";
 import dayjs from "dayjs";
 import { getFullConfig } from "../../src/utils/config.utils";
 import { buildSilenceWavBase64 } from "../helpers/audio";
-import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import { createUserCreds, markUserAsSubscribed, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
 
 beforeAll(setUp);
@@ -17,6 +17,7 @@ const LONG_AUDIO_BASE64 = buildSilenceWavBase64(301, 16_000);
 const createMember = async () => {
   const creds = await createUserCreds();
   await signInWithCreds(creds);
+  await markUserAsSubscribed();
   await invokeHandler("member/tryInitialize", {});
   return creds;
 };

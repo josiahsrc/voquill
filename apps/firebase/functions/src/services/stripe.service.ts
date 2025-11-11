@@ -6,6 +6,7 @@ import { Nullable } from "@repo/types";
 import { dedup, getRec } from "@repo/utilities";
 import { AuthData } from "firebase-functions/tasks";
 import stripe from "stripe";
+import * as admin from "firebase-admin";
 import { checkPaidAccess } from "../utils/check.utils";
 import { ClientError, UnauthenticatedError } from "../utils/error.utils";
 import { getStripe, getOrCreateStripeDatabaseMember } from "../utils/stripe.utils";
@@ -93,6 +94,11 @@ export const handleGetPrices = async (args: {
     return { prices: {} };
   }
 
+  const notFoundPriceIds = args.input.priceIds.filter((priceId) => !priceKeyById[priceId]);
+  if (notFoundPriceIds.length > 0) {
+    throw new ClientError("Invalid price IDs provided: " + notFoundPriceIds.join(", "));
+  }
+
   const dedupedIds = dedup(args.input.priceIds);
   const stripePrices = await Promise.all(
     dedupedIds.map((priceId) => stripe.prices.retrieve(priceId))
@@ -133,16 +139,28 @@ export const handleSubscriptionCreated = async (
     priceId,
     stripeCustomerId: event.data.object.customer as string,
   });
+
+  console.log("adding custom claims to user", member.id);
+  await admin.auth().setCustomUserClaims(member.id, {
+    subscribed: true,
+  });
 };
 
 export const handleSubscriptionDeleted = async (
   event: stripe.CustomerSubscriptionDeletedEvent
 ) => {
   const member = await getOrCreateStripeDatabaseMember(event.data.object.metadata);
+
+  console.log("handling subscription deleted event");
   await firemix().update(mixpath.members(member.id), {
     plan: "free",
     priceId: null,
     updatedAt: firemix().now(),
+  });
+
+  console.log("removing custom claims from user", member.id);
+  await admin.auth().setCustomUserClaims(member.id, {
+    subscribed: false,
   });
 };
 

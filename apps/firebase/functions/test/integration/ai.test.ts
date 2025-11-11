@@ -3,7 +3,7 @@ import { firemix } from "@firemix/mixed";
 import { invokeHandler } from "@repo/functions";
 import { mixpath } from "@repo/firemix";
 import { retry } from "@repo/utilities";
-import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import { createUserCreds, markUserAsSubscribed, signInWithCreds } from "../helpers/firebase";
 import { buildSilenceWavBase64 } from "../helpers/audio";
 import { setUp, tearDown } from "../helpers/setup";
 import { getFullConfig } from "../../src/utils/config.utils";
@@ -20,6 +20,7 @@ type MemberCreds = {
 const createMember = async (): Promise<MemberCreds> => {
   const creds = await createUserCreds();
   await signInWithCreds(creds);
+  await markUserAsSubscribed();
   await invokeHandler("member/tryInitialize", {});
   return { id: creds.id };
 };

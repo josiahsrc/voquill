@@ -29,9 +29,9 @@ export const OnboardingLoginForm = () => {
   };
 
   const handleOpenPaymentDialog = async () => {
-    const member = await invokeHandler("member/getMyMember", {}).then(
-      (res) => res.member
-    );
+    const member = await invokeHandler("member/getMyMember", {})
+      .then((res) => res.member)
+      .catch(() => null);
     if (member?.plan !== "pro") {
       openPaymentDialog(getPriceIdFromKey("pro_monthly"));
     } else {
@@ -40,6 +40,7 @@ export const OnboardingLoginForm = () => {
   };
 
   useAsyncEffect(async () => {
+    console.log("currentUserId changed:", currentUserId);
     if (currentUserId) {
       handleOpenPaymentDialog();
     }

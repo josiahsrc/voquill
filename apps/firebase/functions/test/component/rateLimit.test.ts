@@ -1,7 +1,7 @@
 import { invokeHandler } from "@repo/functions";
 import * as admin from "firebase-admin";
 import { buildTerm, buildUser } from "../helpers/entities";
-import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import { createUserCreds, markUserAsSubscribed, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
 
 beforeAll(setUp);
@@ -11,6 +11,7 @@ describe("rate limiting", () => {
   it("increments my limits when I call", async () => {
     const creds = await createUserCreds();
     await signInWithCreds(creds);
+    await markUserAsSubscribed();
 
     const prevLimit = (await admin.database().ref(`/limits/${creds.id}`).get()).val() || 0;
     expect(prevLimit).toBe(0);
@@ -27,6 +28,7 @@ describe("rate limiting", () => {
   it("resets when the limit reset is called", async () => {
     const creds = await createUserCreds();
     await signInWithCreds(creds);
+    await markUserAsSubscribed();
 
     const limitRef = admin.database().ref(`/limits/${creds.id}`);
     await limitRef.set(10);
@@ -41,6 +43,7 @@ describe("rate limiting", () => {
     const runTest = async (fn: () => Promise<unknown>) => {
       const creds = await createUserCreds();
       await signInWithCreds(creds);
+      await markUserAsSubscribed();
 
       // Simulate exceeding rate limit
       const limitRef = admin.database().ref(`/limits/${creds.id}`);

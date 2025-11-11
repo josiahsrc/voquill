@@ -139,6 +139,20 @@ export async function signInWithCreds(creds: UserCreds) {
   return auth.currentUser;
 }
 
+export async function markUserAsSubscribed() {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("no user signed in");
+  }
+
+  await admin.auth().setCustomUserClaims(user.uid, {
+    subscribed: true,
+  });
+
+  await user.getIdToken(true);
+}
+
 export async function signOutUser() {
   const auth = getAuth();
   await signOut(auth);

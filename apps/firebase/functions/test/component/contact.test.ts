@@ -2,6 +2,7 @@ import { firemix } from "@firemix/mixed";
 import {
   createUserCreds,
   deleteMyUser,
+  markUserAsSubscribed,
   signInWithCreds,
 } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
