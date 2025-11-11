@@ -1,5 +1,5 @@
 import { firemix } from "@firemix/mixed";
-import { DatabaseMember, DatabaseUser, Member, User } from "@repo/types";
+import { DatabaseMember, DatabaseTerm, DatabaseUser, Member, Term, User } from "@repo/types";
 
 export const userToDatabase = (user: User): DatabaseUser => ({
   ...user,
@@ -29,4 +29,14 @@ export const memberFromDatabase = (dbMember: DatabaseMember): Member => ({
   updatedAt: dbMember.updatedAt.toDate().toISOString(),
   todayResetAt: dbMember.todayResetAt.toDate().toISOString(),
   thisMonthResetAt: dbMember.thisMonthResetAt.toDate().toISOString(),
+});
+
+export const termToDatabase = (term: Term): DatabaseTerm => ({
+  ...term,
+  createdAt: firemix().timestampFromDate(new Date(term.createdAt)),
+});
+
+export const termFromDatabase = (dbTerm: DatabaseTerm): Term => ({
+  ...dbTerm,
+  createdAt: dbTerm.createdAt.toDate().toISOString(),
 });

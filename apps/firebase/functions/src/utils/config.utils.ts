@@ -1,9 +1,15 @@
-import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
 import { FullConfig } from "@repo/types";
-import { getFullConfig } from "@repo/utilities";
 
-export const loadFullConfig = async (): Promise<FullConfig> => {
-  const partialConfig = await firemix().get(mixpath.systemConfig());
-  return getFullConfig(partialConfig?.data);
+export const getFullConfig = (): FullConfig => {
+  return {
+    freeWordsPerDay: 0,
+    freeWordsPerMonth: 0,
+    freeTokensPerDay: 0,
+    freeTokensPerMonth: 0,
+    proWordsPerDay: 20_000,
+    proWordsPerMonth: 1_000_000,
+    proTokensPerDay: 50_000,
+    proTokensPerMonth: 2_500_000,
+  };
 };
+

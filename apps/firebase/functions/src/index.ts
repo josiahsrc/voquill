@@ -1,22 +1,20 @@
 import {
   AiGenerateTextInputZod,
   AiTranscribeAudioInputZod,
+  DeleteTermInputZod,
   EmptyObjectZod,
   HandlerName,
   SetMyUserInputZod,
   StripeCreateCheckoutSessionInputZod,
   StripeGetPricesInputZod,
+  UpsertTermInputZod,
 } from "@repo/functions";
 import * as admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
 import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
-import {
-  cancelAccountDeletion,
-  enqueueAccountDeletion,
-} from "./services/auth.service";
-import { processDelayedActions } from "./services/delayedAction.service";
+import { getFullConfigResp } from "./services/config.service";
 import {
   getMyMember,
   handleResetLimitsThisMonth,
@@ -29,6 +27,7 @@ import {
   createCustomerPortalSession,
   handleGetPrices,
 } from "./services/stripe.service";
+import { deleteMyTerm, listMyTerms, upsertMyTerm } from "./services/term.service";
 import { getMyUser, setMyUser } from "./services/user.service";
 import {
   getDatabaseUrl,
@@ -51,7 +50,6 @@ initializeApp({
 getFirestore().settings({ ignoreUndefinedProperties: true });
 
 export * as auth from "./functions/auth.functions";
-export * as delayedAction from "./functions/delayedAction.functions";
 export * as member from "./functions/member.functions";
 export * as rateLimit from "./functions/rateLimit.functions";
 export * as stripe from "./functions/stripe.functions";
@@ -122,25 +120,12 @@ export const handler = onCall(
           auth,
           origin: req.rawRequest.get("origin") ?? "",
         });
-      } else if (name === "auth/deleteMyAccount") {
-        validateData(EmptyObjectZod, args ?? {});
-        data = await enqueueAccountDeletion({
-          auth,
-        });
-      } else if (name === "auth/cancelAccountDeletion") {
-        validateData(EmptyObjectZod, args ?? {});
-        data = await cancelAccountDeletion({
-          auth,
-        });
       } else if (name === "emulator/resetWordsToday") {
         validateData(EmptyObjectZod, args ?? {});
         data = await handleResetLimitsToday();
       } else if (name === "emulator/resetWordsThisMonth") {
         validateData(EmptyObjectZod, args ?? {});
         data = await handleResetLimitsThisMonth();
-      } else if (name === "emulator/processDelayedActions") {
-        validateData(EmptyObjectZod, args ?? {});
-        data = await processDelayedActions();
       } else if (name === "emulator/clearRateLimits") {
         validateData(EmptyObjectZod, args ?? {});
         data = await clearRateLimits();
@@ -167,6 +152,24 @@ export const handler = onCall(
       } else if (name === "user/getMyUser") {
         validateData(EmptyObjectZod, args ?? {});
         data = await getMyUser({
+          auth,
+        });
+      } else if (name === "config/getFullConfig") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = getFullConfigResp();
+      } else if (name === "term/deleteMyTerm") {
+        data = await deleteMyTerm({
+          auth,
+          input: validateData(DeleteTermInputZod, args),
+        });
+      } else if (name === "term/upsertMyTerm") {
+        data = await upsertMyTerm({
+          auth,
+          input: validateData(UpsertTermInputZod, args),
+        });
+      } else if (name === "term/listMyTerms") {
+        validateData(EmptyObjectZod, args ?? {});
+        data = await listMyTerms({
           auth,
         });
       } else {

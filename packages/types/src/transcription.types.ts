@@ -1,8 +1,6 @@
-import { FiremixTimestamp } from "@firemix/core";
-
 export type Transcription = {
   id: string;
-  createdAt: FiremixTimestamp;
+  createdAt: string;
   createdByUserId: string;
   transcript: string;
   isDeleted: boolean;

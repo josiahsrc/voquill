@@ -1,25 +1,15 @@
-import dayjs from "dayjs";
 import { firemix } from "@firemix/mixed";
-import { invokeHandler } from "@repo/functions";
 import { mixpath } from "@repo/firemix";
+import { invokeHandler } from "@repo/functions";
 import { retry } from "@repo/utilities";
-import { createUserCreds, signInWithCreds } from "../helpers/firebase";
+import dayjs from "dayjs";
+import { getFullConfig } from "../../src/utils/config.utils";
 import { buildSilenceWavBase64 } from "../helpers/audio";
+import { createUserCreds, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
 
 beforeAll(setUp);
 afterAll(tearDown);
-
-const config = {
-  freeWordsPerDay: 1000,
-  freeWordsPerMonth: 10_000,
-  proWordsPerDay: 10_000,
-  proWordsPerMonth: 100_000,
-  freeTokensPerDay: 2_000,
-  freeTokensPerMonth: 20_000,
-  proTokensPerDay: 20_000,
-  proTokensPerMonth: 200_000,
-};
 
 const SHORT_AUDIO_BASE64 = buildSilenceWavBase64(5, 8_000);
 const LONG_AUDIO_BASE64 = buildSilenceWavBase64(301, 16_000);
@@ -31,15 +21,11 @@ const createMember = async () => {
   return creds;
 };
 
-beforeAll(async () => {
-  await firemix().set(mixpath.systemConfig(), config);
-});
-
 describe("ai/transcribeAudio", () => {
   it("blocks access if the daily word limit is exceeded", async () => {
     const creds = await createMember();
     await firemix().update(mixpath.members(creds.id), {
-      wordsToday: config.freeWordsPerDay,
+      wordsToday: getFullConfig().freeWordsPerDay,
       wordsThisMonth: 0,
       tokensToday: 0,
       tokensThisMonth: 0,
@@ -62,7 +48,7 @@ describe("ai/transcribeAudio", () => {
     const creds = await createMember();
     await firemix().update(mixpath.members(creds.id), {
       wordsToday: 0,
-      wordsThisMonth: config.freeWordsPerMonth,
+      wordsThisMonth: getFullConfig().freeWordsPerMonth,
       tokensToday: 0,
       tokensThisMonth: 0,
       todayResetAt: firemix().timestampFromDate(dayjs().add(1, "day").toDate()),
@@ -83,6 +69,7 @@ describe("ai/transcribeAudio", () => {
   it("increments word usage counters when transcription succeeds", async () => {
     const creds = await createMember();
     await firemix().update(mixpath.members(creds.id), {
+      plan: "pro",
       wordsToday: 10,
       wordsThisMonth: 100,
       wordsTotal: 1_000,
@@ -111,7 +98,10 @@ describe("ai/transcribeAudio", () => {
   });
 
   it("rejects audio longer than three minutes", async () => {
-    await createMember();
+    const creds = await createMember();
+    await firemix().update(mixpath.members(creds.id), {
+      plan: "pro",
+    });
 
     await expect(
       invokeHandler("ai/transcribeAudio", {
@@ -123,7 +113,11 @@ describe("ai/transcribeAudio", () => {
   });
 
   it("rejects prompts longer than allowed length", async () => {
-    await createMember();
+    const creds = await createMember();
+    await firemix().update(mixpath.members(creds.id), {
+      plan: "pro",
+    });
+
     const longPrompt = "a".repeat(10_001);
 
     await expect(
@@ -141,9 +135,9 @@ describe("ai/generateText", () => {
   it("blocks access if the daily token limit is exceeded", async () => {
     const creds = await createMember();
     await firemix().update(mixpath.members(creds.id), {
-      wordsToday: 0,
-      wordsThisMonth: 0,
-      tokensToday: config.freeTokensPerDay,
+      wordsToday: -1,
+      wordsThisMonth: -1,
+      tokensToday: getFullConfig().freeTokensPerDay,
       tokensThisMonth: 0,
       todayResetAt: firemix().timestampFromDate(dayjs().add(1, "day").toDate()),
       thisMonthResetAt: firemix().timestampFromDate(
@@ -162,10 +156,10 @@ describe("ai/generateText", () => {
   it("blocks access if the monthly token limit is exceeded", async () => {
     const creds = await createMember();
     await firemix().update(mixpath.members(creds.id), {
-      wordsToday: 0,
-      wordsThisMonth: 0,
-      tokensToday: 0,
-      tokensThisMonth: config.freeTokensPerMonth,
+      wordsToday: -1,
+      wordsThisMonth: -1,
+      tokensToday: -1,
+      tokensThisMonth: getFullConfig().freeTokensPerMonth,
       todayResetAt: firemix().timestampFromDate(dayjs().add(1, "day").toDate()),
       thisMonthResetAt: firemix().timestampFromDate(
         dayjs().add(1, "month").toDate()
@@ -183,6 +177,7 @@ describe("ai/generateText", () => {
   it("increments token usage counters when generation succeeds", async () => {
     const creds = await createMember();
     await firemix().update(mixpath.members(creds.id), {
+      plan: "pro",
       wordsToday: 0,
       wordsThisMonth: 0,
       wordsTotal: 0,
@@ -210,7 +205,11 @@ describe("ai/generateText", () => {
   });
 
   it("rejects prompts longer than allowed length", async () => {
-    await createMember();
+    const creds = await createMember();
+    await firemix().update(mixpath.members(creds.id), {
+      plan: "pro",
+    });
+
     const longPrompt = "a".repeat(10_001);
 
     await expect(

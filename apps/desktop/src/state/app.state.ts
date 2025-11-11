@@ -1,26 +1,26 @@
 import { HandlerOutput } from "@repo/functions";
 import {
   ApiKey,
+  FullConfig,
   Hotkey,
   Member,
   Nullable,
-  PartialConfig,
-  UserPreferences,
   Term,
   Transcription,
   User,
+  UserPreferences,
 } from "@repo/types";
+import { AuthUser } from "../types/auth.types";
 import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
+import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
 import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.state";
 import { INITIAL_PAYMENT_STATE, PaymentState } from "./payment.state";
 import { INITIAL_PRICING_STATE, PricingState } from "./pricing.state";
 import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
-import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
-import { AuthUser } from "../types/auth.types";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -42,7 +42,7 @@ export type AppState = {
   transcriptionById: Record<string, Transcription>;
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
-  config: Nullable<PartialConfig>;
+  config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
 
   onboarding: OnboardingState;

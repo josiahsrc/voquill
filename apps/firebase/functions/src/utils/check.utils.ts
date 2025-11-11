@@ -1,7 +1,6 @@
 import { Nullable } from "@repo/types";
-import * as admin from "firebase-admin";
 import { AuthData } from "firebase-functions/tasks";
-import { ClientError, UnauthenticatedError } from "./error.utils";
+import { UnauthenticatedError } from "./error.utils";
 import { consumeRateLimit } from "./rateLimit.utils";
 
 function requireAuth(auth: Nullable<AuthData>): asserts auth is AuthData {
@@ -27,7 +26,7 @@ export const checkPaidAccess = async (auth: Nullable<AuthData>): Promise<PaidAcc
   requireAuth(auth);
   await requireSubscription(auth);
   await consumeRateLimit({
-    limit: 100_000,
+    limit: 50_000,
     auth: auth,
   });
   return { auth };

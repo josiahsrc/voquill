@@ -1,26 +1,20 @@
-import { AuthData } from "firebase-functions/tasks";
-import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { UnauthenticatedError } from "../utils/error.utils";
-import { tryInitializeMember } from "../utils/member.utils";
-import dayjs from "dayjs";
-import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
 import { firemix } from "@firemix/mixed";
-import { Member, Nullable } from "@repo/types";
 import { mixpath } from "@repo/firemix";
+import { HandlerInput, HandlerOutput } from "@repo/functions";
+import { Member, Nullable } from "@repo/types";
+import dayjs from "dayjs";
+import { AuthData } from "firebase-functions/tasks";
 import { checkPaidAccess } from "../utils/check.utils";
+import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
+import { tryInitializeMember } from "../utils/member.utils";
 import { memberFromDatabase } from "../utils/type.utils";
 
 export const handleTryInitializeMember = async (args: {
   auth: Nullable<AuthData>;
   input: HandlerInput<"member/tryInitialize">;
 }): Promise<HandlerOutput<"member/tryInitialize">> => {
-  const userId = args.auth?.uid;
-  if (!userId) {
-    console.log("no auth data provided");
-    throw new UnauthenticatedError("You must be authenticated");
-  }
-
-  await tryInitializeMember(userId);
+  const access = await checkPaidAccess(args.auth);
+  await tryInitializeMember(access.auth.uid);
   return {};
 };
 
@@ -114,8 +108,10 @@ export const trySend1000WordsEvent = async (args: {
 
 export const getMyMember = async (args: {
   auth: Nullable<AuthData>;
-}): Promise<Nullable<Member>> => {
+}): Promise<HandlerOutput<"member/getMyMember">> => {
   const access = await checkPaidAccess(args.auth);
   const member = await firemix().get(mixpath.members(access.auth.uid));
-  return member?.data ? memberFromDatabase(member.data) : null;
+  return {
+    member: member?.data ? memberFromDatabase(member.data) : null,
+  };
 };

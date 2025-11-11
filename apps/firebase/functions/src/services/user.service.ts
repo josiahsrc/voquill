@@ -5,6 +5,7 @@ import { mixpath } from "@repo/firemix";
 import { AuthData } from "firebase-functions/tasks";
 import { checkPaidAccess } from "../utils/check.utils";
 import { userFromDatabase, userToDatabase } from "../utils/type.utils";
+import { HandlerOutput } from "@repo/functions";
 
 export const tryUpdateUserLoopsContact = async (args: {
   userId: string;
@@ -44,16 +45,18 @@ export const trySendFinishedOnboardingEvent = async (args: {
 
 export const getMyUser = async (args: {
   auth: Nullable<AuthData>;
-}): Promise<Nullable<User>> => {
+}): Promise<HandlerOutput<"user/getMyUser">> => {
   const access = await checkPaidAccess(args.auth);
   const user = await firemix().get(mixpath.users(access.auth.uid));
-  return user?.data ? userFromDatabase(user.data) : null;
+  return {
+    user: user?.data ? userFromDatabase(user.data) : null,
+  };
 };
 
 export const setMyUser = async (args: {
   auth: Nullable<AuthData>;
   data: User;
-}): Promise<void> => {
+}): Promise<HandlerOutput<"user/setMyUser">> => {
   const access = await checkPaidAccess(args.auth);
   const userId = access.auth.uid;
   const data = args.data;
@@ -62,4 +65,5 @@ export const setMyUser = async (args: {
     id: userId,
     updatedAt: firemix().now(),
   });
+  return {};
 };

@@ -1,9 +1,8 @@
+import { DatabaseMember, Nullable } from "@repo/types";
 import stripe from "stripe";
 import { getStripeSecretKey } from "./env.utils";
 import { ClientError } from "./error.utils";
-import { Member, Nullable } from "@repo/types";
-import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
+import { tryInitializeMember } from "./member.utils";
 
 export const getStripe = () => {
   const secret = getStripeSecretKey();
@@ -14,25 +13,20 @@ export const getStripe = () => {
   return new stripe(secret);
 }
 
-export type GetMemberArgs = {
+export type GetStripDatabaseMember = {
   metadata?: stripe.Metadata;
   customer?: string | stripe.Customer | stripe.DeletedCustomer;
 };
 
-export const getMember = async (
+export const getOrCreateStripeDatabaseMember = async (
   metadata?: Nullable<stripe.Metadata>
-): Promise<Member> => {
+): Promise<DatabaseMember> => {
   const userId = metadata?.userId;
   if (!userId) {
     console.error("cannot find member, no userId provided in metadata");
     throw new ClientError("no userId provided");
   }
 
-  const member = await firemix().get(mixpath.members(userId));
-  if (!member) {
-    console.log("no member found for userId", userId);
-    throw new Error("member not found");
-  }
-
-  return member.data;
+  const member = await tryInitializeMember(userId);
+  return member;
 };

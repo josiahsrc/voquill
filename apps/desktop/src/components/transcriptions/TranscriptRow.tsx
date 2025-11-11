@@ -360,7 +360,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         spacing={1}
       >
         <Typography variant="subtitle2" color="text.secondary">
-          {dayjs(transcription?.createdAt.toDate()).format(
+          {dayjs(transcription?.createdAt).format(
             "MMM D, YYYY h:mm A"
           )}
         </Typography>

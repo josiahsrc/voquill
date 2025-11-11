@@ -93,7 +93,7 @@ describe("resetWordsTodayCron", () => {
         expect(notExpiredMemberSnap?.data.wordsToday).toBe(50);
         expect(
           notExpiredMemberSnap?.data.thisMonthResetAt?.toDate().toISOString()
-        ).toEqual(notExpiredMember.thisMonthResetAt);
+        ).toEqual(notExpiredMember.thisMonthResetAt?.toDate().toISOString());
       },
       retries: 10,
       delay: 1000
@@ -146,7 +146,7 @@ describe("resetWordsThisMonthCron", () => {
         expect(notExpiredMemberSnap?.data.wordsThisMonth).toBe(2500);
         expect(
           notExpiredMemberSnap?.data.thisMonthResetAt.toDate().toISOString()
-        ).toEqual(notExpiredMember.thisMonthResetAt);
+        ).toEqual(notExpiredMember.thisMonthResetAt.toDate().toISOString());
       },
       retries: 10,
       delay: 1000
@@ -154,50 +154,12 @@ describe("resetWordsThisMonthCron", () => {
   });
 });
 
-describe("firestore rules", () => {
-  let userId: string;
-
-  beforeEach(async () => {
-    const creds = await createUserCreds();
-    const user = await signInWithCreds(creds);
-
-    const member = memberToDatabase(buildMember({ id: user.uid }));
-    await firemix().set(mixpath.members(user.uid), member);
-
-    userId = user.uid;
-  });
-
-  it("lets me read my membership", async () => {
-    await expect(
-      firemix("client").get(mixpath.members(userId))
-    ).resolves.not.toThrow();
-  });
-
-  it("prevents listing other members", async () => {
-    await expect(
-      firemix("client").get(mixpath.members("differentUserId"))
-    ).rejects.toThrow();
-  });
-
-  it("prevents me from spoofing my membership", async () => {
-    await expect(
-      firemix("client").update(mixpath.members(userId), {
-        id: "differentUserId",
-      })
-    ).rejects.toThrow();
-    await expect(
-      firemix("client").update(mixpath.members(userId), {
-        plan: "pro",
-      })
-    ).rejects.toThrow();
-  });
-});
-
 describe("api", () => {
   it("lets me manage my member", async () => {
     const creds = await createUserCreds();
     await signInWithCreds(creds);
-    const myMember = await invokeHandler("member/getMyMember", {});
+    await invokeHandler("member/tryInitialize", {});
+    const myMember = await invokeHandler("member/getMyMember", {}).then(res => res.member);
     expect(myMember).not.toBeNull();
     expect(myMember?.id).toBe(creds.id);
   });

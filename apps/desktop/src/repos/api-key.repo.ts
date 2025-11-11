@@ -1,6 +1,6 @@
-import { firemix } from "@firemix/client";
 import { ApiKey, ApiKeyProvider } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
+import dayjs from "dayjs";
 import { BaseRepo } from "./base.repo";
 
 type LocalApiKey = {
@@ -16,7 +16,7 @@ const fromLocalApiKey = (apiKey: LocalApiKey): ApiKey => ({
   id: apiKey.id,
   name: apiKey.name,
   provider: apiKey.provider,
-  createdAt: firemix().timestampFromMillis(apiKey.createdAt),
+  createdAt: dayjs(apiKey.createdAt).toISOString(),
   keySuffix: apiKey.keySuffix ?? null,
   keyFull: apiKey.keyFull ?? null,
 });

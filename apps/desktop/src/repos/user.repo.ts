@@ -81,7 +81,7 @@ export class CloudUserRepo extends BaseUserRepo {
   }
 
   async getUser(): Promise<Nullable<User>> {
-    const user = await invokeHandler("user/getMyUser", {});
+    const user = await invokeHandler("user/getMyUser", {}).then((res) => res.user);
     return user;
   }
 }

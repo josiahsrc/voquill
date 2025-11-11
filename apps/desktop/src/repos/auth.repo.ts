@@ -20,6 +20,7 @@ export abstract class BaseAuthRepo extends BaseRepo {
   abstract sendPasswordResetRequest(email: string): Promise<void>;
   abstract signInWithGoogle(): Promise<UserCredential>;
   abstract getCurrentUser(): FirebaseUser | null;
+  abstract deleteMyAccount(): Promise<void>;
 }
 
 export class CloudAuthRepo extends BaseAuthRepo {
@@ -57,5 +58,14 @@ export class CloudAuthRepo extends BaseAuthRepo {
 
   getCurrentUser(): FirebaseUser | null {
     return getAuth().currentUser;
+  }
+
+  async deleteMyAccount(): Promise<void> {
+    const user = getAuth().currentUser;
+    if (!user) {
+      throw new Error("No user is currently signed in.");
+    }
+
+    await user.delete();
   }
 }

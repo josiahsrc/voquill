@@ -7,8 +7,8 @@ import { Nullable } from "@repo/types";
 import { countWords } from "@repo/utilities/src/string";
 import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
 import { AuthData } from "firebase-functions/tasks";
+import { checkPaidAccess } from "../utils/check.utils";
 import { getGroqApiKey } from "../utils/env.utils";
-import { UnauthenticatedError } from "../utils/error.utils";
 import {
   ensureAudioDurationWithinLimit,
   incrementTokenCount,
@@ -24,13 +24,9 @@ export const runTranscribeAudio = async ({
   auth: Nullable<AuthData>;
   input: HandlerInput<"ai/transcribeAudio">;
 }): Promise<HandlerOutput<"ai/transcribeAudio">> => {
-  if (!auth) {
-    console.log("missing auth data");
-    throw new UnauthenticatedError("You must be authenticated");
-  }
-
+  const access = await checkPaidAccess(auth);
   const { ext } = validateAudioInput({ audioMimeType: input.audioMimeType });
-  await validateMemberWithinLimits({ auth });
+  await validateMemberWithinLimits({ auth: access.auth });
 
   const blob = Buffer.from(input.audioBase64, "base64");
   const durationSeconds = ensureAudioDurationWithinLimit({
@@ -63,7 +59,7 @@ export const runTranscribeAudio = async ({
   }
 
   await incrementWordCount({
-    auth,
+    auth: access.auth,
     count: wordsUsed,
   });
 
@@ -79,12 +75,8 @@ export const runGenerateText = async ({
   auth: Nullable<AuthData>;
   input: HandlerInput<"ai/generateText">;
 }): Promise<HandlerOutput<"ai/generateText">> => {
-  if (!auth) {
-    console.log("missing auth data");
-    throw new UnauthenticatedError("You must be authenticated");
-  }
-
-  await validateMemberWithinLimits({ auth });
+  const access = await checkPaidAccess(auth);
+  await validateMemberWithinLimits({ auth: access.auth });
 
   let generatedText: string;
   let tokensUsed: number;
@@ -102,7 +94,7 @@ export const runGenerateText = async ({
   }
 
   await incrementTokenCount({
-    auth,
+    auth: access.auth,
     count: tokensUsed,
   });
 

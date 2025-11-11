@@ -1,6 +1,6 @@
 import { invokeHandler } from "@repo/functions";
 import * as admin from "firebase-admin";
-import { buildUser } from "../helpers/entities";
+import { buildTerm, buildUser } from "../helpers/entities";
 import { createUserCreds, signInWithCreds } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
 
@@ -63,5 +63,8 @@ describe("rate limiting", () => {
     await runTest(() => invokeHandler("user/getMyUser", {}));
     await runTest(() => invokeHandler("user/setMyUser", { value: buildUser() }));
     await runTest(() => invokeHandler("member/getMyMember", {}));
+    await runTest(() => invokeHandler("term/listMyTerms", {}));
+    await runTest(() => invokeHandler("term/upsertMyTerm", { term: buildTerm() }));
+    await runTest(() => invokeHandler("term/deleteMyTerm", { termId: "someTermId" }));
   });
 });

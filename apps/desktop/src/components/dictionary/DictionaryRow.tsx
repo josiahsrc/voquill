@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
-import { getMyEffectiveUserId } from "../../utils/user.utils";
 
 export type DictionaryRowProps = {
   id: string;
@@ -59,10 +58,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
     });
 
     try {
-      await getTermRepo().updateTerm(
-        getMyEffectiveUserId(getAppState()),
-        updatedTerm
-      );
+      await getTermRepo().updateTerm(updatedTerm);
     } catch (error) {
       produceAppState((draft) => {
         draft.termById[id] = previousTerm;
@@ -88,7 +84,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
     });
 
     try {
-      await getTermRepo().deleteTerm(getMyEffectiveUserId(getAppState()), id);
+      await getTermRepo().deleteTerm(id);
     } catch (error) {
       produceAppState((draft) => {
         draft.termById[id] = previousTerm;

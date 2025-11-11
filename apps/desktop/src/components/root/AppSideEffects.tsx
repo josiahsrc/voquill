@@ -1,7 +1,5 @@
-import { firemix, FiremixResult, Nullable } from "@firemix/client";
-import { mixpath } from "@repo/firemix";
 import { invokeHandler } from "@repo/functions";
-import { Member, PartialConfig, User } from "@repo/types";
+import { FullConfig, Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
 import { getAuth } from "firebase/auth";
 import { useEffect, useState } from "react";
@@ -17,7 +15,7 @@ import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 
 type StreamRet = Nullable<
-  [Nullable<Member>, Nullable<User>, Nullable<FiremixResult<PartialConfig>>]
+  [Nullable<Member>, Nullable<User>, Nullable<FullConfig>]
 >;
 
 export const AppSideEffects = () => {
@@ -53,9 +51,21 @@ export const AppSideEffects = () => {
       }
 
       return combineLatest([
-        from(invokeHandler("member/getMyMember", {}).catch(() => null)),
-        from(invokeHandler("user/getMyUser", {}).catch(() => null)),
-        firemix().watch(mixpath.systemConfig()),
+        from(
+          invokeHandler("member/getMyMember", {})
+            .then((res) => res.member)
+            .catch(() => null)
+        ),
+        from(
+          invokeHandler("user/getMyUser", {})
+            .then((res) => res.user)
+            .catch(() => null)
+        ),
+        from(
+          invokeHandler("config/getFullConfig", {})
+            .then((res) => res.config)
+            .catch(() => null)
+        ),
       ]);
     },
     onSuccess: (results) => {
@@ -68,7 +78,7 @@ export const AppSideEffects = () => {
       produceAppState((draft) => {
         registerUsers(draft, listify(user));
         registerMembers(draft, listify(members));
-        draft.config = config?.data ?? null;
+        draft.config = config;
       });
     },
     dependencies: [userId, authReady],

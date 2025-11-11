@@ -1,5 +1,4 @@
-import { firemix } from "@firemix/mixed";
-import { Member, TermDoc, User } from "@repo/types";
+import { Member, Term, User } from "@repo/types";
 
 export const buildMember = (overrides?: Partial<Member>): Member => ({
   id: "defaultMemberId",
@@ -35,17 +34,11 @@ export const buildUser = (overrides?: Partial<User>): User => ({
   ...overrides,
 });
 
-export const buildTermDoc = (overrides?: Partial<TermDoc>): TermDoc => ({
+export const buildTerm = (overrides?: Partial<Term>): Term => ({
   id: "defaultTermId",
-  termIds: ["term1"],
-  termById: {
-    term1: {
-      createdAt: firemix().timestampFromDate(new Date("2023-01-01T00:00:00Z")),
-      sourceValue: "default source",
-      destinationValue: "default destination",
-      isReplacement: true,
-      id: "term1"
-    }
-  },
+  createdAt: "2023-01-01T00:00:00Z",
+  sourceValue: "default source",
+  destinationValue: "default destination",
+  isReplacement: true,
   ...overrides,
 });
