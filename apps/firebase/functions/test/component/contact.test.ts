@@ -1,13 +1,12 @@
 import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
+import { retry } from "@repo/utilities";
 import {
   createUserCreds,
   deleteMyUser,
-  markUserAsSubscribed,
-  signInWithCreds,
+  signInWithCreds
 } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
-import { mixpath } from "@repo/firemix";
-import { retry } from "@repo/utilities";
 
 beforeAll(setUp);
 afterAll(tearDown);
