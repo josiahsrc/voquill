@@ -29,7 +29,7 @@ const REFRESH_TOKEN_ENTRY: &str = "refresh_token";
 const CALLBACK_PATH: &str = "/callback";
 const HTTP_SERVER_TIMEOUT: Duration = Duration::from_secs(120);
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GoogleAuthEventPayload {
 	pub id_token: String,
@@ -40,7 +40,7 @@ pub struct GoogleAuthEventPayload {
 	pub user: GoogleUserInfo,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GoogleUserInfo {
 	pub sub: String,
@@ -61,6 +61,7 @@ pub async fn start_google_oauth(
 	let code_verifier = generate_code_verifier();
 	let code_challenge = compute_code_challenge(&code_verifier);
 	let state = random_string(32);
+	let server_state = state.clone();
 
 	let listener = TcpListener::bind(("127.0.0.1", 0))
 		.map_err(|err| format!("Failed to bind OAuth callback listener: {err}"))?;
@@ -73,7 +74,7 @@ pub async fn start_google_oauth(
 	let redirect_uri = format!("http://127.0.0.1:{port}{CALLBACK_PATH}");
 
 	let server_handle = tauri::async_runtime::spawn_blocking(move || {
-		run_local_http_server(listener, state.clone(), HTTP_SERVER_TIMEOUT)
+		run_local_http_server(listener, server_state, HTTP_SERVER_TIMEOUT)
 	});
 
 	let auth_url = build_authorization_url(
@@ -236,7 +237,7 @@ fn handle_request(stream: &mut TcpStream, expected_state: &str) -> Result<Option
 	let state = query.get("state");
 	let code = query.get("code");
 
-	if state.as_deref() != Some(expected_state) || code.is_none() {
+	if state.map(|value| value.as_str()) != Some(expected_state) || code.is_none() {
 		respond(stream, 400, "Invalid sign-in request")?;
 		return Ok(None);
 	}
@@ -387,6 +388,6 @@ enum Audience {
 }
 
 fn store_refresh_token(token: &str) -> Result<(), keyring::Error> {
-	let entry = Entry::new(KEYRING_SERVICE, REFRESH_TOKEN_ENTRY)?;
+	let entry = Entry::new(KEYRING_SERVICE, REFRESH_TOKEN_ENTRY);
 	entry.set_password(token)
 }

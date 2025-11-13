@@ -49,6 +49,7 @@ sha2 = "0.10"
 keyring = "1"
 url = "2"
 jsonwebtoken = "9"
+dotenvy = "0.15"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"

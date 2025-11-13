@@ -166,7 +166,8 @@ pub async fn start_google_sign_in(
     let result = crate::system::google_oauth::start_google_oauth(&app_handle, config).await?;
 
     app_handle
-        .emit_all(
+        .emit_to(
+            EventTarget::any(),
             crate::system::google_oauth::GOOGLE_AUTH_EVENT,
             result.payload,
         )
