@@ -12,9 +12,9 @@
     "dev:linux:gpu": "cross-env TAURI_PLATFORM=linux npm run dev:tauri:gpu",
     "dev:tauri": "tauri dev --config src-tauri/tauri.local.conf.json",
     "dev:tauri:gpu": "tauri dev --config src-tauri/tauri.local.conf.json -- --no-default-features --features linux-gpu",
-    "dev:vite": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "dev:vite": "node scripts/run-vite-with-flavor.mjs dev",
+    "build": "tsc && node scripts/run-vite-with-flavor.mjs build",
+    "preview": "node scripts/run-vite-with-flavor.mjs preview",
     "tauri": "tauri",
     "test:webdriver": "wdio run webdriver/wdio.conf.js"
   },
