@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { produceAppState } from "../../store";
 import {
-  checkInputMonitoringPermission,
+  checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "../../utils/permission.utils";
 
@@ -17,13 +17,13 @@ export const PermissionSideEffects = () => {
 
     checkingRef.current = true;
     try {
-      const [microphone, inputMonitoring] = await Promise.all([
+      const [microphone, accessibility] = await Promise.all([
         checkMicrophonePermission().catch((error) => {
           console.error("Failed to fetch microphone permission", error);
           return null;
         }),
-        checkInputMonitoringPermission().catch((error) => {
-          console.error("Failed to fetch input monitoring permission", error);
+        checkAccessibilityPermission().catch((error) => {
+          console.error("Failed to fetch accessibility permission", error);
           return null;
         }),
       ]);
@@ -31,7 +31,7 @@ export const PermissionSideEffects = () => {
       if (mountedRef.current) {
         produceAppState((draft) => {
           draft.permissions.microphone = microphone;
-          draft.permissions["input-monitoring"] = inputMonitoring;
+          draft.permissions.accessibility = accessibility;
         });
       }
     } finally {

@@ -23,7 +23,7 @@ import {
   getPermissionInstructions,
   getPermissionLabel,
   isPermissionAuthorized,
-  requestInputMonitoringPermission,
+  requestAccessibilityPermission,
   requestMicrophonePermission,
 } from "../../utils/permission.utils";
 
@@ -32,7 +32,7 @@ const ICON_SIZE = 28;
 const purposeDescriptions: Record<PermissionKind, string> = {
   microphone:
     "Allows Voquill to capture audio from your microphone for transcription.",
-  "input-monitoring":
+  accessibility:
     "Lets you trigger dictation hotkeys while using other applications.",
 };
 
@@ -85,7 +85,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       const requestFn =
         kind === "microphone"
           ? requestMicrophonePermission
-          : requestInputMonitoringPermission;
+          : requestAccessibilityPermission;
       const result = await requestFn();
       produceAppState((draft) => {
         draft.permissions[kind] = result;

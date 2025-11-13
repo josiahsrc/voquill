@@ -13,7 +13,7 @@ pub enum PermissionState {
 #[serde(rename_all = "kebab-case")]
 pub enum PermissionKind {
     Microphone,
-    InputMonitoring,
+    Accessibility,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
