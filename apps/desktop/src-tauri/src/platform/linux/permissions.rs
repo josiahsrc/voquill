@@ -8,12 +8,12 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
     check_microphone_permission()
 }
 
-pub(crate) fn check_input_monitoring_permission() -> Result<PermissionStatus, String> {
-    Ok(authorized_status(PermissionKind::InputMonitoring))
+pub(crate) fn check_accessibility_permission() -> Result<PermissionStatus, String> {
+    Ok(authorized_status(PermissionKind::Accessibility))
 }
 
-pub(crate) fn request_input_monitoring_permission() -> Result<PermissionStatus, String> {
-    check_input_monitoring_permission()
+pub(crate) fn request_accessibility_permission() -> Result<PermissionStatus, String> {
+    check_accessibility_permission()
 }
 
 fn authorized_status(kind: PermissionKind) -> PermissionStatus {

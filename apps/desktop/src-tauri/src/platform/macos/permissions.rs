@@ -2,6 +2,10 @@ use crate::domain::{PermissionKind, PermissionState, PermissionStatus};
 use block::ConcreteBlock;
 use cocoa::base::{id, nil};
 use cocoa::foundation::{NSAutoreleasePool, NSString};
+use core_foundation::{
+    base::TCFType, boolean::CFBoolean, dictionary::CFDictionary, string::CFString,
+};
+use core_foundation_sys::{dictionary::CFDictionaryRef, string::CFStringRef};
 use objc::{class, msg_send, sel, sel_impl};
 use std::sync::{Arc, Condvar, Mutex};
 
@@ -12,8 +16,9 @@ const AUTH_STATUS_AUTHORIZED: i64 = 3;
 
 #[link(name = "ApplicationServices", kind = "framework")]
 extern "C" {
-    fn CGPreflightListenEventAccess() -> bool;
-    fn CGRequestListenEventAccess() -> bool;
+    fn AXIsProcessTrusted() -> bool;
+    fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> bool;
+    static kAXTrustedCheckOptionPrompt: CFStringRef;
 }
 
 #[link(name = "AVFoundation", kind = "framework")]
@@ -137,23 +142,6 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
     }
 }
 
-pub(crate) fn check_input_monitoring_permission() -> Result<PermissionStatus, String> {
-    unsafe {
-        let trusted = CGPreflightListenEventAccess();
-        let state = if trusted {
-            PermissionState::Authorized
-        } else {
-            PermissionState::Denied
-        };
-
-        Ok(PermissionStatus {
-            kind: PermissionKind::InputMonitoring,
-            state,
-            prompt_shown: false,
-        })
-    }
-}
-
 fn permission_state_from_authorization(status: i64) -> Result<PermissionState, String> {
     match status {
         AUTH_STATUS_AUTHORIZED => Ok(PermissionState::Authorized),
@@ -189,10 +177,10 @@ fn open_microphone_privacy_settings() -> bool {
     }
 }
 
-fn open_input_monitoring_privacy_settings() -> bool {
+fn open_accessibility_privacy_settings() -> bool {
     unsafe {
         let url_string = NSString::alloc(nil).init_str(
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
         );
         let url: id = msg_send![class!(NSURL), URLWithString: url_string];
         if url == nil {
@@ -209,62 +197,73 @@ fn open_input_monitoring_privacy_settings() -> bool {
     }
 }
 
-pub(crate) fn request_input_monitoring_permission() -> Result<PermissionStatus, String> {
+pub(crate) fn check_accessibility_permission() -> Result<PermissionStatus, String> {
     unsafe {
-        eprintln!("[macos::permissions] request_input_monitoring_permission invoked");
-        let initial_trusted = CGPreflightListenEventAccess();
+        let trusted = AXIsProcessTrusted();
+        Ok(PermissionStatus {
+            kind: PermissionKind::Accessibility,
+            state: accessibility_state_from_bool(trusted),
+            prompt_shown: false,
+        })
+    }
+}
+
+fn accessibility_state_from_bool(trusted: bool) -> PermissionState {
+    if trusted {
+        PermissionState::Authorized
+    } else {
+        PermissionState::Denied
+    }
+}
+
+pub(crate) fn request_accessibility_permission() -> Result<PermissionStatus, String> {
+    unsafe {
+        eprintln!("[macos::permissions] request_accessibility_permission invoked");
+        let initial_trusted = AXIsProcessTrusted();
         eprintln!(
-            "[macos::permissions] request_input_monitoring_permission initial_trusted={}",
+            "[macos::permissions] request_accessibility_permission initial_trusted={}",
             initial_trusted
         );
 
-        if initial_trusted {
-            return Ok(PermissionStatus {
-                kind: PermissionKind::InputMonitoring,
-                state: PermissionState::Authorized,
-                prompt_shown: false,
-            });
+        let mut prompt_shown = false;
+        if !initial_trusted {
+            prompt_shown = true;
+            let key = CFString::wrap_under_get_rule(kAXTrustedCheckOptionPrompt);
+            let prompt_value = CFBoolean::true_value();
+            let options: CFDictionary<CFString, CFBoolean> =
+                CFDictionary::from_CFType_pairs(&[(key, prompt_value)]);
+            let request_result = AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef());
+            eprintln!(
+                "[macos::permissions] request_accessibility_permission request_result={}",
+                request_result
+            );
         }
 
-        let request_result = CGRequestListenEventAccess();
+        let mut final_trusted = AXIsProcessTrusted();
         eprintln!(
-            "[macos::permissions] request_input_monitoring_permission request_result={}",
-            request_result
-        );
-
-        let mut prompt_shown = request_result || !initial_trusted;
-
-        let mut final_trusted = CGPreflightListenEventAccess();
-        eprintln!(
-            "[macos::permissions] request_input_monitoring_permission final_trusted_after_request={}",
+            "[macos::permissions] request_accessibility_permission final_trusted={}",
             final_trusted
         );
 
         if !final_trusted {
-            let settings_opened = open_input_monitoring_privacy_settings();
+            let settings_opened = open_accessibility_privacy_settings();
             eprintln!(
-                "[macos::permissions] input monitoring settings opened via helper={}",
+                "[macos::permissions] accessibility settings opened via helper={}",
                 settings_opened
             );
             if settings_opened {
-                final_trusted = CGPreflightListenEventAccess();
+                final_trusted = AXIsProcessTrusted();
                 eprintln!(
-                    "[macos::permissions] request_input_monitoring_permission final_trusted_after_settings={}",
+                    "[macos::permissions] request_accessibility_permission final_trusted_after_settings={}",
                     final_trusted
                 );
             }
             prompt_shown |= settings_opened;
         }
 
-        let state = if final_trusted {
-            PermissionState::Authorized
-        } else {
-            PermissionState::Denied
-        };
-
         Ok(PermissionStatus {
-            kind: PermissionKind::InputMonitoring,
-            state,
+            kind: PermissionKind::Accessibility,
+            state: accessibility_state_from_bool(final_trusted),
             prompt_shown,
         })
     }
