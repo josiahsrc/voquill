@@ -27,6 +27,8 @@ pub use windows::permissions;
 #[cfg(target_os = "windows")]
 pub use windows::window;
 
+pub mod app_info;
+
 pub mod audio;
 pub mod whisper;
 

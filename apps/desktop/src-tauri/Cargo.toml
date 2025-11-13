@@ -44,6 +44,8 @@ rodio = "0.17"
 wgpu = "0.20"
 hound = "3.5"
 base64 = "0.21"
+ferrous-focus = "0.3.1"
+image = { version = "0.25.2", default-features = false, features = ["jpeg"] }
 rand = "0.8"
 sha2 = "0.10"
 keyring = "1"
