@@ -6,6 +6,7 @@ import {
   getAuth,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
@@ -19,6 +20,7 @@ export abstract class BaseAuthRepo extends BaseRepo {
   abstract signInWithEmail(email: string, password: string): Promise<UserCredential>;
   abstract sendPasswordResetRequest(email: string): Promise<void>;
   abstract signInWithGoogle(): Promise<UserCredential>;
+  abstract signInWithGoogleTokens(idToken: string, accessToken: string): Promise<UserCredential>;
   abstract getCurrentUser(): FirebaseUser | null;
   abstract deleteMyAccount(): Promise<void>;
 }
@@ -54,6 +56,11 @@ export class CloudAuthRepo extends BaseAuthRepo {
     provider.setCustomParameters({ prompt: "select_account" });
 
     return signInWithPopup(getAuth(), provider);
+  }
+
+  async signInWithGoogleTokens(idToken: string, accessToken: string): Promise<UserCredential> {
+    const credential = GoogleAuthProvider.credential(idToken, accessToken);
+    return signInWithCredential(getAuth(), credential);
   }
 
   getCurrentUser(): FirebaseUser | null {

@@ -42,6 +42,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
+            app.manage(crate::state::GoogleOAuthState::from_env());
 
             #[cfg(desktop)]
             {
@@ -90,6 +91,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::user_get_one,
             crate::commands::user_set_one,
             crate::commands::user_preferences_get,
+            crate::commands::start_google_sign_in,
             crate::commands::user_preferences_set,
             crate::commands::list_microphones,
             crate::commands::list_gpus,

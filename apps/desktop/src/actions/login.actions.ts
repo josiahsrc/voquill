@@ -1,5 +1,8 @@
+import { invoke } from "@tauri-apps/api/core";
 import { invokeHandler } from "@repo/functions";
 import type { LoginMode } from "../state/login.state";
+import type { GoogleAuthPayload } from "../types/google-auth.types";
+import { GOOGLE_AUTH_COMMAND } from "../types/google-auth.types";
 import { getAppState, produceAppState } from "../store";
 import { getAuthRepo } from "../repos";
 import { validateEmail } from "../utils/login.utils";
@@ -29,22 +32,37 @@ export const submitSignIn = async (): Promise<void> => {
 };
 
 export const submitSignInWithGoogle = async (): Promise<void> => {
-  try {
-    produceAppState((state) => {
-      state.login.status = "loading";
-      state.login.errorMessage = "";
-    });
-    await getAuthRepo().signInWithGoogle();
-    await tryInit();
-    produceAppState((state) => {
-      state.login.status = "success";
-    });
-  } catch {
-    produceAppState((state) => {
-      state.login.errorMessage = "An error occurred while signing in.";
-      state.login.status = "idle";
-    });
-  }
+	try {
+		produceAppState((state) => {
+			state.login.status = "loading";
+			state.login.errorMessage = "";
+		});
+		await invoke(GOOGLE_AUTH_COMMAND);
+	} catch {
+		produceAppState((state) => {
+			state.login.errorMessage = "An error occurred while signing in.";
+			state.login.status = "idle";
+		});
+	}
+};
+
+export const handleGoogleAuthPayload = async (payload: GoogleAuthPayload): Promise<void> => {
+	try {
+		produceAppState((state) => {
+			state.login.status = "loading";
+			state.login.errorMessage = "";
+		});
+		await getAuthRepo().signInWithGoogleTokens(payload.idToken, payload.accessToken);
+		await tryInit();
+		produceAppState((state) => {
+			state.login.status = "success";
+		});
+	} catch {
+		produceAppState((state) => {
+			state.login.errorMessage = "An error occurred while signing in with Google.";
+			state.login.status = "idle";
+		});
+	}
 };
 
 export const submitSignUp = async (): Promise<void> => {
