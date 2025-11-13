@@ -31,6 +31,7 @@ import { deleteMyTerm, listMyTerms, upsertMyTerm } from "./services/term.service
 import { getMyUser, setMyUser } from "./services/user.service";
 import {
   getDatabaseUrl,
+  getFlavor,
   getStorageBucket,
   GROQ_API_KEY_VAR,
   isEmulated,
@@ -85,6 +86,9 @@ export const handler = onCall(
     return await wrapAsync(async () => {
       const { name, args } = req.data;
       console.log("handler called", name);
+      if (getFlavor() === "dev") {
+        throw new Error("dev has not been implemented yet");
+      }
 
       // deny disabled users
       const auth = req.auth ?? null;
