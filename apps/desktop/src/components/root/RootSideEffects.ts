@@ -12,6 +12,7 @@ import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { addWordsToCurrentUser } from "../../actions/user.actions";
+import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
@@ -19,6 +20,8 @@ import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import { OverlayPhase } from "../../types/overlay.types";
+import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
+import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMyEffectiveUserId, getMyUser } from "../../utils/user.utils";
 import {
@@ -358,6 +361,10 @@ export const RootSideEffects = () => {
       draft.audioLevels = sanitized;
     });
   });
+
+  useTauriListen<GoogleAuthPayload>(GOOGLE_AUTH_EVENT, (payload) =>
+    handleGoogleAuthPayload(payload),
+  );
 
   return null;
 };

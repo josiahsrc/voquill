@@ -152,6 +152,31 @@ pub async fn user_preferences_get(
 }
 
 #[tauri::command]
+pub async fn start_google_sign_in(
+    app_handle: AppHandle,
+    config: State<'_, crate::state::GoogleOAuthState>,
+) -> Result<(), String> {
+    let config = config
+        .config()
+        .ok_or_else(|| {
+            "Google OAuth client id/secret not configured. Set VOQUILL_GOOGLE_CLIENT_ID and VOQUILL_GOOGLE_CLIENT_SECRET."
+                .to_string()
+        })?;
+
+    let result = crate::system::google_oauth::start_google_oauth(&app_handle, config).await?;
+
+    app_handle
+        .emit_to(
+            EventTarget::any(),
+            crate::system::google_oauth::GOOGLE_AUTH_EVENT,
+            result.payload,
+        )
+        .map_err(|err| err.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn list_microphones() -> Vec<crate::platform::audio::InputDeviceDescriptor> {
     crate::platform::audio::list_input_devices()
 }
