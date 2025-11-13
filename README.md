@@ -77,7 +77,7 @@ npm run dev:linux --workspace apps/desktop
 npm run dev:linux:gpu --workspace apps/desktop
 ```
 
-During local development you can override platform detection by exporting `VOQUILL_DESKTOP_PLATFORM` (`darwin`, `win32`, or `linux`). Set `VITE_USE_EMULATORS=true` to point at Firebase emulators.
+During local development you can override platform detection by exporting `VOQUILL_DESKTOP_PLATFORM` (`darwin`, `win32`, or `linux`). The desktop dev journey now defaults to the `emulators` flavor (`apps/desktop/.env.emulators`) so that `turbo dev` and the workspace dev scripts point at the Firebase emulator suite; pass `FLAVOR=dev` or `VITE_FLAVOR=dev` when you explicitly want the hosted dev project. Set `VITE_USE_EMULATORS=true` to point at Firebase emulators (this is already true in the emulator flavor).
 
 ### Run the marketing site
 ```sh

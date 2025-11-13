@@ -16,8 +16,7 @@ import {
   validateMemberWithinLimits
 } from "../utils/voice.utils";
 
-const MAX_BLOB_BYTES = 20 * 1024 * 1024; // 20 MB
-const MAX_WORD_COUNT_PROMPT = 20_000;
+const MAX_BLOB_BYTES = 16 * 1024 * 1024; // 16 MB
 
 export const runTranscribeAudio = async ({
   auth,
@@ -33,7 +32,7 @@ export const runTranscribeAudio = async ({
   }
 
   if (blobBytes > MAX_BLOB_BYTES) {
-    throw new ClientError("Audio data exceeds maximum size of 10 MB");
+    throw new ClientError("Audio data exceeds maximum size of 16 MB");
   }
 
   const access = await checkPaidAccess(auth);
@@ -75,19 +74,6 @@ export const runGenerateText = async ({
 }): Promise<HandlerOutput<"ai/generateText">> => {
   const access = await checkPaidAccess(auth);
   await validateMemberWithinLimits({ auth: access.auth });
-
-  const systemWordCount = countWords(input.system ?? "");
-  const promptWordCount = countWords(input.prompt);
-  const totalWordCount = systemWordCount + promptWordCount;
-  if (totalWordCount === 0) {
-    throw new ClientError("Prompt cannot be empty");
-  }
-
-  if (totalWordCount > MAX_WORD_COUNT_PROMPT) {
-    throw new ClientError(
-      `Prompt exceeds maximum word count of ${MAX_WORD_COUNT_PROMPT}`
-    );
-  }
 
   let generatedText: string;
   let tokensUsed: number;

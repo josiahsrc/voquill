@@ -173,7 +173,7 @@ export class VoiceClient {
         messages,
         model,
         temperature: 1,
-        max_completion_tokens: 1024,
+        max_completion_tokens: 4000,
         top_p: 1,
         response_format: {
           type: "json_schema",

@@ -12,7 +12,7 @@ beforeAll(setUp);
 afterAll(tearDown);
 
 const SHORT_AUDIO_BASE64 = buildSilenceWavBase64(5, 8_000);
-const LONG_AUDIO_BASE64 = buildSilenceWavBase64(301, 16_000);
+const LONG_AUDIO_BASE64 = buildSilenceWavBase64(301, 32_000);
 
 const createMember = async () => {
   const creds = await createUserCreds();
@@ -110,7 +110,7 @@ describe("ai/transcribeAudio", () => {
         audioMimeType: "audio/wav",
         simulate: true,
       })
-    ).rejects.toThrow("Audio duration must be 3 minutes or less");
+    ).rejects.toThrow("Audio data exceeds maximum size of 16 MB");
   });
 
   it("rejects prompts longer than allowed length", async () => {
@@ -119,7 +119,7 @@ describe("ai/transcribeAudio", () => {
       plan: "pro",
     });
 
-    const longPrompt = "a".repeat(10_001);
+    const longPrompt = "a".repeat(20_001);
 
     await expect(
       invokeHandler("ai/transcribeAudio", {
@@ -128,7 +128,7 @@ describe("ai/transcribeAudio", () => {
         audioMimeType: "audio/wav",
         simulate: true,
       })
-    ).rejects.toThrow(/String must contain at most 10000 character\(s\)/);
+    ).rejects.toThrow(/String must contain at most 20000 character\(s\)/);
   });
 });
 
@@ -211,14 +211,14 @@ describe("ai/generateText", () => {
       plan: "pro",
     });
 
-    const longPrompt = "a".repeat(10_001);
+    const longPrompt = "a".repeat(25_001);
 
     await expect(
       invokeHandler("ai/generateText", {
         prompt: longPrompt,
         simulate: true,
       })
-    ).rejects.toThrow(/String must contain at most 10000 character\(s\)/);
+    ).rejects.toThrow(/String must contain at most 25000 character\(s\)/);
   });
 });
 

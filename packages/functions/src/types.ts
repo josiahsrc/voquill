@@ -1,9 +1,6 @@
 import { FullConfig, Member, Term, TermZod, UserZod, type EmptyObject, type JsonResponse, type Nullable, type User } from "@repo/types";
 import { z } from "zod";
 
-export const AI_MAX_AUDIO_DURATION_SECONDS = 3 * 60;
-export const AI_PROMPT_MAX_CHARACTERS = 10_000;
-
 type HandlerDefinitions = {
   // emulator
   "emulator/resetWordsToday": {
@@ -152,7 +149,7 @@ export const JsonResponseZod = z
 
 export const AiTranscribeAudioInputZod = z
   .object({
-    prompt: z.string().max(AI_PROMPT_MAX_CHARACTERS).nullable().optional(),
+    prompt: z.string().max(20_000).nullable().optional(),
     audioBase64: z.string().min(1),
     audioMimeType: z.string().min(1),
     simulate: z.boolean().nullable().optional(),
@@ -161,8 +158,8 @@ export const AiTranscribeAudioInputZod = z
 
 export const AiGenerateTextInputZod = z
   .object({
-    system: z.string().nullable().optional(),
-    prompt: z.string().max(AI_PROMPT_MAX_CHARACTERS),
+    system: z.string().max(3_000).nullable().optional(),
+    prompt: z.string().max(25_000),
     simulate: z.boolean().nullable().optional(),
     jsonResponse: JsonResponseZod.nullable().optional(),
   })

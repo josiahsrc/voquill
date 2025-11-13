@@ -14,7 +14,8 @@ const finalArgs = []
   .concat(hasExplicitCommand ? explicitCommand : [])
   .concat(subcommandArgs);
 
-const defaultMode = modeHint === "build" || modeHint === "preview" ? "prod" : "dev";
+const defaultMode =
+  modeHint === "build" || modeHint === "preview" ? "prod" : "emulators";
 const flavorFromEnv =
   (process.env.VITE_FLAVOR ?? process.env.FLAVOR)?.trim() ?? undefined;
 const desiredMode = flavorFromEnv || defaultMode;

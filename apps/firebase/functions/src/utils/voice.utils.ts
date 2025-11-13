@@ -1,11 +1,10 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
-import { AI_MAX_AUDIO_DURATION_SECONDS } from "@repo/functions";
 import { Member } from "@repo/types";
 import { getMemberExceedsTokenLimit, getMemberExceedsWordLimit } from "@repo/utilities";
 import { AuthData } from "firebase-functions/tasks";
-import { ClientError } from "./error.utils";
 import { getFullConfig } from "./config.utils";
+import { ClientError } from "./error.utils";
 import { memberFromDatabase } from "./type.utils";
 
 export const validateAudioInput = (args: {
