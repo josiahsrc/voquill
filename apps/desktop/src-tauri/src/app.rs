@@ -24,6 +24,12 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();
+                #[cfg(target_os = "macos")]
+                if window.label() == "main" {
+                    if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
+                        eprintln!("Failed to hide dock icon: {err}");
+                    }
+                }
             }
         })
         .setup(|app| {
@@ -49,6 +55,12 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 if std::env::args().any(|arg| arg == AUTOSTART_HIDDEN_ARG) {
                     if let Some(main_window) = app.get_webview_window("main") {
                         let _ = main_window.hide();
+                        #[cfg(target_os = "macos")]
+                        {
+                            if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
+                                eprintln!("Failed to hide dock icon on autostart: {err}");
+                            }
+                        }
                     }
                 }
 

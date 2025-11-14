@@ -2,6 +2,7 @@ use cocoa::appkit::{NSApp, NSApplication, NSWindow};
 use cocoa::base::{id, nil, YES};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
+use crate::platform::macos::dock;
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
@@ -10,6 +11,10 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     window
         .run_on_main_thread(move || {
             let result = (|| -> Result<(), String> {
+                if let Err(err) = dock::show_dock_icon() {
+                    eprintln!("Failed to show dock icon: {err}");
+                }
+
                 let ns_window_ptr = window_for_handle
                     .ns_window()
                     .map_err(|err| err.to_string())?;
