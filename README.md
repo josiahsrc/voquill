@@ -14,8 +14,6 @@
 
 </div>
 
----
-
 Voquill is an open-source, cross-platform speech-to-text workspace that lets you dictate into any desktop application, clean the transcript with AI, and keep your personal glossary in sync. The repo bundles the production desktop app, marketing site, Firebase backend, and all shared packages in a single Turborepo.
 
 ## Highlights
