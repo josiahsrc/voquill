@@ -1,5 +1,6 @@
 import { ArrowBack } from "@mui/icons-material";
 import { Button, Stack, Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { setMode } from "../../actions/login.actions";
 
 export const ResetSentForm = () => {
@@ -10,10 +11,10 @@ export const ResetSentForm = () => {
 	return (
 		<Stack spacing={2} alignItems="center">
 			<Typography textAlign="center" variant="body2">
-				An email has been sent to you with a link to reset your password.
+				<FormattedMessage defaultMessage="An email has been sent to you with a link to reset your password." />
 			</Typography>
 			<Button size="small" startIcon={<ArrowBack />} onClick={handleClickBack}>
-				Back
+				<FormattedMessage defaultMessage="Back" />
 			</Button>
 		</Stack>
 	);

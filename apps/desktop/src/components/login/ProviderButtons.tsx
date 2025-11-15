@@ -1,12 +1,13 @@
 import { Google } from "@mui/icons-material";
 import { Button } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { useAppStore } from "../../store";
 import { submitSignInWithGoogle } from "../../actions/login.actions";
 
 export const SignInWithGoogleButton = () => {
 	const loading = useAppStore((state) => state.login.status === "loading");
 
-	return (
+		return (
 		<Button
 			fullWidth
 			variant="outlined"
@@ -14,7 +15,7 @@ export const SignInWithGoogleButton = () => {
 			disabled={loading}
 			onClick={submitSignInWithGoogle}
 		>
-			Continue with Google
+			<FormattedMessage defaultMessage="Continue with Google" />
 		</Button>
 	);
 };

@@ -1,5 +1,6 @@
 import { CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { isDefined } from "@repo/utilities";
 
 type SectionProps = {
@@ -57,7 +58,11 @@ export const Section = ({
   if (blocked) {
     return (
       <Tooltip
-        title={blockedReason || "This setting is not available."}
+        title={
+          blockedReason || (
+            <FormattedMessage defaultMessage="This setting is not available." />
+          )
+        }
         disableInteractive
       >
         <span

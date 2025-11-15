@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { useAppStore } from "../../store";
 import {
   DICTATE_HOTKEY,
@@ -18,7 +19,8 @@ export const DictationInstruction = () => {
 
   return (
     <Typography variant="body2" color="text.secondary" component="div">
-      Press {combos.length > 1 ? "one of " : ""}
+      <FormattedMessage defaultMessage="Press" />{" "}
+      {combos.length > 1 ? <FormattedMessage defaultMessage="one of" /> : ""}{" "}
       {combos.map((combo, index) => {
         const key = combo.join("|");
         const isLast = index === combos.length - 1;
@@ -42,7 +44,8 @@ export const DictationInstruction = () => {
           </Fragment>
         );
       })}
-      {" to start dictating."}
+      {" "}
+      <FormattedMessage defaultMessage="to start dictating." />
     </Typography>
   );
 };

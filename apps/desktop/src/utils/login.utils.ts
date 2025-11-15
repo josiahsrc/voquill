@@ -1,11 +1,14 @@
 import type { AppState } from "../state/app.state";
+import { getIntl } from "../i18n/intl";
 
 export const validateEmail = (state: AppState): string | null => {
 	const email = state.login.email;
 
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 	if (!emailRegex.test(email)) {
-		return "Invalid email address";
+		return getIntl().formatMessage({
+			defaultMessage: "Invalid email address",
+		});
 	}
 
 	return null;
@@ -14,7 +17,9 @@ export const validateEmail = (state: AppState): string | null => {
 export const validatePassword = (state: AppState): string | null => {
 	const password = state.login.password;
 	if (password.length < 6) {
-		return "Password must be at least 6 characters long";
+		return getIntl().formatMessage({
+			defaultMessage: "Password must be at least 6 characters long",
+		});
 	}
 
 	return null;
@@ -25,7 +30,9 @@ export const validateConfirmPassword = (state: AppState): string | null => {
 	const password = state.login.password;
 
 	if (confirmPassword !== password) {
-		return "Password does not match";
+		return getIntl().formatMessage({
+			defaultMessage: "Password does not match",
+		});
 	}
 
 	return null;
