@@ -1,7 +1,6 @@
 import { MemberPlan } from "@repo/types";
 import { getAppState, produceAppState } from "../store";
 import { getPricesWithRuntimeCaching } from "../utils/price.utils";
-import { showErrorSnackbar } from "./app.actions";
 import { setMode } from "./login.actions";
 import { tryOpenPaymentDialogForPlan } from "./payment.actions";
 
@@ -14,7 +13,6 @@ export const loadPrices = async () => {
       draft.priceValueByKey = prices;
     });
   } catch (error) {
-    showErrorSnackbar(error);
     produceAppState((draft) => {
       draft.pricing.initialized = false;
     });
