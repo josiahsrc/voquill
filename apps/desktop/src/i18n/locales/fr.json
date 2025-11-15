@@ -1,0 +1,21 @@
+{
+  "a_voquill_update": "Une mise à jour Voquill",
+  "downloading_update": "Téléchargement de la mise à jour...",
+  "installation_in_progress_voquill_may_restart_automatically_w": "Installation en cours. Voquill peut redémarrer automatiquement une fois terminée.",
+  "installing_update": "Installation de la mise à jour...",
+  "label_is_ready_to_install": "{label} est prête à être installée.",
+  "later": "Plus tard",
+  "released_on_date": "Publiée le {date}",
+  "start_dictating_here": "Commencez à dicter ici...",
+  "try_it_out": "Essayez",
+  "unknown": "inconnue",
+  "update": "Mettre à jour",
+  "update_available": "Mise à jour disponible",
+  "use_this_space_to_type_or_paste_anything_and_see_how_voquill": "Utilisez cet espace pour taper ou coller n'importe quel texte et voir comment Voquill le traite. Rien de ce que vous saisissez ici n'est enregistré.",
+  "voquill_version": "Voquill {version}",
+  "welcome_name": "Bienvenue, {name}",
+  "what_s_new": "Nouveautés",
+  "words_this_month": "Mots ce mois-ci",
+  "words_total": "Total de mots",
+  "you_re_currently_on_version_version_the_app_will_restart_aft": "Vous utilisez actuellement la version {version}. L'application redémarrera une fois la mise à jour terminée."
+}

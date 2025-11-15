@@ -15,11 +15,13 @@ import {
 } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, getStorage } from "firebase/storage";
-import React from "react";
+import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
+import { IntlProvider } from "react-intl";
 import { OverlayRoot } from "./components/overlay/OverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
+import { getIntlConfig } from "./i18n";
 import { theme } from "./theme";
 import { getIsEmulators, getStripePublicKey } from "./utils/env.utils";
 
@@ -87,12 +89,16 @@ type ChildrenProps = {
 };
 
 const Main = ({ children }: ChildrenProps) => {
+  const intlConfig = useMemo(() => getIntlConfig(), []);
+
   return (
     <React.StrictMode>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
+      <IntlProvider {...intlConfig}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
+      </IntlProvider>
     </React.StrictMode>
   );
 };

@@ -16,7 +16,9 @@
     "build": "tsc && node scripts/run-vite-with-flavor.mjs build",
     "preview": "node scripts/run-vite-with-flavor.mjs preview",
     "tauri": "tauri",
-    "test:webdriver": "wdio run webdriver/wdio.conf.js"
+    "test:webdriver": "wdio run webdriver/wdio.conf.js",
+    "i18n:extract": "formatjs extract \"src/**/*.{ts,tsx}\" --ignore \"src/**/*.d.ts\" --out-file src/i18n/locales/en.json --format ./scripts/formatjs-formatter.mjs --id-interpolation-pattern \"[sha1:contenthash:base64:6]\"",
+    "i18n:sync": "node ./scripts/i18n-sync.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -47,6 +49,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-error-boundary": "^6.0.0",
+    "react-intl": "^7.1.14",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.29.0",
     "react-transition-group": "^4.4.5",
@@ -56,6 +59,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@formatjs/cli": "^6.7.4",
     "@tauri-apps/cli": "^2",
     "@types/lodash-es": "^4.17.12",
     "@types/react": "^19.1.8",
@@ -66,6 +70,7 @@
     "@wdio/local-runner": "^9.20.0",
     "@wdio/mocha-framework": "^9.20.0",
     "@wdio/spec-reporter": "^9.20.0",
+    "babel-plugin-formatjs": "^10.5.41",
     "chromedriver": "^141.0.0",
     "cross-env": "^7.0.3",
     "ts-node": "^10.9.2",
