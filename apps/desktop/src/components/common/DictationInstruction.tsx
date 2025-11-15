@@ -17,10 +17,8 @@ export const DictationInstruction = () => {
     return null;
   }
 
-  return (
-    <Typography variant="body2" color="text.secondary" component="div">
-      <FormattedMessage defaultMessage="Press" />{" "}
-      {combos.length > 1 ? <FormattedMessage defaultMessage="one of" /> : ""}{" "}
+  const hotkeys = (
+    <>
       {combos.map((combo, index) => {
         const key = combo.join("|");
         const isLast = index === combos.length - 1;
@@ -44,8 +42,22 @@ export const DictationInstruction = () => {
           </Fragment>
         );
       })}
-      {" "}
-      <FormattedMessage defaultMessage="to start dictating." />
+    </>
+  );
+
+  return (
+    <Typography variant="body2" color="text.secondary" component="div">
+      {combos.length === 1 ? (
+        <FormattedMessage
+          defaultMessage="Press {hotkeys} to start dictating."
+          values={{ hotkeys }}
+        />
+      ) : (
+        <FormattedMessage
+          defaultMessage="Press one of {hotkeys} to start dictating."
+          values={{ hotkeys }}
+        />
+      )}
     </Typography>
   );
 };
