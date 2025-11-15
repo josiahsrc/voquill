@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_PLATFORM,
   detectPlatform,
   fetchReleaseManifest,
+  isMobileDevice,
   PLATFORM_CONFIG,
   selectPlatformUrl,
   type Platform,
@@ -17,15 +18,13 @@ type DownloadButtonProps = {
 const BUTTON_ICON_SIZE = 20;
 const COMPACT_LABEL_BREAKPOINT = 640;
 
-export function DownloadButton({
-  href = "#cta",
-  className,
-}: DownloadButtonProps) {
+export function DownloadButton({ href, className }: DownloadButtonProps) {
   const classes = [styles.primaryButton, className].filter(Boolean).join(" ");
   const [platform, setPlatform] = useState<Platform>(DEFAULT_PLATFORM);
-  const [downloadHref, setDownloadHref] = useState<string>(href);
+  const [downloadHref, setDownloadHref] = useState<string | undefined>(href);
   const [isCompact, setIsCompact] = useState(false);
   const { label, shortLabel, Icon } = PLATFORM_CONFIG[platform];
+  const isMobile = useMemo(() => isMobileDevice(), []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -52,6 +51,13 @@ export function DownloadButton({
     setPlatform(detectedPlatform);
     setDownloadHref(href);
 
+    if (isMobile) {
+      return () => {
+        isCancelled = true;
+        abortController.abort();
+      };
+    }
+
     async function updateDownloadHref() {
       try {
         const manifest = await fetchReleaseManifest(abortController.signal);
@@ -74,9 +80,21 @@ export function DownloadButton({
       isCancelled = true;
       abortController.abort();
     };
-  }, [href]);
+  }, [href, isMobile]);
 
-  const buttonLabel = isCompact ? shortLabel : label;
+  const buttonLabel = isMobile
+    ? "iOS/Android coming soon"
+    : isCompact
+      ? shortLabel
+      : label;
+
+  if (isMobile) {
+    return (
+      <button type="button" className={classes} disabled>
+        <span>{buttonLabel}</span>
+      </button>
+    );
+  }
 
   return (
     <a href={downloadHref} className={classes}>

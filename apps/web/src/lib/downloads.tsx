@@ -178,7 +178,7 @@ export async function fetchReleaseManifest(signal?: AbortSignal) {
 
 export async function selectPlatformUrl(
   manifest: ReleaseManifest,
-  platform: Platform,
+  platform: Platform
 ) {
   const preference = await buildPlatformPreference(platform);
 
@@ -233,7 +233,9 @@ export function extractDownloads(manifest: ReleaseManifest) {
     });
 }
 
-function transformGithubRelease(release: GithubRelease): ReleaseManifest | undefined {
+function transformGithubRelease(
+  release: GithubRelease
+): ReleaseManifest | undefined {
   const assets = release.assets ?? [];
   const platforms: Record<string, ReleasePlatformDetails | undefined> = {};
 
@@ -322,7 +324,7 @@ export function detectPlatform(): Platform {
   const platformHint =
     "userAgentData" in navigator && navigator.userAgentData
       ? // NavigatorUAData#platform
-        (navigator.userAgentData as { platform?: string }).platform ?? ""
+        ((navigator.userAgentData as { platform?: string }).platform ?? "")
       : "";
   const ua = [navigator.userAgent ?? "", platformHint, navigator.platform ?? ""]
     .join(" ")
@@ -343,6 +345,23 @@ export function detectPlatform(): Platform {
   return DEFAULT_PLATFORM;
 }
 
+export function isMobileDevice() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const { navigator } = window;
+  const platformHint =
+    "userAgentData" in navigator && navigator.userAgentData
+      ? ((navigator.userAgentData as { platform?: string }).platform ?? "")
+      : "";
+  const ua = [navigator.userAgent ?? "", platformHint, navigator.platform ?? ""]
+    .join(" ")
+    .toLowerCase();
+
+  return /iphone|ipad|ipod|android/.test(ua);
+}
+
 export function getPlatformDisplayName(platform: Platform) {
   return PLATFORM_CONFIG[platform].name;
 }
@@ -352,14 +371,14 @@ async function buildPlatformPreference(platform: Platform) {
     case "mac": {
       const macKey = await detectMacManifestKey();
       if (macKey === "darwin-aarch64") {
-        return ["darwin-aarch64", "darwin-x86_64"];
+        return ["darwin-aarch64", "darwin-universal"];
       }
 
       if (macKey === "darwin-x86_64") {
-        return ["darwin-x86_64", "darwin-aarch64"];
+        return ["darwin-x86_64", "darwin-universal"];
       }
 
-      return ["darwin-aarch64", "darwin-x86_64"];
+      return ["darwin-universal", "darwin-aarch64", "darwin-x86_64"];
     }
     case "windows":
       return ["windows-x86_64"];
@@ -379,24 +398,30 @@ async function detectMacManifestKey() {
   const ua = [
     navigator.userAgent ?? "",
     "userAgentData" in navigator
-      ? (navigator.userAgentData as { platform?: string }).platform ?? ""
+      ? ((navigator.userAgentData as { platform?: string }).platform ?? "")
       : "",
     navigator.platform ?? "",
   ]
     .join(" ")
     .toLowerCase();
 
-  if (ua.includes("arm") || ua.includes("aarch") || ua.includes("apple silicon")) {
+  if (
+    ua.includes("arm") ||
+    ua.includes("aarch") ||
+    ua.includes("apple silicon")
+  ) {
     return "darwin-aarch64";
   }
 
-  const userAgentData = (navigator as Navigator & {
-    userAgentData?: {
-      getHighEntropyValues?: (
-        hints: string[],
-      ) => Promise<{ architecture?: string }>;
-    };
-  }).userAgentData;
+  const userAgentData = (
+    navigator as Navigator & {
+      userAgentData?: {
+        getHighEntropyValues?: (
+          hints: string[]
+        ) => Promise<{ architecture?: string }>;
+      };
+    }
+  ).userAgentData;
 
   if (userAgentData?.getHighEntropyValues) {
     try {
