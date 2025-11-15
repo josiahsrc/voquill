@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { FormattedMessage } from "react-intl";
 import styles from "./speed-showcase.module.css";
 
 const keyLabels = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "A", "S"];
@@ -62,19 +63,25 @@ export default function SpeedShowcase() {
   return (
     <section className={styles.speedShowcase} id="speed">
       <div className={styles.sectionIntro}>
-        <span className={styles.badge}>4× faster than typing</span>
-        <h2>Voice runs circles around your keyboard.</h2>
+        <span className={styles.badge}>
+          <FormattedMessage defaultMessage="4× faster than typing" />
+        </span>
+        <h2>
+          <FormattedMessage defaultMessage="Voice runs circles around your keyboard." />
+        </h2>
         <p>
-          You speak at two hundred words per minute while manual keystrokes
-          stall out at fifty. With Voquill, narrated sentences land whole so you
-          never lose the thread to backspacing.
+          <FormattedMessage defaultMessage="You speak at two hundred words per minute while manual keystrokes stall out at fifty. With Voquill, narrated sentences land whole so you never lose the thread to backspacing." />
         </p>
       </div>
       <div className={styles.showcaseGrid}>
         <article className={styles.keyboardPane}>
           <header className={styles.paneHeader}>
-            <span>Keyboard</span>
-            <span className={styles.paneMetric}>≈ 50 wpm</span>
+            <span>
+              <FormattedMessage defaultMessage="Keyboard" />
+            </span>
+            <span className={styles.paneMetric}>
+              <FormattedMessage defaultMessage="≈ 50 wpm" />
+            </span>
           </header>
           <div className={styles.keyboardVisual}>
             <div className={styles.keyDeck}>
@@ -99,13 +106,19 @@ export default function SpeedShowcase() {
               </span>
             </div>
           </div>
-          <p className={styles.keyboardFooter}>Wow, that&apos;s slow.</p>
+          <p className={styles.keyboardFooter}>
+            <FormattedMessage defaultMessage="Wow, that's slow." />
+          </p>
         </article>
 
         <article className={styles.voicePane}>
           <header className={styles.paneHeader}>
-            <span>Voquill voice</span>
-            <span className={styles.paneMetricHot}>≈ 220 wpm</span>
+            <span>
+              <FormattedMessage defaultMessage="Voquill voice" />
+            </span>
+            <span className={styles.paneMetricHot}>
+              <FormattedMessage defaultMessage="≈ 220 wpm" />
+            </span>
           </header>
           <div className={styles.voiceVisual}>
             <div className={styles.waveform}>
@@ -154,7 +167,7 @@ export default function SpeedShowcase() {
             </div>
           </div>
           <p className={styles.voiceFooter}>
-            Write at the speed of thought. Words materialize faster than you can blink.
+            <FormattedMessage defaultMessage="Write at the speed of thought. Words materialize faster than you can blink." />
           </p>
         </article>
       </div>

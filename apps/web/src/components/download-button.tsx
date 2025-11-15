@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FormattedMessage } from "react-intl";
 import {
   DEFAULT_PLATFORM,
   detectPlatform,
@@ -91,7 +92,7 @@ export function DownloadButton({ href, className }: DownloadButtonProps) {
   if (isMobile) {
     return (
       <button type="button" className={classes} disabled>
-        <span>{buttonLabel}</span>
+        <FormattedMessage defaultMessage="iOS/Android coming soon" />
       </button>
     );
   }
