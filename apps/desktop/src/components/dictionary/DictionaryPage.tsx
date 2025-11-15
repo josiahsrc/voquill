@@ -4,6 +4,7 @@ import { Button } from "@mui/material";
 import { Term } from "@repo/types";
 import dayjs from "dayjs";
 import { useCallback } from "react";
+import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
@@ -52,7 +53,9 @@ export default function DictionaryPage() {
       items={[
         {
           kind: "listItem",
-          title: "Glossary term",
+          title: (
+            <FormattedMessage defaultMessage="Glossary term" />
+          ),
           onClick: ({ close }) => {
             handleAddTerm(false);
             close();
@@ -61,7 +64,9 @@ export default function DictionaryPage() {
         },
         {
           kind: "listItem",
-          title: "Replacement rule",
+          title: (
+            <FormattedMessage defaultMessage="Replacement rule" />
+          ),
           onClick: ({ close }) => {
             handleAddTerm(true);
             close();
@@ -77,7 +82,7 @@ export default function DictionaryPage() {
           onClick={args.open}
           ref={args.ref}
         >
-          Add
+          <FormattedMessage defaultMessage="Add" />
         </Button>
       )}
     </MenuPopoverBuilder>
@@ -85,8 +90,10 @@ export default function DictionaryPage() {
 
   return (
     <VirtualizedListPage
-      title="Dictionary"
-      subtitle="Voquill may misunderstand you on occasion. If you see certain words being missed frequently, you can define a replacement rule here to fix the spelling automatically."
+      title={<FormattedMessage defaultMessage="Dictionary" />}
+      subtitle={
+        <FormattedMessage defaultMessage="Voquill may misunderstand you on occasion. If you see certain words being missed frequently, you can define a replacement rule here to fix the spelling automatically." />
+      }
       action={addButton}
       items={termIds}
       computeItemKey={(id) => id}

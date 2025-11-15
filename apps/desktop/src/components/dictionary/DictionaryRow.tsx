@@ -3,6 +3,7 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { IconButton, Stack, TextField } from "@mui/material";
 import { getRec } from "@repo/utilities";
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
+import { useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
@@ -12,6 +13,7 @@ export type DictionaryRowProps = {
 };
 
 export const DictionaryRow = ({ id }: DictionaryRowProps) => {
+  const intl = useIntl();
   const term = useAppStore((state) => getRec(state.termById, id));
   const [sourceValue, setSourceValue] = useState(term?.sourceValue ?? "");
   const [destinationValue, setDestinationValue] = useState(
@@ -105,7 +107,11 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
       <TextField
         variant="outlined"
         size="small"
-        placeholder={isReplacement ? "Original" : "Glossary term"}
+        placeholder={
+          isReplacement
+            ? intl.formatMessage({ defaultMessage: "Original" })
+            : intl.formatMessage({ defaultMessage: "Glossary term" })
+        }
         value={sourceValue}
         onChange={handleFieldChange("source")}
         onBlur={handleCommit}
@@ -118,7 +124,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
           <TextField
             variant="outlined"
             size="small"
-            placeholder="Replacement"
+            placeholder={intl.formatMessage({ defaultMessage: "Replacement" })}
             value={destinationValue}
             onChange={handleFieldChange("destination")}
             onBlur={handleCommit}
@@ -130,7 +136,10 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
         </>
       ) : null}
       <IconButton
-        aria-label={`Delete dictionary item ${term.sourceValue}`}
+        aria-label={intl.formatMessage(
+          { defaultMessage: "Delete dictionary item {term}" },
+          { term: term.sourceValue }
+        )}
         onClick={handleDelete}
         size="small"
       >
