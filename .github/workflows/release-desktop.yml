@@ -193,7 +193,7 @@ jobs:
 
       - name: Generate release notes
         id: release_notes
-        uses: josiahsrc/ai-release-notes-builder@v1
+        uses: josiahsrc/ai-release-notes-builder@v2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
@@ -203,6 +203,9 @@ jobs:
             just bullet points.
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
+          paths: |
+            apps/desktop/**
+            packages/**
 
       - name: Compose release body
         id: release_body
