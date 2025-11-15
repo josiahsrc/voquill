@@ -78,6 +78,11 @@ const MANIFEST_KEY_DETAILS: Record<
     label: "macOS (Intel)",
     description: "Universal .app bundle",
   },
+  "darwin-universal": {
+    platform: "mac",
+    label: "macOS (Universal)",
+    description: "Installer for all macOS architectures",
+  },
   "windows-x86_64": {
     platform: "windows",
     label: "Windows (x64)",
@@ -122,6 +127,14 @@ const ASSET_KEY_MAPPINGS: Array<{
   {
     match: (name) => /\.rpm$/i.test(name),
     keys: ["linux-x86_64-rpm"],
+  },
+  {
+    match: (name) => /\.app\.tar\.gz$/i.test(name),
+    keys: ["darwin-universal"],
+  },
+  {
+    match: (name) => /\.dmg$/i.test(name),
+    keys: ["darwin-universal"],
   },
   {
     match: (name) => /darwin.*\.app\.tar\.gz$/i.test(name),
