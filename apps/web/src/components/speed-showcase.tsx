@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 import styles from "./speed-showcase.module.css";
 
 const keyLabels = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "A", "S"];
-const typingScript =
-  "Here's a really long sentence that I have to type out and it just goes on forever.";
-const voiceWords = typingScript.split(" ");
 
 type AnimatedStyle = CSSProperties & { "--delay"?: string };
 
 export default function SpeedShowcase() {
+  const intl = useIntl();
+  
+  const typingScript = intl.formatMessage({
+    defaultMessage: "Here's a really long sentence that I have to type out and it just goes on forever.",
+  });
+  const voiceWords = typingScript.split(" ");
   const totalChars = typingScript.length;
   const [visibleCharCount, setVisibleCharCount] = useState(0);
   const directionRef = useRef<1 | -1>(1);
