@@ -1,3 +1,4 @@
+import { createIntl, createIntlCache } from "react-intl";
 import { DEFAULT_LOCALE, Locale, SUPPORTED_LOCALES } from "./config";
 import enMessages from "./locales/en.json";
 import esMessages from "./locales/es.json";
@@ -66,3 +67,17 @@ export const getIntlConfig = () => {
     messages: getMessagesForLocale(locale),
   };
 };
+
+// Helper to get intl instance for non-React contexts
+export function getIntl(locale?: Locale) {
+  const cache = createIntlCache();
+  const detectedLocale = locale ?? detectLocale();
+  return createIntl(
+    {
+      locale: detectedLocale,
+      defaultLocale: DEFAULT_LOCALE,
+      messages: getMessagesForLocale(detectedLocale),
+    },
+    cache
+  );
+}
