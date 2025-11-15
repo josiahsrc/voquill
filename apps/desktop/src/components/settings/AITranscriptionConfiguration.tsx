@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo } from "react";
+import { FormattedMessage } from "react-intl";
 import {
   setPreferredTranscriptionApiKeyId,
   setPreferredTranscriptionMode,
@@ -142,11 +143,11 @@ export const AITranscriptionConfiguration = ({
         <Stack spacing={3} sx={{ width: "100%" }}>
           <FormControl fullWidth size="small">
             <InputLabel id="processing-device-label">
-              Processing device
+              <FormattedMessage defaultMessage="Processing device" />
             </InputLabel>
             <Select
               labelId="processing-device-label"
-              label="Processing device"
+              label={<FormattedMessage defaultMessage="Processing device" />}
               value={transcription.device}
               onChange={(event) => handleDeviceChange(event.target.value)}
             >
@@ -159,10 +160,12 @@ export const AITranscriptionConfiguration = ({
           </FormControl>
 
           <FormControl fullWidth size="small">
-            <InputLabel id="model-size-label">Model size</InputLabel>
+            <InputLabel id="model-size-label">
+              <FormattedMessage defaultMessage="Model size" />
+            </InputLabel>
             <Select
               labelId="model-size-label"
-              label="Model size"
+              label={<FormattedMessage defaultMessage="Model size" />}
               value={transcription.modelSize}
               onChange={(event) => handleModelSizeChange(event.target.value)}
             >

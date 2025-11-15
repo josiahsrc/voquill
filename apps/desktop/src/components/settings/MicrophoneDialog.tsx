@@ -21,6 +21,7 @@ import {
 import { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormattedMessage } from "react-intl";
 import { setPreferredMicrophone } from "../../actions/user.actions";
 import { useMyUser } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -387,21 +388,25 @@ export const MicrophoneDialog = () => {
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Microphone settings</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Microphone settings" />
+      </DialogTitle>
       <DialogContent dividers>
         <Stack spacing={3} sx={{ paddingTop: 0.5 }}>
           <Stack spacing={1.5}>
             <SettingSection
-              title="Preferred microphone"
-              description="Choose which microphone Voquill should use when recording. Automatic picks the best available device each time."
+              title={<FormattedMessage defaultMessage="Preferred microphone" />}
+              description={<FormattedMessage defaultMessage="Choose which microphone Voquill should use when recording. Automatic picks the best available device each time." />}
               sx={{ pb: 0.5 }}
             />
             <FormControl fullWidth size="small" disabled={loadingDevices}>
-              <InputLabel id="microphone-select-label">Microphone</InputLabel>
+              <InputLabel id="microphone-select-label">
+                <FormattedMessage defaultMessage="Microphone" />
+              </InputLabel>
               <Select
                 labelId="microphone-select-label"
                 value={selectValue}
-                label="Microphone"
+                label={<FormattedMessage defaultMessage="Microphone" />}
                 onChange={handleSelectChange}
               >
                 <MenuItem value={AUTO_OPTION_VALUE}>
@@ -411,10 +416,12 @@ export const MicrophoneDialog = () => {
                     alignItems="center"
                     spacing={1}
                   >
-                    <Typography>Automatic</Typography>
+                    <Typography>
+                      <FormattedMessage defaultMessage="Automatic" />
+                    </Typography>
                     <Chip
                       size="small"
-                      label="Recommended"
+                      label={<FormattedMessage defaultMessage="Recommended" />}
                       color="primary"
                       variant="filled"
                     />
@@ -433,11 +440,11 @@ export const MicrophoneDialog = () => {
                         <Typography>{option.label}</Typography>
                         {option.unavailable ? (
                           <Typography variant="caption" color="warning.main">
-                            Currently unavailable
+                            <FormattedMessage defaultMessage="Currently unavailable" />
                           </Typography>
                         ) : option.caution ? (
                           <Typography variant="caption" color="text.secondary">
-                            May provide lower audio quality
+                            <FormattedMessage defaultMessage="May provide lower audio quality" />
                           </Typography>
                         ) : null}
                       </Box>
@@ -445,7 +452,7 @@ export const MicrophoneDialog = () => {
                         {option.isDefault && (
                           <Chip
                             size="small"
-                            label="Default"
+                            label={<FormattedMessage defaultMessage="Default" />}
                             color="primary"
                             variant="outlined"
                           />
@@ -453,7 +460,7 @@ export const MicrophoneDialog = () => {
                         {option.caution && !option.unavailable && (
                           <Chip
                             size="small"
-                            label="Caution"
+                            label={<FormattedMessage defaultMessage="Caution" />}
                             color="warning"
                             variant="outlined"
                           />
@@ -471,21 +478,25 @@ export const MicrophoneDialog = () => {
                 size="small"
                 disabled={loadingDevices}
               >
-                Refresh devices
+                <FormattedMessage defaultMessage="Refresh devices" />
               </Button>
               {loadingDevices && <CircularProgress size={18} />}
             </Stack>
             {deviceError && <Alert severity="error">{deviceError}</Alert>}
             {saveError && <Alert severity="error">{saveError}</Alert>}
-            {saveSuccess && <Alert severity="success">Preference saved.</Alert>}
+            {saveSuccess && (
+              <Alert severity="success">
+                <FormattedMessage defaultMessage="Preference saved." />
+              </Alert>
+            )}
           </Stack>
 
           <Divider />
 
           <Stack spacing={1.5}>
             <SettingSection
-              title="Test your microphone"
-              description="Start a short test to see live audio levels and play back what was recorded."
+              title={<FormattedMessage defaultMessage="Test your microphone" />}
+              description={<FormattedMessage defaultMessage="Start a short test to see live audio levels and play back what was recorded." />}
             />
             <Box
               sx={{
@@ -524,20 +535,27 @@ export const MicrophoneDialog = () => {
                   isTestRunning ? disableStopButton : disableStartButton
                 }
               >
-                {isTestRunning ? "Stop test" : "Start test"}
+                {isTestRunning ? (
+                  <FormattedMessage defaultMessage="Stop test" />
+                ) : (
+                  <FormattedMessage defaultMessage="Start test" />
+                )}
               </LoadingButton>
               <Button
                 variant="outlined"
                 disabled={previewUrl == null}
                 onClick={handleTogglePreview}
               >
-                {isPreviewPlaying ? "Pause preview" : "Play preview"}
+                {isPreviewPlaying ? (
+                  <FormattedMessage defaultMessage="Pause preview" />
+                ) : (
+                  <FormattedMessage defaultMessage="Play preview" />
+                )}
               </Button>
             </Stack>
             {isGlobalRecording && (
               <Alert severity="info">
-                You cannot start a microphone test while a transcription is in
-                progress.
+                <FormattedMessage defaultMessage="You cannot start a microphone test while a transcription is in progress." />
               </Alert>
             )}
             {testError && <Alert severity="warning">{testError}</Alert>}
@@ -545,14 +563,16 @@ export const MicrophoneDialog = () => {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
+        <Button onClick={handleClose}>
+          <FormattedMessage defaultMessage="Close" />
+        </Button>
         <LoadingButton
           onClick={handleSave}
           loading={saving}
           disabled={!hasChanges || saving}
           variant="contained"
         >
-          Save changes
+          <FormattedMessage defaultMessage="Save changes" />
         </LoadingButton>
       </DialogActions>
     </Dialog>

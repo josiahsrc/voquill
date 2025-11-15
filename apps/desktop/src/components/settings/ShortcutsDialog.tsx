@@ -8,6 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
@@ -41,8 +42,8 @@ export const ShortcutsDialog = () => {
     return (
       <Stack spacing={3}>
         <HotkeySetting
-          title="Start/stop dictating"
-          description="Start recording audio and transcribe your speech into text with AI."
+          title={<FormattedMessage defaultMessage="Start/stop dictating" />}
+          description={<FormattedMessage defaultMessage="Start recording audio and transcribe your speech into text with AI." />}
           actionName={DICTATE_HOTKEY}
         />
       </Stack>
@@ -53,16 +54,19 @@ export const ShortcutsDialog = () => {
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>
         <Stack spacing={1}>
-          <Typography variant="h6">Keyboard shortcuts</Typography>
+          <Typography variant="h6">
+            <FormattedMessage defaultMessage="Keyboard shortcuts" />
+          </Typography>
           <Typography variant="body2" color="textSecondary">
-            Customize your keyboard shortcuts. Keyboard shortcuts can be
-            triggered from within any app.
+            <FormattedMessage defaultMessage="Customize your keyboard shortcuts. Keyboard shortcuts can be triggered from within any app." />
           </Typography>
         </Stack>
       </DialogTitle>
       <DialogContent dividers>{renderContent()}</DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
+        <Button onClick={handleClose}>
+          <FormattedMessage defaultMessage="Close" />
+        </Button>
       </DialogActions>
     </Dialog>
   );
