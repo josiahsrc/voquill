@@ -87,6 +87,7 @@ export type ListTileProps = {
   sx?: SxProps;
   href?: string;
   disabled?: boolean;
+  disableRipple?: boolean;
 };
 
 export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
@@ -105,6 +106,7 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
       sx,
       href,
       disabled,
+      disableRipple,
     },
     ref
   ) => {
@@ -155,6 +157,7 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
           selected={selected}
           onClick={handleClick}
           disabled={disabled}
+          disableRipple={disableRipple}
         >
           <Stack direction="row" alignItems="center" width="100%">
             {Boolean(leading) && (

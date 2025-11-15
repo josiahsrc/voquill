@@ -6,6 +6,7 @@ import {
   DialogTitle,
   Typography,
 } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getAuthRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
@@ -42,26 +43,28 @@ export const ChangePasswordDialog = () => {
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>
         <Typography variant="h6" component="div" fontWeight={600}>
-          Change password
+          <FormattedMessage defaultMessage="Change password" />
         </Typography>
       </DialogTitle>
       <DialogContent>
         <Typography variant="body1" component="div" sx={{ mb: 2 }}>
-          We'll send a password reset link to your email address. Click the link
-          in the email to create a new password.
+          <FormattedMessage defaultMessage="We'll send a password reset link to your email address. Click the link in the email to create a new password." />
         </Typography>
         {userEmail && (
           <Typography variant="body2" component="div" color="textSecondary">
-            Reset link will be sent to: <strong>{userEmail}</strong>
+            <FormattedMessage
+              defaultMessage="Reset link will be sent to: {email}"
+              values={{ email: <strong>{userEmail}</strong> }}
+            />
           </Typography>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} variant="text">
-          Cancel
+          <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button onClick={handleSubmit} variant="contained">
-          Send reset link
+          <FormattedMessage defaultMessage="Send reset link" />
         </Button>
       </DialogActions>
     </Dialog>

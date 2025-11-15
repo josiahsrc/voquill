@@ -9,6 +9,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import { AIPostProcessingConfiguration } from "./AIPostProcessingConfiguration";
 
@@ -26,7 +27,7 @@ export const AIPostProcessingDialog = () => {
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center" }}>
-        AI post processing
+        <FormattedMessage defaultMessage="AI post processing" />
         <IconButton
           onClick={handleClose}
           size="small"
@@ -39,14 +40,16 @@ export const AIPostProcessingDialog = () => {
       <DialogContent dividers>
         <Stack spacing={3} alignItems="flex-start">
           <Typography variant="body1" color="text.secondary">
-            Tell Voquill how to enhance your transcripts after they are created.
+            <FormattedMessage defaultMessage="Tell Voquill how to enhance your transcripts after they are created." />
           </Typography>
 
           <AIPostProcessingConfiguration />
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Done</Button>
+        <Button onClick={handleClose}>
+          <FormattedMessage defaultMessage="Done" />
+        </Button>
       </DialogActions>
     </Dialog>
   );

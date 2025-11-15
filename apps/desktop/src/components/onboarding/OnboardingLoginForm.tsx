@@ -1,5 +1,6 @@
 import { ArrowForward } from "@mui/icons-material";
 import { Button, Card, Stack, Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { invokeHandler } from "@repo/functions";
 import {
   goBackOnboardingPage,
@@ -56,26 +57,25 @@ export const OnboardingLoginForm = () => {
     return (
       <FormContainer>
         <Typography variant="h6" gutterBottom>
-          You are logged in
+          <FormattedMessage defaultMessage="You are logged in" />
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          You haven't completed checkout yet. Click the "Next" button below to
-          proceed to checkout.
+          <FormattedMessage defaultMessage="You haven't completed checkout yet. Click the 'Next' button below to proceed to checkout." />
           <br />
           <br />
-          You can always go back if you changed your mind!
+          <FormattedMessage defaultMessage="You can always go back if you changed your mind!" />
         </Typography>
 
         <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
           <Button onClick={() => goBackOnboardingPage()} disabled={loggingIn}>
-            Back
+            <FormattedMessage defaultMessage="Back" />
           </Button>
           <Button
             variant="contained"
             onClick={handleOpenPaymentDialog}
             endIcon={<ArrowForward />}
           >
-            Next
+            <FormattedMessage defaultMessage="Next" />
           </Button>
         </Stack>
       </FormContainer>
@@ -85,11 +85,10 @@ export const OnboardingLoginForm = () => {
   return (
     <FormContainer>
       <Typography variant="h4" fontWeight={600} gutterBottom>
-        Sign in to continue
+        <FormattedMessage defaultMessage="Sign in to continue" />
       </Typography>
       <Typography variant="body1" color="text.secondary" mb={3}>
-        We&apos;ll connect your account and launch checkout right after you sign
-        in.
+        <FormattedMessage defaultMessage="We'll connect your account and launch checkout right after you sign in." />
       </Typography>
 
       <Card
@@ -104,7 +103,7 @@ export const OnboardingLoginForm = () => {
 
       <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
         <Button onClick={() => goBackOnboardingPage()} disabled={loggingIn}>
-          Back
+          <FormattedMessage defaultMessage="Back" />
         </Button>
       </Stack>
     </FormContainer>

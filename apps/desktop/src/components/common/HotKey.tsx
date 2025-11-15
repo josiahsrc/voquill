@@ -2,6 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { keyframes } from "@mui/material/styles";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useIntl } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import { getPrettyKeyName } from "../../utils/keyboard.utils";
 
@@ -20,6 +21,7 @@ const pulseBorder = keyframes`
 `;
 
 export const HotKey = ({ value, onChange }: HotKeyProps) => {
+  const intl = useIntl();
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [focused, setFocused] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -93,13 +95,13 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
 
   const [empty, label] = useMemo(() => {
     if (focused && !hasInteracted) {
-      return [true, "Listening..."];
+      return [true, intl.formatMessage({ defaultMessage: "Listening..." })];
     }
     const v = value ?? [];
     return v.length > 0
       ? [false, v.map((k) => getPrettyKeyName(k)).join(" + ")]
-      : [true, "Change hotkey"];
-  }, [value, focused, hasInteracted]);
+      : [true, intl.formatMessage({ defaultMessage: "Change hotkey" })];
+  }, [value, focused, hasInteracted, intl]);
 
   return (
     <Box

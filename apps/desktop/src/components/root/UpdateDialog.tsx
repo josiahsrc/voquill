@@ -19,6 +19,7 @@ import {
 } from "../../actions/updater.actions";
 import { useAppStore } from "../../store";
 import { formatSize } from "../../utils/format.utils";
+import { FormattedMessage, useIntl } from "react-intl";
 
 const formatReleaseDate = (isoDate: string | null) => {
   if (!isoDate) {
@@ -38,6 +39,7 @@ const formatReleaseDate = (isoDate: string | null) => {
 
 export const UpdateDialog = () => {
   const updater = useAppStore((state) => state.updater);
+  const intl = useIntl();
   const {
     dialogOpen,
     status,
@@ -55,8 +57,15 @@ export const UpdateDialog = () => {
   const showProgress = status === "downloading" || status === "installing";
 
   const versionLabel = availableVersion
-    ? `Voquill ${availableVersion}`
-    : "A Voquill update";
+    ? intl.formatMessage(
+        {
+          defaultMessage: "Voquill {version}",
+        },
+        { version: availableVersion }
+      )
+    : intl.formatMessage({
+        defaultMessage: "A Voquill update",
+      });
 
   const formattedDate = useMemo(
     () => formatReleaseDate(releaseDate),
@@ -77,6 +86,27 @@ export const UpdateDialog = () => {
     }
     return `${formatSize(downloadedBytes)} of ${formatSize(totalBytes)}`;
   }, [downloadedBytes, totalBytes]);
+
+  const currentVersionLabel =
+    currentVersion ??
+    intl.formatMessage({
+      defaultMessage: "unknown",
+    });
+
+  const readyToInstallLabel = intl.formatMessage(
+    {
+      defaultMessage: "{label} is ready to install.",
+    },
+    { label: versionLabel }
+  );
+
+  const currentVersionDescription = intl.formatMessage(
+    {
+      defaultMessage:
+        "You're currently on version {version}. The app will restart after the update finishes.",
+    },
+    { version: currentVersionLabel }
+  );
 
   const handleClose = useCallback(() => {
     if (isUpdating) {
@@ -104,27 +134,33 @@ export const UpdateDialog = () => {
       maxWidth="sm"
       disableEscapeKeyDown={isUpdating}
     >
-      <DialogTitle>Update available</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Update available" />
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Stack spacing={0.5}>
             <Typography variant="body1" fontWeight={600}>
-              {versionLabel} is ready to install.
+              {readyToInstallLabel}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              You&apos;re currently on version {currentVersion ?? "unknown"}.
-              The app will restart after the update finishes.
+              {currentVersionDescription}
             </Typography>
             {formattedDate && (
               <Typography variant="caption" color="text.secondary">
-                Released on {formattedDate}
+                <FormattedMessage
+                  defaultMessage="Released on {date}"
+                  values={{ date: formattedDate }}
+                />
               </Typography>
             )}
           </Stack>
 
           {releaseNotes && (
             <Stack spacing={1}>
-              <Typography variant="body1">What&apos;s new</Typography>
+              <Typography variant="body1">
+                <FormattedMessage defaultMessage="What's new" />
+              </Typography>
               <Markdown>{releaseNotes}</Markdown>
             </Stack>
           )}
@@ -137,9 +173,11 @@ export const UpdateDialog = () => {
               />
               <Stack direction="row" spacing={1} justifyContent="space-between">
                 <Typography variant="caption" color="text.secondary">
-                  {status === "installing"
-                    ? "Installing update..."
-                    : "Downloading update..."}
+                  {status === "installing" ? (
+                    <FormattedMessage defaultMessage="Installing update..." />
+                  ) : (
+                    <FormattedMessage defaultMessage="Downloading update..." />
+                  )}
                 </Typography>
                 {progressLabel && (
                   <Typography variant="caption" color="text.secondary">
@@ -153,8 +191,7 @@ export const UpdateDialog = () => {
 
           {status === "installing" && (
             <Alert severity="info" variant="outlined">
-              Installation in progress. Voquill may restart automatically when
-              finished.
+              <FormattedMessage defaultMessage="Installation in progress. Voquill may restart automatically when finished." />
             </Alert>
           )}
 
@@ -167,7 +204,7 @@ export const UpdateDialog = () => {
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={isUpdating}>
-          Later
+          <FormattedMessage defaultMessage="Later" />
         </Button>
         <Button
           variant="contained"
@@ -181,7 +218,7 @@ export const UpdateDialog = () => {
             )
           }
         >
-          Update
+          <FormattedMessage defaultMessage="Update" />
         </Button>
       </DialogActions>
     </Dialog>

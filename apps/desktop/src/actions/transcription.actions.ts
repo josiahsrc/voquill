@@ -3,7 +3,12 @@ import { getGenerateTextRepo, getTranscribeAudioRepo } from "../repos";
 import { getAppState } from "../store";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
-import { buildGlossaryPromptFromEntries, buildPostProcessingPrompt, collectDictionaryEntries } from "../utils/prompt.utils";
+import {
+  buildLocalizedPostProcessingPrompt,
+  buildLocalizedTranscriptionPrompt,
+  collectDictionaryEntries,
+} from "../utils/prompt.utils";
+import { getMyPreferredLocale } from "../utils/user.utils";
 
 export type TranscriptionAudioInput = {
   samples: AudioSamples;
@@ -46,26 +51,34 @@ export const transcribeAndPostProcessAudio = async ({
   warnings.push(...genWarnings);
 
   // transcribe the audio
-  const transcriptionPrompt = buildGlossaryPromptFromEntries(collectDictionaryEntries(state));
+  const preferredLocale = getMyPreferredLocale(state);
+  const dictionaryEntries = collectDictionaryEntries(state);
+  const transcriptionPrompt = buildLocalizedTranscriptionPrompt(
+    dictionaryEntries,
+    preferredLocale,
+  );
+
   const transcribeOutput = await transcribeRepo.transcribeAudio({
     samples,
     sampleRate,
     prompt: transcriptionPrompt,
+    language: preferredLocale,
   });
   const rawTranscript = transcribeOutput.text.trim();
   metadata.modelSize = state.settings.aiTranscription.modelSize || null;
   metadata.inferenceDevice = transcribeOutput.metadata?.inferenceDevice || null;
   metadata.rawTranscript = rawTranscript;
-  metadata.transcriptionPrompt = transcriptionPrompt || null;
+  metadata.transcriptionPrompt = transcriptionPrompt;
   metadata.transcriptionApiKeyId = transcriptionApiKeyId;
   metadata.transcriptionMode = transcribeOutput.metadata?.transcriptionMode || null;
 
   // post-process the transcription
   let processedTranscript = rawTranscript;
   if (genRepo) {
-    const ppPrompt = buildPostProcessingPrompt(
+    const ppPrompt = buildLocalizedPostProcessingPrompt(
       rawTranscript,
-      collectDictionaryEntries(state),
+      dictionaryEntries,
+      preferredLocale,
     );
 
     const genOutput = await genRepo.generateText({
@@ -73,7 +86,7 @@ export const transcribeAndPostProcessAudio = async ({
     });
 
     processedTranscript = genOutput.text.trim();
-    metadata.postProcessPrompt = ppPrompt || null;
+    metadata.postProcessPrompt = ppPrompt;
     metadata.postProcessApiKeyId = genApiKeyId;
     metadata.postProcessMode = genOutput.metadata?.postProcessingMode || null;
     metadata.postProcessDevice = genOutput.metadata?.inferenceDevice || null;

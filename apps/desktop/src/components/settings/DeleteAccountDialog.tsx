@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { FormattedMessage } from "react-intl";
 import { showSnackbar } from "../../actions/app.actions";
 import { getAuthRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
@@ -55,44 +56,46 @@ export const DeleteAccountDialog = () => {
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>
         <Typography variant="h6" component="div" fontWeight={600} color="error">
-          Delete account
+          <FormattedMessage defaultMessage="Delete account" />
         </Typography>
       </DialogTitle>
       <DialogContent>
         <Alert severity="warning" sx={{ mb: 2 }}>
-          This action cannot be undone. All your data will be permanently
-          deleted.
+          <FormattedMessage defaultMessage="This action cannot be undone. All your data will be permanently deleted." />
         </Alert>
         <Typography variant="body1" component="div" sx={{ mb: 2 }}>
-          Are you sure you want to delete your account? This will:
+          <FormattedMessage defaultMessage="Are you sure you want to delete your account? This will:" />
         </Typography>
         <Box component="ul" sx={{ pl: 2, mb: 2 }}>
           <Typography component="li" variant="body2">
-            Permanently delete all your data
+            <FormattedMessage defaultMessage="Permanently delete all your data" />
           </Typography>
           <Typography component="li" variant="body2">
-            Cancel any active subscriptions
+            <FormattedMessage defaultMessage="Cancel any active subscriptions" />
           </Typography>
           <Typography component="li" variant="body2">
-            Remove access to all premium features
+            <FormattedMessage defaultMessage="Remove access to all premium features" />
           </Typography>
           <Typography component="li" variant="body2">
-            Sign you out immediately
+            <FormattedMessage defaultMessage="Sign you out immediately" />
           </Typography>
         </Box>
         {userEmail && (
           <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-            Account to be deleted: <strong>{userEmail}</strong>
+            <FormattedMessage
+              defaultMessage="Account to be deleted: {email}"
+              values={{ email: <strong>{userEmail}</strong> }}
+            />
           </Typography>
         )}
 
         <Typography variant="body2" sx={{ mb: 1 }}>
-          To confirm, type your email address below:
+          <FormattedMessage defaultMessage="To confirm, type your email address below:" />
         </Typography>
         <TextField
           fullWidth
           variant="outlined"
-          placeholder={userEmail || "Enter your email"}
+          placeholder={userEmail || ""}
           value={confirmationEmail}
           onChange={handleEmailChange}
           size="small"
@@ -101,7 +104,7 @@ export const DeleteAccountDialog = () => {
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} variant="text">
-          Cancel
+          <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button
           onClick={handleSubmit}
@@ -109,7 +112,7 @@ export const DeleteAccountDialog = () => {
           color="error"
           disabled={!isDeleteEnabled}
         >
-          Delete account
+          <FormattedMessage defaultMessage="Delete account" />
         </Button>
       </DialogActions>
     </Dialog>

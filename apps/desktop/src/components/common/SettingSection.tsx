@@ -2,8 +2,8 @@ import { Box, Stack, SxProps, Typography } from "@mui/material";
 import { ReactNode } from "react";
 
 type SettingSectionProps = {
-  title: string;
-  description: string;
+  title: ReactNode;
+  description: ReactNode;
   action?: ReactNode;
   sx?: SxProps;
 };

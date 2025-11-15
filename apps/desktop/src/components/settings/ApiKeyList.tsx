@@ -19,6 +19,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { FormattedMessage } from "react-intl";
 import {
   createApiKey,
   deleteApiKey,
@@ -80,7 +81,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
       }}
     >
       <TextField
-        label="Key name"
+        label={<FormattedMessage defaultMessage="Key name" />}
         value={name}
         onChange={(event) => setName(event.target.value)}
         placeholder="e.g., My Groq Key"
@@ -90,7 +91,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
       />
       <TextField
         select
-        label="Provider"
+        label={<FormattedMessage defaultMessage="Provider" />}
         value={provider}
         onChange={(event) =>
           setProvider(event.target.value as SettingsApiKeyProvider)
@@ -102,7 +103,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         <MenuItem value="groq">Groq</MenuItem>
       </TextField>
       <TextField
-        label="API key"
+        label={<FormattedMessage defaultMessage="API key" />}
         value={key}
         onChange={(event) => setKey(event.target.value)}
         placeholder="Paste your API key"
@@ -118,7 +119,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
           size="small"
           disabled={saving}
         >
-          Cancel
+          <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button
           variant="contained"
@@ -126,7 +127,11 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
           onClick={handleSave}
           disabled={!name || !key || saving}
         >
-          {saving ? "Saving..." : "Save"}
+          {saving ? (
+            <FormattedMessage defaultMessage="Saving..." />
+          ) : (
+            <FormattedMessage defaultMessage="Save" />
+          )}
         </Button>
       </Box>
     </Paper>
@@ -194,7 +199,10 @@ const ApiKeyCard = ({
       </Typography>
       {apiKey.keySuffix ? (
         <Typography variant="caption" color="text.secondary">
-          Ends with {apiKey.keySuffix}
+          <FormattedMessage
+            defaultMessage="Ends with {suffix}"
+            values={{ suffix: apiKey.keySuffix }}
+          />
         </Typography>
       ) : null}
     </Stack>
@@ -208,9 +216,13 @@ const ApiKeyCard = ({
         }}
         disabled={testing || deleting}
       >
-        {testing ? "Testing..." : "Test"}
+        {testing ? (
+          <FormattedMessage defaultMessage="Testing..." />
+        ) : (
+          <FormattedMessage defaultMessage="Test" />
+        )}
       </Button>
-      <Tooltip title="Delete key">
+      <Tooltip title={<FormattedMessage defaultMessage="Delete key" />}>
         <span>
           <IconButton
             size="small"
@@ -327,7 +339,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
     <Stack spacing={1} alignItems="center">
       <CircularProgress size={24} />
       <Typography variant="body2" color="text.secondary">
-        Loading API keys…
+        <FormattedMessage defaultMessage="Loading API keys…" />
       </Typography>
     </Stack>
   );
@@ -335,13 +347,13 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
   const errorState = (
     <Stack spacing={1.5} alignItems="flex-start">
       <Typography variant="subtitle1" fontWeight={600}>
-        Failed to load API keys
+        <FormattedMessage defaultMessage="Failed to load API keys" />
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        We couldn&apos;t load your saved API keys. Please try again.
+        <FormattedMessage defaultMessage="We couldn't load your saved API keys. Please try again." />
       </Typography>
       <Button variant="outlined" onClick={handleRetryLoad}>
-        Retry
+        <FormattedMessage defaultMessage="Retry" />
       </Button>
     </Stack>
   );
@@ -349,17 +361,17 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
   const emptyState = (
     <Stack spacing={1.5} alignItems="flex-start">
       <Typography variant="subtitle1" fontWeight={600}>
-        No API keys yet
+        <FormattedMessage defaultMessage="No API keys yet" />
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        Connect a transcription provider like Groq with your API key.
+        <FormattedMessage defaultMessage="Connect a transcription provider like Groq with your API key." />
       </Typography>
       <Button
         variant="contained"
         startIcon={<AddIcon />}
         onClick={() => setShowAddCard(true)}
       >
-        Add API key
+        <FormattedMessage defaultMessage="Add API key" />
       </Button>
     </Stack>
   );
@@ -376,7 +388,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
     <Stack spacing={1} sx={{ width: "100%" }}>
       <Stack direction="row" spacing={0.5} alignItems="center">
         <Typography variant="body2" color="text.secondary">
-          Grab an API key from the
+          <FormattedMessage defaultMessage="Grab an API key from the" />
         </Typography>
         <Link
           href="https://console.groq.com/"
@@ -388,7 +400,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
             gap: 0.5,
           }}
         >
-          Groq Console
+          <FormattedMessage defaultMessage="Groq Console" />
           <OpenInNewIcon sx={{ fontSize: 16 }} />
         </Link>
       </Stack>
@@ -426,7 +438,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
           onClick={() => setShowAddCard(true)}
           sx={{ alignSelf: "flex-start" }}
         >
-          Add another key
+          <FormattedMessage defaultMessage="Add another key" />
         </Button>
       ) : null}
       <Dialog
@@ -435,17 +447,24 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Delete API key</DialogTitle>
+        <DialogTitle>
+          <FormattedMessage defaultMessage="Delete API key" />
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            Are you sure you want to delete the API key{" "}
-            <Box component="span" fontWeight={600}>
-              {apiKeyToDelete?.name ?? "this API key"}
-            </Box>
-            ?
+            <FormattedMessage
+              defaultMessage="Are you sure you want to delete the API key {keyName}?"
+              values={{
+                keyName: (
+                  <Box component="span" fontWeight={600}>
+                    {apiKeyToDelete?.name ?? "this API key"}
+                  </Box>
+                ),
+              }}
+            />
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Removing the key signs you out of that provider on this device.
+            <FormattedMessage defaultMessage="Removing the key signs you out of that provider on this device." />
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -453,7 +472,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
             onClick={handleCloseDeleteDialog}
             disabled={deletingApiKeyId !== null}
           >
-            Cancel
+            <FormattedMessage defaultMessage="Cancel" />
           </Button>
           <Button
             variant="contained"
@@ -461,7 +480,11 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
             onClick={handleConfirmDelete}
             disabled={deletingApiKeyId !== null}
           >
-            {deletingApiKeyId !== null ? "Deleting..." : "Delete"}
+            {deletingApiKeyId !== null ? (
+              <FormattedMessage defaultMessage="Deleting..." />
+            ) : (
+              <FormattedMessage defaultMessage="Delete" />
+            )}
           </Button>
         </DialogActions>
       </Dialog>

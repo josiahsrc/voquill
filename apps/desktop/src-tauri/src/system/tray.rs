@@ -28,9 +28,7 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open-dashboard" => {
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.unminimize();
-                    let _ = window.show();
-                    let _ = window.set_focus();
+                    let _ = crate::platform::window::surface_main_window(&window);
                 }
             }
             "quit-voquill" => app.exit(0),

@@ -7,6 +7,7 @@ import {
 	DialogTitle,
 } from "@mui/material";
 import React, { useEffect } from "react";
+import { FormattedMessage } from "react-intl";
 import { useBlocker, useLocation } from "react-router-dom";
 
 export const PromptLeave = ({
@@ -46,14 +47,18 @@ export const PromptLeave = ({
 
 	return (
 		<Dialog open={blocker.state === "blocked"}>
-			<DialogTitle>Unsaved Changes</DialogTitle>
+			<DialogTitle>
+				<FormattedMessage defaultMessage="Unsaved Changes" />
+			</DialogTitle>
 			<DialogContent>
 				<DialogContentText>{message}</DialogContentText>
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={blocker.reset}>Stay</Button>
+				<Button onClick={blocker.reset}>
+					<FormattedMessage defaultMessage="Stay" />
+				</Button>
 				<Button onClick={blocker.proceed} variant="contained" color="primary">
-					Leave
+					<FormattedMessage defaultMessage="Leave" />
 				</Button>
 			</DialogActions>
 		</Dialog>

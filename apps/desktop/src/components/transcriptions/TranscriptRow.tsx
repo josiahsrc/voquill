@@ -6,6 +6,7 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
 import { Box, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { getRec } from "@repo/utilities";
+import { useIntl } from "react-intl";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -81,6 +82,7 @@ const buildWaveformOutline = (
 };
 
 export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
+  const intl = useIntl();
   const transcription = useAppStore((state) =>
     getRec(state.transcriptionById, id)
   );
@@ -236,11 +238,11 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const handleCopyTranscript = useCallback(async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      showSnackbar("copied successful", { mode: "success" });
+      showSnackbar(intl.formatMessage({ defaultMessage: "Copied successfully" }), { mode: "success" });
     } catch (error) {
       showErrorSnackbar(error);
     }
-  }, []);
+  }, [intl]);
 
   const handleDeleteTranscript = useCallback(async (id: string) => {
     try {
@@ -252,11 +254,11 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           );
       });
       await getTranscriptionRepo().deleteTranscription(id);
-      showSnackbar("Delete successful", { mode: "success" });
+      showSnackbar(intl.formatMessage({ defaultMessage: "Delete successful" }), { mode: "success" });
     } catch (error) {
       showErrorSnackbar(error);
     }
-  }, []);
+  }, [intl]);
 
   const handlePlaybackToggle = useCallback(async () => {
     const element = audioRef.current;
@@ -275,18 +277,18 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       }
     } catch (error) {
       console.error("Failed to toggle audio playback", error);
-      showErrorSnackbar("Unable to play audio snippet.");
+      showErrorSnackbar(intl.formatMessage({ defaultMessage: "Unable to play audio snippet." }));
     }
-  }, []);
+  }, [intl]);
 
   const handleRetranscribe = useCallback(async () => {
     if (!audioSnapshot) {
-      showErrorSnackbar("Audio snapshot unavailable for this transcription.");
+      showErrorSnackbar(intl.formatMessage({ defaultMessage: "Audio snapshot unavailable for this transcription." }));
       return;
     }
 
     if (!transcription) {
-      showErrorSnackbar("Unable to load transcription details.");
+      showErrorSnackbar(intl.formatMessage({ defaultMessage: "Unable to load transcription details." }));
       return;
     }
 
@@ -314,7 +316,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       });
 
       if (!finalTranscript) {
-        showErrorSnackbar("Retranscription produced no text.");
+        showErrorSnackbar(intl.formatMessage({ defaultMessage: "Retranscription produced no text." }));
         return;
       }
 
@@ -341,14 +343,14 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       });
     } catch (error) {
       console.error("Failed to retranscribe audio", error);
-      const fallbackMessage = "Unable to retranscribe audio snippet.";
+      const fallbackMessage = intl.formatMessage({ defaultMessage: "Unable to retranscribe audio snippet." });
       const message = (error =
         error instanceof Error ? error.message : fallbackMessage);
       showErrorSnackbar(message || fallbackMessage);
     } finally {
       setIsRetranscribing(false);
     }
-  }, [audioSnapshot, id, transcription]);
+  }, [audioSnapshot, id, intl, transcription]);
 
   return (
     <>
@@ -365,9 +367,9 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           )}
         </Typography>
         <Stack direction="row" spacing={1}>
-          <Tooltip title="View transcription details" placement="top">
+          <Tooltip title={intl.formatMessage({ defaultMessage: "View transcription details" })} placement="top">
             <IconButton
-              aria-label="View transcription details"
+              aria-label={intl.formatMessage({ defaultMessage: "View transcription details" })}
               onClick={handleDetailsOpen}
               size="small"
               color={hasMetadata ? "primary" : "default"}
@@ -375,9 +377,9 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               <InfoOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Copy transcript" placement="top">
+          <Tooltip title={intl.formatMessage({ defaultMessage: "Copy transcript" })} placement="top">
             <IconButton
-              aria-label="Copy transcript"
+              aria-label={intl.formatMessage({ defaultMessage: "Copy transcript" })}
               onClick={() =>
                 handleCopyTranscript(transcription?.transcript || "")
               }
@@ -386,9 +388,9 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               <ContentCopyRoundedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Delete transcript" placement="top">
+          <Tooltip title={intl.formatMessage({ defaultMessage: "Delete transcript" })} placement="top">
             <IconButton
-              aria-label="Delete transcript"
+              aria-label={intl.formatMessage({ defaultMessage: "Delete transcript" })}
               onClick={() => handleDeleteTranscript(id)}
               size="small"
             >
@@ -424,7 +426,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
             }}
           >
             <IconButton
-              aria-label={isPlaying ? "Pause audio" : "Play audio"}
+              aria-label={isPlaying ? intl.formatMessage({ defaultMessage: "Pause audio" }) : intl.formatMessage({ defaultMessage: "Play audio" })}
               size="small"
               onClick={handlePlaybackToggle}
               disabled={isRetranscribing}
@@ -492,10 +494,10 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
                 />
               ))}
             </Box>
-            <Tooltip title="Retranscribe audio clip" placement="top">
+            <Tooltip title={intl.formatMessage({ defaultMessage: "Retranscribe audio clip" })} placement="top">
               <span style={{ display: "inline-flex" }}>
                 <IconButton
-                  aria-label="Retranscribe audio"
+                  aria-label={intl.formatMessage({ defaultMessage: "Retranscribe audio" })}
                   size="small"
                   onClick={handleRetranscribe}
                   disabled={isRetranscribing}

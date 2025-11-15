@@ -14,6 +14,7 @@ import {
   registerUserPreferences,
   setCurrentUser,
 } from "../utils/user.utils";
+import { type Locale } from "../i18n/config";
 import { showErrorSnackbar } from "./app.actions";
 
 const updateUser = async (
@@ -144,6 +145,16 @@ export const setPreferredMicrophone = async (
     },
     "Unable to update microphone preference. User not found.",
     "Failed to save microphone preference. Please try again.",
+  );
+};
+
+export const setPreferredLanguage = async (language: Locale): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.preferredLanguage = language;
+    },
+    "Unable to update preferred language. User not found.",
+    "Failed to save preferred language. Please try again.",
   );
 };
 

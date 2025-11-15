@@ -1,11 +1,12 @@
 import { Box, Button, Typography, type TypographyProps } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormattedMessage } from "react-intl";
 
 type TypographyWithMoreProps = TypographyProps & {
   maxLines?: number;
   initiallyExpanded?: boolean;
-  moreLabel?: string;
-  lessLabel?: string;
+  moreLabel?: React.ReactNode;
+  lessLabel?: React.ReactNode;
 };
 
 const defaultClampStyles = (maxLines: number) => ({
@@ -31,8 +32,8 @@ export function TypographyWithMore({
   children,
   maxLines = 3,
   initiallyExpanded = false,
-  moreLabel = "Show more",
-  lessLabel = "Show less",
+  moreLabel = <FormattedMessage defaultMessage="Show more" />,
+  lessLabel = <FormattedMessage defaultMessage="Show less" />,
   sx,
   ...typographyProps
 }: TypographyWithMoreProps) {

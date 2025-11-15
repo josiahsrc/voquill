@@ -193,16 +193,19 @@ jobs:
 
       - name: Generate release notes
         id: release_notes
-        uses: josiahsrc/ai-release-notes-builder@v1
+        uses: josiahsrc/ai-release-notes-builder@v2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           prompt: |
-            Keep it short and high level, focusing on bug fixes and features. 
+            Keep it short and super high level, focusing on bug fixes and features. 
             Use a single list of bullet points. Use emojis here and there. No header, 
             just bullet points.
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
+          paths: |
+            apps/desktop/**
+            packages/**
 
       - name: Compose release body
         id: release_body

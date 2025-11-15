@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { MemberPlan } from "@repo/types";
 import { useEffect } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import {
   closeUpgradePlanDialog,
   completePendingUpgrade,
@@ -21,6 +22,7 @@ import { FormContainer } from "../onboarding/OnboardingShared";
 import { PlanList } from "./PlanList";
 
 export const UpgradePlanDialog = () => {
+  const intl = useIntl();
   const open = useAppStore((state) => state.pricing.upgradePlanDialog);
   const view = useAppStore((state) => state.pricing.upgradePlanDialogView);
   const pendingPlan = useAppStore(
@@ -63,16 +65,16 @@ export const UpgradePlanDialog = () => {
               fontWeight={700}
               sx={{ mb: 1.5 }}
             >
-              Upgrade your plan
+              <FormattedMessage defaultMessage="Upgrade your plan" />
             </Typography>
             <Typography component="div" variant="body1" color="textSecondary">
-              Cross-device sync, Voquill Cloud, and more advanced features.
+              <FormattedMessage defaultMessage="Cross-device sync, Voquill Cloud, and more advanced features." />
             </Typography>
           </DialogTitle>
           <DialogContent>
             <PlanList
               onSelect={handleClickPlan}
-              text="Upgrade"
+              text={intl.formatMessage({ defaultMessage: "Upgrade" })}
               sx={{
                 mt: 1,
                 mb: 1,
@@ -91,10 +93,10 @@ export const UpgradePlanDialog = () => {
                 fontWeight={700}
                 sx={{ mb: 1.5 }}
               >
-                Sign in to continue
+                <FormattedMessage defaultMessage="Sign in to continue" />
               </Typography>
               <Typography component="div" variant="body1" color="textSecondary">
-                Log in and we’ll launch checkout automatically.
+                <FormattedMessage defaultMessage="Log in and we'll launch checkout automatically." />
               </Typography>
             </DialogTitle>
             <DialogContent sx={{ pt: 1 }}>
@@ -105,10 +107,12 @@ export const UpgradePlanDialog = () => {
       )}
       <DialogActions sx={{ px: 3, pb: 2 }}>
         {view === "login" && (
-          <Button onClick={showUpgradePlanList}>Back to plans</Button>
+          <Button onClick={showUpgradePlanList}>
+            <FormattedMessage defaultMessage="Back to plans" />
+          </Button>
         )}
         <Button onClick={handleClose} variant="text">
-          Close
+          <FormattedMessage defaultMessage="Close" />
         </Button>
       </DialogActions>
     </Dialog>

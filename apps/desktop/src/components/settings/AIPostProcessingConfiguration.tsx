@@ -1,5 +1,6 @@
 import { Stack, Typography } from "@mui/material";
 import { useCallback } from "react";
+import { FormattedMessage } from "react-intl";
 import {
   setPreferredPostProcessingApiKeyId,
   setPreferredPostProcessingMode,
@@ -59,7 +60,7 @@ export const AIPostProcessingConfiguration = ({
 
       {postProcessing.mode === "none" && (
         <Typography variant="body2" color="text.secondary">
-          No AI post-processing will run on new transcripts.
+          <FormattedMessage defaultMessage="No AI post-processing will run on new transcripts." />
         </Typography>
       )}
 

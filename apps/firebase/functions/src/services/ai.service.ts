@@ -1,7 +1,6 @@
 import {
-  AI_MAX_AUDIO_DURATION_SECONDS,
   HandlerInput,
-  HandlerOutput,
+  HandlerOutput
 } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import { countWords } from "@repo/utilities/src/string";
@@ -9,13 +8,15 @@ import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
 import { AuthData } from "firebase-functions/tasks";
 import { checkPaidAccess } from "../utils/check.utils";
 import { getGroqApiKey } from "../utils/env.utils";
+import { ClientError } from "../utils/error.utils";
 import {
-  ensureAudioDurationWithinLimit,
   incrementTokenCount,
   incrementWordCount,
   validateAudioInput,
   validateMemberWithinLimits
 } from "../utils/voice.utils";
+
+const MAX_BLOB_BYTES = 16 * 1024 * 1024; // 16 MB
 
 export const runTranscribeAudio = async ({
   auth,
@@ -24,15 +25,19 @@ export const runTranscribeAudio = async ({
   auth: Nullable<AuthData>;
   input: HandlerInput<"ai/transcribeAudio">;
 }): Promise<HandlerOutput<"ai/transcribeAudio">> => {
+  const blob = Buffer.from(input.audioBase64, "base64");
+  const blobBytes = blob.length;
+  if (blobBytes === 0) {
+    throw new ClientError("Audio data is empty");
+  }
+
+  if (blobBytes > MAX_BLOB_BYTES) {
+    throw new ClientError("Audio data exceeds maximum size of 16 MB");
+  }
+
   const access = await checkPaidAccess(auth);
   const { ext } = validateAudioInput({ audioMimeType: input.audioMimeType });
   await validateMemberWithinLimits({ auth: access.auth });
-
-  const blob = Buffer.from(input.audioBase64, "base64");
-  const durationSeconds = ensureAudioDurationWithinLimit({
-    audioBuffer: blob,
-    maxDurationSeconds: AI_MAX_AUDIO_DURATION_SECONDS,
-  });
 
   let transcript: string;
   let wordsUsed: number;
@@ -42,19 +47,12 @@ export const runTranscribeAudio = async ({
     wordsUsed = countWords(transcript);
   } else {
     const mb = blob.length / (1024 * 1024);
-    console.log(
-      "Processing",
-      mb.toFixed(2),
-      "MB of",
-      ext,
-      "audio lasting",
-      durationSeconds.toFixed(2),
-      "seconds"
-    );
+    console.log("Processing", mb.toFixed(2), "MB of", ext);
     ({ text: transcript, wordsUsed } = await groqTranscribeAudio({
       apiKey: getGroqApiKey(),
       blob,
       ext,
+      language: input.language,
     }));
   }
 
@@ -66,7 +64,7 @@ export const runTranscribeAudio = async ({
   return {
     text: transcript,
   };
-};
+}
 
 export const runGenerateText = async ({
   auth,

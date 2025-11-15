@@ -10,17 +10,19 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              bio,
              onboarded,
              preferred_microphone,
+             preferred_language,
              words_this_month,
              words_this_month_month,
              words_total,
              play_interaction_chime
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
             onboarded = excluded.onboarded,
             preferred_microphone = excluded.preferred_microphone,
+            preferred_language = excluded.preferred_language,
             words_this_month = excluded.words_this_month,
             words_this_month_month = excluded.words_this_month_month,
             words_total = excluded.words_total,
@@ -31,6 +33,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(&user.bio)
     .bind(if user.onboarded { 1 } else { 0 })
     .bind(&user.preferred_microphone)
+    .bind(&user.preferred_language)
     .bind(&user.words_this_month)
     .bind(&user.words_this_month_month)
     .bind(&user.words_total)
@@ -49,6 +52,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             bio,
             onboarded,
             preferred_microphone,
+            preferred_language,
             words_this_month,
             words_this_month_month,
             words_total,
@@ -69,6 +73,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 bio: row.get::<String, _>("bio"),
                 onboarded: onboarded_raw != 0,
                 preferred_microphone: row.get::<Option<String>, _>("preferred_microphone"),
+                preferred_language: row.get::<Option<String>, _>("preferred_language"),
                 words_this_month: row.try_get::<i64, _>("words_this_month").unwrap_or(0),
                 words_this_month_month: row
                     .try_get::<Option<String>, _>("words_this_month_month")

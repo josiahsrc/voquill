@@ -7,24 +7,29 @@ import {
 import { Box, List, Stack } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ListTile } from "../common/ListTile";
+import { FormattedMessage } from "react-intl";
 
 const settingsPath = "/dashboard/settings";
 
 type NavItem = {
-  label: string;
+  label: React.ReactNode;
   path: string;
   icon: React.ReactNode;
 };
 
 const navItems: NavItem[] = [
-  { label: "Home", path: "/dashboard", icon: <HomeOutlined /> },
   {
-    label: "History",
+    label: <FormattedMessage defaultMessage="Home" />,
+    path: "/dashboard",
+    icon: <HomeOutlined />,
+  },
+  {
+    label: <FormattedMessage defaultMessage="History" />,
     path: "/dashboard/transcriptions",
     icon: <HistoryOutlined />,
   },
   {
-    label: "Dictionary",
+    label: <FormattedMessage defaultMessage="Dictionary" />,
     path: "/dashboard/dictionary",
     icon: <ClassOutlined />,
   },
@@ -71,7 +76,7 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
           onClick={() => onChooseHandler(settingsPath)}
           selected={location.pathname === settingsPath}
           leading={<SettingsOutlined />}
-          title="Settings"
+          title={<FormattedMessage defaultMessage="Settings" />}
         />
       </Box>
     </Stack>

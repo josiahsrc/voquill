@@ -159,6 +159,7 @@ describe("api", () => {
   it("lets me manage my member", async () => {
     const creds = await createUserCreds();
     await signInWithCreds(creds);
+    await markUserAsSubscribed();
     await invokeHandler("member/tryInitialize", {});
     const myMember = await invokeHandler("member/getMyMember", {}).then(res => res.member);
     expect(myMember).not.toBeNull();

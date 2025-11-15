@@ -383,7 +383,15 @@ impl Transcriber for WhisperTranscriber {
             .map_err(|err| format!("Failed to create Whisper state: {err}"))?;
 
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-        params.set_language(Some("en"));
+        let language_code = request
+            .and_then(|req| req.language.as_deref())
+            .filter(|value| !value.is_empty());
+        eprintln!("[whisper] using language code: {:?}", language_code);
+        if let Some(language) = language_code {
+            params.set_language(Some(language));
+        } else {
+            params.set_language(Some("en"));
+        }
         params.set_translate(false);
         params.set_print_special(false);
         params.set_print_progress(false);
@@ -471,10 +479,22 @@ fn configure_linux_gpu_auto(params: &mut WhisperContextParameters) -> LinuxGpuAt
         };
     }
 
+    eprintln!("[whisper] Attempting to enumerate Vulkan devices...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
-        Ok(devs) => devs,
-        Err(_) => {
-            eprintln!("[whisper] Vulkan device enumeration panicked; falling back to CPU.");
+        Ok(devs) => {
+            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s)", devs.len());
+            devs
+        }
+        Err(panic_info) => {
+            eprintln!("[whisper] ERROR: Vulkan device enumeration panicked!");
+            if let Some(s) = panic_info.downcast_ref::<&str>() {
+                eprintln!("[whisper] Panic message: {s}");
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                eprintln!("[whisper] Panic message: {s}");
+            } else {
+                eprintln!("[whisper] Panic message: <unknown>");
+            }
+            eprintln!("[whisper] This may indicate GPU driver issues. Falling back to CPU.");
             return LinuxGpuAttempt {
                 attempted: false,
                 device_name: None,
@@ -501,8 +521,8 @@ fn configure_linux_gpu_auto(params: &mut WhisperContextParameters) -> LinuxGpuAt
     let device_name = selected.name.clone();
     let free_gib = selected.vram.free as f64 / (1024.0 * 1024.0 * 1024.0);
     eprintln!(
-        "[whisper] attempting GPU inference on '{}' (≈{free_gib:.2} GiB free VRAM)",
-        device_name
+        "[whisper] Attempting GPU inference on '{}' (ID: {}, ≈{free_gib:.2} GiB free VRAM)",
+        device_name, selected.id
     );
 
     LinuxGpuAttempt {
@@ -524,9 +544,19 @@ fn configure_linux_gpu_selection(
         ));
     }
 
+    eprintln!("[whisper] Attempting to enumerate Vulkan devices for selection...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
-        Ok(devs) => devs,
-        Err(_) => {
+        Ok(devs) => {
+            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s) for selection", devs.len());
+            devs
+        }
+        Err(panic_info) => {
+            eprintln!("[whisper] ERROR: Vulkan device enumeration panicked while selecting GPU!");
+            if let Some(s) = panic_info.downcast_ref::<&str>() {
+                eprintln!("[whisper] Panic message: {s}");
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                eprintln!("[whisper] Panic message: {s}");
+            }
             return Err(
                 "Vulkan device enumeration panicked while selecting GPU; GPU inference unavailable"
                     .to_string(),
@@ -606,10 +636,23 @@ fn configure_windows_gpu_auto(params: &mut WhisperContextParameters) -> WindowsG
         };
     }
 
+    eprintln!("[whisper] Attempting to enumerate Vulkan devices...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
-        Ok(devs) => devs,
-        Err(_) => {
-            eprintln!("[whisper] Vulkan device enumeration panicked; falling back to CPU.");
+        Ok(devs) => {
+            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s)", devs.len());
+            devs
+        }
+        Err(panic_info) => {
+            eprintln!("[whisper] ERROR: Vulkan device enumeration panicked!");
+            if let Some(s) = panic_info.downcast_ref::<&str>() {
+                eprintln!("[whisper] Panic message: {s}");
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                eprintln!("[whisper] Panic message: {s}");
+            } else {
+                eprintln!("[whisper] Panic message: <unknown>");
+            }
+            eprintln!("[whisper] This may indicate GPU driver issues (particularly with AMD cards on Windows).");
+            eprintln!("[whisper] Falling back to CPU inference.");
             return WindowsGpuAttempt {
                 attempted: false,
                 device_name: None,
@@ -636,8 +679,8 @@ fn configure_windows_gpu_auto(params: &mut WhisperContextParameters) -> WindowsG
     let device_name = selected.name.clone();
     let free_gib = selected.vram.free as f64 / (1024.0 * 1024.0 * 1024.0);
     eprintln!(
-        "[whisper] attempting GPU inference on '{}' (≈{free_gib:.2} GiB free VRAM)",
-        device_name
+        "[whisper] Attempting GPU inference on '{}' (ID: {}, ≈{free_gib:.2} GiB free VRAM)",
+        device_name, selected.id
     );
 
     WindowsGpuAttempt {
@@ -659,9 +702,20 @@ fn configure_windows_gpu_selection(
         ));
     }
 
+    eprintln!("[whisper] Attempting to enumerate Vulkan devices for selection...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
-        Ok(devs) => devs,
-        Err(_) => {
+        Ok(devs) => {
+            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s) for selection", devs.len());
+            devs
+        }
+        Err(panic_info) => {
+            eprintln!("[whisper] ERROR: Vulkan device enumeration panicked while selecting GPU!");
+            if let Some(s) = panic_info.downcast_ref::<&str>() {
+                eprintln!("[whisper] Panic message: {s}");
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                eprintln!("[whisper] Panic message: {s}");
+            }
+            eprintln!("[whisper] This may indicate GPU driver issues (particularly with AMD cards on Windows).");
             return Err(
                 "Vulkan device enumeration panicked while selecting GPU; GPU inference unavailable"
                     .to_string(),

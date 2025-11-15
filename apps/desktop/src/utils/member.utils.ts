@@ -1,6 +1,7 @@
 import { Member, MemberPlan, Nullable } from "@repo/types";
 import { getMemberExceedsLimits, getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
+import { getIntl } from "../i18n";
 
 export const getMyMember = (state: AppState): Nullable<Member> => {
   return getRec(state.memberById, state.auth?.uid) ?? null;
@@ -12,9 +13,9 @@ export const getEffectivePlan = (state: AppState): MemberPlan => {
 
 export const planToDisplayName = (plan: MemberPlan): string => {
   if (plan === "free") {
-    return "Community";
+    return getIntl().formatMessage({ defaultMessage: "Community" });
   } else {
-    return "Pro";
+    return getIntl().formatMessage({ defaultMessage: "Pro" });
   }
 };
 

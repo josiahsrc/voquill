@@ -79,6 +79,8 @@ pub struct TranscriptionOptionsDto {
     pub device: Option<TranscriptionDeviceSelectionDto>,
     pub model_size: Option<String>,
     pub initial_prompt: Option<String>,
+    #[serde(default)]
+    pub language: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -637,6 +639,7 @@ pub async fn transcribe_audio(
         device,
         model_size: maybe_model_size,
         initial_prompt,
+        language: maybe_language,
     }) = options
     {
         if let Some(device_dto) = device {
@@ -648,6 +651,14 @@ pub async fn transcribe_audio(
             let trimmed = sanitized.trim();
             if !trimmed.is_empty() {
                 request.initial_prompt = Some(trimmed.to_string());
+            }
+        }
+
+        if let Some(language_value) = maybe_language {
+            let sanitized: String = language_value.chars().filter(|ch| *ch != '\0').collect();
+            let trimmed = sanitized.trim();
+            if !trimmed.is_empty() {
+                request.language = Some(trimmed.to_string());
             }
         }
 

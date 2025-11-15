@@ -1,5 +1,6 @@
 import { ArrowBack } from "@mui/icons-material";
 import { Button, Stack, TextField, Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { setMode, submitResetPassword } from "../../actions/login.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { getCanSubmitResetPassword } from "../../utils/login.utils";
@@ -25,10 +26,10 @@ export const ResetPasswordForm = () => {
 	return (
 		<Stack spacing={2} alignItems="center">
 			<Typography textAlign="center" variant="body2">
-				Enter your email and we'll send a reset link.
+				<FormattedMessage defaultMessage="Enter your email and we'll send a reset link." />
 			</Typography>
 			<TextField
-				label="Email"
+				label={<FormattedMessage defaultMessage="Email" />}
 				type="email"
 				fullWidth
 				value={email}
@@ -41,10 +42,10 @@ export const ResetPasswordForm = () => {
 				disabled={!canSubmit}
 				onClick={handleSubmit}
 			>
-				Send reset link
+				<FormattedMessage defaultMessage="Send reset link" />
 			</Button>
 			<Button size="small" startIcon={<ArrowBack />} onClick={handleClickBack}>
-				Back
+				<FormattedMessage defaultMessage="Back" />
 			</Button>
 		</Stack>
 	);

@@ -1,4 +1,5 @@
 import { Button, Stack, Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   goToOnboardingPage,
@@ -17,23 +18,24 @@ export const TranscriptionMethodForm = () => {
   return (
     <FormContainer>
       <Typography variant="h4" fontWeight={600} gutterBottom>
-        Choose your transcription setup
+        <FormattedMessage defaultMessage="Choose your transcription setup" />
       </Typography>
       <Typography variant="body1" color="text.secondary" mb={4}>
-        Decide how Voquill should transcribe your recordings—locally or through
-        an API-powered service.
+        <FormattedMessage defaultMessage="Decide how Voquill should transcribe your recordings—locally or through an API-powered service." />
       </Typography>
 
       <AITranscriptionConfiguration hideCloudOption={true} />
 
       <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
-        <Button onClick={() => goBackOnboardingPage()}>Back</Button>
+        <Button onClick={() => goBackOnboardingPage()}>
+          <FormattedMessage defaultMessage="Back" />
+        </Button>
         <Button
           variant="contained"
           onClick={() => goToOnboardingPage("postProcessing")}
           disabled={!canContinue}
         >
-          Continue
+          <FormattedMessage defaultMessage="Continue" />
         </Button>
       </Stack>
     </FormContainer>

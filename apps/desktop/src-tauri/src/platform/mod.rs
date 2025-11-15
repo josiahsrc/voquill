@@ -44,6 +44,7 @@ pub struct TranscriptionRequest {
     pub device: Option<TranscriptionDevice>,
     pub model_path: Option<String>,
     pub initial_prompt: Option<String>,
+    pub language: Option<String>,
 }
 
 #[derive(Clone, Debug)]

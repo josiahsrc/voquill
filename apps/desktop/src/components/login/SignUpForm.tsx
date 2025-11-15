@@ -8,6 +8,7 @@ import {
   TextField,
 } from "@mui/material";
 import { useState } from "react";
+import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import { SignInWithGoogleButton } from "./ProviderButtons";
 import { setMode, submitSignUp } from "../../actions/login.actions";
@@ -69,10 +70,12 @@ export const SignUpForm = () => {
     <Stack spacing={2}>
       <SignInWithGoogleButton />
 
-      <Divider>or</Divider>
+      <Divider>
+        <FormattedMessage defaultMessage="or" />
+      </Divider>
 
       <TextField
-        label="Email"
+        label={<FormattedMessage defaultMessage="Email" />}
         type="email"
         fullWidth
         value={email}
@@ -82,7 +85,7 @@ export const SignUpForm = () => {
         size="small"
       />
       <TextField
-        label="Password"
+        label={<FormattedMessage defaultMessage="Password" />}
         type={passwordVisible ? "text" : "password"}
         fullWidth
         value={password}
@@ -103,7 +106,7 @@ export const SignUpForm = () => {
         }}
       />
       <TextField
-        label="Confirm password"
+        label={<FormattedMessage defaultMessage="Confirm password" />}
         type={confirmPasswordVisible ? "text" : "password"}
         fullWidth
         value={confirmPassword}
@@ -130,7 +133,7 @@ export const SignUpForm = () => {
         disabled={!canSubmit}
         onClick={handleSubmit}
       >
-        Create account
+        <FormattedMessage defaultMessage="Create account" />
       </Button>
 
       <Link
@@ -138,7 +141,7 @@ export const SignUpForm = () => {
         onClick={handleClickLogin}
         sx={{ alignSelf: "center" }}
       >
-        Already have an account? Log in
+        <FormattedMessage defaultMessage="Already have an account? Log in" />
       </Link>
     </Stack>
   );

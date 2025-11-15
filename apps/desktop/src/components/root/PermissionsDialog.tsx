@@ -15,6 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useMemo, useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import type { PermissionKind } from "../../types/permission.types";
 import {
@@ -29,14 +30,25 @@ import {
 
 const ICON_SIZE = 28;
 
-const purposeDescriptions: Record<PermissionKind, string> = {
-  microphone:
-    "Allows Voquill to capture audio from your microphone for transcription.",
-  accessibility:
-    "Lets you trigger dictation hotkeys while using other applications.",
+const getPurposeDescription = (
+  kind: PermissionKind,
+  intl: ReturnType<typeof useIntl>
+): string => {
+  const descriptions: Record<PermissionKind, string> = {
+    microphone: intl.formatMessage({
+      defaultMessage:
+        "Allows Voquill to capture audio from your microphone for transcription.",
+    }),
+    accessibility: intl.formatMessage({
+      defaultMessage:
+        "Lets you trigger dictation hotkeys while using other applications.",
+    }),
+  };
+  return descriptions[kind];
 };
 
 const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
+  const intl = useIntl();
   const status = useAppStore((state) => state.permissions[kind]);
   const [requesting, setRequesting] = useState(false);
 
@@ -46,7 +58,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
         icon: <PendingOutlined sx={{ fontSize: ICON_SIZE }} />,
         color: "text.secondary" as const,
         chipColor: "default" as const,
-        chipLabel: "Checking",
+        chipLabel: intl.formatMessage({ defaultMessage: "Checking" }),
       };
     }
 
@@ -57,7 +69,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
         ),
         color: "success.main" as const,
         chipColor: "success" as const,
-        chipLabel: "Authorized",
+        chipLabel: intl.formatMessage({ defaultMessage: "Authorized" }),
       };
     }
 
@@ -67,7 +79,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
       chipColor: "error" as const,
       chipLabel: describePermissionState(status.state),
     };
-  }, [status]);
+  }, [status, intl]);
 
   const instructions = getPermissionInstructions(kind);
   const title = getPermissionLabel(kind);
@@ -114,7 +126,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
           {instructions}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {purposeDescriptions[kind]}
+          {getPurposeDescription(kind, intl)}
         </Typography>
       </Stack>
       <Button
@@ -124,7 +136,7 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
         disabled={requesting || requestingDisabled}
         endIcon={<OpenInNew />}
       >
-        Enable
+        <FormattedMessage defaultMessage="Enable" />
       </Button>
     </Stack>
   );
@@ -182,12 +194,13 @@ export const PermissionsDialog = () => {
         },
       }}
     >
-      <DialogTitle>Voquill needs permissions to run</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Voquill needs permissions to run" />
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={3}>
           <Typography variant="body1">
-            This dialog will close automatically after you have granted all
-            required permissions.
+            <FormattedMessage defaultMessage="This dialog will close automatically after you have granted all required permissions." />
           </Typography>
           <Stack>
             {REQUIRED_PERMISSIONS.map((kind) => (

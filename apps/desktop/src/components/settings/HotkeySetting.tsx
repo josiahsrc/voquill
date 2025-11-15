@@ -2,6 +2,7 @@ import { Add, Close, RestartAlt } from "@mui/icons-material";
 import { Button, IconButton, Stack, Typography } from "@mui/material";
 import type { Hotkey } from "@repo/types";
 import type { ReactNode } from "react";
+import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
@@ -97,9 +98,11 @@ export const HotkeySetting = ({
   };
 
   const buttonLabel =
-    hotkeys.length === 0 && defaultCombos.length === 0
-      ? "Set hotkey"
-      : "Add another";
+    hotkeys.length === 0 && defaultCombos.length === 0 ? (
+      <FormattedMessage defaultMessage="Set hotkey" />
+    ) : (
+      <FormattedMessage defaultMessage="Add another" />
+    );
 
   return (
     <Stack direction="row" spacing={2} alignItems="flex-start">

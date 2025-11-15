@@ -32,6 +32,7 @@ export type TranscribeAudioInput = {
   samples: AudioSamples;
   sampleRate: number;
   prompt?: Nullable<string>;
+  language?: string;
 };
 
 export type TranscribeAudioOutput = {
@@ -78,7 +79,6 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
 
     const gpus = await loadDiscreteGpus();
     const selected = gpus[index];
-
     if (!selected) {
       return ensureCpu();
     }
@@ -103,6 +103,7 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         modelSize: options.modelSize,
         device: options.device,
         initialPrompt: input.prompt,
+        language: input.language,
       },
     });
 
@@ -128,6 +129,7 @@ export class CloudTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       prompt: input.prompt,
       audioBase64,
       audioMimeType: "audio/wav",
+      language: input.language,
     });
 
     return {
@@ -159,6 +161,7 @@ export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       blob: wavBuffer,
       ext: "wav",
       prompt: input.prompt ?? undefined,
+      language: input.language,
     });
 
     return {

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactElement } from "react";
+import { getIntl } from "../i18n/intl";
 
 export type Platform = "mac" | "windows" | "linux";
 
@@ -40,55 +41,69 @@ export const DEFAULT_PLATFORM: Platform = "mac";
 export const RELEASE_API_URL =
   "https://api.github.com/repos/josiahsrc/voquill/releases/latest";
 
-export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
-  mac: {
-    id: "mac",
-    name: "macOS",
-    label: "Download for free",
-    shortLabel: "Download",
-    Icon: createMaskIcon("/apple.svg"),
-  },
-  windows: {
-    id: "windows",
-    name: "Windows",
-    label: "Download for free",
-    shortLabel: "Download",
-    Icon: createMaskIcon("/windows.svg"),
-  },
-  linux: {
-    id: "linux",
-    name: "Linux",
-    label: "Download for free",
-    shortLabel: "Download",
-    Icon: createMaskIcon("/ubuntu.svg"),
-  },
-};
+export function getPlatformConfig(intl = getIntl()): Record<Platform, PlatformConfig> {
+  return {
+    mac: {
+      id: "mac",
+      name: "macOS",
+      label: intl.formatMessage({ defaultMessage: "Download for free" }),
+      shortLabel: intl.formatMessage({ defaultMessage: "Download" }),
+      Icon: createMaskIcon("/apple.svg"),
+    },
+    windows: {
+      id: "windows",
+      name: "Windows",
+      label: intl.formatMessage({ defaultMessage: "Download for free" }),
+      shortLabel: intl.formatMessage({ defaultMessage: "Download" }),
+      Icon: createMaskIcon("/windows.svg"),
+    },
+    linux: {
+      id: "linux",
+      name: "Linux",
+      label: intl.formatMessage({ defaultMessage: "Download for free" }),
+      shortLabel: intl.formatMessage({ defaultMessage: "Download" }),
+      Icon: createMaskIcon("/ubuntu.svg"),
+    },
+  };
+}
 
-const MANIFEST_KEY_DETAILS: Record<
+// Export non-function version for backwards compatibility
+export const PLATFORM_CONFIG = getPlatformConfig();
+
+function getManifestKeyDetails(intl = getIntl()): Record<
   string,
   { platform: Platform; label: string; description?: string }
-> = {
-  "darwin-aarch64": {
-    platform: "mac",
-    label: "macOS (Apple silicon)",
-    description: "Universal .app bundle",
-  },
-  "darwin-x86_64": {
-    platform: "mac",
-    label: "macOS (Intel)",
-    description: "Universal .app bundle",
-  },
-  "windows-x86_64": {
-    platform: "windows",
-    label: "Windows (x64)",
-    description: ".msi installer",
-  },
-  "linux-x86_64": {
-    platform: "linux",
-    label: "Linux (x86_64)",
-    description: "AppImage",
-  },
-};
+> {
+  return {
+    "darwin-aarch64": {
+      platform: "mac",
+      label: intl.formatMessage({ defaultMessage: "macOS (Apple silicon)" }),
+      description: intl.formatMessage({ defaultMessage: "Universal .app bundle" }),
+    },
+    "darwin-x86_64": {
+      platform: "mac",
+      label: intl.formatMessage({ defaultMessage: "macOS (Intel)" }),
+      description: intl.formatMessage({ defaultMessage: "Universal .app bundle" }),
+    },
+    "darwin-universal": {
+      platform: "mac",
+      label: intl.formatMessage({ defaultMessage: "macOS (Universal)" }),
+      description: intl.formatMessage({ defaultMessage: "Installer for all macOS architectures" }),
+    },
+    "windows-x86_64": {
+      platform: "windows",
+      label: intl.formatMessage({ defaultMessage: "Windows (x64)" }),
+      description: intl.formatMessage({ defaultMessage: ".msi installer" }),
+    },
+    "linux-x86_64": {
+      platform: "linux",
+      label: intl.formatMessage({ defaultMessage: "Linux (x86_64)" }),
+      description: intl.formatMessage({ defaultMessage: "AppImage" }),
+    },
+  };
+}
+
+const MANIFEST_KEY_DETAILS = getManifestKeyDetails();
 
 export const PLATFORM_ORDER: Platform[] = ["mac", "windows", "linux"];
 
@@ -122,6 +137,14 @@ const ASSET_KEY_MAPPINGS: Array<{
   {
     match: (name) => /\.rpm$/i.test(name),
     keys: ["linux-x86_64-rpm"],
+  },
+  {
+    match: (name) => /\.app\.tar\.gz$/i.test(name),
+    keys: ["darwin-universal"],
+  },
+  {
+    match: (name) => /\.dmg$/i.test(name),
+    keys: ["darwin-universal"],
   },
   {
     match: (name) => /darwin.*\.app\.tar\.gz$/i.test(name),
@@ -165,7 +188,7 @@ export async function fetchReleaseManifest(signal?: AbortSignal) {
 
 export async function selectPlatformUrl(
   manifest: ReleaseManifest,
-  platform: Platform,
+  platform: Platform
 ) {
   const preference = await buildPlatformPreference(platform);
 
@@ -220,7 +243,9 @@ export function extractDownloads(manifest: ReleaseManifest) {
     });
 }
 
-function transformGithubRelease(release: GithubRelease): ReleaseManifest | undefined {
+function transformGithubRelease(
+  release: GithubRelease
+): ReleaseManifest | undefined {
   const assets = release.assets ?? [];
   const platforms: Record<string, ReleasePlatformDetails | undefined> = {};
 
@@ -309,7 +334,7 @@ export function detectPlatform(): Platform {
   const platformHint =
     "userAgentData" in navigator && navigator.userAgentData
       ? // NavigatorUAData#platform
-        (navigator.userAgentData as { platform?: string }).platform ?? ""
+        ((navigator.userAgentData as { platform?: string }).platform ?? "")
       : "";
   const ua = [navigator.userAgent ?? "", platformHint, navigator.platform ?? ""]
     .join(" ")
@@ -330,6 +355,23 @@ export function detectPlatform(): Platform {
   return DEFAULT_PLATFORM;
 }
 
+export function isMobileDevice() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const { navigator } = window;
+  const platformHint =
+    "userAgentData" in navigator && navigator.userAgentData
+      ? ((navigator.userAgentData as { platform?: string }).platform ?? "")
+      : "";
+  const ua = [navigator.userAgent ?? "", platformHint, navigator.platform ?? ""]
+    .join(" ")
+    .toLowerCase();
+
+  return /iphone|ipad|ipod|android/.test(ua);
+}
+
 export function getPlatformDisplayName(platform: Platform) {
   return PLATFORM_CONFIG[platform].name;
 }
@@ -339,19 +381,24 @@ async function buildPlatformPreference(platform: Platform) {
     case "mac": {
       const macKey = await detectMacManifestKey();
       if (macKey === "darwin-aarch64") {
-        return ["darwin-aarch64", "darwin-x86_64"];
+        return ["darwin-aarch64", "darwin-universal"];
       }
 
       if (macKey === "darwin-x86_64") {
-        return ["darwin-x86_64", "darwin-aarch64"];
+        return ["darwin-x86_64", "darwin-universal"];
       }
 
-      return ["darwin-aarch64", "darwin-x86_64"];
+      return ["darwin-universal", "darwin-aarch64", "darwin-x86_64"];
     }
     case "windows":
-      return ["windows-x86_64"];
+      return ["windows-x86_64", "windows-x86_64-msi", "windows-x86_64-nsis"];
     case "linux":
-      return ["linux-x86_64"];
+      return [
+        "linux-x86_64",
+        "linux-x86_64-appimage",
+        "linux-x86_64-deb",
+        "linux-x86_64-rpm",
+      ];
     default:
       return [];
   }
@@ -366,24 +413,30 @@ async function detectMacManifestKey() {
   const ua = [
     navigator.userAgent ?? "",
     "userAgentData" in navigator
-      ? (navigator.userAgentData as { platform?: string }).platform ?? ""
+      ? ((navigator.userAgentData as { platform?: string }).platform ?? "")
       : "",
     navigator.platform ?? "",
   ]
     .join(" ")
     .toLowerCase();
 
-  if (ua.includes("arm") || ua.includes("aarch") || ua.includes("apple silicon")) {
+  if (
+    ua.includes("arm") ||
+    ua.includes("aarch") ||
+    ua.includes("apple silicon")
+  ) {
     return "darwin-aarch64";
   }
 
-  const userAgentData = (navigator as Navigator & {
-    userAgentData?: {
-      getHighEntropyValues?: (
-        hints: string[],
-      ) => Promise<{ architecture?: string }>;
-    };
-  }).userAgentData;
+  const userAgentData = (
+    navigator as Navigator & {
+      userAgentData?: {
+        getHighEntropyValues?: (
+          hints: string[]
+        ) => Promise<{ architecture?: string }>;
+      };
+    }
+  ).userAgentData;
 
   if (userAgentData?.getHighEntropyValues) {
     try {

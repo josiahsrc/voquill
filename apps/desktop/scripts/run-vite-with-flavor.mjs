@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 
 const rawArgs = process.argv.slice(2);
 const viteSubcommands = new Set(["build", "preview"]);
@@ -14,7 +16,8 @@ const finalArgs = []
   .concat(hasExplicitCommand ? explicitCommand : [])
   .concat(subcommandArgs);
 
-const defaultMode = modeHint === "build" || modeHint === "preview" ? "prod" : "dev";
+const defaultMode =
+  modeHint === "build" || modeHint === "preview" ? "prod" : "emulators";
 const flavorFromEnv =
   (process.env.VITE_FLAVOR ?? process.env.FLAVOR)?.trim() ?? undefined;
 const desiredMode = flavorFromEnv || defaultMode;
@@ -35,7 +38,12 @@ const childEnv = {
 
 const viteCmd = "vite";
 
-const child = spawn(viteCmd, finalArgs, {
+const require = createRequire(import.meta.url);
+const vitePkgPath = require.resolve("vite/package.json");
+const vitePkg = require("vite/package.json");
+const viteBinRelative = vitePkg.bin?.vite ?? "bin/vite.js";
+const viteBin = join(dirname(vitePkgPath), viteBinRelative);
+const child = spawn(process.execPath, [viteBin, ...finalArgs], {
   env: childEnv,
   stdio: "inherit",
   shell: true,
