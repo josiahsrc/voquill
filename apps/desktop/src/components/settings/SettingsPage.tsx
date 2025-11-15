@@ -5,6 +5,7 @@ import {
   DescriptionOutlined,
   GraphicEqOutlined,
   KeyboardAltOutlined,
+  LanguageOutlined,
   LockOutlined,
   LogoutOutlined,
   MicOutlined,
@@ -14,20 +15,43 @@ import {
   RocketLaunchOutlined,
   VolumeUpOutlined,
 } from "@mui/icons-material";
-import { Stack, Switch, Typography } from "@mui/material";
+import {
+  Box,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  Stack,
+  Switch,
+  Typography,
+} from "@mui/material";
 import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
+import { setPreferredLanguage } from "../../actions/user.actions";
 import { getAuthRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { getIsPaying } from "../../utils/member.utils";
-import { getHasEmailProvider, getIsSignedIn } from "../../utils/user.utils";
+import {
+  getHasEmailProvider,
+  getIsSignedIn,
+  getMyUser,
+} from "../../utils/user.utils";
+import {
+  normalizeLocaleValue,
+  LANGUAGE_DISPLAY_NAMES,
+} from "../../utils/language.utils";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/config";
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
+
+const LANGUAGE_OPTIONS = Object.entries(LANGUAGE_DISPLAY_NAMES) as [
+  Locale,
+  string,
+][];
 
 export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
@@ -40,6 +64,17 @@ export default function SettingsPage() {
     state.settings.autoLaunchStatus,
   ]);
   const autoLaunchLoading = autoLaunchStatus === "loading";
+
+  const preferredLanguage = useAppStore((state) => {
+    const user = getMyUser(state);
+    const normalized = normalizeLocaleValue(user?.preferredLanguage);
+    return normalized ?? DEFAULT_LOCALE;
+  });
+
+  const handlePreferredLanguageChange = (event: SelectChangeEvent<string>) => {
+    const nextValue = (event.target.value as Locale) ?? DEFAULT_LOCALE;
+    void setPreferredLanguage(nextValue);
+  };
 
   const openChangePasswordDialog = () => {
     produceAppState((state) => {
@@ -118,6 +153,7 @@ export default function SettingsPage() {
       <ListTile
         title={<FormattedMessage defaultMessage="Start on system startup" />}
         leading={<RocketLaunchOutlined />}
+        disableRipple={true}
         trailing={
           <Switch
             edge="end"
@@ -142,13 +178,41 @@ export default function SettingsPage() {
         leading={<KeyboardAltOutlined />}
         onClick={openShortcutsDialog}
       />
+      <ListTile
+        title={<FormattedMessage defaultMessage="Preferred language" />}
+        leading={<LanguageOutlined />}
+        disableRipple={true}
+        trailing={
+          <Box
+            onClick={(event) => event.stopPropagation()}
+            sx={{ minWidth: 160 }}
+          >
+            <Select
+              value={preferredLanguage}
+              onChange={handlePreferredLanguageChange}
+              size="small"
+              variant="outlined"
+              fullWidth
+              inputProps={{ "aria-label": "Preferred language" }}
+            >
+              {LANGUAGE_OPTIONS.map(([value, label]) => (
+                <MenuItem key={value} value={value}>
+                  {label}
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+        }
+      />
     </Section>
   );
 
   const processing = (
     <Section
       title={<FormattedMessage defaultMessage="Processing" />}
-      description={<FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />}
+      description={
+        <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
+      }
     >
       <ListTile
         title={<FormattedMessage defaultMessage="AI transcription" />}
@@ -166,7 +230,9 @@ export default function SettingsPage() {
   const advanced = (
     <Section
       title={<FormattedMessage defaultMessage="Advanced" />}
-      description={<FormattedMessage defaultMessage="Manage your account preferences and settings." />}
+      description={
+        <FormattedMessage defaultMessage="Manage your account preferences and settings." />
+      }
     >
       {hasEmailProvider && (
         <ListTile
@@ -209,7 +275,9 @@ export default function SettingsPage() {
   const dangerZone = (
     <Section
       title={<FormattedMessage defaultMessage="Danger zone" />}
-      description={<FormattedMessage defaultMessage="Be careful with these actions. They can have significant consequences for your account." />}
+      description={
+        <FormattedMessage defaultMessage="Be careful with these actions. They can have significant consequences for your account." />
+      }
     >
       <ListTile
         title={<FormattedMessage defaultMessage="Clear local data" />}

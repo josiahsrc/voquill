@@ -11,6 +11,7 @@ type LocalUser = {
   bio: string;
   onboarded: boolean;
   preferredMicrophone: string | null;
+  preferredLanguage: string | null;
   wordsThisMonth: number;
   wordsThisMonthMonth: string | null;
   wordsTotal: number;
@@ -33,6 +34,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     onboardedAt: isOnboarded ? nowIso() : null,
     timezone: null,
     preferredMicrophone: localUser.preferredMicrophone ?? null,
+    preferredLanguage: localUser.preferredLanguage ?? null,
     wordsThisMonth: localUser.wordsThisMonth ?? 0,
     wordsThisMonthMonth: localUser.wordsThisMonthMonth ?? null,
     wordsTotal: localUser.wordsTotal ?? 0,
@@ -46,6 +48,7 @@ const toLocalUser = (user: User): LocalUser => ({
   bio: user.bio ?? "",
   onboarded: user.onboarded,
   preferredMicrophone: user.preferredMicrophone ?? null,
+  preferredLanguage: user.preferredLanguage ?? null,
   wordsThisMonth: user.wordsThisMonth,
   wordsThisMonthMonth: user.wordsThisMonthMonth ?? null,
   wordsTotal: user.wordsTotal,

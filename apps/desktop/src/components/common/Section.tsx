@@ -4,13 +4,13 @@ import { FormattedMessage } from "react-intl";
 import { isDefined } from "@repo/utilities";
 
 type SectionProps = {
-  title: string;
-  description?: string;
+  title: React.ReactNode;
+  description?: React.ReactNode;
   children?: React.ReactNode;
   enabled?: boolean;
   onToggleEnable?: () => void;
   blocked?: boolean;
-  blockedReason?: string;
+  blockedReason?: React.ReactNode;
 };
 
 export const Section = ({

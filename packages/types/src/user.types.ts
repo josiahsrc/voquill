@@ -11,6 +11,7 @@ export type DatabaseUser = {
   onboarded: boolean;
   onboardedAt: Nullable<FiremixTimestamp>;
   timezone?: Nullable<string>;
+  preferredLanguage?: Nullable<string>;
   preferredMicrophone?: Nullable<string>;
   playInteractionChime: boolean;
   wordsThisMonth: number;
@@ -29,6 +30,7 @@ export const UserZod = z.object({
   onboarded: z.boolean(),
   onboardedAt: z.string().nullable(),
   timezone: z.string().nullable().optional(),
+  preferredLanguage: z.string().nullable().optional(),
   preferredMicrophone: z.string().nullable().optional(),
   playInteractionChime: z.boolean(),
   wordsThisMonth: z.number(),

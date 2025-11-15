@@ -10,6 +10,8 @@ pub struct User {
     #[serde(default)]
     pub preferred_microphone: Option<String>,
     #[serde(default)]
+    pub preferred_language: Option<String>,
+    #[serde(default)]
     pub words_this_month: i64,
     #[serde(default)]
     pub words_this_month_month: Option<String>,
