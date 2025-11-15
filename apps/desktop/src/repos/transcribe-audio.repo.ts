@@ -103,6 +103,7 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         modelSize: options.modelSize,
         device: options.device,
         initialPrompt: input.prompt,
+        language: input.language,
       },
     });
 

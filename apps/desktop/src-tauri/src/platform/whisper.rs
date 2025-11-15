@@ -383,7 +383,15 @@ impl Transcriber for WhisperTranscriber {
             .map_err(|err| format!("Failed to create Whisper state: {err}"))?;
 
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-        params.set_language(Some("en"));
+        let language_code = request
+            .and_then(|req| req.language.as_deref())
+            .filter(|value| !value.is_empty());
+        eprintln!("[whisper] using language code: {:?}", language_code);
+        if let Some(language) = language_code {
+            params.set_language(Some(language));
+        } else {
+            params.set_language(Some("en"));
+        }
         params.set_translate(false);
         params.set_print_special(false);
         params.set_print_progress(false);

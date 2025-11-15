@@ -72,9 +72,9 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 name: row.get::<String, _>("name"),
                 bio: row.get::<String, _>("bio"),
                 onboarded: onboarded_raw != 0,
-            preferred_microphone: row.get::<Option<String>, _>("preferred_microphone"),
-            preferred_language: row.get::<Option<String>, _>("preferred_language"),
-            words_this_month: row.try_get::<i64, _>("words_this_month").unwrap_or(0),
+                preferred_microphone: row.get::<Option<String>, _>("preferred_microphone"),
+                preferred_language: row.get::<Option<String>, _>("preferred_language"),
+                words_this_month: row.try_get::<i64, _>("words_this_month").unwrap_or(0),
                 words_this_month_month: row
                     .try_get::<Option<String>, _>("words_this_month_month")
                     .unwrap_or(None),
