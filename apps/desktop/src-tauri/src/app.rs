@@ -33,6 +33,11 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             }
         })
         .setup(|app| {
+            eprintln!("[app] Starting application setup...");
+
+            // Write startup diagnostics for debugging
+            crate::system::diagnostics::write_startup_diagnostics(app.handle());
+
             let db_url = {
                 let handle = app.handle();
                 crate::system::paths::database_url(&handle)

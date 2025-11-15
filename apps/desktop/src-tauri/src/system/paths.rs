@@ -38,3 +38,18 @@ pub fn models_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     fs::create_dir_all(&path)?;
     Ok(path)
 }
+
+pub fn logs_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
+    let path = app
+        .path()
+        .app_log_dir()
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+pub fn startup_diagnostics_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
+    let mut path = logs_dir(app)?;
+    path.push("startup_diagnostics.log");
+    Ok(path)
+}
