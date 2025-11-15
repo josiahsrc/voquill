@@ -1,20 +1,16 @@
-<div align="center" style="padding-bottom: 1em;">
+<div align="center">
 
-<img src="docs/graphic.png" alt="Voquill Logo" style="max-width: 400px;" />
+<img src="docs/graphic.png" alt="Voquill Logo" width="400" />
 
-<div style="font-size: 2.5em; font-weight: bold; margin-bottom: 0.5em;">
-Your keyboard is holding you back.
-</div>
+# Your keyboard is holding you back.
 
-<div style="font-size: 1.25em; margin-bottom: 1em;">
-Make voice your new keyboard. Type four times faster by using your voice.
-</div>
+### Make voice your new keyboard. Type four times faster by using your voice.
 
-<a href="https://voquill.com" style="text-decoration: none; margin-right: 1em;">
-  <button style="background-color: #4673e5ff; color: white; padding: 0.75em 1.5em; border: none; border-radius: 0.375em; font-size: 1em; cursor: pointer;">
-    Visit our website
-  </button>
-</a>
+<br/>
+
+**[Visit our website →](https://voquill.com)**
+
+<br/>
 
 </div>
 
