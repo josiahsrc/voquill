@@ -6,6 +6,7 @@ import {
 	Stack,
 	TextField,
 } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { SignInWithGoogleButton } from "./ProviderButtons";
 import { setMode, submitSignIn } from "../../actions/login.actions";
 import { produceAppState, useAppStore } from "../../store";
@@ -48,10 +49,12 @@ export const SignInForm = () => {
 		<Stack spacing={2}>
 			<SignInWithGoogleButton />
 
-			<Divider>or</Divider>
+			<Divider>
+				<FormattedMessage defaultMessage="or" />
+			</Divider>
 
 			<TextField
-				label="Email"
+				label={<FormattedMessage defaultMessage="Email" />}
 				type="email"
 				fullWidth
 				value={email}
@@ -59,7 +62,7 @@ export const SignInForm = () => {
 				size="small"
 			/>
 			<TextField
-				label="Password"
+				label={<FormattedMessage defaultMessage="Password" />}
 				type={passwordVisible ? "text" : "password"}
 				fullWidth
 				value={password}
@@ -84,15 +87,15 @@ export const SignInForm = () => {
 				disabled={!canSubmit}
 				onClick={handleSubmit}
 			>
-				Log in
+				<FormattedMessage defaultMessage="Log in" />
 			</Button>
 
 			<Stack direction="row" justifyContent="space-between" spacing={1}>
 				<Link component="button" onClick={handleClickReset}>
-					Forgot?
+					<FormattedMessage defaultMessage="Forgot?" />
 				</Link>
 				<Link component="button" onClick={handleClickRegister}>
-					Create account
+					<FormattedMessage defaultMessage="Create account" />
 				</Link>
 			</Stack>
 		</Stack>

@@ -52,6 +52,7 @@ export const runTranscribeAudio = async ({
       apiKey: getGroqApiKey(),
       blob,
       ext,
+      language: input.language,
     }));
   }
 

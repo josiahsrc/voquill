@@ -1,5 +1,6 @@
 import { Button, Stack, Typography } from "@mui/material";
 import { MemberPlan } from "@repo/types";
+import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   selectOnboardingPlan,
@@ -24,11 +25,10 @@ export const PlanSelectionForm = () => {
         textAlign="center"
       >
         <Typography variant="h4" fontWeight={600} gutterBottom>
-          Pick your plan
+          <FormattedMessage defaultMessage="Pick your plan" />
         </Typography>
         <Typography variant="body1" color="text.secondary" pb={2}>
-          The community edition is free forever. Upgrade anytime for more
-          features and support.
+          <FormattedMessage defaultMessage="The community edition is free forever. Upgrade anytime for more features and support." />
         </Typography>
       </Stack>
 
@@ -40,7 +40,9 @@ export const PlanSelectionForm = () => {
       />
 
       <Stack direction="row" justifyContent="flex-start" mt={4} pb={4}>
-        <Button onClick={() => goBackOnboardingPage()}>Back</Button>
+        <Button onClick={() => goBackOnboardingPage()}>
+          <FormattedMessage defaultMessage="Back" />
+        </Button>
       </Stack>
     </FormContainer>
   );

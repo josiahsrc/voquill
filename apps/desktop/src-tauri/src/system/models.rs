@@ -27,26 +27,26 @@ impl WhisperModelSize {
 
     pub fn filename(self) -> &'static str {
         match self {
-            Self::Tiny => "ggml-tiny.en.bin",
-            Self::Base => "ggml-base.en.bin",
-            Self::Small => "ggml-small.en.bin",
-            Self::Medium => "ggml-medium.en.bin",
+            Self::Tiny => "ggml-tiny.bin",
+            Self::Base => "ggml-base.bin",
+            Self::Small => "ggml-small.bin",
+            Self::Medium => "ggml-medium.bin",
         }
     }
 
     fn default_url(self) -> Option<&'static str> {
         match self {
             Self::Tiny => {
-                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin")
+                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin")
             }
             Self::Base => {
-                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin")
+                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin")
             }
             Self::Small => {
-                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin")
+                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin")
             }
             Self::Medium => {
-                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.en.bin")
+                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin")
             }
         }
     }

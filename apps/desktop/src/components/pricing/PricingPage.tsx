@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from "@mui/material";
 import { MemberPlan } from "@repo/types";
 import { useEffect } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { tryOpenPaymentDialogForPlan } from "../../actions/payment.actions";
 import { usePrevious } from "../../hooks/helper.hooks";
@@ -14,6 +15,7 @@ import { PlanList } from "./PlanList";
 
 export default function PricingPage() {
   const nav = useNavigate();
+  const intl = useIntl();
   const onboarded = useAppStore(
     (state) => getMyUser(state)?.onboarded ?? false
   );
@@ -40,15 +42,14 @@ export default function PricingPage() {
     }
   };
 
-  let title: string;
-  let subtitle: string;
+  let title: React.ReactNode;
+  let subtitle: React.ReactNode;
   if (onboarded) {
-    title = "Upgrade your plan";
-    subtitle = "Get access to the full feature set by upgrading your plan.";
+    title = <FormattedMessage defaultMessage="Upgrade your plan" />;
+    subtitle = <FormattedMessage defaultMessage="Get access to the full feature set by upgrading your plan." />;
   } else {
-    title = "Try it free. Upgrade anytime.";
-    subtitle =
-      "No credit card required. Get started today and upgrade when you're ready.";
+    title = <FormattedMessage defaultMessage="Try it free. Upgrade anytime." />;
+    subtitle = <FormattedMessage defaultMessage="No credit card required. Get started today and upgrade when you're ready." />;
   }
 
   const plans = (
@@ -70,7 +71,7 @@ export default function PricingPage() {
       </Typography>
       <PlanList
         onSelect={handleClickPlan}
-        text={onboarded ? "Subscribe" : "Continue"}
+        text={onboarded ? intl.formatMessage({ defaultMessage: "Subscribe" }) : intl.formatMessage({ defaultMessage: "Continue" })}
         sx={{
           mt: 4,
           mb: 2,

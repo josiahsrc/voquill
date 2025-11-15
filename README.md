@@ -1,6 +1,20 @@
-# Voquill
+<div align="center">
 
-Make voice your new keyboard. Voquill is an open-source, cross-platform speech-to-text workspace that lets you dictate into any desktop application, clean the transcript with AI, and keep your personal glossary in sync. The repo bundles the production desktop app, marketing site, Firebase backend, and all shared packages in a single Turborepo.
+<img src="docs/graphic.png" alt="Voquill Logo" width="400" />
+
+# Your keyboard is holding you back.
+
+### Make voice your new keyboard. Type four times faster by using your voice.
+
+<br/>
+
+**[Visit our website →](https://voquill.com)**
+
+<br/>
+
+</div>
+
+Voquill is an open-source, cross-platform speech-to-text workspace that lets you dictate into any desktop application, clean the transcript with AI, and keep your personal glossary in sync. The repo bundles the production desktop app, marketing site, Firebase backend, and all shared packages in a single Turborepo.
 
 ## Highlights
 - Voice input everywhere: overlay, hotkeys, and system integrations work across macOS, Windows, and Linux.

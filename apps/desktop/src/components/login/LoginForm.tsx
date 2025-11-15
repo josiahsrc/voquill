@@ -1,4 +1,5 @@
 import { Collapse, Stack, Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { useSearchParams } from "react-router-dom";
 import { TransitionGroup } from "react-transition-group";
 import { useOnExit } from "../../hooks/helper.hooks";
@@ -45,10 +46,10 @@ export const LoginForm = () => {
   return (
     <Stack spacing={1.5}>
       <Typography variant="body1" fontWeight="bold">
-        {mode === "signIn" && "Sign in"}
-        {mode === "signUp" && "Sign up"}
-        {mode === "resetPassword" && "Reset password"}
-        {mode === "passwordResetSent" && "Email sent"}
+        {mode === "signIn" && <FormattedMessage defaultMessage="Sign in" />}
+        {mode === "signUp" && <FormattedMessage defaultMessage="Sign up" />}
+        {mode === "resetPassword" && <FormattedMessage defaultMessage="Reset password" />}
+        {mode === "passwordResetSent" && <FormattedMessage defaultMessage="Email sent" />}
       </Typography>
 
       <TransitionGroup>
@@ -80,19 +81,19 @@ export const LoginForm = () => {
         textAlign="center"
         sx={{ maxWidth: 300, alignSelf: "center", fontSize: "0.75rem" }}
       >
-        By using this service, you agree to our{" "}
+        <FormattedMessage defaultMessage="By using this service, you agree to our" />{" "}
         <a
           href="/terms"
           style={{ color: "inherit", textDecoration: "underline" }}
         >
-          Terms & Conditions
+          <FormattedMessage defaultMessage="Terms & Conditions" />
         </a>{" "}
-        and{" "}
+        <FormattedMessage defaultMessage="and" />{" "}
         <a
           href="/privacy"
           style={{ color: "inherit", textDecoration: "underline" }}
         >
-          Privacy Policy
+          <FormattedMessage defaultMessage="Privacy Policy" />
         </a>
       </Typography>
 

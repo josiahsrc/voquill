@@ -1,8 +1,8 @@
+use crate::platform::macos::dock;
 use cocoa::appkit::{NSApp, NSApplication, NSWindow};
 use cocoa::base::{id, nil, YES};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
-use crate::platform::macos::dock;
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();

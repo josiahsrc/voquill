@@ -1,3 +1,4 @@
+import { FormattedMessage } from "react-intl";
 import styles from "../styles/page.module.css";
 
 type GitHubButtonProps = {
@@ -16,7 +17,9 @@ export function GitHubButton({ className }: GitHubButtonProps) {
       rel="noopener noreferrer"
     >
       <GitHubIcon className={styles.buttonIcon} size={size} />
-      <span>GitHub</span>
+      <span>
+        <FormattedMessage defaultMessage="GitHub" />
+      </span>
     </a>
   );
 }

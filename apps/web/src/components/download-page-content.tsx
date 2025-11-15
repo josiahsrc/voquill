@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import DownloadButton from "./download-button";
 import styles from "../styles/page.module.css";
 import {
@@ -17,6 +18,7 @@ import {
 const OPTIONS_SECTION_ID = "download-options";
 
 export function DownloadPageContent() {
+  const intl = useIntl();
   const [platform, setPlatform] = useState<Platform>(DEFAULT_PLATFORM);
   const [manifest, setManifest] = useState<ReleaseManifest | undefined>();
   const [downloads, setDownloads] = useState<PlatformDownload[]>([]);
@@ -75,14 +77,24 @@ export function DownloadPageContent() {
 
   const displayName = getPlatformDisplayName(platform);
   const recommendedLabel = manifest
-    ? `${displayName} ${manifest.version} (recommended)`
-    : `${displayName} download`;
+    ? intl.formatMessage(
+        { defaultMessage: "{displayName} {version} (recommended)" },
+        { displayName, version: manifest.version },
+      )
+    : intl.formatMessage(
+        { defaultMessage: "{displayName} download" },
+        { displayName },
+      );
 
   return (
     <section className={styles.downloadMain}>
       <header className={styles.downloadHero}>
-        <h1>Make voice your new keyboard.</h1>
-        <p>Dictate four times faster using your voice.</p>
+        <h1>
+          <FormattedMessage defaultMessage="Make voice your new keyboard." />
+        </h1>
+        <p>
+          <FormattedMessage defaultMessage="Dictate four times faster using your voice." />
+        </p>
         <div className={styles.downloadPrimary}>
           <DownloadButton
             className={styles.downloadPrimaryButton}
@@ -97,7 +109,9 @@ export function DownloadPageContent() {
       <section
         id={OPTIONS_SECTION_ID}
         className={styles.downloadOptions}
-        aria-label="All download options"
+        aria-label={intl.formatMessage({
+          defaultMessage: "All download options",
+        })}
       >
         {PLATFORM_ORDER.map((id: Platform) => {
           const config = PLATFORM_CONFIG[id];
@@ -113,11 +127,13 @@ export function DownloadPageContent() {
                 <div>
                   <h3 className={styles.downloadCardTitle}>{config.name}</h3>
                   <p className={styles.downloadVersionMeta}>
-                    {hasDownloads
-                      ? "Direct installers"
-                      : isLoading
-                        ? "Loading..."
-                        : "Currently unavailable"}
+                    {hasDownloads ? (
+                      <FormattedMessage defaultMessage="Direct installers" />
+                    ) : isLoading ? (
+                      <FormattedMessage defaultMessage="Loading..." />
+                    ) : (
+                      <FormattedMessage defaultMessage="Currently unavailable" />
+                    )}
                   </p>
                 </div>
               </div>
@@ -144,9 +160,11 @@ export function DownloadPageContent() {
                 </ul>
               ) : (
                 <span className={styles.downloadEmpty}>
-                  {isLoading
-                    ? "Loading download options…"
-                    : "No downloads available yet."}
+                  {isLoading ? (
+                    <FormattedMessage defaultMessage="Loading download options…" />
+                  ) : (
+                    <FormattedMessage defaultMessage="No downloads available yet." />
+                  )}
                 </span>
               )}
             </article>

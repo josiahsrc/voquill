@@ -9,6 +9,7 @@ import {
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
+import { DEFAULT_LOCALE } from "../i18n/config";
 import {
   GenerativePrefs,
   getGenerativePrefs,
@@ -95,6 +96,7 @@ export const submitOnboarding = async () => {
       onboardedAt: now,
       timezone: null,
       preferredMicrophone: null,
+      preferredLanguage: DEFAULT_LOCALE,
       wordsThisMonth: 0,
       wordsThisMonthMonth: null,
       wordsTotal: 0,

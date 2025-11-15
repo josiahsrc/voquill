@@ -5,6 +5,7 @@ import {
 import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { FormattedMessage } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { useHeaderPortal } from "../../hooks/header.hooks";
 import { useIsOnboarded } from "../../hooks/user.hooks";
@@ -72,7 +73,7 @@ export const AppHeader = () => {
   const sharedRightMenuItems: MenuPopoverItem[] = [
     {
       kind: "listItem",
-      title: "My profile",
+      title: <FormattedMessage defaultMessage="My profile" />,
       onClick: ({ close }) => {
         produceAppState((draft) => {
           draft.settings.profileDialogOpen = true;
@@ -84,7 +85,7 @@ export const AppHeader = () => {
     ...maybeArrayElements<MenuPopoverItem>(!isPaying, [
       {
         kind: "listItem",
-        title: "Upgrade to Pro",
+        title: <FormattedMessage defaultMessage="Upgrade to Pro" />,
         onClick: ({ close }) => {
           openUpgradePlanDialog();
           close();

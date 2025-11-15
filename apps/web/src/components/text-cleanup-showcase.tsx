@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
+import { useIntl } from "react-intl";
 import styles from "./text-cleanup-showcase.module.css";
-
-const BEFORE_TEXT =
-  "Soo umm I was thinkin we shud probaly uhh meet tommorow at like 3pm or somthing.";
-const AFTER_TEXT = "So I was thinking we should probably meet tomorrow at 3pm or something.";
-
-const BAD_WORDS = ["Soo", "umm", "thinkin", "shud", "probaly", "uhh", "tommorow", "like", "somthing"];
 
 const INITIAL_DELAY = 2000; // Show before text for 2 seconds
 const GRAY_DELAY = 800; // Show grayed words for 800ms
@@ -13,7 +8,17 @@ const TRANSITION_DURATION = 600; // Blur transition duration
 const SHOW_AFTER_DELAY = 2000; // Show after text for 2 seconds
 
 export default function TextCleanupShowcase() {
+  const intl = useIntl();
   const [phase, setPhase] = useState<"before" | "graying" | "transitioning" | "after">("before");
+
+  const BEFORE_TEXT = intl.formatMessage({
+    defaultMessage: "Soo umm I was thinkin we shud probaly uhh meet tommorow at like 3pm or somthing.",
+  });
+  const AFTER_TEXT = intl.formatMessage({
+    defaultMessage: "So I was thinking we should probably meet tomorrow at 3pm or something.",
+  });
+
+  const BAD_WORDS = ["Soo", "umm", "thinkin", "shud", "probaly", "uhh", "tommorow", "like", "somthing"];
 
   useEffect(() => {
     const timer1 = setTimeout(() => setPhase("graying"), INITIAL_DELAY);

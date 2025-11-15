@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactElement } from "react";
+import { getIntl } from "../i18n/intl";
 
 export type Platform = "mac" | "windows" | "linux";
 
@@ -40,60 +41,69 @@ export const DEFAULT_PLATFORM: Platform = "mac";
 export const RELEASE_API_URL =
   "https://api.github.com/repos/josiahsrc/voquill/releases/latest";
 
-export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
-  mac: {
-    id: "mac",
-    name: "macOS",
-    label: "Download for free",
-    shortLabel: "Download",
-    Icon: createMaskIcon("/apple.svg"),
-  },
-  windows: {
-    id: "windows",
-    name: "Windows",
-    label: "Download for free",
-    shortLabel: "Download",
-    Icon: createMaskIcon("/windows.svg"),
-  },
-  linux: {
-    id: "linux",
-    name: "Linux",
-    label: "Download for free",
-    shortLabel: "Download",
-    Icon: createMaskIcon("/ubuntu.svg"),
-  },
-};
+export function getPlatformConfig(intl = getIntl()): Record<Platform, PlatformConfig> {
+  return {
+    mac: {
+      id: "mac",
+      name: "macOS",
+      label: intl.formatMessage({ defaultMessage: "Download for free" }),
+      shortLabel: intl.formatMessage({ defaultMessage: "Download" }),
+      Icon: createMaskIcon("/apple.svg"),
+    },
+    windows: {
+      id: "windows",
+      name: "Windows",
+      label: intl.formatMessage({ defaultMessage: "Download for free" }),
+      shortLabel: intl.formatMessage({ defaultMessage: "Download" }),
+      Icon: createMaskIcon("/windows.svg"),
+    },
+    linux: {
+      id: "linux",
+      name: "Linux",
+      label: intl.formatMessage({ defaultMessage: "Download for free" }),
+      shortLabel: intl.formatMessage({ defaultMessage: "Download" }),
+      Icon: createMaskIcon("/ubuntu.svg"),
+    },
+  };
+}
 
-const MANIFEST_KEY_DETAILS: Record<
+// Export non-function version for backwards compatibility
+export const PLATFORM_CONFIG = getPlatformConfig();
+
+function getManifestKeyDetails(intl = getIntl()): Record<
   string,
   { platform: Platform; label: string; description?: string }
-> = {
-  "darwin-aarch64": {
-    platform: "mac",
-    label: "macOS (Apple silicon)",
-    description: "Universal .app bundle",
-  },
-  "darwin-x86_64": {
-    platform: "mac",
-    label: "macOS (Intel)",
-    description: "Universal .app bundle",
-  },
-  "darwin-universal": {
-    platform: "mac",
-    label: "macOS (Universal)",
-    description: "Installer for all macOS architectures",
-  },
-  "windows-x86_64": {
-    platform: "windows",
-    label: "Windows (x64)",
-    description: ".msi installer",
-  },
-  "linux-x86_64": {
-    platform: "linux",
-    label: "Linux (x86_64)",
-    description: "AppImage",
-  },
-};
+> {
+  return {
+    "darwin-aarch64": {
+      platform: "mac",
+      label: intl.formatMessage({ defaultMessage: "macOS (Apple silicon)" }),
+      description: intl.formatMessage({ defaultMessage: "Universal .app bundle" }),
+    },
+    "darwin-x86_64": {
+      platform: "mac",
+      label: intl.formatMessage({ defaultMessage: "macOS (Intel)" }),
+      description: intl.formatMessage({ defaultMessage: "Universal .app bundle" }),
+    },
+    "darwin-universal": {
+      platform: "mac",
+      label: intl.formatMessage({ defaultMessage: "macOS (Universal)" }),
+      description: intl.formatMessage({ defaultMessage: "Installer for all macOS architectures" }),
+    },
+    "windows-x86_64": {
+      platform: "windows",
+      label: intl.formatMessage({ defaultMessage: "Windows (x64)" }),
+      description: intl.formatMessage({ defaultMessage: ".msi installer" }),
+    },
+    "linux-x86_64": {
+      platform: "linux",
+      label: intl.formatMessage({ defaultMessage: "Linux (x86_64)" }),
+      description: intl.formatMessage({ defaultMessage: "AppImage" }),
+    },
+  };
+}
+
+const MANIFEST_KEY_DETAILS = getManifestKeyDetails();
 
 export const PLATFORM_ORDER: Platform[] = ["mac", "windows", "linux"];
 

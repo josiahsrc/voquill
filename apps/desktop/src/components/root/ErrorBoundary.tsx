@@ -4,6 +4,7 @@ import {
   useNavigate,
   useRouteError,
 } from "react-router-dom";
+import { FormattedMessage } from "react-intl";
 import { PageLayout } from "../common/PageLayout";
 import { AppHeader } from "./Header";
 
@@ -12,7 +13,11 @@ const ErrorContent = () => {
 
   if (isRouteErrorResponse(error)) {
     if (error.status === 404) {
-      return <Typography variant="h4">404 - page not found</Typography>;
+      return (
+        <Typography variant="h4">
+          <FormattedMessage defaultMessage="404 - page not found" />
+        </Typography>
+      );
     }
 
     return (
@@ -27,7 +32,9 @@ const ErrorContent = () => {
 
   return (
     <>
-      <Typography variant="h4">Something went wrong.</Typography>
+      <Typography variant="h4">
+        <FormattedMessage defaultMessage="Something went wrong." />
+      </Typography>
       <Typography>{(error as Error).message}</Typography>
     </>
   );
@@ -56,7 +63,7 @@ export default function ErrorBoundary() {
         <Stack sx={{ maxWidth: 800 }} spacing={3} alignItems="center">
           <ErrorContent />
           <Button variant="contained" onClick={handleGoHome}>
-            Return home
+            <FormattedMessage defaultMessage="Return home" />
           </Button>
         </Stack>
       </Stack>

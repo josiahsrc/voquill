@@ -1,8 +1,11 @@
 import { Nullable, User, UserPreferences } from "@repo/types";
 import { getRec } from "@repo/utilities";
+import { detectLocale } from "../i18n";
+import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
+import { normalizeLocaleValue } from "./language.utils";
 import { getMemberExceedsLimitsFromState, getMyMember } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -31,6 +34,11 @@ export const getMyEffectiveUserId = (state: AppState): string => {
 
 export const getMyUser = (state: AppState): Nullable<User> => {
   return getRec(state.userById, getMyEffectiveUserId(state)) ?? null;
+};
+
+export const getMyPreferredLocale = (state: AppState): Locale => {
+  const user = getMyUser(state);
+  return normalizeLocaleValue(user?.preferredLanguage) ?? detectLocale() ?? DEFAULT_LOCALE;
 };
 
 export const getMyUserPreferences = (state: AppState): Nullable<UserPreferences> => {

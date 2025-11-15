@@ -8,6 +8,7 @@ import {
   TextField,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FormattedMessage } from "react-intl";
 import { setUserName } from "../../actions/user.actions";
 import { useMyUser } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -66,27 +67,29 @@ export const ProfileDialog = () => {
 
   return (
     <Dialog open={open} onClose={closeDialog} maxWidth="xs" fullWidth>
-      <DialogTitle>My profile</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="My profile" />
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
             autoFocus
-            label="Username"
+            label={<FormattedMessage defaultMessage="Username" />}
             value={value}
             onChange={(event) => setValue(event.target.value)}
             disabled={!user || saving}
             size="small"
             fullWidth
-            helperText="Used to sign things like emails and stuff"
+            helperText={<FormattedMessage defaultMessage="Used to sign things like emails and stuff" />}
           />
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={closeDialog} disabled={saving}>
-          Cancel
+          <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button onClick={handleSave} disabled={!canSave} variant="contained">
-          Save
+          <FormattedMessage defaultMessage="Save" />
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,5 +1,6 @@
 import { Check } from "@mui/icons-material";
 import { Button, CircularProgress, Stack, Typography } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   submitOnboarding,
@@ -38,11 +39,10 @@ export const HotkeySelectionForm = () => {
   return (
     <FormContainer>
       <Typography variant="h4" fontWeight={600} gutterBottom>
-        Choose your dictation shortcut
+        <FormattedMessage defaultMessage="Choose your dictation shortcut" />
       </Typography>
       <Typography variant="body1" color="text.secondary" mb={4}>
-        Pick the keys you&apos;ll press to start and stop dictation anywhere.
-        You can change this anytime from settings.
+        <FormattedMessage defaultMessage="Pick the keys you'll press to start and stop dictation anywhere. You can change this anytime from settings." />
       </Typography>
 
       {status === "loading" ? (
@@ -71,7 +71,7 @@ export const HotkeySelectionForm = () => {
             onClick={() => goBackOnboardingPage()}
             disabled={status === "loading"}
           >
-            Back
+            <FormattedMessage defaultMessage="Back" />
           </Button>
         )}
         <Button
@@ -80,7 +80,7 @@ export const HotkeySelectionForm = () => {
           onClick={handleFinish}
           disabled={submitting || !canFinish}
         >
-          Finish
+          <FormattedMessage defaultMessage="Finish" />
         </Button>
       </Stack>
     </FormContainer>

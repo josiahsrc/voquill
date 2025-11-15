@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { useIntl } from "react-intl";
 
 type BaseLayoutProps = {
   children: ReactNode;
@@ -8,17 +9,23 @@ type BaseLayoutProps = {
   description?: string;
 };
 
-const DEFAULT_TITLE = "Voquill";
-const DEFAULT_DESCRIPTION = "Type four times faster with a voice-first keyboard.";
-const DEFAULT_SOCIAL_IMAGE = "/docs.png";
-const FALLBACK_CANONICAL_ORIGIN = "https://voquill.com";
-
 export function BaseLayout({
   children,
-  title = DEFAULT_TITLE,
-  description = DEFAULT_DESCRIPTION,
+  title,
+  description,
 }: BaseLayoutProps) {
+  const intl = useIntl();
   const location = useLocation();
+
+  const DEFAULT_TITLE = intl.formatMessage({ defaultMessage: "Voquill" });
+  const DEFAULT_DESCRIPTION = intl.formatMessage({
+    defaultMessage: "Type four times faster with a voice-first keyboard.",
+  });
+  const DEFAULT_SOCIAL_IMAGE = "/docs.png";
+  const FALLBACK_CANONICAL_ORIGIN = "https://voquill.com";
+
+  const finalTitle = title ?? DEFAULT_TITLE;
+  const finalDescription = description ?? DEFAULT_DESCRIPTION;
 
   const canonicalUrl = useMemo(() => {
     // Always use the fallback origin to ensure consistent canonical URLs
@@ -36,23 +43,23 @@ export function BaseLayout({
       return;
     }
 
-    document.title = title;
-    updateMetaTag("name", "description", description);
+    document.title = finalTitle;
+    updateMetaTag("name", "description", finalDescription);
     updateMetaTag("name", "robots", "index,follow");
 
     updateMetaTag("property", "og:type", "website");
-    updateMetaTag("property", "og:title", title);
-    updateMetaTag("property", "og:description", description);
+    updateMetaTag("property", "og:title", finalTitle);
+    updateMetaTag("property", "og:description", finalDescription);
     updateMetaTag("property", "og:url", canonicalUrl);
     updateMetaTag("property", "og:image", DEFAULT_SOCIAL_IMAGE);
 
     updateMetaTag("name", "twitter:card", "summary_large_image");
-    updateMetaTag("name", "twitter:title", title);
-    updateMetaTag("name", "twitter:description", description);
+    updateMetaTag("name", "twitter:title", finalTitle);
+    updateMetaTag("name", "twitter:description", finalDescription);
     updateMetaTag("name", "twitter:image", DEFAULT_SOCIAL_IMAGE);
 
     updateCanonicalLink(canonicalUrl);
-  }, [title, description, canonicalUrl]);
+  }, [finalTitle, finalDescription, canonicalUrl]);
 
   return (
     <>

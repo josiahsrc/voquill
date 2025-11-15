@@ -10,24 +10,28 @@ import {
   Typography,
 } from "@mui/material";
 import { getRec } from "@repo/utilities";
+import { FormattedMessage } from "react-intl";
 import { useCallback, useMemo } from "react";
 import { closeTranscriptionDetailsDialog } from "../../actions/transcriptions.actions";
 import { AppState } from "../../state/app.state";
 import { useAppStore } from "../../store";
 
-const formatModelSizeLabel = (modelSize?: string | null): string => {
+const formatModelSizeLabel = (
+  modelSize?: string | null,
+  unknownLabel: React.ReactNode = "Unknown"
+): React.ReactNode => {
   const value = modelSize?.trim();
   if (!value) {
-    return "Unknown";
+    return unknownLabel;
   }
 
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
 const renderTextBlock = (
-  label: string,
+  label: React.ReactNode,
   value: string | null | undefined,
-  options?: { placeholder?: string; monospace?: boolean }
+  options?: { placeholder?: React.ReactNode; monospace?: boolean }
 ) => {
   const normalized = value?.trim();
 
@@ -42,7 +46,8 @@ const renderTextBlock = (
             mt: 0.5,
             p: 1,
             borderRadius: 1,
-            bgcolor: theme.vars?.palette.level1 ?? theme.palette.background.default,
+            bgcolor:
+              theme.vars?.palette.level1 ?? theme.palette.background.default,
           })}
         >
           <Typography
@@ -50,7 +55,9 @@ const renderTextBlock = (
             sx={{
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
-              fontFamily: options?.monospace ? '"Roboto Mono", monospace' : undefined,
+              fontFamily: options?.monospace
+                ? '"Roboto Mono", monospace'
+                : undefined,
             }}
           >
             {normalized}
@@ -58,21 +65,28 @@ const renderTextBlock = (
         </Box>
       ) : (
         <Typography variant="body2" color="text.secondary">
-          {options?.placeholder ?? "Not provided."}
+          {options?.placeholder ?? (
+            <FormattedMessage defaultMessage="Not provided." />
+          )}
         </Typography>
       )}
     </Box>
   );
 };
 
-const resolveApiKeyLabel = (records: AppState["apiKeyById"], apiKeyId?: string | null): string => {
+const resolveApiKeyLabel = (
+  records: AppState["apiKeyById"],
+  apiKeyId: string | null | undefined,
+  noneLabel: string,
+  unknownLabel: string
+): string => {
   if (!apiKeyId) {
-    return "None";
+    return noneLabel;
   }
 
   const record = records[apiKeyId];
   if (!record) {
-    return "Unknown";
+    return unknownLabel;
   }
 
   const suffix = record.keySuffix?.trim();
@@ -100,50 +114,70 @@ export const TranscriptionDetailsDialog = () => {
 
   const transcriptionModeLabel = useMemo(() => {
     if (transcription?.transcriptionMode === "api") {
-      return "API";
+      return <FormattedMessage defaultMessage="API" />;
     }
     if (transcription?.transcriptionMode === "cloud") {
-      return "Voquill Cloud";
+      return <FormattedMessage defaultMessage="Voquill Cloud" />;
     }
     if (transcription?.transcriptionMode === "local") {
-      return "Local";
+      return <FormattedMessage defaultMessage="Local" />;
     }
-    return "Unknown";
+    return <FormattedMessage defaultMessage="Unknown" />;
   }, [transcription?.transcriptionMode]);
 
   const transcriptionApiKeyLabel = useMemo(
-    () => resolveApiKeyLabel(apiKeysById, transcription?.transcriptionApiKeyId),
+    () =>
+      resolveApiKeyLabel(
+        apiKeysById,
+        transcription?.transcriptionApiKeyId,
+        "None",
+        "Unknown"
+      ),
     [apiKeysById, transcription?.transcriptionApiKeyId]
   );
 
   const postProcessModeLabel = useMemo(() => {
     if (transcription?.postProcessMode === "api") {
-      return "API";
+      return <FormattedMessage defaultMessage="API" />;
     }
     if (transcription?.postProcessMode === "cloud") {
-      return "Voquill Cloud";
+      return <FormattedMessage defaultMessage="Voquill Cloud" />;
     }
-    return "Disabled";
+    return <FormattedMessage defaultMessage="Disabled" />;
   }, [transcription?.postProcessDevice, transcription?.postProcessMode]);
 
   const postProcessApiKeyLabel = useMemo(
-    () => resolveApiKeyLabel(apiKeysById, transcription?.postProcessApiKeyId),
+    () =>
+      resolveApiKeyLabel(
+        apiKeysById,
+        transcription?.postProcessApiKeyId,
+        "None",
+        "Unknown"
+      ),
     [apiKeysById, transcription?.postProcessApiKeyId]
   );
 
   const modelSizeLabel = useMemo(
-    () => formatModelSizeLabel(transcription?.modelSize ?? null),
+    () => formatModelSizeLabel(transcription?.modelSize ?? null, "Unknown"),
     [transcription?.modelSize]
   );
 
   const deviceLabel = useMemo(() => {
     const value = transcription?.inferenceDevice?.trim();
-    return value && value.length > 0 ? value : "Unknown";
+    return value && value.length > 0 ? (
+      value
+    ) : (
+      <FormattedMessage defaultMessage="Unknown" />
+    );
   }, [transcription?.inferenceDevice]);
 
   const postProcessDeviceLabel = useMemo(() => {
     const value = transcription?.postProcessDevice?.trim();
-    return value && value.length > 0 ? value : "Unknown";
+    return value && value.length > 0 ? (
+      value
+    ) : (
+      <FormattedMessage defaultMessage="Unknown" />
+    );
   }, [transcription?.postProcessDevice]);
 
   const transcriptionPrompt = useMemo(() => {
@@ -173,18 +207,20 @@ export const TranscriptionDetailsDialog = () => {
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Transcription Details</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Transcription Details" />
+      </DialogTitle>
       <DialogContent dividers>
         {transcription ? (
           <Stack spacing={3}>
             <Box>
               <Typography variant="overline" color="text.secondary">
-                Transcription Step
+                <FormattedMessage defaultMessage="Transcription Step" />
               </Typography>
               <Stack spacing={1.25} sx={{ mt: 1 }}>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Mode
+                    <FormattedMessage defaultMessage="Mode" />
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {transcriptionModeLabel}
@@ -192,7 +228,7 @@ export const TranscriptionDetailsDialog = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Device
+                    <FormattedMessage defaultMessage="Device" />
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {deviceLabel}
@@ -200,7 +236,7 @@ export const TranscriptionDetailsDialog = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Model Size
+                    <FormattedMessage defaultMessage="Model Size" />
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {modelSizeLabel}
@@ -208,16 +244,22 @@ export const TranscriptionDetailsDialog = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    API Key
+                    <FormattedMessage defaultMessage="API Key" />
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {transcriptionApiKeyLabel}
                   </Typography>
                 </Box>
-                {renderTextBlock("Prompt", transcriptionPrompt, {
-                  placeholder: "No custom prompt applied.",
-                  monospace: true,
-                })}
+                {renderTextBlock(
+                  <FormattedMessage defaultMessage="Prompt" />,
+                  transcriptionPrompt,
+                  {
+                    placeholder: (
+                      <FormattedMessage defaultMessage="No custom prompt applied." />
+                    ),
+                    monospace: true,
+                  }
+                )}
               </Stack>
             </Box>
 
@@ -225,12 +267,12 @@ export const TranscriptionDetailsDialog = () => {
 
             <Box>
               <Typography variant="overline" color="text.secondary">
-                Post-processing Step
+                <FormattedMessage defaultMessage="Post-processing Step" />
               </Typography>
               <Stack spacing={1.25} sx={{ mt: 1 }}>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Mode
+                    <FormattedMessage defaultMessage="Mode" />
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {postProcessModeLabel}
@@ -238,7 +280,7 @@ export const TranscriptionDetailsDialog = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Processor
+                    <FormattedMessage defaultMessage="Processor" />
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {postProcessDeviceLabel}
@@ -246,16 +288,22 @@ export const TranscriptionDetailsDialog = () => {
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    API Key
+                    <FormattedMessage defaultMessage="API Key" />
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
                     {postProcessApiKeyLabel}
                   </Typography>
                 </Box>
-                {renderTextBlock("Prompt", postProcessPrompt, {
-                  placeholder: "No LLM post-processing was applied.",
-                  monospace: true,
-                })}
+                {renderTextBlock(
+                  <FormattedMessage defaultMessage="Prompt" />,
+                  postProcessPrompt,
+                  {
+                    placeholder: (
+                      <FormattedMessage defaultMessage="No LLM post-processing was applied." />
+                    ),
+                    monospace: true,
+                  }
+                )}
               </Stack>
             </Box>
 
@@ -263,17 +311,29 @@ export const TranscriptionDetailsDialog = () => {
 
             <Box>
               <Typography variant="overline" color="text.secondary">
-                Outputs
+                <FormattedMessage defaultMessage="Outputs" />
               </Typography>
               <Stack spacing={1.25} sx={{ mt: 1 }}>
-                {renderTextBlock("Raw transcription", rawTranscriptText, {
-                  placeholder: "Raw transcript unavailable.",
-                  monospace: true,
-                })}
-                {renderTextBlock("Final transcription", finalTranscriptText, {
-                  placeholder: "Final transcript unavailable.",
-                  monospace: true,
-                })}
+                {renderTextBlock(
+                  <FormattedMessage defaultMessage="Raw transcription" />,
+                  rawTranscriptText,
+                  {
+                    placeholder: (
+                      <FormattedMessage defaultMessage="Raw transcript unavailable." />
+                    ),
+                    monospace: true,
+                  }
+                )}
+                {renderTextBlock(
+                  <FormattedMessage defaultMessage="Final transcription" />,
+                  finalTranscriptText,
+                  {
+                    placeholder: (
+                      <FormattedMessage defaultMessage="Final transcript unavailable." />
+                    ),
+                    monospace: true,
+                  }
+                )}
               </Stack>
             </Box>
 
@@ -281,7 +341,7 @@ export const TranscriptionDetailsDialog = () => {
 
             <Box>
               <Typography variant="overline" color="text.secondary">
-                Warnings
+                <FormattedMessage defaultMessage="Warnings" />
               </Typography>
               <Stack spacing={1} sx={{ mt: 1 }}>
                 {warnings.length > 0 ? (
@@ -292,7 +352,8 @@ export const TranscriptionDetailsDialog = () => {
                         p: 1,
                         borderRadius: 1,
                         bgcolor:
-                          theme.vars?.palette.level1 ?? theme.palette.background.default,
+                          theme.vars?.palette.level1 ??
+                          theme.palette.background.default,
                       })}
                     >
                       <Typography
@@ -309,7 +370,7 @@ export const TranscriptionDetailsDialog = () => {
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No warnings recorded for this transcription.
+                    <FormattedMessage defaultMessage="No warnings recorded for this transcription." />
                   </Typography>
                 )}
               </Stack>
@@ -317,12 +378,14 @@ export const TranscriptionDetailsDialog = () => {
           </Stack>
         ) : (
           <Typography variant="body2" color="text.secondary">
-            Metadata unavailable for this transcription.
+            <FormattedMessage defaultMessage="Metadata unavailable for this transcription." />
           </Typography>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
+        <Button onClick={handleClose}>
+          <FormattedMessage defaultMessage="Close" />
+        </Button>
       </DialogActions>
     </Dialog>
   );

@@ -32,3 +32,4 @@ Shared packages used by both the desktop, server, and web applications. We place
 - Use disabled button states for loading instead of changing button text.
 - Reuse code where appropriate without overgeneralizing.
 - Use the shared types from the packages where possible, e.g. `Nullable<T>`.
+- When adding translations to the desktop or web app, first use <FormattedMessage>, `getIntl`, or `useIntl` in the relevant component or util (do NOT pass in an ID, only pass in a `defaultMessage`). Then run the `i18n:extract` script in the desktop app to extract messages. Finally, run the `i18n:sync` script to sync new messages to all locale files. Lastly, open up each locale json file and add the translations (you MUST do this yourself as an AI).

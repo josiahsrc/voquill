@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 
 const CONFIRMATION_PHRASE = "clear";
@@ -57,32 +58,40 @@ export const ClearLocalDataDialog = () => {
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Clear local data</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Clear local data" />
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <Alert severity="warning" variant="outlined">
-            <AlertTitle>This action permanently removes local data</AlertTitle>
+            <AlertTitle>
+              <FormattedMessage defaultMessage="This action permanently removes local data" />
+            </AlertTitle>
             <Typography variant="body2">
-              This will delete all preferences, dictionary entries, and saved
-              transcriptions from this device. The action cannot be undone.
+              <FormattedMessage defaultMessage="This will delete all preferences, dictionary entries, and saved transcriptions from this device. The action cannot be undone." />
             </Typography>
           </Alert>
           <Typography variant="body2">
-            To confirm, type{" "}
-            <Typography
-              component="span"
-              variant="body2"
-              fontWeight="bold"
-              sx={{ fontFamily: "inherit" }}
-            >
-              {CONFIRMATION_PHRASE}
-            </Typography>{" "}
-            below and click Clear local data.
+            <FormattedMessage
+              defaultMessage="To confirm, type {phrase} below and click Clear local data."
+              values={{
+                phrase: (
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    fontWeight="bold"
+                    sx={{ fontFamily: "inherit" }}
+                  >
+                    {CONFIRMATION_PHRASE}
+                  </Typography>
+                ),
+              }}
+            />
           </Typography>
           <TextField
             autoFocus
             fullWidth
-            label="Confirmation phrase"
+            label={<FormattedMessage defaultMessage="Confirmation phrase" />}
             value={confirmationValue}
             onChange={(event) => setConfirmationValue(event.target.value)}
             disabled={isClearing}
@@ -98,7 +107,7 @@ export const ClearLocalDataDialog = () => {
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={isClearing}>
-          Cancel
+          <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button
           color="error"
@@ -106,7 +115,11 @@ export const ClearLocalDataDialog = () => {
           onClick={handleClear}
           disabled={!confirmationMatches || isClearing}
         >
-          {isClearing ? "Clearing..." : "Clear local data"}
+          {isClearing ? (
+            <FormattedMessage defaultMessage="Clearing..." />
+          ) : (
+            <FormattedMessage defaultMessage="Clear local data" />
+          )}
         </Button>
       </DialogActions>
     </Dialog>
