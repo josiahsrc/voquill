@@ -9,6 +9,7 @@ import {
   type SxProps,
 } from "@mui/material";
 import { MemberPlan } from "@repo/types";
+import { FormattedMessage, useIntl } from "react-intl";
 import { loadPrices } from "../../actions/pricing.actions";
 import { useOnEnter } from "../../hooks/helper.hooks";
 import { useAppStore } from "../../store";
@@ -97,6 +98,7 @@ export const PlanList = ({
   disabled,
   ignoreCurrentPlan,
 }: PlanListProps) => {
+  const intl = useIntl();
   const effectivePlan = useAppStore(getEffectivePlan);
 
   const proPrice = useAppStore((state) =>
@@ -109,19 +111,19 @@ export const PlanList = ({
 
   const getText = (plan: MemberPlan) => {
     if (effectivePlan === plan && !ignoreCurrentPlan) {
-      return { text: "Current plan", disabled: true };
+      return { text: intl.formatMessage({ defaultMessage: "Current plan" }), disabled: true };
     }
 
     return {
-      text: text ?? "Continue",
+      text: text ?? intl.formatMessage({ defaultMessage: "Continue" }),
       disabled,
     };
   };
 
   const communityCard = (
     <PlanCard
-      title="Community"
-      price="Free"
+      title={<FormattedMessage defaultMessage="Community" />}
+      price={<FormattedMessage defaultMessage="Free" />}
       buttonVariant="outlined"
       cardSx={{ borderColor: "level1" }}
       button={
@@ -135,17 +137,17 @@ export const PlanList = ({
         </Button>
       }
     >
-      <CheckmarkRow>On-device processing</CheckmarkRow>
-      <CheckmarkRow>Unlimited words</CheckmarkRow>
-      <CheckmarkRow>Custom API keys</CheckmarkRow>
-      <CheckmarkRow disabled>Manual setup</CheckmarkRow>
+      <CheckmarkRow><FormattedMessage defaultMessage="On-device processing" /></CheckmarkRow>
+      <CheckmarkRow><FormattedMessage defaultMessage="Unlimited words" /></CheckmarkRow>
+      <CheckmarkRow><FormattedMessage defaultMessage="Custom API keys" /></CheckmarkRow>
+      <CheckmarkRow disabled><FormattedMessage defaultMessage="Manual setup" /></CheckmarkRow>
     </PlanCard>
   );
 
   const proCard = (
     <PlanCard
-      title="Pro"
-      price={proPrice ? `$${proPrice}/month` : "--"}
+      title={<FormattedMessage defaultMessage="Pro" />}
+      price={proPrice ? intl.formatMessage({ defaultMessage: "${proPrice}/month" }, { proPrice }) : "--"}
       cardSx={{ borderColor: "primary.main" }}
       button={
         <Button
@@ -158,10 +160,10 @@ export const PlanList = ({
         </Button>
       }
     >
-      <CheckmarkRow>Everything community has</CheckmarkRow>
-      <CheckmarkRow>Cross-device data storage</CheckmarkRow>
-      <CheckmarkRow>No setup needed</CheckmarkRow>
-      <CheckmarkRow>Priority support</CheckmarkRow>
+      <CheckmarkRow><FormattedMessage defaultMessage="Everything community has" /></CheckmarkRow>
+      <CheckmarkRow><FormattedMessage defaultMessage="Cross-device data storage" /></CheckmarkRow>
+      <CheckmarkRow><FormattedMessage defaultMessage="No setup needed" /></CheckmarkRow>
+      <CheckmarkRow><FormattedMessage defaultMessage="Priority support" /></CheckmarkRow>
     </PlanCard>
   );
 
