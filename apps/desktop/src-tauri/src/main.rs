@@ -31,9 +31,17 @@ fn main() {
     match app_result {
         Ok(result) => {
             if let Err(err) = result {
+                let err_str = err.to_string();
                 eprintln!("[startup] ERROR: Tauri runtime failure: {err}");
-                eprintln!("[startup] This may be caused by GPU/graphics driver issues.");
-                eprintln!("[startup] Try setting VOQUILL_WHISPER_DISABLE_GPU=1 to disable GPU acceleration.");
+
+                // Provide context-specific guidance
+                if err_str.contains("migration") {
+                    eprintln!("[startup] This is a database migration issue.");
+                    eprintln!("[startup] Try deleting the app database and restarting.");
+                } else if err_str.contains("vulkan") || err_str.contains("gpu") || err_str.contains("GPU") {
+                    eprintln!("[startup] This appears to be a GPU/graphics driver issue.");
+                    eprintln!("[startup] Try setting VOQUILL_WHISPER_DISABLE_GPU=1 to disable GPU acceleration.");
+                }
                 std::process::exit(1);
             }
         }
@@ -46,8 +54,7 @@ fn main() {
             } else {
                 eprintln!("[startup] Panic message: <unknown>");
             }
-            eprintln!("[startup] This may be caused by GPU/graphics driver issues on AMD cards.");
-            eprintln!("[startup] Try setting VOQUILL_WHISPER_DISABLE_GPU=1 to disable GPU acceleration.");
+            eprintln!("[startup] If this is a GPU-related crash, try setting VOQUILL_WHISPER_DISABLE_GPU=1");
             std::process::exit(1);
         }
     }

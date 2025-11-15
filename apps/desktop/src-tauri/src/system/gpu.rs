@@ -27,30 +27,12 @@ fn get_vendor_name(vendor_id: u32) -> &'static str {
 pub fn list_available_gpus() -> Vec<GpuAdapterInfo> {
     eprintln!("[gpu] Enumerating GPUs...");
 
-    let instance_result = panic::catch_unwind(|| {
+    // Wrap the entire GPU enumeration in catch_unwind to handle driver crashes
+    let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
         let mut descriptor = wgpu::InstanceDescriptor::default();
         descriptor.backends = wgpu::Backends::all();
-        wgpu::Instance::new(descriptor)
-    });
+        let instance = wgpu::Instance::new(descriptor);
 
-    let instance = match instance_result {
-        Ok(inst) => inst,
-        Err(panic_info) => {
-            eprintln!("[gpu] ERROR: wgpu::Instance::new() panicked!");
-            if let Some(s) = panic_info.downcast_ref::<&str>() {
-                eprintln!("[gpu] Panic message: {s}");
-            } else if let Some(s) = panic_info.downcast_ref::<String>() {
-                eprintln!("[gpu] Panic message: {s}");
-            } else {
-                eprintln!("[gpu] Panic message: <unknown>");
-            }
-            eprintln!("[gpu] This is likely caused by GPU driver issues.");
-            eprintln!("[gpu] Returning empty GPU list.");
-            return Vec::new();
-        }
-    };
-
-    let adapters_result = panic::catch_unwind(|| {
         instance
             .enumerate_adapters(wgpu::Backends::all())
             .into_iter()
@@ -72,15 +54,15 @@ pub fn list_available_gpus() -> Vec<GpuAdapterInfo> {
                 }
             })
             .collect::<Vec<_>>()
-    });
+    }));
 
-    match adapters_result {
+    match result {
         Ok(adapters) => {
             eprintln!("[gpu] Successfully enumerated {} GPU(s)", adapters.len());
             adapters
         }
         Err(panic_info) => {
-            eprintln!("[gpu] ERROR: enumerate_adapters() panicked!");
+            eprintln!("[gpu] ERROR: GPU enumeration panicked!");
             if let Some(s) = panic_info.downcast_ref::<&str>() {
                 eprintln!("[gpu] Panic message: {s}");
             } else if let Some(s) = panic_info.downcast_ref::<String>() {

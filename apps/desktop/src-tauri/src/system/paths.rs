@@ -40,7 +40,7 @@ pub fn models_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
 }
 
 pub fn logs_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
-    let mut path = app
+    let path = app
         .path()
         .app_log_dir()
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
