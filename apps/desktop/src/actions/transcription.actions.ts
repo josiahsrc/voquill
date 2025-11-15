@@ -62,6 +62,7 @@ export const transcribeAndPostProcessAudio = async ({
     samples,
     sampleRate,
     prompt: transcriptionPrompt,
+    language: preferredLocale,
   });
   const rawTranscript = transcribeOutput.text.trim();
   metadata.modelSize = state.settings.aiTranscription.modelSize || null;

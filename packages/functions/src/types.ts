@@ -55,6 +55,7 @@ type HandlerDefinitions = {
       audioBase64: string;
       audioMimeType: string;
       simulate?: Nullable<boolean>;
+      language?: string;
     };
     output: {
       text: string;
@@ -153,6 +154,7 @@ export const AiTranscribeAudioInputZod = z
     audioBase64: z.string().min(1),
     audioMimeType: z.string().min(1),
     simulate: z.boolean().nullable().optional(),
+    language: z.string().min(1).optional(),
   })
   .strict() satisfies z.ZodType<HandlerInput<"ai/transcribeAudio">>;
 

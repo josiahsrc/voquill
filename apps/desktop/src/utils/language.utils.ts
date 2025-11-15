@@ -4,6 +4,8 @@ export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
   en: "English",
   es: "Español",
   fr: "Français",
+  de: "Deutsch",
+  pt: "Português",
 };
 
 export const normalizeLocaleValue = (value?: string | null): Locale | null => {

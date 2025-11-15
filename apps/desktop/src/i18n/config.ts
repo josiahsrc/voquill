@@ -7,10 +7,10 @@ type Manifest = {
 
 const manifestData = manifest as Manifest;
 
-export const DEFAULT_LOCALE = manifestData.defaultLocale;
-export const SUPPORTED_LOCALES = manifestData.supportedLocales;
+export const SUPPORTED_LOCALES = ["en", "es", "fr", "de", "pt"] as const;
+export type Locale = typeof SUPPORTED_LOCALES[number];
 
-export type Locale = (typeof SUPPORTED_LOCALES)[number];
+export const DEFAULT_LOCALE = manifestData.defaultLocale as Locale;
 
 export const isSupportedLocale = (
   locale: string | null | undefined

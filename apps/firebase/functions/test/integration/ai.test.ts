@@ -52,6 +52,7 @@ describe("ai endpoints integration", () => {
       audioBase64: SHORT_AUDIO_BASE64,
       audioMimeType: "audio/wav",
       simulate: true,
+      language: "en",
     });
 
     expect(transcription.text).toBe("Simulated response");
@@ -132,6 +133,7 @@ describe("ai endpoints integration", () => {
         audioBase64: SHORT_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
+        language: "en",
       })
     ).rejects.toThrow("You have exceeded your word limit");
 

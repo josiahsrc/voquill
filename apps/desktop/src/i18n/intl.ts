@@ -3,11 +3,15 @@ import { DEFAULT_LOCALE, Locale, SUPPORTED_LOCALES } from "./config";
 import enMessages from "./locales/en.json";
 import esMessages from "./locales/es.json";
 import frMessages from "./locales/fr.json";
+import deMessages from "./locales/de.json";
+import ptMessages from "./locales/pt.json";
 
-const LOCALE_MESSAGES: Record<string, Record<string, string>> = {
+const LOCALE_MESSAGES: Record<Locale, Record<string, string>> = {
   en: enMessages,
   es: esMessages,
   fr: frMessages,
+  de: deMessages,
+  pt: ptMessages,
 };
 
 const normalizeLocale = (value?: string | null) => {
@@ -25,8 +29,8 @@ const matchSupportedLocale = (value?: string | null): Locale | null => {
     return null;
   }
 
-  if (SUPPORTED_LOCALES.includes(normalized)) {
-    return normalized;
+  if (SUPPORTED_LOCALES.includes(normalized as Locale)) {
+    return normalized as Locale;
   }
 
   return null;

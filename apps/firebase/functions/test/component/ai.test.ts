@@ -41,6 +41,7 @@ describe("ai/transcribeAudio", () => {
         audioBase64: SHORT_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
+        language: "en",
       })
     ).rejects.toThrow("You have exceeded your word limit");
   });
@@ -63,6 +64,7 @@ describe("ai/transcribeAudio", () => {
         audioBase64: SHORT_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
+        language: "en",
       })
     ).rejects.toThrow("You have exceeded your word limit");
   });
@@ -87,6 +89,7 @@ describe("ai/transcribeAudio", () => {
       audioBase64: SHORT_AUDIO_BASE64,
       audioMimeType: "audio/wav",
       simulate: true,
+      language: "en",
     });
 
     expect(res.text).toBeDefined();
@@ -109,6 +112,7 @@ describe("ai/transcribeAudio", () => {
         audioBase64: LONG_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
+        language: "en",
       })
     ).rejects.toThrow("Audio data exceeds maximum size of 16 MB");
   });
@@ -127,6 +131,7 @@ describe("ai/transcribeAudio", () => {
         audioBase64: SHORT_AUDIO_BASE64,
         audioMimeType: "audio/wav",
         simulate: true,
+        language: "en",
       })
     ).rejects.toThrow(/String must contain at most 20000 character\(s\)/);
   });

@@ -45,6 +45,7 @@ export type GroqTranscriptionArgs = {
   blob: ArrayBuffer | Buffer,
   ext: string
   prompt?: string;
+  language?: string;
 }
 
 export type GroqTranscribeAudioOutput = {
@@ -58,6 +59,7 @@ export const groqTranscribeAudio = async ({
   blob,
   ext,
   prompt,
+  language,
 }: GroqTranscriptionArgs): Promise<GroqTranscribeAudioOutput> => {
   return retry({
     retries: 3,
@@ -69,6 +71,7 @@ export const groqTranscribeAudio = async ({
         file,
         model,
         prompt,
+        language: language ?? "en",
       });
 
       if (!response.text) {
