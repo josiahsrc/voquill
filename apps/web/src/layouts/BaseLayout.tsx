@@ -17,11 +17,10 @@ export function BaseLayout({
   const intl = useIntl();
   const location = useLocation();
 
-  const DEFAULT_TITLE = intl.formatMessage({ defaultMessage: "Voquill" });
+  const DEFAULT_TITLE = intl.formatMessage({ defaultMessage: "Voquill | Your keyboard is holding you back" });
   const DEFAULT_DESCRIPTION = intl.formatMessage({
     defaultMessage: "Type four times faster with a voice-first keyboard.",
   });
-  const DEFAULT_SOCIAL_IMAGE = "/docs.png";
   const FALLBACK_CANONICAL_ORIGIN = "https://voquill.com";
 
   const finalTitle = title ?? DEFAULT_TITLE;
@@ -51,12 +50,10 @@ export function BaseLayout({
     updateMetaTag("property", "og:title", finalTitle);
     updateMetaTag("property", "og:description", finalDescription);
     updateMetaTag("property", "og:url", canonicalUrl);
-    updateMetaTag("property", "og:image", DEFAULT_SOCIAL_IMAGE);
 
     updateMetaTag("name", "twitter:card", "summary_large_image");
     updateMetaTag("name", "twitter:title", finalTitle);
     updateMetaTag("name", "twitter:description", finalDescription);
-    updateMetaTag("name", "twitter:image", DEFAULT_SOCIAL_IMAGE);
 
     updateCanonicalLink(canonicalUrl);
   }, [finalTitle, finalDescription, canonicalUrl]);
