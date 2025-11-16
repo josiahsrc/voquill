@@ -28,8 +28,10 @@ export abstract class BaseStorageRepo extends BaseRepo {
 export class LocalStorageRepo extends BaseStorageRepo {
   async uploadData({ path, data }: StorageUploadInput): Promise<void> {
     await invoke<void>("storage_upload_data", {
-      path,
-      data: normalizeData(data),
+      args: {
+        path,
+        data: normalizeData(data),
+      },
     });
   }
 
