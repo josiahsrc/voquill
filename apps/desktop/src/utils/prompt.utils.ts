@@ -3,6 +3,8 @@ import { Locale } from "../i18n/config";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
 import { LANGUAGE_DISPLAY_NAMES } from "./language.utils";
+import z from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
 
 const sanitizeGlossaryValue = (value: string): string =>
   value.replace(/\0/g, "").replace(/\s+/g, " ").trim();
@@ -68,7 +70,7 @@ type ReplacementRule = {
   destination: string;
 };
 
-type DictionaryEntries = {
+export type DictionaryEntries = {
   sources: string[];
   replacements: ReplacementRule[];
 };
@@ -192,4 +194,12 @@ export const buildLocalizedPostProcessingPrompt = (
   return base;
 };
 
-export type { DictionaryEntries };
+export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
+  processedTranscription: z
+    .string()
+    .describe("The processed version of the transcript."),
+});
+
+export const PROCESSED_TRANSCRIPTION_JSON_SCHEMA =
+  zodToJsonSchema(PROCESSED_TRANSCRIPTION_SCHEMA, "Schema").definitions?.Schema ??
+  {};

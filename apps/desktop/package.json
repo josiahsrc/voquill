@@ -56,7 +56,9 @@
     "react-virtuoso": "^4.12.8",
     "rxjs": "^7.8.2",
     "vite-plugin-svgr": "^4.5.0",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@formatjs/cli": "^6.7.4",

@@ -1,3 +1,4 @@
+import { Nullable } from "@repo/types";
 import { dedup, getRec } from "@repo/utilities";
 import { getGenerateTextRepo, getTranscribeAudioRepo } from "../repos";
 import { getAppState } from "../store";
@@ -8,9 +9,10 @@ import {
   buildLocalizedTranscriptionPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
+  PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
+  PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
 import { getMyEffectiveUserId, getMyPreferredLocale } from "../utils/user.utils";
-import { Nullable } from "@repo/types";
 
 export type TranscriptionAudioInput = {
   samples: AudioSamples;
@@ -96,9 +98,24 @@ export const transcribeAndPostProcessAudio = async ({
     const genOutput = await genRepo.generateText({
       system: ppSystem,
       prompt: ppPrompt,
+      jsonResponse: {
+        name: "transcription_cleaning",
+        description: "JSON response with the processed transcription",
+        schema: PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
+      },
     });
 
-    processedTranscript = genOutput.text.trim();
+    try {
+      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(JSON.parse(genOutput.text));
+      if (!validationResult.success) {
+        warnings.push(`Post-processing response validation failed: ${validationResult.error.message}`);
+      } else {
+        processedTranscript = validationResult.data.processedTranscription.trim();
+      }
+    } catch (e) {
+      warnings.push(`Failed to parse post-processing response: ${(e as Error).message}`);
+    }
+
     metadata.postProcessPrompt = ppPrompt;
     metadata.postProcessApiKeyId = genApiKeyId;
     metadata.postProcessMode = genOutput.metadata?.postProcessingMode || null;
