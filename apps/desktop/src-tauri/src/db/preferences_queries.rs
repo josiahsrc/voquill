@@ -12,20 +12,23 @@ pub async fn upsert_user_preferences(
              transcription_mode,
              transcription_api_key_id,
              post_processing_mode,
-             post_processing_api_key_id
+             post_processing_api_key_id,
+             active_tone_id
          )
-         VALUES (?1, ?2, ?3, ?4, ?5)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
             post_processing_mode = excluded.post_processing_mode,
-            post_processing_api_key_id = excluded.post_processing_api_key_id",
+            post_processing_api_key_id = excluded.post_processing_api_key_id,
+            active_tone_id = excluded.active_tone_id",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
     .bind(&preferences.transcription_api_key_id)
     .bind(&preferences.post_processing_mode)
     .bind(&preferences.post_processing_api_key_id)
+    .bind(&preferences.active_tone_id)
     .execute(&pool)
     .await?;
 
@@ -42,7 +45,8 @@ pub async fn fetch_user_preferences(
             transcription_mode,
             transcription_api_key_id,
             post_processing_mode,
-            post_processing_api_key_id
+            post_processing_api_key_id,
+            active_tone_id
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -64,6 +68,9 @@ pub async fn fetch_user_preferences(
             .unwrap_or(None),
         post_processing_api_key_id: row
             .try_get::<Option<String>, _>("post_processing_api_key_id")
+            .unwrap_or(None),
+        active_tone_id: row
+            .try_get::<Option<String>, _>("active_tone_id")
             .unwrap_or(None),
     });
 

@@ -52,6 +52,13 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             })
             .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
+            // Seed default tones on first launch
+            tauri::async_runtime::block_on(async {
+                if let Err(err) = crate::db::tone_seed::seed_default_tones_if_needed(pool.clone()).await {
+                    eprintln!("[app] Failed to seed default tones: {err}");
+                }
+            });
+
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
             app.manage(crate::state::GoogleOAuthState::from_env());
 
@@ -138,6 +145,11 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::api_key_create,
             crate::commands::api_key_list,
             crate::commands::api_key_delete,
+            crate::commands::tone_create,
+            crate::commands::tone_list,
+            crate::commands::tone_get,
+            crate::commands::tone_update,
+            crate::commands::tone_delete,
             crate::commands::clear_local_data,
             crate::commands::set_phase,
             crate::commands::play_audio,

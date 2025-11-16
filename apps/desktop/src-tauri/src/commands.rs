@@ -455,6 +455,69 @@ pub async fn api_key_delete(
 }
 
 #[tauri::command]
+pub async fn tone_create(
+    tone: crate::domain::ToneCreateRequest,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Tone, String> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_millis() as i64;
+
+    let new_tone = crate::domain::Tone {
+        id: tone.id,
+        name: tone.name,
+        prompt_template: tone.prompt_template,
+        is_system: false, // user-created tones are not system tones
+        created_at: now,
+        sort_order: tone.sort_order.unwrap_or(999),
+    };
+
+    crate::db::tone_queries::insert_tone(database.pool(), &new_tone)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn tone_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Tone>, String> {
+    crate::db::tone_queries::fetch_all_tones(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn tone_get(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Option<crate::domain::Tone>, String> {
+    crate::db::tone_queries::fetch_tone_by_id(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn tone_update(
+    tone: crate::domain::Tone,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Tone, String> {
+    crate::db::tone_queries::update_tone(database.pool(), &tone)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn tone_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::tone_queries::delete_tone(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn clear_local_data(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<(), String> {
