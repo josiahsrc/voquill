@@ -1,4 +1,5 @@
 pub mod api_key;
+pub mod app_target;
 pub mod hotkey;
 pub mod keyboard;
 pub mod overlay;
@@ -11,6 +12,7 @@ pub mod transcription;
 pub mod user;
 
 pub use api_key::{ApiKey, ApiKeyCreateRequest, ApiKeyView};
+pub use app_target::AppTarget;
 pub use hotkey::Hotkey;
 pub use keyboard::{KeysHeldPayload, EVT_KEYS_HELD};
 pub use overlay::{OverlayPhase, OverlayPhasePayload, EVT_OVERLAY_PHASE};

@@ -4,10 +4,11 @@ import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
-import { loadApiKeys } from "../../actions/api-key.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { loadApiKeys } from "../../actions/api-key.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
+import { loadAppTargets, upsertAppTarget } from "../../actions/app-target.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
 import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
@@ -29,6 +30,7 @@ import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
 } from "../../utils/window.utils";
+import { normalizeAppTargetId } from "../../utils/apptarget.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -64,7 +66,7 @@ export const RootSideEffects = () => {
     // TODO: Figure out why terms don't load if this isn't delayed
     await delayed(200);
 
-    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary(), loadTones()];
+    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary(), loadTones(), loadAppTargets()];
     await Promise.allSettled(loaders);
   }, [userId]);
 
@@ -96,6 +98,27 @@ export const RootSideEffects = () => {
 
     if (rate <= 0 || payloadSamples.length === 0) {
       return null;
+    }
+
+    try {
+      const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
+      console.log("Current app name:", appInfo.appName);
+      console.log("Current app icon:", appInfo.iconBase64);
+
+      const appName = appInfo.appName?.trim();
+      if (appName) {
+        const appTargetId = normalizeAppTargetId(appName);
+        const existingAppTarget = getAppState().appTargetById[appTargetId];
+        if (!existingAppTarget) {
+          try {
+            await upsertAppTarget({ id: appTargetId, name: appName });
+          } catch (error) {
+            console.error("Failed to upsert app target", error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch current app info", error);
     }
 
     let finalTranscript: string | null = null;
@@ -204,14 +227,6 @@ export const RootSideEffects = () => {
       }
     } catch (error) {
       console.error("Failed to purge stale audio snapshots", error);
-    }
-
-    try {
-      const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
-      console.log("Current app name:", appInfo.appName);
-      console.log("Current app icon:", appInfo.iconBase64);
-    } catch (error) {
-      console.error("Failed to fetch current app info", error);
     }
 
     return finalTranscript;

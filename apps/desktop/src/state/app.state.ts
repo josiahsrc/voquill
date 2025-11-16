@@ -1,6 +1,7 @@
 import { HandlerOutput } from "@repo/functions";
 import {
   ApiKey,
+  AppTarget,
   FullConfig,
   Hotkey,
   Member,
@@ -41,6 +42,7 @@ export type AppState = {
   userById: Record<string, User>;
   userPreferencesById: Record<string, UserPreferences>;
   termById: Record<string, Term>;
+  appTargetById: Record<string, AppTarget>;
   transcriptionById: Record<string, Transcription>;
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
@@ -71,6 +73,7 @@ export const INITIAL_APP_STATE: AppState = {
   userById: {},
   userPreferencesById: {},
   termById: {},
+  appTargetById: {},
   transcriptionById: {},
   priceValueByKey: {},
   apiKeyById: {},

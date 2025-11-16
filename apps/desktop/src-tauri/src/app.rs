@@ -117,6 +117,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::check_accessibility_permission,
             crate::commands::request_accessibility_permission,
             crate::commands::get_current_app_info,
+            crate::commands::app_target_upsert,
+            crate::commands::app_target_list,
             crate::commands::start_recording,
             crate::commands::stop_recording,
             crate::commands::store_transcription_audio,

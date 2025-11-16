@@ -1,4 +1,5 @@
 pub mod api_key_queries;
+pub mod app_target_queries;
 pub mod hotkey_queries;
 pub mod preferences_queries;
 pub mod term_queries;
@@ -38,6 +39,7 @@ pub const TRANSCRIPTION_WARNINGS_MIGRATION_SQL: &str =
 pub const USER_PREFERRED_LANGUAGE_MIGRATION_SQL: &str =
     include_str!("migrations/017_user_preferred_language.sql");
 pub const TONES_MIGRATION_SQL: &str = include_str!("migrations/018_tones.sql");
+pub const APP_TARGETS_MIGRATION_SQL: &str = include_str!("migrations/019_app_targets.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -153,6 +155,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 19,
             description: "create_tones_table",
             sql: TONES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 20,
+            description: "create_app_targets_table",
+            sql: APP_TARGETS_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

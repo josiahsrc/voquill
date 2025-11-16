@@ -30,6 +30,13 @@ pub struct CurrentAppInfoResponse {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppTargetUpsertArgs {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(serde::Deserialize)]
 pub enum AudioClip {
     #[serde(rename = "start_recording_clip")]
     StartRecordingClip,
@@ -222,6 +229,25 @@ pub fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
             app_name: info.app_name,
             icon_base64: info.icon_base64,
         })
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn app_target_upsert(
+    args: AppTargetUpsertArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::AppTarget, String> {
+    crate::db::app_target_queries::upsert_app_target(database.pool(), &args.id, &args.name)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn app_target_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::AppTarget>, String> {
+    crate::db::app_target_queries::fetch_app_targets(database.pool())
+        .await
         .map_err(|err| err.to_string())
 }
 
