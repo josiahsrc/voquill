@@ -70,7 +70,9 @@ pub fn list_available_gpus() -> Vec<GpuAdapterInfo> {
             } else {
                 eprintln!("[gpu] Panic message: <unknown>");
             }
-            eprintln!("[gpu] This is likely caused by GPU driver issues (particularly AMD on Windows).");
+            eprintln!(
+                "[gpu] This is likely caused by GPU driver issues (particularly AMD on Windows)."
+            );
             eprintln!("[gpu] Returning empty GPU list.");
             Vec::new()
         }

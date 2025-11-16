@@ -34,6 +34,8 @@ pub struct CurrentAppInfoResponse {
 pub struct AppTargetUpsertArgs {
     pub id: String,
     pub name: String,
+    #[serde(default)]
+    pub tone_id: Option<Option<String>>,
 }
 
 #[derive(serde::Deserialize)]
@@ -237,9 +239,14 @@ pub async fn app_target_upsert(
     args: AppTargetUpsertArgs,
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<crate::domain::AppTarget, String> {
-    crate::db::app_target_queries::upsert_app_target(database.pool(), &args.id, &args.name)
-        .await
-        .map_err(|err| err.to_string())
+    crate::db::app_target_queries::upsert_app_target(
+        database.pool(),
+        &args.id,
+        &args.name,
+        args.tone_id,
+    )
+    .await
+    .map_err(|err| err.to_string())
 }
 
 #[tauri::command]

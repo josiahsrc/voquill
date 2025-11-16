@@ -23,10 +23,8 @@ fn main() {
 
     eprintln!("[startup] Building Tauri application...");
 
-    let app_result = std::panic::catch_unwind(|| {
-        desktop_lib::app::build()
-            .run(tauri::generate_context!())
-    });
+    let app_result =
+        std::panic::catch_unwind(|| desktop_lib::app::build().run(tauri::generate_context!()));
 
     match app_result {
         Ok(result) => {
@@ -38,7 +36,10 @@ fn main() {
                 if err_str.contains("migration") {
                     eprintln!("[startup] This is a database migration issue.");
                     eprintln!("[startup] Try deleting the app database and restarting.");
-                } else if err_str.contains("vulkan") || err_str.contains("gpu") || err_str.contains("GPU") {
+                } else if err_str.contains("vulkan")
+                    || err_str.contains("gpu")
+                    || err_str.contains("GPU")
+                {
                     eprintln!("[startup] This appears to be a GPU/graphics driver issue.");
                     eprintln!("[startup] Try setting VOQUILL_WHISPER_DISABLE_GPU=1 to disable GPU acceleration.");
                 }

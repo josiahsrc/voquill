@@ -482,7 +482,10 @@ fn configure_linux_gpu_auto(params: &mut WhisperContextParameters) -> LinuxGpuAt
     eprintln!("[whisper] Attempting to enumerate Vulkan devices...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
         Ok(devs) => {
-            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s)", devs.len());
+            eprintln!(
+                "[whisper] Successfully enumerated {} Vulkan device(s)",
+                devs.len()
+            );
             devs
         }
         Err(panic_info) => {
@@ -547,7 +550,10 @@ fn configure_linux_gpu_selection(
     eprintln!("[whisper] Attempting to enumerate Vulkan devices for selection...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
         Ok(devs) => {
-            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s) for selection", devs.len());
+            eprintln!(
+                "[whisper] Successfully enumerated {} Vulkan device(s) for selection",
+                devs.len()
+            );
             devs
         }
         Err(panic_info) => {
@@ -639,7 +645,10 @@ fn configure_windows_gpu_auto(params: &mut WhisperContextParameters) -> WindowsG
     eprintln!("[whisper] Attempting to enumerate Vulkan devices...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
         Ok(devs) => {
-            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s)", devs.len());
+            eprintln!(
+                "[whisper] Successfully enumerated {} Vulkan device(s)",
+                devs.len()
+            );
             devs
         }
         Err(panic_info) => {
@@ -705,7 +714,10 @@ fn configure_windows_gpu_selection(
     eprintln!("[whisper] Attempting to enumerate Vulkan devices for selection...");
     let devices = match panic::catch_unwind(|| vulkan::list_devices()) {
         Ok(devs) => {
-            eprintln!("[whisper] Successfully enumerated {} Vulkan device(s) for selection", devs.len());
+            eprintln!(
+                "[whisper] Successfully enumerated {} Vulkan device(s) for selection",
+                devs.len()
+            );
             devs
         }
         Err(panic_info) => {

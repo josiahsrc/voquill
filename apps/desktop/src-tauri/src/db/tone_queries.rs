@@ -53,10 +53,7 @@ pub async fn delete_tone(pool: SqlitePool, id: &str) -> Result<(), sqlx::Error> 
     Ok(())
 }
 
-pub async fn fetch_tone_by_id(
-    pool: SqlitePool,
-    id: &str,
-) -> Result<Option<Tone>, sqlx::Error> {
+pub async fn fetch_tone_by_id(pool: SqlitePool, id: &str) -> Result<Option<Tone>, sqlx::Error> {
     let row = sqlx::query("SELECT id, name, prompt_template, is_system, created_at, sort_order FROM tones WHERE id = ?1 LIMIT 1")
         .bind(id)
         .fetch_optional(&pool)
@@ -107,9 +104,7 @@ pub async fn count_tones(pool: SqlitePool) -> Result<i64, sqlx::Error> {
 }
 
 pub async fn delete_all_tones(pool: SqlitePool) -> Result<(), sqlx::Error> {
-    sqlx::query("DELETE FROM tones")
-        .execute(&pool)
-        .await?;
+    sqlx::query("DELETE FROM tones").execute(&pool).await?;
 
     Ok(())
 }

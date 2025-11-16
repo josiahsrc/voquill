@@ -40,6 +40,8 @@ pub const USER_PREFERRED_LANGUAGE_MIGRATION_SQL: &str =
     include_str!("migrations/017_user_preferred_language.sql");
 pub const TONES_MIGRATION_SQL: &str = include_str!("migrations/018_tones.sql");
 pub const APP_TARGETS_MIGRATION_SQL: &str = include_str!("migrations/019_app_targets.sql");
+pub const APP_TARGET_TONE_ID_MIGRATION_SQL: &str =
+    include_str!("migrations/020_app_target_tone_id.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -161,6 +163,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 20,
             description: "create_app_targets_table",
             sql: APP_TARGETS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 21,
+            description: "add_app_target_tone_id",
+            sql: APP_TARGET_TONE_ID_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

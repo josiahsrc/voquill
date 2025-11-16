@@ -5,6 +5,7 @@ import { BaseRepo } from "./base.repo";
 export type AppTargetUpsertParams = {
   id: string;
   name: string;
+  toneId?: string | null;
 };
 
 export abstract class BaseAppTargetRepo extends BaseRepo {

@@ -1,18 +1,13 @@
-import { useMemo } from "react";
 import { FormattedMessage } from "react-intl";
 import { useAppStore } from "../../store";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { StylingRow } from "./StylingRow";
 
 export default function StylingPage() {
-  const appTargets = useAppStore((state) => Object.values(state.appTargetById));
-
-  const sortedTargets = useMemo(
-    () =>
-      [...appTargets].sort((left, right) =>
-        left.name.localeCompare(right.name)
-      ),
-    [appTargets]
+  const sortedAppTargetIds = useAppStore((state) =>
+    Object.values(state.appTargetById)
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((target) => target.id)
   );
 
   return (
@@ -21,9 +16,9 @@ export default function StylingPage() {
       subtitle={
         <FormattedMessage defaultMessage="Choose how you want Voquill to sound based on what app you're using." />
       }
-      items={sortedTargets}
-      computeItemKey={(target) => target.id}
-      renderItem={(target) => <StylingRow key={target.id} target={target} />}
+      items={sortedAppTargetIds}
+      computeItemKey={(id) => id}
+      renderItem={(id) => <StylingRow key={id} id={id} />}
     />
   );
 }
