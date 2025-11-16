@@ -84,11 +84,9 @@ export const transcribeAndPostProcessAudio = async ({
     const tone = getRec(state.toneById, toneId)
       ?? getRec(state.toneById, myPrefs?.activeToneId)
       ?? null;
-      console.log("tone.promptTemplate", tone?.promptTemplate);
 
     const ppPrompt = buildLocalizedPostProcessingPrompt(
       rawTranscript,
-      dictionaryEntries,
       preferredLocale,
       tone?.promptTemplate ?? null,
     );
