@@ -21,7 +21,7 @@ export function BaseLayout({
   const DEFAULT_DESCRIPTION = intl.formatMessage({
     defaultMessage: "Type four times faster with a voice-first keyboard.",
   });
-  const DEFAULT_SOCIAL_IMAGE = "/docs.png";
+  const DEFAULT_SOCIAL_IMAGE = "/preview.jpg";
   const FALLBACK_CANONICAL_ORIGIN = "https://voquill.com";
 
   const finalTitle = title ?? DEFAULT_TITLE;
