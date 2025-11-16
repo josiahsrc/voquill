@@ -17,7 +17,7 @@ export function BaseLayout({
   const intl = useIntl();
   const location = useLocation();
 
-  const DEFAULT_TITLE = intl.formatMessage({ defaultMessage: "Voquill" });
+  const DEFAULT_TITLE = intl.formatMessage({ defaultMessage: "Voquill | Your keyboard is holding you back" });
   const DEFAULT_DESCRIPTION = intl.formatMessage({
     defaultMessage: "Type four times faster with a voice-first keyboard.",
   });
