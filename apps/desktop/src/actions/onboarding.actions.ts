@@ -116,6 +116,7 @@ export const submitOnboarding = async () => {
           ? postProcessingPreference.apiKeyId
           : null,
       activeToneId: null,
+      hasCreatedInitialTones: false,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

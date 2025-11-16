@@ -3,9 +3,9 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import { useCallback } from "react";
 import { FormattedMessage } from "react-intl";
 import {
-  createTone,
   getSortedTones,
   setActiveTone,
+  upsertTone,
 } from "../../actions/tone.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
@@ -61,11 +61,13 @@ export default function TonesPage() {
 
   const handleCreateTone = useCallback(
     async (name: string, promptTemplate: string) => {
-      await createTone({
+      await upsertTone({
         id: createId(),
         name,
         promptTemplate,
         sortOrder: tones.length,
+        createdAt: Date.now(),
+        isSystem: false,
       });
     },
     [tones.length]

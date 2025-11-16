@@ -31,12 +31,14 @@ pub async fn update_tone(pool: SqlitePool, tone: &Tone) -> Result<Tone, sqlx::Er
         "UPDATE tones SET
             name = ?2,
             prompt_template = ?3,
-            sort_order = ?4
+            is_system = ?4,
+            sort_order = ?5
          WHERE id = ?1",
     )
     .bind(&tone.id)
     .bind(&tone.name)
     .bind(&tone.prompt_template)
+    .bind(if tone.is_system { 1 } else { 0 })
     .bind(tone.sort_order)
     .execute(&pool)
     .await?;

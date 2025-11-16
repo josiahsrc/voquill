@@ -1,9 +1,11 @@
-import { Tone, ToneCreateRequest } from "@repo/types";
+import { Tone, UserPreferences } from "@repo/types";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";
+import { getDefaultSystemTones } from "../utils/tone.utils";
+import { getMyEffectiveUserId, registerUserPreferences } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
-import { getMyEffectiveUserId } from "../utils/user.utils";
+import { createDefaultPreferences } from "./user.actions";
 
 let loadTonesPromise: Promise<void> | null = null;
 
@@ -33,43 +35,22 @@ export const loadTones = async (): Promise<void> => {
   return loadTonesPromise;
 };
 
-export const createTone = async (
-  request: ToneCreateRequest,
-): Promise<Tone> => {
+export const upsertTone = async (tone: Tone): Promise<Tone> => {
   try {
-    const created = await getToneRepo().createTone(request);
+    const saved = await getToneRepo().upsertTone(tone);
 
     produceAppState((draft) => {
-      registerTones(draft, [created]);
-      draft.tones.selectedToneId = created.id;
+      registerTones(draft, [saved]);
+      draft.tones.selectedToneId = saved.id;
       draft.tones.isCreating = false;
     });
 
-    showSnackbar("Tone created successfully", { mode: "success" });
-    return created;
+    showSnackbar("Tone saved successfully", { mode: "success" });
+    return saved;
   } catch (error) {
-    console.error("Failed to create tone", error);
+    console.error("Failed to save tone", error);
     showErrorSnackbar(
-      error instanceof Error ? error.message : "Failed to create tone.",
-    );
-    throw error;
-  }
-};
-
-export const updateTone = async (tone: Tone): Promise<Tone> => {
-  try {
-    const updated = await getToneRepo().updateTone(tone);
-
-    produceAppState((draft) => {
-      registerTones(draft, [updated]);
-    });
-
-    showSnackbar("Tone updated successfully", { mode: "success" });
-    return updated;
-  } catch (error) {
-    console.error("Failed to update tone", error);
-    showErrorSnackbar(
-      error instanceof Error ? error.message : "Failed to update tone.",
+      error instanceof Error ? error.message : "Failed to save tone.",
     );
     throw error;
   }
@@ -161,4 +142,51 @@ export const getActiveTone = (): Tone | null => {
   }
 
   return state.toneById[activeToneId] ?? null;
+};
+
+const markInitialTonesCreated = async (value: boolean): Promise<void> => {
+  const state = getAppState();
+  const myUserId = getMyEffectiveUserId(state);
+  const currentPrefs = state.userPreferencesById[myUserId];
+  const basePreferences = currentPrefs ?? createDefaultPreferences(myUserId);
+
+  const updatedPrefs: UserPreferences = {
+    ...basePreferences,
+    hasCreatedInitialTones: value,
+  };
+
+  const saved = await getUserPreferencesRepo().setUserPreferences(updatedPrefs);
+  produceAppState((draft) => {
+    registerUserPreferences(draft, [saved]);
+  });
+};
+
+export const recreateInitialTones = async (): Promise<void> => {
+  await loadTones();
+
+  const tones = Object.values(getAppState().toneById);
+  for (const tone of tones) {
+    if (tone.isSystem) {
+      await deleteTone(tone.id);
+    }
+  }
+
+  const sysTones = getDefaultSystemTones();
+  for (const tone of sysTones) {
+    await getToneRepo().upsertTone({
+      ...tone,
+      isSystem: true,
+    });
+  }
+};
+
+export const initializeInitialTones = async (): Promise<void> => {
+  try {
+    await recreateInitialTones();
+    await markInitialTonesCreated(true);
+  } catch (error) {
+    console.error("Failed to initialize default tones", error);
+    showErrorSnackbar("Failed to initialize default tones. Please try again.");
+    throw error;
+  }
 };

@@ -49,13 +49,14 @@ const updateUser = async (
   }
 };
 
-const buildDefaultPreferences = (userId: string): UserPreferences => ({
+export const createDefaultPreferences = (userId: string): UserPreferences => ({
   userId,
   transcriptionMode: DEFAULT_TRANSCRIPTION_MODE,
   transcriptionApiKeyId: null,
   postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
   postProcessingApiKeyId: null,
   activeToneId: null,
+  hasCreatedInitialTones: false,
 });
 
 const updateUserPreferences = async (
@@ -65,7 +66,7 @@ const updateUserPreferences = async (
   const state = getAppState();
   const myUserId = getMyEffectiveUserId(state);
 
-  const existing = getMyUserPreferences(state) ?? buildDefaultPreferences(myUserId);
+  const existing = getMyUserPreferences(state) ?? createDefaultPreferences(myUserId);
   const payload: UserPreferences = { ...existing, userId: myUserId };
   updateCallback(payload);
 

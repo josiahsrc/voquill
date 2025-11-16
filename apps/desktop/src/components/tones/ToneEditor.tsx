@@ -4,7 +4,7 @@ import { Box, Button, IconButton, Stack, TextField, Tooltip, Typography } from "
 import { Tone } from "@repo/types";
 import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { deleteTone, updateTone } from "../../actions/tone.actions";
+import { deleteTone, upsertTone } from "../../actions/tone.actions";
 
 type ToneEditorProps =
   | {
@@ -43,7 +43,7 @@ export function ToneEditor(props: ToneEditorProps) {
       if (props.mode === "create") {
         await props.onSave(name.trim(), promptTemplate.trim());
       } else {
-        await updateTone({
+        await upsertTone({
           ...props.tone,
           name: name.trim(),
           promptTemplate: promptTemplate.trim(),

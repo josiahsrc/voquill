@@ -505,25 +505,40 @@ pub async fn api_key_delete(
 }
 
 #[tauri::command]
-pub async fn tone_create(
-    tone: crate::domain::ToneCreateRequest,
+pub async fn tone_upsert(
+    tone: crate::domain::Tone,
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<crate::domain::Tone, String> {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|err| err.to_string())?
-        .as_millis() as i64;
+    let pool = database.pool();
 
-    let new_tone = crate::domain::Tone {
-        id: tone.id,
-        name: tone.name,
-        prompt_template: tone.prompt_template,
-        is_system: false, // user-created tones are not system tones
-        created_at: now,
-        sort_order: tone.sort_order.unwrap_or(999),
+    if let Some(existing) = crate::db::tone_queries::fetch_tone_by_id(pool.clone(), &tone.id)
+        .await
+        .map_err(|err| err.to_string())?
+    {
+        let updated = crate::domain::Tone {
+            created_at: existing.created_at,
+            ..tone.clone()
+        };
+
+        crate::db::tone_queries::update_tone(pool.clone(), &updated)
+            .await
+            .map_err(|err| err.to_string())?;
+
+        return Ok(updated);
+    }
+
+    let created_at = if tone.created_at > 0 {
+        tone.created_at
+    } else {
+        current_timestamp_millis()?
     };
 
-    crate::db::tone_queries::insert_tone(database.pool(), &new_tone)
+    let new_tone = crate::domain::Tone {
+        created_at,
+        ..tone
+    };
+
+    crate::db::tone_queries::insert_tone(pool, &new_tone)
         .await
         .map_err(|err| err.to_string())
 }
@@ -543,16 +558,6 @@ pub async fn tone_get(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Option<crate::domain::Tone>, String> {
     crate::db::tone_queries::fetch_tone_by_id(database.pool(), &id)
-        .await
-        .map_err(|err| err.to_string())
-}
-
-#[tauri::command]
-pub async fn tone_update(
-    tone: crate::domain::Tone,
-    database: State<'_, crate::state::OptionKeyDatabase>,
-) -> Result<crate::domain::Tone, String> {
-    crate::db::tone_queries::update_tone(database.pool(), &tone)
         .await
         .map_err(|err| err.to_string())
 }

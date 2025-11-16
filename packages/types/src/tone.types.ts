@@ -6,10 +6,3 @@ export type Tone = {
   createdAt: number;
   sortOrder: number;
 };
-
-export type ToneCreateRequest = {
-  id: string;
-  name: string;
-  promptTemplate: string;
-  sortOrder?: number;
-};

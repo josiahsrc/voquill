@@ -22,6 +22,6 @@ pub use recording::{
     RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult, EVT_REC_LEVEL,
 };
 pub use term::Term;
-pub use tone::{Tone, ToneCreateRequest};
+pub use tone::Tone;
 pub use transcription::{Transcription, TranscriptionAudioSnapshot};
 pub use user::User;

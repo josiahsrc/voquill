@@ -11,15 +11,6 @@ pub struct Tone {
     pub sort_order: i32,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ToneCreateRequest {
-    pub id: String,
-    pub name: String,
-    pub prompt_template: String,
-    pub sort_order: Option<i32>,
-}
-
 impl Tone {
     /// Create a system tone with a specific ID (for default tones)
     pub fn new_system(id: String, name: String, prompt_template: String, sort_order: i32) -> Self {

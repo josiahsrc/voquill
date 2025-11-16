@@ -3,7 +3,7 @@ import { getIntl } from "../i18n/intl";
 import { getMyPreferredLocale } from "./user.utils";
 import { getAppState } from "../store";
 
-export const getLocalizedHardcodedTones = (): Tone[] => {
+export const getDefaultSystemTones = (): Tone[] => {
   const locale = getMyPreferredLocale(getAppState());
   const intl = getIntl(locale);
 
