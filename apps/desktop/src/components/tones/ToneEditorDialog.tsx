@@ -191,21 +191,22 @@ export const ToneEditorDialog = () => {
             onChange={(event) => setName(event.target.value)}
             fullWidth
             placeholder="Casual, Formal, Business..."
+            inputProps={{ maxLength: 120 }}
           />
 
           <TextField
-            label={<FormattedMessage defaultMessage="Prompt template" />}
+            label={<FormattedMessage defaultMessage="Prompt" />}
             value={promptTemplate}
             onChange={(event) => setPromptTemplate(event.target.value)}
             multiline
             rows={12}
             fullWidth
-            placeholder="You are Voquill. Transform the transcript below..."
+            placeholder="Make it sound like a professional but friendly email. Use jargon and fun words."
+            inputProps={{ maxLength: 500 }}
             helperText={
-              <FormattedMessage
-                defaultMessage="This template will be sent to the LLM for post-processing. Include clear instructions and use {transcript} to reference the raw transcription."
-                values={{ transcript: "{transcript}" }}
-              />
+              <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
+                {promptTemplate.length}/500
+              </Typography>
             }
           />
         </Stack>

@@ -166,10 +166,20 @@ export const buildLocalizedPostProcessingPrompt = (
   let base: string;
   if (toneTemplate) {
     // Replace variables in tone template
-    base = toneTemplate
-      .replace(/\{transcript\}/g, transcript)
-      .replace(/\{languageName\}/g, languageName);
+    base = `
+Post process the transcript according to the following style instructions:
 
+\`\`\`
+${toneTemplate}
+\`\`\`
+
+Here is the transcript to process:
+-------
+${transcript}
+-------
+
+Return only the processed version of the transcript.
+`;
     console.log("[Prompt] Using tone template, result length:", base.length);
   } else {
     // Default prompt (backward compatibility)
