@@ -18,6 +18,8 @@ export class LocalAppTargetRepo extends BaseAppTargetRepo {
   }
 
   async upsertAppTarget(params: AppTargetUpsertParams): Promise<AppTarget> {
-    return invoke<AppTarget>("app_target_upsert", params);
+    return invoke<AppTarget>("app_target_upsert", {
+      args: params,
+    });
   }
 }
