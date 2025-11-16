@@ -11,12 +11,12 @@ import {
   type Theme,
 } from "@mui/material";
 import type { Tone } from "@repo/types";
+import { getRec } from "@repo/utilities";
 import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import { useAppStore } from "../../store";
 import { getMyUserPreferences } from "../../utils/user.utils";
-import { getRec } from "@repo/utilities";
 
 const ADD_TONE_MENU_VALUE = "__add_tone_option__";
 
@@ -29,6 +29,7 @@ type ToneSelectProps = {
   formControlSx?: SxProps<Theme>;
   selectSize?: "small" | "medium";
   label?: string;
+  trueDefault?: boolean;
 };
 
 const sortTones = (tones: Tone[]) =>
@@ -43,6 +44,7 @@ export const ToneSelect = ({
   formControlSx,
   selectSize = "small",
   label,
+  trueDefault,
 }: ToneSelectProps) => {
   const toneById = useAppStore((state) => state.toneById);
   const defaultTone = useAppStore((state) => {
@@ -75,7 +77,7 @@ export const ToneSelect = ({
 
   return (
     <FormControl size={selectSize} sx={formControlSx}>
-      {label && <InputLabel>{label}</InputLabel>}
+      {label && <InputLabel shrink>{label}</InputLabel>}
       <Select
         open={menuOpen}
         onOpen={handleSelectOpen}
@@ -88,7 +90,7 @@ export const ToneSelect = ({
         label={label}
         renderValue={(selected) => {
           if (!selected) {
-            return defaultTone ? (
+            return defaultTone && !trueDefault ? (
               <FormattedMessage
                 defaultMessage="Default ({toneName})"
                 values={{ toneName: defaultTone.name }}
@@ -111,7 +113,7 @@ export const ToneSelect = ({
         </MenuItem>
         {includeDefaultOption && (
           <MenuItem value="">
-            {defaultTone ? (
+            {defaultTone && !trueDefault ? (
               <FormattedMessage
                 defaultMessage="Default ({toneName})"
                 values={{ toneName: defaultTone.name }}

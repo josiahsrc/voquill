@@ -58,8 +58,8 @@ export default function StylingPage() {
       action={
         <ToneSelect
           value={activeToneId}
+          trueDefault={true}
           onToneChange={handleActiveToneChange}
-          includeDefaultOption={false}
           formControlSx={{ minWidth: 200 }}
           label={intl.formatMessage({ defaultMessage: "Default style" })}
         />

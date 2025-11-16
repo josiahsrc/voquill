@@ -162,11 +162,6 @@ export const buildLocalizedPostProcessingPrompt = (
   const intl = getIntl(locale);
   const languageName = LANGUAGE_DISPLAY_NAMES[locale];
 
-  console.log("[Prompt] Building post-processing prompt with tone:", {
-    hasToneTemplate: !!toneTemplate,
-    toneTemplateLength: toneTemplate?.length,
-  });
-
   // Use tone template if provided, otherwise use default prompt
   let base: string;
   if (toneTemplate) {
@@ -197,7 +192,7 @@ export const buildLocalizedPostProcessingPrompt = (
 export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
   processedTranscription: z
     .string()
-    .describe("The processed version of the transcript."),
+    .describe("The processed version of the transcript. Empty if no transcript."),
 });
 
 export const PROCESSED_TRANSCRIPTION_JSON_SCHEMA =
