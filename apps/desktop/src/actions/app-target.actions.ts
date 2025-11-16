@@ -28,7 +28,6 @@ export const setAppTargetTone = async (
   toneId: string | null,
 ): Promise<void> => {
   const existing = getAppState().appTargetById[id];
-
   if (!existing) {
     showErrorSnackbar("App target is not registered.");
     return;

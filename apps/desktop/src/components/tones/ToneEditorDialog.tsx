@@ -134,7 +134,7 @@ export const ToneEditorDialog = () => {
       return;
     }
 
-    if (!confirm("Are you sure you want to delete this tone?")) {
+    if (!confirm("Are you sure you want to delete this style?")) {
       return;
     }
 
@@ -158,9 +158,9 @@ export const ToneEditorDialog = () => {
   const title = useMemo(
     () =>
       isEditMode ? (
-        <FormattedMessage defaultMessage="Edit tone" />
+        <FormattedMessage defaultMessage="Edit style" />
       ) : (
-        <FormattedMessage defaultMessage="Create tone" />
+        <FormattedMessage defaultMessage="Create style" />
       ),
     [isEditMode]
   );

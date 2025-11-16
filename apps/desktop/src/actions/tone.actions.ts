@@ -117,7 +117,7 @@ export const setActiveTone = async (toneId: string | null): Promise<void> => {
       draft.userPreferencesById[myUserId] = updatedPrefs;
     });
 
-    showSnackbar(toneId ? "Active tone set" : "Active tone cleared", { mode: "success" });
+    showSnackbar(toneId ? "Default tone set" : "Default tone cleared", { mode: "success" });
   } catch (error) {
     console.error("Failed to set active tone", error);
     showErrorSnackbar(
