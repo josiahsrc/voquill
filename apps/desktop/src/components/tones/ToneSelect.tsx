@@ -15,6 +15,8 @@ import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import { useAppStore } from "../../store";
+import { getMyUserPreferences } from "../../utils/user.utils";
+import { getRec } from "@repo/utilities";
 
 const ADD_TONE_MENU_VALUE = "__add_tone_option__";
 
@@ -43,6 +45,10 @@ export const ToneSelect = ({
   label,
 }: ToneSelectProps) => {
   const toneById = useAppStore((state) => state.toneById);
+  const defaultTone = useAppStore((state) => {
+    const userPreferences = getMyUserPreferences(state);
+    return getRec(state.toneById, userPreferences?.activeToneId);
+  });
 
   const tones = useMemo(() => sortTones(Object.values(toneById)), [toneById]);
 
@@ -82,7 +88,14 @@ export const ToneSelect = ({
         label={label}
         renderValue={(selected) => {
           if (!selected) {
-            return <FormattedMessage defaultMessage="Default" />;
+            return defaultTone ? (
+              <FormattedMessage
+                defaultMessage="Default ({toneName})"
+                values={{ toneName: defaultTone.name }}
+              />
+            ) : (
+              <FormattedMessage defaultMessage="Default" />
+            );
           }
 
           return toneById[selected]?.name ?? selected;
@@ -98,7 +111,14 @@ export const ToneSelect = ({
         </MenuItem>
         {includeDefaultOption && (
           <MenuItem value="">
-            <FormattedMessage defaultMessage="Default" />
+            {defaultTone ? (
+              <FormattedMessage
+                defaultMessage="Default ({toneName})"
+                values={{ toneName: defaultTone.name }}
+              />
+            ) : (
+              <FormattedMessage defaultMessage="Default" />
+            )}
           </MenuItem>
         )}
         {tones.map((tone) => (
