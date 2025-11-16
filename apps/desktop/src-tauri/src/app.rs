@@ -122,6 +122,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::start_recording,
             crate::commands::stop_recording,
             crate::commands::store_transcription_audio,
+            crate::commands::storage_upload_data,
+            crate::commands::storage_get_download_url,
             crate::commands::transcribe_audio,
             crate::commands::surface_main_window,
             crate::commands::paste,

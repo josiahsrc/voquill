@@ -11,6 +11,7 @@ use crate::domain::{
 use crate::platform::{GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest};
 use crate::system::crypto::{protect_api_key, reveal_api_key};
 use crate::system::models::WhisperModelSize;
+use crate::system::StorageRepo;
 use sqlx::Row;
 
 use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
@@ -533,10 +534,7 @@ pub async fn tone_upsert(
         current_timestamp_millis()?
     };
 
-    let new_tone = crate::domain::Tone {
-        created_at,
-        ..tone
-    };
+    let new_tone = crate::domain::Tone { created_at, ..tone };
 
     crate::db::tone_queries::insert_tone(pool, &new_tone)
         .await
@@ -723,6 +721,26 @@ pub async fn store_transcription_audio(
     .map_err(|err| err.to_string())?;
 
     result
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageUploadArgs {
+    pub path: String,
+    pub data: Vec<u8>,
+}
+
+#[tauri::command]
+pub fn storage_upload_data(app: AppHandle, args: StorageUploadArgs) -> Result<(), String> {
+    let repo = StorageRepo::new(&app).map_err(|err| err.to_string())?;
+    repo.upload_data(&args.path, &args.data)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub fn storage_get_download_url(app: AppHandle, path: String) -> Result<String, String> {
+    let repo = StorageRepo::new(&app).map_err(|err| err.to_string())?;
+    repo.get_download_url(&path).map_err(|err| err.to_string())
 }
 
 #[tauri::command]

@@ -31,7 +31,11 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.post_processing_mode)
     .bind(&preferences.post_processing_api_key_id)
     .bind(&preferences.active_tone_id)
-    .bind(if preferences.has_created_initial_tones { 1 } else { 0 })
+    .bind(if preferences.has_created_initial_tones {
+        1
+    } else {
+        0
+    })
     .execute(&pool)
     .await?;
 
@@ -76,9 +80,7 @@ pub async fn fetch_user_preferences(
         active_tone_id: row
             .try_get::<Option<String>, _>("active_tone_id")
             .unwrap_or(None),
-        has_created_initial_tones: row
-            .get::<i64, _>("has_created_initial_tones")
-            != 0,
+        has_created_initial_tones: row.get::<i64, _>("has_created_initial_tones") != 0,
     });
 
     Ok(preferences)

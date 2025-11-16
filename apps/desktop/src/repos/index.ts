@@ -12,6 +12,7 @@ import { BaseTranscribeAudioRepo, CloudTranscribeAudioRepo, GroqTranscribeAudioR
 import { BaseTranscriptionRepo, LocalTranscriptionRepo } from "./transcription.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
+import { BaseStorageRepo, LocalStorageRepo } from "./storage.repo";
 
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
@@ -49,6 +50,10 @@ export const getApiKeyRepo = (): BaseApiKeyRepo => {
 
 export const getToneRepo = (): BaseToneRepo => {
   return new LocalToneRepo();
+};
+
+export const getStorageRepo = (): BaseStorageRepo => {
+  return new LocalStorageRepo();
 };
 
 export type GenerateTextRepoOutput = {
