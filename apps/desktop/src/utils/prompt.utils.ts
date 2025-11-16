@@ -88,7 +88,7 @@ const buildDictionaryContext = (
           defaultMessage: "Glossary: {terms}",
         },
         {
-          terms: entries.sources.join(", "),
+          terms: ["Voquill", ...entries.sources].join(", "),
         },
       ),
     );
@@ -148,7 +148,7 @@ export const buildSystemPostProcessingTonePrompt = (
   return intl.formatMessage(
     {
       defaultMessage:
-        "You post-process transcripts, modifying the transcript based on the user's request.",
+        "You are a transcript rewriting assistant. Your job is to change STYLE only while preserving the original INTENT of the transcript.",
     },
     {},
   );
@@ -167,18 +167,18 @@ export const buildLocalizedPostProcessingPrompt = (
   if (toneTemplate) {
     // Replace variables in tone template
     base = `
-Post process the transcript according to the following style instructions:
+Process the transcript according to the following style instructions:
 
 \`\`\`
 ${toneTemplate}
 \`\`\`
 
-Here is the transcript to process:
+Here is the transcript:
 -------
 ${transcript}
 -------
 
-Return only the processed version of the transcript.
+Do not add extra content that was not stated. ONLY modify the style. Your response must be in ${languageName}.
 `;
     console.log("[Prompt] Using tone template, result length:", base.length);
   } else {
