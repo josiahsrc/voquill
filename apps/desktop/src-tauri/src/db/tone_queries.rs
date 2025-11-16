@@ -45,7 +45,7 @@ pub async fn update_tone(pool: SqlitePool, tone: &Tone) -> Result<Tone, sqlx::Er
 }
 
 pub async fn delete_tone(pool: SqlitePool, id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query("DELETE FROM tones WHERE id = ?1 AND is_system = 0")
+    sqlx::query("DELETE FROM tones WHERE id = ?1")
         .bind(id)
         .execute(&pool)
         .await?;
@@ -104,4 +104,12 @@ pub async fn count_tones(pool: SqlitePool) -> Result<i64, sqlx::Error> {
         .await?;
 
     Ok(row.get::<i64, _>("count"))
+}
+
+pub async fn delete_all_tones(pool: SqlitePool) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM tones")
+        .execute(&pool)
+        .await?;
+
+    Ok(())
 }

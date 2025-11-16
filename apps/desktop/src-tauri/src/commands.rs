@@ -518,6 +518,29 @@ pub async fn tone_delete(
 }
 
 #[tauri::command]
+pub async fn tone_reset_defaults(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Tone>, String> {
+    let pool = database.pool();
+
+    crate::db::tone_queries::delete_all_tones(pool.clone())
+        .await
+        .map_err(|err| err.to_string())?;
+
+    crate::db::tone_seed::seed_default_tones_if_needed(pool.clone())
+        .await
+        .map_err(|err| err.to_string())?;
+
+    crate::db::preferences_queries::clear_missing_active_tones(pool.clone())
+        .await
+        .map_err(|err| err.to_string())?;
+
+    crate::db::tone_queries::fetch_all_tones(pool)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn clear_local_data(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<(), String> {

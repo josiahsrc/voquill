@@ -9,6 +9,7 @@ type LocalUserPreferences = {
   transcriptionApiKeyId: Nullable<string>;
   postProcessingMode: Nullable<PostProcessingMode>;
   postProcessingApiKeyId: Nullable<string>;
+  activeToneId: Nullable<string>;
 };
 
 const fromLocalPreferences = (preferences: LocalUserPreferences): UserPreferences => ({
@@ -17,6 +18,7 @@ const fromLocalPreferences = (preferences: LocalUserPreferences): UserPreference
   transcriptionApiKeyId: preferences.transcriptionApiKeyId,
   postProcessingMode: preferences.postProcessingMode,
   postProcessingApiKeyId: preferences.postProcessingApiKeyId,
+  activeToneId: preferences.activeToneId,
 });
 
 const toLocalPreferences = (preferences: UserPreferences): LocalUserPreferences => ({
@@ -25,6 +27,7 @@ const toLocalPreferences = (preferences: UserPreferences): LocalUserPreferences 
   transcriptionApiKeyId: preferences.transcriptionApiKeyId ?? null,
   postProcessingMode: preferences.postProcessingMode ?? null,
   postProcessingApiKeyId: preferences.postProcessingApiKeyId ?? null,
+  activeToneId: preferences.activeToneId ?? null,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

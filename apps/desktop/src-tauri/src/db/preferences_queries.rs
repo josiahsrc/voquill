@@ -76,3 +76,16 @@ pub async fn fetch_user_preferences(
 
     Ok(preferences)
 }
+
+pub async fn clear_missing_active_tones(pool: SqlitePool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "UPDATE user_preferences
+         SET active_tone_id = NULL
+         WHERE active_tone_id IS NOT NULL
+           AND active_tone_id NOT IN (SELECT id FROM tones)",
+    )
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}

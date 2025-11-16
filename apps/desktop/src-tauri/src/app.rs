@@ -150,6 +150,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::tone_get,
             crate::commands::tone_update,
             crate::commands::tone_delete,
+            crate::commands::tone_reset_defaults,
             crate::commands::clear_local_data,
             crate::commands::set_phase,
             crate::commands::play_audio,

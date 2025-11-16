@@ -157,26 +157,47 @@ export const buildLocalizedPostProcessingPrompt = (
   transcript: string,
   entries: DictionaryEntries,
   locale: Locale,
+  toneTemplate?: string | null,
 ): string => {
   const intl = getIntl(locale);
   const languageName = LANGUAGE_DISPLAY_NAMES[locale];
-  const base = intl.formatMessage(
-    {
-      defaultMessage:
-        "You are Voquill. Clean the {languageName} transcript below. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without rephrasing or embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.\n\nHere is the transcript:\n-------\n{transcript}\n-------\n\nReturn only the cleaned version.",
-    },
-    {
-      languageName,
-      transcript,
-    },
-  );
 
-  const dictionaryContext = buildDictionaryContext(entries, intl);
-  if (!dictionaryContext) {
-    return base;
+  console.log("[Prompt] Building post-processing prompt with tone:", {
+    hasToneTemplate: !!toneTemplate,
+    toneTemplateLength: toneTemplate?.length,
+  });
+
+  // Use tone template if provided, otherwise use default prompt
+  let base: string;
+  if (toneTemplate) {
+    // Replace variables in tone template
+    base = toneTemplate
+      .replace(/\{transcript\}/g, transcript)
+      .replace(/\{languageName\}/g, languageName);
+
+    console.log("[Prompt] Using tone template, result length:", base.length);
+  } else {
+    // Default prompt (backward compatibility)
+    console.log("[Prompt] Using default prompt (no tone template provided)");
+    base = intl.formatMessage(
+      {
+        defaultMessage:
+          "You are Voquill. Clean the {languageName} transcript below. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without rephrasing or embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.\n\nHere is the transcript:\n-------\n{transcript}\n-------\n\nReturn only the cleaned version.",
+      },
+      {
+        languageName,
+        transcript,
+      },
+    );
   }
 
-  return `${dictionaryContext}\n\n${base}`;
+  // Always add dictionary context (prepend to the base prompt)
+  const dictionaryContext = buildDictionaryContext(entries, intl);
+  if (dictionaryContext) {
+    return `${dictionaryContext}\n\n${base}`;
+  }
+
+  return base;
 };
 
 export type { DictionaryEntries };

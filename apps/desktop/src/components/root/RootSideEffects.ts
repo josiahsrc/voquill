@@ -9,6 +9,7 @@ import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
+import { loadTones } from "../../actions/tone.actions";
 import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { addWordsToCurrentUser } from "../../actions/user.actions";
@@ -58,7 +59,7 @@ export const RootSideEffects = () => {
     // TODO: Figure out why terms don't load if this isn't delayed
     await delayed(200);
 
-    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary()];
+    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary(), loadTones()];
     await Promise.allSettled(loaders);
   }, [userId]);
 

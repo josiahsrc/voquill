@@ -8,7 +8,7 @@ import {
   buildLocalizedTranscriptionPrompt,
   collectDictionaryEntries,
 } from "../utils/prompt.utils";
-import { getMyPreferredLocale } from "../utils/user.utils";
+import { getMyEffectiveUserId, getMyPreferredLocale } from "../utils/user.utils";
 
 export type TranscriptionAudioInput = {
   samples: AudioSamples;
@@ -75,10 +75,24 @@ export const transcribeAndPostProcessAudio = async ({
   // post-process the transcription
   let processedTranscript = rawTranscript;
   if (genRepo) {
+    // Get active tone template
+    const myUserId = getMyEffectiveUserId(state);
+    const activeToneId = state.userPreferencesById[myUserId]?.activeToneId;
+    const activeTone = activeToneId ? state.toneById[activeToneId] : null;
+    const toneTemplate = activeTone?.promptTemplate ?? null;
+
+    console.log("[Transcription] Active tone:", {
+      userId: myUserId,
+      activeToneId,
+      toneName: activeTone?.name,
+      hasTemplate: !!toneTemplate,
+    });
+
     const ppPrompt = buildLocalizedPostProcessingPrompt(
       rawTranscript,
       dictionaryEntries,
       preferredLocale,
+      toneTemplate,
     );
 
     const genOutput = await genRepo.generateText({

@@ -6,6 +6,7 @@ import {
   Member,
   Nullable,
   Term,
+  Tone,
   Transcription,
   User,
   UserPreferences,
@@ -19,6 +20,7 @@ import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.sta
 import { INITIAL_PAYMENT_STATE, PaymentState } from "./payment.state";
 import { INITIAL_PRICING_STATE, PricingState } from "./pricing.state";
 import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
+import { INITIAL_TONES_STATE, TonesState } from "./tones.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
@@ -42,12 +44,14 @@ export type AppState = {
   transcriptionById: Record<string, Transcription>;
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
+  toneById: Record<string, Tone>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
   dictionary: DictionaryState;
+  tones: TonesState;
   settings: SettingsState;
   updater: UpdaterState;
   payment: PaymentState;
@@ -70,6 +74,7 @@ export const INITIAL_APP_STATE: AppState = {
   transcriptionById: {},
   priceValueByKey: {},
   apiKeyById: {},
+  toneById: {},
   overlayPhase: "idle",
   audioLevels: [],
   permissions: {
@@ -88,6 +93,7 @@ export const INITIAL_APP_STATE: AppState = {
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,
+  tones: INITIAL_TONES_STATE,
   settings: INITIAL_SETTINGS_STATE,
   updater: INITIAL_UPDATER_STATE,
   payment: INITIAL_PAYMENT_STATE,

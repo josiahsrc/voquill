@@ -2,6 +2,7 @@ import {
   ClassOutlined,
   HistoryOutlined,
   HomeOutlined,
+  RecordVoiceOverOutlined,
   SettingsOutlined,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
@@ -32,6 +33,11 @@ const navItems: NavItem[] = [
     label: <FormattedMessage defaultMessage="Dictionary" />,
     path: "/dashboard/dictionary",
     icon: <ClassOutlined />,
+  },
+  {
+    label: <FormattedMessage defaultMessage="Tones" />,
+    path: "/dashboard/tones",
+    icon: <RecordVoiceOverOutlined />,
   },
 ];
 
