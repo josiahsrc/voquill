@@ -15,7 +15,7 @@ pub async fn upsert_app_target(
     .fetch_optional(&pool)
     .await?;
 
-    let created_at = existing_created_at.unwrap_or_else(|| Utc::now().to_rfc3339());
+    let created_at = existing_created_at.unwrap_or_else(|| Some(Utc::now().to_rfc3339()));
 
     sqlx::query(
         "INSERT INTO app_targets (id, name, created_at)
