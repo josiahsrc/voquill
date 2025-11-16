@@ -55,7 +55,6 @@ export const StorageImage = ({
       sx={{
         width: size,
         height: size,
-        borderRadius: 1.5,
         objectFit: "cover",
         backgroundColor: "level1",
         flexShrink: 0,

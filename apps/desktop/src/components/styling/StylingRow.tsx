@@ -29,9 +29,11 @@ export const StylingRow = ({ id }: StylingRowProps) => {
     <Box
       sx={{
         overflow: "hidden",
-        borderRadius: 0.7,
+        borderRadius: 0.75,
         minWidth: 36,
         minHeight: 36,
+        maxWidth: 36,
+        maxHeight: 36,
         bgcolor: "level2",
         mr: 1,
       }}
