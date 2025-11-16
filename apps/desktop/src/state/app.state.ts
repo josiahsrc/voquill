@@ -24,6 +24,7 @@ import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import { INITIAL_TONES_STATE, TonesState } from "./tones.state";
 import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
+import { INITIAL_TONE_EDITOR_STATE, ToneEditorState } from "./tone-editor.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -54,6 +55,7 @@ export type AppState = {
   transcriptions: TranscriptionsState;
   dictionary: DictionaryState;
   tones: TonesState;
+  toneEditor: ToneEditorState;
   settings: SettingsState;
   updater: UpdaterState;
   payment: PaymentState;
@@ -97,6 +99,7 @@ export const INITIAL_APP_STATE: AppState = {
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,
   tones: INITIAL_TONES_STATE,
+  toneEditor: INITIAL_TONE_EDITOR_STATE,
   settings: INITIAL_SETTINGS_STATE,
   updater: INITIAL_UPDATER_STATE,
   payment: INITIAL_PAYMENT_STATE,

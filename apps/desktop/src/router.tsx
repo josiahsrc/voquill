@@ -12,7 +12,6 @@ import DashboardPage from "./components/dashboard/DashboardPage.tsx";
 import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.tsx";
 import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
 import StylingPage from "./components/styling/StylingPage.tsx";
-import TonesPage from "./components/tones/TonesPage.tsx";
 
 const AppWrapper = () => {
   return (
@@ -75,10 +74,6 @@ const router = createBrowserRouter([
               {
                 path: "styling",
                 element: <StylingPage />,
-              },
-              {
-                path: "tones",
-                element: <TonesPage />,
               },
             ],
           },

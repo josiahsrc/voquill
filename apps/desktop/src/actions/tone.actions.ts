@@ -6,6 +6,7 @@ import { getDefaultSystemTones } from "../utils/tone.utils";
 import { getMyEffectiveUserId, registerUserPreferences } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 import { createDefaultPreferences } from "./user.actions";
+import { ToneEditorMode } from "../state/tone-editor.state";
 
 let loadTonesPromise: Promise<void> | null = null;
 
@@ -189,4 +190,23 @@ export const initializeInitialTones = async (): Promise<void> => {
     showErrorSnackbar("Failed to initialize default tones. Please try again.");
     throw error;
   }
+};
+
+export const openToneEditorDialog = (options: {
+  mode: ToneEditorMode;
+  toneId?: string | null;
+  targetId?: string | null;
+}): void => {
+  produceAppState((draft) => {
+    draft.toneEditor.open = true;
+    draft.toneEditor.mode = options.mode;
+    draft.toneEditor.toneId = options.toneId ?? null;
+    draft.toneEditor.targetId = options.targetId ?? null;
+  });
+};
+
+export const closeToneEditorDialog = (): void => {
+  produceAppState((draft) => {
+    draft.toneEditor.open = false;
+  });
 };
