@@ -36,6 +36,8 @@ const childEnv = {
   FLAVOR: process.env.FLAVOR ?? envFlavor,
 };
 
+const viteCmd = "vite";
+
 const require = createRequire(import.meta.url);
 const vitePkgPath = require.resolve("vite/package.json");
 const vitePkg = require("vite/package.json");
@@ -44,6 +46,7 @@ const viteBin = join(dirname(vitePkgPath), viteBinRelative);
 const child = spawn(process.execPath, [viteBin, ...finalArgs], {
   env: childEnv,
   stdio: "inherit",
+  shell: true,
 });
 
 child.on("exit", (code, signal) => {

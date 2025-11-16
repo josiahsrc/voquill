@@ -11,6 +11,7 @@ use crate::domain::{
 use crate::platform::{GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest};
 use crate::system::crypto::{protect_api_key, reveal_api_key};
 use crate::system::models::WhisperModelSize;
+use crate::system::StorageRepo;
 use sqlx::Row;
 
 use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
@@ -20,6 +21,24 @@ use crate::platform::input::paste_text_into_focused_field as platform_paste_text
 pub struct StopRecordingResponse {
     pub samples: Vec<f32>,
     pub sample_rate: u32,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentAppInfoResponse {
+    pub app_name: String,
+    pub icon_base64: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppTargetUpsertArgs {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub tone_id: Option<String>,
+    #[serde(default)]
+    pub icon_path: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -206,6 +225,41 @@ pub fn check_accessibility_permission() -> Result<crate::domain::PermissionStatu
 #[tauri::command]
 pub fn request_accessibility_permission() -> Result<crate::domain::PermissionStatus, String> {
     crate::platform::permissions::request_accessibility_permission()
+}
+
+#[tauri::command]
+pub fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
+    crate::platform::app_info::get_current_app_info()
+        .map(|info| CurrentAppInfoResponse {
+            app_name: info.app_name,
+            icon_base64: info.icon_base64,
+        })
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn app_target_upsert(
+    args: AppTargetUpsertArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::AppTarget, String> {
+    crate::db::app_target_queries::upsert_app_target(
+        database.pool(),
+        &args.id,
+        &args.name,
+        args.tone_id,
+        args.icon_path,
+    )
+    .await
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn app_target_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::AppTarget>, String> {
+    crate::db::app_target_queries::fetch_app_targets(database.pool())
+        .await
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -455,6 +509,71 @@ pub async fn api_key_delete(
 }
 
 #[tauri::command]
+pub async fn tone_upsert(
+    tone: crate::domain::Tone,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Tone, String> {
+    let pool = database.pool();
+
+    if let Some(existing) = crate::db::tone_queries::fetch_tone_by_id(pool.clone(), &tone.id)
+        .await
+        .map_err(|err| err.to_string())?
+    {
+        let updated = crate::domain::Tone {
+            created_at: existing.created_at,
+            ..tone.clone()
+        };
+
+        crate::db::tone_queries::update_tone(pool.clone(), &updated)
+            .await
+            .map_err(|err| err.to_string())?;
+
+        return Ok(updated);
+    }
+
+    let created_at = if tone.created_at > 0 {
+        tone.created_at
+    } else {
+        current_timestamp_millis()?
+    };
+
+    let new_tone = crate::domain::Tone { created_at, ..tone };
+
+    crate::db::tone_queries::insert_tone(pool, &new_tone)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn tone_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Tone>, String> {
+    crate::db::tone_queries::fetch_all_tones(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn tone_get(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Option<crate::domain::Tone>, String> {
+    crate::db::tone_queries::fetch_tone_by_id(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn tone_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::tone_queries::delete_tone(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn clear_local_data(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<(), String> {
@@ -605,6 +724,26 @@ pub async fn store_transcription_audio(
     .map_err(|err| err.to_string())?;
 
     result
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageUploadArgs {
+    pub path: String,
+    pub data: Vec<u8>,
+}
+
+#[tauri::command]
+pub fn storage_upload_data(app: AppHandle, args: StorageUploadArgs) -> Result<(), String> {
+    let repo = StorageRepo::new(&app).map_err(|err| err.to_string())?;
+    repo.upload_data(&args.path, &args.data)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub fn storage_get_download_url(app: AppHandle, path: String) -> Result<String, String> {
+    let repo = StorageRepo::new(&app).map_err(|err| err.to_string())?;
+    repo.get_download_url(&path).map_err(|err| err.to_string())
 }
 
 #[tauri::command]

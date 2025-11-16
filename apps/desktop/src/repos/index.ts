@@ -7,9 +7,12 @@ import { BaseGenerateTextRepo, CloudGenerateTextRepo, GroqGenerateTextRepo } fro
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
 import { BaseUserPreferencesRepo, LocalUserPreferencesRepo } from "./preferences.repo";
 import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
+import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
 import { BaseTranscribeAudioRepo, CloudTranscribeAudioRepo, GroqTranscribeAudioRepo, LocalTranscribeAudioRepo } from "./transcribe-audio.repo";
 import { BaseTranscriptionRepo, LocalTranscriptionRepo } from "./transcription.repo";
+import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
+import { BaseStorageRepo, LocalStorageRepo } from "./storage.repo";
 
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
@@ -29,6 +32,10 @@ export const getTranscriptionRepo = (): BaseTranscriptionRepo => {
   return new LocalTranscriptionRepo();
 };
 
+export const getAppTargetRepo = (): BaseAppTargetRepo => {
+  return new LocalAppTargetRepo();
+};
+
 export const getTermRepo = (): BaseTermRepo => {
   return shouldUseCloud() ? new CloudTermRepo() : new LocalTermRepo();
 };
@@ -39,6 +46,14 @@ export const getHotkeyRepo = (): BaseHotkeyRepo => {
 
 export const getApiKeyRepo = (): BaseApiKeyRepo => {
   return new LocalApiKeyRepo();
+};
+
+export const getToneRepo = (): BaseToneRepo => {
+  return new LocalToneRepo();
+};
+
+export const getStorageRepo = (): BaseStorageRepo => {
+  return new LocalStorageRepo();
 };
 
 export type GenerateTextRepoOutput = {

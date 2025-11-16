@@ -4,6 +4,7 @@ use tauri::Manager;
 use super::models::WhisperModelSize;
 
 const MODELS_DIR_NAME: &str = "models";
+const STORAGE_DIR_NAME: &str = "storage";
 
 pub fn database_path(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let mut path = app
@@ -35,6 +36,16 @@ pub fn models_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
         .app_data_dir()
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
     path.push(MODELS_DIR_NAME);
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+pub fn storage_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
+    let mut path = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+    path.push(STORAGE_DIR_NAME);
     fs::create_dir_all(&path)?;
     Ok(path)
 }

@@ -6,4 +6,6 @@ export type UserPreferences = {
   transcriptionApiKeyId: Nullable<string>;
   postProcessingMode: Nullable<PostProcessingMode>;
   postProcessingApiKeyId: Nullable<string>;
+  activeToneId: Nullable<string>;
+  hasCreatedInitialTones: boolean;
 };

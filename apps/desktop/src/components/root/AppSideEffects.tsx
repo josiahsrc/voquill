@@ -2,9 +2,10 @@ import { invokeHandler } from "@repo/functions";
 import { FullConfig, Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
 import { getAuth } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { initializeInitialTones } from "../../actions/tone.actions";
 import { refreshCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useKeyDownHandler } from "../../hooks/helper.hooks";
@@ -13,6 +14,7 @@ import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getIsDevMode } from "../../utils/env.utils";
+import { getMyEffectiveUserId } from "../../utils/user.utils";
 
 type StreamRet = Nullable<
   [Nullable<Member>, Nullable<User>, Nullable<FullConfig>]
@@ -24,6 +26,11 @@ export const AppSideEffects = () => {
   const [initReady, setInitReady] = useState(false);
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
+  const hasCreatedInitialTones = useAppStore((state) => {
+    const effectiveUserId = getMyEffectiveUserId(state);
+    return state.userPreferencesById[effectiveUserId]?.hasCreatedInitialTones ?? false;
+  });
+  const initialTonesInitializing = useRef(false);
 
   const onAuthStateChanged = (user: AuthUser | null) => {
     setAuthReady(true);
@@ -98,6 +105,21 @@ export const AppSideEffects = () => {
       });
     }
   }, [streamReady, initReady, initialized]);
+
+  useEffect(() => {
+    if (!initialized || hasCreatedInitialTones) {
+      return;
+    }
+
+    if (initialTonesInitializing.current) {
+      return;
+    }
+
+    initialTonesInitializing.current = true;
+    initializeInitialTones().catch(() => {
+      initialTonesInitializing.current = false;
+    });
+  }, [initialized, hasCreatedInitialTones, initializeInitialTones]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({

@@ -2,12 +2,13 @@ import {
   ClassOutlined,
   HistoryOutlined,
   HomeOutlined,
+  PaletteOutlined,
   SettingsOutlined,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ListTile } from "../common/ListTile";
-import { FormattedMessage } from "react-intl";
 
 const settingsPath = "/dashboard/settings";
 
@@ -32,6 +33,11 @@ const navItems: NavItem[] = [
     label: <FormattedMessage defaultMessage="Dictionary" />,
     path: "/dashboard/dictionary",
     icon: <ClassOutlined />,
+  },
+  {
+    label: <FormattedMessage defaultMessage="Styles" />,
+    path: "/dashboard/styling",
+    icon: <PaletteOutlined />,
   },
 ];
 

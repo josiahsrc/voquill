@@ -1,4 +1,4 @@
-import { ApiKey, Hotkey, Member, Term, Transcription, User } from "@repo/types";
+import { ApiKey, AppTarget, Hotkey, Member, Term, Tone, Transcription, User } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -52,8 +52,20 @@ export const registerApiKeys = (draft: AppState, apiKeys: ApiKey[]): void => {
   }
 };
 
+export const registerTones = (draft: AppState, tones: Tone[]): void => {
+  for (const tone of tones) {
+    draft.toneById[tone.id] = tone;
+  }
+};
+
 export const registerMembers = (draft: AppState, members: Member[]): void => {
   for (const member of members) {
     draft.memberById[member.id] = member;
   }
 }
+
+export const registerAppTargets = (draft: AppState, appTargets: AppTarget[]): void => {
+  for (const appTarget of appTargets) {
+    draft.appTargetById[appTarget.id] = appTarget;
+  }
+};

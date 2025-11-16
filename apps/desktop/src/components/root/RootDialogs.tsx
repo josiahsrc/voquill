@@ -10,12 +10,14 @@ import { UpgradePlanDialog } from "../pricing/UpgradePlanDialog";
 import { PermissionsDialog } from "./PermissionsDialog";
 import { UpdateDialog } from "./UpdateDialog";
 import { DeleteAccountDialog } from "../settings/DeleteAccountDialog";
+import { ToneEditorDialog } from "../tones/ToneEditorDialog";
 
 export const RootDialogs = () => {
   return (
     <>
       <UpdateDialog />
       <PermissionsDialog />
+      <ToneEditorDialog />
       <AITranscriptionDialog />
       <AIPostProcessingDialog />
       <ProfileDialog />
