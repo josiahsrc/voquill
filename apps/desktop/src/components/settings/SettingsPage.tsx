@@ -47,6 +47,7 @@ import { DEFAULT_LOCALE, type Locale } from "../../i18n/config";
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
+import { loadTones } from "../../actions/tone.actions";
 
 const LANGUAGE_OPTIONS = Object.entries(LANGUAGE_DISPLAY_NAMES) as [
   Locale,
@@ -73,7 +74,9 @@ export default function SettingsPage() {
 
   const handlePreferredLanguageChange = (event: SelectChangeEvent<string>) => {
     const nextValue = (event.target.value as Locale) ?? DEFAULT_LOCALE;
-    void setPreferredLanguage(nextValue);
+    void setPreferredLanguage(nextValue).then(() => {
+      loadTones(); // tones need to be reloaded to get the localized names
+    });
   };
 
   const openChangePasswordDialog = () => {
