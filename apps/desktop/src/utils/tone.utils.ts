@@ -1,7 +1,7 @@
 import { Tone } from "@repo/types";
 import { getIntl } from "../i18n/intl";
-import { getMyPreferredLocale } from "./user.utils";
 import { getAppState } from "../store";
+import { getMyPreferredLocale } from "./user.utils";
 
 export const getDefaultSystemTones = (): Tone[] => {
   const locale = getMyPreferredLocale(getAppState());
@@ -17,11 +17,6 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: `
 Make only surgical corrections that fix spelling, punctuation, or clear grammatical mistakes while keeping the speaker's sentences exactly as spoken.
 Make the language vocal, clean, and free of filler while preserving the speaker's meaning. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.
-
-Here is the transcript:
--------
-{transcript}
--------
         `,
       }),
       isSystem: true,
@@ -38,11 +33,6 @@ Here is the transcript:
 The cleaned output should feel casual, vocal, and approachable—like a friendly conversation—while preserving the speaker's core message.
 Make the language vocal, clean, and free of filler while preserving the speaker's meaning. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.
 
-Here is the transcript:
--------
-{transcript}
--------
-
         `,
       }),
       isSystem: true,
@@ -58,11 +48,6 @@ Here is the transcript:
         defaultMessage: `
 Deliver the result in a polished, formal register with precise grammar and professional language while keeping every idea from the speaker.
 Make the language vocal, clean, and free of filler while preserving the speaker's meaning. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.
-
-Here is the transcript:
--------
-{transcript}
--------
         `,
       }),
       isSystem: true,
@@ -78,11 +63,6 @@ Here is the transcript:
         defaultMessage: `
 Return a concise, business-ready version that is direct, action-oriented, and focused on the key decisions or takeaways without losing meaning.
 Make the language vocal, clean, and free of filler while preserving the speaker's meaning. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.
-
-Here is the transcript:
--------
-{transcript}
--------
         `,
       }),
       isSystem: true,
@@ -98,11 +78,6 @@ Here is the transcript:
         defaultMessage: `
 Inject clever puns and playful wordplay while keeping the original intent fully intact, and maintain the same level of polish as a clean transcript.
 Make the language vocal, clean, and free of filler while preserving the speaker's meaning. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.
-
-Here is the transcript:
--------
-{transcript}
--------
         `,
       }),
       isSystem: true,
