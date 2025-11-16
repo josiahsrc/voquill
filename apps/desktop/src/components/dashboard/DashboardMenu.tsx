@@ -36,7 +36,7 @@ const navItems: NavItem[] = [
     icon: <ClassOutlined />,
   },
   {
-    label: <FormattedMessage defaultMessage="Styling" />,
+    label: <FormattedMessage defaultMessage="Styles" />,
     path: "/dashboard/styling",
     icon: <PaletteOutlined />,
   },

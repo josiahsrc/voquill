@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { FormattedMessage } from "react-intl";
-import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { useAppStore } from "../../store";
+import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { StylingRow } from "./StylingRow";
 
 export default function StylingPage() {
@@ -17,9 +17,9 @@ export default function StylingPage() {
 
   return (
     <VirtualizedListPage
-      title={<FormattedMessage defaultMessage="Styling" />}
+      title={<FormattedMessage defaultMessage="Writing Styles" />}
       subtitle={
-        <FormattedMessage defaultMessage="These are the applications Voquill keeps track of for styling context." />
+        <FormattedMessage defaultMessage="Choose how you want Voquill to sound based on what app you're using." />
       }
       items={sortedTargets}
       computeItemKey={(target) => target.id}
