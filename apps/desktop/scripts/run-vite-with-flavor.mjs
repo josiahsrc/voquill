@@ -33,11 +33,12 @@ const childEnv = {
   FLAVOR: process.env.FLAVOR ?? envFlavor,
 };
 
-const viteCmd = process.platform === "win32" ? "vite.cmd" : "vite";
+const viteCmd = "vite";
 
 const child = spawn(viteCmd, finalArgs, {
   env: childEnv,
   stdio: "inherit",
+  shell: true,
 });
 
 child.on("exit", (code, signal) => {
