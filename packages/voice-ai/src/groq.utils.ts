@@ -4,7 +4,7 @@ import { retry } from "@repo/utilities/src/async";
 import { countWords } from "@repo/utilities/src/string";
 import type { JsonResponse } from "@repo/types";
 
-export const GENERATE_TEXT_MODELS = ["meta-llama/llama-4-scout-17b-16e-instruct"] as const;
+export const GENERATE_TEXT_MODELS = ["meta-llama/llama-4-scout-17b-16e-instruct", "openai/gpt-oss-20b", "openai/gpt-oss-120b"] as const;
 export type GenerateTextModel = (typeof GENERATE_TEXT_MODELS)[number];
 
 export const TRANSCRIPTION_MODELS = ["whisper-large-v3-turbo"] as const;
