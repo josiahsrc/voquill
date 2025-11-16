@@ -1,27 +1,46 @@
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import { type ReactNode } from "react";
 
 export type CenterMessageProps = {
-	title?: React.ReactNode;
-	description?: React.ReactNode;
-	button?: React.ReactNode;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  actionLabel: ReactNode;
+  onAction: () => void;
 };
 
-export const CenterMessage = ({
-	title,
-	description,
-	button,
-}: CenterMessageProps) => {
-	return (
-		<Stack alignItems="center" sx={{ height: "100%" }} spacing={3}>
-			<Box flexGrow={2} />
-			{title && <Typography variant="h4">{title}</Typography>}
-			{description && (
-				<Typography variant="body1" color="textSecondary">
-					{description}
-				</Typography>
-			)}
-			{button}
-			<Box flexGrow={3} />
-		</Stack>
-	);
-};
+export function CenterMessage({
+  title,
+  subtitle,
+  actionLabel,
+  onAction,
+}: CenterMessageProps) {
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: "100%",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        px: 2,
+        py: 8,
+      }}
+    >
+      <Container maxWidth="xs">
+        <Stack alignItems="center" spacing={2} pb={8}>
+          <Typography variant="h5" fontWeight={600} align="center">
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography variant="body1" color="text.secondary" align="center">
+              {subtitle}
+            </Typography>
+          )}
+          <Button variant="contained" onClick={onAction} size="large">
+            {actionLabel}
+          </Button>
+        </Stack>
+      </Container>
+    </Box>
+  );
+}

@@ -1,11 +1,12 @@
-import { FormattedMessage, useIntl } from "react-intl";
 import { useCallback } from "react";
-import { useAppStore } from "../../store";
-import { getMyEffectiveUserId } from "../../utils/user.utils";
+import { FormattedMessage, useIntl } from "react-intl";
 import { setActiveTone } from "../../actions/tone.actions";
+import { produceAppState, useAppStore } from "../../store";
+import { getMyEffectiveUserId } from "../../utils/user.utils";
+import { CenterMessage } from "../common/CenterMessage";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
-import { StylingRow } from "./StylingRow";
 import { ToneSelect } from "../tones/ToneSelect";
+import { StylingRow } from "./StylingRow";
 
 export default function StylingPage() {
   const intl = useIntl();
@@ -24,6 +25,29 @@ export default function StylingPage() {
   const handleActiveToneChange = useCallback((toneId: string | null) => {
     void setActiveTone(toneId);
   }, []);
+
+  const openPostProcessingSettings = useCallback(() => {
+    produceAppState((draft) => {
+      draft.settings.aiPostProcessingDialogOpen = true;
+    });
+  }, []);
+
+  const postProcessingMode = useAppStore(
+    (state) => state.settings.aiPostProcessing.mode
+  );
+
+  if (postProcessingMode === "none") {
+    return (
+      <CenterMessage
+        title={<FormattedMessage defaultMessage="Writing styles unavailable" />}
+        subtitle={
+          <FormattedMessage defaultMessage="Post-processing must be enabled in order to use writing styles. Update your settings to enable it." />
+        }
+        actionLabel={<FormattedMessage defaultMessage="Open settings" />}
+        onAction={openPostProcessingSettings}
+      />
+    );
+  }
 
   return (
     <VirtualizedListPage
