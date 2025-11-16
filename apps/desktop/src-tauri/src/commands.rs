@@ -36,7 +36,9 @@ pub struct AppTargetUpsertArgs {
     pub id: String,
     pub name: String,
     #[serde(default)]
-    pub tone_id: Option<Option<String>>,
+    pub tone_id: Option<String>,
+    #[serde(default)]
+    pub icon_path: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -245,6 +247,7 @@ pub async fn app_target_upsert(
         &args.id,
         &args.name,
         args.tone_id,
+        args.icon_path,
     )
     .await
     .map_err(|err| err.to_string())

@@ -42,6 +42,8 @@ pub const TONES_MIGRATION_SQL: &str = include_str!("migrations/018_tones.sql");
 pub const APP_TARGETS_MIGRATION_SQL: &str = include_str!("migrations/019_app_targets.sql");
 pub const APP_TARGET_TONE_ID_MIGRATION_SQL: &str =
     include_str!("migrations/020_app_target_tone_id.sql");
+pub const APP_TARGET_ICON_PATH_MIGRATION_SQL: &str =
+    include_str!("migrations/023_app_target_icon_path.sql");
 pub const USER_PREFERENCES_INITIAL_TONES_MIGRATION_SQL: &str =
     include_str!("migrations/022_user_preferences_initial_tones.sql");
 
@@ -177,6 +179,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 22,
             description: "add_initial_tones_flag",
             sql: USER_PREFERENCES_INITIAL_TONES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 23,
+            description: "add_app_target_icon_path",
+            sql: APP_TARGET_ICON_PATH_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

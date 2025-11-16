@@ -5,4 +5,5 @@ export type AppTarget = {
   name: string;
   createdAt: string;
   toneId: Nullable<string>;
+  iconPath: Nullable<string>;
 };

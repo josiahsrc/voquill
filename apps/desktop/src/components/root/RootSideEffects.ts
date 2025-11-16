@@ -19,12 +19,13 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
-import { getTranscriptionRepo } from "../../repos";
+import { getStorageRepo, getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
 import { OverlayPhase } from "../../types/overlay.types";
 import { normalizeAppTargetId } from "../../utils/apptarget.utils";
+import { buildAppIconPath, decodeBase64Icon } from "../../utils/storage.utils";
 import { createId } from "../../utils/id.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMyEffectiveUserId, getMyUser } from "../../utils/user.utils";
@@ -107,9 +108,31 @@ export const RootSideEffects = () => {
       const appName = appInfo.appName?.trim() ?? "";
       const appTargetId = normalizeAppTargetId(appName);
       const existingApp = getRec(getAppState().appTargetById, appTargetId);
-      if (!existingApp) {
+
+      const shouldRegisterAppTarget = !existingApp || !existingApp.iconPath;
+      if (shouldRegisterAppTarget) {
+        let iconPath: string | undefined;
+        if (appInfo.iconBase64) {
+          const targetPath = buildAppIconPath(getAppState(), appTargetId);
+          try {
+            await getStorageRepo().uploadData({
+              path: targetPath,
+              data: decodeBase64Icon(appInfo.iconBase64),
+            });
+            iconPath = targetPath;
+          } catch (uploadError) {
+            console.error("Failed to upload app icon", uploadError);
+          }
+        }
+
         try {
-          await upsertAppTarget({ id: appTargetId, name: appName });
+          const params = {
+            id: appTargetId,
+            name: appName,
+            toneId: existingApp?.toneId ?? null,
+            iconPath: iconPath ?? existingApp?.iconPath ?? null,
+          };
+          await upsertAppTarget(params);
         } catch (error) {
           console.error("Failed to upsert app target", error);
         }

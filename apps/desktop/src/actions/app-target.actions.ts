@@ -38,6 +38,7 @@ export const setAppTargetTone = async (
       id,
       name: existing.name,
       toneId,
+      iconPath: existing.iconPath ?? null,
     });
   } catch (error) {
     console.error("Failed to update app target tone", error);
