@@ -1,6 +1,7 @@
 import { Tone, ToneCreateRequest } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { BaseRepo } from "./base.repo";
+import { getLocalizedHardcodedTones } from "../utils/tone.utils";
 
 type LocalTone = {
   id: string;
@@ -35,13 +36,13 @@ export abstract class BaseToneRepo extends BaseRepo {
   abstract createTone(request: ToneCreateRequest): Promise<Tone>;
   abstract updateTone(tone: Tone): Promise<Tone>;
   abstract deleteTone(id: string): Promise<void>;
-  abstract resetToDefaults(): Promise<Tone[]>;
 }
 
 export class LocalToneRepo extends BaseToneRepo {
   async listTones(): Promise<Tone[]> {
+    const hardcoded = getLocalizedHardcodedTones();
     const tones = await invoke<LocalTone[]>("tone_list");
-    return tones.map(fromLocalTone);
+    return [...hardcoded, ...tones.map(fromLocalTone)];
   }
 
   async getTone(id: string): Promise<Tone | null> {
@@ -65,8 +66,4 @@ export class LocalToneRepo extends BaseToneRepo {
     await invoke("tone_delete", { id });
   }
 
-  async resetToDefaults(): Promise<Tone[]> {
-    const tones = await invoke<LocalTone[]>("tone_reset_defaults");
-    return tones.map(fromLocalTone);
-  }
 }

@@ -145,38 +145,6 @@ export const setActiveTone = async (toneId: string | null): Promise<void> => {
   }
 };
 
-export const resetTonesToDefaults = async (): Promise<void> => {
-  try {
-    const toneRepo = getToneRepo();
-    const state = getAppState();
-    const myUserId = getMyEffectiveUserId(state);
-
-    const tones = await toneRepo.resetToDefaults();
-    const updatedPrefs = await getUserPreferencesRepo().getUserPreferences(myUserId);
-
-    produceAppState((draft) => {
-      draft.toneById = {};
-      registerTones(draft, tones);
-      draft.tones.selectedToneId = null;
-      draft.tones.isCreating = false;
-
-      if (updatedPrefs) {
-        draft.userPreferencesById[myUserId] = updatedPrefs;
-      } else {
-        delete draft.userPreferencesById[myUserId];
-      }
-    });
-
-    showSnackbar("Tones reset to defaults", { mode: "success" });
-  } catch (error) {
-    console.error("Failed to reset tones", error);
-    showErrorSnackbar(
-      error instanceof Error ? error.message : "Failed to reset tones.",
-    );
-    throw error;
-  }
-};
-
 export const getSortedTones = (): Tone[] => {
   const tones = Object.values(getAppState().toneById);
   return sortTones(tones);

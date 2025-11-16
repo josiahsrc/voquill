@@ -1,5 +1,6 @@
-import { getIntl } from "../i18n/intl";
+import { IntlShape } from "react-intl";
 import { Locale } from "../i18n/config";
+import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
 import { LANGUAGE_DISPLAY_NAMES } from "./language.utils";
 
@@ -74,7 +75,7 @@ type DictionaryEntries = {
 
 const buildDictionaryContext = (
   entries: DictionaryEntries,
-  intl: ReturnType<typeof getIntl>,
+  intl: IntlShape
 ): string | null => {
   const sections: string[] = [];
 
@@ -152,6 +153,19 @@ export const buildLocalizedTranscriptionPrompt = (
 
   return instructions;
 };
+
+export const buildSystemPostProcessingTonePrompt = (
+  locale: Locale,
+): string => {
+  const intl = getIntl(locale);
+  return intl.formatMessage(
+    {
+      defaultMessage:
+        "You post-process transcripts, modifying the transcript based on the user's request.",
+    },
+    {},
+  );
+}
 
 export const buildLocalizedPostProcessingPrompt = (
   transcript: string,

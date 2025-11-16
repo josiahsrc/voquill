@@ -1,21 +1,12 @@
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import { Box, Button, Stack, Typography } from "@mui/material";
+import { useCallback } from "react";
+import { FormattedMessage } from "react-intl";
 import {
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import { useCallback, useState } from "react";
-import { FormattedMessage, useIntl } from "react-intl";
-import { createTone, getSortedTones, resetTonesToDefaults, setActiveTone } from "../../actions/tone.actions";
+  createTone,
+  getSortedTones,
+  setActiveTone,
+} from "../../actions/tone.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
 import { getMyEffectiveUserId } from "../../utils/user.utils";
@@ -23,7 +14,6 @@ import { ToneCard } from "./ToneCard";
 import { ToneEditor } from "./ToneEditor";
 
 export default function TonesPage() {
-  const intl = useIntl();
   const toneById = useAppStore((state) => state.toneById);
   const selectedToneId = useAppStore((state) => state.tones.selectedToneId);
   const isCreating = useAppStore((state) => state.tones.isCreating);
@@ -41,9 +31,6 @@ export default function TonesPage() {
 
   const tones = getSortedTones();
   const selectedTone = selectedToneId ? toneById[selectedToneId] : null;
-  const [isResetting, setIsResetting] = useState(false);
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const resetLabel = intl.formatMessage({ defaultMessage: "Reset to defaults" });
 
   console.log("[TonesPage] Render:", {
     tonesCount: tones.length,
@@ -72,48 +59,34 @@ export default function TonesPage() {
     });
   }, []);
 
-  const handleCreateTone = useCallback(async (name: string, promptTemplate: string) => {
-    await createTone({
-      id: createId(),
-      name,
-      promptTemplate,
-      sortOrder: tones.length,
-    });
-  }, [tones.length]);
+  const handleCreateTone = useCallback(
+    async (name: string, promptTemplate: string) => {
+      await createTone({
+        id: createId(),
+        name,
+        promptTemplate,
+        sortOrder: tones.length,
+      });
+    },
+    [tones.length]
+  );
 
   const handleSetActive = useCallback(async (toneId: string | null) => {
     await setActiveTone(toneId);
   }, []);
 
-  const handleOpenResetDialog = useCallback(() => {
-    setIsResetDialogOpen(true);
-  }, []);
-
-  const handleCloseResetDialog = useCallback(() => {
-    if (!isResetting) {
-      setIsResetDialogOpen(false);
-    }
-  }, [isResetting]);
-
-  const handleConfirmReset = useCallback(async () => {
-    if (isResetting) {
-      return;
-    }
-
-    setIsResetting(true);
-    try {
-      await resetTonesToDefaults();
-    } finally {
-      setIsResetting(false);
-      setIsResetDialogOpen(false);
-    }
-  }, [isResetting, resetTonesToDefaults]);
-
   return (
     <Box sx={{ height: "100%", width: "100%", overflow: "hidden", p: 3 }}>
       <Stack spacing={3} sx={{ height: "100%", overflow: "hidden" }}>
         {/* Header */}
-        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 2,
+          }}
+        >
           <Stack spacing={1} sx={{ flex: 1 }}>
             <Typography variant="h4" component="h1">
               <FormattedMessage defaultMessage="Tones" />
@@ -122,20 +95,6 @@ export default function TonesPage() {
               <FormattedMessage defaultMessage="Choose a tone to customize how Voquill post-processes your transcriptions. Each tone uses a different prompt template to adjust the style of your text." />
             </Typography>
           </Stack>
-
-          <Tooltip title={resetLabel}>
-            <span>
-              <IconButton
-                aria-label={resetLabel}
-                onClick={handleOpenResetDialog}
-                disabled={isResetting}
-                size="small"
-                sx={{ flexShrink: 0, color: "text.secondary" }}
-              >
-                <RestartAltIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
         </Box>
 
         {/* Main content */}
@@ -206,30 +165,6 @@ export default function TonesPage() {
           </Box>
         </Box>
       </Stack>
-
-      <Dialog open={isResetDialogOpen} onClose={handleCloseResetDialog} maxWidth="xs" fullWidth>
-        <DialogTitle>
-          <FormattedMessage defaultMessage="Reset tones?" />
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <FormattedMessage defaultMessage="Resetting tones will delete all custom tones. This action cannot be undone. Continue?" />
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseResetDialog} disabled={isResetting}>
-            <FormattedMessage defaultMessage="Cancel" />
-          </Button>
-          <Button
-            onClick={handleConfirmReset}
-            color="error"
-            disabled={isResetting}
-            autoFocus
-          >
-            <FormattedMessage defaultMessage="Reset" />
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

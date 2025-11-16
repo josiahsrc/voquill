@@ -3,7 +3,6 @@ pub mod hotkey_queries;
 pub mod preferences_queries;
 pub mod term_queries;
 pub mod tone_queries;
-pub mod tone_seed;
 pub mod transcription_queries;
 pub mod user_queries;
 
