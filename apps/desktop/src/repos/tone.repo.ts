@@ -65,5 +65,4 @@ export class LocalToneRepo extends BaseToneRepo {
   async deleteTone(id: string): Promise<void> {
     await invoke("tone_delete", { id });
   }
-
 }
