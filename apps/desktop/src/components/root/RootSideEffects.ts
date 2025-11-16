@@ -47,6 +47,11 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
+type CurrentAppInfoResponse = {
+  appName: string;
+  iconBase64: string;
+};
+
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
   const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(null);
@@ -199,6 +204,14 @@ export const RootSideEffects = () => {
       }
     } catch (error) {
       console.error("Failed to purge stale audio snapshots", error);
+    }
+
+    try {
+      const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
+      console.log("Current app name:", appInfo.appName);
+      console.log("Current app icon:", appInfo.iconBase64);
+    } catch (error) {
+      console.error("Failed to fetch current app info", error);
     }
 
     return finalTranscript;
