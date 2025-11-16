@@ -10,10 +10,12 @@ import {
   collectDictionaryEntries,
 } from "../utils/prompt.utils";
 import { getMyEffectiveUserId, getMyPreferredLocale } from "../utils/user.utils";
+import { Nullable } from "@repo/types";
 
 export type TranscriptionAudioInput = {
   samples: AudioSamples;
   sampleRate: number;
+  toneId?: Nullable<string>;
 };
 
 export type TranscriptionMetadata = {
@@ -39,6 +41,7 @@ export type TranscriptionResult = {
 export const transcribeAndPostProcessAudio = async ({
   samples,
   sampleRate,
+  toneId,
 }: TranscriptionAudioInput): Promise<TranscriptionResult> => {
   const state = getAppState();
 
@@ -76,24 +79,17 @@ export const transcribeAndPostProcessAudio = async ({
   // post-process the transcription
   let processedTranscript = rawTranscript;
   if (genRepo) {
-    // Get active tone template
     const myUserId = getMyEffectiveUserId(state);
-    const activeToneId = getRec(state.userPreferencesById, myUserId)?.activeToneId;
-    const activeTone = getRec(state.toneById, activeToneId);
-    const toneTemplate = activeTone?.promptTemplate ?? null;
-
-    console.log("[Transcription] Active tone:", JSON.stringify({
-      userId: myUserId,
-      activeToneId,
-      toneName: activeTone?.name,
-      hasTemplate: !!toneTemplate,
-    }));
+    const myPrefs = getRec(state.userPreferencesById, myUserId);
+    const tone = getRec(state.toneById, toneId)
+      ?? getRec(state.toneById, myPrefs?.activeToneId)
+      ?? null;
 
     const ppPrompt = buildLocalizedPostProcessingPrompt(
       rawTranscript,
       dictionaryEntries,
       preferredLocale,
-      toneTemplate,
+      tone?.promptTemplate ?? null,
     );
 
     const ppSystem = buildSystemPostProcessingTonePrompt(preferredLocale);

@@ -1,36 +1,37 @@
-import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
-import { countWords, delayed } from "@repo/utilities";
+import { Nullable, Transcription, TranscriptionAudioSnapshot } from "@repo/types";
+import { countWords, delayed, getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
-import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadApiKeys } from "../../actions/api-key.actions";
+import { loadAppTargets, upsertAppTarget } from "../../actions/app-target.actions";
+import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
-import { loadAppTargets, upsertAppTarget } from "../../actions/app-target.actions";
+import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
 import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { addWordsToCurrentUser } from "../../actions/user.actions";
-import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
-import { OverlayPhase } from "../../types/overlay.types";
-import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
+import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
+import { OverlayPhase } from "../../types/overlay.types";
+import { normalizeAppTargetId } from "../../utils/apptarget.utils";
+import { createId } from "../../utils/id.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMyEffectiveUserId, getMyUser } from "../../utils/user.utils";
 import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
 } from "../../utils/window.utils";
-import { normalizeAppTargetId } from "../../utils/apptarget.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -100,23 +101,22 @@ export const RootSideEffects = () => {
       return null;
     }
 
+    let toneId: Nullable<string> = null;
     try {
       const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
-      console.log("Current app name:", appInfo.appName);
-      console.log("Current app icon:", appInfo.iconBase64);
-
-      const appName = appInfo.appName?.trim();
-      if (appName) {
-        const appTargetId = normalizeAppTargetId(appName);
-        const existingAppTarget = getAppState().appTargetById[appTargetId];
-        if (!existingAppTarget) {
-          try {
-            await upsertAppTarget({ id: appTargetId, name: appName });
-          } catch (error) {
-            console.error("Failed to upsert app target", error);
-          }
+      const appName = appInfo.appName?.trim() ?? "";
+      const appTargetId = normalizeAppTargetId(appName);
+      const existingApp = getRec(getAppState().appTargetById, appTargetId);
+      if (!existingApp) {
+        try {
+          await upsertAppTarget({ id: appTargetId, name: appName });
+        } catch (error) {
+          console.error("Failed to upsert app target", error);
         }
       }
+
+      const appWithName = appName ? getAppState().appTargetById[appTargetId] : null;
+      toneId = appWithName?.toneId ?? null;
     } catch (error) {
       console.error("Failed to fetch current app info", error);
     }
@@ -130,6 +130,7 @@ export const RootSideEffects = () => {
       const result = await transcribeAndPostProcessAudio({
         samples: payloadSamples,
         sampleRate: rate,
+        toneId,
       });
       finalTranscript = result.transcript;
       rawTranscriptValue = result.rawTranscript;
@@ -152,8 +153,7 @@ export const RootSideEffects = () => {
     }
 
     const state = getAppState();
-
-    const transcriptionId = crypto.randomUUID();
+    const transcriptionId = createId();
 
     let audioSnapshot: TranscriptionAudioSnapshot | undefined;
     try {
