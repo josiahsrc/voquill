@@ -55,6 +55,7 @@ const buildDefaultPreferences = (userId: string): UserPreferences => ({
   transcriptionApiKeyId: null,
   postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
   postProcessingApiKeyId: null,
+  activeToneId: null,
 });
 
 const updateUserPreferences = async (
