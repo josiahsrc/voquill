@@ -22,6 +22,8 @@ export function BaseLayout({
     defaultMessage: "Type four times faster with a voice-first keyboard.",
   });
   const FALLBACK_CANONICAL_ORIGIN = "https://voquill.com";
+  const SOCIAL_IMAGE_PATH = "/social.jpg";
+  const socialImageUrl = `${FALLBACK_CANONICAL_ORIGIN}${SOCIAL_IMAGE_PATH}`;
 
   const finalTitle = title ?? DEFAULT_TITLE;
   const finalDescription = description ?? DEFAULT_DESCRIPTION;
@@ -50,13 +52,16 @@ export function BaseLayout({
     updateMetaTag("property", "og:title", finalTitle);
     updateMetaTag("property", "og:description", finalDescription);
     updateMetaTag("property", "og:url", canonicalUrl);
+    updateMetaTag("property", "og:image", socialImageUrl);
+    updateMetaTag("property", "og:image:alt", "Voquill voice-first keyboard");
 
     updateMetaTag("name", "twitter:card", "summary_large_image");
     updateMetaTag("name", "twitter:title", finalTitle);
     updateMetaTag("name", "twitter:description", finalDescription);
+    updateMetaTag("name", "twitter:image", socialImageUrl);
 
     updateCanonicalLink(canonicalUrl);
-  }, [finalTitle, finalDescription, canonicalUrl]);
+  }, [finalTitle, finalDescription, canonicalUrl, socialImageUrl]);
 
   return (
     <>
