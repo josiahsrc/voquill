@@ -198,9 +198,18 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           prompt: |
-            Keep it short and super high level, focusing on bug fixes and features. 
-            Use a single list of bullet points. Use emojis here and there. No header, 
-            just bullet points.
+            Generate high-level, user-facing release notes based on the diff below.
+            Follow these rules:
+
+            • Focus strictly on user-visible improvements and overall product value.
+            • Never mention file names, code components, technologies, or internal systems.
+            • Never describe what changed in the code; describe only the outcome or benefit.
+            • Use broad, non-technical language.
+            • Combine related changes into a small number of themes.
+            • Output no more than 3-5 bullet points.
+            • Each bullet should be one sentence and written from the user's perspective.
+            • Avoid technical terms, implementation details, or references to specific subsystems.
+            • If a change has no user-visible effect, omit it.
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
           paths: |
