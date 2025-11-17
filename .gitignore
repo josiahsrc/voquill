@@ -28,6 +28,7 @@ out/
 build
 dist
 .astro/
+apps/desktop/src/i18n/locales/.cache/
 
 
 # Debug

@@ -18,7 +18,8 @@
     "tauri": "tauri",
     "test:webdriver": "wdio run webdriver/wdio.conf.js",
     "i18n:extract": "formatjs extract \"src/**/*.{ts,tsx}\" --ignore \"src/**/*.d.ts\" --out-file src/i18n/locales/en.json --format ./scripts/formatjs-formatter.mjs --id-interpolation-pattern \"[sha1:contenthash:base64:6]\"",
-    "i18n:sync": "node ./scripts/i18n-sync.mjs"
+    "i18n:sync": "node ./scripts/i18n-sync.mjs",
+    "i18n": "npm run i18n:extract && npm run i18n:sync"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
