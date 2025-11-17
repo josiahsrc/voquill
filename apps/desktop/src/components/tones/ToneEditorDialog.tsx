@@ -23,6 +23,8 @@ import {
 import { useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
 
+const MAX_PROMPT_LEN = 1000;
+
 export const ToneEditorDialog = () => {
   const toneEditor = useAppStore((state) => state.toneEditor);
   const toneById = useAppStore((state) => state.toneById);
@@ -202,10 +204,10 @@ export const ToneEditorDialog = () => {
             rows={12}
             fullWidth
             placeholder="Make it sound like a professional but friendly email. Use jargon and fun words."
-            inputProps={{ maxLength: 500 }}
+            inputProps={{ maxLength: MAX_PROMPT_LEN }}
             helperText={
               <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
-                {promptTemplate.length}/500
+                {promptTemplate.length}/{MAX_PROMPT_LEN}
               </Typography>
             }
           />
