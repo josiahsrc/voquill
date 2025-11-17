@@ -38,20 +38,21 @@ const formatReleaseDate = (isoDate: string | null) => {
 };
 
 export const UpdateDialog = () => {
-  const updater = useAppStore((state) => state.updater);
   const intl = useIntl();
-  const {
-    dialogOpen,
-    status,
-    availableVersion,
-    currentVersion,
-    releaseDate,
-    releaseNotes,
-    downloadProgress,
-    downloadedBytes,
-    totalBytes,
-    errorMessage,
-  } = updater;
+  const dialogOpen = useAppStore((state) => state.updater.dialogOpen);
+  const status = useAppStore((state) => state.updater.status);
+  const availableVersion = useAppStore(
+    (state) => state.updater.availableVersion
+  );
+  const currentVersion = useAppStore((state) => state.updater.currentVersion);
+  const releaseDate = useAppStore((state) => state.updater.releaseDate);
+  const releaseNotes = useAppStore((state) => state.updater.releaseNotes);
+  const downloadProgress = useAppStore(
+    (state) => state.updater.downloadProgress
+  );
+  const downloadedBytes = useAppStore((state) => state.updater.downloadedBytes);
+  const totalBytes = useAppStore((state) => state.updater.totalBytes);
+  const errorMessage = useAppStore((state) => state.updater.errorMessage);
 
   const isUpdating = status === "downloading" || status === "installing";
   const showProgress = status === "downloading" || status === "installing";

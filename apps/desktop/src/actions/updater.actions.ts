@@ -89,6 +89,10 @@ export const checkForAppUpdates = async (): Promise<void> => {
       return;
     }
 
+    if (getAppState().updater.dialogOpen) {
+      return;
+    }
+
     produceAppState((draft) => {
       draft.updater.status = "ready";
       draft.updater.lastUpdateVersion = lastUpdateVersion;
