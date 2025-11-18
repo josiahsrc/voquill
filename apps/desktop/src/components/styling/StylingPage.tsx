@@ -1,3 +1,5 @@
+import { ArrowOutwardOutlined } from "@mui/icons-material";
+import { Button } from "@mui/material";
 import { useCallback } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { setActiveTone } from "../../actions/tone.actions";
@@ -43,8 +45,15 @@ export default function StylingPage() {
         subtitle={
           <FormattedMessage defaultMessage="Post-processing must be enabled in order to use writing styles. Update your settings to enable it." />
         }
-        actionLabel={<FormattedMessage defaultMessage="Open settings" />}
-        onAction={openPostProcessingSettings}
+        action={
+          <Button
+            onClick={openPostProcessingSettings}
+            variant="contained"
+            endIcon={<ArrowOutwardOutlined />}
+          >
+            <FormattedMessage defaultMessage="Open settings" />
+          </Button>
+        }
       />
     );
   }

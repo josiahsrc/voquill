@@ -1,19 +1,13 @@
-import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import { Box, Container, Stack, Typography } from "@mui/material";
 import { type ReactNode } from "react";
 
 export type CenterMessageProps = {
   title: ReactNode;
   subtitle?: ReactNode;
-  actionLabel: ReactNode;
-  onAction: () => void;
+  action?: ReactNode;
 };
 
-export function CenterMessage({
-  title,
-  subtitle,
-  actionLabel,
-  onAction,
-}: CenterMessageProps) {
+export function CenterMessage({ title, subtitle, action }: CenterMessageProps) {
   return (
     <Box
       sx={{
@@ -36,9 +30,7 @@ export function CenterMessage({
               {subtitle}
             </Typography>
           )}
-          <Button variant="contained" onClick={onAction} size="large">
-            {actionLabel}
-          </Button>
+          {action}
         </Stack>
       </Container>
     </Box>
