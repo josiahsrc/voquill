@@ -3,18 +3,24 @@ const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
     "/icons/tray/menu-item-36.png"
 ));
 
+use crate::domain::EVT_REGISTER_CURRENT_APP;
+
 #[cfg(desktop)]
 pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     use tauri::image::Image;
     use tauri::menu::{MenuBuilder, MenuItem};
     use tauri::tray::TrayIconBuilder;
-    use tauri::Manager;
+    use tauri::{Emitter, Manager};
 
     let open_item = MenuItem::with_id(app, "open-dashboard", "Open Dashboard", true, None::<&str>)?;
+    let register_current_app_item =
+        MenuItem::with_id(app, "register-current-app", "Register this app", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit-voquill", "Quit Voquill", true, None::<&str>)?;
 
     let menu = MenuBuilder::new(app)
         .item(&open_item)
+        .item(&register_current_app_item)
+        .separator()
         .item(&quit_item)
         .build()?;
 
@@ -29,6 +35,11 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
             "open-dashboard" => {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = crate::platform::window::surface_main_window(&window);
+                }
+            }
+            "register-current-app" => {
+                if let Err(err) = app.emit(EVT_REGISTER_CURRENT_APP, ()) {
+                    eprintln!("Failed to emit register-current-app event: {err}");
                 }
             }
             "quit-voquill" => app.exit(0),

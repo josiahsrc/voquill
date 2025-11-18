@@ -1,11 +1,11 @@
-import { Nullable, Transcription, TranscriptionAudioSnapshot } from "@repo/types";
-import { countWords, delayed, getRec } from "@repo/utilities";
+import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
+import { countWords, delayed } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { loadApiKeys } from "../../actions/api-key.actions";
-import { loadAppTargets, upsertAppTarget } from "../../actions/app-target.actions";
+import { loadAppTargets, tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
@@ -19,13 +19,12 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
-import { getStorageRepo, getTranscriptionRepo } from "../../repos";
+import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState } from "../../store";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
+import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import { OverlayPhase } from "../../types/overlay.types";
-import { normalizeAppTargetId } from "../../utils/apptarget.utils";
-import { buildAppIconPath, decodeBase64Icon } from "../../utils/storage.utils";
 import { createId } from "../../utils/id.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMyEffectiveUserId, getMyUser } from "../../utils/user.utils";
@@ -49,11 +48,6 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
-};
-
-type CurrentAppInfoResponse = {
-  appName: string;
-  iconBase64: string;
 };
 
 export const RootSideEffects = () => {
@@ -102,47 +96,8 @@ export const RootSideEffects = () => {
       return null;
     }
 
-    let toneId: Nullable<string> = null;
-    try {
-      const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
-      const appName = appInfo.appName?.trim() ?? "";
-      const appTargetId = normalizeAppTargetId(appName);
-      const existingApp = getRec(getAppState().appTargetById, appTargetId);
-
-      const shouldRegisterAppTarget = !existingApp || !existingApp.iconPath;
-      if (shouldRegisterAppTarget) {
-        let iconPath: string | undefined;
-        if (appInfo.iconBase64) {
-          const targetPath = buildAppIconPath(getAppState(), appTargetId);
-          try {
-            await getStorageRepo().uploadData({
-              path: targetPath,
-              data: decodeBase64Icon(appInfo.iconBase64),
-            });
-            iconPath = targetPath;
-          } catch (uploadError) {
-            console.error("Failed to upload app icon", uploadError);
-          }
-        }
-
-        try {
-          const params = {
-            id: appTargetId,
-            name: appName,
-            toneId: existingApp?.toneId ?? null,
-            iconPath: iconPath ?? existingApp?.iconPath ?? null,
-          };
-          await upsertAppTarget(params);
-        } catch (error) {
-          console.error("Failed to upsert app target", error);
-        }
-      }
-
-      const appWithName = appName ? getAppState().appTargetById[appTargetId] : null;
-      toneId = appWithName?.toneId ?? null;
-    } catch (error) {
-      console.error("Failed to fetch current app info", error);
-    }
+    const currentApp = await tryRegisterCurrentAppTarget();
+    const toneId = currentApp?.toneId ?? null;
 
     let finalTranscript: string | null = null;
     let rawTranscriptValue: string | null = null;
@@ -381,6 +336,10 @@ export const RootSideEffects = () => {
     actionName: DICTATE_HOTKEY,
     onActivate: startRecording,
     onDeactivate: stopRecording,
+  });
+
+  useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
+    await tryRegisterCurrentAppTarget();
   });
 
   useTauriListen<KeysHeldPayload>("keys_held", (payload) => {

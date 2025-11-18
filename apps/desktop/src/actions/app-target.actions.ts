@@ -1,8 +1,12 @@
-import { AppTarget } from "@repo/types";
-import { getAppState, produceAppState } from "../store";
-import { getAppTargetRepo } from "../repos";
-import { registerAppTargets } from "../utils/app.utils";
+import { AppTarget, Nullable } from "@repo/types";
+import { getRec } from "@repo/utilities";
+import { invoke } from "@tauri-apps/api/core";
+import { getAppTargetRepo, getStorageRepo } from "../repos";
 import { AppTargetUpsertParams } from "../repos/app-target.repo";
+import { getAppState, produceAppState } from "../store";
+import { registerAppTargets } from "../utils/app.utils";
+import { normalizeAppTargetId } from "../utils/apptarget.utils";
+import { buildAppIconPath, decodeBase64Icon } from "../utils/storage.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 export const loadAppTargets = async (): Promise<void> => {
@@ -47,3 +51,46 @@ export const setAppTargetTone = async (
     );
   }
 };
+
+type CurrentAppInfoResponse = {
+  appName: string;
+  iconBase64: string;
+};
+
+export const tryRegisterCurrentAppTarget = async (): Promise<Nullable<AppTarget>> => {
+  const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
+  const appName = appInfo.appName?.trim() ?? "";
+  const appTargetId = normalizeAppTargetId(appName);
+  const existingApp = getRec(getAppState().appTargetById, appTargetId);
+
+  const shouldRegisterAppTarget = !existingApp || !existingApp.iconPath;
+  if (shouldRegisterAppTarget) {
+    let iconPath: string | undefined;
+    if (appInfo.iconBase64) {
+      const targetPath = buildAppIconPath(getAppState(), appTargetId);
+      try {
+        await getStorageRepo().uploadData({
+          path: targetPath,
+          data: decodeBase64Icon(appInfo.iconBase64),
+        });
+        iconPath = targetPath;
+      } catch (uploadError) {
+        console.error("Failed to upload app icon", uploadError);
+      }
+    }
+
+    try {
+      const params = {
+        id: appTargetId,
+        name: appName,
+        toneId: existingApp?.toneId ?? null,
+        iconPath: iconPath ?? existingApp?.iconPath ?? null,
+      };
+      await upsertAppTarget(params);
+    } catch (error) {
+      console.error("Failed to upsert app target", error);
+    }
+  }
+
+  return getRec(getAppState().appTargetById, appTargetId) ?? null;
+}

@@ -1,5 +1,5 @@
 import { ArrowOutwardOutlined } from "@mui/icons-material";
-import { Button } from "@mui/material";
+import { Button, Stack, Typography } from "@mui/material";
 import { useCallback } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { setActiveTone } from "../../actions/tone.actions";
@@ -76,6 +76,27 @@ export default function StylingPage() {
       items={sortedAppTargetIds}
       computeItemKey={(id) => id}
       renderItem={(id) => <StylingRow key={id} id={id} />}
+      emptyState={
+        <Stack
+          spacing={1}
+          alignItems="flex-start"
+          width={300}
+          alignSelf="center"
+          mx="auto"
+        >
+          <Typography variant="h6">How it works</Typography>
+          <Typography variant="body2">
+            1. Open up the app you want to style (like Slack or Chrome).
+          </Typography>
+          <Typography variant="body2">
+            2. Click on the Voquill icon in the menu bar, and click "Register
+            this app".
+          </Typography>
+          <Typography variant="body2">
+            3. Go back to Voquill, and select a writing style for that app.
+          </Typography>
+        </Stack>
+      }
     />
   );
 }
