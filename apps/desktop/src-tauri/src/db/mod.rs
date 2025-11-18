@@ -46,6 +46,8 @@ pub const APP_TARGET_ICON_PATH_MIGRATION_SQL: &str =
     include_str!("migrations/023_app_target_icon_path.sql");
 pub const USER_PREFERENCES_INITIAL_TONES_MIGRATION_SQL: &str =
     include_str!("migrations/022_user_preferences_initial_tones.sql");
+pub const CLEANUP_DEFAULT_TONES_MIGRATION_SQL: &str =
+    include_str!("migrations/024_cleanup_default_tones.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -185,6 +187,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 23,
             description: "add_app_target_icon_path",
             sql: APP_TARGET_ICON_PATH_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 24,
+            description: "cleanup_default_tones",
+            sql: CLEANUP_DEFAULT_TONES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

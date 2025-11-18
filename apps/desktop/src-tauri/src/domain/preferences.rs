@@ -14,6 +14,4 @@ pub struct UserPreferences {
     pub post_processing_api_key_id: Option<String>,
     #[serde(default)]
     pub active_tone_id: Option<String>,
-    #[serde(default)]
-    pub has_created_initial_tones: bool,
 }

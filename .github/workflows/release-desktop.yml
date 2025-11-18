@@ -206,7 +206,7 @@ jobs:
             • Never describe what changed in the code; describe only the outcome or benefit.
             • Use broad, non-technical language.
             • Combine related changes into a small number of themes.
-            • Output no more than 3-5 bullet points.
+            • Output no more than 1-4 bullet points.
             • Each bullet should be one sentence and written from the user's perspective.
             • Avoid technical terms, implementation details, or references to specific subsystems.
             • If a change has no user-visible effect, omit it.

@@ -7,5 +7,4 @@ export type UserPreferences = {
   postProcessingMode: Nullable<PostProcessingMode>;
   postProcessingApiKeyId: Nullable<string>;
   activeToneId: Nullable<string>;
-  hasCreatedInitialTones: boolean;
 };

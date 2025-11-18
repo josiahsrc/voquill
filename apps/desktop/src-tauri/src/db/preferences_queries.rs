@@ -13,17 +13,15 @@ pub async fn upsert_user_preferences(
              transcription_api_key_id,
              post_processing_mode,
              post_processing_api_key_id,
-             active_tone_id,
-             has_created_initial_tones
+             active_tone_id
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
             post_processing_mode = excluded.post_processing_mode,
             post_processing_api_key_id = excluded.post_processing_api_key_id,
-            active_tone_id = excluded.active_tone_id,
-            has_created_initial_tones = excluded.has_created_initial_tones",
+            active_tone_id = excluded.active_tone_id",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -31,11 +29,6 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.post_processing_mode)
     .bind(&preferences.post_processing_api_key_id)
     .bind(&preferences.active_tone_id)
-    .bind(if preferences.has_created_initial_tones {
-        1
-    } else {
-        0
-    })
     .execute(&pool)
     .await?;
 
@@ -53,8 +46,7 @@ pub async fn fetch_user_preferences(
             transcription_api_key_id,
             post_processing_mode,
             post_processing_api_key_id,
-            active_tone_id,
-            has_created_initial_tones
+            active_tone_id
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -80,7 +72,6 @@ pub async fn fetch_user_preferences(
         active_tone_id: row
             .try_get::<Option<String>, _>("active_tone_id")
             .unwrap_or(None),
-        has_created_initial_tones: row.get::<i64, _>("has_created_initial_tones") != 0,
     });
 
     Ok(preferences)

@@ -8,16 +8,14 @@ pub async fn insert_tone(pool: SqlitePool, tone: &Tone) -> Result<Tone, sqlx::Er
              id,
              name,
              prompt_template,
-             is_system,
              created_at,
              sort_order
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+         VALUES (?1, ?2, ?3, ?4, ?5)",
     )
     .bind(&tone.id)
     .bind(&tone.name)
     .bind(&tone.prompt_template)
-    .bind(if tone.is_system { 1 } else { 0 })
     .bind(tone.created_at)
     .bind(tone.sort_order)
     .execute(&pool)
@@ -31,14 +29,12 @@ pub async fn update_tone(pool: SqlitePool, tone: &Tone) -> Result<Tone, sqlx::Er
         "UPDATE tones SET
             name = ?2,
             prompt_template = ?3,
-            is_system = ?4,
-            sort_order = ?5
+            sort_order = ?4
          WHERE id = ?1",
     )
     .bind(&tone.id)
     .bind(&tone.name)
     .bind(&tone.prompt_template)
-    .bind(if tone.is_system { 1 } else { 0 })
     .bind(tone.sort_order)
     .execute(&pool)
     .await?;
@@ -56,16 +52,17 @@ pub async fn delete_tone(pool: SqlitePool, id: &str) -> Result<(), sqlx::Error> 
 }
 
 pub async fn fetch_tone_by_id(pool: SqlitePool, id: &str) -> Result<Option<Tone>, sqlx::Error> {
-    let row = sqlx::query("SELECT id, name, prompt_template, is_system, created_at, sort_order FROM tones WHERE id = ?1 LIMIT 1")
-        .bind(id)
-        .fetch_optional(&pool)
-        .await?;
+    let row = sqlx::query(
+        "SELECT id, name, prompt_template, created_at, sort_order FROM tones WHERE id = ?1 LIMIT 1",
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await?;
 
     let tone = row.map(|row| Tone {
         id: row.get::<String, _>("id"),
         name: row.get::<String, _>("name"),
         prompt_template: row.get::<String, _>("prompt_template"),
-        is_system: row.get::<i64, _>("is_system") != 0,
         created_at: row.get::<i64, _>("created_at"),
         sort_order: row.get::<i32, _>("sort_order"),
     });
@@ -75,7 +72,7 @@ pub async fn fetch_tone_by_id(pool: SqlitePool, id: &str) -> Result<Option<Tone>
 
 pub async fn fetch_all_tones(pool: SqlitePool) -> Result<Vec<Tone>, sqlx::Error> {
     let rows = sqlx::query(
-        "SELECT id, name, prompt_template, is_system, created_at, sort_order
+        "SELECT id, name, prompt_template, created_at, sort_order
          FROM tones
          ORDER BY sort_order ASC, created_at ASC",
     )
@@ -88,7 +85,6 @@ pub async fn fetch_all_tones(pool: SqlitePool) -> Result<Vec<Tone>, sqlx::Error>
             id: row.get::<String, _>("id"),
             name: row.get::<String, _>("name"),
             prompt_template: row.get::<String, _>("prompt_template"),
-            is_system: row.get::<i64, _>("is_system") != 0,
             created_at: row.get::<i64, _>("created_at"),
             sort_order: row.get::<i32, _>("sort_order"),
         })

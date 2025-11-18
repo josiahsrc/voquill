@@ -132,17 +132,19 @@ export const ToneSelect = ({
               width="100%"
             >
               <div>{tone.name}</div>
-              <IconButton
-                size="small"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  event.preventDefault();
-                  setMenuOpen(false);
-                  openToneEditorDialog({ mode: "edit", toneId: tone.id });
-                }}
-              >
-                <Edit fontSize="small" />
-              </IconButton>
+              {!tone.isSystem && (
+                <IconButton
+                  size="small"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    setMenuOpen(false);
+                    openToneEditorDialog({ mode: "edit", toneId: tone.id });
+                  }}
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              )}
             </Stack>
           </MenuItem>
         ))}

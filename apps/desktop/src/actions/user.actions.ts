@@ -56,7 +56,6 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
   postProcessingApiKeyId: null,
   activeToneId: null,
-  hasCreatedInitialTones: false,
 });
 
 const updateUserPreferences = async (

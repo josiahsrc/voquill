@@ -1,11 +1,9 @@
-import { Tone, UserPreferences } from "@repo/types";
+import { Tone } from "@repo/types";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";
-import { getDefaultSystemTones } from "../utils/tone.utils";
-import { getMyEffectiveUserId, registerUserPreferences } from "../utils/user.utils";
+import { getMyEffectiveUserId } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
-import { createDefaultPreferences } from "./user.actions";
 import { ToneEditorMode } from "../state/tone-editor.state";
 
 let loadTonesPromise: Promise<void> | null = null;
@@ -143,53 +141,6 @@ export const getActiveTone = (): Tone | null => {
   }
 
   return state.toneById[activeToneId] ?? null;
-};
-
-const markInitialTonesCreated = async (value: boolean): Promise<void> => {
-  const state = getAppState();
-  const myUserId = getMyEffectiveUserId(state);
-  const currentPrefs = state.userPreferencesById[myUserId];
-  const basePreferences = currentPrefs ?? createDefaultPreferences(myUserId);
-
-  const updatedPrefs: UserPreferences = {
-    ...basePreferences,
-    hasCreatedInitialTones: value,
-  };
-
-  const saved = await getUserPreferencesRepo().setUserPreferences(updatedPrefs);
-  produceAppState((draft) => {
-    registerUserPreferences(draft, [saved]);
-  });
-};
-
-export const recreateInitialTones = async (): Promise<void> => {
-  await loadTones();
-
-  const tones = Object.values(getAppState().toneById);
-  for (const tone of tones) {
-    if (tone.isSystem) {
-      await deleteTone(tone.id);
-    }
-  }
-
-  const sysTones = getDefaultSystemTones();
-  for (const tone of sysTones) {
-    await getToneRepo().upsertTone({
-      ...tone,
-      isSystem: true,
-    });
-  }
-};
-
-export const initializeInitialTones = async (): Promise<void> => {
-  try {
-    await recreateInitialTones();
-    await markInitialTonesCreated(true);
-  } catch (error) {
-    console.error("Failed to initialize default tones", error);
-    showErrorSnackbar("Failed to initialize default tones. Please try again.");
-    throw error;
-  }
 };
 
 export const openToneEditorDialog = (options: {
