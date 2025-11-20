@@ -12,7 +12,7 @@ import { loadHotkeys } from "../../actions/hotkey.actions";
 import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
-import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcription.actions";
+import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { addWordsToCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";

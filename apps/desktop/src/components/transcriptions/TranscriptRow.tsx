@@ -15,7 +15,7 @@ import { openTranscriptionDetailsDialog } from "../../actions/transcriptions.act
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { TypographyWithMore } from "../common/TypographyWithMore";
-import { transcribeAndPostProcessAudio } from "../../actions/transcription.actions";
+import { transcribeAndPostProcessAudio } from "../../actions/transcribe.actions";
 
 export type TranscriptionRowProps = {
   id: string;
