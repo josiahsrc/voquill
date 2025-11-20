@@ -45,6 +45,11 @@
       "hardenedRuntime": true,
       "minimumSystemVersion": "13.3",
       "entitlements": "macos/Voquill.entitlements"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller"
+      }
     }
   },
   "plugins": {
