@@ -4,7 +4,7 @@ import { listify } from "@repo/utilities";
 import { getAuth } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
-import { showErrorSnackbar } from "../../actions/app.actions";
+import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { refreshCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useKeyDownHandler } from "../../hooks/helper.hooks";
@@ -104,6 +104,7 @@ export const AppSideEffects = () => {
     keys: ["r"],
     ctrl: true,
     callback: () => {
+      showSnackbar("Refreshing application...");
       if (getIsDevMode()) {
         window.location.reload();
       }

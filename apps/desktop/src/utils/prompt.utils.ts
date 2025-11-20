@@ -148,7 +148,7 @@ export const buildSystemPostProcessingTonePrompt = (
   return intl.formatMessage(
     {
       defaultMessage:
-        "You are a transcript rewriting assistant. Your job is to change STYLE only while preserving the original INTENT of the transcript.",
+        "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same.",
     },
     {},
   );
@@ -178,7 +178,7 @@ Here is the transcript:
 ${transcript}
 -------
 
-Do not add extra content that was not stated. ONLY modify the style. Your response must be in ${languageName}.
+Your response must be in ${languageName}.
 `;
     console.log("[Prompt] Using tone template, result length:", base.length);
   } else {
@@ -186,8 +186,17 @@ Do not add extra content that was not stated. ONLY modify the style. Your respon
     console.log("[Prompt] Using default prompt (no tone template provided)");
     base = intl.formatMessage(
       {
-        defaultMessage:
-          "You are Voquill. Clean the {languageName} transcript below. Remove filler words, false starts, repetitions, and disfluencies. Fix grammar and structure without rephrasing or embellishing, and preserve the speaker's tone exactly. Do not add notes or extra content. Always preserve meaningful input. Never return an empty result unless the input is truly empty.\n\nHere is the transcript:\n-------\n{transcript}\n-------\n\nReturn only the cleaned version.",
+        defaultMessage: `
+Clean the {languageName} transcript below.
+Remove only clear false starts, stutters, repeated sounds, and isolated filler words.
+Do not remove any complete words, phrases, clauses, or sentences that contribute meaning, emotion, tone, emphasis, or intent.
+Do not remove or shorten any part of the transcript unless it is purely a disfluency and contains no meaningful content on its own.
+Do not delete or compress multiple words into fewer words.
+Do not alter or reorganize the original wording, structure, or flow beyond removing those disfluencies.
+
+Here is the transcript:
+{transcript}
+        `
       },
       {
         languageName,
