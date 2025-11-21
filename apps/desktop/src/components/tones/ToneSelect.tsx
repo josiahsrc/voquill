@@ -73,7 +73,7 @@ export const ToneSelect = ({
   const handleSelectOpen = useCallback(() => setMenuOpen(true), []);
   const handleSelectClose = useCallback(() => setMenuOpen(false), []);
 
-  const resolvedValue = value ?? "";
+  const resolvedValue = getRec(toneById, value)?.id ?? "";
 
   return (
     <FormControl size={selectSize} sx={formControlSx}>

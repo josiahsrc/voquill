@@ -22,6 +22,7 @@ import {
 } from "../../actions/tone.actions";
 import { useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 
 const MAX_PROMPT_LEN = 1000;
 
@@ -82,6 +83,7 @@ export const ToneEditorDialog = () => {
   const [promptTemplate, setPromptTemplate] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (isEditMode && tone) {
@@ -92,6 +94,12 @@ export const ToneEditorDialog = () => {
       setPromptTemplate("");
     }
   }, [isEditMode, tone, toneEditor.mode, toneEditor.open]);
+
+  useEffect(() => {
+    if (!toneEditor.open) {
+      setIsConfirmOpen(false);
+    }
+  }, [toneEditor.open]);
 
   const hasChanges =
     isEditMode &&
@@ -132,14 +140,11 @@ export const ToneEditorDialog = () => {
   ]);
 
   const handleDeleteTone = useCallback(async () => {
-    if (!isEditMode || !tone || tone.isSystem) {
+    if (!isEditMode || !tone) {
       return;
     }
 
-    if (!confirm("Are you sure you want to delete this style?")) {
-      return;
-    }
-
+    setIsConfirmOpen(false);
     setIsDeleting(true);
     try {
       await handleDelete(tone.id);
@@ -148,6 +153,18 @@ export const ToneEditorDialog = () => {
       setIsDeleting(false);
     }
   }, [isEditMode, tone, handleDelete, handleClose]);
+
+  const handleOpenDeleteConfirm = useCallback(() => {
+    if (!isEditMode || !tone || tone.isSystem) {
+      return;
+    }
+
+    setIsConfirmOpen(true);
+  }, [isEditMode, tone]);
+
+  const handleCancelDelete = useCallback(() => {
+    setIsConfirmOpen(false);
+  }, []);
 
   const handleCancel = useCallback(() => {
     if (isEditMode && tone) {
@@ -168,86 +185,103 @@ export const ToneEditorDialog = () => {
   );
 
   return (
-    <Dialog
-      open={toneEditor.open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="h6" sx={{ flex: 1 }}>
-            {title}
-          </Typography>
-        </Box>
-      </DialogTitle>
+    <>
+      <Dialog
+        open={toneEditor.open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Typography variant="h6" sx={{ flex: 1 }}>
+              {title}
+            </Typography>
+          </Box>
+        </DialogTitle>
 
-      <DialogContent dividers>
-        <Stack
-          spacing={3}
-          sx={{ height: "100%", overflow: "auto", minHeight: 320, pt: 1 }}
-        >
-          <TextField
-            label={<FormattedMessage defaultMessage="Name" />}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            fullWidth
-            placeholder="Casual, Formal, Business..."
-            inputProps={{ maxLength: 120 }}
-          />
-
-          <TextField
-            label={<FormattedMessage defaultMessage="Prompt" />}
-            value={promptTemplate}
-            onChange={(event) => setPromptTemplate(event.target.value)}
-            multiline
-            rows={12}
-            fullWidth
-            placeholder="Make it sound like a professional but friendly email. Use jargon and fun words."
-            inputProps={{ maxLength: MAX_PROMPT_LEN }}
-            helperText={
-              <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
-                {promptTemplate.length}/{MAX_PROMPT_LEN}
-              </Typography>
-            }
-          />
-        </Stack>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        {isEditMode && (
-          <Button
-            variant="text"
-            onClick={handleDeleteTone}
-            disabled={isDeleting}
-            color="warning"
-            sx={{ mr: "auto" }}
-            startIcon={<DeleteForeverOutlined />}
+        <DialogContent dividers>
+          <Stack
+            spacing={3}
+            sx={{ height: "100%", overflow: "auto", minHeight: 320, pt: 1 }}
           >
-            <FormattedMessage defaultMessage="Delete" />
-          </Button>
-        )}
-        <Button variant="text" onClick={handleCancel}>
-          <FormattedMessage defaultMessage="Cancel" />
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<SaveIcon />}
-          onClick={handleSave}
-          disabled={
-            isSaving ||
-            !name.trim() ||
-            !promptTemplate.trim() ||
-            (isEditMode && !hasChanges)
-          }
-        >
-          {isEditMode ? (
-            <FormattedMessage defaultMessage="Save changes" />
-          ) : (
-            <FormattedMessage defaultMessage="Create" />
+            <TextField
+              label={<FormattedMessage defaultMessage="Name" />}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              fullWidth
+              placeholder="Casual, Formal, Business..."
+              inputProps={{ maxLength: 120 }}
+            />
+
+            <TextField
+              label={<FormattedMessage defaultMessage="Prompt" />}
+              value={promptTemplate}
+              onChange={(event) => setPromptTemplate(event.target.value)}
+              multiline
+              rows={12}
+              fullWidth
+              placeholder="Make it sound like a professional but friendly email. Use jargon and fun words."
+              inputProps={{ maxLength: MAX_PROMPT_LEN }}
+              helperText={
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", mt: 0.5 }}
+                >
+                  {promptTemplate.length}/{MAX_PROMPT_LEN}
+                </Typography>
+              }
+            />
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          {isEditMode && (
+            <Button
+              variant="text"
+              onClick={handleOpenDeleteConfirm}
+              disabled={isDeleting}
+              color="warning"
+              sx={{ mr: "auto" }}
+              startIcon={<DeleteForeverOutlined />}
+            >
+              <FormattedMessage defaultMessage="Delete" />
+            </Button>
           )}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Button variant="text" onClick={handleCancel}>
+            <FormattedMessage defaultMessage="Cancel" />
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<SaveIcon />}
+            onClick={handleSave}
+            disabled={
+              isSaving ||
+              !name.trim() ||
+              !promptTemplate.trim() ||
+              (isEditMode && !hasChanges)
+            }
+          >
+            {isEditMode ? (
+              <FormattedMessage defaultMessage="Save changes" />
+            ) : (
+              <FormattedMessage defaultMessage="Create" />
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        title={<FormattedMessage defaultMessage="Delete style" />}
+        content={
+          <FormattedMessage defaultMessage="Are you sure you want to delete this style?" />
+        }
+        onCancel={handleCancelDelete}
+        onConfirm={handleDeleteTone}
+        confirmLabel={<FormattedMessage defaultMessage="Delete" />}
+        confirmButtonProps={{ color: "error", disabled: isDeleting }}
+      />
+    </>
   );
 };
