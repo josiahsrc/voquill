@@ -2,7 +2,6 @@ import { MemberPlan } from "@repo/types";
 import { getAppState, produceAppState } from "../store";
 import { getPricesWithRuntimeCaching } from "../utils/price.utils";
 import { setMode } from "./login.actions";
-import { tryOpenPaymentDialogForPlan } from "./payment.actions";
 
 export const loadPrices = async () => {
   try {
@@ -43,48 +42,16 @@ export const showUpgradePlanList = () => {
 };
 
 export const selectUpgradePlan = (plan: MemberPlan) => {
-  if (plan !== "pro") {
-    showUpgradePlanList();
-    return;
-  }
-
   const state = getAppState();
-
   if (!state.auth) {
     produceAppState((draft) => {
       draft.pricing.upgradePlanDialogView = "login";
       draft.pricing.upgradePlanPendingPlan = plan;
     });
     setMode("signIn");
-    return;
-  }
-
-  if (tryOpenPaymentDialogForPlan(plan)) {
+  } else {
     produceAppState((draft) => {
-      draft.pricing.upgradePlanDialog = false;
-      draft.pricing.upgradePlanPendingPlan = null;
-      draft.pricing.upgradePlanDialogView = "plans";
+      draft.pricing.upgradePlanPendingPlan = plan;
     });
   }
-};
-
-export const completePendingUpgrade = () => {
-  const state = getAppState();
-  const pendingPlan = state.pricing.upgradePlanPendingPlan;
-
-  if (!pendingPlan) {
-    return false;
-  }
-
-  const opened = tryOpenPaymentDialogForPlan(pendingPlan);
-
-  produceAppState((draft) => {
-    draft.pricing.upgradePlanDialogView = "plans";
-    draft.pricing.upgradePlanPendingPlan = null;
-    if (opened) {
-      draft.pricing.upgradePlanDialog = false;
-    }
-  });
-
-  return opened;
 };

@@ -7,7 +7,7 @@ import { dedup, getRec } from "@repo/utilities";
 import { AuthData } from "firebase-functions/tasks";
 import stripe from "stripe";
 import * as admin from "firebase-admin";
-import { checkPaidAccess } from "../utils/check.utils";
+import { checkAccess } from "../utils/check.utils";
 import { ClientError, UnauthenticatedError } from "../utils/error.utils";
 import { getStripe, getOrCreateStripeDatabaseMember } from "../utils/stripe.utils";
 
@@ -168,7 +168,7 @@ export const createCustomerPortalSession = async (args: {
   origin: string;
   auth: Nullable<AuthData>;
 }): Promise<HandlerOutput<"stripe/createCustomerPortalSession">> => {
-  const access = await checkPaidAccess(args.auth);
+  const access = await checkAccess(args.auth);
 
   const stripe = getStripe();
   if (!stripe) {

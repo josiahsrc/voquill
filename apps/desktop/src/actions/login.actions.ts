@@ -6,9 +6,17 @@ import { GOOGLE_AUTH_COMMAND } from "../types/google-auth.types";
 import { getAppState, produceAppState } from "../store";
 import { getAuthRepo } from "../repos";
 import { validateEmail } from "../utils/login.utils";
+import { registerMembers } from "../utils/app.utils";
+import { listify } from "@repo/utilities";
 
 const tryInit = async () => {
   await invokeHandler("member/tryInitialize", {});
+  const member = await invokeHandler("member/getMyMember", {})
+    .then((res) => res.member)
+    .catch(() => null)
+  produceAppState((state) => {
+    registerMembers(state, listify(member));
+  });
 };
 
 export const submitSignIn = async (): Promise<void> => {
@@ -32,37 +40,37 @@ export const submitSignIn = async (): Promise<void> => {
 };
 
 export const submitSignInWithGoogle = async (): Promise<void> => {
-	try {
-		produceAppState((state) => {
-			state.login.status = "loading";
-			state.login.errorMessage = "";
-		});
-		await invoke(GOOGLE_AUTH_COMMAND);
-	} catch {
-		produceAppState((state) => {
-			state.login.errorMessage = "An error occurred while signing in.";
-			state.login.status = "idle";
-		});
-	}
+  try {
+    produceAppState((state) => {
+      state.login.status = "loading";
+      state.login.errorMessage = "";
+    });
+    await invoke(GOOGLE_AUTH_COMMAND);
+  } catch {
+    produceAppState((state) => {
+      state.login.errorMessage = "An error occurred while signing in.";
+      state.login.status = "idle";
+    });
+  }
 };
 
 export const handleGoogleAuthPayload = async (payload: GoogleAuthPayload): Promise<void> => {
-	try {
-		produceAppState((state) => {
-			state.login.status = "loading";
-			state.login.errorMessage = "";
-		});
-		await getAuthRepo().signInWithGoogleTokens(payload.idToken, payload.accessToken);
-		await tryInit();
-		produceAppState((state) => {
-			state.login.status = "success";
-		});
-	} catch {
-		produceAppState((state) => {
-			state.login.errorMessage = "An error occurred while signing in with Google.";
-			state.login.status = "idle";
-		});
-	}
+  try {
+    produceAppState((state) => {
+      state.login.status = "loading";
+      state.login.errorMessage = "";
+    });
+    await getAuthRepo().signInWithGoogleTokens(payload.idToken, payload.accessToken);
+    await tryInit();
+    produceAppState((state) => {
+      state.login.status = "success";
+    });
+  } catch {
+    produceAppState((state) => {
+      state.login.errorMessage = "An error occurred while signing in with Google.";
+      state.login.status = "idle";
+    });
+  }
 };
 
 export const submitSignUp = async (): Promise<void> => {

@@ -10,13 +10,14 @@ import {
 import { MemberPlan } from "@repo/types";
 import { useEffect } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { tryOpenPaymentDialogForPlan } from "../../actions/payment.actions";
 import {
   closeUpgradePlanDialog,
-  completePendingUpgrade,
   selectUpgradePlan,
   showUpgradePlanList,
 } from "../../actions/pricing.actions";
 import { useAppStore } from "../../store";
+import { getEffectivePlan } from "../../utils/member.utils";
 import { LoginForm } from "../login/LoginForm";
 import { FormContainer } from "../onboarding/OnboardingShared";
 import { PlanList } from "./PlanList";
@@ -25,10 +26,21 @@ export const UpgradePlanDialog = () => {
   const intl = useIntl();
   const open = useAppStore((state) => state.pricing.upgradePlanDialog);
   const view = useAppStore((state) => state.pricing.upgradePlanDialogView);
-  const pendingPlan = useAppStore(
-    (state) => state.pricing.upgradePlanPendingPlan
-  );
-  const auth = useAppStore((state) => state.auth);
+  const currPlan = useAppStore(getEffectivePlan);
+  const currLoggedIn = useAppStore((state) => Boolean(state.auth));
+  const targPlan = useAppStore((state) => state.pricing.upgradePlanPendingPlan);
+  console.log("currPlan:", currPlan, "targPlan:", targPlan);
+
+  useEffect(() => {
+    if (targPlan === "free" && currPlan === "free") {
+      closeUpgradePlanDialog();
+    } else if (targPlan === "pro" && currPlan === "pro") {
+      closeUpgradePlanDialog();
+    } else if (targPlan === "pro" && currPlan !== "pro" && currLoggedIn) {
+      closeUpgradePlanDialog();
+      tryOpenPaymentDialogForPlan(targPlan);
+    }
+  }, [currLoggedIn, currPlan, targPlan]);
 
   const handleClose = () => {
     closeUpgradePlanDialog();
@@ -38,21 +50,9 @@ export const UpgradePlanDialog = () => {
     selectUpgradePlan(plan);
   };
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    if (view !== "login") {
-      return;
-    }
-
-    if (!auth || !pendingPlan) {
-      return;
-    }
-
-    completePendingUpgrade();
-  }, [open, view, auth, pendingPlan]);
+  if (!open) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onClose={handleClose} fullScreen={true}>
@@ -86,17 +86,9 @@ export const UpgradePlanDialog = () => {
       {view === "login" && (
         <Stack spacing={2} alignItems="center" sx={{ mt: 2 }}>
           <FormContainer>
-            <DialogTitle align="center" sx={{ mt: 2 }}>
-              <Typography
-                component="div"
-                variant="h5"
-                fontWeight={700}
-                sx={{ mb: 1.5 }}
-              >
-                <FormattedMessage defaultMessage="Sign in to continue" />
-              </Typography>
+            <DialogTitle sx={{ mt: 2 }}>
               <Typography component="div" variant="body1" color="textSecondary">
-                <FormattedMessage defaultMessage="Log in and we'll launch checkout automatically." />
+                <FormattedMessage defaultMessage="You'll need an account first" />
               </Typography>
             </DialogTitle>
             <DialogContent sx={{ pt: 1 }}>

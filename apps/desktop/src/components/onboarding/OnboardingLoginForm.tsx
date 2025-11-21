@@ -22,6 +22,9 @@ export const OnboardingLoginForm = () => {
   const loggingIn = useAppStore((state) => state.onboarding.loggingIn);
   const currentUserId = useAppStore((state) => state.auth?.uid);
   const memberPlan = useAppStore((state) => getMyMember(state)?.plan);
+  const didSelectProPlan = useAppStore(
+    (state) => state.onboarding.selectedPlan === "pro"
+  );
 
   const goToNextPage = () => {
     goToOnboardingPage("hotkeys");
@@ -41,11 +44,16 @@ export const OnboardingLoginForm = () => {
   };
 
   useAsyncEffect(async () => {
-    console.log("currentUserId changed:", currentUserId);
-    if (currentUserId) {
-      handleOpenPaymentDialog();
+    if (!currentUserId) {
+      return;
     }
-  }, [currentUserId]);
+
+    if (didSelectProPlan) {
+      handleOpenPaymentDialog();
+    } else {
+      goToNextPage();
+    }
+  }, [currentUserId, didSelectProPlan]);
 
   useAsyncEffect(async () => {
     if (memberPlan === "pro") {

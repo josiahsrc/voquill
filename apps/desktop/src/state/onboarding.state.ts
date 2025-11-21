@@ -1,4 +1,4 @@
-import { MemberPlan } from "@repo/types";
+import { EffectivePlan } from "../types/member.types";
 import { getIsDevMode } from "../utils/env.utils";
 
 export type OnboardingPageKey =
@@ -16,7 +16,7 @@ export type OnboardingState = {
   history: OnboardingPageKey[];
   submitting: boolean;
   tryItOutInput: string;
-  selectedPlan: MemberPlan | null;
+  selectedPlan: EffectivePlan | null;
   loggingIn: boolean;
 };
 

@@ -1,19 +1,22 @@
-import { Member, MemberPlan, Nullable } from "@repo/types";
+import { Member, Nullable } from "@repo/types";
 import { getMemberExceedsLimits, getRec } from "@repo/utilities";
-import type { AppState } from "../state/app.state";
 import { getIntl } from "../i18n";
+import type { AppState } from "../state/app.state";
+import { EffectivePlan } from "../types/member.types";
 
 export const getMyMember = (state: AppState): Nullable<Member> => {
   return getRec(state.memberById, state.auth?.uid) ?? null;
 };
 
-export const getEffectivePlan = (state: AppState): MemberPlan => {
-  return getMyMember(state)?.plan ?? "free";
+export const getEffectivePlan = (state: AppState): EffectivePlan => {
+  return getMyMember(state)?.plan ?? "community";
 }
 
-export const planToDisplayName = (plan: MemberPlan): string => {
-  if (plan === "free") {
+export const planToDisplayName = (plan: EffectivePlan): string => {
+  if (plan === "community") {
     return getIntl().formatMessage({ defaultMessage: "Community" });
+  } else if (plan === "free") {
+    return getIntl().formatMessage({ defaultMessage: "Trial" });
   } else {
     return getIntl().formatMessage({ defaultMessage: "Pro" });
   }

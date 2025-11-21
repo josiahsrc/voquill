@@ -4,15 +4,15 @@ import {
 } from "@mui/icons-material";
 import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { FormattedMessage } from "react-intl";
+import { useNavigate } from "react-router-dom";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { useHeaderPortal } from "../../hooks/header.hooks";
 import { useIsOnboarded } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import {
+  getEffectivePlan,
   getIsPaying,
-  getMyMember,
   planToDisplayName,
 } from "../../utils/member.utils";
 import { getInitials } from "../../utils/string.utils";
@@ -55,7 +55,7 @@ export const AppHeader = () => {
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
   const planName = useAppStore((state) =>
-    planToDisplayName(getMyMember(state)?.plan ?? "free")
+    planToDisplayName(getEffectivePlan(state))
   );
   const isPaying = useAppStore(getIsPaying);
 

@@ -3,7 +3,7 @@ import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { AuthData } from "firebase-functions/tasks";
-import { checkPaidAccess } from "../utils/check.utils";
+import { checkAccess } from "../utils/check.utils";
 import { userFromDatabase, userToDatabase } from "../utils/type.utils";
 import { HandlerOutput } from "@repo/functions";
 
@@ -46,7 +46,7 @@ export const trySendFinishedOnboardingEvent = async (args: {
 export const getMyUser = async (args: {
   auth: Nullable<AuthData>;
 }): Promise<HandlerOutput<"user/getMyUser">> => {
-  const access = await checkPaidAccess(args.auth);
+  const access = await checkAccess(args.auth);
   const user = await firemix().get(mixpath.users(access.auth.uid));
   return {
     user: user?.data ? userFromDatabase(user.data) : null,
@@ -57,7 +57,7 @@ export const setMyUser = async (args: {
   auth: Nullable<AuthData>;
   data: User;
 }): Promise<HandlerOutput<"user/setMyUser">> => {
-  const access = await checkPaidAccess(args.auth);
+  const access = await checkAccess(args.auth);
   const userId = access.auth.uid;
   const data = args.data;
   await firemix().set(mixpath.users(userId), {

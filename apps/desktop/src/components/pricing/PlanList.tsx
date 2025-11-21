@@ -70,12 +70,12 @@ const PlanCard = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
-          gap: 1,
+          gap: .5,
           p: 2.5,
         }}
       >
-        <Typography variant="subtitle1">{title}</Typography>
-        <Typography variant="h4">{price}</Typography>
+        <Typography variant="subtitle1" color="text.secondary">{title}</Typography>
+        <Typography variant="h5" fontWeight={600}>{price}</Typography>
         <Box sx={{ mt: 1, mb: 2 }}>{button}</Box>
         {children}
       </CardContent>
@@ -111,7 +111,10 @@ export const PlanList = ({
 
   const getText = (plan: MemberPlan) => {
     if (effectivePlan === plan && !ignoreCurrentPlan) {
-      return { text: intl.formatMessage({ defaultMessage: "Current plan" }), disabled: true };
+      return {
+        text: intl.formatMessage({ defaultMessage: "Current plan" }),
+        disabled: true,
+      };
     }
 
     return {
@@ -120,9 +123,9 @@ export const PlanList = ({
     };
   };
 
-  const communityCard = (
+  const trialCard = (
     <PlanCard
-      title={<FormattedMessage defaultMessage="Community" />}
+      title={<FormattedMessage defaultMessage="Trial" />}
       price={<FormattedMessage defaultMessage="Free" />}
       buttonVariant="outlined"
       cardSx={{ borderColor: "level1" }}
@@ -137,17 +140,32 @@ export const PlanList = ({
         </Button>
       }
     >
-      <CheckmarkRow><FormattedMessage defaultMessage="On-device processing" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Unlimited words" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Custom API keys" /></CheckmarkRow>
-      <CheckmarkRow disabled><FormattedMessage defaultMessage="Manual setup" /></CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="2,000 free words per month" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="No setup needed" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Custom styling" />
+      </CheckmarkRow>
+      <CheckmarkRow disabled>
+        <FormattedMessage defaultMessage="Community support" />
+      </CheckmarkRow>
     </PlanCard>
   );
 
   const proCard = (
     <PlanCard
       title={<FormattedMessage defaultMessage="Pro" />}
-      price={proPrice ? intl.formatMessage({ defaultMessage: "${proPrice}/month" }, { proPrice }) : "--"}
+      price={
+        proPrice
+          ? intl.formatMessage(
+              { defaultMessage: "${proPrice}/month" },
+              { proPrice }
+            )
+          : "--"
+      }
       cardSx={{ borderColor: "primary.main" }}
       button={
         <Button
@@ -160,10 +178,21 @@ export const PlanList = ({
         </Button>
       }
     >
-      <CheckmarkRow><FormattedMessage defaultMessage="Everything community has" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Cross-device data storage" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="No setup needed" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Priority support" /></CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Everything the trial has" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Cross-device data storage" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Unlimited words" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Cancel anytime" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Priority support" />
+      </CheckmarkRow>
     </PlanCard>
   );
 
@@ -178,7 +207,7 @@ export const PlanList = ({
         ...sx,
       }}
     >
-      {communityCard}
+      {trialCard}
       {proCard}
     </Stack>
   );

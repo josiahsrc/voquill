@@ -10,7 +10,7 @@ import {
   DICTATE_HOTKEY,
   getDefaultHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
-import { getMyMember } from "../../utils/member.utils";
+import { getEffectivePlan } from "../../utils/member.utils";
 import { HotkeySetting } from "../settings/HotkeySetting";
 import { FormContainer } from "./OnboardingShared";
 
@@ -24,8 +24,8 @@ export const HotkeySelectionForm = () => {
   }));
 
   const hideBackButton = useAppStore((state) => {
-    const myMember = getMyMember(state);
-    return myMember?.plan === "pro" || !state.onboarding.history.length;
+    const myPlan = getEffectivePlan(state);
+    return myPlan !== "community" || !state.onboarding.history.length;
   });
 
   const defaultHotkeys = getDefaultHotkeyCombosForAction(DICTATE_HOTKEY);

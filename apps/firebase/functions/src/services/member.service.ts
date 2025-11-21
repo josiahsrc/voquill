@@ -4,7 +4,7 @@ import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { Member, Nullable } from "@repo/types";
 import dayjs from "dayjs";
 import { AuthData } from "firebase-functions/tasks";
-import { checkPaidAccess } from "../utils/check.utils";
+import { checkAccess } from "../utils/check.utils";
 import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
 import { tryInitializeMember } from "../utils/member.utils";
 import { memberFromDatabase } from "../utils/type.utils";
@@ -13,7 +13,7 @@ export const handleTryInitializeMember = async (args: {
   auth: Nullable<AuthData>;
   input: HandlerInput<"member/tryInitialize">;
 }): Promise<HandlerOutput<"member/tryInitialize">> => {
-  const access = await checkPaidAccess(args.auth);
+  const access = await checkAccess(args.auth);
   await tryInitializeMember(access.auth.uid);
   return {};
 };
@@ -109,7 +109,7 @@ export const trySend1000WordsEvent = async (args: {
 export const getMyMember = async (args: {
   auth: Nullable<AuthData>;
 }): Promise<HandlerOutput<"member/getMyMember">> => {
-  const access = await checkPaidAccess(args.auth);
+  const access = await checkAccess(args.auth);
   const member = await firemix().get(mixpath.members(access.auth.uid));
   return {
     member: member?.data ? memberFromDatabase(member.data) : null,

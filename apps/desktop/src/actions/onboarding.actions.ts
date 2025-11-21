@@ -1,4 +1,5 @@
-import { MemberPlan, User, UserPreferences } from "@repo/types";
+import { User, UserPreferences } from "@repo/types";
+import { DEFAULT_LOCALE } from "../i18n/config";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import {
   OnboardingPageKey,
@@ -9,7 +10,7 @@ import {
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
-import { DEFAULT_LOCALE } from "../i18n/config";
+import { EffectivePlan } from "../types/member.types";
 import {
   GenerativePrefs,
   getGenerativePrefs,
@@ -48,12 +49,12 @@ export const goToOnboardingPage = (nextPage: OnboardingPageKey) => {
   });
 };
 
-export const selectOnboardingPlan = (plan: MemberPlan) => {
+export const selectOnboardingPlan = (plan: EffectivePlan) => {
   produceAppState((draft) => {
     draft.onboarding.selectedPlan = plan;
 
     const targetPageKey: OnboardingPageKey =
-      plan === "pro" ? "login" : "transcription";
+      plan === "community" ? "transcription" : "login";
 
     navigateToOnboardingPage(draft.onboarding, targetPageKey);
   });

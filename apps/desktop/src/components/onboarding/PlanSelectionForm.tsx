@@ -1,15 +1,16 @@
+import { ArrowForward } from "@mui/icons-material";
 import { Button, Stack, Typography } from "@mui/material";
-import { MemberPlan } from "@repo/types";
 import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   selectOnboardingPlan,
 } from "../../actions/onboarding.actions";
+import { EffectivePlan } from "../../types/member.types";
 import { PlanList } from "../pricing/PlanList";
 import { FormContainer } from "./OnboardingShared";
 
 export const PlanSelectionForm = () => {
-  const handleSelectPlan = (plan: MemberPlan) => {
+  const handleSelectPlan = (plan: EffectivePlan) => {
     selectOnboardingPlan(plan);
   };
 
@@ -17,18 +18,14 @@ export const PlanSelectionForm = () => {
     <FormContainer sx={{ maxWidth: 750 }}>
       <Stack
         direction="column"
-        spacing={2}
         alignItems="center"
         alignSelf="center"
-        mb={2}
-        sx={{ width: 400 }}
+        spacing={1}
+        sx={{ width: 520, pb: 3 }}
         textAlign="center"
       >
-        <Typography variant="h4" fontWeight={600} gutterBottom>
-          <FormattedMessage defaultMessage="Pick your plan" />
-        </Typography>
-        <Typography variant="body1" color="text.secondary" pb={2}>
-          <FormattedMessage defaultMessage="The community edition is free forever. Upgrade anytime for more features and support." />
+        <Typography variant="body1" color="text.secondary">
+          <FormattedMessage defaultMessage="🤩 Try for free. Upgrade anytime for more features and support." />
         </Typography>
       </Stack>
 
@@ -39,9 +36,16 @@ export const PlanSelectionForm = () => {
         sx={{ width: "100%" }}
       />
 
-      <Stack direction="row" justifyContent="flex-start" mt={4} pb={4}>
+      <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
         <Button onClick={() => goBackOnboardingPage()}>
           <FormattedMessage defaultMessage="Back" />
+        </Button>
+        <Button
+          onClick={() => handleSelectPlan("community")}
+          variant="text"
+          endIcon={<ArrowForward />}
+        >
+          <FormattedMessage defaultMessage="Local set up" />
         </Button>
       </Stack>
     </FormContainer>
