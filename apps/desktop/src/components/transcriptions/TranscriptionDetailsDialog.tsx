@@ -1,20 +1,26 @@
+import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
 import {
   Box,
   Button,
-  Divider,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Stack,
   Typography,
 } from "@mui/material";
 import { getRec } from "@repo/utilities";
-import { FormattedMessage } from "react-intl";
-import { useCallback, useMemo } from "react";
-import { closeTranscriptionDetailsDialog } from "../../actions/transcriptions.actions";
+import { useCallback, useMemo, useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
+import { showErrorSnackbar } from "../../actions/app.actions";
+import {
+  closeTranscriptionDetailsDialog,
+  retranscribeTranscription,
+} from "../../actions/transcriptions.actions";
 import { AppState } from "../../state/app.state";
 import { useAppStore } from "../../store";
+import { TranscriptionToneMenu } from "./TranscriptionToneMenu";
 
 const formatModelSizeLabel = (
   modelSize?: string | null,
@@ -107,10 +113,43 @@ export const TranscriptionDetailsDialog = () => {
     return getRec(state.transcriptionById, transcriptionId);
   });
   const apiKeysById = useAppStore((state) => state.apiKeyById);
+  const intl = useIntl();
+  const [isRetranscribing, setIsRetranscribing] = useState(false);
 
   const handleClose = useCallback(() => {
     closeTranscriptionDetailsDialog();
   }, []);
+
+  const handleRetranscribe = useCallback(
+    async (toneId: string | null) => {
+      if (!transcription?.id) {
+        showErrorSnackbar(
+          intl.formatMessage({
+            defaultMessage: "Unable to load transcription details.",
+          })
+        );
+        return;
+      }
+
+      try {
+        setIsRetranscribing(true);
+        await retranscribeTranscription({
+          transcriptionId: transcription.id,
+          toneId,
+        });
+      } catch (error) {
+        const fallbackMessage = intl.formatMessage({
+          defaultMessage: "Unable to retranscribe audio snippet.",
+        });
+        const message =
+          error instanceof Error ? error.message : fallbackMessage;
+        showErrorSnackbar(message || fallbackMessage);
+      } finally {
+        setIsRetranscribing(false);
+      }
+    },
+    [intl, transcription?.id]
+  );
 
   const transcriptionModeLabel = useMemo(() => {
     if (transcription?.transcriptionMode === "api") {
@@ -185,15 +224,19 @@ export const TranscriptionDetailsDialog = () => {
     return prompt && prompt.length > 0 ? prompt : null;
   }, [transcription?.transcriptionPrompt]);
 
-  const postProcessPrompt = useMemo(() => {
-    const prompt = transcription?.postProcessPrompt?.trim();
-    return prompt && prompt.length > 0 ? prompt : null;
-  }, [transcription?.postProcessPrompt]);
-
   const rawTranscriptText = useMemo(
     () => transcription?.rawTranscript ?? transcription?.transcript ?? "",
     [transcription?.rawTranscript, transcription?.transcript]
   );
+
+  const postProcessPrompt = useMemo(() => {
+    let prompt = transcription?.postProcessPrompt?.trim() ?? "";
+    if (rawTranscriptText) {
+      prompt = prompt.replace(rawTranscriptText.trim(), "<transcript>");
+    }
+
+    return prompt && prompt.length > 0 ? prompt : null;
+  }, [transcription?.postProcessPrompt, rawTranscriptText]);
 
   const finalTranscriptText = transcription?.transcript ?? "";
   const warnings = useMemo(() => {
@@ -383,6 +426,18 @@ export const TranscriptionDetailsDialog = () => {
         )}
       </DialogContent>
       <DialogActions>
+        <TranscriptionToneMenu onToneSelect={handleRetranscribe}>
+          {({ ref, open }) => (
+            <Button
+              ref={ref}
+              startIcon={<ReplayRoundedIcon />}
+              onClick={open}
+              disabled={isRetranscribing || !transcription}
+            >
+              <FormattedMessage defaultMessage="Retranscribe" />
+            </Button>
+          )}
+        </TranscriptionToneMenu>
         <Button onClick={handleClose}>
           <FormattedMessage defaultMessage="Close" />
         </Button>
