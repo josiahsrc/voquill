@@ -6,7 +6,7 @@ import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import { normalizeLocaleValue } from "./language.utils";
-import { getMemberExceedsLimitsFromState, getMyMember } from "./member.utils";
+import { getEffectivePlan, getMemberExceedsLimitsFromState } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
 
@@ -18,7 +18,7 @@ export const getHasEmailProvider = (state: AppState): boolean => {
 };
 
 export const getHasCloudAccess = (state: AppState): boolean => {
-  return getMyMember(state)?.plan === "pro";
+  return getEffectivePlan(state) !== "community";
 }
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> => state.auth?.uid ?? null;
