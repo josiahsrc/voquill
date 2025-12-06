@@ -2,7 +2,7 @@ import { invokeHandler } from "@repo/functions";
 import { FullConfig, Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
 import { getAuth } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { refreshCurrentUser } from "../../actions/user.actions";
@@ -18,14 +18,19 @@ type StreamRet = Nullable<
   [Nullable<Member>, Nullable<User>, Nullable<FullConfig>]
 >;
 
+// Timeout for Firebase Auth initialization (handles cases where IndexedDB hangs on some Linux systems)
+const AUTH_READY_TIMEOUT_MS = 4_000;
+
 export const AppSideEffects = () => {
   const [authReady, setAuthReady] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
   const [initReady, setInitReady] = useState(false);
+  const authReadyRef = useRef(false);
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
 
   const onAuthStateChanged = (user: AuthUser | null) => {
+    authReadyRef.current = true;
     setAuthReady(true);
     produceAppState((draft) => {
       draft.auth = user;
@@ -34,10 +39,27 @@ export const AppSideEffects = () => {
   };
 
   useEffect(() => {
-    return getAuth().onAuthStateChanged(onAuthStateChanged, (error) => {
+    // Safety timeout: if Firebase Auth doesn't respond within the timeout,
+    // proceed with null auth state. This handles cases where IndexedDB
+    // initialization hangs on some Linux systems.
+    const timeoutId = setTimeout(() => {
+      if (!authReadyRef.current) {
+        console.warn(
+          "[AppSideEffects] Firebase Auth timed out, proceeding without auth"
+        );
+        onAuthStateChanged(null);
+      }
+    }, AUTH_READY_TIMEOUT_MS);
+
+    const unsubscribe = getAuth().onAuthStateChanged(onAuthStateChanged, (error) => {
       showErrorSnackbar(error);
       onAuthStateChanged(null);
     });
+
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, []);
 
   useStreamWithSideEffects({
