@@ -1,6 +1,6 @@
 import { UserPreferences } from "@repo/types";
 import { AppState } from "../state/app.state";
-import { DEFAULT_POST_PROCESSING_MODE, DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
+import { CPU_DEVICE_VALUE, DEFAULT_MODEL_SIZE, DEFAULT_POST_PROCESSING_MODE, DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { getMyEffectiveUserId } from "./user.utils";
 
 export const applyAiPreferences = (draft: AppState, preferences: UserPreferences): void => {
@@ -13,6 +13,8 @@ export const applyAiPreferences = (draft: AppState, preferences: UserPreferences
     preferences.transcriptionMode ?? DEFAULT_TRANSCRIPTION_MODE;
   draft.settings.aiTranscription.mode = transcriptionMode;
   draft.settings.aiTranscription.selectedApiKeyId = preferences.transcriptionApiKeyId ?? null;
+  draft.settings.aiTranscription.device = preferences.transcriptionDevice ?? CPU_DEVICE_VALUE;
+  draft.settings.aiTranscription.modelSize = preferences.transcriptionModelSize ?? DEFAULT_MODEL_SIZE;
 
   const postProcessingMode =
     preferences.postProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;

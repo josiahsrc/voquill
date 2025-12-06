@@ -110,6 +110,8 @@ export const submitOnboarding = async () => {
         transcriptionPreference.mode === "api"
           ? transcriptionPreference.apiKeyId
           : null,
+      transcriptionDevice: null,
+      transcriptionModelSize: null,
       postProcessingMode: postProcessingPreference.mode,
       postProcessingApiKeyId:
         postProcessingPreference.mode === "api"

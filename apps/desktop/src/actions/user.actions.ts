@@ -53,6 +53,8 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   userId,
   transcriptionMode: DEFAULT_TRANSCRIPTION_MODE,
   transcriptionApiKeyId: null,
+  transcriptionDevice: null,
+  transcriptionModelSize: null,
   postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
   postProcessingApiKeyId: null,
   activeToneId: null,
@@ -189,6 +191,8 @@ const persistAiPreferences = async (): Promise<void> => {
       preferences.postProcessingApiKeyId = state.settings.aiPostProcessing.selectedApiKeyId ?? null;
       preferences.transcriptionMode = state.settings.aiTranscription.mode;
       preferences.transcriptionApiKeyId = state.settings.aiTranscription.selectedApiKeyId ?? null;
+      preferences.transcriptionDevice = state.settings.aiTranscription.device ?? null;
+      preferences.transcriptionModelSize = state.settings.aiTranscription.modelSize ?? null;
     },
     "Failed to save AI preferences. Please try again.",
   );
@@ -209,6 +213,26 @@ export const setPreferredTranscriptionApiKeyId = async (
 ): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiTranscription.selectedApiKeyId = id;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setPreferredTranscriptionDevice = async (
+  device: string,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.device = device;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setPreferredTranscriptionModelSize = async (
+  modelSize: string,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.modelSize = modelSize;
   });
 
   await persistAiPreferences();

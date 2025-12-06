@@ -9,6 +9,10 @@ pub struct UserPreferences {
     #[serde(default)]
     pub transcription_api_key_id: Option<String>,
     #[serde(default)]
+    pub transcription_device: Option<String>,
+    #[serde(default)]
+    pub transcription_model_size: Option<String>,
+    #[serde(default)]
     pub post_processing_mode: Option<String>,
     #[serde(default)]
     pub post_processing_api_key_id: Option<String>,

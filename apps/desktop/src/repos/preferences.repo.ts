@@ -7,6 +7,8 @@ type LocalUserPreferences = {
   userId: string;
   transcriptionMode: Nullable<TranscriptionMode>;
   transcriptionApiKeyId: Nullable<string>;
+  transcriptionDevice: Nullable<string>;
+  transcriptionModelSize: Nullable<string>;
   postProcessingMode: Nullable<PostProcessingMode>;
   postProcessingApiKeyId: Nullable<string>;
   activeToneId: Nullable<string>;
@@ -16,6 +18,8 @@ const fromLocalPreferences = (preferences: LocalUserPreferences): UserPreference
   userId: preferences.userId,
   transcriptionMode: preferences.transcriptionMode,
   transcriptionApiKeyId: preferences.transcriptionApiKeyId,
+  transcriptionDevice: preferences.transcriptionDevice,
+  transcriptionModelSize: preferences.transcriptionModelSize,
   postProcessingMode: preferences.postProcessingMode,
   postProcessingApiKeyId: preferences.postProcessingApiKeyId,
   activeToneId: preferences.activeToneId,
@@ -25,6 +29,8 @@ const toLocalPreferences = (preferences: UserPreferences): LocalUserPreferences 
   userId: LOCAL_USER_ID,
   transcriptionMode: preferences.transcriptionMode ?? null,
   transcriptionApiKeyId: preferences.transcriptionApiKeyId ?? null,
+  transcriptionDevice: preferences.transcriptionDevice ?? null,
+  transcriptionModelSize: preferences.transcriptionModelSize ?? null,
   postProcessingMode: preferences.postProcessingMode ?? null,
   postProcessingApiKeyId: preferences.postProcessingApiKeyId ?? null,
   activeToneId: preferences.activeToneId ?? null,
