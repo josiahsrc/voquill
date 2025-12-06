@@ -28,12 +28,16 @@ install_with_apt() {
   sudo apt-get install -y \
     build-essential \
     pkg-config \
+    cmake \
     libgtk-3-dev \
     libwebkit2gtk-4.1-dev \
     libayatana-appindicator3-dev \
     librsvg2-dev \
     libasound2-dev \
     libxkbcommon-dev \
+    libclang-dev \
+    libxdo-dev \
+    glslang-tools \
     dbus \
     dbus-x11
 }
@@ -42,24 +46,28 @@ install_with_pacman() {
   sudo pacman -Syu --needed \
     base-devel \
     pkgconf \
+    cmake \
     gtk3 \
     webkit2gtk-4.1 \
     libappindicator-gtk3 \
     librsvg \
     alsa-lib \
     libxkbcommon \
+    clang \
     dbus
 }
 
 install_with_dnf() {
   sudo dnf groupinstall -y "Development Tools"
   sudo dnf install -y \
+    cmake \
     gtk3-devel \
     webkit2gtk4.1-devel \
     libappindicator-gtk3-devel \
     librsvg2-devel \
     alsa-lib-devel \
     libxkbcommon-devel \
+    clang-devel \
     dbus-x11
 }
 
@@ -70,30 +78,28 @@ install_with_zypper() {
     gcc-c++ \
     make \
     pkg-config \
+    cmake \
     gtk3-devel \
     webkit2gtk4.1-devel \
     libappindicator3-devel \
     librsvg-devel \
     alsa-devel \
     libxkbcommon-devel \
+    libclang-devel \
     dbus-1
 }
 
 install_gpu_prereqs() {
   echo "[INFO] Installing Vulkan build dependencies for GPU-accelerated Whisper."
   if command_exists apt-get; then
+    # Install LunarG Vulkan SDK for up-to-date headers and tools
+    echo "[INFO] Installing Vulkan SDK from LunarG..."
+    wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc > /dev/null
+    . /etc/os-release
+    sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-${VERSION_CODENAME}.list https://packages.lunarg.com/vulkan/lunarg-vulkan-${VERSION_CODENAME}.list
+    sudo apt-get update
     sudo apt-get install -y \
-      libvulkan-dev \
-      vulkan-utils
-    
-    # Install glslc from LunarG Vulkan SDK
-    if ! command_exists glslc; then
-      echo "[INFO] Installing Vulkan SDK for glslc shader compiler..."
-      wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
-      sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
-      sudo apt-get update
-      sudo apt-get install -y vulkan-sdk
-    fi
+      vulkan-sdk
   elif command_exists pacman; then
     sudo pacman -Syu --needed \
       vulkan-icd-loader \
