@@ -3,7 +3,27 @@
 
 mod flavor_env;
 
+/// Initialize X11 threading support on Linux.
+/// This MUST be called before any X11 operations from any thread.
+/// The application uses multiple threads that interact with X11:
+/// - Tauri/GTK for the GUI
+/// - rdev for global keyboard listening  
+/// - CPAL/ALSA for audio capture
+/// Without XInitThreads, concurrent X11 access causes crashes.
+#[cfg(target_os = "linux")]
+fn init_x11_threads() {
+    unsafe {
+        x11::xlib::XInitThreads();
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn init_x11_threads() {}
+
 fn main() {
+    // CRITICAL: Initialize X11 threading before ANY other operations
+    init_x11_threads();
+
     // Initialize startup logging
     eprintln!("=== Voquill Startup ===");
     eprintln!("[startup] Version: {}", env!("CARGO_PKG_VERSION"));

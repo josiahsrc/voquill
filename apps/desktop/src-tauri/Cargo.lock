@@ -48,6 +48,7 @@ dependencies = [
  "wgpu",
  "whisper-rs",
  "windows 0.61.3",
+ "x11",
 ]
 
 [[package]]
