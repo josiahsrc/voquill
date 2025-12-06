@@ -1,6 +1,11 @@
 import { invokeHandler } from "@repo/functions";
 import { JsonResponse, Nullable } from "@repo/types";
-import { groqGenerateTextResponse, GenerateTextModel } from "@repo/voice-ai";
+import {
+  groqGenerateTextResponse,
+  GenerateTextModel,
+  openaiGenerateTextResponse,
+  OpenAIGenerateTextModel,
+} from "@repo/voice-ai";
 import { PostProcessingMode } from "../types/ai.types";
 import { BaseRepo } from "./base.repo";
 
@@ -65,6 +70,35 @@ export class GroqGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • Groq",
+      },
+    };
+  }
+}
+
+export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
+  private openaiApiKey: string;
+  private model: OpenAIGenerateTextModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.openaiApiKey = apiKey;
+    this.model = (model as OpenAIGenerateTextModel) ?? "gpt-4o-mini";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await openaiGenerateTextResponse({
+      apiKey: this.openaiApiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • OpenAI",
       },
     };
   }

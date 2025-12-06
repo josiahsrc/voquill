@@ -37,8 +37,11 @@ import {
 } from "../../state/settings.state";
 import {
   groqTestIntegration,
+  openaiTestIntegration,
   TRANSCRIPTION_MODELS,
   GENERATE_TEXT_MODELS,
+  OPENAI_TRANSCRIPTION_MODELS,
+  OPENAI_GENERATE_TEXT_MODELS,
 } from "@repo/voice-ai";
 
 export type ApiKeyListContext = "transcription" | "post-processing";
@@ -95,7 +98,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         label={<FormattedMessage defaultMessage="Key name" />}
         value={name}
         onChange={(event) => setName(event.target.value)}
-        placeholder="e.g., My Groq Key"
+        placeholder="e.g., My API Key"
         size="small"
         fullWidth
         disabled={saving}
@@ -112,6 +115,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         disabled={saving}
       >
         <MenuItem value="groq">Groq</MenuItem>
+        <MenuItem value="openai">OpenAI</MenuItem>
       </TextField>
       <TextField
         label={<FormattedMessage defaultMessage="API key" />}
@@ -157,6 +161,8 @@ const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
   switch (apiKey.provider) {
     case "groq":
       return groqTestIntegration({ apiKey: apiKey.keyFull });
+    case "openai":
+      return openaiTestIntegration({ apiKey: apiKey.keyFull });
     default:
       throw new Error("Testing is not available for this provider.");
   }
@@ -171,6 +177,10 @@ const getModelsForProvider = (
       return context === "transcription"
         ? TRANSCRIPTION_MODELS
         : GENERATE_TEXT_MODELS;
+    case "openai":
+      return context === "transcription"
+        ? OPENAI_TRANSCRIPTION_MODELS
+        : OPENAI_GENERATE_TEXT_MODELS;
     default:
       return [];
   }

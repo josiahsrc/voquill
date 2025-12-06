@@ -3,12 +3,12 @@ import { getAppState } from "../store";
 import { getGenerativePrefs, getHasCloudAccess, getTranscriptionPrefs } from "../utils/user.utils";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
-import { BaseGenerateTextRepo, CloudGenerateTextRepo, GroqGenerateTextRepo } from "./generate-text.repo";
+import { BaseGenerateTextRepo, CloudGenerateTextRepo, GroqGenerateTextRepo, OpenAIGenerateTextRepo } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
 import { BaseUserPreferencesRepo, LocalUserPreferencesRepo } from "./preferences.repo";
 import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
-import { BaseTranscribeAudioRepo, CloudTranscribeAudioRepo, GroqTranscribeAudioRepo, LocalTranscribeAudioRepo } from "./transcribe-audio.repo";
+import { BaseTranscribeAudioRepo, CloudTranscribeAudioRepo, GroqTranscribeAudioRepo, LocalTranscribeAudioRepo, OpenAITranscribeAudioRepo } from "./transcribe-audio.repo";
 import { BaseTranscriptionRepo, LocalTranscriptionRepo } from "./transcription.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
@@ -67,8 +67,11 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   if (prefs.mode === "cloud") {
     return { repo: new CloudGenerateTextRepo(), apiKeyId: null, warnings: prefs.warnings };
   } else if (prefs.mode === "api") {
+    const repo = prefs.provider === "openai"
+      ? new OpenAIGenerateTextRepo(prefs.apiKeyValue, prefs.postProcessingModel)
+      : new GroqGenerateTextRepo(prefs.apiKeyValue, prefs.postProcessingModel);
     return {
-      repo: new GroqGenerateTextRepo(prefs.apiKeyValue, prefs.postProcessingModel),
+      repo,
       apiKeyId: prefs.apiKeyId,
       warnings: prefs.warnings,
     };
@@ -88,8 +91,11 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
   if (prefs.mode === "cloud") {
     return { repo: new CloudTranscribeAudioRepo(), apiKeyId: null, warnings: prefs.warnings };
   } else if (prefs.mode === "api") {
+    const repo = prefs.provider === "openai"
+      ? new OpenAITranscribeAudioRepo(prefs.apiKeyValue, prefs.transcriptionModel)
+      : new GroqTranscribeAudioRepo(prefs.apiKeyValue, prefs.transcriptionModel);
     return {
-      repo: new GroqTranscribeAudioRepo(prefs.apiKeyValue, prefs.transcriptionModel),
+      repo,
       apiKeyId: prefs.apiKeyId,
       warnings: prefs.warnings,
     };

@@ -1,4 +1,5 @@
-export type ApiKeyProvider = "groq";
+export const API_KEY_PROVIDERS = ["groq", "openai"] as const;
+export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 
 export type ApiKey = {
   id: string;

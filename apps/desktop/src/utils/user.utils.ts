@@ -1,4 +1,4 @@
-import { Nullable, User, UserPreferences } from "@repo/types";
+import { ApiKeyProvider, Nullable, User, UserPreferences } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { detectLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
@@ -82,6 +82,7 @@ export type LocalTranscriptionPrefs = BaseTranscriptionPrefs & {
 
 export type ApiTranscriptionPrefs = BaseTranscriptionPrefs & {
   mode: "api";
+  provider: ApiKeyProvider;
   apiKeyId: string;
   apiKeyValue: string;
   transcriptionModel: string | null;
@@ -116,6 +117,7 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
       const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
       return {
         mode: "api",
+        provider: selectedApiKey?.provider ?? "groq",
         apiKeyId: config.selectedApiKeyId!,
         apiKeyValue: apiKey,
         transcriptionModel: selectedApiKey?.transcriptionModel ?? null,
@@ -139,6 +141,7 @@ export type CloudGenerativePrefs = BaseGenerativePrefs & {
 
 export type ApiGenerativePrefs = BaseGenerativePrefs & {
   mode: "api";
+  provider: ApiKeyProvider;
   apiKeyId: string;
   apiKeyValue: string;
   postProcessingModel: string | null;
@@ -177,6 +180,7 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
       const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
       return {
         mode: "api",
+        provider: selectedApiKey?.provider ?? "groq",
         apiKeyId: config.selectedApiKeyId!,
         apiKeyValue: apiKey,
         postProcessingModel: selectedApiKey?.postProcessingModel ?? null,
