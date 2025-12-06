@@ -50,7 +50,7 @@ extern "C" {
 }
 
 const OVERLAY_WIDTH: f64 = 280.0;
-const OVERLAY_HEIGHT: f64 = 34.0;
+const OVERLAY_HEIGHT: f64 = 36.0;
 const MIN_VISIBLE_WIDTH: f64 = 6.0;
 const ANIMATION_STEPS: usize = 8;
 const ANIMATION_DURATION: f64 = 0.22;
