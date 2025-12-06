@@ -143,6 +143,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::api_key_create,
             crate::commands::api_key_list,
             crate::commands::api_key_delete,
+            crate::commands::api_key_update,
             crate::commands::tone_upsert,
             crate::commands::tone_list,
             crate::commands::tone_get,

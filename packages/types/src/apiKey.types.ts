@@ -7,4 +7,6 @@ export type ApiKey = {
   createdAt: string;
   keySuffix?: string | null;
   keyFull?: string | null;
+  transcriptionModel?: string | null;
+  postProcessingModel?: string | null;
 };

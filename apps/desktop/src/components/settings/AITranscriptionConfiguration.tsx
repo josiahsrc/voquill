@@ -188,6 +188,7 @@ export const AITranscriptionConfiguration = ({
         <ApiKeyList
           selectedApiKeyId={transcription.selectedApiKeyId}
           onChange={handleApiKeyChange}
+          context="transcription"
         />
       )}
 

@@ -84,6 +84,7 @@ export type ApiTranscriptionPrefs = BaseTranscriptionPrefs & {
   mode: "api";
   apiKeyId: string;
   apiKeyValue: string;
+  transcriptionModel: string | null;
 }
 
 export type TranscriptionPrefs =
@@ -112,7 +113,14 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
 
   if (config.mode === "api") {
     if (apiKey) {
-      return { mode: "api", apiKeyId: config.selectedApiKeyId!, apiKeyValue: apiKey, warnings };
+      const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
+      return {
+        mode: "api",
+        apiKeyId: config.selectedApiKeyId!,
+        apiKeyValue: apiKey,
+        transcriptionModel: selectedApiKey?.transcriptionModel ?? null,
+        warnings,
+      };
     } else {
       warnings.push("No API key configured for API transcription.");
     }
@@ -133,6 +141,7 @@ export type ApiGenerativePrefs = BaseGenerativePrefs & {
   mode: "api";
   apiKeyId: string;
   apiKeyValue: string;
+  postProcessingModel: string | null;
 }
 
 export type NoneGenerativePrefs = BaseGenerativePrefs & {
@@ -165,7 +174,14 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
 
   if (config.mode === "api") {
     if (apiKey) {
-      return { mode: "api", apiKeyId: config.selectedApiKeyId!, apiKeyValue: apiKey, warnings };
+      const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
+      return {
+        mode: "api",
+        apiKeyId: config.selectedApiKeyId!,
+        apiKeyValue: apiKey,
+        postProcessingModel: selectedApiKey?.postProcessingModel ?? null,
+        warnings,
+      };
     } else {
       warnings.push("No API key configured for API post-processing.");
     }

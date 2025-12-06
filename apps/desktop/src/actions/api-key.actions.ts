@@ -8,7 +8,7 @@ import {
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
 import { syncAiPreferences } from "./user.actions";
-import type { CreateApiKeyPayload } from "../repos/api-key.repo";
+import type { CreateApiKeyPayload, UpdateApiKeyPayload } from "../repos/api-key.repo";
 import dayjs from "dayjs";
 
 let loadApiKeysPromise: Promise<void> | null = null;
@@ -106,6 +106,45 @@ export const deleteApiKey = async (id: string): Promise<void> => {
     console.error("Failed to delete API key", error);
     showErrorSnackbar(
       error instanceof Error ? error.message : "Failed to delete API key.",
+    );
+    throw error;
+  }
+};
+
+export const updateApiKey = async (
+  payload: UpdateApiKeyPayload,
+): Promise<void> => {
+  try {
+    await getApiKeyRepo().updateApiKey(payload);
+
+    produceAppState((draft) => {
+      const apiKey = draft.apiKeyById[payload.id];
+      if (apiKey) {
+        if (payload.transcriptionModel !== undefined) {
+          apiKey.transcriptionModel = payload.transcriptionModel ?? null;
+        }
+        if (payload.postProcessingModel !== undefined) {
+          apiKey.postProcessingModel = payload.postProcessingModel ?? null;
+        }
+      }
+      const index = draft.settings.apiKeys.findIndex(
+        (apiKey) => apiKey.id === payload.id,
+      );
+      if (index !== -1) {
+        if (payload.transcriptionModel !== undefined) {
+          draft.settings.apiKeys[index].transcriptionModel =
+            payload.transcriptionModel ?? null;
+        }
+        if (payload.postProcessingModel !== undefined) {
+          draft.settings.apiKeys[index].postProcessingModel =
+            payload.postProcessingModel ?? null;
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Failed to update API key", error);
+    showErrorSnackbar(
+      error instanceof Error ? error.message : "Failed to update API key.",
     );
     throw error;
   }

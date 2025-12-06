@@ -143,21 +143,22 @@ export class CloudTranscribeAudioRepo extends BaseTranscribeAudioRepo {
 
 export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
   private groqApiKey: string;
+  private model: TranscriptionModel;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model: string | null) {
     super();
     this.groqApiKey = apiKey;
+    this.model = (model as TranscriptionModel) ?? "whisper-large-v3-turbo";
   }
 
   async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalized);
     const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
-    const model: TranscriptionModel = "whisper-large-v3-turbo";
 
     const { text: transcript } = await groqTranscribeAudio({
       apiKey: this.groqApiKey,
-      model,
+      model: this.model,
       blob: wavBuffer,
       ext: "wav",
       prompt: input.prompt ?? undefined,
@@ -168,7 +169,7 @@ export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: transcript,
       metadata: {
         inferenceDevice: "API • Groq",
-        modelSize: model,
+        modelSize: this.model,
         transcriptionMode: "api",
       }
     };

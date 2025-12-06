@@ -67,7 +67,11 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   if (prefs.mode === "cloud") {
     return { repo: new CloudGenerateTextRepo(), apiKeyId: null, warnings: prefs.warnings };
   } else if (prefs.mode === "api") {
-    return { repo: new GroqGenerateTextRepo(prefs.apiKeyValue), apiKeyId: prefs.apiKeyId, warnings: prefs.warnings };
+    return {
+      repo: new GroqGenerateTextRepo(prefs.apiKeyValue, prefs.postProcessingModel),
+      apiKeyId: prefs.apiKeyId,
+      warnings: prefs.warnings,
+    };
   }
 
   return { repo: null, apiKeyId: null, warnings: prefs.warnings };
@@ -84,7 +88,11 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
   if (prefs.mode === "cloud") {
     return { repo: new CloudTranscribeAudioRepo(), apiKeyId: null, warnings: prefs.warnings };
   } else if (prefs.mode === "api") {
-    return { repo: new GroqTranscribeAudioRepo(prefs.apiKeyValue), apiKeyId: prefs.apiKeyId, warnings: prefs.warnings };
+    return {
+      repo: new GroqTranscribeAudioRepo(prefs.apiKeyValue, prefs.transcriptionModel),
+      apiKeyId: prefs.apiKeyId,
+      warnings: prefs.warnings,
+    };
   }
 
   return { repo: new LocalTranscribeAudioRepo(), apiKeyId: null, warnings: prefs.warnings };

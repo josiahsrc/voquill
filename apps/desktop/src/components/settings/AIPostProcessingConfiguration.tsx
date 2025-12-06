@@ -68,6 +68,7 @@ export const AIPostProcessingConfiguration = ({
         <ApiKeyList
           selectedApiKeyId={postProcessing.selectedApiKeyId}
           onChange={handleApiKeyChange}
+          context="post-processing"
         />
       )}
 
