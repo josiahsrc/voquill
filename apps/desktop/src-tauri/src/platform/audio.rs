@@ -263,8 +263,47 @@ const LOW_QUALITY_INPUT_KEYWORDS: &[&str] = &[
     "sony wh-",
 ];
 
+/// ALSA virtual/plugin device names that are not real microphones.
+/// These should be completely avoided as input devices.
+#[cfg(target_os = "linux")]
+const ALSA_VIRTUAL_DEVICE_NAMES: &[&str] = &[
+    "default",
+    "samplerate",
+    "speexrate",
+    "pulse",
+    "dmix",
+    "dsnoop",
+    "hw",
+    "plughw",
+    "null",
+    "pipewire",
+    "lavrate",
+    "samplerate_best",
+    "samplerate_medium",
+    "speexrate_best",
+    "speexrate_medium",
+    "upmix",
+    "vdownmix",
+    "jack",
+    "oss",
+    "phonon",
+];
+
 fn should_avoid_input_device(device: &Device, default_output_name: Option<&str>) -> bool {
     let device_name = device.name().ok();
+
+    // On Linux, filter out ALSA virtual/plugin devices that aren't real microphones
+    #[cfg(target_os = "linux")]
+    if let Some(ref name) = device_name {
+        let lower = name.to_ascii_lowercase();
+        if ALSA_VIRTUAL_DEVICE_NAMES
+            .iter()
+            .any(|virtual_name| lower == *virtual_name || lower.starts_with(&format!("{}:", virtual_name)))
+        {
+            return true;
+        }
+    }
+
     let name_match = device_name
         .as_deref()
         .map(|name| {
@@ -327,18 +366,24 @@ fn name_has_low_quality_keyword(name: &str) -> bool {
 }
 
 fn ordered_host_ids() -> Vec<HostId> {
-    let default_host = cpal::default_host();
-    let default_id = default_host.id();
-    let mut others: Vec<HostId> = cpal::available_hosts()
-        .into_iter()
-        .filter(|id| *id != default_id)
-        .collect();
-    others.sort_by_key(|id| host_rank(*id));
+    let mut hosts: Vec<HostId> = cpal::available_hosts().into_iter().collect();
 
-    let mut ordered = Vec::with_capacity(others.len() + 1);
-    ordered.push(default_id);
-    ordered.extend(others);
-    ordered
+    // On Linux, sort strictly by our preferred ranking (PulseAudio > ALSA > JACK)
+    // to avoid issues with ALSA virtual devices when PulseAudio is available.
+    #[cfg(target_os = "linux")]
+    {
+        hosts.sort_by_key(|id| host_rank(*id));
+        return hosts;
+    }
+
+    // On other platforms, prefer the default host first.
+    #[cfg(not(target_os = "linux"))]
+    {
+        let default_host = cpal::default_host();
+        let default_id = default_host.id();
+        hosts.sort_by_key(|id| if *id == default_id { 0 } else { 1 });
+        hosts
+    }
 }
 
 #[cfg(target_os = "linux")]
