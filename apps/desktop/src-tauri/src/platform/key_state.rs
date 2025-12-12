@@ -1,8 +1,8 @@
 use crate::domain::{KeysHeldPayload, EVT_KEYS_HELD};
-use crate::platform::keyboard;
-use rdev::{EventType, Key as RdevKey};
+use rdev::{listen, EventType, Key as RdevKey};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, Once};
+use std::thread;
 use tauri::{AppHandle, Emitter, EventTarget};
 
 pub(crate) type PressedKeys = Arc<Mutex<HashSet<String>>>;
@@ -57,18 +57,25 @@ pub(crate) fn spawn_keys_held_emitter(app: &AppHandle) -> tauri::Result<()> {
         let pressed_keys = new_pressed_keys_state();
         let emit_handle = app_handle.clone();
 
-        keyboard::register_handler(move |event| match event.event_type {
-            EventType::KeyPress(key) => {
-                if let Some(snapshot) = update_pressed_keys_state(&pressed_keys, key, true) {
-                    emit_keys_snapshot(&emit_handle, snapshot);
+        thread::spawn(move || {
+            if let Err(err) = listen(move |event| match event.event_type {
+                EventType::KeyPress(key) => {
+                    if let Some(snapshot) = update_pressed_keys_state(&pressed_keys, key, true) {
+                        emit_keys_snapshot(&emit_handle, snapshot);
+                    }
                 }
-            }
-            EventType::KeyRelease(key) => {
-                if let Some(snapshot) = update_pressed_keys_state(&pressed_keys, key, false) {
-                    emit_keys_snapshot(&emit_handle, snapshot);
+                EventType::KeyRelease(key) => {
+                    if let Some(snapshot) = update_pressed_keys_state(&pressed_keys, key, false) {
+                        emit_keys_snapshot(&emit_handle, snapshot);
+                    }
                 }
+                _ => {}
+            }) {
+                eprintln!(
+                    "Failed to listen for global key events via rdev: {:?}",
+                    err
+                );
             }
-            _ => {}
         });
     });
 
