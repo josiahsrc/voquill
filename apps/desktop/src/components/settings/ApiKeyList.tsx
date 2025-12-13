@@ -9,10 +9,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
   Link,
   MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Tooltip,
@@ -24,6 +27,7 @@ import {
   createApiKey,
   deleteApiKey,
   loadApiKeys,
+  updateApiKey,
 } from "../../actions/api-key.actions";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { useAppStore } from "../../store";
@@ -31,18 +35,28 @@ import {
   SettingsApiKey,
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
-import { groqTestIntegration } from "@repo/voice-ai";
+import {
+  groqTestIntegration,
+  openaiTestIntegration,
+  TRANSCRIPTION_MODELS,
+  GENERATE_TEXT_MODELS,
+  OPENAI_TRANSCRIPTION_MODELS,
+  OPENAI_GENERATE_TEXT_MODELS,
+} from "@repo/voice-ai";
+
+export type ApiKeyListContext = "transcription" | "post-processing";
 
 type ApiKeyListProps = {
   selectedApiKeyId: string | null;
   onChange: (id: string | null) => void;
+  context: ApiKeyListContext;
 };
 
 type AddApiKeyCardProps = {
   onSave: (
     name: string,
     provider: SettingsApiKeyProvider,
-    key: string
+    key: string,
   ) => Promise<void>;
   onCancel: () => void;
 };
@@ -84,7 +98,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         label={<FormattedMessage defaultMessage="Key name" />}
         value={name}
         onChange={(event) => setName(event.target.value)}
-        placeholder="e.g., My Groq Key"
+        placeholder="e.g., My API Key"
         size="small"
         fullWidth
         disabled={saving}
@@ -101,6 +115,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         disabled={saving}
       >
         <MenuItem value="groq">Groq</MenuItem>
+        <MenuItem value="openai">OpenAI</MenuItem>
       </TextField>
       <TextField
         label={<FormattedMessage defaultMessage="API key" />}
@@ -146,9 +161,38 @@ const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
   switch (apiKey.provider) {
     case "groq":
       return groqTestIntegration({ apiKey: apiKey.keyFull });
+    case "openai":
+      return openaiTestIntegration({ apiKey: apiKey.keyFull });
     default:
       throw new Error("Testing is not available for this provider.");
   }
+};
+
+const getModelsForProvider = (
+  provider: SettingsApiKeyProvider,
+  context: ApiKeyListContext,
+): readonly string[] => {
+  switch (provider) {
+    case "groq":
+      return context === "transcription"
+        ? TRANSCRIPTION_MODELS
+        : GENERATE_TEXT_MODELS;
+    case "openai":
+      return context === "transcription"
+        ? OPENAI_TRANSCRIPTION_MODELS
+        : OPENAI_GENERATE_TEXT_MODELS;
+    default:
+      return [];
+  }
+};
+
+const getModelForContext = (
+  apiKey: SettingsApiKey,
+  context: ApiKeyListContext,
+): string | null => {
+  return context === "transcription"
+    ? (apiKey.transcriptionModel ?? null)
+    : (apiKey.postProcessingModel ?? null);
 };
 
 const ApiKeyCard = ({
@@ -159,6 +203,8 @@ const ApiKeyCard = ({
   onDelete,
   testing,
   deleting,
+  onModelChange,
+  context,
 }: {
   apiKey: SettingsApiKey;
   selected: boolean;
@@ -167,90 +213,132 @@ const ApiKeyCard = ({
   testing: boolean;
   onDelete: () => void;
   deleting: boolean;
-}) => (
-  <Paper
-    variant="outlined"
-    onClick={onSelect}
-    sx={{
-      p: 2,
-      borderColor: selected ? "primary.main" : "divider",
-      borderWidth: 1,
-      cursor: "pointer",
-      transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-      boxShadow: selected
-        ? (theme) => `0 0 0 1px ${theme.palette.primary.main}`
-        : "none",
-      ":hover": {
-        borderColor: selected ? "primary.main" : "action.active",
-      },
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 2,
-      width: "100%",
-    }}
-  >
-    <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
-      <Typography variant="subtitle1" fontWeight={600}>
-        {apiKey.name}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {apiKey.provider.toUpperCase()}
-      </Typography>
-      {apiKey.keySuffix ? (
-        <Typography variant="caption" color="text.secondary">
-          <FormattedMessage
-            defaultMessage="Ends with {suffix}"
-            values={{ suffix: apiKey.keySuffix }}
-          />
-        </Typography>
-      ) : null}
-    </Stack>
-    <Stack direction="row" spacing={1} alignItems="center">
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={(event) => {
-          event.stopPropagation();
-          onTest();
-        }}
-        disabled={testing || deleting}
+  onModelChange: (model: string | null) => void;
+  context: ApiKeyListContext;
+}) => {
+  const models = getModelsForProvider(apiKey.provider, context);
+  const currentModel = getModelForContext(apiKey, context) ?? models[0] ?? null;
+
+  return (
+    <Paper
+      variant="outlined"
+      onClick={onSelect}
+      sx={{
+        p: 2,
+        borderColor: selected ? "primary.main" : "divider",
+        borderWidth: 1,
+        cursor: "pointer",
+        transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+        boxShadow: selected
+          ? (theme) => `0 0 0 1px ${theme.palette.primary.main}`
+          : "none",
+        ":hover": {
+          borderColor: selected ? "primary.main" : "action.active",
+        },
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        width: "100%",
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        gap={2}
+        sx={{ width: "100%" }}
       >
-        {testing ? (
-          <FormattedMessage defaultMessage="Testing..." />
-        ) : (
-          <FormattedMessage defaultMessage="Test" />
-        )}
-      </Button>
-      <Tooltip title={<FormattedMessage defaultMessage="Delete key" />}>
-        <span>
-          <IconButton
+        <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={600}>
+            {apiKey.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {apiKey.provider.toUpperCase()}
+          </Typography>
+          {apiKey.keySuffix ? (
+            <Typography variant="caption" color="text.secondary">
+              <FormattedMessage
+                defaultMessage="Ends with {suffix}"
+                values={{ suffix: apiKey.keySuffix }}
+              />
+            </Typography>
+          ) : null}
+        </Stack>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            variant="outlined"
             size="small"
-            color="error"
             onClick={(event) => {
               event.stopPropagation();
-              onDelete();
+              onTest();
             }}
-            disabled={deleting || testing}
+            disabled={testing || deleting}
           >
-            <DeleteOutlineIcon fontSize="small" />
-          </IconButton>
-        </span>
-      </Tooltip>
-    </Stack>
-  </Paper>
-);
+            {testing ? (
+              <FormattedMessage defaultMessage="Testing..." />
+            ) : (
+              <FormattedMessage defaultMessage="Test" />
+            )}
+          </Button>
+          <Tooltip title={<FormattedMessage defaultMessage="Delete key" />}>
+            <span>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete();
+                }}
+                disabled={deleting || testing}
+              >
+                <DeleteOutlineIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
+      </Stack>
+      {models.length > 0 ? (
+        <FormControl fullWidth size="small">
+          <InputLabel id={`model-select-label-${apiKey.id}`}>
+            <FormattedMessage defaultMessage="Model" />
+          </InputLabel>
+          <Select
+            labelId={`model-select-label-${apiKey.id}`}
+            value={currentModel ?? ""}
+            label={<FormattedMessage defaultMessage="Model" />}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => {
+              const value = event.target.value || null;
+              onModelChange(value);
+            }}
+            disabled={testing || deleting}
+          >
+            {models.map((model) => (
+              <MenuItem key={model} value={model}>
+                {model}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      ) : null}
+    </Paper>
+  );
+};
 
 const generateApiKeyId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
+export const ApiKeyList = ({
+  selectedApiKeyId,
+  onChange,
+  context,
+}: ApiKeyListProps) => {
   const apiKeys = useAppStore((state) => state.settings.apiKeys);
   const status = useAppStore((state) => state.settings.apiKeysStatus);
   const [showAddCard, setShowAddCard] = useState(false);
   const [testingApiKeyId, setTestingApiKeyId] = useState<string | null>(null);
   const [apiKeyToDelete, setApiKeyToDelete] = useState<SettingsApiKey | null>(
-    null
+    null,
   );
   const [deletingApiKeyId, setDeletingApiKeyId] = useState<string | null>(null);
 
@@ -282,7 +370,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
       onChange(created.id);
       setShowAddCard(false);
     },
-    [onChange]
+    [onChange],
   );
 
   const handleTestApiKey = useCallback(async (apiKey: SettingsApiKey) => {
@@ -296,7 +384,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
       }
     } catch (error) {
       showErrorSnackbar(
-        error instanceof Error ? error.message : "API key test failed."
+        error instanceof Error ? error.message : "API key test failed.",
       );
     } finally {
       setTestingApiKeyId(null);
@@ -324,7 +412,7 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
       await deleteApiKey(apiKeyToDelete.id);
       showSnackbar("API key deleted", { mode: "success" });
       setApiKeyToDelete(null);
-    } catch (error) {
+    } catch {
       // Errors are surfaced via deleteApiKey.
     } finally {
       setDeletingApiKeyId(null);
@@ -334,6 +422,21 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
   const handleRetryLoad = useCallback(() => {
     void loadApiKeys();
   }, []);
+
+  const handleModelChange = useCallback(
+    async (apiKeyId: string, model: string | null) => {
+      try {
+        if (context === "transcription") {
+          await updateApiKey({ id: apiKeyId, transcriptionModel: model });
+        } else {
+          await updateApiKey({ id: apiKeyId, postProcessingModel: model });
+        }
+      } catch {
+        // Errors are surfaced via updateApiKey.
+      }
+    },
+    [context],
+  );
 
   const loadingState = (
     <Stack spacing={1} alignItems="center">
@@ -422,6 +525,8 @@ export const ApiKeyList = ({ selectedApiKeyId, onChange }: ApiKeyListProps) => {
               testing={testingApiKeyId === apiKey.id}
               onDelete={() => handleRequestDelete(apiKey)}
               deleting={deletingApiKeyId === apiKey.id}
+              onModelChange={(model) => handleModelChange(apiKey.id, model)}
+              context={context}
             />
           ))}
         </Stack>

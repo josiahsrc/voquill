@@ -58,7 +58,7 @@ export const Guard = ({ children, node }: GuardProps) => {
     () => ({
       isOnboarded,
     }),
-    [isOnboarded]
+    [isOnboarded],
   );
 
   const redirectTo = useMemo(() => {

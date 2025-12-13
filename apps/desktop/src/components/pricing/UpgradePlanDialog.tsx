@@ -29,7 +29,6 @@ export const UpgradePlanDialog = () => {
   const currPlan = useAppStore(getEffectivePlan);
   const currLoggedIn = useAppStore((state) => Boolean(state.auth));
   const targPlan = useAppStore((state) => state.pricing.upgradePlanPendingPlan);
-  console.log("currPlan:", currPlan, "targPlan:", targPlan);
 
   useEffect(() => {
     if (targPlan === "free" && currPlan === "free") {

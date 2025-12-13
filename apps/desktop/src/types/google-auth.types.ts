@@ -1,15 +1,15 @@
 export type GoogleAuthPayload = {
-	idToken: string;
-	accessToken: string;
-	refreshToken?: string;
-	expiresIn: number;
-	tokenType: string;
-	user: {
-		sub: string;
-		email?: string;
-		name?: string;
-		picture?: string;
-	};
+  idToken: string;
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn: number;
+  tokenType: string;
+  user: {
+    sub: string;
+    email?: string;
+    name?: string;
+    picture?: string;
+  };
 };
 
 export const GOOGLE_AUTH_EVENT = "voquill:google-auth";

@@ -68,6 +68,7 @@ block = "0.1"
 enigo = "0.1"
 arboard = "3"
 gtk = { version = "0.18", package = "gtk" }
+x11 = "2.21"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 enigo = "0.1"

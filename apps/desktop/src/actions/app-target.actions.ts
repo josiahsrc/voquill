@@ -17,7 +17,9 @@ export const loadAppTargets = async (): Promise<void> => {
   });
 };
 
-export const upsertAppTarget = async (params: AppTargetUpsertParams): Promise<AppTarget> => {
+export const upsertAppTarget = async (
+  params: AppTargetUpsertParams,
+): Promise<AppTarget> => {
   const target = await getAppTargetRepo().upsertAppTarget(params);
 
   produceAppState((draft) => {
@@ -47,7 +49,9 @@ export const setAppTargetTone = async (
   } catch (error) {
     console.error("Failed to update app target tone", error);
     showErrorSnackbar(
-      error instanceof Error ? error.message : "Failed to update app target tone.",
+      error instanceof Error
+        ? error.message
+        : "Failed to update app target tone.",
     );
   }
 };
@@ -57,7 +61,9 @@ type CurrentAppInfoResponse = {
   iconBase64: string;
 };
 
-export const tryRegisterCurrentAppTarget = async (): Promise<Nullable<AppTarget>> => {
+export const tryRegisterCurrentAppTarget = async (): Promise<
+  Nullable<AppTarget>
+> => {
   const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
   const appName = appInfo.appName?.trim() ?? "";
   const appTargetId = normalizeAppTargetId(appName);
@@ -93,4 +99,4 @@ export const tryRegisterCurrentAppTarget = async (): Promise<Nullable<AppTarget>
   }
 
   return getRec(getAppState().appTargetById, appTargetId) ?? null;
-}
+};

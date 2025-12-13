@@ -7,7 +7,7 @@ import { FormattedMessage } from "react-intl";
 
 export default function TranscriptionsPage() {
   const transcriptionIds = useAppStore(
-    (state) => state.transcriptions.transcriptionIds
+    (state) => state.transcriptions.transcriptionIds,
   );
 
   return (
@@ -16,7 +16,12 @@ export default function TranscriptionsPage() {
       <TranscriptionDetailsDialog />
       <VirtualizedListPage
         title={<FormattedMessage defaultMessage="History" />}
-        subtitle={<FormattedMessage defaultMessage="{count} {count, plural, one {transcription} other {transcriptions}}" values={{ count: transcriptionIds.length }} />}
+        subtitle={
+          <FormattedMessage
+            defaultMessage="{count} {count, plural, one {transcription} other {transcriptions}}"
+            values={{ count: transcriptionIds.length }}
+          />
+        }
         items={transcriptionIds}
         computeItemKey={(id) => id}
         renderItem={(id) => <TranscriptionRow key={id} id={id} />}

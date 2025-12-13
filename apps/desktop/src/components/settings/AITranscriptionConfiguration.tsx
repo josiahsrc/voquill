@@ -11,10 +11,12 @@ import { useCallback, useEffect, useMemo } from "react";
 import { FormattedMessage } from "react-intl";
 import {
   setPreferredTranscriptionApiKeyId,
+  setPreferredTranscriptionDevice,
   setPreferredTranscriptionMode,
+  setPreferredTranscriptionModelSize,
 } from "../../actions/user.actions";
 import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
-import { produceAppState, useAppStore } from "../../store";
+import { useAppStore } from "../../store";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
 import { buildDeviceLabel } from "../../types/gpu.types";
 import {
@@ -67,9 +69,7 @@ export const AITranscriptionConfiguration = ({
 
     if (gpus.length === 0) {
       if (transcription.device !== CPU_DEVICE_VALUE) {
-        produceAppState((draft) => {
-          draft.settings.aiTranscription.device = CPU_DEVICE_VALUE;
-        });
+        void setPreferredTranscriptionDevice(CPU_DEVICE_VALUE);
       }
       return;
     }
@@ -77,12 +77,10 @@ export const AITranscriptionConfiguration = ({
     if (transcription.device.startsWith("gpu-")) {
       const index = Number.parseInt(
         transcription.device.split("-")[1] ?? "",
-        10
+        10,
       );
       if (Number.isNaN(index) || index >= gpus.length) {
-        produceAppState((draft) => {
-          draft.settings.aiTranscription.device = CPU_DEVICE_VALUE;
-        });
+        void setPreferredTranscriptionDevice(CPU_DEVICE_VALUE);
       }
     }
   }, [gpus, gpusLoading, transcription.device]);
@@ -95,7 +93,7 @@ export const AITranscriptionConfiguration = ({
         label: buildDeviceLabel(gpu),
       })),
     ],
-    [gpus]
+    [gpus],
   );
 
   const handleModeChange = useCallback((mode: TranscriptionMode) => {
@@ -103,15 +101,11 @@ export const AITranscriptionConfiguration = ({
   }, []);
 
   const handleDeviceChange = useCallback((device: string) => {
-    produceAppState((draft) => {
-      draft.settings.aiTranscription.device = device;
-    });
+    void setPreferredTranscriptionDevice(device);
   }, []);
 
   const handleModelSizeChange = useCallback((modelSize: string) => {
-    produceAppState((draft) => {
-      draft.settings.aiTranscription.modelSize = modelSize;
-    });
+    void setPreferredTranscriptionModelSize(modelSize);
   }, []);
 
   const handleApiKeyChange = useCallback((id: string | null) => {
@@ -131,7 +125,7 @@ export const AITranscriptionConfiguration = ({
                 value: "cloud",
                 label: "Voquill Cloud",
               },
-            ]
+            ],
           ),
           { value: "local", label: "Local processing" },
           { value: "api", label: "API key" },
@@ -194,6 +188,7 @@ export const AITranscriptionConfiguration = ({
         <ApiKeyList
           selectedApiKeyId={transcription.selectedApiKeyId}
           onChange={handleApiKeyChange}
+          context="transcription"
         />
       )}
 

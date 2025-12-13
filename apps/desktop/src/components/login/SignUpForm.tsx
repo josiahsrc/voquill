@@ -29,13 +29,13 @@ export const SignUpForm = () => {
   const canSubmit = useAppStore((state) => getCanSubmitSignUp(state));
 
   const emailValidation = useAppStore((state) =>
-    getSignUpEmailValidation(state)
+    getSignUpEmailValidation(state),
   );
   const passwordValidation = useAppStore((state) =>
-    getSignUpPasswordValidation(state)
+    getSignUpPasswordValidation(state),
   );
   const confirmPasswordValidation = useAppStore((state) =>
-    getSignUpConfirmPasswordValidation(state)
+    getSignUpConfirmPasswordValidation(state),
   );
 
   const handleChangeEmail = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +51,7 @@ export const SignUpForm = () => {
   };
 
   const handleChangeConfirmPassword = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     produceAppState((state) => {
       state.login.confirmPassword = event.target.value;

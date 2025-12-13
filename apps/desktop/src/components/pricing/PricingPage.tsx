@@ -17,7 +17,7 @@ export default function PricingPage() {
   const nav = useNavigate();
   const intl = useIntl();
   const onboarded = useAppStore(
-    (state) => getMyUser(state)?.onboarded ?? false
+    (state) => getMyUser(state)?.onboarded ?? false,
   );
   const isPaying = useAppStore(getIsPaying);
   const currPlan = useAppStore((state) => getMyMember(state)?.plan);
@@ -46,10 +46,14 @@ export default function PricingPage() {
   let subtitle: React.ReactNode;
   if (onboarded) {
     title = <FormattedMessage defaultMessage="Upgrade your plan" />;
-    subtitle = <FormattedMessage defaultMessage="Get access to the full feature set by upgrading your plan." />;
+    subtitle = (
+      <FormattedMessage defaultMessage="Get access to the full feature set by upgrading your plan." />
+    );
   } else {
     title = <FormattedMessage defaultMessage="Try it free. Upgrade anytime." />;
-    subtitle = <FormattedMessage defaultMessage="No credit card required. Get started today and upgrade when you're ready." />;
+    subtitle = (
+      <FormattedMessage defaultMessage="No credit card required. Get started today and upgrade when you're ready." />
+    );
   }
 
   const plans = (
@@ -71,7 +75,11 @@ export default function PricingPage() {
       </Typography>
       <PlanList
         onSelect={handleClickPlan}
-        text={onboarded ? intl.formatMessage({ defaultMessage: "Subscribe" }) : intl.formatMessage({ defaultMessage: "Continue" })}
+        text={
+          onboarded
+            ? intl.formatMessage({ defaultMessage: "Subscribe" })
+            : intl.formatMessage({ defaultMessage: "Continue" })
+        }
         sx={{
           mt: 4,
           mb: 2,

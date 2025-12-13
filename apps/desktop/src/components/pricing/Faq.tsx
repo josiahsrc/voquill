@@ -42,13 +42,23 @@ export const Faq = ({ sx }: FaqProps) => {
         <Typography variant="h4" sx={{ mb: 2 }} textAlign="center">
           <FormattedMessage defaultMessage="Frequently asked questions" />
         </Typography>
-        <FaqRow title={<FormattedMessage defaultMessage="How does the voice activation work?" />}>
+        <FaqRow
+          title={
+            <FormattedMessage defaultMessage="How does the voice activation work?" />
+          }
+        >
           <FormattedMessage defaultMessage="Simply click the microphone bubble that appears in any text input field. Start speaking and watch as your voice is converted to text in real-time." />
         </FaqRow>
-        <FaqRow title={<FormattedMessage defaultMessage="What websites does it work on?" />}>
+        <FaqRow
+          title={
+            <FormattedMessage defaultMessage="What websites does it work on?" />
+          }
+        >
           <FormattedMessage defaultMessage="Voquill works on virtually any website with text input fields - email clients, social media, forms, documents, and more." />
         </FaqRow>
-        <FaqRow title={<FormattedMessage defaultMessage="Is my voice data secure?" />}>
+        <FaqRow
+          title={<FormattedMessage defaultMessage="Is my voice data secure?" />}
+        >
           <FormattedMessage defaultMessage="Absolutely. Our code is open-source, so you can see for yourself. You can even choose to process your voice entirely on-device." />
         </FaqRow>
       </Stack>

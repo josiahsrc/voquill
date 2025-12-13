@@ -21,7 +21,10 @@ export const surfaceMainWindow = async (): Promise<void> => {
   if (!surfaceWindowPromise) {
     surfaceWindowPromise = invoke<void>("surface_main_window")
       .catch(async (error) => {
-        console.error("Failed to surface main window via native command", error);
+        console.error(
+          "Failed to surface main window via native command",
+          error,
+        );
       })
       .finally(() => {
         surfaceWindowPromise = null;

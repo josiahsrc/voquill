@@ -22,4 +22,4 @@ export const loadHotkeys = async (): Promise<void> => {
     });
     showErrorSnackbar("Failed to load hotkeys. Please try again.");
   }
-}
+};

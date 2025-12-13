@@ -19,7 +19,7 @@ export const HotkeySelectionForm = () => {
   const { status, savedHotkeyCount } = useAppStore((state) => ({
     status: state.settings.hotkeysStatus,
     savedHotkeyCount: Object.values(state.hotkeyById).filter(
-      (hotkey) => hotkey.actionName === DICTATE_HOTKEY
+      (hotkey) => hotkey.actionName === DICTATE_HOTKEY,
     ).length,
   }));
 

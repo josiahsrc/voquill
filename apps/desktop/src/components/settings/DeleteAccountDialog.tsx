@@ -41,9 +41,9 @@ export const DeleteAccountDialog = () => {
       produceAppState((state) => {
         state.settings.deleteAccountDialog = false;
       });
-    } catch (error) {
+    } catch {
       showSnackbar(
-        "An error occurred while attempting to delete your account. Please try again later."
+        "An error occurred while attempting to delete your account. Please try again later.",
       );
     }
   };

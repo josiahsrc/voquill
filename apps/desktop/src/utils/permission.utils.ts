@@ -11,23 +11,29 @@ export const REQUIRED_PERMISSIONS: PermissionKind[] = [
   "accessibility",
 ];
 
-export const checkMicrophonePermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("check_microphone_permission");
-};
+export const checkMicrophonePermission =
+  async (): Promise<PermissionStatus> => {
+    return invoke<PermissionStatus>("check_microphone_permission");
+  };
 
-export const requestMicrophonePermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("request_microphone_permission");
-};
+export const requestMicrophonePermission =
+  async (): Promise<PermissionStatus> => {
+    return invoke<PermissionStatus>("request_microphone_permission");
+  };
 
-export const checkAccessibilityPermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("check_accessibility_permission");
-};
+export const checkAccessibilityPermission =
+  async (): Promise<PermissionStatus> => {
+    return invoke<PermissionStatus>("check_accessibility_permission");
+  };
 
-export const requestAccessibilityPermission = async (): Promise<PermissionStatus> => {
-  return invoke<PermissionStatus>("request_accessibility_permission");
-};
+export const requestAccessibilityPermission =
+  async (): Promise<PermissionStatus> => {
+    return invoke<PermissionStatus>("request_accessibility_permission");
+  };
 
-export const isPermissionAuthorized = (state: PermissionState): boolean => {
+export const isPermissionAuthorized = (
+  state: PermissionState | null | undefined,
+): boolean => {
   return state === "authorized";
 };
 

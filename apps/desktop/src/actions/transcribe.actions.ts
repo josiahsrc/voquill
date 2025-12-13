@@ -12,7 +12,10 @@ import {
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
-import { getMyEffectiveUserId, getMyPreferredLocale } from "../utils/user.utils";
+import {
+  getMyEffectiveUserId,
+  getMyPreferredLocale,
+} from "../utils/user.utils";
 
 export type TranscriptionAudioInput = {
   samples: AudioSamples;
@@ -50,10 +53,18 @@ export const transcribeAndPostProcessAudio = async ({
   const metadata: TranscriptionMetadata = {};
   const warnings: string[] = [];
 
-  const { repo: transcribeRepo, apiKeyId: transcriptionApiKeyId, warnings: transcribeWarnings } = getTranscribeAudioRepo();
+  const {
+    repo: transcribeRepo,
+    apiKeyId: transcriptionApiKeyId,
+    warnings: transcribeWarnings,
+  } = getTranscribeAudioRepo();
   warnings.push(...transcribeWarnings);
 
-  const { repo: genRepo, apiKeyId: genApiKeyId, warnings: genWarnings } = getGenerateTextRepo();
+  const {
+    repo: genRepo,
+    apiKeyId: genApiKeyId,
+    warnings: genWarnings,
+  } = getGenerateTextRepo();
   warnings.push(...genWarnings);
 
   // transcribe the audio
@@ -76,16 +87,18 @@ export const transcribeAndPostProcessAudio = async ({
   metadata.rawTranscript = rawTranscript;
   metadata.transcriptionPrompt = transcriptionPrompt;
   metadata.transcriptionApiKeyId = transcriptionApiKeyId;
-  metadata.transcriptionMode = transcribeOutput.metadata?.transcriptionMode || null;
+  metadata.transcriptionMode =
+    transcribeOutput.metadata?.transcriptionMode || null;
 
   // post-process the transcription
   let processedTranscript = rawTranscript;
   if (genRepo) {
     const myUserId = getMyEffectiveUserId(state);
     const myPrefs = getRec(state.userPreferencesById, myUserId);
-    const tone = getRec(state.toneById, toneId)
-      ?? getRec(state.toneById, myPrefs?.activeToneId)
-      ?? null;
+    const tone =
+      getRec(state.toneById, toneId) ??
+      getRec(state.toneById, myPrefs?.activeToneId) ??
+      null;
 
     const ppPrompt = buildLocalizedPostProcessingPrompt(
       rawTranscript,
@@ -106,14 +119,21 @@ export const transcribeAndPostProcessAudio = async ({
     });
 
     try {
-      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(JSON.parse(genOutput.text));
+      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(
+        JSON.parse(genOutput.text),
+      );
       if (!validationResult.success) {
-        warnings.push(`Post-processing response validation failed: ${validationResult.error.message}`);
+        warnings.push(
+          `Post-processing response validation failed: ${validationResult.error.message}`,
+        );
       } else {
-        processedTranscript = validationResult.data.processedTranscription.trim();
+        processedTranscript =
+          validationResult.data.processedTranscription.trim();
       }
     } catch (e) {
-      warnings.push(`Failed to parse post-processing response: ${(e as Error).message}`);
+      warnings.push(
+        `Failed to parse post-processing response: ${(e as Error).message}`,
+      );
     }
 
     metadata.postProcessPrompt = ppPrompt;

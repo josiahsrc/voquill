@@ -10,7 +10,9 @@ export const useHotkeyHold = (args: {
   onDeactivate?: () => void;
 }) => {
   const keysHeld = useAppStore((s) => s.keysHeld);
-  const availableCombos = useAppStore((state) => getHotkeyCombosForAction(state, args.actionName));
+  const availableCombos = useAppStore((state) =>
+    getHotkeyCombosForAction(state, args.actionName),
+  );
 
   const onActivateRef = useRef(args.onActivate);
   const onDeactivateRef = useRef(args.onDeactivate);
@@ -88,12 +90,8 @@ export const useHotkeyHold = (args: {
         return false;
       }
 
-      const uniqueHeld = Array.from(
-        new Set(held.map((key) => normalize(key))),
-      );
-      const required = Array.from(
-        new Set(combo.map((key) => normalize(key))),
-      );
+      const uniqueHeld = Array.from(new Set(held.map((key) => normalize(key))));
+      const required = Array.from(new Set(combo.map((key) => normalize(key))));
 
       if (uniqueHeld.length !== required.length) {
         return false;
@@ -170,7 +168,13 @@ export const useHotkeyHold = (args: {
     }
 
     wasPressedRef.current = isPressed;
-  }, [keysHeld, availableCombos, activate, deactivate, clearPendingDeactivation]);
+  }, [
+    keysHeld,
+    availableCombos,
+    activate,
+    deactivate,
+    clearPendingDeactivation,
+  ]);
 };
 
 export const useHotkeyFire = (args: {
@@ -178,7 +182,9 @@ export const useHotkeyFire = (args: {
   onFire?: () => void;
 }) => {
   const keysHeld = useAppStore((state) => state.keysHeld);
-  const availableCombos = useAppStore((state) => getHotkeyCombosForAction(state, args.actionName));
+  const availableCombos = useAppStore((state) =>
+    getHotkeyCombosForAction(state, args.actionName),
+  );
 
   const previousKeysHeldRef = useRef<string[]>([]);
 

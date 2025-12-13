@@ -10,7 +10,7 @@ import { FormContainer } from "./OnboardingShared";
 
 export const TranscriptionMethodForm = () => {
   const { mode, selectedApiKeyId } = useAppStore(
-    (state) => state.settings.aiTranscription
+    (state) => state.settings.aiTranscription,
   );
 
   const canContinue = mode === "api" ? Boolean(selectedApiKeyId) : true;

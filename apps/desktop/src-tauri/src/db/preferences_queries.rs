@@ -11,23 +11,35 @@ pub async fn upsert_user_preferences(
              user_id,
              transcription_mode,
              transcription_api_key_id,
+             transcription_device,
+             transcription_model_size,
              post_processing_mode,
              post_processing_api_key_id,
+             post_processing_ollama_url,
+             post_processing_ollama_model,
              active_tone_id
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
+            transcription_device = excluded.transcription_device,
+            transcription_model_size = excluded.transcription_model_size,
             post_processing_mode = excluded.post_processing_mode,
             post_processing_api_key_id = excluded.post_processing_api_key_id,
+            post_processing_ollama_url = excluded.post_processing_ollama_url,
+            post_processing_ollama_model = excluded.post_processing_ollama_model,
             active_tone_id = excluded.active_tone_id",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
     .bind(&preferences.transcription_api_key_id)
+    .bind(&preferences.transcription_device)
+    .bind(&preferences.transcription_model_size)
     .bind(&preferences.post_processing_mode)
     .bind(&preferences.post_processing_api_key_id)
+    .bind(&preferences.post_processing_ollama_url)
+    .bind(&preferences.post_processing_ollama_model)
     .bind(&preferences.active_tone_id)
     .execute(&pool)
     .await?;
@@ -44,8 +56,12 @@ pub async fn fetch_user_preferences(
             user_id,
             transcription_mode,
             transcription_api_key_id,
+            transcription_device,
+            transcription_model_size,
             post_processing_mode,
             post_processing_api_key_id,
+            post_processing_ollama_url,
+            post_processing_ollama_model,
             active_tone_id
          FROM user_preferences
          WHERE user_id = ?1
@@ -63,11 +79,23 @@ pub async fn fetch_user_preferences(
         transcription_api_key_id: row
             .try_get::<Option<String>, _>("transcription_api_key_id")
             .unwrap_or(None),
+        transcription_device: row
+            .try_get::<Option<String>, _>("transcription_device")
+            .unwrap_or(None),
+        transcription_model_size: row
+            .try_get::<Option<String>, _>("transcription_model_size")
+            .unwrap_or(None),
         post_processing_mode: row
             .try_get::<Option<String>, _>("post_processing_mode")
             .unwrap_or(None),
         post_processing_api_key_id: row
             .try_get::<Option<String>, _>("post_processing_api_key_id")
+            .unwrap_or(None),
+        post_processing_ollama_url: row
+            .try_get::<Option<String>, _>("post_processing_ollama_url")
+            .unwrap_or(None),
+        post_processing_ollama_model: row
+            .try_get::<Option<String>, _>("post_processing_ollama_model")
             .unwrap_or(None),
         active_tone_id: row
             .try_get::<Option<String>, _>("active_tone_id")

@@ -12,6 +12,10 @@ pub struct ApiKey {
     pub key_ciphertext: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_suffix: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transcription_model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub post_processing_model: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -21,6 +25,16 @@ pub struct ApiKeyCreateRequest {
     pub name: String,
     pub provider: String,
     pub key: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiKeyUpdateRequest {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transcription_model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub post_processing_model: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -34,6 +48,10 @@ pub struct ApiKeyView {
     pub key_suffix: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_full: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transcription_model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub post_processing_model: Option<String>,
 }
 
 impl From<ApiKey> for ApiKeyView {
@@ -45,6 +63,8 @@ impl From<ApiKey> for ApiKeyView {
             created_at: api_key.created_at,
             key_suffix: api_key.key_suffix,
             key_full: None,
+            transcription_model: api_key.transcription_model,
+            post_processing_model: api_key.post_processing_model,
         }
     }
 }

@@ -3,8 +3,10 @@ import {
   HighlightOff,
   OpenInNew,
   PendingOutlined,
+  RestartAlt,
 } from "@mui/icons-material";
 import {
+  Alert,
   Button,
   Box,
   Chip,
@@ -14,7 +16,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useCallback, useMemo, useState } from "react";
+import { relaunch } from "@tauri-apps/plugin-process";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
 import type { PermissionKind } from "../../types/permission.types";
@@ -32,7 +35,7 @@ const ICON_SIZE = 28;
 
 const getPurposeDescription = (
   kind: PermissionKind,
-  intl: ReturnType<typeof useIntl>
+  intl: ReturnType<typeof useIntl>,
 ): string => {
   const descriptions: Record<PermissionKind, string> = {
     microphone: intl.formatMessage({
@@ -144,31 +147,64 @@ const PermissionRow = ({ kind }: { kind: PermissionKind }) => {
 
 export const PermissionsDialog = () => {
   const permissions = useAppStore((state) => state.permissions);
+  const [permissionWasGranted, setPermissionWasGranted] = useState(false);
+  const previousPermissionsRef = useRef(permissions);
 
-  const { ready, blocked } = useMemo(() => {
+  // Track when a permission transitions from not authorized to authorized
+  useEffect(() => {
+    const prev = previousPermissionsRef.current;
+    for (const kind of REQUIRED_PERMISSIONS) {
+      const prevStatus = prev[kind];
+      const currentStatus = permissions[kind];
+      if (
+        prevStatus &&
+        currentStatus &&
+        !isPermissionAuthorized(prevStatus.state) &&
+        isPermissionAuthorized(currentStatus.state)
+      ) {
+        setPermissionWasGranted(true);
+        break;
+      }
+    }
+    previousPermissionsRef.current = permissions;
+  }, [permissions]);
+
+  const { ready, blocked, allAuthorized } = useMemo(() => {
     let known = true;
     let missing = false;
+    let allAuth = true;
 
     for (const kind of REQUIRED_PERMISSIONS) {
       const status = permissions[kind];
       if (!status) {
         known = false;
+        allAuth = false;
         continue;
       }
 
       if (!isPermissionAuthorized(status.state)) {
         missing = true;
+        allAuth = false;
       }
     }
 
-    return { ready: known, blocked: missing };
+    return { ready: known, blocked: missing, allAuthorized: allAuth };
   }, [permissions]);
 
   const open = ready && blocked;
+  const showRestartMessage = allAuthorized && permissionWasGranted;
+
+  const handleRestart = useCallback(async () => {
+    try {
+      await relaunch();
+    } catch (error) {
+      console.error("Failed to restart application", error);
+    }
+  }, []);
 
   const handleClose = (
     _event: unknown,
-    reason: "backdropClick" | "escapeKeyDown"
+    reason: "backdropClick" | "escapeKeyDown",
   ) => {
     if (reason === "backdropClick" || reason === "escapeKeyDown") {
       return;
@@ -177,7 +213,7 @@ export const PermissionsDialog = () => {
 
   return (
     <Dialog
-      open={open}
+      open={open || showRestartMessage}
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
@@ -207,6 +243,23 @@ export const PermissionsDialog = () => {
               <PermissionRow key={kind} kind={kind} />
             ))}
           </Stack>
+          {showRestartMessage && (
+            <Alert
+              severity="info"
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={() => void handleRestart()}
+                  startIcon={<RestartAlt />}
+                >
+                  <FormattedMessage defaultMessage="Restart" />
+                </Button>
+              }
+            >
+              <FormattedMessage defaultMessage="Please restart the application for the new permissions to take effect." />
+            </Alert>
+          )}
         </Stack>
       </DialogContent>
     </Dialog>

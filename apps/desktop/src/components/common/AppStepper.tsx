@@ -38,7 +38,7 @@ export const AppStepper = ({
 
   const transition = theme.transitions.create(
     ["background-color", "padding", "font-size", "color", "transform"],
-    { duration: theme.transitions.duration.short }
+    { duration: theme.transitions.duration.short },
   );
 
   return (

@@ -52,7 +52,7 @@ type StopRecordingResponse = {
 
 const createPreviewUrl = (
   rawSamples: number[] | Float32Array,
-  sampleRate: number
+  sampleRate: number,
 ): string | null => {
   if (!sampleRate || !Number.isFinite(sampleRate) || sampleRate <= 0) {
     return null;
@@ -124,7 +124,7 @@ export const MicrophoneDialog = () => {
       previewUrlRef.current = url;
       setPreviewUrl(url);
     },
-    [releasePreviewAudio]
+    [releasePreviewAudio],
   );
 
   useEffect(() => () => clearPreviewUrl(), [clearPreviewUrl]);
@@ -221,7 +221,7 @@ export const MicrophoneDialog = () => {
       setSaveError(null);
       setSaveSuccess(false);
     },
-    [savedPreference]
+    [savedPreference],
   );
 
   const handleSave = useCallback(async () => {
@@ -237,7 +237,7 @@ export const MicrophoneDialog = () => {
       await setPreferredMicrophone(selected ?? null);
       setHasChanges(false);
       setSaveSuccess(true);
-    } catch (error) {
+    } catch {
       setSaveError("Failed to save microphone preference. Please try again.");
     } finally {
       setSaving(false);
@@ -300,7 +300,7 @@ export const MicrophoneDialog = () => {
           } else {
             updatePreviewUrl(null);
             setTestError(
-              "We didn't detect any audio. Try speaking while the test is running."
+              "We didn't detect any audio. Try speaking while the test is running.",
             );
           }
         } else {
@@ -318,7 +318,7 @@ export const MicrophoneDialog = () => {
         });
       }
     },
-    [testState, updatePreviewUrl]
+    [testState, updatePreviewUrl],
   );
 
   const handleTogglePreview = useCallback(() => {
@@ -396,7 +396,9 @@ export const MicrophoneDialog = () => {
           <Stack spacing={1.5}>
             <SettingSection
               title={<FormattedMessage defaultMessage="Preferred microphone" />}
-              description={<FormattedMessage defaultMessage="Choose which microphone Voquill should use when recording. Automatic picks the best available device each time." />}
+              description={
+                <FormattedMessage defaultMessage="Choose which microphone Voquill should use when recording. Automatic picks the best available device each time." />
+              }
               sx={{ pb: 0.5 }}
             />
             <FormControl fullWidth size="small" disabled={loadingDevices}>
@@ -452,7 +454,9 @@ export const MicrophoneDialog = () => {
                         {option.isDefault && (
                           <Chip
                             size="small"
-                            label={<FormattedMessage defaultMessage="Default" />}
+                            label={
+                              <FormattedMessage defaultMessage="Default" />
+                            }
                             color="primary"
                             variant="outlined"
                           />
@@ -460,7 +464,9 @@ export const MicrophoneDialog = () => {
                         {option.caution && !option.unavailable && (
                           <Chip
                             size="small"
-                            label={<FormattedMessage defaultMessage="Caution" />}
+                            label={
+                              <FormattedMessage defaultMessage="Caution" />
+                            }
                             color="warning"
                             variant="outlined"
                           />
@@ -496,7 +502,9 @@ export const MicrophoneDialog = () => {
           <Stack spacing={1.5}>
             <SettingSection
               title={<FormattedMessage defaultMessage="Test your microphone" />}
-              description={<FormattedMessage defaultMessage="Start a short test to see live audio levels and play back what was recorded." />}
+              description={
+                <FormattedMessage defaultMessage="Start a short test to see live audio levels and play back what was recorded." />
+              }
             />
             <Box
               sx={{

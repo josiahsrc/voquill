@@ -33,9 +33,9 @@ export const ToneEditorDialog = () => {
   const tones = useMemo(
     () =>
       Object.values(toneById).sort(
-        (left, right) => left.sortOrder - right.sortOrder
+        (left, right) => left.sortOrder - right.sortOrder,
       ),
-    [toneById]
+    [toneById],
   );
 
   const editingTone: Tone | null = toneEditor.toneId
@@ -66,7 +66,7 @@ export const ToneEditorDialog = () => {
         await setAppTargetTone(toneEditor.targetId, newTone.id);
       }
     },
-    [tones, toneEditor.targetId]
+    [tones, toneEditor.targetId],
   );
 
   const handleEditSave = useCallback(async (toneToSave: Tone) => {
@@ -181,7 +181,7 @@ export const ToneEditorDialog = () => {
       ) : (
         <FormattedMessage defaultMessage="Create style" />
       ),
-    [isEditMode]
+    [isEditMode],
   );
 
   return (

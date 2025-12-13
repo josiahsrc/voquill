@@ -1,4 +1,9 @@
-import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
+import {
+  PostProcessingMode,
+  Transcription,
+  TranscriptionAudioSnapshot,
+  TranscriptionMode,
+} from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { getAppState } from "../store";
@@ -19,8 +24,8 @@ type LocalTranscription = {
   postProcessPrompt?: string | null;
   transcriptionApiKeyId?: string | null;
   postProcessApiKeyId?: string | null;
-  transcriptionMode?: "local" | "api" | "cloud" | null;
-  postProcessMode?: "none" | "api" | "cloud" | null;
+  transcriptionMode?: TranscriptionMode | null;
+  postProcessMode?: PostProcessingMode | null;
   postProcessDevice?: string | null;
   warnings?: string[] | null;
 };
@@ -36,16 +41,16 @@ export type ListTranscriptionsParams = {
 };
 
 const toLocalTranscription = (
-  transcription: Transcription
+  transcription: Transcription,
 ): LocalTranscription => ({
   id: transcription.id,
   transcript: transcription.transcript,
   timestamp: dayjs(transcription.createdAt).valueOf(),
   audio: transcription.audio
     ? {
-      filePath: transcription.audio.filePath,
-      durationMs: transcription.audio.durationMs,
-    }
+        filePath: transcription.audio.filePath,
+        durationMs: transcription.audio.durationMs,
+      }
     : undefined,
   modelSize: transcription.modelSize ?? null,
   inferenceDevice: transcription.inferenceDevice ?? null,
@@ -61,7 +66,7 @@ const toLocalTranscription = (
 });
 
 const fromLocalTranscription = (
-  transcription: LocalTranscription
+  transcription: LocalTranscription,
 ): Transcription => ({
   id: transcription.id,
   transcript: transcription.transcript,
@@ -70,9 +75,9 @@ const fromLocalTranscription = (
   isDeleted: false,
   audio: transcription.audio
     ? {
-      filePath: transcription.audio.filePath,
-      durationMs: transcription.audio.durationMs,
-    }
+        filePath: transcription.audio.filePath,
+        durationMs: transcription.audio.durationMs,
+      }
     : undefined,
   modelSize: transcription.modelSize ?? undefined,
   inferenceDevice: transcription.inferenceDevice ?? undefined,
@@ -88,17 +93,23 @@ const fromLocalTranscription = (
 });
 
 export abstract class BaseTranscriptionRepo extends BaseRepo {
-  abstract createTranscription(transcription: Transcription): Promise<Transcription>;
-  abstract listTranscriptions(params?: ListTranscriptionsParams): Promise<Transcription[]>;
+  abstract createTranscription(
+    transcription: Transcription,
+  ): Promise<Transcription>;
+  abstract listTranscriptions(
+    params?: ListTranscriptionsParams,
+  ): Promise<Transcription[]>;
   abstract deleteTranscription(id: string): Promise<void>;
-  abstract updateTranscription(transcription: Transcription): Promise<Transcription>;
+  abstract updateTranscription(
+    transcription: Transcription,
+  ): Promise<Transcription>;
   abstract loadTranscriptionAudio(id: string): Promise<TranscriptionAudioData>;
   abstract purgeStaleAudio(): Promise<string[]>;
 }
 
 export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
   async createTranscription(
-    transcription: Transcription
+    transcription: Transcription,
   ): Promise<Transcription> {
     const stored = await invoke<LocalTranscription>("transcription_create", {
       transcription: toLocalTranscription(transcription),
@@ -108,14 +119,14 @@ export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
   }
 
   async listTranscriptions(
-    params: ListTranscriptionsParams = {}
+    params: ListTranscriptionsParams = {},
   ): Promise<Transcription[]> {
     const limit = Math.max(0, Math.trunc(params.limit ?? 20));
     const offset = Math.max(0, Math.trunc(params.offset ?? 0));
 
     const transcriptions = await invoke<LocalTranscription[]>(
       "transcription_list",
-      { limit, offset }
+      { limit, offset },
     );
 
     return transcriptions.map(fromLocalTranscription);
@@ -125,7 +136,9 @@ export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
     await invoke<void>("transcription_delete", { id });
   }
 
-  async updateTranscription(transcription: Transcription): Promise<Transcription> {
+  async updateTranscription(
+    transcription: Transcription,
+  ): Promise<Transcription> {
     const stored = await invoke<LocalTranscription>("transcription_update", {
       transcription: toLocalTranscription(transcription),
     });
@@ -138,7 +151,7 @@ export class LocalTranscriptionRepo extends BaseTranscriptionRepo {
 
   async purgeStaleAudio(): Promise<string[]> {
     const purged = await invoke<string[] | undefined>(
-      "purge_stale_transcription_audio"
+      "purge_stale_transcription_audio",
     );
     return Array.isArray(purged) ? purged : [];
   }

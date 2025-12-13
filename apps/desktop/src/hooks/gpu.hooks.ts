@@ -22,7 +22,7 @@ export const useSupportedDiscreteGpus = (active: boolean) => {
         const gpuList = await invoke<GpuInfo[]>("list_gpus");
         const supported = gpuList.filter(
           (info) =>
-            info.backend === "Vulkan" && info.deviceType === "DiscreteGpu"
+            info.backend === "Vulkan" && info.deviceType === "DiscreteGpu",
         );
         if (!cancelled) {
           setGpus(supported);

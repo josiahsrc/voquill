@@ -67,7 +67,7 @@ export const ToneSelect = ({
       const toneId = event.target.value === "" ? null : event.target.value;
       onToneChange(toneId);
     },
-    [addToneTargetId, onToneChange]
+    [addToneTargetId, onToneChange],
   );
 
   const handleSelectOpen = useCallback(() => setMenuOpen(true), []);

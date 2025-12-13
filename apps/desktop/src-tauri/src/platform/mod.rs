@@ -33,8 +33,6 @@ pub mod audio;
 pub mod whisper;
 
 #[cfg(desktop)]
-pub mod key_state;
-#[cfg(desktop)]
 pub mod keyboard;
 
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;

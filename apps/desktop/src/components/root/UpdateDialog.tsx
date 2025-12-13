@@ -42,13 +42,13 @@ export const UpdateDialog = () => {
   const dialogOpen = useAppStore((state) => state.updater.dialogOpen);
   const status = useAppStore((state) => state.updater.status);
   const availableVersion = useAppStore(
-    (state) => state.updater.availableVersion
+    (state) => state.updater.availableVersion,
   );
   const currentVersion = useAppStore((state) => state.updater.currentVersion);
   const releaseDate = useAppStore((state) => state.updater.releaseDate);
   const releaseNotes = useAppStore((state) => state.updater.releaseNotes);
   const downloadProgress = useAppStore(
-    (state) => state.updater.downloadProgress
+    (state) => state.updater.downloadProgress,
   );
   const downloadedBytes = useAppStore((state) => state.updater.downloadedBytes);
   const totalBytes = useAppStore((state) => state.updater.totalBytes);
@@ -62,7 +62,7 @@ export const UpdateDialog = () => {
         {
           defaultMessage: "Voquill {version}",
         },
-        { version: availableVersion }
+        { version: availableVersion },
       )
     : intl.formatMessage({
         defaultMessage: "A Voquill update",
@@ -70,7 +70,7 @@ export const UpdateDialog = () => {
 
   const formattedDate = useMemo(
     () => formatReleaseDate(releaseDate),
-    [releaseDate]
+    [releaseDate],
   );
 
   const percent = useMemo(() => {
@@ -98,7 +98,7 @@ export const UpdateDialog = () => {
     {
       defaultMessage: "{label} is ready to install.",
     },
-    { label: versionLabel }
+    { label: versionLabel },
   );
 
   const currentVersionDescription = intl.formatMessage(
@@ -106,7 +106,7 @@ export const UpdateDialog = () => {
       defaultMessage:
         "You're currently on version {version}. The app will restart after the update finishes.",
     },
-    { version: currentVersionLabel }
+    { version: currentVersionLabel },
   );
 
   const handleClose = useCallback(() => {

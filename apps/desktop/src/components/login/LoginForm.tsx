@@ -48,8 +48,12 @@ export const LoginForm = () => {
       <Typography variant="body1" fontWeight="bold">
         {mode === "signIn" && <FormattedMessage defaultMessage="Sign in" />}
         {mode === "signUp" && <FormattedMessage defaultMessage="Sign up" />}
-        {mode === "resetPassword" && <FormattedMessage defaultMessage="Reset password" />}
-        {mode === "passwordResetSent" && <FormattedMessage defaultMessage="Email sent" />}
+        {mode === "resetPassword" && (
+          <FormattedMessage defaultMessage="Reset password" />
+        )}
+        {mode === "passwordResetSent" && (
+          <FormattedMessage defaultMessage="Email sent" />
+        )}
       </Typography>
 
       <TransitionGroup>

@@ -1,12 +1,25 @@
 import { invokeHandler } from "@repo/functions";
 import { Nullable } from "@repo/types";
-import { groqTranscribeAudio, TranscriptionModel } from "@repo/voice-ai";
+import {
+  groqTranscribeAudio,
+  TranscriptionModel,
+  openaiTranscribeAudio,
+  OpenAITranscriptionModel,
+} from "@repo/voice-ai";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
-import { CPU_DEVICE_VALUE, DEFAULT_MODEL_SIZE, TranscriptionMode } from "../types/ai.types";
+import {
+  CPU_DEVICE_VALUE,
+  DEFAULT_MODEL_SIZE,
+  TranscriptionMode,
+} from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { buildDeviceLabel } from "../types/gpu.types";
-import { buildWaveFile, ensureFloat32Array, normalizeSamples } from "../utils/audio.utils";
+import {
+  buildWaveFile,
+  ensureFloat32Array,
+  normalizeSamples,
+} from "../utils/audio.utils";
 import { loadDiscreteGpus } from "../utils/gpu.utils";
 import { BaseRepo } from "./base.repo";
 
@@ -26,7 +39,7 @@ export type TranscribeAudioMetadata = {
   inferenceDevice?: Nullable<string>;
   modelSize?: Nullable<string>;
   transcriptionMode?: Nullable<TranscriptionMode>;
-}
+};
 
 export type TranscribeAudioInput = {
   samples: AudioSamples;
@@ -41,7 +54,9 @@ export type TranscribeAudioOutput = {
 };
 
 export abstract class BaseTranscribeAudioRepo extends BaseRepo {
-  abstract transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput>;
+  abstract transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput>;
 }
 
 export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
@@ -91,9 +106,11 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     options.deviceLabel = `GPU · ${buildDeviceLabel(selected)}`;
 
     return options;
-  };
+  }
 
-  async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const options = await this.resolveTranscriptionOptions();
     const transcript = await invoke<string>("transcribe_audio", {
@@ -113,13 +130,15 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         inferenceDevice: options.deviceLabel,
         modelSize: options.modelSize,
         transcriptionMode: "local",
-      }
+      },
     };
   }
 }
 
 export class CloudTranscribeAudioRepo extends BaseTranscribeAudioRepo {
-  async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalized);
     const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
@@ -136,28 +155,31 @@ export class CloudTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: response.text,
       metadata: {
         transcriptionMode: "cloud",
-      }
+      },
     };
   }
 }
 
 export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
   private groqApiKey: string;
+  private model: TranscriptionModel;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model: string | null) {
     super();
     this.groqApiKey = apiKey;
+    this.model = (model as TranscriptionModel) ?? "whisper-large-v3-turbo";
   }
 
-  async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalized);
     const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
-    const model: TranscriptionModel = "whisper-large-v3-turbo";
 
     const { text: transcript } = await groqTranscribeAudio({
       apiKey: this.groqApiKey,
-      model,
+      model: this.model,
       blob: wavBuffer,
       ext: "wav",
       prompt: input.prompt ?? undefined,
@@ -168,9 +190,46 @@ export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: transcript,
       metadata: {
         inferenceDevice: "API • Groq",
-        modelSize: model,
+        modelSize: this.model,
         transcriptionMode: "api",
-      }
+      },
+    };
+  }
+}
+
+export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private openaiApiKey: string;
+  private model: OpenAITranscriptionModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.openaiApiKey = apiKey;
+    this.model = (model as OpenAITranscriptionModel) ?? "whisper-1";
+  }
+
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
+    const normalized = normalizeSamples(input.samples);
+    const floatSamples = ensureFloat32Array(normalized);
+    const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
+
+    const { text: transcript } = await openaiTranscribeAudio({
+      apiKey: this.openaiApiKey,
+      model: this.model,
+      blob: wavBuffer,
+      ext: "wav",
+      prompt: input.prompt ?? undefined,
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • OpenAI",
+        modelSize: this.model,
+        transcriptionMode: "api",
+      },
     };
   }
 }

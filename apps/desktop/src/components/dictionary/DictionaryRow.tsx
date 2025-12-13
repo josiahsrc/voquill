@@ -17,7 +17,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
   const term = useAppStore((state) => getRec(state.termById, id));
   const [sourceValue, setSourceValue] = useState(term?.sourceValue ?? "");
   const [destinationValue, setDestinationValue] = useState(
-    term?.destinationValue ?? ""
+    term?.destinationValue ?? "",
   );
   const isReplacement = term?.isReplacement ?? true;
 
@@ -81,7 +81,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
 
     produceAppState((draft) => {
       draft.dictionary.termIds = draft.dictionary.termIds.filter(
-        (termId) => termId !== id
+        (termId) => termId !== id,
       );
     });
 
@@ -138,7 +138,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
       <IconButton
         aria-label={intl.formatMessage(
           { defaultMessage: "Delete dictionary item {term}" },
-          { term: term.sourceValue }
+          { term: term.sourceValue },
         )}
         onClick={handleDelete}
         size="small"

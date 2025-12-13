@@ -48,6 +48,12 @@ pub const USER_PREFERENCES_INITIAL_TONES_MIGRATION_SQL: &str =
     include_str!("migrations/022_user_preferences_initial_tones.sql");
 pub const CLEANUP_DEFAULT_TONES_MIGRATION_SQL: &str =
     include_str!("migrations/024_cleanup_default_tones.sql");
+pub const USER_PREFERENCES_DEVICE_MIGRATION_SQL: &str =
+    include_str!("migrations/025_user_preferences_device.sql");
+pub const API_KEY_MODEL_MIGRATION_SQL: &str =
+    include_str!("migrations/026_api_key_model.sql");
+pub const USER_PREFERENCES_OLLAMA_MIGRATION_SQL: &str =
+    include_str!("migrations/027_user_preferences_ollama.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -193,6 +199,24 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 24,
             description: "cleanup_default_tones",
             sql: CLEANUP_DEFAULT_TONES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 25,
+            description: "add_user_preferences_device",
+            sql: USER_PREFERENCES_DEVICE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 26,
+            description: "add_api_key_model",
+            sql: API_KEY_MODEL_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 27,
+            description: "add_user_preferences_ollama",
+            sql: USER_PREFERENCES_OLLAMA_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

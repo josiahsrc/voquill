@@ -1,15 +1,9 @@
 import { User, UserPreferences } from "@repo/types";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
-import {
-  OnboardingPageKey,
-  OnboardingState,
-} from "../state/onboarding.state";
+import { OnboardingPageKey, OnboardingState } from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
-import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
-} from "../types/ai.types";
+import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { EffectivePlan } from "../types/member.types";
 import {
   GenerativePrefs,
@@ -18,7 +12,7 @@ import {
   getTranscriptionPrefs,
   registerUserPreferences,
   setCurrentUser,
-  TranscriptionPrefs
+  TranscriptionPrefs,
 } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
@@ -64,17 +58,14 @@ export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
 
-  const transcriptionPreference: TranscriptionPrefs =
-    getTranscriptionPrefs(state) ?? {
-      mode: DEFAULT_TRANSCRIPTION_MODE,
-      apiKeyId: null,
-    };
+  const transcriptionPreference: TranscriptionPrefs = getTranscriptionPrefs(
+    state,
+  ) ?? {
+    mode: DEFAULT_TRANSCRIPTION_MODE,
+    apiKeyId: null,
+  };
 
-  const postProcessingPreference: GenerativePrefs =
-    getGenerativePrefs(state) ?? {
-      mode: DEFAULT_POST_PROCESSING_MODE,
-      apiKeyId: null,
-    };
+  const postProcessingPreference: GenerativePrefs = getGenerativePrefs(state);
 
   produceAppState((draft) => {
     draft.onboarding.submitting = true;
@@ -111,10 +102,20 @@ export const submitOnboarding = async () => {
         transcriptionPreference.mode === "api"
           ? transcriptionPreference.apiKeyId
           : null,
+      transcriptionDevice: null,
+      transcriptionModelSize: null,
       postProcessingMode: postProcessingPreference.mode,
       postProcessingApiKeyId:
         postProcessingPreference.mode === "api"
           ? postProcessingPreference.apiKeyId
+          : null,
+      postProcessingOllamaUrl:
+        postProcessingPreference.mode === "ollama"
+          ? postProcessingPreference.ollamaUrl
+          : null,
+      postProcessingOllamaModel:
+        postProcessingPreference.mode === "ollama"
+          ? postProcessingPreference.ollamaModel
           : null,
       activeToneId: null,
     };

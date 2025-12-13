@@ -7,10 +7,11 @@ import z from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 
 const sanitizeGlossaryValue = (value: string): string =>
+  // oxlint-disable-next-line no-control-regex
   value.replace(/\0/g, "").replace(/\s+/g, " ").trim();
 
 export const collectDictionaryEntries = (
-  state: AppState
+  state: AppState,
 ): DictionaryEntries => {
   const sources = new Map<string, string>();
   const replacements = new Map<string, ReplacementRule>();
@@ -77,7 +78,7 @@ export type DictionaryEntries = {
 
 const buildDictionaryContext = (
   entries: DictionaryEntries,
-  intl: IntlShape
+  intl: IntlShape,
 ): string | null => {
   const sections: string[] = [];
 
@@ -141,9 +142,7 @@ export const buildLocalizedTranscriptionPrompt = (
   return buildDictionaryContext(entries, intl) ?? "";
 };
 
-export const buildSystemPostProcessingTonePrompt = (
-  locale: Locale,
-): string => {
+export const buildSystemPostProcessingTonePrompt = (locale: Locale): string => {
   const intl = getIntl(locale);
   return intl.formatMessage(
     {
@@ -152,7 +151,7 @@ export const buildSystemPostProcessingTonePrompt = (
     },
     {},
   );
-}
+};
 
 export const buildLocalizedPostProcessingPrompt = (
   transcript: string,
@@ -196,7 +195,7 @@ Do not alter or reorganize the original wording, structure, or flow beyond remov
 
 Here is the transcript:
 {transcript}
-        `
+        `,
       },
       {
         languageName,
@@ -211,9 +210,11 @@ Here is the transcript:
 export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
   processedTranscription: z
     .string()
-    .describe("The processed version of the transcript. Empty if no transcript."),
+    .describe(
+      "The processed version of the transcript. Empty if no transcript.",
+    ),
 });
 
 export const PROCESSED_TRANSCRIPTION_JSON_SCHEMA =
-  zodToJsonSchema(PROCESSED_TRANSCRIPTION_SCHEMA, "Schema").definitions?.Schema ??
-  {};
+  zodToJsonSchema(PROCESSED_TRANSCRIPTION_SCHEMA, "Schema").definitions
+    ?.Schema ?? {};

@@ -22,7 +22,7 @@ export const StylingRow = ({ id }: StylingRowProps) => {
 
       void setAppTargetTone(target.id, toneId);
     },
-    [target]
+    [target],
   );
   const toneValue = target?.toneId ?? null;
   const leading = (

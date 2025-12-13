@@ -55,7 +55,7 @@ export function VirtualizedListPage<Item>({
   emptyState,
 }: VirtualizedListPageProps<Item>) {
   const [scrollerNode, setScrollerNode] = useState<HTMLElement | Window | null>(
-    null
+    null,
   );
   const [collapseProgress, setCollapseProgress] = useState(0);
 
@@ -74,7 +74,7 @@ export function VirtualizedListPage<Item>({
       rafId = requestAnimationFrame(() => {
         const progress = Math.min(
           scrollerNode.scrollTop / COLLAPSE_DISTANCE_PX,
-          1
+          1,
         );
         setCollapseProgress(progress);
         rafId = null;

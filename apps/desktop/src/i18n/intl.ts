@@ -82,6 +82,6 @@ export function getIntl(locale?: Locale) {
       defaultLocale: DEFAULT_LOCALE,
       messages: getMessagesForLocale(detectedLocale),
     },
-    cache
+    cache,
   );
 }

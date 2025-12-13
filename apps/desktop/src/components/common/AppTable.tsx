@@ -26,7 +26,7 @@ export interface ColumnDef<T> {
 }
 
 const DefaultRow = React.forwardRef<HTMLDivElement, DivRowProps>(
-  (props, ref) => <MuiTableRow ref={ref} component="div" {...props} />
+  (props, ref) => <MuiTableRow ref={ref} component="div" {...props} />,
 );
 
 export interface AppTableProps<T> {
@@ -54,7 +54,7 @@ export function AppTable<T>({
   defaultSortDirection = "asc",
 }: AppTableProps<T>) {
   const [sortIdx, setSortIdx] = React.useState<number | null>(
-    defaultSortColumnIndex ?? null
+    defaultSortColumnIndex ?? null,
   );
   const [direction, setDirection] =
     React.useState<SortDirection>(defaultSortDirection);
@@ -133,7 +133,7 @@ export function AppTable<T>({
         <MuiTableFooter ref={ref} component="div" {...props} />
       )) as any,
     }),
-    [RowComponent]
+    [RowComponent],
   );
 
   const FixedHeaderContent = () => (

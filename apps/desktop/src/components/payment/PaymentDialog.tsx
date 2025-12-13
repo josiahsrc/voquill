@@ -40,7 +40,7 @@ export const PaymentDialog = () => {
         }
 
         const member = await invokeHandler("member/getMyMember", {}).then(
-          (res) => res.member
+          (res) => res.member,
         );
         if (!member) {
           throw new Error("member not found after payment");

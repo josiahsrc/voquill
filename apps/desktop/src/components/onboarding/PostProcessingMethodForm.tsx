@@ -10,7 +10,7 @@ import { FormContainer } from "./OnboardingShared";
 
 export const PostProcessingMethodForm = () => {
   const { mode, selectedApiKeyId } = useAppStore(
-    (state) => state.settings.aiPostProcessing
+    (state) => state.settings.aiPostProcessing,
   );
 
   const canContinue = mode === "api" ? Boolean(selectedApiKeyId) : true;

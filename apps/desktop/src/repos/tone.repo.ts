@@ -66,7 +66,9 @@ export class LocalToneRepo extends BaseToneRepo {
       throw new Error("System tones cannot be modified.");
     }
 
-    const upserted = await invoke<LocalTone>("tone_upsert", { tone: toLocalTone(tone) });
+    const upserted = await invoke<LocalTone>("tone_upsert", {
+      tone: toLocalTone(tone),
+    });
     return fromLocalTone(upserted);
   }
 

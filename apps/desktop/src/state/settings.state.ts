@@ -23,6 +23,10 @@ export type SettingsTranscriptionState = {
 export type SettingsPostProcessingState = {
   mode: PostProcessingMode;
   selectedApiKeyId: string | null;
+  ollamaUrl: string | null;
+  ollamaModel: string | null;
+  ollamaModels: string[];
+  isOllamaAvailable: boolean;
 };
 
 export type SettingsState = {
@@ -64,6 +68,10 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,
     selectedApiKeyId: null,
+    ollamaUrl: null,
+    ollamaModel: null,
+    ollamaModels: [],
+    isOllamaAvailable: false,
   },
   apiKeys: [],
   apiKeysStatus: "idle",

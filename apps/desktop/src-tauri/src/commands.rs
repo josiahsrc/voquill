@@ -467,6 +467,8 @@ pub async fn api_key_create(
         key_hash: protected.hash_b64,
         key_ciphertext: protected.ciphertext_b64,
         key_suffix: protected.key_suffix,
+        transcription_model: None,
+        post_processing_model: None,
     };
 
     crate::db::api_key_queries::insert_api_key(database.pool(), &stored)
@@ -504,6 +506,16 @@ pub async fn api_key_delete(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<(), String> {
     crate::db::api_key_queries::delete_api_key(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn api_key_update(
+    request: crate::domain::ApiKeyUpdateRequest,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::api_key_queries::update_api_key(database.pool(), &request)
         .await
         .map_err(|err| err.to_string())
 }
@@ -962,4 +974,14 @@ pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
 
     app.emit_to(EventTarget::any(), EVT_OVERLAY_PHASE, payload)
         .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
+    crate::platform::keyboard::start_key_listener(&app)
+}
+
+#[tauri::command]
+pub fn stop_key_listener() -> Result<(), String> {
+    crate::platform::keyboard::stop_key_listener()
 }

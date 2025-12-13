@@ -17,14 +17,23 @@ import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
-import { INITIAL_ONBOARDING_STATE, type OnboardingState } from "./onboarding.state";
+import {
+  INITIAL_ONBOARDING_STATE,
+  type OnboardingState,
+} from "./onboarding.state";
 import { INITIAL_PAYMENT_STATE, PaymentState } from "./payment.state";
 import { INITIAL_PRICING_STATE, PricingState } from "./pricing.state";
 import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import { INITIAL_TONES_STATE, TonesState } from "./tones.state";
-import { INITIAL_TRANSCRIPTIONS_STATE, TranscriptionsState } from "./transcriptions.state";
+import {
+  INITIAL_TRANSCRIPTIONS_STATE,
+  TranscriptionsState,
+} from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
-import { INITIAL_TONE_EDITOR_STATE, ToneEditorState } from "./tone-editor.state";
+import {
+  INITIAL_TONE_EDITOR_STATE,
+  ToneEditorState,
+} from "./tone-editor.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 

@@ -55,8 +55,12 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   userId,
   transcriptionMode: DEFAULT_TRANSCRIPTION_MODE,
   transcriptionApiKeyId: null,
+  transcriptionDevice: null,
+  transcriptionModelSize: null,
   postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
   postProcessingApiKeyId: null,
+  postProcessingOllamaUrl: null,
+  postProcessingOllamaModel: null,
   activeToneId: null,
 });
 
@@ -67,7 +71,8 @@ const updateUserPreferences = async (
   const state = getAppState();
   const myUserId = getMyEffectiveUserId(state);
 
-  const existing = getMyUserPreferences(state) ?? createDefaultPreferences(myUserId);
+  const existing =
+    getMyUserPreferences(state) ?? createDefaultPreferences(myUserId);
   const payload: UserPreferences = { ...existing, userId: myUserId };
   updateCallback(payload);
 
@@ -90,7 +95,9 @@ const getCurrentUsageMonth = (): string => {
   return `${year}-${month}`;
 };
 
-export const addWordsToCurrentUser = async (wordCount: number): Promise<void> => {
+export const addWordsToCurrentUser = async (
+  wordCount: number,
+): Promise<void> => {
   if (wordCount <= 0) {
     return;
   }
@@ -185,15 +192,22 @@ export const setUserName = async (name: string): Promise<void> => {
 
 const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
-  await updateUserPreferences(
-    (preferences) => {
-      preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
-      preferences.postProcessingApiKeyId = state.settings.aiPostProcessing.selectedApiKeyId ?? null;
-      preferences.transcriptionMode = state.settings.aiTranscription.mode;
-      preferences.transcriptionApiKeyId = state.settings.aiTranscription.selectedApiKeyId ?? null;
-    },
-    "Failed to save AI preferences. Please try again.",
-  );
+  await updateUserPreferences((preferences) => {
+    preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
+    preferences.postProcessingApiKeyId =
+      state.settings.aiPostProcessing.selectedApiKeyId ?? null;
+    preferences.postProcessingOllamaUrl =
+      state.settings.aiPostProcessing.ollamaUrl ?? null;
+    preferences.postProcessingOllamaModel =
+      state.settings.aiPostProcessing.ollamaModel ?? null;
+    preferences.transcriptionMode = state.settings.aiTranscription.mode;
+    preferences.transcriptionApiKeyId =
+      state.settings.aiTranscription.selectedApiKeyId ?? null;
+    preferences.transcriptionDevice =
+      state.settings.aiTranscription.device ?? null;
+    preferences.transcriptionModelSize =
+      state.settings.aiTranscription.modelSize ?? null;
+  }, "Failed to save AI preferences. Please try again.");
 };
 
 export const setPreferredTranscriptionMode = async (
@@ -216,6 +230,26 @@ export const setPreferredTranscriptionApiKeyId = async (
   await persistAiPreferences();
 };
 
+export const setPreferredTranscriptionDevice = async (
+  device: string,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.device = device;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setPreferredTranscriptionModelSize = async (
+  modelSize: string,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.modelSize = modelSize;
+  });
+
+  await persistAiPreferences();
+};
+
 export const setPreferredPostProcessingMode = async (
   mode: PostProcessingMode,
 ): Promise<void> => {
@@ -231,6 +265,30 @@ export const setPreferredPostProcessingApiKeyId = async (
 ): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiPostProcessing.selectedApiKeyId = id;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setPreferredPostProcessingOllamaUrl = async (
+  url: Nullable<string>,
+): Promise<void> => {
+  const normalized = url?.trim() ?? null;
+  produceAppState((draft) => {
+    draft.settings.aiPostProcessing.ollamaUrl =
+      normalized && normalized.length > 0 ? normalized : null;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setPreferredPostProcessingOllamaModel = async (
+  model: Nullable<string>,
+): Promise<void> => {
+  const normalized = model?.trim() ?? null;
+  produceAppState((draft) => {
+    draft.settings.aiPostProcessing.ollamaModel =
+      normalized && normalized.length > 0 ? normalized : null;
   });
 
   await persistAiPreferences();

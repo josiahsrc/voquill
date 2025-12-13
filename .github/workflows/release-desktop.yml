@@ -193,15 +193,15 @@ jobs:
 
       - name: Generate release notes
         id: release_notes
-        uses: josiahsrc/ai-release-notes-builder@v2
+        uses: josiahsrc/ai-release-notes-builder@v3
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
+          content_scope: commit_messages
           prompt: |
             Generate high-level, user-facing release notes based on the diff below.
             This is for an AI dictation desktop software application
             Follow these rules:
-
             • Focus strictly on user-visible improvements and overall product value.
             • Never mention file names, code components, technologies, or internal systems.
             • Never describe what changed in the code; describe only the outcome or benefit.
@@ -213,6 +213,10 @@ jobs:
             • If a change has no user-visible effect, omit it.
             • If you're not sure what changed, just say "Various improvements and bug fixes." as a single bullet point.
             • Never repeat yourself.
+            • Your release notes should sound authentic and natural.
+            • Use direct, factual language. Never be sycophantic or overly enthusiastic.
+            • Do not start bullets with phrases like "Enjoy", "Experience", "Discover", or similar marketing language.
+            • State improvements plainly without embellishment (e.g., "Improved performance" not "Enjoy blazing-fast performance").
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
           paths: |
@@ -375,9 +379,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: jakoch/install-vulkan-sdk-action@v1
         with:
-          version: "1.3.290.0"        
-          cache: true                 
-          runtime: true               
+          version: "1.3.290.0"
+          cache: true
+          runtime: true
 
       - name: Install GPU build deps (Windows)
         if: matrix.os == 'windows-latest'

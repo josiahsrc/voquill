@@ -79,18 +79,20 @@ export const OverlayRend = () => {
             if (platform === "windows") {
               // Use physical coordinates on Windows to avoid DPI/scale
               // conversion issues across mixed-DPI multi-monitor setups.
-              const physicalOverlayWidth = Math.round(OVERLAY_WIDTH * scaleFactor);
+              const physicalOverlayWidth = Math.round(
+                OVERLAY_WIDTH * scaleFactor,
+              );
               const physicalX = Math.round(
                 targetMonitor.position.x +
                   targetMonitor.size.width / 2 -
-                  physicalOverlayWidth / 2
+                  physicalOverlayWidth / 2,
               );
               const physicalY = Math.round(
-                targetMonitor.position.y + TOP_MARGIN * scaleFactor
+                targetMonitor.position.y + TOP_MARGIN * scaleFactor,
               );
 
               await windowRef.setPosition(
-                new PhysicalPosition(physicalX, physicalY)
+                new PhysicalPosition(physicalX, physicalY),
               );
             } else {
               // Other platforms: keep using logical coordinates.
@@ -98,14 +100,14 @@ export const OverlayRend = () => {
               const logicalX = Math.round(
                 targetMonitor.position.x / scaleFactor +
                   logicalWidth / 2 -
-                  OVERLAY_WIDTH / 2
+                  OVERLAY_WIDTH / 2,
               );
               const logicalY = Math.round(
-                targetMonitor.position.y / scaleFactor + TOP_MARGIN
+                targetMonitor.position.y / scaleFactor + TOP_MARGIN,
               );
 
               await windowRef.setPosition(
-                new LogicalPosition(logicalX, logicalY)
+                new LogicalPosition(logicalX, logicalY),
               );
             }
           }

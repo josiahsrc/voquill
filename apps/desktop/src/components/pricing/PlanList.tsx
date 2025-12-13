@@ -102,7 +102,7 @@ export const PlanList = ({
   const effectivePlan = useAppStore(getEffectivePlan);
 
   const proPrice = useAppStore((state) =>
-    getDollarPriceFromKey(state, "pro_monthly")
+    getDollarPriceFromKey(state, "pro_monthly"),
   );
 
   useOnEnter(() => {

@@ -26,7 +26,10 @@ export const submitSignIn = async (): Promise<void> => {
       state.login.status = "loading";
       state.login.errorMessage = "";
     });
-    await getAuthRepo().signInWithEmail(state.login.email, state.login.password);
+    await getAuthRepo().signInWithEmail(
+      state.login.email,
+      state.login.password,
+    );
     await tryInit();
     produceAppState((state) => {
       state.login.status = "success";
@@ -54,20 +57,26 @@ export const submitSignInWithGoogle = async (): Promise<void> => {
   }
 };
 
-export const handleGoogleAuthPayload = async (payload: GoogleAuthPayload): Promise<void> => {
+export const handleGoogleAuthPayload = async (
+  payload: GoogleAuthPayload,
+): Promise<void> => {
   try {
     produceAppState((state) => {
       state.login.status = "loading";
       state.login.errorMessage = "";
     });
-    await getAuthRepo().signInWithGoogleTokens(payload.idToken, payload.accessToken);
+    await getAuthRepo().signInWithGoogleTokens(
+      payload.idToken,
+      payload.accessToken,
+    );
     await tryInit();
     produceAppState((state) => {
       state.login.status = "success";
     });
   } catch {
     produceAppState((state) => {
-      state.login.errorMessage = "An error occurred while signing in with Google.";
+      state.login.errorMessage =
+        "An error occurred while signing in with Google.";
       state.login.status = "idle";
     });
   }
@@ -95,7 +104,10 @@ export const submitSignUp = async (): Promise<void> => {
       state.login.status = "loading";
       state.login.errorMessage = "";
     });
-    await getAuthRepo().signUpWithEmail(state.login.email, state.login.password);
+    await getAuthRepo().signUpWithEmail(
+      state.login.email,
+      state.login.password,
+    );
     await tryInit();
     await getAuthRepo().sendEmailVerificationForCurrentUser();
     produceAppState((state) => {
