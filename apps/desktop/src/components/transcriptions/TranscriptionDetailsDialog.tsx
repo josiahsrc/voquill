@@ -24,7 +24,7 @@ import { TranscriptionToneMenu } from "./TranscriptionToneMenu";
 
 const formatModelSizeLabel = (
   modelSize?: string | null,
-  unknownLabel: React.ReactNode = "Unknown"
+  unknownLabel: React.ReactNode = "Unknown",
 ): React.ReactNode => {
   const value = modelSize?.trim();
   if (!value) {
@@ -37,7 +37,7 @@ const formatModelSizeLabel = (
 const renderTextBlock = (
   label: React.ReactNode,
   value: string | null | undefined,
-  options?: { placeholder?: React.ReactNode; monospace?: boolean }
+  options?: { placeholder?: React.ReactNode; monospace?: boolean },
 ) => {
   const normalized = value?.trim();
 
@@ -84,7 +84,7 @@ const resolveApiKeyLabel = (
   records: AppState["apiKeyById"],
   apiKeyId: string | null | undefined,
   noneLabel: string,
-  unknownLabel: string
+  unknownLabel: string,
 ): string => {
   if (!apiKeyId) {
     return noneLabel;
@@ -126,7 +126,7 @@ export const TranscriptionDetailsDialog = () => {
         showErrorSnackbar(
           intl.formatMessage({
             defaultMessage: "Unable to load transcription details.",
-          })
+          }),
         );
         return;
       }
@@ -148,7 +148,7 @@ export const TranscriptionDetailsDialog = () => {
         setIsRetranscribing(false);
       }
     },
-    [intl, transcription?.id]
+    [intl, transcription?.id],
   );
 
   const transcriptionModeLabel = useMemo(() => {
@@ -170,9 +170,9 @@ export const TranscriptionDetailsDialog = () => {
         apiKeysById,
         transcription?.transcriptionApiKeyId,
         "None",
-        "Unknown"
+        "Unknown",
       ),
-    [apiKeysById, transcription?.transcriptionApiKeyId]
+    [apiKeysById, transcription?.transcriptionApiKeyId],
   );
 
   const postProcessModeLabel = useMemo(() => {
@@ -191,14 +191,14 @@ export const TranscriptionDetailsDialog = () => {
         apiKeysById,
         transcription?.postProcessApiKeyId,
         "None",
-        "Unknown"
+        "Unknown",
       ),
-    [apiKeysById, transcription?.postProcessApiKeyId]
+    [apiKeysById, transcription?.postProcessApiKeyId],
   );
 
   const modelSizeLabel = useMemo(
     () => formatModelSizeLabel(transcription?.modelSize ?? null, "Unknown"),
-    [transcription?.modelSize]
+    [transcription?.modelSize],
   );
 
   const deviceLabel = useMemo(() => {
@@ -226,7 +226,7 @@ export const TranscriptionDetailsDialog = () => {
 
   const rawTranscriptText = useMemo(
     () => transcription?.rawTranscript ?? transcription?.transcript ?? "",
-    [transcription?.rawTranscript, transcription?.transcript]
+    [transcription?.rawTranscript, transcription?.transcript],
   );
 
   const postProcessPrompt = useMemo(() => {
@@ -301,7 +301,7 @@ export const TranscriptionDetailsDialog = () => {
                       <FormattedMessage defaultMessage="No custom prompt applied." />
                     ),
                     monospace: true,
-                  }
+                  },
                 )}
               </Stack>
             </Box>
@@ -345,7 +345,7 @@ export const TranscriptionDetailsDialog = () => {
                       <FormattedMessage defaultMessage="No LLM post-processing was applied." />
                     ),
                     monospace: true,
-                  }
+                  },
                 )}
               </Stack>
             </Box>
@@ -365,7 +365,7 @@ export const TranscriptionDetailsDialog = () => {
                       <FormattedMessage defaultMessage="Raw transcript unavailable." />
                     ),
                     monospace: true,
-                  }
+                  },
                 )}
                 {renderTextBlock(
                   <FormattedMessage defaultMessage="Final transcription" />,
@@ -375,7 +375,7 @@ export const TranscriptionDetailsDialog = () => {
                       <FormattedMessage defaultMessage="Final transcript unavailable." />
                     ),
                     monospace: true,
-                  }
+                  },
                 )}
               </Stack>
             </Box>

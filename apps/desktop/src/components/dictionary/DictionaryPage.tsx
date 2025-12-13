@@ -39,7 +39,7 @@ export default function DictionaryPage() {
       produceAppState((draft) => {
         delete draft.termById[newTerm.id];
         draft.dictionary.termIds = draft.dictionary.termIds.filter(
-          (termId) => termId !== newTerm.id
+          (termId) => termId !== newTerm.id,
         );
       });
       showErrorSnackbar(error);
@@ -53,9 +53,7 @@ export default function DictionaryPage() {
       items={[
         {
           kind: "listItem",
-          title: (
-            <FormattedMessage defaultMessage="Glossary term" />
-          ),
+          title: <FormattedMessage defaultMessage="Glossary term" />,
           onClick: ({ close }) => {
             handleAddTerm(false);
             close();
@@ -64,9 +62,7 @@ export default function DictionaryPage() {
         },
         {
           kind: "listItem",
-          title: (
-            <FormattedMessage defaultMessage="Replacement rule" />
-          ),
+          title: <FormattedMessage defaultMessage="Replacement rule" />,
           onClick: ({ close }) => {
             handleAddTerm(true);
             close();

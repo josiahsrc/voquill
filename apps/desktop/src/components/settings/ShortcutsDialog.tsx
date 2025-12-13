@@ -43,7 +43,9 @@ export const ShortcutsDialog = () => {
       <Stack spacing={3}>
         <HotkeySetting
           title={<FormattedMessage defaultMessage="Start/stop dictating" />}
-          description={<FormattedMessage defaultMessage="Start recording audio and transcribe your speech into text with AI." />}
+          description={
+            <FormattedMessage defaultMessage="Start recording audio and transcribe your speech into text with AI." />
+          }
           actionName={DICTATE_HOTKEY}
         />
       </Stack>

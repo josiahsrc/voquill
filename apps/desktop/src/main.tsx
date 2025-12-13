@@ -49,7 +49,7 @@ const missingFirebaseConfigKeys = Object.entries(firebaseConfig)
 
 if (missingFirebaseConfigKeys.length > 0) {
   throw new Error(
-    `Missing Firebase configuration values: ${missingFirebaseConfigKeys.join(", ")}`
+    `Missing Firebase configuration values: ${missingFirebaseConfigKeys.join(", ")}`,
   );
 }
 
@@ -107,7 +107,7 @@ if (isOverlayWindow) {
   root.render(
     <Main>
       <OverlayRoot />
-    </Main>
+    </Main>,
   );
 } else {
   const stripePromise = loadStripe(getStripePublicKey());
@@ -117,6 +117,6 @@ if (isOverlayWindow) {
         <SnackbarEmitter />
         <AppWithLoading />
       </Elements>
-    </Main>
+    </Main>,
   );
 }

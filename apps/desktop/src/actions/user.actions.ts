@@ -69,7 +69,8 @@ const updateUserPreferences = async (
   const state = getAppState();
   const myUserId = getMyEffectiveUserId(state);
 
-  const existing = getMyUserPreferences(state) ?? createDefaultPreferences(myUserId);
+  const existing =
+    getMyUserPreferences(state) ?? createDefaultPreferences(myUserId);
   const payload: UserPreferences = { ...existing, userId: myUserId };
   updateCallback(payload);
 
@@ -92,7 +93,9 @@ const getCurrentUsageMonth = (): string => {
   return `${year}-${month}`;
 };
 
-export const addWordsToCurrentUser = async (wordCount: number): Promise<void> => {
+export const addWordsToCurrentUser = async (
+  wordCount: number,
+): Promise<void> => {
   if (wordCount <= 0) {
     return;
   }
@@ -187,19 +190,22 @@ export const setUserName = async (name: string): Promise<void> => {
 
 const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
-  await updateUserPreferences(
-    (preferences) => {
-      preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
-      preferences.postProcessingApiKeyId = state.settings.aiPostProcessing.selectedApiKeyId ?? null;
-      preferences.postProcessingOllamaUrl = state.settings.aiPostProcessing.ollamaUrl ?? null;
-      preferences.postProcessingOllamaModel = state.settings.aiPostProcessing.ollamaModel ?? null;
-      preferences.transcriptionMode = state.settings.aiTranscription.mode;
-      preferences.transcriptionApiKeyId = state.settings.aiTranscription.selectedApiKeyId ?? null;
-      preferences.transcriptionDevice = state.settings.aiTranscription.device ?? null;
-      preferences.transcriptionModelSize = state.settings.aiTranscription.modelSize ?? null;
-    },
-    "Failed to save AI preferences. Please try again.",
-  );
+  await updateUserPreferences((preferences) => {
+    preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
+    preferences.postProcessingApiKeyId =
+      state.settings.aiPostProcessing.selectedApiKeyId ?? null;
+    preferences.postProcessingOllamaUrl =
+      state.settings.aiPostProcessing.ollamaUrl ?? null;
+    preferences.postProcessingOllamaModel =
+      state.settings.aiPostProcessing.ollamaModel ?? null;
+    preferences.transcriptionMode = state.settings.aiTranscription.mode;
+    preferences.transcriptionApiKeyId =
+      state.settings.aiTranscription.selectedApiKeyId ?? null;
+    preferences.transcriptionDevice =
+      state.settings.aiTranscription.device ?? null;
+    preferences.transcriptionModelSize =
+      state.settings.aiTranscription.modelSize ?? null;
+  }, "Failed to save AI preferences. Please try again.");
 };
 
 export const setPreferredTranscriptionMode = async (

@@ -12,7 +12,7 @@ export const loadPrices = async () => {
       draft.pricing.initialized = true;
       draft.priceValueByKey = prices;
     });
-  } catch (error) {
+  } catch {
     produceAppState((draft) => {
       draft.pricing.initialized = false;
     });

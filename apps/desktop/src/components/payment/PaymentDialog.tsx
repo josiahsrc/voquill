@@ -48,7 +48,7 @@ export const PaymentDialog = () => {
         }
 
         const member = await invokeHandler("member/getMyMember", {}).then(
-          (res) => res.member
+          (res) => res.member,
         );
 
         console.log("retrieved member after payment:", member);

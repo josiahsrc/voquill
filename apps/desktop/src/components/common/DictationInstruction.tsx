@@ -10,7 +10,7 @@ import { HotkeyBadge } from "./HotkeyBadge";
 
 export const DictationInstruction = () => {
   const combos = useAppStore((state) =>
-    getHotkeyCombosForAction(state, DICTATE_HOTKEY)
+    getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );
 
   if (combos.length === 0) {

@@ -80,7 +80,9 @@ export const ProfileDialog = () => {
             disabled={!user || saving}
             size="small"
             fullWidth
-            helperText={<FormattedMessage defaultMessage="Used to sign things like emails and stuff" />}
+            helperText={
+              <FormattedMessage defaultMessage="Used to sign things like emails and stuff" />
+            }
           />
         </Stack>
       </DialogContent>

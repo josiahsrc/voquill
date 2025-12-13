@@ -26,7 +26,7 @@ export const UpgradePlanDialog = () => {
   const open = useAppStore((state) => state.pricing.upgradePlanDialog);
   const view = useAppStore((state) => state.pricing.upgradePlanDialogView);
   const pendingPlan = useAppStore(
-    (state) => state.pricing.upgradePlanPendingPlan
+    (state) => state.pricing.upgradePlanPendingPlan,
   );
   const auth = useAppStore((state) => state.auth);
 

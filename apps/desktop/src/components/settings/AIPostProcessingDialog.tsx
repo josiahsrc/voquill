@@ -15,7 +15,7 @@ import { AIPostProcessingConfiguration } from "./AIPostProcessingConfiguration";
 
 export const AIPostProcessingDialog = () => {
   const open = useAppStore(
-    (state) => state.settings.aiPostProcessingDialogOpen
+    (state) => state.settings.aiPostProcessingDialogOpen,
   );
 
   const handleClose = () => {

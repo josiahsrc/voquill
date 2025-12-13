@@ -102,7 +102,7 @@ export const PlanList = ({
   const effectivePlan = useAppStore(getEffectivePlan);
 
   const proPrice = useAppStore((state) =>
-    getDollarPriceFromKey(state, "pro_monthly")
+    getDollarPriceFromKey(state, "pro_monthly"),
   );
 
   useOnEnter(() => {
@@ -111,7 +111,10 @@ export const PlanList = ({
 
   const getText = (plan: MemberPlan) => {
     if (effectivePlan === plan && !ignoreCurrentPlan) {
-      return { text: intl.formatMessage({ defaultMessage: "Current plan" }), disabled: true };
+      return {
+        text: intl.formatMessage({ defaultMessage: "Current plan" }),
+        disabled: true,
+      };
     }
 
     return {
@@ -137,17 +140,32 @@ export const PlanList = ({
         </Button>
       }
     >
-      <CheckmarkRow><FormattedMessage defaultMessage="On-device processing" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Unlimited words" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Custom API keys" /></CheckmarkRow>
-      <CheckmarkRow disabled><FormattedMessage defaultMessage="Manual setup" /></CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="On-device processing" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Unlimited words" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Custom API keys" />
+      </CheckmarkRow>
+      <CheckmarkRow disabled>
+        <FormattedMessage defaultMessage="Manual setup" />
+      </CheckmarkRow>
     </PlanCard>
   );
 
   const proCard = (
     <PlanCard
       title={<FormattedMessage defaultMessage="Pro" />}
-      price={proPrice ? intl.formatMessage({ defaultMessage: "${proPrice}/month" }, { proPrice }) : "--"}
+      price={
+        proPrice
+          ? intl.formatMessage(
+              { defaultMessage: "${proPrice}/month" },
+              { proPrice },
+            )
+          : "--"
+      }
       cardSx={{ borderColor: "primary.main" }}
       button={
         <Button
@@ -160,10 +178,18 @@ export const PlanList = ({
         </Button>
       }
     >
-      <CheckmarkRow><FormattedMessage defaultMessage="Everything community has" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Cross-device data storage" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="No setup needed" /></CheckmarkRow>
-      <CheckmarkRow><FormattedMessage defaultMessage="Priority support" /></CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Everything community has" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Cross-device data storage" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="No setup needed" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Priority support" />
+      </CheckmarkRow>
     </PlanCard>
   );
 

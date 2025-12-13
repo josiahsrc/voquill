@@ -22,7 +22,9 @@ const fromLocalUser = (localUser: LocalUser): User => {
   const bio = localUser.bio;
   const isOnboarded = localUser.onboarded;
   const playInteractionChime =
-    localUser.playInteractionChime == null ? true : localUser.playInteractionChime;
+    localUser.playInteractionChime == null
+      ? true
+      : localUser.playInteractionChime;
 
   return {
     id: localUser.id,
@@ -55,7 +57,6 @@ const toLocalUser = (user: User): LocalUser => ({
   playInteractionChime: user.playInteractionChime,
 });
 
-
 export abstract class BaseUserRepo extends BaseRepo {
   abstract setUser(user: User): Promise<User>;
   abstract getUser(id: string): Promise<Nullable<User>>;
@@ -84,7 +85,9 @@ export class CloudUserRepo extends BaseUserRepo {
   }
 
   async getUser(): Promise<Nullable<User>> {
-    const user = await invokeHandler("user/getMyUser", {}).then((res) => res.user);
+    const user = await invokeHandler("user/getMyUser", {}).then(
+      (res) => res.user,
+    );
     return user;
   }
 }

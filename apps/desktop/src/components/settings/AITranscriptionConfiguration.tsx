@@ -77,7 +77,7 @@ export const AITranscriptionConfiguration = ({
     if (transcription.device.startsWith("gpu-")) {
       const index = Number.parseInt(
         transcription.device.split("-")[1] ?? "",
-        10
+        10,
       );
       if (Number.isNaN(index) || index >= gpus.length) {
         void setPreferredTranscriptionDevice(CPU_DEVICE_VALUE);
@@ -93,7 +93,7 @@ export const AITranscriptionConfiguration = ({
         label: buildDeviceLabel(gpu),
       })),
     ],
-    [gpus]
+    [gpus],
   );
 
   const handleModeChange = useCallback((mode: TranscriptionMode) => {
@@ -125,7 +125,7 @@ export const AITranscriptionConfiguration = ({
                 value: "cloud",
                 label: "Voquill Cloud",
               },
-            ]
+            ],
           ),
           { value: "local", label: "Local processing" },
           { value: "api", label: "API key" },

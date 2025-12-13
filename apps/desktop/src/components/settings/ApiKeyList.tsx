@@ -56,7 +56,7 @@ type AddApiKeyCardProps = {
   onSave: (
     name: string,
     provider: SettingsApiKeyProvider,
-    key: string
+    key: string,
   ) => Promise<void>;
   onCancel: () => void;
 };
@@ -191,8 +191,8 @@ const getModelForContext = (
   context: ApiKeyListContext,
 ): string | null => {
   return context === "transcription"
-    ? apiKey.transcriptionModel ?? null
-    : apiKey.postProcessingModel ?? null;
+    ? (apiKey.transcriptionModel ?? null)
+    : (apiKey.postProcessingModel ?? null);
 };
 
 const ApiKeyCard = ({
@@ -338,7 +338,7 @@ export const ApiKeyList = ({
   const [showAddCard, setShowAddCard] = useState(false);
   const [testingApiKeyId, setTestingApiKeyId] = useState<string | null>(null);
   const [apiKeyToDelete, setApiKeyToDelete] = useState<SettingsApiKey | null>(
-    null
+    null,
   );
   const [deletingApiKeyId, setDeletingApiKeyId] = useState<string | null>(null);
 
@@ -370,7 +370,7 @@ export const ApiKeyList = ({
       onChange(created.id);
       setShowAddCard(false);
     },
-    [onChange]
+    [onChange],
   );
 
   const handleTestApiKey = useCallback(async (apiKey: SettingsApiKey) => {
@@ -384,7 +384,7 @@ export const ApiKeyList = ({
       }
     } catch (error) {
       showErrorSnackbar(
-        error instanceof Error ? error.message : "API key test failed."
+        error instanceof Error ? error.message : "API key test failed.",
       );
     } finally {
       setTestingApiKeyId(null);
@@ -412,7 +412,7 @@ export const ApiKeyList = ({
       await deleteApiKey(apiKeyToDelete.id);
       showSnackbar("API key deleted", { mode: "success" });
       setApiKeyToDelete(null);
-    } catch (error) {
+    } catch {
       // Errors are surfaced via deleteApiKey.
     } finally {
       setDeletingApiKeyId(null);
@@ -435,7 +435,7 @@ export const ApiKeyList = ({
         // Errors are surfaced via updateApiKey.
       }
     },
-    [context]
+    [context],
   );
 
   const loadingState = (

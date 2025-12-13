@@ -16,7 +16,7 @@ export default function StylingPage() {
   const sortedAppTargetIds = useAppStore((state) =>
     Object.values(state.appTargetById)
       .sort((left, right) => left.name.localeCompare(right.name))
-      .map((target) => target.id)
+      .map((target) => target.id),
   );
 
   const activeToneId = useAppStore((state) => {
@@ -35,7 +35,7 @@ export default function StylingPage() {
   }, []);
 
   const postProcessingMode = useAppStore(
-    (state) => state.settings.aiPostProcessing.mode
+    (state) => state.settings.aiPostProcessing.mode,
   );
 
   if (postProcessingMode === "none") {

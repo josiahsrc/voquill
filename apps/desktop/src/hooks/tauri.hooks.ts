@@ -4,7 +4,7 @@ import { showErrorSnackbar } from "../actions/app.actions";
 
 export const useTauriListen = <T = unknown>(
   eventName: string,
-  callback: (event: T) => void | Promise<void>
+  callback: (event: T) => void | Promise<void>,
 ) => {
   const cbRef = useRef(callback);
   cbRef.current = callback; // always latest

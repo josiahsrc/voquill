@@ -19,7 +19,7 @@ const defaultClampStyles = (maxLines: number) => ({
 const normalizeSxProp = (
   baseClampStyles: Record<string, unknown>,
   shouldClamp: boolean,
-  sx: TypographyProps["sx"]
+  sx: TypographyProps["sx"],
 ): TypographyProps["sx"] => {
   if (!shouldClamp) {
     return sx;
@@ -142,7 +142,8 @@ export function TypographyWithMore({
       sx={(theme) => {
         const variantKey = typographyProps.variant ?? "body2";
         const variantStyles =
-          (theme.typography as Record<string, any>)[variantKey] ?? theme.typography.body2;
+          (theme.typography as Record<string, any>)[variantKey] ??
+          theme.typography.body2;
         const fontSize =
           typeof typographyProps.fontSize !== "undefined"
             ? typographyProps.fontSize
@@ -150,7 +151,7 @@ export function TypographyWithMore({
         const lineHeight =
           typeof typographyProps.lineHeight !== "undefined"
             ? typographyProps.lineHeight
-            : variantStyles.lineHeight ?? 1.35;
+            : (variantStyles.lineHeight ?? 1.35);
 
         return {
           px: 0,

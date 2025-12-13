@@ -49,7 +49,5 @@ export const buildWaveFile = (
   return buffer;
 };
 
-export const normalizeSamples = (
-  samples: AudioSamples,
-): number[] =>
+export const normalizeSamples = (samples: AudioSamples): number[] =>
   Array.isArray(samples) ? samples : Array.from(samples ?? []);

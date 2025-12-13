@@ -55,7 +55,7 @@ export const AppHeader = () => {
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
   const planName = useAppStore((state) =>
-    planToDisplayName(getMyMember(state)?.plan ?? "free")
+    planToDisplayName(getMyMember(state)?.plan ?? "free"),
   );
   const isPaying = useAppStore(getIsPaying);
 

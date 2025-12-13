@@ -1,9 +1,6 @@
 import { MemberPlan, User, UserPreferences } from "@repo/types";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
-import {
-  OnboardingPageKey,
-  OnboardingState,
-} from "../state/onboarding.state";
+import { OnboardingPageKey, OnboardingState } from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { DEFAULT_LOCALE } from "../i18n/config";
@@ -14,7 +11,7 @@ import {
   getTranscriptionPrefs,
   registerUserPreferences,
   setCurrentUser,
-  TranscriptionPrefs
+  TranscriptionPrefs,
 } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
@@ -60,11 +57,12 @@ export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
 
-  const transcriptionPreference: TranscriptionPrefs =
-    getTranscriptionPrefs(state) ?? {
-      mode: DEFAULT_TRANSCRIPTION_MODE,
-      apiKeyId: null,
-    };
+  const transcriptionPreference: TranscriptionPrefs = getTranscriptionPrefs(
+    state,
+  ) ?? {
+    mode: DEFAULT_TRANSCRIPTION_MODE,
+    apiKeyId: null,
+  };
 
   const postProcessingPreference: GenerativePrefs = getGenerativePrefs(state);
 

@@ -32,8 +32,8 @@ export const HotkeySetting = ({
       .map((id) => state.hotkeyById[id])
       .filter(
         (hotkey): hotkey is Hotkey =>
-          Boolean(hotkey) && hotkey.actionName === actionName
-      )
+          Boolean(hotkey) && hotkey.actionName === actionName,
+      ),
   );
   const defaultCombos = getDefaultHotkeyCombosForAction(actionName);
 
@@ -64,7 +64,7 @@ export const HotkeySetting = ({
       produceAppState((draft) => {
         delete draft.hotkeyById[id];
         draft.settings.hotkeyIds = draft.settings.hotkeyIds.filter(
-          (hid) => hid !== id
+          (hid) => hid !== id,
         );
       });
       await getHotkeyRepo().deleteHotkey(id);

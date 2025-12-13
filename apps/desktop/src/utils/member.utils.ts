@@ -9,7 +9,7 @@ export const getMyMember = (state: AppState): Nullable<Member> => {
 
 export const getEffectivePlan = (state: AppState): MemberPlan => {
   return getMyMember(state)?.plan ?? "free";
-}
+};
 
 export const planToDisplayName = (plan: MemberPlan): string => {
   if (plan === "free") {
@@ -27,7 +27,7 @@ export const getMemberExceedsLimitsFromState = (state: AppState): boolean => {
   }
 
   return getMemberExceedsLimits(member, config);
-}
+};
 
 export const getIsPaying = (state: AppState): boolean => {
   const member = getMyMember(state);

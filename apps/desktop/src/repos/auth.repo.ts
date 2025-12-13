@@ -14,19 +14,31 @@ import {
 import { BaseRepo } from "./base.repo";
 
 export abstract class BaseAuthRepo extends BaseRepo {
-  abstract signUpWithEmail(email: string, password: string): Promise<UserCredential>;
+  abstract signUpWithEmail(
+    email: string,
+    password: string,
+  ): Promise<UserCredential>;
   abstract sendEmailVerificationForCurrentUser(): Promise<void>;
   abstract signOut(): Promise<void>;
-  abstract signInWithEmail(email: string, password: string): Promise<UserCredential>;
+  abstract signInWithEmail(
+    email: string,
+    password: string,
+  ): Promise<UserCredential>;
   abstract sendPasswordResetRequest(email: string): Promise<void>;
   abstract signInWithGoogle(): Promise<UserCredential>;
-  abstract signInWithGoogleTokens(idToken: string, accessToken: string): Promise<UserCredential>;
+  abstract signInWithGoogleTokens(
+    idToken: string,
+    accessToken: string,
+  ): Promise<UserCredential>;
   abstract getCurrentUser(): FirebaseUser | null;
   abstract deleteMyAccount(): Promise<void>;
 }
 
 export class CloudAuthRepo extends BaseAuthRepo {
-  async signUpWithEmail(email: string, password: string): Promise<UserCredential> {
+  async signUpWithEmail(
+    email: string,
+    password: string,
+  ): Promise<UserCredential> {
     return createUserWithEmailAndPassword(getAuth(), email, password);
   }
 
@@ -43,7 +55,10 @@ export class CloudAuthRepo extends BaseAuthRepo {
     await firebaseSignOut(getAuth());
   }
 
-  async signInWithEmail(email: string, password: string): Promise<UserCredential> {
+  async signInWithEmail(
+    email: string,
+    password: string,
+  ): Promise<UserCredential> {
     return signInWithEmailAndPassword(getAuth(), email, password);
   }
 
@@ -58,7 +73,10 @@ export class CloudAuthRepo extends BaseAuthRepo {
     return signInWithPopup(getAuth(), provider);
   }
 
-  async signInWithGoogleTokens(idToken: string, accessToken: string): Promise<UserCredential> {
+  async signInWithGoogleTokens(
+    idToken: string,
+    accessToken: string,
+  ): Promise<UserCredential> {
     const credential = GoogleAuthProvider.credential(idToken, accessToken);
     return signInWithCredential(getAuth(), credential);
   }

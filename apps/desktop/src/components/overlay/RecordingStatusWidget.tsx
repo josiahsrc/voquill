@@ -68,10 +68,10 @@ export const RecordingStatusWidget = () => {
             pointerEvents: "none",
             background: `linear-gradient(90deg, ${alpha(
               theme.palette.common.black,
-              0.9
+              0.9,
             )} 0%, transparent 18%, transparent 85%, ${alpha(
               theme.palette.common.black,
-              0.9
+              0.9,
             )} 100%)`,
           }}
         />

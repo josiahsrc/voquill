@@ -1,1 +1,1 @@
-export abstract class BaseRepo { }
+export abstract class BaseRepo {}

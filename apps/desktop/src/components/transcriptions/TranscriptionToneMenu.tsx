@@ -26,7 +26,7 @@ export const TranscriptionToneMenu = ({
 }: TranscriptionToneMenuProps) => {
   const toneById = useAppStore((state) => state.toneById);
   const defaultTone = useAppStore((state) =>
-    getRec(state.toneById, getMyUserPreferences(state)?.activeToneId)
+    getRec(state.toneById, getMyUserPreferences(state)?.activeToneId),
   );
 
   const tones = useMemo(() => sortTones(Object.values(toneById)), [toneById]);
@@ -35,7 +35,7 @@ export const TranscriptionToneMenu = ({
     (toneId: string | null) => {
       onToneSelect(toneId);
     },
-    [onToneSelect]
+    [onToneSelect],
   );
 
   const items = useMemo<MenuPopoverItem[]>(() => {
@@ -73,7 +73,7 @@ export const TranscriptionToneMenu = ({
           handleToneSelect(tone.id);
           close();
         },
-      }))
+      })),
     );
 
     return menuItems;

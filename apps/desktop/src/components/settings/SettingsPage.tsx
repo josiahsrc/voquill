@@ -137,7 +137,7 @@ export default function SettingsPage() {
     try {
       const data = await invokeHandler(
         "stripe/createCustomerPortalSession",
-        {}
+        {},
       );
       openUrl(data.url);
     } catch (error) {

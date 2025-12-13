@@ -41,7 +41,9 @@ export const AudioDialog = () => {
       <DialogContent sx={{ minWidth: 360 }}>
         <SettingSection
           title={<FormattedMessage defaultMessage="Interaction chime" />}
-          description={<FormattedMessage defaultMessage="Play a sound when you start or stop recording." />}
+          description={
+            <FormattedMessage defaultMessage="Play a sound when you start or stop recording." />
+          }
           action={
             <Switch
               edge="end"

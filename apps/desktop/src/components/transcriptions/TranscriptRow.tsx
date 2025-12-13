@@ -65,7 +65,7 @@ const WAVEFORM_BAR_GAP = 2;
 const buildWaveformOutline = (
   seedKey: string,
   durationMs?: number | null,
-  points = 28
+  points = 28,
 ): number[] => {
   if (points <= 0) {
     return [];
@@ -76,7 +76,7 @@ const buildWaveformOutline = (
     .split("")
     .reduce(
       (accumulator, character) => accumulator + character.charCodeAt(0),
-      0
+      0,
     );
   const combinedSeed = stringSeed * 31 + durationSeed * 17 || 1;
   const random = createSeededRandom(combinedSeed);
@@ -94,7 +94,7 @@ const buildWaveformOutline = (
 export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const intl = useIntl();
   const transcription = useAppStore((state) =>
-    getRec(state.transcriptionById, id)
+    getRec(state.transcriptionById, id),
   );
 
   const hasMetadata = useMemo(() => {
@@ -136,12 +136,12 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     const gap = WAVEFORM_BAR_GAP;
     const availableWidth = waveformWidth;
     const approximateCount = Math.floor(
-      (availableWidth + gap) / (WAVEFORM_BAR_MIN_WIDTH + gap)
+      (availableWidth + gap) / (WAVEFORM_BAR_MIN_WIDTH + gap),
     );
 
     return Math.max(
       MIN_COMPUTED_BAR_COUNT,
-      Math.min(MAX_COMPUTED_BAR_COUNT, approximateCount)
+      Math.min(MAX_COMPUTED_BAR_COUNT, approximateCount),
     );
   }, [waveformWidth]);
 
@@ -151,17 +151,17 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         ? buildWaveformOutline(
             id,
             audioSnapshot.durationMs,
-            desiredWaveformBarCount
+            desiredWaveformBarCount,
           )
         : [],
-    [audioSnapshot?.durationMs, desiredWaveformBarCount, id]
+    [audioSnapshot?.durationMs, desiredWaveformBarCount, id],
   );
 
   const waveformBars = useMemo(() => {
     if (!waveformValues.length) {
       return Array.from(
         { length: desiredWaveformBarCount },
-        () => MIN_WAVEFORM_BAR_VALUE
+        () => MIN_WAVEFORM_BAR_VALUE,
       );
     }
 
@@ -179,7 +179,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
 
     return Math.max(
       WAVEFORM_BAR_MIN_WIDTH,
-      Math.min(WAVEFORM_BAR_MAX_WIDTH, widthPerBar)
+      Math.min(WAVEFORM_BAR_MAX_WIDTH, widthPerBar),
     );
   }, [waveformBars.length, waveformWidth]);
   const progressPercent = Math.min(Math.max(playbackProgress, 0), 1) * 100;
@@ -251,13 +251,13 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         await navigator.clipboard.writeText(content);
         showSnackbar(
           intl.formatMessage({ defaultMessage: "Copied successfully" }),
-          { mode: "success" }
+          { mode: "success" },
         );
       } catch (error) {
         showErrorSnackbar(error);
       }
     },
-    [intl]
+    [intl],
   );
 
   const handleDeleteTranscript = useCallback(
@@ -267,19 +267,19 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           delete draft.transcriptionById[id];
           draft.transcriptions.transcriptionIds =
             draft.transcriptions.transcriptionIds.filter(
-              (transcriptionId) => transcriptionId !== id
+              (transcriptionId) => transcriptionId !== id,
             );
         });
         await getTranscriptionRepo().deleteTranscription(id);
         showSnackbar(
           intl.formatMessage({ defaultMessage: "Delete successful" }),
-          { mode: "success" }
+          { mode: "success" },
         );
       } catch (error) {
         showErrorSnackbar(error);
       }
     },
-    [intl]
+    [intl],
   );
 
   const handlePlaybackToggle = useCallback(async () => {
@@ -300,7 +300,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     } catch (error) {
       console.error("Failed to toggle audio playback", error);
       showErrorSnackbar(
-        intl.formatMessage({ defaultMessage: "Unable to play audio snippet." })
+        intl.formatMessage({ defaultMessage: "Unable to play audio snippet." }),
       );
     }
   }, [intl]);
@@ -312,7 +312,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
           intl.formatMessage({
             defaultMessage:
               "Audio snapshot unavailable for this transcription.",
-          })
+          }),
         );
         return;
       }
@@ -340,7 +340,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         setIsRetranscribing(false);
       }
     },
-    [audioSnapshot, id, intl]
+    [audioSnapshot, id, intl],
   );
 
   return (
@@ -558,7 +558,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               }
               if (Number.isFinite(element.duration) && element.duration > 0) {
                 setDurationLabel(
-                  formatDuration(Math.round(element.duration * 1000))
+                  formatDuration(Math.round(element.duration * 1000)),
                 );
               }
               setPlaybackProgress(0);
@@ -574,7 +574,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
                 return;
               }
               setPlaybackProgress(
-                Math.min(Math.max(currentTime / duration, 0), 1)
+                Math.min(Math.max(currentTime / duration, 0), 1),
               );
             }}
           >

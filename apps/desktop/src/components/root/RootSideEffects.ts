@@ -5,14 +5,20 @@ import dayjs from "dayjs";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { loadApiKeys } from "../../actions/api-key.actions";
-import { loadAppTargets, tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
+import {
+  loadAppTargets,
+  tryRegisterCurrentAppTarget,
+} from "../../actions/app-target.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
-import { transcribeAndPostProcessAudio, TranscriptionMetadata } from "../../actions/transcribe.actions";
+import {
+  transcribeAndPostProcessAudio,
+  TranscriptionMetadata,
+} from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { addWordsToCurrentUser } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
@@ -53,12 +59,16 @@ type RecordingLevelPayload = {
 
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
-  const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(null);
+  const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(
+    null,
+  );
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
   const userId = useAppStore((state) => state.auth?.uid);
-  const keyPermAuthorized = useAppStore((state) => isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state));
+  const keyPermAuthorized = useAppStore((state) =>
+    isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
+  );
 
   useAsyncEffect(async () => {
     if (keyPermAuthorized) {
@@ -69,7 +79,13 @@ export const RootSideEffects = () => {
   }, [keyPermAuthorized]);
 
   useAsyncEffect(async () => {
-    const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary(), loadTones(), loadAppTargets()];
+    const loaders: Promise<unknown>[] = [
+      loadHotkeys(),
+      loadApiKeys(),
+      loadDictionary(),
+      loadTones(),
+      loadAppTargets(),
+    ];
     await Promise.allSettled(loaders);
   }, [userId]);
 
@@ -83,139 +99,153 @@ export const RootSideEffects = () => {
     }
   }, []);
 
-  useIntervalAsync(60 * 1000, async () => {
-    await checkForAppUpdates();
-  }, []);
+  useIntervalAsync(
+    60 * 1000,
+    async () => {
+      await checkForAppUpdates();
+    },
+    [],
+  );
 
-  const handleRecordedAudio = useCallback(async (payload: StopRecordingResponse): Promise<string | null> => {
-    const payloadSamples = Array.isArray(payload.samples)
-      ? payload.samples
-      : Array.from(payload.samples ?? []);
-    const rate = payload.sampleRate;
+  const handleRecordedAudio = useCallback(
+    async (payload: StopRecordingResponse): Promise<string | null> => {
+      const payloadSamples = Array.isArray(payload.samples)
+        ? payload.samples
+        : Array.from(payload.samples ?? []);
+      const rate = payload.sampleRate;
 
-    if (rate == null || Number.isNaN(rate)) {
-      console.error("Received audio payload without sample rate", payload);
-      showErrorSnackbar("Recording missing sample rate. Please try again.");
-      return null;
-    }
-
-    if (rate <= 0 || payloadSamples.length === 0) {
-      return null;
-    }
-
-    const currentApp = await tryRegisterCurrentAppTarget();
-    const toneId = currentApp?.toneId ?? null;
-
-    let finalTranscript: string | null = null;
-    let rawTranscriptValue: string | null = null;
-    let warnings: string[] = [];
-    let metadata: TranscriptionMetadata | undefined;
-
-    try {
-      const result = await transcribeAndPostProcessAudio({
-        samples: payloadSamples,
-        sampleRate: rate,
-        toneId,
-      });
-      finalTranscript = result.transcript;
-      rawTranscriptValue = result.rawTranscript;
-      warnings = result.warnings;
-      metadata = result.metadata;
-    } catch (error) {
-      console.error("Failed to transcribe or post-process audio", error);
-      const message =
-        error = error instanceof Error
-          ? error.message
-          : "Unable to transcribe audio. Please try again.";
-      if (message) {
-        showErrorSnackbar(message);
+      if (rate == null || Number.isNaN(rate)) {
+        console.error("Received audio payload without sample rate", payload);
+        showErrorSnackbar("Recording missing sample rate. Please try again.");
+        return null;
       }
-      return null;
-    }
 
-    if (!finalTranscript) {
-      return null;
-    }
+      if (rate <= 0 || payloadSamples.length === 0) {
+        return null;
+      }
 
-    const state = getAppState();
-    const transcriptionId = createId();
+      const currentApp = await tryRegisterCurrentAppTarget();
+      const toneId = currentApp?.toneId ?? null;
 
-    let audioSnapshot: TranscriptionAudioSnapshot | undefined;
-    try {
-      audioSnapshot = await invoke<TranscriptionAudioSnapshot>("store_transcription_audio", {
-        id: transcriptionId,
-        samples: payloadSamples,
-        sampleRate: rate,
-      });
-    } catch (error) {
-      console.error("Failed to persist audio snapshot", error);
-    }
+      let finalTranscript: string | null = null;
+      let rawTranscriptValue: string | null = null;
+      let warnings: string[] = [];
+      let metadata: TranscriptionMetadata | undefined;
 
-    const transcription: Transcription = {
-      id: transcriptionId,
-      transcript: finalTranscript,
-      createdAt: dayjs().toISOString(),
-      createdByUserId: getMyEffectiveUserId(state),
-      isDeleted: false,
-      audio: audioSnapshot,
-      modelSize: metadata?.modelSize ?? null,
-      inferenceDevice: metadata?.inferenceDevice ?? null,
-      rawTranscript: rawTranscriptValue ?? finalTranscript,
-      transcriptionPrompt: metadata?.transcriptionPrompt ?? null,
-      postProcessPrompt: metadata?.postProcessPrompt ?? null,
-      transcriptionApiKeyId: metadata?.transcriptionApiKeyId ?? null,
-      postProcessApiKeyId: metadata?.postProcessApiKeyId ?? null,
-      transcriptionMode: metadata?.transcriptionMode ?? null,
-      postProcessMode: metadata?.postProcessMode ?? null,
-      postProcessDevice: metadata?.postProcessDevice ?? null,
-      warnings: warnings.length > 0 ? warnings : null,
-    };
-
-    let storedTranscription: Transcription;
-
-    try {
-      storedTranscription = await getTranscriptionRepo().createTranscription(transcription);
-    } catch (error) {
-      console.error("Failed to store transcription", error);
-      showErrorSnackbar("Unable to save transcription. Please try again.");
-      return null;
-    }
-
-    produceAppState((draft) => {
-      draft.transcriptionById[storedTranscription.id] = storedTranscription;
-      const existingIds = draft.transcriptions.transcriptionIds.filter(
-        (identifier) => identifier !== storedTranscription.id,
-      );
-      draft.transcriptions.transcriptionIds = [storedTranscription.id, ...existingIds];
-    });
-
-    const wordsAdded = countWords(finalTranscript);
-    if (wordsAdded > 0) {
       try {
-        await addWordsToCurrentUser(wordsAdded);
-      } catch (error) {
-        console.error("Failed to update usage metrics", error);
-      }
-    }
-
-    try {
-      const purgedIds = await getTranscriptionRepo().purgeStaleAudio();
-      if (purgedIds.length > 0) {
-        produceAppState((draft) => {
-          for (const purgedId of purgedIds) {
-            const purged = draft.transcriptionById[purgedId];
-            if (purged) {
-              delete purged.audio;
-            }
-          }
+        const result = await transcribeAndPostProcessAudio({
+          samples: payloadSamples,
+          sampleRate: rate,
+          toneId,
         });
+        finalTranscript = result.transcript;
+        rawTranscriptValue = result.rawTranscript;
+        warnings = result.warnings;
+        metadata = result.metadata;
+      } catch (error) {
+        console.error("Failed to transcribe or post-process audio", error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to transcribe audio. Please try again.";
+        if (message) {
+          showErrorSnackbar(message);
+        }
+        return null;
       }
-    } catch (error) {
-      console.error("Failed to purge stale audio snapshots", error);
-    }
 
-    return finalTranscript;
-  }, []);
+      if (!finalTranscript) {
+        return null;
+      }
+
+      const state = getAppState();
+      const transcriptionId = createId();
+
+      let audioSnapshot: TranscriptionAudioSnapshot | undefined;
+      try {
+        audioSnapshot = await invoke<TranscriptionAudioSnapshot>(
+          "store_transcription_audio",
+          {
+            id: transcriptionId,
+            samples: payloadSamples,
+            sampleRate: rate,
+          },
+        );
+      } catch (error) {
+        console.error("Failed to persist audio snapshot", error);
+      }
+
+      const transcription: Transcription = {
+        id: transcriptionId,
+        transcript: finalTranscript,
+        createdAt: dayjs().toISOString(),
+        createdByUserId: getMyEffectiveUserId(state),
+        isDeleted: false,
+        audio: audioSnapshot,
+        modelSize: metadata?.modelSize ?? null,
+        inferenceDevice: metadata?.inferenceDevice ?? null,
+        rawTranscript: rawTranscriptValue ?? finalTranscript,
+        transcriptionPrompt: metadata?.transcriptionPrompt ?? null,
+        postProcessPrompt: metadata?.postProcessPrompt ?? null,
+        transcriptionApiKeyId: metadata?.transcriptionApiKeyId ?? null,
+        postProcessApiKeyId: metadata?.postProcessApiKeyId ?? null,
+        transcriptionMode: metadata?.transcriptionMode ?? null,
+        postProcessMode: metadata?.postProcessMode ?? null,
+        postProcessDevice: metadata?.postProcessDevice ?? null,
+        warnings: warnings.length > 0 ? warnings : null,
+      };
+
+      let storedTranscription: Transcription;
+
+      try {
+        storedTranscription =
+          await getTranscriptionRepo().createTranscription(transcription);
+      } catch (error) {
+        console.error("Failed to store transcription", error);
+        showErrorSnackbar("Unable to save transcription. Please try again.");
+        return null;
+      }
+
+      produceAppState((draft) => {
+        draft.transcriptionById[storedTranscription.id] = storedTranscription;
+        const existingIds = draft.transcriptions.transcriptionIds.filter(
+          (identifier) => identifier !== storedTranscription.id,
+        );
+        draft.transcriptions.transcriptionIds = [
+          storedTranscription.id,
+          ...existingIds,
+        ];
+      });
+
+      const wordsAdded = countWords(finalTranscript);
+      if (wordsAdded > 0) {
+        try {
+          await addWordsToCurrentUser(wordsAdded);
+        } catch (error) {
+          console.error("Failed to update usage metrics", error);
+        }
+      }
+
+      try {
+        const purgedIds = await getTranscriptionRepo().purgeStaleAudio();
+        if (purgedIds.length > 0) {
+          produceAppState((draft) => {
+            for (const purgedId of purgedIds) {
+              const purged = draft.transcriptionById[purgedId];
+              if (purged) {
+                delete purged.audio;
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error("Failed to purge stale audio snapshots", error);
+      }
+
+      return finalTranscript;
+    },
+    [],
+  );
 
   const startRecording = useCallback(async () => {
     const state = getAppState();
@@ -245,7 +275,9 @@ export const RootSideEffects = () => {
           invoke<void>("start_recording", {
             args: { preferredMicrophone },
           }),
-          ...(playInteractionChime ? [invoke<void>("play_audio", { clip: "start_recording_clip" })] : []),
+          ...(playInteractionChime
+            ? [invoke<void>("play_audio", { clip: "start_recording_clip" })]
+            : []),
         ]);
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
@@ -290,9 +322,11 @@ export const RootSideEffects = () => {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
         const [, outAudio] = await Promise.all([
-          await invoke<void>("set_phase", { phase: "loading" }),
-          await invoke<StopRecordingResponse>("stop_recording"),
-          (playInteractionChime ? invoke<void>("play_audio", { clip: "stop_recording_clip" }) : Promise.resolve()),
+          invoke<void>("set_phase", { phase: "loading" }),
+          invoke<StopRecordingResponse>("stop_recording"),
+          playInteractionChime
+            ? invoke<void>("play_audio", { clip: "stop_recording_clip" })
+            : Promise.resolve(),
         ]);
 
         audio = outAudio;

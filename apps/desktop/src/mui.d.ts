@@ -75,7 +75,7 @@ declare module "@mui/material/styles" {
   }
 
   /* eslint-disable @typescript-eslint/no-empty-object-type */
-  interface TypographyVariantsOptions extends TypographyVariants { }
+  interface TypographyVariantsOptions extends TypographyVariants {}
 }
 
 declare module "@mui/material/Typography" {

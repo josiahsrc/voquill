@@ -8,7 +8,10 @@ import {
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
 import { syncAiPreferences } from "./user.actions";
-import type { CreateApiKeyPayload, UpdateApiKeyPayload } from "../repos/api-key.repo";
+import type {
+  CreateApiKeyPayload,
+  UpdateApiKeyPayload,
+} from "../repos/api-key.repo";
 import dayjs from "dayjs";
 
 let loadApiKeysPromise: Promise<void> | null = null;

@@ -1,7 +1,7 @@
 import { Nullable } from "@repo/types";
 
 export const getFirstAndLastName = (
-  fullName: string
+  fullName: string,
 ): {
   firstName: Nullable<string>;
   lastName: Nullable<string>;

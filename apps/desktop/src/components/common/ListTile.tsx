@@ -108,7 +108,7 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
       disabled,
       disableRipple,
     },
-    ref
+    ref,
   ) => {
     const [hovered, setHovered] = useState(false);
     const nav = useNavigate();
@@ -188,5 +188,5 @@ export const ListTile = forwardRef<HTMLDivElement, ListTileProps>(
         </ListItemButton>
       </ListItem>
     );
-  }
+  },
 );

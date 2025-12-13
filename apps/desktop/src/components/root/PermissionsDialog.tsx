@@ -35,7 +35,7 @@ const ICON_SIZE = 28;
 
 const getPurposeDescription = (
   kind: PermissionKind,
-  intl: ReturnType<typeof useIntl>
+  intl: ReturnType<typeof useIntl>,
 ): string => {
   const descriptions: Record<PermissionKind, string> = {
     microphone: intl.formatMessage({
@@ -204,7 +204,7 @@ export const PermissionsDialog = () => {
 
   const handleClose = (
     _event: unknown,
-    reason: "backdropClick" | "escapeKeyDown"
+    reason: "backdropClick" | "escapeKeyDown",
   ) => {
     if (reason === "backdropClick" || reason === "escapeKeyDown") {
       return;

@@ -8,10 +8,18 @@ import {
 } from "@repo/voice-ai";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
-import { CPU_DEVICE_VALUE, DEFAULT_MODEL_SIZE, TranscriptionMode } from "../types/ai.types";
+import {
+  CPU_DEVICE_VALUE,
+  DEFAULT_MODEL_SIZE,
+  TranscriptionMode,
+} from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { buildDeviceLabel } from "../types/gpu.types";
-import { buildWaveFile, ensureFloat32Array, normalizeSamples } from "../utils/audio.utils";
+import {
+  buildWaveFile,
+  ensureFloat32Array,
+  normalizeSamples,
+} from "../utils/audio.utils";
 import { loadDiscreteGpus } from "../utils/gpu.utils";
 import { BaseRepo } from "./base.repo";
 
@@ -31,7 +39,7 @@ export type TranscribeAudioMetadata = {
   inferenceDevice?: Nullable<string>;
   modelSize?: Nullable<string>;
   transcriptionMode?: Nullable<TranscriptionMode>;
-}
+};
 
 export type TranscribeAudioInput = {
   samples: AudioSamples;
@@ -46,7 +54,9 @@ export type TranscribeAudioOutput = {
 };
 
 export abstract class BaseTranscribeAudioRepo extends BaseRepo {
-  abstract transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput>;
+  abstract transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput>;
 }
 
 export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
@@ -96,9 +106,11 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     options.deviceLabel = `GPU · ${buildDeviceLabel(selected)}`;
 
     return options;
-  };
+  }
 
-  async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const options = await this.resolveTranscriptionOptions();
     const transcript = await invoke<string>("transcribe_audio", {
@@ -118,13 +130,15 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         inferenceDevice: options.deviceLabel,
         modelSize: options.modelSize,
         transcriptionMode: "local",
-      }
+      },
     };
   }
 }
 
 export class CloudTranscribeAudioRepo extends BaseTranscribeAudioRepo {
-  async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalized);
     const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
@@ -141,7 +155,7 @@ export class CloudTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: response.text,
       metadata: {
         transcriptionMode: "cloud",
-      }
+      },
     };
   }
 }
@@ -156,7 +170,9 @@ export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     this.model = (model as TranscriptionModel) ?? "whisper-large-v3-turbo";
   }
 
-  async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalized);
     const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
@@ -176,7 +192,7 @@ export class GroqTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         inferenceDevice: "API • Groq",
         modelSize: this.model,
         transcriptionMode: "api",
-      }
+      },
     };
   }
 }
@@ -191,7 +207,9 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
     this.model = (model as OpenAITranscriptionModel) ?? "whisper-1";
   }
 
-  async transcribeAudio(input: TranscribeAudioInput): Promise<TranscribeAudioOutput> {
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
     const normalized = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalized);
     const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
@@ -211,7 +229,7 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
         inferenceDevice: "API • OpenAI",
         modelSize: this.model,
         transcriptionMode: "api",
-      }
+      },
     };
   }
 }

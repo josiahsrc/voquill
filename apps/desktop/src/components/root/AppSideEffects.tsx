@@ -45,16 +45,19 @@ export const AppSideEffects = () => {
     const timeoutId = setTimeout(() => {
       if (!authReadyRef.current) {
         console.warn(
-          "[AppSideEffects] Firebase Auth timed out, proceeding without auth"
+          "[AppSideEffects] Firebase Auth timed out, proceeding without auth",
         );
         onAuthStateChanged(null);
       }
     }, AUTH_READY_TIMEOUT_MS);
 
-    const unsubscribe = getAuth().onAuthStateChanged(onAuthStateChanged, (error) => {
-      showErrorSnackbar(error);
-      onAuthStateChanged(null);
-    });
+    const unsubscribe = getAuth().onAuthStateChanged(
+      onAuthStateChanged,
+      (error) => {
+        showErrorSnackbar(error);
+        onAuthStateChanged(null);
+      },
+    );
 
     return () => {
       clearTimeout(timeoutId);
@@ -76,17 +79,17 @@ export const AppSideEffects = () => {
         from(
           invokeHandler("member/getMyMember", {})
             .then((res) => res.member)
-            .catch(() => null)
+            .catch(() => null),
         ),
         from(
           invokeHandler("user/getMyUser", {})
             .then((res) => res.user)
-            .catch(() => null)
+            .catch(() => null),
         ),
         from(
           invokeHandler("config/getFullConfig", {})
             .then((res) => res.config)
-            .catch(() => null)
+            .catch(() => null),
         ),
       ]);
     },

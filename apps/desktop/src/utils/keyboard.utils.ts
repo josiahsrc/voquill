@@ -30,7 +30,7 @@ export const getPrettyKeyName = (key: string): string => {
   }
 
   return key;
-}
+};
 
 type PlatformHotkeyCombos = {
   macos: string[][];
@@ -48,9 +48,11 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
 
 export const getHasDefaultHotkeyForAction = (actionName: string): boolean => {
   return Boolean(DEFAULT_HOTKEY_COMBOS[actionName]);
-}
+};
 
-export const getDefaultHotkeyCombosForAction = (actionName: string): string[][] => {
+export const getDefaultHotkeyCombosForAction = (
+  actionName: string,
+): string[][] => {
   const defaultCombos = DEFAULT_HOTKEY_COMBOS[actionName];
   if (defaultCombos) {
     if (getPlatform() === "macos") {
@@ -62,16 +64,19 @@ export const getDefaultHotkeyCombosForAction = (actionName: string): string[][] 
     }
   }
   return [];
-}
+};
 
-export const getHotkeyCombosForAction = (state: AppState, actionName: string): string[][] => {
-  const combos = Object.values(state.hotkeyById).filter(
-    (h) => h.actionName === actionName && h.keys.length > 0,
-  ).map(h => h.keys);
+export const getHotkeyCombosForAction = (
+  state: AppState,
+  actionName: string,
+): string[][] => {
+  const combos = Object.values(state.hotkeyById)
+    .filter((h) => h.actionName === actionName && h.keys.length > 0)
+    .map((h) => h.keys);
 
   if (combos.length > 0) {
     return combos;
   }
 
   return getDefaultHotkeyCombosForAction(actionName);
-}
+};
