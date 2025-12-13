@@ -198,21 +198,34 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           prompt: |
-            Generate high-level, user-facing release notes based on the diff below.
-            This is for an AI dictation desktop software application
-            Follow these rules:
+            Generate high-level, user-facing release notes for an AI dictation desktop app using only what is evidenced in the diff.
 
-            • Focus strictly on user-visible improvements and overall product value.
-            • Never mention file names, code components, technologies, or internal systems.
-            • Never describe what changed in the code; describe only the outcome or benefit.
-            • Use broad, non-technical language.
-            • Combine related changes into a small number of themes.
-            • Output no more than 1-4 bullet points.
-            • Each bullet should be one sentence and written from the user's perspective.
-            • Avoid technical terms, implementation details, or references to specific subsystems.
-            • If a change has no user-visible effect, omit it.
-            • If you're not sure what changed, just say "Various improvements and bug fixes." as a single bullet point.
-            • Never repeat yourself.
+            Goal
+            Write notes that a user would recognize as changes to their dictation experience (accuracy, editing, controls, onboarding, reliability, etc.).
+
+            Process (do this silently)
+            1. Scan the diff and list only changes that plausibly affect a user's day-to-day use.
+            2. For each candidate, restate it purely as a user outcome (for example: “You can now…”, “You'll notice…”, “It's less likely that…”).
+            3. Discard anything that is primarily refactors, cleanup, tests, logging, formatting, build or config changes, dependency updates, or internal-only changes.
+            4. Group remaining outcomes into 1-4 clear themes.
+            5. Before keeping a bullet, verify: “A user could observe this change without reading release notes or code.” If not, remove it.
+
+            Writing rules (strict)
+            - Output 1-4 bullet points total.
+            - One sentence per bullet, written from the user's perspective.
+            - Do not mention file names, code components, technologies, or internal systems.
+            - Do not describe what changed in the code; describe only the visible outcome or benefit.
+            - Use broad, non-technical language.
+            - Avoid generic filler like “improved performance,” “stability,” “polish,” or “under the hood” unless the user-facing effect is explicit and obvious.
+            - Do not speculate or include changes not clearly supported by the diff.
+            - Never repeat yourself.
+
+            Fallback
+            If you cannot confidently identify any user-visible changes, output exactly one bullet:
+            - Various improvements and bug fixes.
+
+            Output format
+            - Bullet list only, no title or explanatory text.
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
           paths: |
