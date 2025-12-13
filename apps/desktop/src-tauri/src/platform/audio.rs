@@ -368,7 +368,7 @@ fn start_recording_on_host(
 
     let mut candidates =
         device_candidates_for_host(host, default_output_name.as_deref(), preferred_normalized);
-    candidates.sort_by_key(|candidate| candidate.priority);
+    candidates.sort_by_key(|candidate| (!candidate.matches_preferred, candidate.priority));
 
     let mut last_err: Option<RecordingError> = None;
 
@@ -513,14 +513,13 @@ fn device_candidates_for_host(
 
         let should_avoid = should_avoid_input_device(&default_device, default_output_name);
         let mut priority = if matches_preferred { 0 } else { 5 };
+        let mut avoid_reason = None;
         if should_avoid {
-            priority = if matches_preferred { 1 } else { 300 };
+            avoid_reason = Some("avoiding low-quality default device".to_string());
+            if !matches_preferred {
+                priority = 300;
+            }
         }
-        let avoid_reason = if should_avoid {
-            Some("avoiding low-quality default device".to_string())
-        } else {
-            None
-        };
 
         seen.insert(key.clone());
         candidates.push(DeviceCandidate {
@@ -561,7 +560,11 @@ fn device_candidates_for_host(
             let mut priority = if matches_preferred { 0 } else { 100 };
             let mut avoid_reason = None;
             if let Some(ref label) = name {
-                if is_builtin_microphone_name(label) {
+                if matches_preferred {
+                    if name_has_low_quality_keyword(label) {
+                        avoid_reason = Some("potential low-quality input".to_string());
+                    }
+                } else if is_builtin_microphone_name(label) {
                     priority = 0;
                 } else if is_preferred_input_device_name(label) {
                     priority = cmp::min(priority, 10);

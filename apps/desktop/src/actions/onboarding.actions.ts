@@ -57,6 +57,12 @@ export const selectOnboardingPlan = (plan: EffectivePlan) => {
 export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
+  const preferredMicrophone =
+    state.onboarding.preferredMicrophone?.trim() ?? null;
+  const normalizedMicrophone =
+    preferredMicrophone && preferredMicrophone.length > 0
+      ? preferredMicrophone
+      : null;
 
   const transcriptionPreference: TranscriptionPrefs = getTranscriptionPrefs(
     state,
@@ -87,7 +93,7 @@ export const submitOnboarding = async () => {
       onboarded: true,
       onboardedAt: now,
       timezone: null,
-      preferredMicrophone: null,
+      preferredMicrophone: normalizedMicrophone,
       preferredLanguage: DEFAULT_LOCALE,
       wordsThisMonth: 0,
       wordsThisMonthMonth: null,

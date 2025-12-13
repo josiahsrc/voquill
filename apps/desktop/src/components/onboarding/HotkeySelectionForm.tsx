@@ -1,9 +1,9 @@
-import { Check } from "@mui/icons-material";
+import { ArrowForward } from "@mui/icons-material";
 import { Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
-  submitOnboarding,
+  goToOnboardingPage,
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import {
@@ -16,7 +16,6 @@ import { HotkeySetting } from "../settings/HotkeySetting";
 import { FormContainer } from "./OnboardingShared";
 
 export const HotkeySelectionForm = () => {
-  const submitting = useAppStore((state) => state.onboarding.submitting);
   const { status, hotkeys } = useAppStore((state) => ({
     status: state.settings.hotkeysStatus,
     hotkeys: Object.values(state.hotkeyById).filter(
@@ -34,8 +33,8 @@ export const HotkeySelectionForm = () => {
   const canFinish =
     status !== "loading" && (savedHotkeyCount > 0 || defaultHotkeys.length > 0);
 
-  const handleFinish = () => {
-    void submitOnboarding();
+  const handleNext = () => {
+    goToOnboardingPage("microphone");
   };
 
   const [primaryHotkey] = hotkeys;
@@ -110,11 +109,11 @@ export const HotkeySelectionForm = () => {
         )}
         <Button
           variant="contained"
-          endIcon={<Check />}
-          onClick={handleFinish}
-          disabled={submitting || !canFinish}
+          endIcon={<ArrowForward />}
+          onClick={handleNext}
+          disabled={!canFinish}
         >
-          <FormattedMessage defaultMessage="Finish" />
+          <FormattedMessage defaultMessage="Next" />
         </Button>
       </Stack>
     </FormContainer>
