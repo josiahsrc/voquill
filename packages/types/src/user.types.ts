@@ -14,26 +14,30 @@ export type DatabaseUser = {
   preferredLanguage?: Nullable<string>;
   preferredMicrophone?: Nullable<string>;
   playInteractionChime: boolean;
+  hasFinishedTutorial: boolean;
   wordsThisMonth: number;
   wordsThisMonthMonth: Nullable<string>;
   wordsTotal: number;
-}
+};
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
 
-export const UserZod = z.object({
-  id: z.string(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  name: z.string(),
-  bio: z.string().nullable().optional(),
-  onboarded: z.boolean(),
-  onboardedAt: z.string().nullable(),
-  timezone: z.string().nullable().optional(),
-  preferredLanguage: z.string().nullable().optional(),
-  preferredMicrophone: z.string().nullable().optional(),
-  playInteractionChime: z.boolean(),
-  wordsThisMonth: z.number(),
-  wordsThisMonthMonth: z.string().nullable(),
-  wordsTotal: z.number(),
-}).strict() satisfies z.ZodType<User>;
+export const UserZod = z
+  .object({
+    id: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    name: z.string(),
+    bio: z.string().nullable().optional(),
+    onboarded: z.boolean(),
+    onboardedAt: z.string().nullable(),
+    timezone: z.string().nullable().optional(),
+    preferredLanguage: z.string().nullable().optional(),
+    preferredMicrophone: z.string().nullable().optional(),
+    playInteractionChime: z.boolean(),
+    hasFinishedTutorial: z.boolean(),
+    wordsThisMonth: z.number(),
+    wordsThisMonthMonth: z.string().nullable(),
+    wordsTotal: z.number(),
+  })
+  .strict() satisfies z.ZodType<User>;

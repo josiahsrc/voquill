@@ -3,6 +3,7 @@ import { DatabaseMember, DatabaseTerm, DatabaseUser, Member, Term, User } from "
 
 export const userToDatabase = (user: User): DatabaseUser => ({
   ...user,
+  hasFinishedTutorial: user.hasFinishedTutorial ?? false,
   createdAt: firemix().timestampFromDate(new Date(user.createdAt)),
   updatedAt: firemix().timestampFromDate(new Date(user.updatedAt)),
   onboardedAt: user.onboardedAt ? firemix().timestampFromDate(new Date(user.onboardedAt)) : null,
@@ -13,6 +14,7 @@ export const userFromDatabase = (dbUser: DatabaseUser): User => ({
   createdAt: dbUser.createdAt.toDate().toISOString(),
   updatedAt: dbUser.updatedAt.toDate().toISOString(),
   onboardedAt: dbUser.onboardedAt ? dbUser.onboardedAt.toDate().toISOString() : null,
+  hasFinishedTutorial: dbUser.hasFinishedTutorial ?? false,
 });
 
 export const memberToDatabase = (member: Member): DatabaseMember => ({

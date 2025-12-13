@@ -28,6 +28,7 @@ export const buildUser = (overrides?: Partial<User>): User => ({
   onboardedAt: null,
   preferredMicrophone: null,
   playInteractionChime: true,
+  hasFinishedTutorial: false,
   wordsThisMonth: 0,
   wordsThisMonthMonth: 'yyyy-MM',
   wordsTotal: 0,

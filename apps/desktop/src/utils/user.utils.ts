@@ -22,7 +22,7 @@ export const getHasEmailProvider = (state: AppState): boolean => {
 
 export const getIsOnboarded = (state: AppState): boolean => {
   return Boolean(getMyUser(state)?.onboarded);
-}
+};
 
 export const getHasCloudAccess = (state: AppState): boolean => {
   return getEffectivePlan(state) !== "community";
@@ -62,6 +62,20 @@ export const getMyUserPreferences = (
 export const getMyUserName = (state: AppState): string => {
   const user = getMyUser(state);
   return user?.name || "Guest";
+};
+
+export const getHasFinishedTutorial = (state: AppState): boolean => {
+  const user = getMyUser(state);
+  return user?.hasFinishedTutorial ?? false;
+};
+
+export const getShouldShowTutorialDialog = (state: AppState): boolean => {
+  const user = getMyUser(state);
+  if (!user) {
+    return false;
+  }
+
+  return !getHasFinishedTutorial(state);
 };
 
 export const getIsSignedIn = (state: AppState): boolean => {

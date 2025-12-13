@@ -99,6 +99,7 @@ export const submitOnboarding = async () => {
       wordsThisMonthMonth: null,
       wordsTotal: 0,
       playInteractionChime: true,
+      hasFinishedTutorial: false,
     };
 
     const preferences: UserPreferences = {

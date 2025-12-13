@@ -54,6 +54,8 @@ pub const API_KEY_MODEL_MIGRATION_SQL: &str =
     include_str!("migrations/026_api_key_model.sql");
 pub const USER_PREFERENCES_OLLAMA_MIGRATION_SQL: &str =
     include_str!("migrations/027_user_preferences_ollama.sql");
+pub const USER_HAS_FINISHED_TUTORIAL_MIGRATION_SQL: &str =
+    include_str!("migrations/028_user_has_finished_tutorial.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -217,6 +219,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 27,
             description: "add_user_preferences_ollama",
             sql: USER_PREFERENCES_OLLAMA_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 28,
+            description: "add_user_has_finished_tutorial",
+            sql: USER_HAS_FINISHED_TUTORIAL_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

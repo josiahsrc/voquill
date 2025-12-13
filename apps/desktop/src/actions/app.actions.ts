@@ -14,3 +14,9 @@ export const showSnackbar = (
 export const showErrorSnackbar = (message: unknown): void => {
   showSnackbar(String(message), { mode: "error" });
 };
+
+export const showConfetti = (): void => {
+  produceAppState((state) => {
+    state.confettiCounter += 1;
+  });
+};

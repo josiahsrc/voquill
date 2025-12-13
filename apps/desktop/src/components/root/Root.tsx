@@ -8,6 +8,7 @@ import { LoadingApp } from "./LoadingApp";
 import { PermissionSideEffects } from "./PermissionSideEffects";
 import { RootDialogs } from "./RootDialogs";
 import { RootSideEffects } from "./RootSideEffects";
+import { RootConfetti } from "./RootConfetti";
 
 function ErrorFallback({ error }: { error: Error }) {
   return (
@@ -28,6 +29,7 @@ export default function Root() {
   return (
     <>
       <PermissionSideEffects />
+      <RootConfetti />
       <RootSideEffects />
       <RootDialogs />
       <HeaderPortalProvider>

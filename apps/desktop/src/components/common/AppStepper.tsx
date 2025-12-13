@@ -32,8 +32,8 @@ export const AppStepper = ({
 
   const pill = {
     backgroundColor: "primary.main",
-    px: 3,
-    py: 1.5,
+    px: 1.5,
+    py: 0.5,
   };
 
   const transition = theme.transitions.create(
@@ -58,17 +58,17 @@ export const AppStepper = ({
                 borderRadius: "64px",
                 display: "flex",
                 alignItems: "center",
-                opacity: clickable ? 1 : 0.2,
+                opacity: clickable ? 1 : 0.5,
                 transition,
                 "& .MuiStepLabel-label": {
                   fontSize: 16,
                   transition,
                 },
                 "& .MuiStepLabel-iconContainer": {
-                  mr: 2,
+                  mr: 0.5,
                   transition,
                   "& svg": {
-                    fontSize: 22,
+                    fontSize: 20,
                     transition,
                   },
                 },
@@ -81,7 +81,7 @@ export const AppStepper = ({
                     ml: -1,
                   },
                   "& .MuiStepLabel-iconContainer svg": {
-                    fontSize: 26,
+                    fontSize: 22,
                     color: theme.vars?.palette?.primary.contrastText,
                     transform: "scale(1.1)",
                   },

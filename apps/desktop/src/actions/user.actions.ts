@@ -190,6 +190,16 @@ export const setUserName = async (name: string): Promise<void> => {
   );
 };
 
+export const finishTutorial = async (): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.hasFinishedTutorial = true;
+    },
+    "Unable to update tutorial status. User not found.",
+    "Failed to update tutorial status. Please try again.",
+  );
+};
+
 const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
   await updateUserPreferences((preferences) => {
