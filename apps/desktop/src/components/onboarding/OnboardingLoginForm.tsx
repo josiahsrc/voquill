@@ -69,9 +69,6 @@ export const OnboardingLoginForm = () => {
         </Typography>
         <Typography variant="body2" color="text.secondary">
           <FormattedMessage defaultMessage="You haven't completed checkout yet. Click the 'Next' button below to proceed to checkout." />
-          <br />
-          <br />
-          <FormattedMessage defaultMessage="You can always go back if you changed your mind!" />
         </Typography>
 
         <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>

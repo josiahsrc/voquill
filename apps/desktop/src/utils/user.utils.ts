@@ -20,6 +20,10 @@ export const getHasEmailProvider = (state: AppState): boolean => {
   return providerIds.includes("password");
 };
 
+export const getIsOnboarded = (state: AppState): boolean => {
+  return Boolean(getMyUser(state)?.onboarded);
+}
+
 export const getHasCloudAccess = (state: AppState): boolean => {
   return getEffectivePlan(state) !== "community";
 };

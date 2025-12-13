@@ -27,18 +27,22 @@ import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
+import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
-import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import { OverlayPhase } from "../../types/overlay.types";
 import { createId } from "../../utils/id.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
-import { getMyEffectiveUserId, getMyUser } from "../../utils/user.utils";
+import { isPermissionAuthorized } from "../../utils/permission.utils";
+import {
+  getIsOnboarded,
+  getMyEffectiveUserId,
+  getMyUser,
+} from "../../utils/user.utils";
 import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
 } from "../../utils/window.utils";
-import { isPermissionAuthorized } from "../../utils/permission.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -254,6 +258,10 @@ export const RootSideEffects = () => {
     }
 
     if (isRecordingRef.current) {
+      return;
+    }
+
+    if (!getIsOnboarded(state)) {
       return;
     }
 
