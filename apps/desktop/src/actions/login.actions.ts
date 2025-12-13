@@ -13,7 +13,7 @@ const tryInit = async () => {
   await invokeHandler("member/tryInitialize", {});
   const member = await invokeHandler("member/getMyMember", {})
     .then((res) => res.member)
-    .catch(() => null)
+    .catch(() => null);
   produceAppState((state) => {
     registerMembers(state, listify(member));
   });

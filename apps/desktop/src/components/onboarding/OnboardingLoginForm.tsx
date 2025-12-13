@@ -23,7 +23,7 @@ export const OnboardingLoginForm = () => {
   const currentUserId = useAppStore((state) => state.auth?.uid);
   const memberPlan = useAppStore((state) => getMyMember(state)?.plan);
   const didSelectProPlan = useAppStore(
-    (state) => state.onboarding.selectedPlan === "pro"
+    (state) => state.onboarding.selectedPlan === "pro",
   );
 
   const goToNextPage = () => {

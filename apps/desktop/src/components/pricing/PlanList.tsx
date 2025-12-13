@@ -70,12 +70,16 @@ const PlanCard = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
-          gap: .5,
+          gap: 0.5,
           p: 2.5,
         }}
       >
-        <Typography variant="subtitle1" color="text.secondary">{title}</Typography>
-        <Typography variant="h5" fontWeight={600}>{price}</Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          {title}
+        </Typography>
+        <Typography variant="h5" fontWeight={600}>
+          {price}
+        </Typography>
         <Box sx={{ mt: 1, mb: 2 }}>{button}</Box>
         {children}
       </CardContent>
@@ -162,7 +166,7 @@ export const PlanList = ({
         proPrice
           ? intl.formatMessage(
               { defaultMessage: "${proPrice}/month" },
-              { proPrice }
+              { proPrice },
             )
           : "--"
       }

@@ -5,7 +5,10 @@ import { getAuth } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
-import { migrateLocalUserToCloud, refreshCurrentUser } from "../../actions/user.actions";
+import {
+  migrateLocalUserToCloud,
+  refreshCurrentUser,
+} from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
@@ -31,12 +34,14 @@ export const AppSideEffects = () => {
   const initialized = useAppStore((state) => state.initialized);
   const member = useAppStore((state) => {
     const uid = state.auth?.uid;
-    return uid ? state.memberById[uid] ?? null : null;
+    return uid ? (state.memberById[uid] ?? null) : null;
   });
-  const localUser = useAppStore((state) => state.userById[LOCAL_USER_ID] ?? null);
+  const localUser = useAppStore(
+    (state) => state.userById[LOCAL_USER_ID] ?? null,
+  );
   const cloudUser = useAppStore((state) => {
     const uid = state.auth?.uid;
-    return uid ? state.userById[uid] ?? null : null;
+    return uid ? (state.userById[uid] ?? null) : null;
   });
 
   const onAuthStateChanged = (user: AuthUser | null) => {
