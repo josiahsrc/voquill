@@ -194,10 +194,10 @@ jobs:
       - name: Generate release notes
         id: release_notes
         uses: josiahsrc/ai-release-notes-builder@v3
-        content_scope: commit_messages
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
+          content_scope: commit_messages
           prompt: |
             Generate high-level, user-facing release notes based on the diff below.
             This is for an AI dictation desktop software application
