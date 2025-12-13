@@ -1,12 +1,13 @@
 import {
   FormControl,
   InputLabel,
+  MenuItem,
   Select,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { FormattedMessage } from "react-intl";
 import {
   setPreferredPostProcessingOllamaModel,
@@ -14,6 +15,7 @@ import {
   setPreferredPostProcessingApiKeyId,
   setPreferredPostProcessingMode,
 } from "../../actions/user.actions";
+import { refreshOllamaPostProcessingState } from "../../actions/settings.actions";
 import { useAppStore } from "../../store";
 import { type PostProcessingMode } from "../../types/ai.types";
 import {
@@ -22,6 +24,8 @@ import {
 } from "../common/SegmentedControl";
 import { ApiKeyList } from "./ApiKeyList";
 import { VoquillCloudSetting } from "./VoquillCloudSetting";
+import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
+import { useIntervalAsync } from "../../hooks/helper.hooks";
 
 type AIPostProcessingConfigurationProps = {
   hideCloudOption?: boolean;
@@ -38,6 +42,26 @@ export const AIPostProcessingConfiguration = ({
     (state) => state.settings.aiPostProcessing,
   );
 
+  const shouldPollOllama = postProcessing.mode === "ollama";
+
+  const refreshOllamaState = async () => {
+    if (shouldPollOllama) {
+      await refreshOllamaPostProcessingState();
+    }
+  };
+
+  useEffect(() => {
+    void refreshOllamaState();
+  }, []);
+
+  useIntervalAsync(
+    3000,
+    async () => {
+      await refreshOllamaState();
+    },
+    [],
+  );
+
   const handleModeChange = useCallback((mode: PostProcessingMode) => {
     void setPreferredPostProcessingMode(mode);
   }, []);
@@ -49,6 +73,10 @@ export const AIPostProcessingConfiguration = ({
   const handleOllamaUrlChange = useCallback((value: string) => {
     void setPreferredPostProcessingOllamaUrl(value);
   }, []);
+
+  const handleOllamaUrlBlur = useCallback(() => {
+    void refreshOllamaState();
+  }, [shouldPollOllama, refreshOllamaState]);
 
   const handleOllamaModelChange = useCallback((value: string | null) => {
     void setPreferredPostProcessingOllamaModel(value);
@@ -96,11 +124,18 @@ export const AIPostProcessingConfiguration = ({
         <Stack spacing={2} sx={{ width: "100%" }}>
           <TextField
             label={<FormattedMessage defaultMessage="Ollama host URL" />}
-            placeholder="http://localhost:11434"
+            placeholder={OLLAMA_DEFAULT_URL}
             value={postProcessing.ollamaUrl ?? ""}
             onChange={(event) => handleOllamaUrlChange(event.target.value)}
+            onBlur={handleOllamaUrlBlur}
             fullWidth
             size="small"
+            error={!postProcessing.isOllamaAvailable}
+            helperText={
+              !postProcessing.isOllamaAvailable ? (
+                <FormattedMessage defaultMessage="Unable to connect to Ollama at the specified URL." />
+              ) : undefined
+            }
             InputLabelProps={{ shrink: true }}
           />
 
@@ -119,8 +154,18 @@ export const AIPostProcessingConfiguration = ({
               }
               displayEmpty
               notched
+              disabled={!postProcessing.isOllamaAvailable}
             >
-              {/* Model options will be added later */}
+              <MenuItem value="">
+                <em>
+                  <FormattedMessage defaultMessage="Select a model" />
+                </em>
+              </MenuItem>
+              {postProcessing.ollamaModels.map((model) => (
+                <MenuItem key={model} value={model}>
+                  {model}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Stack>

@@ -25,6 +25,8 @@ export type SettingsPostProcessingState = {
   selectedApiKeyId: string | null;
   ollamaUrl: string | null;
   ollamaModel: string | null;
+  ollamaModels: string[];
+  isOllamaAvailable: boolean;
 };
 
 export type SettingsState = {
@@ -68,6 +70,8 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     selectedApiKeyId: null,
     ollamaUrl: null,
     ollamaModel: null,
+    ollamaModels: [],
+    isOllamaAvailable: false,
   },
   apiKeys: [],
   apiKeysStatus: "idle",

@@ -1,14 +1,24 @@
 import OpenAI, { toFile } from "openai";
-import { ChatCompletionContentPart, ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions";
 import { retry } from "@repo/utilities/src/async";
 import { countWords } from "@repo/utilities/src/string";
 import type { JsonResponse } from "@repo/types";
 
-export const OPENAI_GENERATE_TEXT_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
-export type OpenAIGenerateTextModel = (typeof OPENAI_GENERATE_TEXT_MODELS)[number];
+export const OPENAI_GENERATE_TEXT_MODELS = [
+  "gpt-4o",
+  "gpt-4o-mini",
+  "gpt-4-turbo",
+  "gpt-3.5-turbo",
+] as const;
+export type OpenAIGenerateTextModel =
+  (typeof OPENAI_GENERATE_TEXT_MODELS)[number];
 
 export const OPENAI_TRANSCRIPTION_MODELS = ["whisper-1"] as const;
-export type OpenAITranscriptionModel = (typeof OPENAI_TRANSCRIPTION_MODELS)[number];
+export type OpenAITranscriptionModel =
+  (typeof OPENAI_TRANSCRIPTION_MODELS)[number];
 
 const contentToString = (
   content: string | ChatCompletionContentPart[] | null | undefined,
@@ -32,26 +42,30 @@ const contentToString = (
     .trim();
 };
 
-const createClient = (apiKey: string) => {
+const createClient = (apiKey: string, baseUrl?: string) => {
   // `dangerouslyAllowBrowser` is needed because this runs on a desktop tauri app.
   // The Tauri app doesn't run in a web browser and encrypts API keys locally, so this
   // is safe.
-  return new OpenAI({ apiKey: apiKey.trim(), dangerouslyAllowBrowser: true });
-}
+  return new OpenAI({
+    apiKey: apiKey.trim(),
+    baseURL: baseUrl,
+    dangerouslyAllowBrowser: true,
+  });
+};
 
 export type OpenAITranscriptionArgs = {
   apiKey: string;
   model?: OpenAITranscriptionModel;
-  blob: ArrayBuffer | Buffer,
-  ext: string
+  blob: ArrayBuffer | Buffer;
+  ext: string;
   prompt?: string;
   language?: string;
-}
+};
 
 export type OpenAITranscribeAudioOutput = {
   text: string;
   wordsUsed: number;
-}
+};
 
 export const openaiTranscribeAudio = async ({
   apiKey,
@@ -81,24 +95,26 @@ export const openaiTranscribeAudio = async ({
       return { text: response.text, wordsUsed: countWords(response.text) };
     },
   });
-}
+};
 
 export type OpenAIGenerateTextArgs = {
   apiKey: string;
-  model?: OpenAIGenerateTextModel;
+  baseUrl?: string;
+  model?: string;
   system?: string;
   prompt: string;
   imageUrls?: string[];
   jsonResponse?: JsonResponse;
-}
+};
 
 export type OpenAIGenerateResponseOutput = {
   text: string;
   tokensUsed: number;
-}
+};
 
 export const openaiGenerateTextResponse = async ({
   apiKey,
+  baseUrl,
   model = "gpt-4o-mini",
   system,
   prompt,
@@ -108,7 +124,7 @@ export const openaiGenerateTextResponse = async ({
   return retry({
     retries: 3,
     fn: async () => {
-      const client = createClient(apiKey);
+      const client = createClient(apiKey, baseUrl);
 
       const messages: ChatCompletionMessageParam[] = [];
       if (system) {
@@ -134,14 +150,14 @@ export const openaiGenerateTextResponse = async ({
         top_p: 1,
         response_format: jsonResponse
           ? {
-            type: "json_schema",
-            json_schema: {
-              name: jsonResponse.name,
-              description: jsonResponse.description,
-              schema: jsonResponse.schema,
-              strict: true,
-            },
-          }
+              type: "json_schema",
+              json_schema: {
+                name: jsonResponse.name,
+                description: jsonResponse.description,
+                schema: jsonResponse.schema,
+                strict: true,
+              },
+            }
           : undefined,
       });
 
@@ -162,11 +178,11 @@ export const openaiGenerateTextResponse = async ({
       };
     },
   });
-}
+};
 
 export type OpenAITestIntegrationArgs = {
   apiKey: string;
-}
+};
 
 export const openaiTestIntegration = async ({
   apiKey,
@@ -202,4 +218,4 @@ export const openaiTestIntegration = async ({
   }
 
   return content.toLowerCase().includes("hello");
-}
+};
