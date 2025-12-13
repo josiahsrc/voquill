@@ -1,3 +1,5 @@
+import { PostProcessingMode, TranscriptionMode } from "./common.types";
+
 export type Transcription = {
   id: string;
   createdAt: string;
@@ -12,8 +14,8 @@ export type Transcription = {
   postProcessPrompt?: string | null;
   transcriptionApiKeyId?: string | null;
   postProcessApiKeyId?: string | null;
-  transcriptionMode?: "local" | "api" | "cloud" | null;
-  postProcessMode?: "none" | "api" | "cloud" | null;
+  transcriptionMode?: TranscriptionMode | null;
+  postProcessMode?: PostProcessingMode | null;
   postProcessDevice?: string | null;
   warnings?: string[] | null;
 };

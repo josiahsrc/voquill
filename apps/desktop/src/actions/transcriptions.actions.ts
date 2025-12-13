@@ -2,6 +2,7 @@ import { getAppState, produceAppState } from "../store";
 import { transcribeAndPostProcessAudio } from "./transcribe.actions";
 import { getTranscriptionRepo } from "../repos";
 import { getRec } from "@repo/utilities";
+import { Transcription } from "@repo/types";
 
 export const openTranscriptionDetailsDialog = (transcriptionId: string) => {
   produceAppState((draft) => {
@@ -50,7 +51,7 @@ export const retranscribeTranscription = async ({
     throw new Error("Retranscription produced no text.");
   }
 
-  const updatedPayload = {
+  const updatedPayload: Transcription = {
     ...transcription,
     transcript: finalTranscript,
     modelSize: metadata?.modelSize ?? null,
