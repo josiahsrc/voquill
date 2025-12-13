@@ -214,6 +214,9 @@ jobs:
             • If you're not sure what changed, just say "Various improvements and bug fixes." as a single bullet point.
             • Never repeat yourself.
             • Your release notes should sound authentic and natural.
+            • Use direct, factual language. Never be sycophantic or overly enthusiastic.
+            • Do not start bullets with phrases like "Enjoy", "Experience", "Discover", or similar marketing language.
+            • State improvements plainly without embellishment (e.g., "Improved performance" not "Enjoy blazing-fast performance").
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
           paths: |
