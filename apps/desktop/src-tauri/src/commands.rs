@@ -975,3 +975,13 @@ pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
     app.emit_to(EventTarget::any(), EVT_OVERLAY_PHASE, payload)
         .map_err(|err| err.to_string())
 }
+
+#[tauri::command]
+pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
+    crate::platform::keyboard::start_key_listener(&app)
+}
+
+#[tauri::command]
+pub fn stop_key_listener() -> Result<(), String> {
+    crate::platform::keyboard::stop_key_listener()
+}

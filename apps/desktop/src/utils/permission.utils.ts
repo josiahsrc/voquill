@@ -27,7 +27,7 @@ export const requestAccessibilityPermission = async (): Promise<PermissionStatus
   return invoke<PermissionStatus>("request_accessibility_permission");
 };
 
-export const isPermissionAuthorized = (state: PermissionState): boolean => {
+export const isPermissionAuthorized = (state: PermissionState | null | undefined): boolean => {
   return state === "authorized";
 };
 

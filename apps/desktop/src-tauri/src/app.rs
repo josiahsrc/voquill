@@ -92,9 +92,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 let recorder: Arc<dyn Recorder> =
                     Arc::new(crate::platform::audio::RecordingManager::new());
 
-                crate::platform::key_state::spawn_keys_held_emitter(&app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
                 app.manage(recorder);
                 app.manage(transcriber);
 
@@ -150,6 +147,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::tone_delete,
             crate::commands::clear_local_data,
             crate::commands::set_phase,
+            crate::commands::start_key_listener,
+            crate::commands::stop_key_listener,
             crate::commands::play_audio,
         ])
 }

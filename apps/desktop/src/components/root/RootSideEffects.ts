@@ -1,5 +1,5 @@
 import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
-import { countWords, delayed } from "@repo/utilities";
+import { countWords, getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { isEqual } from "lodash-es";
@@ -20,7 +20,7 @@ import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { getTranscriptionRepo } from "../../repos";
-import { getAppState, produceAppState } from "../../store";
+import { getAppState, produceAppState, useAppStore } from "../../store";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
@@ -32,6 +32,7 @@ import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
 } from "../../utils/window.utils";
+import { isPermissionAuthorized } from "../../utils/permission.utils";
 
 type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -56,12 +57,18 @@ export const RootSideEffects = () => {
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
-  const userId = getAppState().auth?.uid;
+  const userId = useAppStore((state) => state.auth?.uid);
+  const keyPermAuthorized = useAppStore((state) => isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state));
 
   useAsyncEffect(async () => {
-    // TODO: Figure out why terms don't load if this isn't delayed
-    await delayed(200);
+    if (keyPermAuthorized) {
+      await invoke("start_key_listener");
+    } else {
+      await invoke("stop_key_listener");
+    }
+  }, [keyPermAuthorized]);
 
+  useAsyncEffect(async () => {
     const loaders: Promise<unknown>[] = [loadHotkeys(), loadApiKeys(), loadDictionary(), loadTones(), loadAppTargets()];
     await Promise.allSettled(loaders);
   }, [userId]);
