@@ -17,5 +17,9 @@ pub struct UserPreferences {
     #[serde(default)]
     pub post_processing_api_key_id: Option<String>,
     #[serde(default)]
+    pub post_processing_ollama_url: Option<String>,
+    #[serde(default)]
+    pub post_processing_ollama_model: Option<String>,
+    #[serde(default)]
     pub active_tone_id: Option<String>,
 }

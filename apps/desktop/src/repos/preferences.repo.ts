@@ -11,6 +11,8 @@ type LocalUserPreferences = {
   transcriptionModelSize: Nullable<string>;
   postProcessingMode: Nullable<PostProcessingMode>;
   postProcessingApiKeyId: Nullable<string>;
+  postProcessingOllamaUrl: Nullable<string>;
+  postProcessingOllamaModel: Nullable<string>;
   activeToneId: Nullable<string>;
 };
 
@@ -22,6 +24,8 @@ const fromLocalPreferences = (preferences: LocalUserPreferences): UserPreference
   transcriptionModelSize: preferences.transcriptionModelSize,
   postProcessingMode: preferences.postProcessingMode,
   postProcessingApiKeyId: preferences.postProcessingApiKeyId,
+  postProcessingOllamaUrl: preferences.postProcessingOllamaUrl,
+  postProcessingOllamaModel: preferences.postProcessingOllamaModel,
   activeToneId: preferences.activeToneId,
 });
 
@@ -33,6 +37,8 @@ const toLocalPreferences = (preferences: UserPreferences): LocalUserPreferences 
   transcriptionModelSize: preferences.transcriptionModelSize ?? null,
   postProcessingMode: preferences.postProcessingMode ?? null,
   postProcessingApiKeyId: preferences.postProcessingApiKeyId ?? null,
+  postProcessingOllamaUrl: preferences.postProcessingOllamaUrl ?? null,
+  postProcessingOllamaModel: preferences.postProcessingOllamaModel ?? null,
   activeToneId: preferences.activeToneId ?? null,
 });
 
