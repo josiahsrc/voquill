@@ -64,7 +64,7 @@ if (getIsEmulators()) {
 
 const firestore = getFirestore(app);
 if (getIsEmulators()) {
-  connectFirestoreEmulator(firestore, "localhost", 8080);
+  connectFirestoreEmulator(firestore, "localhost", 8760);
 }
 
 const functions = getFunctions(app);

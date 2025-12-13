@@ -290,7 +290,7 @@ Tones are seeded automatically in `db/tone_seed.rs`. To add system tones:
 1. Ensure `apps/desktop/.env.emulators` flavor is active (default)
 2. Start emulators: `npm run dev --workspace apps/firebase/functions`
 3. Desktop app auto-connects when `VITE_USE_EMULATORS=true`
-4. Emulator ports: Auth (9099), Firestore (8080), Functions (5001), Storage (9199)
+4. Emulator ports: Auth (9099), Firestore (8760), Functions (5001), Storage (9199)
 5. Use `.secret.local` for secrets when emulated
 
 ## Testing
