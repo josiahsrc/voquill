@@ -5,10 +5,7 @@ import {
   OnboardingState,
 } from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
-import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
-} from "../types/ai.types";
+import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import {
   GenerativePrefs,
@@ -69,11 +66,7 @@ export const submitOnboarding = async () => {
       apiKeyId: null,
     };
 
-  const postProcessingPreference: GenerativePrefs =
-    getGenerativePrefs(state) ?? {
-      mode: DEFAULT_POST_PROCESSING_MODE,
-      apiKeyId: null,
-    };
+  const postProcessingPreference: GenerativePrefs = getGenerativePrefs(state);
 
   produceAppState((draft) => {
     draft.onboarding.submitting = true;
@@ -116,6 +109,14 @@ export const submitOnboarding = async () => {
       postProcessingApiKeyId:
         postProcessingPreference.mode === "api"
           ? postProcessingPreference.apiKeyId
+          : null,
+      postProcessingOllamaUrl:
+        postProcessingPreference.mode === "ollama"
+          ? postProcessingPreference.ollamaUrl
+          : null,
+      postProcessingOllamaModel:
+        postProcessingPreference.mode === "ollama"
+          ? postProcessingPreference.ollamaModel
           : null,
       activeToneId: null,
     };

@@ -1,7 +1,16 @@
-import { Stack, Typography } from "@mui/material";
+import {
+  FormControl,
+  InputLabel,
+  Select,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useCallback } from "react";
 import { FormattedMessage } from "react-intl";
 import {
+  setPreferredPostProcessingOllamaModel,
+  setPreferredPostProcessingOllamaUrl,
   setPreferredPostProcessingApiKeyId,
   setPreferredPostProcessingMode,
 } from "../../actions/user.actions";
@@ -26,7 +35,7 @@ export const AIPostProcessingConfiguration = ({
   hideCloudOption,
 }: AIPostProcessingConfigurationProps) => {
   const postProcessing = useAppStore(
-    (state) => state.settings.aiPostProcessing
+    (state) => state.settings.aiPostProcessing,
   );
 
   const handleModeChange = useCallback((mode: PostProcessingMode) => {
@@ -35,6 +44,14 @@ export const AIPostProcessingConfiguration = ({
 
   const handleApiKeyChange = useCallback((id: string | null) => {
     void setPreferredPostProcessingApiKeyId(id);
+  }, []);
+
+  const handleOllamaUrlChange = useCallback((value: string) => {
+    void setPreferredPostProcessingOllamaUrl(value);
+  }, []);
+
+  const handleOllamaModelChange = useCallback((value: string | null) => {
+    void setPreferredPostProcessingOllamaModel(value);
   }, []);
 
   return (
@@ -50,10 +67,11 @@ export const AIPostProcessingConfiguration = ({
                 value: "cloud",
                 label: "Voquill Cloud",
               },
-            ]
+            ],
           ),
           { value: "none", label: "Disabled" },
           { value: "api", label: "API key" },
+          { value: "ollama", label: "Ollama" },
         ]}
         ariaLabel="Post-processing mode"
       />
@@ -73,6 +91,40 @@ export const AIPostProcessingConfiguration = ({
       )}
 
       {postProcessing.mode === "cloud" && <VoquillCloudSetting />}
+
+      {postProcessing.mode === "ollama" && (
+        <Stack spacing={2} sx={{ width: "100%" }}>
+          <TextField
+            label={<FormattedMessage defaultMessage="Ollama host URL" />}
+            placeholder="http://localhost:11434"
+            value={postProcessing.ollamaUrl ?? ""}
+            onChange={(event) => handleOllamaUrlChange(event.target.value)}
+            fullWidth
+            size="small"
+            InputLabelProps={{ shrink: true }}
+          />
+
+          <FormControl fullWidth size="small">
+            <InputLabel id="ollama-model-label" shrink>
+              <FormattedMessage defaultMessage="Model" />
+            </InputLabel>
+            <Select
+              labelId="ollama-model-label"
+              label={<FormattedMessage defaultMessage="Model" />}
+              value={postProcessing.ollamaModel ?? ""}
+              onChange={(event) =>
+                handleOllamaModelChange(
+                  event.target.value ? String(event.target.value) : null,
+                )
+              }
+              displayEmpty
+              notched
+            >
+              {/* Model options will be added later */}
+            </Select>
+          </FormControl>
+        </Stack>
+      )}
     </Stack>
   );
 };

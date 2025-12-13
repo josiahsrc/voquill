@@ -20,4 +20,6 @@ export const applyAiPreferences = (draft: AppState, preferences: UserPreferences
     preferences.postProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;
   draft.settings.aiPostProcessing.mode = postProcessingMode;
   draft.settings.aiPostProcessing.selectedApiKeyId = preferences.postProcessingApiKeyId ?? null;
+  draft.settings.aiPostProcessing.ollamaUrl = preferences.postProcessingOllamaUrl ?? null;
+  draft.settings.aiPostProcessing.ollamaModel = preferences.postProcessingOllamaModel ?? null;
 };

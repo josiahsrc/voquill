@@ -151,9 +151,16 @@ export type NoneGenerativePrefs = BaseGenerativePrefs & {
   mode: "none";
 }
 
+export type OllamaGenerativePrefs = BaseGenerativePrefs & {
+  mode: "ollama";
+  ollamaUrl: string | null;
+  ollamaModel: string | null;
+}
+
 export type GenerativePrefs =
   | CloudGenerativePrefs
   | ApiGenerativePrefs
+  | OllamaGenerativePrefs
   | NoneGenerativePrefs;
 
 export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
@@ -189,6 +196,15 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
     } else {
       warnings.push("No API key configured for API post-processing.");
     }
+  }
+
+  if (config.mode === "ollama") {
+    return {
+      mode: "ollama",
+      ollamaUrl: config.ollamaUrl,
+      ollamaModel: config.ollamaModel,
+      warnings,
+    };
   }
 
   return { mode: "none", warnings };

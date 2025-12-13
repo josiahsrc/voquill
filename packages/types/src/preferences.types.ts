@@ -8,5 +8,7 @@ export type UserPreferences = {
   transcriptionModelSize: Nullable<string>;
   postProcessingMode: Nullable<PostProcessingMode>;
   postProcessingApiKeyId: Nullable<string>;
+  postProcessingOllamaUrl: Nullable<string>;
+  postProcessingOllamaModel: Nullable<string>;
   activeToneId: Nullable<string>;
 };
