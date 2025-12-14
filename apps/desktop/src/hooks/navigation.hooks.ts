@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Nullable } from "@repo/types";
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { AppState } from "../state/app.state";
 import { produceAppState, useAppStore } from "../store";
-import { Nullable } from "@repo/types";
 
 type ParamSyncerArgs<V extends Nullable<string>[]> = {
   queryParamNames: string[];
@@ -76,25 +76,4 @@ export const useConsumeQueryParams = (
       );
     }
   }, [searchParams.toString()]);
-};
-
-const pageMap: Record<string, string> = {
-  worklist: "Worklist",
-  users: "Users",
-  settings: "Settings",
-};
-
-export const usePageName = () => {
-  const location = useLocation();
-  const path = location.pathname;
-
-  return useMemo(() => {
-    for (const key in pageMap) {
-      if (path.includes(key)) {
-        return pageMap[key];
-      }
-    }
-
-    return null;
-  }, [path]);
 };

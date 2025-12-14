@@ -19,6 +19,7 @@ type LocalUserPreferences = {
   postProcessingOllamaUrl: Nullable<string>;
   postProcessingOllamaModel: Nullable<string>;
   activeToneId: Nullable<string>;
+  gotStartedAt: Nullable<number>;
 };
 
 const fromLocalPreferences = (
@@ -34,6 +35,7 @@ const fromLocalPreferences = (
   postProcessingOllamaUrl: preferences.postProcessingOllamaUrl,
   postProcessingOllamaModel: preferences.postProcessingOllamaModel,
   activeToneId: preferences.activeToneId,
+  gotStartedAt: preferences.gotStartedAt,
 });
 
 const toLocalPreferences = (
@@ -49,6 +51,7 @@ const toLocalPreferences = (
   postProcessingOllamaUrl: preferences.postProcessingOllamaUrl ?? null,
   postProcessingOllamaModel: preferences.postProcessingOllamaModel ?? null,
   activeToneId: preferences.activeToneId ?? null,
+  gotStartedAt: preferences.gotStartedAt ?? null,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

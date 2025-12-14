@@ -17,9 +17,10 @@ pub async fn upsert_user_preferences(
              post_processing_api_key_id,
              post_processing_ollama_url,
              post_processing_ollama_model,
-             active_tone_id
+             active_tone_id,
+             got_started_at
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -29,7 +30,8 @@ pub async fn upsert_user_preferences(
             post_processing_api_key_id = excluded.post_processing_api_key_id,
             post_processing_ollama_url = excluded.post_processing_ollama_url,
             post_processing_ollama_model = excluded.post_processing_ollama_model,
-            active_tone_id = excluded.active_tone_id",
+            active_tone_id = excluded.active_tone_id,
+            got_started_at = excluded.got_started_at",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -41,6 +43,7 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.post_processing_ollama_url)
     .bind(&preferences.post_processing_ollama_model)
     .bind(&preferences.active_tone_id)
+    .bind(&preferences.got_started_at)
     .execute(&pool)
     .await?;
 
@@ -62,7 +65,8 @@ pub async fn fetch_user_preferences(
             post_processing_api_key_id,
             post_processing_ollama_url,
             post_processing_ollama_model,
-            active_tone_id
+            active_tone_id,
+            got_started_at
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -99,6 +103,9 @@ pub async fn fetch_user_preferences(
             .unwrap_or(None),
         active_tone_id: row
             .try_get::<Option<String>, _>("active_tone_id")
+            .unwrap_or(None),
+        got_started_at: row
+            .try_get::<Option<i64>, _>("got_started_at")
             .unwrap_or(None),
     });
 

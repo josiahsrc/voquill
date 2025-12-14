@@ -3,7 +3,7 @@ import { useIsOnboarded } from "../../hooks/user.hooks";
 import { Redirect } from "./Redirectors";
 import { getRec } from "@repo/utilities";
 
-export type Node = "dashboard" | "notFound" | "onboarding";
+export type Node = "dashboard" | "notFound" | "onboarding" | "welcome";
 
 type GuardState = {
   isOnboarded: boolean;
@@ -22,6 +22,15 @@ type NodeDefinition = {
 type Graph = Record<Node, NodeDefinition>;
 
 const graph: Graph = {
+  welcome: {
+    edges: [
+      {
+        to: "dashboard",
+        condition: (s) => s.isOnboarded,
+      },
+    ],
+    builder: () => <Redirect to="/welcome" />,
+  },
   onboarding: {
     edges: [
       {
@@ -34,7 +43,7 @@ const graph: Graph = {
   dashboard: {
     edges: [
       {
-        to: "onboarding",
+        to: "welcome",
         condition: (s) => !s.isOnboarded,
       },
     ],

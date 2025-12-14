@@ -22,4 +22,6 @@ pub struct UserPreferences {
     pub post_processing_ollama_model: Option<String>,
     #[serde(default)]
     pub active_tone_id: Option<String>,
+    #[serde(default)]
+    pub got_started_at: Option<i64>,
 }

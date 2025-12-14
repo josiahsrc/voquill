@@ -62,6 +62,7 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   postProcessingOllamaUrl: null,
   postProcessingOllamaModel: null,
   activeToneId: null,
+  gotStartedAt: null,
 });
 
 const updateUserPreferences = async (
@@ -340,4 +341,16 @@ export const migrateLocalUserToCloud = async (): Promise<void> => {
     console.error("Failed migrating local user to cloud", error);
     throw error;
   }
+};
+
+export const setGotStartedAtNow = async (): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.gotStartedAt = Date.now();
+  }, "Failed to save got started timestamp. Please try again.");
+};
+
+export const clearGotStartedAt = async (): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.gotStartedAt = null;
+  }, "Failed to clear got started timestamp. Please try again.");
 };

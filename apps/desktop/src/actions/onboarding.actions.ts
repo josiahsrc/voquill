@@ -1,7 +1,11 @@
 import { User, UserPreferences } from "@repo/types";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
-import { OnboardingPageKey, OnboardingState } from "../state/onboarding.state";
+import {
+  INITIAL_ONBOARDING_STATE,
+  OnboardingPageKey,
+  OnboardingState,
+} from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { EffectivePlan } from "../types/member.types";
@@ -40,6 +44,12 @@ export const goBackOnboardingPage = () => {
 export const goToOnboardingPage = (nextPage: OnboardingPageKey) => {
   produceAppState((draft) => {
     navigateToOnboardingPage(draft.onboarding, nextPage);
+  });
+};
+
+export const resetOnboarding = () => {
+  produceAppState((draft) => {
+    Object.assign(draft.onboarding, INITIAL_ONBOARDING_STATE);
   });
 };
 
@@ -125,6 +135,7 @@ export const submitOnboarding = async () => {
           ? postProcessingPreference.ollamaModel
           : null,
       activeToneId: null,
+      gotStartedAt: null,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

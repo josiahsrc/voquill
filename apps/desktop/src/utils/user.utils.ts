@@ -59,6 +59,23 @@ export const getMyUserPreferences = (
   return getRec(state.userPreferencesById, getMyEffectiveUserId(state)) ?? null;
 };
 
+export const getShouldGoToOnboarding = (state: AppState): boolean => {
+  const prefs = getMyUserPreferences(state);
+  const gotStartedAt = prefs?.gotStartedAt;
+  if (!gotStartedAt) {
+    return false;
+  }
+
+  const now = Date.now();
+  const elapsed = now - gotStartedAt;
+  const twoMinutes = 2 * 60 * 1000;
+  if (elapsed < twoMinutes) {
+    return true;
+  }
+
+  return false;
+};
+
 export const getMyUserName = (state: AppState): string => {
   const user = getMyUser(state);
   return user?.name || "Guest";

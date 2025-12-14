@@ -171,9 +171,9 @@ export const AppSideEffects = () => {
     keys: ["r"],
     ctrl: true,
     callback: () => {
-      showSnackbar("Refreshing application...");
       if (getIsDevMode()) {
-        window.location.reload();
+        showSnackbar("Refreshing application...");
+        window.location.href = "/welcome";
       }
     },
   });
