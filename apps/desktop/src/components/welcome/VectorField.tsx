@@ -12,16 +12,6 @@ export const VectorField = () => {
   // Initialize Perlin noise generator
   const perlin = useMemo(() => new Perlin(), []);
 
-  const mousePos = useRef({ x: width / 2, y: height / 2 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mousePos.current = { x: e.clientX, y: e.clientY };
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -38,7 +28,8 @@ export const VectorField = () => {
 
     // Configuration
     const GRID_SPACING = 40; // Space between vectors
-    const TIME_SPEED = 0.02; // Speed of animation
+    const TIME_SPEED = 0.005; // Speed of animation
+    const NOISE_SCALE = 0.0018; // Scale of noise coordinates
     const MAG_SCALE = 0.01; // Scale for magnitude noise
     const MAX_VECTOR_LENGTH = 24; // Maximum length of a vector
     const LINE_WIDTH = 5;
@@ -68,10 +59,10 @@ export const VectorField = () => {
           const x = i * GRID_SPACING + offsetX;
           const y = j * GRID_SPACING + offsetY;
 
-          // Calculate angle to mouse
-          const dx = mousePos.current.x - x;
-          const dy = mousePos.current.y - y;
-          const angle = Math.atan2(dy, dx);
+          // Noise 1: Angle
+          // Map noise [-1, 1] to angle. Multiplying by PI * 2 allows for full rotation.
+          const nAngle = perlin.noise(x * NOISE_SCALE, y * NOISE_SCALE, time);
+          const angle = nAngle * Math.PI * 2;
 
           // Noise 2: Magnitude (offset by large number)
           // Normalize noise from [-1, 1] to [0, 1]
