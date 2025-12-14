@@ -28,7 +28,7 @@ export const VectorField = () => {
 
     // Configuration
     const GRID_SPACING = 40; // Space between vectors
-    const TIME_SPEED = 0.005; // Speed of animation
+    const TIME_SPEED = 0.0025; // Speed of animation
     const NOISE_SCALE = 0.0018; // Scale of noise coordinates
     const MAG_SCALE = 0.01; // Scale for magnitude noise
     const MAX_VECTOR_LENGTH = 24; // Maximum length of a vector
