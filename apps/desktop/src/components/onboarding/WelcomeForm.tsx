@@ -4,11 +4,14 @@ import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { FormContainer } from "./OnboardingShared";
+import { useAppStore } from "../../store";
+import { getIsLoggedIn } from "../../utils/user.utils";
 
 export const WelcomeForm = () => {
   const navigate = useNavigate();
+  const isLoggedIn = useAppStore(getIsLoggedIn);
   const canGoBack =
-    typeof window !== "undefined"
+    !isLoggedIn && typeof window !== "undefined"
       ? (window.history.state?.idx ?? 0) > 0
       : false;
 

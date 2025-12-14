@@ -25,7 +25,7 @@ export const PlanSelectionForm = () => {
         textAlign="center"
       >
         <Typography variant="body1" color="text.secondary">
-          <FormattedMessage defaultMessage="🤩 Try for free. Upgrade anytime for more features and support." />
+          <FormattedMessage defaultMessage="Try for free. Upgrade anytime for more features and support." />
         </Typography>
       </Stack>
 

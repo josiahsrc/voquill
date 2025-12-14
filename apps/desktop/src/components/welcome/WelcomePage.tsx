@@ -2,10 +2,7 @@ import { Box, Button, Stack, Typography, useTheme } from "@mui/material";
 import { useEffect } from "react";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
-import {
-  goToOnboardingPage,
-  resetOnboarding,
-} from "../../actions/onboarding.actions";
+import { resetOnboarding } from "../../actions/onboarding.actions";
 import { clearGotStartedAt } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { getShouldGoToOnboarding } from "../../utils/user.utils";
@@ -24,8 +21,7 @@ export default function WelcomePage() {
 
   const handleLogin = () => {
     resetOnboarding();
-    goToOnboardingPage("login");
-    nav("/onboarding");
+    nav("/login?mode=login");
   };
 
   useEffect(() => {

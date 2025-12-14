@@ -1,24 +1,35 @@
-import { Card, Stack } from "@mui/material";
+import { Button, Card, Stack } from "@mui/material";
+import { FormattedMessage } from "react-intl";
+import { Link } from "react-router-dom";
 import { LoginForm } from "./LoginForm";
+import { ArrowBack } from "@mui/icons-material";
 
 export default function LoginPage() {
   return (
-    <Stack
-      alignItems="center"
-      justifyContent="center"
-      sx={{ p: 2, minHeight: "100%", pb: { xs: 4, md: 8 } }}
-    >
-      <Card
+    <Stack sx={{ p: 2, minHeight: "100%", pb: { xs: 4, md: 8 } }}>
+      <Stack
+        spacing={2}
+        alignItems="center"
         sx={{
-          p: { xs: 2, sm: 4 },
-          boxShadow: 6,
-          width: { xs: "100%", md: 520 },
-          maxWidth: "100%",
-          overflow: "hidden",
+          m: "auto",
+          width: "100%",
+          maxWidth: 520,
         }}
       >
-        <LoginForm />
-      </Card>
+        <Card
+          sx={{
+            p: { xs: 2, sm: 4 },
+            boxShadow: 6,
+            width: "100%",
+            overflow: "hidden",
+          }}
+        >
+          <LoginForm />
+        </Card>
+        <Button component={Link} to="/" startIcon={<ArrowBack />}>
+          <FormattedMessage defaultMessage="Go back" />
+        </Button>
+      </Stack>
     </Stack>
   );
 }

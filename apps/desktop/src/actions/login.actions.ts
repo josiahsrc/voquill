@@ -147,3 +147,7 @@ export const setMode = (mode: LoginMode): void => {
     state.login.errorMessage = "";
   });
 };
+
+export const signOut = async (): Promise<void> => {
+  await getAuthRepo().signOut();
+};

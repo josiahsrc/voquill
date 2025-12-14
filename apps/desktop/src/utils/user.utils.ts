@@ -13,6 +13,10 @@ import {
 
 export const LOCAL_USER_ID = "local-user-id";
 
+export const getIsLoggedIn = (state: AppState): boolean => {
+  return !!state.auth;
+};
+
 export const getHasEmailProvider = (state: AppState): boolean => {
   const auth = state.auth;
   const providers = auth?.providerData ?? [];

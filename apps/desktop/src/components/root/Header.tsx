@@ -16,13 +16,14 @@ import {
   planToDisplayName,
 } from "../../utils/member.utils";
 import { getInitials } from "../../utils/string.utils";
-import { getMyUser } from "../../utils/user.utils";
+import { getIsLoggedIn, getMyUser } from "../../utils/user.utils";
 import { LogoWithText } from "../common/LogoWithText";
 import {
   MenuPopoverBuilder,
   type MenuPopoverItem,
 } from "../common/MenuPopover";
 import { maybeArrayElements } from "../settings/AIPostProcessingConfiguration";
+import { signOut } from "../../actions/login.actions";
 
 export type BaseHeaderProps = {
   logo?: React.ReactNode;
@@ -54,6 +55,7 @@ export const AppHeader = () => {
   const nav = useNavigate();
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
+  const isLoggedIn = useAppStore(getIsLoggedIn);
   const planName = useAppStore((state) =>
     planToDisplayName(getEffectivePlan(state)),
   );
@@ -67,6 +69,11 @@ export const AppHeader = () => {
   const myInitials = useMemo(() => getInitials(myName), [myName]);
 
   const handleLogoClick = () => {
+    nav("/");
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
     nav("/");
   };
 
@@ -139,6 +146,12 @@ export const AppHeader = () => {
           </Button>
         )}
       </MenuPopoverBuilder>
+    );
+  } else if (isLoggedIn) {
+    rightContent = (
+      <Button onClick={handleSignOut}>
+        <FormattedMessage defaultMessage="Sign Out" />
+      </Button>
     );
   }
 

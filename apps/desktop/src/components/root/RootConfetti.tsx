@@ -1,10 +1,23 @@
 import Confetti from "react-confetti";
-import { useWindowSize } from "../../hooks/helper.hooks";
-import { useAppStore } from "../../store";
+import { useEffectDebounced, useWindowSize } from "../../hooks/helper.hooks";
+import { produceAppState, useAppStore } from "../../store";
 
 export const RootConfetti = () => {
   const { width, height } = useWindowSize();
   const counter = useAppStore((state) => state.confettiCounter);
+
+  useEffectDebounced(
+    10_000,
+    () => {
+      if (counter > 0) {
+        produceAppState((draft) => {
+          draft.confettiCounter = 0;
+        });
+      }
+    },
+    [counter],
+  );
+
   if (counter <= 0) {
     return null;
   }

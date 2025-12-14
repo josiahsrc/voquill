@@ -13,6 +13,7 @@ import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.t
 import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
 import StylingPage from "./components/styling/StylingPage.tsx";
 import WelcomePage from "./components/welcome/WelcomePage.tsx";
+import LoginPage from "./components/login/LoginPage.tsx";
 
 const AppWrapper = () => {
   return (
@@ -42,6 +43,19 @@ const router = createBrowserRouter([
           {
             path: "welcome",
             element: <WelcomePage />,
+          },
+        ],
+      },
+      {
+        element: (
+          <Guard node="welcome">
+            <AppWrapper />
+          </Guard>
+        ),
+        children: [
+          {
+            path: "login",
+            element: <LoginPage />,
           },
         ],
       },
