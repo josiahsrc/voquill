@@ -231,12 +231,12 @@ export const PermissionsDialog = () => {
       }}
     >
       <DialogTitle>
-        <FormattedMessage defaultMessage="Voquill needs permissions to run" />
+        <FormattedMessage defaultMessage="Permissions needed" />
       </DialogTitle>
       <DialogContent>
         <Stack spacing={3}>
           <Typography variant="body1">
-            <FormattedMessage defaultMessage="This dialog will close automatically after you have granted all required permissions." />
+            <FormattedMessage defaultMessage="Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly." />
           </Typography>
           <Stack>
             {REQUIRED_PERMISSIONS.map((kind) => (
