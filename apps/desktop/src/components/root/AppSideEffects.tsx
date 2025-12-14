@@ -5,13 +5,17 @@ import { getAuth } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
-import { refreshCurrentUser } from "../../actions/user.actions";
+import {
+  migrateLocalUserToCloud,
+  refreshCurrentUser,
+} from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
+import { LOCAL_USER_ID } from "../../utils/user.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 
 type StreamRet = Nullable<
@@ -28,6 +32,17 @@ export const AppSideEffects = () => {
   const authReadyRef = useRef(false);
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
+  const member = useAppStore((state) => {
+    const uid = state.auth?.uid;
+    return uid ? (state.memberById[uid] ?? null) : null;
+  });
+  const localUser = useAppStore(
+    (state) => state.userById[LOCAL_USER_ID] ?? null,
+  );
+  const cloudUser = useAppStore((state) => {
+    const uid = state.auth?.uid;
+    return uid ? (state.userById[uid] ?? null) : null;
+  });
 
   const onAuthStateChanged = (user: AuthUser | null) => {
     authReadyRef.current = true;
@@ -124,14 +139,41 @@ export const AppSideEffects = () => {
     }
   }, [streamReady, initReady, initialized]);
 
+  const isMigratingLocalUserRef = useRef(false);
+  const memberPlan = member?.plan;
+  useEffect(() => {
+    if (!userId || !memberPlan) {
+      return;
+    }
+
+    if (memberPlan !== "free" && memberPlan !== "pro") {
+      return;
+    }
+
+    if (!localUser || cloudUser || isMigratingLocalUserRef.current) {
+      return;
+    }
+
+    isMigratingLocalUserRef.current = true;
+    (async () => {
+      try {
+        await migrateLocalUserToCloud();
+      } catch (error) {
+        showErrorSnackbar(error);
+      } finally {
+        isMigratingLocalUserRef.current = false;
+      }
+    })();
+  }, [userId, memberPlan, localUser, cloudUser]);
+
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({
     keys: ["r"],
     ctrl: true,
     callback: () => {
-      showSnackbar("Refreshing application...");
       if (getIsDevMode()) {
-        window.location.reload();
+        showSnackbar("Refreshing application...");
+        window.location.href = "/welcome";
       }
     },
   });

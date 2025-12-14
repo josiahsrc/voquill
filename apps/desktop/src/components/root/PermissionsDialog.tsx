@@ -30,6 +30,8 @@ import {
   requestAccessibilityPermission,
   requestMicrophonePermission,
 } from "../../utils/permission.utils";
+import { useLocation } from "react-router-dom";
+import { setGotStartedAtNow } from "../../actions/user.actions";
 
 const ICON_SIZE = 28;
 
@@ -149,6 +151,8 @@ export const PermissionsDialog = () => {
   const permissions = useAppStore((state) => state.permissions);
   const [permissionWasGranted, setPermissionWasGranted] = useState(false);
   const previousPermissionsRef = useRef(permissions);
+  const location = useLocation();
+  const isWelcomePage = location.pathname === "/welcome";
 
   // Track when a permission transitions from not authorized to authorized
   useEffect(() => {
@@ -191,8 +195,14 @@ export const PermissionsDialog = () => {
     return { ready: known, blocked: missing, allAuthorized: allAuth };
   }, [permissions]);
 
-  const open = ready && blocked;
+  const open = ready && blocked && !isWelcomePage;
   const showRestartMessage = allAuthorized && permissionWasGranted;
+
+  useEffect(() => {
+    if (open) {
+      setGotStartedAtNow();
+    }
+  }, [open]);
 
   const handleRestart = useCallback(async () => {
     try {
@@ -231,12 +241,12 @@ export const PermissionsDialog = () => {
       }}
     >
       <DialogTitle>
-        <FormattedMessage defaultMessage="Voquill needs permissions to run" />
+        <FormattedMessage defaultMessage="Permissions needed" />
       </DialogTitle>
       <DialogContent>
         <Stack spacing={3}>
           <Typography variant="body1">
-            <FormattedMessage defaultMessage="This dialog will close automatically after you have granted all required permissions." />
+            <FormattedMessage defaultMessage="Voquill is an AI dictation tool. It needs microphone and accessibility access in order to function properly." />
           </Typography>
           <Stack>
             {REQUIRED_PERMISSIONS.map((kind) => (

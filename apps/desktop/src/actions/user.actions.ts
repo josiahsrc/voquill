@@ -1,5 +1,6 @@
 import { Nullable, User, UserPreferences } from "@repo/types";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
+import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
 import {
   DEFAULT_POST_PROCESSING_MODE,
@@ -11,6 +12,7 @@ import {
   getMyEffectiveUserId,
   getMyUser,
   getMyUserPreferences,
+  LOCAL_USER_ID,
   registerUserPreferences,
   setCurrentUser,
 } from "../utils/user.utils";
@@ -60,6 +62,7 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   postProcessingOllamaUrl: null,
   postProcessingOllamaModel: null,
   activeToneId: null,
+  gotStartedAt: null,
 });
 
 const updateUserPreferences = async (
@@ -188,6 +191,16 @@ export const setUserName = async (name: string): Promise<void> => {
   );
 };
 
+export const finishTutorial = async (): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.hasFinishedTutorial = true;
+    },
+    "Unable to update tutorial status. User not found.",
+    "Failed to update tutorial status. Please try again.",
+  );
+};
+
 const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
   await updateUserPreferences((preferences) => {
@@ -293,3 +306,51 @@ export const setPreferredPostProcessingOllamaModel = async (
 };
 
 export const syncAiPreferences = persistAiPreferences;
+
+export const migrateLocalUserToCloud = async (): Promise<void> => {
+  const state = getAppState();
+  const userId = state.auth?.uid;
+  if (!userId) {
+    return;
+  }
+
+  const localUser = state.userById[LOCAL_USER_ID];
+  if (!localUser) {
+    return;
+  }
+
+  if (state.userById[userId]) {
+    return;
+  }
+
+  const repo = new CloudUserRepo();
+  const now = new Date().toISOString();
+  const payload: User = {
+    ...localUser,
+    id: userId,
+    createdAt: localUser.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  try {
+    const saved = await repo.setUser(payload);
+    produceAppState((draft) => {
+      setCurrentUser(draft, saved);
+    });
+  } catch (error) {
+    console.error("Failed migrating local user to cloud", error);
+    throw error;
+  }
+};
+
+export const setGotStartedAtNow = async (): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.gotStartedAt = Date.now();
+  }, "Failed to save got started timestamp. Please try again.");
+};
+
+export const clearGotStartedAt = async (): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.gotStartedAt = null;
+  }, "Failed to clear got started timestamp. Please try again.");
+};

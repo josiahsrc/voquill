@@ -36,29 +36,26 @@ export const PaymentDialog = () => {
       fn: async () => {
         const user = getAuth().currentUser;
         if (!user) {
-          console.log("no user signed in after payment");
           throw new Error("no user signed in");
-        }
-
-        const claims = await user.getIdTokenResult(true);
-        const subscribed = claims.claims.subscribed === true;
-        if (!subscribed) {
-          console.log("user not subscribed yet, will retry");
-          throw new Error("user not subscribed yet");
         }
 
         const member = await invokeHandler("member/getMyMember", {}).then(
           (res) => res.member,
         );
-
-        console.log("retrieved member after payment:", member);
-        if (member) {
-          produceAppState((draft) => {
-            registerMembers(draft, [member]);
-          });
+        if (!member) {
+          throw new Error("member not found after payment");
         }
+
+        const plan = member.plan;
+        if (plan === "free") {
+          throw new Error("member plan not updated yet");
+        }
+
+        produceAppState((draft) => {
+          registerMembers(draft, [member]);
+        });
       },
-      retries: 10,
+      retries: 20,
       delay: 1000,
     });
 

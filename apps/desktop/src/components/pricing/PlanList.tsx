@@ -70,12 +70,16 @@ const PlanCard = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "stretch",
-          gap: 1,
+          gap: 0.5,
           p: 2.5,
         }}
       >
-        <Typography variant="subtitle1">{title}</Typography>
-        <Typography variant="h4">{price}</Typography>
+        <Typography variant="subtitle1" color="text.secondary">
+          {title}
+        </Typography>
+        <Typography variant="h5" fontWeight={600}>
+          {price}
+        </Typography>
         <Box sx={{ mt: 1, mb: 2 }}>{button}</Box>
         {children}
       </CardContent>
@@ -123,9 +127,9 @@ export const PlanList = ({
     };
   };
 
-  const communityCard = (
+  const trialCard = (
     <PlanCard
-      title={<FormattedMessage defaultMessage="Community" />}
+      title={<FormattedMessage defaultMessage="Trial" />}
       price={<FormattedMessage defaultMessage="Free" />}
       buttonVariant="outlined"
       cardSx={{ borderColor: "level1" }}
@@ -141,16 +145,16 @@ export const PlanList = ({
       }
     >
       <CheckmarkRow>
-        <FormattedMessage defaultMessage="On-device processing" />
+        <FormattedMessage defaultMessage="2,000 free words per month" />
       </CheckmarkRow>
       <CheckmarkRow>
-        <FormattedMessage defaultMessage="Unlimited words" />
+        <FormattedMessage defaultMessage="No setup needed" />
       </CheckmarkRow>
       <CheckmarkRow>
-        <FormattedMessage defaultMessage="Custom API keys" />
+        <FormattedMessage defaultMessage="Custom styling" />
       </CheckmarkRow>
       <CheckmarkRow disabled>
-        <FormattedMessage defaultMessage="Manual setup" />
+        <FormattedMessage defaultMessage="Community support" />
       </CheckmarkRow>
     </PlanCard>
   );
@@ -179,13 +183,16 @@ export const PlanList = ({
       }
     >
       <CheckmarkRow>
-        <FormattedMessage defaultMessage="Everything community has" />
+        <FormattedMessage defaultMessage="Everything the trial has" />
       </CheckmarkRow>
       <CheckmarkRow>
         <FormattedMessage defaultMessage="Cross-device data storage" />
       </CheckmarkRow>
       <CheckmarkRow>
-        <FormattedMessage defaultMessage="No setup needed" />
+        <FormattedMessage defaultMessage="Unlimited words" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Cancel anytime" />
       </CheckmarkRow>
       <CheckmarkRow>
         <FormattedMessage defaultMessage="Priority support" />
@@ -204,7 +211,7 @@ export const PlanList = ({
         ...sx,
       }}
     >
-      {communityCard}
+      {trialCard}
       {proCard}
     </Stack>
   );

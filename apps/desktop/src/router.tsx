@@ -12,6 +12,8 @@ import DashboardPage from "./components/dashboard/DashboardPage.tsx";
 import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.tsx";
 import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
 import StylingPage from "./components/styling/StylingPage.tsx";
+import WelcomePage from "./components/welcome/WelcomePage.tsx";
+import LoginPage from "./components/login/LoginPage.tsx";
 
 const AppWrapper = () => {
   return (
@@ -30,6 +32,32 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <Redirect to="/dashboard" />,
+      },
+      {
+        element: (
+          <Guard node="welcome">
+            <Outlet />
+          </Guard>
+        ),
+        children: [
+          {
+            path: "welcome",
+            element: <WelcomePage />,
+          },
+        ],
+      },
+      {
+        element: (
+          <Guard node="welcome">
+            <AppWrapper />
+          </Guard>
+        ),
+        children: [
+          {
+            path: "login",
+            element: <LoginPage />,
+          },
+        ],
       },
       {
         element: (

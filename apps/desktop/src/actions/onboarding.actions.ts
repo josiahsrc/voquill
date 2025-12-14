@@ -1,9 +1,14 @@
-import { MemberPlan, User, UserPreferences } from "@repo/types";
+import { User, UserPreferences } from "@repo/types";
+import { DEFAULT_LOCALE } from "../i18n/config";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
-import { OnboardingPageKey, OnboardingState } from "../state/onboarding.state";
+import {
+  INITIAL_ONBOARDING_STATE,
+  OnboardingPageKey,
+  OnboardingState,
+} from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
-import { DEFAULT_LOCALE } from "../i18n/config";
+import { EffectivePlan } from "../types/member.types";
 import {
   GenerativePrefs,
   getGenerativePrefs,
@@ -42,12 +47,18 @@ export const goToOnboardingPage = (nextPage: OnboardingPageKey) => {
   });
 };
 
-export const selectOnboardingPlan = (plan: MemberPlan) => {
+export const resetOnboarding = () => {
+  produceAppState((draft) => {
+    Object.assign(draft.onboarding, INITIAL_ONBOARDING_STATE);
+  });
+};
+
+export const selectOnboardingPlan = (plan: EffectivePlan) => {
   produceAppState((draft) => {
     draft.onboarding.selectedPlan = plan;
 
     const targetPageKey: OnboardingPageKey =
-      plan === "pro" ? "login" : "transcription";
+      plan === "community" ? "transcription" : "login";
 
     navigateToOnboardingPage(draft.onboarding, targetPageKey);
   });
@@ -56,6 +67,12 @@ export const selectOnboardingPlan = (plan: MemberPlan) => {
 export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
+  const preferredMicrophone =
+    state.onboarding.preferredMicrophone?.trim() ?? null;
+  const normalizedMicrophone =
+    preferredMicrophone && preferredMicrophone.length > 0
+      ? preferredMicrophone
+      : null;
 
   const transcriptionPreference: TranscriptionPrefs = getTranscriptionPrefs(
     state,
@@ -86,12 +103,13 @@ export const submitOnboarding = async () => {
       onboarded: true,
       onboardedAt: now,
       timezone: null,
-      preferredMicrophone: null,
+      preferredMicrophone: normalizedMicrophone,
       preferredLanguage: DEFAULT_LOCALE,
       wordsThisMonth: 0,
       wordsThisMonthMonth: null,
       wordsTotal: 0,
       playInteractionChime: true,
+      hasFinishedTutorial: false,
     };
 
     const preferences: UserPreferences = {
@@ -117,6 +135,7 @@ export const submitOnboarding = async () => {
           ? postProcessingPreference.ollamaModel
           : null,
       activeToneId: null,
+      gotStartedAt: null,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

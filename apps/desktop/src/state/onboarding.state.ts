@@ -1,4 +1,5 @@
-import { MemberPlan } from "@repo/types";
+import { Nullable } from "@repo/types";
+import { EffectivePlan } from "../types/member.types";
 import { getIsDevMode } from "../utils/env.utils";
 
 export type OnboardingPageKey =
@@ -8,7 +9,8 @@ export type OnboardingPageKey =
   | "login"
   | "transcription"
   | "postProcessing"
-  | "hotkeys";
+  | "hotkeys"
+  | "microphone";
 
 export type OnboardingState = {
   name: string;
@@ -16,8 +18,9 @@ export type OnboardingState = {
   history: OnboardingPageKey[];
   submitting: boolean;
   tryItOutInput: string;
-  selectedPlan: MemberPlan | null;
+  selectedPlan: EffectivePlan | null;
   loggingIn: boolean;
+  preferredMicrophone: Nullable<string>;
 };
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
@@ -28,6 +31,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   tryItOutInput: "",
   selectedPlan: null,
   loggingIn: false,
+  preferredMicrophone: null,
 };
 
 if (getIsDevMode()) {

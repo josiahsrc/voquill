@@ -6,7 +6,7 @@ import { Nullable } from "@repo/types";
 import { countWords } from "@repo/utilities/src/string";
 import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
 import { AuthData } from "firebase-functions/tasks";
-import { checkPaidAccess } from "../utils/check.utils";
+import { checkAccess } from "../utils/check.utils";
 import { getGroqApiKey } from "../utils/env.utils";
 import { ClientError } from "../utils/error.utils";
 import {
@@ -35,7 +35,7 @@ export const runTranscribeAudio = async ({
     throw new ClientError("Audio data exceeds maximum size of 16 MB");
   }
 
-  const access = await checkPaidAccess(auth);
+  const access = await checkAccess(auth);
   const { ext } = validateAudioInput({ audioMimeType: input.audioMimeType });
   await validateMemberWithinLimits({ auth: access.auth });
 
@@ -73,7 +73,7 @@ export const runGenerateText = async ({
   auth: Nullable<AuthData>;
   input: HandlerInput<"ai/generateText">;
 }): Promise<HandlerOutput<"ai/generateText">> => {
-  const access = await checkPaidAccess(auth);
+  const access = await checkAccess(auth);
   await validateMemberWithinLimits({ auth: access.auth });
 
   let generatedText: string;

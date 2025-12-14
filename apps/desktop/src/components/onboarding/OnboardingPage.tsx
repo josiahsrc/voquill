@@ -4,6 +4,7 @@ import { loadPrices } from "../../actions/pricing.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { getMyMember } from "../../utils/member.utils";
 import { HotkeySelectionForm } from "./HotkeySelectionForm";
+import { MicrophoneSelectionForm } from "./MicrophoneSelectionForm";
 import { NameForm } from "./NameForm";
 import { OnboardingLoginForm } from "./OnboardingLoginForm";
 import { PlanSelectionForm } from "./PlanSelectionForm";
@@ -40,6 +41,7 @@ export default function OnboardingPage() {
       {currentPage === "transcription" && <TranscriptionMethodForm />}
       {currentPage === "postProcessing" && <PostProcessingMethodForm />}
       {currentPage === "hotkeys" && <HotkeySelectionForm />}
+      {currentPage === "microphone" && <MicrophoneSelectionForm />}
     </Stack>
   );
 }

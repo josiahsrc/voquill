@@ -2,11 +2,14 @@ import { useMemo } from "react";
 import { useIsOnboarded } from "../../hooks/user.hooks";
 import { Redirect } from "./Redirectors";
 import { getRec } from "@repo/utilities";
+import { useAppStore } from "../../store";
+import { getIsLoggedIn } from "../../utils/user.utils";
 
-export type Node = "dashboard" | "notFound" | "onboarding";
+export type Node = "dashboard" | "notFound" | "onboarding" | "welcome";
 
 type GuardState = {
   isOnboarded: boolean;
+  isLoggedIn: boolean;
 };
 
 type GuardEdge = {
@@ -22,6 +25,19 @@ type NodeDefinition = {
 type Graph = Record<Node, NodeDefinition>;
 
 const graph: Graph = {
+  welcome: {
+    edges: [
+      {
+        to: "dashboard",
+        condition: (s) => s.isOnboarded,
+      },
+      {
+        to: "onboarding",
+        condition: (s) => s.isLoggedIn && !s.isOnboarded,
+      },
+    ],
+    builder: () => <Redirect to="/welcome" />,
+  },
   onboarding: {
     edges: [
       {
@@ -34,7 +50,7 @@ const graph: Graph = {
   dashboard: {
     edges: [
       {
-        to: "onboarding",
+        to: "welcome",
         condition: (s) => !s.isOnboarded,
       },
     ],
@@ -53,12 +69,14 @@ export type GuardProps = {
 
 export const Guard = ({ children, node }: GuardProps) => {
   const isOnboarded = useIsOnboarded();
+  const isLoggedIn = useAppStore(getIsLoggedIn);
 
   const state = useMemo<GuardState>(
     () => ({
       isOnboarded,
+      isLoggedIn,
     }),
-    [isOnboarded],
+    [isOnboarded, isLoggedIn],
   );
 
   const redirectTo = useMemo(() => {

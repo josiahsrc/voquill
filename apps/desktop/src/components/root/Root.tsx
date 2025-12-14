@@ -1,11 +1,11 @@
 import { Box } from "@mui/material";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Outlet } from "react-router-dom";
-import { usePageName } from "../../hooks/navigation.hooks";
 import { HeaderPortalProvider } from "./HeaderPortalContext";
 import { LoadingApp } from "./LoadingApp";
 import { PermissionSideEffects } from "./PermissionSideEffects";
+import { RootConfetti } from "./RootConfetti";
 import { RootDialogs } from "./RootDialogs";
 import { RootSideEffects } from "./RootSideEffects";
 
@@ -19,15 +19,10 @@ function ErrorFallback({ error }: { error: Error }) {
 }
 
 export default function Root() {
-  const pageTitle = usePageName();
-
-  useEffect(() => {
-    document.title = pageTitle ? `${pageTitle} - Voquill` : "Voquill";
-  }, [pageTitle]);
-
   return (
     <>
       <PermissionSideEffects />
+      <RootConfetti />
       <RootSideEffects />
       <RootDialogs />
       <HeaderPortalProvider>

@@ -6,9 +6,16 @@ import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import { normalizeLocaleValue } from "./language.utils";
-import { getMemberExceedsLimitsFromState, getMyMember } from "./member.utils";
+import {
+  getEffectivePlan,
+  getMemberExceedsLimitsFromState,
+} from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
+
+export const getIsLoggedIn = (state: AppState): boolean => {
+  return !!state.auth;
+};
 
 export const getHasEmailProvider = (state: AppState): boolean => {
   const auth = state.auth;
@@ -17,8 +24,12 @@ export const getHasEmailProvider = (state: AppState): boolean => {
   return providerIds.includes("password");
 };
 
+export const getIsOnboarded = (state: AppState): boolean => {
+  return Boolean(getMyUser(state)?.onboarded);
+};
+
 export const getHasCloudAccess = (state: AppState): boolean => {
-  return getMyMember(state)?.plan === "pro";
+  return getEffectivePlan(state) !== "community";
 };
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> =>
@@ -52,9 +63,40 @@ export const getMyUserPreferences = (
   return getRec(state.userPreferencesById, getMyEffectiveUserId(state)) ?? null;
 };
 
+export const getShouldGoToOnboarding = (state: AppState): boolean => {
+  const prefs = getMyUserPreferences(state);
+  const gotStartedAt = prefs?.gotStartedAt;
+  if (!gotStartedAt) {
+    return false;
+  }
+
+  const now = Date.now();
+  const elapsed = now - gotStartedAt;
+  const twoMinutes = 2 * 60 * 1000;
+  if (elapsed < twoMinutes) {
+    return true;
+  }
+
+  return false;
+};
+
 export const getMyUserName = (state: AppState): string => {
   const user = getMyUser(state);
   return user?.name || "Guest";
+};
+
+export const getHasFinishedTutorial = (state: AppState): boolean => {
+  const user = getMyUser(state);
+  return user?.hasFinishedTutorial ?? false;
+};
+
+export const getShouldShowTutorialDialog = (state: AppState): boolean => {
+  const user = getMyUser(state);
+  if (!user) {
+    return false;
+  }
+
+  return !getHasFinishedTutorial(state);
 };
 
 export const getIsSignedIn = (state: AppState): boolean => {

@@ -6,9 +6,17 @@ import { GOOGLE_AUTH_COMMAND } from "../types/google-auth.types";
 import { getAppState, produceAppState } from "../store";
 import { getAuthRepo } from "../repos";
 import { validateEmail } from "../utils/login.utils";
+import { registerMembers } from "../utils/app.utils";
+import { listify } from "@repo/utilities";
 
 const tryInit = async () => {
   await invokeHandler("member/tryInitialize", {});
+  const member = await invokeHandler("member/getMyMember", {})
+    .then((res) => res.member)
+    .catch(() => null);
+  produceAppState((state) => {
+    registerMembers(state, listify(member));
+  });
 };
 
 export const submitSignIn = async (): Promise<void> => {
@@ -138,4 +146,8 @@ export const setMode = (mode: LoginMode): void => {
     state.login.hasSubmittedRegistration = false;
     state.login.errorMessage = "";
   });
+};
+
+export const signOut = async (): Promise<void> => {
+  await getAuthRepo().signOut();
 };

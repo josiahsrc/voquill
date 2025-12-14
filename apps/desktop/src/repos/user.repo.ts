@@ -16,6 +16,7 @@ type LocalUser = {
   wordsThisMonthMonth: string | null;
   wordsTotal: number;
   playInteractionChime?: boolean;
+  hasFinishedTutorial?: boolean;
 };
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -41,6 +42,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     wordsThisMonthMonth: localUser.wordsThisMonthMonth ?? null,
     wordsTotal: localUser.wordsTotal ?? 0,
     playInteractionChime,
+    hasFinishedTutorial: localUser.hasFinishedTutorial ?? false,
   };
 };
 
@@ -55,6 +57,7 @@ const toLocalUser = (user: User): LocalUser => ({
   wordsThisMonthMonth: user.wordsThisMonthMonth ?? null,
   wordsTotal: user.wordsTotal,
   playInteractionChime: user.playInteractionChime,
+  hasFinishedTutorial: user.hasFinishedTutorial,
 });
 
 export abstract class BaseUserRepo extends BaseRepo {

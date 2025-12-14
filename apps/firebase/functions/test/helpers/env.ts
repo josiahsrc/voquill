@@ -1,7 +1,7 @@
 import * as env from "env-var";
 
 export const getFirestoreEmulatorHost = () =>
-  env.get("FIRESTORE_EMULATOR_HOST").default("localhost:8080").asString();
+  env.get("FIRESTORE_EMULATOR_HOST").default("localhost:8760").asString();
 
 export const getFirebaseAuthEmulatorHost = () =>
   env.get("FIREBASE_AUTH_EMULATOR_HOST").default("localhost:9099").asString();
@@ -13,7 +13,7 @@ export const getClientFirebaseAuthEmulatorUrl = () =>
     .asString();
 
 export const getClientFirestoreHost = () =>
-  env.get("CLIENT_FIRESTORE_HOST").default("localhost:8080").asString();
+  env.get("CLIENT_FIRESTORE_HOST").default("localhost:8760").asString();
 
 export const getRealtimeDatabaseEmulatorHost = () =>
   env.get("REALTIME_DATABASE_EMULATOR_HOST").default("localhost:9000").asString();

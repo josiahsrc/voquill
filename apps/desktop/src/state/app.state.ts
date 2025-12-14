@@ -34,6 +34,7 @@ import {
   INITIAL_TONE_EDITOR_STATE,
   ToneEditorState,
 } from "./tone-editor.state";
+import { INITIAL_TUTORIAL_STATE, TutorialState } from "./tutorial.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -47,6 +48,7 @@ export type AppState = {
   overlayPhase: OverlayPhase;
   audioLevels: number[];
   permissions: PermissionMap;
+  confettiCounter: number;
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -70,6 +72,7 @@ export type AppState = {
   payment: PaymentState;
   pricing: PricingState;
   login: LoginState;
+  tutorial: TutorialState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -97,6 +100,7 @@ export const INITIAL_APP_STATE: AppState = {
   },
   hotkeyById: {},
   auth: null,
+  confettiCounter: 0,
   config: null,
   keysHeld: [],
   initialized: false,
@@ -114,4 +118,5 @@ export const INITIAL_APP_STATE: AppState = {
   payment: INITIAL_PAYMENT_STATE,
   pricing: INITIAL_PRICING_STATE,
   login: INITIAL_LOGIN_STATE,
+  tutorial: INITIAL_TUTORIAL_STATE,
 };

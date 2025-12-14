@@ -1,6 +1,6 @@
 import { Nullable } from "@repo/types";
 import { AuthData } from "firebase-functions/tasks";
-import { ClientError, UnauthenticatedError } from "./error.utils";
+import { UnauthenticatedError } from "./error.utils";
 import { consumeRateLimit } from "./rateLimit.utils";
 
 function requireAuth(auth: Nullable<AuthData>): asserts auth is AuthData {
@@ -9,22 +9,12 @@ function requireAuth(auth: Nullable<AuthData>): asserts auth is AuthData {
   }
 }
 
-async function requireSubscription(auth: Nullable<AuthData>): Promise<void> {
-  requireAuth(auth);
-
-  const isSubscribed = auth.token?.subscribed === true;
-  if (!isSubscribed) {
-    throw new ClientError("you must have an active subscription to perform this action");
-  }
-}
-
-export type PaidAccessOutput = {
+export type AccessOutput = {
   auth: AuthData;
 }
 
-export const checkPaidAccess = async (auth: Nullable<AuthData>): Promise<PaidAccessOutput> => {
+export const checkAccess = async (auth: Nullable<AuthData>): Promise<AccessOutput> => {
   requireAuth(auth);
-  await requireSubscription(auth);
   await consumeRateLimit({
     limit: 50_000,
     auth: auth,

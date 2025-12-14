@@ -11,4 +11,5 @@ export type UserPreferences = {
   postProcessingOllamaUrl: Nullable<string>;
   postProcessingOllamaModel: Nullable<string>;
   activeToneId: Nullable<string>;
+  gotStartedAt: Nullable<number>;
 };
