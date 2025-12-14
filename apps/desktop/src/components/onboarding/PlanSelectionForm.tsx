@@ -1,21 +1,36 @@
 import { ArrowForward } from "@mui/icons-material";
 import { Button, Stack, Typography } from "@mui/material";
+import { useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   selectOnboardingPlan,
 } from "../../actions/onboarding.actions";
 import { EffectivePlan } from "../../types/member.types";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 import { PlanList } from "../pricing/PlanList";
 import { FormContainer } from "./OnboardingShared";
 
 export const PlanSelectionForm = () => {
+  const [confirmLocalSetupOpen, setConfirmLocalSetupOpen] = useState(false);
+
   const handleSelectPlan = (plan: EffectivePlan) => {
     selectOnboardingPlan(plan);
   };
 
   return (
     <FormContainer sx={{ maxWidth: 750 }}>
+      <ConfirmDialog
+        isOpen={confirmLocalSetupOpen}
+        onCancel={() => setConfirmLocalSetupOpen(false)}
+        onConfirm={() => handleSelectPlan("community")}
+        title={<FormattedMessage defaultMessage="⚠️ Advanced Setup Required" />}
+        content={
+          <FormattedMessage defaultMessage="Local set up is complicated and requires a strong technical background. We recommend the free plan for most users." />
+        }
+        confirmLabel={<FormattedMessage defaultMessage="Accept" />}
+        cancelLabel={<FormattedMessage defaultMessage="Go back" />}
+      />
       <Stack
         direction="column"
         alignItems="center"
@@ -41,9 +56,10 @@ export const PlanSelectionForm = () => {
           <FormattedMessage defaultMessage="Back" />
         </Button>
         <Button
-          onClick={() => handleSelectPlan("community")}
+          onClick={() => setConfirmLocalSetupOpen(true)}
           variant="text"
           endIcon={<ArrowForward />}
+          sx={{ color: "text.disabled", fontWeight: 400 }}
         >
           <FormattedMessage defaultMessage="Local set up" />
         </Button>
