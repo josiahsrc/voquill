@@ -1,4 +1,3 @@
-
 export class Perlin {
   private permutation: number[];
   private p: number[];
