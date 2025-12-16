@@ -9,7 +9,7 @@ import {
   loadAppTargets,
   tryRegisterCurrentAppTarget,
 } from "../../actions/app-target.actions";
-import { showErrorSnackbar } from "../../actions/app.actions";
+import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 import { handleGoogleAuthPayload } from "../../actions/login.actions";
@@ -59,6 +59,13 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
+};
+
+type TextSelection = {
+  fullText: string;
+  selectedText: string;
+  startIndex: number;
+  length: number;
 };
 
 export const RootSideEffects = () => {
@@ -130,6 +137,22 @@ export const RootSideEffects = () => {
 
       const currentApp = await tryRegisterCurrentAppTarget();
       const toneId = currentApp?.toneId ?? null;
+
+      try {
+        const textSelection = await invoke<TextSelection>("text_selection_get");
+        console.log("Text selection:", textSelection);
+        const fullTextPreview =
+          textSelection.fullText.length > 50
+            ? textSelection.fullText.slice(0, 50) + "..."
+            : textSelection.fullText;
+        const selectionInfo =
+          textSelection.length > 0
+            ? `Selected: "${textSelection.selectedText}" (start: ${textSelection.startIndex}, len: ${textSelection.length}) | Full: "${fullTextPreview}"`
+            : `Cursor at ${textSelection.startIndex} | Full text: "${fullTextPreview}"`;
+        showSnackbar(selectionInfo);
+      } catch (err) {
+        console.error("Failed to get text selection:", err);
+      }
 
       let finalTranscript: string | null = null;
       let rawTranscriptValue: string | null = null;

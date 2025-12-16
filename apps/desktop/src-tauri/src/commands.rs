@@ -14,6 +14,7 @@ use crate::system::models::WhisperModelSize;
 use crate::system::StorageRepo;
 use sqlx::Row;
 
+use crate::platform::input::get_text_selection as platform_get_text_selection;
 use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
 
 #[derive(serde::Serialize)]
@@ -984,4 +985,24 @@ pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn stop_key_listener() -> Result<(), String> {
     crate::platform::keyboard::stop_key_listener()
+}
+
+#[tauri::command]
+pub async fn text_selection_get() -> Result<crate::domain::TextSelection, String> {
+    let join_result =
+        tauri::async_runtime::spawn_blocking(move || platform_get_text_selection()).await;
+
+    match join_result {
+        Ok(result) => {
+            if let Err(err) = result.as_ref() {
+                eprintln!("Get text selection failed: {err}");
+            }
+            result
+        }
+        Err(err) => {
+            let message = format!("Get text selection task join error: {err}");
+            eprintln!("{message}");
+            Err(message)
+        }
+    }
 }

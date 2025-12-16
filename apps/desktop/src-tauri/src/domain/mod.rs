@@ -7,6 +7,7 @@ pub mod permissions;
 pub mod preferences;
 pub mod recording;
 pub mod term;
+pub mod text_selection;
 pub mod tone;
 pub mod transcription;
 pub mod user;
@@ -22,6 +23,7 @@ pub use recording::{
     RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult, EVT_REC_LEVEL,
 };
 pub use term::Term;
+pub use text_selection::TextSelection;
 pub use tone::Tone;
 pub use transcription::{Transcription, TranscriptionAudioSnapshot};
 pub use user::User;

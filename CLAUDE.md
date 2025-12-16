@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Style notes
+
+Don't leave comments in the code unless instructed to do so.
+
 ## Project Overview
 
 Voquill is a cross-platform voice-to-text desktop application built with Tauri (Rust + TypeScript/React). The repository is a Turborepo monorepo containing the desktop app, marketing website, Firebase backend, and shared packages.
