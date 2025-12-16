@@ -153,12 +153,12 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         ])
 }
 
-#[cfg(target_os = "macos")]
-fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    crate::platform::macos::notch_overlay::prepare_overlay(app)
-}
+// #[cfg(target_os = "macos")]
+// fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+//     crate::platform::macos::notch_overlay::prepare_overlay(app)
+// }
 
-#[cfg(not(target_os = "macos"))]
+// #[cfg(not(target_os = "macos"))]
 fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     use tauri::WebviewWindowBuilder;
     if app.get_webview_window("recording-overlay").is_some() {
@@ -181,7 +181,6 @@ fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-#[cfg(not(target_os = "macos"))]
 fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
     #[cfg(debug_assertions)]
     {
