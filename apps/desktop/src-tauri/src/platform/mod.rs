@@ -30,6 +30,7 @@ pub use windows::window;
 pub mod app_info;
 
 pub mod audio;
+pub mod audio_processing;
 pub mod whisper;
 
 #[cfg(desktop)]

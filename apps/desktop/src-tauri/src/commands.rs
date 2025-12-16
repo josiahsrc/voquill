@@ -673,8 +673,12 @@ pub fn stop_recording(
     match recorder.stop() {
         Ok(result) => {
             let audio = result.audio;
+            let processed_samples = crate::platform::audio_processing::process_audio_for_transcription(
+                &audio.samples,
+                audio.sample_rate,
+            );
             Ok(StopRecordingResponse {
-                samples: audio.samples,
+                samples: processed_samples,
                 sample_rate: audio.sample_rate,
             })
         }
