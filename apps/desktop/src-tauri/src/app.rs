@@ -82,13 +82,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     crate::system::models::ensure_whisper_model(&app_handle, default_model_size)
                         .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-                let transcriber: Arc<dyn Transcriber> = Arc::new(
-                    crate::platform::whisper::WhisperTranscriber::new(&model_path).map_err(
-                        |err| -> Box<dyn std::error::Error> {
-                            Box::new(std::io::Error::new(std::io::ErrorKind::Other, err))
-                        },
-                    )?,
-                );
+                let transcriber: Arc<dyn Transcriber> = create_transcriber(&app_handle, &model_path)?;
                 let recorder: Arc<dyn Recorder> =
                     Arc::new(crate::platform::audio::RecordingManager::new());
 
@@ -196,4 +190,52 @@ fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUr
     }
 
     Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
+}
+
+/// Creates the appropriate transcriber based on platform.
+/// - macOS: Uses Metal GPU acceleration directly (stable, doesn't crash on startup)
+/// - Windows/Linux: Uses SidecarTranscriber which spawns a separate GPU process,
+///   falling back to CPU if the sidecar fails to start (e.g., no Vulkan support)
+#[cfg(desktop)]
+fn create_transcriber(
+    app_handle: &tauri::AppHandle,
+    model_path: &std::path::Path,
+) -> Result<std::sync::Arc<dyn crate::platform::Transcriber>, Box<dyn std::error::Error>> {
+    use std::sync::Arc;
+
+    // macOS: Use Metal directly (it's stable and doesn't crash on startup)
+    #[cfg(target_os = "macos")]
+    {
+        eprintln!("[app] Creating Metal-accelerated transcriber for macOS");
+        let transcriber = crate::platform::whisper::WhisperTranscriber::new(model_path)
+            .map_err(|err| Box::new(std::io::Error::new(std::io::ErrorKind::Other, err)))?;
+        return Ok(Arc::new(transcriber));
+    }
+
+    // Windows/Linux: Use SidecarTranscriber with GPU sidecar + CPU fallback
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        eprintln!("[app] Creating sidecar-based transcriber (GPU with CPU fallback)");
+        match crate::platform::sidecar_transcriber::SidecarTranscriber::new(app_handle, model_path) {
+            Ok(transcriber) => {
+                eprintln!("[app] SidecarTranscriber initialized successfully");
+                return Ok(Arc::new(transcriber));
+            }
+            Err(err) => {
+                eprintln!("[app] SidecarTranscriber initialization failed: {err}");
+                eprintln!("[app] Falling back to CPU-only transcriber");
+                let transcriber = crate::platform::whisper::WhisperTranscriber::new(model_path)
+                    .map_err(|err| Box::new(std::io::Error::new(std::io::ErrorKind::Other, err)))?;
+                return Ok(Arc::new(transcriber));
+            }
+        }
+    }
+
+    // Fallback for other platforms (shouldn't happen)
+    #[allow(unreachable_code)]
+    {
+        let transcriber = crate::platform::whisper::WhisperTranscriber::new(model_path)
+            .map_err(|err| Box::new(std::io::Error::new(std::io::ErrorKind::Other, err)))?;
+        Ok(Arc::new(transcriber))
+    }
 }

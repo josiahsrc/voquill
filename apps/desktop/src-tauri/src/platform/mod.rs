@@ -35,6 +35,9 @@ pub mod whisper;
 #[cfg(desktop)]
 pub mod keyboard;
 
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+pub mod sidecar_transcriber;
+
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
 
 #[derive(Clone, Debug, Default)]

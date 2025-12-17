@@ -14,14 +14,23 @@ edition = "2021"
 name = "desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[[bin]]
+name = "voquill-gpu-sidecar"
+path = "src/sidecar/main.rs"
+required-features = ["gpu-sidecar"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [features]
 default = []
-linux-gpu = ["whisper-rs/vulkan"]
+# GPU sidecar binary - enables Vulkan for GPU transcription
+gpu-sidecar = ["whisper-rs/vulkan"]
+# Legacy features kept for backward compatibility (now empty - main binary is CPU-only)
+linux-gpu = []
+windows-gpu = []
+# macOS uses Metal which is stable and doesn't cause startup crashes
 mac-gpu = ["whisper-rs/metal"]
-windows-gpu = ["whisper-rs/vulkan"]
 
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png"] }

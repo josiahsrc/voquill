@@ -40,6 +40,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "externalBin": [
+      "binaries/voquill-gpu-sidecar"
+    ],
     "resources": [],
     "macOS": {
       "hardenedRuntime": true,

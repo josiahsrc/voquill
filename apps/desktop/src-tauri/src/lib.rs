@@ -4,6 +4,7 @@ pub mod db;
 pub mod domain;
 pub mod errors;
 pub mod platform;
+pub mod sidecar;
 pub mod state;
 pub mod system;
 

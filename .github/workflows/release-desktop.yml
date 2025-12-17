@@ -285,14 +285,16 @@ jobs:
             tauri_platform: linux
             node_platform: linux
             artifact_name: desktop-linux
-            args: "--features linux-gpu"
+            args: ""
+            sidecar_target: "x86_64-unknown-linux-gnu"
           - label: Windows
             os: windows-latest
-            args: "--features windows-gpu"
+            args: ""
             rust_targets: ""
             tauri_platform: windows
             node_platform: win32
             artifact_name: desktop-windows
+            sidecar_target: "x86_64-pc-windows-msvc"
     env:
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
@@ -500,6 +502,31 @@ jobs:
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
         run: npm run build -- --filter=desktop...
+
+      - name: Build GPU sidecar (Windows/Linux)
+        if: matrix.sidecar_target != ''
+        shell: bash
+        working-directory: apps/desktop/src-tauri
+        run: |
+          set -euo pipefail
+          echo "Building GPU sidecar for target: ${{ matrix.sidecar_target }}"
+
+          # Build the sidecar binary with GPU (Vulkan) support
+          cargo build --release --bin voquill-gpu-sidecar --features gpu-sidecar
+
+          # Create binaries directory for Tauri
+          mkdir -p binaries
+
+          # Copy sidecar with platform-specific naming
+          # Note: Windows uses custom CARGO_TARGET_DIR=D:\cargo
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            cp "D:/cargo/release/voquill-gpu-sidecar.exe" "binaries/voquill-gpu-sidecar-${{ matrix.sidecar_target }}.exe"
+          else
+            cp target/release/voquill-gpu-sidecar "binaries/voquill-gpu-sidecar-${{ matrix.sidecar_target }}"
+          fi
+
+          echo "Sidecar built and copied to binaries/"
+          ls -la binaries/
 
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
