@@ -16,6 +16,7 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
   return (
     <div className={styles.page}>
       <SiteHeader />
+      <div className={styles.headerSpacer} />
       <main className={mainClasses}>{children}</main>
       <SiteFooter />
       <div className={styles.pageMeta}>
