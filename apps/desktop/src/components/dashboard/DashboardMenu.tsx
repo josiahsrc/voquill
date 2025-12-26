@@ -6,6 +6,7 @@ import {
   SettingsOutlined,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
+import { DiscordListTile } from "./DiscordListTile";
 import { FormattedMessage } from "react-intl";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ListTile } from "../common/ListTile";
@@ -77,6 +78,7 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
     <Stack alignItems="stretch" sx={{ height: "100%" }}>
       <Box sx={{ flexGrow: 1, overflowY: "auto" }}>{list}</Box>
       <Box sx={{ mt: 2, p: 2 }}>
+        <DiscordListTile />
         <ListTile
           key={settingsPath}
           onClick={() => onChooseHandler(settingsPath)}
