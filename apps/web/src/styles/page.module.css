@@ -282,24 +282,6 @@
   gap: 120px;
 }
 
-.heroSection {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: center;
-  min-height: calc(100vh - 280px);
-  padding: 0;
-}
-
-.heroContent {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  align-items: flex-start;
-  text-align: left;
-  gap: 24px;
-}
-
 .badge {
   align-self: flex-start;
   padding: 6px 16px;
@@ -310,222 +292,6 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.heroTitle {
-  font-size: clamp(2.5rem, 4vw, 3.5rem);
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-}
-
-.heroSubtitle {
-  font-size: 1.05rem;
-  line-height: 1.7;
-  color: var(--text-strong);
-  max-width: 72ch;
-}
-
-.heroActions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.heroNote {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  margin-top: 8px;
-}
-
-.heroMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.heroPlatformList {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.heroGraphic {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.placeholderGraphic {
-  width: 100%;
-  max-width: 480px;
-  aspect-ratio: 1;
-  border-radius: 32px;
-  background: linear-gradient(135deg, var(--level1) 0%, var(--level2) 100%);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  position: relative;
-  overflow: hidden;
-}
-
-.placeholderGraphic::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at center, transparent 0%, transparent 30%, var(--level1) 70%);
-  pointer-events: none;
-}
-
-.placeholderWaveform {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 1;
-}
-
-.placeholderBar {
-  width: 6px;
-  background: var(--text-strong);
-  border-radius: 3px;
-  animation: waveformPulse 1.2s ease-in-out infinite;
-}
-
-.placeholderBar:nth-child(1) { height: 24px; animation-delay: 0s; }
-.placeholderBar:nth-child(2) { height: 40px; animation-delay: 0.1s; }
-.placeholderBar:nth-child(3) { height: 56px; animation-delay: 0.2s; }
-.placeholderBar:nth-child(4) { height: 72px; animation-delay: 0.3s; }
-.placeholderBar:nth-child(5) { height: 56px; animation-delay: 0.4s; }
-.placeholderBar:nth-child(6) { height: 40px; animation-delay: 0.5s; }
-.placeholderBar:nth-child(7) { height: 24px; animation-delay: 0.6s; }
-
-@keyframes waveformPulse {
-  0%, 100% {
-    transform: scaleY(0.5);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-}
-
-.placeholderLabel {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  z-index: 1;
-}
-
-.floatingCard {
-  position: absolute;
-  padding: 12px 16px;
-  border-radius: 16px;
-  background: var(--level0);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-soft);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  animation: floatCard 3s ease-in-out infinite;
-}
-
-.floatingCard.cardLeft {
-  left: -20px;
-  top: 25%;
-  animation-delay: 0s;
-}
-
-.floatingCard.cardRight {
-  right: -20px;
-  bottom: 30%;
-  animation-delay: 1s;
-}
-
-@keyframes floatCard {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-.floatingCardIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.floatingCardIcon.iconSuccess {
-  background: #22c55e;
-}
-
-.floatingCardIcon.iconSpeed {
-  background: #3b82f6;
-}
-
-.floatingCardIconSvg {
-  width: 18px;
-  height: 18px;
-}
-
-.floatingCardText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.floatingCardTitle {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-strong);
-}
-
-.floatingCardSubtitle {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.heroPlatformBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-}
-
-.heroPlatformIcon {
-  width: 24px;
-  height: 24px;
-  color: var(--text-muted);
-}
-
-.heroMoreLink {
-  font-size: 0.9rem;
-}
-
-.heroMedia {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 .downloadMain {
@@ -909,12 +675,6 @@
   opacity: 1;
 }
 
-.heroMoreLink.inlineLink {
-  font-weight: 500;
-  color: var(--text-muted);
-  text-decoration-color: var(--text-muted);
-}
-
 .splitMedia {
   position: relative;
   border-radius: 32px;
@@ -1141,48 +901,12 @@
     display: none;
   }
 
-  .heroSection,
   .splitSection {
     grid-template-columns: 1fr;
   }
 
-  .heroSection {
-    min-height: auto;
-    padding: 20px 0;
-  }
-
-  .heroContent {
-    align-items: center;
-    text-align: center;
-  }
-
-  .heroMeta {
-    align-items: center;
-  }
-
-  .heroPlatformList {
-    justify-content: center;
-  }
-
-  .heroGraphic {
-    order: -1;
-  }
-
-  .placeholderGraphic {
-    max-width: 320px;
-  }
-
-  .floatingCard {
-    display: none;
-  }
-
-  .heroMedia,
   .calloutCard {
     align-self: stretch;
-  }
-
-  .heroMedia {
-    order: 1;
   }
 
   .featureGrid,
@@ -1254,21 +978,12 @@
     justify-content: flex-end;
   }
 
-  .heroTitle {
-    font-size: clamp(2.2rem, 8vw, 2.8rem);
-  }
-
   .partnerTrack {
     gap: 18px;
   }
 
   .logoImage {
     width: 120px;
-  }
-
-  .heroPlatformIcon {
-    width: 22px;
-    height: 22px;
   }
 
   .downloadCardBadge {
