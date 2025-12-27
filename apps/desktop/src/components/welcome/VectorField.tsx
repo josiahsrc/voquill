@@ -32,11 +32,11 @@ export const VectorField = () => {
     const NOISE_SCALE = 0.0018; // Scale of noise coordinates
     const MAG_SCALE = 0.01; // Scale for magnitude noise
     const MAX_VECTOR_LENGTH = 24; // Maximum length of a vector
-    const LINE_WIDTH = 5;
+    const LINE_WIDTH = 2;
 
     // Color scale
-    // Nice Orange: #FF9F1C, Nice Blue: #2EC4B6 or #00A8E8
-    const colorScale = chroma.scale(["#FF9F1C", "#2EC4B6"]).mode("lch");
+    // Nice Orange: #FF9F1C, Nice Blue: #3B82F6 (matches web app)
+    const colorScale = chroma.scale(["#3B82F6", "#FF9F1C"]).mode("rgb");
 
     let animationFrameId: number;
     let time = 0;

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <!-- Bundle VC++ 2015-2022 Runtime DLLs alongside the executable -->
+    <!-- Source paths reference the CI runner's System32 directory -->
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="VCRuntimeDLLs" Guid="*">
+        <File Id="msvcp140dll" Source="C:\Windows\System32\msvcp140.dll" KeyPath="yes" />
+        <File Id="vcruntime140dll" Source="C:\Windows\System32\vcruntime140.dll" />
+        <File Id="vcruntime140_1dll" Source="C:\Windows\System32\vcruntime140_1.dll" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>
