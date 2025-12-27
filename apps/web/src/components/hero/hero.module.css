@@ -97,7 +97,7 @@
   overflow: visible;
 }
 
-.heroCanvas {
+.heroSvg {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -105,6 +105,97 @@
   width: 200vw;
   height: 200vh;
   pointer-events: none;
+}
+
+/* Animated sine waves */
+.wavePath {
+  stroke: rgba(0, 0, 0, 1);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Text along path */
+.pathText {
+  font-size: 18px;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+  fill: rgba(0, 0, 0, 0.7);
+}
+
+/* Icon styles */
+.iconGlow {
+  fill: rgba(0, 0, 0, 0.04);
+  filter: blur(8px);
+}
+
+.iconCircle {
+  fill: #111111;
+}
+
+.iconLogo {
+  filter: invert(1);
+}
+
+/* Sparks container */
+.sparksContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  animation: sparkFly ease-out infinite;
+  animation-duration: var(--spark-duration);
+  animation-delay: var(--spark-delay);
+}
+
+@keyframes sparkFly {
+  0% {
+    opacity: 0.6;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--spark-tx), var(--spark-ty)) scale(0.3);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .wavePath {
+    stroke: rgba(255, 255, 255, 1);
+  }
+
+  .pathText {
+    fill: rgba(255, 255, 255, 0.7);
+  }
+
+  .iconGlow {
+    fill: rgba(255, 255, 255, 0.08);
+  }
+
+  .iconCircle {
+    fill: #ffffff;
+  }
+
+  .iconLogo {
+    filter: none;
+  }
+
+  .spark {
+    background: rgba(255, 255, 255, 0.6);
+  }
 }
 
 @media (max-width: 960px) {
