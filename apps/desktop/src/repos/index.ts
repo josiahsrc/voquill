@@ -30,6 +30,7 @@ import {
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
+  AldeaTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
 import {
   BaseTranscriptionRepo,
@@ -157,10 +158,12 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
             prefs.apiKeyValue,
             prefs.transcriptionModel,
           )
-        : new GroqTranscribeAudioRepo(
-            prefs.apiKeyValue,
-            prefs.transcriptionModel,
-          );
+        : prefs.provider === "aldea"
+          ? new AldeaTranscribeAudioRepo(prefs.apiKeyValue)
+          : new GroqTranscribeAudioRepo(
+              prefs.apiKeyValue,
+              prefs.transcriptionModel,
+            );
     return {
       repo,
       apiKeyId: prefs.apiKeyId,

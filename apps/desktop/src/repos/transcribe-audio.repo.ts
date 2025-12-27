@@ -5,6 +5,7 @@ import {
   TranscriptionModel,
   openaiTranscribeAudio,
   OpenAITranscriptionModel,
+  aldeaTranscribeAudio,
 } from "@repo/voice-ai";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
@@ -228,6 +229,39 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
       metadata: {
         inferenceDevice: "API • OpenAI",
         modelSize: this.model,
+        transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class AldeaTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private aldeaApiKey: string;
+
+  constructor(apiKey: string) {
+    super();
+    this.aldeaApiKey = apiKey;
+  }
+
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
+    const normalized = normalizeSamples(input.samples);
+    const floatSamples = ensureFloat32Array(normalized);
+    const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
+
+    const { text: transcript } = await aldeaTranscribeAudio({
+      apiKey: this.aldeaApiKey,
+      blob: wavBuffer,
+      ext: "wav",
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • Aldea",
+        modelSize: null,
         transcriptionMode: "api",
       },
     };
