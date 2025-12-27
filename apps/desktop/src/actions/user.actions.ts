@@ -63,6 +63,7 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   postProcessingOllamaModel: null,
   activeToneId: null,
   gotStartedAt: null,
+  gpuEnumerationEnabled: false,
 });
 
 const updateUserPreferences = async (
@@ -80,7 +81,7 @@ const updateUserPreferences = async (
   try {
     const saved = await getUserPreferencesRepo().setUserPreferences(payload);
     produceAppState((draft) => {
-      registerUserPreferences(draft, [saved]);
+      draft.userPreferencesById[saved.userId] = saved;
     });
   } catch (error) {
     console.error("Failed to update user preferences", error);
@@ -218,6 +219,8 @@ const persistAiPreferences = async (): Promise<void> => {
       state.settings.aiTranscription.device ?? null;
     preferences.transcriptionModelSize =
       state.settings.aiTranscription.modelSize ?? null;
+    preferences.gpuEnumerationEnabled =
+      state.settings.aiTranscription.gpuEnumerationEnabled;
   }, "Failed to save AI preferences. Please try again.");
 };
 
@@ -256,6 +259,16 @@ export const setPreferredTranscriptionModelSize = async (
 ): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiTranscription.modelSize = modelSize;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setGpuEnumerationEnabled = async (
+  enabled: boolean,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.gpuEnumerationEnabled = enabled;
   });
 
   await persistAiPreferences();

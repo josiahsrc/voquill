@@ -12,4 +12,5 @@ export type UserPreferences = {
   postProcessingOllamaModel: Nullable<string>;
   activeToneId: Nullable<string>;
   gotStartedAt: Nullable<number>;
+  gpuEnumerationEnabled: boolean;
 };

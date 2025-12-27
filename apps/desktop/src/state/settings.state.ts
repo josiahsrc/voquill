@@ -18,6 +18,7 @@ export type SettingsTranscriptionState = {
   modelSize: string;
   device: string;
   selectedApiKeyId: string | null;
+  gpuEnumerationEnabled: boolean;
 };
 
 export type SettingsPostProcessingState = {
@@ -64,6 +65,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     modelSize: DEFAULT_MODEL_SIZE,
     device: CPU_DEVICE_VALUE,
     selectedApiKeyId: null,
+    gpuEnumerationEnabled: false,
   },
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,

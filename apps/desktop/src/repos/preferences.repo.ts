@@ -20,6 +20,7 @@ type LocalUserPreferences = {
   postProcessingOllamaModel: Nullable<string>;
   activeToneId: Nullable<string>;
   gotStartedAt: Nullable<number>;
+  gpuEnumerationEnabled: boolean;
 };
 
 const fromLocalPreferences = (
@@ -36,6 +37,7 @@ const fromLocalPreferences = (
   postProcessingOllamaModel: preferences.postProcessingOllamaModel,
   activeToneId: preferences.activeToneId,
   gotStartedAt: preferences.gotStartedAt,
+  gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
 });
 
 const toLocalPreferences = (
@@ -52,6 +54,7 @@ const toLocalPreferences = (
   postProcessingOllamaModel: preferences.postProcessingOllamaModel ?? null,
   activeToneId: preferences.activeToneId ?? null,
   gotStartedAt: preferences.gotStartedAt ?? null,
+  gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

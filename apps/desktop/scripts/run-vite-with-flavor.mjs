@@ -44,7 +44,6 @@ const viteBin = join(dirname(vitePkgPath), viteBinRelative);
 const child = spawn(process.execPath, [viteBin, ...finalArgs], {
   env: childEnv,
   stdio: "inherit",
-  shell: true,
 });
 
 child.on("exit", (code, signal) => {

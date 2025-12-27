@@ -18,9 +18,10 @@ pub async fn upsert_user_preferences(
              post_processing_ollama_url,
              post_processing_ollama_model,
              active_tone_id,
-             got_started_at
+             got_started_at,
+             gpu_enumeration_enabled
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -31,7 +32,8 @@ pub async fn upsert_user_preferences(
             post_processing_ollama_url = excluded.post_processing_ollama_url,
             post_processing_ollama_model = excluded.post_processing_ollama_model,
             active_tone_id = excluded.active_tone_id,
-            got_started_at = excluded.got_started_at",
+            got_started_at = excluded.got_started_at,
+            gpu_enumeration_enabled = excluded.gpu_enumeration_enabled",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -44,6 +46,7 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.post_processing_ollama_model)
     .bind(&preferences.active_tone_id)
     .bind(&preferences.got_started_at)
+    .bind(preferences.gpu_enumeration_enabled)
     .execute(&pool)
     .await?;
 
@@ -66,7 +69,8 @@ pub async fn fetch_user_preferences(
             post_processing_ollama_url,
             post_processing_ollama_model,
             active_tone_id,
-            got_started_at
+            got_started_at,
+            gpu_enumeration_enabled
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -107,6 +111,10 @@ pub async fn fetch_user_preferences(
         got_started_at: row
             .try_get::<Option<i64>, _>("got_started_at")
             .unwrap_or(None),
+        gpu_enumeration_enabled: row
+            .try_get::<i64, _>("gpu_enumeration_enabled")
+            .map(|v| v != 0)
+            .unwrap_or(false),
     });
 
     Ok(preferences)

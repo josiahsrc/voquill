@@ -41,6 +41,15 @@ fn main() {
         return;
     }
 
+    if std::env::var("VOQUILL_GPU_ENUMERATOR").as_deref() == Ok("1") {
+        eprintln!("[startup] Running in GPU enumerator mode");
+        if let Err(err) = desktop_lib::system::gpu::run_gpu_enumerator_process() {
+            eprintln!("[startup] ERROR: GPU enumerator process failed: {err}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     eprintln!("[startup] Building Tauri application...");
 
     let app_result =
