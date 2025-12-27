@@ -396,6 +396,28 @@ jobs:
           "CLANG_PATH=C:\Program Files\LLVM\bin\clang.exe"  >> $env:GITHUB_ENV
           "C:\Program Files\LLVM\bin"                       >> $env:GITHUB_PATH
 
+      - name: Bundle VC++ Runtime DLLs (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Copy VC++ 2015-2022 Runtime DLLs to src-tauri for bundling
+          $srcTauri = Join-Path $env:GITHUB_WORKSPACE "apps/desktop/src-tauri"
+
+          Copy-Item "C:\Windows\System32\msvcp140.dll" $srcTauri
+          Copy-Item "C:\Windows\System32\vcruntime140.dll" $srcTauri
+          Copy-Item "C:\Windows\System32\vcruntime140_1.dll" $srcTauri
+
+          Write-Host "Copied VC++ Runtime DLLs to src-tauri:"
+          Get-ChildItem $srcTauri -Filter "*.dll" | ForEach-Object { Write-Host "  $($_.Name)" }
+
+          # Add DLLs to bundle.resources in tauri.conf.json
+          $configPath = Join-Path $srcTauri "tauri.conf.json"
+          $config = Get-Content $configPath -Raw | ConvertFrom-Json -Depth 20
+          $config.bundle.resources = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+          $config | ConvertTo-Json -Depth 20 | Set-Content $configPath -Encoding UTF8
+
+          Write-Host "Updated tauri.conf.json with bundle.resources"
+
       - name: Import Apple signing certificate
         if: matrix.os == 'macos-14'
         id: import-macos-cert

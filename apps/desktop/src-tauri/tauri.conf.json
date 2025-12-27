@@ -49,13 +49,6 @@
     "windows": {
       "webviewInstallMode": {
         "type": "offlineInstaller"
-      },
-      "nsis": {
-        "installerHooks": "nsis/installer-hooks.nsh"
-      },
-      "wix": {
-        "fragmentPaths": ["windows/fragments/vc-runtime.wxs"],
-        "componentRefs": ["VCRuntimeDLLs"]
       }
     }
   },

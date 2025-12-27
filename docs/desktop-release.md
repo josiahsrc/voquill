@@ -39,11 +39,10 @@ No additional storage credentials are required—the workflow publishes directly
 - macOS now prompts for microphone access (`NSMicrophoneUsageDescription`) and accessibility (`NSAccessibilityUsageDescription`) the first time the app runs. These strings live in `apps/desktop/src-tauri/Info.plist`.
 
 ## Windows Installer & VC++ Runtime DLLs
-- The Windows installer (NSIS) bundles the Visual C++ 2015-2022 Runtime DLLs directly alongside the executable.
+- Both NSIS and MSI installers bundle Visual C++ 2015-2022 Runtime DLLs via Tauri's `bundle.resources`.
 - These DLLs are required because native dependencies (whisper-rs, cpal, rdev) link against the MSVC runtime.
-- The NSIS installer hooks are defined in `apps/desktop/src-tauri/nsis/installer-hooks.nsh`.
-- The hook uses NSIS `File` directives to embed `msvcp140.dll`, `vcruntime140.dll`, and `vcruntime140_1.dll` from the CI runner's System32 directory at compile time.
-- The DLLs are placed in the installation directory alongside the exe, so Windows finds them automatically.
+- During CI, the workflow copies `msvcp140.dll`, `vcruntime140.dll`, and `vcruntime140_1.dll` from the runner's System32 to `src-tauri/` and patches `tauri.conf.json` to include them in resources.
+- This uses Tauri's official supported method for bundling additional files.
 
 ## Verifying a Dev Release
 1. Push to `main` and wait for the **Release Desktop** workflow to finish.
