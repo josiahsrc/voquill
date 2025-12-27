@@ -60,6 +60,10 @@ pub const USER_PREFERENCES_GOT_STARTED_AT_MIGRATION_SQL: &str =
     include_str!("migrations/029_user_preferences_got_started_at.sql");
 pub const GPU_ENUMERATION_ENABLED_MIGRATION_SQL: &str =
     include_str!("migrations/030_gpu_enumeration_enabled.sql");
+pub const PASTE_KEYBIND_MIGRATION_SQL: &str =
+    include_str!("migrations/031_paste_keybind.sql");
+pub const APP_TARGET_PASTE_KEYBIND_MIGRATION_SQL: &str =
+    include_str!("migrations/032_app_target_paste_keybind.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -241,6 +245,18 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 30,
             description: "add_gpu_enumeration_enabled",
             sql: GPU_ENUMERATION_ENABLED_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 31,
+            description: "add_paste_keybind",
+            sql: PASTE_KEYBIND_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 32,
+            description: "add_app_target_paste_keybind",
+            sql: APP_TARGET_PASTE_KEYBIND_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

@@ -45,6 +45,7 @@ export const setAppTargetTone = async (
       name: existing.name,
       toneId,
       iconPath: existing.iconPath ?? null,
+      pasteKeybind: existing.pasteKeybind ?? null,
     });
   } catch (error) {
     console.error("Failed to update app target tone", error);
@@ -52,6 +53,34 @@ export const setAppTargetTone = async (
       error instanceof Error
         ? error.message
         : "Failed to update app target tone.",
+    );
+  }
+};
+
+export const setAppTargetPasteKeybind = async (
+  id: string,
+  pasteKeybind: string | null,
+): Promise<void> => {
+  const existing = getAppState().appTargetById[id];
+  if (!existing) {
+    showErrorSnackbar("App target is not registered.");
+    return;
+  }
+
+  try {
+    await upsertAppTarget({
+      id,
+      name: existing.name,
+      toneId: existing.toneId ?? null,
+      iconPath: existing.iconPath ?? null,
+      pasteKeybind,
+    });
+  } catch (error) {
+    console.error("Failed to update app target paste keybind", error);
+    showErrorSnackbar(
+      error instanceof Error
+        ? error.message
+        : "Failed to update app target paste keybind.",
     );
   }
 };
@@ -91,6 +120,7 @@ export const tryRegisterCurrentAppTarget = async (): Promise<
         name: appName,
         toneId: existingApp?.toneId ?? null,
         iconPath: iconPath ?? existingApp?.iconPath ?? null,
+        pasteKeybind: existingApp?.pasteKeybind ?? null,
       };
       await upsertAppTarget(params);
     } catch (error) {
