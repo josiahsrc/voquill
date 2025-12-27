@@ -63,7 +63,7 @@ export function HeroGraphic() {
 
       // Output curve: Exiting RIGHT, curving down and off screen
       const outputCurve: BezierCurve = {
-        start: { x: iconX + 40, y: iconY },
+        start: { x: iconX + 40, y: iconY + 10 },
         cp1: { x: centerX + vw * 0.4, y: centerY + vh * 0.1 },
         cp2: { x: centerX, y: centerY + vh * 0.4 },
         end: { x: centerX + vw * 0.7, y: centerY + vh * 0.5 },

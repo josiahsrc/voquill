@@ -23,6 +23,10 @@
   color: var(--text-muted);
 }
 
+.sectionIntro a {
+  align-self: flex-start;
+}
+
 .badge {
   align-self: flex-start;
   padding: 6px 18px;
@@ -268,24 +272,24 @@
 .wavePath {
   fill: none;
   stroke: url(#waveGradient);
-  stroke-width: 3;
+  stroke-width: 2.5;
   stroke-linecap: round;
-  stroke-dasharray: 140;
-  transform: translateX(-20px);
+  transform-origin: center 40px;
 }
 
-.waveSlow {
-  animation: waveScroll 7s linear infinite;
+.waveGroup1 {
+  animation: waveScroll1 3s linear infinite;
+  opacity: 0.9;
 }
 
-.waveMid {
-  animation: waveScroll 5s linear infinite;
-  opacity: 0.65;
+.waveGroup2 {
+  animation: waveScroll2 1.2s linear infinite;
+  opacity: 0.6;
 }
 
-.waveFast {
-  animation: waveScroll 3.6s linear infinite;
-  opacity: 0.4;
+.waveGroup3 {
+  animation: waveScroll3 0.6s linear infinite;
+  opacity: 0.35;
 }
 
 .waveGlow {
@@ -352,12 +356,30 @@
 }
 
 
-@keyframes waveScroll {
-  from {
-    stroke-dashoffset: 0;
+@keyframes waveScroll1 {
+  0% {
+    transform: translateX(0);
   }
-  to {
-    stroke-dashoffset: -280;
+  100% {
+    transform: translateX(-126px);
+  }
+}
+
+@keyframes waveScroll2 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-96px);
+  }
+}
+
+@keyframes waveScroll3 {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-64px);
   }
 }
 
