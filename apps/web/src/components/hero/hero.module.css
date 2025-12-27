@@ -1,0 +1,144 @@
+.heroSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  min-height: calc(100vh - 280px);
+  padding: 0;
+}
+
+.heroContent {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: flex-start;
+  text-align: left;
+  gap: 24px;
+}
+
+.heroTitle {
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.heroSubtitle {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-strong);
+  max-width: 72ch;
+}
+
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.githubIcon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background-color: currentColor;
+  mask: url(/github.svg) center / contain no-repeat;
+  -webkit-mask: url(/github.svg) center / contain no-repeat;
+  flex-shrink: 0;
+}
+
+.heroNote {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.heroMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.heroPlatformList {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.heroPlatformBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.heroPlatformIcon {
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+}
+
+.heroMoreLink {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--text-muted);
+}
+
+.heroGraphic {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  overflow: visible;
+}
+
+.heroCanvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200vw;
+  height: 200vh;
+  pointer-events: none;
+}
+
+@media (max-width: 960px) {
+  .heroSection {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 20px 0;
+  }
+
+  .heroContent {
+    align-items: center;
+    text-align: center;
+  }
+
+  .heroMeta {
+    align-items: center;
+  }
+
+  .heroPlatformList {
+    justify-content: center;
+  }
+
+  .heroGraphic {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .heroTitle {
+    font-size: clamp(2.2rem, 8vw, 2.8rem);
+  }
+
+  .heroPlatformIcon {
+    width: 22px;
+    height: 22px;
+  }
+}
