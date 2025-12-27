@@ -3,65 +3,90 @@ import type { CSSProperties } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import styles from "./speed-showcase.module.css";
 
-const keyLabels = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "A", "S"];
+const keyLabels = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "delete"];
+const BACKSPACE_INDEX = keyLabels.length - 1;
 
 type AnimatedStyle = CSSProperties & { "--delay"?: string };
 
+// Script format: regular chars get typed, :N means backspace N times
+const TYPING_SCRIPT = "Here's a reakkt:4ally long sentance:4ence that I have to type out and it jsut:3ust goes on forever.";
+
 export default function SpeedShowcase() {
   const intl = useIntl();
-  
-  const typingScript = intl.formatMessage({
-    defaultMessage: "Here's a really long sentence that I have to type out and it just goes on forever.",
+
+  const displayScript = intl.formatMessage({
+    defaultMessage:
+      "Here's a really long sentence that I have to type out and it just goes on forever.",
   });
-  const voiceWords = typingScript.split(" ");
-  const totalChars = typingScript.length;
-  const [visibleCharCount, setVisibleCharCount] = useState(0);
-  const directionRef = useRef<1 | -1>(1);
+  const voiceWords = displayScript.split(" ");
+
+  const [displayedText, setDisplayedText] = useState("");
+  const [pressedKeyIndex, setPressedKeyIndex] = useState<number | null>(null);
+  const scriptIndexRef = useRef(0);
   const holdTicksRef = useRef(0);
+  const backspacesRemainingRef = useRef(0);
+  const backspaceReleaseRef = useRef(false);
 
   useEffect(() => {
-    if (!totalChars) {
-      return;
-    }
-
     const STEP_DURATION = 135;
     const HOLD_AT_END = 18;
-    const HOLD_AT_START = 8;
 
     const interval = window.setInterval(() => {
-      setVisibleCharCount((current) => {
-        const direction = directionRef.current;
-        const nextCount = current + direction;
-
-        if (direction > 0 && nextCount > totalChars) {
-          if (holdTicksRef.current < HOLD_AT_END) {
-            holdTicksRef.current += 1;
-            return current;
-          }
-          directionRef.current = -1;
-          holdTicksRef.current = 0;
-          return Math.max(current - 1, 0);
+      // Handle hold at end
+      if (scriptIndexRef.current >= TYPING_SCRIPT.length && backspacesRemainingRef.current === 0) {
+        if (holdTicksRef.current < HOLD_AT_END) {
+          holdTicksRef.current += 1;
+          setPressedKeyIndex(null);
+          return;
         }
-
-        if (direction < 0 && nextCount < 0) {
-          if (holdTicksRef.current < HOLD_AT_START) {
-            holdTicksRef.current += 1;
-            return current;
-          }
-          directionRef.current = 1;
-          holdTicksRef.current = 0;
-          return Math.min(current + 1, totalChars);
-        }
-
+        // Reset
         holdTicksRef.current = 0;
-        return nextCount;
-      });
+        scriptIndexRef.current = 0;
+        setDisplayedText("");
+        setPressedKeyIndex(null);
+        return;
+      }
+
+      // Handle backspacing with press/release cycle
+      if (backspacesRemainingRef.current > 0) {
+        if (backspaceReleaseRef.current) {
+          // Release phase - just lift the key
+          setPressedKeyIndex(null);
+          backspaceReleaseRef.current = false;
+        } else {
+          // Press phase - delete a character
+          setPressedKeyIndex(BACKSPACE_INDEX);
+          setDisplayedText((t) => t.slice(0, -1));
+          backspacesRemainingRef.current -= 1;
+          backspaceReleaseRef.current = true;
+        }
+        return;
+      }
+
+      const currentChar = TYPING_SCRIPT[scriptIndexRef.current];
+
+      // Check for backspace command (:N)
+      if (currentChar === ":") {
+        const nextChar = TYPING_SCRIPT[scriptIndexRef.current + 1] ?? "";
+        const count = parseInt(nextChar, 10);
+        if (!isNaN(count)) {
+          backspacesRemainingRef.current = count;
+          scriptIndexRef.current += 2; // Skip past :N
+          return;
+        }
+      }
+
+      // Normal typing
+      setDisplayedText((t) => t + currentChar);
+      scriptIndexRef.current += 1;
+      const randomIndex = Math.floor(Math.random() * (keyLabels.length - 1));
+      setPressedKeyIndex(randomIndex);
     }, STEP_DURATION);
 
     return () => window.clearInterval(interval);
-  }, [totalChars]);
+  }, []);
 
-  const keyboardScriptCurrent = typingScript.slice(0, visibleCharCount);
+  const keyboardScriptCurrent = displayedText;
 
   return (
     <section className={styles.speedShowcase} id="speed">
@@ -70,10 +95,10 @@ export default function SpeedShowcase() {
           <FormattedMessage defaultMessage="4× faster than typing" />
         </span>
         <h2>
-          <FormattedMessage defaultMessage="Voice runs circles around your keyboard." />
+          <FormattedMessage defaultMessage="Your voice outruns your keyboard." />
         </h2>
         <p>
-          <FormattedMessage defaultMessage="You speak at two hundred words per minute while manual keystrokes stall out at fifty. With Voquill, narrated sentences land whole so you never lose the thread to backspacing." />
+          <FormattedMessage defaultMessage="Your thoughts move faster than your fingers ever will. Stop losing ideas to slow typing. Say what you're thinking and move on." />
         </p>
       </div>
       <div className={styles.showcaseGrid}>
@@ -83,7 +108,7 @@ export default function SpeedShowcase() {
               <FormattedMessage defaultMessage="Keyboard" />
             </span>
             <span className={styles.paneMetric}>
-              <FormattedMessage defaultMessage="≈ 50 wpm" />
+              <FormattedMessage defaultMessage="~45 wpm" />
             </span>
           </header>
           <div className={styles.keyboardVisual}>
@@ -91,18 +116,13 @@ export default function SpeedShowcase() {
               {keyLabels.map((label, index) => (
                 <span
                   key={`${label}-${index}`}
-                  className={styles.key}
-                  style={
-                    {
-                      "--delay": `${index * 0.24}s`,
-                    } as AnimatedStyle
-                  }
+                  className={`${styles.key} ${index === BACKSPACE_INDEX ? styles.keyBackspace : ""} ${pressedKeyIndex === index ? styles.keyPressed : ""}`}
                 >
                   {label}
                 </span>
               ))}
             </div>
-            <div className={styles.typingOutput} aria-label={typingScript}>
+            <div className={styles.typingOutput} aria-label={displayScript}>
               <span className={styles.typingLine} aria-hidden="true">
                 {keyboardScriptCurrent}
                 <span className={styles.typingCaret}>|</span>
@@ -110,7 +130,7 @@ export default function SpeedShowcase() {
             </div>
           </div>
           <p className={styles.keyboardFooter}>
-            <FormattedMessage defaultMessage="Wow, that's slow." />
+            <FormattedMessage defaultMessage="One letter at a time." />
           </p>
         </article>
 
@@ -120,7 +140,7 @@ export default function SpeedShowcase() {
               <FormattedMessage defaultMessage="Voquill voice" />
             </span>
             <span className={styles.paneMetricHot}>
-              <FormattedMessage defaultMessage="≈ 220 wpm" />
+              <FormattedMessage defaultMessage="~220 wpm" />
             </span>
           </header>
           <div className={styles.voiceVisual}>
@@ -152,7 +172,7 @@ export default function SpeedShowcase() {
               <div className={styles.waveGlow} />
             </div>
             <div className={styles.voiceOutput}>
-              <span className={styles.voiceLine} aria-label={typingScript}>
+              <span className={styles.voiceLine} aria-label={displayScript}>
                 {voiceWords.map((word, index) => (
                   <span
                     key={`${word}-${index}`}
@@ -170,7 +190,7 @@ export default function SpeedShowcase() {
             </div>
           </div>
           <p className={styles.voiceFooter}>
-            <FormattedMessage defaultMessage="Write at the speed of thought. Words materialize faster than you can blink." />
+            <FormattedMessage defaultMessage="Works at the speed of thought." />
           </p>
         </article>
       </div>
