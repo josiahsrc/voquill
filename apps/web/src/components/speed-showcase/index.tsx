@@ -200,12 +200,6 @@ export default function SpeedShowcase() {
                 viewBox="0 0 336 80"
                 aria-hidden="true"
               >
-                <defs>
-                  <linearGradient id="waveGradient" x1="0%" x2="100%">
-                    <stop offset="0%" stopColor="rgba(191, 219, 254, 0.55)" />
-                    <stop offset="100%" stopColor="rgba(59, 130, 246, 0.95)" />
-                  </linearGradient>
-                </defs>
                 {/* Wave 1: slower, wider sine wave */}
                 <g className={styles.waveGroup1}>
                   <path

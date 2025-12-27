@@ -271,10 +271,16 @@
 
 .wavePath {
   fill: none;
-  stroke: url(#waveGradient);
+  stroke: rgba(59, 130, 246, 0.85);
   stroke-width: 2.5;
   stroke-linecap: round;
   transform-origin: center 40px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .wavePath {
+    stroke: rgba(96, 165, 250, 0.85);
+  }
 }
 
 .waveGroup1 {
