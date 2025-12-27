@@ -36,5 +36,9 @@ pub struct Transcription {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub post_process_device: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub transcription_duration_ms: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub postprocess_duration_ms: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub warnings: Option<Vec<String>>,
 }

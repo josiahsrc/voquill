@@ -64,6 +64,8 @@ pub const PASTE_KEYBIND_MIGRATION_SQL: &str =
     include_str!("migrations/031_paste_keybind.sql");
 pub const APP_TARGET_PASTE_KEYBIND_MIGRATION_SQL: &str =
     include_str!("migrations/032_app_target_paste_keybind.sql");
+pub const TRANSCRIPTION_TIMING_METRICS_MIGRATION_SQL: &str =
+    include_str!("migrations/033_transcription_timing_metrics.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -257,6 +259,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 32,
             description: "add_app_target_paste_keybind",
             sql: APP_TARGET_PASTE_KEYBIND_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 33,
+            description: "add_transcription_timing_metrics",
+            sql: TRANSCRIPTION_TIMING_METRICS_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

@@ -27,6 +27,8 @@ type LocalTranscription = {
   transcriptionMode?: TranscriptionMode | null;
   postProcessMode?: PostProcessingMode | null;
   postProcessDevice?: string | null;
+  transcriptionDurationMs?: number | null;
+  postprocessDurationMs?: number | null;
   warnings?: string[] | null;
 };
 
@@ -62,6 +64,8 @@ const toLocalTranscription = (
   transcriptionMode: transcription.transcriptionMode ?? null,
   postProcessMode: transcription.postProcessMode ?? null,
   postProcessDevice: transcription.postProcessDevice ?? null,
+  transcriptionDurationMs: transcription.transcriptionDurationMs ?? null,
+  postprocessDurationMs: transcription.postprocessDurationMs ?? null,
   warnings: transcription.warnings ?? null,
 });
 
@@ -89,6 +93,8 @@ const fromLocalTranscription = (
   transcriptionMode: transcription.transcriptionMode ?? undefined,
   postProcessMode: transcription.postProcessMode ?? undefined,
   postProcessDevice: transcription.postProcessDevice ?? undefined,
+  transcriptionDurationMs: transcription.transcriptionDurationMs ?? undefined,
+  postprocessDurationMs: transcription.postprocessDurationMs ?? undefined,
   warnings: transcription.warnings ?? undefined,
 });
 

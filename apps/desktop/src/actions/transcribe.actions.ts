@@ -34,6 +34,8 @@ export type TranscriptionMetadata = {
   transcriptionMode?: TranscriptionMode | null;
   postProcessMode?: PostProcessingMode | null;
   postProcessDevice?: string | null;
+  transcriptionDurationMs?: number | null;
+  postprocessDurationMs?: number | null;
 };
 
 export type TranscriptionResult = {
@@ -75,15 +77,18 @@ export const transcribeAndPostProcessAudio = async ({
     preferredLocale,
   );
 
+  const transcribeStart = performance.now();
   const transcribeOutput = await transcribeRepo.transcribeAudio({
     samples,
     sampleRate,
     prompt: transcriptionPrompt,
     language: preferredLocale,
   });
+  const transcribeDuration = performance.now() - transcribeStart;
   const rawTranscript = transcribeOutput.text.trim();
   metadata.modelSize = state.settings.aiTranscription.modelSize || null;
   metadata.inferenceDevice = transcribeOutput.metadata?.inferenceDevice || null;
+  metadata.transcriptionDurationMs = Math.round(transcribeDuration);
   metadata.rawTranscript = rawTranscript;
   metadata.transcriptionPrompt = transcriptionPrompt;
   metadata.transcriptionApiKeyId = transcriptionApiKeyId;
@@ -108,6 +113,7 @@ export const transcribeAndPostProcessAudio = async ({
 
     const ppSystem = buildSystemPostProcessingTonePrompt(preferredLocale);
 
+    const postprocessStart = performance.now();
     const genOutput = await genRepo.generateText({
       system: ppSystem,
       prompt: ppPrompt,
@@ -117,6 +123,8 @@ export const transcribeAndPostProcessAudio = async ({
         schema: PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
       },
     });
+    const postprocessDuration = performance.now() - postprocessStart;
+    metadata.postprocessDurationMs = Math.round(postprocessDuration);
 
     try {
       const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(
