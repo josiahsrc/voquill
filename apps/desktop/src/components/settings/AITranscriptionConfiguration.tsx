@@ -1,5 +1,7 @@
 import {
+  Alert,
   Box,
+  Button,
   FormControl,
   InputLabel,
   MenuItem,
@@ -7,9 +9,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useMemo } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {
+  setGpuEnumerationEnabled,
   setPreferredTranscriptionApiKeyId,
   setPreferredTranscriptionDevice,
   setPreferredTranscriptionMode,
@@ -18,7 +22,7 @@ import {
 import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { useAppStore } from "../../store";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
-import { buildDeviceLabel } from "../../types/gpu.types";
+import { buildDeviceLabel, type GpuInfo } from "../../types/gpu.types";
 import {
   SegmentedControl,
   SegmentedControlOption,
@@ -60,30 +64,46 @@ export const AITranscriptionConfiguration = ({
   hideCloudOption,
 }: AITranscriptionConfigurationProps) => {
   const transcription = useAppStore((state) => state.settings.aiTranscription);
-  const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(true);
+  const [gpuEnumerationError, setGpuEnumerationError] = useState<string | null>(null);
+  const [isEnablingGpu, setIsEnablingGpu] = useState(false);
 
-  useEffect(() => {
-    if (gpusLoading) {
-      return;
-    }
+  // Only load GPUs if already enabled (persisted state)
+  const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(
+    transcription.gpuEnumerationEnabled
+  );
 
-    if (gpus.length === 0) {
-      if (transcription.device !== CPU_DEVICE_VALUE) {
-        void setPreferredTranscriptionDevice(CPU_DEVICE_VALUE);
-      }
-      return;
-    }
+  console.log("t", transcription)
 
-    if (transcription.device.startsWith("gpu-")) {
-      const index = Number.parseInt(
-        transcription.device.split("-")[1] ?? "",
-        10,
+  // Single click handler - does everything in one place
+  const handleEnableHardwareAcceleration = useCallback(async () => {
+    setGpuEnumerationError(null);
+    setIsEnablingGpu(true);
+
+    try {
+      // Fetch GPUs directly here, don't rely on hook state
+      const gpuList = await invoke<GpuInfo[]>("list_gpus");
+      const supported = gpuList.filter(
+        (info) => info.backend === "Vulkan" && info.deviceType === "DiscreteGpu"
       );
-      if (Number.isNaN(index) || index >= gpus.length) {
-        void setPreferredTranscriptionDevice(CPU_DEVICE_VALUE);
+
+      console.log("[gpu] Detected supported GPUs:", supported);
+
+      if (supported.length > 0) {
+        // Success - enable GPU enumeration (this will trigger hook to load GPUs for dropdown)
+        await setGpuEnumerationEnabled(true);
+        console.log("GPUs enabled for transcription processing.");
+      } else {
+        setGpuEnumerationError(
+          "No compatible GPUs found. Make sure you have a discrete GPU with Vulkan support."
+        );
       }
+    } catch (error) {
+      console.error("Failed to enumerate GPUs:", error);
+      setGpuEnumerationError("Failed to detect GPUs. Please try again.");
+    } finally {
+      setIsEnablingGpu(false);
     }
-  }, [gpus, gpusLoading, transcription.device]);
+  }, []);
 
   const deviceOptions = useMemo(
     () => [
@@ -135,23 +155,61 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          <FormControl fullWidth size="small">
-            <InputLabel id="processing-device-label">
-              <FormattedMessage defaultMessage="Processing device" />
-            </InputLabel>
-            <Select
-              labelId="processing-device-label"
-              label={<FormattedMessage defaultMessage="Processing device" />}
-              value={transcription.device}
-              onChange={(event) => handleDeviceChange(event.target.value)}
+          {!transcription.gpuEnumerationEnabled && (
+            <Alert
+              severity="info"
+              sx={{
+                width: "100%",
+                "& .MuiAlert-message": { width: "100%" }
+              }}
             >
-              {deviceOptions.map(({ value, label }) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2, width: "100%" }}>
+                <Typography variant="body2" sx={{ pt: 0.25 }}>
+                  <FormattedMessage defaultMessage="Have an NVIDIA GPU?" />
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={isEnablingGpu}
+                  onClick={handleEnableHardwareAcceleration}
+                  sx={{ fontSize: "0.75rem", py: 0.5, flexShrink: 0 }}
+                >
+                  {isEnablingGpu ? (
+                    <FormattedMessage defaultMessage="Detecting..." />
+                  ) : (
+                    <FormattedMessage defaultMessage="Enable hardware acceleration" />
+                  )}
+                </Button>
+              </Box>
+            </Alert>
+          )}
+
+          {gpuEnumerationError && (
+            <Alert severity="warning">
+              {gpuEnumerationError}
+            </Alert>
+          )}
+
+          {transcription.gpuEnumerationEnabled && (
+            <FormControl fullWidth size="small">
+              <InputLabel id="processing-device-label">
+                <FormattedMessage defaultMessage="Processing device" />
+              </InputLabel>
+              <Select
+                labelId="processing-device-label"
+                label={<FormattedMessage defaultMessage="Processing device" />}
+                value={transcription.device}
+                onChange={(event) => handleDeviceChange(event.target.value)}
+                disabled={gpusLoading}
+              >
+                {deviceOptions.map(({ value, label }) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <FormControl fullWidth size="small">
             <InputLabel id="model-size-label">

@@ -26,6 +26,8 @@ export const applyAiPreferences = (
     preferences.transcriptionDevice ?? CPU_DEVICE_VALUE;
   draft.settings.aiTranscription.modelSize =
     preferences.transcriptionModelSize ?? DEFAULT_MODEL_SIZE;
+  draft.settings.aiTranscription.gpuEnumerationEnabled =
+    preferences.gpuEnumerationEnabled ?? false;
 
   const postProcessingMode =
     preferences.postProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;

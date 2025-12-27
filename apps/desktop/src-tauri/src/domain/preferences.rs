@@ -24,4 +24,6 @@ pub struct UserPreferences {
     pub active_tone_id: Option<String>,
     #[serde(default)]
     pub got_started_at: Option<i64>,
+    #[serde(default)]
+    pub gpu_enumeration_enabled: bool,
 }
