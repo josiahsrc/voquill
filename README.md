@@ -107,11 +107,10 @@ During local development you can override platform detection by exporting `VOQUI
 $env:WHISPER_CMAKE_ARGS = '-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w'
 
 # (Optional but recommended) shorten build paths on Windows
-$env:CARGO_TARGET_DIR = 'D:\cargo'
+$env:CARGO_TARGET_DIR = 'C:\cargo'
 
-# 3) Clean and build
-cargo clean
-npm run dev:windows:gpu
+# 3) Build
+npm run dev
 ```
 
 ### Run the marketing site
