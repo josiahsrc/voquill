@@ -136,6 +136,7 @@ export const submitOnboarding = async () => {
           : null,
       activeToneId: null,
       gotStartedAt: null,
+      gpuEnumerationEnabled: false,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
