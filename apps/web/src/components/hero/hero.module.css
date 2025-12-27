@@ -36,6 +36,16 @@
   flex-wrap: wrap;
 }
 
+.githubIcon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background-color: currentColor;
+  mask: url(/github.svg) center / contain no-repeat;
+  -webkit-mask: url(/github.svg) center / contain no-repeat;
+  flex-shrink: 0;
+}
+
 .heroNote {
   font-size: 0.95rem;
   color: var(--text-muted);

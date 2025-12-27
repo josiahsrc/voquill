@@ -6,6 +6,7 @@ import {
   PLATFORM_ORDER,
   type Platform,
 } from "../../lib/downloads";
+import pageStyles from "../../styles/page.module.css";
 import styles from "./hero.module.css";
 import { HeroGraphic } from "./hero-graphic";
 
@@ -19,14 +20,23 @@ export function HeroSection() {
           <FormattedMessage defaultMessage="Your keyboard is holding you back." />
         </h1>
         <p className={styles.heroSubtitle}>
-          <FormattedMessage defaultMessage="Make voice your new keyboard. Type four times faster by using your voice." />
+          <FormattedMessage defaultMessage="Make voice your new keyboard. Type four times faster by using your voice. Voquill is the open-source alternative to WisprFlow." />
         </p>
         <div className={styles.heroActions}>
           <DownloadButton />
+          <a
+            href="https://github.com/josiahsrc/voquill"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={pageStyles.secondaryButton}
+          >
+            <span className={styles.githubIcon} aria-hidden="true" />
+            <FormattedMessage defaultMessage="Open source" />
+          </a>
         </div>
         <div className={styles.heroMeta}>
           <p className={styles.heroNote}>
-            <FormattedMessage defaultMessage="No credit card required, get started for free." />
+            <FormattedMessage defaultMessage="Free to use. No credit card required." />
           </p>
           <div
             className={styles.heroPlatformList}
