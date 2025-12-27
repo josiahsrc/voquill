@@ -2,16 +2,142 @@ import { useEffect, useRef } from "react";
 import styles from "./hero.module.css";
 import { reverseString } from "../../utils/string.utils";
 
+// Simple cubic Bezier curve definition
+type BezierCurve = {
+  start: { x: number; y: number };
+  cp1: { x: number; y: number };
+  cp2: { x: number; y: number };
+  end: { x: number; y: number };
+};
+
+// Get point on cubic Bezier at t (0-1)
+const bezierPoint = (curve: BezierCurve, t: number) => {
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+  const t2 = t * t;
+  const t3 = t2 * t;
+
+  const x =
+    mt3 * curve.start.x +
+    3 * mt2 * t * curve.cp1.x +
+    3 * mt * t2 * curve.cp2.x +
+    t3 * curve.end.x;
+  const y =
+    mt3 * curve.start.y +
+    3 * mt2 * t * curve.cp1.y +
+    3 * mt * t2 * curve.cp2.y +
+    t3 * curve.end.y;
+
+  // Tangent
+  const dx =
+    3 * mt2 * (curve.cp1.x - curve.start.x) +
+    6 * mt * t * (curve.cp2.x - curve.cp1.x) +
+    3 * t2 * (curve.end.x - curve.cp2.x);
+  const dy =
+    3 * mt2 * (curve.cp1.y - curve.start.y) +
+    6 * mt * t * (curve.cp2.y - curve.cp1.y) +
+    3 * t2 * (curve.end.y - curve.cp2.y);
+
+  const angle = Math.atan2(dy, dx);
+
+  return { x, y, angle };
+};
+
+// Build arc-length lookup table for uniform spacing along curve
+const buildArcLengthTable = (curve: BezierCurve, samples: number = 200) => {
+  const table: { t: number; length: number }[] = [{ t: 0, length: 0 }];
+  let totalLength = 0;
+  let prevPoint = bezierPoint(curve, 0);
+
+  for (let i = 1; i <= samples; i++) {
+    const t = i / samples;
+    const point = bezierPoint(curve, t);
+    const dx = point.x - prevPoint.x;
+    const dy = point.y - prevPoint.y;
+    totalLength += Math.sqrt(dx * dx + dy * dy);
+    table.push({ t, length: totalLength });
+    prevPoint = point;
+  }
+
+  return { table, totalLength };
+};
+
+// Get t value for a given arc-length distance
+const getTAtLength = (
+  table: { t: number; length: number }[],
+  targetLength: number,
+) => {
+  const lastEntry = table[table.length - 1];
+  if (targetLength <= 0 || !lastEntry) return 0;
+  if (targetLength >= lastEntry.length) return 1;
+
+  // Binary search
+  let low = 0;
+  let high = table.length - 1;
+  while (low < high - 1) {
+    const mid = Math.floor((low + high) / 2);
+    const midEntry = table[mid];
+    if (midEntry && midEntry.length < targetLength) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  // Linear interpolation
+  const lowEntry = table[low];
+  const highEntry = table[high];
+  if (!lowEntry || !highEntry) return 0;
+  const l0 = lowEntry.length;
+  const l1 = highEntry.length;
+  const t0 = lowEntry.t;
+  const t1 = highEntry.t;
+  const ratio = (targetLength - l0) / (l1 - l0);
+  return t0 + ratio * (t1 - t0);
+};
+
+// Seeded random for consistent but random-looking values
+const seededRandom = (seed: number) => {
+  const x = Math.sin(seed * 12.9898 + seed * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
+
+// Wave configurations (static)
+const WAVE_CONFIGS = [
+  { frequency: 16 / 3, amplitude: 14, speed: 6, opacity: 0.5 },
+  { frequency: 24 / 3, amplitude: 10, speed: 10, opacity: 0.35 },
+  { frequency: 36 / 3, amplitude: 6, speed: 32, opacity: 0.25 },
+];
+
+const WAVE_SEGMENTS = 100; // Reduced from 200
+const NUM_SPARKS = 6;
+const LETTER_PIXEL_SPACING = 10;
+const BASE_PARAGRAPH = reverseString(
+  "So I've been working on this really cool flower garden project lately. I'm growing sunflowers, lavender, and these amazing dahlias that just started blooming. The colors are incredible and I can't wait to show you the photos. ",
+);
+
 export function HeroGraphic() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const logoRef = useRef<HTMLImageElement | null>(null);
+  const isVisibleRef = useRef(true);
+  const cacheRef = useRef<{
+    inputCurve: BezierCurve;
+    outputCurve: BezierCurve;
+    iconX: number;
+    iconY: number;
+    w: number;
+    h: number;
+    arcTable: { t: number; length: number }[];
+    totalLength: number;
+  } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     // Load the logo SVG as an image
@@ -19,31 +145,8 @@ export function HeroGraphic() {
     logo.src = "/app-logo.svg";
     logoRef.current = logo;
 
-    // Set canvas size
-    const resize = () => {
-      const w = window.innerWidth * 2;
-      const h = window.innerHeight * 2;
-      canvas.width = w * window.devicePixelRatio;
-      canvas.height = h * window.devicePixelRatio;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    };
-
-    resize();
-    window.addEventListener("resize", resize);
-
-    // Simple cubic Bezier curve definition
-    type BezierCurve = {
-      start: { x: number; y: number };
-      cp1: { x: number; y: number };
-      cp2: { x: number; y: number };
-      end: { x: number; y: number };
-    };
-
-    // Get curves - simple cubic Bezier curves (perfectly smooth)
-    const getCurves = () => {
+    // Get curves - simple cubic Bezier curves
+    const computeCurves = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
@@ -69,100 +172,75 @@ export function HeroGraphic() {
         end: { x: centerX + vw * 0.7, y: centerY + vh * 0.5 },
       };
 
-      return { inputCurve, outputCurve, iconX, iconY, w: vw * 2, h: vh * 2 };
+      // Pre-compute arc-length table for output curve
+      const { table, totalLength } = buildArcLengthTable(outputCurve);
+
+      cacheRef.current = {
+        inputCurve,
+        outputCurve,
+        iconX,
+        iconY,
+        w: vw * 2,
+        h: vh * 2,
+        arcTable: table,
+        totalLength,
+      };
     };
 
-    // Get point on cubic Bezier at t (0-1)
-    const bezierPoint = (curve: BezierCurve, t: number) => {
-      const mt = 1 - t;
-      const mt2 = mt * mt;
-      const mt3 = mt2 * mt;
-      const t2 = t * t;
-      const t3 = t2 * t;
+    // Set canvas size - use 1x size, not 2x
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio, 2); // Cap DPR at 2
+      const w = window.innerWidth * 2;
+      const h = window.innerHeight * 2;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
 
-      const x =
-        mt3 * curve.start.x +
-        3 * mt2 * t * curve.cp1.x +
-        3 * mt * t2 * curve.cp2.x +
-        t3 * curve.end.x;
-      const y =
-        mt3 * curve.start.y +
-        3 * mt2 * t * curve.cp1.y +
-        3 * mt * t2 * curve.cp2.y +
-        t3 * curve.end.y;
-
-      // Tangent
-      const dx =
-        3 * mt2 * (curve.cp1.x - curve.start.x) +
-        6 * mt * t * (curve.cp2.x - curve.cp1.x) +
-        3 * t2 * (curve.end.x - curve.cp2.x);
-      const dy =
-        3 * mt2 * (curve.cp1.y - curve.start.y) +
-        6 * mt * t * (curve.cp2.y - curve.cp1.y) +
-        3 * t2 * (curve.end.y - curve.cp2.y);
-
-      const angle = Math.atan2(dy, dx);
-
-      return { x, y, angle };
+      // Recompute curves on resize
+      computeCurves();
     };
 
-    // Build arc-length lookup table for uniform spacing along curve
-    const buildArcLengthTable = (curve: BezierCurve, samples: number = 500) => {
-      const table: { t: number; length: number }[] = [{ t: 0, length: 0 }];
-      let totalLength = 0;
-      let prevPoint = bezierPoint(curve, 0);
+    resize();
+    window.addEventListener("resize", resize);
 
-      for (let i = 1; i <= samples; i++) {
-        const t = i / samples;
-        const point = bezierPoint(curve, t);
-        const dx = point.x - prevPoint.x;
-        const dy = point.y - prevPoint.y;
-        totalLength += Math.sqrt(dx * dx + dy * dy);
-        table.push({ t, length: totalLength });
-        prevPoint = point;
-      }
-
-      return { table, totalLength };
-    };
-
-    // Get t value for a given arc-length distance
-    const getTAtLength = (
-      table: { t: number; length: number }[],
-      targetLength: number,
-    ) => {
-      const lastEntry = table[table.length - 1];
-      if (targetLength <= 0 || !lastEntry) return 0;
-      if (targetLength >= lastEntry.length) return 1;
-
-      // Binary search
-      let low = 0;
-      let high = table.length - 1;
-      while (low < high - 1) {
-        const mid = Math.floor((low + high) / 2);
-        const midEntry = table[mid];
-        if (midEntry && midEntry.length < targetLength) {
-          low = mid;
-        } else {
-          high = mid;
-        }
-      }
-
-      // Linear interpolation
-      const lowEntry = table[low];
-      const highEntry = table[high];
-      if (!lowEntry || !highEntry) return 0;
-      const l0 = lowEntry.length;
-      const l1 = highEntry.length;
-      const t0 = lowEntry.t;
-      const t1 = highEntry.t;
-      const ratio = (targetLength - l0) / (l1 - l0);
-      return t0 + ratio * (t1 - t0);
-    };
+    // Intersection Observer to pause animation when not visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisibleRef.current = entries[0]?.isIntersecting ?? false;
+      },
+      { threshold: 0 },
+    );
+    observer.observe(canvas);
 
     let time = 25; // Start midway so text is already visible on curve
+    let lastFrameTime = performance.now();
 
-    const draw = () => {
-      const { inputCurve, outputCurve, iconX, iconY, w, h } = getCurves();
+    const draw = (currentTime: number) => {
+      // Skip if not visible
+      if (!isVisibleRef.current) {
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      // Frame rate limiting - target ~30fps for smoother performance
+      const elapsed = currentTime - lastFrameTime;
+      if (elapsed < 32) {
+        // ~30fps
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrameTime = currentTime;
+
+      const cache = cacheRef.current;
+      if (!cache) {
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      const { inputCurve, outputCurve, iconX, iconY, w, h, arcTable, totalLength } = cache;
 
       // Clear canvas
       ctx.clearRect(0, 0, w, h);
@@ -171,30 +249,13 @@ export function HeroGraphic() {
       const isDarkMode = window.matchMedia(
         "(prefers-color-scheme: dark)",
       ).matches;
-      const strokeColor = isDarkMode
-        ? "rgba(255, 255, 255, 0.15)"
-        : "rgba(0, 0, 0, 0.08)";
-
-      // Set up stroke style for waves
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 1.5;
-      ctx.lineCap = "round";
 
       // Draw three continuous sine waves along the entire input curve
-      // Each wave has a different frequency and they animate over time
-      const waveConfigs = [
-        { frequency: 16 / 3, amplitude: 14, speed: 6, opacity: 0.5 },
-        { frequency: 24 / 3, amplitude: 10, speed: 10, opacity: 0.35 },
-        { frequency: 36 / 3, amplitude: 6, speed: 32, opacity: 0.25 },
-      ];
-
-      const segments = 200; // High segment count for smooth curves
-
-      for (const wave of waveConfigs) {
+      for (const wave of WAVE_CONFIGS) {
         ctx.beginPath();
 
-        for (let i = 0; i <= segments; i++) {
-          const t = i / segments;
+        for (let i = 0; i <= WAVE_SEGMENTS; i++) {
+          const t = i / WAVE_SEGMENTS;
           const { x, y, angle } = bezierPoint(inputCurve, t);
 
           // Perpendicular direction to the curve
@@ -230,14 +291,6 @@ export function HeroGraphic() {
       }
 
       // Draw letters traveling along output curve with uniform spacing
-      const baseParagraph = reverseString(
-        "So I've been working on this really cool flower garden project lately. I'm growing sunflowers, lavender, and these amazing dahlias that just started blooming. The colors are incredible and I can't wait to show you the photos. ",
-      );
-      const letterPixelSpacing = 10; // Fixed pixel spacing between letters
-
-      // Build arc-length table for output curve
-      const { table, totalLength } = buildArcLengthTable(outputCurve);
-
       ctx.font = "500 18px system-ui, -apple-system, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -250,48 +303,35 @@ export function HeroGraphic() {
       const scrollOffset = time * 280;
 
       // Calculate which letter indices are currently visible on the curve
-      // Letter i is at curve position: scrollOffset - i * letterPixelSpacing
-      // Visible when position is in [0, totalLength]
       const minIndex = Math.max(
         0,
-        Math.floor((scrollOffset - totalLength) / letterPixelSpacing),
+        Math.floor((scrollOffset - totalLength) / LETTER_PIXEL_SPACING),
       );
-      const maxIndex = Math.floor(scrollOffset / letterPixelSpacing);
+      const maxIndex = Math.floor(scrollOffset / LETTER_PIXEL_SPACING);
+
+      ctx.fillStyle = textColor;
 
       for (let i = minIndex; i <= maxIndex; i++) {
-        const curvePosition = scrollOffset - i * letterPixelSpacing;
+        const curvePosition = scrollOffset - i * LETTER_PIXEL_SPACING;
 
         if (curvePosition >= 0 && curvePosition <= totalLength) {
           // Wrap index to get repeating text
-          const letterIndex = i % baseParagraph.length;
-          const letter = baseParagraph[letterIndex];
+          const letterIndex = i % BASE_PARAGRAPH.length;
+          const letter = BASE_PARAGRAPH[letterIndex];
 
-          const t = getTAtLength(table, curvePosition);
+          const t = getTAtLength(arcTable, curvePosition);
           const { x, y, angle } = bezierPoint(outputCurve, t);
 
           ctx.save();
           ctx.translate(x, y);
           ctx.rotate(angle);
-
-          ctx.fillStyle = textColor;
           ctx.fillText(letter ?? "", 0, 0);
-
           ctx.restore();
         }
       }
 
-      // Draw Voquill icon at the meeting point
-      const iconSize = 80;
-
       // Draw sparks flying out of the icon randomly
-      const numSparks = 6;
-      // Use seeded random for consistent but random-looking sparks
-      const seededRandom = (seed: number) => {
-        const x = Math.sin(seed * 12.9898 + seed * 78.233) * 43758.5453;
-        return x - Math.floor(x);
-      };
-
-      for (let i = 0; i < numSparks; i++) {
+      for (let i = 0; i < NUM_SPARKS; i++) {
         // Random timing offset for each spark
         const timeOffset = seededRandom(i * 1.1) * 3;
         const duration = 0.8 + seededRandom(i * 2.2) * 0.7;
@@ -303,13 +343,9 @@ export function HeroGraphic() {
         // Random speed
         const speed = 150 + seededRandom(i * 4.4) * 100;
 
-        // Start from inside the icon
-        const startX = iconX;
-        const startY = iconY;
-
-        // Straight line outward
-        const sparkX = startX + Math.cos(launchAngle) * speed * t;
-        const sparkY = startY + Math.sin(launchAngle) * speed * t;
+        // Straight line outward from icon center
+        const sparkX = iconX + Math.cos(launchAngle) * speed * t;
+        const sparkY = iconY + Math.sin(launchAngle) * speed * t;
 
         // Fade out over time
         const sparkAlpha = Math.max(0, (1 - t) * 0.6);
@@ -328,6 +364,7 @@ export function HeroGraphic() {
       }
 
       // Icon glow/background
+      const iconSize = 80;
       ctx.beginPath();
       ctx.arc(iconX, iconY, iconSize / 2 + 8, 0, Math.PI * 2);
       ctx.fillStyle = isDarkMode
@@ -342,20 +379,20 @@ export function HeroGraphic() {
       ctx.fill();
 
       // Draw the app logo
-      const logo = logoRef.current;
-      if (logo && logo.complete) {
+      const logoImg = logoRef.current;
+      if (logoImg && logoImg.complete) {
         ctx.save();
 
         // Logo is black by default (stroke="currentColor")
-        // Light mode: black circle bg → need white logo → invert
-        // Dark mode: white circle bg → need black logo → no invert
+        // Light mode: black circle bg -> need white logo -> invert
+        // Dark mode: white circle bg -> need black logo -> no invert
         if (!isDarkMode) {
           ctx.filter = "invert(1)";
         }
 
         const logoSize = iconSize * 0.65;
         ctx.drawImage(
-          logo,
+          logoImg,
           iconX - logoSize / 2,
           iconY - logoSize / 2,
           logoSize,
@@ -365,14 +402,15 @@ export function HeroGraphic() {
         ctx.restore();
       }
 
-      time += 0.006;
+      time += 0.01; // Adjusted for ~30fps
       animationRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    animationRef.current = requestAnimationFrame(draw);
 
     return () => {
       window.removeEventListener("resize", resize);
+      observer.disconnect();
       cancelAnimationFrame(animationRef.current);
     };
   }, []);
