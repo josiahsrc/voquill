@@ -1,35 +1,19 @@
 ; Voquill NSIS Installer Hooks
-; Installs Visual C++ 2015-2022 Redistributable (x64) if not already present
-
-!include "LogicLib.nsh"
+; Bundles Visual C++ Runtime DLLs directly from the CI build machine
 
 !macro NSIS_HOOK_POSTINSTALL
-  ; Check if VC++ 2015-2022 x64 runtime is already installed
-  ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" "Installed"
+  ; Copy VC++ 2015-2022 Runtime DLLs to installation directory
+  ; These are embedded at NSIS compile time from the CI runner's System32
+  ; The DLLs are placed alongside the exe so Windows finds them automatically
 
-  ${If} $0 != 1
-    ; File is bundled via tauri.conf.json bundle.resources
-    ${If} ${FileExists} "$INSTDIR\resources\vc_redist.x64.exe"
-      DetailPrint "Installing Microsoft Visual C++ Runtime..."
+  DetailPrint "Installing Visual C++ Runtime DLLs..."
+  SetOutPath "$INSTDIR"
 
-      ; Run silently: /install /quiet /norestart
-      nsExec::ExecToLog '"$INSTDIR\resources\vc_redist.x64.exe" /install /quiet /norestart'
-      Pop $1
+  ; Bundle the required MSVC runtime DLLs directly
+  ; These paths exist on GitHub Actions windows-latest runners
+  File "C:\Windows\System32\msvcp140.dll"
+  File "C:\Windows\System32\vcruntime140.dll"
+  File "C:\Windows\System32\vcruntime140_1.dll"
 
-      ${If} $1 == 0
-        DetailPrint "Visual C++ Runtime installed successfully"
-      ${ElseIf} $1 == 3010
-        DetailPrint "Visual C++ Runtime installed (restart may be required later)"
-      ${Else}
-        DetailPrint "Visual C++ Runtime setup returned code $1 (continuing anyway)"
-      ${EndIf}
-
-      ; Clean up - delete the redistributable after installation
-      Delete "$INSTDIR\resources\vc_redist.x64.exe"
-    ${Else}
-      DetailPrint "Note: VC++ Runtime installer not found in bundle"
-    ${EndIf}
-  ${Else}
-    DetailPrint "Visual C++ Runtime already installed"
-  ${EndIf}
+  DetailPrint "Visual C++ Runtime DLLs installed"
 !macroend
