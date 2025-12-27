@@ -39,6 +39,8 @@ pub struct AppTargetUpsertArgs {
     pub tone_id: Option<String>,
     #[serde(default)]
     pub icon_path: Option<String>,
+    #[serde(default)]
+    pub paste_keybind: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -248,6 +250,7 @@ pub async fn app_target_upsert(
         &args.name,
         args.tone_id,
         args.icon_path,
+        args.paste_keybind,
     )
     .await
     .map_err(|err| err.to_string())
@@ -938,9 +941,9 @@ pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn paste(text: String) -> Result<(), String> {
+pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
     let join_result =
-        tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text)).await;
+        tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text, keybind.as_deref())).await;
 
     match join_result {
         Ok(result) => {

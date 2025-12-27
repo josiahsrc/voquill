@@ -7,6 +7,7 @@ export type AppTargetUpsertParams = {
   name: string;
   toneId: string | null;
   iconPath: string | null;
+  pasteKeybind: string | null;
 };
 
 export abstract class BaseAppTargetRepo extends BaseRepo {

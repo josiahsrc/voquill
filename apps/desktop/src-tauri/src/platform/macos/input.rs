@@ -1,7 +1,9 @@
 use core_graphics::event::CGEventTapLocation;
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 
-pub(crate) fn paste_text_into_focused_field(text: &str) -> Result<(), String> {
+// Note: macOS uses native text injection via CGEvent, so the keybind parameter is ignored.
+// The text is injected directly at the OS level, bypassing clipboard and paste shortcuts.
+pub(crate) fn paste_text_into_focused_field(text: &str, _keybind: Option<&str>) -> Result<(), String> {
     if text.trim().is_empty() {
         return Ok(());
     }
