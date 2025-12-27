@@ -113,6 +113,7 @@ export const submitOnboarding = async () => {
     };
 
     const preferences: UserPreferences = {
+      gpuEnumerationEnabled: false,
       userId,
       transcriptionMode: transcriptionPreference.mode,
       transcriptionApiKeyId:

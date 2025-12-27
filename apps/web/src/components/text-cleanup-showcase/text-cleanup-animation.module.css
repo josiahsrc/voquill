@@ -1,0 +1,343 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 24px;
+  gap: 0;
+}
+
+.transcriptBox {
+  background: var(--level1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 40px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: var(--shadow-soft);
+}
+
+.transcript {
+  font-size: 1.35rem;
+  line-height: 2.4;
+  color: var(--text-strong);
+  font-weight: 450;
+  min-height: 4.8em;
+}
+
+.wordContainer {
+  position: relative;
+  display: inline;
+}
+
+.word {
+  position: relative;
+  display: inline;
+  transition: opacity 0.3s ease, color 0.2s ease;
+}
+
+/* Flagged state - word is being marked for cleanup */
+.wordFlagged {
+  color: var(--warning, #e67700);
+  background: linear-gradient(to bottom, transparent 60%, rgba(230, 119, 0, 0.15) 60%);
+}
+
+/* Removed state - filler/hesitation words that disappear */
+.wordRemoved {
+  text-decoration: line-through;
+  text-decoration-color: var(--danger, #dc3545);
+  text-decoration-thickness: 2px;
+  opacity: 0.35;
+  color: var(--text-muted);
+  animation: strikeAndFade 0.4s ease forwards;
+}
+
+@keyframes strikeAndFade {
+  0% {
+    text-decoration-color: transparent;
+    opacity: 1;
+  }
+  40% {
+    text-decoration-color: var(--danger, #dc3545);
+    opacity: 1;
+  }
+  100% {
+    text-decoration-color: var(--danger, #dc3545);
+    opacity: 0.35;
+  }
+}
+
+/* Replaced state - typos that get corrected */
+.wordReplaced {
+  text-decoration: line-through;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  opacity: 0.5;
+  color: var(--text-muted);
+  animation: strikeThrough 0.3s ease forwards;
+}
+
+@keyframes strikeThrough {
+  0% {
+    text-decoration-color: transparent;
+  }
+  100% {
+    text-decoration-color: var(--primary);
+  }
+}
+
+/* Replacement word slides in */
+.replacement {
+  display: inline;
+  color: var(--success, #28a745);
+  font-weight: 500;
+  margin-left: 4px;
+  animation: slideIn 0.35s ease forwards;
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Labels that pop up */
+.label {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  background: var(--level2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  opacity: 0;
+  animation: popIn 0.25s ease forwards;
+  box-shadow: var(--shadow-soft);
+  z-index: 10;
+}
+
+.label::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--border);
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.6) translateY(4px);
+  }
+  70% {
+    transform: translateX(-50%) scale(1.05) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+
+/* Label colors by type */
+.label[data-type="filler"],
+.label[data-type="hesitation"] {
+  color: var(--danger, #dc3545);
+  border-color: color-mix(in srgb, var(--danger, #dc3545) 30%, transparent);
+}
+
+.label[data-type="typo"] {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+/* Label done state - slightly faded */
+.labelDone {
+  opacity: 0.7;
+}
+
+.space {
+  display: inline;
+}
+
+/* Arrow between boxes */
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+  color: var(--text-muted);
+}
+
+.arrowIcon {
+  width: 32px;
+  height: 32px;
+  opacity: 0.6;
+}
+
+/* Result box */
+.resultBox {
+  border-radius: 16px;
+  padding: 24px 40px;
+  max-width: 600px;
+  width: 100%;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  transition: all 0.4s ease;
+}
+
+/* Pending state - animated circling dotted outline */
+.resultBoxPending {
+  background: transparent;
+  border: 2px dashed var(--border);
+  position: relative;
+  overflow: visible;
+}
+
+.resultBoxPending::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 20px;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 0deg,
+    rgba(59, 130, 246, 0.5) 40deg,
+    rgba(59, 130, 246, 0.8) 50deg,
+    rgba(59, 130, 246, 0.5) 60deg,
+    transparent 100deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 3px;
+  animation: rotate 2.5s linear infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .resultBoxPending::before {
+    background: conic-gradient(
+      from var(--angle, 0deg),
+      transparent 0deg,
+      rgba(96, 165, 250, 0.4) 40deg,
+      rgba(96, 165, 250, 0.7) 50deg,
+      rgba(96, 165, 250, 0.4) 60deg,
+      transparent 100deg
+    );
+  }
+}
+
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotate {
+  to {
+    --angle: 360deg;
+  }
+}
+
+/* Complete state - solid blue outline with background */
+.resultBoxComplete {
+  background: var(--level1);
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15), var(--shadow-soft);
+  animation: boxPopIn 0.4s ease forwards;
+}
+
+@media (prefers-color-scheme: dark) {
+  .resultBoxComplete {
+    border-color: #60a5fa;
+    box-shadow: 0 0 24px rgba(96, 165, 250, 0.2), var(--shadow-soft);
+  }
+}
+
+@keyframes boxPopIn {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.resultText {
+  font-size: 1.35rem;
+  line-height: 1.6;
+  color: var(--text-strong);
+  font-weight: 450;
+  opacity: 0;
+}
+
+.resultTextVisible {
+  animation: textPopIn 0.5s ease 0.1s forwards;
+}
+
+@keyframes textPopIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .transcriptBox {
+    padding: 24px;
+  }
+
+  .transcript {
+    font-size: 1.1rem;
+    line-height: 2.2;
+  }
+
+  .label {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    top: -32px;
+  }
+
+  .resultBox {
+    padding: 20px 24px;
+  }
+
+  .resultText {
+    font-size: 1.1rem;
+  }
+
+  .arrowIcon {
+    width: 24px;
+    height: 24px;
+  }
+}
