@@ -38,6 +38,13 @@ No additional storage credentials are required—the workflow publishes directly
 - The desktop bundle enables Hardened Runtime with custom entitlements at `apps/desktop/src-tauri/macos/Voquill.entitlements`. Keep the Developer ID certificate in sync with these capabilities if you adjust microphone or keyboard monitoring features.
 - macOS now prompts for microphone access (`NSMicrophoneUsageDescription`) and accessibility (`NSAccessibilityUsageDescription`) the first time the app runs. These strings live in `apps/desktop/src-tauri/Info.plist`.
 
+## Windows Installer & VC++ Redistributable
+- The Windows installer (NSIS) automatically installs the Visual C++ 2015-2022 Redistributable (x64) if not present on the target system.
+- The redistributable is required because native dependencies (whisper-rs, cpal, rdev) link against the MSVC runtime.
+- The NSIS installer hooks are defined in `apps/desktop/src-tauri/nsis/installer-hooks.nsi`.
+- During CI, the workflow downloads `vc_redist.x64.exe` from Microsoft and bundles it with the installer.
+- Installation runs silently (`/install /quiet /norestart`) and is non-blocking if the runtime is already installed or if the setup returns a non-fatal error.
+
 ## Verifying a Dev Release
 1. Push to `main` and wait for the **Release Desktop** workflow to finish.
 2. Check the `metadata` job output for the new `desktop-dev-v*` tag.
