@@ -396,46 +396,6 @@ jobs:
           "CLANG_PATH=C:\Program Files\LLVM\bin\clang.exe"  >> $env:GITHUB_ENV
           "C:\Program Files\LLVM\bin"                       >> $env:GITHUB_PATH
 
-      - name: Download VC++ Redistributable (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          # Download Visual C++ 2015-2022 Redistributable (x64)
-          # This is bundled with the installer for systems without the runtime
-          $repoRoot = $env:GITHUB_WORKSPACE
-          $resourcesDir = Join-Path $repoRoot "apps/desktop/src-tauri/resources"
-          New-Item -ItemType Directory -Force -Path $resourcesDir | Out-Null
-
-          $vcRedistUrl = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
-          $vcRedistPath = Join-Path $resourcesDir "vc_redist.x64.exe"
-
-          Write-Host "Downloading VC++ Redistributable..."
-          Write-Host "  URL: $vcRedistUrl"
-          Write-Host "  Destination: $vcRedistPath"
-
-          Invoke-WebRequest -Uri $vcRedistUrl -OutFile $vcRedistPath -UseBasicParsing
-
-          if (Test-Path $vcRedistPath) {
-            $size = (Get-Item $vcRedistPath).Length / 1MB
-            Write-Host "Downloaded VC++ Redistributable: $([math]::Round($size, 2)) MB"
-
-            # Export the path for NSIS to find
-            "VCREDIST_PATH=$vcRedistPath" >> $env:GITHUB_ENV
-
-            # Verify the file is valid (should be > 10MB)
-            if ($size -lt 10) {
-              Write-Error "Downloaded file is too small ($size MB), may be corrupted"
-              exit 1
-            }
-          } else {
-            Write-Error "Failed to download VC++ Redistributable"
-            exit 1
-          }
-
-          # List contents to verify
-          Write-Host "Resources directory contents:"
-          Get-ChildItem $resourcesDir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length/1MB, 2)) MB)" }
-
       - name: Import Apple signing certificate
         if: matrix.os == 'macos-14'
         id: import-macos-cert
@@ -532,23 +492,6 @@ jobs:
           printf 'Using %s for %s release.\n' "${config_file}" "${RELEASE_ENV}"
           echo "args=${combined_args}" >> "$GITHUB_OUTPUT"
           echo "config=${config_file}" >> "$GITHUB_OUTPUT"
-
-      - name: Verify VC++ Redistributable (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          $vcRedistPath = Join-Path $env:GITHUB_WORKSPACE "apps/desktop/src-tauri/resources/vc_redist.x64.exe"
-          Write-Host "Checking for VC++ Redistributable at: $vcRedistPath"
-          if (Test-Path $vcRedistPath) {
-            $size = (Get-Item $vcRedistPath).Length / 1MB
-            Write-Host "Found vc_redist.x64.exe ($([math]::Round($size, 2)) MB)"
-          } else {
-            Write-Error "VC++ Redistributable not found at expected path!"
-            Write-Host "Expected: $vcRedistPath"
-            Write-Host "Listing apps/desktop/src-tauri/:"
-            Get-ChildItem (Join-Path $env:GITHUB_WORKSPACE "apps/desktop/src-tauri") -Recurse -Name | ForEach-Object { Write-Host "  $_" }
-            exit 1
-          }
 
       - name: Turbo build desktop workspace
         env:
