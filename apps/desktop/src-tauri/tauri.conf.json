@@ -51,7 +51,7 @@
         "type": "offlineInstaller"
       },
       "nsis": {
-        "installerHooks": "nsis/installer-hooks.nsi"
+        "installerHooks": "nsis/installer-hooks.nsh"
       }
     }
   },

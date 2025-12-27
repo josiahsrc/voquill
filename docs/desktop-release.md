@@ -41,7 +41,7 @@ No additional storage credentials are required—the workflow publishes directly
 ## Windows Installer & VC++ Redistributable
 - The Windows installer (NSIS) automatically installs the Visual C++ 2015-2022 Redistributable (x64) if not present on the target system.
 - The redistributable is required because native dependencies (whisper-rs, cpal, rdev) link against the MSVC runtime.
-- The NSIS installer hooks are defined in `apps/desktop/src-tauri/nsis/installer-hooks.nsi`.
+- The NSIS installer hooks are defined in `apps/desktop/src-tauri/nsis/installer-hooks.nsh`.
 - During CI, the workflow downloads `vc_redist.x64.exe` from Microsoft and bundles it with the installer.
 - Installation runs silently (`/install /quiet /norestart`) and is non-blocking if the runtime is already installed or if the setup returns a non-fatal error.
 
