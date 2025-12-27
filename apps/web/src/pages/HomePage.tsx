@@ -1,5 +1,5 @@
 import { FormattedMessage } from "react-intl";
-import AppIconShowcase from "../components/app-icon-showcase";
+import { AppsCarousel } from "../components/apps-carousel";
 import { HeroSection } from "../components/hero";
 import PrivacyLock from "../components/privacy-lock";
 import SpeedShowcase from "../components/speed-showcase";
@@ -14,24 +14,9 @@ function HomePage() {
       <PageLayout>
         <HeroSection />
 
-        <SpeedShowcase />
+        <AppsCarousel />
 
-        <section className={styles.splitSection} id="features">
-          <div className={`${styles.splitMedia} ${styles.iconShowcaseMedia}`}>
-            <AppIconShowcase />
-          </div>
-          <div className={styles.splitContent}>
-            <span className={styles.badge}>
-              <FormattedMessage defaultMessage="Works on any app" />
-            </span>
-            <h2>
-              <FormattedMessage defaultMessage="Your voice, everywhere you write." />
-            </h2>
-            <p>
-              <FormattedMessage defaultMessage="Voquill integrates seamlessly with any application on your system. Whether you're drafting emails, writing code, or taking notes, your voice works everywhere your keyboard does." />
-            </p>
-          </div>
-        </section>
+        <SpeedShowcase />
 
         <section className={styles.splitSection} id="privacy">
           <div className={styles.splitContent}>

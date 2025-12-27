@@ -691,6 +691,16 @@
   background: transparent;
 }
 
+.carouselMedia {
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .privacyMedia {
   border: none;
   box-shadow: none;
