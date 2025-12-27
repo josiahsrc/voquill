@@ -17,6 +17,8 @@ export type Transcription = {
   transcriptionMode?: TranscriptionMode | null;
   postProcessMode?: PostProcessingMode | null;
   postProcessDevice?: string | null;
+  transcriptionDurationMs?: number | null;
+  postprocessDurationMs?: number | null;
   warnings?: string[] | null;
 };
 

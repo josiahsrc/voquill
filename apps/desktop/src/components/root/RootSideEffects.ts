@@ -201,6 +201,8 @@ export const RootSideEffects = () => {
         transcriptionMode: metadata?.transcriptionMode ?? null,
         postProcessMode: metadata?.postProcessMode ?? null,
         postProcessDevice: metadata?.postProcessDevice ?? null,
+        transcriptionDurationMs: metadata?.transcriptionDurationMs ?? null,
+        postprocessDurationMs: metadata?.postprocessDurationMs ?? null,
         warnings: warnings.length > 0 ? warnings : null,
       };
 

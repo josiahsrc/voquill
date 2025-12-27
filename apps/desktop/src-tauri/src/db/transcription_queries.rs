@@ -40,6 +40,8 @@ fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
         transcription_mode: row.try_get::<Option<String>, _>("transcription_mode")?,
         post_process_mode: row.try_get::<Option<String>, _>("post_process_mode")?,
         post_process_device: row.try_get::<Option<String>, _>("post_process_device")?,
+        transcription_duration_ms: row.try_get::<Option<i64>, _>("transcription_duration_ms")?,
+        postprocess_duration_ms: row.try_get::<Option<i64>, _>("postprocess_duration_ms")?,
         warnings,
     })
 }
@@ -65,9 +67,11 @@ pub async fn insert_transcription(
              transcription_mode,
              post_process_mode,
              post_process_device,
+             transcription_duration_ms,
+             postprocess_duration_ms,
              warnings_json
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
     )
     .bind(&transcription.id)
     .bind(&transcription.transcript)
@@ -89,6 +93,8 @@ pub async fn insert_transcription(
     .bind(transcription.transcription_mode.as_deref())
     .bind(transcription.post_process_mode.as_deref())
     .bind(transcription.post_process_device.as_deref())
+    .bind(transcription.transcription_duration_ms)
+    .bind(transcription.postprocess_duration_ms)
     .bind(serialize_warnings(&transcription.warnings))
     .execute(&pool)
     .await?;
@@ -117,6 +123,8 @@ pub async fn fetch_transcriptions(
                 transcription_mode,
                 post_process_mode,
                 post_process_device,
+                transcription_duration_ms,
+                postprocess_duration_ms,
                 warnings_json
          FROM transcriptions
          ORDER BY timestamp DESC
@@ -156,7 +164,9 @@ pub async fn update_transcription(
              transcription_mode = ?13,
              post_process_mode = ?14,
              post_process_device = ?15,
-             warnings_json = ?16
+             transcription_duration_ms = ?16,
+             postprocess_duration_ms = ?17,
+             warnings_json = ?18
          WHERE id = ?1",
     )
     .bind(&transcription.id)
@@ -179,6 +189,8 @@ pub async fn update_transcription(
     .bind(transcription.transcription_mode.as_deref())
     .bind(transcription.post_process_mode.as_deref())
     .bind(transcription.post_process_device.as_deref())
+    .bind(transcription.transcription_duration_ms)
+    .bind(transcription.postprocess_duration_ms)
     .bind(serialize_warnings(&transcription.warnings))
     .execute(&pool)
     .await?;
@@ -199,6 +211,8 @@ pub async fn update_transcription(
                 transcription_mode,
                 post_process_mode,
                 post_process_device,
+                transcription_duration_ms,
+                postprocess_duration_ms,
                 warnings_json
          FROM transcriptions
          WHERE id = ?1",

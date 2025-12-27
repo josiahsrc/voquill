@@ -239,6 +239,25 @@ export const TranscriptionDetailsDialog = () => {
   }, [transcription?.postProcessPrompt, rawTranscriptText]);
 
   const finalTranscriptText = transcription?.transcript ?? "";
+
+  const transcriptionDurationLabel = useMemo(() => {
+    const ms = transcription?.transcriptionDurationMs;
+    if (ms == null) return null;
+    if (ms >= 1000) {
+      return `${(ms / 1000).toFixed(2)}s`;
+    }
+    return `${ms}ms`;
+  }, [transcription?.transcriptionDurationMs]);
+
+  const postprocessDurationLabel = useMemo(() => {
+    const ms = transcription?.postprocessDurationMs;
+    if (ms == null) return null;
+    if (ms >= 1000) {
+      return `${(ms / 1000).toFixed(2)}s`;
+    }
+    return `${ms}ms`;
+  }, [transcription?.postprocessDurationMs]);
+
   const warnings = useMemo(() => {
     if (!transcription?.warnings) {
       return [];
@@ -379,6 +398,40 @@ export const TranscriptionDetailsDialog = () => {
                 )}
               </Stack>
             </Box>
+
+            {(transcriptionDurationLabel || postprocessDurationLabel) && (
+              <>
+                <Divider />
+
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    <FormattedMessage defaultMessage="Performance" />
+                  </Typography>
+                  <Stack spacing={1.25} sx={{ mt: 1 }}>
+                    {transcriptionDurationLabel && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          <FormattedMessage defaultMessage="Transcription Duration" />
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {transcriptionDurationLabel}
+                        </Typography>
+                      </Box>
+                    )}
+                    {postprocessDurationLabel && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          <FormattedMessage defaultMessage="Post-processing Duration" />
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {postprocessDurationLabel}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
+              </>
+            )}
 
             <Divider />
 
