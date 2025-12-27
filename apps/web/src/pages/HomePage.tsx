@@ -28,7 +28,7 @@ function HomePage() {
               <FormattedMessage defaultMessage="Your data is yours. Period." />
             </h2>
             <p>
-              <FormattedMessage defaultMessage="Process everything locally on your device, or bring your own API key to connect to the Groq API. Don't believe us? See for yourself. Voquill is fully open-source." />
+              <FormattedMessage defaultMessage="Process everything locally on your device, bring your own API key, or connect to our cloud. Don't believe us? See for yourself. Voquill is fully open-source." />
             </p>
             <a
               href="https://github.com/josiahsrc/voquill"
@@ -53,7 +53,7 @@ function HomePage() {
               <FormattedMessage defaultMessage="Smart text cleanup" />
             </span>
             <h2>
-              <FormattedMessage defaultMessage="Uhh? Umm? Not anymore." />
+              <FormattedMessage defaultMessage="Auto-correct with AI" />
             </h2>
             <p>
               <FormattedMessage defaultMessage="Voquill uses AI to clean up your transcripts. It removes filler words, hesitations, false starts, etc. Speak naturally, Voquill will handle the rest." />
