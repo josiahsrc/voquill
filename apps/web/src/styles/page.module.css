@@ -650,6 +650,10 @@
   color: var(--text-muted);
 }
 
+.inlineButton {
+  align-self: flex-start;
+}
+
 .bulletList {
   list-style: none;
   display: flex;

@@ -1,5 +1,6 @@
 import { FormattedMessage } from "react-intl";
 import { AppsCarousel } from "../components/apps-carousel";
+import DownloadButton from "../components/download-button";
 import { HeroSection } from "../components/hero";
 import OfflineShowcase from "../components/offline-showcase";
 import PrivacyLock from "../components/privacy-lock";
@@ -58,6 +59,7 @@ function HomePage() {
             <p>
               <FormattedMessage defaultMessage="Voquill uses AI to clean up your transcripts. It removes filler words, hesitations, false starts, etc. Speak naturally, Voquill will handle the rest." />
             </p>
+            <DownloadButton className={styles.inlineButton} />
           </div>
         </section>
 
