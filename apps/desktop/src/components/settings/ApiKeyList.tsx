@@ -39,6 +39,7 @@ import {
   groqTestIntegration,
   openaiTestIntegration,
   aldeaTestIntegration,
+  assemblyaiTestIntegration,
   TRANSCRIPTION_MODELS,
   GENERATE_TEXT_MODELS,
   OPENAI_TRANSCRIPTION_MODELS,
@@ -118,6 +119,7 @@ const AddApiKeyCard = ({ onSave, onCancel }: AddApiKeyCardProps) => {
         <MenuItem value="groq">Groq</MenuItem>
         <MenuItem value="openai">OpenAI</MenuItem>
         <MenuItem value="aldea">Aldea</MenuItem>
+        <MenuItem value="assemblyai">AssemblyAI</MenuItem>
       </TextField>
       <TextField
         label={<FormattedMessage defaultMessage="API key" />}
@@ -167,6 +169,8 @@ const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
       return openaiTestIntegration({ apiKey: apiKey.keyFull });
     case "aldea":
       return aldeaTestIntegration({ apiKey: apiKey.keyFull });
+    case "assemblyai":
+      return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
     default:
       throw new Error("Testing is not available for this provider.");
   }
@@ -186,6 +190,8 @@ const getModelsForProvider = (
         ? OPENAI_TRANSCRIPTION_MODELS
         : OPENAI_GENERATE_TEXT_MODELS;
     case "aldea":
+      return [];
+    case "assemblyai":
       return [];
     default:
       return [];

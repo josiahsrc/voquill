@@ -36,6 +36,7 @@ pub mod whisper;
 pub mod keyboard;
 
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
+pub type ChunkCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
 
 #[derive(Clone, Debug, Default)]
 pub struct TranscriptionRequest {
@@ -61,9 +62,13 @@ pub trait Recorder: Send + Sync {
     fn start(
         &self,
         level_callback: Option<LevelCallback>,
+        chunk_callback: Option<ChunkCallback>,
     ) -> Result<(), Box<dyn std::error::Error>>;
     fn stop(&self) -> Result<crate::domain::RecordingResult, Box<dyn std::error::Error>>;
     fn set_preferred_input_device(&self, _name: Option<String>) {}
+    fn current_sample_rate(&self) -> Option<u32> {
+        None
+    }
 }
 
 pub trait Transcriber: Send + Sync {

@@ -41,12 +41,13 @@ export const aldeaTranscribeAudio = async ({
   return retry({
     retries: 3,
     fn: async () => {
+      const bodyData = blob instanceof ArrayBuffer ? blob : (blob.buffer as ArrayBuffer);
       const response = await fetch(ALDEA_API_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey.trim()}`,
         },
-        body: blob,
+        body: bodyData,
       });
 
       if (!response.ok) {

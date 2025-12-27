@@ -1,4 +1,4 @@
-export const API_KEY_PROVIDERS = ["groq", "openai", "aldea"] as const;
+export const API_KEY_PROVIDERS = ["groq", "openai", "aldea", "assemblyai"] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 
 export type ApiKey = {
