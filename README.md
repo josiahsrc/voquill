@@ -64,6 +64,8 @@ See `docs/desktop-architecture.md` for the full tour.
 - A Groq API key if you plan to use hosted transcription or transcript cleanup (`GROQ_API_KEY`).
 - Firebase CLI (`npm install -g firebase-tools`) when working on the functions project.
 
+
+
 ### Install dependencies
 ```sh
 npm install
@@ -92,6 +94,25 @@ npm run dev:linux:gpu --workspace apps/desktop
 ```
 
 During local development you can override platform detection by exporting `VOQUILL_DESKTOP_PLATFORM` (`darwin`, `win32`, or `linux`). The desktop dev journey now defaults to the `emulators` flavor (`apps/desktop/.env.emulators`) so that `turbo dev` and the workspace dev scripts point at the Firebase emulator suite; pass `FLAVOR=dev` or `VITE_FLAVOR=dev` when you explicitly want the hosted dev project. Set `VITE_USE_EMULATORS=true` to point at Firebase emulators (this is already true in the emulator flavor).
+
+
+### Running in windows
+
+```powershell
+# 1) Make sure MSVC is initialized
+# (Skip this if you're already in "Developer PowerShell for VS 2022")
+& "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+# 2) Required for whisper.cpp / ggml Vulkan builds
+$env:WHISPER_CMAKE_ARGS = '-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w'
+
+# (Optional but recommended) shorten build paths on Windows
+$env:CARGO_TARGET_DIR = 'D:\cargo'
+
+# 3) Clean and build
+cargo clean
+npm run dev:windows:gpu
+```
 
 ### Run the marketing site
 ```sh
