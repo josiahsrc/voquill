@@ -99,30 +99,30 @@ const WAVE_CONFIGS = [
 // Number of animation frames for SMIL path animation (more = smoother)
 const WAVE_FRAMES = 20;
 
-// Pre-compute spark data with actual x/y translations (CSS cos/sin not widely supported)
+// Pre-compute spark data with actual x/y translations
 const SPARKS = Array.from({ length: 6 }, (_, i) => {
   const angle = seededRandom(i * 3.3) * Math.PI * 2;
-  const distance = 150 + seededRandom(i * 4.4) * 100;
+  const distance = 80 + seededRandom(i * 4.4) * 60;
   return {
     translateX: Math.cos(angle) * distance,
     translateY: Math.sin(angle) * distance,
-    delay: seededRandom(i * 1.1) * 3,
-    duration: 0.8 + seededRandom(i * 2.2) * 0.7,
+    delay: seededRandom(i * 1.1) * 2,
+    duration: 0.6 + seededRandom(i * 2.2) * 0.5,
   };
 });
 
 const BASE_TEXT =
   "So I've been working on this really cool flower garden project lately. I'm growing sunflowers, lavender, and these amazing dahlias that just started blooming. The colors are incredible and I can't wait to show you the photos. ";
 
-// Repeat text to ensure seamless looping
-const REPEATED_TEXT = BASE_TEXT.repeat(4);
+// Repeat text many times for seamless looping
+const REPEATED_TEXT = BASE_TEXT.repeat(10);
 
 export function HeroGraphic() {
   // Compute all paths once using useMemo
   const { waves, outputCurvePath, iconX, iconY, viewBox } = useMemo(() => {
-    // Use fixed dimensions for SVG viewBox (will scale with CSS)
-    const vw = 800;
-    const vh = 600;
+    // Use larger dimensions for SVG viewBox to zoom out
+    const vw = 1000;
+    const vh = 750;
     const centerX = vw;
     const centerY = vh;
     const iconX = centerX;
@@ -133,12 +133,12 @@ export function HeroGraphic() {
       start: { x: centerX - vw * 0.1, y: -50 },
       cp1: { x: centerX + vw * 0.2, y: centerY - vh * 0.8 },
       cp2: { x: centerX - vw * 0.5, y: centerY - vh * 0.1 },
-      end: { x: iconX - 35, y: iconY - 5 },
+      end: { x: iconX - 28, y: iconY - 5 },
     };
 
     // Output curve: Exiting RIGHT, curving down and off screen
     const outputCurve: BezierCurve = {
-      start: { x: iconX + 35, y: iconY + 10 },
+      start: { x: iconX + 28, y: iconY + 8 },
       cp1: { x: centerX + vw * 0.4, y: centerY + vh * 0.1 },
       cp2: { x: centerX, y: centerY + vh * 0.4 },
       end: { x: centerX + vw * 0.7, y: centerY + vh * 0.5 },
@@ -210,18 +210,60 @@ export function HeroGraphic() {
             {REPEATED_TEXT}
             <animate
               attributeName="startOffset"
-              values="-100%;0%"
-              dur="10s"
+              from="-1300"
+              to="0"
+              dur="15.5s"
+              calcMode="linear"
               repeatCount="indefinite"
             />
           </textPath>
         </text>
 
+        {/* Spark particles - rendered before icon so they appear behind */}
+        {SPARKS.map((spark, index) => (
+          <circle
+            key={index}
+            cx={iconX}
+            cy={iconY}
+            r={3}
+            className={styles.spark}
+          >
+            <animate
+              attributeName="cx"
+              values={`${iconX};${iconX + spark.translateX}`}
+              dur={`${spark.duration}s`}
+              begin={`${spark.delay}s`}
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="cy"
+              values={`${iconY};${iconY + spark.translateY}`}
+              dur={`${spark.duration}s`}
+              begin={`${spark.delay}s`}
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0.6;0"
+              dur={`${spark.duration}s`}
+              begin={`${spark.delay}s`}
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="r"
+              values="3;1"
+              dur={`${spark.duration}s`}
+              begin={`${spark.delay}s`}
+              repeatCount="indefinite"
+            />
+          </circle>
+        ))}
+
         {/* Icon glow */}
         <circle
           cx={iconX}
           cy={iconY}
-          r={48}
+          r={38}
           className={styles.iconGlow}
         />
 
@@ -229,36 +271,20 @@ export function HeroGraphic() {
         <circle
           cx={iconX}
           cy={iconY}
-          r={40}
+          r={30}
           className={styles.iconCircle}
         />
 
         {/* App logo */}
         <image
           href="/app-logo.svg"
-          x={iconX - 26}
-          y={iconY - 26}
-          width={52}
-          height={52}
+          x={iconX - 20}
+          y={iconY - 20}
+          width={40}
+          height={40}
           className={styles.iconLogo}
         />
       </svg>
-
-      {/* Spark particles (CSS animated) */}
-      <div className={styles.sparksContainer}>
-        {SPARKS.map((spark, index) => (
-          <div
-            key={index}
-            className={styles.spark}
-            style={{
-              "--spark-tx": `${spark.translateX}px`,
-              "--spark-ty": `${spark.translateY}px`,
-              "--spark-delay": `${spark.delay}s`,
-              "--spark-duration": `${spark.duration}s`,
-            } as React.CSSProperties}
-          />
-        ))}
-      </div>
     </div>
   );
 }

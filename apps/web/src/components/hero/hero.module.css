@@ -117,7 +117,7 @@
 
 /* Text along path */
 .pathText {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 500;
   font-family: system-ui, -apple-system, sans-serif;
   fill: rgba(0, 0, 0, 0.7);
@@ -137,38 +137,9 @@
   filter: invert(1);
 }
 
-/* Sparks container */
-.sparksContainer {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
+/* Spark particles (SVG circles with SMIL animation) */
 .spark {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  opacity: 0;
-  animation: sparkFly ease-out infinite;
-  animation-duration: var(--spark-duration);
-  animation-delay: var(--spark-delay);
-}
-
-@keyframes sparkFly {
-  0% {
-    opacity: 0.6;
-    transform: translate(0, 0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--spark-tx), var(--spark-ty)) scale(0.3);
-  }
+  fill: rgba(0, 0, 0, 0.6);
 }
 
 /* Dark mode support */
@@ -194,7 +165,7 @@
   }
 
   .spark {
-    background: rgba(255, 255, 255, 0.6);
+    fill: rgba(255, 255, 255, 0.6);
   }
 }
 
