@@ -1,4 +1,4 @@
-import { Transcription, TranscriptionAudioSnapshot } from "@repo/types";
+import { AppTarget, Transcription, TranscriptionAudioSnapshot } from "@repo/types";
 import { countWords, getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
@@ -61,6 +61,11 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
+type RecordedAudioResult = {
+  transcript: string | null;
+  currentApp: AppTarget | null;
+};
+
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
   const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(
@@ -112,7 +117,7 @@ export const RootSideEffects = () => {
   );
 
   const handleRecordedAudio = useCallback(
-    async (payload: StopRecordingResponse): Promise<string | null> => {
+    async (payload: StopRecordingResponse): Promise<RecordedAudioResult> => {
       const payloadSamples = Array.isArray(payload.samples)
         ? payload.samples
         : Array.from(payload.samples ?? []);
@@ -121,11 +126,11 @@ export const RootSideEffects = () => {
       if (rate == null || Number.isNaN(rate)) {
         console.error("Received audio payload without sample rate", payload);
         showErrorSnackbar("Recording missing sample rate. Please try again.");
-        return null;
+        return { transcript: null, currentApp: null };
       }
 
       if (rate <= 0 || payloadSamples.length === 0) {
-        return null;
+        return { transcript: null, currentApp: null };
       }
 
       const currentApp = await tryRegisterCurrentAppTarget();
@@ -155,11 +160,11 @@ export const RootSideEffects = () => {
         if (message) {
           showErrorSnackbar(message);
         }
-        return null;
+        return { transcript: null, currentApp };
       }
 
       if (!finalTranscript) {
-        return null;
+        return { transcript: null, currentApp };
       }
 
       const state = getAppState();
@@ -207,7 +212,7 @@ export const RootSideEffects = () => {
       } catch (error) {
         console.error("Failed to store transcription", error);
         showErrorSnackbar("Unable to save transcription. Please try again.");
-        return null;
+        return { transcript: null, currentApp };
       }
 
       produceAppState((draft) => {
@@ -246,7 +251,7 @@ export const RootSideEffects = () => {
         console.error("Failed to purge stale audio snapshots", error);
       }
 
-      return finalTranscript;
+      return { transcript: finalTranscript, currentApp };
     },
     [],
   );
@@ -354,10 +359,10 @@ export const RootSideEffects = () => {
 
     isRecordingRef.current = false;
 
-    let finalTranscriptText: string | null = null;
+    let result: RecordedAudioResult | null = null;
     try {
       if (audio) {
-        finalTranscriptText = await handleRecordedAudio(audio);
+        result = await handleRecordedAudio(audio);
       }
     } finally {
       if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
@@ -365,14 +370,15 @@ export const RootSideEffects = () => {
         await invoke<void>("set_phase", { phase: "idle" });
       }
 
-      const trimmedTranscript = finalTranscriptText?.trim();
+      const trimmedTranscript = result?.transcript?.trim();
       if (trimmedTranscript) {
         await new Promise<void>((resolve) => {
           setTimeout(resolve, 20);
         });
 
         try {
-          await invoke<void>("paste", { text: trimmedTranscript });
+          const keybind = result?.currentApp?.pasteKeybind ?? null;
+          await invoke<void>("paste", { text: trimmedTranscript, keybind });
         } catch (error) {
           console.error("Failed to paste transcription", error);
           showErrorSnackbar("Unable to paste transcription.");

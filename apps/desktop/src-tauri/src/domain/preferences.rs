@@ -26,4 +26,6 @@ pub struct UserPreferences {
     pub got_started_at: Option<i64>,
     #[serde(default)]
     pub gpu_enumeration_enabled: bool,
+    #[serde(default)]
+    pub paste_keybind: Option<String>,
 }

@@ -6,4 +6,5 @@ export type AppTarget = {
   createdAt: string;
   toneId: Nullable<string>;
   iconPath: Nullable<string>;
+  pasteKeybind: Nullable<string>;
 };
