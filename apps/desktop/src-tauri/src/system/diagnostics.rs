@@ -34,19 +34,6 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
 
     // GPU Information
     log_content.push_str("=== GPU Detection ===\n");
-    let gpus = crate::system::gpu::list_available_gpus();
-    if gpus.is_empty() {
-        log_content.push_str("No GPUs detected (or enumeration failed)\n");
-    } else {
-        log_content.push_str(&format!("Found {} GPU(s):\n", gpus.len()));
-        for (idx, gpu) in gpus.iter().enumerate() {
-            let vendor_name = get_vendor_name(gpu.vendor);
-            log_content.push_str(&format!(
-                "  [{}] {} (Vendor: {} [0x{:04X}], Device: 0x{:04X}, Type: {}, Backend: {})\n",
-                idx, gpu.name, vendor_name, gpu.vendor, gpu.device, gpu.device_type, gpu.backend
-            ));
-        }
-    }
     log_content.push_str("\n");
 
     // System info
