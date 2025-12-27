@@ -436,6 +436,18 @@ jobs:
           Write-Host "Resources directory contents:"
           Get-ChildItem $resourcesDir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length/1MB, 2)) MB)" }
 
+      - name: Add VC++ Redistributable to bundle resources (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Patch tauri.conf.json to include vc_redist.x64.exe in bundle.resources
+          # This is Windows-only; macOS/Linux builds don't need this file
+          $configPath = Join-Path $env:GITHUB_WORKSPACE "apps/desktop/src-tauri/tauri.conf.json"
+          $config = Get-Content $configPath -Raw | ConvertFrom-Json -Depth 20
+          $config.bundle.resources = @("resources/vc_redist.x64.exe")
+          $config | ConvertTo-Json -Depth 20 | Set-Content $configPath -Encoding UTF8
+          Write-Host "Added vc_redist.x64.exe to bundle.resources in tauri.conf.json"
+
       - name: Import Apple signing certificate
         if: matrix.os == 'macos-14'
         id: import-macos-cert
@@ -532,23 +544,6 @@ jobs:
           printf 'Using %s for %s release.\n' "${config_file}" "${RELEASE_ENV}"
           echo "args=${combined_args}" >> "$GITHUB_OUTPUT"
           echo "config=${config_file}" >> "$GITHUB_OUTPUT"
-
-      - name: Verify VC++ Redistributable (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          $vcRedistPath = Join-Path $env:GITHUB_WORKSPACE "apps/desktop/src-tauri/resources/vc_redist.x64.exe"
-          Write-Host "Checking for VC++ Redistributable at: $vcRedistPath"
-          if (Test-Path $vcRedistPath) {
-            $size = (Get-Item $vcRedistPath).Length / 1MB
-            Write-Host "Found vc_redist.x64.exe ($([math]::Round($size, 2)) MB)"
-          } else {
-            Write-Error "VC++ Redistributable not found at expected path!"
-            Write-Host "Expected: $vcRedistPath"
-            Write-Host "Listing apps/desktop/src-tauri/:"
-            Get-ChildItem (Join-Path $env:GITHUB_WORKSPACE "apps/desktop/src-tauri") -Recurse -Name | ForEach-Object { Write-Host "  $_" }
-            exit 1
-          }
 
       - name: Turbo build desktop workspace
         env:
