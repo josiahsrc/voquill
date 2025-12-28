@@ -1,4 +1,4 @@
-import { TranscriptionMetadata } from "../actions/transcribe.actions";
+import { TranscribeAudioMetadata } from "../actions/transcribe.actions";
 
 export type StopRecordingResponse = {
   samples: number[] | Float32Array;
@@ -6,9 +6,8 @@ export type StopRecordingResponse = {
 };
 
 export type TranscriptionSessionResult = {
-  transcript: string | null;
   rawTranscript: string | null;
-  metadata: TranscriptionMetadata;
+  metadata: TranscribeAudioMetadata;
   warnings: string[];
 };
 

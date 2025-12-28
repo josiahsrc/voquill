@@ -1,4 +1,3 @@
-import { Nullable } from "@repo/types";
 import { TranscriptionSession } from "../types/transcription-session.types";
 import { TranscriptionPrefs } from "../utils/user.utils";
 import { AssemblyAITranscriptionSession } from "./assemblyai-transcription-session";
@@ -9,7 +8,6 @@ export { BatchTranscriptionSession } from "./batch-transcription-session";
 
 export const createTranscriptionSession = (
   prefs: TranscriptionPrefs,
-  toneId: Nullable<string>,
 ): TranscriptionSession => {
   if (prefs.mode === "api") {
     switch (prefs.provider) {
@@ -21,5 +19,5 @@ export const createTranscriptionSession = (
     }
   }
 
-  return new BatchTranscriptionSession(toneId);
+  return new BatchTranscriptionSession();
 };

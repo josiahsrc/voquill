@@ -333,7 +333,6 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
   ): Promise<TranscriptionSessionResult> {
     if (!this.session) {
       return {
-        transcript: null,
         rawTranscript: null,
         metadata: {
           inferenceDevice: "API • AssemblyAI (Streaming)",
@@ -358,7 +357,6 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
       });
 
       return {
-        transcript: transcript || null,
         rawTranscript: transcript || null,
         metadata: {
           inferenceDevice: "API • AssemblyAI (Streaming)",
@@ -370,7 +368,6 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
     } catch (error) {
       console.error("[AssemblyAI] Failed to finalize session:", error);
       return {
-        transcript: null,
         rawTranscript: null,
         metadata: {
           inferenceDevice: "API • AssemblyAI (Streaming)",

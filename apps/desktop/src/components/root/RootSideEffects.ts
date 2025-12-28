@@ -14,6 +14,7 @@ import { loadHotkeys } from "../../actions/hotkey.actions";
 import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
+import { postProcessTranscript } from "../../actions/transcribe.actions";
 import { storeTranscription } from "../../actions/transcription-storage.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
@@ -143,10 +144,9 @@ export const RootSideEffects = () => {
         overlayLoadingTokenRef.current = null;
 
         const prefs = getTranscriptionPrefs(getAppState());
-        const currentApp = await tryRegisterCurrentAppTarget();
-        const toneId = currentApp?.toneId ?? null;
-
-        sessionRef.current = createTranscriptionSession(prefs, toneId);
+        // Don't fetch current app info here - it's slow (icon capture + encoding).
+        // We'll get the toneId when recording stops via tryRegisterCurrentAppTarget().
+        sessionRef.current = createTranscriptionSession(prefs);
 
         const playAudioPromise = playInteractionChime
           ? invoke<void>("play_audio", { clip: "start_recording_clip" })
@@ -246,13 +246,39 @@ export const RootSideEffects = () => {
 
     try {
       if (session && audio) {
-        const result = await session.finalize(audio);
-        const currentApp = await tryRegisterCurrentAppTarget();
+        const [currentApp, transcribeResult] = await Promise.all([
+          tryRegisterCurrentAppTarget(),
+          session.finalize(audio),
+        ]);
+        const toneId = currentApp?.toneId ?? null;
+        const rawTranscript = transcribeResult.rawTranscript;
 
-        const { transcription } = await storeTranscription({ audio, result });
+        let transcript = rawTranscript;
+        let postProcessMetadata = {};
+        const allWarnings = [...transcribeResult.warnings];
+
+        if (rawTranscript) {
+          const ppResult = await postProcessTranscript({
+            rawTranscript,
+            toneId,
+          });
+          transcript = ppResult.transcript;
+          postProcessMetadata = ppResult.metadata;
+          allWarnings.push(...ppResult.warnings);
+        }
+
+        // don't await so we don't block pasting
+        storeTranscription({
+          audio,
+          rawTranscript,
+          transcript,
+          transcriptionMetadata: transcribeResult.metadata,
+          postProcessMetadata,
+          warnings: allWarnings,
+        });
 
         recordingResult = {
-          transcript: transcription?.transcript ?? null,
+          transcript,
           currentApp,
         };
       }

@@ -1,8 +1,4 @@
-import { Nullable } from "@repo/types";
-import {
-  transcribeAndPostProcessAudio,
-  TranscriptionMetadata,
-} from "../actions/transcribe.actions";
+import { transcribeAudio } from "../actions/transcribe.actions";
 import {
   StopRecordingResponse,
   TranscriptionSession,
@@ -10,13 +6,11 @@ import {
 } from "../types/transcription-session.types";
 import { showErrorSnackbar } from "../actions/app.actions";
 
+/**
+ * Batch transcription session - records audio first, then transcribes all at once.
+ * Only handles transcription, not post-processing.
+ */
 export class BatchTranscriptionSession implements TranscriptionSession {
-  private toneId: Nullable<string>;
-
-  constructor(toneId: Nullable<string>) {
-    this.toneId = toneId;
-  }
-
   async onRecordingStart(_sampleRate: number): Promise<void> {
     // No-op for batch transcription - we process after recording stops
   }
@@ -31,30 +25,27 @@ export class BatchTranscriptionSession implements TranscriptionSession {
 
     if (rate == null || rate <= 0 || payloadSamples.length === 0) {
       return {
-        transcript: null,
         rawTranscript: null,
         metadata: {},
         warnings: [],
       };
     }
 
-    let transcript: string | null = null;
-    let rawTranscript: string | null = null;
     const warnings: string[] = [];
-    let metadata: TranscriptionMetadata = {};
 
     try {
-      const result = await transcribeAndPostProcessAudio({
+      const result = await transcribeAudio({
         samples: payloadSamples,
         sampleRate: rate,
-        toneId: this.toneId,
       });
-      transcript = result.transcript;
-      rawTranscript = result.rawTranscript;
-      warnings.push(...result.warnings);
-      metadata = result.metadata;
+
+      return {
+        rawTranscript: result.rawTranscript,
+        metadata: result.metadata,
+        warnings: [...warnings, ...result.warnings],
+      };
     } catch (error) {
-      console.error("Failed to transcribe or post-process audio", error);
+      console.error("Failed to transcribe audio", error);
       const message =
         error instanceof Error
           ? error.message
@@ -63,14 +54,13 @@ export class BatchTranscriptionSession implements TranscriptionSession {
         warnings.push(`Transcription failed: ${message}`);
         showErrorSnackbar(message);
       }
-    }
 
-    return {
-      transcript,
-      rawTranscript,
-      metadata,
-      warnings,
-    };
+      return {
+        rawTranscript: null,
+        metadata: {},
+        warnings,
+      };
+    }
   }
 
   cleanup(): void {

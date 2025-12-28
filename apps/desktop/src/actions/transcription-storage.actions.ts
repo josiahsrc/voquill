@@ -4,18 +4,23 @@ import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
-import {
-  StopRecordingResponse,
-  TranscriptionSessionResult,
-} from "../types/transcription-session.types";
+import { StopRecordingResponse } from "../types/transcription-session.types";
 import { createId } from "../utils/id.utils";
 import { getMyEffectiveUserId } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
+import {
+  PostProcessMetadata,
+  TranscribeAudioMetadata,
+} from "./transcribe.actions";
 import { addWordsToCurrentUser } from "./user.actions";
 
 export type StoreTranscriptionInput = {
   audio: StopRecordingResponse;
-  result: TranscriptionSessionResult;
+  rawTranscript: string | null;
+  transcript: string | null;
+  transcriptionMetadata: TranscribeAudioMetadata;
+  postProcessMetadata: PostProcessMetadata;
+  warnings: string[];
 };
 
 export type StoreTranscriptionOutput = {
@@ -59,31 +64,34 @@ export const storeTranscription = async (
   }
 
   const transcriptionFailed =
-    input.result.transcript === null && input.result.warnings.length > 0;
+    input.rawTranscript === null && input.warnings.length > 0;
 
   const transcription: Transcription = {
     id: transcriptionId,
     transcript: !transcriptionFailed
-      ? (input.result.transcript ?? "")
+      ? (input.transcript ?? "")
       : "[Transcription Failed]",
     createdAt: dayjs().toISOString(),
     createdByUserId: getMyEffectiveUserId(state),
     isDeleted: false,
     audio: audioSnapshot,
-    modelSize: input.result.metadata.modelSize ?? null,
-    inferenceDevice: input.result.metadata.inferenceDevice ?? null,
-    rawTranscript: input.result.rawTranscript ?? input.result.transcript ?? "",
-    transcriptionPrompt: input.result.metadata.transcriptionPrompt ?? null,
-    postProcessPrompt: input.result.metadata.postProcessPrompt ?? null,
-    transcriptionApiKeyId: input.result.metadata.transcriptionApiKeyId ?? null,
-    postProcessApiKeyId: input.result.metadata.postProcessApiKeyId ?? null,
-    transcriptionMode: input.result.metadata.transcriptionMode ?? null,
-    postProcessMode: input.result.metadata.postProcessMode ?? null,
-    postProcessDevice: input.result.metadata.postProcessDevice ?? null,
+    modelSize: input.transcriptionMetadata.modelSize ?? null,
+    inferenceDevice: input.transcriptionMetadata.inferenceDevice ?? null,
+    rawTranscript: input.rawTranscript ?? input.transcript ?? "",
+    transcriptionPrompt:
+      input.transcriptionMetadata.transcriptionPrompt ?? null,
+    postProcessPrompt: input.postProcessMetadata.postProcessPrompt ?? null,
+    transcriptionApiKeyId:
+      input.transcriptionMetadata.transcriptionApiKeyId ?? null,
+    postProcessApiKeyId: input.postProcessMetadata.postProcessApiKeyId ?? null,
+    transcriptionMode: input.transcriptionMetadata.transcriptionMode ?? null,
+    postProcessMode: input.postProcessMetadata.postProcessMode ?? null,
+    postProcessDevice: input.postProcessMetadata.postProcessDevice ?? null,
     transcriptionDurationMs:
-      input.result.metadata.transcriptionDurationMs ?? null,
-    postprocessDurationMs: input.result.metadata.postprocessDurationMs ?? null,
-    warnings: input.result.warnings.length > 0 ? input.result.warnings : null,
+      input.transcriptionMetadata.transcriptionDurationMs ?? null,
+    postprocessDurationMs:
+      input.postProcessMetadata.postprocessDurationMs ?? null,
+    warnings: input.warnings.length > 0 ? input.warnings : null,
   };
 
   let storedTranscription: Transcription;
@@ -108,9 +116,7 @@ export const storeTranscription = async (
     ];
   });
 
-  const wordsAdded = input.result.transcript
-    ? countWords(input.result.transcript)
-    : 0;
+  const wordsAdded = input.transcript ? countWords(input.transcript) : 0;
   if (wordsAdded > 0) {
     try {
       await addWordsToCurrentUser(wordsAdded);
