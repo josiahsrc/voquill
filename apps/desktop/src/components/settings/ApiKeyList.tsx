@@ -21,6 +21,18 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import {
+  aldeaTestIntegration,
+  assemblyaiTestIntegration,
+  GENERATE_TEXT_MODELS,
+  groqTestIntegration,
+  OPENAI_GENERATE_TEXT_MODELS,
+  OPENAI_TRANSCRIPTION_MODELS,
+  openaiTestIntegration,
+  OPENROUTER_FAVORITE_MODELS,
+  openrouterTestIntegration,
+  TRANSCRIPTION_MODELS,
+} from "@repo/voice-ai";
 import { useCallback, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {
@@ -30,27 +42,13 @@ import {
   updateApiKey,
 } from "../../actions/api-key.actions";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
-import { useAppStore } from "../../store";
 import {
   SettingsApiKey,
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
-import {
-  groqTestIntegration,
-  openaiTestIntegration,
-  aldeaTestIntegration,
-  assemblyaiTestIntegration,
-  openrouterTestIntegration,
-  TRANSCRIPTION_MODELS,
-  GENERATE_TEXT_MODELS,
-  OPENAI_TRANSCRIPTION_MODELS,
-  OPENAI_GENERATE_TEXT_MODELS,
-  OPENROUTER_FAVORITE_MODELS,
-} from "@repo/voice-ai";
-import {
-  OpenRouterModelPicker,
-  OpenRouterProviderRouting,
-} from "./openrouter";
+import { useAppStore } from "../../store";
+import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
+import { OpenRouterProviderRouting } from "./OpenRouterProviderRouting";
 
 export type ApiKeyListContext = "transcription" | "post-processing";
 

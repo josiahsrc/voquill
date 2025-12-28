@@ -24,8 +24,8 @@ import {
   loadOpenRouterModels,
   setOpenRouterSearchQuery,
   toggleOpenRouterFavoriteModel,
-} from "../../../actions/openrouter.actions";
-import { useAppStore } from "../../../store";
+} from "../../actions/openrouter.actions";
+import { useAppStore } from "../../store";
 
 type OpenRouterModelPickerProps = {
   apiKeyId: string;

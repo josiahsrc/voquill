@@ -1,4 +1,4 @@
-import { Nullable, OpenRouterProviderRouting } from "@repo/types";
+import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
@@ -19,6 +19,7 @@ import {
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
+import { BaseOllamaRepo, OllamaRepo } from "./ollama.repo";
 import {
   BaseUserPreferencesRepo,
   LocalUserPreferencesRepo,
@@ -27,19 +28,18 @@ import { BaseStorageRepo, LocalStorageRepo } from "./storage.repo";
 import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
 import {
+  AldeaTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
   CloudTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
-  AldeaTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
 import {
   BaseTranscriptionRepo,
   LocalTranscriptionRepo,
 } from "./transcription.repo";
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
-import { BaseOllamaRepo, OllamaRepo } from "./ollama.repo";
 
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
