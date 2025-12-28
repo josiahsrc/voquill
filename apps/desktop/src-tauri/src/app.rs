@@ -7,6 +7,12 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // When a second instance is launched, bring the existing window to the foreground
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = crate::platform::window::surface_main_window(&window);
+            }
+        }))
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![AUTOSTART_HIDDEN_ARG.into()]),
