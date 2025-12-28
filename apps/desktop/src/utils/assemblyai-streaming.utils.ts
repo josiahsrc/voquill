@@ -1,6 +1,5 @@
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { convertFloat32ToPCM16 } from "@repo/voice-ai";
-import { current } from "immer";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 export type AssemblyAIStreamingSession = {
   finalize: () => Promise<string>;
@@ -36,7 +35,9 @@ export const startAssemblyAIStreaming = async (
     let extra = "";
 
     const getText = () => {
-      return finalTranscript + (extra ? (finalTranscript ? " " : "") + extra : "");
+      return (
+        finalTranscript + (extra ? (finalTranscript ? " " : "") + extra : "")
+      );
     };
 
     const resetBuffers = () => {
@@ -108,7 +109,10 @@ export const startAssemblyAIStreaming = async (
             );
           }
         } catch (error) {
-          console.error("[AssemblyAI WebSocket] Error sending buffered chunk:", error);
+          console.error(
+            "[AssemblyAI WebSocket] Error sending buffered chunk:",
+            error,
+          );
           break;
         }
       }
@@ -127,29 +131,40 @@ export const startAssemblyAIStreaming = async (
     };
 
     const finalize = (): Promise<string> => {
-      return new Promise(async (resolveFinalize) => {
+      return new Promise((resolveFinalize) => {
         // resolveFinalize(finalTranscript);
-        console.log("[AssemblyAI WebSocket] Finalize called, isFinalized:", isFinalized, "ws state:", ws?.readyState);
+        console.log(
+          "[AssemblyAI WebSocket] Finalize called, isFinalized:",
+          isFinalized,
+          "ws state:",
+          ws?.readyState,
+        );
         if (isFinalized) {
-          console.log("[AssemblyAI WebSocket] Already finalized, returning transcript");
+          console.log(
+            "[AssemblyAI WebSocket] Already finalized, returning transcript",
+          );
           resolveFinalize(getText());
           return;
         }
 
         isFinalized = true;
         flushPendingSamples(true);
-        console.log("[AssemblyAI WebSocket] Total chunks sent:", sentChunkCount);
+        console.log(
+          "[AssemblyAI WebSocket] Total chunks sent:",
+          sentChunkCount,
+        );
 
         if (ws && ws.readyState === WebSocket.OPEN) {
           console.log("[AssemblyAI WebSocket] Sending Terminate message...");
           // Send termination message
           ws.send(JSON.stringify({ type: "Terminate" }));
 
-
-
           // Wait a bit for final transcript
           const timeout = setTimeout(() => {
-            console.log("[AssemblyAI WebSocket] Timeout reached, finalizing with transcript:", getText());
+            console.log(
+              "[AssemblyAI WebSocket] Timeout reached, finalizing with transcript:",
+              getText(),
+            );
             cleanup();
             resolveFinalize(getText());
           }, 2000);
@@ -159,9 +174,13 @@ export const startAssemblyAIStreaming = async (
           const currentWs = ws;
           ws.onclose = () => {
             clearTimeout(timeout);
-            if (originalOnClose && currentWs) originalOnClose.call(currentWs, {} as CloseEvent);
+            if (originalOnClose && currentWs)
+              originalOnClose.call(currentWs, {} as CloseEvent);
             cleanup();
-            console.log("[AssemblyAI WebSocket] WebSocket closed, finalizing with transcript:", getText());
+            console.log(
+              "[AssemblyAI WebSocket] WebSocket closed, finalizing with transcript:",
+              getText(),
+            );
             resolveFinalize(getText());
           };
         } else {
@@ -178,19 +197,32 @@ export const startAssemblyAIStreaming = async (
 
     ws.onopen = async () => {
       console.log("[AssemblyAI WebSocket] Connected, sending auth...");
-      console.log("[AssemblyAI WebSocket] API Key present:", !!apiKey, "length:", apiKey?.length ?? 0);
-      console.log("[AssemblyAI WebSocket] API Key preview:", apiKey?.substring(0, 10) + "...");
+      console.log(
+        "[AssemblyAI WebSocket] API Key present:",
+        !!apiKey,
+        "length:",
+        apiKey?.length ?? 0,
+      );
+      console.log(
+        "[AssemblyAI WebSocket] API Key preview:",
+        apiKey?.substring(0, 10) + "...",
+      );
       // Send auth via first message
 
       // Listen for audio chunks from Rust
       try {
-        console.log("[AssemblyAI WebSocket] Setting up audio_chunk listener...");
+        console.log(
+          "[AssemblyAI WebSocket] Setting up audio_chunk listener...",
+        );
         unlisten = await listen<{ samples: number[] }>(
           "audio_chunk",
           (event) => {
             receivedChunkCount++;
             if (receivedChunkCount <= 3 || receivedChunkCount % 10 === 0) {
-              console.log(`[AssemblyAI WebSocket] Received chunk #${receivedChunkCount}, samples:`, event.payload.samples.length);
+              console.log(
+                `[AssemblyAI WebSocket] Received chunk #${receivedChunkCount}, samples:`,
+                event.payload.samples.length,
+              );
             }
             if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
               try {
@@ -202,7 +234,10 @@ export const startAssemblyAIStreaming = async (
                 pendingSampleCount += typedChunk.length;
                 flushPendingSamples(false);
               } catch (error) {
-                console.error("[AssemblyAI WebSocket] Error sending audio chunk:", error);
+                console.error(
+                  "[AssemblyAI WebSocket] Error sending audio chunk:",
+                  error,
+                );
               }
             }
           },
@@ -212,7 +247,10 @@ export const startAssemblyAIStreaming = async (
         // Session is ready
         resolve({ finalize, cleanup });
       } catch (error) {
-        console.error("[AssemblyAI WebSocket] Error setting up listener:", error);
+        console.error(
+          "[AssemblyAI WebSocket] Error setting up listener:",
+          error,
+        );
         cleanup();
         reject(error);
       }
@@ -221,14 +259,21 @@ export const startAssemblyAIStreaming = async (
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("[AssemblyAI WebSocket] Received message:", data.type, data);
+        console.log(
+          "[AssemblyAI WebSocket] Received message:",
+          data.type,
+          data,
+        );
 
         if (data.type === "Turn" && data.end_of_turn) {
           // Final formatted transcript
-          finalTranscript += (finalTranscript ? " " : "") + (data.transcript || "");
-          console.log("[AssemblyAI WebSocket] Final formatted transcript received:", finalTranscript.substring(0, 100));
+          finalTranscript +=
+            (finalTranscript ? " " : "") + (data.transcript || "");
+          console.log(
+            "[AssemblyAI WebSocket] Final formatted transcript received:",
+            finalTranscript.substring(0, 100),
+          );
           if (currentTurn === data.turn_order) {
-
             extra = "";
           }
         } else if (data.type === "Turn") {
@@ -237,7 +282,6 @@ export const startAssemblyAIStreaming = async (
 
             extra = data.transcript;
           }
-          
         }
       } catch (error) {
         console.error("[AssemblyAI WebSocket] Error parsing message:", error);
@@ -251,9 +295,11 @@ export const startAssemblyAIStreaming = async (
     };
 
     ws.onclose = (event) => {
-      console.log("[AssemblyAI WebSocket] WebSocket closed:", { code: event.code, reason: event.reason });
+      console.log("[AssemblyAI WebSocket] WebSocket closed:", {
+        code: event.code,
+        reason: event.reason,
+      });
       cleanup();
-
     };
   });
 };
