@@ -105,7 +105,9 @@ export const StylingRow = ({ id }: StylingRowProps) => {
       {target?.iconPath && (
         <StorageImage
           path={target.iconPath}
-          alt={target?.name ?? intl.formatMessage({ defaultMessage: "App icon" })}
+          alt={
+            target?.name ?? intl.formatMessage({ defaultMessage: "App icon" })
+          }
           size={36}
         />
       )}
