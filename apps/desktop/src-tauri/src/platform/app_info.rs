@@ -11,13 +11,12 @@ use std::os::raw::c_char;
 use base64::{engine::general_purpose, Engine as _};
 use ferrous_focus::{FocusTracker, FocusTrackerConfig, FocusedWindow};
 use image::{
-    codecs::jpeg::JpegEncoder, imageops::FilterType, ExtendedColorType, ImageBuffer, Rgba,
-    RgbaImage,
+    codecs::png::PngEncoder, imageops::FilterType, ExtendedColorType, ImageBuffer, ImageEncoder,
+    Rgba, RgbaImage,
 };
 use thiserror::Error;
 
 const DEFAULT_ICON_SIZE: u32 = 128;
-const JPEG_QUALITY: u8 = 85;
 
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -85,7 +84,7 @@ fn build_app_info(window: FocusedWindow, icon_size: u32) -> Result<CurrentAppInf
         .icon
         .take()
         .unwrap_or_else(|| fallback_icon(icon_size));
-    let encoded_icon = encode_icon_as_jpeg(&icon)?;
+    let encoded_icon = encode_icon_as_png(&icon)?;
 
     Ok(CurrentAppInfo {
         app_name,
@@ -124,17 +123,16 @@ fn blend_rgba(a: Rgba<u8>, b: Rgba<u8>, t: f32) -> Rgba<u8> {
     Rgba([r, g, b_channel, a_channel])
 }
 
-fn encode_icon_as_jpeg(icon: &RgbaImage) -> Result<Vec<u8>, AppInfoError> {
+fn encode_icon_as_png(icon: &RgbaImage) -> Result<Vec<u8>, AppInfoError> {
     let resized = resize_icon_if_needed(icon);
-    let rgb_image = image::DynamicImage::ImageRgba8(resized).to_rgb8();
     let mut buffer = Vec::new();
-    let mut encoder = JpegEncoder::new_with_quality(&mut buffer, JPEG_QUALITY);
+    let encoder = PngEncoder::new(&mut buffer);
     encoder
-        .encode(
-            rgb_image.as_raw(),
-            rgb_image.width(),
-            rgb_image.height(),
-            ExtendedColorType::Rgb8,
+        .write_image(
+            resized.as_raw(),
+            resized.width(),
+            resized.height(),
+            ExtendedColorType::Rgba8,
         )
         .map_err(|err| AppInfoError::Encode(err.to_string()))?;
 

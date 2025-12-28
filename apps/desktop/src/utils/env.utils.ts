@@ -24,7 +24,9 @@ export type Platform = "darwin" | "win32" | "linux";
 
 export const getPlatform = (): Platform => {
   // Allow override via environment variable
-  const override = import.meta.env.VOQUILL_DESKTOP_PLATFORM as Platform | undefined;
+  const override = import.meta.env.VOQUILL_DESKTOP_PLATFORM as
+    | Platform
+    | undefined;
   if (override) {
     return override;
   }

@@ -1,12 +1,17 @@
 import { convertFloat32ToPCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import {
+  StopRecordingResponse,
+  TranscriptionSession,
+  TranscriptionSessionResult,
+} from "../types/transcription-session.types";
 
-export type AssemblyAIStreamingSession = {
+type AssemblyAIStreamingSession = {
   finalize: () => Promise<string>;
   cleanup: () => void;
 };
 
-export const startAssemblyAIStreaming = async (
+const startAssemblyAIStreaming = async (
   apiKey: string,
   sampleRate: number,
 ): Promise<AssemblyAIStreamingSession> => {
@@ -303,3 +308,85 @@ export const startAssemblyAIStreaming = async (
     };
   });
 };
+
+export class AssemblyAITranscriptionSession implements TranscriptionSession {
+  private session: AssemblyAIStreamingSession | null = null;
+  private apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async onRecordingStart(sampleRate: number): Promise<void> {
+    try {
+      console.log("[AssemblyAI] Starting streaming session...");
+      this.session = await startAssemblyAIStreaming(this.apiKey, sampleRate);
+      console.log("[AssemblyAI] Streaming session started successfully");
+    } catch (error) {
+      console.error("[AssemblyAI] Failed to start streaming:", error);
+      // Continue recording anyway - finalize will handle missing session
+    }
+  }
+
+  async finalize(
+    _audio: StopRecordingResponse,
+  ): Promise<TranscriptionSessionResult> {
+    if (!this.session) {
+      return {
+        transcript: null,
+        rawTranscript: null,
+        metadata: {
+          inferenceDevice: "API • AssemblyAI (Streaming)",
+          transcriptionMode: "api",
+        },
+        warnings: ["AssemblyAI streaming session was not established"],
+      };
+    }
+
+    try {
+      console.log("[AssemblyAI] Finalizing streaming session...");
+      const finalizeStart = performance.now();
+      const transcript = await this.session.finalize();
+      const durationMs = Math.round(performance.now() - finalizeStart);
+
+      console.log("[AssemblyAI] Transcript timing:", { durationMs });
+      console.log("[AssemblyAI] Received transcript:", {
+        length: transcript?.length ?? 0,
+        preview:
+          transcript?.substring(0, 50) +
+          (transcript && transcript.length > 50 ? "..." : ""),
+      });
+
+      return {
+        transcript: transcript || null,
+        rawTranscript: transcript || null,
+        metadata: {
+          inferenceDevice: "API • AssemblyAI (Streaming)",
+          transcriptionMode: "api",
+          transcriptionDurationMs: durationMs,
+        },
+        warnings: [],
+      };
+    } catch (error) {
+      console.error("[AssemblyAI] Failed to finalize session:", error);
+      return {
+        transcript: null,
+        rawTranscript: null,
+        metadata: {
+          inferenceDevice: "API • AssemblyAI (Streaming)",
+          transcriptionMode: "api",
+        },
+        warnings: [
+          `AssemblyAI finalization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ],
+      };
+    }
+  }
+
+  cleanup(): void {
+    if (this.session) {
+      this.session.cleanup();
+      this.session = null;
+    }
+  }
+}

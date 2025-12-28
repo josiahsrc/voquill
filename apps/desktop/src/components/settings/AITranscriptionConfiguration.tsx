@@ -30,6 +30,7 @@ import {
 import { maybeArrayElements } from "./AIPostProcessingConfiguration";
 import { ApiKeyList } from "./ApiKeyList";
 import { VoquillCloudSetting } from "./VoquillCloudSetting";
+import { isMacOS } from "../../utils/env.utils";
 
 type ModelOption = {
   value: string;
@@ -64,15 +65,17 @@ export const AITranscriptionConfiguration = ({
   hideCloudOption,
 }: AITranscriptionConfigurationProps) => {
   const transcription = useAppStore((state) => state.settings.aiTranscription);
-  const [gpuEnumerationError, setGpuEnumerationError] = useState<string | null>(null);
+  const [gpuEnumerationError, setGpuEnumerationError] = useState<string | null>(
+    null,
+  );
   const [isEnablingGpu, setIsEnablingGpu] = useState(false);
 
   // Only load GPUs if already enabled (persisted state)
   const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(
-    transcription.gpuEnumerationEnabled
+    transcription.gpuEnumerationEnabled,
   );
 
-  console.log("t", transcription)
+  console.log("t", transcription);
 
   // Single click handler - does everything in one place
   const handleEnableHardwareAcceleration = useCallback(async () => {
@@ -83,7 +86,8 @@ export const AITranscriptionConfiguration = ({
       // Fetch GPUs directly here, don't rely on hook state
       const gpuList = await invoke<GpuInfo[]>("list_gpus");
       const supported = gpuList.filter(
-        (info) => info.backend === "Vulkan" && info.deviceType === "DiscreteGpu"
+        (info) =>
+          info.backend === "Vulkan" && info.deviceType === "DiscreteGpu",
       );
 
       console.log("[gpu] Detected supported GPUs:", supported);
@@ -94,7 +98,7 @@ export const AITranscriptionConfiguration = ({
         console.log("GPUs enabled for transcription processing.");
       } else {
         setGpuEnumerationError(
-          "No compatible GPUs found. Make sure you have a discrete GPU with Vulkan support."
+          "No compatible GPUs found. Make sure you have a discrete GPU with Vulkan support.",
         );
       }
     } catch (error) {
@@ -155,15 +159,23 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          {!transcription.gpuEnumerationEnabled && (
+          {!transcription.gpuEnumerationEnabled && !isMacOS() && (
             <Alert
               severity="info"
               sx={{
                 width: "100%",
-                "& .MuiAlert-message": { width: "100%" }
+                "& .MuiAlert-message": { width: "100%" },
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2, width: "100%" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  width: "100%",
+                }}
+              >
                 <Typography variant="body2" sx={{ pt: 0.25 }}>
                   <FormattedMessage defaultMessage="Have an NVIDIA GPU?" />
                 </Typography>
@@ -185,9 +197,7 @@ export const AITranscriptionConfiguration = ({
           )}
 
           {gpuEnumerationError && (
-            <Alert severity="warning">
-              {gpuEnumerationError}
-            </Alert>
+            <Alert severity="warning">{gpuEnumerationError}</Alert>
           )}
 
           {transcription.gpuEnumerationEnabled && (

@@ -181,6 +181,10 @@
     text-align: center;
   }
 
+  .heroActions {
+    justify-content: center;
+  }
+
   .heroMeta {
     align-items: center;
   }
