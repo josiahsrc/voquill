@@ -1,7 +1,7 @@
 import type { AppState } from "../state/app.state";
 
 const APP_ICON_DIRECTORY = "app-icons";
-const APP_ICON_EXTENSION = ".jpg";
+const APP_ICON_EXTENSION = ".png";
 const FALLBACK_USER_ID = "unknown-user";
 
 export const buildAppIconPath = (state: AppState, targetId: string): string => {
