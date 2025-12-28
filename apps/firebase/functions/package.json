@@ -32,7 +32,7 @@
     "@repo/voice-ai": "*",
     "dayjs": "^1.11.13",
     "env-var": "^7.4.1",
-    "firebase": "^11.1.0",
+    "firebase": "^12.6.0",
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.4.0",
     "googleapis": "^150.0.1",
