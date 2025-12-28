@@ -208,10 +208,6 @@ const persistAiPreferences = async (): Promise<void> => {
     preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
     preferences.postProcessingApiKeyId =
       state.settings.aiPostProcessing.selectedApiKeyId ?? null;
-    preferences.postProcessingOllamaUrl =
-      state.settings.aiPostProcessing.ollamaUrl ?? null;
-    preferences.postProcessingOllamaModel =
-      state.settings.aiPostProcessing.ollamaModel ?? null;
     preferences.transcriptionMode = state.settings.aiTranscription.mode;
     preferences.transcriptionApiKeyId =
       state.settings.aiTranscription.selectedApiKeyId ?? null;
@@ -289,30 +285,6 @@ export const setPreferredPostProcessingApiKeyId = async (
 ): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiPostProcessing.selectedApiKeyId = id;
-  });
-
-  await persistAiPreferences();
-};
-
-export const setPreferredPostProcessingOllamaUrl = async (
-  url: Nullable<string>,
-): Promise<void> => {
-  const normalized = url?.trim() ?? null;
-  produceAppState((draft) => {
-    draft.settings.aiPostProcessing.ollamaUrl =
-      normalized && normalized.length > 0 ? normalized : null;
-  });
-
-  await persistAiPreferences();
-};
-
-export const setPreferredPostProcessingOllamaModel = async (
-  model: Nullable<string>,
-): Promise<void> => {
-  const normalized = model?.trim() ?? null;
-  produceAppState((draft) => {
-    draft.settings.aiPostProcessing.ollamaModel =
-      normalized && normalized.length > 0 ? normalized : null;
   });
 
   await persistAiPreferences();

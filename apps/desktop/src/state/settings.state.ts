@@ -29,10 +29,6 @@ export type SettingsTranscriptionState = {
 export type SettingsPostProcessingState = {
   mode: PostProcessingMode;
   selectedApiKeyId: string | null;
-  ollamaUrl: string | null;
-  ollamaModel: string | null;
-  ollamaModels: string[];
-  isOllamaAvailable: boolean;
   // OpenRouter-specific state
   openRouterModels: OpenRouterModel[];
   openRouterModelsStatus: ActionStatus;
@@ -81,10 +77,6 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,
     selectedApiKeyId: null,
-    ollamaUrl: null,
-    ollamaModel: null,
-    ollamaModels: [],
-    isOllamaAvailable: false,
     openRouterModels: [],
     openRouterModelsStatus: "idle",
     openRouterSearchQuery: "",

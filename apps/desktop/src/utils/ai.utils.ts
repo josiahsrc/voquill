@@ -34,8 +34,4 @@ export const applyAiPreferences = (
   draft.settings.aiPostProcessing.mode = postProcessingMode;
   draft.settings.aiPostProcessing.selectedApiKeyId =
     preferences.postProcessingApiKeyId ?? null;
-  draft.settings.aiPostProcessing.ollamaUrl =
-    preferences.postProcessingOllamaUrl ?? null;
-  draft.settings.aiPostProcessing.ollamaModel =
-    preferences.postProcessingOllamaModel ?? null;
 };

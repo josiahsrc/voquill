@@ -465,6 +465,7 @@ pub async fn api_key_create(
         name,
         provider,
         key,
+        base_url,
     } = api_key;
 
     let protected = protect_api_key(&key);
@@ -482,6 +483,7 @@ pub async fn api_key_create(
         transcription_model: None,
         post_processing_model: None,
         openrouter_config: None,
+        base_url,
     };
 
     crate::db::api_key_queries::insert_api_key(database.pool(), &stored)

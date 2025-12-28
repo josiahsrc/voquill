@@ -13,6 +13,7 @@ type LocalApiKey = {
   transcriptionModel?: string | null;
   postProcessingModel?: string | null;
   openrouterConfig?: string | null;
+  baseUrl?: string | null;
 };
 
 const parseOpenRouterConfig = (
@@ -36,6 +37,7 @@ const fromLocalApiKey = (apiKey: LocalApiKey): ApiKey => ({
   transcriptionModel: apiKey.transcriptionModel ?? null,
   postProcessingModel: apiKey.postProcessingModel ?? null,
   openRouterConfig: parseOpenRouterConfig(apiKey.openrouterConfig),
+  baseUrl: apiKey.baseUrl ?? null,
 });
 
 export type CreateApiKeyPayload = {
@@ -43,6 +45,7 @@ export type CreateApiKeyPayload = {
   name: string;
   provider: ApiKeyProvider;
   key: string;
+  baseUrl?: string;
 };
 
 export type UpdateApiKeyPayload = {
@@ -50,6 +53,7 @@ export type UpdateApiKeyPayload = {
   transcriptionModel?: string | null;
   postProcessingModel?: string | null;
   openRouterConfig?: OpenRouterConfig | null;
+  baseUrl?: string | null;
 };
 
 export abstract class BaseApiKeyRepo extends BaseRepo {

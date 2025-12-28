@@ -7,6 +7,7 @@ export const API_KEY_PROVIDERS = [
   "aldea",
   "assemblyai",
   "openrouter",
+  "ollama",
 ] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 
@@ -20,4 +21,5 @@ export type ApiKey = {
   transcriptionModel?: string | null;
   postProcessingModel?: string | null;
   openRouterConfig?: Nullable<OpenRouterConfig>;
+  baseUrl?: string | null;
 };

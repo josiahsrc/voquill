@@ -47,6 +47,9 @@ import {
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
 import { useAppStore } from "../../store";
+import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
+import { OllamaRepo } from "../../repos/ollama.repo";
+import { OllamaModelPicker } from "./OllamaModelPicker";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { OpenRouterProviderRouting } from "./OpenRouterProviderRouting";
 
@@ -63,6 +66,7 @@ type AddApiKeyCardProps = {
     name: string,
     provider: SettingsApiKeyProvider,
     key: string,
+    baseUrl?: string,
   ) => Promise<void>;
   onCancel: () => void;
   context: ApiKeyListContext;
@@ -72,24 +76,32 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [name, setName] = useState("");
   const [provider, setProvider] = useState<SettingsApiKeyProvider>("groq");
   const [key, setKey] = useState("");
+  const [ollamaUrl, setOllamaUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const isOllama = provider === "ollama";
+  const canSave = isOllama ? !!name : !!name && !!key;
+
   const handleSave = useCallback(async () => {
-    if (!name || !key || saving) {
+    if (!canSave || saving) {
       return;
     }
 
     setSaving(true);
     try {
-      await onSave(name, provider, key);
+      // For OLLAMA, use a dummy key since it doesn't require authentication
+      const keyToSave = isOllama ? "ollama" : key;
+      const baseUrl = isOllama ? ollamaUrl || OLLAMA_DEFAULT_URL : undefined;
+      await onSave(name, provider, keyToSave, baseUrl);
       setName("");
       setKey("");
+      setOllamaUrl("");
     } catch (error) {
       console.error("Failed to save API key", error);
     } finally {
       setSaving(false);
     }
-  }, [name, key, provider, onSave, saving]);
+  }, [canSave, isOllama, name, key, ollamaUrl, provider, onSave, saving]);
 
   return (
     <Paper
@@ -123,23 +135,41 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       >
         <MenuItem value="groq">Groq</MenuItem>
         <MenuItem value="openai">OpenAI</MenuItem>
-        {/* OpenRouter only supports LLM, not transcription */}
+        {/* OpenRouter and Ollama only support LLM, not transcription */}
         {context === "post-processing" && (
           <MenuItem value="openrouter">OpenRouter</MenuItem>
+        )}
+        {context === "post-processing" && (
+          <MenuItem value="ollama">Ollama</MenuItem>
         )}
         <MenuItem value="aldea">Aldea</MenuItem>
         <MenuItem value="assemblyai">AssemblyAI</MenuItem>
       </TextField>
-      <TextField
-        label={<FormattedMessage defaultMessage="API key" />}
-        value={key}
-        onChange={(event) => setKey(event.target.value)}
-        placeholder="Paste your API key"
-        size="small"
-        fullWidth
-        type="password"
-        disabled={saving}
-      />
+      {isOllama ? (
+        <TextField
+          label={<FormattedMessage defaultMessage="Ollama URL" />}
+          value={ollamaUrl}
+          onChange={(event) => setOllamaUrl(event.target.value)}
+          placeholder={OLLAMA_DEFAULT_URL}
+          size="small"
+          fullWidth
+          disabled={saving}
+          helperText={
+            <FormattedMessage defaultMessage="Leave empty to use the default URL" />
+          }
+        />
+      ) : (
+        <TextField
+          label={<FormattedMessage defaultMessage="API key" />}
+          value={key}
+          onChange={(event) => setKey(event.target.value)}
+          placeholder="Paste your API key"
+          size="small"
+          fullWidth
+          type="password"
+          disabled={saving}
+        />
+      )}
       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
         <Button
           variant="outlined"
@@ -153,7 +183,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
           variant="contained"
           size="small"
           onClick={handleSave}
-          disabled={!name || !key || saving}
+          disabled={!canSave || saving}
         >
           {saving ? (
             <FormattedMessage defaultMessage="Saving..." />
@@ -167,6 +197,12 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
 };
 
 const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
+  // OLLAMA doesn't need an API key, just check server availability
+  if (apiKey.provider === "ollama") {
+    const repo = new OllamaRepo(apiKey.baseUrl || OLLAMA_DEFAULT_URL);
+    return repo.checkAvailability();
+  }
+
   if (!apiKey.keyFull) {
     throw new Error("The stored API key value is unavailable.");
   }
@@ -203,6 +239,9 @@ const getModelsForProvider = (
     case "openrouter":
       // OpenRouter doesn't support transcription, only post-processing
       return context === "transcription" ? [] : OPENROUTER_FAVORITE_MODELS;
+    case "ollama":
+      // Ollama models are fetched dynamically via OllamaModelPicker
+      return [];
     case "aldea":
       return [];
     case "assemblyai":
@@ -337,6 +376,15 @@ const ApiKeyCard = ({
             disabled={testing || deleting}
           />
         </Box>
+      ) : apiKey.provider === "ollama" && context === "post-processing" ? (
+        <Box onClick={(e) => e.stopPropagation()}>
+          <OllamaModelPicker
+            baseUrl={apiKey.baseUrl ?? null}
+            selectedModel={currentModel}
+            onModelSelect={onModelChange}
+            disabled={testing || deleting}
+          />
+        </Box>
       ) : models.length > 0 ? (
         <FormControl fullWidth size="small">
           <InputLabel id={`model-select-label-${apiKey.id}`}>
@@ -375,9 +423,12 @@ export const ApiKeyList = ({
 }: ApiKeyListProps) => {
   const allApiKeys = useAppStore((state) => state.settings.apiKeys);
 
-  // Filter API keys based on context - OpenRouter only supports post-processing
+  // Filter API keys based on context - OpenRouter and Ollama only support post-processing
   const apiKeys = allApiKeys.filter((key) => {
-    if (context === "transcription" && key.provider === "openrouter") {
+    if (
+      context === "transcription" &&
+      (key.provider === "openrouter" || key.provider === "ollama")
+    ) {
       return false;
     }
     return true;
@@ -407,12 +458,18 @@ export const ApiKeyList = ({
   }, [apiKeys, selectedApiKeyId, onChange]);
 
   const handleAddApiKey = useCallback(
-    async (name: string, provider: SettingsApiKeyProvider, key: string) => {
+    async (
+      name: string,
+      provider: SettingsApiKeyProvider,
+      key: string,
+      baseUrl?: string,
+    ) => {
       const created = await createApiKey({
         id: generateApiKeyId(),
         name,
         provider,
         key,
+        baseUrl,
       });
 
       onChange(created.id);

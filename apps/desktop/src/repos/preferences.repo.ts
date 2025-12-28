@@ -14,13 +14,26 @@ type LocalUserPreferences = {
   transcriptionApiKeyId: Nullable<string>;
   transcriptionDevice: Nullable<string>;
   transcriptionModelSize: Nullable<string>;
-  postProcessingMode: Nullable<PostProcessingMode>;
+  postProcessingMode: Nullable<string>;
   postProcessingApiKeyId: Nullable<string>;
   postProcessingOllamaUrl: Nullable<string>;
   postProcessingOllamaModel: Nullable<string>;
   activeToneId: Nullable<string>;
   gotStartedAt: Nullable<number>;
   gpuEnumerationEnabled: boolean;
+};
+
+// Normalize post-processing mode for backwards compatibility
+// "ollama" mode is no longer supported - treat it as "none" (user needs to re-add Ollama via API keys)
+const normalizePostProcessingMode = (
+  mode: Nullable<string>,
+): Nullable<PostProcessingMode> => {
+  if (!mode) return null;
+  if (mode === "api" || mode === "cloud" || mode === "none") {
+    return mode;
+  }
+  // "ollama" or any other unknown mode falls back to "none"
+  return "none";
 };
 
 const fromLocalPreferences = (
@@ -31,7 +44,9 @@ const fromLocalPreferences = (
   transcriptionApiKeyId: preferences.transcriptionApiKeyId,
   transcriptionDevice: preferences.transcriptionDevice,
   transcriptionModelSize: preferences.transcriptionModelSize,
-  postProcessingMode: preferences.postProcessingMode,
+  postProcessingMode: normalizePostProcessingMode(
+    preferences.postProcessingMode,
+  ),
   postProcessingApiKeyId: preferences.postProcessingApiKeyId,
   postProcessingOllamaUrl: preferences.postProcessingOllamaUrl,
   postProcessingOllamaModel: preferences.postProcessingOllamaModel,

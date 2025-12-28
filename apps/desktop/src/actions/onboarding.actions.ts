@@ -127,14 +127,8 @@ export const submitOnboarding = async () => {
         postProcessingPreference.mode === "api"
           ? postProcessingPreference.apiKeyId
           : null,
-      postProcessingOllamaUrl:
-        postProcessingPreference.mode === "ollama"
-          ? postProcessingPreference.ollamaUrl
-          : null,
-      postProcessingOllamaModel:
-        postProcessingPreference.mode === "ollama"
-          ? postProcessingPreference.ollamaModel
-          : null,
+      postProcessingOllamaUrl: null,
+      postProcessingOllamaModel: null,
       activeToneId: null,
       gotStartedAt: null,
     };

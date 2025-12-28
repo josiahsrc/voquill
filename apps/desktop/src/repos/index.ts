@@ -83,9 +83,8 @@ export const getStorageRepo = (): BaseStorageRepo => {
   return new LocalStorageRepo();
 };
 
-export const getOllamaRepo = (): BaseOllamaRepo => {
-  const config = getAppState().settings.aiPostProcessing;
-  const url = config.ollamaUrl || OLLAMA_DEFAULT_URL;
+export const getOllamaRepo = (baseUrl?: string): BaseOllamaRepo => {
+  const url = baseUrl || OLLAMA_DEFAULT_URL;
   return new OllamaRepo(url);
 };
 
@@ -105,9 +104,19 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
       warnings: prefs.warnings,
     };
   } else if (prefs.mode === "api") {
-    let repo: BaseGenerateTextRepo;
+    let repo: BaseGenerateTextRepo | null = null;
 
-    if (prefs.provider === "openrouter") {
+    if (prefs.provider === "ollama") {
+      // Get Ollama-specific config from the API key
+      const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKey?.baseUrl || OLLAMA_DEFAULT_URL;
+      const model = prefs.postProcessingModel;
+      if (model) {
+        repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model);
+      } else {
+        prefs.warnings.push("No model configured for Ollama post-processing.");
+      }
+    } else if (prefs.provider === "openrouter") {
       // Get OpenRouter-specific config from the API key
       const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
       const config = apiKey?.openRouterConfig;
@@ -134,21 +143,6 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
       apiKeyId: prefs.apiKeyId,
       warnings: prefs.warnings,
     };
-  } else if (prefs.mode === "ollama") {
-    const url = `${prefs.ollamaUrl || OLLAMA_DEFAULT_URL}/v1`;
-    const model = prefs.ollamaModel || null;
-    if (model) {
-      const repo = new OllamaGenerateTextRepo(url, model);
-      return {
-        repo,
-        apiKeyId: null,
-        warnings: prefs.warnings,
-      };
-    } else {
-      prefs.warnings.push(
-        "No Ollama model configured for Ollama post-processing.",
-      );
-    }
   }
 
   return { repo: null, apiKeyId: null, warnings: prefs.warnings };
