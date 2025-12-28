@@ -7,7 +7,7 @@ import {
   type TranscriptionMode,
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
-import { ApiKey, ApiKeyProvider } from "@repo/types";
+import { ApiKey, ApiKeyProvider, OpenRouterModel, OpenRouterProvider } from "@repo/types";
 
 export type SettingsApiKeyProvider = ApiKeyProvider;
 
@@ -28,6 +28,12 @@ export type SettingsPostProcessingState = {
   ollamaModel: string | null;
   ollamaModels: string[];
   isOllamaAvailable: boolean;
+  // OpenRouter-specific state
+  openRouterModels: OpenRouterModel[];
+  openRouterModelsStatus: ActionStatus;
+  openRouterSearchQuery: string;
+  openRouterProviders: OpenRouterProvider[];
+  openRouterProvidersStatus: ActionStatus;
 };
 
 export type SettingsState = {
@@ -74,6 +80,11 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     ollamaModel: null,
     ollamaModels: [],
     isOllamaAvailable: false,
+    openRouterModels: [],
+    openRouterModelsStatus: "idle",
+    openRouterSearchQuery: "",
+    openRouterProviders: [],
+    openRouterProvidersStatus: "idle",
   },
   apiKeys: [],
   apiKeysStatus: "idle",

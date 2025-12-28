@@ -4,8 +4,8 @@ use crate::domain::{ApiKey, ApiKeyUpdateRequest};
 
 pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey, sqlx::Error> {
     sqlx::query(
-        "INSERT INTO api_keys (id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        "INSERT INTO api_keys (id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model, openrouter_config)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
     )
     .bind(&api_key.id)
     .bind(&api_key.name)
@@ -17,6 +17,7 @@ pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey
     .bind(&api_key.key_suffix)
     .bind(&api_key.transcription_model)
     .bind(&api_key.post_processing_model)
+    .bind(&api_key.openrouter_config)
     .execute(&pool)
     .await?;
 
@@ -25,7 +26,7 @@ pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey
 
 pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error> {
     let rows = sqlx::query(
-        "SELECT id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model
+        "SELECT id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model, openrouter_config
          FROM api_keys
          ORDER BY created_at DESC",
     )
@@ -45,6 +46,7 @@ pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error
             key_suffix: row.get::<Option<String>, _>("key_suffix"),
             transcription_model: row.get::<Option<String>, _>("transcription_model"),
             post_processing_model: row.get::<Option<String>, _>("post_processing_model"),
+            openrouter_config: row.get::<Option<String>, _>("openrouter_config"),
         })
         .collect();
 
@@ -53,11 +55,12 @@ pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error
 
 pub async fn update_api_key(pool: SqlitePool, request: &ApiKeyUpdateRequest) -> Result<(), sqlx::Error> {
     sqlx::query(
-        "UPDATE api_keys SET transcription_model = ?2, post_processing_model = ?3 WHERE id = ?1",
+        "UPDATE api_keys SET transcription_model = ?2, post_processing_model = ?3, openrouter_config = ?4 WHERE id = ?1",
     )
     .bind(&request.id)
     .bind(&request.transcription_model)
     .bind(&request.post_processing_model)
+    .bind(&request.openrouter_config)
     .execute(&pool)
     .await?;
 

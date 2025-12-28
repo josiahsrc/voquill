@@ -1,10 +1,12 @@
 import { invokeHandler } from "@repo/functions";
-import { JsonResponse, Nullable } from "@repo/types";
+import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
   groqGenerateTextResponse,
   GenerateTextModel,
   openaiGenerateTextResponse,
   OpenAIGenerateTextModel,
+  openrouterGenerateTextResponse,
+  OPENROUTER_DEFAULT_MODEL,
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
@@ -133,6 +135,42 @@ export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • Ollama",
+      },
+    };
+  }
+}
+
+export class OpenRouterGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private model: string;
+  private providerRouting?: OpenRouterProviderRouting;
+
+  constructor(
+    apiKey: string,
+    model: string | null,
+    providerRouting?: OpenRouterProviderRouting,
+  ) {
+    super();
+    this.apiKey = apiKey;
+    this.model = model ?? OPENROUTER_DEFAULT_MODEL;
+    this.providerRouting = providerRouting;
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await openrouterGenerateTextResponse({
+      apiKey: this.apiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+      providerRouting: this.providerRouting,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • OpenRouter",
       },
     };
   }

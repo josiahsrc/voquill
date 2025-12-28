@@ -1,4 +1,5 @@
-import { Nullable } from "@repo/types";
+import { Nullable, OpenRouterProviderRouting } from "@repo/types";
+import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import {
@@ -15,6 +16,7 @@ import {
   GroqGenerateTextRepo,
   OllamaGenerateTextRepo,
   OpenAIGenerateTextRepo,
+  OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
 import {
@@ -94,7 +96,8 @@ export type GenerateTextRepoOutput = {
 };
 
 export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
-  const prefs = getGenerativePrefs(getAppState());
+  const state = getAppState();
+  const prefs = getGenerativePrefs(state);
   if (prefs.mode === "cloud") {
     return {
       repo: new CloudGenerateTextRepo(),
@@ -102,16 +105,40 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
       warnings: prefs.warnings,
     };
   } else if (prefs.mode === "api") {
-    const repo =
-      prefs.provider === "openai"
-        ? new OpenAIGenerateTextRepo(
-            prefs.apiKeyValue,
-            prefs.postProcessingModel,
-          )
-        : new GroqGenerateTextRepo(
-            prefs.apiKeyValue,
-            prefs.postProcessingModel,
-          );
+    let repo: BaseGenerateTextRepo;
+
+    if (prefs.provider === "openrouter") {
+      // Get OpenRouter-specific config from the API key
+      const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
+      let providerRouting: OpenRouterProviderRouting | undefined;
+      if (apiKey?.openRouterConfig) {
+        try {
+          const config =
+            typeof apiKey.openRouterConfig === "string"
+              ? JSON.parse(apiKey.openRouterConfig)
+              : apiKey.openRouterConfig;
+          providerRouting = config?.providerRouting ?? undefined;
+        } catch {
+          // Ignore JSON parse errors
+        }
+      }
+      repo = new OpenRouterGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
+        providerRouting,
+      );
+    } else if (prefs.provider === "openai") {
+      repo = new OpenAIGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
+      );
+    } else {
+      repo = new GroqGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
+      );
+    }
+
     return {
       repo,
       apiKeyId: prefs.apiKeyId,
