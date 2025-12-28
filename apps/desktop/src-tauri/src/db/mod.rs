@@ -66,6 +66,8 @@ pub const APP_TARGET_PASTE_KEYBIND_MIGRATION_SQL: &str =
     include_str!("migrations/032_app_target_paste_keybind.sql");
 pub const TRANSCRIPTION_TIMING_METRICS_MIGRATION_SQL: &str =
     include_str!("migrations/033_transcription_timing_metrics.sql");
+pub const API_KEY_OPENROUTER_CONFIG_MIGRATION_SQL: &str =
+    include_str!("migrations/034_api_key_openrouter_config.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -265,6 +267,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 33,
             description: "add_transcription_timing_metrics",
             sql: TRANSCRIPTION_TIMING_METRICS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 34,
+            description: "add_api_key_openrouter_config",
+            sql: API_KEY_OPENROUTER_CONFIG_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

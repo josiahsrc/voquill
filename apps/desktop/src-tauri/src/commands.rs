@@ -481,6 +481,7 @@ pub async fn api_key_create(
         key_suffix: protected.key_suffix,
         transcription_model: None,
         post_processing_model: None,
+        openrouter_config: None,
     };
 
     crate::db::api_key_queries::insert_api_key(database.pool(), &stored)

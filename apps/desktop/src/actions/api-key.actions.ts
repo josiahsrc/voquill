@@ -129,6 +129,9 @@ export const updateApiKey = async (
         if (payload.postProcessingModel !== undefined) {
           apiKey.postProcessingModel = payload.postProcessingModel ?? null;
         }
+        if (payload.openRouterConfig !== undefined) {
+          apiKey.openRouterConfig = payload.openRouterConfig ?? null;
+        }
       }
       const index = draft.settings.apiKeys.findIndex(
         (apiKey) => apiKey.id === payload.id,
@@ -141,6 +144,10 @@ export const updateApiKey = async (
         if (payload.postProcessingModel !== undefined) {
           draft.settings.apiKeys[index].postProcessingModel =
             payload.postProcessingModel ?? null;
+        }
+        if (payload.openRouterConfig !== undefined) {
+          draft.settings.apiKeys[index].openRouterConfig =
+            payload.openRouterConfig ?? null;
         }
       }
     });
