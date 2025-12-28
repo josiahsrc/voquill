@@ -110,18 +110,8 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
     if (prefs.provider === "openrouter") {
       // Get OpenRouter-specific config from the API key
       const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
-      let providerRouting: OpenRouterProviderRouting | undefined;
-      if (apiKey?.openRouterConfig) {
-        try {
-          const config =
-            typeof apiKey.openRouterConfig === "string"
-              ? JSON.parse(apiKey.openRouterConfig)
-              : apiKey.openRouterConfig;
-          providerRouting = config?.providerRouting ?? undefined;
-        } catch {
-          // Ignore JSON parse errors
-        }
-      }
+      const config = apiKey?.openRouterConfig;
+      const providerRouting = config?.providerRouting ?? undefined;
       repo = new OpenRouterGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
