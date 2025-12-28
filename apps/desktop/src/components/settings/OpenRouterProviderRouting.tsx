@@ -26,8 +26,8 @@ import {
   getOpenRouterConfigForKey,
   loadOpenRouterProviders,
   updateOpenRouterProviderRouting,
-} from "../../../actions/openrouter.actions";
-import { useAppStore } from "../../../store";
+} from "../../actions/openrouter.actions";
+import { useAppStore } from "../../store";
 
 type OpenRouterProviderRoutingProps = {
   apiKeyId: string;

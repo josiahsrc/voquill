@@ -20,12 +20,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { Virtuoso } from "react-virtuoso";
 import {
+  getOpenRouterConfigForKey,
   loadOpenRouterModels,
   setOpenRouterSearchQuery,
   toggleOpenRouterFavoriteModel,
-  getOpenRouterConfigForKey,
-} from "../../../actions/openrouter.actions";
-import { useAppStore } from "../../../store";
+} from "../../actions/openrouter.actions";
+import { useAppStore } from "../../store";
 
 type OpenRouterModelPickerProps = {
   apiKeyId: string;
@@ -41,6 +41,12 @@ type ModelRowProps = {
   onSelect: () => void;
   onToggleFavorite: () => void;
 };
+
+// Types for unified list items
+type ListItem =
+  | { type: "header"; label: string; count: number }
+  | { type: "model"; model: OpenRouterModel; isFavorite: boolean }
+  | { type: "divider" };
 
 const ModelRow = ({
   model,
@@ -147,7 +153,7 @@ export const OpenRouterModelPicker = ({
       return new Set(userFavorites);
     }
     // No customization yet - use defaults
-    return new Set<string>([...OPENROUTER_FAVORITE_MODELS]);
+    return new Set<string>(OPENROUTER_FAVORITE_MODELS);
   }, [userFavorites]);
 
   // Filter models based on search query
@@ -171,6 +177,34 @@ export const OpenRouterModelPicker = ({
   const otherModels = useMemo(() => {
     return filteredModels.filter((m) => !allFavoriteIds.has(m.id));
   }, [filteredModels, allFavoriteIds]);
+
+  // Build unified list items for single scrollable list
+  const listItems = useMemo((): ListItem[] => {
+    const items: ListItem[] = [];
+
+    if (favoriteModels.length > 0) {
+      items.push({
+        type: "header",
+        label: "Favorites",
+        count: favoriteModels.length,
+      });
+      favoriteModels.forEach((model) => {
+        items.push({ type: "model", model, isFavorite: true });
+      });
+      items.push({ type: "divider" });
+    }
+
+    items.push({
+      type: "header",
+      label: "All Models",
+      count: otherModels.length,
+    });
+    otherModels.forEach((model) => {
+      items.push({ type: "model", model, isFavorite: false });
+    });
+
+    return items;
+  }, [favoriteModels, otherModels]);
 
   // Get selected model name for collapsed display
   const selectedModelData = useMemo(() => {
@@ -304,105 +338,56 @@ export const OpenRouterModelPicker = ({
         </Stack>
       )}
 
-      {/* Models list */}
+      {/* Models list - single scrollable container */}
       {modelsStatus === "success" && (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            height: 320,
-            overflow: "hidden",
-          }}
-        >
-          {/* Favorites section - scrollable if too many */}
-          {favoriteModels.length > 0 && (
-            <Box sx={{ flexShrink: 0, maxHeight: 160, display: "flex", flexDirection: "column" }}>
-              <Box sx={{ px: 1.5, pt: 1.5, pb: 0.5, flexShrink: 0 }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  fontWeight={600}
-                >
-                  <FormattedMessage defaultMessage="Favorites" />
-                  <Typography
-                    component="span"
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ ml: 0.5 }}
-                  >
-                    ({favoriteModels.length})
-                  </Typography>
-                </Typography>
-              </Box>
-              <Box sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
-                {favoriteModels.map((model) => (
+        <Box sx={{ height: 320 }}>
+          {listItems.length > 1 ? (
+            <Virtuoso
+              style={{ height: "100%" }}
+              data={listItems}
+              itemContent={(_index, item) => {
+                if (item.type === "header") {
+                  return (
+                    <Box sx={{ px: 1.5, pt: 1.5, pb: 0.5 }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                      >
+                        {item.label}
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ ml: 0.5 }}
+                        >
+                          ({item.count})
+                        </Typography>
+                      </Typography>
+                    </Box>
+                  );
+                }
+                if (item.type === "divider") {
+                  return <Divider sx={{ my: 1 }} />;
+                }
+                return (
                   <ModelRow
-                    key={model.id}
-                    model={model}
-                    selected={selectedModel === model.id}
-                    isFavorite={true}
-                    onSelect={() => handleModelSelect(model.id)}
-                    onToggleFavorite={() => handleToggleFavorite(model.id)}
+                    model={item.model}
+                    selected={selectedModel === item.model.id}
+                    isFavorite={item.isFavorite}
+                    onSelect={() => handleModelSelect(item.model.id)}
+                    onToggleFavorite={() => handleToggleFavorite(item.model.id)}
                   />
-                ))}
-              </Box>
-              <Divider sx={{ mt: 1, flexShrink: 0 }} />
-            </Box>
-          )}
-
-          {/* All models section - fills remaining space */}
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
-            <Box sx={{ px: 1.5, pt: favoriteModels.length > 0 ? 0.5 : 1.5, pb: 0.5, flexShrink: 0 }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                fontWeight={600}
-              >
-                <FormattedMessage defaultMessage="All Models" />
-                {filteredModels.length > 0 && (
-                  <Typography
-                    component="span"
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ ml: 0.5 }}
-                  >
-                    ({otherModels.length})
-                  </Typography>
-                )}
+                );
+              }}
+            />
+          ) : (
+            <Box sx={{ px: 1.5, py: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                <FormattedMessage defaultMessage="No models found" />
               </Typography>
             </Box>
-            {otherModels.length > 0 ? (
-              <Box sx={{ flex: 1, minHeight: 0 }}>
-                <Virtuoso
-                  style={{ height: "100%" }}
-                  data={otherModels}
-                  itemContent={(_index, model) => (
-                    <ModelRow
-                      model={model}
-                      selected={selectedModel === model.id}
-                      isFavorite={allFavoriteIds.has(model.id)}
-                      onSelect={() => handleModelSelect(model.id)}
-                      onToggleFavorite={() => handleToggleFavorite(model.id)}
-                    />
-                  )}
-                />
-              </Box>
-            ) : (
-              <Box sx={{ px: 1.5, py: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  <FormattedMessage defaultMessage="No models found" />
-                </Typography>
-              </Box>
-            )}
-          </Box>
+          )}
         </Box>
       )}
     </Paper>
