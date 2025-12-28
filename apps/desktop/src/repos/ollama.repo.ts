@@ -1,3 +1,4 @@
+import { fetch } from "@tauri-apps/plugin-http";
 import { BaseRepo } from "./base.repo";
 
 export abstract class BaseOllamaRepo extends BaseRepo {
@@ -24,7 +25,7 @@ export class OllamaRepo extends BaseOllamaRepo {
 
   async getAvailableModels(): Promise<string[]> {
     // Hitting the Ollama tags endpoint mirrors the `ollama list` CLI call.
-    const response = await fetch(new URL("/api/tags", this.ollamaUrl));
+    const response = await fetch(new URL("/api/tags", this.ollamaUrl).href);
     if (!response.ok) {
       throw new Error(
         `Unable to fetch Ollama models (status ${response.status})`,

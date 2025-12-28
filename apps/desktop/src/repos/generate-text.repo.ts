@@ -6,6 +6,7 @@ import {
   openaiGenerateTextResponse,
   OpenAIGenerateTextModel,
 } from "@repo/voice-ai";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
 import { BaseRepo } from "./base.repo";
 
@@ -124,13 +125,14 @@ export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
       prompt: input.prompt,
       system: input.system ?? undefined,
       jsonResponse: input.jsonResponse,
+      customFetch: tauriFetch,
     });
 
     return {
       text: response.text,
       metadata: {
         postProcessingMode: "api",
-        inferenceDevice: "API • OpenAI",
+        inferenceDevice: "API • Ollama",
       },
     };
   }

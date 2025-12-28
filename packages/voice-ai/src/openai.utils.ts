@@ -42,7 +42,11 @@ const contentToString = (
     .trim();
 };
 
-const createClient = (apiKey: string, baseUrl?: string) => {
+const createClient = (
+  apiKey: string,
+  baseUrl?: string,
+  customFetch?: typeof globalThis.fetch,
+) => {
   // `dangerouslyAllowBrowser` is needed because this runs on a desktop tauri app.
   // The Tauri app doesn't run in a web browser and encrypts API keys locally, so this
   // is safe.
@@ -50,6 +54,7 @@ const createClient = (apiKey: string, baseUrl?: string) => {
     apiKey: apiKey.trim(),
     baseURL: baseUrl,
     dangerouslyAllowBrowser: true,
+    fetch: customFetch,
   });
 };
 
@@ -105,6 +110,7 @@ export type OpenAIGenerateTextArgs = {
   prompt: string;
   imageUrls?: string[];
   jsonResponse?: JsonResponse;
+  customFetch?: typeof globalThis.fetch;
 };
 
 export type OpenAIGenerateResponseOutput = {
@@ -120,11 +126,12 @@ export const openaiGenerateTextResponse = async ({
   prompt,
   imageUrls = [],
   jsonResponse,
+  customFetch,
 }: OpenAIGenerateTextArgs): Promise<OpenAIGenerateResponseOutput> => {
   return retry({
     retries: 3,
     fn: async () => {
-      const client = createClient(apiKey, baseUrl);
+      const client = createClient(apiKey, baseUrl, customFetch);
 
       const messages: ChatCompletionMessageParam[] = [];
       if (system) {
