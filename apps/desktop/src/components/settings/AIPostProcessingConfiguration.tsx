@@ -48,12 +48,12 @@ export const AIPostProcessingConfiguration = ({
             [
               {
                 value: "cloud",
-                label: "Voquill Cloud",
+                label: "Voquill",
               },
             ],
           ),
-          { value: "none", label: "Disabled" },
-          { value: "api", label: "API key" },
+          { value: "api", label: "API" },
+          { value: "none", label: "Off" },
         ]}
         ariaLabel="Post-processing mode"
       />

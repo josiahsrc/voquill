@@ -147,12 +147,12 @@ export const AITranscriptionConfiguration = ({
             [
               {
                 value: "cloud",
-                label: "Voquill Cloud",
+                label: "Voquill",
               },
             ],
           ),
-          { value: "local", label: "Local processing" },
-          { value: "api", label: "API key" },
+          { value: "api", label: "API" },
+          { value: "local", label: "Local" },
         ]}
         ariaLabel="Processing mode"
       />

@@ -1,6 +1,5 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import {
   Box,
   Button,
@@ -12,7 +11,6 @@ import {
   FormControl,
   IconButton,
   InputLabel,
-  Link,
   MenuItem,
   Paper,
   Select,
@@ -42,13 +40,13 @@ import {
   updateApiKey,
 } from "../../actions/api-key.actions";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { OllamaRepo } from "../../repos/ollama.repo";
 import {
   SettingsApiKey,
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
 import { useAppStore } from "../../store";
 import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
-import { OllamaRepo } from "../../repos/ollama.repo";
 import { OllamaModelPicker } from "./OllamaModelPicker";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { OpenRouterProviderRouting } from "./OpenRouterProviderRouting";
@@ -594,24 +592,6 @@ export const ApiKeyList = ({
 
   return (
     <Stack spacing={1} sx={{ width: "100%" }}>
-      <Stack direction="row" spacing={0.5} alignItems="center">
-        <Typography variant="body2" color="text.secondary">
-          <FormattedMessage defaultMessage="Grab an API key from the" />
-        </Typography>
-        <Link
-          href="https://console.groq.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 0.5,
-          }}
-        >
-          <FormattedMessage defaultMessage="Groq Console" />
-          <OpenInNewIcon sx={{ fontSize: 16 }} />
-        </Link>
-      </Stack>
       {shouldShowLoading ? (
         loadingState
       ) : shouldShowError ? (
