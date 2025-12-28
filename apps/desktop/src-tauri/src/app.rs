@@ -175,6 +175,7 @@ fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .skip_taskbar(true)
         .resizable(false)
         .shadow(false)
+        .focusable(false)
         .inner_size(OVERLAY_WINDOW_WIDTH, OVERLAY_WINDOW_HEIGHT)
         .build()?;
 
