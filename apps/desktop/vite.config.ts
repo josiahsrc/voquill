@@ -20,13 +20,13 @@ export default defineConfig(async () => {
                   id: string | undefined,
                   defaultMessage: string | undefined,
                   description: string | undefined,
-                  filePath: string | undefined
+                  filePath: string | undefined,
                 ) =>
                   formatjsOverrideIdFn(
                     id,
                     defaultMessage,
                     description,
-                    filePath
+                    filePath,
                   ) ?? id,
                 ast: true,
               },
@@ -43,10 +43,10 @@ export default defineConfig(async () => {
       host: host || false,
       hmr: host
         ? {
-          protocol: "ws",
-          host,
-          port: 1421,
-        }
+            protocol: "ws",
+            host,
+            port: 1421,
+          }
         : undefined,
       watch: {
         ignored: ["**/src-tauri/**"],

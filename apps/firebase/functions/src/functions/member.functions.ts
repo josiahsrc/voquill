@@ -35,5 +35,5 @@ export const onWrite = onDocumentWritten(
 		await trySend1000WordsEvent({ before, after }).catch((err) => {
 			console.error("error sending 1000 words event for member", err);
 		});
-	}
+	},
 );

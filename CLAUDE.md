@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Voquill is a cross-platform voice-to-text desktop application built with Tauri (Rust + TypeScript/React). The repository is a Turborepo monorepo containing the desktop app, marketing website, Firebase backend, and shared packages.
 
 **Key architectural principle: "Rust is the API, TypeScript is the Brain"**
+
 - ALL business logic lives in TypeScript (never duplicated in Rust)
 - Rust provides pure API capabilities without decision-making
 - Single source of truth for state is Zustand in TypeScript
@@ -16,6 +17,7 @@ Voquill is a cross-platform voice-to-text desktop application built with Tauri (
 ### Desktop App (apps/desktop)
 
 **Run in development (always use platform-specific commands):**
+
 ```bash
 npm run dev:mac          # macOS
 npm run dev:windows      # Windows
@@ -24,6 +26,7 @@ npm run dev:linux:gpu    # Linux with Vulkan GPU acceleration
 ```
 
 **Build and quality checks:**
+
 ```bash
 npm run build            # Build frontend (TypeScript → Vite)
 npm run lint             # ESLint
@@ -36,6 +39,7 @@ npm run i18n:sync        # Sync message IDs to other locales
 ```
 
 **Environment variables:**
+
 - `VOQUILL_DESKTOP_PLATFORM` - Override platform detection (darwin/win32/linux)
 - `VITE_FLAVOR` - Environment flavor (dev/prod/emulators, defaults to emulators)
 - `VITE_USE_EMULATORS` - Point to Firebase emulators (default true in emulators flavor)
@@ -123,6 +127,7 @@ SQLite / Whisper / External APIs
 ### Tauri Command Pattern
 
 **Rust side (commands.rs):**
+
 ```rust
 #[tauri::command]
 pub async fn transcription_create(
@@ -136,6 +141,7 @@ pub async fn transcription_create(
 ```
 
 **TypeScript side (repos/):**
+
 ```typescript
 async createTranscription(transcription: Transcription): Promise<Transcription> {
   const local = toLocalTranscription(transcription);
@@ -148,10 +154,10 @@ async createTranscription(transcription: Transcription): Promise<Transcription> 
 
 ```typescript
 // Read state
-const transcriptions = useAppStore(state => state.transcriptions.items);
+const transcriptions = useAppStore((state) => state.transcriptions.items);
 
 // Write state (immutable via Immer)
-produceAppState(draft => {
+produceAppState((draft) => {
   draft.transcriptions.items.push(newTranscription);
 });
 ```
@@ -176,11 +182,12 @@ Repos are instantiated based on user settings and auth state:
 
 ```typescript
 // Example from repos/index.ts
-const transcribeRepo = settings.mode === 'api'
-  ? new GroqTranscribeAudioRepo(apiKey)
-  : settings.mode === 'cloud'
-    ? new CloudTranscribeAudioRepo()
-    : new LocalTranscribeAudioRepo();
+const transcribeRepo =
+  settings.mode === "api"
+    ? new GroqTranscribeAudioRepo(apiKey)
+    : settings.mode === "cloud"
+      ? new CloudTranscribeAudioRepo()
+      : new LocalTranscribeAudioRepo();
 ```
 
 ## AI/LLM Integration
@@ -207,6 +214,7 @@ const transcribeRepo = settings.mode === 'api'
 ### Dictionary System
 
 Two types of terms (distinguished by `is_replacement` flag):
+
 - **Glossary terms** (false) - Included in prompts for context
 - **Replacement rules** (true) - Applied as transformations (e.g., "GPT" → "ChatGPT")
 
@@ -281,6 +289,7 @@ Two types of terms (distinguished by `is_replacement` flag):
 ### Adding a New Tone
 
 Tones are seeded automatically in `db/tone_seed.rs`. To add system tones:
+
 - Edit `seed_default_tones_if_needed()` function
 - Use `Tone::new_system()` with specific ID
 - Prompt template uses `{transcript}` placeholder

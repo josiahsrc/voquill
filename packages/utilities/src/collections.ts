@@ -1,7 +1,7 @@
 export function getRec<K extends number | string, V>(
   map?: Record<K, V>,
   key?: K | null,
-  fallback?: V
+  fallback?: V,
 ): V | undefined {
   const missingKey = key === null || key === undefined;
   const inner = map ?? ({} as Record<K, V>);

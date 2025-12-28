@@ -130,7 +130,9 @@ export const toggleOpenRouterFavoriteModel = async (
   const existingConfig = apiKey.openRouterConfig ?? {};
 
   // If user hasn't customized favorites yet, initialize from defaults
-  const favorites = existingConfig.favoriteModels ?? [...OPENROUTER_FAVORITE_MODELS];
+  const favorites = existingConfig.favoriteModels ?? [
+    ...OPENROUTER_FAVORITE_MODELS,
+  ];
 
   const newFavorites = favorites.includes(modelId)
     ? favorites.filter((id) => id !== modelId)

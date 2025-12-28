@@ -75,7 +75,7 @@ export async function wrapAsync<T>(fn: () => Promise<T>): Promise<T> {
 
 export async function wrapAsyncExpress(
 	res: express.Response,
-	fn: () => Promise<void>
+	fn: () => Promise<void>,
 ): Promise<void> {
 	try {
 		await fn();

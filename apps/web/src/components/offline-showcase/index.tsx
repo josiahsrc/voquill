@@ -19,14 +19,16 @@ export default function OfflineShowcase() {
       <div className={`${pageStyles.splitMedia} ${styles.offlineMedia}`}>
         <div className={styles.wrapper}>
           <div className={styles.iconContainer}>
-            <svg
-              viewBox="0 0 160 160"
-              className={styles.wifiSvg}
-              fill="none"
-            >
+            <svg viewBox="0 0 160 160" className={styles.wifiSvg} fill="none">
               <defs>
                 {/* Arc gradient - metallic bevel */}
-                <linearGradient id="arcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient
+                  id="arcGradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
                   <stop offset="0%" className={styles.arcLight} />
                   <stop offset="50%" className={styles.arcMid} />
                   <stop offset="100%" className={styles.arcDark} />
@@ -39,7 +41,13 @@ export default function OfflineShowcase() {
                 </radialGradient>
 
                 {/* Highlight for arcs */}
-                <linearGradient id="arcHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+                <linearGradient
+                  id="arcHighlight"
+                  x1="0%"
+                  y1="0%"
+                  x2="0%"
+                  y2="100%"
+                >
                   <stop offset="0%" stopColor="white" stopOpacity="0.3" />
                   <stop offset="100%" stopColor="white" stopOpacity="0" />
                 </linearGradient>
@@ -130,28 +138,11 @@ export default function OfflineShowcase() {
               />
 
               {/* Center dot shadow */}
-              <circle
-                cx="82"
-                cy="138"
-                r="10"
-                fill="black"
-                fillOpacity="0.15"
-              />
+              <circle cx="82" cy="138" r="10" fill="black" fillOpacity="0.15" />
               {/* Center dot */}
-              <circle
-                cx="80"
-                cy="136"
-                r="10"
-                fill="url(#dotGradient)"
-              />
+              <circle cx="80" cy="136" r="10" fill="url(#dotGradient)" />
               {/* Dot highlight */}
-              <circle
-                cx="77"
-                cy="133"
-                r="3"
-                fill="white"
-                fillOpacity="0.3"
-              />
+              <circle cx="77" cy="133" r="3" fill="white" fillOpacity="0.3" />
 
               {/* Strike-through background knockout */}
               <line

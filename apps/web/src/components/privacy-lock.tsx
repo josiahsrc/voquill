@@ -13,14 +13,16 @@ export default function PrivacyLock({ className }: PrivacyLockProps) {
     <div className={wrapperClass} aria-hidden="true">
       <div className={styles.halo} />
       <div className={styles.lockContainer}>
-        <svg
-          viewBox="0 0 120 150"
-          className={styles.lockSvg}
-          fill="none"
-        >
+        <svg viewBox="0 0 120 150" className={styles.lockSvg} fill="none">
           <defs>
             {/* Shackle gradient - metallic bevel */}
-            <linearGradient id="shackleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+              id="shackleGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
               <stop offset="0%" className={styles.shackleLight} />
               <stop offset="35%" className={styles.shackleMid} />
               <stop offset="50%" className={styles.shackleDark} />
@@ -29,20 +31,38 @@ export default function PrivacyLock({ className }: PrivacyLockProps) {
             </linearGradient>
 
             {/* Body gradient - 3D bevel effect */}
-            <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient
+              id="bodyGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
               <stop offset="0%" className={styles.bodyLight} />
               <stop offset="30%" className={styles.bodyMid} />
               <stop offset="100%" className={styles.bodyDark} />
             </linearGradient>
 
             {/* Body highlight */}
-            <linearGradient id="bodyHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient
+              id="bodyHighlight"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
               <stop offset="0%" stopColor="white" stopOpacity="0.25" />
               <stop offset="50%" stopColor="white" stopOpacity="0" />
             </linearGradient>
 
             {/* Keyhole gradient */}
-            <linearGradient id="keyholeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient
+              id="keyholeGradient"
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
               <stop offset="0%" className={styles.keyholeLight} />
               <stop offset="100%" className={styles.keyholeDark} />
             </linearGradient>

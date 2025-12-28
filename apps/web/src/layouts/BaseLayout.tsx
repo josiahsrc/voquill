@@ -9,15 +9,13 @@ type BaseLayoutProps = {
   description?: string;
 };
 
-export function BaseLayout({
-  children,
-  title,
-  description,
-}: BaseLayoutProps) {
+export function BaseLayout({ children, title, description }: BaseLayoutProps) {
   const intl = useIntl();
   const location = useLocation();
 
-  const DEFAULT_TITLE = intl.formatMessage({ defaultMessage: "Voquill | Your keyboard is holding you back" });
+  const DEFAULT_TITLE = intl.formatMessage({
+    defaultMessage: "Voquill | Your keyboard is holding you back",
+  });
   const DEFAULT_DESCRIPTION = intl.formatMessage({
     defaultMessage: "Type four times faster with a voice-first keyboard.",
   });
@@ -29,10 +27,10 @@ export function BaseLayout({
   const canonicalUrl = useMemo(() => {
     // Always use the fallback origin to ensure consistent canonical URLs
     const baseUrl = new URL(FALLBACK_CANONICAL_ORIGIN);
-    
+
     // Use React Router location for the path (client-side routing)
     baseUrl.pathname = location.pathname;
-    
+
     // Don't include search params in canonical URL to avoid duplicate content
     return baseUrl.toString();
   }, [location.pathname]);
@@ -58,11 +56,7 @@ export function BaseLayout({
     updateCanonicalLink(canonicalUrl);
   }, [finalTitle, finalDescription, canonicalUrl]);
 
-  return (
-    <>
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }
 
 export default BaseLayout;
@@ -73,9 +67,7 @@ function updateMetaTag(
   value: string,
 ) {
   const selector =
-    attribute === "name"
-      ? `meta[name="${key}"]`
-      : `meta[property="${key}"]`;
+    attribute === "name" ? `meta[name="${key}"]` : `meta[property="${key}"]`;
   let element = document.head.querySelector<HTMLMetaElement>(selector);
 
   if (!element) {
@@ -88,7 +80,9 @@ function updateMetaTag(
 }
 
 function updateCanonicalLink(href: string) {
-  let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  let link = document.head.querySelector<HTMLLinkElement>(
+    'link[rel="canonical"]',
+  );
 
   if (!link) {
     link = document.createElement("link");

@@ -21,7 +21,11 @@ interface WordState {
 }
 
 const TOKENS: WordToken[] = [
-  { id: 1, text: "I was...", cleanup: { type: "filler", label: "False start" } },
+  {
+    id: 1,
+    text: "I was...",
+    cleanup: { type: "filler", label: "False start" },
+  },
   { id: 2, text: "I" },
   { id: 3, text: "was" },
   { id: 4, text: "thinking," },

@@ -76,7 +76,9 @@ export const openrouterFetchModels = async ({
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch OpenRouter models: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch OpenRouter models: ${response.status} ${response.statusText}`,
+    );
   }
 
   const data = (await response.json()) as { data: OpenRouterModel[] };
@@ -112,7 +114,9 @@ export const openrouterFetchProviders = async ({
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch OpenRouter providers: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch OpenRouter providers: ${response.status} ${response.statusText}`,
+    );
   }
 
   const data = (await response.json()) as { data: OpenRouterProvider[] };

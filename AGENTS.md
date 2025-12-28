@@ -21,7 +21,7 @@ The desktop application built using Tauri.
 
 The product website for Voquill. Built with Astro.
 
-## packages/**
+## packages/\*\*
 
 Shared packages used by both the desktop, server, and web applications. We place entities here as well as shared utilities.
 

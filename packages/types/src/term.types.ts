@@ -16,13 +16,14 @@ export type TermDoc = {
   id: string;
   termIds: string[];
   termById: Record<string, DatabaseTerm>;
-}
+};
 
-export const TermZod = z.object({
-  id: z.string(),
-  createdAt: z.string(),
-  sourceValue: z.string(),
-  destinationValue: z.string(),
-  isReplacement: z.boolean(),
-}).strict() satisfies z.ZodType<Term>;
-
+export const TermZod = z
+  .object({
+    id: z.string(),
+    createdAt: z.string(),
+    sourceValue: z.string(),
+    destinationValue: z.string(),
+    isReplacement: z.boolean(),
+  })
+  .strict() satisfies z.ZodType<Term>;

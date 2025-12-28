@@ -39,12 +39,14 @@ User Interaction / Native Events
 ## Layer Responsibilities
 
 ### Rust Layer (API)
+
 - **Platform capabilities**: Audio recording, keyboard hooks, system tray, OS-specific features
 - **Data persistence**: SQLite database operations via Tauri commands
 - **Event emission**: Notifying TypeScript of native events (recording levels, key presses, etc.)
 - **No business logic**: Rust does not make decisions about what to do with data
 
 ### TypeScript Layer (Business Logic)
+
 - **Application state**: Single Redux-like store managing all app state
 - **Business logic**: All decisions about data processing, validation, routing
 - **Event handling**: Listening to Rust events and orchestrating responses
@@ -70,7 +72,9 @@ TypeScript consumes these commands via the repo layer:
 
 ```typescript
 export class LocalTranscriptionRepo {
-  async createTranscription(transcription: Transcription): Promise<Transcription> {
+  async createTranscription(
+    transcription: Transcription,
+  ): Promise<Transcription> {
     return await invoke("transcription_create", { transcription });
   }
 }
@@ -82,4 +86,4 @@ export class LocalTranscriptionRepo {
 2. **Testability**: Core logic can be tested in TypeScript without Rust dependencies
 3. **State Management**: No confusion about where state lives—it's always in TypeScript
 4. **Backend Flexibility**: Easy to switch between local SQLite and remote Firebase/cloud backends
-5. **Clear Boundaries**: Each layer has well-defined responsibilities and interfaces 
+5. **Clear Boundaries**: Each layer has well-defined responsibilities and interfaces

@@ -41,7 +41,9 @@ export const DEFAULT_PLATFORM: Platform = "mac";
 export const RELEASE_API_URL =
   "https://api.github.com/repos/josiahsrc/voquill/releases/latest";
 
-export function getPlatformConfig(intl = getIntl()): Record<Platform, PlatformConfig> {
+export function getPlatformConfig(
+  intl = getIntl(),
+): Record<Platform, PlatformConfig> {
   return {
     mac: {
       id: "mac",
@@ -70,25 +72,30 @@ export function getPlatformConfig(intl = getIntl()): Record<Platform, PlatformCo
 // Export non-function version for backwards compatibility
 export const PLATFORM_CONFIG = getPlatformConfig();
 
-function getManifestKeyDetails(intl = getIntl()): Record<
-  string,
-  { platform: Platform; label: string; description?: string }
-> {
+function getManifestKeyDetails(
+  intl = getIntl(),
+): Record<string, { platform: Platform; label: string; description?: string }> {
   return {
     "darwin-aarch64": {
       platform: "mac",
       label: intl.formatMessage({ defaultMessage: "macOS (Apple silicon)" }),
-      description: intl.formatMessage({ defaultMessage: "Universal .app bundle" }),
+      description: intl.formatMessage({
+        defaultMessage: "Universal .app bundle",
+      }),
     },
     "darwin-x86_64": {
       platform: "mac",
       label: intl.formatMessage({ defaultMessage: "macOS (Intel)" }),
-      description: intl.formatMessage({ defaultMessage: "Universal .app bundle" }),
+      description: intl.formatMessage({
+        defaultMessage: "Universal .app bundle",
+      }),
     },
     "darwin-universal": {
       platform: "mac",
       label: intl.formatMessage({ defaultMessage: "macOS (Universal)" }),
-      description: intl.formatMessage({ defaultMessage: "Installer for all macOS architectures" }),
+      description: intl.formatMessage({
+        defaultMessage: "Installer for all macOS architectures",
+      }),
     },
     "windows-x86_64": {
       platform: "windows",
@@ -188,7 +195,7 @@ export async function fetchReleaseManifest(signal?: AbortSignal) {
 
 export async function selectPlatformUrl(
   manifest: ReleaseManifest,
-  platform: Platform
+  platform: Platform,
 ) {
   const preference = await buildPlatformPreference(platform);
 
@@ -244,7 +251,7 @@ export function extractDownloads(manifest: ReleaseManifest) {
 }
 
 function transformGithubRelease(
-  release: GithubRelease
+  release: GithubRelease,
 ): ReleaseManifest | undefined {
   const assets = release.assets ?? [];
   const platforms: Record<string, ReleasePlatformDetails | undefined> = {};
@@ -432,7 +439,7 @@ async function detectMacManifestKey() {
     navigator as Navigator & {
       userAgentData?: {
         getHighEntropyValues?: (
-          hints: string[]
+          hints: string[],
         ) => Promise<{ architecture?: string }>;
       };
     }

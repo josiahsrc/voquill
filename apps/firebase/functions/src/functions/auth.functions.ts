@@ -6,7 +6,6 @@ import { tryInitializeMember } from "../utils/member.utils";
 import { mixpath } from "@repo/firemix";
 import { firemix } from "@firemix/mixed";
 
-
 export const onCreate = v1
 	.runWith({
 		secrets: [LOOPS_API_KEY_VAR],
@@ -23,7 +22,7 @@ export const onCreate = v1
 			console.error(
 				"error creating loops contact for new user",
 				event.uid,
-				err
+				err,
 			);
 		});
 
@@ -58,7 +57,7 @@ export const onDelete = v1
 				console.error(
 					"error deleting member document for user",
 					event.uid,
-					err
+					err,
 				);
 			});
 

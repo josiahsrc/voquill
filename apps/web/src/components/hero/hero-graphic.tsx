@@ -49,7 +49,7 @@ const generateWavePath = (
   frequency: number,
   amplitude: number,
   timeOffset: number,
-  segments: number = 100
+  segments: number = 100,
 ): string => {
   const points: string[] = [];
 
@@ -151,7 +151,14 @@ export function HeroGraphic() {
       for (let i = 0; i < WAVE_FRAMES; i++) {
         // One complete cycle of the wave animation
         const timeOffset = (i / WAVE_FRAMES) * Math.PI * 2;
-        frames.push(generateWavePath(inputCurve, config.frequency, config.amplitude, timeOffset));
+        frames.push(
+          generateWavePath(
+            inputCurve,
+            config.frequency,
+            config.amplitude,
+            timeOffset,
+          ),
+        );
       }
       // Add first frame again for seamless loop
       frames.push(frames[0]!);
@@ -260,20 +267,10 @@ export function HeroGraphic() {
         ))}
 
         {/* Icon glow */}
-        <circle
-          cx={iconX}
-          cy={iconY}
-          r={38}
-          className={styles.iconGlow}
-        />
+        <circle cx={iconX} cy={iconY} r={38} className={styles.iconGlow} />
 
         {/* Icon circle background */}
-        <circle
-          cx={iconX}
-          cy={iconY}
-          r={30}
-          className={styles.iconCircle}
-        />
+        <circle cx={iconX} cy={iconY} r={30} className={styles.iconCircle} />
 
         {/* App logo */}
         <image

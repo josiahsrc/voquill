@@ -1,4 +1,14 @@
-import { FullConfig, Member, Term, TermZod, UserZod, type EmptyObject, type JsonResponse, type Nullable, type User } from "@repo/types";
+import {
+  FullConfig,
+  Member,
+  Term,
+  TermZod,
+  UserZod,
+  type EmptyObject,
+  type JsonResponse,
+  type Nullable,
+  type User,
+} from "@repo/types";
 import { z } from "zod";
 
 type HandlerDefinitions = {
@@ -45,7 +55,7 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: {
       member: Nullable<Member>;
-    }
+    };
   };
 
   // ai
@@ -135,7 +145,7 @@ export type HandlerOutput<N extends HandlerName> =
   HandlerDefinitions[N]["output"];
 
 export const HANDLER_NAMES: string[] = Object.keys(
-  {} as HandlerDefinitions
+  {} as HandlerDefinitions,
 ) as Array<HandlerName>;
 
 export const EmptyObjectZod = z.object({}).strict();
@@ -171,9 +181,7 @@ export const StripeCreateCheckoutSessionInputZod = z
   .object({
     priceId: z.string().min(1),
   })
-  .strict() satisfies z.ZodType<
-    HandlerInput<"stripe/createCheckoutSession">
-  >;
+  .strict() satisfies z.ZodType<HandlerInput<"stripe/createCheckoutSession">>;
 
 export const StripeGetPricesInputZod = z
   .object({

@@ -225,11 +225,7 @@ export const OpenRouterProviderRouting = ({
           <Stack spacing={2.5}>
             {/* Provider Priority */}
             <Box>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                sx={{ mb: 1 }}
-              >
+              <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
                 <FormattedMessage defaultMessage="Provider Priority" />
               </Typography>
               <Typography
@@ -297,7 +293,9 @@ export const OpenRouterProviderRouting = ({
                     value=""
                     label={<FormattedMessage defaultMessage="Add provider" />}
                     onChange={(e) => handleAddProvider(e.target.value)}
-                    startAdornment={<AddIcon fontSize="small" sx={{ mr: 0.5 }} />}
+                    startAdornment={
+                      <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    }
                   >
                     {availableToAdd.map((provider) => (
                       <MenuItem key={provider.slug} value={provider.slug}>

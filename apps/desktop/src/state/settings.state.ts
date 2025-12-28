@@ -7,7 +7,12 @@ import {
   type TranscriptionMode,
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
-import { ApiKey, ApiKeyProvider, OpenRouterModel, OpenRouterProvider } from "@repo/types";
+import {
+  ApiKey,
+  ApiKeyProvider,
+  OpenRouterModel,
+  OpenRouterProvider,
+} from "@repo/types";
 
 export type SettingsApiKeyProvider = ApiKeyProvider;
 

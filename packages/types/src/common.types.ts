@@ -4,14 +4,14 @@ export type EmptyObject = Record<string, never>;
 
 export type Replace<T, S, D> = {
   [K in keyof T]: T[K] extends S
-  ? D
-  : T[K] extends S | null
-  ? D | null
-  : T[K] extends S | undefined
-  ? D | undefined
-  : T[K] extends S | null | undefined
-  ? D | null | undefined
-  : T[K];
+    ? D
+    : T[K] extends S | null
+      ? D | null
+      : T[K] extends S | undefined
+        ? D | undefined
+        : T[K] extends S | null | undefined
+          ? D | null | undefined
+          : T[K];
 };
 
 export type JsonResponse = {

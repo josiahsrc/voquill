@@ -6,9 +6,9 @@ beforeAll(setUp);
 afterAll(tearDown);
 
 describe("api", () => {
-  it("always lets callers read the config", async () => {
-    await signOutUser();
-    const res = await invokeHandler("config/getFullConfig", {});
-    expect(res.config).toBeDefined();
-  });
+	it("always lets callers read the config", async () => {
+		await signOutUser();
+		const res = await invokeHandler("config/getFullConfig", {});
+		expect(res.config).toBeDefined();
+	});
 });

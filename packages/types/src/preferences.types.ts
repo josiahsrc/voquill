@@ -1,4 +1,8 @@
-import type { Nullable, PostProcessingMode, TranscriptionMode } from "./common.types";
+import type {
+  Nullable,
+  PostProcessingMode,
+  TranscriptionMode,
+} from "./common.types";
 
 export type UserPreferences = {
   userId: string;

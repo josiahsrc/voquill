@@ -9,228 +9,241 @@ import stripe from "stripe";
 import * as admin from "firebase-admin";
 import { checkAccess } from "../utils/check.utils";
 import { ClientError, UnauthenticatedError } from "../utils/error.utils";
-import { getStripe, getOrCreateStripeDatabaseMember } from "../utils/stripe.utils";
+import {
+	getStripe,
+	getOrCreateStripeDatabaseMember,
+} from "../utils/stripe.utils";
 
 export const createCheckoutSession = async (args: {
-  auth: Nullable<AuthData>;
-  origin: string;
-  input: HandlerInput<"stripe/createCheckoutSession">;
+	auth: Nullable<AuthData>;
+	origin: string;
+	input: HandlerInput<"stripe/createCheckoutSession">;
 }): Promise<HandlerOutput<"stripe/createCheckoutSession">> => {
-  const stripe = getStripe();
-  if (!stripe) {
-    console.log("no stripe secret key provided");
-    throw new Error("Stripe is not configured");
-  }
+	const stripe = getStripe();
+	if (!stripe) {
+		console.log("no stripe secret key provided");
+		throw new Error("Stripe is not configured");
+	}
 
-  if (!args.auth) {
-    console.log("no auth data provided");
-    throw new UnauthenticatedError("You must be authenticated");
-  }
+	if (!args.auth) {
+		console.log("no auth data provided");
+		throw new UnauthenticatedError("You must be authenticated");
+	}
 
-  if (!args.origin) {
-    console.log("no origin provided");
-    throw new UnauthenticatedError("You must be authenticated");
-  }
+	if (!args.origin) {
+		console.log("no origin provided");
+		throw new UnauthenticatedError("You must be authenticated");
+	}
 
-  const { priceId } = args.input;
-  if (!priceId) {
-    console.log("no price ID provided");
-    throw new UnauthenticatedError("No price ID provided");
-  }
+	const { priceId } = args.input;
+	if (!priceId) {
+		console.log("no price ID provided");
+		throw new UnauthenticatedError("No price ID provided");
+	}
 
-  const metadata = {
-    userId: args.auth.uid,
-    priceId,
-  };
+	const metadata = {
+		userId: args.auth.uid,
+		priceId,
+	};
 
-  const priceKey = getRec(priceKeyById, priceId);
-  if (!priceKey) {
-    console.log("invalid price ID provided", priceId);
-    throw new ClientError("Invalid price ID provided");
-  }
+	const priceKey = getRec(priceKeyById, priceId);
+	if (!priceKey) {
+		console.log("invalid price ID provided", priceId);
+		throw new ClientError("Invalid price ID provided");
+	}
 
-  const mode: stripe.Checkout.SessionCreateParams.Mode = "subscription";
-  const subscription_data:
-    | stripe.Checkout.SessionCreateParams.SubscriptionData
-    | undefined = {
-    metadata,
-  };
+	const mode: stripe.Checkout.SessionCreateParams.Mode = "subscription";
+	const subscription_data:
+		| stripe.Checkout.SessionCreateParams.SubscriptionData
+		| undefined = {
+		metadata,
+	};
 
-  const session = await stripe.checkout.sessions.create({
-    ui_mode: "embedded",
-    payment_method_options: {
-      card: {
-        request_three_d_secure: "automatic",
-      },
-    },
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-    mode,
-    redirect_on_completion: "never",
-    metadata,
-    subscription_data,
-  });
+	const session = await stripe.checkout.sessions.create({
+		ui_mode: "embedded",
+		payment_method_options: {
+			card: {
+				request_three_d_secure: "automatic",
+			},
+		},
+		line_items: [
+			{
+				price: priceId,
+				quantity: 1,
+			},
+		],
+		mode,
+		redirect_on_completion: "never",
+		metadata,
+		subscription_data,
+	});
 
-  if (!session.client_secret) {
-    console.log("session.client_secret is undefined");
-    throw new Error("Failed to create checkout session");
-  }
+	if (!session.client_secret) {
+		console.log("session.client_secret is undefined");
+		throw new Error("Failed to create checkout session");
+	}
 
-  return {
-    sessionId: session.id,
-    clientSecret: session.client_secret,
-  };
+	return {
+		sessionId: session.id,
+		clientSecret: session.client_secret,
+	};
 };
 
 export const handleGetPrices = async (args: {
-  input: HandlerInput<"stripe/getPrices">;
+	input: HandlerInput<"stripe/getPrices">;
 }): Promise<HandlerOutput<"stripe/getPrices">> => {
-  const stripe = getStripe();
-  if (!stripe) {
-    return { prices: {} };
-  }
+	const stripe = getStripe();
+	if (!stripe) {
+		return { prices: {} };
+	}
 
-  const notFoundPriceIds = args.input.priceIds.filter((priceId) => !priceKeyById[priceId]);
-  if (notFoundPriceIds.length > 0) {
-    throw new ClientError("Invalid price IDs provided: " + notFoundPriceIds.join(", "));
-  }
+	const notFoundPriceIds = args.input.priceIds.filter(
+		(priceId) => !priceKeyById[priceId],
+	);
+	if (notFoundPriceIds.length > 0) {
+		throw new ClientError(
+			"Invalid price IDs provided: " + notFoundPriceIds.join(", "),
+		);
+	}
 
-  const dedupedIds = dedup(args.input.priceIds);
-  const stripePrices = await Promise.all(
-    dedupedIds.map((priceId) => stripe.prices.retrieve(priceId))
-  );
+	const dedupedIds = dedup(args.input.priceIds);
+	const stripePrices = await Promise.all(
+		dedupedIds.map((priceId) => stripe.prices.retrieve(priceId)),
+	);
 
-  const priceMap: Record<
-    string,
-    HandlerOutput<"stripe/getPrices">["prices"][string]
-  > = {};
-  for (const price of stripePrices) {
-    priceMap[price.id] = {
-      unitAmount: price.unit_amount ?? null,
-      unitAmountDecimal: price.unit_amount_decimal ?? null,
-      currency: price.currency,
-    };
-  }
+	const priceMap: Record<
+		string,
+		HandlerOutput<"stripe/getPrices">["prices"][string]
+	> = {};
+	for (const price of stripePrices) {
+		priceMap[price.id] = {
+			unitAmount: price.unit_amount ?? null,
+			unitAmountDecimal: price.unit_amount_decimal ?? null,
+			currency: price.currency,
+		};
+	}
 
-  return {
-    prices: priceMap,
-  };
+	return {
+		prices: priceMap,
+	};
 };
 
 export const handleSubscriptionCreated = async (
-  event: stripe.CustomerSubscriptionCreatedEvent
+	event: stripe.CustomerSubscriptionCreatedEvent,
 ) => {
-  const member = await getOrCreateStripeDatabaseMember(event.data.object.metadata);
+	const member = await getOrCreateStripeDatabaseMember(
+		event.data.object.metadata,
+	);
 
-  const priceId = event.data.object.items.data[0]?.price?.id;
-  if (!priceId) {
-    console.log("no price id found on subscription");
-    throw new Error("no price id found on subscription");
-  }
+	const priceId = event.data.object.items.data[0]?.price?.id;
+	if (!priceId) {
+		console.log("no price id found on subscription");
+		throw new Error("no price id found on subscription");
+	}
 
-  console.log("subscribing member", member.id, "to price", priceId);
-  await firemix().update(mixpath.members(member.id), {
-    plan: "pro",
-    updatedAt: firemix().now(),
-    priceId,
-    stripeCustomerId: event.data.object.customer as string,
-  });
+	console.log("subscribing member", member.id, "to price", priceId);
+	await firemix().update(mixpath.members(member.id), {
+		plan: "pro",
+		updatedAt: firemix().now(),
+		priceId,
+		stripeCustomerId: event.data.object.customer as string,
+	});
 
-  console.log("adding custom claims to user", member.id);
-  await admin.auth().setCustomUserClaims(member.id, {
-    subscribed: true,
-  });
+	console.log("adding custom claims to user", member.id);
+	await admin.auth().setCustomUserClaims(member.id, {
+		subscribed: true,
+	});
 };
 
 export const handleSubscriptionDeleted = async (
-  event: stripe.CustomerSubscriptionDeletedEvent
+	event: stripe.CustomerSubscriptionDeletedEvent,
 ) => {
-  const member = await getOrCreateStripeDatabaseMember(event.data.object.metadata);
+	const member = await getOrCreateStripeDatabaseMember(
+		event.data.object.metadata,
+	);
 
-  console.log("handling subscription deleted event");
-  await firemix().update(mixpath.members(member.id), {
-    plan: "free",
-    priceId: null,
-    updatedAt: firemix().now(),
-  });
+	console.log("handling subscription deleted event");
+	await firemix().update(mixpath.members(member.id), {
+		plan: "free",
+		priceId: null,
+		updatedAt: firemix().now(),
+	});
 
-  console.log("removing custom claims from user", member.id);
-  await admin.auth().setCustomUserClaims(member.id, {
-    subscribed: false,
-  });
+	console.log("removing custom claims from user", member.id);
+	await admin.auth().setCustomUserClaims(member.id, {
+		subscribed: false,
+	});
 };
 
 export const createCustomerPortalSession = async (args: {
-  origin: string;
-  auth: Nullable<AuthData>;
+	origin: string;
+	auth: Nullable<AuthData>;
 }): Promise<HandlerOutput<"stripe/createCustomerPortalSession">> => {
-  const access = await checkAccess(args.auth);
+	const access = await checkAccess(args.auth);
 
-  const stripe = getStripe();
-  if (!stripe) {
-    console.log("no stripe secret key provided");
-    throw new Error("Stripe is not configured");
-  }
+	const stripe = getStripe();
+	if (!stripe) {
+		console.log("no stripe secret key provided");
+		throw new Error("Stripe is not configured");
+	}
 
-  const member = await getOrCreateStripeDatabaseMember({ userId: access.auth.uid });
-  if (!member) {
-    console.log("no member found for user", access.auth.uid);
-    throw new ClientError("No member found for user");
-  }
+	const member = await getOrCreateStripeDatabaseMember({
+		userId: access.auth.uid,
+	});
+	if (!member) {
+		console.log("no member found for user", access.auth.uid);
+		throw new ClientError("No member found for user");
+	}
 
-  if (!member.stripeCustomerId) {
-    console.log("no stripe customer ID found for member", member.id);
-    throw new ClientError("No stripe customer ID found for member");
-  }
+	if (!member.stripeCustomerId) {
+		console.log("no stripe customer ID found for member", member.id);
+		throw new ClientError("No stripe customer ID found for member");
+	}
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: member.stripeCustomerId,
-    return_url: `${args.origin}/settings`,
-  });
+	const session = await stripe.billingPortal.sessions.create({
+		customer: member.stripeCustomerId,
+		return_url: `${args.origin}/settings`,
+	});
 
-  return { url: session.url };
+	return { url: session.url };
 };
 
 export const cancelUserSubscriptions = async (args: {
-  userId: string;
+	userId: string;
 }): Promise<void> => {
-  const stripe = getStripe();
-  if (!stripe) {
-    console.log("no stripe secret key provided");
-    throw new Error("Stripe is not configured");
-  }
+	const stripe = getStripe();
+	if (!stripe) {
+		console.log("no stripe secret key provided");
+		throw new Error("Stripe is not configured");
+	}
 
-  const member = await getOrCreateStripeDatabaseMember({ userId: args.userId });
-  if (!member) {
-    console.log("no member found for user", args.userId);
-    return;
-  }
+	const member = await getOrCreateStripeDatabaseMember({ userId: args.userId });
+	if (!member) {
+		console.log("no member found for user", args.userId);
+		return;
+	}
 
-  if (!member.stripeCustomerId) {
-    console.log("no stripe customer ID found for member", member.id);
-    return;
-  }
+	if (!member.stripeCustomerId) {
+		console.log("no stripe customer ID found for member", member.id);
+		return;
+	}
 
-  const subscriptions = await stripe.subscriptions.list({
-    customer: member.stripeCustomerId,
-    status: "active",
-  });
+	const subscriptions = await stripe.subscriptions.list({
+		customer: member.stripeCustomerId,
+		status: "active",
+	});
 
-  if (subscriptions.data.length === 0) {
-    console.log("no active subscriptions found for member", member.id);
-    return;
-  }
+	if (subscriptions.data.length === 0) {
+		console.log("no active subscriptions found for member", member.id);
+		return;
+	}
 
-  for (const subscription of subscriptions.data) {
-    console.log("cancelling sub", subscription.id, "for member", member.id);
-    await stripe.subscriptions.cancel(subscription.id, {
-      expand: ["latest_invoice.payment_intent"],
-    });
-  }
+	for (const subscription of subscriptions.data) {
+		console.log("cancelling sub", subscription.id, "for member", member.id);
+		await stripe.subscriptions.cancel(subscription.id, {
+			expand: ["latest_invoice.payment_intent"],
+		});
+	}
 
-  console.log("cancelled all active subscriptions for member", member.id);
+	console.log("cancelled all active subscriptions for member", member.id);
 };

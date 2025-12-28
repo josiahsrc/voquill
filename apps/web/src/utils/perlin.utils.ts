@@ -78,7 +78,7 @@ export function noise1dNormalized(x: number): number {
 export function fractalNoise1d(
   x: number,
   octaves: number = 4,
-  persistence: number = 0.5
+  persistence: number = 0.5,
 ): number {
   let total = 0;
   let frequency = 1;

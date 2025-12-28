@@ -3,5 +3,5 @@ import { clearRateLimits } from "../services/rateLimit.service";
 
 // Every day
 export const clearRateLimitsCron = onSchedule("0 0 * * *", async () => {
-  await clearRateLimits();
+	await clearRateLimits();
 });

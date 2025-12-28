@@ -3,5 +3,5 @@ export declare const formatjsOverrideIdFn: (
   id?: string,
   defaultMessage?: string,
   description?: string,
-  filePath?: string
+  filePath?: string,
 ) => string | undefined;

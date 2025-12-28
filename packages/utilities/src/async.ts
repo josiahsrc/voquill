@@ -4,9 +4,9 @@ export const delayed = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 export const retry = async <T>(args: {
-  fn: () => Promise<T>,
-  retries?: number,
-  delay?: number
+  fn: () => Promise<T>;
+  retries?: number;
+  delay?: number;
 }): Promise<T> => {
   const { fn, retries = 3, delay = 20 } = args;
   for (let i = 0; i < retries; i++) {
@@ -26,7 +26,7 @@ export const retry = async <T>(args: {
 
 export const batchAsync = async <T = void>(
   size: number,
-  promises: (() => Promise<T>)[]
+  promises: (() => Promise<T>)[],
 ): Promise<T[]> => {
   const chunked = chunkify(promises, size);
   const results: T[] = [];

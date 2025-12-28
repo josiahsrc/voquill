@@ -21,9 +21,7 @@ type AppIconShowcaseProps = {
 };
 
 export default function AppIconShowcase({ className }: AppIconShowcaseProps) {
-  const stageClass = className
-    ? `${styles.stage} ${className}`
-    : styles.stage;
+  const stageClass = className ? `${styles.stage} ${className}` : styles.stage;
 
   return (
     <div className={stageClass}>
@@ -48,10 +46,8 @@ export default function AppIconShowcase({ className }: AppIconShowcaseProps) {
         ))}
       </div>
       <p className={styles.srOnly}>
-        Supported destinations include {icons
-          .map((icon) => icon.label)
-          .join(", ")}
-        .
+        Supported destinations include{" "}
+        {icons.map((icon) => icon.label).join(", ")}.
       </p>
     </div>
   );
