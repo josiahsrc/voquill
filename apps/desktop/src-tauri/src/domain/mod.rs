@@ -19,7 +19,8 @@ pub use overlay::{OverlayPhase, OverlayPhasePayload, EVT_OVERLAY_PHASE};
 pub use permissions::{PermissionKind, PermissionState, PermissionStatus};
 pub use preferences::UserPreferences;
 pub use recording::{
-    RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult, EVT_REC_LEVEL,
+    AudioChunkPayload, RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult,
+    EVT_AUDIO_CHUNK, EVT_REC_LEVEL,
 };
 pub use term::Term;
 pub use tone::Tone;

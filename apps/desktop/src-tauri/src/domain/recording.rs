@@ -2,6 +2,7 @@ use serde::Serialize;
 use std::time::Duration;
 
 pub const EVT_REC_LEVEL: &str = "recording_level";
+pub const EVT_AUDIO_CHUNK: &str = "audio_chunk";
 
 #[derive(Clone, Debug)]
 pub struct RecordingMetrics {
@@ -24,4 +25,9 @@ pub struct RecordingResult {
 #[derive(Clone, Serialize)]
 pub struct RecordingLevelPayload {
     pub levels: Vec<f32>,
+}
+
+#[derive(Clone, Serialize)]
+pub struct AudioChunkPayload {
+    pub samples: Vec<f32>,
 }
