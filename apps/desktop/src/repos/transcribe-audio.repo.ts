@@ -1,11 +1,11 @@
 import { invokeHandler } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import {
+  aldeaTranscribeAudio,
   groqTranscribeAudio,
-  TranscriptionModel,
   openaiTranscribeAudio,
   OpenAITranscriptionModel,
-  aldeaTranscribeAudio,
+  TranscriptionModel,
 } from "@repo/voice-ai";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
@@ -143,8 +143,14 @@ export class CloudTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     const normalized = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalized);
     const wavBuffer = buildWaveFile(floatSamples, input.sampleRate);
-    const audioBase64 = btoa(String.fromCharCode(...new Uint8Array(wavBuffer)));
 
+    const bytes = new Uint8Array(wavBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]!);
+    }
+
+    const audioBase64 = btoa(binary);
     const response = await invokeHandler("ai/transcribeAudio", {
       prompt: input.prompt,
       audioBase64,
