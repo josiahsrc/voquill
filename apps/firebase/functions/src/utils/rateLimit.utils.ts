@@ -1,11 +1,13 @@
 import * as admin from "firebase-admin";
 import { AuthData } from "firebase-functions/tasks";
 import { ClientError } from "./error.utils";
+import { getDatabaseUrl } from "./env.utils";
 
 export const consumeRateLimit = async (args: {
 	limit: number;
 	auth: AuthData;
 }): Promise<void> => {
+  console.log(getDatabaseUrl(), "DB URL");
 	const ref = admin.database().ref(`limits/${args.auth.uid}`);
 
 	let didExceed = false;
