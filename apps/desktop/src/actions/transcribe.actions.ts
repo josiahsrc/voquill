@@ -4,6 +4,7 @@ import { getGenerateTextRepo, getTranscribeAudioRepo } from "../repos";
 import { getAppState } from "../store";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
+import { mapLocaleToWhisperLanguage } from "../utils/language.utils";
 import {
   buildLocalizedPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
@@ -83,6 +84,8 @@ export const transcribeAudio = async ({
   warnings.push(...transcribeWarnings);
 
   const preferredLocale = getMyPreferredLocale(state);
+  const whisperLanguage = mapLocaleToWhisperLanguage(preferredLocale);
+
   const dictionaryEntries = collectDictionaryEntries(state);
   const transcriptionPrompt = buildLocalizedTranscriptionPrompt(
     dictionaryEntries,
@@ -94,7 +97,7 @@ export const transcribeAudio = async ({
     samples,
     sampleRate,
     prompt: transcriptionPrompt,
-    language: preferredLocale,
+    language: whisperLanguage,
   });
   const transcribeDuration = performance.now() - transcribeStart;
   const rawTranscript = transcribeOutput.text.trim();

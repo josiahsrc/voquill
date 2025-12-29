@@ -1,4 +1,5 @@
-import { DEFAULT_LOCALE, isSupportedLocale, type Locale } from "../i18n/config";
+import { matchSupportedLocale } from "../i18n";
+import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 
 export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
   en: "English",
@@ -6,22 +7,23 @@ export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
   fr: "Français",
   de: "Deutsch",
   pt: "Português",
-};
-
-export const normalizeLocaleValue = (value?: string | null): Locale | null => {
-  if (!value) {
-    return null;
-  }
-
-  const cleaned = value.toLowerCase().replace(/_/g, "-");
-  const [language] = cleaned.split("-");
-  if (isSupportedLocale(language)) {
-    return language as Locale;
-  }
-
-  return null;
+  "pt-BR": "Português (Brasil)",
+  it: "Italiano",
+  "zh-TW": "中文 (台灣)",
 };
 
 export const resolveLocaleValue = (value?: string | null): Locale => {
-  return normalizeLocaleValue(value) ?? DEFAULT_LOCALE;
+  return matchSupportedLocale(value) ?? DEFAULT_LOCALE;
+};
+
+export const mapLocaleToWhisperLanguage = (locale: Locale): string => {
+  if (locale === "pt-BR") {
+    return "pt";
+  }
+
+  if (locale === "zh-TW") {
+    return "zh";
+  }
+
+  return locale;
 };

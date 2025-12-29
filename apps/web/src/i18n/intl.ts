@@ -3,30 +3,39 @@ import { DEFAULT_LOCALE, Locale, SUPPORTED_LOCALES } from "./config";
 import enMessages from "./locales/en.json";
 import esMessages from "./locales/es.json";
 import frMessages from "./locales/fr.json";
+import deMessages from "./locales/de.json";
+import ptMessages from "./locales/pt.json";
+import ptBRMessages from "./locales/pt-BR.json";
+import itMessages from "./locales/it.json";
+import zhTWMessages from "./locales/zh-TW.json";
 
 const LOCALE_MESSAGES: Record<string, Record<string, string>> = {
   en: enMessages,
   es: esMessages,
   fr: frMessages,
-};
-
-const normalizeLocale = (value?: string | null) => {
-  if (!value) {
-    return null;
-  }
-  const cleaned = value.toLowerCase().replace("_", "-");
-  const [language] = cleaned.split("-");
-  return language ?? cleaned;
+  de: deMessages,
+  pt: ptMessages,
+  "pt-BR": ptBRMessages,
+  it: itMessages,
+  "zh-TW": zhTWMessages,
 };
 
 const matchSupportedLocale = (value?: string | null): Locale | null => {
-  const normalized = normalizeLocale(value);
-  if (!normalized) {
+  if (!value) {
     return null;
   }
 
-  if (SUPPORTED_LOCALES.includes(normalized)) {
-    return normalized;
+  const cleaned = value.replace(/_/g, "-");
+
+  // First check if the full locale (with region) is supported
+  if (SUPPORTED_LOCALES.includes(cleaned)) {
+    return cleaned;
+  }
+
+  // Fall back to just the language part
+  const language = cleaned.toLowerCase().split("-")[0];
+  if (language && SUPPORTED_LOCALES.includes(language)) {
+    return language;
   }
 
   return null;
