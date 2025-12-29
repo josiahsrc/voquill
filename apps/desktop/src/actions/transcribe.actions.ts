@@ -4,6 +4,7 @@ import { getGenerateTextRepo, getTranscribeAudioRepo } from "../repos";
 import { getAppState } from "../store";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
+import { mapLocaleToSupportedTranscriptionLocale } from "../utils/language.utils";
 import {
   buildLocalizedPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
@@ -82,7 +83,10 @@ export const transcribeAudio = async ({
   } = getTranscribeAudioRepo();
   warnings.push(...transcribeWarnings);
 
-  const preferredLocale = getMyPreferredLocale(state);
+  const preferredLocale = mapLocaleToSupportedTranscriptionLocale(
+    getMyPreferredLocale(state),
+  );
+
   const dictionaryEntries = collectDictionaryEntries(state);
   const transcriptionPrompt = buildLocalizedTranscriptionPrompt(
     dictionaryEntries,

@@ -1,11 +1,12 @@
 import { createIntl, createIntlCache } from "react-intl";
 import { DEFAULT_LOCALE, Locale, SUPPORTED_LOCALES } from "./config";
+import deMessages from "./locales/de.json";
 import enMessages from "./locales/en.json";
 import esMessages from "./locales/es.json";
 import frMessages from "./locales/fr.json";
-import deMessages from "./locales/de.json";
-import ptMessages from "./locales/pt.json";
 import itMessages from "./locales/it.json";
+import ptBRMessages from "./locales/pt-BR.json";
+import ptMessages from "./locales/pt.json";
 
 const LOCALE_MESSAGES: Record<Locale, Record<string, string>> = {
   en: enMessages,
@@ -13,26 +14,26 @@ const LOCALE_MESSAGES: Record<Locale, Record<string, string>> = {
   fr: frMessages,
   de: deMessages,
   pt: ptMessages,
+  "pt-BR": ptBRMessages,
   it: itMessages,
 };
 
-const normalizeLocale = (value?: string | null) => {
+export const matchSupportedLocale = (value?: string | null): Locale | null => {
   if (!value) {
     return null;
   }
-  const cleaned = value.toLowerCase().replace("_", "-");
-  const [language] = cleaned.split("-");
-  return language ?? cleaned;
-};
 
-const matchSupportedLocale = (value?: string | null): Locale | null => {
-  const normalized = normalizeLocale(value);
-  if (!normalized) {
-    return null;
+  const cleaned = value.replace(/_/g, "-");
+
+  // First check if the full locale (with region) is supported
+  if (SUPPORTED_LOCALES.includes(cleaned as Locale)) {
+    return cleaned as Locale;
   }
 
-  if (SUPPORTED_LOCALES.includes(normalized as Locale)) {
-    return normalized as Locale;
+  // Fall back to just the language part
+  const [language] = cleaned.toLowerCase().split("-");
+  if (SUPPORTED_LOCALES.includes(language as Locale)) {
+    return language as Locale;
   }
 
   return null;

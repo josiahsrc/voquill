@@ -30,24 +30,22 @@ import { ChangeEvent, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
+import { loadTones } from "../../actions/tone.actions";
 import { setPreferredLanguage } from "../../actions/user.actions";
+import { matchSupportedLocale } from "../../i18n";
+import { DEFAULT_LOCALE, type Locale } from "../../i18n/config";
 import { getAuthRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
+import { LANGUAGE_DISPLAY_NAMES } from "../../utils/language.utils";
 import { getIsPaying } from "../../utils/member.utils";
 import {
   getHasEmailProvider,
   getIsSignedIn,
   getMyUser,
 } from "../../utils/user.utils";
-import {
-  normalizeLocaleValue,
-  LANGUAGE_DISPLAY_NAMES,
-} from "../../utils/language.utils";
-import { DEFAULT_LOCALE, type Locale } from "../../i18n/config";
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
-import { loadTones } from "../../actions/tone.actions";
 
 const LANGUAGE_OPTIONS = Object.entries(LANGUAGE_DISPLAY_NAMES) as [
   Locale,
@@ -68,7 +66,7 @@ export default function SettingsPage() {
 
   const preferredLanguage = useAppStore((state) => {
     const user = getMyUser(state);
-    const normalized = normalizeLocaleValue(user?.preferredLanguage);
+    const normalized = matchSupportedLocale(user?.preferredLanguage);
     return normalized ?? DEFAULT_LOCALE;
   });
 
