@@ -1,5 +1,5 @@
 import { getAppState, produceAppState } from "../store";
-import { transcribeAndPostProcessAudio } from "./transcribe.actions";
+import { postProcessTranscript, transcribeAudio } from "./transcribe.actions";
 import { getTranscriptionRepo } from "../repos";
 import { getRec } from "@repo/utilities";
 import { Transcription } from "@repo/types";
@@ -36,16 +36,26 @@ export const retranscribeTranscription = async ({
   const repo = getTranscriptionRepo();
   const audioData = await repo.loadTranscriptionAudio(transcriptionId);
 
-  const {
-    transcript: finalTranscript,
-    rawTranscript,
-    warnings,
-    metadata,
-  } = await transcribeAndPostProcessAudio({
+  const transcribeResult = await transcribeAudio({
     samples: audioData.samples,
     sampleRate: audioData.sampleRate,
-    toneId,
   });
+
+  const postProcessResult = await postProcessTranscript({
+    rawTranscript: transcribeResult.rawTranscript,
+    toneId: toneId ?? null,
+  });
+
+  const finalTranscript = postProcessResult.transcript;
+  const rawTranscript = transcribeResult.rawTranscript;
+  const warnings = [
+    ...transcribeResult.warnings,
+    ...postProcessResult.warnings,
+  ];
+  const metadata = {
+    ...transcribeResult.metadata,
+    ...postProcessResult.metadata,
+  };
 
   if (!finalTranscript) {
     throw new Error("Retranscription produced no text.");
