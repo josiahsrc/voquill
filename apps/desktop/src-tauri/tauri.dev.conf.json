@@ -2,6 +2,9 @@
   "productName": "Voquill (dev)",
   "identifier": "com.voquill.desktop.dev",
   "mainBinaryName": "Voquill (dev)",
+  "bundle": {
+    "resources": ["../.env.dev"]
+  },
   "plugins": {
     "updater": {
       "endpoints": [
