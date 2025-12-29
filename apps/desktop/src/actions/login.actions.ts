@@ -44,15 +44,12 @@ export const submitSignIn = async (): Promise<void> => {
 
 export const submitSignInWithGoogle = async (): Promise<void> => {
   try {
-    console.log("[submitSignInWithGoogle] Starting Google sign-in...");
     produceAppState((state) => {
       state.login.status = "loading";
       state.login.errorMessage = "";
     });
     await invoke(GOOGLE_AUTH_COMMAND);
-    console.log("[submitSignInWithGoogle] Invoke completed successfully");
-  } catch (error) {
-    console.error("[submitSignInWithGoogle] Error:", error);
+  } catch {
     produceAppState((state) => {
       state.login.errorMessage = "An error occurred while signing in.";
       state.login.status = "idle";

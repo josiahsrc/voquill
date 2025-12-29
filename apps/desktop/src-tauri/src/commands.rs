@@ -188,21 +188,12 @@ pub async fn start_google_sign_in(
     app_handle: AppHandle,
     config: State<'_, crate::state::GoogleOAuthState>,
 ) -> Result<(), String> {
-    eprintln!("[google_sign_in] Command invoked");
-
     let config = config.config().ok_or_else(|| {
-        let err = "Google OAuth client id/secret not configured. Set VOQUILL_GOOGLE_CLIENT_ID and VOQUILL_GOOGLE_CLIENT_SECRET.";
-        eprintln!("[google_sign_in] ERROR: {}", err);
-        err.to_string()
+        "Google OAuth client id/secret not configured. Set VOQUILL_GOOGLE_CLIENT_ID and VOQUILL_GOOGLE_CLIENT_SECRET."
+            .to_string()
     })?;
 
-    eprintln!("[google_sign_in] Config loaded, starting OAuth flow...");
-    let result = crate::system::google_oauth::start_google_oauth(&app_handle, config)
-        .await
-        .map_err(|err| {
-            eprintln!("[google_sign_in] OAuth flow error: {}", err);
-            err
-        })?;
+    let result = crate::system::google_oauth::start_google_oauth(&app_handle, config).await?;
 
     app_handle
         .emit_to(
