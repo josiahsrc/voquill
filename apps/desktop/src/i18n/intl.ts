@@ -5,6 +5,7 @@ import esMessages from "./locales/es.json";
 import frMessages from "./locales/fr.json";
 import deMessages from "./locales/de.json";
 import ptMessages from "./locales/pt.json";
+import itMessages from "./locales/it.json";
 
 const LOCALE_MESSAGES: Record<Locale, Record<string, string>> = {
   en: enMessages,
@@ -12,6 +13,7 @@ const LOCALE_MESSAGES: Record<Locale, Record<string, string>> = {
   fr: frMessages,
   de: deMessages,
   pt: ptMessages,
+  it: itMessages,
 };
 
 const normalizeLocale = (value?: string | null) => {

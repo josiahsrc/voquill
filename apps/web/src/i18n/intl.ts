@@ -3,11 +3,17 @@ import { DEFAULT_LOCALE, Locale, SUPPORTED_LOCALES } from "./config";
 import enMessages from "./locales/en.json";
 import esMessages from "./locales/es.json";
 import frMessages from "./locales/fr.json";
+import deMessages from "./locales/de.json";
+import ptMessages from "./locales/pt.json";
+import itMessages from "./locales/it.json";
 
 const LOCALE_MESSAGES: Record<string, Record<string, string>> = {
   en: enMessages,
   es: esMessages,
   fr: frMessages,
+  de: deMessages,
+  pt: ptMessages,
+  it: itMessages,
 };
 
 const normalizeLocale = (value?: string | null) => {
