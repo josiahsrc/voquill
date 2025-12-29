@@ -10,5 +10,8 @@
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "prettier.prettier-vscode"
+  },
+  "files.associations": {
+    "*.rules": "firestorerules"
   }
 }
