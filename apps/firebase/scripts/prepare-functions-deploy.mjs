@@ -72,11 +72,31 @@ function copyFirebaseConfig() {
     "firestore.rules",
     "firestore.indexes.json",
     "storage.rules",
+    "database.rules.json",
   ];
   for (const file of filesToCopy) {
     const sourcePath = path.join(firebaseRoot, file);
     if (existsSync(sourcePath)) {
       cpSync(sourcePath, path.join(destinationRoot, file));
+    }
+  }
+}
+
+function copyEnvFiles() {
+  const sourceDir = path.join(firebaseRoot, "functions");
+  const destDir = path.join(pruneOutputDir, "apps/firebase/functions");
+  mkdirSync(destDir, { recursive: true });
+
+  // Copy .env files that Firebase Functions v2 expects
+  const envFiles = [
+    ".env",
+    ".env.voquill-prod",
+    ".env.voquill-dev",
+  ];
+  for (const file of envFiles) {
+    const sourcePath = path.join(sourceDir, file);
+    if (existsSync(sourcePath)) {
+      cpSync(sourcePath, path.join(destDir, file));
     }
   }
 }
@@ -137,6 +157,7 @@ function updatePackageLock() {
 function main() {
   runTurboPrune();
   copyFirebaseConfig();
+  copyEnvFiles();
   stageLocalPackages();
   rewritePackageJson();
   updatePackageLock();
