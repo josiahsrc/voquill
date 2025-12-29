@@ -10,6 +10,7 @@ export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
   "pt-BR": "Português (Brasil)",
   it: "Italiano",
   "zh-TW": "中文 (台灣)",
+  "zh-CN": "中文 (简体)",
 };
 
 export const resolveLocaleValue = (value?: string | null): Locale => {
@@ -21,7 +22,7 @@ export const mapLocaleToWhisperLanguage = (locale: Locale): string => {
     return "pt";
   }
 
-  if (locale === "zh-TW") {
+  if (locale === "zh-TW" || locale === "zh-CN") {
     return "zh";
   }
 
