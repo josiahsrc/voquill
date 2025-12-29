@@ -13,6 +13,9 @@ PRUNED_FUNCTIONS_DIR="$PRUNED_FIREBASE_DIR/functions"
 echo "Installing workspace dependencies in pruned functions directory..."
 (cd "$PRUNED_FUNCTIONS_DIR" && npm install)
 
+echo "Linting functions..."
+(cd "$PRUNED_FUNCTIONS_DIR" && npm run lint)
+
 echo "Building functions bundle..."
 (cd "$PRUNED_FUNCTIONS_DIR" && npm run build)
 
