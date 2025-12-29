@@ -44,6 +44,7 @@ npm run i18n:sync        # Sync message IDs to other locales
 - `VITE_FLAVOR` - Environment flavor (dev/prod/emulators, defaults to emulators)
 - `VITE_USE_EMULATORS` - Point to Firebase emulators (default true in emulators flavor)
 - `VOQUILL_WHISPER_DISABLE_GPU` - Force CPU-only Whisper inference
+- `VOQUILL_ENABLE_DEVTOOLS` - Open dev tools automatically on startup (useful for debugging production builds)
 
 ### Root-level Commands
 

@@ -106,6 +106,14 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 
+            // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
+            if std::env::var("VOQUILL_ENABLE_DEVTOOLS").is_ok() {
+                eprintln!("[app] VOQUILL_ENABLE_DEVTOOLS detected, opening dev tools...");
+                if let Some(main_window) = app.get_webview_window("main") {
+                    main_window.open_devtools();
+                }
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
