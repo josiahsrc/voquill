@@ -1,7 +1,6 @@
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
-use keyring::Entry;
 use rand::{rngs::OsRng, RngCore};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -24,8 +23,6 @@ pub const GOOGLE_AUTH_EVENT: &str = "voquill:google-auth";
 const AUTHORIZATION_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 const CERTS_URL: &str = "https://www.googleapis.com/oauth2/v3/certs";
-const KEYRING_SERVICE: &str = "voquill-google";
-const REFRESH_TOKEN_ENTRY: &str = "refresh_token";
 const CALLBACK_PATH: &str = "/callback";
 const HTTP_SERVER_TIMEOUT: Duration = Duration::from_secs(120);
 
@@ -114,12 +111,6 @@ pub async fn start_google_oauth(
         name: claims.name,
         picture: claims.picture,
     };
-
-    if let Some(ref refresh_token) = token_response.refresh_token {
-        if let Err(err) = store_refresh_token(refresh_token) {
-            eprintln!("Failed to persist Google refresh token: {err}");
-        }
-    }
 
     let payload = GoogleAuthEventPayload {
         id_token: token_response.id_token.clone(),
@@ -390,9 +381,4 @@ struct GoogleIdTokenClaims {
 enum Audience {
     Single(String),
     Multiple(Vec<String>),
-}
-
-fn store_refresh_token(token: &str) -> Result<(), keyring::Error> {
-    let entry = Entry::new(KEYRING_SERVICE, REFRESH_TOKEN_ENTRY);
-    entry.set_password(token)
 }
