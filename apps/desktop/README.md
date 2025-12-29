@@ -1,27 +1,105 @@
-# Tauri + React + Typescript
+# Voquill Desktop
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Cross-platform voice-to-text desktop application built with Tauri 2 (Rust + TypeScript/React).
 
-## WebdriverIO smoke test
+## Development
 
-1. Install the [tauri-driver](https://github.com/tauri-apps/tauri-driver) binary once with `cargo install tauri-driver`.
-2. From this directory run `npm run test:webdriver` to build the app in debug mode and execute the WebdriverIO proof-of-concept spec.
-3. You can override the compiled binary path by setting `TAURI_APPLICATION_PATH` before running the test if you use a custom build output.
+### Prerequisites
 
-The test boots the desktop application and asserts that the app shell renders in the main window, providing a starting point for richer end-to-end coverage.
+- Node.js 18+
+- Rust 1.77+
+- Platform-specific dependencies (see [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/))
 
-## Recommended IDE Setup
+### Running Locally
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+Use platform-specific commands (required for native features):
+
+```bash
+npm run dev:mac          # macOS
+npm run dev:windows      # Windows
+npm run dev:linux        # Linux (CPU-only Whisper)
+npm run dev:linux:gpu    # Linux (Vulkan GPU acceleration)
+```
+
+> **Note:** Do not use `npm run dev` directly—use the platform-specific commands above.
+
+### Build & Quality
+
+```bash
+npm run build            # Build frontend
+npm run lint             # ESLint
+npm run check-types      # TypeScript type checking
+npm run test:webdriver   # E2E smoke tests
+```
+
+## Project Structure
+
+```
+src/
+├── actions/         # Business logic orchestration
+├── components/      # React components
+├── hooks/           # Reusable React hooks
+├── repos/           # Data access (local SQLite / cloud Firebase)
+├── state/           # Zustand state slices
+├── types/           # TypeScript types
+└── utils/           # Pure utility functions
+
+src-tauri/
+└── src/
+    ├── commands.rs  # Tauri commands (TypeScript ↔ Rust bridge)
+    ├── app.rs       # Application setup
+    ├── db/          # SQLite migrations and queries
+    ├── domain/      # Rust domain models
+    ├── platform/    # Platform-specific code (audio, keyboard, whisper)
+    └── system/      # System utilities (models, GPU, tray)
+```
+
+## Architecture
+
+**"Rust is the API, TypeScript is the Brain"**
+
+- All business logic lives in TypeScript
+- Rust provides capabilities (audio recording, transcription, system APIs)
+- Zustand is the single source of truth for state
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_FLAVOR` | Environment: `dev`, `prod`, or `emulators` (default) |
+| `VITE_USE_EMULATORS` | Connect to Firebase emulators |
+| `VOQUILL_WHISPER_DISABLE_GPU` | Force CPU-only Whisper inference |
+| `VOQUILL_ENABLE_DEVTOOLS` | Open dev tools on startup |
+| `VOQUILL_DESKTOP_PLATFORM` | Override platform detection |
 
 ## Internationalization
 
-The desktop app uses [`react-intl`](https://formatjs.io/docs/react-intl/) for translations. Device language is detected from the browser/OS locale and falls back to English (`src/i18n/manifest.json` tracks the supported locales). Translation JSON files live in `src/i18n/locales`.
+Uses [react-intl](https://formatjs.io/docs/react-intl/) with auto-generated message IDs.
 
-### Adding or Updating Messages
+```bash
+npm run i18n:extract     # Extract messages to en.json
+npm run i18n:sync        # Sync to other locales
+```
 
-1. Wrap UI strings with `<FormattedMessage>` or call `intl.formatMessage` from the `useIntl` hook. Only `defaultMessage` (and optional `description`) is required—the Babel plugin (`babel-plugin-formatjs`) derives ids directly from the default text (e.g., `"Installing update..."` ⇒ `installing_update`).
-2. Run `npm run i18n:extract` (from `apps/desktop`) to regenerate the English catalog (`src/i18n/locales/en.json`) from the source defaults. The custom formatter applies the same slug rules so ids match the runtime output.
-3. Run `npm run i18n:sync` to copy the new message ids into the other locale files (`es`, `fr`) while preserving any existing translations. Use `npm run i18n:sync -- --locale=es` to target a subset.
+### Adding Translations
 
-To add a new locale, list it inside `src/i18n/manifest.json`, create a `.json` file in `src/i18n/locales`, then run the sync command to seed the keys with English defaults before translating them.
+1. Use `<FormattedMessage defaultMessage="..." />` in components
+2. Run `npm run i18n:extract` to update `src/i18n/locales/en.json`
+3. Run `npm run i18n:sync` to propagate keys to other locales
+4. Add translations to each locale file
+
+## Testing
+
+```bash
+# Install tauri-driver (one-time)
+cargo install tauri-driver
+
+# Run E2E tests
+npm run test:webdriver
+```
+
+## IDE Setup
+
+- [VS Code](https://code.visualstudio.com/)
+- [Tauri extension](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)
+- [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
