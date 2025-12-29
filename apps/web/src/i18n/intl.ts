@@ -7,6 +7,7 @@ import deMessages from "./locales/de.json";
 import ptMessages from "./locales/pt.json";
 import ptBRMessages from "./locales/pt-BR.json";
 import itMessages from "./locales/it.json";
+import zhTWMessages from "./locales/zh-TW.json";
 
 const LOCALE_MESSAGES: Record<string, Record<string, string>> = {
   en: enMessages,
@@ -16,6 +17,7 @@ const LOCALE_MESSAGES: Record<string, Record<string, string>> = {
   pt: ptMessages,
   "pt-BR": ptBRMessages,
   it: itMessages,
+  "zh-TW": zhTWMessages,
 };
 
 const matchSupportedLocale = (value?: string | null): Locale | null => {

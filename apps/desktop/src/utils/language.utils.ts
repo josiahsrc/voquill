@@ -9,17 +9,20 @@ export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
   pt: "Português",
   "pt-BR": "Português (Brasil)",
   it: "Italiano",
+  "zh-TW": "中文 (台灣)",
 };
 
 export const resolveLocaleValue = (value?: string | null): Locale => {
   return matchSupportedLocale(value) ?? DEFAULT_LOCALE;
 };
 
-export const mapLocaleToSupportedTranscriptionLocale = (
-  locale: Locale,
-): Locale => {
+export const mapLocaleToWhisperLanguage = (locale: Locale): string => {
   if (locale === "pt-BR") {
     return "pt";
+  }
+
+  if (locale === "zh-TW") {
+    return "zh";
   }
 
   return locale;
