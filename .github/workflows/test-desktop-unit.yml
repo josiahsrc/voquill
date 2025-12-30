@@ -1,4 +1,4 @@
-name: Test Desktop
+name: Test Desktop Unit
 
 on:
   pull_request:
