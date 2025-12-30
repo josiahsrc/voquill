@@ -11,6 +11,7 @@ export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
   it: "Italiano",
   "zh-TW": "中文 (台灣)",
   "zh-CN": "中文 (简体)",
+  ko: "한국어",
 };
 
 export const resolveLocaleValue = (value?: string | null): Locale => {
