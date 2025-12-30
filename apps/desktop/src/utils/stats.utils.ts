@@ -1,28 +1,35 @@
-// Average words per minute for typing vs speaking
-export const TYPING_WPM = 40;
-export const SPEAKING_WPM = 150;
-
-// Maximum reasonable hourly rate (for validation)
-export const MAX_HOURLY_RATE = 10000;
+// Average typing speed assumption for MVP
+export const TYPING_WPM = 45;
 
 /**
- * Calculate time saved in minutes based on word count.
- * Time saved = time to type - time to speak
+ * Calculate estimated typing time in minutes based on word count.
  */
-export const calculateTimeSavedMinutes = (wordCount: number): number => {
+export const calculateEstimatedTypingMinutes = (wordCount: number): number => {
   if (wordCount <= 0) {
     return 0;
   }
-  const typingMinutes = wordCount / TYPING_WPM;
-  const speakingMinutes = wordCount / SPEAKING_WPM;
-  return typingMinutes - speakingMinutes;
+  return wordCount / TYPING_WPM;
 };
 
 /**
- * Format time saved for display.
+ * Calculate time saved in minutes.
+ * Time saved = estimated typing time - actual transcription time
+ */
+export const calculateTimeSavedMinutes = (
+  wordCount: number,
+  durationTotalMs: number,
+): number => {
+  const typingMinutes = calculateEstimatedTypingMinutes(wordCount);
+  const transcriptionMinutes = durationTotalMs / 60000;
+  const saved = typingMinutes - transcriptionMinutes;
+  return Math.max(0, saved); // Don't return negative time saved
+};
+
+/**
+ * Format time for display.
  * Returns localized time string like "< 1 min", "5 min", "1 hr 30 min"
  */
-export const formatTimeSaved = (
+export const formatTime = (
   minutes: number,
   options?: {
     lessThanOneMin?: string;
@@ -46,40 +53,4 @@ export const formatTimeSaved = (
     return `${hours} ${hrLabel}`;
   }
   return `${hours} ${hrLabel} ${remainingMinutes} ${minLabel}`;
-};
-
-/**
- * Format money saved for display using Intl.NumberFormat.
- */
-export const formatMoneySaved = (
-  amount: number,
-  locale: string,
-  currency: string = "USD",
-): string => {
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
-
-/**
- * Validate and normalize hourly rate input.
- * Returns null for invalid/empty input, or the validated number.
- */
-export const validateHourlyRate = (input: string): number | null => {
-  const trimmed = input.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const numericValue = parseFloat(trimmed);
-  if (
-    isNaN(numericValue) ||
-    numericValue < 0 ||
-    numericValue > MAX_HOURLY_RATE
-  ) {
-    return null;
-  }
-  return numericValue;
 };

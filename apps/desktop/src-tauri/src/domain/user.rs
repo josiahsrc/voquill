@@ -17,6 +17,8 @@ pub struct User {
     pub words_this_month_month: Option<String>,
     #[serde(default)]
     pub words_total: i64,
+    #[serde(default)]
+    pub duration_total_ms: i64,
     #[serde(default = "default_play_interaction_chime")]
     pub play_interaction_chime: bool,
     #[serde(default)]

@@ -15,6 +15,7 @@ type LocalUser = {
   wordsThisMonth: number;
   wordsThisMonthMonth: string | null;
   wordsTotal: number;
+  durationTotalMs: number;
   playInteractionChime?: boolean;
   hasFinishedTutorial?: boolean;
 };
@@ -41,6 +42,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     wordsThisMonth: localUser.wordsThisMonth ?? 0,
     wordsThisMonthMonth: localUser.wordsThisMonthMonth ?? null,
     wordsTotal: localUser.wordsTotal ?? 0,
+    durationTotalMs: localUser.durationTotalMs ?? 0,
     playInteractionChime,
     hasFinishedTutorial: localUser.hasFinishedTutorial ?? false,
   };
@@ -56,6 +58,7 @@ const toLocalUser = (user: User): LocalUser => ({
   wordsThisMonth: user.wordsThisMonth,
   wordsThisMonthMonth: user.wordsThisMonthMonth ?? null,
   wordsTotal: user.wordsTotal,
+  durationTotalMs: user.durationTotalMs,
   playInteractionChime: user.playInteractionChime,
   hasFinishedTutorial: user.hasFinishedTutorial,
 });

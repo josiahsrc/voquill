@@ -28,6 +28,4 @@ pub struct UserPreferences {
     pub gpu_enumeration_enabled: bool,
     #[serde(default)]
     pub paste_keybind: Option<String>,
-    #[serde(default)]
-    pub hourly_rate: Option<f64>,
 }

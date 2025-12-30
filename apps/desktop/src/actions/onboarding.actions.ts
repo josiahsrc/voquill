@@ -108,6 +108,7 @@ export const submitOnboarding = async () => {
       wordsThisMonth: 0,
       wordsThisMonthMonth: null,
       wordsTotal: 0,
+      durationTotalMs: 0,
       playInteractionChime: true,
       hasFinishedTutorial: false,
     };

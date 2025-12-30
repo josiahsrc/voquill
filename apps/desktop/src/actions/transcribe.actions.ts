@@ -30,7 +30,7 @@ import {
   getMyPreferredLocale,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
-import { addWordsToCurrentUser } from "./user.actions";
+import { addUsageToCurrentUser } from "./user.actions";
 
 export type TranscribeAudioInput = {
   samples: AudioSamples;
@@ -319,9 +319,10 @@ export const storeTranscription = async (
   });
 
   const wordsAdded = input.transcript ? countWords(input.transcript) : 0;
-  if (wordsAdded > 0) {
+  const durationMs = audioSnapshot?.durationMs ?? 0;
+  if (wordsAdded > 0 || durationMs > 0) {
     try {
-      await addWordsToCurrentUser(wordsAdded);
+      await addUsageToCurrentUser(wordsAdded, durationMs);
     } catch (error) {
       console.error("Failed to update usage metrics", error);
     }

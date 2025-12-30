@@ -64,7 +64,6 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   activeToneId: null,
   gotStartedAt: null,
   gpuEnumerationEnabled: false,
-  hourlyRate: null,
 });
 
 const updateUserPreferences = async (
@@ -98,10 +97,11 @@ const getCurrentUsageMonth = (): string => {
   return `${year}-${month}`;
 };
 
-export const addWordsToCurrentUser = async (
+export const addUsageToCurrentUser = async (
   wordCount: number,
+  durationMs: number,
 ): Promise<void> => {
-  if (wordCount <= 0) {
+  if (wordCount <= 0 && durationMs <= 0) {
     return;
   }
 
@@ -115,6 +115,7 @@ export const addWordsToCurrentUser = async (
 
       user.wordsThisMonth += wordCount;
       user.wordsTotal += wordCount;
+      user.durationTotalMs += durationMs;
     },
     "Unable to update usage. User not found.",
     "Failed to update usage metrics. Please try again.",
@@ -339,12 +340,4 @@ export const clearGotStartedAt = async (): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.gotStartedAt = null;
   }, "Failed to clear got started timestamp. Please try again.");
-};
-
-export const setHourlyRate = async (
-  hourlyRate: Nullable<number>,
-): Promise<void> => {
-  await updateUserPreferences((preferences) => {
-    preferences.hourlyRate = hourlyRate;
-  }, "Failed to save hourly rate. Please try again.");
 };

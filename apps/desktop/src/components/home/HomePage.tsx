@@ -2,15 +2,10 @@ import { Box, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
 import {
-  calculateTimeSavedMinutes,
-  formatMoneySaved,
-  formatTimeSaved,
+  calculateEstimatedTypingMinutes,
+  formatTime,
 } from "../../utils/stats.utils";
-import {
-  getMyUser,
-  getMyUserName,
-  getMyUserPreferences,
-} from "../../utils/user.utils";
+import { getMyUser, getMyUserName } from "../../utils/user.utils";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 import { Stat } from "./Stat";
@@ -19,12 +14,11 @@ import { DictationInstruction } from "../common/DictationInstruction";
 
 export default function HomePage() {
   const user = useAppStore(getMyUser);
-  const preferences = useAppStore(getMyUserPreferences);
   const userName = useAppStore(getMyUserName);
   const intl = useIntl();
 
   const wordsTotal = user?.wordsTotal ?? 0;
-  const hourlyRate = preferences?.hourlyRate ?? null;
+  const durationTotalMs = user?.durationTotalMs ?? 0;
 
   // Localized time labels
   const timeLabels = {
@@ -33,15 +27,15 @@ export default function HomePage() {
     hrLabel: intl.formatMessage({ defaultMessage: "hr" }),
   };
 
-  // Calculate time saved
-  const timeSavedMinutes = calculateTimeSavedMinutes(wordsTotal);
-  const timeSavedDisplay = formatTimeSaved(timeSavedMinutes, timeLabels);
+  // Calculate times
+  const transcriptionMinutes = durationTotalMs / 60000;
+  const estimatedTypingMinutes = calculateEstimatedTypingMinutes(wordsTotal);
 
-  // Calculate money saved (only if hourly rate is set)
-  const timeSavedHours = timeSavedMinutes / 60;
-  const moneySaved = hourlyRate ? timeSavedHours * hourlyRate : null;
-  const moneySavedDisplay =
-    moneySaved !== null ? formatMoneySaved(moneySaved, intl.locale) : null;
+  const transcriptionTimeDisplay = formatTime(transcriptionMinutes, timeLabels);
+  const estimatedTypingTimeDisplay = formatTime(
+    estimatedTypingMinutes,
+    timeLabels,
+  );
 
   return (
     <DashboardEntryLayout>
@@ -62,25 +56,15 @@ export default function HomePage() {
           >
             <Stat
               label={intl.formatMessage({
-                defaultMessage: "Time saved",
+                defaultMessage: "Time to transcribe",
               })}
-              value={timeSavedDisplay}
-              subtitle={
-                moneySavedDisplay
-                  ? intl.formatMessage(
-                      {
-                        defaultMessage: "{amount} saved",
-                      },
-                      { amount: moneySavedDisplay },
-                    )
-                  : undefined
-              }
+              value={transcriptionTimeDisplay}
             />
             <Stat
               label={intl.formatMessage({
-                defaultMessage: "Words total",
+                defaultMessage: "Estimated typing time",
               })}
-              value={wordsTotal}
+              value={estimatedTypingTimeDisplay}
             />
           </Stack>
         </Box>

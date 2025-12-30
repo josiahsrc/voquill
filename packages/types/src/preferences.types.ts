@@ -17,5 +17,4 @@ export type UserPreferences = {
   activeToneId: Nullable<string>;
   gotStartedAt: Nullable<number>;
   gpuEnumerationEnabled: boolean;
-  hourlyRate: Nullable<number>;
 };

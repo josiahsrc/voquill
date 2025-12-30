@@ -18,6 +18,7 @@ export type DatabaseUser = {
   wordsThisMonth: number;
   wordsThisMonthMonth: Nullable<string>;
   wordsTotal: number;
+  durationTotalMs: number;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
@@ -39,5 +40,6 @@ export const UserZod = z
     wordsThisMonth: z.number(),
     wordsThisMonthMonth: z.string().nullable(),
     wordsTotal: z.number(),
+    durationTotalMs: z.number(),
   })
   .strict() satisfies z.ZodType<User>;

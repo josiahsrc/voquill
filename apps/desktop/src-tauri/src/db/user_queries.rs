@@ -14,10 +14,11 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              words_this_month,
              words_this_month_month,
              words_total,
+             duration_total_ms,
              play_interaction_chime,
              has_finished_tutorial
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
@@ -27,6 +28,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
             words_this_month = excluded.words_this_month,
             words_this_month_month = excluded.words_this_month_month,
             words_total = excluded.words_total,
+            duration_total_ms = excluded.duration_total_ms,
             play_interaction_chime = excluded.play_interaction_chime,
             has_finished_tutorial = excluded.has_finished_tutorial",
     )
@@ -39,6 +41,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(&user.words_this_month)
     .bind(&user.words_this_month_month)
     .bind(&user.words_total)
+    .bind(&user.duration_total_ms)
     .bind(if user.play_interaction_chime { 1 } else { 0 })
     .bind(if user.has_finished_tutorial { 1 } else { 0 })
     .execute(&pool)
@@ -59,6 +62,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             words_this_month,
             words_this_month_month,
             words_total,
+            duration_total_ms,
             play_interaction_chime,
             has_finished_tutorial
          FROM user_profiles
@@ -86,6 +90,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                     .try_get::<Option<String>, _>("words_this_month_month")
                     .unwrap_or(None),
                 words_total: row.try_get::<i64, _>("words_total").unwrap_or(0),
+                duration_total_ms: row.try_get::<i64, _>("duration_total_ms").unwrap_or(0),
                 play_interaction_chime: play_interaction_raw != 0,
                 has_finished_tutorial: tutorial_finished_raw != 0,
             })

@@ -70,8 +70,8 @@ pub const API_KEY_OPENROUTER_CONFIG_MIGRATION_SQL: &str =
     include_str!("migrations/034_api_key_openrouter_config.sql");
 pub const API_KEY_BASE_URL_MIGRATION_SQL: &str =
     include_str!("migrations/035_api_key_base_url.sql");
-pub const USER_PREFERENCES_HOURLY_RATE_MIGRATION_SQL: &str =
-    include_str!("migrations/036_user_preferences_hourly_rate.sql");
+pub const USER_DURATION_STATS_MIGRATION_SQL: &str =
+    include_str!("migrations/036_user_duration_stats.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -287,8 +287,8 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
         },
         tauri_plugin_sql::Migration {
             version: 36,
-            description: "add_user_preferences_hourly_rate",
-            sql: USER_PREFERENCES_HOURLY_RATE_MIGRATION_SQL,
+            description: "add_user_duration_stats",
+            sql: USER_DURATION_STATS_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]
