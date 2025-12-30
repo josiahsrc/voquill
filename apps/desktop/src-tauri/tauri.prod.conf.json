@@ -2,6 +2,13 @@
   "productName": "Voquill",
   "identifier": "com.voquill.desktop",
   "mainBinaryName": "Voquill",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "depends": ["libxdo3"]
+      }
+    }
+  },
   "plugins": {
     "updater": {
       "endpoints": [
