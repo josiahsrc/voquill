@@ -35,8 +35,17 @@
   max-width: 560px;
 }
 
-.content > span {
-  align-self: center;
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* New badge */
+.newBadge {
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+  color: white;
+  border-color: transparent;
 }
 
 /* Online badge with green ping */

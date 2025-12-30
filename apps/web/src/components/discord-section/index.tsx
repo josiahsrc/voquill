@@ -40,18 +40,23 @@ export default function DiscordSection() {
     <section className={styles.section} id="community">
       <DiscordIcon className={styles.backgroundIcon} />
       <div className={styles.content}>
-        {onlineCount !== null && (
-          <span className={`${pageStyles.badge} ${styles.onlineBadge}`}>
-            <span className={styles.pingWrapper}>
-              <span className={styles.ping} />
-              <span className={styles.pingDot} />
-            </span>
-            <FormattedMessage
-              defaultMessage="{count} Online"
-              values={{ count: onlineCount.toLocaleString() }}
-            />
+        <div className={styles.badges}>
+          <span className={`${pageStyles.badge} ${styles.newBadge}`}>
+            <FormattedMessage defaultMessage="New!" />
           </span>
-        )}
+          {onlineCount !== null && (
+            <span className={`${pageStyles.badge} ${styles.onlineBadge}`}>
+              <span className={styles.pingWrapper}>
+                <span className={styles.ping} />
+                <span className={styles.pingDot} />
+              </span>
+              <FormattedMessage
+                defaultMessage="{count} Online"
+                values={{ count: onlineCount.toLocaleString() }}
+              />
+            </span>
+          )}
+        </div>
         <h2 className={styles.heading}>
           <FormattedMessage defaultMessage="Join the conversation" />
         </h2>
