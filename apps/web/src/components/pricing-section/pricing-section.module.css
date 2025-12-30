@@ -1,0 +1,282 @@
+.pricingSection {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.sectionHeaderCentered {
+  text-align: center;
+  align-items: center;
+  margin: 0 auto;
+}
+
+.sectionHeaderCentered > span {
+  align-self: center;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.pricingCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--level1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pricingCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.pricingCardPopular {
+  background: var(--primary-button-bg);
+  border-color: var(--primary-button-border);
+  box-shadow: var(--shadow);
+  transform: scale(1.02);
+}
+
+.pricingCardPopular:hover {
+  transform: scale(1.02) translateY(-2px);
+}
+
+.popularBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.planHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planName {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text-strong);
+}
+
+.pricingCardPopular .planName {
+  color: var(--primary-button-fg);
+}
+
+.planDescription {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.pricingCardPopular .planDescription {
+  color: var(--primary-button-fg);
+  opacity: 0.7;
+}
+
+.priceContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.price {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.pricingCardPopular .price {
+  color: var(--primary-button-fg);
+}
+
+.pricePeriod {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.pricingCardPopular .pricePeriod {
+  color: var(--primary-button-fg);
+  opacity: 0.7;
+}
+
+.priceCustom {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--primary-button-bg);
+  color: var(--primary-button-fg);
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ctaButton:hover {
+  background: var(--primary-button-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+.pricingCardPopular .ctaButton {
+  background: var(--level0);
+  color: var(--text-strong);
+  border-color: transparent;
+}
+
+.pricingCardPopular .ctaButton:hover {
+  background: var(--level1);
+}
+
+.featuresDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+  border: none;
+}
+
+.pricingCardPopular .featuresDivider {
+  background: var(--primary-button-fg);
+  opacity: 0.2;
+}
+
+.featuresSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.featuresLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.pricingCardPopular .featuresLabel {
+  color: var(--primary-button-fg);
+  opacity: 0.7;
+}
+
+.featuresList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.pricingCardPopular .featureItem {
+  color: var(--primary-button-fg);
+  opacity: 0.85;
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: #3b82f6;
+  margin-top: 1px;
+}
+
+.pricingCardPopular .checkIcon {
+  color: #60a5fa;
+}
+
+.trustSignal {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.trustContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background: var(--level1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.shieldIcon {
+  width: 22px;
+  height: 22px;
+  color: #22c55e;
+}
+
+.trustStrong {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+@media (max-width: 1100px) {
+  .pricingGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pricingCardPopular {
+    transform: none;
+  }
+
+  .pricingCardPopular:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 720px) {
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricingCard {
+    padding: 24px;
+  }
+
+  .popularBadge {
+    top: -10px;
+  }
+}
