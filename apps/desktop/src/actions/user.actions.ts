@@ -16,7 +16,6 @@ import {
   registerUserPreferences,
   setCurrentUser,
 } from "../utils/user.utils";
-import { type Locale } from "../i18n/config";
 import { showErrorSnackbar } from "./app.actions";
 
 const updateUser = async (
@@ -160,7 +159,9 @@ export const setPreferredMicrophone = async (
   );
 };
 
-export const setPreferredLanguage = async (language: Locale): Promise<void> => {
+export const setPreferredLanguage = async (
+  language: Nullable<string>,
+): Promise<void> => {
   await updateUser(
     (user) => {
       user.preferredLanguage = language;

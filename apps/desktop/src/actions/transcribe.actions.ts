@@ -26,6 +26,7 @@ import {
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
 import {
+  getMyDictationLanguage,
   getMyEffectiveUserId,
   getMyPreferredLocale,
 } from "../utils/user.utils";
@@ -98,7 +99,8 @@ export const transcribeAudio = async ({
   warnings.push(...transcribeWarnings);
 
   const preferredLocale = getMyPreferredLocale(state);
-  const whisperLanguage = mapLocaleToWhisperLanguage(preferredLocale);
+  const dictationLanguage = getMyDictationLanguage(state);
+  const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
   const transcriptionPrompt = buildLocalizedTranscriptionPrompt(

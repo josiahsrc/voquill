@@ -32,13 +32,12 @@ import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
 import { setPreferredLanguage } from "../../actions/user.actions";
-import { matchSupportedLocale } from "../../i18n";
-import { DEFAULT_LOCALE, type Locale } from "../../i18n/config";
 import { getAuthRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
-import { LANGUAGE_DISPLAY_NAMES } from "../../utils/language.utils";
+import { DICTATION_LANGUAGE_OPTIONS } from "../../utils/language.utils";
 import { getIsPaying } from "../../utils/member.utils";
 import {
+  getDetectedSystemLocale,
   getHasEmailProvider,
   getIsSignedIn,
   getMyUser,
@@ -46,11 +45,6 @@ import {
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
-
-const LANGUAGE_OPTIONS = Object.entries(LANGUAGE_DISPLAY_NAMES) as [
-  Locale,
-  string,
-][];
 
 export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
@@ -64,16 +58,15 @@ export default function SettingsPage() {
   ]);
   const autoLaunchLoading = autoLaunchStatus === "loading";
 
-  const preferredLanguage = useAppStore((state) => {
+  const dictationLanguage = useAppStore((state) => {
     const user = getMyUser(state);
-    const normalized = matchSupportedLocale(user?.preferredLanguage);
-    return normalized ?? DEFAULT_LOCALE;
+    return user?.preferredLanguage ?? getDetectedSystemLocale();
   });
 
-  const handlePreferredLanguageChange = (event: SelectChangeEvent<string>) => {
-    const nextValue = (event.target.value as Locale) ?? DEFAULT_LOCALE;
+  const handleDictationLanguageChange = (event: SelectChangeEvent<string>) => {
+    const nextValue = event.target.value;
     void setPreferredLanguage(nextValue).then(() => {
-      loadTones(); // tones need to be reloaded to get the localized names
+      loadTones();
     });
   };
 
@@ -179,32 +172,6 @@ export default function SettingsPage() {
         leading={<KeyboardAltOutlined />}
         onClick={openShortcutsDialog}
       />
-      <ListTile
-        title={<FormattedMessage defaultMessage="Preferred language" />}
-        leading={<LanguageOutlined />}
-        disableRipple={true}
-        trailing={
-          <Box
-            onClick={(event) => event.stopPropagation()}
-            sx={{ minWidth: 160 }}
-          >
-            <Select
-              value={preferredLanguage}
-              onChange={handlePreferredLanguageChange}
-              size="small"
-              variant="outlined"
-              fullWidth
-              inputProps={{ "aria-label": "Preferred language" }}
-            >
-              {LANGUAGE_OPTIONS.map(([value, label]) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
-        }
-      />
     </Section>
   );
 
@@ -215,6 +182,39 @@ export default function SettingsPage() {
         <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
       }
     >
+      <ListTile
+        title={<FormattedMessage defaultMessage="Dictation language" />}
+        leading={<LanguageOutlined />}
+        disableRipple={true}
+        trailing={
+          <Box
+            onClick={(event) => event.stopPropagation()}
+            sx={{ minWidth: 200 }}
+          >
+            <Select
+              value={dictationLanguage}
+              onChange={handleDictationLanguageChange}
+              size="small"
+              variant="outlined"
+              fullWidth
+              inputProps={{ "aria-label": "Dictation language" }}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 300,
+                  },
+                },
+              }}
+            >
+              {DICTATION_LANGUAGE_OPTIONS.map(([value, label]) => (
+                <MenuItem key={value} value={value}>
+                  {label}
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+        }
+      />
       <ListTile
         title={<FormattedMessage defaultMessage="AI transcription" />}
         leading={<GraphicEqOutlined />}
