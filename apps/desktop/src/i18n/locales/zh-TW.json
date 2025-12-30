@@ -1,4 +1,5 @@
 {
+  "1_min": "< 1 min",
   "2_000_free_words_per_month": "每月 2,000 字免費",
   "404_page_not_found": "404 - 找不到頁面",
   "a_voquill_update": "Voquill 更新",
@@ -140,6 +141,7 @@
   "hourly_rate": "Hourly rate",
   "how_does_the_voice_activation_work": "語音啟動如何運作？",
   "how_voquill_should_manage_your_transcriptions": "Voquill 應如何管理您的轉錄。",
+  "hr": "hr",
   "i_already_have_an_account": "我已有帳戶",
   "installation_in_progress_voquill_may_restart_automatically_w": "安裝進行中。Voquill 完成後可能會自動重新啟動。",
   "installing_update": "正在安裝更新...",
@@ -168,6 +170,7 @@
   "metadata_unavailable_for_this_transcription": "此轉錄的中繼資料不可用。",
   "microphone": "麥克風",
   "microphone_settings": "麥克風設定",
+  "min": "min",
   "mode": "模式",
   "model": "模型",
   "model_size": "模型大小",

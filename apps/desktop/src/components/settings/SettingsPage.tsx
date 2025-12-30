@@ -29,7 +29,7 @@ import {
 } from "@mui/material";
 import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
@@ -43,6 +43,7 @@ import { DEFAULT_LOCALE, type Locale } from "../../i18n/config";
 import { getAuthRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { LANGUAGE_DISPLAY_NAMES } from "../../utils/language.utils";
+import { validateHourlyRate } from "../../utils/stats.utils";
 import { getIsPaying } from "../../utils/member.utils";
 import {
   getHasEmailProvider,
@@ -80,6 +81,13 @@ export default function SettingsPage() {
     storedHourlyRate?.toString() ?? "",
   );
   const [hourlyRateSaving, setHourlyRateSaving] = useState(false);
+
+  // Sync input when stored value changes externally (e.g., cloud sync)
+  useEffect(() => {
+    if (!hourlyRateSaving) {
+      setHourlyRateInput(storedHourlyRate?.toString() ?? "");
+    }
+  }, [storedHourlyRate, hourlyRateSaving]);
 
   const preferredLanguage = useAppStore((state) => {
     const user = getMyUser(state);
@@ -152,12 +160,7 @@ export default function SettingsPage() {
   };
 
   const handleHourlyRateBlur = async () => {
-    const trimmed = hourlyRateInput.trim();
-    const numericValue = trimmed ? parseFloat(trimmed) : null;
-    const validValue =
-      numericValue !== null && !isNaN(numericValue) && numericValue >= 0
-        ? numericValue
-        : null;
+    const validValue = validateHourlyRate(hourlyRateInput);
 
     // Only save if the value has changed
     if (validValue !== storedHourlyRate) {

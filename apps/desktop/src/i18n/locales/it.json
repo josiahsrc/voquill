@@ -1,4 +1,5 @@
 {
+  "1_min": "< 1 min",
   "2_000_free_words_per_month": "2.000 parole gratis al mese",
   "404_page_not_found": "404 - pagina non trovata",
   "a_voquill_update": "Un aggiornamento di Voquill",
@@ -140,6 +141,7 @@
   "hourly_rate": "Hourly rate",
   "how_does_the_voice_activation_work": "Come funziona l'attivazione vocale?",
   "how_voquill_should_manage_your_transcriptions": "Come Voquill deve gestire le tue trascrizioni.",
+  "hr": "hr",
   "i_already_have_an_account": "Ho già un account",
   "installation_in_progress_voquill_may_restart_automatically_w": "Installazione in corso. Voquill potrebbe riavviarsi automaticamente al termine.",
   "installing_update": "Installazione aggiornamento...",
@@ -168,6 +170,7 @@
   "metadata_unavailable_for_this_transcription": "Metadati non disponibili per questa trascrizione.",
   "microphone": "Microfono",
   "microphone_settings": "Impostazioni microfono",
+  "min": "min",
   "mode": "Modalità",
   "model": "Modello",
   "model_size": "Dimensione modello",

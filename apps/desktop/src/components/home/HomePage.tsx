@@ -2,6 +2,11 @@ import { Box, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
 import {
+  calculateTimeSavedMinutes,
+  formatMoneySaved,
+  formatTimeSaved,
+} from "../../utils/stats.utils";
+import {
   getMyUser,
   getMyUserName,
   getMyUserPreferences,
@@ -12,48 +17,6 @@ import { Stat } from "./Stat";
 import { HomeSideEffects } from "./HomeSideEffects";
 import { DictationInstruction } from "../common/DictationInstruction";
 
-// Average words per minute for typing vs speaking
-const TYPING_WPM = 40;
-const SPEAKING_WPM = 150;
-
-// Calculate time saved in minutes based on word count
-// Time saved = time to type - time to speak
-const calculateTimeSavedMinutes = (wordCount: number): number => {
-  const typingMinutes = wordCount / TYPING_WPM;
-  const speakingMinutes = wordCount / SPEAKING_WPM;
-  return typingMinutes - speakingMinutes;
-};
-
-// Format time saved for display
-const formatTimeSaved = (minutes: number): string => {
-  if (minutes < 1) {
-    return "< 1 min";
-  }
-  if (minutes < 60) {
-    return `${Math.round(minutes)} min`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = Math.round(minutes % 60);
-  if (remainingMinutes === 0) {
-    return `${hours} hr`;
-  }
-  return `${hours} hr ${remainingMinutes} min`;
-};
-
-// Format money saved for display
-const formatMoneySaved = (
-  amount: number,
-  locale: string,
-  currency: string = "USD",
-): string => {
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
-
 export default function HomePage() {
   const user = useAppStore(getMyUser);
   const preferences = useAppStore(getMyUserPreferences);
@@ -63,9 +26,16 @@ export default function HomePage() {
   const wordsTotal = user?.wordsTotal ?? 0;
   const hourlyRate = preferences?.hourlyRate ?? null;
 
+  // Localized time labels
+  const timeLabels = {
+    lessThanOneMin: intl.formatMessage({ defaultMessage: "< 1 min" }),
+    minLabel: intl.formatMessage({ defaultMessage: "min" }),
+    hrLabel: intl.formatMessage({ defaultMessage: "hr" }),
+  };
+
   // Calculate time saved
   const timeSavedMinutes = calculateTimeSavedMinutes(wordsTotal);
-  const timeSavedDisplay = formatTimeSaved(timeSavedMinutes);
+  const timeSavedDisplay = formatTimeSaved(timeSavedMinutes, timeLabels);
 
   // Calculate money saved (only if hourly rate is set)
   const timeSavedHours = timeSavedMinutes / 60;
