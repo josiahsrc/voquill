@@ -336,6 +336,10 @@ const LOW_QUALITY_INPUT_KEYWORDS: &[&str] = &[
     "hfp",
     "hsp",
     "sony wh-",
+    // Linux virtual devices that don't provide real microphone input
+    "monitor of", // PulseAudio monitor (captures output audio, not microphone)
+    "samplerate", // ALSA samplerate converter
+    "null",       // Null audio device
 ];
 
 fn should_avoid_input_device(device: &Device, default_output_name: Option<&str>) -> bool {
@@ -586,7 +590,7 @@ fn device_candidates_for_host(
             .map(|pref| {
                 normalized_name
                     .as_ref()
-                    .map(|label| label == pref)
+                    .map(|label| label.contains(pref) || pref.contains(label))
                     .unwrap_or(false)
             })
             .unwrap_or(false);
@@ -632,7 +636,7 @@ fn device_candidates_for_host(
                 .map(|pref| {
                     normalized_name
                         .as_ref()
-                        .map(|label| label == pref)
+                        .map(|label| label.contains(pref) || pref.contains(label))
                         .unwrap_or(false)
                 })
                 .unwrap_or(false);
@@ -671,6 +675,7 @@ fn device_candidates_for_host(
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InputDeviceDescriptor {
     pub label: String,
     pub is_default: bool,
