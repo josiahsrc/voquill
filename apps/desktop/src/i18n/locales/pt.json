@@ -231,6 +231,7 @@
   "recommended": "Recomendado",
   "record": "Gravar",
   "refresh_devices": "Atualizar dispositivos",
+  "release_notes_are_ai_generated_and_may_contain_errors_visit": "Release notes are AI-generated and may contain errors. Visit the {discord} for a more accurate discussion on what's being developed.",
   "released_on_date": "Lançado em {date}",
   "remove_access_to_all_premium_features": "Remover acesso a todos os recursos premium",
   "removing_the_key_signs_you_out_of_that_provider_on_this_devi": "Remover a chave desconecta você desse provedor neste dispositivo.",

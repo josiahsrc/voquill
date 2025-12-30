@@ -21,7 +21,10 @@
     "i18n:sync": "node ./scripts/i18n-sync.mjs",
     "i18n": "npm run i18n:extract && npm run i18n:sync",
     "lint:fix": "prettier --write src && oxlint --fix src",
-    "lint": "prettier --check src && oxlint src"
+    "lint": "prettier --check src && oxlint src",
+    "test": "vitest run",
+    "test:unit": "vitest run src",
+    "test:integration": "vitest run test/integration"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -84,7 +87,9 @@
     "oxlint": "^1.32.0",
     "prettier": "^3.7.4",
     "ts-node": "^10.9.2",
+    "dotenv": "^16.4.7",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "vitest": "^3.1.0"
   }
 }

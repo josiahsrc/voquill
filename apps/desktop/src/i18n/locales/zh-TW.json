@@ -231,6 +231,7 @@
   "recommended": "建議",
   "record": "錄音",
   "refresh_devices": "重新整理裝置",
+  "release_notes_are_ai_generated_and_may_contain_errors_visit": "Release notes are AI-generated and may contain errors. Visit the {discord} for a more accurate discussion on what's being developed.",
   "released_on_date": "發佈於 {date}",
   "remove_access_to_all_premium_features": "移除所有進階功能的存取權限",
   "removing_the_key_signs_you_out_of_that_provider_on_this_devi": "移除金鑰會將您從此裝置上的該供應商登出。",

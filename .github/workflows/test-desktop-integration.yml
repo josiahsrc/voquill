@@ -1,0 +1,43 @@
+name: Test Desktop Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  integration-tests:
+    name: Desktop Integration Tests
+    runs-on: ubuntu-latest
+    # Only run on push to main OR on PRs from the same repo (not forks)
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build dependencies
+        run: npm run build -- --filter=desktop^...
+
+      - name: Create empty .env file since secrets are injected via env vars
+        run: |
+          echo '' > apps/desktop/test/helpers/.env
+
+      - name: Run desktop integration tests
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}  
+        run: npm run test:integration --workspace=desktop

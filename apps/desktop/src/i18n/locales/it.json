@@ -231,6 +231,7 @@
   "recommended": "Consigliato",
   "record": "Registra",
   "refresh_devices": "Aggiorna dispositivi",
+  "release_notes_are_ai_generated_and_may_contain_errors_visit": "Release notes are AI-generated and may contain errors. Visit the {discord} for a more accurate discussion on what's being developed.",
   "released_on_date": "Rilasciato il {date}",
   "remove_access_to_all_premium_features": "Rimuovi accesso a tutte le funzionalità premium",
   "removing_the_key_signs_you_out_of_that_provider_on_this_devi": "Rimuovendo la chiave ti disconnetti da quel provider su questo dispositivo.",
