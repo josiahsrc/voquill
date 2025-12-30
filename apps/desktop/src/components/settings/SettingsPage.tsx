@@ -1,5 +1,6 @@
 import {
   ArrowOutwardRounded,
+  AttachMoneyOutlined,
   AutoFixHighOutlined,
   DeleteForeverOutlined,
   DescriptionOutlined,
@@ -17,21 +18,26 @@ import {
 } from "@mui/icons-material";
 import {
   Box,
+  InputAdornment,
   MenuItem,
   Select,
   SelectChangeEvent,
   Stack,
   Switch,
+  TextField,
   Typography,
 } from "@mui/material";
 import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChangeEvent, useState } from "react";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
-import { setPreferredLanguage } from "../../actions/user.actions";
+import {
+  setHourlyRate,
+  setPreferredLanguage,
+} from "../../actions/user.actions";
 import { matchSupportedLocale } from "../../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../../i18n/config";
 import { getAuthRepo } from "../../repos";
@@ -42,6 +48,7 @@ import {
   getHasEmailProvider,
   getIsSignedIn,
   getMyUser,
+  getMyUserPreferences,
 } from "../../utils/user.utils";
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
@@ -53,6 +60,7 @@ const LANGUAGE_OPTIONS = Object.entries(LANGUAGE_DISPLAY_NAMES) as [
 ][];
 
 export default function SettingsPage() {
+  const intl = useIntl();
   const hasEmailProvider = useAppStore(getHasEmailProvider);
   const isPaying = useAppStore(getIsPaying);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
@@ -63,6 +71,15 @@ export default function SettingsPage() {
     state.settings.autoLaunchStatus,
   ]);
   const autoLaunchLoading = autoLaunchStatus === "loading";
+
+  const storedHourlyRate = useAppStore((state) => {
+    const prefs = getMyUserPreferences(state);
+    return prefs?.hourlyRate ?? null;
+  });
+  const [hourlyRateInput, setHourlyRateInput] = useState<string>(
+    storedHourlyRate?.toString() ?? "",
+  );
+  const [hourlyRateSaving, setHourlyRateSaving] = useState(false);
 
   const preferredLanguage = useAppStore((state) => {
     const user = getMyUser(state);
@@ -128,6 +145,33 @@ export default function SettingsPage() {
   const handleToggleAutoLaunch = (event: ChangeEvent<HTMLInputElement>) => {
     const enabled = event.target.checked;
     void setAutoLaunchEnabled(enabled);
+  };
+
+  const handleHourlyRateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setHourlyRateInput(event.target.value);
+  };
+
+  const handleHourlyRateBlur = async () => {
+    const trimmed = hourlyRateInput.trim();
+    const numericValue = trimmed ? parseFloat(trimmed) : null;
+    const validValue =
+      numericValue !== null && !isNaN(numericValue) && numericValue >= 0
+        ? numericValue
+        : null;
+
+    // Only save if the value has changed
+    if (validValue !== storedHourlyRate) {
+      setHourlyRateSaving(true);
+      try {
+        await setHourlyRate(validValue);
+        setHourlyRateInput(validValue?.toString() ?? "");
+      } catch {
+        // Reset to stored value on error
+        setHourlyRateInput(storedHourlyRate?.toString() ?? "");
+      } finally {
+        setHourlyRateSaving(false);
+      }
+    }
   };
 
   const handleManageSubscription = async () => {
@@ -202,6 +246,40 @@ export default function SettingsPage() {
                 </MenuItem>
               ))}
             </Select>
+          </Box>
+        }
+      />
+      <ListTile
+        title={<FormattedMessage defaultMessage="Hourly rate" />}
+        subtitle={
+          <FormattedMessage defaultMessage="Set your hourly rate to see money saved on the home page" />
+        }
+        leading={<AttachMoneyOutlined />}
+        disableRipple={true}
+        trailing={
+          <Box onClick={(event) => event.stopPropagation()} sx={{ width: 120 }}>
+            <TextField
+              value={hourlyRateInput}
+              onChange={handleHourlyRateChange}
+              onBlur={handleHourlyRateBlur}
+              size="small"
+              variant="outlined"
+              type="number"
+              disabled={hourlyRateSaving}
+              placeholder="0"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">$</InputAdornment>
+                ),
+              }}
+              inputProps={{
+                "aria-label": intl.formatMessage({
+                  defaultMessage: "Hourly rate",
+                }),
+                min: 0,
+                step: "any",
+              }}
+            />
           </Box>
         }
       />

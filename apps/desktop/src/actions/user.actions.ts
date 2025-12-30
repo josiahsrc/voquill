@@ -64,6 +64,7 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   activeToneId: null,
   gotStartedAt: null,
   gpuEnumerationEnabled: false,
+  hourlyRate: null,
 });
 
 const updateUserPreferences = async (
@@ -338,4 +339,12 @@ export const clearGotStartedAt = async (): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.gotStartedAt = null;
   }, "Failed to clear got started timestamp. Please try again.");
+};
+
+export const setHourlyRate = async (
+  hourlyRate: Nullable<number>,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.hourlyRate = hourlyRate;
+  }, "Failed to save hourly rate. Please try again.");
 };

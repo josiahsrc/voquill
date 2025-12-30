@@ -21,6 +21,7 @@ type LocalUserPreferences = {
   activeToneId: Nullable<string>;
   gotStartedAt: Nullable<number>;
   gpuEnumerationEnabled: boolean;
+  hourlyRate: Nullable<number>;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -53,6 +54,7 @@ const fromLocalPreferences = (
   activeToneId: preferences.activeToneId,
   gotStartedAt: preferences.gotStartedAt,
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
+  hourlyRate: preferences.hourlyRate,
 });
 
 const toLocalPreferences = (
@@ -70,6 +72,7 @@ const toLocalPreferences = (
   activeToneId: preferences.activeToneId ?? null,
   gotStartedAt: preferences.gotStartedAt ?? null,
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
+  hourlyRate: preferences.hourlyRate ?? null,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {
