@@ -12,7 +12,7 @@ export const getFirstAndLastName = (
   }
 
   const firstName = parts[0];
-  const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null;
+  const lastName = parts.length > 1 ? parts.at(-1) : null;
   return {
     firstName: firstName.trim() || null,
     lastName: lastName?.trim() || null,

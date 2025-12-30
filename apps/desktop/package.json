@@ -23,6 +23,7 @@
     "lint:fix": "prettier --write src && oxlint --fix src",
     "lint": "prettier --check src && oxlint src",
     "test": "vitest run",
+    "test:unit": "vitest run src",
     "test:integration": "vitest run test/integration"
   },
   "dependencies": {

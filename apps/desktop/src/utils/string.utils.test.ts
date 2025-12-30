@@ -14,7 +14,7 @@ describe("getFirstAndLastName", () => {
 
   it("should handle names with multiple parts", () => {
     const result = getFirstAndLastName("John Michael Doe");
-    expect(result).toEqual({ firstName: "John", lastName: "Michael Doe" });
+    expect(result).toEqual({ firstName: "John", lastName: "Doe" });
   });
 
   it("should handle leading and trailing spaces", () => {
@@ -34,7 +34,7 @@ describe("getFirstAndLastName", () => {
 
   it("should handle names with tabs and newlines", () => {
     const result = getFirstAndLastName("John\tDoe\nSmith");
-    expect(result).toEqual({ firstName: "John", lastName: "Doe Smith" });
+    expect(result).toEqual({ firstName: "John", lastName: "Smith" });
   });
 });
 
