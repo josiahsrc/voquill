@@ -180,6 +180,53 @@ describe("mergeTranscriptions", () => {
     });
   });
 
+  describe("truncated word handling", () => {
+    it("should handle truncated last word by preferring second segment's version", () => {
+      // When audio is cut mid-word, the transcriber might mishear the partial word
+      // e.g., "bagels" cut mid-word might be transcribed as "big"
+      const result = mergeTranscriptions([
+        "hello i like big",
+        "like bagels a lot",
+      ]);
+      expect(result).toBe("hello i like bagels a lot");
+    });
+
+    it("should handle truncated word with longer overlap", () => {
+      // "going to the sto" might be transcribed as "going to the stuff" or similar
+      const result = mergeTranscriptions([
+        "I was going to the sto",
+        "to the store tomorrow",
+      ]);
+      expect(result).toBe("I was going to the store tomorrow");
+    });
+
+    it("should handle truncated word with single word overlap", () => {
+      const result = mergeTranscriptions([
+        "hello wor",
+        "world peace",
+      ]);
+      expect(result).toBe("hello world peace");
+    });
+
+    it("should prefer exact match over truncated match when available", () => {
+      // When there's an exact overlap, use it instead of truncated logic
+      const result = mergeTranscriptions([
+        "hello world peace",
+        "world peace and love",
+      ]);
+      expect(result).toBe("hello world peace and love");
+    });
+
+    it("should handle truncated word at segment boundary in multi-segment merge", () => {
+      const result = mergeTranscriptions([
+        "the quick bro",
+        "brown fox jumps",
+        "fox jumps over",
+      ]);
+      expect(result).toBe("the quick brown fox jumps over");
+    });
+  });
+
   describe("realistic transcription scenarios", () => {
     it("should merge realistic speech segments", () => {
       const result = mergeTranscriptions([
