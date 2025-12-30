@@ -94,3 +94,46 @@ export const mergeTranscriptions = (transcriptions: string[]): string => {
     mergeTwoTranscriptions(merged, current),
   );
 };
+
+/**
+ * Splits audio samples into overlapping segments for transcription.
+ *
+ * @example
+ * // With 4 second segments and 2 second overlap:
+ * // Segment 1: 0-4 sec
+ * // Segment 2: 2-6 sec
+ * // Segment 3: 4-8 sec
+ * // etc.
+ */
+export const splitAudioTranscription = (args: {
+  sampleRate: number;
+  samples: Float32Array;
+  segmentDurationSec: number;
+  overlapDurationSec: number;
+}): Float32Array[] => {
+  const { sampleRate, samples, segmentDurationSec, overlapDurationSec } = args;
+
+  const segmentSamples = Math.floor(sampleRate * segmentDurationSec);
+  const stepSamples = Math.floor(sampleRate * (segmentDurationSec - overlapDurationSec));
+
+  if (stepSamples <= 0) {
+    throw new Error("Overlap duration must be less than segment duration");
+  }
+
+  if (samples.length <= segmentSamples) {
+    return [samples];
+  }
+
+  const segments: Float32Array[] = [];
+
+  for (let start = 0; start < samples.length; start += stepSamples) {
+    const end = Math.min(start + segmentSamples, samples.length);
+    segments.push(samples.slice(start, end));
+
+    if (end === samples.length) {
+      break;
+    }
+  }
+
+  return segments;
+}

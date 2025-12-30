@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mergeTranscriptions } from "./transcribe.utils";
+import {
+  mergeTranscriptions,
+  splitAudioTranscription,
+} from "./transcribe.utils";
 
 describe("mergeTranscriptions", () => {
   describe("basic overlap detection", () => {
@@ -205,6 +208,205 @@ describe("mergeTranscriptions", () => {
         "the result is 100",
       ]);
       expect(result).toBe("The value is 42 and the result is 100");
+    });
+  });
+});
+
+describe("splitAudioTranscription", () => {
+  // Helper to create a Float32Array with sequential values for easy verification
+  const createSamples = (length: number): Float32Array => {
+    const samples = new Float32Array(length);
+    for (let i = 0; i < length; i++) {
+      samples[i] = i;
+    }
+    return samples;
+  };
+
+  describe("basic splitting", () => {
+    it("should split audio into overlapping segments", () => {
+      // 10 samples, 4-sample segments, 2-sample overlap (step = 2)
+      // Expected: [0,1,2,3], [2,3,4,5], [4,5,6,7], [6,7,8,9]
+      const samples = createSamples(10);
+      const result = splitAudioTranscription({
+        sampleRate: 1,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 2,
+      });
+
+      expect(result).toHaveLength(4);
+      expect(Array.from(result[0])).toEqual([0, 1, 2, 3]);
+      expect(Array.from(result[1])).toEqual([2, 3, 4, 5]);
+      expect(Array.from(result[2])).toEqual([4, 5, 6, 7]);
+      expect(Array.from(result[3])).toEqual([6, 7, 8, 9]);
+    });
+
+    it("should handle no overlap (step equals segment size)", () => {
+      // 8 samples, 4-sample segments, 0 overlap (step = 4)
+      // Expected: [0,1,2,3], [4,5,6,7]
+      const samples = createSamples(8);
+      const result = splitAudioTranscription({
+        sampleRate: 1,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 0,
+      });
+
+      expect(result).toHaveLength(2);
+      expect(Array.from(result[0])).toEqual([0, 1, 2, 3]);
+      expect(Array.from(result[1])).toEqual([4, 5, 6, 7]);
+    });
+
+    it("should use sample rate to calculate segment size", () => {
+      // 16000 samples = 1 second at 16kHz
+      // 4-second segments at 16kHz = 64000 samples per segment
+      // With 2-second overlap, step = 2 seconds = 32000 samples
+      const sampleRate = 16000;
+      const samples = createSamples(sampleRate * 5); // 5 seconds of audio
+
+      const result = splitAudioTranscription({
+        sampleRate,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 2,
+      });
+
+      // 5 sec audio, 4 sec segments, 2 sec step
+      // Segment 1: 0-4s, Segment 2: 2-5s (truncated)
+      expect(result).toHaveLength(2);
+      expect(result[0].length).toBe(sampleRate * 4); // Full 4 seconds
+      expect(result[1].length).toBe(sampleRate * 3); // 3 seconds (2-5s)
+    });
+  });
+
+  describe("edge cases", () => {
+    it("should return single segment when audio is shorter than segment duration", () => {
+      const samples = createSamples(3);
+      const result = splitAudioTranscription({
+        sampleRate: 1,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 2,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(Array.from(result[0])).toEqual([0, 1, 2]);
+    });
+
+    it("should return single segment when audio equals segment duration", () => {
+      const samples = createSamples(4);
+      const result = splitAudioTranscription({
+        sampleRate: 1,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 2,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(Array.from(result[0])).toEqual([0, 1, 2, 3]);
+    });
+
+    it("should handle last segment being shorter than full segment", () => {
+      // 9 samples, 4-sample segments, 2-sample overlap (step = 2)
+      // Expected: [0,1,2,3], [2,3,4,5], [4,5,6,7], [6,7,8] (last is truncated)
+      const samples = createSamples(9);
+      const result = splitAudioTranscription({
+        sampleRate: 1,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 2,
+      });
+
+      expect(result).toHaveLength(4);
+      expect(Array.from(result[3])).toEqual([6, 7, 8]);
+    });
+
+    it("should handle empty samples array", () => {
+      const samples = new Float32Array(0);
+      const result = splitAudioTranscription({
+        sampleRate: 1,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 2,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].length).toBe(0);
+    });
+  });
+
+  describe("error handling", () => {
+    it("should throw when overlap equals segment duration", () => {
+      const samples = createSamples(10);
+      expect(() =>
+        splitAudioTranscription({
+          sampleRate: 1,
+          samples,
+          segmentDurationSec: 4,
+          overlapDurationSec: 4,
+        }),
+      ).toThrow("Overlap duration must be less than segment duration");
+    });
+
+    it("should throw when overlap exceeds segment duration", () => {
+      const samples = createSamples(10);
+      expect(() =>
+        splitAudioTranscription({
+          sampleRate: 1,
+          samples,
+          segmentDurationSec: 4,
+          overlapDurationSec: 5,
+        }),
+      ).toThrow("Overlap duration must be less than segment duration");
+    });
+  });
+
+  describe("realistic scenarios", () => {
+    it("should correctly split 30 seconds of audio at 16kHz with 10s segments and 3s overlap", () => {
+      const sampleRate = 16000;
+      const durationSec = 30;
+      const samples = createSamples(sampleRate * durationSec);
+
+      const result = splitAudioTranscription({
+        sampleRate,
+        samples,
+        segmentDurationSec: 10,
+        overlapDurationSec: 3,
+      });
+
+      // Step = 10 - 3 = 7 seconds
+      // Segments: 0-10, 7-17, 14-24, 21-30 (truncated)
+      expect(result).toHaveLength(4);
+      expect(result[0].length).toBe(sampleRate * 10);
+      expect(result[1].length).toBe(sampleRate * 10);
+      expect(result[2].length).toBe(sampleRate * 10);
+      expect(result[3].length).toBe(sampleRate * 9); // 21-30 = 9 seconds
+    });
+
+    it("should correctly split 60 seconds of audio with 4s segments and 2s overlap", () => {
+      const sampleRate = 16000;
+      const durationSec = 60;
+      const samples = createSamples(sampleRate * durationSec);
+
+      const result = splitAudioTranscription({
+        sampleRate,
+        samples,
+        segmentDurationSec: 4,
+        overlapDurationSec: 2,
+      });
+
+      // Step = 4 - 2 = 2 seconds
+      // Number of full steps: (60 - 4) / 2 = 28, plus initial = 29 segments
+      expect(result).toHaveLength(29);
+
+      // Verify first segment starts at 0
+      expect(result[0][0]).toBe(0);
+
+      // Verify second segment starts at step (2 seconds = 32000 samples)
+      expect(result[1][0]).toBe(sampleRate * 2);
+
+      // Verify last segment
+      expect(result[28][0]).toBe(sampleRate * 56); // 28 * 2 = 56 seconds
     });
   });
 });
