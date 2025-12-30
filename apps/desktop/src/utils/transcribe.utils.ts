@@ -1,109 +1,165 @@
+import { getStringSimilarity } from "./string.utils";
+
 /**
- * Normalizes a word for comparison by removing punctuation and lowercasing.
- * This helps match words like "eat" and "eat," or "Hello" and "hello".
+ * Normalizes text for comparison by removing punctuation, hyphens, and lowercasing.
+ * This creates a canonical form for fuzzy matching.
  */
-const normalizeForComparison = (word: string): string => {
-  return word.replace(/[.,!?;:'"()[\]{}]/g, "").toLowerCase();
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/[.,!?;:'"()[\]{}-]/g, "") // Remove punctuation including hyphens
+    .replace(/\s+/g, " ") // Normalize whitespace
+    .trim();
 };
 
+/** Minimum similarity threshold for considering two text segments as matching */
+const SIMILARITY_THRESHOLD = 0.75;
+
+/**
+ * Result of finding overlap between two transcriptions.
+ * - wordsToKeepFromFirst: number of words to keep from first transcription
+ * - wordsToSkipFromSecond: number of words to skip from start of second transcription
+ */
 type OverlapResult = {
-  overlapLength: number;
-  dropLastWordOfFirst: boolean;
+  wordsToKeepFromFirst: number;
+  wordsToSkipFromSecond: number;
 };
 
+/** Threshold for considering a match "exact" (same word count, very high similarity) */
+const EXACT_MATCH_THRESHOLD = 0.9;
+
 /**
- * Finds the longest overlap between the end of `firstWords` and the start of `secondWords`.
- * Returns the overlap length and whether the last word of first should be dropped (truncated word case).
- *
- * Example: ["I", "want", "to", "eat"] and ["to", "eat", "milk"] → { overlapLength: 2, dropLastWordOfFirst: false }
- *
- * Truncated word case:
- * ["hello", "i", "like", "big"] and ["like", "bagels", "a", "lot"]
- * → { overlapLength: 1, dropLastWordOfFirst: true }
- * Here "big" is a misheard truncated word, and "like" is the actual overlap point.
+ * Finds the best overlap between two transcriptions using fuzzy string matching.
+ * This handles contractions ("that's" vs "that is"), hyphens ("slow-moving" vs "slow moving"),
+ * punctuation differences, and minor transcription errors.
  */
-const findOverlapInfo = (
-  firstWords: string[],
-  secondWords: string[],
-): OverlapResult => {
-  const maxPossibleOverlap = Math.min(firstWords.length, secondWords.length);
+const findOverlap = (first: string, second: string): OverlapResult => {
+  const firstWords = first.trim().split(/\s+/);
+  const secondWords = second.trim().split(/\s+/);
 
-  // Try exact match first (original behavior)
-  for (let len = maxPossibleOverlap; len > 0; len--) {
-    const endOfFirst = firstWords.slice(-len);
-    const startOfSecond = secondWords.slice(0, len);
-
-    const matches = endOfFirst.every(
-      (word, i) =>
-        normalizeForComparison(word) ===
-        normalizeForComparison(startOfSecond[i]),
-    );
-
-    if (matches) {
-      return { overlapLength: len, dropLastWordOfFirst: false };
-    }
+  if (firstWords.length === 0 || secondWords.length === 0) {
+    return { wordsToKeepFromFirst: firstWords.length, wordsToSkipFromSecond: 0 };
   }
 
-  // Try truncated last word match
-  // Check if first[-(len+1):-1] matches second[0:len]
-  // This handles the case where audio was cut mid-word and the transcriber
-  // misheard the partial word (e.g., "bagels" cut mid-word → "big")
-  if (firstWords.length >= 2) {
-    for (
-      let len = Math.min(maxPossibleOverlap, secondWords.length);
-      len >= 1;
-      len--
-    ) {
-      // Need at least len+1 words in first to have len overlap + 1 truncated word
-      if (firstWords.length < len + 1) continue;
+  // Allow different limits for first and second to handle contraction expansion
+  // e.g., "I'm" (1 word) needs to match "I am" (2 words)
+  // Use higher limit (30 words) for longer audio segment overlaps
+  const maxIToCheck = Math.min(firstWords.length, 30);
+  const maxJToCheck = Math.min(secondWords.length, 30);
 
-      // Get len words from first, excluding the very last word (which might be truncated)
-      const endOfFirst = firstWords.slice(-(len + 1), -1);
-      const startOfSecond = secondWords.slice(0, len);
+  // Track best overlap found
+  let best: {
+    i: number; // words from end of first
+    j: number; // words from start of second
+    similarity: number;
+    isExact: boolean;
+  } | null = null;
 
-      const matches = endOfFirst.every(
-        (word, i) =>
-          normalizeForComparison(word) ===
-          normalizeForComparison(startOfSecond[i]),
-      );
+  // For each possible overlap size
+  for (let i = 1; i <= maxIToCheck; i++) {
+    const endOfFirst = firstWords.slice(-i).join(" ");
+    const normalizedFirst = normalizeText(endOfFirst);
 
-      if (matches) {
-        return { overlapLength: len, dropLastWordOfFirst: true };
+    for (let j = 1; j <= maxJToCheck; j++) {
+      const startOfSecond = secondWords.slice(0, j).join(" ");
+      const normalizedSecond = normalizeText(startOfSecond);
+
+      // Skip if lengths are too different
+      const lengthRatio =
+        Math.min(normalizedFirst.length, normalizedSecond.length) /
+        Math.max(normalizedFirst.length, normalizedSecond.length);
+      if (lengthRatio < 0.5) continue;
+
+      const similarity = getStringSimilarity(normalizedFirst, normalizedSecond);
+
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        const isExact = i === j && similarity >= EXACT_MATCH_THRESHOLD;
+
+        // Prefer: longer overlaps (j), then exact matches, then higher similarity
+        const score = j * 10 + (isExact ? 5 : 0) + similarity;
+        const bestScore = best
+          ? best.j * 10 + (best.isExact ? 5 : 0) + best.similarity
+          : 0;
+
+        if (!best || score > bestScore) {
+          best = { i, j, similarity, isExact };
+        }
       }
     }
   }
 
-  // Try prefix match for the very last word
-  // Check if first's last word is a truncated prefix of second's first word
+  // Check if last word of first is a truncated prefix of first word of second
   // e.g., "hello wor" + "world peace" → "wor" is prefix of "world"
-  if (firstWords.length >= 1 && secondWords.length >= 1) {
-    const lastWordOfFirst = normalizeForComparison(
-      firstWords[firstWords.length - 1],
-    );
-    const firstWordOfSecond = normalizeForComparison(secondWords[0]);
+  if (secondWords.length > 0) {
+    const lastWordOfFirst = normalizeText(firstWords[firstWords.length - 1]);
+    const firstWordOfSecond = normalizeText(secondWords[0]);
 
-    // Check if last word of first is a prefix of first word of second
-    // and is shorter (to avoid matching identical words)
     if (
+      lastWordOfFirst.length >= 2 &&
       firstWordOfSecond.startsWith(lastWordOfFirst) &&
       lastWordOfFirst.length < firstWordOfSecond.length
     ) {
-      return { overlapLength: 0, dropLastWordOfFirst: true };
+      // Drop the truncated word from first, use all of second
+      return {
+        wordsToKeepFromFirst: firstWords.length - 1,
+        wordsToSkipFromSecond: 0,
+      };
     }
   }
 
-  return { overlapLength: 0, dropLastWordOfFirst: false };
+  // Also check for overlap if we drop the last word (handles truncated/misheard last word)
+  if (!best && firstWords.length >= 2) {
+    const firstWithoutLast = firstWords.slice(0, -1);
+    for (let i = 1; i <= Math.min(firstWithoutLast.length, 30); i++) {
+      const endOfFirst = firstWithoutLast.slice(-i).join(" ");
+      const normalizedFirst = normalizeText(endOfFirst);
+
+      for (let j = 1; j <= maxJToCheck; j++) {
+        const startOfSecond = secondWords.slice(0, j).join(" ");
+        const normalizedSecond = normalizeText(startOfSecond);
+
+        const lengthRatio =
+          Math.min(normalizedFirst.length, normalizedSecond.length) /
+          Math.max(normalizedFirst.length, normalizedSecond.length);
+        if (lengthRatio < 0.5) continue;
+
+        const similarity = getStringSimilarity(normalizedFirst, normalizedSecond);
+
+        if (similarity >= EXACT_MATCH_THRESHOLD && i === j) {
+          // Found exact match after dropping last word - keep first without last word, skip overlap from second
+          return {
+            wordsToKeepFromFirst: firstWords.length - 1,
+            wordsToSkipFromSecond: j,
+          };
+        }
+      }
+    }
+  }
+
+  // No overlap found - concatenate
+  if (!best) {
+    return { wordsToKeepFromFirst: firstWords.length, wordsToSkipFromSecond: 0 };
+  }
+
+  // Exact match: keep all of first (preserving its formatting), skip overlap from second
+  if (best.isExact) {
+    return {
+      wordsToKeepFromFirst: firstWords.length,
+      wordsToSkipFromSecond: best.j,
+    };
+  }
+
+  // Fuzzy match: drop the overlapping portion from first, use second's version
+  // This handles contractions, hyphens, and truncated words
+  return {
+    wordsToKeepFromFirst: firstWords.length - best.i,
+    wordsToSkipFromSecond: 0,
+  };
 };
 
 /**
- * Merges two transcriptions by finding word overlap and combining them.
- * If overlap is found, the overlapping portion is not duplicated.
- * If no overlap, the strings are concatenated with a space.
- *
- * Also handles the case where the last word of the first transcription was
- * truncated/misheard due to audio being cut mid-word. In this case, the
- * truncated word is dropped and replaced with the correct word from the
- * second transcription.
+ * Merges two transcriptions by finding overlap using fuzzy string matching.
+ * Handles contractions, hyphens, punctuation differences, and minor errors.
  */
 const mergeTwoTranscriptions = (first: string, second: string): string => {
   const trimmedFirst = first.trim();
@@ -115,53 +171,19 @@ const mergeTwoTranscriptions = (first: string, second: string): string => {
   const firstWords = trimmedFirst.split(/\s+/);
   const secondWords = trimmedSecond.split(/\s+/);
 
-  const { overlapLength, dropLastWordOfFirst } = findOverlapInfo(
-    firstWords,
-    secondWords,
+  const { wordsToKeepFromFirst, wordsToSkipFromSecond } = findOverlap(
+    trimmedFirst,
+    trimmedSecond,
   );
 
-  if (overlapLength === 0 && !dropLastWordOfFirst) {
-    // No overlap found, simple concatenation
-    return `${trimmedFirst} ${trimmedSecond}`;
-  }
+  // Build the merged result
+  const firstPart = firstWords.slice(0, wordsToKeepFromFirst).join(" ");
+  const secondPart = secondWords.slice(wordsToSkipFromSecond).join(" ");
 
-  if (overlapLength === 0 && dropLastWordOfFirst) {
-    // Last word of first is a truncated prefix of first word of second
-    // Drop the truncated word and concatenate with second
-    const firstPart = firstWords.slice(0, -1).join(" ");
-    if (!firstPart) return trimmedSecond;
-    return `${firstPart} ${trimmedSecond}`;
-  }
+  if (!firstPart) return trimmedSecond;
+  if (!secondPart) return firstPart;
 
-  // Determine the first part of the merged result
-  let firstPart: string;
-  if (dropLastWordOfFirst) {
-    // Drop the truncated/misheard last word from first
-    firstPart = firstWords.slice(0, -1).join(" ");
-  } else {
-    firstPart = trimmedFirst;
-  }
-
-  // Get the non-overlapping part of second
-  const nonOverlappingSecond = secondWords.slice(overlapLength).join(" ");
-
-  // Handle edge cases
-  if (!firstPart) {
-    // First part became empty after dropping truncated word
-    return trimmedSecond;
-  }
-
-  if (!nonOverlappingSecond) {
-    // Second is fully contained in the overlap
-    if (dropLastWordOfFirst) {
-      // Include the overlap words from second since we dropped first's truncated word
-      return `${firstPart} ${secondWords.slice(0, overlapLength).join(" ")}`;
-    }
-    return firstPart;
-  }
-
-  // Standard merge: first part + non-overlapping second
-  return `${firstPart} ${nonOverlappingSecond}`;
+  return `${firstPart} ${secondPart}`;
 };
 
 /**
