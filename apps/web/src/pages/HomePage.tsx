@@ -1,5 +1,6 @@
 import { FormattedMessage } from "react-intl";
 import { AppsCarousel } from "../components/apps-carousel";
+import DiscordSection from "../components/discord-section";
 import DownloadButton from "../components/download-button";
 import { HeroSection } from "../components/hero";
 import OfflineShowcase from "../components/offline-showcase";
@@ -64,6 +65,8 @@ function HomePage() {
         </section>
 
         <OfflineShowcase />
+
+        <DiscordSection />
       </PageLayout>
     </BaseLayout>
   );
