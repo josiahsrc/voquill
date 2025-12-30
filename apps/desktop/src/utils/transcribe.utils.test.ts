@@ -141,6 +141,105 @@ describe("mergeTranscriptions", () => {
       const result = mergeTranscriptions(['he said "hello', 'hello world"']);
       expect(result).toBe('he said "hello world"');
     });
+
+    it("should match apostrophe words with non-apostrophe versions", () => {
+      // "that's" without apostrophe becomes "thats" which should match
+      const result = mergeTranscriptions([
+        "I think that's great",
+        "thats great and wonderful",
+      ]);
+      expect(result).toBe("I think that's great and wonderful");
+    });
+
+    it("should handle possessives with apostrophes", () => {
+      const result = mergeTranscriptions([
+        "the dog's toy is",
+        "dogs toy is broken",
+      ]);
+      expect(result).toBe("the dog's toy is broken");
+    });
+
+    it("should handle multiple punctuation marks", () => {
+      const result = mergeTranscriptions([
+        "wait... what?!",
+        "what?! that's crazy",
+      ]);
+      expect(result).toBe("wait... what?! that's crazy");
+    });
+
+    it("should handle punctuation mismatches in overlap", () => {
+      const result = mergeTranscriptions([
+        "Hello, world!!!",
+        "world how are you?",
+      ]);
+      expect(result.toLowerCase()).toBe("hello, world!!! how are you?");
+    });
+  });
+
+  describe("contraction handling", () => {
+    it("should match contraction with expanded form (that's / that is)", () => {
+      const result = mergeTranscriptions([
+        "I think that's really",
+        "that is really cool",
+      ]);
+      expect(result).toBe("I think that is really cool");
+    });
+
+    it("should match contraction with expanded form (don't / do not)", () => {
+      const result = mergeTranscriptions([
+        "I don't want to",
+        "do not want to go",
+      ]);
+      expect(result).toBe("I do not want to go");
+    });
+
+    it("should match contraction with expanded form (I'm / I am)", () => {
+      const result = mergeTranscriptions([
+        "I'm going to the",
+        "I am going to the store",
+      ]);
+      expect(result).toBe("I am going to the store");
+    });
+
+    it("should match contraction with expanded form (it's / it is)", () => {
+      const result = mergeTranscriptions([
+        "I think it's going",
+        "it is going to rain",
+      ]);
+      expect(result).toBe("I think it is going to rain");
+    });
+
+    it("should match contraction with expanded form (we're / we are)", () => {
+      const result = mergeTranscriptions([
+        "we're going to be",
+        "we are going to be late",
+      ]);
+      expect(result).toBe("we are going to be late");
+    });
+
+    it("should match contraction with expanded form (they're / they are)", () => {
+      const result = mergeTranscriptions([
+        "I think they're coming",
+        "they are coming over tonight",
+      ]);
+      expect(result).toBe("I think they are coming over tonight");
+    });
+
+    it("should handle can't / cannot", () => {
+      const result = mergeTranscriptions([
+        "I can't believe that",
+        "cannot believe that happened",
+      ]);
+      expect(result).toBe("I cannot believe that happened");
+    });
+
+    it("should handle there's / there is", () => {
+      const result = mergeTranscriptions([
+        "I think there's something",
+        "there is something wrong",
+      ]);
+      expect(result).toBe("I think there is something wrong");
+    });
   });
 
   describe("complete overlap scenarios", () => {
@@ -162,8 +261,9 @@ describe("mergeTranscriptions", () => {
 
   describe("whitespace handling", () => {
     it("should handle extra whitespace between words", () => {
+      // Note: whitespace is normalized during merge
       const result = mergeTranscriptions(["hello   world", "world  peace"]);
-      expect(result).toBe("hello   world peace");
+      expect(result).toBe("hello world peace");
     });
 
     it("should handle leading and trailing whitespace", () => {
@@ -175,8 +275,52 @@ describe("mergeTranscriptions", () => {
     });
 
     it("should handle tabs and newlines", () => {
+      // Note: whitespace is normalized during merge
       const result = mergeTranscriptions(["hello\tworld", "world\npeace"]);
-      expect(result).toBe("hello\tworld peace");
+      expect(result).toBe("hello world peace");
+    });
+  });
+
+  describe("hyphenated word handling", () => {
+    it("should detect overlap despite hyphen differences", () => {
+      // Transcribers sometimes produce "slow-moving" and sometimes "slow moving"
+      // The overlap is detected using fuzzy matching
+      const result = mergeTranscriptions([
+        "turning dust into slow-moving constellations",
+        "slow moving constellations and making the room",
+      ]);
+      // Uses second segment's version for the overlap region
+      expect(result).toBe(
+        "turning dust into slow moving constellations and making the room",
+      );
+    });
+
+    it("should handle hyphenated word in second segment", () => {
+      const result = mergeTranscriptions([
+        "the well known scientist",
+        "well-known scientist discovered",
+      ]);
+      // Uses second segment's version for fuzzy overlap
+      expect(result).toBe("the well-known scientist discovered");
+    });
+
+    it("should detect overlap with hyphenated words", () => {
+      const result = mergeTranscriptions([
+        "a self-driving car in the",
+        "self driving car in the city",
+      ]);
+      // Uses second segment's version for the overlap region
+      expect(result).toBe("a self driving car in the city");
+    });
+
+    it("should handle real transcript with inconsistent hyphens", () => {
+      const result = mergeTranscriptions([
+        "making the room feel briefly weightless.",
+        "feel briefly weightless there's somewhere outside",
+      ]);
+      expect(result).toBe(
+        "making the room feel briefly weightless there's somewhere outside",
+      );
     });
   });
 
