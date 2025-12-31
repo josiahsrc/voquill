@@ -6,8 +6,8 @@ use tauri::{AppHandle, Emitter, EventTarget, Manager, State};
 
 use crate::domain::{
     ApiKey, ApiKeyCreateRequest, ApiKeyView, AudioChunkPayload, OverlayPhase, OverlayPhasePayload,
-    RecordingLevelPayload, Toast, ToastPayload, ToastType, TranscriptionAudioSnapshot,
-    EVT_AUDIO_CHUNK, EVT_OVERLAY_PHASE, EVT_REC_LEVEL, EVT_TOAST,
+    RecordingLevelPayload, TranscriptionAudioSnapshot, EVT_AUDIO_CHUNK, EVT_OVERLAY_PHASE,
+    EVT_REC_LEVEL,
 };
 use crate::platform::{
     ChunkCallback, GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest,
@@ -1013,37 +1013,4 @@ pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn stop_key_listener() -> Result<(), String> {
     crate::platform::keyboard::stop_key_listener()
-}
-
-#[tauri::command]
-pub fn show_toast(
-    app: AppHandle,
-    title: String,
-    message: String,
-    toast_type: String,
-) -> Result<(), String> {
-    let resolved_type = match toast_type.as_str() {
-        "error" => ToastType::Error,
-        _ => ToastType::Info,
-    };
-
-    let id = format!(
-        "toast-{}",
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    );
-
-    let toast = Toast {
-        id,
-        title,
-        message,
-        toast_type: resolved_type,
-    };
-
-    let payload = ToastPayload { toast };
-
-    app.emit_to(EventTarget::any(), EVT_TOAST, payload)
-        .map_err(|err| err.to_string())
 }

@@ -7,7 +7,6 @@ pub mod permissions;
 pub mod preferences;
 pub mod recording;
 pub mod term;
-pub mod toast;
 pub mod tone;
 pub mod transcription;
 pub mod user;
@@ -24,7 +23,6 @@ pub use recording::{
     EVT_AUDIO_CHUNK, EVT_REC_LEVEL,
 };
 pub use term::Term;
-pub use toast::{Toast, ToastPayload, ToastType, EVT_TOAST};
 pub use tone::Tone;
 pub use transcription::{Transcription, TranscriptionAudioSnapshot};
 pub use user::User;
