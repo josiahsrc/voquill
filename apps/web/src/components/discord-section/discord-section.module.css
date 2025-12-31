@@ -1,0 +1,163 @@
+.section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  overflow: hidden;
+}
+
+/* Large washed out background Discord logo */
+.backgroundIcon {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  color: rgba(88, 101, 242, 0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .backgroundIcon {
+    color: rgba(114, 137, 218, 0.1);
+  }
+}
+
+/* Centered content */
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 18px;
+  max-width: 560px;
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* New badge */
+.newBadge {
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Online badge with green ping */
+.onlineBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.pingWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+}
+
+.ping {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.pingDot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22c55e;
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.heading {
+  font-size: clamp(1.8rem, 2.5vw, 2.2rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--text-muted);
+}
+
+/* Discord button */
+.discordButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: #5865f2;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(88, 101, 242, 0.3);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+  margin-top: 8px;
+}
+
+.discordButton:hover {
+  background: #4752c4;
+  box-shadow: 0 6px 24px rgba(88, 101, 242, 0.4);
+  transform: translateY(-2px);
+}
+
+.discordButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(88, 101, 242, 0.3);
+}
+
+.discordButtonIcon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+@media (max-width: 720px) {
+  .section {
+    padding: 60px 18px;
+  }
+
+  .backgroundIcon {
+    width: 350px;
+    height: 350px;
+  }
+}
+
+@media (max-width: 520px) {
+  .backgroundIcon {
+    width: 280px;
+    height: 280px;
+  }
+}

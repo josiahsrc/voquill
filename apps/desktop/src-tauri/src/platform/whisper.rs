@@ -386,12 +386,13 @@ impl Transcriber for WhisperTranscriber {
         let language_code = request
             .and_then(|req| req.language.as_deref())
             .filter(|value| !value.is_empty());
+
+        // If no language specified, don't call set_language - Whisper will auto-detect
         eprintln!("[whisper] using language code: {:?}", language_code);
         if let Some(language) = language_code {
             params.set_language(Some(language));
-        } else {
-            params.set_language(Some("en"));
         }
+
         params.set_translate(false);
         params.set_print_special(false);
         params.set_print_progress(false);

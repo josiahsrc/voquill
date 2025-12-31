@@ -188,12 +188,10 @@ pub async fn start_google_sign_in(
     app_handle: AppHandle,
     config: State<'_, crate::state::GoogleOAuthState>,
 ) -> Result<(), String> {
-    let config = config
-        .config()
-        .ok_or_else(|| {
-            "Google OAuth client id/secret not configured. Set VOQUILL_GOOGLE_CLIENT_ID and VOQUILL_GOOGLE_CLIENT_SECRET."
-                .to_string()
-        })?;
+    let config = config.config().ok_or_else(|| {
+        "Google OAuth client id/secret not configured. Set VOQUILL_GOOGLE_CLIENT_ID and VOQUILL_GOOGLE_CLIENT_SECRET."
+            .to_string()
+    })?;
 
     let result = crate::system::google_oauth::start_google_oauth(&app_handle, config).await?;
 

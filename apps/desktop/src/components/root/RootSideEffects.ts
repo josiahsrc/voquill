@@ -14,8 +14,10 @@ import { loadHotkeys } from "../../actions/hotkey.actions";
 import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
-import { postProcessTranscript } from "../../actions/transcribe.actions";
-import { storeTranscription } from "../../actions/transcription-storage.actions";
+import {
+  postProcessTranscript,
+  storeTranscription,
+} from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";

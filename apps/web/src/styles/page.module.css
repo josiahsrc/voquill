@@ -45,7 +45,8 @@
 .main,
 .footer {
   width: min(1120px, 100%);
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .headerWrapper {
@@ -909,7 +910,7 @@
   flex-direction: column;
   gap: 40px;
   padding: 48px;
-  margin-top: 32px;
+  margin-top: 120px;
   border-radius: 32px;
   background: var(--level1);
   border: 1px solid var(--border);

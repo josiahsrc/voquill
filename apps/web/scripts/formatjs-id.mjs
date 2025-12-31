@@ -26,7 +26,7 @@ export const createMessageId = (defaultMessage = "") => {
   return truncated || "message";
 };
 
-export const formatjsOverrideIdFn = (id, defaultMessage) => {
+export const formatjsOverrideIdFn = (id, defaultMessage, _description, _filePath) => {
   if (id || !defaultMessage) {
     return id;
   }

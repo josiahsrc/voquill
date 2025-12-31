@@ -56,6 +56,18 @@ export const getMyPreferredLocale = (state: AppState): Locale => {
   );
 };
 
+export const getDetectedSystemLocale = (): string => {
+  return detectLocale() ?? DEFAULT_LOCALE;
+};
+
+export const getMyDictationLanguage = (state: AppState): string => {
+  const user = getMyUser(state);
+  if (user?.preferredLanguage) {
+    return user.preferredLanguage;
+  }
+  return getDetectedSystemLocale();
+};
+
 export const getMyUserPreferences = (
   state: AppState,
 ): Nullable<UserPreferences> => {

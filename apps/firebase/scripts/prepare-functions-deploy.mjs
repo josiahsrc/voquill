@@ -90,8 +90,8 @@ function copyEnvFiles() {
   // Copy .env files that Firebase Functions v2 expects
   const envFiles = [
     ".env",
-    ".env.voquill-prod",
-    ".env.voquill-dev",
+    ".env.prod",
+    ".env.dev",
   ];
   for (const file of envFiles) {
     const sourcePath = path.join(sourceDir, file);
