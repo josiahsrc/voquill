@@ -13,8 +13,9 @@ import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 import { handleGoogleAuthPayload } from "../../actions/login.actions";
 import { refreshMember } from "../../actions/member.actions";
+import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
-import { showErrorToast } from "../../actions/toast.actions";
+import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
 import {
   postProcessTranscript,
@@ -138,10 +139,13 @@ export const RootSideEffects = () => {
 
     if (getMemberExceedsWordLimitByState(state)) {
       tryPlayAudioChime("limit_reached_clip");
-      showErrorToast(
-        "Word limit reached",
-        "You've used all your free words for this period. Upgrade to continue.",
-      );
+      showToast({
+        title: "Word limit reached",
+        message: "You've used all your free words for today.",
+        toastType: "error",
+        action: "upgrade",
+        duration: 8_000,
+      });
       return;
     }
 
@@ -364,6 +368,13 @@ export const RootSideEffects = () => {
   useTauriListen<GoogleAuthPayload>(GOOGLE_AUTH_EVENT, (payload) =>
     handleGoogleAuthPayload(payload),
   );
+
+  useTauriListen<{ action: string }>("toast-action", async (payload) => {
+    if (payload.action === "upgrade") {
+      surfaceMainWindow();
+      openUpgradePlanDialog();
+    }
+  });
 
   return null;
 };

@@ -1,4 +1,5 @@
 import { Box, keyframes } from "@mui/material";
+import { emitTo } from "@tauri-apps/api/event";
 import {
   availableMonitors,
   cursorPosition,
@@ -8,6 +9,7 @@ import {
 } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { produceAppState, useAppStore } from "../../store";
+import { ToastAction } from "../../types/toast.types";
 import { getPlatform } from "../../utils/platform.utils";
 import { ToastItem } from "./ToastItem";
 
@@ -60,37 +62,38 @@ export const ToastRend = () => {
     });
   }, []);
 
-  // Initialize window settings for transparency
+  const handleAction = useCallback((action: ToastAction) => {
+    produceAppState((draft) => {
+      draft.currentToast = null;
+    });
+
+    emitTo("main", "toast-action", { action }).catch(console.error);
+  }, []);
+
   useEffect(() => {
     document.body.style.backgroundColor = "transparent";
     document.body.style.margin = "0";
     document.documentElement.style.backgroundColor = "transparent";
   }, []);
 
-  // Handle toast changes with exit animation
   useEffect(() => {
     if (currentToast) {
-      // New toast arrived
       setIsAnimatingOut(false);
       setDisplayedToast(currentToast);
     } else if (displayedToast && !isAnimatingOut) {
-      // Toast was dismissed, start exit animation
       setIsAnimatingOut(true);
     }
   }, [currentToast, displayedToast, isAnimatingOut]);
 
-  // Handle exit animation completion - hide window first, then clear state
   useEffect(() => {
     if (!isAnimatingOut) return;
 
     const timer = setTimeout(async () => {
-      // Hide window first to prevent flicker
       try {
         await windowRef.hide();
       } catch {
         // Ignore errors
       }
-      // Then clear state
       setDisplayedToast(null);
       setIsAnimatingOut(false);
     }, ANIMATION_OUT_MS);
@@ -98,7 +101,6 @@ export const ToastRend = () => {
     return () => clearTimeout(timer);
   }, [isAnimatingOut, windowRef]);
 
-  // Handle showing and positioning (hiding is handled by exit animation effect)
   useEffect(() => {
     let canceled = false;
     const shouldShow = hasToast && !isAnimatingOut;
@@ -111,7 +113,6 @@ export const ToastRend = () => {
             cursorPosition().catch(() => null),
           ]);
 
-          // Find monitor containing cursor
           const targetMonitor =
             monitors?.find((monitor) => {
               if (!cursor) {
@@ -190,7 +191,6 @@ export const ToastRend = () => {
     };
   }, [windowRef, hasToast, isAnimatingOut]);
 
-  // Don't render anything if no toast to display
   if (!displayedToast) {
     return null;
   }
@@ -218,7 +218,11 @@ export const ToastRend = () => {
           width: TOAST_CONTENT_WIDTH - 16,
         }}
       >
-        <ToastItem toast={displayedToast} onClose={handleClose} />
+        <ToastItem
+          toast={displayedToast}
+          onClose={handleClose}
+          onAction={handleAction}
+        />
       </Box>
     </Box>
   );

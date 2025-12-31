@@ -1,8 +1,16 @@
-import { Box, IconButton, keyframes, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  IconButton,
+  keyframes,
+  Paper,
+  Typography,
+} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { Toast } from "../../types/toast.types";
+import { useIntl } from "react-intl";
+import { Toast, ToastAction } from "../../types/toast.types";
 
 const DEFAULT_DURATION_MS = 3000;
 
@@ -19,11 +27,22 @@ const shrinkProgress = keyframes`
 type ToastItemProps = {
   toast: Toast;
   onClose?: () => void;
+  onAction?: (action: ToastAction) => void;
 };
 
-export const ToastItem = ({ toast, onClose }: ToastItemProps) => {
+export const ToastItem = ({ toast, onClose, onAction }: ToastItemProps) => {
+  const intl = useIntl();
   const isError = toast.toastType === "error";
   const duration = toast.duration ?? DEFAULT_DURATION_MS;
+
+  const getActionLabel = (action: ToastAction): string => {
+    switch (action) {
+      case "upgrade":
+        return intl.formatMessage({ defaultMessage: "Upgrade" });
+    }
+  };
+
+  const actionLabel = toast.action ? getActionLabel(toast.action) : null;
 
   return (
     <Paper
@@ -110,6 +129,25 @@ export const ToastItem = ({ toast, onClose }: ToastItemProps) => {
             {toast.message}
           </Typography>
         </Box>
+        {actionLabel && toast.action && (
+          <Box sx={{ flexShrink: 0, ml: 1 }} alignSelf="center">
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => onAction?.(toast.action!)}
+              sx={{
+                textTransform: "none",
+                whiteSpace: "nowrap",
+                fontSize: 12,
+                py: 0.5,
+                px: 1.5,
+                minWidth: "auto",
+              }}
+            >
+              {actionLabel}
+            </Button>
+          </Box>
+        )}
       </Box>
 
       {/* Progress bar */}
