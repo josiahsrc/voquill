@@ -2,6 +2,8 @@
 
 <img src="docs/graphic.png" alt="Voquill Logo" width="400" />
 
+[![Discord](https://img.shields.io/discord/1454230702106345514?logo=discord&label=Discord&color=5865F2)](https://discord.gg/5jXkDvdVdt)
+
 # Your keyboard is holding you back.
 
 ### Make voice your new keyboard. Type four times faster by using your voice.
@@ -9,8 +11,6 @@
 <br/>
 
 **[Visit our website →](https://voquill.com)**
-
-<br/>
 
 </div>
 
