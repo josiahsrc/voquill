@@ -150,16 +150,18 @@ export const RootSideEffects = () => {
         // We'll get the toneId when recording stops via tryRegisterCurrentAppTarget().
         sessionRef.current = createTranscriptionSession(prefs);
 
-        const playAudioPromise = playInteractionChime
-          ? invoke<void>("play_audio", { clip: "start_recording_clip" })
-          : Promise.resolve();
+        // Fire chime immediately (fire-and-forget) for instant feedback
+        if (playInteractionChime) {
+          invoke<void>("play_audio", { clip: "start_recording_clip" }).catch(
+            console.error,
+          );
+        }
 
         const [, startRecordingResult] = await Promise.all([
           invoke<void>("set_phase", { phase: "recording" }),
           invoke<StartRecordingResponse>("start_recording", {
             args: { preferredMicrophone },
           }),
-          playAudioPromise,
         ]);
 
         const sampleRate =

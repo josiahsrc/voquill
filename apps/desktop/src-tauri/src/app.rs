@@ -102,6 +102,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 app.manage(recorder);
                 app.manage(transcriber);
 
+                // Pre-warm audio output for instant chime playback
+                crate::system::audio_feedback::warm_audio_output();
+
                 ensure_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
