@@ -14,6 +14,11 @@ static STOP_RECORDING_CLIP: &[u8] = include_bytes!(concat!(
     "/assets/audio/stop-recording.wav"
 ));
 
+static LIMIT_REACHED_CLIP: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/assets/audio/limit-reached.wav"
+));
+
 /// Channel sender for the warm audio thread.
 static AUDIO_SENDER: OnceLock<Sender<AudioRequest>> = OnceLock::new();
 
@@ -83,6 +88,10 @@ pub fn play_start_recording_clip() {
 
 pub fn play_stop_recording_clip() {
     play_clip(STOP_RECORDING_CLIP);
+}
+
+pub fn play_limit_reached_clip() {
+    play_clip(LIMIT_REACHED_CLIP);
 }
 
 fn play_clip(bytes: &'static [u8]) {

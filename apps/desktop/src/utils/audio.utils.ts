@@ -1,4 +1,7 @@
+import { invoke } from "@tauri-apps/api/core";
+import { getAppState } from "../store";
 import { AudioSamples } from "../types/audio.types";
+import { getMyUser } from "./user.utils";
 
 const writeString = (view: DataView, offset: number, text: string) => {
   for (let index = 0; index < text.length; index += 1) {
@@ -51,3 +54,20 @@ export const buildWaveFile = (
 
 export const normalizeSamples = (samples: AudioSamples): number[] =>
   Array.isArray(samples) ? samples : Array.from(samples ?? []);
+
+export type AudioClip =
+  | "start_recording_clip"
+  | "stop_recording_clip"
+  | "limit_reached_clip";
+
+export function tryPlayAudioChime(clip: AudioClip): void {
+  const state = getAppState();
+  const user = getMyUser(state);
+  const playInteractionChime = user?.playInteractionChime ?? true;
+
+  if (!playInteractionChime) {
+    return;
+  }
+
+  invoke<void>("play_audio", { clip }).catch(console.error);
+}

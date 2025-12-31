@@ -2,11 +2,11 @@ import { Box, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
 import { getMyUser, getMyUserName } from "../../utils/user.utils";
+import { DictationInstruction } from "../common/DictationInstruction";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
-import { Stat } from "./Stat";
 import { HomeSideEffects } from "./HomeSideEffects";
-import { DictationInstruction } from "../common/DictationInstruction";
+import { Stat } from "./Stat";
 
 export default function HomePage() {
   const user = useAppStore(getMyUser);
