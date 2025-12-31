@@ -6,6 +6,7 @@ import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
+import { signOut } from "../../actions/login.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { useHeaderPortal } from "../../hooks/header.hooks";
 import { useIsOnboarded } from "../../hooks/user.hooks";
@@ -23,7 +24,6 @@ import {
   type MenuPopoverItem,
 } from "../common/MenuPopover";
 import { maybeArrayElements } from "../settings/AIPostProcessingConfiguration";
-import { signOut } from "../../actions/login.actions";
 
 export type BaseHeaderProps = {
   logo?: React.ReactNode;
@@ -60,6 +60,7 @@ export const AppHeader = () => {
     planToDisplayName(getEffectivePlan(state)),
   );
   const isPaying = useAppStore(getIsPaying);
+  const plan = useAppStore((state) => getEffectivePlan(state));
 
   const myName = useAppStore((state) => {
     const user = getMyUser(state);
@@ -105,47 +106,69 @@ export const AppHeader = () => {
   let rightContent: React.ReactNode;
   if (isOnboarded) {
     rightContent = (
-      <MenuPopoverBuilder
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        items={sharedRightMenuItems}
-      >
-        {({ ref, open }) => (
+      <Stack direction="row" alignItems="center" gap={1.5}>
+        {plan === "free" && (
           <Button
-            ref={ref}
-            onClick={open}
+            onClick={() => openUpgradePlanDialog()}
+            startIcon={<ArrowUpwardOutlined sx={{ fontSize: 18 }} />}
             sx={{
-              display: { xs: "none", sm: "flex" },
-              flexShrink: 0,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 1.5,
+              backgroundColor: "#3b82f6",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              px: 2,
+              py: 0.75,
+              textTransform: "none",
+              "&:hover": {
+                backgroundColor: "#2563eb",
+              },
             }}
           >
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                fontSize: 14,
-              }}
-            >
-              {myInitials}
-            </Avatar>
-            <Stack textAlign="left" spacing={0.5}>
-              <Typography variant="subtitle1" fontWeight={700} lineHeight={1}>
-                {myName}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="textSecondary"
-                lineHeight={1}
-              >
-                {planName}
-              </Typography>
-            </Stack>
+            <FormattedMessage defaultMessage="Upgrade" />
           </Button>
         )}
-      </MenuPopoverBuilder>
+        <MenuPopoverBuilder
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          items={sharedRightMenuItems}
+        >
+          {({ ref, open }) => (
+            <Button
+              ref={ref}
+              onClick={open}
+              sx={{
+                display: { xs: "none", sm: "flex" },
+                flexShrink: 0,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 1.5,
+              }}
+            >
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  fontSize: 14,
+                }}
+              >
+                {myInitials}
+              </Avatar>
+              <Stack textAlign="left" spacing={0.5}>
+                <Typography variant="subtitle1" fontWeight={700} lineHeight={1}>
+                  {myName}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  lineHeight={1}
+                >
+                  {planName}
+                </Typography>
+              </Stack>
+            </Button>
+          )}
+        </MenuPopoverBuilder>
+      </Stack>
     );
   } else if (isLoggedIn) {
     rightContent = (
