@@ -8,6 +8,51 @@ use std::{
 const MODEL_URL_ENV: &str = "VOQUILL_WHISPER_MODEL_URL";
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ModelFamily {
+    Whisper,
+    #[cfg(feature = "cuda")]
+    Parakeet,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ModelDescriptor {
+    pub family: ModelFamily,
+    pub size: String,
+}
+
+impl ModelDescriptor {
+    pub fn parse(value: &str) -> Self {
+        if let Some((family, size)) = value.split_once(':') {
+            match family.trim() {
+                "whisper" => Self {
+                    family: ModelFamily::Whisper,
+                    size: size.trim().to_string(),
+                },
+                #[cfg(feature = "cuda")]
+                "parakeet" => Self {
+                    family: ModelFamily::Parakeet,
+                    size: size.trim().to_string(),
+                },
+                _ => Self::default_whisper(),
+            }
+        } else {
+            // Backward compatibility: plain "base" -> "whisper:base"
+            Self {
+                family: ModelFamily::Whisper,
+                size: value.trim().to_string(),
+            }
+        }
+    }
+
+    fn default_whisper() -> Self {
+        Self {
+            family: ModelFamily::Whisper,
+            size: "base".to_string(),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum WhisperModelSize {
     Tiny,
     Base,
@@ -154,7 +199,7 @@ fn download_model(url: &str, destination: &Path) -> io::Result<()> {
     let mut response = reqwest::blocking::get(url).map_err(|err| {
         io::Error::new(
             io::ErrorKind::Other,
-            format!("Failed to request whisper model: {err}"),
+            format!("Failed to request model: {err}"),
         )
     })?;
 
@@ -162,7 +207,7 @@ fn download_model(url: &str, destination: &Path) -> io::Result<()> {
         return Err(io::Error::new(
             io::ErrorKind::Other,
             format!(
-                "Failed to download whisper model, server returned status: {}",
+                "Failed to download model, server returned status: {}",
                 response.status()
             ),
         ));
@@ -175,4 +220,86 @@ fn download_model(url: &str, destination: &Path) -> io::Result<()> {
     fs::rename(&temp_path, destination)?;
 
     Ok(())
+}
+
+#[cfg(feature = "cuda")]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ParakeetModelSize {
+    Tdt06bV3, // TDT 0.6B v3 (int8 quantized)
+}
+
+#[cfg(feature = "cuda")]
+impl ParakeetModelSize {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Tdt06bV3 => "0.6b",
+        }
+    }
+
+    pub fn model_files(self) -> Vec<&'static str> {
+        match self {
+            Self::Tdt06bV3 => vec![
+                "encoder-model.onnx",
+                "encoder-model.onnx.data",
+                "decoder_joint-model.onnx",
+                "vocab.txt",
+            ],
+        }
+    }
+
+    fn default_urls(self) -> Vec<(&'static str, &'static str)> {
+        match self {
+            Self::Tdt06bV3 => vec![
+                // Using istupakov's official ONNX export instead of altunenes
+                // to fix character-level spacing issues in decoder
+                ("encoder-model.onnx", "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/encoder-model.onnx"),
+                ("encoder-model.onnx.data", "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/encoder-model.onnx.data"),
+                ("decoder_joint-model.onnx", "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/decoder_joint-model.onnx"),
+                ("vocab.txt", "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/vocab.txt"),
+            ],
+        }
+    }
+}
+
+#[cfg(feature = "cuda")]
+impl FromStr for ParakeetModelSize {
+    type Err = ();
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let normalized = value.trim().to_ascii_lowercase();
+        match normalized.as_str() {
+            "0.6b" | "0.6" => Ok(Self::Tdt06bV3),
+            _ => Err(()),
+        }
+    }
+}
+
+#[cfg(feature = "cuda")]
+impl fmt::Display for ParakeetModelSize {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+#[cfg(feature = "cuda")]
+pub fn ensure_parakeet_model(
+    app: &tauri::AppHandle,
+    size: ParakeetModelSize,
+) -> io::Result<PathBuf> {
+    let base_path = crate::system::paths::parakeet_model_dir(app, size)?;
+    eprintln!("[parakeet] Model directory: {}", base_path.display());
+
+    for (filename, url) in size.default_urls() {
+        let file_path = base_path.join(filename);
+        if !file_path.exists() {
+            eprintln!("[parakeet] Downloading {} from {}", filename, url);
+            download_model(url, &file_path)?;
+            eprintln!("[parakeet] Downloaded {}", filename);
+        } else {
+            eprintln!("[parakeet] Already exists: {}", filename);
+        }
+    }
+
+    eprintln!("[parakeet] All model files ready at: {}", base_path.display());
+    Ok(base_path)
 }

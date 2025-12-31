@@ -19,9 +19,10 @@ tauri-build = { version = "2", features = [] }
 
 [features]
 default = []
-linux-gpu = ["whisper-rs/vulkan"]
+cuda = ["dep:parakeet-rs"]
+linux-gpu = ["whisper-rs/vulkan", "cuda"]
 mac-gpu = ["whisper-rs/metal"]
-windows-gpu = ["whisper-rs/vulkan"]
+windows-gpu = ["whisper-rs/vulkan", "cuda"]
 
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png", "devtools"] }
@@ -56,6 +57,7 @@ jsonwebtoken = "9"
 dotenvy = "0.15"
 chrono = "0.4"
 hostname = "0.4"
+parakeet-rs = { version = "0.1.9", optional = true, features = ["cuda"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"

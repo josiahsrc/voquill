@@ -828,20 +828,91 @@ pub async fn transcribe_audio(
         }
 
         if let Some(size_value) = maybe_model_size {
-            match size_value.parse::<WhisperModelSize>() {
-                Ok(parsed) => {
-                    model_size = parsed;
+            use crate::system::models::{ModelDescriptor, ModelFamily};
+
+            // Parse model descriptor (e.g., "whisper:base" or "parakeet:0.6b")
+            let descriptor = ModelDescriptor::parse(&size_value);
+
+            match descriptor.family {
+                ModelFamily::Whisper => {
+                    match descriptor.size.parse::<WhisperModelSize>() {
+                        Ok(parsed) => {
+                            model_size = parsed;
+                        }
+                        Err(_) => {
+                            eprintln!(
+                                "Unrecognised Whisper model size '{}'; falling back to default.",
+                                descriptor.size
+                            );
+                        }
+                    }
                 }
-                Err(_) => {
-                    eprintln!(
-                        "Unrecognised Whisper model size '{}'; falling back to default.",
-                        size_value
+                #[cfg(feature = "cuda")]
+                ModelFamily::Parakeet => {
+                    use crate::system::models::ParakeetModelSize;
+                    use crate::platform::Transcriber;
+
+                    // Parse Parakeet model size
+                    let parakeet_size = descriptor
+                        .size
+                        .parse::<ParakeetModelSize>()
+                        .unwrap_or(ParakeetModelSize::Tdt06bV3);
+
+                    // Ensure Parakeet model is downloaded
+                    let handle = app.clone();
+                    let parakeet_path = tauri::async_runtime::spawn_blocking(move || {
+                        crate::system::models::ensure_parakeet_model(&handle, parakeet_size)
+                            .map_err(|err| err.to_string())
+                    })
+                    .await
+                    .map_err(|err| err.to_string())??;
+
+                    // Create a Parakeet transcriber directly (not using managed state)
+                    eprintln!("[parakeet] Creating transcriber for path: {}", parakeet_path.display());
+                    let parakeet_transcriber = crate::platform::parakeet::ParakeetTranscriber::new(&parakeet_path)
+                        .map_err(|e| format!("Failed to create Parakeet transcriber: {}", e))?;
+
+                    request.model_path = Some(parakeet_path.to_string_lossy().into_owned());
+                    request.model_family = Some(ModelFamily::Parakeet);
+
+                    let request = Some(request);
+                    let join_result = tauri::async_runtime::spawn_blocking(move || {
+                        let original_len = samples.len();
+                        let mut filtered = Vec::with_capacity(original_len);
+                        for sample in samples {
+                            if sample.is_finite() {
+                                filtered.push(sample as f32);
+                            }
+                        }
+
+                        if filtered.len() != original_len {
+                            eprintln!(
+                                "Discarded {} non-finite audio samples before transcription",
+                                original_len - filtered.len()
+                            );
+                        }
+
+                        let request_ref = request.as_ref();
+                        // Use the Parakeet transcriber directly
+                        parakeet_transcriber.transcribe(filtered.as_slice(), sample_rate, request_ref)
+                    })
+                    .await
+                    .map_err(|err| err.to_string())?;
+
+                    return join_result;
+                }
+                #[cfg(not(feature = "cuda"))]
+                ModelFamily::Parakeet => {
+                    return Err(
+                        "Parakeet models are not supported in this build. Please select a Whisper model."
+                            .to_string(),
                     );
                 }
             }
         }
     }
 
+    // Whisper model path setup (default path for Whisper models)
     let initial_path = crate::system::paths::whisper_model_path(&app, model_size)
         .map_err(|err| err.to_string())?;
 
@@ -859,6 +930,7 @@ pub async fn transcribe_audio(
 
     let model_path_string = model_path.to_string_lossy().into_owned();
     request.model_path = Some(model_path_string);
+    request.model_family = Some(crate::system::models::ModelFamily::Whisper);
 
     let request = Some(request);
     let transcriber = transcriber.inner().clone();

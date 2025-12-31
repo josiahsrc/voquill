@@ -30,6 +30,17 @@ pub fn whisper_model_path(app: &tauri::AppHandle, size: WhisperModelSize) -> io:
     Ok(path)
 }
 
+#[cfg(feature = "cuda")]
+pub fn parakeet_model_dir(
+    app: &tauri::AppHandle,
+    size: crate::system::models::ParakeetModelSize,
+) -> io::Result<PathBuf> {
+    let mut path = models_dir(app)?;
+    path.push(format!("parakeet-{}", size.as_str()));
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
 pub fn models_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let mut path = app
         .path()

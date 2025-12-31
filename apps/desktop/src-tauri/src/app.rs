@@ -81,26 +81,35 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 let app_handle = app.handle();
 
-                use crate::platform::{Recorder, Transcriber};
+                use crate::platform::{Recorder, Transcriber, TranscriberBackend};
                 use std::sync::Arc;
 
+                // Initialize Whisper transcriber (always available)
                 let default_model_size = crate::system::models::WhisperModelSize::default();
-                let model_path =
+                let whisper_model_path =
                     crate::system::models::ensure_whisper_model(&app_handle, default_model_size)
                         .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-                let transcriber: Arc<dyn Transcriber> = Arc::new(
-                    crate::platform::whisper::WhisperTranscriber::new(&model_path).map_err(
+                let whisper_transcriber = Arc::new(
+                    crate::platform::whisper::WhisperTranscriber::new(&whisper_model_path).map_err(
                         |err| -> Box<dyn std::error::Error> {
                             Box::new(std::io::Error::new(std::io::ErrorKind::Other, err))
                         },
                     )?,
                 );
+
+                // Start in Whisper-only mode - Parakeet will be lazy-loaded on first use
+                // This prevents blocking startup with large model downloads
+                let transcriber_backend: Arc<dyn Transcriber> = {
+                    eprintln!("[transcriber] Initialized in Whisper-only mode (Parakeet lazy-loaded on first use)");
+                    Arc::new(TranscriberBackend::WhisperOnly(whisper_transcriber))
+                };
+
                 let recorder: Arc<dyn Recorder> =
                     Arc::new(crate::platform::audio::RecordingManager::new());
 
                 app.manage(recorder);
-                app.manage(transcriber);
+                app.manage(transcriber_backend);
 
                 ensure_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;

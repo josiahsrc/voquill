@@ -13,5 +13,6 @@
   },
   "files.associations": {
     "*.rules": "firestorerules"
-  }
+  },
+  "rust-analyzer.cargo.features": ["cuda"]
 }

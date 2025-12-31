@@ -21,7 +21,14 @@ import {
 } from "../../actions/user.actions";
 import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { useAppStore } from "../../store";
-import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
+import {
+  CPU_DEVICE_VALUE,
+  type TranscriptionMode,
+  WHISPER_MODELS,
+  PARAKEET_MODELS,
+  encodeModelKey,
+  normalizeModelSize,
+} from "../../types/ai.types";
 import { buildDeviceLabel, type GpuInfo } from "../../types/gpu.types";
 import {
   SegmentedControl,
@@ -32,30 +39,6 @@ import { ApiKeyList } from "./ApiKeyList";
 import { VoquillCloudSetting } from "./VoquillCloudSetting";
 import { isMacOS } from "../../utils/env.utils";
 
-type ModelOption = {
-  value: string;
-  label: string;
-  helper: string;
-};
-
-const MODEL_OPTIONS: ModelOption[] = [
-  { value: "tiny", label: "Tiny (77 MB)", helper: "Fastest, lowest accuracy" },
-  {
-    value: "base",
-    label: "Base (148 MB)",
-    helper: "Great balance of speed and accuracy",
-  },
-  {
-    value: "small",
-    label: "Small (488 MB)",
-    helper: "Recommended with GPU acceleration",
-  },
-  {
-    value: "medium",
-    label: "Medium (1.53 GB)",
-    helper: "Highest accuracy, slower on CPU",
-  },
-];
 
 export type AITranscriptionConfigurationProps = {
   hideCloudOption?: boolean;
@@ -75,7 +58,31 @@ export const AITranscriptionConfiguration = ({
     transcription.gpuEnumerationEnabled,
   );
 
-  console.log("t", transcription);
+  // Detect NVIDIA GPUs (vendor ID 0x10DE)
+  const hasNvidiaGpu = useMemo(
+    () => gpus.some((gpu) => gpu.vendor === 0x10de),
+    [gpus],
+  );
+
+  // Build model options dynamically based on GPU availability
+  const modelOptions = useMemo(() => {
+    const whisperOptions = WHISPER_MODELS.map((model) => ({
+      value: encodeModelKey(model),
+      label: model.displayName,
+      helper: model.helper,
+    }));
+
+    if (hasNvidiaGpu && transcription.gpuEnumerationEnabled) {
+      const parakeetOptions = PARAKEET_MODELS.map((model) => ({
+        value: encodeModelKey(model),
+        label: model.displayName,
+        helper: model.helper,
+      }));
+      return [...whisperOptions, ...parakeetOptions];
+    }
+
+    return whisperOptions;
+  }, [hasNvidiaGpu, transcription.gpuEnumerationEnabled]);
 
   // Single click handler - does everything in one place
   const handleEnableHardwareAcceleration = useCallback(async () => {
@@ -223,15 +230,15 @@ export const AITranscriptionConfiguration = ({
 
           <FormControl fullWidth size="small">
             <InputLabel id="model-size-label">
-              <FormattedMessage defaultMessage="Model size" />
+              <FormattedMessage defaultMessage="Model" />
             </InputLabel>
             <Select
               labelId="model-size-label"
-              label={<FormattedMessage defaultMessage="Model size" />}
-              value={transcription.modelSize}
+              label={<FormattedMessage defaultMessage="Model" />}
+              value={normalizeModelSize(transcription.modelSize)}
               onChange={(event) => handleModelSizeChange(event.target.value)}
             >
-              {MODEL_OPTIONS.map(({ value, label, helper }) => (
+              {modelOptions.map(({ value, label, helper }) => (
                 <MenuItem key={value} value={value}>
                   <Box>
                     <Typography variant="body2" fontWeight={600}>

@@ -32,6 +32,9 @@ pub mod app_info;
 pub mod audio;
 pub mod whisper;
 
+#[cfg(feature = "cuda")]
+pub mod parakeet;
+
 #[cfg(desktop)]
 pub mod keyboard;
 
@@ -44,6 +47,7 @@ pub struct TranscriptionRequest {
     pub model_path: Option<String>,
     pub initial_prompt: Option<String>,
     pub language: Option<String>,
+    pub model_family: Option<crate::system::models::ModelFamily>,
 }
 
 #[derive(Clone, Debug)]
@@ -78,4 +82,49 @@ pub trait Transcriber: Send + Sync {
         sample_rate: u32,
         request: Option<&TranscriptionRequest>,
     ) -> Result<String, String>;
+}
+
+pub enum TranscriberBackend {
+    WhisperOnly(Arc<whisper::WhisperTranscriber>),
+    #[cfg(feature = "cuda")]
+    DualMode {
+        whisper: Arc<whisper::WhisperTranscriber>,
+        parakeet: Arc<parakeet::ParakeetTranscriber>,
+    },
+}
+
+impl Transcriber for TranscriberBackend {
+    fn transcribe(
+        &self,
+        samples: &[f32],
+        sample_rate: u32,
+        request: Option<&TranscriptionRequest>,
+    ) -> Result<String, String> {
+        // Check if model family is specified in the request
+        let model_family = request
+            .and_then(|r| r.model_family.as_ref())
+            .copied()
+            .unwrap_or(crate::system::models::ModelFamily::Whisper);
+
+        match model_family {
+            crate::system::models::ModelFamily::Whisper => match self {
+                Self::WhisperOnly(t) => t.transcribe(samples, sample_rate, request),
+                #[cfg(feature = "cuda")]
+                Self::DualMode { whisper, .. } => whisper.transcribe(samples, sample_rate, request),
+            },
+            #[cfg(feature = "cuda")]
+            crate::system::models::ModelFamily::Parakeet => match self {
+                Self::DualMode { parakeet, .. } => parakeet.transcribe(samples, sample_rate, request),
+                Self::WhisperOnly(_) => Err(
+                    "Parakeet model requested but CUDA support not available in this build. Please select a Whisper model."
+                        .to_string(),
+                ),
+            },
+            #[cfg(not(feature = "cuda"))]
+            crate::system::models::ModelFamily::Parakeet => Err(
+                "Parakeet models are not supported in this build. Please select a Whisper model."
+                    .to_string(),
+            ),
+        }
+    }
 }
