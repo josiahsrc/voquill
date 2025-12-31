@@ -8,7 +8,6 @@ import {
   sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { BaseRepo } from "./base.repo";
@@ -25,7 +24,6 @@ export abstract class BaseAuthRepo extends BaseRepo {
     password: string,
   ): Promise<UserCredential>;
   abstract sendPasswordResetRequest(email: string): Promise<void>;
-  abstract signInWithGoogle(): Promise<UserCredential>;
   abstract signInWithGoogleTokens(
     idToken: string,
     accessToken: string,
@@ -64,13 +62,6 @@ export class CloudAuthRepo extends BaseAuthRepo {
 
   async sendPasswordResetRequest(email: string): Promise<void> {
     await sendPasswordResetEmail(getAuth(), email);
-  }
-
-  async signInWithGoogle(): Promise<UserCredential> {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-
-    return signInWithPopup(getAuth(), provider);
   }
 
   async signInWithGoogleTokens(
