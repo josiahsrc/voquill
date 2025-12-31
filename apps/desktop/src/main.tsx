@@ -19,6 +19,7 @@ import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { OverlayRoot } from "./components/overlay/OverlayRoot";
+import { ToastRoot } from "./components/toast";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { getIntlConfig } from "./i18n";
@@ -77,9 +78,13 @@ if (getIsEmulators()) {
   connectStorageEmulator(storage, "localhost", 9199);
 }
 
-const isOverlayWindow =
-  typeof window !== "undefined" &&
-  new URLSearchParams(window.location.search).get("overlay") === "1";
+const searchParams =
+  typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search)
+    : null;
+
+const isOverlayWindow = searchParams?.get("overlay") === "1";
+const isToastWindow = searchParams?.get("toast") === "1";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 const root = ReactDOM.createRoot(rootElement);
@@ -107,6 +112,12 @@ if (isOverlayWindow) {
   root.render(
     <Main>
       <OverlayRoot />
+    </Main>,
+  );
+} else if (isToastWindow) {
+  root.render(
+    <Main>
+      <ToastRoot />
     </Main>,
   );
 } else {
