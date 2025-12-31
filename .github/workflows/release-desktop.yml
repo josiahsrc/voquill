@@ -22,6 +22,10 @@ on:
         description: "Semver version to promote (prod only, defaults to latest dev tag)"
         required: false
         type: string
+      release_context:
+        description: "Optional extra context to include in the release notes prompt"
+        required: false
+        type: string
 
 jobs:
   metadata:
@@ -196,6 +200,7 @@ jobs:
         uses: josiahsrc/ai-release-notes-builder@v3
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_CONTEXT: ${{ github.event.inputs.release_context || '' }}
         with:
           content_scope: commit_messages
           prompt: |
@@ -217,6 +222,10 @@ jobs:
             • Use direct, factual language. Never be sycophantic or overly enthusiastic.
             • Do not start bullets with phrases like "Enjoy", "Experience", "Discover", or similar marketing language.
             • State improvements plainly without embellishment (e.g., "Improved performance" not "Enjoy blazing-fast performance").
+            ${{ github.event.inputs.release_context && format('
+
+            Additional context from the release author:
+            {0}', github.event.inputs.release_context) || 'None' }}
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}
           paths: |
