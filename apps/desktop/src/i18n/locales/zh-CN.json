@@ -1,5 +1,4 @@
 {
-  "2_000_free_words_per_month": "每月 2,000 字免費",
   "404_page_not_found": "404 - 找不到頁面",
   "a_voquill_update": "Voquill 更新",
   "absolutely_our_code_is_open_source_so_you_can_see_for_yourse": "當然。我們的程式碼是開源的，您可以自行查看。您甚至可以選擇完全在裝置上處理您的語音。",
@@ -124,6 +123,7 @@
   "forgot": "忘記？",
   "formal": "正式",
   "free": "免費",
+  "freewordsperday_number_free_words_per_day": "每天 {freeWordsPerDay, number} 个免费单词",
   "frequently_asked_questions": "常見問題",
   "full_name": "全名",
   "general": "一般",

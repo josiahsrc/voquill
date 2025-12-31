@@ -1,5 +1,4 @@
 {
-  "2_000_free_words_per_month": "월 2,000단어 무료",
   "404_page_not_found": "404 - 페이지를 찾을 수 없음",
   "a_voquill_update": "Voquill 업데이트",
   "absolutely_our_code_is_open_source_so_you_can_see_for_yourse": "물론입니다. 저희 코드는 오픈 소스이므로 직접 확인하실 수 있습니다. 음성을 완전히 기기에서 처리하도록 선택할 수도 있습니다.",
@@ -124,6 +123,7 @@
   "forgot": "잊으셨나요?",
   "formal": "격식체",
   "free": "무료",
+  "freewordsperday_number_free_words_per_day": "하루 {freeWordsPerDay, number}개 무료 단어",
   "frequently_asked_questions": "자주 묻는 질문",
   "full_name": "전체 이름",
   "general": "일반",

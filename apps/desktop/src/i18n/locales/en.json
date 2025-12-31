@@ -1,5 +1,4 @@
 {
-  "2_000_free_words_per_month": "2,000 free words per month",
   "404_page_not_found": "404 - page not found",
   "a_voquill_update": "A Voquill update",
   "absolutely_our_code_is_open_source_so_you_can_see_for_yourse": "Absolutely. Our code is open-source, so you can see for yourself. You can even choose to process your voice entirely on-device.",
@@ -124,6 +123,7 @@
   "forgot": "Forgot?",
   "formal": "Formal",
   "free": "Free",
+  "freewordsperday_number_free_words_per_day": "{freeWordsPerDay, number} free words per day",
   "frequently_asked_questions": "Frequently asked questions",
   "full_name": "Full name",
   "general": "General",

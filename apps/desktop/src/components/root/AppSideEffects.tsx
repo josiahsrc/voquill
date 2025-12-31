@@ -1,5 +1,5 @@
 import { invokeHandler } from "@repo/functions";
-import { FullConfig, Member, Nullable, User } from "@repo/types";
+import { Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
@@ -9,21 +9,22 @@ import {
   refreshCurrentUser,
 } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
-import { useKeyDownHandler } from "../../hooks/helper.hooks";
+import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
+import { auth } from "../../main";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
-import { LOCAL_USER_ID } from "../../utils/user.utils";
 import { getIsDevMode } from "../../utils/env.utils";
-import { auth } from "../../main";
+import { LOCAL_USER_ID } from "../../utils/user.utils";
 
-type StreamRet = Nullable<
-  [Nullable<Member>, Nullable<User>, Nullable<FullConfig>]
->;
+type StreamRet = Nullable<[Nullable<Member>, Nullable<User>]>;
 
 // Timeout for Firebase Auth initialization (handles cases where IndexedDB hangs on some Linux systems)
 const AUTH_READY_TIMEOUT_MS = 4_000;
+
+// 10 minutes
+const CONFIG_REFRESH_INTERVAL_MS = 1000 * 60 * 10;
 
 export const AppSideEffects = () => {
   const [authReady, setAuthReady] = useState(false);
@@ -66,18 +67,27 @@ export const AppSideEffects = () => {
       }
     }, AUTH_READY_TIMEOUT_MS);
 
-    const unsubscribe = auth.onAuthStateChanged(
-      onAuthStateChanged,
-      (error) => {
-        showErrorSnackbar(error);
-        onAuthStateChanged(null);
-      },
-    );
+    const unsubscribe = auth.onAuthStateChanged(onAuthStateChanged, (error) => {
+      showErrorSnackbar(error);
+      onAuthStateChanged(null);
+    });
 
     return () => {
       clearTimeout(timeoutId);
       unsubscribe();
     };
+  }, []);
+
+  useIntervalAsync(CONFIG_REFRESH_INTERVAL_MS, async () => {
+    const config = await invokeHandler("config/getFullConfig", {})
+      .then((res) => res.config)
+      .catch(() => null);
+
+    if (config) {
+      produceAppState((draft) => {
+        draft.config = config;
+      });
+    }
   }, []);
 
   useStreamWithSideEffects({
@@ -87,7 +97,7 @@ export const AppSideEffects = () => {
       }
 
       if (!userId) {
-        return combineLatest([of(null), of(null), of(null)]);
+        return combineLatest([of(null), of(null)]);
       }
 
       return combineLatest([
@@ -101,11 +111,6 @@ export const AppSideEffects = () => {
             .then((res) => res.user)
             .catch(() => null),
         ),
-        from(
-          invokeHandler("config/getFullConfig", {})
-            .then((res) => res.config)
-            .catch(() => null),
-        ),
       ]);
     },
     onSuccess: (results) => {
@@ -114,11 +119,10 @@ export const AppSideEffects = () => {
         return;
       }
 
-      const [members, user, config] = results;
+      const [members, user] = results;
       produceAppState((draft) => {
         registerUsers(draft, listify(user));
         registerMembers(draft, listify(members));
-        draft.config = config;
       });
     },
     dependencies: [userId, authReady],
