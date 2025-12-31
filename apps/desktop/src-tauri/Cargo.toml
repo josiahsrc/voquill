@@ -24,7 +24,7 @@ mac-gpu = ["whisper-rs/metal"]
 windows-gpu = ["whisper-rs/vulkan"]
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png", "devtools"] }
+tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png", "devtools", "macos-private-api"] }
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-opener = "2"

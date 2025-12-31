@@ -58,6 +58,8 @@ pub enum AudioClip {
     StartRecordingClip,
     #[serde(rename = "stop_recording_clip")]
     StopRecordingClip,
+    #[serde(rename = "limit_reached_clip")]
+    LimitReachedClip,
 }
 
 #[derive(serde::Deserialize, Default)]
@@ -636,6 +638,7 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
     match clip {
         AudioClip::StartRecordingClip => crate::system::audio_feedback::play_start_recording_clip(),
         AudioClip::StopRecordingClip => crate::system::audio_feedback::play_stop_recording_clip(),
+        AudioClip::LimitReachedClip => crate::system::audio_feedback::play_limit_reached_clip(),
     }
 
     Ok(())
