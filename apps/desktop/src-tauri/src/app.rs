@@ -107,6 +107,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 ensure_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                ensure_toast_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
@@ -215,4 +218,58 @@ fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUr
     }
 
     Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
+}
+
+fn ensure_toast_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::{WebviewWindowBuilder, Manager};
+    if app.get_webview_window("toast").is_some() {
+        return Ok(());
+    }
+
+    // Extra width for slide-in animation (toast slides from right)
+    const TOAST_CONTENT_WIDTH: f64 = 350.0;
+    const TOAST_WINDOW_WIDTH: f64 = TOAST_CONTENT_WIDTH * 2.0; // Room for animation
+    const TOAST_WINDOW_HEIGHT: f64 = 120.0;
+
+    // Position window so the right edge is flush with screen
+    let (x, y) = if let Some(monitor) = app.primary_monitor().ok().flatten() {
+        let size = monitor.size();
+        let scale = monitor.scale_factor();
+        let logical_width = size.width as f64 / scale;
+        let x = logical_width - TOAST_WINDOW_WIDTH;
+        (x, 0.0)
+    } else {
+        (500.0, 0.0)
+    };
+
+    let _window = WebviewWindowBuilder::new(app, "toast", toast_webview_url(app)?)
+        .decorations(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .transparent(true)
+        .focusable(false)
+        .visible(false)
+        .inner_size(TOAST_WINDOW_WIDTH, TOAST_WINDOW_HEIGHT)
+        .position(x, y)
+        .build()?;
+
+    Ok(())
+}
+
+fn toast_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
+    #[cfg(debug_assertions)]
+    {
+        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
+            let query = match dev_url.query() {
+                Some(existing) if !existing.is_empty() => format!("{existing}&toast=1"),
+                _ => "toast=1".to_string(),
+            };
+            dev_url.set_query(Some(&query));
+            return Ok(tauri::WebviewUrl::External(dev_url));
+        }
+    }
+
+    Ok(tauri::WebviewUrl::App("index.html?toast=1".into()))
 }

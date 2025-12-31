@@ -15,6 +15,7 @@ import {
 import { AuthUser } from "../types/auth.types";
 import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
+import { Toast } from "../types/toast.types";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
 import {
@@ -79,6 +80,9 @@ export type AppState = {
   snackbarMode: SnackbarMode;
   snackbarDuration: number;
   snackbarTransitionDuration?: number;
+
+  toastQueue: Toast[];
+  currentToast: Toast | null;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -108,6 +112,8 @@ export const INITIAL_APP_STATE: AppState = {
   snackbarMode: "info",
   snackbarDuration: 3000,
   snackbarTransitionDuration: undefined,
+  toastQueue: [],
+  currentToast: null,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,

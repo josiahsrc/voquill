@@ -1,4 +1,4 @@
-import { Box, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
 import { getMyUser, getMyUserName } from "../../utils/user.utils";
@@ -7,6 +7,7 @@ import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 import { Stat } from "./Stat";
 import { HomeSideEffects } from "./HomeSideEffects";
 import { DictationInstruction } from "../common/DictationInstruction";
+import { showToast } from "../../actions/toast.actions";
 
 export default function HomePage() {
   const user = useAppStore(getMyUser);
@@ -45,6 +46,25 @@ export default function HomePage() {
               })}
               value={wordsTotal}
             />
+          </Stack>
+          <Stack direction="row" spacing={2} justifyContent="center">
+            <Button
+              variant="outlined"
+              onClick={() =>
+                showToast("Info Toast", "This is an info message!", "info")
+              }
+            >
+              Test Info Toast
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() =>
+                showToast("Error Toast", "This is an error message!", "error")
+              }
+            >
+              Test Error Toast
+            </Button>
           </Stack>
         </Box>
         <Section
