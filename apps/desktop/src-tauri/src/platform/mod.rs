@@ -66,6 +66,7 @@ pub trait Recorder: Send + Sync {
     ) -> Result<(), Box<dyn std::error::Error>>;
     fn stop(&self) -> Result<crate::domain::RecordingResult, Box<dyn std::error::Error>>;
     fn set_preferred_input_device(&self, _name: Option<String>) {}
+    fn clear_device_cache(&self) {}
     fn current_sample_rate(&self) -> Option<u32> {
         None
     }

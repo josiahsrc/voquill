@@ -12,9 +12,20 @@ use std::time::{Duration, Instant};
 #[cfg(target_os = "macos")]
 use crate::platform::macos::notch_overlay;
 
+/// Cached device info for quick recording start.
+/// We remember the last successfully used device to avoid re-enumeration.
+#[derive(Clone)]
+struct CachedDeviceInfo {
+    host_id: HostId,
+    device_name: String,
+}
+
 pub struct RecordingManager {
     inner: Arc<Mutex<Option<ActiveRecording>>>,
     preferred_input_name: Arc<Mutex<Option<String>>>,
+    /// Cache of the last successfully used input device.
+    /// This allows us to skip full device enumeration on subsequent recordings.
+    last_successful_device: Arc<Mutex<Option<CachedDeviceInfo>>>,
 }
 
 struct ActiveRecording {
@@ -179,6 +190,69 @@ impl RecordingManager {
         Self {
             inner: Arc::new(Mutex::new(None)),
             preferred_input_name: Arc::new(Mutex::new(None)),
+            last_successful_device: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    /// Store the successfully used device for quick lookup next time.
+    fn cache_successful_device(&self, host_id: HostId, device_name: String) {
+        if let Ok(mut guard) = self.last_successful_device.lock() {
+            *guard = Some(CachedDeviceInfo {
+                host_id,
+                device_name,
+            });
+        }
+    }
+
+    /// Try to start recording using the cached device (fast path).
+    /// Returns None if cache is empty or device is no longer available.
+    fn try_cached_device(
+        &self,
+        level_emitter: Option<Arc<LevelEmitter>>,
+        chunk_emitter: Option<Arc<ChunkEmitter>>,
+        preferred_normalized: Option<&str>,
+    ) -> Option<(ActiveRecording, HostId, String)> {
+        let cached = {
+            let guard = self.last_successful_device.lock().ok()?;
+            guard.clone()
+        }?;
+
+        let host = cpal::host_from_id(cached.host_id).ok()?;
+
+        // If user has a preferred device that's different from cached, skip cache
+        if let Some(preferred) = preferred_normalized {
+            let cached_normalized = cached.device_name.to_ascii_lowercase();
+            if cached_normalized != preferred {
+                return None;
+            }
+        }
+
+        // Try to find the cached device directly (minimal enumeration)
+        let device = find_device_by_name(&host, &cached.device_name)?;
+
+        // Try to start recording on this device
+        let result = try_start_on_device(
+            &device,
+            Some(&cached.device_name),
+            level_emitter,
+            chunk_emitter,
+        );
+
+        match result {
+            Ok(active) => {
+                eprintln!(
+                    "[recording] using cached device '{}' via host {:?}",
+                    cached.device_name, cached.host_id
+                );
+                Some((active, cached.host_id, cached.device_name))
+            }
+            Err(err) => {
+                eprintln!(
+                    "[recording] cached device '{}' failed: {err}",
+                    cached.device_name
+                );
+                None
+            }
         }
     }
 
@@ -215,9 +289,22 @@ impl RecordingManager {
             return Err(RecordingError::AlreadyRecording);
         }
 
-        let mut last_err: Option<RecordingError> = None;
         let level_emitter = level_callback.map(LevelEmitter::new);
         let chunk_emitter = chunk_callback.map(ChunkEmitter::new);
+
+        // Fast path: try the cached device first (avoids full enumeration)
+        if let Some((active, host_id, device_name)) = self.try_cached_device(
+            level_emitter.clone(),
+            chunk_emitter.clone(),
+            preferred_normalized.as_deref(),
+        ) {
+            *guard = Some(active);
+            self.cache_successful_device(host_id, device_name);
+            return Ok(());
+        }
+
+        // Slow path: full device enumeration
+        let mut last_err: Option<RecordingError> = None;
 
         for host_id in ordered_host_ids() {
             let host = match cpal::host_from_id(host_id) {
@@ -235,8 +322,10 @@ impl RecordingManager {
                 preferred_trimmed.as_deref(),
                 preferred_normalized.as_deref(),
             ) {
-                Ok(active) => {
+                Ok((active, device_name)) => {
                     *guard = Some(active);
+                    // Cache this device for next time
+                    self.cache_successful_device(host_id, device_name);
                     return Ok(());
                 }
                 Err(err) => {
@@ -314,6 +403,16 @@ impl Recorder for RecordingManager {
             Err(poisoned) => {
                 *poisoned.into_inner() = sanitized;
             }
+        }
+
+        // Clear device cache so next recording uses the new preference
+        self.clear_device_cache();
+    }
+
+    fn clear_device_cache(&self) {
+        if let Ok(mut guard) = self.last_successful_device.lock() {
+            *guard = None;
+            eprintln!("[recording] device cache cleared");
         }
     }
 
@@ -431,13 +530,99 @@ fn host_rank(_id: HostId) -> u8 {
     0
 }
 
+/// Find a device by name in the given host (minimal enumeration).
+fn find_device_by_name(host: &cpal::Host, target_name: &str) -> Option<Device> {
+    let target_normalized = target_name.to_ascii_lowercase();
+
+    // Check default device first
+    if let Some(device) = host.default_input_device() {
+        if let Ok(name) = device.name() {
+            if name.to_ascii_lowercase() == target_normalized {
+                return Some(device);
+            }
+        }
+    }
+
+    // Enumerate until we find the target
+    if let Ok(devices) = host.input_devices() {
+        for device in devices {
+            if let Ok(name) = device.name() {
+                if name.to_ascii_lowercase() == target_normalized {
+                    return Some(device);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Try to start recording on a specific device.
+fn try_start_on_device(
+    device: &Device,
+    device_name: Option<&str>,
+    level_emitter: Option<Arc<LevelEmitter>>,
+    chunk_emitter: Option<Arc<ChunkEmitter>>,
+) -> Result<ActiveRecording, RecordingError> {
+    let label = device_name.unwrap_or("<unknown>");
+
+    let config = device
+        .default_input_config()
+        .map_err(|err| RecordingError::StreamConfig(err.to_string()))?;
+
+    let sample_format = config.sample_format();
+    let stream_config: StreamConfig = config.into();
+    let sample_rate = stream_config.sample_rate.0;
+    let buffer = Arc::new(Mutex::new(Vec::<f32>::new()));
+
+    let stream = match sample_format {
+        SampleFormat::I16 => build_input_stream::<i16>(
+            device,
+            &stream_config,
+            buffer.clone(),
+            level_emitter.clone(),
+            chunk_emitter.clone(),
+        ),
+        SampleFormat::U16 => build_input_stream::<u16>(
+            device,
+            &stream_config,
+            buffer.clone(),
+            level_emitter.clone(),
+            chunk_emitter.clone(),
+        ),
+        SampleFormat::F32 => build_input_stream::<f32>(
+            device,
+            &stream_config,
+            buffer.clone(),
+            level_emitter.clone(),
+            chunk_emitter.clone(),
+        ),
+        other => return Err(RecordingError::UnsupportedFormat(other)),
+    }?;
+
+    stream
+        .play()
+        .map_err(|err| RecordingError::StreamPlay(err.to_string()))?;
+
+    eprintln!("[recording] started on device '{label}'");
+
+    Ok(ActiveRecording {
+        _stream: stream,
+        start: Instant::now(),
+        buffer,
+        sample_rate,
+        _level_emitter: level_emitter,
+        _chunk_emitter: chunk_emitter,
+    })
+}
+
 fn start_recording_on_host(
     host: &cpal::Host,
     level_emitter: Option<Arc<LevelEmitter>>,
     chunk_emitter: Option<Arc<ChunkEmitter>>,
     preferred_label: Option<&str>,
     preferred_normalized: Option<&str>,
-) -> Result<ActiveRecording, RecordingError> {
+) -> Result<(ActiveRecording, String), RecordingError> {
     let default_output_name = host
         .default_output_device()
         .and_then(|device| device.name().ok());
@@ -540,14 +725,18 @@ fn start_recording_on_host(
             );
         }
 
-        return Ok(ActiveRecording {
-            _stream: stream,
-            start: Instant::now(),
-            buffer,
-            sample_rate,
-            _level_emitter: level_emitter.clone(),
-            _chunk_emitter: chunk_emitter.clone(),
-        });
+        let device_name_for_cache = name.clone().unwrap_or_else(|| label.to_string());
+        return Ok((
+            ActiveRecording {
+                _stream: stream,
+                start: Instant::now(),
+                buffer,
+                sample_rate,
+                _level_emitter: level_emitter.clone(),
+                _chunk_emitter: chunk_emitter.clone(),
+            },
+            device_name_for_cache,
+        ));
     }
 
     Err(last_err.unwrap_or(RecordingError::InputDeviceUnavailable))
