@@ -7,7 +7,7 @@ type ToastPayload = {
   toast: Toast;
 };
 
-const TOAST_DURATION_MS = 3000;
+const DEFAULT_TOAST_DURATION_MS = 3000;
 
 export const ToastSideEffects = () => {
   const currentToast = useAppStore((state) => state.currentToast);
@@ -52,11 +52,12 @@ export const ToastSideEffects = () => {
   // Auto-dismiss current toast after duration
   useEffect(() => {
     if (currentToast !== null) {
+      const duration = currentToast.duration ?? DEFAULT_TOAST_DURATION_MS;
       timerRef.current = window.setTimeout(() => {
         produceAppState((draft) => {
           draft.currentToast = null;
         });
-      }, TOAST_DURATION_MS);
+      }, duration);
 
       return () => {
         if (timerRef.current !== null) {
@@ -65,7 +66,7 @@ export const ToastSideEffects = () => {
         }
       };
     }
-  }, [currentToast?.id]);
+  }, [currentToast?.id, currentToast?.duration]);
 
   return null;
 };

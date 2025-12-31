@@ -51,7 +51,11 @@ export default function HomePage() {
             <Button
               variant="outlined"
               onClick={() =>
-                showToast("Info Toast", "This is an info message!", "info")
+                showToast({
+                  title: "Info Toast",
+                  message: "This is an info message!",
+                  duration: 10_000,
+                })
               }
             >
               Test Info Toast
@@ -60,7 +64,11 @@ export default function HomePage() {
               variant="outlined"
               color="error"
               onClick={() =>
-                showToast("Error Toast", "This is an error message!", "error")
+                showToast({
+                  title: "Error Toast",
+                  message: "This is an error message!",
+                  toastType: "error",
+                })
               }
             >
               Test Error Toast

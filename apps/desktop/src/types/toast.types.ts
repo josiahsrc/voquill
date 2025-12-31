@@ -5,4 +5,5 @@ export type Toast = {
   title: string;
   message: string;
   toastType: ToastType;
+  duration?: number;
 };
