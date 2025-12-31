@@ -12,7 +12,9 @@ import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
 import { handleGoogleAuthPayload } from "../../actions/login.actions";
+import { refreshMember } from "../../actions/member.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
+import { showErrorToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
 import {
   postProcessTranscript,
@@ -33,7 +35,9 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
+import { tryPlayAudioChime } from "../../utils/audio.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import { getMemberExceedsWordLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
@@ -95,6 +99,7 @@ export const RootSideEffects = () => {
       loadDictionary(),
       loadTones(),
       loadAppTargets(),
+      refreshMember(),
     ];
     await Promise.allSettled(loaders);
   }, [userId]);
@@ -131,6 +136,15 @@ export const RootSideEffects = () => {
       return;
     }
 
+    if (getMemberExceedsWordLimitByState(state)) {
+      tryPlayAudioChime("limit_reached_clip");
+      showErrorToast(
+        "Word limit reached",
+        "You've used all your free words for this period. Upgrade to continue.",
+      );
+      return;
+    }
+
     isRecordingRef.current = true;
     if (startPendingRef.current) {
       await startPendingRef.current;
@@ -139,7 +153,6 @@ export const RootSideEffects = () => {
 
     const user = getMyUser(state);
     const preferredMicrophone = user?.preferredMicrophone ?? null;
-    const playInteractionChime = user?.playInteractionChime ?? true;
 
     const promise = (async () => {
       try {
@@ -151,11 +164,7 @@ export const RootSideEffects = () => {
         sessionRef.current = createTranscriptionSession(prefs);
 
         // Fire chime immediately (fire-and-forget) for instant feedback
-        if (playInteractionChime) {
-          invoke<void>("play_audio", { clip: "start_recording_clip" }).catch(
-            console.error,
-          );
-        }
+        tryPlayAudioChime("start_recording_clip");
 
         const [, startRecordingResult] = await Promise.all([
           invoke<void>("set_phase", { phase: "recording" }),
@@ -208,19 +217,17 @@ export const RootSideEffects = () => {
         }
       }
 
-      const playInteractionChime =
-        getMyUser(getAppState())?.playInteractionChime ?? true;
-
       let audio: StopRecordingResponse | null = null;
       try {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
+
+        // Fire chime immediately (fire-and-forget) for instant feedback
+        tryPlayAudioChime("stop_recording_clip");
+
         const [, outAudio] = await Promise.all([
           invoke<void>("set_phase", { phase: "loading" }),
           invoke<StopRecordingResponse>("stop_recording"),
-          playInteractionChime
-            ? invoke<void>("play_audio", { clip: "stop_recording_clip" })
-            : Promise.resolve(),
         ]);
 
         audio = outAudio;
@@ -308,6 +315,8 @@ export const RootSideEffects = () => {
           showErrorSnackbar("Unable to paste transcription.");
         }
       }
+
+      refreshMember();
     }
   }, []);
 
