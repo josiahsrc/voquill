@@ -6,8 +6,8 @@ import {
   LogicalPosition,
   PhysicalPosition,
 } from "@tauri-apps/api/window";
-import { useEffect, useMemo, useState } from "react";
-import { useAppStore } from "../../store";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { produceAppState, useAppStore } from "../../store";
 import { getPlatform } from "../../utils/platform.utils";
 import { ToastItem } from "./ToastItem";
 
@@ -53,6 +53,12 @@ export const ToastRend = () => {
   const [displayedToast, setDisplayedToast] = useState(currentToast);
 
   const hasToast = currentToast !== null;
+
+  const handleClose = useCallback(() => {
+    produceAppState((draft) => {
+      draft.currentToast = null;
+    });
+  }, []);
 
   // Initialize window settings for transparency
   useEffect(() => {
@@ -169,7 +175,6 @@ export const ToastRend = () => {
 
           await windowRef.show();
           await windowRef.setAlwaysOnTop(true);
-          await windowRef.setIgnoreCursorEvents(true);
         }
       } catch (err) {
         if (!canceled) {
@@ -213,7 +218,7 @@ export const ToastRend = () => {
           width: TOAST_CONTENT_WIDTH - 16,
         }}
       >
-        <ToastItem toast={displayedToast} />
+        <ToastItem toast={displayedToast} onClose={handleClose} />
       </Box>
     </Box>
   );
