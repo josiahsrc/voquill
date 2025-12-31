@@ -1,7 +1,6 @@
 import { invokeHandler } from "@repo/functions";
 import { FullConfig, Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
-import { getAuth } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
@@ -17,6 +16,7 @@ import { AuthUser } from "../../types/auth.types";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { LOCAL_USER_ID } from "../../utils/user.utils";
 import { getIsDevMode } from "../../utils/env.utils";
+import { auth } from "../../main";
 
 type StreamRet = Nullable<
   [Nullable<Member>, Nullable<User>, Nullable<FullConfig>]
@@ -66,7 +66,7 @@ export const AppSideEffects = () => {
       }
     }, AUTH_READY_TIMEOUT_MS);
 
-    const unsubscribe = getAuth().onAuthStateChanged(
+    const unsubscribe = auth.onAuthStateChanged(
       onAuthStateChanged,
       (error) => {
         showErrorSnackbar(error);

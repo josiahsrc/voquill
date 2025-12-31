@@ -145,6 +145,13 @@ npm run test
 
 Individual workspaces expose the same commands if you need a narrower scope.
 
+## Run in prod mode
+
+1. Comment out devUrl in `apps/desktop/src-tauri/tauri.conf.json`.
+2. cd /apps/desktop
+3. npm run build
+4. VITE_FLAVOR=prod npx tauri dev --no-dev-server
+
 ## Environment Reference
 
 | Variable                                                         | Purpose                                                                                                            |

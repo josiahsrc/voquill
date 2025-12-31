@@ -73,7 +73,8 @@ export const handleGoogleAuthPayload = async (
     produceAppState((state) => {
       state.login.status = "success";
     });
-  } catch {
+  } catch (error) {
+    console.error("Google auth error:", error);
     produceAppState((state) => {
       state.login.errorMessage =
         "An error occurred while signing in with Google.";
