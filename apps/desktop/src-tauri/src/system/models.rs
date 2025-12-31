@@ -10,7 +10,6 @@ const MODEL_URL_ENV: &str = "VOQUILL_WHISPER_MODEL_URL";
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ModelFamily {
     Whisper,
-    #[cfg(feature = "cuda")]
     Parakeet,
 }
 
@@ -28,7 +27,6 @@ impl ModelDescriptor {
                     family: ModelFamily::Whisper,
                     size: size.trim().to_string(),
                 },
-                #[cfg(feature = "cuda")]
                 "parakeet" => Self {
                     family: ModelFamily::Parakeet,
                     size: size.trim().to_string(),
