@@ -39,6 +39,14 @@ pub struct CurrentAppInfoResponse {
     pub icon_base64: String,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityInfo {
+    pub cursor_position: Option<usize>,
+    pub selection_length: Option<usize>,
+    pub text_content: Option<String>,
+}
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppTargetUpsertArgs {
@@ -1016,4 +1024,9 @@ pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn stop_key_listener() -> Result<(), String> {
     crate::platform::keyboard::stop_key_listener()
+}
+
+#[tauri::command]
+pub fn get_accessibility_info() -> AccessibilityInfo {
+    crate::platform::accessibility::get_accessibility_info()
 }

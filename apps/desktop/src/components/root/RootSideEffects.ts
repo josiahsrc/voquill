@@ -22,6 +22,7 @@ import {
   storeTranscription,
 } from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
+import type { AccessibilityInfo } from "../../types/accessibility.types";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
@@ -166,6 +167,15 @@ export const RootSideEffects = () => {
         // Don't fetch current app info here - it's slow (icon capture + encoding).
         // We'll get the toneId when recording stops via tryRegisterCurrentAppTarget().
         sessionRef.current = createTranscriptionSession(prefs);
+
+        // POC: Get accessibility info when dictation starts
+        try {
+          const accessibilityInfo =
+            await invoke<AccessibilityInfo>("get_accessibility_info");
+          console.log("[a11y POC] Accessibility info:", accessibilityInfo);
+        } catch (error) {
+          console.warn("[a11y POC] Failed to get accessibility info:", error);
+        }
 
         // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("start_recording_clip");
