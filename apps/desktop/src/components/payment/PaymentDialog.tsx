@@ -6,11 +6,11 @@ import {
   EmbeddedCheckoutProvider,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { auth } from "../../main";
 import { useCallback } from "react";
 import { useOnExit } from "../../hooks/helper.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import { registerMembers } from "../../utils/app.utils";
+import { getEffectiveAuth } from "../../utils/auth.utils";
 
 export const PaymentDialog = () => {
   const open = useAppStore((state) => state.payment.open);
@@ -34,7 +34,7 @@ export const PaymentDialog = () => {
     // retrieve the member (process is async so we retry a few times)
     retry({
       fn: async () => {
-        const user = auth.currentUser;
+        const user = getEffectiveAuth().currentUser;
         if (!user) {
           throw new Error("no user signed in");
         }

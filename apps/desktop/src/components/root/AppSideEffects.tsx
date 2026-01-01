@@ -11,10 +11,10 @@ import {
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
-import { auth } from "../../main";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
+import { getEffectiveAuth } from "../../utils/auth.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { LOCAL_USER_ID } from "../../utils/user.utils";
 
@@ -67,10 +67,13 @@ export const AppSideEffects = () => {
       }
     }, AUTH_READY_TIMEOUT_MS);
 
-    const unsubscribe = auth.onAuthStateChanged(onAuthStateChanged, (error) => {
-      showErrorSnackbar(error);
-      onAuthStateChanged(null);
-    });
+    const unsubscribe = getEffectiveAuth().onAuthStateChanged(
+      onAuthStateChanged,
+      (error) => {
+        showErrorSnackbar(error);
+        onAuthStateChanged(null);
+      },
+    );
 
     return () => {
       clearTimeout(timeoutId);
