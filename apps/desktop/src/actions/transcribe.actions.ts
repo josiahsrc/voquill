@@ -12,10 +12,14 @@ import {
   getTranscriptionRepo,
 } from "../repos";
 import { getAppState, produceAppState } from "../store";
+import { AccessibilityInfo } from "../types/accessibility.types";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
-import { TextFieldContext } from "../utils/accessibility.utils";
+import {
+  applySpacingInContext,
+  extractTextFieldContext,
+} from "../utils/accessibility.utils";
 import { createId } from "../utils/id.utils";
 import { mapLocaleToWhisperLanguage } from "../utils/language.utils";
 import {
@@ -57,7 +61,7 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
-  textFieldContext?: TextFieldContext | null;
+  a11yInfo: Nullable<AccessibilityInfo>;
 };
 
 export type PostProcessMetadata = {
@@ -142,7 +146,7 @@ export const transcribeAudio = async ({
 export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
-  textFieldContext,
+  a11yInfo,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -167,6 +171,7 @@ export const postProcessTranscript = async ({
       getRec(state.toneById, myPrefs?.activeToneId) ??
       null;
 
+    const textFieldContext = extractTextFieldContext(a11yInfo);
     const ppPrompt = buildLocalizedPostProcessingPrompt(
       rawTranscript,
       preferredLocale,
@@ -213,6 +218,15 @@ export const postProcessTranscript = async ({
     metadata.postProcessDevice = genOutput.metadata?.inferenceDevice || null;
   } else {
     metadata.postProcessMode = "none";
+  }
+
+  if (a11yInfo) {
+    processedTranscript = applySpacingInContext({
+      textToInsert: processedTranscript,
+      info: a11yInfo,
+    });
+  } else {
+    processedTranscript = processedTranscript.trim();
   }
 
   return {

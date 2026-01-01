@@ -37,7 +37,6 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
-import { extractTextFieldContext } from "../../utils/accessibility.utils";
 import { tryPlayAudioChime } from "../../utils/audio.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMemberExceedsWordLimitByState } from "../../utils/member.utils";
@@ -287,7 +286,7 @@ export const RootSideEffects = () => {
           const ppResult = await postProcessTranscript({
             rawTranscript,
             toneId,
-            textFieldContext: extractTextFieldContext(a11yInfo),
+            a11yInfo,
           });
           transcript = ppResult.transcript;
           postProcessMetadata = ppResult.metadata;
@@ -317,15 +316,15 @@ export const RootSideEffects = () => {
         await invoke<void>("set_phase", { phase: "idle" });
       }
 
-      const trimmedTranscript = recordingResult.transcript?.trim();
-      if (trimmedTranscript) {
+      const finalTranscript = recordingResult.transcript;
+      if (finalTranscript) {
         await new Promise<void>((resolve) => {
           setTimeout(resolve, 20);
         });
 
         try {
           const keybind = recordingResult.currentApp?.pasteKeybind ?? null;
-          await invoke<void>("paste", { text: trimmedTranscript, keybind });
+          await invoke<void>("paste", { text: finalTranscript, keybind });
         } catch (error) {
           console.error("Failed to paste transcription", error);
           showErrorSnackbar("Unable to paste transcription.");

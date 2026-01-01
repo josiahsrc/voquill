@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AccessibilityInfo } from "../types/accessibility.types";
 import {
+  applySpacingInContext,
   extractFollowingText,
   extractPrecedingText,
   extractSelectedText,
@@ -381,5 +382,271 @@ describe("extractTextFieldContext", () => {
     expect(context?.precedingText?.length).toBe(200);
     expect(context?.selectedText).toBe("|CURSOR|");
     expect(context?.followingText?.length).toBe(100);
+  });
+});
+
+describe("applySpacingInContext", () => {
+  it("should add space before when inserting after non-whitespace", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: 5, // after "Hello"
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "there",
+      info,
+    });
+    expect(result).toBe(" there");
+  });
+
+  it("should add space after when inserting before non-whitespace", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: 6, // before "world"
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    expect(result).toBe("beautiful ");
+  });
+
+  it("should add spaces both before and after when surrounded by non-whitespace", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Helloworld",
+      cursorPosition: 5, // between "Hello" and "world"
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    expect(result).toBe(" beautiful ");
+  });
+
+  it("should not add space before when there is already a space before", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: 6, // after "Hello " (space)
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    expect(result).toBe("beautiful ");
+  });
+
+  it("should not add space after when there is already a space after", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: 5, // before " world"
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    expect(result).toBe(" beautiful");
+  });
+
+  it("should not add spaces when text already has surrounding spaces", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: 6, // at the space position, replacing it
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    // Before cursor is " ", after cursor is "w"
+    expect(result).toBe("beautiful ");
+  });
+
+  it("should not add space before when at start of text", () => {
+    const info: AccessibilityInfo = {
+      textContent: "world",
+      cursorPosition: 0,
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "Hello",
+      info,
+    });
+    expect(result).toBe("Hello ");
+  });
+
+  it("should not add space after when at end of text", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello",
+      cursorPosition: 5, // at end
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "world",
+      info,
+    });
+    expect(result).toBe(" world");
+  });
+
+  it("should not add any spaces when inserting into empty field", () => {
+    const info: AccessibilityInfo = {
+      textContent: "",
+      cursorPosition: 0,
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "Hello",
+      info,
+    });
+    expect(result).toBe("Hello");
+  });
+
+  it("should return text as-is when textContent is null", () => {
+    const info: AccessibilityInfo = {
+      textContent: null,
+      cursorPosition: 5,
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "Hello",
+      info,
+    });
+    expect(result).toBe("Hello");
+  });
+
+  it("should return text as-is when cursorPosition is null", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: null,
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "test",
+      info,
+    });
+    expect(result).toBe("test");
+  });
+
+  it("should return empty string when inserting empty text", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: 5,
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "",
+      info,
+    });
+    expect(result).toBe("");
+  });
+
+  it("should not add space before when text to insert starts with space", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Helloworld",
+      cursorPosition: 5,
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: " beautiful",
+      info,
+    });
+    expect(result).toBe(" beautiful ");
+  });
+
+  it("should not add space after when text to insert ends with space", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Helloworld",
+      cursorPosition: 5,
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful ",
+      info,
+    });
+    expect(result).toBe(" beautiful ");
+  });
+
+  it("should handle newline as whitespace before cursor", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello\nworld",
+      cursorPosition: 6, // after newline
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    expect(result).toBe("beautiful ");
+  });
+
+  it("should handle newline as whitespace after cursor", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello\nworld",
+      cursorPosition: 5, // before newline
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    expect(result).toBe(" beautiful");
+  });
+
+  it("should handle tab as whitespace", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello\tworld",
+      cursorPosition: 6, // after tab
+      selectionLength: 0,
+    };
+    const result = applySpacingInContext({
+      textToInsert: "beautiful",
+      info,
+    });
+    expect(result).toBe("beautiful ");
+  });
+
+  it("should account for selection when determining following text", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world",
+      cursorPosition: 6,
+      selectionLength: 5, // "world" is selected
+    };
+    // Replacing "world", nothing after
+    const result = applySpacingInContext({
+      textToInsert: "there",
+      info,
+    });
+    expect(result).toBe("there");
+  });
+
+  it("should add space after when replacing selected text with content following", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello world today",
+      cursorPosition: 6,
+      selectionLength: 5, // "world" is selected
+    };
+    // Replacing "world", " today" follows (space then "today")
+    const result = applySpacingInContext({
+      textToInsert: "there",
+      info,
+    });
+    expect(result).toBe("there");
+  });
+
+  it("should add space when replacing with non-whitespace following", () => {
+    const info: AccessibilityInfo = {
+      textContent: "Hello worldtoday",
+      cursorPosition: 6,
+      selectionLength: 5, // "world" is selected
+    };
+    // Replacing "world", "today" follows directly (no space)
+    const result = applySpacingInContext({
+      textToInsert: "there",
+      info,
+    });
+    expect(result).toBe("there ");
   });
 });

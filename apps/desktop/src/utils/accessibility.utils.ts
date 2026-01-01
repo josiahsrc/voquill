@@ -118,3 +118,60 @@ export const extractTextFieldContext = (
     followingText,
   };
 };
+
+const isWhitespace = (char: string): boolean => {
+  return char === " " || char === "\n" || char === "\t";
+};
+
+export const applySpacingInContext = (args: {
+  textToInsert: string;
+  info: AccessibilityInfo;
+}): string => {
+  const { textToInsert, info } = args;
+
+  // If we can't determine context, return as-is
+  if (info.textContent == null || info.cursorPosition == null) {
+    return textToInsert;
+  }
+
+  // Empty text to insert, nothing to do
+  if (textToInsert.length === 0) {
+    return textToInsert;
+  }
+
+  let result = textToInsert;
+
+  // Get the character immediately before cursor
+  const cursorPos = info.cursorPosition;
+  const charBefore = cursorPos > 0 ? info.textContent[cursorPos - 1] : null;
+
+  // Get the character immediately after cursor (accounting for selection)
+  const selectionLen = info.selectionLength ?? 0;
+  const afterPos = cursorPos + selectionLen;
+  const charAfter =
+    afterPos < info.textContent.length ? info.textContent[afterPos] : null;
+
+  // Add space before if there's non-whitespace content before
+  // and the text to insert doesn't already start with whitespace
+  const needsSpaceBefore =
+    charBefore != null &&
+    !isWhitespace(charBefore) &&
+    !isWhitespace(result[0]);
+
+  // Add space after if there's non-whitespace content after
+  // and the text to insert doesn't already end with whitespace
+  const needsSpaceAfter =
+    charAfter != null &&
+    !isWhitespace(charAfter) &&
+    !isWhitespace(result[result.length - 1]);
+
+  if (needsSpaceBefore) {
+    result = " " + result;
+  }
+
+  if (needsSpaceAfter) {
+    result = result + " ";
+  }
+
+  return result;
+}
