@@ -156,8 +156,12 @@ export const buildSystemPostProcessingTonePrompt = (locale: Locale): string => {
 
 const buildStyleSection = (toneTemplate: string | null | undefined): string => {
   if (!toneTemplate) {
-    return "";
+    return `
+STYLE INSTRUCTIONS:
+Do not modify the style or tone of the transcript. Focus solely on fixing grammar mistakes and punctuation errors without changing the speaker's original tone or intent.
+    `;
   }
+
   return `
 STYLE INSTRUCTIONS:
 Apply the following writing style to your output:
