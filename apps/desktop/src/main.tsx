@@ -7,7 +7,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { FirebaseOptions, initializeApp } from "firebase/app";
-import { connectAuthEmulator, initializeAuth } from "firebase/auth";
+import { connectAuthEmulator } from "firebase/auth";
 import {
   connectFirestoreEmulator,
   getFirestore,
@@ -24,6 +24,7 @@ import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { ToastRoot } from "./components/toast";
 import { getIntlConfig } from "./i18n";
 import { theme } from "./theme";
+import { createEffectiveAuth } from "./utils/auth.utils";
 import { getIsEmulators, getStripePublicKey } from "./utils/env.utils";
 
 const firebaseConfig: FirebaseOptions = {
@@ -58,7 +59,7 @@ const app = initializeApp(firebaseConfig);
 
 initializeFirestore(app, { ignoreUndefinedProperties: true });
 
-export const auth = initializeAuth(app);
+const auth = createEffectiveAuth(app);
 if (getIsEmulators()) {
   connectAuthEmulator(auth, `http://localhost:9099`);
 }

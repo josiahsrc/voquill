@@ -140,8 +140,11 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         {context === "post-processing" && (
           <MenuItem value="ollama">Ollama</MenuItem>
         )}
-        <MenuItem value="aldea">Aldea</MenuItem>
-        <MenuItem value="assemblyai">AssemblyAI</MenuItem>
+        {/* Aldea and AssemblyAI only support transcription, not post-processing */}
+        {context === "transcription" && <MenuItem value="aldea">Aldea</MenuItem>}
+        {context === "transcription" && (
+          <MenuItem value="assemblyai">AssemblyAI</MenuItem>
+        )}
       </TextField>
       {isOllama ? (
         <TextField
@@ -421,11 +424,19 @@ export const ApiKeyList = ({
 }: ApiKeyListProps) => {
   const allApiKeys = useAppStore((state) => state.settings.apiKeys);
 
-  // Filter API keys based on context - OpenRouter and Ollama only support post-processing
+  // Filter API keys based on context
   const apiKeys = allApiKeys.filter((key) => {
+    // OpenRouter and Ollama only support post-processing
     if (
       context === "transcription" &&
       (key.provider === "openrouter" || key.provider === "ollama")
+    ) {
+      return false;
+    }
+    // Aldea and AssemblyAI only support transcription
+    if (
+      context === "post-processing" &&
+      (key.provider === "aldea" || key.provider === "assemblyai")
     ) {
       return false;
     }
