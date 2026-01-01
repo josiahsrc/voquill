@@ -48,6 +48,7 @@ export const runTranscribeAudio = async ({
 		({ text: transcript, wordsUsed } = await groqTranscribeAudio({
 			apiKey: getGroqApiKey(),
 			blob,
+      prompt: input.prompt ?? undefined,
 			ext,
 			language: input.language,
 		}));

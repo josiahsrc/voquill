@@ -81,20 +81,16 @@ const buildDictionaryContext = (
   entries: DictionaryEntries,
   intl: IntlShape,
 ): string | null => {
-  const sections: string[] = [];
-
-  if (entries.sources.length > 0) {
-    sections.push(
-      intl.formatMessage(
-        {
-          defaultMessage: "Glossary: {terms}",
-        },
-        {
-          terms: ["Voquill", ...entries.sources].join(", "),
-        },
-      ),
-    );
-  }
+  const sections: string[] = [
+    intl.formatMessage(
+      {
+        defaultMessage: "Glossary: {terms}",
+      },
+      {
+        terms: ["Voquill", ...entries.sources].join(", "),
+      },
+    ),
+  ];
 
   if (entries.replacements.length > 0) {
     const formattedRules = entries.replacements
