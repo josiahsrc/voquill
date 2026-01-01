@@ -540,6 +540,14 @@ fn find_device_by_name(host: &cpal::Host, target_name: &str) -> Option<Device> {
             if name.to_ascii_lowercase() == target_normalized {
                 return Some(device);
             }
+            // On Linux, also check if the friendly name matches
+            #[cfg(target_os = "linux")]
+            {
+                let friendly_name = crate::platform::linux::audio::get_friendly_device_name(&name);
+                if friendly_name.to_ascii_lowercase() == target_normalized {
+                    return Some(device);
+                }
+            }
         }
     }
 
@@ -549,6 +557,14 @@ fn find_device_by_name(host: &cpal::Host, target_name: &str) -> Option<Device> {
             if let Ok(name) = device.name() {
                 if name.to_ascii_lowercase() == target_normalized {
                     return Some(device);
+                }
+                // On Linux, also check if the friendly name matches
+                #[cfg(target_os = "linux")]
+                {
+                    let friendly_name = crate::platform::linux::audio::get_friendly_device_name(&name);
+                    if friendly_name.to_ascii_lowercase() == target_normalized {
+                        return Some(device);
+                    }
                 }
             }
         }
@@ -752,6 +768,26 @@ struct DeviceCandidate {
     is_default: bool,
 }
 
+/// Check if a device name matches the preferred name.
+/// On Linux, also checks the friendly name.
+fn device_matches_preferred(device_name: &str, preferred_lower: &str) -> bool {
+    let device_lower = device_name.trim().to_ascii_lowercase();
+    if device_lower == preferred_lower {
+        return true;
+    }
+
+    // On Linux, also check if the friendly name matches
+    #[cfg(target_os = "linux")]
+    {
+        let friendly_name = crate::platform::linux::audio::get_friendly_device_name(device_name);
+        if friendly_name.to_ascii_lowercase() == preferred_lower {
+            return true;
+        }
+    }
+
+    false
+}
+
 fn device_candidates_for_host(
     host: &cpal::Host,
     default_output_name: Option<&str>,
@@ -772,11 +808,8 @@ fn device_candidates_for_host(
 
         let matches_preferred = preferred_lower
             .as_ref()
-            .map(|pref| {
-                normalized_name
-                    .as_ref()
-                    .map(|label| label == pref)
-                    .unwrap_or(false)
+            .and_then(|pref| {
+                name.as_deref().map(|device_name| device_matches_preferred(device_name, pref))
             })
             .unwrap_or(false);
 
@@ -818,11 +851,8 @@ fn device_candidates_for_host(
 
             let matches_preferred = preferred_lower
                 .as_ref()
-                .map(|pref| {
-                    normalized_name
-                        .as_ref()
-                        .map(|label| label == pref)
-                        .unwrap_or(false)
+                .and_then(|pref| {
+                    name.as_deref().map(|device_name| device_matches_preferred(device_name, pref))
                 })
                 .unwrap_or(false);
 
@@ -885,11 +915,23 @@ pub fn list_input_devices() -> Vec<InputDeviceDescriptor> {
         let candidates = device_candidates_for_host(&host, default_output_name.as_deref(), None);
 
         for candidate in candidates {
-            let label = candidate
+            let raw_label = candidate
                 .name
                 .as_ref()
                 .map(|value| value.trim().to_string())
                 .unwrap_or_else(|| "<unknown>".to_string());
+
+            // On Linux, convert technical device names to friendly names
+            #[cfg(target_os = "linux")]
+            let label = crate::platform::linux::audio::get_friendly_device_name(&raw_label);
+            #[cfg(not(target_os = "linux"))]
+            let label = raw_label;
+
+            // On Linux, use the friendly name as the key for deduplication
+            // This ensures hw:CARD=X, plughw:CARD=X, sysdefault:CARD=X all map to the same entry
+            #[cfg(target_os = "linux")]
+            let key = label.to_ascii_lowercase();
+            #[cfg(not(target_os = "linux"))]
             let key = candidate
                 .normalized_name
                 .clone()
