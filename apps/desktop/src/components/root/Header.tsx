@@ -110,17 +110,15 @@ export const AppHeader = () => {
         {plan === "free" && (
           <Button
             onClick={() => openUpgradePlanDialog()}
-            startIcon={<ArrowUpwardOutlined sx={{ fontSize: 18 }} />}
+            startIcon={<ArrowUpwardOutlined />}
+            variant="blue"
             sx={{
-              backgroundColor: "#3b82f6",
-              color: "#fff",
               fontWeight: 600,
               fontSize: 13,
               px: 2,
               py: 0.75,
-              textTransform: "none",
-              "&:hover": {
-                backgroundColor: "#2563eb",
+              "& .MuiSvgIcon-root": {
+                fontSize: 18,
               },
             }}
           >

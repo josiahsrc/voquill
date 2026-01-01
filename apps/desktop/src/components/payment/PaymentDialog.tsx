@@ -6,7 +6,7 @@ import {
   EmbeddedCheckoutProvider,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { getAuth } from "firebase/auth";
+import { auth } from "../../main";
 import { useCallback } from "react";
 import { useOnExit } from "../../hooks/helper.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -34,7 +34,7 @@ export const PaymentDialog = () => {
     // retrieve the member (process is async so we retry a few times)
     retry({
       fn: async () => {
-        const user = getAuth().currentUser;
+        const user = auth.currentUser;
         if (!user) {
           throw new Error("no user signed in");
         }

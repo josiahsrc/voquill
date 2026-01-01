@@ -1,3 +1,4 @@
+import { getRec } from "@repo/utilities";
 import { matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 
@@ -14,7 +15,8 @@ export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
   ko: "한국어",
 };
 
-export const WHISPER_LANGUAGES: Record<string, string> = {
+/** These are languages supported by Whisper for transcription */
+export const WHISPER_LANGUAGES = {
   en: "English",
   zh: "中文",
   de: "Deutsch",
@@ -117,18 +119,37 @@ export const WHISPER_LANGUAGES: Record<string, string> = {
   yue: "粵語",
 };
 
-type WhisperLanguageCode = keyof typeof WHISPER_LANGUAGES;
+/** These are all the supported languages. Anything not supported by Whisper needs to be post processed into the language of choice */
+export const DICTATION_LANGUAGES = {
+  ...WHISPER_LANGUAGES,
 
-const ORDERED_WHISPER_LANGUAGES: WhisperLanguageCode[] = [
+  // chinese (Traditional Chinese (Taiwan), Traditional Chinese (Hong Kong), and Simplified Chinese)
+  "zh-TW": "中文 (台灣)",
+  "zh-HK": "中文 (香港)",
+  "zh-CN": "中文 (简体)",
+
+  // Portuguese (Portugal and Brazil)
+  "pt-PT": "Português (Portugal)",
+  "pt-BR": "Português (Brasil)",
+};
+
+type DictationLanguageCode = keyof typeof DICTATION_LANGUAGES;
+
+const ORDERED_DICTATION_LANGUAGES: DictationLanguageCode[] = [
   "en",
   "es",
   "de",
   "zh",
+  "zh-TW",
+  "zh-HK",
+  "zh-CN",
   "ru",
   "ko",
   "fr",
   "ja",
   "pt",
+  "pt-PT",
+  "pt-BR",
   "tr",
   "pl",
   "ca",
@@ -223,15 +244,15 @@ const ORDERED_WHISPER_LANGUAGES: WhisperLanguageCode[] = [
 ];
 
 export const DICTATION_LANGUAGE_OPTIONS: [string, string][] =
-  ORDERED_WHISPER_LANGUAGES.map<[string, string]>((code) => [
+  ORDERED_DICTATION_LANGUAGES.map<[string, string]>((code) => [
     code,
-    WHISPER_LANGUAGES[code],
+    DICTATION_LANGUAGES[code],
   ]);
 
 export const getDisplayNameForLanguage = (code: string): string => {
   const baseCode = code.split("-")[0];
   return (
-    WHISPER_LANGUAGES[baseCode] ??
+    getRec(WHISPER_LANGUAGES, baseCode) ??
     LANGUAGE_DISPLAY_NAMES[code as Locale] ??
     code
   );

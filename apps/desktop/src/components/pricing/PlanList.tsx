@@ -108,6 +108,9 @@ export const PlanList = ({
   const proPrice = useAppStore((state) =>
     getDollarPriceFromKey(state, "pro_monthly"),
   );
+  const freeWordsPerDay = useAppStore(
+    (state) => state.config?.freeWordsPerDay ?? 1_000,
+  );
 
   useOnEnter(() => {
     loadPrices();
@@ -145,7 +148,10 @@ export const PlanList = ({
       }
     >
       <CheckmarkRow>
-        <FormattedMessage defaultMessage="2,000 free words per month" />
+        <FormattedMessage
+          defaultMessage="{freeWordsPerDay, number} free words per day"
+          values={{ freeWordsPerDay }}
+        />
       </CheckmarkRow>
       <CheckmarkRow>
         <FormattedMessage defaultMessage="No setup needed" />
@@ -173,7 +179,7 @@ export const PlanList = ({
       cardSx={{ borderColor: "primary.main" }}
       button={
         <Button
-          variant="contained"
+          variant="blue"
           onClick={() => onSelect("pro")}
           disabled={getText("pro").disabled}
           fullWidth

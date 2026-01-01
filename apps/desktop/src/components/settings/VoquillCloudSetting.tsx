@@ -18,18 +18,8 @@ export const VoquillCloudSetting = () => {
       </Typography>
       {!isPro && (
         <Button
-          variant="contained"
+          variant="blue"
           onClick={openUpgradePlanDialog}
-          sx={{
-            bgcolor: (theme) => theme.vars?.palette.blue,
-            color: (theme) => theme.vars?.palette.onBlue,
-            "&:hover": {
-              bgcolor: (theme) => theme.vars?.palette.blueHover,
-            },
-            "&:active": {
-              bgcolor: (theme) => theme.vars?.palette.blueActive,
-            },
-          }}
           endIcon={<ArrowUpwardOutlined />}
         >
           <FormattedMessage defaultMessage="Upgrade to Pro" />

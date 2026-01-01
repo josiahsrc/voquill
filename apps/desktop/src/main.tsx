@@ -7,7 +7,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { FirebaseOptions, initializeApp } from "firebase/app";
-import { connectAuthEmulator, getAuth } from "firebase/auth";
+import { connectAuthEmulator, initializeAuth } from "firebase/auth";
 import {
   connectFirestoreEmulator,
   getFirestore,
@@ -58,7 +58,7 @@ const app = initializeApp(firebaseConfig);
 
 initializeFirestore(app, { ignoreUndefinedProperties: true });
 
-const auth = getAuth(app);
+export const auth = initializeAuth(app);
 if (getIsEmulators()) {
   connectAuthEmulator(auth, `http://localhost:9099`);
 }

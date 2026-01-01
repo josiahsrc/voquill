@@ -251,6 +251,19 @@ export const theme = createTheme({
             },
           }),
         },
+        {
+          props: { variant: "blue" },
+          style: ({ theme }) => ({
+            backgroundColor: theme.vars.palette.blue,
+            color: theme.vars.palette.onBlue,
+            "&:hover": {
+              backgroundColor: theme.vars.palette.blueHover,
+            },
+            "&:active": {
+              backgroundColor: theme.vars.palette.blueActive,
+            },
+          }),
+        },
       ],
     },
 

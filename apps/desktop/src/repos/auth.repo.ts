@@ -3,13 +3,13 @@ import {
   User as FirebaseUser,
   UserCredential,
   createUserWithEmailAndPassword,
-  getAuth,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from "firebase/auth";
+import { auth } from "../main";
 import { BaseRepo } from "./base.repo";
 
 export abstract class BaseAuthRepo extends BaseRepo {
@@ -37,11 +37,11 @@ export class CloudAuthRepo extends BaseAuthRepo {
     email: string,
     password: string,
   ): Promise<UserCredential> {
-    return createUserWithEmailAndPassword(getAuth(), email, password);
+    return createUserWithEmailAndPassword(auth, email, password);
   }
 
   async sendEmailVerificationForCurrentUser(): Promise<void> {
-    const user = getAuth().currentUser;
+    const user = auth.currentUser;
     if (!user) {
       throw new Error("No user is currently signed in.");
     }
@@ -50,18 +50,18 @@ export class CloudAuthRepo extends BaseAuthRepo {
   }
 
   async signOut(): Promise<void> {
-    await firebaseSignOut(getAuth());
+    await firebaseSignOut(auth);
   }
 
   async signInWithEmail(
     email: string,
     password: string,
   ): Promise<UserCredential> {
-    return signInWithEmailAndPassword(getAuth(), email, password);
+    return signInWithEmailAndPassword(auth, email, password);
   }
 
   async sendPasswordResetRequest(email: string): Promise<void> {
-    await sendPasswordResetEmail(getAuth(), email);
+    await sendPasswordResetEmail(auth, email);
   }
 
   async signInWithGoogleTokens(
@@ -69,15 +69,15 @@ export class CloudAuthRepo extends BaseAuthRepo {
     accessToken: string,
   ): Promise<UserCredential> {
     const credential = GoogleAuthProvider.credential(idToken, accessToken);
-    return signInWithCredential(getAuth(), credential);
+    return signInWithCredential(auth, credential);
   }
 
   getCurrentUser(): FirebaseUser | null {
-    return getAuth().currentUser;
+    return auth.currentUser;
   }
 
   async deleteMyAccount(): Promise<void> {
-    const user = getAuth().currentUser;
+    const user = auth.currentUser;
     if (!user) {
       throw new Error("No user is currently signed in.");
     }

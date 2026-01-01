@@ -2,8 +2,8 @@ import { FullConfig } from "@repo/types";
 
 export const getFullConfig = (): FullConfig => {
 	return {
-		freeWordsPerDay: 2_000,
-		freeWordsPerMonth: 2_000,
+		freeWordsPerDay: 1_000,
+		freeWordsPerMonth: 32_000,
 		freeTokensPerDay: 5_000,
 		freeTokensPerMonth: 5_000,
 		proWordsPerDay: 20_000,
