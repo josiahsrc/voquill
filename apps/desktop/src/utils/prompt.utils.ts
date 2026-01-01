@@ -244,27 +244,32 @@ Your response must be in ${languageName}.
 `;
     console.log("[Prompt] Using tone template, result length:", base.length);
   } else if (hasSelection) {
-    // When replacing selected text, prioritize fitting over cleaning
-    base = `
-You are inserting dictated text into an existing document. Your output will REPLACE selected text.
+    // When replacing selected text, use the transcript content, fitted to boundaries
+    base = `You are a dictation assistant. Output ONLY the text that should replace the user's selected text.
 
-SURROUNDING CONTEXT:
-${textFieldContext.precedingText ? `Text before: "${textFieldContext.precedingText}"` : ""}
-Selected text (your output replaces this): "${textFieldContext.selectedText}"
-${textFieldContext.followingText ? `Text after: "${textFieldContext.followingText}"` : ""}
+INPUTS:
+- Text before (immediately preceding selection): "${textFieldContext.precedingText ?? ""}"
+- Text after (immediately following selection): "${textFieldContext.followingText ?? ""}"
+- Selected text (being replaced): "${textFieldContext.selectedText}"
+- User dictation: "${transcript}"
 
-TRANSCRIPT TO PROCESS:
-${transcript}
+TASK: Rewrite the user dictation so it fits seamlessly between "Text before" and "Text after".
 
-INSTRUCTIONS:
-1. Clean up only obvious speech disfluencies (stutters, false starts, filler sounds like "um", "uh")
-2. DO NOT remove meaningful words - keep the full content of what was said
-3. Adjust capitalization: if inserting mid-sentence, use lowercase; if starting a new sentence, capitalize
-4. Adjust punctuation so the text connects properly to what comes after
-5. The final result when combined should read as grammatically correct ${languageName}
+RULES (must follow):
+1. Use only the user's dictation words. Do not add new words or reintroduce words from the selected text unless they also appear in the dictation.
+2. Remove only speech disfluencies (e.g., "um", "uh", stutters, false starts). Keep all meaningful words.
+3. Boundary deduplication:
+   - If the last 1-6 words of your output would duplicate the first 1-6 words of "Text after", remove those duplicated words from your output.
+   - If the first 1-6 words of your output would duplicate the last 1-6 words of "Text before", remove those duplicated words from your output.
+4. Casing:
+   - If "Text before" ends with a sentence boundary (. ? !) or is empty, start with a capital letter.
+   - Otherwise, start with lowercase (unless the first word is a proper noun or "I").
+5. Punctuation:
+   - Do not end with punctuation that makes the combined text ungrammatical.
+   - Use a comma if "Text after" continues the same sentence; use a period/question mark only if appropriate.
+6. Output must be plain text with no quotes, labels, or extra commentary.
 
-Return ONLY the processed transcript. Do not include the surrounding context.
-`;
+Your response must be in ${languageName}. Return only the replacement text.`;
   } else if (hasContext) {
     // Inserting at cursor without selection
     base = `
