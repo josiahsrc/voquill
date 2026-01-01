@@ -1,8 +1,8 @@
+import { Transcription } from "@repo/types";
+import { getRec } from "@repo/utilities";
+import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { postProcessTranscript, transcribeAudio } from "./transcribe.actions";
-import { getTranscriptionRepo } from "../repos";
-import { getRec } from "@repo/utilities";
-import { Transcription } from "@repo/types";
 
 export const openTranscriptionDetailsDialog = (transcriptionId: string) => {
   produceAppState((draft) => {
@@ -44,6 +44,7 @@ export const retranscribeTranscription = async ({
   const postProcessResult = await postProcessTranscript({
     rawTranscript: transcribeResult.rawTranscript,
     toneId: toneId ?? null,
+    a11yInfo: null,
   });
 
   const finalTranscript = postProcessResult.transcript;

@@ -1,10 +1,11 @@
 import { IntlShape } from "react-intl";
+import z from "zod";
+import zodToJsonSchema from "zod-to-json-schema";
 import { Locale } from "../i18n/config";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
+import type { TextFieldContext } from "./accessibility.utils";
 import { LANGUAGE_DISPLAY_NAMES } from "./language.utils";
-import z from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
 
 const sanitizeGlossaryValue = (value: string): string =>
   // oxlint-disable-next-line no-control-regex
@@ -80,20 +81,16 @@ const buildDictionaryContext = (
   entries: DictionaryEntries,
   intl: IntlShape,
 ): string | null => {
-  const sections: string[] = [];
-
-  if (entries.sources.length > 0) {
-    sections.push(
-      intl.formatMessage(
-        {
-          defaultMessage: "Glossary: {terms}",
-        },
-        {
-          terms: ["Voquill", ...entries.sources].join(", "),
-        },
-      ),
-    );
-  }
+  const sections: string[] = [
+    intl.formatMessage(
+      {
+        defaultMessage: "Glossary: {terms}",
+      },
+      {
+        terms: ["Voquill", ...entries.sources].join(", "),
+      },
+    ),
+  ];
 
   if (entries.replacements.length > 0) {
     const formattedRules = entries.replacements
@@ -153,40 +150,92 @@ export const buildSystemPostProcessingTonePrompt = (locale: Locale): string => {
   );
 };
 
-export const buildLocalizedPostProcessingPrompt = (
-  transcript: string,
-  locale: Locale,
-  toneTemplate?: string | null,
-): string => {
-  const intl = getIntl(locale);
-  const languageName = LANGUAGE_DISPLAY_NAMES[locale];
+const buildStyleSection = (toneTemplate: string | null | undefined): string => {
+  if (!toneTemplate) {
+    return `
+STYLE INSTRUCTIONS:
+Do not modify the style or tone of the transcript. Focus solely on fixing grammar mistakes and punctuation errors without changing the speaker's original tone or intent.
+    `;
+  }
 
-  // Use tone template if provided, otherwise use default prompt
-  let base: string;
-  if (toneTemplate) {
-    // Replace variables in tone template
-    base = `
-Process the transcript according to the following style instructions:
-
+  return `
+STYLE INSTRUCTIONS:
+Apply the following writing style to your output:
 \`\`\`
 ${toneTemplate}
 \`\`\`
-
-Here is the transcript:
--------
-${transcript}
--------
-
-Your response must be in ${languageName}.
 `;
-    console.log("[Prompt] Using tone template, result length:", base.length);
+};
+
+export const buildLocalizedPostProcessingPrompt = ({
+  transcript,
+  locale,
+  toneTemplate,
+  textFieldContext,
+}: {
+  transcript: string;
+  locale: Locale;
+  toneTemplate?: string | null;
+  textFieldContext?: TextFieldContext | null;
+}): string => {
+  const languageName = LANGUAGE_DISPLAY_NAMES[locale];
+  const hasContext = textFieldContext != null;
+  const hasSelection =
+    textFieldContext?.selectedText &&
+    textFieldContext.selectedText.trim().length > 0;
+
+  const styleSection = buildStyleSection(toneTemplate);
+  let base: string;
+
+  if (hasSelection) {
+    // When replacing selected text, use the transcript content, fitted to boundaries
+    base = `You are a dictation assistant. Output ONLY the text that should replace the user's selected text.
+
+INPUTS:
+- Text before (immediately preceding selection): "${textFieldContext.precedingText ?? ""}"
+- Text after (immediately following selection): "${textFieldContext.followingText ?? ""}"
+- Selected text (being replaced): "${textFieldContext.selectedText}"
+- User dictation: "${transcript}"
+
+TASK: Rewrite the user dictation so it fits seamlessly between "Text before" and "Text after".
+${styleSection}
+RULES (must follow):
+1. Use only the user's dictation words. Do not add new words or reintroduce words from the selected text unless they also appear in the dictation.
+2. Remove only speech disfluencies (e.g., "um", "uh", stutters, false starts). Keep all meaningful words.
+3. Boundary deduplication:
+   - If the last 1-6 words of your output would duplicate the first 1-6 words of "Text after", remove those duplicated words from your output.
+   - If the first 1-6 words of your output would duplicate the last 1-6 words of "Text before", remove those duplicated words from your output.
+4. Casing:
+   - If "Text before" ends with a sentence boundary (. ? !) or is empty, start with a capital letter.
+   - Otherwise, start with lowercase (unless the first word is a proper noun or "I").
+5. Punctuation:
+   - Do not end with punctuation that makes the combined text ungrammatical.
+   - Use a comma if "Text after" continues the same sentence; use a period/question mark only if appropriate.
+6. Output must be plain text with no quotes, labels, or extra commentary.
+
+Your response must be in ${languageName}. Return only the replacement text.`;
+  } else if (hasContext) {
+    // Inserting at cursor without selection
+    base = `You are inserting dictated text into an existing document at the cursor position.
+
+SURROUNDING CONTEXT:
+${textFieldContext.precedingText ? `Text before cursor: "${textFieldContext.precedingText}"` : "Start of document"}
+${textFieldContext.followingText ? `Text after cursor: "${textFieldContext.followingText}"` : "End of document"}
+
+TRANSCRIPT TO PROCESS:
+${transcript}
+${styleSection}
+INSTRUCTIONS:
+1. Clean up only obvious speech disfluencies (stutters, false starts, filler sounds like "um", "uh")
+2. DO NOT remove meaningful words - keep the full content of what was said
+3. Adjust capitalization based on position: lowercase if mid-sentence, capitalize if starting new sentence
+4. The result should flow naturally with the surrounding text
+
+Return ONLY the processed transcript in ${languageName}.`;
   } else {
-    // Default prompt (backward compatibility)
-    console.log("[Prompt] Using default prompt (no tone template provided)");
-    base = intl.formatMessage(
-      {
-        defaultMessage: `
-Clean the {languageName} transcript below.
+    // No context - just clean the transcript
+    base = `Clean the ${languageName} transcript below.
+${styleSection}
 Remove only clear false starts, stutters, repeated sounds, and isolated filler words.
 Do not remove any complete words, phrases, clauses, or sentences that contribute meaning, emotion, tone, emphasis, or intent.
 Do not remove or shorten any part of the transcript unless it is purely a disfluency and contains no meaningful content on its own.
@@ -194,14 +243,11 @@ Do not delete or compress multiple words into fewer words.
 Do not alter or reorganize the original wording, structure, or flow beyond removing those disfluencies.
 
 Here is the transcript:
-{transcript}
-        `,
-      },
-      {
-        languageName,
-        transcript,
-      },
-    );
+-------
+${transcript}
+-------
+
+Your response must be in ${languageName}.`;
   }
 
   return base;
