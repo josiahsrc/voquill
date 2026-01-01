@@ -154,9 +154,7 @@ export const applySpacingInContext = (args: {
   // Add space before if there's non-whitespace content before
   // and the text to insert doesn't already start with whitespace
   const needsSpaceBefore =
-    charBefore != null &&
-    !isWhitespace(charBefore) &&
-    !isWhitespace(result[0]);
+    charBefore != null && !isWhitespace(charBefore) && !isWhitespace(result[0]);
 
   // Add space after if there's non-whitespace content after
   // and the text to insert doesn't already end with whitespace
@@ -174,4 +172,4 @@ export const applySpacingInContext = (args: {
   }
 
   return result;
-}
+};

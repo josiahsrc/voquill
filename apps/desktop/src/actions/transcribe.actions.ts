@@ -172,12 +172,12 @@ export const postProcessTranscript = async ({
       null;
 
     const textFieldContext = extractTextFieldContext(a11yInfo);
-    const ppPrompt = buildLocalizedPostProcessingPrompt(
-      rawTranscript,
-      preferredLocale,
-      tone?.promptTemplate ?? null,
-      textFieldContext ?? null,
-    );
+    const ppPrompt = buildLocalizedPostProcessingPrompt({
+      transcript: rawTranscript,
+      locale: preferredLocale,
+      toneTemplate: tone?.promptTemplate ?? null,
+      textFieldContext: textFieldContext ?? null,
+    });
 
     const ppSystem = buildSystemPostProcessingTonePrompt(preferredLocale);
 
