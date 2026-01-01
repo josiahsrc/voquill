@@ -1,5 +1,5 @@
 import { FirebaseApp } from "firebase/app";
-import { Auth, getAuth, initializeAuth } from "firebase/auth";
+import { Auth, browserLocalPersistence, getAuth, initializeAuth } from "firebase/auth";
 import { isLinux } from "./env.utils";
 
 let _auth: Auth | null = null;
@@ -18,7 +18,7 @@ export const createEffectiveAuth = (app: FirebaseApp): Auth => {
   }
 
   if (isLinux()) {
-    _auth = initializeAuth(app);
+    _auth = initializeAuth(app, {persistence:  browserLocalPersistence});
   } else {
     _auth = getAuth(app);
   }
