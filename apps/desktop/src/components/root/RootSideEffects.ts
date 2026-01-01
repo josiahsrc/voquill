@@ -128,8 +128,11 @@ export const RootSideEffects = () => {
   );
 
   const startRecording = useCallback(async () => {
+    // Only set to dictate if not already set (e.g., by startAgentRecording)
     produceAppState((draft) => {
-      draft.activeRecordingMode = "dictate";
+      if (!draft.activeRecordingMode) {
+        draft.activeRecordingMode = "dictate";
+      }
     });
 
     const state = getAppState();
@@ -331,6 +334,11 @@ export const RootSideEffects = () => {
         overlayLoadingTokenRef.current = null;
         await invoke<void>("set_phase", { phase: "idle" });
       }
+
+      // Reset recording mode for next recording
+      produceAppState((draft) => {
+        draft.activeRecordingMode = undefined;
+      });
 
       const trimmedTranscript = recordingResult.transcript?.trim();
       if (trimmedTranscript) {
