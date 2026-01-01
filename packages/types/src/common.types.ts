@@ -23,3 +23,5 @@ export type JsonResponse = {
 export type TranscriptionMode = "local" | "api" | "cloud";
 
 export type PostProcessingMode = "none" | "api" | "cloud";
+
+export type AgentMode = "none" | "api" | "cloud";

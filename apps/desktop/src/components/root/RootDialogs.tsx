@@ -1,4 +1,5 @@
 import { PaymentDialog } from "../payment/PaymentDialog";
+import { AIAgentModeDialog } from "../settings/AIAgentModeDialog";
 import { AIPostProcessingDialog } from "../settings/AIPostProcessingDialog";
 import { AITranscriptionDialog } from "../settings/AITranscriptionDialog";
 import { AudioDialog } from "../settings/AudioDialog";
@@ -20,6 +21,7 @@ export const RootDialogs = () => {
       <ToneEditorDialog />
       <AITranscriptionDialog />
       <AIPostProcessingDialog />
+      <AIAgentModeDialog />
       <ProfileDialog />
       <MicrophoneDialog />
       <AudioDialog />

@@ -19,6 +19,7 @@ import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
 import {
   postProcessTranscript,
+  processWithAgent,
   storeTranscription,
 } from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
@@ -37,7 +38,10 @@ import {
   TranscriptionSession,
 } from "../../types/transcription-session.types";
 import { tryPlayAudioChime } from "../../utils/audio.utils";
-import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import {
+  AGENT_DICTATE_HOTKEY,
+  DICTATE_HOTKEY,
+} from "../../utils/keyboard.utils";
 import { getMemberExceedsWordLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
@@ -124,6 +128,10 @@ export const RootSideEffects = () => {
   );
 
   const startRecording = useCallback(async () => {
+    produceAppState((draft) => {
+      draft.activeRecordingMode = "dictate";
+    });
+
     const state = getAppState();
     if (state.isRecordingHotkey) {
       return;
@@ -200,6 +208,13 @@ export const RootSideEffects = () => {
     await promise;
   }, []);
 
+  const startAgentRecording = useCallback(async () => {
+    produceAppState((draft) => {
+      draft.activeRecordingMode = "agent";
+    });
+    await startRecording();
+  }, [startRecording]);
+
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
       return;
@@ -273,13 +288,25 @@ export const RootSideEffects = () => {
         const allWarnings = [...transcribeResult.warnings];
 
         if (rawTranscript) {
-          const ppResult = await postProcessTranscript({
-            rawTranscript,
-            toneId,
-          });
-          transcript = ppResult.transcript;
-          postProcessMetadata = ppResult.metadata;
-          allWarnings.push(...ppResult.warnings);
+          const mode = getAppState().activeRecordingMode;
+
+          if (mode === "agent") {
+            const agentResult = await processWithAgent({
+              rawTranscript,
+              toneId,
+            });
+            transcript = agentResult.transcript;
+            postProcessMetadata = agentResult.metadata;
+            allWarnings.push(...agentResult.warnings);
+          } else {
+            const ppResult = await postProcessTranscript({
+              rawTranscript,
+              toneId,
+            });
+            transcript = ppResult.transcript;
+            postProcessMetadata = ppResult.metadata;
+            allWarnings.push(...ppResult.warnings);
+          }
         }
 
         // don't await so we don't block pasting
@@ -324,10 +351,20 @@ export const RootSideEffects = () => {
     }
   }, []);
 
+  const stopAgentRecording = useCallback(async () => {
+    await stopRecording();
+  }, [stopRecording]);
+
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
     onActivate: startRecording,
     onDeactivate: stopRecording,
+  });
+
+  useHotkeyHold({
+    actionName: AGENT_DICTATE_HOTKEY,
+    onActivate: startAgentRecording,
+    onDeactivate: stopAgentRecording,
   });
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {

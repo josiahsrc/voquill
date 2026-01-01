@@ -46,6 +46,7 @@ export type AppState = {
   auth: Nullable<AuthUser>;
   keysHeld: string[];
   isRecordingHotkey: boolean;
+  activeRecordingMode: "dictate" | "agent" | null;
   overlayPhase: OverlayPhase;
   audioLevels: number[];
   permissions: PermissionMap;
@@ -87,6 +88,7 @@ export type AppState = {
 
 export const INITIAL_APP_STATE: AppState = {
   isRecordingHotkey: false,
+  activeRecordingMode: null,
   memberById: {},
   userById: {},
   userPreferencesById: {},

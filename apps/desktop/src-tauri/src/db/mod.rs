@@ -70,6 +70,7 @@ pub const API_KEY_OPENROUTER_CONFIG_MIGRATION_SQL: &str =
     include_str!("migrations/034_api_key_openrouter_config.sql");
 pub const API_KEY_BASE_URL_MIGRATION_SQL: &str =
     include_str!("migrations/035_api_key_base_url.sql");
+pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/036_agent_mode.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -281,6 +282,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 35,
             description: "add_api_key_base_url",
             sql: API_KEY_BASE_URL_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 36,
+            description: "add_agent_mode",
+            sql: AGENT_MODE_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

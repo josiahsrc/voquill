@@ -1,8 +1,10 @@
 import {
   CPU_DEVICE_VALUE,
+  DEFAULT_AGENT_MODE,
   DEFAULT_MODEL_SIZE,
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
+  type AgentMode,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
@@ -37,6 +39,11 @@ export type SettingsPostProcessingState = {
   openRouterProvidersStatus: ActionStatus;
 };
 
+export type SettingsAgentModeState = {
+  mode: AgentMode;
+  selectedApiKeyId: string | null;
+};
+
 export type SettingsState = {
   changePasswordDialogOpen: boolean;
   deleteAccountDialog: boolean;
@@ -47,8 +54,10 @@ export type SettingsState = {
   profileDialogOpen: boolean;
   aiTranscriptionDialogOpen: boolean;
   aiPostProcessingDialogOpen: boolean;
+  agentModeDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsPostProcessingState;
+  agentMode: SettingsAgentModeState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
@@ -67,6 +76,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   profileDialogOpen: false,
   aiTranscriptionDialogOpen: false,
   aiPostProcessingDialogOpen: false,
+  agentModeDialogOpen: false,
   aiTranscription: {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,
@@ -82,6 +92,10 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     openRouterSearchQuery: "",
     openRouterProviders: [],
     openRouterProvidersStatus: "idle",
+  },
+  agentMode: {
+    mode: DEFAULT_AGENT_MODE,
+    selectedApiKeyId: null,
   },
   apiKeys: [],
   apiKeysStatus: "idle",

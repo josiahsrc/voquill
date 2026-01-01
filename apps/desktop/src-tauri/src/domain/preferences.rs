@@ -21,6 +21,10 @@ pub struct UserPreferences {
     #[serde(default)]
     pub post_processing_ollama_model: Option<String>,
     #[serde(default)]
+    pub agent_mode: Option<String>,
+    #[serde(default)]
+    pub agent_mode_api_key_id: Option<String>,
+    #[serde(default)]
     pub active_tone_id: Option<String>,
     #[serde(default)]
     pub got_started_at: Option<i64>,

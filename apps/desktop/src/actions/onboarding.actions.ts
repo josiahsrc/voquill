@@ -131,6 +131,8 @@ export const submitOnboarding = async () => {
       postProcessingOllamaModel: null,
       activeToneId: null,
       gotStartedAt: null,
+      agentMode: null,
+      agentModeApiKeyId: null,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
