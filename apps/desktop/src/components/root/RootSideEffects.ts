@@ -37,7 +37,7 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
-import { tryPlayAudioChime } from "../../utils/audio.utils";
+import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMemberExceedsWordLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
@@ -142,7 +142,7 @@ export const RootSideEffects = () => {
     }
 
     if (getMemberExceedsWordLimitByState(state)) {
-      tryPlayAudioChime("limit_reached_clip");
+      playAlertSound();
       showToast({
         title: "Word limit reached",
         message: "You've used all your free words for today.",

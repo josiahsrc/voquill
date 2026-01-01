@@ -45,3 +45,40 @@ export const getPlatform = (): Platform => {
 export const isMacOS = (): boolean => getPlatform() === "darwin";
 export const isWindows = (): boolean => getPlatform() === "win32";
 export const isLinux = (): boolean => getPlatform() === "linux";
+
+export const isWindows10 = (): boolean => {
+  if (!isWindows()) {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent;
+  const match = userAgent.match(/Windows NT 10\.0.*build[:/\s]*(\d+)/i);
+  if (match) {
+    const build = parseInt(match[1], 10);
+    return build < 22000;
+  }
+
+  const uaData = (
+    navigator as Navigator & { userAgentData?: { platform: string } }
+  ).userAgentData;
+  if (uaData?.platform === "Windows") {
+    return userAgent.includes("Windows NT 10.0");
+  }
+
+  return userAgent.includes("Windows NT 10.0");
+};
+
+export const isWindows11 = (): boolean => {
+  if (!isWindows()) {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent;
+  const match = userAgent.match(/Windows NT 10\.0.*build[:/\s]*(\d+)/i);
+  if (match) {
+    const build = parseInt(match[1], 10);
+    return build >= 22000;
+  }
+
+  return false;
+};

@@ -66,8 +66,14 @@ pub enum AudioClip {
     StartRecordingClip,
     #[serde(rename = "stop_recording_clip")]
     StopRecordingClip,
-    #[serde(rename = "limit_reached_clip")]
-    LimitReachedClip,
+    #[serde(rename = "alert_linux_clip")]
+    AlertLinuxClip,
+    #[serde(rename = "alert_macos_clip")]
+    AlertMacosClip,
+    #[serde(rename = "alert_windows_10_clip")]
+    AlertWindows10Clip,
+    #[serde(rename = "alert_windows_11_clip")]
+    AlertWindows11Clip,
 }
 
 #[derive(serde::Deserialize, Default)]
@@ -646,7 +652,14 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
     match clip {
         AudioClip::StartRecordingClip => crate::system::audio_feedback::play_start_recording_clip(),
         AudioClip::StopRecordingClip => crate::system::audio_feedback::play_stop_recording_clip(),
-        AudioClip::LimitReachedClip => crate::system::audio_feedback::play_limit_reached_clip(),
+        AudioClip::AlertLinuxClip => crate::system::audio_feedback::play_alert_linux_clip(),
+        AudioClip::AlertMacosClip => crate::system::audio_feedback::play_alert_macos_clip(),
+        AudioClip::AlertWindows10Clip => {
+            crate::system::audio_feedback::play_alert_windows_10_clip()
+        }
+        AudioClip::AlertWindows11Clip => {
+            crate::system::audio_feedback::play_alert_windows_11_clip()
+        }
     }
 
     Ok(())
