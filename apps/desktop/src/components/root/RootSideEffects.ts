@@ -22,13 +22,13 @@ import {
   storeTranscription,
 } from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
-import type { AccessibilityInfo } from "../../types/accessibility.types";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import { getAppState, produceAppState, useAppStore } from "../../store";
+import type { AccessibilityInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
@@ -37,6 +37,7 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
+import { extractTextFieldContext } from "../../utils/accessibility.utils";
 import { tryPlayAudioChime } from "../../utils/audio.utils";
 import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { getMemberExceedsWordLimitByState } from "../../utils/member.utils";
@@ -72,11 +73,14 @@ type RecordingResult = {
   currentApp: AppTarget | null;
 };
 
+type StopRecordingResult = [
+  StopRecordingResponse | null,
+  AccessibilityInfo | null,
+];
+
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
-  const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(
-    null,
-  );
+  const stopPendingRef = useRef<Promise<StopRecordingResult> | null>(null);
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
@@ -168,15 +172,6 @@ export const RootSideEffects = () => {
         // We'll get the toneId when recording stops via tryRegisterCurrentAppTarget().
         sessionRef.current = createTranscriptionSession(prefs);
 
-        // POC: Get accessibility info when dictation starts
-        try {
-          const accessibilityInfo =
-            await invoke<AccessibilityInfo>("get_accessibility_info");
-          console.log("[a11y POC] Accessibility info:", accessibilityInfo);
-        } catch (error) {
-          console.warn("[a11y POC] Failed to get accessibility info:", error);
-        }
-
         // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("start_recording_clip");
 
@@ -222,7 +217,7 @@ export const RootSideEffects = () => {
 
     let loadingToken: symbol | null = null;
 
-    const promise = (async (): Promise<StopRecordingResponse | null> => {
+    const promise = (async (): Promise<StopRecordingResult> => {
       if (startPendingRef.current) {
         try {
           await startPendingRef.current;
@@ -232,6 +227,7 @@ export const RootSideEffects = () => {
       }
 
       let audio: StopRecordingResponse | null = null;
+      let a11yInfo: AccessibilityInfo | null = null;
       try {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
@@ -239,12 +235,17 @@ export const RootSideEffects = () => {
         // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("stop_recording_clip");
 
-        const [, outAudio] = await Promise.all([
+        const [, outAudio, outA11yInfo] = await Promise.all([
           invoke<void>("set_phase", { phase: "loading" }),
           invoke<StopRecordingResponse>("stop_recording"),
+          invoke<AccessibilityInfo>("get_accessibility_info").catch((error) => {
+            console.warn("[a11y] Failed to get accessibility info:", error);
+            return null;
+          }),
         ]);
 
         audio = outAudio;
+        a11yInfo = outA11yInfo;
       } catch (error) {
         console.error("Failed to stop recording via hotkey", error);
         showErrorSnackbar("Unable to stop recording. Please try again.");
@@ -253,11 +254,11 @@ export const RootSideEffects = () => {
         stopPendingRef.current = null;
       }
 
-      return audio;
+      return [audio, a11yInfo];
     })();
 
     stopPendingRef.current = promise;
-    const audio = await promise;
+    const [audio, a11yInfo] = await promise;
 
     isRecordingRef.current = false;
 
@@ -286,6 +287,7 @@ export const RootSideEffects = () => {
           const ppResult = await postProcessTranscript({
             rawTranscript,
             toneId,
+            textFieldContext: extractTextFieldContext(a11yInfo),
           });
           transcript = ppResult.transcript;
           postProcessMetadata = ppResult.metadata;

@@ -15,6 +15,7 @@ import { getAppState, produceAppState } from "../store";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
+import { TextFieldContext } from "../utils/accessibility.utils";
 import { createId } from "../utils/id.utils";
 import { mapLocaleToWhisperLanguage } from "../utils/language.utils";
 import {
@@ -56,6 +57,7 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
+  textFieldContext?: TextFieldContext | null;
 };
 
 export type PostProcessMetadata = {
@@ -140,6 +142,7 @@ export const transcribeAudio = async ({
 export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
+  textFieldContext,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -168,6 +171,7 @@ export const postProcessTranscript = async ({
       rawTranscript,
       preferredLocale,
       tone?.promptTemplate ?? null,
+      textFieldContext ?? null,
     );
 
     const ppSystem = buildSystemPostProcessingTonePrompt(preferredLocale);
