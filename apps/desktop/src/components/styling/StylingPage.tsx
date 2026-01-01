@@ -1,13 +1,12 @@
-import { ArrowOutwardOutlined } from "@mui/icons-material";
-import { Button, Stack, Typography } from "@mui/material";
+import { Stack, Typography } from "@mui/material";
 import { useCallback } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { setActiveTone } from "../../actions/tone.actions";
-import { produceAppState, useAppStore } from "../../store";
+import { useAppStore } from "../../store";
 import { getMyEffectiveUserId } from "../../utils/user.utils";
-import { CenterMessage } from "../common/CenterMessage";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { ToneSelect } from "../tones/ToneSelect";
+import { PostProcessingDisabledTooltip } from "./PostProcessingDisabledTooltip";
 import { StylingRow } from "./StylingRow";
 
 export default function StylingPage() {
@@ -28,35 +27,11 @@ export default function StylingPage() {
     void setActiveTone(toneId);
   }, []);
 
-  const openPostProcessingSettings = useCallback(() => {
-    produceAppState((draft) => {
-      draft.settings.aiPostProcessingDialogOpen = true;
-    });
-  }, []);
-
   const postProcessingMode = useAppStore(
     (state) => state.settings.aiPostProcessing.mode,
   );
 
-  if (postProcessingMode === "none") {
-    return (
-      <CenterMessage
-        title={<FormattedMessage defaultMessage="Writing styles unavailable" />}
-        subtitle={
-          <FormattedMessage defaultMessage="Post-processing must be enabled in order to use writing styles. Update your settings to enable it." />
-        }
-        action={
-          <Button
-            onClick={openPostProcessingSettings}
-            variant="contained"
-            endIcon={<ArrowOutwardOutlined />}
-          >
-            <FormattedMessage defaultMessage="Open settings" />
-          </Button>
-        }
-      />
-    );
-  }
+  const isPostProcessingDisabled = postProcessingMode === "none";
 
   return (
     <VirtualizedListPage
@@ -65,13 +40,16 @@ export default function StylingPage() {
         <FormattedMessage defaultMessage="Choose how you want to sound based on what app you're using." />
       }
       action={
-        <ToneSelect
-          value={activeToneId}
-          trueDefault={true}
-          onToneChange={handleActiveToneChange}
-          formControlSx={{ minWidth: 200 }}
-          label={intl.formatMessage({ defaultMessage: "Default style" })}
-        />
+        <PostProcessingDisabledTooltip disabled={isPostProcessingDisabled}>
+          <ToneSelect
+            value={activeToneId}
+            trueDefault={true}
+            onToneChange={handleActiveToneChange}
+            formControlSx={{ minWidth: 200 }}
+            label={intl.formatMessage({ defaultMessage: "Default style" })}
+            disabled={isPostProcessingDisabled}
+          />
+        </PostProcessingDisabledTooltip>
       }
       items={sortedAppTargetIds}
       computeItemKey={(id) => id}

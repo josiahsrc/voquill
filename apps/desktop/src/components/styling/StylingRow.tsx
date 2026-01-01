@@ -16,6 +16,7 @@ import {
 } from "../common/MenuPopover";
 import { StorageImage } from "../common/StorageImage";
 import { ToneSelect } from "../tones/ToneSelect";
+import { PostProcessingDisabledTooltip } from "./PostProcessingDisabledTooltip";
 
 export type StylingRowProps = {
   id: string;
@@ -24,6 +25,11 @@ export type StylingRowProps = {
 export const StylingRow = ({ id }: StylingRowProps) => {
   const intl = useIntl();
   const target = useAppStore((state) => getRec(state.appTargetById, id));
+  const postProcessingMode = useAppStore(
+    (state) => state.settings.aiPostProcessing.mode,
+  );
+
+  const isPostProcessingDisabled = postProcessingMode === "none";
 
   const handleToneChange = useCallback(
     (toneId: string | null) => {
@@ -116,13 +122,15 @@ export const StylingRow = ({ id }: StylingRowProps) => {
 
   const trailing = (
     <Stack direction="row" spacing={1} alignItems="center">
-      <ToneSelect
-        value={toneValue}
-        onToneChange={handleToneChange}
-        addToneTargetId={target?.id ?? null}
-        disabled={!target}
-        formControlSx={{ minWidth: 140 }}
-      />
+      <PostProcessingDisabledTooltip disabled={isPostProcessingDisabled}>
+        <ToneSelect
+          value={toneValue}
+          onToneChange={handleToneChange}
+          addToneTargetId={target?.id ?? null}
+          disabled={!target || isPostProcessingDisabled}
+          formControlSx={{ minWidth: 140 }}
+        />
+      </PostProcessingDisabledTooltip>
       {!isMacOS() && (
         <MenuPopoverBuilder items={pasteKeybindMenuItems}>
           {({ ref, open }) => (
