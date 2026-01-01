@@ -108,11 +108,12 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
 
     if (prefs.provider === "ollama") {
       // Get Ollama-specific config from the API key
-      const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
-      const baseUrl = apiKey?.baseUrl || OLLAMA_DEFAULT_URL;
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl || OLLAMA_DEFAULT_URL;
       const model = prefs.postProcessingModel;
+      const ollamaApiKey = apiKeyRecord?.keyFull || undefined;
       if (model) {
-        repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model);
+        repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model, ollamaApiKey);
       } else {
         prefs.warnings.push("No model configured for Ollama post-processing.");
       }

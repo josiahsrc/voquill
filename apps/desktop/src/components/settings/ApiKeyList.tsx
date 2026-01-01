@@ -87,8 +87,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
 
     setSaving(true);
     try {
-      // For OLLAMA, use a dummy key since it doesn't require authentication
-      const keyToSave = isOllama ? "ollama" : key;
+      const keyToSave = key || "";
       const baseUrl = isOllama ? ollamaUrl || OLLAMA_DEFAULT_URL : undefined;
       await onSave(name, provider, keyToSave, baseUrl);
       setName("");
@@ -144,18 +143,33 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         <MenuItem value="assemblyai">AssemblyAI</MenuItem>
       </TextField>
       {isOllama ? (
-        <TextField
-          label={<FormattedMessage defaultMessage="Ollama URL" />}
-          value={ollamaUrl}
-          onChange={(event) => setOllamaUrl(event.target.value)}
-          placeholder={OLLAMA_DEFAULT_URL}
-          size="small"
-          fullWidth
-          disabled={saving}
-          helperText={
-            <FormattedMessage defaultMessage="Leave empty to use the default URL" />
-          }
-        />
+        <>
+          <TextField
+            label={<FormattedMessage defaultMessage="Ollama URL" />}
+            value={ollamaUrl}
+            onChange={(event) => setOllamaUrl(event.target.value)}
+            placeholder={OLLAMA_DEFAULT_URL}
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Leave empty to use the default URL" />
+            }
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="API key (optional)" />}
+            value={key}
+            onChange={(event) => setKey(event.target.value)}
+            placeholder="Leave empty if not required"
+            size="small"
+            fullWidth
+            type="password"
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Only needed if your Ollama instance requires authentication" />
+            }
+          />
+        </>
       ) : (
         <TextField
           label={<FormattedMessage defaultMessage="API key" />}
