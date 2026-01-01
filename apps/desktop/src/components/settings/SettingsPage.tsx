@@ -14,27 +14,33 @@ import {
   PrivacyTipOutlined,
   RocketLaunchOutlined,
   VolumeUpOutlined,
+  WarningAmberOutlined,
 } from "@mui/icons-material";
 import {
   Box,
+  Link,
   MenuItem,
   Select,
   SelectChangeEvent,
   Stack,
   Switch,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChangeEvent, useState } from "react";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
 import { setPreferredLanguage } from "../../actions/user.actions";
 import { getAuthRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
-import { DICTATION_LANGUAGE_OPTIONS } from "../../utils/language.utils";
+import {
+  DICTATION_LANGUAGE_OPTIONS,
+  WHISPER_LANGUAGES,
+} from "../../utils/language.utils";
 import { getIsPaying } from "../../utils/member.utils";
 import {
   getDetectedSystemLocale,
@@ -57,10 +63,29 @@ export default function SettingsPage() {
     state.settings.autoLaunchStatus,
   ]);
   const autoLaunchLoading = autoLaunchStatus === "loading";
+  const intl = useIntl();
 
   const dictationLanguage = useAppStore((state) => {
     const user = getMyUser(state);
     return user?.preferredLanguage ?? getDetectedSystemLocale();
+  });
+
+  const dictationLanguageWarning = useAppStore((state) => {
+    const hasPostProcessingEnabled =
+      state.settings.aiPostProcessing.mode !== "none";
+    if (hasPostProcessingEnabled) {
+      return null;
+    }
+
+    const isWhisperLang = dictationLanguage in WHISPER_LANGUAGES;
+    if (!isWhisperLang) {
+      return intl.formatMessage({
+        defaultMessage:
+          "Be sure to enable AI post processing when using this language for the best results.",
+      });
+    }
+
+    return null;
   });
 
   const handleDictationLanguageChange = (event: SelectChangeEvent<string>) => {
@@ -189,8 +214,39 @@ export default function SettingsPage() {
         trailing={
           <Box
             onClick={(event) => event.stopPropagation()}
-            sx={{ minWidth: 200 }}
+            sx={{
+              minWidth: 200,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
           >
+            {dictationLanguageWarning && (
+              <Tooltip
+                title={
+                  <Box>
+                    {dictationLanguageWarning}{" "}
+                    <Link
+                      component="button"
+                      color="inherit"
+                      sx={{ verticalAlign: "baseline" }}
+                      onClick={openPostProcessingDialog}
+                    >
+                      <FormattedMessage defaultMessage="Fix issue" />
+                    </Link>
+                  </Box>
+                }
+                slotProps={{
+                  popper: {
+                    modifiers: [
+                      { name: "offset", options: { offset: [0, -8] } },
+                    ],
+                  },
+                }}
+              >
+                <WarningAmberOutlined color="warning" fontSize="small" />
+              </Tooltip>
+            )}
             <Select
               value={dictationLanguage}
               onChange={handleDictationLanguageChange}
