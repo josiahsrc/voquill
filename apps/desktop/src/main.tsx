@@ -19,9 +19,9 @@ import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { OverlayRoot } from "./components/overlay/OverlayRoot";
-import { ToastRoot } from "./components/toast";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
+import { ToastRoot } from "./components/toast";
 import { getIntlConfig } from "./i18n";
 import { theme } from "./theme";
 import { getIsEmulators, getStripePublicKey } from "./utils/env.utils";
@@ -87,7 +87,13 @@ const isOverlayWindow = searchParams?.get("overlay") === "1";
 const isToastWindow = searchParams?.get("toast") === "1";
 
 const rootElement = document.getElementById("root") as HTMLElement;
-const root = ReactDOM.createRoot(rootElement);
+
+// Prevent HMR from creating multiple React roots.
+// Store the root on the DOM element so we can reuse it across hot reloads.
+const existingRoot = (rootElement as unknown as { _reactRoot?: ReactDOM.Root })
+  ._reactRoot;
+const root = existingRoot ?? ReactDOM.createRoot(rootElement);
+(rootElement as unknown as { _reactRoot?: ReactDOM.Root })._reactRoot = root;
 
 type ChildrenProps = {
   children: React.ReactNode;
