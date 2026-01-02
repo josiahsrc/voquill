@@ -32,7 +32,7 @@ fn try_get_accessibility_info() -> Result<AccessibilityInfo, windows::core::Erro
         // Try to get the TextPattern
         let pattern = focused.GetCurrentPattern(UIA_TextPatternId)?;
 
-        if pattern.is_none() {
+        if pattern.as_raw().is_null() {
             eprintln!("[windows::accessibility] Focused element does not support TextPattern");
             return Ok(empty_info());
         }
