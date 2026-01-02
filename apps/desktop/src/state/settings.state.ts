@@ -4,7 +4,6 @@ import {
   DEFAULT_MODEL_SIZE,
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
-  type AgentMode,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
@@ -28,19 +27,8 @@ export type SettingsTranscriptionState = {
   gpuEnumerationEnabled: boolean;
 };
 
-export type SettingsPostProcessingState = {
+export type SettingsGenerativeState = {
   mode: PostProcessingMode;
-  selectedApiKeyId: string | null;
-  // OpenRouter-specific state
-  openRouterModels: OpenRouterModel[];
-  openRouterModelsStatus: ActionStatus;
-  openRouterSearchQuery: string;
-  openRouterProviders: OpenRouterProvider[];
-  openRouterProvidersStatus: ActionStatus;
-};
-
-export type SettingsAgentModeState = {
-  mode: AgentMode;
   selectedApiKeyId: string | null;
 };
 
@@ -56,14 +44,19 @@ export type SettingsState = {
   aiPostProcessingDialogOpen: boolean;
   agentModeDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
-  aiPostProcessing: SettingsPostProcessingState;
-  agentMode: SettingsAgentModeState;
+  aiPostProcessing: SettingsGenerativeState;
+  agentMode: SettingsGenerativeState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
   hotkeysStatus: ActionStatus;
   autoLaunchEnabled: boolean;
   autoLaunchStatus: ActionStatus;
+  openRouterModels: OpenRouterModel[];
+  openRouterModelsStatus: ActionStatus;
+  openRouterSearchQuery: string;
+  openRouterProviders: OpenRouterProvider[];
+  openRouterProvidersStatus: ActionStatus;
 };
 
 export const INITIAL_SETTINGS_STATE: SettingsState = {
@@ -87,11 +80,6 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,
     selectedApiKeyId: null,
-    openRouterModels: [],
-    openRouterModelsStatus: "idle",
-    openRouterSearchQuery: "",
-    openRouterProviders: [],
-    openRouterProvidersStatus: "idle",
   },
   agentMode: {
     mode: DEFAULT_AGENT_MODE,
@@ -103,4 +91,9 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   hotkeysStatus: "idle",
   autoLaunchEnabled: false,
   autoLaunchStatus: "idle",
+  openRouterModels: [],
+  openRouterModelsStatus: "idle",
+  openRouterSearchQuery: "",
+  openRouterProviders: [],
+  openRouterProvidersStatus: "idle",
 };

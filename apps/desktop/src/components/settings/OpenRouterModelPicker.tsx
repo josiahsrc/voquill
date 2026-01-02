@@ -131,14 +131,12 @@ export const OpenRouterModelPicker = ({
   disabled = false,
 }: OpenRouterModelPickerProps) => {
   const [expanded, setExpanded] = useState(false);
-  const models = useAppStore(
-    (state) => state.settings.aiPostProcessing.openRouterModels,
-  );
+  const models = useAppStore((state) => state.settings.openRouterModels);
   const modelsStatus = useAppStore(
-    (state) => state.settings.aiPostProcessing.openRouterModelsStatus,
+    (state) => state.settings.openRouterModelsStatus,
   );
   const searchQuery = useAppStore(
-    (state) => state.settings.aiPostProcessing.openRouterSearchQuery,
+    (state) => state.settings.openRouterSearchQuery,
   );
 
   // Get user favorites from the API key config

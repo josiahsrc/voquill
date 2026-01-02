@@ -42,11 +42,9 @@ export const OpenRouterProviderRouting = ({
   const [saving, setSaving] = useState(false);
 
   // Get providers from state
-  const providers = useAppStore(
-    (state) => state.settings.aiPostProcessing.openRouterProviders,
-  );
+  const providers = useAppStore((state) => state.settings.openRouterProviders);
   const providersStatus = useAppStore(
-    (state) => state.settings.aiPostProcessing.openRouterProvidersStatus,
+    (state) => state.settings.openRouterProvidersStatus,
   );
 
   // Load providers when expanded

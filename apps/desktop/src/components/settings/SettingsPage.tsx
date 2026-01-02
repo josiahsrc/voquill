@@ -1,5 +1,6 @@
 import {
   ArrowOutwardRounded,
+  AutoAwesomeOutlined,
   AutoFixHighOutlined,
   DeleteForeverOutlined,
   DescriptionOutlined,
@@ -13,7 +14,6 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
-  SmartToyOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
 } from "@mui/icons-material";
@@ -290,7 +290,7 @@ export default function SettingsPage() {
       />
       <ListTile
         title={<FormattedMessage defaultMessage="Agent mode" />}
-        leading={<SmartToyOutlined />}
+        leading={<AutoAwesomeOutlined />}
         onClick={openAgentModeDialog}
       />
     </Section>

@@ -3,19 +3,12 @@ import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import {
+  GenerativePrefs,
   getAgentModePrefs,
   getGenerativePrefs,
   getHasCloudAccess,
   getTranscriptionPrefs,
 } from "../utils/user.utils";
-import {
-  BaseAgentRepo,
-  CloudAgentRepo,
-  GroqAgentRepo,
-  OllamaAgentRepo,
-  OpenAIAgentRepo,
-  OpenRouterAgentRepo,
-} from "./agent.repo";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
 import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
@@ -103,9 +96,10 @@ export type GenerateTextRepoOutput = {
   warnings: string[];
 };
 
-export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
+const getGenTextRepoInternal = (
+  prefs: GenerativePrefs,
+): GenerateTextRepoOutput => {
   const state = getAppState();
-  const prefs = getGenerativePrefs(state);
   if (prefs.mode === "cloud") {
     return {
       repo: new CloudGenerateTextRepo(),
@@ -157,58 +151,16 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   return { repo: null, apiKeyId: null, warnings: prefs.warnings };
 };
 
-export type AgentRepoOutput = {
-  repo: Nullable<BaseAgentRepo>;
-  apiKeyId: Nullable<string>;
-  warnings: string[];
+export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
+  const state = getAppState();
+  const prefs = getGenerativePrefs(state);
+  return getGenTextRepoInternal(prefs);
 };
 
-export const getAgentRepo = (): AgentRepoOutput => {
+export const getAgentRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getAgentModePrefs(state);
-  if (prefs.mode === "cloud") {
-    return {
-      repo: new CloudAgentRepo(),
-      apiKeyId: null,
-      warnings: prefs.warnings,
-    };
-  } else if (prefs.mode === "api") {
-    let repo: BaseAgentRepo | null = null;
-
-    if (prefs.provider === "ollama") {
-      // Get Ollama-specific config from the API key
-      const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
-      const baseUrl = apiKey?.baseUrl || OLLAMA_DEFAULT_URL;
-      const model = prefs.agentModel;
-      if (model) {
-        repo = new OllamaAgentRepo(baseUrl, model);
-      } else {
-        prefs.warnings.push("No model configured for Ollama agent mode.");
-      }
-    } else if (prefs.provider === "openrouter") {
-      // Get OpenRouter-specific config from the API key
-      const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
-      const config = apiKey?.openRouterConfig;
-      const providerRouting = config?.providerRouting ?? undefined;
-      repo = new OpenRouterAgentRepo(
-        prefs.apiKeyValue,
-        prefs.agentModel,
-        providerRouting,
-      );
-    } else if (prefs.provider === "openai") {
-      repo = new OpenAIAgentRepo(prefs.apiKeyValue, prefs.agentModel);
-    } else {
-      repo = new GroqAgentRepo(prefs.apiKeyValue, prefs.agentModel);
-    }
-
-    return {
-      repo,
-      apiKeyId: prefs.apiKeyId,
-      warnings: prefs.warnings,
-    };
-  }
-
-  return { repo: null, apiKeyId: null, warnings: prefs.warnings };
+  return getGenTextRepoInternal(prefs);
 };
 
 export type TranscribeAudioRepoOutput = {

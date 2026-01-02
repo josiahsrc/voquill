@@ -7,7 +7,6 @@ import { countWords, dedup, getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import {
-  getAgentRepo,
   getGenerateTextRepo,
   getTranscribeAudioRepo,
   getTranscriptionRepo,
@@ -271,7 +270,7 @@ export const processWithAgent = async ({
     repo: agentRepo,
     apiKeyId: agentApiKeyId,
     warnings: agentWarnings,
-  } = getAgentRepo();
+  } = getGenerateTextRepo();
   warnings.push(...agentWarnings);
 
   let processedTranscript = rawTranscript;
@@ -294,7 +293,7 @@ export const processWithAgent = async ({
     const agentSystem = buildSystemAgentPrompt(preferredLocale);
 
     const agentStart = performance.now();
-    const agentOutput = await agentRepo.processWithAgent({
+    const agentOutput = await agentRepo.generateText({
       system: agentSystem,
       prompt: agentPrompt,
       jsonResponse: {
@@ -326,7 +325,7 @@ export const processWithAgent = async ({
 
     metadata.agentPrompt = agentPrompt;
     metadata.agentApiKeyId = agentApiKeyId;
-    metadata.agentMode = agentOutput.metadata?.agentMode || null;
+    metadata.agentMode = agentOutput.metadata?.postProcessingMode || null;
     metadata.agentDevice = agentOutput.metadata?.inferenceDevice || null;
   } else {
     metadata.agentMode = "none";

@@ -218,8 +218,16 @@ export type GenerativePrefs =
   | ApiGenerativePrefs
   | NoneGenerativePrefs;
 
-export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
-  const config = state.settings.aiPostProcessing;
+type GenerativeConfigInput = {
+  mode: "none" | "api" | "cloud";
+  selectedApiKeyId: string | null;
+};
+
+const getGenPrefsInternal = (
+  state: AppState,
+  config: GenerativeConfigInput,
+  context: string,
+): GenerativePrefs => {
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const exceedsLimits = getMemberExceedsWordLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
@@ -228,13 +236,13 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
   if (config.mode === "cloud") {
     if (cloudAvailable) {
       if (exceedsLimits) {
-        warnings.push("Cloud post-processing limit exceeded.");
+        warnings.push(`Cloud ${context} limit exceeded.`);
       } else {
         return { mode: "cloud", warnings };
       }
     } else {
       warnings.push(
-        "Cloud post-processing is not available. Please check your subscription.",
+        `Cloud ${context} is not available. Please check your subscription.`,
       );
     }
   }
@@ -251,74 +259,21 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
         warnings,
       };
     } else {
-      warnings.push("No API key configured for API post-processing.");
+      warnings.push(`No API key configured for API ${context}.`);
     }
   }
 
   return { mode: "none", warnings };
 };
 
-type BaseAgentModePrefs = {
-  warnings: string[];
+export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
+  return getGenPrefsInternal(
+    state,
+    state.settings.aiPostProcessing,
+    "post-processing",
+  );
 };
 
-export type CloudAgentModePrefs = BaseAgentModePrefs & {
-  mode: "cloud";
-};
-
-export type ApiAgentModePrefs = BaseAgentModePrefs & {
-  mode: "api";
-  provider: ApiKeyProvider;
-  apiKeyId: string;
-  apiKeyValue: string;
-  agentModel: string | null;
-};
-
-export type NoneAgentModePrefs = BaseAgentModePrefs & {
-  mode: "none";
-};
-
-export type AgentModePrefs =
-  | CloudAgentModePrefs
-  | ApiAgentModePrefs
-  | NoneAgentModePrefs;
-
-export const getAgentModePrefs = (state: AppState): AgentModePrefs => {
-  const config = state.settings.agentMode;
-  const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
-  const exceedsLimits = getMemberExceedsLimitsFromState(state);
-  const cloudAvailable = getHasCloudAccess(state);
-  const warnings: string[] = [];
-
-  if (config.mode === "cloud") {
-    if (cloudAvailable) {
-      if (exceedsLimits) {
-        warnings.push("Cloud agent mode limit exceeded.");
-      } else {
-        return { mode: "cloud", warnings };
-      }
-    } else {
-      warnings.push(
-        "Cloud agent mode is not available. Please check your subscription.",
-      );
-    }
-  }
-
-  if (config.mode === "api") {
-    if (apiKey) {
-      const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
-      return {
-        mode: "api",
-        provider: selectedApiKey?.provider ?? "groq",
-        apiKeyId: config.selectedApiKeyId!,
-        apiKeyValue: apiKey,
-        agentModel: selectedApiKey?.postProcessingModel ?? null,
-        warnings,
-      };
-    } else {
-      warnings.push("No API key configured for API agent mode.");
-    }
-  }
-
-  return { mode: "none", warnings };
+export const getAgentModePrefs = (state: AppState): GenerativePrefs => {
+  return getGenPrefsInternal(state, state.settings.agentMode, "agent mode");
 };
