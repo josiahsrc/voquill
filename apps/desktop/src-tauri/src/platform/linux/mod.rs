@@ -1,3 +1,4 @@
+pub mod accessibility;
 pub mod audio;
 pub mod feedback;
 pub mod input;

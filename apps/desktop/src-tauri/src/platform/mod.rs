@@ -3,6 +3,8 @@ use std::sync::Arc;
 #[cfg(target_os = "linux")]
 pub mod linux;
 #[cfg(target_os = "linux")]
+pub use linux::accessibility;
+#[cfg(target_os = "linux")]
 pub use linux::input;
 #[cfg(target_os = "linux")]
 pub use linux::permissions;
@@ -12,6 +14,8 @@ pub use linux::window;
 #[cfg(target_os = "macos")]
 pub mod macos;
 #[cfg(target_os = "macos")]
+pub use macos::accessibility;
+#[cfg(target_os = "macos")]
 pub use macos::input;
 #[cfg(target_os = "macos")]
 pub use macos::permissions;
@@ -20,6 +24,8 @@ pub use macos::window;
 
 #[cfg(target_os = "windows")]
 pub mod windows;
+#[cfg(target_os = "windows")]
+pub use windows::accessibility;
 #[cfg(target_os = "windows")]
 pub use windows::input;
 #[cfg(target_os = "windows")]

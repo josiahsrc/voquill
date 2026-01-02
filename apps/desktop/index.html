@@ -11,6 +11,9 @@
         if (params.get("overlay") === "1") {
           document.documentElement.dataset.overlay = "true";
         }
+        if (params.get("toast") === "1") {
+          document.documentElement.dataset.toast = "true";
+        }
       })();
     </script>
     <style>
@@ -29,7 +32,10 @@
         }
       }
 
-      :root[data-overlay="true"] body {
+      :root[data-overlay="true"],
+      :root[data-overlay="true"] body,
+      :root[data-toast="true"],
+      :root[data-toast="true"] body {
         background-color: transparent;
       }
 

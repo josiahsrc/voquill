@@ -88,7 +88,13 @@ const isOverlayWindow = searchParams?.get("overlay") === "1";
 const isToastWindow = searchParams?.get("toast") === "1";
 
 const rootElement = document.getElementById("root") as HTMLElement;
-const root = ReactDOM.createRoot(rootElement);
+
+// Prevent HMR from creating multiple React roots.
+// Store the root on the DOM element so we can reuse it across hot reloads.
+const existingRoot = (rootElement as unknown as { _reactRoot?: ReactDOM.Root })
+  ._reactRoot;
+const root = existingRoot ?? ReactDOM.createRoot(rootElement);
+(rootElement as unknown as { _reactRoot?: ReactDOM.Root })._reactRoot = root;
 
 type ChildrenProps = {
   children: React.ReactNode;

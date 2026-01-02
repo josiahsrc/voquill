@@ -29,6 +29,7 @@ import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import { getAppState, produceAppState, useAppStore } from "../../store";
+import type { AccessibilityInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
@@ -37,7 +38,7 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
-import { tryPlayAudioChime } from "../../utils/audio.utils";
+import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
@@ -75,11 +76,14 @@ type RecordingResult = {
   currentApp: AppTarget | null;
 };
 
+type StopRecordingResult = [
+  StopRecordingResponse | null,
+  AccessibilityInfo | null,
+];
+
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
-  const stopPendingRef = useRef<Promise<StopRecordingResponse | null> | null>(
-    null,
-  );
+  const stopPendingRef = useRef<Promise<StopRecordingResult> | null>(null);
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
@@ -149,7 +153,7 @@ export const RootSideEffects = () => {
     }
 
     if (getMemberExceedsWordLimitByState(state)) {
-      tryPlayAudioChime("limit_reached_clip");
+      playAlertSound();
       showToast({
         title: "Word limit reached",
         message: "You've used all your free words for today.",
@@ -230,7 +234,7 @@ export const RootSideEffects = () => {
 
     let loadingToken: symbol | null = null;
 
-    const promise = (async (): Promise<StopRecordingResponse | null> => {
+    const promise = (async (): Promise<StopRecordingResult> => {
       if (startPendingRef.current) {
         try {
           await startPendingRef.current;
@@ -240,6 +244,7 @@ export const RootSideEffects = () => {
       }
 
       let audio: StopRecordingResponse | null = null;
+      let a11yInfo: AccessibilityInfo | null = null;
       try {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
@@ -247,12 +252,17 @@ export const RootSideEffects = () => {
         // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("stop_recording_clip");
 
-        const [, outAudio] = await Promise.all([
+        const [, outAudio, outA11yInfo] = await Promise.all([
           invoke<void>("set_phase", { phase: "loading" }),
           invoke<StopRecordingResponse>("stop_recording"),
+          invoke<AccessibilityInfo>("get_accessibility_info").catch((error) => {
+            console.warn("[a11y] Failed to get accessibility info:", error);
+            return null;
+          }),
         ]);
 
         audio = outAudio;
+        a11yInfo = outA11yInfo;
       } catch (error) {
         console.error("Failed to stop recording via hotkey", error);
         showErrorSnackbar("Unable to stop recording. Please try again.");
@@ -261,11 +271,11 @@ export const RootSideEffects = () => {
         stopPendingRef.current = null;
       }
 
-      return audio;
+      return [audio, a11yInfo];
     })();
 
     stopPendingRef.current = promise;
-    const audio = await promise;
+    const [audio, a11yInfo] = await promise;
 
     isRecordingRef.current = false;
 
@@ -305,6 +315,7 @@ export const RootSideEffects = () => {
             const ppResult = await postProcessTranscript({
               rawTranscript,
               toneId,
+              a11yInfo,
             });
             transcript = ppResult.transcript;
             postProcessMetadata = ppResult.metadata;
@@ -337,18 +348,18 @@ export const RootSideEffects = () => {
 
       // Reset recording mode for next recording
       produceAppState((draft) => {
-        draft.activeRecordingMode = undefined;
+        draft.activeRecordingMode = null;
       });
 
-      const trimmedTranscript = recordingResult.transcript?.trim();
-      if (trimmedTranscript) {
+      const finalTranscript = recordingResult.transcript;
+      if (finalTranscript) {
         await new Promise<void>((resolve) => {
           setTimeout(resolve, 20);
         });
 
         try {
           const keybind = recordingResult.currentApp?.pasteKeybind ?? null;
-          await invoke<void>("paste", { text: trimmedTranscript, keybind });
+          await invoke<void>("paste", { text: finalTranscript, keybind });
         } catch (error) {
           console.error("Failed to paste transcription", error);
           showErrorSnackbar("Unable to paste transcription.");

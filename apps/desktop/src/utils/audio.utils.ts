@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
 import { AudioSamples } from "../types/audio.types";
+import { isLinux, isMacOS, isWindows11 } from "./env.utils";
 import { getMyUser } from "./user.utils";
 
 const writeString = (view: DataView, offset: number, text: string) => {
@@ -58,7 +59,10 @@ export const normalizeSamples = (samples: AudioSamples): number[] =>
 export type AudioClip =
   | "start_recording_clip"
   | "stop_recording_clip"
-  | "limit_reached_clip";
+  | "alert_linux_clip"
+  | "alert_macos_clip"
+  | "alert_windows_10_clip"
+  | "alert_windows_11_clip";
 
 export function tryPlayAudioChime(clip: AudioClip): void {
   const state = getAppState();
@@ -70,4 +74,22 @@ export function tryPlayAudioChime(clip: AudioClip): void {
   }
 
   invoke<void>("play_audio", { clip }).catch(console.error);
+}
+
+function getAlertClip(): AudioClip {
+  if (isMacOS()) {
+    return "alert_macos_clip";
+  }
+  if (isLinux()) {
+    return "alert_linux_clip";
+  }
+  if (isWindows11()) {
+    return "alert_windows_11_clip";
+  }
+  return "alert_windows_10_clip";
+}
+
+export function playAlertSound(): void {
+  const clip = getAlertClip();
+  tryPlayAudioChime(clip);
 }
