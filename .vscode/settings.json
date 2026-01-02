@@ -3,7 +3,7 @@
     "editor.defaultFormatter": "prettier.prettier-vscode"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "prettier.prettier-vscode"
   },
   "[javascriptreact]": {
     "editor.defaultFormatter": "prettier.prettier-vscode"

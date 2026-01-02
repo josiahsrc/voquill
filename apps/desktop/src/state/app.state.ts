@@ -39,6 +39,8 @@ import { INITIAL_TUTORIAL_STATE, TutorialState } from "./tutorial.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
+export type RecordingMode = "dictate" | "agent";
+
 export type PriceValue = HandlerOutput<"stripe/getPrices">["prices"];
 
 export type AppState = {
@@ -46,7 +48,7 @@ export type AppState = {
   auth: Nullable<AuthUser>;
   keysHeld: string[];
   isRecordingHotkey: boolean;
-  activeRecordingMode: "dictate" | "agent" | null;
+  activeRecordingMode: Nullable<RecordingMode>;
   overlayPhase: OverlayPhase;
   audioLevels: number[];
   permissions: PermissionMap;
