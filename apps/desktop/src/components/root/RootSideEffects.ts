@@ -215,13 +215,6 @@ export const RootSideEffects = () => {
     await promise;
   }, []);
 
-  const startAgentRecording = useCallback(async () => {
-    produceAppState((draft) => {
-      draft.activeRecordingMode = "agent";
-    });
-    await startRecording();
-  }, [startRecording]);
-
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
       return;
@@ -370,14 +363,32 @@ export const RootSideEffects = () => {
     }
   }, []);
 
+  const startDictationRecording = useCallback(async () => {
+    produceAppState((draft) => {
+      draft.activeRecordingMode = "dictate";
+    });
+    await startRecording();
+  }, [startRecording]);
+
+  const stopDictationRecording = useCallback(async () => {
+    await stopRecording();
+  }, [stopRecording]);
+
+  const startAgentRecording = useCallback(async () => {
+    produceAppState((draft) => {
+      draft.activeRecordingMode = "agent";
+    });
+    await startRecording();
+  }, [startRecording]);
+
   const stopAgentRecording = useCallback(async () => {
     await stopRecording();
   }, [stopRecording]);
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    onActivate: startRecording,
-    onDeactivate: stopRecording,
+    onActivate: startDictationRecording,
+    onDeactivate: stopDictationRecording,
   });
 
   useHotkeyHold({
