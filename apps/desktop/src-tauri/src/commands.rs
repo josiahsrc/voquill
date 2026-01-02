@@ -719,11 +719,13 @@ pub fn start_recording(
 }
 
 #[tauri::command]
-pub fn stop_recording(
+pub async fn stop_recording(
     _app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
 ) -> Result<StopRecordingResponse, String> {
-    match recorder.stop() {
+    let recorder = Arc::clone(&recorder);
+
+    tauri::async_runtime::spawn_blocking(move || match recorder.stop() {
         Ok(result) => {
             let audio = result.audio;
             Ok(StopRecordingResponse {
@@ -748,7 +750,9 @@ pub fn stop_recording(
             eprintln!("Failed to stop recording via command: {message}");
             Err(message)
         }
-    }
+    })
+    .await
+    .map_err(|err| err.to_string())?
 }
 
 #[tauri::command]
@@ -1040,6 +1044,8 @@ pub fn stop_key_listener() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn get_accessibility_info() -> AccessibilityInfo {
-    crate::platform::accessibility::get_accessibility_info()
+pub async fn get_accessibility_info() -> Result<AccessibilityInfo, String> {
+    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_accessibility_info)
+        .await
+        .map_err(|err| err.to_string())
 }
