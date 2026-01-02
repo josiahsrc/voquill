@@ -2,13 +2,12 @@ use enigo::{Enigo, Key, KeyboardControllable};
 use std::{env, thread, time::Duration};
 
 pub(crate) fn paste_text_into_focused_field(text: &str, keybind: Option<&str>) -> Result<(), String> {
-    let trimmed = text.trim();
-    if trimmed.is_empty() {
+    if text.trim().is_empty() {
         return Ok(());
     }
 
     let override_text = env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
-    let target = override_text.as_deref().unwrap_or(trimmed);
+    let target = override_text.as_deref().unwrap_or(text);
     eprintln!(
         "[voquill] attempting to inject text ({} chars)",
         target.chars().count()
