@@ -14,7 +14,13 @@ import {
   getCurrentWindow,
   LogicalSize,
 } from "@tauri-apps/api/window";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useOverlayClickThrough } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
@@ -200,6 +206,8 @@ export const AgentOverlayRend = () => {
   const [animationKey, setAnimationKey] = useState(0);
   const paperRef = useRef<HTMLDivElement>(null);
   const [paperHeight, setPaperHeight] = useState<number | null>(null);
+  const [wasRecording, setWasRecording] = useState(false);
+  const prevMessagesLengthRef = useRef(0);
 
   useOverlayClickThrough({
     contentRef: paperRef,
@@ -281,6 +289,32 @@ export const AgentOverlayRend = () => {
     }
   }, [isVisible]);
 
+  // Track when recording starts
+  useEffect(() => {
+    if (isRecording) {
+      setWasRecording(true);
+    }
+  }, [isRecording]);
+
+  // Reset wasRecording when a new user message appears or phase goes idle
+  useEffect(() => {
+    if (phase === "idle") {
+      setWasRecording(false);
+      prevMessagesLengthRef.current = 0;
+      return;
+    }
+
+    const newUserMessage =
+      messages.length > prevMessagesLengthRef.current &&
+      messages[messages.length - 1]?.sender === "me";
+
+    if (newUserMessage) {
+      setWasRecording(false);
+    }
+
+    prevMessagesLengthRef.current = messages.length;
+  }, [phase, messages]);
+
   useEffect(() => {
     let canceled = false;
 
@@ -317,9 +351,9 @@ export const AgentOverlayRend = () => {
   // Determine which live indicator to show at the bottom
   const lastMessage = messages[messages.length - 1];
   const showUserRecordingBubble = isRecording;
-  const showUserProcessingBubble =
-    isLoading && (!lastMessage || lastMessage.sender === "agent");
-  const showAgentThinkingBubble = isLoading && lastMessage?.sender === "me";
+  const showUserProcessingBubble = isLoading && wasRecording;
+  const showAgentThinkingBubble =
+    isLoading && !wasRecording && lastMessage?.sender === "me";
 
   return (
     <Box
