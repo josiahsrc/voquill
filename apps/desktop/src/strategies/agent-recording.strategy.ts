@@ -1,5 +1,7 @@
 import { emitTo } from "@tauri-apps/api/event";
-import { processWithAgent } from "../actions/transcribe.actions";
+import { Agent } from "../agent/agent";
+import { AgentMessage } from "../types/agent.types";
+import { getAgentRepo } from "../repos";
 import type {
   AgentWindowMessage,
   AgentWindowState,
@@ -10,22 +12,43 @@ import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
 } from "./recording.types";
+import { ShowToastTool } from "../tools/show-toast.tool";
+import { StopTool } from "../tools/stop.tool";
 
 export class AgentRecordingStrategy extends BaseRecordingStrategy {
-  private messages: AgentWindowMessage[] = [];
+  private history: AgentMessage[] = [];
+  private uiMessages: AgentWindowMessage[] = [];
   private isFirstTurn = true;
+  private agent: Agent | null = null;
+  private shouldStop = false;
 
   private async emitState(state: AgentWindowState | null): Promise<void> {
     await emitTo("agent-overlay", "agent_window_state", { state });
   }
 
+  private initAgent(): Agent | null {
+    const { repo, warnings } = getAgentRepo();
+    if (!repo) {
+      console.warn("No agent repo configured:", warnings);
+      return null;
+    }
+
+    const tools = [
+      new ShowToastTool(),
+      new StopTool(() => {
+        this.shouldStop = true;
+      }),
+    ];
+
+    return new Agent(repo, tools);
+  }
+
   async onBeforeStart(): Promise<void> {
     if (this.isFirstTurn) {
-      // First turn: clear any previous state
       await this.emitState(null);
       this.isFirstTurn = false;
+      this.agent = this.initAgent();
     }
-    // Subsequent turns: window is already open, nothing to do
   }
 
   async setPhase(phase: OverlayPhase): Promise<void> {
@@ -34,42 +57,36 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
 
   async handleTranscript({
     rawTranscript,
-    toneId,
     loadingToken,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
-    // 1. Check for exit command
-    const shouldExit = rawTranscript.toLowerCase().includes("stop");
-
-    if (shouldExit) {
-      if (
-        loadingToken &&
-        this.context.overlayLoadingTokenRef.current === loadingToken
-      ) {
-        this.context.overlayLoadingTokenRef.current = null;
+    if (!this.agent) {
+      this.agent = this.initAgent();
+      if (!this.agent) {
+        if (
+          loadingToken &&
+          this.context.overlayLoadingTokenRef.current === loadingToken
+        ) {
+          this.context.overlayLoadingTokenRef.current = null;
+        }
+        return { shouldContinue: false };
       }
-      await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
-      await this.emitState(null);
-      return { shouldContinue: false };
     }
 
-    // 2. Add user's message ("me") and emit immediately
-    this.messages.push({ text: rawTranscript, sender: "me" });
-    await this.emitState({ messages: this.messages });
+    this.uiMessages.push({ text: rawTranscript, sender: "me" });
+    await this.emitState({ messages: this.uiMessages });
 
-    // 3. Call agent to get response
-    const { transcript: agentResponse } = await processWithAgent({
-      rawTranscript,
-      toneId,
-    });
-    console.log("Agent response:", agentResponse);
+    const result = await this.agent.run(this.history, rawTranscript);
+    console.log("Agent response:", result.response);
+    console.log("Tool calls:", result.toolCalls);
 
-    // 4. Add agent's response and emit
-    if (agentResponse) {
-      this.messages.push({ text: agentResponse, sender: "agent" });
-      await this.emitState({ messages: this.messages });
+    this.history.push({ role: "user", content: rawTranscript });
+    this.history.push({ role: "assistant", content: result.response });
+
+    if (result.response) {
+      this.uiMessages.push({ text: result.response, sender: "agent" });
+      await this.emitState({ messages: this.uiMessages });
     }
 
-    // 5. Clear loading token but keep window visible
     if (
       loadingToken &&
       this.context.overlayLoadingTokenRef.current === loadingToken
@@ -77,14 +94,20 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
       this.context.overlayLoadingTokenRef.current = null;
     }
 
-    // No storeTranscription - agent mode doesn't save to history
+    if (this.shouldStop) {
+      await this.cleanup();
+      return { shouldContinue: false };
+    }
+
     return { shouldContinue: true };
   }
 
   async cleanup(): Promise<void> {
-    // Clean up on exit
-    this.messages = [];
+    this.history = [];
+    this.uiMessages = [];
     this.isFirstTurn = true;
+    this.agent = null;
+    this.shouldStop = false;
     await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
     await this.emitState(null);
   }

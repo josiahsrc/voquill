@@ -233,7 +233,7 @@ fn ensure_toast_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     // Extra width for slide-in animation (toast slides from right)
     const TOAST_CONTENT_WIDTH: f64 = 350.0;
     const TOAST_WINDOW_WIDTH: f64 = TOAST_CONTENT_WIDTH * 2.0; // Room for animation
-    const TOAST_WINDOW_HEIGHT: f64 = 160.0;
+    const TOAST_WINDOW_HEIGHT: f64 = 200.0;
 
     // Position window so the right edge is flush with screen
     let (x, y) = if let Some(monitor) = app.primary_monitor().ok().flatten() {

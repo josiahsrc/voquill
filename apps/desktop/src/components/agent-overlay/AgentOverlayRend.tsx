@@ -189,8 +189,8 @@ export const AgentOverlayRend = () => {
             padding: theme.spacing(1.5),
             overflow: "auto",
             display: "flex",
-            flexDirection: "column",
-            justifyContent: messages.length > 0 ? "flex-start" : "center",
+            flexDirection: "column-reverse",
+            justifyContent: messages.length > 0 ? "flex-end" : "center",
           }}
         >
           {messages.length > 0 ? (

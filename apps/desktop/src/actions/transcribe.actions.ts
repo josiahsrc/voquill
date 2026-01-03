@@ -23,10 +23,8 @@ import {
 import { createId } from "../utils/id.utils";
 import { mapLocaleToWhisperLanguage } from "../utils/language.utils";
 import {
-  buildLocalizedAgentPrompt,
   buildLocalizedPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
-  buildSystemAgentPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
@@ -229,106 +227,6 @@ export const postProcessTranscript = async ({
     });
   } else {
     processedTranscript = processedTranscript.trim();
-  }
-
-  return {
-    transcript: processedTranscript,
-    warnings: dedup(warnings),
-    metadata,
-  };
-};
-
-export type ProcessWithAgentInput = {
-  rawTranscript: string;
-  toneId?: Nullable<string>;
-};
-
-export type ProcessWithAgentMetadata = {
-  agentPrompt?: Nullable<string>;
-  agentApiKeyId?: Nullable<string>;
-  agentMode?: Nullable<string>;
-  agentDevice?: Nullable<string>;
-  agentDurationMs?: Nullable<number>;
-};
-
-export type ProcessWithAgentResult = {
-  transcript: string;
-  warnings: string[];
-  metadata: ProcessWithAgentMetadata;
-};
-
-export const processWithAgent = async ({
-  rawTranscript,
-  toneId,
-}: ProcessWithAgentInput): Promise<ProcessWithAgentResult> => {
-  const state = getAppState();
-
-  const metadata: ProcessWithAgentMetadata = {};
-  const warnings: string[] = [];
-
-  const {
-    repo: agentRepo,
-    apiKeyId: agentApiKeyId,
-    warnings: agentWarnings,
-  } = getGenerateTextRepo();
-  warnings.push(...agentWarnings);
-
-  let processedTranscript = rawTranscript;
-
-  if (agentRepo) {
-    const preferredLocale = getMyPreferredLocale(state);
-    const myUserId = getMyEffectiveUserId(state);
-    const myPrefs = getRec(state.userPreferencesById, myUserId);
-    const tone =
-      getRec(state.toneById, toneId) ??
-      getRec(state.toneById, myPrefs?.activeToneId) ??
-      null;
-
-    const agentPrompt = buildLocalizedAgentPrompt(
-      rawTranscript,
-      preferredLocale,
-      tone?.promptTemplate ?? null,
-    );
-
-    const agentSystem = buildSystemAgentPrompt(preferredLocale);
-
-    const agentStart = performance.now();
-    const agentOutput = await agentRepo.generateText({
-      system: agentSystem,
-      prompt: agentPrompt,
-      jsonResponse: {
-        name: "agent_processing",
-        description: "JSON response with the agent-processed output",
-        schema: PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
-      },
-    });
-    const agentDuration = performance.now() - agentStart;
-    metadata.agentDurationMs = Math.round(agentDuration);
-
-    try {
-      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(
-        JSON.parse(agentOutput.text),
-      );
-      if (!validationResult.success) {
-        warnings.push(
-          `Agent processing response validation failed: ${validationResult.error.message}`,
-        );
-      } else {
-        processedTranscript =
-          validationResult.data.processedTranscription.trim();
-      }
-    } catch (e) {
-      warnings.push(
-        `Failed to parse agent processing response: ${(e as Error).message}`,
-      );
-    }
-
-    metadata.agentPrompt = agentPrompt;
-    metadata.agentApiKeyId = agentApiKeyId;
-    metadata.agentMode = agentOutput.metadata?.postProcessingMode || null;
-    metadata.agentDevice = agentOutput.metadata?.inferenceDevice || null;
-  } else {
-    metadata.agentMode = "none";
   }
 
   return {

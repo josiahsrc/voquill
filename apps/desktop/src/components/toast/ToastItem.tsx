@@ -113,6 +113,9 @@ export const ToastItem = ({ toast, onClose, onAction }: ToastItemProps) => {
                 : (theme.vars?.palette.text.primary ??
                   theme.palette.text.primary),
               mb: 0.5,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             })}
           >
             {toast.title}
@@ -124,6 +127,10 @@ export const ToastItem = ({ toast, onClose, onAction }: ToastItemProps) => {
                 theme.vars?.palette.text.secondary ??
                 theme.palette.text.secondary,
               wordBreak: "break-word",
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             })}
           >
             {toast.message}
