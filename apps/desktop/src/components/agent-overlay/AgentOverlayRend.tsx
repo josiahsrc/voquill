@@ -1,6 +1,7 @@
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
+  Button,
   CircularProgress,
   IconButton,
   LinearProgress,
@@ -320,6 +321,8 @@ export const AgentOverlayRend = () => {
   const showUserProcessingBubble = isLoading && wasRecording;
   const showAgentThinkingBubble =
     isLoading && !wasRecording && lastMessage?.sender === "me";
+  const showFinishButton =
+    !isRecording && !showUserProcessingBubble && !showAgentThinkingBubble;
 
   return (
     <Box
@@ -401,6 +404,10 @@ export const AgentOverlayRend = () => {
             flexDirection: "column",
           }}
         >
+          <MessageBubble
+            message={{ sender: "agent", text: "What can I help you with?" }}
+          />
+
           {messages.map((message, index) => (
             <MessageBubble key={index} message={message} />
           ))}
@@ -414,6 +421,28 @@ export const AgentOverlayRend = () => {
           )}
 
           {showAgentThinkingBubble && <AgentThinkingBubble />}
+
+          {showFinishButton && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                mt: 1,
+              }}
+            >
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleClose}
+                sx={{
+                  textTransform: "none",
+                  fontSize: "0.8125rem",
+                }}
+              >
+                Finish
+              </Button>
+            </Box>
+          )}
         </Box>
         {canScrollDown && (
           <Box
