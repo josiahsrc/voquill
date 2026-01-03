@@ -9,4 +9,6 @@ export type AccessibilityInfo = {
   selectionLength: number | null;
   /** Full text content of the focused text field. Null if not available. */
   textContent: string | null;
+  /** Text content gathered from other elements on the screen for context. Null if not available. */
+  screenContext: string | null;
 };

@@ -45,6 +45,7 @@ pub struct AccessibilityInfo {
     pub cursor_position: Option<usize>,
     pub selection_length: Option<usize>,
     pub text_content: Option<String>,
+    pub screen_context: Option<String>,
 }
 
 #[derive(serde::Deserialize)]

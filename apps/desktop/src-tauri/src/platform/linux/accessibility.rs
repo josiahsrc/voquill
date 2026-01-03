@@ -12,6 +12,7 @@ pub fn get_accessibility_info() -> AccessibilityInfo {
         cursor_position: None,
         selection_length: None,
         text_content: None,
+        screen_context: None,
     }
 }
 

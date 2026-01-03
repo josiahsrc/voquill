@@ -14,6 +14,7 @@ describe("extractPrecedingText", () => {
       textContent: "Hello world, this is a test.",
       cursorPosition: 12,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 100)).toBe("Hello world,");
   });
@@ -23,6 +24,7 @@ describe("extractPrecedingText", () => {
       textContent: "The quick brown fox jumps over the lazy dog.",
       cursorPosition: 20, // "The quick brown fox "
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 10)).toBe("brown fox ");
   });
@@ -32,6 +34,7 @@ describe("extractPrecedingText", () => {
       textContent: "Hi there!",
       cursorPosition: 3,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 100)).toBe("Hi ");
   });
@@ -41,6 +44,7 @@ describe("extractPrecedingText", () => {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 100)).toBeNull();
   });
@@ -50,6 +54,7 @@ describe("extractPrecedingText", () => {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 100)).toBeNull();
   });
@@ -59,6 +64,7 @@ describe("extractPrecedingText", () => {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 100)).toBeNull();
   });
@@ -68,6 +74,7 @@ describe("extractPrecedingText", () => {
       textContent: "Short",
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 100)).toBe("Short");
   });
@@ -77,6 +84,7 @@ describe("extractPrecedingText", () => {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractPrecedingText(info, 0)).toBe("");
   });
@@ -88,6 +96,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world, this is a test.",
       cursorPosition: 6,
       selectionLength: 5, // "world"
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBe("world");
   });
@@ -97,6 +106,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBeNull();
   });
@@ -106,6 +116,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: null,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBeNull();
   });
@@ -115,6 +126,7 @@ describe("extractSelectedText", () => {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 3,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBeNull();
   });
@@ -124,6 +136,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 3,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBeNull();
   });
@@ -133,6 +146,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 5,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBe("Hello");
   });
@@ -142,6 +156,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world",
       cursorPosition: 6,
       selectionLength: 5,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBe("world");
   });
@@ -151,6 +166,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 11,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBe("Hello world");
   });
@@ -160,6 +176,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello",
       cursorPosition: 3,
       selectionLength: 10, // Would go past end
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBeNull();
   });
@@ -169,6 +186,7 @@ describe("extractSelectedText", () => {
       textContent: "Hello world",
       cursorPosition: -1,
       selectionLength: 3,
+      screenContext: null,
     };
     expect(extractSelectedText(info)).toBeNull();
   });
@@ -180,6 +198,7 @@ describe("extractFollowingText", () => {
       textContent: "Hello world, this is a test.",
       cursorPosition: 13, // after "Hello world, "
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 100)).toBe("this is a test.");
   });
@@ -189,6 +208,7 @@ describe("extractFollowingText", () => {
       textContent: "The quick brown fox jumps over the lazy dog.",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 10)).toBe("The quick ");
   });
@@ -198,6 +218,7 @@ describe("extractFollowingText", () => {
       textContent: "Hello world",
       cursorPosition: 6,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 100)).toBe("world");
   });
@@ -207,6 +228,7 @@ describe("extractFollowingText", () => {
       textContent: "Hello world",
       cursorPosition: 11,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 100)).toBeNull();
   });
@@ -216,6 +238,7 @@ describe("extractFollowingText", () => {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 100)).toBeNull();
   });
@@ -225,6 +248,7 @@ describe("extractFollowingText", () => {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 100)).toBeNull();
   });
@@ -234,6 +258,7 @@ describe("extractFollowingText", () => {
       textContent: "Hello world, this is a test.",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected
+      screenContext: null,
     };
     // Following text starts after selection
     expect(extractFollowingText(info, 100)).toBe(", this is a test.");
@@ -244,6 +269,7 @@ describe("extractFollowingText", () => {
       textContent: "Hello",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 100)).toBe("Hello");
   });
@@ -253,6 +279,7 @@ describe("extractFollowingText", () => {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     expect(extractFollowingText(info, 0)).toBe("");
   });
@@ -264,6 +291,7 @@ describe("extractTextFieldContext", () => {
       textContent: "Hello world, this is a test.",
       cursorPosition: 12,
       selectionLength: 5, // " this" is selected
+      screenContext: null,
     };
     const context = extractTextFieldContext(info);
     expect(context).toEqual({
@@ -282,6 +310,7 @@ describe("extractTextFieldContext", () => {
       textContent: null,
       cursorPosition: null,
       selectionLength: null,
+      screenContext: null,
     };
     expect(extractTextFieldContext(info)).toBeNull();
   });
@@ -291,6 +320,7 @@ describe("extractTextFieldContext", () => {
       textContent: "The quick brown fox jumps.",
       cursorPosition: 20, // "The quick brown fox "
       selectionLength: 0,
+      screenContext: null,
     };
     const context = extractTextFieldContext(info, { precedingCharLimit: 5 });
     // Last 5 chars of "The quick brown fox " is " fox " (space, f, o, x, space)
@@ -302,6 +332,7 @@ describe("extractTextFieldContext", () => {
       textContent: "The quick brown fox jumps.",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     const context = extractTextFieldContext(info, { followingCharLimit: 10 });
     expect(context?.followingText).toBe("The quick ");
@@ -312,6 +343,7 @@ describe("extractTextFieldContext", () => {
       textContent: "Hello world",
       cursorPosition: 11, // at end
       selectionLength: 0,
+      screenContext: null,
     };
     const context = extractTextFieldContext(info);
     expect(context).toEqual({
@@ -326,6 +358,7 @@ describe("extractTextFieldContext", () => {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     const context = extractTextFieldContext(info);
     expect(context).toEqual({
@@ -340,6 +373,7 @@ describe("extractTextFieldContext", () => {
       textContent: "Hello",
       cursorPosition: 0,
       selectionLength: 5, // full text selected
+      screenContext: null,
     };
     const context = extractTextFieldContext(info);
     expect(context).toEqual({
@@ -354,6 +388,7 @@ describe("extractTextFieldContext", () => {
       textContent: "The quick brown fox jumps over the lazy dog.",
       cursorPosition: 20, // after "The quick brown fox "
       selectionLength: 0,
+      screenContext: null,
     };
     const context = extractTextFieldContext(info, {
       precedingCharLimit: 15,
@@ -376,6 +411,7 @@ describe("extractTextFieldContext", () => {
       textContent: longText,
       cursorPosition: cursorPos,
       selectionLength: 8, // "|CURSOR|"
+      screenContext: null,
     };
     const context = extractTextFieldContext(info);
     // Default preceding limit is 200, following is 100
@@ -391,6 +427,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: 5, // after "Hello"
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "there",
@@ -404,6 +441,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: 6, // before "world"
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -417,6 +455,7 @@ describe("applySpacingInContext", () => {
       textContent: "Helloworld",
       cursorPosition: 5, // between "Hello" and "world"
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -430,6 +469,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: 6, // after "Hello " (space)
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -443,6 +483,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: 5, // before " world"
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -456,6 +497,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: 6, // at the space position, replacing it
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -470,6 +512,7 @@ describe("applySpacingInContext", () => {
       textContent: "world",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "Hello",
@@ -483,6 +526,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello",
       cursorPosition: 5, // at end
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "world",
@@ -496,6 +540,7 @@ describe("applySpacingInContext", () => {
       textContent: "",
       cursorPosition: 0,
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "Hello",
@@ -509,6 +554,7 @@ describe("applySpacingInContext", () => {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "Hello",
@@ -522,6 +568,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "test",
@@ -535,6 +582,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "",
@@ -548,6 +596,7 @@ describe("applySpacingInContext", () => {
       textContent: "Helloworld",
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: " beautiful",
@@ -561,6 +610,7 @@ describe("applySpacingInContext", () => {
       textContent: "Helloworld",
       cursorPosition: 5,
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful ",
@@ -574,6 +624,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello\nworld",
       cursorPosition: 6, // after newline
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -587,6 +638,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello\nworld",
       cursorPosition: 5, // before newline
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -600,6 +652,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello\tworld",
       cursorPosition: 6, // after tab
       selectionLength: 0,
+      screenContext: null,
     };
     const result = applySpacingInContext({
       textToInsert: "beautiful",
@@ -613,6 +666,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected
+      screenContext: null,
     };
     // Replacing "world", nothing after
     const result = applySpacingInContext({
@@ -627,6 +681,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello world today",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected
+      screenContext: null,
     };
     // Replacing "world", " today" follows (space then "today")
     const result = applySpacingInContext({
@@ -641,6 +696,7 @@ describe("applySpacingInContext", () => {
       textContent: "Hello worldtoday",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected
+      screenContext: null,
     };
     // Replacing "world", "today" follows directly (no space)
     const result = applySpacingInContext({

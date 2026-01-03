@@ -88,6 +88,7 @@ fn try_get_accessibility_info() -> Result<AccessibilityInfo, windows::core::Erro
             cursor_position,
             selection_length,
             text_content,
+            screen_context: None,
         })
     }
 }
@@ -97,6 +98,7 @@ fn empty_info() -> AccessibilityInfo {
         cursor_position: None,
         selection_length: None,
         text_content: None,
+        screen_context: None,
     }
 }
 

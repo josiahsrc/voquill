@@ -18,12 +18,19 @@ export const GetAccessibilityInfoOutputSchema = z.object({
     .number()
     .nullable()
     .describe("The length of selected text, if any"),
+  screenContext: z
+    .string()
+    .nullable()
+    .describe(
+      "Text content gathered from the screen around the focused field for context",
+    ),
 });
 
 type AccessibilityInfo = {
   cursorPosition: number | null;
   selectionLength: number | null;
   textContent: string | null;
+  screenContext: string | null;
 };
 
 export class GetAccessibilityInfoTool extends BaseTool<
@@ -39,7 +46,9 @@ export class GetAccessibilityInfoTool extends BaseTool<
   protected async execInternal(
     _args: z.infer<typeof GetAccessibilityInfoInputSchema>,
   ): Promise<ToolResult> {
+    console.log("Invoking get_accessibility_info...");
     const info = await invoke<AccessibilityInfo>("get_accessibility_info");
+    console.log("Accessibility Info:", info);
 
     if (
       info.textContent === null &&
@@ -61,6 +70,7 @@ export class GetAccessibilityInfoTool extends BaseTool<
         textContent: info.textContent,
         cursorPosition: info.cursorPosition,
         selectionLength: info.selectionLength,
+        screenContext: info.screenContext,
       }),
     };
   }

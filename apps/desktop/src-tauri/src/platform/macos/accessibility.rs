@@ -1,6 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::commands::AccessibilityInfo;
+use core_foundation::array::{CFArrayGetCount, CFArrayGetValueAtIndex};
 use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
 use core_foundation::string::{CFString, CFStringRef};
 use std::ptr;
@@ -44,19 +45,15 @@ pub fn get_accessibility_info() -> AccessibilityInfo {
 }
 
 unsafe fn get_accessibility_info_impl() -> AccessibilityInfo {
-    // Create the attribute name strings
     let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
     let ax_value = CFString::new("AXValue");
     let ax_selected_text_range = CFString::new("AXSelectedTextRange");
 
-    // Create system-wide accessibility element
     let system_wide = AXUIElementCreateSystemWide();
     if system_wide.is_null() {
-        eprintln!("[macos::accessibility] Failed to create system-wide AXUIElement");
         return empty_info();
     }
 
-    // Get the currently focused UI element
     let mut focused_element: CFTypeRef = ptr::null();
     let result = AXUIElementCopyAttributeValue(
         system_wide,
@@ -67,33 +64,25 @@ unsafe fn get_accessibility_info_impl() -> AccessibilityInfo {
     CFRelease(system_wide);
 
     if result != AX_ERROR_SUCCESS || focused_element.is_null() {
-        eprintln!(
-            "[macos::accessibility] Failed to get focused element, error: {}",
-            result
-        );
         return empty_info();
     }
 
-    // Get text content (AXValue)
     let text_content = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
 
-    // Get selected text range (AXSelectedTextRange)
     let (cursor_position, selection_length) =
         get_range_attribute(focused_element, ax_selected_text_range.as_concrete_TypeRef());
 
-    CFRelease(focused_element);
+    // Gather screen context by working outward from the focused element
+    let context = gather_context_outward(focused_element);
+    let screen_context = if context.is_empty() { None } else { Some(context) };
 
-    eprintln!(
-        "[macos::accessibility] Retrieved: cursor={:?}, selection_len={:?}, text_len={:?}",
-        cursor_position,
-        selection_length,
-        text_content.as_ref().map(|s| s.len())
-    );
+    CFRelease(focused_element);
 
     AccessibilityInfo {
         cursor_position,
         selection_length,
         text_content,
+        screen_context,
     }
 }
 
@@ -158,7 +147,406 @@ fn empty_info() -> AccessibilityInfo {
         cursor_position: None,
         selection_length: None,
         text_content: None,
+        screen_context: None,
     }
+}
+
+const MAX_CONTEXT_LENGTH: usize = 12000;
+const MAX_LEVELS_UP: usize = 20;
+const MAX_SIBLINGS: isize = 60;
+
+unsafe fn extract_text_from_element(
+    element: CFTypeRef,
+    role: &str,
+    ax_title: CFStringRef,
+    ax_value: CFStringRef,
+    ax_description: CFStringRef,
+    ax_placeholder: CFStringRef,
+) -> Vec<String> {
+    let mut texts = Vec::new();
+
+    // Get title (safe for all elements)
+    if let Some(title) = get_string_attribute(element, ax_title) {
+        let t = title.trim();
+        if !t.is_empty() && t.len() < 500 {
+            texts.push(t.to_string());
+        }
+    }
+
+    // Get value for elements that safely support it
+    let value_safe_roles = [
+        "AXStaticText", "AXLink", "AXCell", "AXMenuItem",
+    ];
+    if value_safe_roles.iter().any(|&r| role == r) {
+        if let Some(value) = get_string_attribute(element, ax_value) {
+            let t = value.trim();
+            if !t.is_empty() && t.len() < 500 {
+                texts.push(t.to_string());
+            }
+        }
+    }
+
+    // Get description (safe for all elements)
+    if let Some(desc) = get_string_attribute(element, ax_description) {
+        let t = desc.trim();
+        if !t.is_empty() && t.len() < 500 {
+            texts.push(t.to_string());
+        }
+    }
+
+    // Get placeholder for text fields
+    if role == "AXTextField" || role == "AXTextArea" || role == "AXComboBox" {
+        if let Some(ph) = get_string_attribute(element, ax_placeholder) {
+            let t = ph.trim();
+            if !t.is_empty() {
+                texts.push(format!("[placeholder: {}]", t));
+            }
+        }
+    }
+
+    texts
+}
+
+unsafe fn extract_text_recursive(
+    element: CFTypeRef,
+    ax_role: CFStringRef,
+    ax_title: CFStringRef,
+    ax_value: CFStringRef,
+    ax_description: CFStringRef,
+    ax_placeholder: CFStringRef,
+    ax_children: CFStringRef,
+    depth: usize,
+    max_depth: usize,
+) -> Vec<String> {
+    if element.is_null() || depth > max_depth {
+        return Vec::new();
+    }
+
+    let mut texts = Vec::new();
+
+    let role = match get_string_attribute(element, ax_role) {
+        Some(r) => r,
+        None => return texts,
+    };
+
+    // Skip problematic containers
+    if role == "AXWebArea" || role == "AXScrollArea" || role == "AXUnknown" {
+        return texts;
+    }
+
+    // Extract text from this element
+    let element_texts = extract_text_from_element(
+        element,
+        &role,
+        ax_title,
+        ax_value,
+        ax_description,
+        ax_placeholder,
+    );
+    texts.extend(element_texts);
+
+    // Recurse into children for container types
+    let container_roles = [
+        "AXGroup", "AXCell", "AXRow", "AXList", "AXTable",
+        "AXOutline", "AXSection", "AXForm", "AXArticle",
+        "AXLandmarkMain", "AXLandmarkNavigation", "AXLandmarkSearch",
+    ];
+    if container_roles.iter().any(|&c| role == c) {
+        let mut children_ref: CFTypeRef = ptr::null();
+        let result = AXUIElementCopyAttributeValue(element, ax_children, &mut children_ref);
+        if result == AX_ERROR_SUCCESS && !children_ref.is_null() {
+            let arr = children_ref as core_foundation::array::CFArrayRef;
+            let count = CFArrayGetCount(arr).min(30);
+            for i in 0..count {
+                let child = CFArrayGetValueAtIndex(arr, i);
+                if !child.is_null() {
+                    let child_texts = extract_text_recursive(
+                        child,
+                        ax_role,
+                        ax_title,
+                        ax_value,
+                        ax_description,
+                        ax_placeholder,
+                        ax_children,
+                        depth + 1,
+                        max_depth,
+                    );
+                    texts.extend(child_texts);
+                }
+            }
+            CFRelease(children_ref);
+        }
+    }
+
+    texts
+}
+
+unsafe fn gather_context_outward(focused_element: CFTypeRef) -> String {
+    if focused_element.is_null() {
+        return String::new();
+    }
+
+    let mut texts: Vec<String> = Vec::new();
+
+    let ax_parent = CFString::new("AXParent");
+    let ax_children = CFString::new("AXChildren");
+    let ax_role = CFString::new("AXRole");
+    let ax_title = CFString::new("AXTitle");
+    let ax_value = CFString::new("AXValue");
+    let ax_description = CFString::new("AXDescription");
+    let ax_placeholder = CFString::new("AXPlaceholderValue");
+
+    // STEP 1: Get info from the focused element itself
+    if let Some(role) = get_string_attribute(focused_element, ax_role.as_concrete_TypeRef()) {
+        let focused_texts = extract_text_from_element(
+            focused_element,
+            &role,
+            ax_title.as_concrete_TypeRef(),
+            ax_value.as_concrete_TypeRef(),
+            ax_description.as_concrete_TypeRef(),
+            ax_placeholder.as_concrete_TypeRef(),
+        );
+        texts.extend(focused_texts);
+    }
+
+    // STEP 2: Walk up the hierarchy, collecting text from siblings at each level
+    let mut current_element = focused_element;
+    let mut levels_up = 0;
+
+    while levels_up < MAX_LEVELS_UP {
+        let mut parent: CFTypeRef = ptr::null();
+        let parent_result = AXUIElementCopyAttributeValue(
+            current_element,
+            ax_parent.as_concrete_TypeRef(),
+            &mut parent,
+        );
+
+        if parent_result != AX_ERROR_SUCCESS || parent.is_null() {
+            break;
+        }
+
+        let parent_role = get_string_attribute(parent, ax_role.as_concrete_TypeRef());
+
+        // If window/app, get title and stop
+        if let Some(ref role) = parent_role {
+            if role == "AXWindow" || role == "AXApplication" {
+                if let Some(title) = get_string_attribute(parent, ax_title.as_concrete_TypeRef()) {
+                    let t = title.trim();
+                    if !t.is_empty() {
+                        texts.push(format!("[Window: {}]", t));
+                    }
+                }
+                CFRelease(parent);
+                break;
+            }
+        }
+
+        // Get parent's title
+        if let Some(title) = get_string_attribute(parent, ax_title.as_concrete_TypeRef()) {
+            let t = title.trim();
+            if !t.is_empty() && t.len() > 1 {
+                texts.push(t.to_string());
+            }
+        }
+
+        // Get siblings (children of parent)
+        let mut children_ref: CFTypeRef = ptr::null();
+        let children_result = AXUIElementCopyAttributeValue(
+            parent,
+            ax_children.as_concrete_TypeRef(),
+            &mut children_ref,
+        );
+
+        if children_result == AX_ERROR_SUCCESS && !children_ref.is_null() {
+            let arr = children_ref as core_foundation::array::CFArrayRef;
+            let count = CFArrayGetCount(arr).min(MAX_SIBLINGS);
+
+            for i in 0..count {
+                let sibling = CFArrayGetValueAtIndex(arr, i);
+                if sibling.is_null() {
+                    continue;
+                }
+
+                // Extract text recursively (up to 5 levels deep into containers)
+                let sibling_texts = extract_text_recursive(
+                    sibling,
+                    ax_role.as_concrete_TypeRef(),
+                    ax_title.as_concrete_TypeRef(),
+                    ax_value.as_concrete_TypeRef(),
+                    ax_description.as_concrete_TypeRef(),
+                    ax_placeholder.as_concrete_TypeRef(),
+                    ax_children.as_concrete_TypeRef(),
+                    0,
+                    5, // max 5 levels deep into each sibling
+                );
+                texts.extend(sibling_texts);
+
+                // Check length limit
+                let current_len: usize = texts.iter().map(|s| s.len()).sum();
+                if current_len > MAX_CONTEXT_LENGTH {
+                    break;
+                }
+            }
+            CFRelease(children_ref);
+        }
+
+        // Check length limit
+        let current_len: usize = texts.iter().map(|s| s.len()).sum();
+        if current_len > MAX_CONTEXT_LENGTH {
+            CFRelease(parent);
+            break;
+        }
+
+        // Move up
+        if levels_up > 0 && current_element != focused_element {
+            CFRelease(current_element);
+        }
+        current_element = parent;
+        levels_up += 1;
+    }
+
+    // Cleanup
+    if levels_up > 0 && current_element != focused_element {
+        CFRelease(current_element);
+    }
+
+    // Deduplicate while preserving order
+    let mut seen = std::collections::HashSet::new();
+    let unique_texts: Vec<String> = texts
+        .into_iter()
+        .filter(|s| seen.insert(s.clone()))
+        .collect();
+
+    unique_texts.join("\n")
+}
+
+// Legacy function - kept for reference
+#[allow(dead_code)]
+const MAX_CONTEXT_DEPTH: usize = 10;
+#[allow(dead_code)]
+const MAX_CHILDREN_TO_TRAVERSE: isize = 100;
+
+#[allow(dead_code)]
+unsafe fn gather_screen_context(element: CFTypeRef, depth: usize) -> String {
+    // Conservative limits to avoid crashes with problematic elements
+    const SAFE_MAX_DEPTH: usize = 3;
+    const SAFE_MAX_CHILDREN: isize = 30;
+    const SAFE_MAX_TEXTS: usize = 100;
+
+    if element.is_null() || depth > SAFE_MAX_DEPTH {
+        return String::new();
+    }
+
+    let mut texts: Vec<String> = Vec::new();
+
+    let ax_role = CFString::new("AXRole");
+    let ax_title = CFString::new("AXTitle");
+    let ax_value = CFString::new("AXValue");
+    let ax_children = CFString::new("AXChildren");
+
+    // First check if we can access this element's role - if not, skip entirely
+    let mut role_ref: CFTypeRef = ptr::null();
+    let role_result =
+        AXUIElementCopyAttributeValue(element, ax_role.as_concrete_TypeRef(), &mut role_ref);
+
+    // If we can't get the role, this element doesn't support accessibility properly
+    if role_result != AX_ERROR_SUCCESS {
+        return String::new();
+    }
+
+    let role = if !role_ref.is_null() {
+        let cf_string = CFString::wrap_under_get_rule(role_ref as _);
+        let s = cf_string.to_string();
+        CFRelease(role_ref);
+        Some(s)
+    } else {
+        None
+    };
+
+    // Skip certain roles that are known to be problematic or not useful
+    if let Some(ref r) = role {
+        let skip_roles = [
+            "AXWebArea",      // Web content can be huge and problematic
+            "AXScrollArea",   // Just a container
+            "AXSplitGroup",   // Just a container
+            "AXLayoutArea",   // Just a container
+            "AXUnknown",      // Unknown elements
+        ];
+        if skip_roles.iter().any(|&sr| r == sr) {
+            return String::new();
+        }
+    }
+
+    // Extract text from text-bearing elements
+    if let Some(ref r) = role {
+        let text_roles = [
+            "AXStaticText",
+            "AXTextField",
+            "AXTextArea",
+            "AXButton",
+            "AXLink",
+            "AXHeading",
+            "AXCell",
+            "AXMenuItem",
+            "AXMenuButton",
+            "AXPopUpButton",
+            "AXComboBox",
+            "AXGroup",  // Groups often have titles
+            "AXWindow", // Window title
+        ];
+
+        if text_roles.iter().any(|&tr| r == tr) {
+            // Get title
+            if let Some(title) = get_string_attribute(element, ax_title.as_concrete_TypeRef()) {
+                let trimmed = title.trim();
+                if !trimmed.is_empty() && trimmed.len() > 1 {
+                    texts.push(trimmed.to_string());
+                }
+            }
+
+            // Get value (for text fields, but skip if it's too long - probably the focused field)
+            if let Some(value) = get_string_attribute(element, ax_value.as_concrete_TypeRef()) {
+                let trimmed = value.trim();
+                if !trimmed.is_empty() && trimmed.len() > 1 && trimmed.len() < 500 {
+                    texts.push(trimmed.to_string());
+                }
+            }
+        }
+    }
+
+    // Get children and recurse (only if we haven't gathered too much yet)
+    if texts.len() < SAFE_MAX_TEXTS {
+        let mut children_ref: CFTypeRef = ptr::null();
+        let children_result = AXUIElementCopyAttributeValue(
+            element,
+            ax_children.as_concrete_TypeRef(),
+            &mut children_ref,
+        );
+
+        if children_result == AX_ERROR_SUCCESS && !children_ref.is_null() {
+            let children_array = children_ref as core_foundation::array::CFArrayRef;
+            let count = CFArrayGetCount(children_array).min(SAFE_MAX_CHILDREN);
+
+            for i in 0..count {
+                let child = CFArrayGetValueAtIndex(children_array, i);
+                if !child.is_null() {
+                    let child_text = gather_screen_context(child, depth + 1);
+                    if !child_text.is_empty() {
+                        texts.push(child_text);
+                    }
+                }
+
+                // Stop if we have enough
+                let current_len: usize = texts.iter().map(|s| s.len()).sum();
+                if current_len > MAX_CONTEXT_LENGTH || texts.len() >= SAFE_MAX_TEXTS {
+                    break;
+                }
+            }
+            CFRelease(children_ref);
+        }
+    }
+
+    texts.join("\n")
 }
 
 pub fn set_text_field_value(value: &str) -> Result<(), String> {
