@@ -13,7 +13,7 @@ export type ToolCall = z.infer<typeof ToolCallSchema>;
 
 export const AgentLLMResponseSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("tool_call"), toolCall: TypedToolCallSchema }),
-  z.object({ type: z.literal("final_answer"), answer: z.string() }),
+  z.object({ type: z.literal("answer"), answer: z.string() }),
 ]);
 export type AgentLLMResponse = z.infer<typeof AgentLLMResponseSchema>;
 

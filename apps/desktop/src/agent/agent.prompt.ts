@@ -16,15 +16,15 @@ export const buildSystemPrompt = (tools: BaseTool[]): string => {
 ${toolDescriptions}
 
 ## Response Format
-You MUST respond with ONLY valid JSON (no markdown, no explanation). Use one of return either a tool call or a final answer (response).
+You MUST respond with ONLY valid JSON (no markdown, no explanation). Return either a tool call or an answer.
 
 ## Rules
 - ALWAYS respond with valid JSON only - no other text
 - If the user asks you to do something that requires a tool, call the tool
-- After a tool executes, you will receive the result. Then either call another tool or provide final_answer
+- After a tool executes, you will receive the result. Then either call another tool or provide an answer
 - Use the stop tool when the user wants to end the conversation (says goodbye, stop, etc.)
-- Keep calling tools until you have completed the user's request, then use final_answer
-- Be concise in your final answers`;
+- Keep calling tools until you have completed the user's request, then provide an answer
+- Be concise in your answers`;
 };
 
 export const formatHistory = (messages: AgentMessage[]): string => {
@@ -56,5 +56,5 @@ export const buildUserPrompt = (
   return `${historyText}## Current User Input
 ${currentInput}
 
-Respond with JSON (tool_call or final_answer):`;
+Respond with JSON (tool_call or answer):`;
 };

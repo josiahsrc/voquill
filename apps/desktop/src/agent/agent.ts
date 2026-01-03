@@ -48,7 +48,7 @@ export class Agent {
 
       const llmResponse = await this.callLLM(systemPrompt, userPrompt);
 
-      if (llmResponse.type === "final_answer") {
+      if (llmResponse.type === "answer") {
         return {
           response: llmResponse.answer,
           toolCalls,
@@ -88,7 +88,7 @@ What would you like to do next? (Respond with JSON)`;
       prompt,
       jsonResponse: {
         name: "agent_response",
-        description: "Agent response - either a tool call or final answer",
+        description: "Agent response - either a tool call or answer",
         schema: AGENT_RESPONSE_JSON_SCHEMA,
       },
     });
@@ -101,7 +101,7 @@ What would you like to do next? (Respond with JSON)`;
     } catch (error) {
       console.error("Failed to parse agent response:", error, output.text);
       return {
-        type: "final_answer",
+        type: "answer",
         answer: output.text,
       };
     }
@@ -131,15 +131,15 @@ What would you like to do next? (Respond with JSON)`;
     }
 
     if (
+      obj.type === "answer" ||
       obj.type === "final_answer" ||
-      obj.type === "response" ||
-      obj.type === "answer"
+      obj.type === "response"
     ) {
       const answer =
         obj.answer ?? obj.response ?? obj.text ?? obj.content ?? obj.message;
       if (typeof answer === "string") {
         return {
-          type: "final_answer",
+          type: "answer",
           answer,
         };
       }
