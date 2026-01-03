@@ -24,6 +24,12 @@ export const buildDecisionSystemPrompt = (tools: BaseTool[]): string => {
 
   return `You are a helpful assistant that decides how to respond to user requests.
 
+For all tasks, you should call the accessibility information to try and gather if they
+are working on a text field. If they are working on a text field, that means that they
+probably want you to edit it, and you should make changes there. If they're not dealing
+with a text field, then feel free to respond in any other format you wish. Make sure
+to use the tools available to you to gather information before fulfilling the request.
+
 ## Available Tools
 ${toolDescriptions}
 
@@ -48,6 +54,9 @@ Respond with JSON only:
 export const buildFinalResponseSystemPrompt = (): string => {
   return `You are a helpful assistant. Provide a direct, helpful response to the user.
 
+you are saying something directly back to the user, commenting on the outcome of the
+task that you performed.
+
 ## Response Format
 Respond with JSON only:
 {
@@ -57,7 +66,9 @@ Respond with JSON only:
 ## Rules
 - Be concise and helpful
 - If you just executed tools, summarize what you did
-- If you're answering a question, provide the answer directly`;
+- If you're answering a question, provide the answer directly
+- Do NOT regurgitate stuff you did. Describe it in summary.
+`;
 };
 
 export const buildToolArgsSystemPrompt = (tool: BaseTool): string => {
