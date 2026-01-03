@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -35,7 +36,20 @@ export default defineConfig(async () => {
         },
       }),
       svgr(),
+      nodePolyfills({
+        include: ["stream", "buffer", "process", "util", "events"],
+        globals: {
+          Buffer: true,
+          process: true,
+        },
+      }),
     ],
+    resolve: {
+      alias: {
+        "stream/web": "web-streams-polyfill/dist/ponyfill.mjs",
+        "node:stream/web": "web-streams-polyfill/dist/ponyfill.mjs",
+      },
+    },
     clearScreen: false,
     server: {
       port: 1420,

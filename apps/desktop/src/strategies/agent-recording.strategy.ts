@@ -1,5 +1,5 @@
 import { emitTo } from "@tauri-apps/api/event";
-import { processWithAgent } from "../actions/transcribe.actions";
+import { VoquillAgent } from "../agent";
 import type {
   AgentWindowMessage,
   AgentWindowState,
@@ -14,6 +14,7 @@ import type {
 export class AgentRecordingStrategy extends BaseRecordingStrategy {
   private messages: AgentWindowMessage[] = [];
   private isFirstTurn = true;
+  private agent: VoquillAgent | null = null;
 
   private async emitState(state: AgentWindowState | null): Promise<void> {
     await emitTo("agent-overlay", "agent_window_state", { state });
@@ -21,11 +22,10 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
 
   async onBeforeStart(): Promise<void> {
     if (this.isFirstTurn) {
-      // First turn: clear any previous state
       await this.emitState(null);
+      this.agent = new VoquillAgent();
       this.isFirstTurn = false;
     }
-    // Subsequent turns: window is already open, nothing to do
   }
 
   async setPhase(phase: OverlayPhase): Promise<void> {
@@ -34,42 +34,23 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
 
   async handleTranscript({
     rawTranscript,
-    toneId,
     loadingToken,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
-    // 1. Check for exit command
-    const shouldExit = rawTranscript.toLowerCase().includes("stop");
-
-    if (shouldExit) {
-      if (
-        loadingToken &&
-        this.context.overlayLoadingTokenRef.current === loadingToken
-      ) {
-        this.context.overlayLoadingTokenRef.current = null;
-      }
-      await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
-      await this.emitState(null);
-      return { shouldContinue: false };
+    if (!this.agent) {
+      throw new Error("Agent is not initialized");
     }
 
-    // 2. Add user's message ("me") and emit immediately
     this.messages.push({ text: rawTranscript, sender: "me" });
     await this.emitState({ messages: this.messages });
 
-    // 3. Call agent to get response
-    const { transcript: agentResponse } = await processWithAgent({
-      rawTranscript,
-      toneId,
-    });
-    console.log("Agent response:", agentResponse);
+    const result = await this.agent.turn(rawTranscript);
+    console.log("Agent response:", result.text, "shouldStop:", result.shouldStop);
 
-    // 4. Add agent's response and emit
-    if (agentResponse) {
-      this.messages.push({ text: agentResponse, sender: "agent" });
+    if (result.text) {
+      this.messages.push({ text: result.text, sender: "agent" });
       await this.emitState({ messages: this.messages });
     }
 
-    // 5. Clear loading token but keep window visible
     if (
       loadingToken &&
       this.context.overlayLoadingTokenRef.current === loadingToken
@@ -77,14 +58,20 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
       this.context.overlayLoadingTokenRef.current = null;
     }
 
-    // No storeTranscription - agent mode doesn't save to history
+    if (result.shouldStop) {
+      await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
+      await this.emitState(null);
+      return { shouldContinue: false };
+    }
+
     return { shouldContinue: true };
   }
 
   async cleanup(): Promise<void> {
-    // Clean up on exit
     this.messages = [];
     this.isFirstTurn = true;
+    this.agent?.reset();
+    this.agent = null;
     await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
     await this.emitState(null);
   }
