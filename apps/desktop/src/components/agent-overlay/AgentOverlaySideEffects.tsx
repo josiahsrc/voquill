@@ -10,7 +10,20 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
+type OverlayTranscriptPayload = {
+  transcript: string | null;
+};
+
 export const AgentOverlaySideEffects = () => {
+  useTauriListen<OverlayTranscriptPayload>(
+    "agent_overlay_transcript",
+    (payload) => {
+      produceAppState((draft) => {
+        draft.agent.overlayTranscript = payload.transcript;
+      });
+    },
+  );
+
   useTauriListen<OverlayPhasePayload>("agent_overlay_phase", (payload) => {
     produceAppState((draft) => {
       draft.agent.overlayPhase = payload.phase;

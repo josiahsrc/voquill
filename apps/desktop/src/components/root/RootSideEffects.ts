@@ -1,10 +1,13 @@
 import { AppTarget } from "@repo/types";
 import { getRec } from "@repo/utilities";
-import { emitTo } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
-import { useCallback, useRef } from "react";
-import { RecordingMode } from "../../state/app.state";
+import { useCallback, useMemo, useRef } from "react";
+import {
+  BaseRecordingStrategy,
+  getRecordingStrategy,
+  RecordingContext,
+} from "../../strategies";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -19,11 +22,7 @@ import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
-import {
-  postProcessTranscript,
-  processWithAgent,
-  storeTranscription,
-} from "../../actions/transcribe.actions";
+import { storeTranscription } from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
@@ -78,17 +77,6 @@ type RecordingResult = {
   currentApp: AppTarget | null;
 };
 
-const setPhaseForMode = async (
-  phase: OverlayPhase,
-  mode: RecordingMode | null,
-): Promise<void> => {
-  if (mode === "agent") {
-    await emitTo("agent-overlay", "agent_overlay_phase", { phase });
-  } else {
-    await invoke<void>("set_phase", { phase });
-  }
-};
-
 type StopRecordingResult = [
   StopRecordingResponse | null,
   AccessibilityInfo | null,
@@ -101,9 +89,17 @@ export const RootSideEffects = () => {
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
+  const strategyRef = useRef<BaseRecordingStrategy | null>(null);
   const userId = useAppStore((state) => state.auth?.uid);
   const keyPermAuthorized = useAppStore((state) =>
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
+  );
+
+  const recordingContext: RecordingContext = useMemo(
+    () => ({
+      overlayLoadingTokenRef,
+    }),
+    [],
   );
 
   useAsyncEffect(async () => {
@@ -145,13 +141,6 @@ export const RootSideEffects = () => {
   );
 
   const startRecording = useCallback(async () => {
-    // Only set to dictate if not already set (e.g., by startAgentRecording)
-    produceAppState((draft) => {
-      if (!draft.activeRecordingMode) {
-        draft.activeRecordingMode = "dictate";
-      }
-    });
-
     const state = getAppState();
     if (state.isRecordingHotkey) {
       return;
@@ -187,6 +176,16 @@ export const RootSideEffects = () => {
     const preferredMicrophone = user?.preferredMicrophone ?? null;
     const currentMode = getAppState().activeRecordingMode;
 
+    // Create or reuse strategy based on mode
+    let strategy = strategyRef.current;
+    if (!strategy) {
+      strategy = getRecordingStrategy(
+        currentMode ?? "dictate",
+        recordingContext,
+      );
+      strategyRef.current = strategy;
+    }
+
     const promise = (async () => {
       try {
         overlayLoadingTokenRef.current = null;
@@ -199,14 +198,10 @@ export const RootSideEffects = () => {
         // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("start_recording_clip");
 
-        if (currentMode === "agent") {
-          produceAppState((draft) => {
-            draft.agent.overlayTranscript = null;
-          });
-        }
+        await strategy.onBeforeStart();
 
         const [, startRecordingResult] = await Promise.all([
-          setPhaseForMode("recording", currentMode),
+          strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
             args: { preferredMicrophone },
           }),
@@ -221,7 +216,7 @@ export const RootSideEffects = () => {
         await sessionRef.current.onRecordingStart(sampleRate);
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
-        await setPhaseForMode("idle", currentMode);
+        await strategy.setPhase("idle");
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
         sessionRef.current?.cleanup();
@@ -233,7 +228,7 @@ export const RootSideEffects = () => {
 
     startPendingRef.current = promise;
     await promise;
-  }, []);
+  }, [recordingContext]);
 
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
@@ -245,7 +240,12 @@ export const RootSideEffects = () => {
       return;
     }
 
-    const recordingMode = getAppState().activeRecordingMode;
+    const strategy = strategyRef.current;
+    if (!strategy) {
+      console.error("No recording strategy found");
+      return;
+    }
+
     let loadingToken: symbol | null = null;
 
     const promise = (async (): Promise<StopRecordingResult> => {
@@ -267,7 +267,7 @@ export const RootSideEffects = () => {
         tryPlayAudioChime("stop_recording_clip");
 
         const [, outAudio, outA11yInfo] = await Promise.all([
-          setPhaseForMode("loading", recordingMode),
+          strategy.setPhase("loading"),
           invoke<StopRecordingResponse>("stop_recording"),
           invoke<AccessibilityInfo>("get_accessibility_info").catch((error) => {
             console.warn("[a11y] Failed to get accessibility info:", error);
@@ -315,24 +315,14 @@ export const RootSideEffects = () => {
         const allWarnings = [...transcribeResult.warnings];
 
         if (rawTranscript) {
-          if (recordingMode === "agent") {
-            const agentResult = await processWithAgent({
-              rawTranscript,
-              toneId,
-            });
-            transcript = agentResult.transcript;
-            postProcessMetadata = agentResult.metadata;
-            allWarnings.push(...agentResult.warnings);
-          } else {
-            const ppResult = await postProcessTranscript({
-              rawTranscript,
-              toneId,
-              a11yInfo,
-            });
-            transcript = ppResult.transcript;
-            postProcessMetadata = ppResult.metadata;
-            allWarnings.push(...ppResult.warnings);
-          }
+          const ppResult = await strategy.postProcess({
+            rawTranscript,
+            toneId,
+            a11yInfo,
+          });
+          transcript = ppResult.transcript;
+          postProcessMetadata = ppResult.metadata;
+          allWarnings.push(...ppResult.warnings);
         }
 
         // don't await so we don't block pasting
@@ -355,47 +345,21 @@ export const RootSideEffects = () => {
 
       const finalTranscript = recordingResult.transcript;
 
-      if (recordingMode === "agent") {
-        if (finalTranscript) {
-          produceAppState((draft) => {
-            draft.agent.overlayTranscript = finalTranscript;
-          });
-        }
-
-        setTimeout(async () => {
-          if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
-            overlayLoadingTokenRef.current = null;
-          }
-          await setPhaseForMode("idle", "agent");
-          produceAppState((draft) => {
-            draft.agent.overlayTranscript = null;
-          });
-        }, 5000);
-      } else {
-        if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
-          overlayLoadingTokenRef.current = null;
-          await setPhaseForMode("idle", recordingMode);
-        }
-
-        if (finalTranscript) {
-          await new Promise<void>((resolve) => {
-            setTimeout(resolve, 20);
-          });
-
-          try {
-            const keybind = recordingResult.currentApp?.pasteKeybind ?? null;
-            await invoke<void>("paste", { text: finalTranscript, keybind });
-          } catch (error) {
-            console.error("Failed to paste transcription", error);
-            showErrorSnackbar("Unable to paste transcription.");
-          }
-        }
-      }
-
-      // Reset recording mode for next recording
-      produceAppState((draft) => {
-        draft.activeRecordingMode = null;
+      const { shouldContinue } = await strategy.onComplete({
+        transcript: finalTranscript,
+        currentApp: recordingResult.currentApp,
+        loadingToken,
       });
+
+      if (!shouldContinue) {
+        // Exit: clean up strategy and reset mode
+        await strategy.cleanup();
+        strategyRef.current = null;
+        produceAppState((draft) => {
+          draft.activeRecordingMode = null;
+        });
+      }
+      // If shouldContinue is true, keep strategy and mode for next turn
 
       refreshMember();
     }
