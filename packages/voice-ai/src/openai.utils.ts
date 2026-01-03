@@ -1,11 +1,14 @@
-import OpenAI, { toFile } from "openai";
-import {
-  ChatCompletionContentPart,
-  ChatCompletionMessageParam,
-} from "openai/resources/chat/completions";
+import type { JsonResponse } from "@repo/types";
 import { retry } from "@repo/utilities/src/async";
 import { countWords } from "@repo/utilities/src/string";
-import type { JsonResponse } from "@repo/types";
+import OpenAI, { toFile } from "openai";
+import {
+  ChatCompletion,
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+  ChatCompletionTool,
+  ChatCompletionToolChoiceOption,
+} from "openai/resources/chat/completions";
 
 export const OPENAI_GENERATE_TEXT_MODELS = [
   "gpt-4o",
@@ -225,4 +228,93 @@ export const openaiTestIntegration = async ({
   }
 
   return content.toLowerCase().includes("hello");
+};
+
+export type OpenAIChatCompletionArgs = {
+  apiKey: string;
+  model: string;
+  messages: ChatCompletionMessageParam[];
+  tools?: ChatCompletionTool[];
+  toolChoice?: ChatCompletionToolChoiceOption;
+  maxTokens?: number;
+  temperature?: number;
+  topP?: number;
+  stopSequences?: string[];
+  responseFormat?:
+    | { type: "text" }
+    | {
+        type: "json_schema";
+        jsonSchema: {
+          name?: string;
+          description?: string;
+          schema?: Record<string, unknown>;
+        };
+      };
+  abortSignal?: AbortSignal;
+};
+
+export const openaiChatCompletion = async ({
+  apiKey,
+  model,
+  messages,
+  tools,
+  toolChoice,
+  maxTokens,
+  temperature,
+  topP,
+  stopSequences,
+  responseFormat,
+  abortSignal,
+}: OpenAIChatCompletionArgs): Promise<ChatCompletion> => {
+  return retry({
+    retries: 3,
+    fn: async () => {
+      const client = createClient(apiKey);
+
+      const response = await client.chat.completions.create(
+        {
+          model,
+          messages,
+          tools: tools && tools.length > 0 ? tools : undefined,
+          tool_choice: toolChoice,
+          max_completion_tokens: maxTokens,
+          temperature,
+          top_p: topP,
+          stop: stopSequences,
+          response_format: responseFormat
+            ? responseFormat.type === "json_schema"
+              ? {
+                  type: "json_schema",
+                  json_schema: {
+                    name: responseFormat.jsonSchema.name ?? "response",
+                    description: responseFormat.jsonSchema.description,
+                    schema: responseFormat.jsonSchema.schema,
+                    strict: true,
+                  },
+                }
+              : { type: "text" }
+            : undefined,
+        },
+        {
+          signal: abortSignal,
+        },
+      );
+
+      console.log("openai chat completion usage:", response.usage);
+
+      if (!response.choices || response.choices.length === 0) {
+        throw new Error("No response from OpenAI");
+      }
+
+      return response;
+    },
+  });
+};
+
+export type {
+  ChatCompletion,
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+  ChatCompletionTool,
+  ChatCompletionToolChoiceOption,
 };

@@ -1,15 +1,23 @@
 import { invokeHandler } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
-  groqGenerateTextResponse,
   GenerateTextModel,
-  openaiGenerateTextResponse,
+  groqGenerateTextResponse,
+  openaiChatCompletion,
   OpenAIGenerateTextModel,
-  openrouterGenerateTextResponse,
+  openaiGenerateTextResponse,
   OPENROUTER_DEFAULT_MODEL,
+  openrouterGenerateTextResponse,
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import type { AiSdkGenerateOptions, AiSdkGenerateResult } from "../agent/types";
 import { PostProcessingMode } from "../types/ai.types";
+import {
+  convertMessagesToOpenAI,
+  convertResponseToAiSdk,
+  convertToolChoiceToOpenAI,
+  convertToolsToOpenAI,
+} from "../utils/openai.utils";
 import { BaseRepo } from "./base.repo";
 
 export type GenerateTextInput = {
@@ -30,6 +38,10 @@ export type GenerateTextOutput = {
 
 export abstract class BaseGenerateTextRepo extends BaseRepo {
   abstract generateText(input: GenerateTextInput): Promise<GenerateTextOutput>;
+  abstract getModelId(): string;
+  abstract doGenerateAiSdk(
+    options: AiSdkGenerateOptions,
+  ): Promise<AiSdkGenerateResult>;
 }
 
 export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
@@ -46,6 +58,16 @@ export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
         postProcessingMode: "cloud",
       },
     };
+  }
+
+  async doGenerateAiSdk(): Promise<AiSdkGenerateResult> {
+    throw new Error(
+      "doGenerateAiSdk not implemented for CloudGenerateTextRepo",
+    );
+  }
+
+  getModelId(): string {
+    return "voquill-cloud";
   }
 }
 
@@ -78,6 +100,14 @@ export class GroqGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  async doGenerateAiSdk(): Promise<AiSdkGenerateResult> {
+    throw new Error("doGenerateAiSdk not implemented for GroqGenerateTextRepo");
+  }
+
+  getModelId(): string {
+    return this.model;
+  }
 }
 
 export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
@@ -106,6 +136,47 @@ export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • OpenAI",
       },
     };
+  }
+
+  async doGenerateAiSdk(
+    options: AiSdkGenerateOptions,
+  ): Promise<AiSdkGenerateResult> {
+    const messages = convertMessagesToOpenAI(options.prompt);
+    const tools = convertToolsToOpenAI(options.tools);
+    const toolChoice = convertToolChoiceToOpenAI(options.toolChoice);
+
+    const responseFormat = options.responseFormat
+      ? options.responseFormat.type === "json"
+        ? {
+            type: "json_schema" as const,
+            jsonSchema: {
+              name: options.responseFormat.name,
+              description: options.responseFormat.description,
+              schema: options.responseFormat.schema as Record<string, unknown>,
+            },
+          }
+        : { type: "text" as const }
+      : undefined;
+
+    const response = await openaiChatCompletion({
+      apiKey: this.openaiApiKey,
+      model: this.model,
+      messages,
+      tools,
+      toolChoice,
+      maxTokens: options.maxOutputTokens,
+      temperature: options.temperature,
+      topP: options.topP,
+      stopSequences: options.stopSequences,
+      responseFormat,
+      abortSignal: options.abortSignal,
+    });
+
+    return convertResponseToAiSdk(response);
+  }
+
+  getModelId(): string {
+    return this.model;
   }
 }
 
@@ -137,6 +208,16 @@ export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • Ollama",
       },
     };
+  }
+
+  async doGenerateAiSdk(): Promise<AiSdkGenerateResult> {
+    throw new Error(
+      "doGenerateAiSdk not implemented for OllamaGenerateTextRepo",
+    );
+  }
+
+  getModelId(): string {
+    return this.model;
   }
 }
 
@@ -173,5 +254,15 @@ export class OpenRouterGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • OpenRouter",
       },
     };
+  }
+
+  async doGenerateAiSdk(): Promise<AiSdkGenerateResult> {
+    throw new Error(
+      "doGenerateAiSdk not implemented for OpenRouterGenerateTextRepo",
+    );
+  }
+
+  getModelId(): string {
+    return this.model;
   }
 }
