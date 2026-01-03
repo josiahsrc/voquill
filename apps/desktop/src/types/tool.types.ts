@@ -13,9 +13,15 @@ export const StopParamsSchema = z.object({
 });
 export type StopParams = z.infer<typeof StopParamsSchema>;
 
+export const GetAccessibilityInfoParamsSchema = z.object({});
+export type GetAccessibilityInfoParams = z.infer<
+  typeof GetAccessibilityInfoParamsSchema
+>;
+
 export const ToolParamsSchema = z.union([
   ShowToastParamsSchema,
   StopParamsSchema,
+  GetAccessibilityInfoParamsSchema,
 ]);
 export type ToolParams = z.infer<typeof ToolParamsSchema>;
 
@@ -27,6 +33,10 @@ export const TypedToolCallSchema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal("stop"),
     arguments: StopParamsSchema,
+  }),
+  z.object({
+    name: z.literal("get_accessibility_info"),
+    arguments: GetAccessibilityInfoParamsSchema,
   }),
 ]);
 export type TypedToolCall = z.infer<typeof TypedToolCallSchema>;

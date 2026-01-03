@@ -12,6 +12,7 @@ import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
 } from "./recording.types";
+import { GetAccessibilityInfoTool } from "../tools/get-accessibility-info.tool";
 import { ShowToastTool } from "../tools/show-toast.tool";
 import { StopTool } from "../tools/stop.tool";
 
@@ -35,6 +36,7 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
 
     const tools = [
       new ShowToastTool(),
+      new GetAccessibilityInfoTool(),
       new StopTool(() => {
         this.shouldStop = true;
       }),
