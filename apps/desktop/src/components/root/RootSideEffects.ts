@@ -1,8 +1,10 @@
 import { AppTarget } from "@repo/types";
 import { getRec } from "@repo/utilities";
+import { emitTo } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useRef } from "react";
+import { RecordingMode } from "../../state/app.state";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -74,6 +76,17 @@ type RecordingLevelPayload = {
 type RecordingResult = {
   transcript: string | null;
   currentApp: AppTarget | null;
+};
+
+const setPhaseForMode = async (
+  phase: OverlayPhase,
+  mode: RecordingMode | null,
+): Promise<void> => {
+  if (mode === "agent") {
+    await emitTo("agent-overlay", "agent_overlay_phase", { phase });
+  } else {
+    await invoke<void>("set_phase", { phase });
+  }
 };
 
 type StopRecordingResult = [
@@ -172,6 +185,7 @@ export const RootSideEffects = () => {
 
     const user = getMyUser(state);
     const preferredMicrophone = user?.preferredMicrophone ?? null;
+    const currentMode = getAppState().activeRecordingMode;
 
     const promise = (async () => {
       try {
@@ -185,8 +199,14 @@ export const RootSideEffects = () => {
         // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("start_recording_clip");
 
+        if (currentMode === "agent") {
+          produceAppState((draft) => {
+            draft.agent.overlayTranscript = null;
+          });
+        }
+
         const [, startRecordingResult] = await Promise.all([
-          invoke<void>("set_phase", { phase: "recording" }),
+          setPhaseForMode("recording", currentMode),
           invoke<StartRecordingResponse>("start_recording", {
             args: { preferredMicrophone },
           }),
@@ -201,7 +221,7 @@ export const RootSideEffects = () => {
         await sessionRef.current.onRecordingStart(sampleRate);
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
-        await invoke<void>("set_phase", { phase: "idle" });
+        await setPhaseForMode("idle", currentMode);
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
         sessionRef.current?.cleanup();
@@ -225,6 +245,7 @@ export const RootSideEffects = () => {
       return;
     }
 
+    const recordingMode = getAppState().activeRecordingMode;
     let loadingToken: symbol | null = null;
 
     const promise = (async (): Promise<StopRecordingResult> => {
@@ -246,7 +267,7 @@ export const RootSideEffects = () => {
         tryPlayAudioChime("stop_recording_clip");
 
         const [, outAudio, outA11yInfo] = await Promise.all([
-          invoke<void>("set_phase", { phase: "loading" }),
+          setPhaseForMode("loading", recordingMode),
           invoke<StopRecordingResponse>("stop_recording"),
           invoke<AccessibilityInfo>("get_accessibility_info").catch((error) => {
             console.warn("[a11y] Failed to get accessibility info:", error);
@@ -294,9 +315,7 @@ export const RootSideEffects = () => {
         const allWarnings = [...transcribeResult.warnings];
 
         if (rawTranscript) {
-          const mode = getAppState().activeRecordingMode;
-
-          if (mode === "agent") {
+          if (recordingMode === "agent") {
             const agentResult = await processWithAgent({
               rawTranscript,
               toneId,
@@ -334,30 +353,49 @@ export const RootSideEffects = () => {
     } finally {
       session?.cleanup();
 
-      if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
-        overlayLoadingTokenRef.current = null;
-        await invoke<void>("set_phase", { phase: "idle" });
+      const finalTranscript = recordingResult.transcript;
+
+      if (recordingMode === "agent") {
+        if (finalTranscript) {
+          produceAppState((draft) => {
+            draft.agent.overlayTranscript = finalTranscript;
+          });
+        }
+
+        setTimeout(async () => {
+          if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
+            overlayLoadingTokenRef.current = null;
+          }
+          await setPhaseForMode("idle", "agent");
+          produceAppState((draft) => {
+            draft.agent.overlayTranscript = null;
+          });
+        }, 5000);
+      } else {
+        if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
+          overlayLoadingTokenRef.current = null;
+          await setPhaseForMode("idle", recordingMode);
+        }
+
+        if (finalTranscript) {
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 20);
+          });
+
+          try {
+            const keybind = recordingResult.currentApp?.pasteKeybind ?? null;
+            await invoke<void>("paste", { text: finalTranscript, keybind });
+          } catch (error) {
+            console.error("Failed to paste transcription", error);
+            showErrorSnackbar("Unable to paste transcription.");
+          }
+        }
       }
 
       // Reset recording mode for next recording
       produceAppState((draft) => {
         draft.activeRecordingMode = null;
       });
-
-      const finalTranscript = recordingResult.transcript;
-      if (finalTranscript) {
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 20);
-        });
-
-        try {
-          const keybind = recordingResult.currentApp?.pasteKeybind ?? null;
-          await invoke<void>("paste", { text: finalTranscript, keybind });
-        } catch (error) {
-          console.error("Failed to paste transcription", error);
-          showErrorSnackbar("Unable to paste transcription.");
-        }
-      }
 
       refreshMember();
     }

@@ -6,10 +6,28 @@ type OverlayPhasePayload = {
   phase: OverlayPhase;
 };
 
+type RecordingLevelPayload = {
+  levels?: number[];
+};
+
 export const AgentOverlaySideEffects = () => {
-  useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
+  useTauriListen<OverlayPhasePayload>("agent_overlay_phase", (payload) => {
     produceAppState((draft) => {
-      draft.overlayPhase = payload.phase;
+      draft.agent.overlayPhase = payload.phase;
+      if (payload.phase !== "recording") {
+        draft.audioLevels = [];
+      }
+    });
+  });
+
+  useTauriListen<RecordingLevelPayload>("recording_level", (payload) => {
+    const raw = Array.isArray(payload.levels) ? payload.levels : [];
+    const sanitized = raw.map((value) =>
+      typeof value === "number" && Number.isFinite(value) ? value : 0,
+    );
+
+    produceAppState((draft) => {
+      draft.audioLevels = sanitized;
     });
   });
 

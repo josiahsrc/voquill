@@ -1,7 +1,9 @@
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, LinearProgress, Paper, Typography } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useMemo } from "react";
 import { useAppStore } from "../../store";
+import { AudioWaveform } from "../common/AudioWaveform";
 
 const AGENT_OVERLAY_WIDTH = 300;
 const AGENT_OVERLAY_HEIGHT = 200;
@@ -9,9 +11,15 @@ const LEFT_MARGIN = 16;
 const TOP_MARGIN = 16;
 
 export const AgentOverlayRend = () => {
+  const theme = useTheme();
   const windowRef = useMemo(() => getCurrentWindow(), []);
-  const phase = useAppStore((state) => state.overlayPhase);
-  const isVisible = phase === "recording";
+  const phase = useAppStore((state) => state.agent.overlayPhase);
+  const levels = useAppStore((state) => state.audioLevels);
+  const transcript = useAppStore((state) => state.agent.overlayTranscript);
+
+  const isVisible = phase !== "idle";
+  const isRecording = phase === "recording";
+  const isLoading = phase === "loading";
 
   useEffect(() => {
     document.body.style.backgroundColor = "transparent";
@@ -88,14 +96,80 @@ export const AgentOverlayRend = () => {
           height: `${AGENT_OVERLAY_HEIGHT}px`,
           borderRadius: 2,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          flexDirection: "column",
+          overflow: "hidden",
           backgroundColor: "background.paper",
         }}
       >
-        <Typography variant="h6" color="text.secondary">
-          TODO
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: theme.spacing(1.5),
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+            minHeight: 48,
+          }}
+        >
+          {isLoading ? (
+            <Box sx={{ width: "80%" }}>
+              <LinearProgress sx={{ height: 3, borderRadius: 1.5 }} />
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                width: 120,
+                height: 36,
+                position: "relative",
+              }}
+            >
+              <AudioWaveform
+                levels={levels}
+                active={isRecording}
+                processing={isLoading}
+                strokeColor={theme.vars?.palette.primary.main}
+                strokeWidth={2}
+                width={120}
+                height={36}
+              />
+            </Box>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            flex: 1,
+            padding: theme.spacing(2),
+            overflow: "auto",
+            display: "flex",
+            alignItems: transcript ? "flex-start" : "center",
+            justifyContent: transcript ? "flex-start" : "center",
+          }}
+        >
+          {transcript ? (
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.primary",
+                lineHeight: 1.5,
+                wordBreak: "break-word",
+              }}
+            >
+              {transcript}
+            </Typography>
+          ) : (
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                fontStyle: "italic",
+              }}
+            >
+              {isRecording ? "Listening..." : "Processing..."}
+            </Typography>
+          )}
+        </Box>
       </Paper>
     </Box>
   );
