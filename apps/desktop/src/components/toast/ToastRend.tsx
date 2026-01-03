@@ -75,7 +75,6 @@ export const ToastRend = () => {
     document.body.style.backgroundColor = "transparent";
     document.body.style.margin = "0";
     document.documentElement.style.backgroundColor = "transparent";
-
   }, []);
 
   // Poll cursor position to toggle click-through based on whether mouse

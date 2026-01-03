@@ -141,7 +141,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
           <MenuItem value="ollama">Ollama</MenuItem>
         )}
         {/* Aldea and AssemblyAI only support transcription, not post-processing */}
-        {context === "transcription" && <MenuItem value="aldea">Aldea</MenuItem>}
+        {context === "transcription" && (
+          <MenuItem value="aldea">Aldea</MenuItem>
+        )}
         {context === "transcription" && (
           <MenuItem value="assemblyai">AssemblyAI</MenuItem>
         )}

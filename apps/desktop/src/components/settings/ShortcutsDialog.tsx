@@ -10,7 +10,10 @@ import {
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
-import { AGENT_DICTATE_HOTKEY, DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import {
+  AGENT_DICTATE_HOTKEY,
+  DICTATE_HOTKEY,
+} from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {

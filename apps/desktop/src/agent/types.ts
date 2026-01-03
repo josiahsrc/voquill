@@ -53,7 +53,12 @@ export type AiSdkGenerateOptions = {
   /** Response format (text or JSON) */
   responseFormat?:
     | { type: "text" }
-    | { type: "json"; schema?: JSONSchema7; name?: string; description?: string };
+    | {
+        type: "json";
+        schema?: JSONSchema7;
+        name?: string;
+        description?: string;
+      };
   /** Abort signal */
   abortSignal?: AbortSignal;
 };

@@ -108,7 +108,9 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
     }
 
     const segmentDurationSec = this.getSegmentDurationSec();
-    const segmentSampleCount = Math.floor(input.sampleRate * segmentDurationSec);
+    const segmentSampleCount = Math.floor(
+      input.sampleRate * segmentDurationSec,
+    );
 
     // If audio fits in a single segment, transcribe directly
     if (floatSamples.length <= segmentSampleCount) {

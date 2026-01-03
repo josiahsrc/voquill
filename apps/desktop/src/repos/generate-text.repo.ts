@@ -2,6 +2,7 @@ import { invokeHandler } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
   GenerateTextModel,
+  groqChatCompletion,
   groqGenerateTextResponse,
   openaiChatCompletion,
   OpenAIGenerateTextModel,
@@ -12,6 +13,12 @@ import {
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import type { AiSdkGenerateOptions, AiSdkGenerateResult } from "../agent/types";
 import { PostProcessingMode } from "../types/ai.types";
+import {
+  convertGroqResponseToAiSdk,
+  convertMessagesToGroq,
+  convertToolChoiceToGroq,
+  convertToolsToGroq,
+} from "../utils/groq.utils";
 import {
   convertMessagesToOpenAI,
   convertResponseToAiSdk,
@@ -101,8 +108,41 @@ export class GroqGenerateTextRepo extends BaseGenerateTextRepo {
     };
   }
 
-  async doGenerateAiSdk(): Promise<AiSdkGenerateResult> {
-    throw new Error("doGenerateAiSdk not implemented for GroqGenerateTextRepo");
+  async doGenerateAiSdk(
+    options: AiSdkGenerateOptions,
+  ): Promise<AiSdkGenerateResult> {
+    const messages = convertMessagesToGroq(options.prompt);
+    const tools = convertToolsToGroq(options.tools);
+    const toolChoice = convertToolChoiceToGroq(options.toolChoice);
+
+    const responseFormat = options.responseFormat
+      ? options.responseFormat.type === "json"
+        ? {
+            type: "json_schema" as const,
+            jsonSchema: {
+              name: options.responseFormat.name ?? "response",
+              description: options.responseFormat.description,
+              schema: options.responseFormat.schema as Record<string, unknown>,
+            },
+          }
+        : { type: "text" as const }
+      : undefined;
+
+    const response = await groqChatCompletion({
+      apiKey: this.groqApiKey,
+      model: this.model,
+      messages,
+      tools,
+      toolChoice,
+      maxTokens: options.maxOutputTokens,
+      temperature: options.temperature,
+      topP: options.topP,
+      stopSequences: options.stopSequences,
+      responseFormat,
+      abortSignal: options.abortSignal,
+    });
+
+    return convertGroqResponseToAiSdk(response);
   }
 
   getModelId(): string {

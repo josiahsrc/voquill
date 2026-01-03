@@ -1,7 +1,10 @@
 import Groq, { toFile } from "groq-sdk/index";
-import {
+import type {
+  ChatCompletion,
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
+  ChatCompletionTool,
+  ChatCompletionToolChoiceOption,
 } from "groq-sdk/resources/chat/completions";
 import { retry } from "@repo/utilities/src/async";
 import { countWords } from "@repo/utilities/src/string";
@@ -208,4 +211,78 @@ export const groqTestIntegration = async ({
   }
 
   return content.toLowerCase().includes("hello");
+};
+
+export type GroqChatCompletionArgs = {
+  apiKey: string;
+  model: string;
+  messages: ChatCompletionMessageParam[];
+  tools?: ChatCompletionTool[];
+  toolChoice?: ChatCompletionToolChoiceOption;
+  maxTokens?: number;
+  temperature?: number;
+  topP?: number;
+  stopSequences?: string[];
+  responseFormat?:
+    | { type: "text" }
+    | {
+        type: "json_schema";
+        jsonSchema: {
+          name: string;
+          description?: string;
+          schema: Record<string, unknown>;
+        };
+      };
+  abortSignal?: AbortSignal;
+};
+
+export const groqChatCompletion = async ({
+  apiKey,
+  model,
+  messages,
+  tools,
+  toolChoice,
+  maxTokens,
+  temperature,
+  topP,
+  stopSequences,
+  responseFormat,
+  abortSignal,
+}: GroqChatCompletionArgs): Promise<ChatCompletion> => {
+  const client = createClient(apiKey);
+
+  const response = await client.chat.completions.create(
+    {
+      model,
+      messages,
+      tools: tools && tools.length > 0 ? tools : undefined,
+      tool_choice: tools && tools.length > 0 ? toolChoice : undefined,
+      max_completion_tokens: maxTokens,
+      temperature: temperature ?? 1,
+      top_p: topP ?? 1,
+      stop: stopSequences,
+      response_format: responseFormat
+        ? responseFormat.type === "json_schema"
+          ? {
+              type: "json_schema",
+              json_schema: {
+                name: responseFormat.jsonSchema.name,
+                description: responseFormat.jsonSchema.description,
+                schema: responseFormat.jsonSchema.schema,
+              },
+            }
+          : { type: "text" }
+        : undefined,
+    },
+    { signal: abortSignal },
+  );
+
+  return response;
+};
+
+export type {
+  ChatCompletion as GroqChatCompletion,
+  ChatCompletionMessageParam as GroqChatCompletionMessageParam,
+  ChatCompletionTool as GroqChatCompletionTool,
+  ChatCompletionToolChoiceOption as GroqChatCompletionToolChoiceOption,
 };

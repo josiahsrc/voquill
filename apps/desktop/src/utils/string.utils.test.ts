@@ -50,7 +50,9 @@ describe("editDistance", () => {
 
   it("should be symmetric", () => {
     expect(editDistance("abc", "def")).toBe(editDistance("def", "abc"));
-    expect(editDistance("kitten", "sitting")).toBe(editDistance("sitting", "kitten"));
+    expect(editDistance("kitten", "sitting")).toBe(
+      editDistance("sitting", "kitten"),
+    );
   });
 
   it("should handle case sensitivity", () => {
@@ -94,8 +96,12 @@ describe("getStringSimilarity", () => {
   });
 
   it("should be symmetric", () => {
-    expect(getStringSimilarity("abc", "def")).toBe(getStringSimilarity("def", "abc"));
-    expect(getStringSimilarity("hello", "world")).toBe(getStringSimilarity("world", "hello"));
+    expect(getStringSimilarity("abc", "def")).toBe(
+      getStringSimilarity("def", "abc"),
+    );
+    expect(getStringSimilarity("hello", "world")).toBe(
+      getStringSimilarity("world", "hello"),
+    );
   });
 
   it("should handle high similarity strings", () => {

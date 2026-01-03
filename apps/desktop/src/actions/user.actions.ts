@@ -296,9 +296,7 @@ export const setPreferredPostProcessingApiKeyId = async (
   await persistAiPreferences();
 };
 
-export const setPreferredAgentMode = async (
-  mode: string,
-): Promise<void> => {
+export const setPreferredAgentMode = async (mode: string): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.agentMode.mode = mode as any;
   });

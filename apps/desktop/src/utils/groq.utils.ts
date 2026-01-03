@@ -1,25 +1,34 @@
 import type {
-  ChatCompletion,
-  ChatCompletionMessageParam,
-  ChatCompletionTool,
-  ChatCompletionToolChoiceOption,
-  ChatCompletionContentPart,
+  GroqChatCompletion,
+  GroqChatCompletionMessageParam,
+  GroqChatCompletionTool,
+  GroqChatCompletionToolChoiceOption,
 } from "@repo/voice-ai";
 import type {
   AiSdkGenerateResult,
   LanguageModelV3Content,
   LanguageModelV3FinishReason,
-  LanguageModelV3Usage,
-  LanguageModelV3Prompt,
   LanguageModelV3FunctionTool,
+  LanguageModelV3Prompt,
   LanguageModelV3ProviderTool,
   LanguageModelV3ToolChoice,
+  LanguageModelV3Usage,
 } from "../agent/types";
 
-export function convertMessagesToOpenAI(
+type GroqContentPart =
+  | {
+      type: "text";
+      text: string;
+    }
+  | {
+      type: "image_url";
+      image_url: { url: string };
+    };
+
+export function convertMessagesToGroq(
   prompt: LanguageModelV3Prompt,
-): ChatCompletionMessageParam[] {
-  const messages: ChatCompletionMessageParam[] = [];
+): GroqChatCompletionMessageParam[] {
+  const messages: GroqChatCompletionMessageParam[] = [];
 
   for (const message of prompt) {
     switch (message.role) {
@@ -63,7 +72,7 @@ export function convertMessagesToOpenAI(
           }
         }
 
-        const assistantMessage: ChatCompletionMessageParam = {
+        const assistantMessage: GroqChatCompletionMessageParam = {
           role: "assistant",
           content: textParts.length > 0 ? textParts.join("") : null,
         };
@@ -110,13 +119,13 @@ function convertUserContent(
     data?: unknown;
     mediaType?: string;
   }>,
-): string | ChatCompletionContentPart[] {
+): string | GroqContentPart[] {
   const hasOnlyText = content.every((part) => part.type === "text");
   if (hasOnlyText && content.length === 1 && content[0].type === "text") {
     return content[0].text ?? "";
   }
 
-  const parts: ChatCompletionContentPart[] = [];
+  const parts: GroqContentPart[] = [];
 
   for (const part of content) {
     if (part.type === "text") {
@@ -141,11 +150,11 @@ function convertUserContent(
   return parts.length > 0 ? parts : "";
 }
 
-export function convertToolsToOpenAI(
+export function convertToolsToGroq(
   tools:
     | Array<LanguageModelV3FunctionTool | LanguageModelV3ProviderTool>
     | undefined,
-): ChatCompletionTool[] | undefined {
+): GroqChatCompletionTool[] | undefined {
   if (!tools || tools.length === 0) {
     return undefined;
   }
@@ -160,14 +169,13 @@ export function convertToolsToOpenAI(
         name: tool.name,
         description: tool.description,
         parameters: tool.inputSchema as Record<string, unknown>,
-        strict: tool.strict,
       },
     }));
 }
 
-export function convertToolChoiceToOpenAI(
+export function convertToolChoiceToGroq(
   toolChoice: LanguageModelV3ToolChoice | undefined,
-): ChatCompletionToolChoiceOption | undefined {
+): GroqChatCompletionToolChoiceOption | undefined {
   if (!toolChoice) {
     return undefined;
   }
@@ -193,12 +201,12 @@ export function convertToolChoiceToOpenAI(
   return undefined;
 }
 
-export function convertResponseToAiSdk(
-  response: ChatCompletion,
+export function convertGroqResponseToAiSdk(
+  response: GroqChatCompletion,
 ): AiSdkGenerateResult {
   const choice = response.choices[0];
   if (!choice) {
-    throw new Error("No choices in OpenAI response");
+    throw new Error("No choices in Groq response");
   }
 
   const content = convertContentToAiSdk(choice.message);
@@ -219,7 +227,7 @@ export function convertResponseToAiSdk(
 }
 
 function convertContentToAiSdk(
-  message: ChatCompletion["choices"][0]["message"],
+  message: GroqChatCompletion["choices"][0]["message"],
 ): LanguageModelV3Content[] {
   const content: LanguageModelV3Content[] = [];
 
@@ -244,7 +252,7 @@ function convertContentToAiSdk(
   return content;
 }
 
-type OpenAIFinishReason =
+type GroqFinishReason =
   | "stop"
   | "length"
   | "tool_calls"
@@ -252,7 +260,7 @@ type OpenAIFinishReason =
   | "function_call";
 
 function convertFinishReasonToAiSdk(
-  finishReason: OpenAIFinishReason,
+  finishReason: GroqFinishReason,
 ): LanguageModelV3FinishReason {
   const reasonMap: Record<
     string,
@@ -273,7 +281,7 @@ function convertFinishReasonToAiSdk(
   };
 }
 
-type OpenAIUsage =
+type GroqUsage =
   | {
       prompt_tokens: number;
       completion_tokens: number;
@@ -287,7 +295,7 @@ type OpenAIUsage =
     }
   | undefined;
 
-function convertUsageToAiSdk(usage: OpenAIUsage): LanguageModelV3Usage {
+function convertUsageToAiSdk(usage: GroqUsage): LanguageModelV3Usage {
   return {
     inputTokens: {
       total: usage?.prompt_tokens,
