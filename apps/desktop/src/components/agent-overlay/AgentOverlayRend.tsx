@@ -9,11 +9,7 @@ import {
 } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import { emitTo } from "@tauri-apps/api/event";
-import {
-  availableMonitors,
-  getCurrentWindow,
-  LogicalSize,
-} from "@tauri-apps/api/window";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   useCallback,
   useEffect,
@@ -29,6 +25,7 @@ import { AudioWaveform } from "../common/AudioWaveform";
 const AGENT_OVERLAY_WIDTH = 300;
 const LEFT_MARGIN = 16;
 const TOP_MARGIN = 16;
+const MAX_PAPER_HEIGHT = 600; // Must match Rust: AGENT_OVERLAY_HEIGHT - TOP_MARGIN * 2
 
 const fadeInScale = keyframes`
   from {
@@ -202,10 +199,9 @@ export const AgentOverlayRend = () => {
   const isRecording = phase === "recording";
   const isLoading = phase === "loading";
 
-  const [maxPaperHeight, setMaxPaperHeight] = useState(600);
   const [animationKey, setAnimationKey] = useState(0);
   const paperRef = useRef<HTMLDivElement>(null);
-  const [paperHeight, setPaperHeight] = useState<number | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [wasRecording, setWasRecording] = useState(false);
   const prevMessagesLengthRef = useRef(0);
 
@@ -218,61 +214,6 @@ export const AgentOverlayRend = () => {
   const handleClose = useCallback(() => {
     emitTo("main", "agent-overlay-close", {}).catch(console.error);
   }, []);
-
-  // Get max height (half screen) on mount
-  useEffect(() => {
-    const getScreenHeight = async () => {
-      try {
-        const monitors = await availableMonitors();
-        if (monitors.length > 0) {
-          const primaryMonitor = monitors[0];
-          const screenHeight = primaryMonitor.size.height;
-          // Max paper height is half screen minus margins
-          const maxHeight = Math.floor(screenHeight / 2) - TOP_MARGIN * 2;
-          setMaxPaperHeight(maxHeight);
-        }
-      } catch (err) {
-        console.error("Failed to get screen dimensions", err);
-      }
-    };
-    getScreenHeight();
-  }, []);
-
-  // Measure Paper element and resize window
-  useEffect(() => {
-    if (!isVisible || !paperRef.current) return;
-
-    const measureAndResize = async () => {
-      // Use requestAnimationFrame to ensure DOM has painted
-      requestAnimationFrame(async () => {
-        if (!paperRef.current) return;
-
-        // Get the natural height of the Paper
-        const naturalHeight = paperRef.current.scrollHeight;
-        const clampedHeight = Math.min(naturalHeight, maxPaperHeight);
-
-        // Only update if height changed
-        if (clampedHeight !== paperHeight) {
-          setPaperHeight(clampedHeight);
-
-          // Resize native window to fit
-          try {
-            const windowHeight = clampedHeight + TOP_MARGIN * 2;
-            await windowRef.setSize(
-              new LogicalSize(
-                AGENT_OVERLAY_WIDTH + LEFT_MARGIN * 2,
-                windowHeight,
-              ),
-            );
-          } catch (err) {
-            console.error("Failed to resize agent overlay window", err);
-          }
-        }
-      });
-    };
-
-    measureAndResize();
-  }, [windowRef, isVisible, messages, paperHeight, maxPaperHeight]);
 
   useEffect(() => {
     document.body.style.backgroundColor = "transparent";
@@ -314,6 +255,14 @@ export const AgentOverlayRend = () => {
 
     prevMessagesLengthRef.current = messages.length;
   }, [phase, messages]);
+
+  // Auto-scroll to bottom when messages change or indicators appear
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop =
+        scrollContainerRef.current.scrollHeight;
+    }
+  }, [messages, isRecording, isLoading, wasRecording]);
 
   useEffect(() => {
     let canceled = false;
@@ -370,6 +319,7 @@ export const AgentOverlayRend = () => {
         backgroundColor: "transparent",
         paddingLeft: `${LEFT_MARGIN}px`,
         paddingTop: `${TOP_MARGIN}px`,
+        paddingBottom: `${TOP_MARGIN}px`,
       }}
     >
       <Paper
@@ -378,7 +328,7 @@ export const AgentOverlayRend = () => {
         elevation={4}
         sx={{
           width: `${AGENT_OVERLAY_WIDTH}px`,
-          maxHeight: `${maxPaperHeight}px`,
+          maxHeight: `${MAX_PAPER_HEIGHT}px`,
           borderRadius: 1,
           display: "flex",
           flexDirection: "column",
@@ -399,6 +349,7 @@ export const AgentOverlayRend = () => {
             left: 4,
             width: 24,
             height: 24,
+            zIndex: 1,
             backgroundColor: alpha(theme.palette.grey[500], 0.1),
             "&:hover": {
               backgroundColor: alpha(theme.palette.grey[500], 0.2),
@@ -408,10 +359,14 @@ export const AgentOverlayRend = () => {
           <CloseIcon sx={{ fontSize: 14 }} />
         </IconButton>
         <Box
+          ref={scrollContainerRef}
           sx={{
             padding: theme.spacing(1.5),
             paddingTop: theme.spacing(4),
-            overflow: "auto",
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
             display: "flex",
             flexDirection: "column",
           }}
