@@ -3,6 +3,8 @@ import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import {
+  GenerativePrefs,
+  getAgentModePrefs,
   getGenerativePrefs,
   getHasCloudAccess,
   getTranscriptionPrefs,
@@ -94,9 +96,10 @@ export type GenerateTextRepoOutput = {
   warnings: string[];
 };
 
-export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
+const getGenTextRepoInternal = (
+  prefs: GenerativePrefs,
+): GenerateTextRepoOutput => {
   const state = getAppState();
-  const prefs = getGenerativePrefs(state);
   if (prefs.mode === "cloud") {
     return {
       repo: new CloudGenerateTextRepo(),
@@ -146,6 +149,18 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   }
 
   return { repo: null, apiKeyId: null, warnings: prefs.warnings };
+};
+
+export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
+  const state = getAppState();
+  const prefs = getGenerativePrefs(state);
+  return getGenTextRepoInternal(prefs);
+};
+
+export const getAgentRepo = (): GenerateTextRepoOutput => {
+  const state = getAppState();
+  const prefs = getAgentModePrefs(state);
+  return getGenTextRepoInternal(prefs);
 };
 
 export type TranscribeAudioRepoOutput = {

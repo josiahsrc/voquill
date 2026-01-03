@@ -1,5 +1,6 @@
 import {
   ArrowOutwardRounded,
+  AutoAwesomeOutlined,
   AutoFixHighOutlined,
   DeleteForeverOutlined,
   DescriptionOutlined,
@@ -110,6 +111,12 @@ export default function SettingsPage() {
   const openPostProcessingDialog = () => {
     produceAppState((draft) => {
       draft.settings.aiPostProcessingDialogOpen = true;
+    });
+  };
+
+  const openAgentModeDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.agentModeDialogOpen = true;
     });
   };
 
@@ -280,6 +287,11 @@ export default function SettingsPage() {
         title={<FormattedMessage defaultMessage="AI post processing" />}
         leading={<AutoFixHighOutlined />}
         onClick={openPostProcessingDialog}
+      />
+      <ListTile
+        title={<FormattedMessage defaultMessage="Agent mode" />}
+        leading={<AutoAwesomeOutlined />}
+        onClick={openAgentModeDialog}
       />
     </Section>
   );

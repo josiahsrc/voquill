@@ -17,12 +17,14 @@ pub async fn upsert_user_preferences(
              post_processing_api_key_id,
              post_processing_ollama_url,
              post_processing_ollama_model,
+             agent_mode,
+             agent_mode_api_key_id,
              active_tone_id,
              got_started_at,
              gpu_enumeration_enabled,
              paste_keybind
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -32,6 +34,8 @@ pub async fn upsert_user_preferences(
             post_processing_api_key_id = excluded.post_processing_api_key_id,
             post_processing_ollama_url = excluded.post_processing_ollama_url,
             post_processing_ollama_model = excluded.post_processing_ollama_model,
+            agent_mode = excluded.agent_mode,
+            agent_mode_api_key_id = excluded.agent_mode_api_key_id,
             active_tone_id = excluded.active_tone_id,
             got_started_at = excluded.got_started_at,
             gpu_enumeration_enabled = excluded.gpu_enumeration_enabled,
@@ -46,6 +50,8 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.post_processing_api_key_id)
     .bind(&preferences.post_processing_ollama_url)
     .bind(&preferences.post_processing_ollama_model)
+    .bind(&preferences.agent_mode)
+    .bind(&preferences.agent_mode_api_key_id)
     .bind(&preferences.active_tone_id)
     .bind(&preferences.got_started_at)
     .bind(preferences.gpu_enumeration_enabled)
@@ -71,6 +77,8 @@ pub async fn fetch_user_preferences(
             post_processing_api_key_id,
             post_processing_ollama_url,
             post_processing_ollama_model,
+            agent_mode,
+            agent_mode_api_key_id,
             active_tone_id,
             got_started_at,
             gpu_enumeration_enabled,
@@ -108,6 +116,12 @@ pub async fn fetch_user_preferences(
             .unwrap_or(None),
         post_processing_ollama_model: row
             .try_get::<Option<String>, _>("post_processing_ollama_model")
+            .unwrap_or(None),
+        agent_mode: row
+            .try_get::<Option<String>, _>("agent_mode")
+            .unwrap_or(None),
+        agent_mode_api_key_id: row
+            .try_get::<Option<String>, _>("agent_mode_api_key_id")
             .unwrap_or(None),
         active_tone_id: row
             .try_get::<Option<String>, _>("active_tone_id")

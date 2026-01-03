@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
-import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import { AGENT_DICTATE_HOTKEY, DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {
@@ -40,13 +40,22 @@ export const ShortcutsDialog = () => {
     }
 
     return (
-      <HotkeySetting
-        title={<FormattedMessage defaultMessage="Start/stop dictating" />}
-        description={
-          <FormattedMessage defaultMessage="Start recording audio and transcribe your speech into text with AI." />
-        }
-        actionName={DICTATE_HOTKEY}
-      />
+      <Stack spacing={3}>
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Start/stop dictating" />}
+          description={
+            <FormattedMessage defaultMessage="Start recording audio and transcribe your speech into text with AI." />
+          }
+          actionName={DICTATE_HOTKEY}
+        />
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Agent mode" />}
+          description={
+            <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
+          }
+          actionName={AGENT_DICTATE_HOTKEY}
+        />
+      </Stack>
     );
   };
 

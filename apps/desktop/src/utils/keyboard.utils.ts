@@ -2,6 +2,7 @@ import { AppState } from "../state/app.state";
 import { getPlatform } from "./platform.utils";
 
 export const DICTATE_HOTKEY = "dictate";
+export const AGENT_DICTATE_HOTKEY = "agent-dictate";
 
 export const getPrettyKeyName = (key: string): string => {
   const lower = key.toLowerCase();
@@ -43,6 +44,11 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
     macos: [["Function"]],
     windows: [["F8"]],
     linux: [["F8"]],
+  },
+  [AGENT_DICTATE_HOTKEY]: {
+    macos: [["Shift", "Function"]],
+    windows: [["Shift", "F8"]],
+    linux: [["Shift", "F8"]],
   },
 };
 
