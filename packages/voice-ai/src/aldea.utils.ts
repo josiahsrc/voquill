@@ -35,8 +35,6 @@ type AldeaResponse = {
 export const aldeaTranscribeAudio = async ({
   apiKey,
   blob,
-  ext,
-  language,
 }: AldeaTranscriptionArgs): Promise<AldeaTranscribeAudioOutput> => {
   return retry({
     retries: 3,

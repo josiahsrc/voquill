@@ -285,7 +285,7 @@ fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     }
 
     const AGENT_OVERLAY_WIDTH: f64 = 332.0; // 300 + 16 padding * 2
-    const AGENT_OVERLAY_HEIGHT: f64 = 232.0; // 200 + 16 padding * 2
+    const AGENT_OVERLAY_HEIGHT: f64 = 632.0; // Max height to support up to half screen (600 + 16 padding * 2)
 
     let _window = WebviewWindowBuilder::new(app, "agent-overlay", agent_webview_url(app)?)
         .decorations(false)
