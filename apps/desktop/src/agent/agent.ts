@@ -66,10 +66,10 @@ export class Agent {
         toolName: toolCall.name,
       });
 
-      userInput = `Previous action: Called ${toolCall.name}
+      userInput = `Tool "${toolCall.name}" executed.
 Result: ${toolResult.output}
 
-What would you like to do next? (Respond with JSON)`;
+Now respond with JSON. If the user's original request is complete, provide an {"type": "answer", "answer": "..."} confirming what was done. Only call another tool if more actions are needed.`;
     }
 
     return {
@@ -109,27 +109,45 @@ What would you like to do next? (Respond with JSON)`;
 
   private normalizeResponse(parsed: unknown): unknown {
     if (typeof parsed !== "object" || parsed === null) {
+      // If the LLM returned a plain string, treat it as an answer
+      if (typeof parsed === "string") {
+        return { type: "answer", answer: parsed };
+      }
       return parsed;
     }
 
     const obj = parsed as Record<string, unknown>;
 
-    if (obj.type === "tool_calls" || obj.type === "tool_call") {
-      const toolCall = obj.toolCall ?? obj.tool_call;
-      const toolCalls = obj.toolCalls ?? obj.tool_calls;
+    // Handle tool_call responses (various malformed formats LLMs produce)
+    if (
+      obj.type === "tool_calls" ||
+      obj.type === "tool_call" ||
+      obj.toolCall ||
+      obj.toolCalls ||
+      obj.tool_call ||
+      obj.tool_calls
+    ) {
+      // Gather all possible tool call fields
+      const candidates = [
+        obj.toolCall,
+        obj.tool_call,
+        obj.toolCalls,
+        obj.tool_calls,
+      ];
 
-      const resolvedToolCall = Array.isArray(toolCalls)
-        ? toolCalls[0]
-        : toolCall;
-
-      if (resolvedToolCall) {
-        return {
-          type: "tool_call",
-          toolCall: resolvedToolCall,
-        };
+      for (const candidate of candidates) {
+        if (Array.isArray(candidate) && candidate.length > 0) {
+          // Take only the first tool call from any array
+          return { type: "tool_call", toolCall: candidate[0] };
+        }
+        if (candidate && typeof candidate === "object" && "name" in candidate) {
+          // Single tool call object
+          return { type: "tool_call", toolCall: candidate };
+        }
       }
     }
 
+    // Handle answer responses (various formats)
     if (
       obj.type === "answer" ||
       obj.type === "final_answer" ||
@@ -141,6 +159,24 @@ What would you like to do next? (Respond with JSON)`;
         return {
           type: "answer",
           answer,
+        };
+      }
+    }
+
+    // Handle case where LLM returned an object without a type field
+    // but has answer-like content
+    if (!obj.type) {
+      const possibleAnswer =
+        obj.answer ?? obj.response ?? obj.text ?? obj.content ?? obj.message;
+      if (typeof possibleAnswer === "string") {
+        return { type: "answer", answer: possibleAnswer };
+      }
+
+      // Check if it looks like a tool call without the wrapper
+      if (obj.name && obj.arguments) {
+        return {
+          type: "tool_call",
+          toolCall: { name: obj.name, arguments: obj.arguments },
         };
       }
     }
