@@ -1,6 +1,5 @@
 import { emitTo } from "@tauri-apps/api/event";
 import { Agent } from "../agent/agent";
-import { AgentMessage } from "../types/agent.types";
 import { getAgentRepo } from "../repos";
 import type {
   AgentWindowMessage,
@@ -18,7 +17,6 @@ import { StopTool } from "../tools/stop.tool";
 import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
 
 export class AgentRecordingStrategy extends BaseRecordingStrategy {
-  private history: AgentMessage[] = [];
   private uiMessages: AgentWindowMessage[] = [];
   private isFirstTurn = true;
   private agent: Agent | null = null;
@@ -79,12 +77,9 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
     this.uiMessages.push({ text: rawTranscript, sender: "me" });
     await this.emitState({ messages: this.uiMessages });
 
-    const result = await this.agent.run(this.history, rawTranscript);
+    const result = await this.agent.run(rawTranscript);
     console.log("Agent response:", result.response);
-    console.log("Tool calls:", result.toolCalls);
-
-    this.history.push({ role: "user", content: rawTranscript });
-    this.history.push({ role: "assistant", content: result.response });
+    console.log("Agent history:", result.history);
 
     if (result.response) {
       this.uiMessages.push({ text: result.response, sender: "agent" });
@@ -107,7 +102,7 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
   }
 
   async cleanup(): Promise<void> {
-    this.history = [];
+    this.agent?.clearHistory();
     this.uiMessages = [];
     this.isFirstTurn = true;
     this.agent = null;

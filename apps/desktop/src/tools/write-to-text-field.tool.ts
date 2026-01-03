@@ -1,27 +1,35 @@
 import { invoke } from "@tauri-apps/api/core";
+import { z } from "zod";
 import type { ToolResult } from "../types/agent.types";
-import { WriteToTextFieldParamsSchema } from "../types/tool.types";
 import { BaseTool } from "./base.tool";
 
-export class WriteToTextFieldTool extends BaseTool {
+export const WriteToTextFieldInputSchema = z.object({
+  text: z.string().describe("The text to write to the focused text field"),
+});
+
+export const WriteToTextFieldOutputSchema = z.object({
+  written: z.boolean().describe("Whether the text was written successfully"),
+  text: z.string().describe("The text that was written"),
+});
+
+export class WriteToTextFieldTool extends BaseTool<
+  typeof WriteToTextFieldInputSchema,
+  typeof WriteToTextFieldOutputSchema
+> {
   readonly name = "write_to_text_field";
   readonly description =
     "Replaces the entire content of the currently focused text field with the provided text.";
-  readonly parametersSchema = WriteToTextFieldParamsSchema;
+  readonly inputSchema = WriteToTextFieldInputSchema;
+  readonly outputSchema = WriteToTextFieldOutputSchema;
 
-  async execute(args: Record<string, unknown>): Promise<ToolResult> {
-    try {
-      const { text } = args as { text: string };
-      await invoke("set_accessibility_text", { text });
-      return {
-        success: true,
-        output: "Text written to field successfully.",
-      };
-    } catch (error) {
-      return {
-        success: false,
-        output: `Failed to write to text field: ${String(error)}`,
-      };
-    }
+  protected async execInternal(
+    args: z.infer<typeof WriteToTextFieldInputSchema>,
+  ): Promise<ToolResult> {
+    const { text } = args;
+    await invoke("set_accessibility_text", { text });
+    return {
+      success: true,
+      output: this.parseOutput({ written: true, text }),
+    };
   }
 }

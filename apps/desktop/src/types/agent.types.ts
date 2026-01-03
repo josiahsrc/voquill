@@ -1,29 +1,42 @@
 import { z } from "zod";
-import { TypedToolCallSchema } from "./tool.types";
 
-export const AgentMessageSchema = z.object({
-  role: z.enum(["user", "assistant", "tool"]),
-  content: z.string(),
-  toolName: z.string().optional(),
+export const DecisionResponseSchema = z.object({
+  reasoning: z.string(),
+  choice: z.string(),
 });
-export type AgentMessage = z.infer<typeof AgentMessageSchema>;
+export type DecisionResponse = z.infer<typeof DecisionResponseSchema>;
 
-export const ToolCallSchema = TypedToolCallSchema;
-export type ToolCall = z.infer<typeof ToolCallSchema>;
-
-export const AgentLLMResponseSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("tool_call"), toolCall: TypedToolCallSchema }),
-  z.object({ type: z.literal("answer"), answer: z.string() }),
-]);
-export type AgentLLMResponse = z.infer<typeof AgentLLMResponseSchema>;
+export const FinalResponseSchema = z.object({
+  response: z.string(),
+});
+export type FinalResponse = z.infer<typeof FinalResponseSchema>;
 
 export const ToolResultSchema = z.object({
   success: z.boolean(),
-  output: z.string(),
+  output: z.record(z.unknown()),
 });
 export type ToolResult = z.infer<typeof ToolResultSchema>;
 
+export type ToolExecution = {
+  name: string;
+  input: Record<string, unknown>;
+  output?: Record<string, unknown>;
+};
+
+export type UserMessage = {
+  type: "user";
+  content: string;
+};
+
+export type AssistantMessage = {
+  type: "assistant";
+  tools: ToolExecution[];
+  response: string;
+};
+
+export type AgentMessage = UserMessage | AssistantMessage;
+
 export type AgentRunResult = {
   response: string;
-  toolCalls: ToolCall[];
+  history: AgentMessage[];
 };

@@ -1,53 +1,95 @@
 import zodToJsonSchema from "zod-to-json-schema";
 import { BaseTool } from "../tools/base.tool";
 import type { AgentMessage } from "../types/agent.types";
-import { AgentLLMResponseSchema } from "../types/agent.types";
+import {
+  DecisionResponseSchema,
+  FinalResponseSchema,
+} from "../types/agent.types";
 
-export const AGENT_RESPONSE_JSON_SCHEMA = zodToJsonSchema(
-  AgentLLMResponseSchema,
-  {
-    name: "AgentResponse",
-    // Inline all definitions for better LLM comprehension
-    $refStrategy: "none",
-  },
-);
+export const DECISION_JSON_SCHEMA = zodToJsonSchema(DecisionResponseSchema, {
+  name: "DecisionResponse",
+  $refStrategy: "none",
+});
 
-export const buildSystemPrompt = (tools: BaseTool[]): string => {
-  const toolDescriptions = tools.map((t) => t.toPromptString()).join("\n\n");
+export const FINAL_RESPONSE_JSON_SCHEMA = zodToJsonSchema(FinalResponseSchema, {
+  name: "FinalResponse",
+  $refStrategy: "none",
+});
 
-  return `You are a helpful assistant. Respond with JSON only.
+export const buildDecisionSystemPrompt = (tools: BaseTool[]): string => {
+  const toolNames = tools.map((t) => t.name);
+  const toolDescriptions = tools
+    .map((t) => `- ${t.name}: ${t.description}`)
+    .join("\n");
 
-## Tools
+  return `You are a helpful assistant that decides how to respond to user requests.
+
+## Available Tools
 ${toolDescriptions}
 
+## Your Task
+Analyze the user's request and conversation history, then decide what to do next.
+
 ## Response Format
-Respond with exactly ONE of these JSON formats:
-
-To call a tool:
-{"type": "tool_call", "toolCall": {"name": "tool_name", "arguments": {...}}}
-
-To answer the user:
-{"type": "answer", "answer": "your response"}
+Respond with JSON only:
+{
+  "reasoning": "Brief explanation of why you chose this action",
+  "choice": "respond" | "${toolNames.join('" | "')}"
+}
 
 ## Rules
-- Output valid JSON only. No other text.
-- Call ONE tool at a time. Never multiple.
-- After a tool runs, respond with an answer confirming what happened.`;
+- Use "respond" when you have completed the user's request or when no tool is needed
+- Use "respond" if the user just wants information or a conversational reply
+- Choose a tool when you need to take an action to fulfill the request
+- If the user's task is not yet complete and a tool can help, choose that tool
+- If no tool can satisfy the request, use "respond" to explain what you can do`;
+};
+
+export const buildFinalResponseSystemPrompt = (): string => {
+  return `You are a helpful assistant. Provide a direct, helpful response to the user.
+
+## Response Format
+Respond with JSON only:
+{
+  "response": "Your response to the user"
+}
+
+## Rules
+- Be concise and helpful
+- If you just executed tools, summarize what you did
+- If you're answering a question, provide the answer directly`;
+};
+
+export const buildToolArgsSystemPrompt = (tool: BaseTool): string => {
+  const jsonSchema = tool.getInputJsonSchema();
+
+  return `You are a helpful assistant. You need to provide arguments for the "${tool.name}" tool.
+
+## Tool Description
+${tool.description}
+
+## Parameters Schema
+${JSON.stringify(jsonSchema, null, 2)}
+
+## Response Format
+Respond with JSON matching the parameters schema above.
+
+## Rules
+- Provide all required parameters
+- Use appropriate values based on the conversation context`;
 };
 
 export const formatHistory = (messages: AgentMessage[]): string => {
   return messages
     .map((msg) => {
-      switch (msg.role) {
-        case "user":
-          return `User: ${msg.content}`;
-        case "assistant":
-          return `Assistant: ${msg.content}`;
-        case "tool":
-          return `Tool (${msg.toolName}): ${msg.content}`;
-        default:
-          return msg.content;
+      if (msg.type === "user") {
+        return `User: ${msg.content}`;
       }
+      const toolsSummary =
+        msg.tools.length > 0
+          ? `[Tools used: ${msg.tools.map((t) => `${t.name}(${JSON.stringify(t.input)}) → ${JSON.stringify(t.output)}`).join(", ")}]\n`
+          : "";
+      return `Assistant: ${toolsSummary}${msg.response}`;
     })
     .join("\n\n");
 };
@@ -62,7 +104,5 @@ export const buildUserPrompt = (
       : "";
 
   return `${historyText}## Current User Input
-${currentInput}
-
-Respond with JSON (tool_call or answer):`;
+${currentInput}`;
 };
