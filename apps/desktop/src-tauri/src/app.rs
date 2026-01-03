@@ -110,6 +110,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 ensure_toast_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                ensure_agent_overlay_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
@@ -273,4 +276,45 @@ fn toast_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl>
     }
 
     Ok(tauri::WebviewUrl::App("index.html?toast=1".into()))
+}
+
+fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::WebviewWindowBuilder;
+    if app.get_webview_window("agent-overlay").is_some() {
+        return Ok(());
+    }
+
+    const AGENT_OVERLAY_WIDTH: f64 = 332.0; // 300 + 16 padding * 2
+    const AGENT_OVERLAY_HEIGHT: f64 = 232.0; // 200 + 16 padding * 2
+
+    let _window = WebviewWindowBuilder::new(app, "agent-overlay", agent_webview_url(app)?)
+        .decorations(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .transparent(true)
+        .focusable(false)
+        .visible(false)
+        .inner_size(AGENT_OVERLAY_WIDTH, AGENT_OVERLAY_HEIGHT)
+        .position(0.0, 0.0)
+        .build()?;
+
+    Ok(())
+}
+
+fn agent_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
+    #[cfg(debug_assertions)]
+    {
+        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
+            let query = match dev_url.query() {
+                Some(existing) if !existing.is_empty() => format!("{existing}&agent=1"),
+                _ => "agent=1".to_string(),
+            };
+            dev_url.set_query(Some(&query));
+            return Ok(tauri::WebviewUrl::External(dev_url));
+        }
+    }
+
+    Ok(tauri::WebviewUrl::App("index.html?agent=1".into()))
 }

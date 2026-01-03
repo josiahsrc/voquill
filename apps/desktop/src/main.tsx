@@ -18,6 +18,7 @@ import { connectStorageEmulator, getStorage } from "firebase/storage";
 import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
+import { AgentOverlayRoot } from "./components/agent-overlay";
 import { OverlayRoot } from "./components/overlay/OverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
@@ -86,6 +87,7 @@ const searchParams =
 
 const isOverlayWindow = searchParams?.get("overlay") === "1";
 const isToastWindow = searchParams?.get("toast") === "1";
+const isAgentWindow = searchParams?.get("agent") === "1";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
@@ -125,6 +127,12 @@ if (isOverlayWindow) {
   root.render(
     <Main>
       <ToastRoot />
+    </Main>,
+  );
+} else if (isAgentWindow) {
+  root.render(
+    <Main>
+      <AgentOverlayRoot />
     </Main>,
   );
 } else {
