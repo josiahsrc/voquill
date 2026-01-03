@@ -92,6 +92,31 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
     );
   }
 
+  if (message.isError) {
+    return (
+      <Box
+        sx={{
+          padding: theme.spacing(1, 1.5),
+          borderRadius: 1,
+          backgroundColor: alpha(theme.palette.error.main, 0.1),
+          mb: 1,
+        }}
+      >
+        <Typography
+          variant="body2"
+          sx={{
+            color: "error.main",
+            lineHeight: 1.5,
+            wordBreak: "break-word",
+            fontSize: "0.8125rem",
+          }}
+        >
+          {message.text}
+        </Typography>
+      </Box>
+    );
+  }
+
   // Agent messages - no bubble, just inline text
   return (
     <Typography

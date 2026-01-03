@@ -82,7 +82,11 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
     console.log("Agent history:", result.history);
 
     if (result.response) {
-      this.uiMessages.push({ text: result.response, sender: "agent" });
+      this.uiMessages.push({
+        text: result.response,
+        sender: "agent",
+        isError: result.isError,
+      });
       await this.emitState({ messages: this.uiMessages });
     }
 

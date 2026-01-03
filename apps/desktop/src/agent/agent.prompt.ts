@@ -30,6 +30,8 @@ probably want you to edit it, and you should make changes there. If they're not 
 with a text field, then feel free to respond in any other format you wish. Make sure
 to use the tools available to you to gather information before fulfilling the request.
 
+Do your best to write the outputs back into the text field when you have the answer.
+
 ## Available Tools
 ${toolDescriptions}
 
@@ -51,30 +53,35 @@ Respond with JSON only:
 - If no tool can satisfy the request, use "respond" to explain what you can do`;
 };
 
-export const buildFinalResponseSystemPrompt = (): string => {
-  return `You are a helpful assistant. Provide a direct, helpful response to the user.
+export const buildFinalResponseSystemPrompt = (reasoning: string): string => {
+  return `You are a helpful assistant that summarizes actions and responds to the user.
 
-you are saying something directly back to the user, commenting on the outcome of the
-task that you performed.
+You are responding to the user because of this reason: ${reasoning}
+
+You are speaking directly to the user. Let them know why you did what you did. Provide a
+brief, high-level summary of the actions you took, explaining what changed.
+
+DO NOT INCLUDE EXACT DETAILS OF THINGS YOU CHANGED OR DID. Just provide a summary of your actions.
 
 ## Response Format
 Respond with JSON only:
 {
-  "response": "Your response to the user"
+  "response": "What you want to say to the user"
 }
 
 ## Rules
 - Be concise and helpful
 - If you just executed tools, summarize what you did
 - If you're answering a question, provide the answer directly
-- Do NOT regurgitate stuff you did. Describe it in summary.
 `;
 };
 
-export const buildToolArgsSystemPrompt = (tool: BaseTool): string => {
+export const buildToolArgsSystemPrompt = (tool: BaseTool, reasoning: string): string => {
   const jsonSchema = tool.getInputJsonSchema();
 
   return `You are a helpful assistant. You need to provide arguments for the "${tool.name}" tool.
+
+The reason for calling this tool is: ${reasoning}
 
 ## Tool Description
 ${tool.description}

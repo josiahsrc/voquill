@@ -32,11 +32,13 @@ export type AssistantMessage = {
   type: "assistant";
   tools: ToolExecution[];
   response: string;
+  isError: boolean;
 };
 
 export type AgentMessage = UserMessage | AssistantMessage;
 
 export type AgentRunResult = {
   response: string;
+  isError: boolean;
   history: AgentMessage[];
 };

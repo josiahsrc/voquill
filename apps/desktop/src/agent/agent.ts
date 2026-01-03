@@ -1,5 +1,21 @@
-import type { BaseGenerateTextRepo } from "../repos/generate-text.repo";
+import { retry } from "@repo/utilities";
+import type { ZodType, z } from "zod";
+import type {
+  BaseGenerateTextRepo,
+  GenerateTextInput,
+} from "../repos/generate-text.repo";
 import { BaseTool } from "../tools/base.tool";
+import type {
+  AgentMessage,
+  AgentRunResult,
+  DecisionResponse,
+  ToolExecution,
+  ToolResult,
+} from "../types/agent.types";
+import {
+  DecisionResponseSchema,
+  FinalResponseSchema,
+} from "../types/agent.types";
 import {
   DECISION_JSON_SCHEMA,
   FINAL_RESPONSE_JSON_SCHEMA,
@@ -8,20 +24,10 @@ import {
   buildToolArgsSystemPrompt,
   buildUserPrompt,
 } from "./agent.prompt";
-import type {
-  AgentMessage,
-  AgentRunResult,
-  DecisionResponse,
-  FinalResponse,
-  ToolExecution,
-  ToolResult,
-} from "../types/agent.types";
-import {
-  DecisionResponseSchema,
-  FinalResponseSchema,
-} from "../types/agent.types";
 
 const MAX_ITERATIONS = 16;
+const LLM_RETRIES = 3;
+const LLM_RETRY_DELAY_MS = 500;
 
 export class Agent {
   private history: AgentMessage[] = [];
@@ -30,6 +36,21 @@ export class Agent {
     private repo: BaseGenerateTextRepo,
     private tools: BaseTool[] = [],
   ) {}
+
+  private generateTextWithRetries<T extends ZodType>(
+    schema: T,
+    input: GenerateTextInput,
+  ): Promise<z.infer<T>> {
+    return retry({
+      fn: async () => {
+        const output = await this.repo.generateText(input);
+        const parsed = JSON.parse(output.text);
+        return schema.parse(parsed);
+      },
+      retries: LLM_RETRIES,
+      delay: LLM_RETRY_DELAY_MS,
+    });
+  }
 
   private toolRecord(): Record<string, BaseTool> {
     const record: Record<string, BaseTool> = {};
@@ -53,65 +74,81 @@ export class Agent {
     const toolExecutions: ToolExecution[] = [];
     const decisionSystemPrompt = buildDecisionSystemPrompt(this.tools);
 
-    for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-      const userPrompt = buildUserPrompt(this.history, userInput);
-      const decision = await this.callDecisionLLM(
-        decisionSystemPrompt,
-        userPrompt,
-      );
+    try {
+      for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+        const userPrompt = buildUserPrompt(this.history, userInput);
+        const decision = await this.callDecisionLLM(
+          decisionSystemPrompt,
+          userPrompt,
+        );
 
-      if (decision.choice === "respond") {
-        const response = await this.callFinalResponseLLM(userPrompt);
-        this.history.push({
-          type: "assistant",
-          tools: toolExecutions,
-          response,
+        if (decision.choice === "respond") {
+          const response = await this.callFinalResponseLLM(
+            userPrompt,
+            decision.reasoning,
+          );
+          this.history.push({
+            type: "assistant",
+            tools: toolExecutions,
+            response,
+            isError: false,
+          });
+          return { response, history: this.getHistory(), isError: false };
+        }
+
+        const tool = this.toolRecord()[decision.choice];
+        if (!tool) {
+          throw new Error(`Tool not found: ${decision.choice}`);
+        }
+
+        const toolArgs = await this.callToolArgsLLM(
+          tool,
+          userPrompt,
+          decision.reasoning,
+        );
+
+        const toolResult = await this.executeTool(tool, toolArgs);
+
+        toolExecutions.push({
+          name: tool.name,
+          input: toolArgs,
+          output: toolResult.output,
         });
-        return { response, history: this.getHistory() };
-      }
 
-      const tool = this.toolRecord()[decision.choice];
-      if (!tool) {
-        const response = `I tried to use tool "${decision.choice}" but it doesn't exist. Available tools: ${Object.keys(this.toolRecord()).join(", ")}`;
-        this.history.push({
-          type: "assistant",
-          tools: toolExecutions,
-          response,
-        });
-        return { response, history: this.getHistory() };
-      }
-
-      const toolArgs = await this.callToolArgsLLM(tool, userPrompt);
-      const toolResult = await this.executeTool(tool, toolArgs);
-
-      toolExecutions.push({
-        name: tool.name,
-        input: toolArgs,
-        output: toolResult.output,
-      });
-
-      userInput = `Tool "${tool.name}" executed with args ${JSON.stringify(toolArgs)}.
+        userInput = `Tool "${tool.name}" executed with args ${JSON.stringify(toolArgs)}.
 Result: ${JSON.stringify(toolResult.output)}
 ${toolResult.success ? "Success." : "Failed."}
 
 Decide what to do next. If the user's original request is complete, choose "respond".`;
-    }
+      }
 
-    const response =
-      "I apologize, but I was unable to complete the task in the allowed number of steps.";
-    this.history.push({
-      type: "assistant",
-      tools: toolExecutions,
-      response,
-    });
-    return { response, history: this.getHistory() };
+      throw new Error(
+        "Maximum iterations reached without completing the task.",
+      );
+    } catch (error) {
+      let message: string;
+      if (error instanceof Error) {
+        message = error.message;
+      } else {
+        message = "An unexpected error occurred.";
+      }
+
+      this.history.push({
+        type: "assistant",
+        tools: toolExecutions,
+        response: message,
+        isError: true,
+      });
+
+      return { response: message, history: this.getHistory(), isError: true };
+    }
   }
 
   private async callDecisionLLM(
     system: string,
     prompt: string,
   ): Promise<DecisionResponse> {
-    const output = await this.repo.generateText({
+    return this.generateTextWithRetries(DecisionResponseSchema, {
       system,
       prompt,
       jsonResponse: {
@@ -120,19 +157,14 @@ Decide what to do next. If the user's original request is complete, choose "resp
         schema: DECISION_JSON_SCHEMA,
       },
     });
-
-    try {
-      const parsed = JSON.parse(output.text);
-      return DecisionResponseSchema.parse(parsed);
-    } catch (error) {
-      console.error("Failed to parse decision response:", error, output.text);
-      return { reasoning: "Failed to parse response", choice: "respond" };
-    }
   }
 
-  private async callFinalResponseLLM(prompt: string): Promise<string> {
-    const system = buildFinalResponseSystemPrompt();
-    const output = await this.repo.generateText({
+  private async callFinalResponseLLM(
+    prompt: string,
+    reasoning: string,
+  ): Promise<string> {
+    const system = buildFinalResponseSystemPrompt(reasoning);
+    const result = await this.generateTextWithRetries(FinalResponseSchema, {
       system,
       prompt,
       jsonResponse: {
@@ -141,22 +173,16 @@ Decide what to do next. If the user's original request is complete, choose "resp
         schema: FINAL_RESPONSE_JSON_SCHEMA,
       },
     });
-
-    try {
-      const parsed: FinalResponse = JSON.parse(output.text);
-      return FinalResponseSchema.parse(parsed).response;
-    } catch (error) {
-      console.error("Failed to parse final response:", error, output.text);
-      return output.text;
-    }
+    return result.response;
   }
 
   private async callToolArgsLLM(
     tool: BaseTool,
     prompt: string,
+    reasoning: string,
   ): Promise<Record<string, unknown>> {
-    const system = buildToolArgsSystemPrompt(tool);
-    const output = await this.repo.generateText({
+    const system = buildToolArgsSystemPrompt(tool, reasoning);
+    return this.generateTextWithRetries(tool.inputSchema, {
       system,
       prompt,
       jsonResponse: {
@@ -165,13 +191,6 @@ Decide what to do next. If the user's original request is complete, choose "resp
         schema: tool.getInputJsonSchema(),
       },
     });
-
-    try {
-      return JSON.parse(output.text);
-    } catch (error) {
-      console.error("Failed to parse tool args:", error, output.text);
-      return {};
-    }
   }
 
   private async executeTool(
