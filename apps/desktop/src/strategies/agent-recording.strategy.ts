@@ -1,26 +1,28 @@
 import { emitTo } from "@tauri-apps/api/event";
 import { processWithAgent } from "../actions/transcribe.actions";
+import type {
+  AgentWindowMessage,
+  AgentWindowState,
+} from "../types/agent-window.types";
 import type { OverlayPhase } from "../types/overlay.types";
 import { BaseRecordingStrategy } from "./base-recording.strategy";
 import type {
-  CompleteParams,
-  CompleteResult,
-  PostProcessParams,
-  PostProcessOutput,
+  HandleTranscriptParams,
+  HandleTranscriptResult,
 } from "./recording.types";
 
 export class AgentRecordingStrategy extends BaseRecordingStrategy {
-  private transcripts: string[] = [];
+  private messages: AgentWindowMessage[] = [];
   private isFirstTurn = true;
 
-  private async emitTranscript(transcript: string | null): Promise<void> {
-    await emitTo("agent-overlay", "agent_overlay_transcript", { transcript });
+  private async emitState(state: AgentWindowState | null): Promise<void> {
+    await emitTo("agent-overlay", "agent_window_state", { state });
   }
 
   async onBeforeStart(): Promise<void> {
     if (this.isFirstTurn) {
-      // First turn: clear any previous transcript
-      await this.emitTranscript(null);
+      // First turn: clear any previous state
+      await this.emitState(null);
       this.isFirstTurn = false;
     }
     // Subsequent turns: window is already open, nothing to do
@@ -30,22 +32,15 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
     await emitTo("agent-overlay", "agent_overlay_phase", { phase });
   }
 
-  async postProcess({
+  async handleTranscript({
     rawTranscript,
     toneId,
-  }: PostProcessParams): Promise<PostProcessOutput> {
-    return processWithAgent({ rawTranscript, toneId });
-  }
-
-  async onComplete({
-    transcript,
     loadingToken,
-  }: CompleteParams): Promise<CompleteResult> {
-    // Check for exit command
-    const shouldExit = transcript?.toLowerCase().includes("stop") ?? false;
+  }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
+    // 1. Check for exit command
+    const shouldExit = rawTranscript.toLowerCase().includes("stop");
 
     if (shouldExit) {
-      // Exit: close the window
       if (
         loadingToken &&
         this.context.overlayLoadingTokenRef.current === loadingToken
@@ -53,33 +48,44 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
         this.context.overlayLoadingTokenRef.current = null;
       }
       await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
-      await this.emitTranscript(null);
+      await this.emitState(null);
       return { shouldContinue: false };
     }
 
-    // Continue: add transcript to the stack and keep window open
-    if (transcript) {
-      this.transcripts.push(transcript);
-      await this.emitTranscript(this.transcripts.join("\n\n"));
+    // 2. Add user's message ("me") and emit immediately
+    this.messages.push({ text: rawTranscript, sender: "me" });
+    await this.emitState({ messages: this.messages });
+
+    // 3. Call agent to get response
+    const { transcript: agentResponse } = await processWithAgent({
+      rawTranscript,
+      toneId,
+    });
+    console.log("Agent response:", agentResponse);
+
+    // 4. Add agent's response and emit
+    if (agentResponse) {
+      this.messages.push({ text: agentResponse, sender: "agent" });
+      await this.emitState({ messages: this.messages });
     }
 
-    // Clear loading token but DON'T set phase to idle - keep window visible
+    // 5. Clear loading token but keep window visible
     if (
       loadingToken &&
       this.context.overlayLoadingTokenRef.current === loadingToken
     ) {
       this.context.overlayLoadingTokenRef.current = null;
     }
-    // Window stays open in current phase, ready for next turn
 
+    // No storeTranscription - agent mode doesn't save to history
     return { shouldContinue: true };
   }
 
   async cleanup(): Promise<void> {
     // Clean up on exit
-    this.transcripts = [];
+    this.messages = [];
     this.isFirstTurn = true;
     await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
-    await this.emitTranscript(null);
+    await this.emitState(null);
   }
 }

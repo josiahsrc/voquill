@@ -1,13 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { showErrorSnackbar } from "../actions/app.actions";
-import { postProcessTranscript } from "../actions/transcribe.actions";
+import {
+  postProcessTranscript,
+  storeTranscription,
+} from "../actions/transcribe.actions";
 import type { OverlayPhase } from "../types/overlay.types";
 import { BaseRecordingStrategy } from "./base-recording.strategy";
 import type {
-  CompleteParams,
-  CompleteResult,
-  PostProcessParams,
-  PostProcessOutput,
+  HandleTranscriptParams,
+  HandleTranscriptResult,
 } from "./recording.types";
 
 export class DictationRecordingStrategy extends BaseRecordingStrategy {
@@ -19,20 +20,32 @@ export class DictationRecordingStrategy extends BaseRecordingStrategy {
     await invoke<void>("set_phase", { phase });
   }
 
-  async postProcess({
+  async handleTranscript({
     rawTranscript,
     toneId,
     a11yInfo,
-  }: PostProcessParams): Promise<PostProcessOutput> {
-    return postProcessTranscript({ rawTranscript, toneId, a11yInfo });
-  }
-
-  async onComplete({
-    transcript,
     currentApp,
     loadingToken,
-  }: CompleteParams): Promise<CompleteResult> {
-    // Set overlay to idle
+    audio,
+  }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
+    // 1. Post-process the transcript
+    const { transcript, metadata, warnings } = await postProcessTranscript({
+      rawTranscript,
+      toneId,
+      a11yInfo,
+    });
+
+    // 2. Store transcription (don't await - don't block pasting)
+    storeTranscription({
+      audio,
+      rawTranscript,
+      transcript,
+      transcriptionMetadata: {},
+      postProcessMetadata: metadata,
+      warnings,
+    });
+
+    // 3. Set overlay to idle
     if (
       loadingToken &&
       this.context.overlayLoadingTokenRef.current === loadingToken
@@ -41,7 +54,7 @@ export class DictationRecordingStrategy extends BaseRecordingStrategy {
       await invoke<void>("set_phase", { phase: "idle" });
     }
 
-    // Paste the transcript
+    // 4. Paste the transcript
     if (transcript) {
       await new Promise<void>((resolve) => setTimeout(resolve, 20));
       try {

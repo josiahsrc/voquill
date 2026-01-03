@@ -1,26 +1,18 @@
 import type { RefObject } from "react";
 import type { AppTarget } from "@repo/types";
 import type { AccessibilityInfo } from "../types/accessibility.types";
+import type { StopRecordingResponse } from "../types/transcription-session.types";
 
-export type PostProcessParams = {
+export type HandleTranscriptParams = {
   rawTranscript: string;
   toneId: string | null;
   a11yInfo: AccessibilityInfo | null;
-};
-
-export type PostProcessOutput = {
-  transcript: string;
-  metadata: object;
-  warnings: string[];
-};
-
-export type CompleteParams = {
-  transcript: string | null;
   currentApp: AppTarget | null;
   loadingToken: symbol | null;
+  audio: StopRecordingResponse;
 };
 
-export type CompleteResult = {
+export type HandleTranscriptResult = {
   shouldContinue: boolean;
 };
 

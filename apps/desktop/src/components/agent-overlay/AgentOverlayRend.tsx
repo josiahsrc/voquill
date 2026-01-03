@@ -3,6 +3,7 @@ import { alpha, useTheme } from "@mui/material/styles";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useMemo } from "react";
 import { useAppStore } from "../../store";
+import type { AgentWindowMessage } from "../../types/agent-window.types";
 import { AudioWaveform } from "../common/AudioWaveform";
 
 const AGENT_OVERLAY_WIDTH = 300;
@@ -10,12 +11,57 @@ const AGENT_OVERLAY_HEIGHT = 200;
 const LEFT_MARGIN = 16;
 const TOP_MARGIN = 16;
 
+type MessageBubbleProps = {
+  message: AgentWindowMessage;
+};
+
+const MessageBubble = ({ message }: MessageBubbleProps) => {
+  const theme = useTheme();
+  const isMe = message.sender === "me";
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: isMe ? "flex-end" : "flex-start",
+        mb: 1,
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: "85%",
+          padding: theme.spacing(1, 1.5),
+          borderRadius: 2,
+          backgroundColor: isMe
+            ? alpha(theme.palette.primary.main, 0.15)
+            : alpha(theme.palette.grey[500], 0.15),
+          borderBottomRightRadius: isMe ? 4 : undefined,
+          borderBottomLeftRadius: isMe ? undefined : 4,
+        }}
+      >
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.primary",
+            lineHeight: 1.4,
+            wordBreak: "break-word",
+            fontSize: "0.8125rem",
+          }}
+        >
+          {message.text}
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+
 export const AgentOverlayRend = () => {
   const theme = useTheme();
   const windowRef = useMemo(() => getCurrentWindow(), []);
   const phase = useAppStore((state) => state.agent.overlayPhase);
   const levels = useAppStore((state) => state.audioLevels);
-  const transcript = useAppStore((state) => state.agent.overlayTranscript);
+  const windowState = useAppStore((state) => state.agent.windowState);
+  const messages = windowState?.messages ?? [];
 
   const isVisible = phase !== "idle";
   const isRecording = phase === "recording";
@@ -140,30 +186,24 @@ export const AgentOverlayRend = () => {
         <Box
           sx={{
             flex: 1,
-            padding: theme.spacing(2),
+            padding: theme.spacing(1.5),
             overflow: "auto",
             display: "flex",
-            alignItems: transcript ? "flex-start" : "center",
-            justifyContent: transcript ? "flex-start" : "center",
+            flexDirection: "column",
+            justifyContent: messages.length > 0 ? "flex-start" : "center",
           }}
         >
-          {transcript ? (
-            <Typography
-              variant="body2"
-              sx={{
-                color: "text.primary",
-                lineHeight: 1.5,
-                wordBreak: "break-word",
-              }}
-            >
-              {transcript}
-            </Typography>
+          {messages.length > 0 ? (
+            messages.map((message, index) => (
+              <MessageBubble key={index} message={message} />
+            ))
           ) : (
             <Typography
               variant="body2"
               sx={{
                 color: "text.secondary",
                 fontStyle: "italic",
+                textAlign: "center",
               }}
             >
               {isRecording ? "Listening..." : "Processing..."}

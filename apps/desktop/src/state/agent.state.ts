@@ -1,11 +1,12 @@
-import { OverlayPhase } from "../types/overlay.types";
+import type { AgentWindowState } from "../types/agent-window.types";
+import type { OverlayPhase } from "../types/overlay.types";
 
 export type AgentState = {
   overlayPhase: OverlayPhase;
-  overlayTranscript: string | null;
+  windowState: AgentWindowState | null;
 };
 
 export const INITIAL_AGENT_STATE: AgentState = {
   overlayPhase: "idle",
-  overlayTranscript: null,
+  windowState: null,
 };

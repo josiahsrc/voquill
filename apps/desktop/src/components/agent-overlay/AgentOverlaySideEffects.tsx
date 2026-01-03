@@ -1,6 +1,7 @@
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState } from "../../store";
-import { OverlayPhase } from "../../types/overlay.types";
+import type { AgentWindowState } from "../../types/agent-window.types";
+import type { OverlayPhase } from "../../types/overlay.types";
 
 type OverlayPhasePayload = {
   phase: OverlayPhase;
@@ -10,19 +11,16 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
-type OverlayTranscriptPayload = {
-  transcript: string | null;
+type WindowStatePayload = {
+  state: AgentWindowState | null;
 };
 
 export const AgentOverlaySideEffects = () => {
-  useTauriListen<OverlayTranscriptPayload>(
-    "agent_overlay_transcript",
-    (payload) => {
-      produceAppState((draft) => {
-        draft.agent.overlayTranscript = payload.transcript;
-      });
-    },
-  );
+  useTauriListen<WindowStatePayload>("agent_window_state", (payload) => {
+    produceAppState((draft) => {
+      draft.agent.windowState = payload.state;
+    });
+  });
 
   useTauriListen<OverlayPhasePayload>("agent_overlay_phase", (payload) => {
     produceAppState((draft) => {

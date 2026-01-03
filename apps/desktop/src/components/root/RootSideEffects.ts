@@ -1,4 +1,3 @@
-import { AppTarget } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
@@ -22,7 +21,6 @@ import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
-import { storeTranscription } from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
@@ -70,11 +68,6 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
-};
-
-type RecordingResult = {
-  transcript: string | null;
-  currentApp: AppTarget | null;
 };
 
 type StopRecordingResult = [
@@ -296,11 +289,6 @@ export const RootSideEffects = () => {
     const session = sessionRef.current;
     sessionRef.current = null;
 
-    let recordingResult: RecordingResult = {
-      transcript: null,
-      currentApp: null,
-    };
-
     try {
       if (session && audio) {
         const [currentApp, transcribeResult] = await Promise.all([
@@ -310,57 +298,29 @@ export const RootSideEffects = () => {
         const toneId = currentApp?.toneId ?? null;
         const rawTranscript = transcribeResult.rawTranscript;
 
-        let transcript = rawTranscript;
-        let postProcessMetadata = {};
-        const allWarnings = [...transcribeResult.warnings];
-
         if (rawTranscript) {
-          const ppResult = await strategy.postProcess({
+          const { shouldContinue } = await strategy.handleTranscript({
             rawTranscript,
             toneId,
             a11yInfo,
+            currentApp,
+            loadingToken,
+            audio,
           });
-          transcript = ppResult.transcript;
-          postProcessMetadata = ppResult.metadata;
-          allWarnings.push(...ppResult.warnings);
+
+          if (!shouldContinue) {
+            // Exit: clean up strategy and reset mode
+            await strategy.cleanup();
+            strategyRef.current = null;
+            produceAppState((draft) => {
+              draft.activeRecordingMode = null;
+            });
+          }
+          // If shouldContinue is true, keep strategy and mode for next turn
         }
-
-        // don't await so we don't block pasting
-        storeTranscription({
-          audio,
-          rawTranscript,
-          transcript,
-          transcriptionMetadata: transcribeResult.metadata,
-          postProcessMetadata,
-          warnings: allWarnings,
-        });
-
-        recordingResult = {
-          transcript,
-          currentApp,
-        };
       }
     } finally {
       session?.cleanup();
-
-      const finalTranscript = recordingResult.transcript;
-
-      const { shouldContinue } = await strategy.onComplete({
-        transcript: finalTranscript,
-        currentApp: recordingResult.currentApp,
-        loadingToken,
-      });
-
-      if (!shouldContinue) {
-        // Exit: clean up strategy and reset mode
-        await strategy.cleanup();
-        strategyRef.current = null;
-        produceAppState((draft) => {
-          draft.activeRecordingMode = null;
-        });
-      }
-      // If shouldContinue is true, keep strategy and mode for next turn
-
       refreshMember();
     }
   }, []);
