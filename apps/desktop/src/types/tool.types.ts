@@ -18,10 +18,18 @@ export type GetAccessibilityInfoParams = z.infer<
   typeof GetAccessibilityInfoParamsSchema
 >;
 
+export const WriteToTextFieldParamsSchema = z.object({
+  text: z.string().describe("The text to write to the focused text field"),
+});
+export type WriteToTextFieldParams = z.infer<
+  typeof WriteToTextFieldParamsSchema
+>;
+
 export const ToolParamsSchema = z.union([
   ShowToastParamsSchema,
   StopParamsSchema,
   GetAccessibilityInfoParamsSchema,
+  WriteToTextFieldParamsSchema,
 ]);
 export type ToolParams = z.infer<typeof ToolParamsSchema>;
 
@@ -37,6 +45,10 @@ export const TypedToolCallSchema = z.discriminatedUnion("name", [
   z.object({
     name: z.literal("get_accessibility_info"),
     arguments: GetAccessibilityInfoParamsSchema,
+  }),
+  z.object({
+    name: z.literal("write_to_text_field"),
+    arguments: WriteToTextFieldParamsSchema,
   }),
 ]);
 export type TypedToolCall = z.infer<typeof TypedToolCallSchema>;

@@ -175,6 +175,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::stop_key_listener,
             crate::commands::play_audio,
             crate::commands::get_accessibility_info,
+            crate::commands::set_accessibility_text,
         ])
 }
 

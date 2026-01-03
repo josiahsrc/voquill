@@ -15,6 +15,7 @@ import type {
 import { GetAccessibilityInfoTool } from "../tools/get-accessibility-info.tool";
 import { ShowToastTool } from "../tools/show-toast.tool";
 import { StopTool } from "../tools/stop.tool";
+import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
 
 export class AgentRecordingStrategy extends BaseRecordingStrategy {
   private history: AgentMessage[] = [];
@@ -37,6 +38,7 @@ export class AgentRecordingStrategy extends BaseRecordingStrategy {
     const tools = [
       new ShowToastTool(),
       new GetAccessibilityInfoTool(),
+      new WriteToTextFieldTool(),
       new StopTool(() => {
         this.shouldStop = true;
       }),
