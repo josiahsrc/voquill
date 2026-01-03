@@ -11,6 +11,9 @@
     "core:window:allow-show",
     "core:window:allow-hide",
     "core:window:allow-set-always-on-top",
-    "core:window:allow-set-ignore-cursor-events"
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-cursor-position",
+    "core:window:allow-outer-position",
+    "core:window:allow-scale-factor"
   ]
 }

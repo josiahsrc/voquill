@@ -1,17 +1,21 @@
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
   CircularProgress,
+  IconButton,
   LinearProgress,
   Paper,
   Typography,
 } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
+import { emitTo } from "@tauri-apps/api/event";
 import {
   availableMonitors,
   getCurrentWindow,
   LogicalSize,
 } from "@tauri-apps/api/window";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOverlayClickThrough } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
 import { AudioWaveform } from "../common/AudioWaveform";
@@ -197,6 +201,16 @@ export const AgentOverlayRend = () => {
   const paperRef = useRef<HTMLDivElement>(null);
   const [paperHeight, setPaperHeight] = useState<number | null>(null);
 
+  useOverlayClickThrough({
+    contentRef: paperRef,
+    enabled: isVisible,
+    windowRef,
+  });
+
+  const handleClose = useCallback(() => {
+    emitTo("main", "agent-overlay-close", {}).catch(console.error);
+  }, []);
+
   // Get max height (half screen) on mount
   useEffect(() => {
     const getScreenHeight = async () => {
@@ -257,16 +271,7 @@ export const AgentOverlayRend = () => {
     document.body.style.margin = "0";
     document.documentElement.style.backgroundColor = "transparent";
 
-    const initialize = async () => {
-      try {
-        await windowRef.setIgnoreCursorEvents(true);
-        await windowRef.hide();
-      } catch (err) {
-        console.error("Failed to initialize agent overlay window", err);
-      }
-    };
-
-    initialize().catch(() => {});
+    windowRef.hide().catch(console.error);
   }, [windowRef]);
 
   // Trigger animation when becoming visible
@@ -288,7 +293,6 @@ export const AgentOverlayRend = () => {
 
           await windowRef.show();
           await windowRef.setAlwaysOnTop(true);
-          await windowRef.setIgnoreCursorEvents(true);
         } else {
           await windowRef.hide();
         }
@@ -348,11 +352,31 @@ export const AgentOverlayRend = () => {
           backgroundColor: "background.paper",
           animation: `${fadeInScale} 0.2s ease-out`,
           transformOrigin: "top left",
+          position: "relative",
+          pointerEvents: "auto",
         }}
       >
+        <IconButton
+          onClick={handleClose}
+          size="small"
+          sx={{
+            position: "absolute",
+            top: 4,
+            left: 4,
+            width: 24,
+            height: 24,
+            backgroundColor: alpha(theme.palette.grey[500], 0.1),
+            "&:hover": {
+              backgroundColor: alpha(theme.palette.grey[500], 0.2),
+            },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 14 }} />
+        </IconButton>
         <Box
           sx={{
             padding: theme.spacing(1.5),
+            paddingTop: theme.spacing(4),
             overflow: "auto",
             display: "flex",
             flexDirection: "column",

@@ -405,5 +405,16 @@ export const RootSideEffects = () => {
     }
   });
 
+  useTauriListen<void>("agent-overlay-close", async () => {
+    const strategy = strategyRef.current;
+    if (strategy) {
+      await strategy.cleanup();
+      strategyRef.current = null;
+      produceAppState((draft) => {
+        draft.activeRecordingMode = null;
+      });
+    }
+  });
+
   return null;
 };

@@ -8,6 +8,7 @@ import {
   PhysicalPosition,
 } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOverlayClickThrough } from "../../hooks/overlay.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import { ToastAction } from "../../types/toast.types";
 import { getPlatform } from "../../utils/platform.utils";
@@ -75,56 +76,13 @@ export const ToastRend = () => {
     document.body.style.backgroundColor = "transparent";
     document.body.style.margin = "0";
     document.documentElement.style.backgroundColor = "transparent";
-
   }, []);
 
-  // Poll cursor position to toggle click-through based on whether mouse
-  // is over the content area. We use Tauri's cursorPosition API since it
-  // works even when the window is set to ignore cursor events.
-  useEffect(() => {
-    const content = contentRef.current;
-    if (!content || !displayedToast) return;
-
-    let isOverContent = false;
-    let animationFrame: number;
-
-    const checkCursorPosition = async () => {
-      try {
-        const cursor = await cursorPosition();
-        const windowPos = await windowRef.outerPosition();
-        const scaleFactor = (await windowRef.scaleFactor()) ?? 1;
-
-        // Convert cursor position to window-relative coordinates
-        const relativeX = (cursor.x - windowPos.x) / scaleFactor;
-        const relativeY = (cursor.y - windowPos.y) / scaleFactor;
-
-        const rect = content.getBoundingClientRect();
-        const nowOverContent =
-          relativeX >= rect.left &&
-          relativeX <= rect.right &&
-          relativeY >= rect.top &&
-          relativeY <= rect.bottom;
-
-        if (nowOverContent !== isOverContent) {
-          isOverContent = nowOverContent;
-          await windowRef.setIgnoreCursorEvents(!nowOverContent);
-        }
-      } catch {
-        // Ignore errors (window may be closing)
-      }
-
-      animationFrame = requestAnimationFrame(checkCursorPosition);
-    };
-
-    // Start with click-through enabled
-    windowRef.setIgnoreCursorEvents(true).catch(console.error);
-    animationFrame = requestAnimationFrame(checkCursorPosition);
-
-    return () => {
-      cancelAnimationFrame(animationFrame);
-      windowRef.setIgnoreCursorEvents(true).catch(console.error);
-    };
-  }, [windowRef, displayedToast]);
+  useOverlayClickThrough({
+    contentRef,
+    enabled: displayedToast !== null,
+    windowRef,
+  });
 
   useEffect(() => {
     if (currentToast) {
