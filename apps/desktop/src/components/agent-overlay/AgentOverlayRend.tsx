@@ -204,6 +204,7 @@ export const AgentOverlayRend = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [wasRecording, setWasRecording] = useState(false);
   const prevMessagesLengthRef = useRef(0);
+  const [canScrollDown, setCanScrollDown] = useState(false);
 
   useOverlayClickThrough({
     contentRef: paperRef,
@@ -263,6 +264,22 @@ export const AgentOverlayRend = () => {
         scrollContainerRef.current.scrollHeight;
     }
   }, [messages, isRecording, isLoading, wasRecording]);
+
+  // Track whether there's more content to scroll to
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const checkScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 5;
+      setCanScrollDown(!isAtBottom && scrollHeight > clientHeight);
+    };
+
+    checkScroll();
+    container.addEventListener("scroll", checkScroll);
+    return () => container.removeEventListener("scroll", checkScroll);
+  }, [messages, isVisible]);
 
   useEffect(() => {
     let canceled = false;
@@ -340,29 +357,42 @@ export const AgentOverlayRend = () => {
           pointerEvents: "auto",
         }}
       >
-        <IconButton
-          onClick={handleClose}
-          size="small"
+        <Box
           sx={{
             position: "absolute",
-            top: 4,
-            left: 4,
-            width: 24,
-            height: 24,
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 40,
+            background: `linear-gradient(to bottom, ${theme.vars?.palette.background.paper} 0%, ${theme.vars?.palette.background.paper} 50%, transparent 100%)`,
             zIndex: 1,
-            backgroundColor: alpha(theme.palette.grey[500], 0.1),
-            "&:hover": {
-              backgroundColor: alpha(theme.palette.grey[500], 0.2),
-            },
+            display: "flex",
+            alignItems: "flex-start",
+            padding: theme.spacing(0.5),
+            pointerEvents: "none",
           }}
         >
-          <CloseIcon sx={{ fontSize: 14 }} />
-        </IconButton>
+          <IconButton
+            onClick={handleClose}
+            size="small"
+            sx={{
+              width: 24,
+              height: 24,
+              pointerEvents: "auto",
+              backgroundColor: alpha(theme.palette.grey[500], 0.1),
+              "&:hover": {
+                backgroundColor: alpha(theme.palette.grey[500], 0.2),
+              },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Box>
         <Box
           ref={scrollContainerRef}
           sx={{
             padding: theme.spacing(1.5),
-            paddingTop: theme.spacing(4),
+            paddingTop: theme.spacing(5),
             flex: 1,
             minHeight: 0,
             overflowY: "auto",
@@ -385,6 +415,22 @@ export const AgentOverlayRend = () => {
 
           {showAgentThinkingBubble && <AgentThinkingBubble />}
         </Box>
+        {canScrollDown && (
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 40,
+              background: `linear-gradient(to top, ${theme.vars?.palette.background.paper} 0%, ${theme.vars?.palette.background.paper} 50%, transparent 100%)`,
+              zIndex: 1,
+              pointerEvents: "none",
+              borderBottomLeftRadius: "inherit",
+              borderBottomRightRadius: "inherit",
+            }}
+          />
+        )}
       </Paper>
     </Box>
   );
