@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import type { AppTarget } from "@repo/types";
-import type { AccessibilityInfo } from "../types/accessibility.types";
-import type { StopRecordingResponse } from "../types/transcription-session.types";
+import type { AccessibilityInfo } from "./accessibility.types";
+import type { StopRecordingResponse } from "./transcription-session.types";
 
 export type HandleTranscriptParams = {
   rawTranscript: string;
@@ -16,6 +16,6 @@ export type HandleTranscriptResult = {
   shouldContinue: boolean;
 };
 
-export type RecordingContext = {
+export type StrategyContext = {
   overlayLoadingTokenRef: RefObject<symbol | null>;
 };

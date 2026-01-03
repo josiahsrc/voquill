@@ -5,13 +5,13 @@ import {
   storeTranscription,
 } from "../actions/transcribe.actions";
 import type { OverlayPhase } from "../types/overlay.types";
-import { BaseRecordingStrategy } from "./base-recording.strategy";
+import { BaseStrategy } from "./base.strategy";
 import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
-} from "./recording.types";
+} from "../types/strategy.types";
 
-export class DictationRecordingStrategy extends BaseRecordingStrategy {
+export class DictationStrategy extends BaseStrategy {
   async onBeforeStart(): Promise<void> {
     // No special setup for dictation
   }

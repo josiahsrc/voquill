@@ -2,11 +2,11 @@ import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useMemo, useRef } from "react";
-import {
-  BaseRecordingStrategy,
-  getRecordingStrategy,
-  RecordingContext,
-} from "../../strategies";
+import type { RecordingMode } from "../../state/app.state";
+import { AgentStrategy } from "../../strategies/agent.strategy";
+import { BaseStrategy } from "../../strategies/base.strategy";
+import { DictationStrategy } from "../../strategies/dictation.strategy";
+import type { StrategyContext } from "../../types/strategy.types";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -82,13 +82,13 @@ export const RootSideEffects = () => {
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
-  const strategyRef = useRef<BaseRecordingStrategy | null>(null);
+  const strategyRef = useRef<BaseStrategy | null>(null);
   const userId = useAppStore((state) => state.auth?.uid);
   const keyPermAuthorized = useAppStore((state) =>
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
 
-  const recordingContext: RecordingContext = useMemo(
+  const strategyContext: StrategyContext = useMemo(
     () => ({
       overlayLoadingTokenRef,
     }),
@@ -172,10 +172,11 @@ export const RootSideEffects = () => {
     // Create or reuse strategy based on mode
     let strategy = strategyRef.current;
     if (!strategy) {
-      strategy = getRecordingStrategy(
-        currentMode ?? "dictate",
-        recordingContext,
-      );
+      const mode: RecordingMode = currentMode ?? "dictate";
+      strategy =
+        mode === "agent"
+          ? new AgentStrategy(strategyContext)
+          : new DictationStrategy(strategyContext);
       strategyRef.current = strategy;
     }
 
@@ -221,7 +222,7 @@ export const RootSideEffects = () => {
 
     startPendingRef.current = promise;
     await promise;
-  }, [recordingContext]);
+  }, [strategyContext]);
 
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {

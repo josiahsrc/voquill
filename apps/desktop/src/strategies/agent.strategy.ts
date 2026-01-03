@@ -6,17 +6,17 @@ import type {
   AgentWindowState,
 } from "../types/agent-window.types";
 import type { OverlayPhase } from "../types/overlay.types";
-import { BaseRecordingStrategy } from "./base-recording.strategy";
+import { BaseStrategy } from "./base.strategy";
 import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
-} from "./recording.types";
+} from "../types/strategy.types";
 import { GetAccessibilityInfoTool } from "../tools/get-accessibility-info.tool";
 import { ShowToastTool } from "../tools/show-toast.tool";
 import { StopTool } from "../tools/stop.tool";
 import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
 
-export class AgentRecordingStrategy extends BaseRecordingStrategy {
+export class AgentStrategy extends BaseStrategy {
   private uiMessages: AgentWindowMessage[] = [];
   private isFirstTurn = true;
   private agent: Agent | null = null;

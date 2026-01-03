@@ -2,11 +2,11 @@ import type { OverlayPhase } from "../types/overlay.types";
 import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
-  RecordingContext,
-} from "./recording.types";
+  StrategyContext,
+} from "../types/strategy.types";
 
-export abstract class BaseRecordingStrategy {
-  constructor(protected context: RecordingContext) {}
+export abstract class BaseStrategy {
+  constructor(protected context: StrategyContext) {}
 
   abstract onBeforeStart(): Promise<void>;
   abstract setPhase(phase: OverlayPhase): Promise<void>;
@@ -14,8 +14,5 @@ export abstract class BaseRecordingStrategy {
     params: HandleTranscriptParams,
   ): Promise<HandleTranscriptResult>;
 
-  /**
-   * Called when the strategy is being disposed (on exit or when switching modes)
-   */
   abstract cleanup(): Promise<void>;
 }
