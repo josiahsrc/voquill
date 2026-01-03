@@ -1,12 +1,12 @@
 import { invokeHandler } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
-  groqGenerateTextResponse,
   GenerateTextModel,
-  openaiGenerateTextResponse,
+  groqGenerateTextResponse,
   OpenAIGenerateTextModel,
-  openrouterGenerateTextResponse,
+  openaiGenerateTextResponse,
   OPENROUTER_DEFAULT_MODEL,
+  openrouterGenerateTextResponse,
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
@@ -30,6 +30,7 @@ export type GenerateTextOutput = {
 
 export abstract class BaseGenerateTextRepo extends BaseRepo {
   abstract generateText(input: GenerateTextInput): Promise<GenerateTextOutput>;
+  abstract getModelName(): string;
 }
 
 export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
@@ -46,6 +47,10 @@ export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
         postProcessingMode: "cloud",
       },
     };
+  }
+
+  getModelName(): string {
+    return "voquill-cloud";
   }
 }
 
@@ -78,6 +83,10 @@ export class GroqGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  getModelName(): string {
+    return this.model;
+  }
 }
 
 export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
@@ -106,6 +115,10 @@ export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • OpenAI",
       },
     };
+  }
+
+  getModelName(): string {
+    return this.model;
   }
 }
 
@@ -137,6 +150,10 @@ export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • Ollama",
       },
     };
+  }
+
+  getModelName(): string {
+    return this.model;
   }
 }
 
@@ -173,5 +190,9 @@ export class OpenRouterGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • OpenRouter",
       },
     };
+  }
+
+  getModelName(): string {
+    return this.model;
   }
 }
