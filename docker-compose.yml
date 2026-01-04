@@ -1,0 +1,30 @@
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - voquill-net
+
+  caddy:
+    image: caddy:2.8
+    container_name: ollama-gateway
+    restart: unless-stopped
+    environment:
+      API_KEY: test-api-key-12345
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./config/ollama/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - voquill-net
+    depends_on:
+      - ollama
+
+volumes:
+  ollama_data:
+
+networks:
+  voquill-net:
