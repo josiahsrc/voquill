@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
+    ports:
+      - "11431:11434"
     networks:
       - voquill-net
 
@@ -15,7 +17,7 @@ services:
     environment:
       API_KEY: test-api-key-12345
     ports:
-      - "11434:11434"
+      - "11430:11434"
     volumes:
       - ./config/ollama/Caddyfile:/etc/caddy/Caddyfile:ro
     networks:
