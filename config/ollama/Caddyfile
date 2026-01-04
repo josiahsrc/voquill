@@ -1,0 +1,21 @@
+:11434 {
+	# Matchers: accept either Authorization: Bearer <API_KEY> or X-API-Key: <API_KEY>
+	@bearer header Authorization "Bearer {env.API_KEY}"
+	@xapikey header X-API-Key {env.API_KEY}
+
+	# Allowed paths -> proxy to Ollama
+	handle @bearer {
+		reverse_proxy ollama:11434
+	}
+	handle @xapikey {
+		reverse_proxy ollama:11434
+	}
+
+	# Fallback: add auth challenge header and 401
+	handle {
+		header {
+			WWW-Authenticate "Bearer"
+		}
+		respond "Unauthorized" 401
+	}
+}

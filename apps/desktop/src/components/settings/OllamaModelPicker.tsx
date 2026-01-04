@@ -15,6 +15,7 @@ import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
 
 type OllamaModelPickerProps = {
   baseUrl: string | null;
+  apiKey?: string | null;
   selectedModel: string | null;
   onModelSelect: (model: string | null) => void;
   disabled?: boolean;
@@ -22,6 +23,7 @@ type OllamaModelPickerProps = {
 
 export const OllamaModelPicker = ({
   baseUrl,
+  apiKey,
   selectedModel,
   onModelSelect,
   disabled = false,
@@ -35,7 +37,7 @@ export const OllamaModelPicker = ({
   const fetchModels = useCallback(async () => {
     setIsLoading(true);
     try {
-      const repo = new OllamaRepo(effectiveUrl);
+      const repo = new OllamaRepo(effectiveUrl, apiKey || undefined);
       const available = await repo.checkAvailability();
       setIsAvailable(available);
 
@@ -52,7 +54,7 @@ export const OllamaModelPicker = ({
     } finally {
       setIsLoading(false);
     }
-  }, [effectiveUrl]);
+  }, [effectiveUrl, apiKey]);
 
   useEffect(() => {
     void fetchModels();
