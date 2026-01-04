@@ -1,20 +1,21 @@
 import { emitTo } from "@tauri-apps/api/event";
 import { Agent } from "../agent/agent";
 import { getAgentRepo } from "../repos";
+import { GetAccessibilityInfoTool } from "../tools/get-accessibility-info.tool";
+import { getToolsForServers } from "../tools/mcp.tool";
+import { ShowToastTool } from "../tools/show-toast.tool";
+import { StopTool } from "../tools/stop.tool";
+import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
 import type {
   AgentWindowMessage,
   AgentWindowState,
 } from "../types/agent-window.types";
 import type { OverlayPhase } from "../types/overlay.types";
-import { BaseStrategy } from "./base.strategy";
 import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
 } from "../types/strategy.types";
-import { GetAccessibilityInfoTool } from "../tools/get-accessibility-info.tool";
-import { ShowToastTool } from "../tools/show-toast.tool";
-import { StopTool } from "../tools/stop.tool";
-import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
+import { BaseStrategy } from "./base.strategy";
 
 export class AgentStrategy extends BaseStrategy {
   private uiMessages: AgentWindowMessage[] = [];
@@ -26,12 +27,21 @@ export class AgentStrategy extends BaseStrategy {
     await emitTo("agent-overlay", "agent_window_state", { state });
   }
 
-  private initAgent(): Agent | null {
+  private async initAgent(): Promise<Agent | null> {
     const { repo, warnings } = getAgentRepo();
     if (!repo) {
       console.warn("No agent repo configured:", warnings);
       return null;
     }
+
+    const mcpTools = await getToolsForServers([
+      // {
+      //   url: "https://api.githubcopilot.com/mcp/",
+      //   headers: {
+      //     Authorization: `Bearer todo`,
+      //   },
+      // },
+    ]);
 
     const tools = [
       new ShowToastTool(),
@@ -40,6 +50,7 @@ export class AgentStrategy extends BaseStrategy {
       new StopTool(() => {
         this.shouldStop = true;
       }),
+      ...mcpTools,
     ];
 
     return new Agent(repo, tools);
@@ -49,7 +60,7 @@ export class AgentStrategy extends BaseStrategy {
     if (this.isFirstTurn) {
       await this.emitState(null);
       this.isFirstTurn = false;
-      this.agent = this.initAgent();
+      this.agent = await this.initAgent();
     }
   }
 
@@ -62,7 +73,7 @@ export class AgentStrategy extends BaseStrategy {
     loadingToken,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
     if (!this.agent) {
-      this.agent = this.initAgent();
+      this.agent = await this.initAgent();
       if (!this.agent) {
         if (
           loadingToken &&

@@ -36,7 +36,8 @@ Do your best to write the outputs back into the text field when you have the ans
 ${toolDescriptions}
 
 ## Your Task
-Analyze the user's request and conversation history, then decide what to do next.
+Analyze the user's request and conversation history, then decide what to do next. If
+you've accomplished your task, choose "respond".
 
 ## Response Format
 Respond with JSON only:

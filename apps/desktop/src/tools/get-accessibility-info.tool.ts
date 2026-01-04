@@ -39,7 +39,7 @@ export class GetAccessibilityInfoTool extends BaseTool<
 > {
   readonly name = "get_accessibility_info";
   readonly description =
-    "Get information about the currently focused text field, including cursor position, selected text length, and text content.";
+    "Get information about what's on the screen and the currently focused text field, including cursor position, selected text length, and text content.";
   readonly inputSchema = GetAccessibilityInfoInputSchema;
   readonly outputSchema = GetAccessibilityInfoOutputSchema;
 
