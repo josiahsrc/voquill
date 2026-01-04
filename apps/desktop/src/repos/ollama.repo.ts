@@ -8,15 +8,28 @@ export abstract class BaseOllamaRepo extends BaseRepo {
 
 export class OllamaRepo extends BaseOllamaRepo {
   private ollamaUrl: string;
+  private apiKey?: string;
 
-  constructor(ollamaUrl: string) {
+  constructor(ollamaUrl: string, apiKey?: string) {
     super();
     this.ollamaUrl = ollamaUrl;
+    this.apiKey = apiKey;
+  }
+
+  private getHeaders(): HeadersInit | undefined {
+    if (!this.apiKey) {
+      return undefined;
+    }
+    return {
+      Authorization: `Bearer ${this.apiKey}`,
+    };
   }
 
   override async checkAvailability(): Promise<boolean> {
     try {
-      const health = await fetch(`${this.ollamaUrl}`);
+      const health = await fetch(`${this.ollamaUrl}`, {
+        headers: this.getHeaders(),
+      });
       return health.ok;
     } catch {
       return false;
@@ -25,7 +38,9 @@ export class OllamaRepo extends BaseOllamaRepo {
 
   async getAvailableModels(): Promise<string[]> {
     // Hitting the Ollama tags endpoint mirrors the `ollama list` CLI call.
-    const response = await fetch(new URL("/api/tags", this.ollamaUrl).href);
+    const response = await fetch(new URL("/api/tags", this.ollamaUrl).href, {
+      headers: this.getHeaders(),
+    });
     if (!response.ok) {
       throw new Error(
         `Unable to fetch Ollama models (status ${response.status})`,

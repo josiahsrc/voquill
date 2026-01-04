@@ -83,9 +83,9 @@ export const getStorageRepo = (): BaseStorageRepo => {
   return new LocalStorageRepo();
 };
 
-export const getOllamaRepo = (baseUrl?: string): BaseOllamaRepo => {
+export const getOllamaRepo = (baseUrl?: string, apiKey?: string): BaseOllamaRepo => {
   const url = baseUrl || OLLAMA_DEFAULT_URL;
-  return new OllamaRepo(url);
+  return new OllamaRepo(url, apiKey);
 };
 
 export type GenerateTextRepoOutput = {

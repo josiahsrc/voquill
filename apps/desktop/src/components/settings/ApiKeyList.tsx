@@ -212,9 +212,8 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
 };
 
 const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
-  // OLLAMA doesn't need an API key, just check server availability
   if (apiKey.provider === "ollama") {
-    const repo = new OllamaRepo(apiKey.baseUrl || OLLAMA_DEFAULT_URL);
+    const repo = new OllamaRepo(apiKey.baseUrl || OLLAMA_DEFAULT_URL, apiKey.keyFull || undefined);
     return repo.checkAvailability();
   }
 
@@ -395,6 +394,7 @@ const ApiKeyCard = ({
         <Box onClick={(e) => e.stopPropagation()}>
           <OllamaModelPicker
             baseUrl={apiKey.baseUrl ?? null}
+            apiKey={apiKey.keyFull}
             selectedModel={currentModel}
             onModelSelect={onModelChange}
             disabled={testing || deleting}
