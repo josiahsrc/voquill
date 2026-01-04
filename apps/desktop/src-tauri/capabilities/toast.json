@@ -13,6 +13,9 @@
     "core:window:allow-set-position",
     "core:window:allow-set-always-on-top",
     "core:window:allow-available-monitors",
-    "core:window:allow-cursor-position"
+    "core:window:allow-cursor-position",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-outer-position",
+    "core:window:allow-scale-factor"
   ]
 }

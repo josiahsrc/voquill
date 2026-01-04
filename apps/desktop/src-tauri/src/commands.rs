@@ -39,6 +39,14 @@ pub struct CurrentAppInfoResponse {
     pub icon_base64: String,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessibilityInfo {
+    pub cursor_position: Option<usize>,
+    pub selection_length: Option<usize>,
+    pub text_content: Option<String>,
+}
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppTargetUpsertArgs {
@@ -58,8 +66,14 @@ pub enum AudioClip {
     StartRecordingClip,
     #[serde(rename = "stop_recording_clip")]
     StopRecordingClip,
-    #[serde(rename = "limit_reached_clip")]
-    LimitReachedClip,
+    #[serde(rename = "alert_linux_clip")]
+    AlertLinuxClip,
+    #[serde(rename = "alert_macos_clip")]
+    AlertMacosClip,
+    #[serde(rename = "alert_windows_10_clip")]
+    AlertWindows10Clip,
+    #[serde(rename = "alert_windows_11_clip")]
+    AlertWindows11Clip,
 }
 
 #[derive(serde::Deserialize, Default)]
@@ -638,7 +652,14 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
     match clip {
         AudioClip::StartRecordingClip => crate::system::audio_feedback::play_start_recording_clip(),
         AudioClip::StopRecordingClip => crate::system::audio_feedback::play_stop_recording_clip(),
-        AudioClip::LimitReachedClip => crate::system::audio_feedback::play_limit_reached_clip(),
+        AudioClip::AlertLinuxClip => crate::system::audio_feedback::play_alert_linux_clip(),
+        AudioClip::AlertMacosClip => crate::system::audio_feedback::play_alert_macos_clip(),
+        AudioClip::AlertWindows10Clip => {
+            crate::system::audio_feedback::play_alert_windows_10_clip()
+        }
+        AudioClip::AlertWindows11Clip => {
+            crate::system::audio_feedback::play_alert_windows_11_clip()
+        }
     }
 
     Ok(())
@@ -698,11 +719,13 @@ pub fn start_recording(
 }
 
 #[tauri::command]
-pub fn stop_recording(
+pub async fn stop_recording(
     _app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
 ) -> Result<StopRecordingResponse, String> {
-    match recorder.stop() {
+    let recorder = Arc::clone(&recorder);
+
+    tauri::async_runtime::spawn_blocking(move || match recorder.stop() {
         Ok(result) => {
             let audio = result.audio;
             Ok(StopRecordingResponse {
@@ -727,7 +750,9 @@ pub fn stop_recording(
             eprintln!("Failed to stop recording via command: {message}");
             Err(message)
         }
-    }
+    })
+    .await
+    .map_err(|err| err.to_string())?
 }
 
 #[tauri::command]
@@ -1016,4 +1041,11 @@ pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn stop_key_listener() -> Result<(), String> {
     crate::platform::keyboard::stop_key_listener()
+}
+
+#[tauri::command]
+pub async fn get_accessibility_info() -> Result<AccessibilityInfo, String> {
+    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_accessibility_info)
+        .await
+        .map_err(|err| err.to_string())
 }

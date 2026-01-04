@@ -1,15 +1,15 @@
 import {
-  GoogleAuthProvider,
   User as FirebaseUser,
+  GoogleAuthProvider,
   UserCredential,
   createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
 } from "firebase/auth";
-import { auth } from "../main";
+import { getEffectiveAuth } from "../utils/auth.utils";
 import { BaseRepo } from "./base.repo";
 
 export abstract class BaseAuthRepo extends BaseRepo {
@@ -37,11 +37,11 @@ export class CloudAuthRepo extends BaseAuthRepo {
     email: string,
     password: string,
   ): Promise<UserCredential> {
-    return createUserWithEmailAndPassword(auth, email, password);
+    return createUserWithEmailAndPassword(getEffectiveAuth(), email, password);
   }
 
   async sendEmailVerificationForCurrentUser(): Promise<void> {
-    const user = auth.currentUser;
+    const user = getEffectiveAuth().currentUser;
     if (!user) {
       throw new Error("No user is currently signed in.");
     }
@@ -50,18 +50,18 @@ export class CloudAuthRepo extends BaseAuthRepo {
   }
 
   async signOut(): Promise<void> {
-    await firebaseSignOut(auth);
+    await firebaseSignOut(getEffectiveAuth());
   }
 
   async signInWithEmail(
     email: string,
     password: string,
   ): Promise<UserCredential> {
-    return signInWithEmailAndPassword(auth, email, password);
+    return signInWithEmailAndPassword(getEffectiveAuth(), email, password);
   }
 
   async sendPasswordResetRequest(email: string): Promise<void> {
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(getEffectiveAuth(), email);
   }
 
   async signInWithGoogleTokens(
@@ -69,15 +69,15 @@ export class CloudAuthRepo extends BaseAuthRepo {
     accessToken: string,
   ): Promise<UserCredential> {
     const credential = GoogleAuthProvider.credential(idToken, accessToken);
-    return signInWithCredential(auth, credential);
+    return signInWithCredential(getEffectiveAuth(), credential);
   }
 
   getCurrentUser(): FirebaseUser | null {
-    return auth.currentUser;
+    return getEffectiveAuth().currentUser;
   }
 
   async deleteMyAccount(): Promise<void> {
-    const user = auth.currentUser;
+    const user = getEffectiveAuth().currentUser;
     if (!user) {
       throw new Error("No user is currently signed in.");
     }

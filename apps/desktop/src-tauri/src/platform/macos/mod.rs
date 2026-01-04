@@ -1,3 +1,4 @@
+pub mod accessibility;
 pub mod dock;
 pub mod input;
 pub mod notch_overlay;
