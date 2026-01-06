@@ -42,7 +42,7 @@ import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
 } from "../../utils/keyboard.utils";
-import { getMemberExceedsWordLimitByState } from "../../utils/member.utils";
+import { getMemberExceedsLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
@@ -147,7 +147,7 @@ export const RootSideEffects = () => {
       return;
     }
 
-    if (getMemberExceedsWordLimitByState(state)) {
+    if (getMemberExceedsLimitByState(state)) {
       playAlertSound();
       showToast({
         title: "Word limit reached",

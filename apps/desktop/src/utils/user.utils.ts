@@ -7,7 +7,7 @@ import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import {
   getEffectivePlan,
-  getMemberExceedsWordLimitByState,
+  getMemberExceedsLimitByState,
 } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -157,7 +157,7 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const config = state.settings.aiTranscription;
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const cloudAvailable = getHasCloudAccess(state);
-  const exceedsLimits = getMemberExceedsWordLimitByState(state);
+  const exceedsLimits = getMemberExceedsLimitByState(state);
   const warnings: string[] = [];
 
   if (config.mode === "cloud") {
@@ -229,7 +229,7 @@ const getGenPrefsInternal = (
   context: string,
 ): GenerativePrefs => {
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
-  const exceedsLimits = getMemberExceedsWordLimitByState(state);
+  const exceedsLimits = getMemberExceedsLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
 
