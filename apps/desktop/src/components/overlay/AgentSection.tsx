@@ -10,15 +10,13 @@ import {
 } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import { emitTo } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
+  forwardRef,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import { useOverlayClickThrough } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
 import { AudioWaveform } from "../common/AudioWaveform";
@@ -26,7 +24,7 @@ import { AudioWaveform } from "../common/AudioWaveform";
 const AGENT_OVERLAY_WIDTH = 300;
 const LEFT_MARGIN = 16;
 const TOP_MARGIN = 16;
-const MAX_PAPER_HEIGHT = 600; // Must match Rust: AGENT_OVERLAY_HEIGHT - TOP_MARGIN * 2
+const MAX_PAPER_HEIGHT = 600;
 
 const fadeInScale = keyframes`
   from {
@@ -117,7 +115,6 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
     );
   }
 
-  // Agent messages - no bubble, just inline text
   return (
     <Typography
       variant="body2"
@@ -213,9 +210,8 @@ const AgentThinkingBubble = () => {
   );
 };
 
-export const AgentOverlayRend = () => {
+export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
   const theme = useTheme();
-  const windowRef = useMemo(() => getCurrentWindow(), []);
   const phase = useAppStore((state) => state.agent.overlayPhase);
   const levels = useAppStore((state) => state.audioLevels);
   const windowState = useAppStore((state) => state.agent.windowState);
@@ -226,45 +222,27 @@ export const AgentOverlayRend = () => {
   const isLoading = phase === "loading";
 
   const [animationKey, setAnimationKey] = useState(0);
-  const paperRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [wasRecording, setWasRecording] = useState(false);
   const prevMessagesLengthRef = useRef(0);
   const [canScrollDown, setCanScrollDown] = useState(false);
-
-  useOverlayClickThrough({
-    contentRef: paperRef,
-    enabled: isVisible,
-    windowRef,
-  });
 
   const handleClose = useCallback(() => {
     emitTo("main", "agent-overlay-close", {}).catch(console.error);
   }, []);
 
   useEffect(() => {
-    document.body.style.backgroundColor = "transparent";
-    document.body.style.margin = "0";
-    document.documentElement.style.backgroundColor = "transparent";
-
-    windowRef.hide().catch(console.error);
-  }, [windowRef]);
-
-  // Trigger animation when becoming visible
-  useEffect(() => {
     if (isVisible) {
       setAnimationKey((prev) => prev + 1);
     }
   }, [isVisible]);
 
-  // Track when recording starts
   useEffect(() => {
     if (isRecording) {
       setWasRecording(true);
     }
   }, [isRecording]);
 
-  // Reset wasRecording when a new user message appears or phase goes idle
   useEffect(() => {
     if (phase === "idle") {
       setWasRecording(false);
@@ -283,7 +261,6 @@ export const AgentOverlayRend = () => {
     prevMessagesLengthRef.current = messages.length;
   }, [phase, messages]);
 
-  // Auto-scroll to bottom when messages change or indicators appear
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop =
@@ -291,7 +268,6 @@ export const AgentOverlayRend = () => {
     }
   }, [messages, isRecording, isLoading, wasRecording]);
 
-  // Track whether there's more content to scroll to
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -307,40 +283,10 @@ export const AgentOverlayRend = () => {
     return () => container.removeEventListener("scroll", checkScroll);
   }, [messages, isVisible]);
 
-  useEffect(() => {
-    let canceled = false;
-
-    const syncVisibility = async () => {
-      try {
-        if (isVisible) {
-          if (canceled) {
-            return;
-          }
-
-          await windowRef.show();
-          await windowRef.setAlwaysOnTop(true);
-        } else {
-          await windowRef.hide();
-        }
-      } catch (err) {
-        if (!canceled) {
-          console.error("Failed to toggle agent overlay visibility", err);
-        }
-      }
-    };
-
-    syncVisibility().catch(() => {});
-
-    return () => {
-      canceled = true;
-    };
-  }, [windowRef, isVisible]);
-
   if (!isVisible) {
     return null;
   }
 
-  // Determine which live indicator to show at the bottom
   const lastMessage = messages[messages.length - 1];
   const showUserRecordingBubble = isRecording;
   const showUserProcessingBubble = isLoading && wasRecording;
@@ -352,23 +298,18 @@ export const AgentOverlayRend = () => {
   return (
     <Box
       sx={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        position: "absolute",
+        top: `${TOP_MARGIN}px`,
+        left: `${LEFT_MARGIN}px`,
+        bottom: `${TOP_MARGIN}px`,
         display: "flex",
         justifyContent: "flex-start",
         alignItems: "flex-start",
         pointerEvents: "none",
-        backgroundColor: "transparent",
-        paddingLeft: `${LEFT_MARGIN}px`,
-        paddingTop: `${TOP_MARGIN}px`,
-        paddingBottom: `${TOP_MARGIN}px`,
       }}
     >
       <Paper
-        ref={paperRef}
+        ref={ref}
         key={animationKey}
         elevation={4}
         sx={{
@@ -488,4 +429,6 @@ export const AgentOverlayRend = () => {
       </Paper>
     </Box>
   );
-};
+});
+
+AgentSection.displayName = "AgentSection";

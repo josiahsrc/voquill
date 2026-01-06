@@ -5,17 +5,19 @@ import {
 } from "@tauri-apps/api/window";
 import { useEffect, useMemo, RefObject } from "react";
 
-type UseOverlayClickThroughOptions = {
-  contentRef: RefObject<HTMLElement | null>;
+type ContentRef = RefObject<HTMLElement | null>;
+
+type UseUnifiedClickThroughOptions = {
+  contentRefs: ContentRef[];
   enabled: boolean;
   windowRef?: Window;
 };
 
-export const useOverlayClickThrough = ({
-  contentRef,
+export const useUnifiedClickThrough = ({
+  contentRefs,
   enabled,
   windowRef: providedWindowRef,
-}: UseOverlayClickThroughOptions) => {
+}: UseUnifiedClickThroughOptions) => {
   const defaultWindowRef = useMemo(() => getCurrentWindow(), []);
   const windowRef = providedWindowRef ?? defaultWindowRef;
 
@@ -26,12 +28,6 @@ export const useOverlayClickThrough = ({
     let animationFrame: number;
 
     const checkCursorPosition = async () => {
-      const content = contentRef.current;
-      if (!content) {
-        animationFrame = requestAnimationFrame(checkCursorPosition);
-        return;
-      }
-
       try {
         const cursor = await cursorPosition();
         const windowPos = await windowRef.outerPosition();
@@ -40,12 +36,23 @@ export const useOverlayClickThrough = ({
         const relativeX = (cursor.x - windowPos.x) / scaleFactor;
         const relativeY = (cursor.y - windowPos.y) / scaleFactor;
 
-        const rect = content.getBoundingClientRect();
-        const nowOverContent =
-          relativeX >= rect.left &&
-          relativeX <= rect.right &&
-          relativeY >= rect.top &&
-          relativeY <= rect.bottom;
+        let nowOverContent = false;
+
+        for (const ref of contentRefs) {
+          const content = ref.current;
+          if (!content) continue;
+
+          const rect = content.getBoundingClientRect();
+          if (
+            relativeX >= rect.left &&
+            relativeX <= rect.right &&
+            relativeY >= rect.top &&
+            relativeY <= rect.bottom
+          ) {
+            nowOverContent = true;
+            break;
+          }
+        }
 
         if (nowOverContent !== isOverContent) {
           isOverContent = nowOverContent;
@@ -65,5 +72,5 @@ export const useOverlayClickThrough = ({
       cancelAnimationFrame(animationFrame);
       windowRef.setIgnoreCursorEvents(true).catch(console.error);
     };
-  }, [windowRef, enabled, contentRef]);
+  }, [windowRef, enabled, contentRefs]);
 };

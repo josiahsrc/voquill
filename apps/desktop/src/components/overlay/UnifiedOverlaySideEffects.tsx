@@ -1,7 +1,22 @@
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
+import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
-import { Toast } from "../../types/toast.types";
+import type { AgentWindowState } from "../../types/agent-window.types";
+import type { OverlayPhase } from "../../types/overlay.types";
+import type { Toast } from "../../types/toast.types";
+
+type OverlayPhasePayload = {
+  phase: OverlayPhase;
+};
+
+type RecordingLevelPayload = {
+  levels?: number[];
+};
+
+type AgentWindowStatePayload = {
+  state: AgentWindowState | null;
+};
 
 type ToastPayload = {
   toast: Toast;
@@ -9,12 +24,46 @@ type ToastPayload = {
 
 const DEFAULT_TOAST_DURATION_MS = 3000;
 
-export const ToastSideEffects = () => {
+export const UnifiedOverlaySideEffects = () => {
   const currentToast = useAppStore((state) => state.currentToast);
   const toastQueue = useAppStore((state) => state.toastQueue);
   const timerRef = useRef<number | null>(null);
 
-  // Listen for toast events from Tauri
+  useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
+    produceAppState((draft) => {
+      draft.overlayPhase = payload.phase;
+      if (payload.phase !== "recording") {
+        draft.audioLevels = [];
+      }
+    });
+  });
+
+  useTauriListen<RecordingLevelPayload>("recording_level", (payload) => {
+    const raw = Array.isArray(payload.levels) ? payload.levels : [];
+    const sanitized = raw.map((value) =>
+      typeof value === "number" && Number.isFinite(value) ? value : 0,
+    );
+
+    produceAppState((draft) => {
+      draft.audioLevels = sanitized;
+    });
+  });
+
+  useTauriListen<AgentWindowStatePayload>("agent_window_state", (payload) => {
+    produceAppState((draft) => {
+      draft.agent.windowState = payload.state;
+    });
+  });
+
+  useTauriListen<OverlayPhasePayload>("agent_overlay_phase", (payload) => {
+    produceAppState((draft) => {
+      draft.agent.overlayPhase = payload.phase;
+      if (payload.phase !== "recording") {
+        draft.audioLevels = [];
+      }
+    });
+  });
+
   useEffect(() => {
     let unlisten: UnlistenFn | null = null;
     let canceled = false;
@@ -37,7 +86,6 @@ export const ToastSideEffects = () => {
     };
   }, []);
 
-  // When queue has items and no current toast, show next toast
   useEffect(() => {
     if (currentToast === null && toastQueue.length > 0) {
       produceAppState((draft) => {
@@ -49,7 +97,6 @@ export const ToastSideEffects = () => {
     }
   }, [currentToast, toastQueue.length]);
 
-  // Auto-dismiss current toast after duration
   useEffect(() => {
     if (currentToast !== null) {
       const duration = currentToast.duration ?? DEFAULT_TOAST_DURATION_MS;

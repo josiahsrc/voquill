@@ -24,7 +24,7 @@ export class AgentStrategy extends BaseStrategy {
   private shouldStop = false;
 
   private async emitState(state: AgentWindowState | null): Promise<void> {
-    await emitTo("agent-overlay", "agent_window_state", { state });
+    await emitTo("unified-overlay", "agent_window_state", { state });
   }
 
   private async initAgent(): Promise<Agent | null> {
@@ -65,7 +65,7 @@ export class AgentStrategy extends BaseStrategy {
   }
 
   async setPhase(phase: OverlayPhase): Promise<void> {
-    await emitTo("agent-overlay", "agent_overlay_phase", { phase });
+    await emitTo("unified-overlay", "agent_overlay_phase", { phase });
   }
 
   async handleTranscript({
@@ -122,7 +122,7 @@ export class AgentStrategy extends BaseStrategy {
     this.isFirstTurn = true;
     this.agent = null;
     this.shouldStop = false;
-    await emitTo("agent-overlay", "agent_overlay_phase", { phase: "idle" });
+    await emitTo("unified-overlay", "agent_overlay_phase", { phase: "idle" });
     await this.emitState(null);
   }
 }

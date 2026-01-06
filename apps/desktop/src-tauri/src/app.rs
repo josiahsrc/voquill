@@ -105,13 +105,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                ensure_overlay_window(&app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
-                ensure_toast_window(&app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
-                ensure_agent_overlay_window(&app_handle)
+                ensure_unified_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 
@@ -133,6 +127,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::user_preferences_set,
             crate::commands::list_microphones,
             crate::commands::list_gpus,
+            crate::commands::get_screen_visible_area,
             crate::commands::check_microphone_permission,
             crate::commands::request_microphone_permission,
             crate::commands::check_accessibility_permission,
@@ -179,22 +174,27 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         ])
 }
 
-#[cfg(target_os = "macos")]
-fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    crate::platform::macos::notch_overlay::prepare_overlay(app)
-}
+fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::{Manager, WebviewWindowBuilder};
 
-#[cfg(not(target_os = "macos"))]
-fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    use tauri::WebviewWindowBuilder;
-    if app.get_webview_window("recording-overlay").is_some() {
+    #[cfg(target_os = "macos")]
+    {
+        crate::platform::macos::notch_overlay::prepare_overlay(app)?;
+    }
+
+    if app.get_webview_window("unified-overlay").is_some() {
         return Ok(());
     }
 
-    const OVERLAY_WINDOW_WIDTH: f64 = 360.0;
-    const OVERLAY_WINDOW_HEIGHT: f64 = 80.0;
+    let (width, height) = if let Some(monitor) = app.primary_monitor().ok().flatten() {
+        let size = monitor.size();
+        let scale = monitor.scale_factor();
+        (size.width as f64 / scale, size.height as f64 / scale)
+    } else {
+        (1920.0, 1080.0)
+    };
 
-    WebviewWindowBuilder::new(app, "recording-overlay", overlay_webview_url(app)?)
+    WebviewWindowBuilder::new(app, "unified-overlay", unified_overlay_webview_url(app)?)
         .decorations(false)
         .always_on_top(true)
         .transparent(true)
@@ -202,14 +202,15 @@ fn ensure_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         .resizable(false)
         .shadow(false)
         .focusable(false)
-        .inner_size(OVERLAY_WINDOW_WIDTH, OVERLAY_WINDOW_HEIGHT)
+        .visible(false)
+        .inner_size(width, height)
+        .position(0.0, 0.0)
         .build()?;
 
     Ok(())
 }
 
-#[cfg(not(target_os = "macos"))]
-fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
+fn unified_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
     #[cfg(debug_assertions)]
     {
         if let Some(mut dev_url) = app.config().build.dev_url.clone() {
@@ -223,99 +224,4 @@ fn overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUr
     }
 
     Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
-}
-
-fn ensure_toast_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    use tauri::{WebviewWindowBuilder, Manager};
-    if app.get_webview_window("toast").is_some() {
-        return Ok(());
-    }
-
-    // Extra width for slide-in animation (toast slides from right)
-    const TOAST_CONTENT_WIDTH: f64 = 350.0;
-    const TOAST_WINDOW_WIDTH: f64 = TOAST_CONTENT_WIDTH * 2.0; // Room for animation
-    const TOAST_WINDOW_HEIGHT: f64 = 200.0;
-
-    // Position window so the right edge is flush with screen
-    let (x, y) = if let Some(monitor) = app.primary_monitor().ok().flatten() {
-        let size = monitor.size();
-        let scale = monitor.scale_factor();
-        let logical_width = size.width as f64 / scale;
-        let x = logical_width - TOAST_WINDOW_WIDTH;
-        (x, 0.0)
-    } else {
-        (500.0, 0.0)
-    };
-
-    let _window = WebviewWindowBuilder::new(app, "toast", toast_webview_url(app)?)
-        .decorations(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .resizable(false)
-        .shadow(false)
-        .transparent(true)
-        .focusable(false)
-        .visible(false)
-        .inner_size(TOAST_WINDOW_WIDTH, TOAST_WINDOW_HEIGHT)
-        .position(x, y)
-        .build()?;
-
-    Ok(())
-}
-
-fn toast_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
-    #[cfg(debug_assertions)]
-    {
-        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
-            let query = match dev_url.query() {
-                Some(existing) if !existing.is_empty() => format!("{existing}&toast=1"),
-                _ => "toast=1".to_string(),
-            };
-            dev_url.set_query(Some(&query));
-            return Ok(tauri::WebviewUrl::External(dev_url));
-        }
-    }
-
-    Ok(tauri::WebviewUrl::App("index.html?toast=1".into()))
-}
-
-fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    use tauri::WebviewWindowBuilder;
-    if app.get_webview_window("agent-overlay").is_some() {
-        return Ok(());
-    }
-
-    const AGENT_OVERLAY_WIDTH: f64 = 332.0; // 300 + 16 padding * 2
-    const AGENT_OVERLAY_HEIGHT: f64 = 632.0; // Max height to support up to half screen (600 + 16 padding * 2)
-
-    let _window = WebviewWindowBuilder::new(app, "agent-overlay", agent_webview_url(app)?)
-        .decorations(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .resizable(false)
-        .shadow(false)
-        .transparent(true)
-        .focusable(false)
-        .visible(false)
-        .inner_size(AGENT_OVERLAY_WIDTH, AGENT_OVERLAY_HEIGHT)
-        .position(0.0, 0.0)
-        .build()?;
-
-    Ok(())
-}
-
-fn agent_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
-    #[cfg(debug_assertions)]
-    {
-        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
-            let query = match dev_url.query() {
-                Some(existing) if !existing.is_empty() => format!("{existing}&agent=1"),
-                _ => "agent=1".to_string(),
-            };
-            dev_url.set_query(Some(&query));
-            return Ok(tauri::WebviewUrl::External(dev_url));
-        }
-    }
-
-    Ok(tauri::WebviewUrl::App("index.html?agent=1".into()))
 }
