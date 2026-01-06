@@ -10,13 +10,8 @@ import {
 } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import { emitTo } from "@tauri-apps/api/event";
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { useOverlayDrag } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
 import { AudioWaveform } from "../common/AudioWaveform";
@@ -25,6 +20,7 @@ const AGENT_OVERLAY_WIDTH = 300;
 const LEFT_MARGIN = 16;
 const TOP_MARGIN = 16;
 const MAX_PAPER_HEIGHT = 600;
+const HEADER_HEIGHT = 40;
 
 const fadeInScale = keyframes`
   from {
@@ -227,6 +223,16 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
   const prevMessagesLengthRef = useRef(0);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
+  const {
+    offset: dragOffset,
+    isDragging,
+    handleDragStart,
+  } = useOverlayDrag({
+    elementWidth: AGENT_OVERLAY_WIDTH,
+    headerHeight: HEADER_HEIGHT,
+    initialMargin: { left: LEFT_MARGIN, top: TOP_MARGIN },
+  });
+
   const handleClose = useCallback(() => {
     emitTo("main", "agent-overlay-close", {}).catch(console.error);
   }, []);
@@ -299,9 +305,9 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
     <Box
       sx={{
         position: "absolute",
-        top: `${TOP_MARGIN}px`,
-        left: `${LEFT_MARGIN}px`,
-        bottom: `${TOP_MARGIN}px`,
+        top: `${TOP_MARGIN + dragOffset.y}px`,
+        left: `${LEFT_MARGIN + dragOffset.x}px`,
+        bottom: `${TOP_MARGIN - dragOffset.y}px`,
         display: "flex",
         justifyContent: "flex-start",
         alignItems: "flex-start",
@@ -327,18 +333,21 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
         }}
       >
         <Box
+          onMouseDown={handleDragStart}
           sx={{
             position: "absolute",
             top: 0,
             left: 0,
             right: 0,
-            height: 40,
+            height: HEADER_HEIGHT,
             background: `linear-gradient(to bottom, ${theme.vars?.palette.background.paper} 0%, ${theme.vars?.palette.background.paper} 50%, transparent 100%)`,
             zIndex: 1,
             display: "flex",
             alignItems: "flex-start",
             padding: theme.spacing(0.5),
-            pointerEvents: "none",
+            pointerEvents: "auto",
+            cursor: isDragging ? "grabbing" : "grab",
+            userSelect: "none",
           }}
         >
           <IconButton
