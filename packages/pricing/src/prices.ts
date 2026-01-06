@@ -8,7 +8,7 @@ export const SUBSCRIPTION_PRICE_KEYS = [] as const;
 
 export type SubscriptionPriceKey = (typeof SUBSCRIPTION_PRICE_KEYS)[number];
 
-export const ONE_TIME_PRICE_KEYS = ["pro_monthly"] as const;
+export const ONE_TIME_PRICE_KEYS = ["pro_monthly", "pro_yearly"] as const;
 
 export type OneTimePriceKey = (typeof ONE_TIME_PRICE_KEYS)[number];
 
@@ -23,7 +23,12 @@ export const Prices: Record<PriceKey, PriceInfo> = {
   pro_monthly: {
     sandboxId: "price_1RlrYhRRNItZsxS6QxXfp7XK",
     devId: "",
-    prodId: "price_1Rm1JRIp7DaYKUgMvex8GJIv",
+    prodId: "price_1SmivAIp7DaYKUgML09WS7nC",
+  },
+  pro_yearly: {
+    sandboxId: "price_1RlrYhRRNItZsxS6QxXfp7XK",
+    devId: "",
+    prodId: "price_1SmiviIp7DaYKUgMlbjqI23J",
   },
 };
 

@@ -1,9 +1,9 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { invokeHandler } from "@repo/functions";
+import { FULL_CONFIG } from "@repo/types";
 import { retry } from "@repo/utilities";
 import dayjs from "dayjs";
-import { getFullConfig } from "../../src/utils/config.utils";
 import { buildSilenceWavBase64 } from "../helpers/audio";
 import {
 	createUserCreds,
@@ -30,7 +30,7 @@ describe("ai/transcribeAudio", () => {
 	it("blocks access if the daily word limit is exceeded", async () => {
 		const creds = await createMember();
 		await firemix().update(mixpath.members(creds.id), {
-			wordsToday: getFullConfig().freeWordsPerDay,
+			wordsToday: FULL_CONFIG.freeWordsPerDay,
 			wordsThisMonth: 0,
 			tokensToday: 0,
 			tokensThisMonth: 0,
@@ -54,7 +54,7 @@ describe("ai/transcribeAudio", () => {
 		const creds = await createMember();
 		await firemix().update(mixpath.members(creds.id), {
 			wordsToday: 0,
-			wordsThisMonth: getFullConfig().freeWordsPerMonth,
+			wordsThisMonth: FULL_CONFIG.freeWordsPerMonth,
 			tokensToday: 0,
 			tokensThisMonth: 0,
 			todayResetAt: firemix().timestampFromDate(dayjs().add(1, "day").toDate()),
@@ -149,7 +149,7 @@ describe("ai/generateText", () => {
 		await firemix().update(mixpath.members(creds.id), {
 			wordsToday: -1,
 			wordsThisMonth: -1,
-			tokensToday: getFullConfig().freeTokensPerDay,
+			tokensToday: FULL_CONFIG.freeTokensPerDay,
 			tokensThisMonth: 0,
 			todayResetAt: firemix().timestampFromDate(dayjs().add(1, "day").toDate()),
 			thisMonthResetAt: firemix().timestampFromDate(
@@ -171,7 +171,7 @@ describe("ai/generateText", () => {
 			wordsToday: -1,
 			wordsThisMonth: -1,
 			tokensToday: -1,
-			tokensThisMonth: getFullConfig().freeTokensPerMonth,
+			tokensThisMonth: FULL_CONFIG.freeTokensPerMonth,
 			todayResetAt: firemix().timestampFromDate(dayjs().add(1, "day").toDate()),
 			thisMonthResetAt: firemix().timestampFromDate(
 				dayjs().add(1, "month").toDate(),
