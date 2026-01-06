@@ -87,8 +87,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
 
     setSaving(true);
     try {
-      // For OLLAMA, use a dummy key since it doesn't require authentication
-      const keyToSave = isOllama ? "ollama" : key;
+      const keyToSave = key || "";
       const baseUrl = isOllama ? ollamaUrl || OLLAMA_DEFAULT_URL : undefined;
       await onSave(name, provider, keyToSave, baseUrl);
       setName("");
@@ -147,18 +146,33 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         )}
       </TextField>
       {isOllama ? (
-        <TextField
-          label={<FormattedMessage defaultMessage="Ollama URL" />}
-          value={ollamaUrl}
-          onChange={(event) => setOllamaUrl(event.target.value)}
-          placeholder={OLLAMA_DEFAULT_URL}
-          size="small"
-          fullWidth
-          disabled={saving}
-          helperText={
-            <FormattedMessage defaultMessage="Leave empty to use the default URL" />
-          }
-        />
+        <>
+          <TextField
+            label={<FormattedMessage defaultMessage="Ollama URL" />}
+            value={ollamaUrl}
+            onChange={(event) => setOllamaUrl(event.target.value)}
+            placeholder={OLLAMA_DEFAULT_URL}
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Leave empty to use the default URL" />
+            }
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="API key (optional)" />}
+            value={key}
+            onChange={(event) => setKey(event.target.value)}
+            placeholder="Leave empty if not required"
+            size="small"
+            fullWidth
+            type="password"
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Only needed if your Ollama instance requires authentication" />
+            }
+          />
+        </>
       ) : (
         <TextField
           label={<FormattedMessage defaultMessage="API key" />}
@@ -198,9 +212,8 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
 };
 
 const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
-  // OLLAMA doesn't need an API key, just check server availability
   if (apiKey.provider === "ollama") {
-    const repo = new OllamaRepo(apiKey.baseUrl || OLLAMA_DEFAULT_URL);
+    const repo = new OllamaRepo(apiKey.baseUrl || OLLAMA_DEFAULT_URL, apiKey.keyFull || undefined);
     return repo.checkAvailability();
   }
 
@@ -381,6 +394,7 @@ const ApiKeyCard = ({
         <Box onClick={(e) => e.stopPropagation()}>
           <OllamaModelPicker
             baseUrl={apiKey.baseUrl ?? null}
+            apiKey={apiKey.keyFull}
             selectedModel={currentModel}
             onModelSelect={onModelChange}
             disabled={testing || deleting}

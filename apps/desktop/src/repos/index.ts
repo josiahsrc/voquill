@@ -85,9 +85,9 @@ export const getStorageRepo = (): BaseStorageRepo => {
   return new LocalStorageRepo();
 };
 
-export const getOllamaRepo = (baseUrl?: string): BaseOllamaRepo => {
+export const getOllamaRepo = (baseUrl?: string, apiKey?: string): BaseOllamaRepo => {
   const url = baseUrl || OLLAMA_DEFAULT_URL;
-  return new OllamaRepo(url);
+  return new OllamaRepo(url, apiKey);
 };
 
 export type GenerateTextRepoOutput = {
@@ -111,11 +111,12 @@ const getGenTextRepoInternal = (
 
     if (prefs.provider === "ollama") {
       // Get Ollama-specific config from the API key
-      const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
-      const baseUrl = apiKey?.baseUrl || OLLAMA_DEFAULT_URL;
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl || OLLAMA_DEFAULT_URL;
       const model = prefs.postProcessingModel;
+      const ollamaApiKey = apiKeyRecord?.keyFull || undefined;
       if (model) {
-        repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model);
+        repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model, ollamaApiKey);
       } else {
         prefs.warnings.push("No model configured for Ollama post-processing.");
       }

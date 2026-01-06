@@ -1,12 +1,12 @@
 import { invokeHandler } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
-  groqGenerateTextResponse,
   GenerateTextModel,
-  openaiGenerateTextResponse,
+  groqGenerateTextResponse,
   OpenAIGenerateTextModel,
-  openrouterGenerateTextResponse,
+  openaiGenerateTextResponse,
   OPENROUTER_DEFAULT_MODEL,
+  openrouterGenerateTextResponse,
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
@@ -112,17 +112,19 @@ export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
 export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
   private ollamaUrl: string;
   private model: string;
+  private apiKey: string;
 
-  constructor(url: string, model: string) {
+  constructor(url: string, model: string, apiKey?: string) {
     super();
     this.ollamaUrl = url;
     this.model = model;
+    this.apiKey = apiKey || "ollama";
   }
 
   async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
     const response = await openaiGenerateTextResponse({
       baseUrl: this.ollamaUrl,
-      apiKey: "ollama",
+      apiKey: this.apiKey,
       model: this.model,
       prompt: input.prompt,
       system: input.system ?? undefined,
