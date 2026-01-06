@@ -102,6 +102,43 @@ fn empty_info() -> AccessibilityInfo {
     }
 }
 
+pub fn get_selected_text() -> Option<String> {
+    try_get_selected_text().ok().flatten()
+}
+
+fn try_get_selected_text() -> Result<Option<String>, windows::core::Error> {
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+        let automation: IUIAutomation =
+            CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)?;
+
+        let focused = automation.GetFocusedElement()?;
+
+        let pattern = focused.GetCurrentPattern(UIA_TextPatternId)?;
+
+        if pattern.as_raw().is_null() {
+            return Ok(None);
+        }
+
+        let text_pattern: IUIAutomationTextPattern = pattern.cast()?;
+
+        let selections = text_pattern.GetSelection()?;
+        let selection_count = selections.Length()?;
+
+        if selection_count > 0 {
+            let selection = selections.GetElement(0)?;
+            let selection_text: BSTR = selection.GetText(-1)?;
+            let text = selection_text.to_string();
+            if !text.is_empty() {
+                return Ok(Some(text));
+            }
+        }
+
+        Ok(None)
+    }
+}
+
 pub fn set_text_field_value(value: &str) -> Result<(), String> {
     try_set_text_field_value(value).map_err(|e| format!("Failed to set text field value: {:?}", e))
 }

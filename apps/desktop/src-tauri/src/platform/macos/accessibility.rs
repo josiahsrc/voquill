@@ -549,6 +549,39 @@ unsafe fn gather_screen_context(element: CFTypeRef, depth: usize) -> String {
     texts.join("\n")
 }
 
+pub fn get_selected_text() -> Option<String> {
+    unsafe { get_selected_text_impl() }
+}
+
+unsafe fn get_selected_text_impl() -> Option<String> {
+    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
+    let ax_selected_text = CFString::new("AXSelectedText");
+
+    let system_wide = AXUIElementCreateSystemWide();
+    if system_wide.is_null() {
+        return None;
+    }
+
+    let mut focused_element: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(
+        system_wide,
+        ax_focused_ui_element.as_concrete_TypeRef(),
+        &mut focused_element,
+    );
+
+    CFRelease(system_wide);
+
+    if result != AX_ERROR_SUCCESS || focused_element.is_null() {
+        return None;
+    }
+
+    let selected_text = get_string_attribute(focused_element, ax_selected_text.as_concrete_TypeRef());
+
+    CFRelease(focused_element);
+
+    selected_text.filter(|s| !s.is_empty())
+}
+
 pub fn set_text_field_value(value: &str) -> Result<(), String> {
     unsafe { set_text_field_value_impl(value) }
 }
