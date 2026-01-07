@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { firemix } from "@firemix/mixed";
 import { invokeHandler } from "@repo/functions";
 import { mixpath } from "@repo/firemix";
+import { FULL_CONFIG } from "@repo/types";
 import { retry } from "@repo/utilities";
 import {
 	createUserCreds,
@@ -10,7 +11,6 @@ import {
 } from "../helpers/firebase";
 import { buildSilenceWavBase64 } from "../helpers/audio";
 import { setUp, tearDown } from "../helpers/setup";
-import { getFullConfig } from "../../src/utils/config.utils";
 
 beforeAll(setUp);
 afterAll(tearDown);
@@ -128,7 +128,7 @@ describe("ai endpoints integration", () => {
 
 	it("prevents usage when limits are exceeded", async () => {
 		await firemix().update(mixpath.members(member.id), {
-			wordsToday: getFullConfig().proWordsPerDay,
+			wordsToday: FULL_CONFIG.proWordsPerDay,
 			tokensToday: -1,
 		});
 
@@ -143,7 +143,7 @@ describe("ai endpoints integration", () => {
 
 		await firemix().update(mixpath.members(member.id), {
 			wordsToday: -1,
-			tokensToday: getFullConfig().proTokensPerDay,
+			tokensToday: FULL_CONFIG.proTokensPerDay,
 		});
 
 		await expect(
