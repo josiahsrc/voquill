@@ -3,6 +3,7 @@ import { Nullable } from "@repo/types";
 import { countWords } from "@repo/utilities/src/string";
 import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
 import { AuthData } from "firebase-functions/tasks";
+import { mapCloudModelToGroqModel } from "../utils/ai.utils";
 import { checkAccess } from "../utils/check.utils";
 import { getGroqApiKey } from "../utils/env.utils";
 import { ClientError } from "../utils/error.utils";
@@ -48,7 +49,7 @@ export const runTranscribeAudio = async ({
 		({ text: transcript, wordsUsed } = await groqTranscribeAudio({
 			apiKey: getGroqApiKey(),
 			blob,
-      prompt: input.prompt ?? undefined,
+			prompt: input.prompt ?? undefined,
 			ext,
 			language: input.language,
 		}));
@@ -81,8 +82,10 @@ export const runGenerateText = async ({
 		generatedText = "Simulated generated text.";
 		tokensUsed = countWords(generatedText);
 	} else {
+		const model = mapCloudModelToGroqModel(input.model);
 		({ text: generatedText, tokensUsed } = await groqGenerateTextResponse({
 			apiKey: getGroqApiKey(),
+			model,
 			prompt: input.prompt,
 			system: input.system ?? undefined,
 			jsonResponse: input.jsonResponse ?? undefined,

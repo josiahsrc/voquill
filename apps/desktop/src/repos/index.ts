@@ -1,3 +1,4 @@
+import type { CloudModel } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
@@ -85,7 +86,10 @@ export const getStorageRepo = (): BaseStorageRepo => {
   return new LocalStorageRepo();
 };
 
-export const getOllamaRepo = (baseUrl?: string, apiKey?: string): BaseOllamaRepo => {
+export const getOllamaRepo = (
+  baseUrl?: string,
+  apiKey?: string,
+): BaseOllamaRepo => {
   const url = baseUrl || OLLAMA_DEFAULT_URL;
   return new OllamaRepo(url, apiKey);
 };
@@ -96,13 +100,17 @@ export type GenerateTextRepoOutput = {
   warnings: string[];
 };
 
-const getGenTextRepoInternal = (
-  prefs: GenerativePrefs,
-): GenerateTextRepoOutput => {
+const getGenTextRepoInternal = ({
+  prefs,
+  cloudModel,
+}: {
+  prefs: GenerativePrefs;
+  cloudModel: CloudModel;
+}): GenerateTextRepoOutput => {
   const state = getAppState();
   if (prefs.mode === "cloud") {
     return {
-      repo: new CloudGenerateTextRepo(),
+      repo: new CloudGenerateTextRepo(cloudModel),
       apiKeyId: null,
       warnings: prefs.warnings,
     };
@@ -155,13 +163,13 @@ const getGenTextRepoInternal = (
 export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getGenerativePrefs(state);
-  return getGenTextRepoInternal(prefs);
+  return getGenTextRepoInternal({ prefs, cloudModel: "medium" });
 };
 
 export const getAgentRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getAgentModePrefs(state);
-  return getGenTextRepoInternal(prefs);
+  return getGenTextRepoInternal({ prefs, cloudModel: "large" });
 };
 
 export type TranscribeAudioRepoOutput = {
