@@ -23,6 +23,7 @@
     "@formatjs/cli": "^6.7.4",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
+    "@repo/types": "*",
     "@types/node": "^22.15.3",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.1",

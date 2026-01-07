@@ -2,6 +2,7 @@ import { AppsCarousel } from "../components/apps-carousel";
 import DiscordSection from "../components/discord-section";
 import { HeroSection } from "../components/hero";
 import OfflineShowcase from "../components/offline-showcase";
+import PricingSection from "../components/pricing-section";
 import PrivacyShowcase from "../components/privacy-showcase";
 import SpeedShowcase from "../components/speed-showcase";
 import TextCleanupShowcase from "../components/text-cleanup-showcase";
@@ -18,6 +19,7 @@ function HomePage() {
         <PrivacyShowcase />
         <TextCleanupShowcase />
         <OfflineShowcase />
+        <PricingSection />
         <DiscordSection />
       </PageLayout>
     </BaseLayout>

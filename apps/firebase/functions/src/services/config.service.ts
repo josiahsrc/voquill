@@ -1,7 +1,6 @@
 import { HandlerOutput } from "@repo/functions";
-import { getFullConfig } from "../utils/config.utils";
+import { FULL_CONFIG } from "@repo/types";
 
 export const getFullConfigResp = (): HandlerOutput<"config/getFullConfig"> => {
-	const config = getFullConfig();
-	return { config };
+	return { config: FULL_CONFIG };
 };

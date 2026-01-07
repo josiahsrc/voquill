@@ -1,0 +1,430 @@
+.section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+  padding: 80px 0;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+  width: 100%;
+  max-width: 1120px;
+  padding: 0 24px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  max-width: 600px;
+}
+
+.header > *:first-child {
+  align-self: center;
+}
+
+.header h2 {
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.header p {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+/* Billing Toggle */
+.billingToggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.billingLabel {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.billingLabel.active {
+  color: var(--text-strong);
+}
+
+.toggleButton {
+  position: relative;
+  width: 56px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--level2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.toggleButton:hover {
+  background: var(--level3);
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-strong);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggleKnob.active {
+  transform: translateX(28px);
+}
+
+.saveBadge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .saveBadge {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+  }
+}
+
+/* Pricing Cards Grid */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+/* Pricing Card */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--level0);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow);
+}
+
+.card.popular {
+  background: var(--level1);
+  border-color: var(--border);
+  transform: scale(1.01);
+  box-shadow: var(--shadow);
+}
+
+/* Popular Badge */
+.popularBadge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #3b82f6;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Card Content */
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.planName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.card.popular .planName {
+  color: var(--text-strong);
+}
+
+.planDescription {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.card.popular .planDescription {
+  color: var(--text-muted);
+}
+
+/* Price */
+.priceContainer {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+}
+
+.price {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+}
+
+.card.popular .price {
+  color: var(--text-strong);
+}
+
+.pricePeriod {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.card.popular .pricePeriod {
+  color: var(--text-muted);
+}
+
+.billingNote {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.card.popular .billingNote {
+  color: var(--text-muted);
+}
+
+.customPrice {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+}
+
+/* CTA Button */
+.ctaButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 24px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  text-decoration: none;
+  background: var(--primary-button-bg);
+  color: var(--primary-button-fg);
+}
+
+.ctaButton:hover {
+  background: var(--primary-button-hover);
+  transform: translateY(-1px);
+}
+
+.ctaButton:active {
+  transform: translateY(1px);
+}
+
+.ctaButtonOutline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 24px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+  background: transparent !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+
+.ctaButtonOutline:hover {
+  background: var(--level1) !important;
+  color: var(--text-strong) !important;
+  border-color: var(--text-muted) !important;
+  transform: translateY(-1px);
+}
+
+.ctaButtonOutline:active {
+  transform: translateY(1px);
+}
+
+.card.popular .ctaButton {
+  background: var(--primary-button-bg);
+  color: var(--primary-button-fg);
+}
+
+.card.popular .ctaButton:hover {
+  background: var(--primary-button-hover);
+}
+
+/* Features List */
+.featuresSection {
+  margin-top: 24px;
+}
+
+.featuresTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.card.popular .featuresTitle {
+  color: var(--text-muted);
+}
+
+.featuresList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.card.popular .featureItem {
+  color: var(--text-muted);
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: #3b82f6;
+}
+
+.card.popular .checkIcon {
+  color: #3b82f6;
+}
+
+/* Deemphasized features */
+.featureItem.deemphasized {
+  opacity: 0.5;
+}
+
+.featureItem.deemphasized .checkIcon {
+  color: var(--text-muted);
+}
+
+/* Trust Signal */
+.trustSignal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-radius: 999px;
+  background: var(--level0);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.shieldIcon {
+  width: 24px;
+  height: 24px;
+  color: #22c55e;
+}
+
+@media (prefers-color-scheme: dark) {
+  .shieldIcon {
+    color: #4ade80;
+  }
+}
+
+.trustText {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.trustText strong {
+  color: var(--text-strong);
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .cardsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .card.popular {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 720px) {
+  .section {
+    padding: 56px 0;
+    border-radius: 24px;
+  }
+
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .billingToggle {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+}

@@ -1,12 +1,11 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
-import { Member } from "@repo/types";
+import { FULL_CONFIG, Member } from "@repo/types";
 import {
 	getMemberExceedsTokenLimit,
 	getMemberExceedsWordLimit,
 } from "@repo/utilities";
 import { AuthData } from "firebase-functions/tasks";
-import { getFullConfig } from "./config.utils";
 import { ClientError } from "./error.utils";
 import { memberFromDatabase } from "./type.utils";
 
@@ -31,13 +30,12 @@ export const validateMemberWithinLimits = async (args: {
 		throw new ClientError("You must be a member");
 	}
 
-	const config = getFullConfig();
-	if (getMemberExceedsWordLimit(memberFromDatabase(member.data), config)) {
+	if (getMemberExceedsWordLimit(memberFromDatabase(member.data), FULL_CONFIG)) {
 		console.warn("member exceeds word limit", member.data);
 		throw new ClientError("You have exceeded your word limit");
 	}
 
-	if (getMemberExceedsTokenLimit(memberFromDatabase(member.data), config)) {
+	if (getMemberExceedsTokenLimit(memberFromDatabase(member.data), FULL_CONFIG)) {
 		console.warn("member exceeds token limit", member.data);
 		throw new ClientError("You have exceeded your token limit");
 	}
