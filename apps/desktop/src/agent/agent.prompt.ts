@@ -1,10 +1,12 @@
 import zodToJsonSchema from "zod-to-json-schema";
+import { getAppState } from "../store";
 import { BaseTool } from "../tools/base.tool";
 import type { AgentMessage } from "../types/agent.types";
 import {
   DecisionResponseSchema,
   FinalResponseSchema,
 } from "../types/agent.types";
+import { getMyUserName } from "../utils/user.utils";
 
 export const DECISION_JSON_SCHEMA = zodToJsonSchema(DecisionResponseSchema, {
   name: "DecisionResponse",
@@ -16,6 +18,13 @@ export const FINAL_RESPONSE_JSON_SCHEMA = zodToJsonSchema(FinalResponseSchema, {
   $refStrategy: "none",
 });
 
+const getCommonPromptContext = (): string => {
+  const username = getMyUserName(getAppState());
+  return `
+The user's name is "${username}".
+`;
+};
+
 export const buildDecisionSystemPrompt = (tools: BaseTool[]): string => {
   const toolNames = tools.map((t) => t.name);
   const toolDescriptions = tools
@@ -23,6 +32,8 @@ export const buildDecisionSystemPrompt = (tools: BaseTool[]): string => {
     .join("\n");
 
   return `You are a helpful assistant that decides how to respond to user requests.
+
+${getCommonPromptContext()}
 
 For all tasks, you should call the get_text_field_info tool to try and gather if they
 are working on a text field. If they are working on a text field, that means that they
@@ -59,6 +70,8 @@ Respond with JSON only:
 export const buildFinalResponseSystemPrompt = (reasoning: string): string => {
   return `You are a helpful assistant that summarizes actions and responds to the user.
 
+${getCommonPromptContext()}
+
 You are responding to the user because of this reason: ${reasoning}
 
 You are speaking directly to the user. Let them know why you did what you did. Provide a
@@ -79,7 +92,10 @@ Respond with JSON only:
 `;
 };
 
-export const buildToolArgsSystemPrompt = (tool: BaseTool, reasoning: string): string => {
+export const buildToolArgsSystemPrompt = (
+  tool: BaseTool,
+  reasoning: string,
+): string => {
   const jsonSchema = tool.getInputJsonSchema();
 
   return `You are a helpful assistant. You need to provide arguments for the "${tool.name}" tool.
