@@ -17,9 +17,8 @@ export const FeatureReleaseDialog = () => {
     (state) => getMyUserPreferences(state)?.lastSeenFeature,
   );
   const hasConfettiFired = useRef(false);
-  console.log("lastSeenFeature:", lastSeenFeature);
 
-  const open = lastSeenFeature !== CURRENT_FEATURE;
+  const open = false;//lastSeenFeature !== CURRENT_FEATURE;
 
   useEffect(() => {
     if (open && !hasConfettiFired.current) {
