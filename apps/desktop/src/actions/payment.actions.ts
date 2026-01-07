@@ -1,6 +1,9 @@
-import { MemberPlan } from "@repo/types";
 import { produceAppState } from "../store";
-import { getPriceIdFromKey } from "../utils/price.utils";
+import {
+  getPriceIdFromKey,
+  PRICING_PLANS,
+  PricingPlan,
+} from "../utils/price.utils";
 
 export const openPaymentDialog = (priceId: string) => {
   produceAppState((draft) => {
@@ -9,13 +12,18 @@ export const openPaymentDialog = (priceId: string) => {
   });
 };
 
-export const tryOpenPaymentDialogForPlan = (
-  plan?: MemberPlan | string | null,
+export const tryOpenPaymentDialogForPricingPlan = (
+  plan?: PricingPlan | string | null,
 ): boolean => {
-  if (plan === "pro") {
-    openPaymentDialog(getPriceIdFromKey("pro_monthly"));
-    return true;
+  const castedPlan = plan as PricingPlan | undefined;
+  if (!castedPlan || !PRICING_PLANS.includes(castedPlan)) {
+    return false;
   }
 
-  return false;
+  if (castedPlan === "free" || castedPlan === "community") {
+    return false;
+  }
+
+  openPaymentDialog(getPriceIdFromKey(castedPlan));
+  return true;
 };

@@ -15,7 +15,7 @@ import { loadPrices } from "../../actions/pricing.actions";
 import { useOnEnter } from "../../hooks/helper.hooks";
 import { useAppStore } from "../../store";
 import { getEffectivePlan } from "../../utils/member.utils";
-import { getDollarPriceFromKey } from "../../utils/price.utils";
+import { getDollarPriceFromKey, PricingPlan } from "../../utils/price.utils";
 
 type CheckmarkRowProps = {
   children?: React.ReactNode;
@@ -170,7 +170,7 @@ const BillingToggle = ({ isYearly, onToggle }: BillingToggleProps) => {
 };
 
 export type PlanListProps = {
-  onSelect: (plan: MemberPlan) => void;
+  onSelect: (plan: PricingPlan) => void;
   disabled?: boolean;
   text?: string;
   sx?: SxProps;
@@ -198,8 +198,11 @@ export const PlanList = ({
     (state) => state.config?.freeWordsPerDay ?? 1_000,
   );
 
-  const displayPrice = isYearly ? proYearlyPrice : proMonthlyPrice;
-  const yearlyTotal = proYearlyPrice ? proYearlyPrice * 12 : null;
+  const proYearlyPerMonth = proYearlyPrice
+    ? Math.round(proYearlyPrice / 12)
+    : null;
+  const displayPrice = isYearly ? proYearlyPerMonth : proMonthlyPrice;
+  const yearlyTotal = proYearlyPrice;
 
   useOnEnter(() => {
     loadPrices();
@@ -301,7 +304,7 @@ export const PlanList = ({
         <Button
           variant="blue"
           size="small"
-          onClick={() => onSelect("pro")}
+          onClick={() => onSelect(isYearly ? "pro_yearly" : "pro_monthly")}
           disabled={getText("pro").disabled}
           fullWidth
           sx={{ py: 0.5 }}

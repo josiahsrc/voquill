@@ -8,8 +8,8 @@ import {
 } from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
-import { EffectivePlan } from "../types/member.types";
 import { CURRENT_FEATURE } from "../utils/feature.utils";
+import { PricingPlan } from "../utils/price.utils";
 import {
   GenerativePrefs,
   getGenerativePrefs,
@@ -54,7 +54,7 @@ export const resetOnboarding = () => {
   });
 };
 
-export const selectOnboardingPlan = (plan: EffectivePlan) => {
+export const selectOnboardingPlan = (plan: PricingPlan) => {
   produceAppState((draft) => {
     draft.onboarding.selectedPlan = plan;
 

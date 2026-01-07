@@ -21,12 +21,12 @@ export type PriceKey = (typeof PRICE_KEYS)[number];
 
 export const Prices: Record<PriceKey, PriceInfo> = {
   pro_monthly: {
-    sandboxId: "price_1RlrYhRRNItZsxS6QxXfp7XK",
+    sandboxId: "price_1Smx96RRNItZsxS6WXTeWby3",
     devId: "",
     prodId: "price_1SmivAIp7DaYKUgML09WS7nC",
   },
   pro_yearly: {
-    sandboxId: "price_1RlrYhRRNItZsxS6QxXfp7XK",
+    sandboxId: "price_1Smx9IRRNItZsxS6BG3XnnhL",
     devId: "",
     prodId: "price_1SmiviIp7DaYKUgMlbjqI23J",
   },

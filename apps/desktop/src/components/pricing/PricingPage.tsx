@@ -1,13 +1,13 @@
 import { Box, Stack, Typography } from "@mui/material";
-import { MemberPlan } from "@repo/types";
 import { useEffect } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router-dom";
-import { tryOpenPaymentDialogForPlan } from "../../actions/payment.actions";
+import { tryOpenPaymentDialogForPricingPlan } from "../../actions/payment.actions";
 import { usePrevious } from "../../hooks/helper.hooks";
 import { useConsumeQueryParams } from "../../hooks/navigation.hooks";
 import { getAppState, useAppStore } from "../../store";
 import { getIsPaying, getMyMember } from "../../utils/member.utils";
+import { PricingPlan } from "../../utils/price.utils";
 import { getIsSignedIn, getMyUser } from "../../utils/user.utils";
 import { Faq } from "./Faq";
 import Liquid from "./Liquid";
@@ -30,13 +30,13 @@ export default function PricingPage() {
   }, [isPaying, currPlan, prevPlan]);
 
   useConsumeQueryParams(["plan"], ([plan]) => {
-    tryOpenPaymentDialogForPlan(plan);
+    tryOpenPaymentDialogForPricingPlan(plan);
   });
 
-  const handleClickPlan = (plan: MemberPlan) => {
+  const handleClickPlan = (plan: PricingPlan) => {
     const isSignedIn = getIsSignedIn(getAppState());
     if (isSignedIn) {
-      tryOpenPaymentDialogForPlan(plan);
+      tryOpenPaymentDialogForPricingPlan(plan);
     } else {
       nav(`/login?plan=${plan}`, { replace: true });
     }

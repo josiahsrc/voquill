@@ -1,6 +1,5 @@
-import { MemberPlan } from "@repo/types";
 import { getAppState, produceAppState } from "../store";
-import { getPricesWithRuntimeCaching } from "../utils/price.utils";
+import { getPricesWithRuntimeCaching, PricingPlan } from "../utils/price.utils";
 import { setMode } from "./login.actions";
 
 export const loadPrices = async () => {
@@ -41,7 +40,7 @@ export const showUpgradePlanList = () => {
   });
 };
 
-export const selectUpgradePlan = (plan: MemberPlan) => {
+export const selectUpgradePlan = (plan: PricingPlan) => {
   const state = getAppState();
   if (!state.auth) {
     produceAppState((draft) => {
