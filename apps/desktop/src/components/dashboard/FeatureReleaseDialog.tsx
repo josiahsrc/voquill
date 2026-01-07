@@ -1,4 +1,10 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
 import { useEffect, useRef } from "react";
 import { showConfetti } from "../../actions/app.actions";
 import { markFeatureSeen } from "../../actions/user.actions";
@@ -11,8 +17,9 @@ export const FeatureReleaseDialog = () => {
     (state) => getMyUserPreferences(state)?.lastSeenFeature,
   );
   const hasConfettiFired = useRef(false);
+  console.log("lastSeenFeature:", lastSeenFeature);
 
-  const open = lastSeenFeature !== null && lastSeenFeature !== CURRENT_FEATURE;
+  const open = lastSeenFeature !== CURRENT_FEATURE;
 
   useEffect(() => {
     if (open && !hasConfettiFired.current) {
@@ -32,9 +39,7 @@ export const FeatureReleaseDialog = () => {
   return (
     <Dialog open={open} fullWidth maxWidth="sm">
       <DialogTitle>New Feature</DialogTitle>
-      <DialogContent>
-        {/* TODO: Add feature release content */}
-      </DialogContent>
+      <DialogContent>{/* TODO: Add feature release content */}</DialogContent>
       <DialogActions>
         <Button onClick={handleDismiss} variant="contained">
           Got it
