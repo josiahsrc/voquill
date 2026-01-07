@@ -25,7 +25,6 @@ const pricingPlans: PricingPlan[] = [
     monthlyPrice: 0,
     yearlyPrice: null,
     features: [
-      "Personal use",
       "AI dictation",
       "Bring your own API key",
       "Offline mode",
@@ -44,7 +43,6 @@ const pricingPlans: PricingPlan[] = [
     yearlyPrice: 8,
     features: [
       { text: "Everything in Personal", deemphasized: true },
-      "Commercial use",
       "AI dictation",
       "Advanced agent mode",
       "MCP integrations",
