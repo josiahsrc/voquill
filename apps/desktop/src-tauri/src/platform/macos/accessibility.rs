@@ -1,6 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
-use crate::commands::AccessibilityInfo;
+use crate::commands::{ScreenContextInfo, TextFieldInfo};
 use core_foundation::array::{CFArrayGetCount, CFArrayGetValueAtIndex};
 use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
 use core_foundation::string::{CFString, CFStringRef};
@@ -38,20 +38,24 @@ extern "C" {
     fn AXValueGetValue(value: CFTypeRef, value_type: i32, out: *mut CFRange) -> bool;
 }
 
-/// Get accessibility information about the currently focused text field.
-/// Uses macOS AXUIElement APIs to retrieve cursor position, selection length, and text content.
-pub fn get_accessibility_info() -> AccessibilityInfo {
-    unsafe { get_accessibility_info_impl() }
+/// Get text field information (cursor position, selection length, text content) without screen context.
+pub fn get_text_field_info() -> TextFieldInfo {
+    unsafe { get_text_field_info_impl() }
 }
 
-unsafe fn get_accessibility_info_impl() -> AccessibilityInfo {
+/// Get screen context information gathered from the screen around the focused element.
+pub fn get_screen_context() -> ScreenContextInfo {
+    unsafe { get_screen_context_impl() }
+}
+
+unsafe fn get_text_field_info_impl() -> TextFieldInfo {
     let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
     let ax_value = CFString::new("AXValue");
     let ax_selected_text_range = CFString::new("AXSelectedTextRange");
 
     let system_wide = AXUIElementCreateSystemWide();
     if system_wide.is_null() {
-        return empty_info();
+        return empty_text_field_info();
     }
 
     let mut focused_element: CFTypeRef = ptr::null();
@@ -64,7 +68,7 @@ unsafe fn get_accessibility_info_impl() -> AccessibilityInfo {
     CFRelease(system_wide);
 
     if result != AX_ERROR_SUCCESS || focused_element.is_null() {
-        return empty_info();
+        return empty_text_field_info();
     }
 
     let text_content = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
@@ -72,17 +76,49 @@ unsafe fn get_accessibility_info_impl() -> AccessibilityInfo {
     let (cursor_position, selection_length) =
         get_range_attribute(focused_element, ax_selected_text_range.as_concrete_TypeRef());
 
-    // Gather screen context by working outward from the focused element
+    CFRelease(focused_element);
+
+    TextFieldInfo {
+        cursor_position,
+        selection_length,
+        text_content,
+    }
+}
+
+unsafe fn get_screen_context_impl() -> ScreenContextInfo {
+    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
+
+    let system_wide = AXUIElementCreateSystemWide();
+    if system_wide.is_null() {
+        return ScreenContextInfo { screen_context: None };
+    }
+
+    let mut focused_element: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(
+        system_wide,
+        ax_focused_ui_element.as_concrete_TypeRef(),
+        &mut focused_element,
+    );
+
+    CFRelease(system_wide);
+
+    if result != AX_ERROR_SUCCESS || focused_element.is_null() {
+        return ScreenContextInfo { screen_context: None };
+    }
+
     let context = gather_context_outward(focused_element);
     let screen_context = if context.is_empty() { None } else { Some(context) };
 
     CFRelease(focused_element);
 
-    AccessibilityInfo {
-        cursor_position,
-        selection_length,
-        text_content,
-        screen_context,
+    ScreenContextInfo { screen_context }
+}
+
+fn empty_text_field_info() -> TextFieldInfo {
+    TextFieldInfo {
+        cursor_position: None,
+        selection_length: None,
+        text_content: None,
     }
 }
 
@@ -139,15 +175,6 @@ unsafe fn get_range_attribute(
     } else {
         CFRelease(value);
         (None, None)
-    }
-}
-
-fn empty_info() -> AccessibilityInfo {
-    AccessibilityInfo {
-        cursor_position: None,
-        selection_length: None,
-        text_content: None,
-        screen_context: None,
     }
 }
 

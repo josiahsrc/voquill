@@ -1,7 +1,8 @@
 import { emitTo } from "@tauri-apps/api/event";
 import { Agent } from "../agent/agent";
 import { getAgentRepo } from "../repos";
-import { GetAccessibilityInfoTool } from "../tools/get-accessibility-info.tool";
+import { GetScreenContextTool } from "../tools/get-screen-context.tool";
+import { GetTextFieldInfoTool } from "../tools/get-text-field-info.tool";
 import { getToolsForServers } from "../tools/mcp.tool";
 import { ShowToastTool } from "../tools/show-toast.tool";
 import { StopTool } from "../tools/stop.tool";
@@ -45,7 +46,8 @@ export class AgentStrategy extends BaseStrategy {
 
     const tools = [
       new ShowToastTool(),
-      new GetAccessibilityInfoTool(),
+      new GetTextFieldInfoTool(),
+      new GetScreenContextTool(),
       new WriteToTextFieldTool(),
       new StopTool(() => {
         this.shouldStop = true;

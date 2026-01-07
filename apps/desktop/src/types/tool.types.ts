@@ -13,9 +13,14 @@ export const StopParamsSchema = z.object({
 });
 export type StopParams = z.infer<typeof StopParamsSchema>;
 
-export const GetAccessibilityInfoParamsSchema = z.object({});
-export type GetAccessibilityInfoParams = z.infer<
-  typeof GetAccessibilityInfoParamsSchema
+export const GetTextFieldInfoParamsSchema = z.object({});
+export type GetTextFieldInfoParams = z.infer<
+  typeof GetTextFieldInfoParamsSchema
+>;
+
+export const GetScreenContextParamsSchema = z.object({});
+export type GetScreenContextParams = z.infer<
+  typeof GetScreenContextParamsSchema
 >;
 
 export const WriteToTextFieldParamsSchema = z.object({
@@ -28,7 +33,8 @@ export type WriteToTextFieldParams = z.infer<
 export const ToolParamsSchema = z.union([
   ShowToastParamsSchema,
   StopParamsSchema,
-  GetAccessibilityInfoParamsSchema,
+  GetTextFieldInfoParamsSchema,
+  GetScreenContextParamsSchema,
   WriteToTextFieldParamsSchema,
 ]);
 export type ToolParams = z.infer<typeof ToolParamsSchema>;
@@ -43,8 +49,12 @@ export const TypedToolCallSchema = z.discriminatedUnion("name", [
     arguments: StopParamsSchema,
   }),
   z.object({
-    name: z.literal("get_accessibility_info"),
-    arguments: GetAccessibilityInfoParamsSchema,
+    name: z.literal("get_text_field_info"),
+    arguments: GetTextFieldInfoParamsSchema,
+  }),
+  z.object({
+    name: z.literal("get_screen_context"),
+    arguments: GetScreenContextParamsSchema,
   }),
   z.object({
     name: z.literal("write_to_text_field"),

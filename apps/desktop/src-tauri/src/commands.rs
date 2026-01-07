@@ -41,10 +41,15 @@ pub struct CurrentAppInfoResponse {
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AccessibilityInfo {
+pub struct TextFieldInfo {
     pub cursor_position: Option<usize>,
     pub selection_length: Option<usize>,
     pub text_content: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenContextInfo {
     pub screen_context: Option<String>,
 }
 
@@ -1087,8 +1092,15 @@ pub fn stop_key_listener() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn get_accessibility_info() -> Result<AccessibilityInfo, String> {
-    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_accessibility_info)
+pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
+    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_text_field_info)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn get_screen_context() -> Result<ScreenContextInfo, String> {
+    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_screen_context)
         .await
         .map_err(|err| err.to_string())
 }

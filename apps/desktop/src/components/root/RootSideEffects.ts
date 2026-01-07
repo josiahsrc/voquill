@@ -28,7 +28,7 @@ import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import { getAppState, produceAppState, useAppStore } from "../../store";
-import type { AccessibilityInfo } from "../../types/accessibility.types";
+import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
@@ -72,7 +72,7 @@ type RecordingLevelPayload = {
 
 type StopRecordingResult = [
   StopRecordingResponse | null,
-  AccessibilityInfo | null,
+  TextFieldInfo | null,
 ];
 
 export const RootSideEffects = () => {
@@ -252,7 +252,7 @@ export const RootSideEffects = () => {
       }
 
       let audio: StopRecordingResponse | null = null;
-      let a11yInfo: AccessibilityInfo | null = null;
+      let a11yInfo: TextFieldInfo | null = null;
       try {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
@@ -263,8 +263,8 @@ export const RootSideEffects = () => {
         const [, outAudio, outA11yInfo] = await Promise.all([
           strategy.setPhase("loading"),
           invoke<StopRecordingResponse>("stop_recording"),
-          invoke<AccessibilityInfo>("get_accessibility_info").catch((error) => {
-            console.warn("[a11y] Failed to get accessibility info:", error);
+          invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
+            console.warn("[a11y] Failed to get text field info:", error);
             return null;
           }),
         ]);
