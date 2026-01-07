@@ -46,7 +46,10 @@ export const getPricesWithRuntimeCaching = async () => {
     return pendingPromise;
   }
 
-  const pricesIds = [getPriceIdFromKey("pro_monthly")];
+  const pricesIds = [
+    getPriceIdFromKey("pro_monthly"),
+    getPriceIdFromKey("pro_yearly"),
+  ];
 
   pendingPromise = invokeHandler("stripe/getPrices", {
     priceIds: pricesIds,
