@@ -20,4 +20,5 @@ export type UserPreferences = {
   gpuEnumerationEnabled: boolean;
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
+  lastSeenFeature: Nullable<string>;
 };

@@ -65,6 +65,7 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   gpuEnumerationEnabled: false,
   agentMode: null,
   agentModeApiKeyId: null,
+  lastSeenFeature: null,
 });
 
 const updateUserPreferences = async (
@@ -364,4 +365,10 @@ export const clearGotStartedAt = async (): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.gotStartedAt = null;
   }, "Failed to clear got started timestamp. Please try again.");
+};
+
+export const markFeatureSeen = async (feature: string): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.lastSeenFeature = feature;
+  }, "Failed to save feature seen status. Please try again.");
 };

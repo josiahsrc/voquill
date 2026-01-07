@@ -9,6 +9,7 @@ import {
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { EffectivePlan } from "../types/member.types";
+import { CURRENT_FEATURE } from "../utils/feature.utils";
 import {
   GenerativePrefs,
   getGenerativePrefs,
@@ -133,6 +134,7 @@ export const submitOnboarding = async () => {
       gotStartedAt: null,
       agentMode: null,
       agentModeApiKeyId: null,
+      lastSeenFeature: CURRENT_FEATURE,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
