@@ -1,9 +1,18 @@
 use crate::commands::{ScreenContextInfo, TextFieldInfo};
+use std::collections::HashSet;
 use windows::core::{Interface, BSTR};
-use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED};
+use windows::Win32::System::Com::{
+    CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
+};
 use windows::Win32::UI::Accessibility::{
-    CUIAutomation, IUIAutomation, IUIAutomationTextPattern, IUIAutomationValuePattern,
-    UIA_TextPatternId, UIA_ValuePatternId,
+    CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
+    IUIAutomationTreeWalker, IUIAutomationValuePattern, TreeScope_Children,
+    UIA_ControlTypePropertyId, UIA_DataItemControlTypeId, UIA_HeaderControlTypeId,
+    UIA_HyperlinkControlTypeId, UIA_ListItemControlTypeId, UIA_MenuBarControlTypeId,
+    UIA_MenuControlTypeId, UIA_MenuItemControlTypeId, UIA_NamePropertyId,
+    UIA_StatusBarControlTypeId, UIA_TabControlTypeId, UIA_TextControlTypeId,
+    UIA_TextPatternId, UIA_ToolBarControlTypeId, UIA_TreeItemControlTypeId,
+    UIA_ValuePatternId, UIA_WindowControlTypeId,
 };
 
 fn empty_text_field_info() -> TextFieldInfo {
@@ -80,7 +89,246 @@ fn try_get_text_field_info() -> Result<TextFieldInfo, windows::core::Error> {
 }
 
 pub fn get_screen_context() -> ScreenContextInfo {
-    ScreenContextInfo { screen_context: None }
+    match try_get_screen_context() {
+        Ok(info) => info,
+        Err(e) => {
+            eprintln!("[windows::accessibility] Error getting screen context: {:?}", e);
+            ScreenContextInfo { screen_context: None }
+        }
+    }
+}
+
+const MAX_CONTEXT_LENGTH: usize = 12000;
+const MAX_LEVELS_UP: usize = 20;
+const MAX_SIBLINGS: i32 = 60;
+const MAX_RECURSION_DEPTH: usize = 5;
+
+fn try_get_screen_context() -> Result<ScreenContextInfo, windows::core::Error> {
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+        let automation: IUIAutomation =
+            CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)?;
+
+        let focused = automation.GetFocusedElement()?;
+        let tree_walker = automation.ControlViewWalker()?;
+
+        let context = gather_context_outward(&automation, &tree_walker, &focused)?;
+        let screen_context = if context.is_empty() {
+            None
+        } else {
+            Some(context)
+        };
+
+        Ok(ScreenContextInfo { screen_context })
+    }
+}
+
+unsafe fn gather_context_outward(
+    automation: &IUIAutomation,
+    tree_walker: &IUIAutomationTreeWalker,
+    focused_element: &IUIAutomationElement,
+) -> Result<String, windows::core::Error> {
+    let mut texts: Vec<String> = Vec::new();
+
+    let focused_control_type = get_control_type(focused_element);
+    let focused_texts = extract_text_from_element(focused_element, focused_control_type)?;
+    texts.extend(focused_texts);
+
+    let mut current_element = focused_element.clone();
+    let mut levels_up = 0;
+
+    while levels_up < MAX_LEVELS_UP {
+        let parent = match tree_walker.GetParentElement(&current_element) {
+            Ok(p) => p,
+            Err(_) => break,
+        };
+
+        let control_type = get_control_type(&parent);
+
+        if control_type == UIA_WindowControlTypeId.0 as i32 {
+            if let Some(name) = get_element_name(&parent) {
+                let t = name.trim();
+                if !t.is_empty() {
+                    texts.push(format!("[Window: {}]", t));
+                }
+            }
+            break;
+        }
+
+        if let Some(name) = get_element_name(&parent) {
+            let t = name.trim();
+            if !t.is_empty() && t.len() > 1 {
+                texts.push(t.to_string());
+            }
+        }
+
+        if let Ok(children) = parent.FindAll(TreeScope_Children, &automation.CreateTrueCondition()?)
+        {
+            let count = children.Length()?.min(MAX_SIBLINGS);
+            for i in 0..count {
+                if let Ok(sibling) = children.GetElement(i) {
+                    let sibling_texts =
+                        extract_text_recursive(automation, &sibling, 0, MAX_RECURSION_DEPTH)?;
+                    texts.extend(sibling_texts);
+
+                    let current_len: usize = texts.iter().map(|s| s.len()).sum();
+                    if current_len > MAX_CONTEXT_LENGTH {
+                        break;
+                    }
+                }
+            }
+        }
+
+        let current_len: usize = texts.iter().map(|s| s.len()).sum();
+        if current_len > MAX_CONTEXT_LENGTH {
+            break;
+        }
+
+        current_element = parent;
+        levels_up += 1;
+    }
+
+    let mut seen = HashSet::new();
+    let unique_texts: Vec<String> = texts
+        .into_iter()
+        .filter(|s| seen.insert(s.clone()))
+        .collect();
+
+    Ok(unique_texts.join("\n"))
+}
+
+unsafe fn extract_text_recursive(
+    automation: &IUIAutomation,
+    element: &IUIAutomationElement,
+    depth: usize,
+    max_depth: usize,
+) -> Result<Vec<String>, windows::core::Error> {
+    if depth > max_depth {
+        return Ok(Vec::new());
+    }
+
+    let mut texts = Vec::new();
+    let control_type = get_control_type(element);
+
+    if should_skip_control_type(control_type) {
+        return Ok(texts);
+    }
+
+    let element_texts = extract_text_from_element(element, control_type)?;
+    texts.extend(element_texts);
+
+    if is_container_control_type(control_type) {
+        if let Ok(children) =
+            element.FindAll(TreeScope_Children, &automation.CreateTrueCondition()?)
+        {
+            let count = children.Length()?.min(30);
+            for i in 0..count {
+                if let Ok(child) = children.GetElement(i) {
+                    let child_texts =
+                        extract_text_recursive(automation, &child, depth + 1, max_depth)?;
+                    texts.extend(child_texts);
+                }
+            }
+        }
+    }
+
+    Ok(texts)
+}
+
+unsafe fn extract_text_from_element(
+    element: &IUIAutomationElement,
+    control_type: i32,
+) -> Result<Vec<String>, windows::core::Error> {
+    let mut texts = Vec::new();
+
+    if let Some(name) = get_element_name(element) {
+        let t = name.trim();
+        if !t.is_empty() && t.len() < 500 {
+            texts.push(t.to_string());
+        }
+    }
+
+    let value_safe_types = [
+        UIA_TextControlTypeId.0 as i32,
+        UIA_HyperlinkControlTypeId.0 as i32,
+        UIA_DataItemControlTypeId.0 as i32,
+        UIA_ListItemControlTypeId.0 as i32,
+        UIA_TreeItemControlTypeId.0 as i32,
+        UIA_MenuItemControlTypeId.0 as i32,
+    ];
+
+    if value_safe_types.contains(&control_type) {
+        if let Some(value) = get_element_value(element) {
+            let t = value.trim();
+            if !t.is_empty() && t.len() < 500 && !texts.contains(&t.to_string()) {
+                texts.push(t.to_string());
+            }
+        }
+    }
+
+    Ok(texts)
+}
+
+fn get_control_type(element: &IUIAutomationElement) -> i32 {
+    unsafe {
+        element
+            .GetCurrentPropertyValue(UIA_ControlTypePropertyId)
+            .ok()
+            .and_then(|v| v.as_raw().Anonymous.Anonymous.Anonymous.lVal.try_into().ok())
+            .unwrap_or(0)
+    }
+}
+
+fn get_element_name(element: &IUIAutomationElement) -> Option<String> {
+    unsafe {
+        element
+            .GetCurrentPropertyValue(UIA_NamePropertyId)
+            .ok()
+            .and_then(|v| {
+                let bstr = BSTR::from_raw(*v.as_raw().Anonymous.Anonymous.Anonymous.bstrVal);
+                let s = bstr.to_string();
+                std::mem::forget(bstr);
+                if s.is_empty() {
+                    None
+                } else {
+                    Some(s)
+                }
+            })
+    }
+}
+
+fn get_element_value(element: &IUIAutomationElement) -> Option<String> {
+    unsafe {
+        let pattern = element.GetCurrentPattern(UIA_ValuePatternId).ok()?;
+        if pattern.as_raw().is_null() {
+            return None;
+        }
+        let value_pattern: IUIAutomationValuePattern = pattern.cast().ok()?;
+        let value: BSTR = value_pattern.CurrentValue().ok()?;
+        let s = value.to_string();
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    }
+}
+
+fn should_skip_control_type(control_type: i32) -> bool {
+    control_type == 0
+}
+
+fn is_container_control_type(control_type: i32) -> bool {
+    let container_types = [
+        UIA_TabControlTypeId.0 as i32,
+        UIA_MenuControlTypeId.0 as i32,
+        UIA_MenuBarControlTypeId.0 as i32,
+        UIA_ToolBarControlTypeId.0 as i32,
+        UIA_StatusBarControlTypeId.0 as i32,
+        UIA_HeaderControlTypeId.0 as i32,
+    ];
+    container_types.contains(&control_type)
 }
 
 pub fn get_selected_text() -> Option<String> {
