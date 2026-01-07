@@ -1,9 +1,10 @@
 import { emitTo } from "@tauri-apps/api/event";
 import { Agent } from "../agent/agent";
-import { getAgentRepo } from "../repos";
+import { getAgentRepo, getMcpServerRepo } from "../repos";
+import { getAppState } from "../store";
 import { GetScreenContextTool } from "../tools/get-screen-context.tool";
 import { GetTextFieldInfoTool } from "../tools/get-text-field-info.tool";
-import { getToolsForServers } from "../tools/mcp.tool";
+import { getToolsForServers, type McpServerConfig } from "../tools/mcp.tool";
 import { StopTool } from "../tools/stop.tool";
 import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
 import type {
@@ -34,14 +35,8 @@ export class AgentStrategy extends BaseStrategy {
       return null;
     }
 
-    const mcpTools = await getToolsForServers([
-      // {
-      //   url: "https://api.githubcopilot.com/mcp/",
-      //   headers: {
-      //     Authorization: `Bearer todo`,
-      //   },
-      // },
-    ]);
+    const mcpConfigs = await this.getMcpServerConfigs();
+    const mcpTools = await getToolsForServers(mcpConfigs);
 
     const tools = [
       new GetTextFieldInfoTool(),
@@ -54,6 +49,36 @@ export class AgentStrategy extends BaseStrategy {
     ];
 
     return new Agent(repo, tools);
+  }
+
+  private async getMcpServerConfigs(): Promise<McpServerConfig[]> {
+    const state = getAppState();
+    const enabledServers = Object.values(state.mcpServerById).filter(
+      (s) => s.enabled && s.isAuthenticated,
+    );
+
+    if (enabledServers.length === 0) {
+      return [];
+    }
+
+    const mcpRepo = getMcpServerRepo();
+    const configs: McpServerConfig[] = [];
+
+    for (const server of enabledServers) {
+      try {
+        const token = await mcpRepo.getMcpServerToken(server.id);
+        configs.push({
+          url: server.url,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.warn(`Failed to get token for MCP server ${server.name}:`, error);
+      }
+    }
+
+    return configs;
   }
 
   async onBeforeStart(): Promise<void> {

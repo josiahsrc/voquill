@@ -4,6 +4,7 @@ import {
   AppTarget,
   FullConfig,
   Hotkey,
+  McpServer,
   Member,
   Nullable,
   Term,
@@ -37,6 +38,7 @@ import {
 } from "./transcriptions.state";
 import { INITIAL_TUTORIAL_STATE, TutorialState } from "./tutorial.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
+import { INITIAL_APPS_STATE, AppsState } from "./apps.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -64,12 +66,14 @@ export type AppState = {
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
   toneById: Record<string, Tone>;
+  mcpServerById: Record<string, McpServer>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
   dictionary: DictionaryState;
+  apps: AppsState;
   tones: TonesState;
   toneEditor: ToneEditorState;
   settings: SettingsState;
@@ -102,6 +106,7 @@ export const INITIAL_APP_STATE: AppState = {
   priceValueByKey: {},
   apiKeyById: {},
   toneById: {},
+  mcpServerById: {},
   overlayPhase: "idle",
   audioLevels: [],
   permissions: {
@@ -124,6 +129,7 @@ export const INITIAL_APP_STATE: AppState = {
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,
+  apps: INITIAL_APPS_STATE,
   tones: INITIAL_TONES_STATE,
   toneEditor: INITIAL_TONE_EDITOR_STATE,
   settings: INITIAL_SETTINGS_STATE,

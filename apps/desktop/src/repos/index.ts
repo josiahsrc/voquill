@@ -29,6 +29,7 @@ import {
 import { BaseStorageRepo, LocalStorageRepo } from "./storage.repo";
 import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
+import { BaseMcpServerRepo, LocalMcpServerRepo } from "./mcp-server.repo";
 import {
   AldeaTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
@@ -203,4 +204,8 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
     apiKeyId: null,
     warnings: prefs.warnings,
   };
+};
+
+export const getMcpServerRepo = (): BaseMcpServerRepo => {
+  return new LocalMcpServerRepo();
 };

@@ -1120,3 +1120,186 @@ pub async fn get_selected_text() -> Result<Option<String>, String> {
         .await
         .map_err(|err| err.to_string())
 }
+
+#[tauri::command]
+pub async fn mcp_server_create(
+    server: crate::domain::McpServerCreateRequest,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::McpServerView, String> {
+    let created_at = current_timestamp_millis()?;
+
+    let stored = crate::domain::McpServer {
+        id: server.id,
+        provider: server.provider,
+        name: server.name,
+        url: server.url,
+        enabled: true,
+        created_at,
+        access_token_ciphertext: None,
+        refresh_token_ciphertext: None,
+        token_expires_at: None,
+        salt: None,
+    };
+
+    crate::db::mcp_server_queries::insert_mcp_server(database.pool(), &stored)
+        .await
+        .map(crate::domain::McpServerView::from)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn mcp_server_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::McpServerView>, String> {
+    crate::db::mcp_server_queries::fetch_mcp_servers(database.pool())
+        .await
+        .map(|servers| servers.into_iter().map(crate::domain::McpServerView::from).collect())
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn mcp_server_update(
+    request: crate::domain::McpServerUpdateRequest,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::mcp_server_queries::update_mcp_server(database.pool(), &request)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn mcp_server_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::mcp_server_queries::delete_mcp_server(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn mcp_server_get_token(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    microsoft_config: State<'_, crate::state::MicrosoftOAuthState>,
+) -> Result<String, String> {
+    let server = crate::db::mcp_server_queries::fetch_mcp_server_by_id(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())?
+        .ok_or_else(|| format!("MCP server with id '{}' not found", id))?;
+
+    let salt = server.salt.as_ref().ok_or_else(|| "MCP server has no auth tokens".to_string())?;
+    let ciphertext = server.access_token_ciphertext.as_ref().ok_or_else(|| "MCP server has no access token".to_string())?;
+
+    let access_token = reveal_api_key(salt, ciphertext)
+        .map_err(|err| format!("Failed to decrypt access token: {err}"))?;
+
+    let now = current_timestamp_millis()?;
+    let token_expires_at = server.token_expires_at.unwrap_or(0);
+    let buffer_ms: i64 = 5 * 60 * 1000;
+
+    if token_expires_at > 0 && now + buffer_ms < token_expires_at {
+        return Ok(access_token);
+    }
+
+    let refresh_token_ciphertext = server.refresh_token_ciphertext.as_ref()
+        .ok_or_else(|| "No refresh token available to renew access".to_string())?;
+
+    let refresh_token = reveal_api_key(salt, refresh_token_ciphertext)
+        .map_err(|err| format!("Failed to decrypt refresh token: {err}"))?;
+
+    let config = microsoft_config.config().ok_or_else(|| {
+        "Microsoft OAuth not configured. Set VOQUILL_MICROSOFT_CLIENT_ID.".to_string()
+    })?;
+
+    let scopes = get_scopes_for_provider(&server.provider);
+    let refreshed = crate::system::microsoft_oauth::refresh_microsoft_token(config, &refresh_token, scopes)
+        .await
+        .map_err(|err| format!("Token refresh failed: {err}"))?;
+
+    let new_access_protected = protect_api_key(&refreshed.access_token);
+    let new_refresh_protected = refreshed.refresh_token.as_ref().map(|rt| protect_api_key(rt));
+    let new_expires_at = now + (refreshed.expires_in * 1000);
+
+    crate::db::mcp_server_queries::update_mcp_server_tokens(
+        database.pool(),
+        &id,
+        &new_access_protected.ciphertext_b64,
+        new_refresh_protected.as_ref().map(|p| p.ciphertext_b64.as_str()),
+        Some(new_expires_at),
+        &new_access_protected.salt_b64,
+    )
+    .await
+    .map_err(|err| format!("Failed to save refreshed tokens: {err}"))?;
+
+    Ok(refreshed.access_token)
+}
+
+fn get_scopes_for_provider(provider: &str) -> &'static str {
+    match provider {
+        "microsoft_graph" => "User.Read offline_access",
+        _ => "offline_access",
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MicrosoftAuthResult {
+    pub access_token: String,
+    pub refresh_token: Option<String>,
+    pub expires_in: i64,
+}
+
+#[tauri::command]
+pub async fn start_microsoft_oauth(
+    app_handle: AppHandle,
+    provider: String,
+    config: State<'_, crate::state::MicrosoftOAuthState>,
+) -> Result<MicrosoftAuthResult, String> {
+    let config = config.config().ok_or_else(|| {
+        "Microsoft OAuth not configured. Set VOQUILL_MICROSOFT_CLIENT_ID.".to_string()
+    })?;
+
+    let scopes = get_scopes_for_provider(&provider);
+
+    let result = crate::system::microsoft_oauth::start_microsoft_oauth(&app_handle, config, scopes).await?;
+
+    Ok(MicrosoftAuthResult {
+        access_token: result.payload.access_token,
+        refresh_token: result.payload.refresh_token,
+        expires_in: result.payload.expires_in,
+    })
+}
+
+#[tauri::command]
+pub async fn mcp_server_set_tokens(
+    id: String,
+    access_token: String,
+    refresh_token: Option<String>,
+    expires_in: i64,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::McpServerView, String> {
+    let now = current_timestamp_millis()?;
+    let expires_at = now + (expires_in * 1000);
+
+    let access_protected = protect_api_key(&access_token);
+    let refresh_protected = refresh_token.as_ref().map(|rt| protect_api_key(rt));
+
+    crate::db::mcp_server_queries::update_mcp_server_tokens(
+        database.pool(),
+        &id,
+        &access_protected.ciphertext_b64,
+        refresh_protected.as_ref().map(|p| p.ciphertext_b64.as_str()),
+        Some(expires_at),
+        &access_protected.salt_b64,
+    )
+    .await
+    .map_err(|err| err.to_string())?;
+
+    let updated = crate::db::mcp_server_queries::fetch_mcp_server_by_id(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())?
+        .ok_or_else(|| format!("MCP server with id '{}' not found after token update", id))?;
+
+    Ok(crate::domain::McpServerView::from(updated))
+}

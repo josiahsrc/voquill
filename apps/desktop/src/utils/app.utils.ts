@@ -2,6 +2,7 @@ import {
   ApiKey,
   AppTarget,
   Hotkey,
+  McpServer,
   Member,
   Term,
   Tone,
@@ -79,5 +80,14 @@ export const registerAppTargets = (
 ): void => {
   for (const appTarget of appTargets) {
     draft.appTargetById[appTarget.id] = appTarget;
+  }
+};
+
+export const registerMcpServers = (
+  draft: AppState,
+  mcpServers: McpServer[],
+): void => {
+  for (const mcpServer of mcpServers) {
+    draft.mcpServerById[mcpServer.id] = mcpServer;
   }
 };

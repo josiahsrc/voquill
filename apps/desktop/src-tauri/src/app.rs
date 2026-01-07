@@ -61,6 +61,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
             app.manage(crate::state::GoogleOAuthState::from_env());
+            app.manage(crate::state::MicrosoftOAuthState::from_env());
 
             #[cfg(desktop)]
             {
@@ -173,6 +174,13 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_screen_context,
             crate::commands::set_accessibility_text,
             crate::commands::get_selected_text,
+            crate::commands::mcp_server_create,
+            crate::commands::mcp_server_list,
+            crate::commands::mcp_server_update,
+            crate::commands::mcp_server_delete,
+            crate::commands::mcp_server_get_token,
+            crate::commands::mcp_server_set_tokens,
+            crate::commands::start_microsoft_oauth,
         ])
 }
 

@@ -1,6 +1,7 @@
 pub mod api_key_queries;
 pub mod app_target_queries;
 pub mod hotkey_queries;
+pub mod mcp_server_queries;
 pub mod preferences_queries;
 pub mod term_queries;
 pub mod tone_queries;
@@ -72,6 +73,7 @@ pub const API_KEY_BASE_URL_MIGRATION_SQL: &str =
     include_str!("migrations/035_api_key_base_url.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/036_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str = include_str!("migrations/037_last_seen_feature.sql");
+pub const MCP_SERVERS_MIGRATION_SQL: &str = include_str!("migrations/038_mcp_servers.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -295,6 +297,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 37,
             description: "add_last_seen_feature",
             sql: LAST_SEEN_FEATURE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 38,
+            description: "create_mcp_servers_table",
+            sql: MCP_SERVERS_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

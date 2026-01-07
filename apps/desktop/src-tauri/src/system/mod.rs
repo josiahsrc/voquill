@@ -4,6 +4,7 @@ pub mod crypto;
 pub mod diagnostics;
 pub mod google_oauth;
 pub mod gpu;
+pub mod microsoft_oauth;
 pub mod models;
 pub mod paths;
 pub mod storage_repo;
