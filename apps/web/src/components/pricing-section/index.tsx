@@ -110,7 +110,7 @@ function ShieldIcon({ className }: { className?: string }) {
 }
 
 export default function PricingSection() {
-  const [isYearly, setIsYearly] = useState(false);
+  const [isYearly, setIsYearly] = useState(true);
 
   const getPrice = (plan: PricingPlan): number | null => {
     if (plan.isEnterprise) return null;

@@ -186,7 +186,7 @@ export const PlanList = ({
 }: PlanListProps) => {
   const intl = useIntl();
   const effectivePlan = useAppStore(getEffectivePlan);
-  const [isYearly, setIsYearly] = useState(false);
+  const [isYearly, setIsYearly] = useState(true);
 
   const proMonthlyPrice = useAppStore((state) =>
     getDollarPriceFromKey(state, "pro_monthly"),
