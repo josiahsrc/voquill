@@ -12,6 +12,7 @@ import DashboardPage from "./components/dashboard/DashboardPage.tsx";
 import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.tsx";
 import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
 import StylingPage from "./components/styling/StylingPage.tsx";
+import AppsPage from "./components/apps/AppsPage.tsx";
 import WelcomePage from "./components/welcome/WelcomePage.tsx";
 import LoginPage from "./components/login/LoginPage.tsx";
 
@@ -102,6 +103,10 @@ const router = createBrowserRouter([
               {
                 path: "styling",
                 element: <StylingPage />,
+              },
+              {
+                path: "apps",
+                element: <AppsPage />,
               },
             ],
           },

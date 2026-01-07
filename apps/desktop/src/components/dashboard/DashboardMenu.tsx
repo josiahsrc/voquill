@@ -1,4 +1,5 @@
 import {
+  AppsOutlined,
   ClassOutlined,
   HistoryOutlined,
   HomeOutlined,
@@ -39,6 +40,11 @@ const navItems: NavItem[] = [
     label: <FormattedMessage defaultMessage="Styles" />,
     path: "/dashboard/styling",
     icon: <PaletteOutlined />,
+  },
+  {
+    label: <FormattedMessage defaultMessage="Apps" />,
+    path: "/dashboard/apps",
+    icon: <AppsOutlined />,
   },
 ];
 
