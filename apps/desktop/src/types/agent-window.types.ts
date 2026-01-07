@@ -4,6 +4,7 @@ export type AgentWindowMessage = {
   text: string;
   sender: AgentWindowMessageSender;
   isError?: boolean;
+  tools?: string[];
 };
 
 export type AgentWindowState = {

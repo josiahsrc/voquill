@@ -93,6 +93,7 @@ function jsonSchemaToZod(schema: Record<string, unknown>): z.ZodType {
 
 class McpProxyTool extends BaseTool {
   readonly name: string;
+  readonly displayName: string;
   readonly description: string;
   readonly inputSchema: z.ZodType;
   readonly outputSchema = z.object({
@@ -110,6 +111,10 @@ class McpProxyTool extends BaseTool {
   ) {
     super();
     this.name = toolDef.name;
+    this.displayName = toolDef.name
+      .split(/[-_]/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
     this.description = toolDef.description ?? `MCP tool: ${toolDef.name}`;
     this.inputSchema = jsonSchemaToZod(toolDef.inputSchema);
   }

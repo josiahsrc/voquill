@@ -23,6 +23,7 @@ export class GetScreenContextTool extends BaseTool<
   typeof GetScreenContextOutputSchema
 > {
   readonly name = "get_screen_context";
+  readonly displayName = "Get Screen Context";
   readonly description =
     "Collect context for what information is visible on the screen. This isn't always accurate, but can provide useful information.";
   readonly inputSchema = GetScreenContextInputSchema;

@@ -17,6 +17,7 @@ export class WriteToTextFieldTool extends BaseTool<
   typeof WriteToTextFieldOutputSchema
 > {
   readonly name = "write_to_text_field";
+  readonly displayName = "Write to Text Field";
   readonly description =
     "Replaces the entire content of the currently focused text field with the provided text.";
   readonly inputSchema = WriteToTextFieldInputSchema;

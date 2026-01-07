@@ -111,6 +111,7 @@ export class Agent {
 
         toolExecutions.push({
           name: tool.name,
+          displayName: tool.displayName,
           input: toolArgs,
           output: toolResult.output,
         });

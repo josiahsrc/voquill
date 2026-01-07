@@ -19,6 +19,7 @@ export type ToolResult = z.infer<typeof ToolResultSchema>;
 
 export type ToolExecution = {
   name: string;
+  displayName: string;
   input: Record<string, unknown>;
   output?: Record<string, unknown>;
 };

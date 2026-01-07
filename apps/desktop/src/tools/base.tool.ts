@@ -7,6 +7,7 @@ export abstract class BaseTool<
   TOutput extends z.ZodType = z.ZodType,
 > {
   abstract readonly name: string;
+  abstract readonly displayName: string;
   abstract readonly description: string;
   abstract readonly inputSchema: TInput;
   abstract readonly outputSchema: TOutput;

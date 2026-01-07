@@ -111,19 +111,51 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
     );
   }
 
+  const tools = message.tools ?? [];
+  const hasTools = tools.length > 0;
+
   return (
-    <Typography
-      variant="body2"
-      sx={{
-        color: "text.primary",
-        lineHeight: 1.5,
-        wordBreak: "break-word",
-        fontSize: "0.8125rem",
-        mb: 1,
-      }}
-    >
-      {message.text}
-    </Typography>
+    <Box sx={{ mb: 1 }}>
+      {hasTools && (
+        <Box sx={{ mb: 0.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.4,
+              fontSize: "0.75rem",
+            }}
+          >
+            Tools used ({tools.length})
+          </Typography>
+          {tools.map((tool, index) => (
+            <Typography
+              key={index}
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.4,
+                fontSize: "0.75rem",
+                pl: 1,
+              }}
+            >
+              • {tool}
+            </Typography>
+          ))}
+        </Box>
+      )}
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.primary",
+          lineHeight: 1.5,
+          wordBreak: "break-word",
+          fontSize: "0.8125rem",
+        }}
+      >
+        {message.text}
+      </Typography>
+    </Box>
   );
 };
 

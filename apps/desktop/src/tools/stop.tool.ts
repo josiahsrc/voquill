@@ -20,6 +20,7 @@ export class StopTool extends BaseTool<
   private callback: () => void;
 
   readonly name = "stop";
+  readonly displayName = "Stop";
   readonly description =
     "Signal that you are done with the conversation and the agent session should end. Use this when the user says goodbye, asks to stop, or when the task is complete and no further interaction is needed.";
   readonly inputSchema = StopInputSchema;

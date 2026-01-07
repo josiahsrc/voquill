@@ -31,6 +31,7 @@ export class GetTextFieldInfoTool extends BaseTool<
   typeof GetTextFieldInfoOutputSchema
 > {
   readonly name = "get_text_field_info";
+  readonly displayName = "Get Text Field Info";
   readonly description =
     "Get information about the currently focused text field, including cursor position, selected text length, and text content.";
   readonly inputSchema = GetTextFieldInfoInputSchema;

@@ -93,10 +93,17 @@ export class AgentStrategy extends BaseStrategy {
     console.log("Agent history:", result.history);
 
     if (result.response) {
+      const lastHistoryMessage = result.history[result.history.length - 1];
+      const toolDisplayNames =
+        lastHistoryMessage?.type === "assistant"
+          ? lastHistoryMessage.tools.map((t) => t.displayName)
+          : [];
+
       this.uiMessages.push({
         text: result.response,
         sender: "agent",
         isError: result.isError,
+        tools: toolDisplayNames,
       });
       await this.emitState({ messages: this.uiMessages });
     }
