@@ -1,8 +1,21 @@
 import { HandlerOutput, invokeHandler } from "@repo/functions";
-import { Prices, type PriceKey } from "@repo/pricing";
+import { PRICE_KEYS, Prices, type PriceKey } from "@repo/pricing";
+import { MemberPlan } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import type { AppState } from "../state/app.state";
 import { isDev, isEmulators, isProd } from "./env.utils";
+
+export const PRICING_PLANS = ["community", "free", ...PRICE_KEYS] as const;
+export type PricingPlan = (typeof PRICING_PLANS)[number];
+
+export const convertPricingPlanToMemberPlan = (
+  plan: PricingPlan,
+): MemberPlan => {
+  if (plan === "pro_monthly" || plan === "pro_yearly") {
+    return "pro";
+  }
+  return "free";
+};
 
 export const getPriceIdFromKey = (priceKey: PriceKey) => {
   const data = Prices[priceKey];

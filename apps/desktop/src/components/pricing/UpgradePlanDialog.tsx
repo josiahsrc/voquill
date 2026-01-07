@@ -7,10 +7,9 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { MemberPlan } from "@repo/types";
 import { useEffect } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { tryOpenPaymentDialogForPlan } from "../../actions/payment.actions";
+import { tryOpenPaymentDialogForPricingPlan } from "../../actions/payment.actions";
 import {
   closeUpgradePlanDialog,
   selectUpgradePlan,
@@ -18,6 +17,7 @@ import {
 } from "../../actions/pricing.actions";
 import { useAppStore } from "../../store";
 import { getEffectivePlan } from "../../utils/member.utils";
+import { PricingPlan } from "../../utils/price.utils";
 import { LoginForm } from "../login/LoginForm";
 import { FormContainer } from "../onboarding/OnboardingShared";
 import { PlanList } from "./PlanList";
@@ -31,13 +31,16 @@ export const UpgradePlanDialog = () => {
   const targPlan = useAppStore((state) => state.pricing.upgradePlanPendingPlan);
 
   useEffect(() => {
+    const isTargPlanPro =
+      targPlan === "pro_monthly" || targPlan === "pro_yearly";
+
     if (targPlan === "free" && currPlan === "free") {
       closeUpgradePlanDialog();
-    } else if (targPlan === "pro" && currPlan === "pro") {
+    } else if (isTargPlanPro && currPlan === "pro") {
       closeUpgradePlanDialog();
-    } else if (targPlan === "pro" && currPlan !== "pro" && currLoggedIn) {
+    } else if (isTargPlanPro && currPlan !== "pro" && currLoggedIn) {
       closeUpgradePlanDialog();
-      tryOpenPaymentDialogForPlan(targPlan);
+      tryOpenPaymentDialogForPricingPlan(targPlan);
     }
   }, [currLoggedIn, currPlan, targPlan]);
 
@@ -45,7 +48,7 @@ export const UpgradePlanDialog = () => {
     closeUpgradePlanDialog();
   };
 
-  const handleClickPlan = (plan: MemberPlan) => {
+  const handleClickPlan = (plan: PricingPlan) => {
     selectUpgradePlan(plan);
   };
 

@@ -1,12 +1,13 @@
 import { PriceKey } from "@repo/pricing";
-import { MemberPlan, Nullable } from "@repo/types";
+import { Nullable } from "@repo/types";
+import { PricingPlan } from "../utils/price.utils";
 
 export type PricingState = {
   priceKeys: PriceKey[];
   initialized: boolean;
   upgradePlanDialog: boolean;
   upgradePlanDialogView: "plans" | "login";
-  upgradePlanPendingPlan: Nullable<MemberPlan>;
+  upgradePlanPendingPlan: Nullable<PricingPlan>;
 };
 
 export const INITIAL_PRICING_STATE: PricingState = {

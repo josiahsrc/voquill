@@ -6,7 +6,7 @@ import {
   goBackOnboardingPage,
   selectOnboardingPlan,
 } from "../../actions/onboarding.actions";
-import { EffectivePlan } from "../../types/member.types";
+import { PricingPlan } from "../../utils/price.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { PlanList } from "../pricing/PlanList";
 import { FormContainer } from "./OnboardingShared";
@@ -14,7 +14,7 @@ import { FormContainer } from "./OnboardingShared";
 export const PlanSelectionForm = () => {
   const [confirmLocalSetupOpen, setConfirmLocalSetupOpen] = useState(false);
 
-  const handleSelectPlan = (plan: EffectivePlan) => {
+  const handleSelectPlan = (plan: PricingPlan) => {
     selectOnboardingPlan(plan);
   };
 

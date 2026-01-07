@@ -1,6 +1,6 @@
 import { Nullable } from "@repo/types";
-import { EffectivePlan } from "../types/member.types";
 import { getIsDevMode } from "../utils/env.utils";
+import { PricingPlan } from "../utils/price.utils";
 
 export type OnboardingPageKey =
   | "welcome"
@@ -18,7 +18,7 @@ export type OnboardingState = {
   history: OnboardingPageKey[];
   submitting: boolean;
   tryItOutInput: string;
-  selectedPlan: EffectivePlan | null;
+  selectedPlan: PricingPlan | null;
   loggingIn: boolean;
   preferredMicrophone: Nullable<string>;
 };

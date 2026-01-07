@@ -20,12 +20,12 @@ export function SiteHeader() {
       label: intl.formatMessage({ defaultMessage: "Purpose" }),
     },
     {
-      href: "/#features",
-      label: intl.formatMessage({ defaultMessage: "Features" }),
-    },
-    {
       href: "/#privacy",
       label: intl.formatMessage({ defaultMessage: "Security" }),
+    },
+    {
+      href: "/#pricing",
+      label: intl.formatMessage({ defaultMessage: "Pricing" }),
     },
   ];
 
