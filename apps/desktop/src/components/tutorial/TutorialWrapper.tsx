@@ -5,7 +5,7 @@ import { showConfetti, showErrorSnackbar } from "../../actions/app.actions";
 import { finishTutorial } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 
-const PAGE_COUNT = 2;
+const PAGE_COUNT = 3;
 
 export type TutorialWrapperProps = {
   title?: React.ReactNode;
