@@ -5,12 +5,12 @@ import {
   goToOnboardingPage,
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
-import { AIPostProcessingConfiguration } from "../settings/AIPostProcessingConfiguration";
+import { AIAgentModeConfiguration } from "../settings/AIAgentModeConfiguration";
 import { FormContainer } from "./OnboardingShared";
 
-export const PostProcessingMethodForm = () => {
+export const AgentModeMethodForm = () => {
   const { mode, selectedApiKeyId } = useAppStore(
-    (state) => state.settings.aiPostProcessing,
+    (state) => state.settings.agentMode,
   );
 
   const canContinue = mode === "api" ? Boolean(selectedApiKeyId) : true;
@@ -18,13 +18,13 @@ export const PostProcessingMethodForm = () => {
   return (
     <FormContainer>
       <Typography variant="h4" fontWeight={600} gutterBottom>
-        <FormattedMessage defaultMessage="Pick your post-processing" />
+        <FormattedMessage defaultMessage="Set up agent mode" />
       </Typography>
       <Typography variant="body1" color="text.secondary" mb={4}>
-        <FormattedMessage defaultMessage="Choose if Voquill should enhance transcripts automatically after they are transcribed." />
+        <FormattedMessage defaultMessage="Agent mode lets you use AI to perform actions on your computer. You can turn this on later in settings." />
       </Typography>
 
-      <AIPostProcessingConfiguration hideCloudOption={true} />
+      <AIAgentModeConfiguration hideCloudOption={true} />
 
       <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
         <Button onClick={() => goBackOnboardingPage()}>
@@ -32,7 +32,7 @@ export const PostProcessingMethodForm = () => {
         </Button>
         <Button
           variant="contained"
-          onClick={() => goToOnboardingPage("agentMode")}
+          onClick={() => goToOnboardingPage("hotkeys")}
           disabled={!canContinue}
         >
           <FormattedMessage defaultMessage="Continue" />

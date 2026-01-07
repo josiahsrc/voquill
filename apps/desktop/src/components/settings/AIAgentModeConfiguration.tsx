@@ -55,7 +55,7 @@ export const AIAgentModeConfiguration = ({
 
       {agentMode.mode === "none" && (
         <Typography variant="body2" color="text.secondary">
-          <FormattedMessage defaultMessage="Agent mode is disabled. Use regular dictation with F8." />
+          <FormattedMessage defaultMessage="Agent mode is disabled." />
         </Typography>
       )}
 

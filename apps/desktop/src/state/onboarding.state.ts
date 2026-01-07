@@ -9,6 +9,7 @@ export type OnboardingPageKey =
   | "login"
   | "transcription"
   | "postProcessing"
+  | "agentMode"
   | "hotkeys"
   | "microphone";
 
