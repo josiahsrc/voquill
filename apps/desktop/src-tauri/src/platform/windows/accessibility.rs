@@ -275,7 +275,7 @@ fn get_control_type(element: &IUIAutomationElement) -> i32 {
         element
             .GetCurrentPropertyValue(UIA_ControlTypePropertyId)
             .ok()
-            .and_then(|v| v.as_raw().Anonymous.Anonymous.Anonymous.lVal.try_into().ok())
+            .and_then(|v| v.Anonymous.Anonymous.Anonymous.lVal.try_into().ok())
             .unwrap_or(0)
     }
 }
@@ -286,9 +286,8 @@ fn get_element_name(element: &IUIAutomationElement) -> Option<String> {
             .GetCurrentPropertyValue(UIA_NamePropertyId)
             .ok()
             .and_then(|v| {
-                let bstr = BSTR::from_raw(*v.as_raw().Anonymous.Anonymous.Anonymous.bstrVal);
-                let s = bstr.to_string();
-                std::mem::forget(bstr);
+                let bstr_ref = &v.Anonymous.Anonymous.Anonymous.bstrVal;
+                let s = bstr_ref.to_string();
                 if s.is_empty() {
                     None
                 } else {
