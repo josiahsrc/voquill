@@ -24,11 +24,13 @@ export const buildDecisionSystemPrompt = (tools: BaseTool[]): string => {
 
   return `You are a helpful assistant that decides how to respond to user requests.
 
-For all tasks, you should call the accessibility information to try and gather if they
+For all tasks, you should call the get_text_field_info tool to try and gather if they
 are working on a text field. If they are working on a text field, that means that they
 probably want you to edit it, and you should make changes there. If they're not dealing
 with a text field, then feel free to respond in any other format you wish. Make sure
 to use the tools available to you to gather information before fulfilling the request.
+Use other tools as needed to accomplish the user's goals. Stop once you've completed
+the user's request.
 
 Do your best to write the outputs back into the text field when you have the answer.
 

@@ -4,7 +4,6 @@ import { getAgentRepo } from "../repos";
 import { GetScreenContextTool } from "../tools/get-screen-context.tool";
 import { GetTextFieldInfoTool } from "../tools/get-text-field-info.tool";
 import { getToolsForServers } from "../tools/mcp.tool";
-import { ShowToastTool } from "../tools/show-toast.tool";
 import { StopTool } from "../tools/stop.tool";
 import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
 import type {
@@ -45,7 +44,6 @@ export class AgentStrategy extends BaseStrategy {
     ]);
 
     const tools = [
-      new ShowToastTool(),
       new GetTextFieldInfoTool(),
       new GetScreenContextTool(),
       new WriteToTextFieldTool(),

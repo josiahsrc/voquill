@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { invoke } from "@tauri-apps/api/core";
+import { z } from "zod";
 import type { ToolResult } from "../types/agent.types";
 import { BaseTool } from "./base.tool";
 
@@ -24,7 +24,7 @@ export class GetScreenContextTool extends BaseTool<
 > {
   readonly name = "get_screen_context";
   readonly description =
-    "Get text content gathered from the screen around the currently focused element for context.";
+    "Collect context for what information is visible on the screen. This isn't always accurate, but can provide useful information.";
   readonly inputSchema = GetScreenContextInputSchema;
   readonly outputSchema = GetScreenContextOutputSchema;
 
