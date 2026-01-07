@@ -1,1 +1,1 @@
-export const CURRENT_FEATURE = "agent-mode";
+export const CURRENT_FEATURE = "agent-mode2";
