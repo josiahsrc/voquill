@@ -13,18 +13,21 @@ import {
 import { ChangeEvent, Fragment, useEffect, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showConfetti } from "../../actions/app.actions";
-import { markFeatureSeen } from "../../actions/user.actions";
+import {
+  markFeatureSeen,
+  setPreferredAgentMode,
+} from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { CURRENT_FEATURE } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import { getEffectivePlan } from "../../utils/member.utils";
 import { getMyUserPreferences } from "../../utils/user.utils";
 import { HotkeyBadge } from "../common/HotkeyBadge";
+import { AIAgentModeConfiguration } from "../settings/AIAgentModeConfiguration";
 import { HotkeySetting } from "../settings/HotkeySetting";
-
-const PAGE_COUNT = 3;
 
 const IntroPage = () => {
   return (
@@ -170,13 +173,38 @@ const TryItPage = () => {
   );
 };
 
+const ProcessorPage = () => {
+  return (
+    <Stack spacing={3} py={4} px={2}>
+      <Stack spacing={1} textAlign="center">
+        <Typography variant="h5" fontWeight={600}>
+          <FormattedMessage defaultMessage="Choose Your Processor" />
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          <FormattedMessage defaultMessage="Select which AI provider to use for Agent Mode" />
+        </Typography>
+      </Stack>
+      <Box sx={{ pt: 2 }}>
+        <AIAgentModeConfiguration hideCloudOption />
+      </Box>
+      <Typography variant="body2" color="text.secondary" fontStyle="italic">
+        <FormattedMessage defaultMessage="Tip: Choose a stronger model for better results. Smaller or weaker models may produce lower quality output." />
+      </Typography>
+    </Stack>
+  );
+};
+
 export const FeatureReleaseDialog = () => {
   const lastSeenFeature = useAppStore(
     (state) => getMyUserPreferences(state)?.lastSeenFeature,
   );
+  const isCommunity = useAppStore(
+    (state) => getEffectivePlan(state) === "community",
+  );
   const hasConfettiFired = useRef(false);
   const [pageIndex, setPageIndex] = useState(0);
 
+  const pageCount = isCommunity ? 4 : 3;
   const open = lastSeenFeature !== CURRENT_FEATURE;
 
   useEffect(() => {
@@ -186,12 +214,18 @@ export const FeatureReleaseDialog = () => {
     }
   }, [open]);
 
+  useEffect(() => {
+    if (open && !isCommunity) {
+      void setPreferredAgentMode("cloud");
+    }
+  }, [open, isCommunity]);
+
   const handleDismiss = async () => {
     await markFeatureSeen(CURRENT_FEATURE);
   };
 
   const handleNext = () => {
-    setPageIndex((prev) => Math.min(PAGE_COUNT - 1, prev + 1));
+    setPageIndex((prev) => Math.min(pageCount - 1, prev + 1));
   };
 
   const handleBack = () => {
@@ -203,15 +237,23 @@ export const FeatureReleaseDialog = () => {
   }
 
   const canBack = pageIndex > 0;
-  const isLastPage = pageIndex === PAGE_COUNT - 1;
+  const isLastPage = pageIndex === pageCount - 1;
+
+  const getPageContent = () => {
+    if (pageIndex === 0) return <IntroPage />;
+    if (pageIndex === 1) return <HotkeyPage />;
+    if (isCommunity) {
+      if (pageIndex === 2) return <ProcessorPage />;
+      if (pageIndex === 3) return <TryItPage />;
+    } else {
+      if (pageIndex === 2) return <TryItPage />;
+    }
+    return null;
+  };
 
   return (
     <Dialog open={open} fullWidth maxWidth="sm">
-      <DialogContent sx={{ px: 2, py: 1 }}>
-        {pageIndex === 0 && <IntroPage />}
-        {pageIndex === 1 && <HotkeyPage />}
-        {pageIndex === 2 && <TryItPage />}
-      </DialogContent>
+      <DialogContent sx={{ px: 2, py: 1 }}>{getPageContent()}</DialogContent>
       <DialogActions sx={{ justifyContent: "space-between", px: 2, pb: 2 }}>
         {canBack ? (
           <Button onClick={handleBack}>

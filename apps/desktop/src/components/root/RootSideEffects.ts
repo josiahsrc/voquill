@@ -2,6 +2,7 @@ import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useMemo, useRef } from "react";
+import { useIntl } from "react-intl";
 import type { RecordingMode } from "../../state/app.state";
 import { AgentStrategy } from "../../strategies/agent.strategy";
 import { BaseStrategy } from "../../strategies/base.strategy";
@@ -87,6 +88,7 @@ export const RootSideEffects = () => {
   const keyPermAuthorized = useAppStore((state) =>
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
+  const intl = useIntl();
 
   const strategyContext: StrategyContext = useMemo(
     () => ({
@@ -150,8 +152,10 @@ export const RootSideEffects = () => {
     if (getMemberExceedsLimitByState(state)) {
       playAlertSound();
       showToast({
-        title: "Word limit reached",
-        message: "You've used all your free words for today.",
+        title: intl.formatMessage({ defaultMessage: "Word limit reached" }),
+        message: intl.formatMessage({
+          defaultMessage: "You've used all your free words for today.",
+        }),
         toastType: "error",
         action: "upgrade",
         duration: 8_000,
@@ -222,7 +226,7 @@ export const RootSideEffects = () => {
 
     startPendingRef.current = promise;
     await promise;
-  }, [strategyContext]);
+  }, [intl, strategyContext]);
 
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
@@ -338,11 +342,25 @@ export const RootSideEffects = () => {
   }, [stopRecording]);
 
   const startAgentRecording = useCallback(async () => {
+    const state = getAppState();
+    if (state.settings.agentMode.mode === "none") {
+      playAlertSound();
+      showToast({
+        title: intl.formatMessage({ defaultMessage: "Agent mode disabled" }),
+        message: intl.formatMessage({
+          defaultMessage: "Enable agent mode in settings to use this feature.",
+        }),
+        toastType: "error",
+        action: "open_agent_settings",
+        duration: 8_000,
+      });
+      return;
+    }
     produceAppState((draft) => {
       draft.activeRecordingMode = "agent";
     });
     await startRecording();
-  }, [startRecording]);
+  }, [intl, startRecording]);
 
   const stopAgentRecording = useCallback(async () => {
     await stopRecording();
@@ -403,6 +421,11 @@ export const RootSideEffects = () => {
     if (payload.action === "upgrade") {
       surfaceMainWindow();
       openUpgradePlanDialog();
+    } else if (payload.action === "open_agent_settings") {
+      surfaceMainWindow();
+      produceAppState((draft) => {
+        draft.settings.agentModeDialogOpen = true;
+      });
     }
   });
 
