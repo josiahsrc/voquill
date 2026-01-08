@@ -4,6 +4,8 @@ use crate::commands::{ScreenContextInfo, TextFieldInfo};
 use core_foundation::array::{CFArrayGetCount, CFArrayGetValueAtIndex};
 use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
 use core_foundation::string::{CFString, CFStringRef};
+use core_graphics::event::{CGEvent, CGEventTapLocation};
+use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use std::ptr;
 
 // AXUIElement types and functions from ApplicationServices framework
@@ -36,6 +38,7 @@ extern "C" {
         value: CFTypeRef,
     ) -> AXError;
     fn AXValueGetValue(value: CFTypeRef, value_type: i32, out: *mut CFRange) -> bool;
+    fn AXValueCreate(value_type: i32, value: *const CFRange) -> CFTypeRef;
 }
 
 /// Get text field information (cursor position, selection length, text content) without screen context.
@@ -616,6 +619,7 @@ pub fn set_text_field_value(value: &str) -> Result<(), String> {
 unsafe fn set_text_field_value_impl(value: &str) -> Result<(), String> {
     let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
     let ax_value = CFString::new("AXValue");
+    let ax_selected_text_range = CFString::new("AXSelectedTextRange");
 
     let system_wide = AXUIElementCreateSystemWide();
     if system_wide.is_null() {
@@ -638,21 +642,41 @@ unsafe fn set_text_field_value_impl(value: &str) -> Result<(), String> {
         ));
     }
 
-    let value_cfstring = CFString::new(value);
-    let set_result = AXUIElementSetAttributeValue(
-        focused_element,
-        ax_value.as_concrete_TypeRef(),
-        value_cfstring.as_CFTypeRef(),
-    );
+    let text_length = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef())
+        .map(|s| s.len() as isize)
+        .unwrap_or(0);
+
+    if text_length > 0 {
+        let select_all_range = CFRange {
+            location: 0,
+            length: text_length,
+        };
+        let range_value = AXValueCreate(AX_VALUE_TYPE_CF_RANGE, &select_all_range);
+        if !range_value.is_null() {
+            AXUIElementSetAttributeValue(
+                focused_element,
+                ax_selected_text_range.as_concrete_TypeRef(),
+                range_value,
+            );
+            CFRelease(range_value);
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    }
 
     CFRelease(focused_element);
 
-    if set_result != AX_ERROR_SUCCESS {
-        return Err(format!(
-            "Failed to set text field value, error code: {}",
-            set_result
-        ));
-    }
+    let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
+        .map_err(|_| "Failed to create event source".to_string())?;
+
+    let key_down = CGEvent::new_keyboard_event(source.clone(), 0, true)
+        .map_err(|_| "Failed to create key-down event".to_string())?;
+    key_down.set_string(value);
+    key_down.post(CGEventTapLocation::HID);
+
+    let key_up = CGEvent::new_keyboard_event(source, 0, false)
+        .map_err(|_| "Failed to create key-up event".to_string())?;
+    key_up.set_string("");
+    key_up.post(CGEventTapLocation::HID);
 
     Ok(())
 }
