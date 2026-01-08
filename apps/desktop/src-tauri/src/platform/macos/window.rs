@@ -4,6 +4,8 @@ use cocoa::base::{id, nil, YES};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
 
+const NS_FLOATING_WINDOW_LEVEL: i64 = 3;
+
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
     let (tx, rx) = mpsc::channel();
@@ -68,7 +70,7 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
 
                 unsafe {
                     let ns_window = ns_window_ptr as id;
-                    ns_window.setLevel_(cocoa::appkit::NSFloatingWindowLevel as i64);
+                    ns_window.setLevel_(NS_FLOATING_WINDOW_LEVEL);
                     ns_window.orderFrontRegardless();
                 }
 
