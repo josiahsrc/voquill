@@ -1043,6 +1043,15 @@ pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn show_overlay_no_focus(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("unified-overlay")
+        .ok_or_else(|| "unified-overlay window not found".to_string())?;
+    crate::platform::window::show_overlay_no_focus(&window)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
     let join_result =
         tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text, keybind.as_deref())).await;
