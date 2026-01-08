@@ -50,8 +50,7 @@ pub const CLEANUP_DEFAULT_TONES_MIGRATION_SQL: &str =
     include_str!("migrations/024_cleanup_default_tones.sql");
 pub const USER_PREFERENCES_DEVICE_MIGRATION_SQL: &str =
     include_str!("migrations/025_user_preferences_device.sql");
-pub const API_KEY_MODEL_MIGRATION_SQL: &str =
-    include_str!("migrations/026_api_key_model.sql");
+pub const API_KEY_MODEL_MIGRATION_SQL: &str = include_str!("migrations/026_api_key_model.sql");
 pub const USER_PREFERENCES_OLLAMA_MIGRATION_SQL: &str =
     include_str!("migrations/027_user_preferences_ollama.sql");
 pub const USER_HAS_FINISHED_TUTORIAL_MIGRATION_SQL: &str =
@@ -60,8 +59,7 @@ pub const USER_PREFERENCES_GOT_STARTED_AT_MIGRATION_SQL: &str =
     include_str!("migrations/029_user_preferences_got_started_at.sql");
 pub const GPU_ENUMERATION_ENABLED_MIGRATION_SQL: &str =
     include_str!("migrations/030_gpu_enumeration_enabled.sql");
-pub const PASTE_KEYBIND_MIGRATION_SQL: &str =
-    include_str!("migrations/031_paste_keybind.sql");
+pub const PASTE_KEYBIND_MIGRATION_SQL: &str = include_str!("migrations/031_paste_keybind.sql");
 pub const APP_TARGET_PASTE_KEYBIND_MIGRATION_SQL: &str =
     include_str!("migrations/032_app_target_paste_keybind.sql");
 pub const TRANSCRIPTION_TIMING_METRICS_MIGRATION_SQL: &str =
@@ -70,9 +68,11 @@ pub const API_KEY_OPENROUTER_CONFIG_MIGRATION_SQL: &str =
     include_str!("migrations/034_api_key_openrouter_config.sql");
 pub const API_KEY_BASE_URL_MIGRATION_SQL: &str =
     include_str!("migrations/035_api_key_base_url.sql");
-pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/036_agent_mode.sql");
-pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str = include_str!("migrations/037_last_seen_feature.sql");
-pub const API_KEY_AZURE_REGION_MIGRATION_SQL: &str = include_str!("migrations/038_api_key_azure_region.sql");
+pub const API_KEY_AZURE_REGION_MIGRATION_SQL: &str =
+    include_str!("migrations/036_api_key_azure_region.sql");
+pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
+pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
+    include_str!("migrations/038_last_seen_feature.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -288,20 +288,20 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
         },
         tauri_plugin_sql::Migration {
             version: 36,
+            description: "add_api_key_azure_region",
+            sql: API_KEY_AZURE_REGION_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 37,
             description: "add_agent_mode",
             sql: AGENT_MODE_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
         tauri_plugin_sql::Migration {
-            version: 37,
+            version: 38,
             description: "add_last_seen_feature",
             sql: LAST_SEEN_FEATURE_MIGRATION_SQL,
-            kind: tauri_plugin_sql::MigrationKind::Up,
-        },
-        tauri_plugin_sql::Migration {
-            version: 38,
-            description: "add_api_key_azure_region",
-            sql: API_KEY_AZURE_REGION_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]
