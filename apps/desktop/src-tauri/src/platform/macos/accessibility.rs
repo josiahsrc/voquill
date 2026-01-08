@@ -237,6 +237,75 @@ unsafe fn extract_text_from_element(
     texts
 }
 
+unsafe fn extract_text_from_web_area(
+    element: CFTypeRef,
+    ax_role: CFStringRef,
+    ax_value: CFStringRef,
+    ax_children: CFStringRef,
+    depth: usize,
+    max_depth: usize,
+    collected_len: &mut usize,
+    max_len: usize,
+) -> Vec<String> {
+    if element.is_null() || depth > max_depth || *collected_len > max_len {
+        return Vec::new();
+    }
+
+    let mut texts = Vec::new();
+
+    let role = get_string_attribute(element, ax_role).unwrap_or_default();
+
+    let text_roles = [
+        "AXStaticText",
+        "AXLink",
+        "AXHeading",
+        "AXParagraph",
+        "AXTextArea",
+    ];
+    if text_roles.iter().any(|&r| role == r) {
+        if let Some(value) = get_string_attribute(element, ax_value) {
+            let t = value.trim();
+            if !t.is_empty() && t.len() < 1000 {
+                *collected_len += t.len();
+                texts.push(t.to_string());
+            }
+        }
+    }
+
+    if *collected_len > max_len {
+        return texts;
+    }
+
+    let mut children_ref: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(element, ax_children, &mut children_ref);
+    if result == AX_ERROR_SUCCESS && !children_ref.is_null() {
+        let arr = children_ref as core_foundation::array::CFArrayRef;
+        let count = CFArrayGetCount(arr).min(100);
+        for i in 0..count {
+            if *collected_len > max_len {
+                break;
+            }
+            let child = CFArrayGetValueAtIndex(arr, i);
+            if !child.is_null() {
+                let child_texts = extract_text_from_web_area(
+                    child,
+                    ax_role,
+                    ax_value,
+                    ax_children,
+                    depth + 1,
+                    max_depth,
+                    collected_len,
+                    max_len,
+                );
+                texts.extend(child_texts);
+            }
+        }
+        CFRelease(children_ref);
+    }
+
+    texts
+}
+
 unsafe fn extract_text_recursive(
     element: CFTypeRef,
     ax_role: CFStringRef,
@@ -259,8 +328,25 @@ unsafe fn extract_text_recursive(
         None => return texts,
     };
 
-    // Skip problematic containers
-    if role == "AXWebArea" || role == "AXScrollArea" || role == "AXUnknown" {
+    // Handle web areas specially (email content, browser content)
+    if role == "AXWebArea" {
+        let mut collected_len = 0;
+        let web_texts = extract_text_from_web_area(
+            element,
+            ax_role,
+            ax_value,
+            ax_children,
+            0,
+            15,
+            &mut collected_len,
+            8000,
+        );
+        texts.extend(web_texts);
+        return texts;
+    }
+
+    // Skip other problematic containers
+    if role == "AXScrollArea" || role == "AXUnknown" {
         return texts;
     }
 
