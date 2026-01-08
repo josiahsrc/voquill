@@ -8,6 +8,7 @@ export const API_KEY_PROVIDERS = [
   "assemblyai",
   "openrouter",
   "ollama",
+  "azure",
 ] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 
@@ -22,4 +23,5 @@ export type ApiKey = {
   postProcessingModel?: string | null;
   openRouterConfig?: Nullable<OpenRouterConfig>;
   baseUrl?: string | null;
+  azureRegion?: string | null;
 };
