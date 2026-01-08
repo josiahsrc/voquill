@@ -3,6 +3,7 @@ import { Nullable } from "@repo/types";
 import { batchAsync } from "@repo/utilities";
 import {
   aldeaTranscribeAudio,
+  azureTranscribeAudio,
   groqTranscribeAudio,
   openaiTranscribeAudio,
   OpenAITranscriptionModel,
@@ -427,6 +428,54 @@ export class AldeaTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: transcript,
       metadata: {
         inferenceDevice: "API • Aldea",
+        modelSize: null,
+        transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class AzureTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private azureSubscriptionKey: string;
+  private azureRegion: string;
+
+  constructor(subscriptionKey: string, region: string) {
+    super();
+    this.azureSubscriptionKey = subscriptionKey;
+    this.azureRegion = region;
+  }
+
+  // Azure supports up to 30MB, 60s segments are safe
+  protected getSegmentDurationSec(): number {
+    return 60;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 5;
+  }
+
+  // Azure can handle parallel requests
+  protected getBatchChunkCount(): number {
+    return 3;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wavBuffer = buildWaveFile(input.samples, input.sampleRate);
+
+    const { text: transcript } = await azureTranscribeAudio({
+      subscriptionKey: this.azureSubscriptionKey,
+      region: this.azureRegion,
+      blob: wavBuffer,
+      prompt: input.prompt ?? undefined,
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • Azure",
         modelSize: null,
         transcriptionMode: "api",
       },

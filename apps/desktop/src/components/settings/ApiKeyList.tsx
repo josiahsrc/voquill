@@ -22,6 +22,7 @@ import {
 import {
   aldeaTestIntegration,
   assemblyaiTestIntegration,
+  azureTestIntegration,
   GENERATE_TEXT_MODELS,
   groqTestIntegration,
   OPENAI_GENERATE_TEXT_MODELS,
@@ -65,6 +66,7 @@ type AddApiKeyCardProps = {
     provider: SettingsApiKeyProvider,
     key: string,
     baseUrl?: string,
+    azureRegion?: string,
   ) => Promise<void>;
   onCancel: () => void;
   context: ApiKeyListContext;
@@ -75,10 +77,16 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [provider, setProvider] = useState<SettingsApiKeyProvider>("groq");
   const [key, setKey] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("");
+  const [azureRegion, setAzureRegion] = useState("");
   const [saving, setSaving] = useState(false);
 
   const isOllama = provider === "ollama";
-  const canSave = isOllama ? !!name : !!name && !!key;
+  const isAzure = provider === "azure";
+  const canSave = isOllama
+    ? !!name
+    : isAzure
+      ? !!name && !!key && !!azureRegion
+      : !!name && !!key;
 
   const handleSave = useCallback(async () => {
     if (!canSave || saving) {
@@ -89,16 +97,18 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
     try {
       const keyToSave = key || "";
       const baseUrl = isOllama ? ollamaUrl || OLLAMA_DEFAULT_URL : undefined;
-      await onSave(name, provider, keyToSave, baseUrl);
+      const azureRegionValue = isAzure ? azureRegion : undefined;
+      await onSave(name, provider, keyToSave, baseUrl, azureRegionValue);
       setName("");
       setKey("");
       setOllamaUrl("");
+      setAzureRegion("");
     } catch (error) {
       console.error("Failed to save API key", error);
     } finally {
       setSaving(false);
     }
-  }, [canSave, isOllama, name, key, ollamaUrl, provider, onSave, saving]);
+  }, [canSave, isOllama, isAzure, name, key, ollamaUrl, azureRegion, provider, onSave, saving]);
 
   return (
     <Paper
@@ -139,13 +149,39 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         {context === "post-processing" && (
           <MenuItem value="ollama">Ollama</MenuItem>
         )}
-        {/* Aldea and AssemblyAI only support transcription, not post-processing */}
+        {/* Aldea, AssemblyAI, and Azure only support transcription, not post-processing */}
         {context === "transcription" && <MenuItem value="aldea">Aldea</MenuItem>}
         {context === "transcription" && (
           <MenuItem value="assemblyai">AssemblyAI</MenuItem>
         )}
+        {context === "transcription" && <MenuItem value="azure">Azure</MenuItem>}
       </TextField>
-      {isOllama ? (
+      {isAzure ? (
+        <>
+          <TextField
+            label={<FormattedMessage defaultMessage="Azure Region" />}
+            value={azureRegion}
+            onChange={(event) => setAzureRegion(event.target.value)}
+            placeholder="e.g., eastus, westus, northeurope"
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Azure service region (e.g., eastus)" />
+            }
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="Subscription Key" />}
+            value={key}
+            onChange={(event) => setKey(event.target.value)}
+            placeholder="Paste your Azure subscription key"
+            size="small"
+            fullWidth
+            type="password"
+            disabled={saving}
+          />
+        </>
+      ) : isOllama ? (
         <>
           <TextField
             label={<FormattedMessage defaultMessage="Ollama URL" />}
@@ -232,6 +268,14 @@ const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
       return aldeaTestIntegration({ apiKey: apiKey.keyFull });
     case "assemblyai":
       return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
+    case "azure":
+      if (!apiKey.azureRegion) {
+        throw new Error("Azure region is required.");
+      }
+      return azureTestIntegration({
+        subscriptionKey: apiKey.keyFull,
+        region: apiKey.azureRegion,
+      });
     default:
       throw new Error("Testing is not available for this provider.");
   }
@@ -486,6 +530,7 @@ export const ApiKeyList = ({
       provider: SettingsApiKeyProvider,
       key: string,
       baseUrl?: string,
+      azureRegion?: string,
     ) => {
       const created = await createApiKey({
         id: generateApiKeyId(),
@@ -493,6 +538,7 @@ export const ApiKeyList = ({
         provider,
         key,
         baseUrl,
+        azureRegion,
       });
 
       onChange(created.id);

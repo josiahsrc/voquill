@@ -132,6 +132,9 @@ export const updateApiKey = async (
         if (payload.openRouterConfig !== undefined) {
           apiKey.openRouterConfig = payload.openRouterConfig ?? null;
         }
+        if (payload.azureRegion !== undefined) {
+          apiKey.azureRegion = payload.azureRegion ?? null;
+        }
       }
       const index = draft.settings.apiKeys.findIndex(
         (apiKey) => apiKey.id === payload.id,
@@ -148,6 +151,10 @@ export const updateApiKey = async (
         if (payload.openRouterConfig !== undefined) {
           draft.settings.apiKeys[index].openRouterConfig =
             payload.openRouterConfig ?? null;
+        }
+        if (payload.azureRegion !== undefined) {
+          draft.settings.apiKeys[index].azureRegion =
+            payload.azureRegion ?? null;
         }
       }
     });
