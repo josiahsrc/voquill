@@ -8,11 +8,20 @@ use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
     IUIAutomationTreeWalker, IUIAutomationValuePattern, TreeScope_Children,
     UIA_ControlTypePropertyId, UIA_DataItemControlTypeId, UIA_HeaderControlTypeId,
-    UIA_HyperlinkControlTypeId, UIA_ListItemControlTypeId, UIA_MenuBarControlTypeId,
-    UIA_MenuControlTypeId, UIA_MenuItemControlTypeId, UIA_NamePropertyId,
-    UIA_StatusBarControlTypeId, UIA_TabControlTypeId, UIA_TextControlTypeId,
-    UIA_TextPatternId, UIA_ToolBarControlTypeId, UIA_TreeItemControlTypeId,
-    UIA_ValuePatternId, UIA_WindowControlTypeId,
+    UIA_HelpTextPropertyId, UIA_HyperlinkControlTypeId, UIA_ListItemControlTypeId,
+    UIA_MenuBarControlTypeId, UIA_MenuControlTypeId, UIA_MenuItemControlTypeId,
+    UIA_NamePropertyId, UIA_StatusBarControlTypeId, UIA_TabControlTypeId,
+    UIA_TextControlTypeId, UIA_TextPatternId, UIA_ToolBarControlTypeId,
+    UIA_TreeItemControlTypeId, UIA_ValuePatternId, UIA_WindowControlTypeId,
+    UIA_ButtonControlTypeId, UIA_CheckBoxControlTypeId, UIA_ComboBoxControlTypeId,
+    UIA_DocumentControlTypeId, UIA_GroupControlTypeId,
+    UIA_ListControlTypeId, UIA_PaneControlTypeId, UIA_RadioButtonControlTypeId,
+    UIA_TableControlTypeId, UIA_TreeControlTypeId, UIA_DataGridControlTypeId,
+    UIA_CustomControlTypeId, UIA_SplitButtonControlTypeId, UIA_SliderControlTypeId,
+    UIA_SpinnerControlTypeId, UIA_ProgressBarControlTypeId, UIA_TabItemControlTypeId,
+    UIA_TitleBarControlTypeId, UIA_HeaderItemControlTypeId, UIA_ThumbControlTypeId,
+    UIA_ImageControlTypeId, UIA_CalendarControlTypeId, UIA_SemanticZoomControlTypeId,
+    UIA_AppBarControlTypeId,
 };
 
 fn empty_text_field_info() -> TextFieldInfo {
@@ -100,8 +109,8 @@ pub fn get_screen_context() -> ScreenContextInfo {
 
 const MAX_CONTEXT_LENGTH: usize = 12000;
 const MAX_LEVELS_UP: usize = 20;
-const MAX_SIBLINGS: i32 = 60;
-const MAX_RECURSION_DEPTH: usize = 5;
+const MAX_SIBLINGS: i32 = 80;
+const MAX_RECURSION_DEPTH: usize = 8;
 
 fn try_get_screen_context() -> Result<ScreenContextInfo, windows::core::Error> {
     unsafe {
@@ -256,6 +265,16 @@ unsafe fn extract_text_from_element(
         UIA_ListItemControlTypeId.0 as i32,
         UIA_TreeItemControlTypeId.0 as i32,
         UIA_MenuItemControlTypeId.0 as i32,
+        UIA_ButtonControlTypeId.0 as i32,
+        UIA_CheckBoxControlTypeId.0 as i32,
+        UIA_RadioButtonControlTypeId.0 as i32,
+        UIA_ComboBoxControlTypeId.0 as i32,
+        UIA_TabItemControlTypeId.0 as i32,
+        UIA_HeaderItemControlTypeId.0 as i32,
+        UIA_SplitButtonControlTypeId.0 as i32,
+        UIA_SliderControlTypeId.0 as i32,
+        UIA_SpinnerControlTypeId.0 as i32,
+        UIA_ProgressBarControlTypeId.0 as i32,
     ];
 
     if value_safe_types.contains(&control_type) {
@@ -264,6 +283,13 @@ unsafe fn extract_text_from_element(
             if !t.is_empty() && t.len() < 500 && !texts.contains(&t.to_string()) {
                 texts.push(t.to_string());
             }
+        }
+    }
+
+    if let Some(help_text) = get_element_help_text(element) {
+        let t = help_text.trim();
+        if !t.is_empty() && t.len() < 500 && !texts.contains(&t.to_string()) {
+            texts.push(t.to_string());
         }
     }
 
@@ -314,8 +340,31 @@ fn get_element_value(element: &IUIAutomationElement) -> Option<String> {
     }
 }
 
+fn get_element_help_text(element: &IUIAutomationElement) -> Option<String> {
+    unsafe {
+        element
+            .GetCurrentPropertyValue(UIA_HelpTextPropertyId)
+            .ok()
+            .and_then(|v| {
+                let bstr_ref = &v.Anonymous.Anonymous.Anonymous.bstrVal;
+                let s = bstr_ref.to_string();
+                if s.is_empty() {
+                    None
+                } else {
+                    Some(s)
+                }
+            })
+    }
+}
+
 fn should_skip_control_type(control_type: i32) -> bool {
-    control_type == 0
+    let skip_types = [
+        0, // Unknown
+        UIA_ThumbControlTypeId.0 as i32,
+        UIA_TitleBarControlTypeId.0 as i32,
+        UIA_ImageControlTypeId.0 as i32,
+    ];
+    skip_types.contains(&control_type)
 }
 
 fn is_container_control_type(control_type: i32) -> bool {
@@ -326,6 +375,17 @@ fn is_container_control_type(control_type: i32) -> bool {
         UIA_ToolBarControlTypeId.0 as i32,
         UIA_StatusBarControlTypeId.0 as i32,
         UIA_HeaderControlTypeId.0 as i32,
+        UIA_PaneControlTypeId.0 as i32,
+        UIA_GroupControlTypeId.0 as i32,
+        UIA_DocumentControlTypeId.0 as i32,
+        UIA_ListControlTypeId.0 as i32,
+        UIA_TableControlTypeId.0 as i32,
+        UIA_TreeControlTypeId.0 as i32,
+        UIA_DataGridControlTypeId.0 as i32,
+        UIA_CustomControlTypeId.0 as i32,
+        UIA_CalendarControlTypeId.0 as i32,
+        UIA_SemanticZoomControlTypeId.0 as i32,
+        UIA_AppBarControlTypeId.0 as i32,
     ];
     container_types.contains(&control_type)
 }
