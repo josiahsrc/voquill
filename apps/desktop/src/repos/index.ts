@@ -29,6 +29,7 @@ import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
 import {
   AldeaTranscribeAudioRepo,
+  AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
   CloudTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
@@ -164,18 +165,27 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       warnings: prefs.warnings,
     };
   } else if (prefs.mode === "api") {
-    const repo =
-      prefs.provider === "openai"
-        ? new OpenAITranscribeAudioRepo(
-            prefs.apiKeyValue,
-            prefs.transcriptionModel,
-          )
-        : prefs.provider === "aldea"
-          ? new AldeaTranscribeAudioRepo(prefs.apiKeyValue)
-          : new GroqTranscribeAudioRepo(
-              prefs.apiKeyValue,
-              prefs.transcriptionModel,
-            );
+    let repo: BaseTranscribeAudioRepo;
+
+    if (prefs.provider === "openai") {
+      repo = new OpenAITranscribeAudioRepo(
+        prefs.apiKeyValue,
+        prefs.transcriptionModel,
+      );
+    } else if (prefs.provider === "aldea") {
+      repo = new AldeaTranscribeAudioRepo(prefs.apiKeyValue);
+    } else if (prefs.provider === "azure") {
+      const state = getAppState();
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const region = apiKeyRecord?.azureRegion || "eastus";
+      repo = new AzureTranscribeAudioRepo(prefs.apiKeyValue, region);
+    } else {
+      repo = new GroqTranscribeAudioRepo(
+        prefs.apiKeyValue,
+        prefs.transcriptionModel,
+      );
+    }
+
     return {
       repo,
       apiKeyId: prefs.apiKeyId,
