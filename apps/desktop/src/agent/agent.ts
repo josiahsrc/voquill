@@ -71,22 +71,44 @@ export class Agent {
   async run(userInput: string): Promise<AgentRunResult> {
     this.history.push({ type: "user", content: userInput });
 
+    const originalInput = userInput;
     const toolExecutions: ToolExecution[] = [];
     const decisionSystemPrompt = buildDecisionSystemPrompt(this.tools);
 
+    const buildCurrentPrompt = (): string => {
+      if (toolExecutions.length === 0) {
+        return originalInput;
+      }
+      const toolsSummary = toolExecutions
+        .map(
+          (t) =>
+            `- ${t.name}: ${JSON.stringify(t.output)}`,
+        )
+        .join("\n");
+      return `${originalInput}
+
+## Tools Already Called (do not call these again unless necessary)
+${toolsSummary}
+
+Decide what to do next. If the user's original request is complete, choose "respond".`;
+    };
+
     try {
       for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-        const userPrompt = buildUserPrompt(this.history, userInput);
+        const userPrompt = buildUserPrompt(this.history, buildCurrentPrompt());
         const decision = await this.callDecisionLLM(
           decisionSystemPrompt,
           userPrompt,
         );
 
-        if (decision.choice === "respond") {
-          const response = await this.callFinalResponseLLM(
-            userPrompt,
-            decision.reasoning,
-          );
+        const lastToolName = toolExecutions.at(-1)?.name;
+        const isLooping = lastToolName === decision.choice;
+
+        if (decision.choice === "respond" || isLooping) {
+          const reasoning = isLooping
+            ? "Task appears complete after using " + lastToolName
+            : decision.reasoning;
+          const response = await this.callFinalResponseLLM(userPrompt, reasoning);
           this.history.push({
             type: "assistant",
             tools: toolExecutions,
@@ -115,12 +137,6 @@ export class Agent {
           input: toolArgs,
           output: toolResult.output,
         });
-
-        userInput = `Tool "${tool.name}" executed with args ${JSON.stringify(toolArgs)}.
-Result: ${JSON.stringify(toolResult.output)}
-${toolResult.success ? "Success." : "Failed."}
-
-Decide what to do next. If the user's original request is complete, choose "respond".`;
       }
 
       throw new Error(

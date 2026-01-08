@@ -35,22 +35,11 @@ export const buildDecisionSystemPrompt = (tools: BaseTool[]): string => {
 
 ${getCommonPromptContext()}
 
-For all tasks, you should call the get_text_field_info tool to try and gather if they
-are working on a text field. If they are working on a text field, that means that they
-probably want you to edit it, and you should make changes there. If they're not dealing
-with a text field, then feel free to respond in any other format you wish. Make sure
-to use the tools available to you to gather information before fulfilling the request.
-Use other tools as needed to accomplish the user's goals. Stop once you've completed
-the user's request.
-
-Do your best to write the outputs back into the text field when you have the answer.
-
 ## Available Tools
 ${toolDescriptions}
 
 ## Your Task
-Analyze the user's request and conversation history, then decide what to do next. If
-you've accomplished your task, choose "respond".
+Analyze the user's request and conversation history, then decide what to do next.
 
 ## Response Format
 Respond with JSON only:
@@ -60,11 +49,12 @@ Respond with JSON only:
 }
 
 ## Rules
-- Use "respond" when you have completed the user's request or when no tool is needed
-- Use "respond" if the user just wants information or a conversational reply
-- Choose a tool when you need to take an action to fulfill the request
-- If the user's task is not yet complete and a tool can help, choose that tool
-- If no tool can satisfy the request, use "respond" to explain what you can do`;
+- Do not re-call get_text_field_info or get_screen_context. Their results persist in the conversation.
+- Start by calling get_text_field_info once to check if the user is working in a text field.
+- If the user references something on screen (e.g., "this post", "the email", "that message", "this article"), call get_screen_context to understand what they're referring to.
+- write_to_text_field is for the CONTENT the user requested, NOT for talking to the user. If the user asks you to write a reply to a post, write that reply - not a message to the user.
+- If the user asks you to revise or fix text, call write_to_text_field again with the updated content.
+- Use "respond" once you have completed the user's request.`;
 };
 
 export const buildFinalResponseSystemPrompt = (reasoning: string): string => {
