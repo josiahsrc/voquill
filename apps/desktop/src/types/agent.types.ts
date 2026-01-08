@@ -22,6 +22,7 @@ export type ToolExecution = {
   displayName: string;
   input: Record<string, unknown>;
   output?: Record<string, unknown>;
+  didSucceed: boolean;
 };
 
 export type UserMessage = {

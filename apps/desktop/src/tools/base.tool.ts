@@ -16,7 +16,6 @@ export abstract class BaseTool<
 
   async execute(args: unknown): Promise<ToolResult> {
     const parseResult = this.inputSchema.safeParse(args);
-
     if (!parseResult.success) {
       return {
         success: false,
@@ -27,8 +26,25 @@ export abstract class BaseTool<
     }
 
     try {
-      return await this.execInternal(parseResult.data);
+      const result = await this.execInternal(parseResult.data);
+      console.log(
+        "Invoking tool",
+        this.name,
+        "with args:",
+        args,
+        "result:",
+        result,
+      );
+      return result;
     } catch (error) {
+      console.error(
+        "Error executing tool",
+        this.name,
+        "with args:",
+        args,
+        "got error:",
+        error,
+      );
       return {
         success: false,
         output: { error: `Tool execution error: ${String(error)}` },

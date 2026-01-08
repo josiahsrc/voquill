@@ -50,8 +50,8 @@ Respond with JSON only:
 
 ## Rules
 - Do not re-call get_text_field_info or get_screen_context. Their results persist in the conversation.
-- Start by calling get_text_field_info once to check if the user is working in a text field.
-- If the user references something on screen (e.g., "this post", "the email", "that message", "this article"), call get_screen_context to understand what they're referring to.
+- Start by calling get_text_field_info once to check if the user is working in a text field AND get_screen_context to gather context from the screen.
+- If the user references ANYTHING on screen (e.g., "this post", "the email", "that message", "this article"), call get_screen_context to understand what they're referring to.
 - write_to_text_field is for the CONTENT the user requested, NOT for talking to the user. If the user asks you to write a reply to a post, write that reply - not a message to the user.
 - If the user asks you to revise or fix text, call write_to_text_field again with the updated content.
 - Use "respond" once you have completed the user's request.`;

@@ -86,15 +86,15 @@ export class Agent {
       const toolsSummary = toolExecutions
         .map(
           (t) =>
-            `- ${t.name}: ${JSON.stringify(t.output)}`,
+            `- ${t.name} [${t.didSucceed ? "SUCCESS" : "FAILED"}]: ${JSON.stringify(t.output)}`,
         )
         .join("\n");
       return `${originalInput}
 
-## Tools Already Called (do not call these again unless necessary)
+## Tools Already Called
 ${toolsSummary}
 
-Decide what to do next. If the user's original request is complete, choose "respond".`;
+IMPORTANT: If a tool succeeded, the task for that tool is COMPLETE. Do NOT call the same tool again. Choose "respond" to finish.`;
     };
 
     try {
@@ -105,12 +105,12 @@ Decide what to do next. If the user's original request is complete, choose "resp
           userPrompt,
         );
 
-        const lastToolName = toolExecutions.at(-1)?.name;
-        const isLooping = lastToolName === decision.choice;
+        const lastTool = toolExecutions.at(-1);
+        const isLooping = lastTool?.didSucceed && lastTool.name === decision.choice;
 
         if (decision.choice === "respond" || isLooping) {
           const reasoning = isLooping
-            ? "Task appears complete after using " + lastToolName
+            ? "Task complete - " + lastTool?.name + " succeeded"
             : decision.reasoning;
           const response = await this.callFinalResponseLLM(userPrompt, reasoning);
           this.history.push({
@@ -140,6 +140,7 @@ Decide what to do next. If the user's original request is complete, choose "resp
           displayName: tool.displayName,
           input: toolArgs,
           output: toolResult.output,
+          didSucceed: toolResult.success,
         };
         toolExecutions.push(execution);
         options?.onToolExecuted?.(execution);
