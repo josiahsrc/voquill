@@ -16,6 +16,7 @@
   "advanced_routing": "Routage avancé",
   "advanced_setup_required": "⚠️ Configuration avancée requise",
   "agent_mode": "Mode agent",
+  "agent_mode_disabled": "Mode agent désactivé",
   "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "Le mode agent suit les commandes que vous dictez au lieu de simplement nettoyer le texte. Utilisez Maj+F8 pour l'activer.",
   "agent_mode_is_disabled": "Le mode agent est désactivé.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "Le mode agent vous permet de donner des commandes vocales pour écrire, éditer ou transformer du texte. Il peut lire ce qui se trouve déjà dans le champ de texte et le réécrire selon vos instructions.",
@@ -129,6 +130,7 @@
   "email": "E-mail",
   "email_sent": "E-mail envoyé",
   "enable": "Activer",
+  "enable_agent_mode_in_settings_to_use_this_feature": "Activez le mode agent dans les paramètres pour utiliser cette fonctionnalité.",
   "enable_hardware_acceleration": "Activer l'accélération matérielle",
   "ends_with_suffix": "Se termine par {suffix}",
   "enter_your_email_and_we_ll_send_a_reset_link": "Entrez votre e-mail et nous vous enverrons un lien de réinitialisation.",
@@ -140,6 +142,7 @@
   "final_transcript_unavailable": "Transcription finale non disponible.",
   "final_transcription": "Transcription finale",
   "finish": "Terminer",
+  "fix": "Corriger",
   "fix_issue": "Corriger le problème",
   "forgot": "Oublié ?",
   "formal": "Formel",
@@ -370,6 +373,7 @@
   "what_s_new": "Quoi de neuf",
   "what_s_your_name": "Quel est votre nom ?",
   "what_websites_does_it_work_on": "Sur quels sites web cela fonctionne-t-il ?",
+  "word_limit_reached": "Limite de mots atteinte",
   "words_this_month": "Mots ce mois-ci",
   "words_total": "Total des mots",
   "writing_styles": "Styles d'écriture",
@@ -381,5 +385,6 @@
   "you_haven_t_completed_checkout_yet_click_the_next_button_bel": "Vous n'avez pas encore terminé le paiement. Cliquez sur le bouton 'Suivant' ci-dessous pour procéder au paiement.",
   "you_ll_need_an_account_first": "Vous avez d'abord besoin d'un compte",
   "you_re_all_set": "Vous êtes prêt !",
-  "you_re_currently_on_version_version_the_app_will_restart_aft": "Vous utilisez actuellement la version {version}. L'application redémarrera une fois la mise à jour terminée."
+  "you_re_currently_on_version_version_the_app_will_restart_aft": "Vous utilisez actuellement la version {version}. L'application redémarrera une fois la mise à jour terminée.",
+  "you_ve_used_all_your_free_words_for_today": "Vous avez utilisé tous vos mots gratuits pour aujourd'hui."
 }

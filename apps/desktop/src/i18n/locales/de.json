@@ -16,6 +16,7 @@
   "advanced_routing": "Erweitertes Routing",
   "advanced_setup_required": "⚠️ Erweiterte Einrichtung erforderlich",
   "agent_mode": "Agenten-Modus",
+  "agent_mode_disabled": "Agenten-Modus deaktiviert",
   "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "Der Agenten-Modus folgt Befehlen, die Sie diktieren, anstatt nur Text zu bereinigen. Verwenden Sie Shift+F8 zum Aktivieren.",
   "agent_mode_is_disabled": "Der Agenten-Modus ist deaktiviert.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "Der Agenten-Modus ermöglicht es Ihnen, Sprachbefehle zu geben, um Text zu schreiben, zu bearbeiten oder umzuwandeln. Er kann lesen, was bereits im Textfeld steht, und es basierend auf Ihren Anweisungen umschreiben.",
@@ -129,6 +130,7 @@
   "email": "E-Mail",
   "email_sent": "E-Mail gesendet",
   "enable": "Aktivieren",
+  "enable_agent_mode_in_settings_to_use_this_feature": "Aktivieren Sie den Agenten-Modus in den Einstellungen, um diese Funktion zu nutzen.",
   "enable_hardware_acceleration": "Hardwarebeschleunigung aktivieren",
   "ends_with_suffix": "Endet mit {suffix}",
   "enter_your_email_and_we_ll_send_a_reset_link": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Reset-Link.",
@@ -140,6 +142,7 @@
   "final_transcript_unavailable": "Endgültiges Transkript nicht verfügbar.",
   "final_transcription": "Endgültige Transkription",
   "finish": "Beenden",
+  "fix": "Beheben",
   "fix_issue": "Problem beheben",
   "forgot": "Vergessen?",
   "formal": "Formell",
@@ -370,6 +373,7 @@
   "what_s_new": "Was ist neu",
   "what_s_your_name": "Wie ist Ihr Name?",
   "what_websites_does_it_work_on": "Auf welchen Websites funktioniert es?",
+  "word_limit_reached": "Wortlimit erreicht",
   "words_this_month": "Wörter diesen Monat",
   "words_total": "Wörter gesamt",
   "writing_styles": "Schreibstile",
@@ -381,5 +385,6 @@
   "you_haven_t_completed_checkout_yet_click_the_next_button_bel": "Sie haben den Checkout noch nicht abgeschlossen. Klicken Sie auf die Schaltfläche 'Weiter' unten, um zum Checkout zu gelangen.",
   "you_ll_need_an_account_first": "Sie benötigen zunächst ein Konto",
   "you_re_all_set": "Sie sind startklar!",
-  "you_re_currently_on_version_version_the_app_will_restart_aft": "Sie verwenden derzeit Version {version}. Die App wird nach Abschluss des Updates neu gestartet."
+  "you_re_currently_on_version_version_the_app_will_restart_aft": "Sie verwenden derzeit Version {version}. Die App wird nach Abschluss des Updates neu gestartet.",
+  "you_ve_used_all_your_free_words_for_today": "Sie haben alle Ihre kostenlosen Wörter für heute aufgebraucht."
 }

@@ -39,6 +39,8 @@ export const ToastItem = ({ toast, onClose, onAction }: ToastItemProps) => {
     switch (action) {
       case "upgrade":
         return intl.formatMessage({ defaultMessage: "Upgrade" });
+      case "open_agent_settings":
+        return intl.formatMessage({ defaultMessage: "Fix" });
     }
   };
 

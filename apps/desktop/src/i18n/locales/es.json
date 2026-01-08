@@ -16,6 +16,7 @@
   "advanced_routing": "Enrutamiento avanzado",
   "advanced_setup_required": "⚠️ Configuración avanzada requerida",
   "agent_mode": "Modo Agente",
+  "agent_mode_disabled": "Modo agente deshabilitado",
   "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "El Modo Agente sigue los comandos que dictas en lugar de solo limpiar el texto. Usa Shift+F8 para activar.",
   "agent_mode_is_disabled": "El Modo Agente está deshabilitado.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "El Modo Agente te permite dar comandos de voz para escribir, editar o transformar texto. Puede leer lo que ya está en el campo de texto y reescribirlo según tus instrucciones.",
@@ -129,6 +130,7 @@
   "email": "Correo electrónico",
   "email_sent": "Correo enviado",
   "enable": "Habilitar",
+  "enable_agent_mode_in_settings_to_use_this_feature": "Habilita el modo agente en la configuración para usar esta función.",
   "enable_hardware_acceleration": "Habilitar aceleración por hardware",
   "ends_with_suffix": "Termina con {suffix}",
   "enter_your_email_and_we_ll_send_a_reset_link": "Ingresa tu correo y te enviaremos un enlace de restablecimiento.",
@@ -140,6 +142,7 @@
   "final_transcript_unavailable": "Transcripción final no disponible.",
   "final_transcription": "Transcripción final",
   "finish": "Finalizar",
+  "fix": "Corregir",
   "fix_issue": "Fix issue",
   "forgot": "¿Olvidaste?",
   "formal": "Formal",
@@ -370,6 +373,7 @@
   "what_s_new": "Novedades",
   "what_s_your_name": "¿Cuál es tu nombre?",
   "what_websites_does_it_work_on": "¿En qué sitios web funciona?",
+  "word_limit_reached": "Límite de palabras alcanzado",
   "words_this_month": "Palabras este mes",
   "words_total": "Palabras totales",
   "writing_styles": "Estilos de escritura",
@@ -381,5 +385,6 @@
   "you_haven_t_completed_checkout_yet_click_the_next_button_bel": "Aún no has completado el pago. Haz clic en el botón 'Siguiente' a continuación para proceder al pago.",
   "you_ll_need_an_account_first": "Primero necesitas una cuenta",
   "you_re_all_set": "¡Estás listo!",
-  "you_re_currently_on_version_version_the_app_will_restart_aft": "Actualmente usas la versión {version}. La aplicación se reiniciará cuando termine la actualización."
+  "you_re_currently_on_version_version_the_app_will_restart_aft": "Actualmente usas la versión {version}. La aplicación se reiniciará cuando termine la actualización.",
+  "you_ve_used_all_your_free_words_for_today": "Has usado todas tus palabras gratis de hoy."
 }

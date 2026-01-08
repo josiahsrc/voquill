@@ -16,6 +16,7 @@
   "advanced_routing": "Routing avanzato",
   "advanced_setup_required": "Configurazione avanzata richiesta",
   "agent_mode": "Modalità agente",
+  "agent_mode_disabled": "Modalità agente disabilitata",
   "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "La modalità agente esegue i comandi che detti invece di pulire semplicemente il testo. Usa Shift+F8 per attivarla.",
   "agent_mode_is_disabled": "La modalità agente è disabilitata.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "La modalità agente ti permette di dare comandi vocali per scrivere, modificare o trasformare il testo. Può leggere ciò che è già nel campo di testo e riscriverlo in base alle tue istruzioni.",
@@ -129,6 +130,7 @@
   "email": "Email",
   "email_sent": "Email inviata",
   "enable": "Abilita",
+  "enable_agent_mode_in_settings_to_use_this_feature": "Abilita la modalità agente nelle impostazioni per usare questa funzione.",
   "enable_hardware_acceleration": "Abilita accelerazione hardware",
   "ends_with_suffix": "Termina con {suffix}",
   "enter_your_email_and_we_ll_send_a_reset_link": "Inserisci la tua email e ti invieremo un link per il reset.",
@@ -140,6 +142,7 @@
   "final_transcript_unavailable": "Trascrizione finale non disponibile.",
   "final_transcription": "Trascrizione finale",
   "finish": "Fine",
+  "fix": "Correggi",
   "fix_issue": "Risolvi problema",
   "forgot": "Dimenticato?",
   "formal": "Formale",
@@ -370,6 +373,7 @@
   "what_s_new": "Novità",
   "what_s_your_name": "Come ti chiami?",
   "what_websites_does_it_work_on": "Su quali siti web funziona?",
+  "word_limit_reached": "Limite di parole raggiunto",
   "words_this_month": "Parole questo mese",
   "words_total": "Parole totali",
   "writing_styles": "Stili di scrittura",
@@ -381,5 +385,6 @@
   "you_haven_t_completed_checkout_yet_click_the_next_button_bel": "Non hai ancora completato il checkout. Clicca il pulsante 'Avanti' qui sotto per procedere al checkout.",
   "you_ll_need_an_account_first": "Prima ti serve un account",
   "you_re_all_set": "Sei pronto!",
-  "you_re_currently_on_version_version_the_app_will_restart_aft": "Stai usando la versione {version}. L'app si riavvierà dopo che l'aggiornamento sarà completato."
+  "you_re_currently_on_version_version_the_app_will_restart_aft": "Stai usando la versione {version}. L'app si riavvierà dopo che l'aggiornamento sarà completato.",
+  "you_ve_used_all_your_free_words_for_today": "Hai esaurito tutte le parole gratuite per oggi."
 }

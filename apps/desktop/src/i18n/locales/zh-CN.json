@@ -16,6 +16,7 @@
   "advanced_routing": "進階路由",
   "advanced_setup_required": "需要進階設定",
   "agent_mode": "代理模式",
+  "agent_mode_disabled": "代理模式已禁用",
   "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "代理模式会执行您口述的命令，而不仅仅是整理文本。使用 Shift+F8 激活。",
   "agent_mode_is_disabled": "代理模式已禁用。",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "代理模式让您通过语音命令来撰写、编辑或转换文本。它可以读取文本框中已有的内容，并根据您的指示重新编写。",
@@ -129,6 +130,7 @@
   "email": "電子郵件",
   "email_sent": "電子郵件已發送",
   "enable": "啟用",
+  "enable_agent_mode_in_settings_to_use_this_feature": "请在设置中启用代理模式以使用此功能。",
   "enable_hardware_acceleration": "啟用硬體加速",
   "ends_with_suffix": "以 {suffix} 結尾",
   "enter_your_email_and_we_ll_send_a_reset_link": "輸入您的電子郵件，我們將發送重設連結。",
@@ -140,6 +142,7 @@
   "final_transcript_unavailable": "最終轉錄不可用。",
   "final_transcription": "最終轉錄",
   "finish": "完成",
+  "fix": "修复",
   "fix_issue": "修复问题",
   "forgot": "忘記？",
   "formal": "正式",
@@ -370,6 +373,7 @@
   "what_s_new": "最新消息",
   "what_s_your_name": "您叫什麼名字？",
   "what_websites_does_it_work_on": "它可以在哪些網站上運作？",
+  "word_limit_reached": "已达字数上限",
   "words_this_month": "本月字數",
   "words_total": "總字數",
   "writing_styles": "寫作樣式",
@@ -381,5 +385,6 @@
   "you_haven_t_completed_checkout_yet_click_the_next_button_bel": "您尚未完成結帳。點擊下方的「下一步」按鈕以進行結帳。",
   "you_ll_need_an_account_first": "您需要先建立帳戶",
   "you_re_all_set": "您已準備就緒！",
-  "you_re_currently_on_version_version_the_app_will_restart_aft": "您目前使用的是版本 {version}。應用程式將在更新完成後重新啟動。"
+  "you_re_currently_on_version_version_the_app_will_restart_aft": "您目前使用的是版本 {version}。應用程式將在更新完成後重新啟動。",
+  "you_ve_used_all_your_free_words_for_today": "您今天的免费字数已用完。"
 }

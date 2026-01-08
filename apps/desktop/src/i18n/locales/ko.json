@@ -16,6 +16,7 @@
   "advanced_routing": "고급 라우팅",
   "advanced_setup_required": "⚠️ 고급 설정 필요",
   "agent_mode": "에이전트 모드",
+  "agent_mode_disabled": "에이전트 모드 비활성화됨",
   "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "에이전트 모드는 텍스트를 정리하는 대신 사용자가 말한 명령을 따릅니다. Shift+F8로 활성화하세요.",
   "agent_mode_is_disabled": "에이전트 모드가 비활성화되어 있습니다.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "에이전트 모드를 사용하면 음성 명령으로 텍스트를 작성, 편집 또는 변환할 수 있습니다. 텍스트 필드에 이미 있는 내용을 읽고 지시에 따라 다시 작성할 수 있습니다.",
@@ -129,6 +130,7 @@
   "email": "이메일",
   "email_sent": "이메일 발송됨",
   "enable": "활성화",
+  "enable_agent_mode_in_settings_to_use_this_feature": "이 기능을 사용하려면 설정에서 에이전트 모드를 활성화하세요.",
   "enable_hardware_acceleration": "하드웨어 가속 활성화",
   "ends_with_suffix": "{suffix}(으)로 끝남",
   "enter_your_email_and_we_ll_send_a_reset_link": "이메일을 입력하시면 재설정 링크를 보내드립니다.",
@@ -140,6 +142,7 @@
   "final_transcript_unavailable": "최종 텍스트를 사용할 수 없습니다.",
   "final_transcription": "최종 음성 인식",
   "finish": "완료",
+  "fix": "수정",
   "fix_issue": "문제 해결",
   "forgot": "잊으셨나요?",
   "formal": "격식체",
@@ -370,6 +373,7 @@
   "what_s_new": "새로운 소식",
   "what_s_your_name": "이름이 무엇인가요?",
   "what_websites_does_it_work_on": "어떤 웹사이트에서 작동하나요?",
+  "word_limit_reached": "단어 한도 도달",
   "words_this_month": "이번 달 단어 수",
   "words_total": "총 단어 수",
   "writing_styles": "글쓰기 스타일",
@@ -381,5 +385,6 @@
   "you_haven_t_completed_checkout_yet_click_the_next_button_bel": "아직 결제를 완료하지 않으셨습니다. 아래 '다음' 버튼을 클릭하여 결제를 진행하세요.",
   "you_ll_need_an_account_first": "먼저 계정이 필요합니다",
   "you_re_all_set": "모든 준비가 완료되었습니다!",
-  "you_re_currently_on_version_version_the_app_will_restart_aft": "현재 버전 {version}을(를) 사용 중입니다. 업데이트가 완료되면 앱이 다시 시작됩니다."
+  "you_re_currently_on_version_version_the_app_will_restart_aft": "현재 버전 {version}을(를) 사용 중입니다. 업데이트가 완료되면 앱이 다시 시작됩니다.",
+  "you_ve_used_all_your_free_words_for_today": "오늘의 무료 단어를 모두 사용했습니다."
 }
