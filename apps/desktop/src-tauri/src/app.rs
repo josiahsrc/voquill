@@ -142,6 +142,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::storage_get_download_url,
             crate::commands::transcribe_audio,
             crate::commands::surface_main_window,
+            crate::commands::show_overlay_no_focus,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,

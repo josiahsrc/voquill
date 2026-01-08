@@ -138,8 +138,7 @@ export const UnifiedOverlayRoot = () => {
             return;
           }
 
-          await windowRef.show();
-          await windowRef.setAlwaysOnTop(true);
+          await invoke("show_overlay_no_focus");
         } else {
           await windowRef.hide();
         }
