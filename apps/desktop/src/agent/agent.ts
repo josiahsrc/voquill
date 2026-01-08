@@ -7,6 +7,7 @@ import type {
 import { BaseTool } from "../tools/base.tool";
 import type {
   AgentMessage,
+  AgentRunOptions,
   AgentRunResult,
   DecisionResponse,
   ToolExecution,
@@ -68,7 +69,10 @@ export class Agent {
     this.history = [];
   }
 
-  async run(userInput: string): Promise<AgentRunResult> {
+  async run(
+    userInput: string,
+    options?: AgentRunOptions,
+  ): Promise<AgentRunResult> {
     this.history.push({ type: "user", content: userInput });
 
     const originalInput = userInput;
@@ -131,12 +135,14 @@ Decide what to do next. If the user's original request is complete, choose "resp
 
         const toolResult = await this.executeTool(tool, toolArgs);
 
-        toolExecutions.push({
+        const execution: ToolExecution = {
           name: tool.name,
           displayName: tool.displayName,
           input: toolArgs,
           output: toolResult.output,
-        });
+        };
+        toolExecutions.push(execution);
+        options?.onToolExecuted?.(execution);
       }
 
       throw new Error(

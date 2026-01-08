@@ -88,9 +88,19 @@ export class AgentStrategy extends BaseStrategy {
     this.uiMessages.push({ text: rawTranscript, sender: "me" });
     await this.emitState({ messages: this.uiMessages });
 
-    const result = await this.agent.run(rawTranscript);
+    const liveTools: string[] = [];
+    this.uiMessages.push({ text: "", sender: "agent", tools: liveTools });
+
+    const result = await this.agent.run(rawTranscript, {
+      onToolExecuted: (tool) => {
+        liveTools.push(tool.displayName);
+        this.emitState({ messages: this.uiMessages }).catch(console.error);
+      },
+    });
     console.log("Agent response:", result.response);
     console.log("Agent history:", result.history);
+
+    this.uiMessages.pop();
 
     if (result.response) {
       const lastHistoryMessage = result.history[result.history.length - 1];

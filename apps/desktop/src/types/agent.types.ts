@@ -43,3 +43,7 @@ export type AgentRunResult = {
   isError: boolean;
   history: AgentMessage[];
 };
+
+export type AgentRunOptions = {
+  onToolExecuted?: (tool: ToolExecution) => void;
+};
