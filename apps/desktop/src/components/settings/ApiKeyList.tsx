@@ -41,13 +41,15 @@ import {
   updateApiKey,
 } from "../../actions/api-key.actions";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
-import { OllamaRepo } from "../../repos/ollama.repo";
 import {
   SettingsApiKey,
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
 import { useAppStore } from "../../store";
-import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
+import {
+  OLLAMA_DEFAULT_URL,
+  ollamaTestIntegration,
+} from "../../utils/ollama.utils";
 import { OllamaModelPicker } from "./OllamaModelPicker";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { OpenRouterProviderRouting } from "./OpenRouterProviderRouting";
@@ -249,8 +251,10 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
 
 const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
   if (apiKey.provider === "ollama") {
-    const repo = new OllamaRepo(apiKey.baseUrl || OLLAMA_DEFAULT_URL, apiKey.keyFull || undefined);
-    return repo.checkAvailability();
+    return ollamaTestIntegration({
+      baseUrl: apiKey.baseUrl || OLLAMA_DEFAULT_URL,
+      apiKey: apiKey.keyFull || undefined,
+    });
   }
 
   if (!apiKey.keyFull) {

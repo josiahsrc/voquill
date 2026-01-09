@@ -1,4 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { getOllamaHeaders } from "../utils/ollama.utils";
 import { BaseRepo } from "./base.repo";
 
 export abstract class BaseOllamaRepo extends BaseRepo {
@@ -16,19 +17,10 @@ export class OllamaRepo extends BaseOllamaRepo {
     this.apiKey = apiKey;
   }
 
-  private getHeaders(): HeadersInit | undefined {
-    if (!this.apiKey) {
-      return undefined;
-    }
-    return {
-      Authorization: `Bearer ${this.apiKey}`,
-    };
-  }
-
   override async checkAvailability(): Promise<boolean> {
     try {
       const health = await fetch(`${this.ollamaUrl}`, {
-        headers: this.getHeaders(),
+        headers: getOllamaHeaders(this.apiKey),
       });
       return health.ok;
     } catch {
@@ -37,9 +29,8 @@ export class OllamaRepo extends BaseOllamaRepo {
   }
 
   async getAvailableModels(): Promise<string[]> {
-    // Hitting the Ollama tags endpoint mirrors the `ollama list` CLI call.
     const response = await fetch(new URL("/api/tags", this.ollamaUrl).href, {
-      headers: this.getHeaders(),
+      headers: getOllamaHeaders(this.apiKey),
     });
     if (!response.ok) {
       throw new Error(
