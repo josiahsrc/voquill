@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
+import { trackAgentStart, trackDictationStart } from "../../utils/analytics.utils";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -344,6 +345,7 @@ export const RootSideEffects = () => {
       return;
     }
 
+    trackDictationStart();
     produceAppState((draft) => {
       draft.activeRecordingMode = "dictate";
     });
@@ -374,6 +376,7 @@ export const RootSideEffects = () => {
       return;
     }
 
+    trackAgentStart();
     produceAppState((draft) => {
       draft.activeRecordingMode = "agent";
     });

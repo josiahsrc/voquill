@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { trackButtonClick } from "../utils/analytics.utils";
 import DownloadButton from "./download-button";
 import styles from "../styles/page.module.css";
 import {
@@ -99,6 +100,7 @@ export function DownloadPageContent() {
           <DownloadButton
             className={styles.downloadPrimaryButton}
             href={`#${OPTIONS_SECTION_ID}`}
+            trackingId="download-page-primary"
           />
           <span className={styles.downloadRecommendation}>
             {recommendedLabel}
@@ -147,6 +149,9 @@ export function DownloadPageContent() {
                         className={styles.downloadLink}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() =>
+                          trackButtonClick(`download-${download.platform}-${download.key}`)
+                        }
                       >
                         <span>{download.label}</span>
                         {download.description ? (

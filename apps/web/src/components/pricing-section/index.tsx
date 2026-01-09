@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FormattedMessage } from "react-intl";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import pageStyles from "../../styles/page.module.css";
 import { DownloadButton } from "../download-button";
 import styles from "./pricing-section.module.css";
@@ -236,12 +237,14 @@ export default function PricingSection() {
                 <a
                   href="mailto:hello@voquill.com"
                   className={styles.ctaButtonOutline}
+                  onClick={() => trackButtonClick(`pricing-${plan.name.toLowerCase()}`)}
                 >
                   {plan.cta}
                 </a>
               ) : (
                 <DownloadButton
                   className={plan.popular ? styles.ctaButton : styles.ctaButtonOutline}
+                  trackingId={`pricing-${plan.name.toLowerCase()}`}
                 />
               )}
 

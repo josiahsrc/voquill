@@ -23,7 +23,7 @@ export function HeroSection() {
           <FormattedMessage defaultMessage="Make voice your new keyboard. Type four times faster by using your voice. Voquill is the open-source alternative to WisprFlow." />
         </p>
         <div className={styles.heroActions}>
-          <DownloadButton />
+          <DownloadButton trackingId="download-hero" />
           <a
             href="https://github.com/josiahsrc/voquill"
             target="_blank"

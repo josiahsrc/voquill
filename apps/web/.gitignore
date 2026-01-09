@@ -38,3 +38,5 @@ next-env.d.ts
 
 .firebase
 firebase-debug.log
+!.env
+

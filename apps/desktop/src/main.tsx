@@ -7,6 +7,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { FirebaseOptions, initializeApp } from "firebase/app";
+import mixpanel from "mixpanel-browser";
 import { connectAuthEmulator } from "firebase/auth";
 import {
   connectFirestoreEmulator,
@@ -76,6 +77,15 @@ if (getIsEmulators()) {
 const storage = getStorage(app);
 if (getIsEmulators()) {
   connectStorageEmulator(storage, "localhost", 9199);
+}
+
+const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;
+if (mixpanelToken) {
+  mixpanel.init(mixpanelToken, {
+    debug: import.meta.env.DEV,
+    track_pageview: true,
+    persistence: "localStorage",
+  });
 }
 
 const searchParams =
