@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { trackButtonClick } from "../lib/analytics";
+import { trackButtonClick } from "../utils/analytics.utils";
 import {
   DEFAULT_PLATFORM,
   detectPlatform,

@@ -1,7 +1,7 @@
 import { Stack } from "@mui/material";
 import { useEffect } from "react";
 import { loadPrices } from "../../actions/pricing.actions";
-import { trackOnboardingStep } from "../../lib/analytics";
+import { trackOnboardingStep } from "../../utils/analytics.utils";
 import { produceAppState, useAppStore } from "../../store";
 import { getMyMember } from "../../utils/member.utils";
 import { AgentHotkeySelectionForm } from "./AgentHotkeySelectionForm";

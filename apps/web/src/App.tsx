@@ -1,7 +1,7 @@
 import { Fragment, useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import ScrollToTop from "./components/scroll-to-top";
-import { trackPageView } from "./lib/analytics";
+import { trackPageView } from "./utils/analytics.utils";
 import DownloadPage from "./pages/DownloadPage";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";

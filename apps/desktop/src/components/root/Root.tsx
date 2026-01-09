@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Outlet, useLocation } from "react-router-dom";
-import { trackPageView } from "../../lib/analytics";
+import { trackPageView } from "../../utils/analytics.utils";
 import { HeaderPortalProvider } from "./HeaderPortalContext";
 import { LoadingApp } from "./LoadingApp";
 import { PermissionSideEffects } from "./PermissionSideEffects";
