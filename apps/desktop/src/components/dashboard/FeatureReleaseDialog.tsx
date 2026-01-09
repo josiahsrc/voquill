@@ -232,10 +232,6 @@ export const FeatureReleaseDialog = () => {
     setPageIndex((prev) => Math.max(0, prev - 1));
   };
 
-  if (!open) {
-    return null;
-  }
-
   const canBack = pageIndex > 0;
   const isLastPage = pageIndex === pageCount - 1;
 
