@@ -87,6 +87,8 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
     );
   }
 
+  const draft = message.draft;
+
   if (message.isError) {
     return (
       <Box
@@ -115,6 +117,7 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
 
   const tools = message.tools ?? [];
   const hasTools = tools.length > 0;
+  const hasDraft = !!draft;
 
   return (
     <Box sx={{ mb: 1 }}>
@@ -144,6 +147,44 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
               • {tool}
             </Typography>
           ))}
+        </Box>
+      )}
+      {hasDraft && (
+        <Box
+          sx={{
+            mb: 1,
+            padding: theme.spacing(1.5),
+            borderRadius: 1,
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            borderLeft: `3px solid ${theme.palette.primary.main}`,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: "primary.main",
+              fontWeight: 500,
+              fontSize: "0.7rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              display: "block",
+              mb: 0.5,
+            }}
+          >
+            Draft
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.primary",
+              lineHeight: 1.5,
+              wordBreak: "break-word",
+              fontSize: "0.8125rem",
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {draft}
+          </Typography>
         </Box>
       )}
       <Typography

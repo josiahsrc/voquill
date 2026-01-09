@@ -1,8 +1,8 @@
 import { emitTo } from "@tauri-apps/api/event";
 import { Agent } from "../agent/agent";
 import { getAgentRepo } from "../repos";
-import { GetScreenContextTool } from "../tools/get-screen-context.tool";
-import { GetTextFieldInfoTool } from "../tools/get-text-field-info.tool";
+import { DraftTool } from "../tools/draft.tool";
+import { GetContextTool } from "../tools/get-context.tool";
 import { getToolsForServers } from "../tools/mcp.tool";
 import { StopTool } from "../tools/stop.tool";
 import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
@@ -24,6 +24,8 @@ export class AgentStrategy extends BaseStrategy {
   private shouldStop = false;
   private writeToTextFieldTool: WriteToTextFieldTool | null = null;
   private stopTool: StopTool | null = null;
+  private draftTool: DraftTool | null = null;
+  private currentDraft: string | null = null;
 
   private async emitState(state: AgentWindowState | null): Promise<void> {
     await emitTo("unified-overlay", "agent_window_state", { state });
@@ -49,12 +51,19 @@ export class AgentStrategy extends BaseStrategy {
       this.shouldStop = true;
     });
 
+    this.draftTool = new DraftTool();
+    this.draftTool.setOnDraftUpdated((draft) => {
+      this.currentDraft = draft;
+      this.emitState({ messages: this.uiMessages }).catch(console.error);
+    });
+
     this.writeToTextFieldTool = new WriteToTextFieldTool();
     this.writeToTextFieldTool.setStopTool(this.stopTool);
+    this.writeToTextFieldTool.setDraftTool(this.draftTool);
 
     const tools = [
-      new GetTextFieldInfoTool(),
-      new GetScreenContextTool(),
+      new GetContextTool(),
+      this.draftTool,
       this.writeToTextFieldTool,
       this.stopTool,
       ...mcpTools,
@@ -126,7 +135,9 @@ export class AgentStrategy extends BaseStrategy {
         sender: "agent",
         isError: result.isError,
         tools: toolDisplayNames,
+        draft: this.currentDraft ?? undefined,
       });
+      this.currentDraft = null;
       await this.emitState({ messages: this.uiMessages });
     }
 
@@ -152,6 +163,8 @@ export class AgentStrategy extends BaseStrategy {
     this.agent = null;
     this.shouldStop = false;
     this.writeToTextFieldTool = null;
+    this.draftTool = null;
+    this.currentDraft = null;
     await emitTo("unified-overlay", "agent_overlay_phase", { phase: "idle" });
     await this.emitState(null);
   }

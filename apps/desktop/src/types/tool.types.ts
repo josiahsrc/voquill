@@ -13,28 +13,22 @@ export const StopParamsSchema = z.object({
 });
 export type StopParams = z.infer<typeof StopParamsSchema>;
 
-export const GetTextFieldInfoParamsSchema = z.object({});
-export type GetTextFieldInfoParams = z.infer<
-  typeof GetTextFieldInfoParamsSchema
->;
+export const GetContextParamsSchema = z.object({});
+export type GetContextParams = z.infer<typeof GetContextParamsSchema>;
 
-export const GetScreenContextParamsSchema = z.object({});
-export type GetScreenContextParams = z.infer<
-  typeof GetScreenContextParamsSchema
->;
-
-export const WriteToTextFieldParamsSchema = z.object({
-  text: z.string().describe("The text to write to the focused text field"),
+export const DraftParamsSchema = z.object({
+  text: z.string().describe("The draft text to store"),
 });
-export type WriteToTextFieldParams = z.infer<
-  typeof WriteToTextFieldParamsSchema
->;
+export type DraftParams = z.infer<typeof DraftParamsSchema>;
+
+export const WriteToTextFieldParamsSchema = z.object({});
+export type WriteToTextFieldParams = z.infer<typeof WriteToTextFieldParamsSchema>;
 
 export const ToolParamsSchema = z.union([
   ShowToastParamsSchema,
   StopParamsSchema,
-  GetTextFieldInfoParamsSchema,
-  GetScreenContextParamsSchema,
+  GetContextParamsSchema,
+  DraftParamsSchema,
   WriteToTextFieldParamsSchema,
 ]);
 export type ToolParams = z.infer<typeof ToolParamsSchema>;
@@ -49,12 +43,12 @@ export const TypedToolCallSchema = z.discriminatedUnion("name", [
     arguments: StopParamsSchema,
   }),
   z.object({
-    name: z.literal("get_text_field_info"),
-    arguments: GetTextFieldInfoParamsSchema,
+    name: z.literal("get_context"),
+    arguments: GetContextParamsSchema,
   }),
   z.object({
-    name: z.literal("get_screen_context"),
-    arguments: GetScreenContextParamsSchema,
+    name: z.literal("draft"),
+    arguments: DraftParamsSchema,
   }),
   z.object({
     name: z.literal("write_to_text_field"),

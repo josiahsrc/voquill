@@ -22,6 +22,8 @@ const getCommonPromptContext = (): string => {
   const username = getMyUserName(getAppState());
   return `
 The user's name is "${username}".
+
+CRITICAL: You must NEVER include draft content in your responses. Drafts are displayed separately by the system. Your response should only contain a brief message like "How does this look?" - never the draft text itself.
 `;
 };
 
@@ -49,23 +51,9 @@ Respond with JSON only:
 }
 
 ## Rules
-- If you're not sure what the user is referring to, use get_text_field_info and get_screen_context to gather more information.
-
-## Draft Approval Flow (CRITICAL)
-When the user asks you to write content (emails, replies, messages, etc.):
-1. FIRST: Choose "respond" and output the FULL draft text in your response. End with "How does this sound?" or similar.
-2. WAIT for the user to confirm (e.g., "yes", "looks good", "send it", "perfect").
-3. ONLY THEN: Call write_to_text_field with the approved draft.
-
-REVISION REQUESTS: If the user asks for changes (e.g., "make it shorter", "more formal", "change X to Y"):
-- Choose "respond"
-- Output the FULL REVISED draft text in your response
-- Ask for confirmation again (e.g., "How about this?")
-- Do NOT call write_to_text_field yet
-
-APPROVAL: Only call write_to_text_field when the user explicitly approves with phrases like "yes", "good", "perfect", "do it", "send it", "looks good", "that works", etc.
-
-- Use "respond" once you have completed the user's request.`;
+- If you're not sure what the user is referring to, use get_context to gather more information.
+- Use "respond" when you need to communicate with the user or have completed their request.
+- Read the tool descriptions carefully - they explain when and how to use each tool.`;
 };
 
 export const buildFinalResponseSystemPrompt = (reasoning: string): string => {
@@ -83,10 +71,12 @@ Respond with JSON only:
 
 ## Rules
 - Be concise and helpful
-- If you're presenting a draft for approval, include the FULL draft text and ask for confirmation
-- If you're revising a draft, include the FULL REVISED draft text and ask for confirmation
-- If you just executed a tool (like write_to_text_field), briefly confirm what you did
+- If you just executed a tool, briefly confirm what you did or ask for next steps as appropriate
 - If you're answering a question, provide the answer directly
+
+## CRITICAL - Draft Content
+If you used the draft tool, your response must ONLY be a short question like "How does this look?" or "Does this work?".
+DO NOT repeat, summarize, or include ANY of the draft text. The draft is shown separately by the system.
 `;
 };
 
