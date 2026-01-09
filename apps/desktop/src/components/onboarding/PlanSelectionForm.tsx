@@ -6,6 +6,7 @@ import {
   goBackOnboardingPage,
   selectOnboardingPlan,
 } from "../../actions/onboarding.actions";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import { PricingPlan } from "../../utils/price.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { PlanList } from "../pricing/PlanList";
@@ -15,15 +16,31 @@ export const PlanSelectionForm = () => {
   const [confirmLocalSetupOpen, setConfirmLocalSetupOpen] = useState(false);
 
   const handleSelectPlan = (plan: PricingPlan) => {
+    trackButtonClick(`Onboarding Select Plan - ${plan}`);
     selectOnboardingPlan(plan);
+  };
+
+  const handleClickLocalSetup = () => {
+    trackButtonClick("Onboarding Local set up");
+    setConfirmLocalSetupOpen(true);
+  };
+
+  const handleConfirmLocalSetup = () => {
+    trackButtonClick("Onboarding Confirm Local Setup");
+    handleSelectPlan("community");
+  };
+
+  const handleCancelLocalSetup = () => {
+    trackButtonClick("Onboarding Cancel Local Setup");
+    setConfirmLocalSetupOpen(false);
   };
 
   return (
     <FormContainer sx={{ maxWidth: 750 }}>
       <ConfirmDialog
         isOpen={confirmLocalSetupOpen}
-        onCancel={() => setConfirmLocalSetupOpen(false)}
-        onConfirm={() => handleSelectPlan("community")}
+        onCancel={handleCancelLocalSetup}
+        onConfirm={handleConfirmLocalSetup}
         title={<FormattedMessage defaultMessage="⚠️ Advanced Setup Required" />}
         content={
           <FormattedMessage defaultMessage="Local set up is complicated and requires a strong technical background. We recommend the free plan for most users." />
@@ -56,7 +73,7 @@ export const PlanSelectionForm = () => {
           <FormattedMessage defaultMessage="Back" />
         </Button>
         <Button
-          onClick={() => setConfirmLocalSetupOpen(true)}
+          onClick={handleClickLocalSetup}
           variant="text"
           endIcon={<ArrowForward />}
           sx={{ color: "text.disabled", fontWeight: 400 }}

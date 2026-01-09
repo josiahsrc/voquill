@@ -15,3 +15,7 @@ export function trackDictationStart() {
 export function trackAgentStart() {
   mixpanel.track("Activate Agent Mode");
 }
+
+export function trackButtonClick(name: string) {
+  mixpanel.track("Button Click", { name });
+}
