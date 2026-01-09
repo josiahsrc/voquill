@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
+import { trackButtonClick } from "../lib/analytics";
 import {
   DEFAULT_PLATFORM,
   detectPlatform,
@@ -14,12 +15,17 @@ import styles from "../styles/page.module.css";
 type DownloadButtonProps = {
   href?: string;
   className?: string;
+  trackingId?: string;
 };
 
 const BUTTON_ICON_SIZE = 20;
 const COMPACT_LABEL_BREAKPOINT = 640;
 
-export function DownloadButton({ href, className }: DownloadButtonProps) {
+export function DownloadButton({
+  href,
+  className,
+  trackingId,
+}: DownloadButtonProps) {
   const classes = [styles.primaryButton, className].filter(Boolean).join(" ");
   const [platform, setPlatform] = useState<Platform>(DEFAULT_PLATFORM);
   const [downloadHref, setDownloadHref] = useState<string | undefined>(href);
@@ -97,8 +103,14 @@ export function DownloadButton({ href, className }: DownloadButtonProps) {
     );
   }
 
+  const handleClick = () => {
+    if (trackingId) {
+      trackButtonClick(trackingId);
+    }
+  };
+
   return (
-    <a href={downloadHref} className={classes}>
+    <a href={downloadHref} className={classes} onClick={handleClick}>
       <Icon className={styles.buttonIcon} size={BUTTON_ICON_SIZE} />
       <span>{buttonLabel}</span>
     </a>
