@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import zodToJsonSchema from "zod-to-json-schema";
 import { getAppState } from "../store";
 import { BaseTool } from "../tools/base.tool";
@@ -20,10 +21,15 @@ export const FINAL_RESPONSE_JSON_SCHEMA = zodToJsonSchema(FinalResponseSchema, {
 
 const getCommonPromptContext = (): string => {
   const username = getMyUserName(getAppState());
+  const now = new Date();
+  const timezoneAbbr = now
+    .toLocaleTimeString("en-US", { timeZoneName: "short" })
+    .split(" ")
+    .pop();
   return `
-The user's name is "${username}".
-
-CRITICAL: You must NEVER include draft content in your responses. Drafts are displayed separately by the system. Your response should only contain a brief message like "How does this look?" - never the draft text itself.
+CRITICAL CONTEXT (DO NOT FORGET!):
+The user's name is "${username}". YOU MUST SIGN EMAILS WITH THIS NAME.
+The current date is ${dayjs().format("MMMM D, YYYY (dddd)")} at ${dayjs().format("h:mm A")} ${timezoneAbbr}.
 `;
 };
 
@@ -34,8 +40,6 @@ export const buildDecisionSystemPrompt = (tools: BaseTool[]): string => {
     .join("\n");
 
   return `You are a helpful assistant that decides how to respond to user requests.
-
-${getCommonPromptContext()}
 
 ## Available Tools
 ${toolDescriptions}
@@ -53,13 +57,14 @@ Respond with JSON only:
 ## Rules
 - If you're not sure what the user is referring to, use get_context to gather more information.
 - Use "respond" when you need to communicate with the user or have completed their request.
-- Read the tool descriptions carefully - they explain when and how to use each tool.`;
+- Read the tool descriptions carefully - they explain when and how to use each tool.
+
+${getCommonPromptContext()}
+`;
 };
 
 export const buildFinalResponseSystemPrompt = (reasoning: string): string => {
   return `You are a helpful assistant that responds to the user.
-
-${getCommonPromptContext()}
 
 You are responding to the user because of this reason: ${reasoning}
 
@@ -73,10 +78,13 @@ Respond with JSON only:
 - Be concise and helpful
 - If you just executed a tool, briefly confirm what you did or ask for next steps as appropriate
 - If you're answering a question, provide the answer directly
+- CRITICAL: You must NEVER include draft content in your responses. Drafts are displayed separately by the system. Your response should only contain a brief message like "How does this look?" - never the draft text itself.
 
-## CRITICAL - Draft Content
+## Draft Content
 If you used the draft tool, your response must ONLY be a short question like "How does this look?" or "Does this work?".
 DO NOT repeat, summarize, or include ANY of the draft text. The draft is shown separately by the system.
+
+${getCommonPromptContext()}
 `;
 };
 
@@ -101,7 +109,10 @@ Respond with JSON matching the parameters schema above.
 
 ## Rules
 - Provide all required parameters
-- Use appropriate values based on the conversation context`;
+- Use appropriate values based on the conversation context
+
+${getCommonPromptContext()}
+`;
 };
 
 export const formatHistory = (messages: AgentMessage[]): string => {
