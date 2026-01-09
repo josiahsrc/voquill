@@ -5,10 +5,7 @@ import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
-import {
-  getEffectivePlan,
-  getMemberExceedsLimitByState,
-} from "./member.utils";
+import { getEffectivePlan, getMemberExceedsLimitByState } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
 
@@ -71,7 +68,7 @@ export const getMyDictationLanguage = (state: AppState): string => {
 export const getMyUserPreferences = (
   state: AppState,
 ): Nullable<UserPreferences> => {
-  return getRec(state.userPreferencesById, getMyEffectiveUserId(state)) ?? null;
+  return state.userPrefs;
 };
 
 export const getShouldGoToOnboarding = (state: AppState): boolean => {
@@ -118,14 +115,12 @@ export const setCurrentUser = (draft: AppState, user: User): void => {
   registerUsers(draft, [user]);
 };
 
-export const registerUserPreferences = (
+export const setUserPreferences = (
   draft: AppState,
-  preferences: UserPreferences[],
+  value: UserPreferences,
 ): void => {
-  for (const pref of preferences) {
-    draft.userPreferencesById[pref.userId] = pref;
-    applyAiPreferences(draft, pref);
-  }
+  draft.userPrefs = value;
+  applyAiPreferences(draft, value);
 };
 
 type BaseTranscriptionPrefs = {

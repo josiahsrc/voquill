@@ -6,8 +6,8 @@ import {
   UserPreferences,
 } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { BaseRepo } from "./base.repo";
 import { LOCAL_USER_ID } from "../utils/user.utils";
+import { BaseRepo } from "./base.repo";
 
 type LocalUserPreferences = {
   userId: string;
@@ -86,9 +86,7 @@ export abstract class BaseUserPreferencesRepo extends BaseRepo {
   abstract setUserPreferences(
     preferences: UserPreferences,
   ): Promise<UserPreferences>;
-  abstract getUserPreferences(
-    userId: string,
-  ): Promise<Nullable<UserPreferences>>;
+  abstract getUserPreferences(): Promise<Nullable<UserPreferences>>;
 }
 
 export class LocalUserPreferencesRepo extends BaseUserPreferencesRepo {
@@ -102,11 +100,11 @@ export class LocalUserPreferencesRepo extends BaseUserPreferencesRepo {
     return fromLocalPreferences(saved);
   }
 
-  async getUserPreferences(userId: string): Promise<Nullable<UserPreferences>> {
+  async getUserPreferences(): Promise<Nullable<UserPreferences>> {
     const result = await invoke<Nullable<LocalUserPreferences>>(
       "user_preferences_get",
       {
-        args: { userId },
+        args: { userId: LOCAL_USER_ID },
       },
     );
 

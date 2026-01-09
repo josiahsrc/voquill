@@ -164,8 +164,7 @@ export const postProcessTranscript = async ({
 
   if (genRepo) {
     const preferredLocale = getMyPreferredLocale(state);
-    const myUserId = getMyEffectiveUserId(state);
-    const myPrefs = getRec(state.userPreferencesById, myUserId);
+    const myPrefs = state.userPrefs;
     const tone =
       getRec(state.toneById, toneId) ??
       getRec(state.toneById, myPrefs?.activeToneId) ??

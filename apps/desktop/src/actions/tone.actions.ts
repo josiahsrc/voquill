@@ -1,10 +1,9 @@
 import { Tone } from "@repo/types";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
+import { ToneEditorMode } from "../state/tone-editor.state";
 import { getAppState, produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";
-import { getMyEffectiveUserId } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
-import { ToneEditorMode } from "../state/tone-editor.state";
 
 let loadTonesPromise: Promise<void> | null = null;
 
@@ -68,19 +67,14 @@ export const deleteTone = async (id: string): Promise<void> => {
       }
 
       // Clear active tone if deleting the currently active tone
-      const myUserId = getMyEffectiveUserId(draft);
-      const prefs = draft.userPreferencesById[myUserId];
+      const prefs = draft.userPrefs;
       if (prefs?.activeToneId === id) {
-        draft.userPreferencesById[myUserId] = {
-          ...prefs,
-          activeToneId: null,
-        };
+        prefs.activeToneId = null;
       }
     });
 
     // Sync preferences if we cleared the active tone
-    const myUserId = getMyEffectiveUserId(getAppState());
-    const prefs = getAppState().userPreferencesById[myUserId];
+    const prefs = getAppState().userPrefs;
     if (prefs && prefs.activeToneId === null) {
       await getUserPreferencesRepo().setUserPreferences(prefs);
     }
@@ -97,9 +91,7 @@ export const deleteTone = async (id: string): Promise<void> => {
 
 export const setActiveTone = async (toneId: string | null): Promise<void> => {
   try {
-    const myUserId = getMyEffectiveUserId(getAppState());
-    const currentPrefs = getAppState().userPreferencesById[myUserId];
-
+    const currentPrefs = getAppState().userPrefs;
     if (!currentPrefs) {
       throw new Error("User preferences not found");
     }
@@ -110,9 +102,8 @@ export const setActiveTone = async (toneId: string | null): Promise<void> => {
     };
 
     await getUserPreferencesRepo().setUserPreferences(updatedPrefs);
-
     produceAppState((draft) => {
-      draft.userPreferencesById[myUserId] = updatedPrefs;
+      draft.userPrefs = updatedPrefs;
     });
 
     showSnackbar(toneId ? "Default tone set" : "Default tone cleared", {
@@ -134,8 +125,7 @@ export const getSortedTones = (): Tone[] => {
 
 export const getActiveTone = (): Tone | null => {
   const state = getAppState();
-  const myUserId = getMyEffectiveUserId(state);
-  const prefs = state.userPreferencesById[myUserId];
+  const prefs = state.userPrefs;
   const activeToneId = prefs?.activeToneId;
 
   if (!activeToneId) {

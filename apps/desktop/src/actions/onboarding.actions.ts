@@ -16,8 +16,8 @@ import {
   getGenerativePrefs,
   getMyEffectiveUserId,
   getTranscriptionPrefs,
-  registerUserPreferences,
   setCurrentUser,
+  setUserPreferences,
   TranscriptionPrefs,
 } from "../utils/user.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
@@ -149,7 +149,7 @@ export const submitOnboarding = async () => {
 
     produceAppState((draft) => {
       setCurrentUser(draft, savedUser);
-      registerUserPreferences(draft, [savedPreferences]);
+      setUserPreferences(draft, savedPreferences);
       draft.onboarding.submitting = false;
       draft.onboarding.name = savedUser.name;
     });

@@ -54,10 +54,10 @@ export type AppState = {
   audioLevels: number[];
   permissions: PermissionMap;
   confettiCounter: number;
+  userPrefs: Nullable<UserPreferences>;
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
-  userPreferencesById: Record<string, UserPreferences>;
   termById: Record<string, Term>;
   appTargetById: Record<string, AppTarget>;
   transcriptionById: Record<string, Transcription>;
@@ -91,11 +91,11 @@ export type AppState = {
 };
 
 export const INITIAL_APP_STATE: AppState = {
+  userPrefs: null,
   isRecordingHotkey: false,
   activeRecordingMode: null,
   memberById: {},
   userById: {},
-  userPreferencesById: {},
   termById: {},
   appTargetById: {},
   transcriptionById: {},

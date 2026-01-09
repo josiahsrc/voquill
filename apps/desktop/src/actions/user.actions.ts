@@ -13,8 +13,8 @@ import {
   getMyUser,
   getMyUserPreferences,
   LOCAL_USER_ID,
-  registerUserPreferences,
   setCurrentUser,
+  setUserPreferences,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 
@@ -50,8 +50,8 @@ const updateUser = async (
   }
 };
 
-export const createDefaultPreferences = (userId: string): UserPreferences => ({
-  userId,
+export const createDefaultPreferences = (): UserPreferences => ({
+  userId: LOCAL_USER_ID,
   transcriptionMode: DEFAULT_TRANSCRIPTION_MODE,
   transcriptionApiKeyId: null,
   transcriptionDevice: null,
@@ -75,15 +75,14 @@ const updateUserPreferences = async (
   const state = getAppState();
   const myUserId = getMyEffectiveUserId(state);
 
-  const existing =
-    getMyUserPreferences(state) ?? createDefaultPreferences(myUserId);
+  const existing = getMyUserPreferences(state) ?? createDefaultPreferences();
   const payload: UserPreferences = { ...existing, userId: myUserId };
   updateCallback(payload);
 
   try {
     const saved = await getUserPreferencesRepo().setUserPreferences(payload);
     produceAppState((draft) => {
-      draft.userPreferencesById[saved.userId] = saved;
+      setUserPreferences(draft, saved);
     });
   } catch (error) {
     console.error("Failed to update user preferences", error);
@@ -129,17 +128,18 @@ export const refreshCurrentUser = async (): Promise<void> => {
   try {
     const [user, preferences] = await Promise.all([
       getUserRepo().getUser(userId),
-      getUserPreferencesRepo().getUserPreferences(userId),
+      getUserPreferencesRepo().getUserPreferences(),
     ]);
     produceAppState((draft) => {
       if (user) {
         setCurrentUser(draft, user);
       }
 
+      console.log("REFRESHING", userId, preferences);
       if (preferences) {
-        registerUserPreferences(draft, [preferences]);
+        setUserPreferences(draft, preferences);
       } else {
-        delete draft.userPreferencesById[userId];
+        draft.userPrefs = null;
       }
     });
   } catch (error) {
@@ -297,9 +297,7 @@ export const setPreferredPostProcessingApiKeyId = async (
   await persistAiPreferences();
 };
 
-export const setPreferredAgentMode = async (
-  mode: string,
-): Promise<void> => {
+export const setPreferredAgentMode = async (mode: string): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.agentMode.mode = mode as any;
   });

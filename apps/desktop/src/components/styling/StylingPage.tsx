@@ -3,7 +3,6 @@ import { useCallback } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { setActiveTone } from "../../actions/tone.actions";
 import { useAppStore } from "../../store";
-import { getMyEffectiveUserId } from "../../utils/user.utils";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { ToneSelect } from "../tones/ToneSelect";
 import { PostProcessingDisabledTooltip } from "./PostProcessingDisabledTooltip";
@@ -19,8 +18,7 @@ export default function StylingPage() {
   );
 
   const activeToneId = useAppStore((state) => {
-    const myUserId = getMyEffectiveUserId(state);
-    return state.userPreferencesById[myUserId]?.activeToneId ?? null;
+    return state.userPrefs?.activeToneId ?? null;
   });
 
   const handleActiveToneChange = useCallback((toneId: string | null) => {
