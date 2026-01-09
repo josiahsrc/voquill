@@ -206,7 +206,7 @@ export const finishTutorial = async (): Promise<void> => {
   );
 };
 
-const persistAiPreferences = async (): Promise<void> => {
+export const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
   await updateUserPreferences((preferences) => {
     preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
@@ -232,6 +232,16 @@ export const setPreferredTranscriptionMode = async (
 ): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiTranscription.mode = mode;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setAllModesToCloud = async (): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.mode = "cloud";
+    draft.settings.aiPostProcessing.mode = "cloud";
+    draft.settings.agentMode.mode = "cloud";
   });
 
   await persistAiPreferences();
@@ -297,9 +307,11 @@ export const setPreferredPostProcessingApiKeyId = async (
   await persistAiPreferences();
 };
 
-export const setPreferredAgentMode = async (mode: string): Promise<void> => {
+export const setPreferredAgentMode = async (
+  mode: PostProcessingMode,
+): Promise<void> => {
   produceAppState((draft) => {
-    draft.settings.agentMode.mode = mode as any;
+    draft.settings.agentMode.mode = mode;
   });
 
   await persistAiPreferences();

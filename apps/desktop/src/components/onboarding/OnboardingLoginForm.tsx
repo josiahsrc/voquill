@@ -7,10 +7,7 @@ import {
   goToOnboardingPage,
 } from "../../actions/onboarding.actions";
 import { tryOpenPaymentDialogForPricingPlan } from "../../actions/payment.actions";
-import {
-  setPreferredPostProcessingMode,
-  setPreferredTranscriptionMode,
-} from "../../actions/user.actions";
+import { setAllModesToCloud } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { getAppState, useAppStore } from "../../store";
 import { getMyMember } from "../../utils/member.utils";
@@ -29,8 +26,7 @@ export const OnboardingLoginForm = () => {
 
   const goToNextPage = () => {
     goToOnboardingPage("hotkeys");
-    setPreferredPostProcessingMode("cloud");
-    setPreferredTranscriptionMode("cloud");
+    setAllModesToCloud();
   };
 
   const handleOpenPaymentDialog = async () => {
