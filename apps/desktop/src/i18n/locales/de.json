@@ -17,7 +17,7 @@
   "advanced_setup_required": "⚠️ Erweiterte Einrichtung erforderlich",
   "agent_mode": "Agenten-Modus",
   "agent_mode_disabled": "Agenten-Modus deaktiviert",
-  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "Der Agenten-Modus folgt Befehlen, die Sie diktieren, anstatt nur Text zu bereinigen. Verwenden Sie Shift+F8 zum Aktivieren.",
+  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "Der Agenten-Modus folgt Befehlen, die Sie diktieren, anstatt nur den Text zu bereinigen.",
   "agent_mode_is_disabled": "Der Agenten-Modus ist deaktiviert.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "Der Agenten-Modus ermöglicht es Ihnen, Sprachbefehle zu geben, um Text zu schreiben, zu bearbeiten oder umzuwandeln. Er kann lesen, was bereits im Textfeld steht, und es basierend auf Ihren Anweisungen umschreiben.",
   "agent_mode_lets_you_use_ai_to_perform_actions_on_your_comput": "Der Agenten-Modus ermöglicht es Ihnen, KI zu verwenden, um Aktionen auf Ihrem Computer auszuführen. Sie können dies später in den Einstellungen aktivieren.",

@@ -17,7 +17,7 @@
   "advanced_setup_required": "⚠️ 고급 설정 필요",
   "agent_mode": "에이전트 모드",
   "agent_mode_disabled": "에이전트 모드 비활성화됨",
-  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "에이전트 모드는 텍스트를 정리하는 대신 사용자가 말한 명령을 따릅니다. Shift+F8로 활성화하세요.",
+  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "에이전트 모드는 단순히 텍스트를 정리하는 대신 사용자가 말하는 명령을 따릅니다.",
   "agent_mode_is_disabled": "에이전트 모드가 비활성화되어 있습니다.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "에이전트 모드를 사용하면 음성 명령으로 텍스트를 작성, 편집 또는 변환할 수 있습니다. 텍스트 필드에 이미 있는 내용을 읽고 지시에 따라 다시 작성할 수 있습니다.",
   "agent_mode_lets_you_use_ai_to_perform_actions_on_your_comput": "에이전트 모드를 사용하면 AI로 컴퓨터에서 작업을 수행할 수 있습니다. 나중에 설정에서 켤 수 있습니다.",

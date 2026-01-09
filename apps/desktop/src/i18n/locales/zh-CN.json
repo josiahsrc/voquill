@@ -17,7 +17,7 @@
   "advanced_setup_required": "需要進階設定",
   "agent_mode": "代理模式",
   "agent_mode_disabled": "代理模式已禁用",
-  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "代理模式会执行您口述的命令，而不仅仅是整理文本。使用 Shift+F8 激活。",
+  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "代理模式会遵循您口述的指令，而不仅仅是整理文字。",
   "agent_mode_is_disabled": "代理模式已禁用。",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "代理模式让您通过语音命令来撰写、编辑或转换文本。它可以读取文本框中已有的内容，并根据您的指示重新编写。",
   "agent_mode_lets_you_use_ai_to_perform_actions_on_your_comput": "代理模式让您使用 AI 在电脑上执行操作。您可以稍后在设置中开启此功能。",

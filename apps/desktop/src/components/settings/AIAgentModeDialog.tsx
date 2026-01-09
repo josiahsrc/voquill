@@ -38,7 +38,7 @@ export const AIAgentModeDialog = () => {
       <DialogContent dividers>
         <Stack spacing={3} alignItems="flex-start">
           <Typography variant="body1" color="text.secondary">
-            <FormattedMessage defaultMessage="Agent mode follows commands you dictate instead of just cleaning up text. Use Shift+F8 to activate." />
+            <FormattedMessage defaultMessage="Agent mode follows commands you dictate instead of just cleaning up text." />
           </Typography>
 
           <AIAgentModeConfiguration />

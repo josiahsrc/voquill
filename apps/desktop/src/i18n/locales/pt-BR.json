@@ -17,7 +17,7 @@
   "advanced_setup_required": "⚠️ Configuração avançada necessária",
   "agent_mode": "Modo agente",
   "agent_mode_disabled": "Modo agente desativado",
-  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "O modo agente segue os comandos que você dita em vez de apenas limpar o texto. Use Shift+F8 para ativar.",
+  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "O modo agente segue os comandos que você dita em vez de apenas limpar o texto.",
   "agent_mode_is_disabled": "O modo agente está desativado.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "O Modo Agente permite que você dê comandos de voz para escrever, editar ou transformar texto. Ele pode ler o que já está no campo de texto e reescrevê-lo com base nas suas instruções.",
   "agent_mode_lets_you_use_ai_to_perform_actions_on_your_comput": "O modo agente permite usar IA para realizar ações no seu computador. Você pode ativar isso depois nas configurações.",

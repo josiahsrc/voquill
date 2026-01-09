@@ -17,7 +17,7 @@
   "advanced_setup_required": "⚠️ Advanced Setup Required",
   "agent_mode": "Agent mode",
   "agent_mode_disabled": "Agent mode disabled",
-  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "Agent mode follows commands you dictate instead of just cleaning up text. Use Shift+F8 to activate.",
+  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "Agent mode follows commands you dictate instead of just cleaning up text.",
   "agent_mode_is_disabled": "Agent mode is disabled.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "Agent Mode lets you give voice commands to write, edit, or transform text. It can read what's already in the text field and rewrite it based on your instructions.",
   "agent_mode_lets_you_use_ai_to_perform_actions_on_your_comput": "Agent mode lets you use AI to perform actions on your computer. You can turn this on later in settings.",

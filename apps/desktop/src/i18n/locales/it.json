@@ -17,7 +17,7 @@
   "advanced_setup_required": "Configurazione avanzata richiesta",
   "agent_mode": "Modalità agente",
   "agent_mode_disabled": "Modalità agente disabilitata",
-  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "La modalità agente esegue i comandi che detti invece di pulire semplicemente il testo. Usa Shift+F8 per attivarla.",
+  "agent_mode_follows_commands_you_dictate_instead_of_just_clea": "La modalità agente segue i comandi che detti invece di limitarsi a pulire il testo.",
   "agent_mode_is_disabled": "La modalità agente è disabilitata.",
   "agent_mode_lets_you_give_voice_commands_to_write_edit_or_tra": "La modalità agente ti permette di dare comandi vocali per scrivere, modificare o trasformare il testo. Può leggere ciò che è già nel campo di testo e riscriverlo in base alle tue istruzioni.",
   "agent_mode_lets_you_use_ai_to_perform_actions_on_your_comput": "La modalità agente ti permette di usare l'IA per eseguire azioni sul tuo computer. Puoi attivarla in seguito nelle impostazioni.",
