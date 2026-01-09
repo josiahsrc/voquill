@@ -172,7 +172,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::play_audio,
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
-            crate::commands::set_accessibility_text,
             crate::commands::get_selected_text,
         ])
 }

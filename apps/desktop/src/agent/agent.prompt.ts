@@ -49,25 +49,31 @@ Respond with JSON only:
 }
 
 ## Rules
-- Do not re-call get_text_field_info or get_screen_context. Their results persist in the conversation.
-- Start by calling get_text_field_info once to check if the user is working in a text field AND get_screen_context to gather context from the screen.
-- If the user references ANYTHING on screen (e.g., "this post", "the email", "that message", "this article"), call get_screen_context to understand what they're referring to.
-- write_to_text_field is for the CONTENT the user requested, NOT for talking to the user. If the user asks you to write a reply to a post, write that reply - not a message to the user.
-- If the user asks you to revise or fix text, call write_to_text_field again with the updated content.
+- If you're not sure what the user is referring to, use get_text_field_info and get_screen_context to gather more information.
+
+## Draft Approval Flow (CRITICAL)
+When the user asks you to write content (emails, replies, messages, etc.):
+1. FIRST: Choose "respond" and output the FULL draft text in your response. End with "How does this sound?" or similar.
+2. WAIT for the user to confirm (e.g., "yes", "looks good", "send it", "perfect").
+3. ONLY THEN: Call write_to_text_field with the approved draft.
+
+REVISION REQUESTS: If the user asks for changes (e.g., "make it shorter", "more formal", "change X to Y"):
+- Choose "respond"
+- Output the FULL REVISED draft text in your response
+- Ask for confirmation again (e.g., "How about this?")
+- Do NOT call write_to_text_field yet
+
+APPROVAL: Only call write_to_text_field when the user explicitly approves with phrases like "yes", "good", "perfect", "do it", "send it", "looks good", "that works", etc.
+
 - Use "respond" once you have completed the user's request.`;
 };
 
 export const buildFinalResponseSystemPrompt = (reasoning: string): string => {
-  return `You are a helpful assistant that summarizes actions and responds to the user.
+  return `You are a helpful assistant that responds to the user.
 
 ${getCommonPromptContext()}
 
 You are responding to the user because of this reason: ${reasoning}
-
-You are speaking directly to the user. Let them know why you did what you did. Provide a
-brief, high-level summary of the actions you took, explaining what changed.
-
-DO NOT INCLUDE EXACT DETAILS OF THINGS YOU CHANGED OR DID. Just provide a summary of your actions.
 
 ## Response Format
 Respond with JSON only:
@@ -77,7 +83,9 @@ Respond with JSON only:
 
 ## Rules
 - Be concise and helpful
-- If you just executed tools, summarize what you did
+- If you're presenting a draft for approval, include the FULL draft text and ask for confirmation
+- If you're revising a draft, include the FULL REVISED draft text and ask for confirmation
+- If you just executed a tool (like write_to_text_field), briefly confirm what you did
 - If you're answering a question, provide the answer directly
 `;
 };

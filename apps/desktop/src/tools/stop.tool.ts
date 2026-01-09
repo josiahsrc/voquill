@@ -31,11 +31,15 @@ export class StopTool extends BaseTool<
     this.callback = callback;
   }
 
+  public stop(): void {
+    this.callback();
+  }
+
   protected async execInternal(
     args: z.infer<typeof StopInputSchema>,
   ): Promise<ToolResult> {
     const { reason } = args;
-    this.callback();
+    this.stop();
     return {
       success: true,
       output: this.parseOutput({ stopped: true, reason }),

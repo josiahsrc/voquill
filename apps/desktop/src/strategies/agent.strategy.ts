@@ -22,6 +22,8 @@ export class AgentStrategy extends BaseStrategy {
   private isFirstTurn = true;
   private agent: Agent | null = null;
   private shouldStop = false;
+  private writeToTextFieldTool: WriteToTextFieldTool | null = null;
+  private stopTool: StopTool | null = null;
 
   private async emitState(state: AgentWindowState | null): Promise<void> {
     await emitTo("unified-overlay", "agent_window_state", { state });
@@ -43,13 +45,18 @@ export class AgentStrategy extends BaseStrategy {
       // },
     ]);
 
+    this.stopTool = new StopTool(() => {
+      this.shouldStop = true;
+    });
+
+    this.writeToTextFieldTool = new WriteToTextFieldTool();
+    this.writeToTextFieldTool.setStopTool(this.stopTool);
+
     const tools = [
       new GetTextFieldInfoTool(),
       new GetScreenContextTool(),
-      new WriteToTextFieldTool(),
-      new StopTool(() => {
-        this.shouldStop = true;
-      }),
+      this.writeToTextFieldTool,
+      this.stopTool,
       ...mcpTools,
     ];
 
@@ -71,6 +78,7 @@ export class AgentStrategy extends BaseStrategy {
   async handleTranscript({
     rawTranscript,
     loadingToken,
+    currentApp,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
     if (!this.agent) {
       this.agent = await this.initAgent();
@@ -84,6 +92,10 @@ export class AgentStrategy extends BaseStrategy {
         return { shouldContinue: false };
       }
     }
+
+    this.writeToTextFieldTool?.setPasteKeybind(
+      currentApp?.pasteKeybind ?? null,
+    );
 
     this.uiMessages.push({ text: rawTranscript, sender: "me" });
     await this.emitState({ messages: this.uiMessages });
@@ -139,6 +151,7 @@ export class AgentStrategy extends BaseStrategy {
     this.isFirstTurn = true;
     this.agent = null;
     this.shouldStop = false;
+    this.writeToTextFieldTool = null;
     await emitTo("unified-overlay", "agent_overlay_phase", { phase: "idle" });
     await this.emitState(null);
   }

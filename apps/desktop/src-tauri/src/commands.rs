@@ -1117,15 +1117,6 @@ pub async fn get_screen_context() -> Result<ScreenContextInfo, String> {
 }
 
 #[tauri::command]
-pub async fn set_accessibility_text(text: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        crate::platform::accessibility::set_text_field_value(&text)
-    })
-    .await
-    .map_err(|err| err.to_string())?
-}
-
-#[tauri::command]
 pub async fn get_selected_text() -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_selected_text)
         .await

@@ -2,10 +2,9 @@
 
 use crate::commands::{ScreenContextInfo, TextFieldInfo};
 use core_foundation::array::{CFArrayGetCount, CFArrayGetValueAtIndex};
-use core_foundation::base::{CFRelease, CFTypeRef, TCFType};
-use core_foundation::string::{CFString, CFStringRef};
-use core_graphics::event::{CGEvent, CGEventTapLocation};
-use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+use core_foundation::base::{CFGetTypeID, CFRelease, CFTypeRef, TCFType};
+use core_foundation::string::{CFString, CFStringGetTypeID, CFStringRef};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
 
 // AXUIElement types and functions from ApplicationServices framework
@@ -43,12 +42,20 @@ extern "C" {
 
 /// Get text field information (cursor position, selection length, text content) without screen context.
 pub fn get_text_field_info() -> TextFieldInfo {
-    unsafe { get_text_field_info_impl() }
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_text_field_info_impl() }))
+        .unwrap_or_else(|_| {
+            eprintln!("[macos::accessibility] get_text_field_info panicked, returning empty");
+            empty_text_field_info()
+        })
 }
 
 /// Get screen context information gathered from the screen around the focused element.
 pub fn get_screen_context() -> ScreenContextInfo {
-    unsafe { get_screen_context_impl() }
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_screen_context_impl() }))
+        .unwrap_or_else(|_| {
+            eprintln!("[macos::accessibility] get_screen_context panicked, returning empty");
+            ScreenContextInfo { screen_context: None }
+        })
 }
 
 unsafe fn get_text_field_info_impl() -> TextFieldInfo {
@@ -133,7 +140,16 @@ unsafe fn get_string_attribute(element: CFTypeRef, attribute: CFStringRef) -> Op
         return None;
     }
 
-    // The value should be a CFString - try to convert it
+    // Verify the value is actually a CFString before converting
+    let value_type_id = CFGetTypeID(value);
+    let string_type_id = CFStringGetTypeID();
+
+    if value_type_id != string_type_id {
+        CFRelease(value);
+        return None;
+    }
+
+    // The value is a CFString - convert it
     let cf_string = CFString::wrap_under_get_rule(value as _);
     let string = cf_string.to_string();
 
@@ -666,7 +682,11 @@ unsafe fn gather_screen_context(element: CFTypeRef, depth: usize) -> String {
 }
 
 pub fn get_selected_text() -> Option<String> {
-    unsafe { get_selected_text_impl() }
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_selected_text_impl() }))
+        .unwrap_or_else(|_| {
+            eprintln!("[macos::accessibility] get_selected_text panicked, returning None");
+            None
+        })
 }
 
 unsafe fn get_selected_text_impl() -> Option<String> {
@@ -696,73 +716,4 @@ unsafe fn get_selected_text_impl() -> Option<String> {
     CFRelease(focused_element);
 
     selected_text.filter(|s| !s.is_empty())
-}
-
-pub fn set_text_field_value(value: &str) -> Result<(), String> {
-    unsafe { set_text_field_value_impl(value) }
-}
-
-unsafe fn set_text_field_value_impl(value: &str) -> Result<(), String> {
-    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
-    let ax_value = CFString::new("AXValue");
-    let ax_selected_text_range = CFString::new("AXSelectedTextRange");
-
-    let system_wide = AXUIElementCreateSystemWide();
-    if system_wide.is_null() {
-        return Err("Failed to create system-wide AXUIElement".to_string());
-    }
-
-    let mut focused_element: CFTypeRef = ptr::null();
-    let result = AXUIElementCopyAttributeValue(
-        system_wide,
-        ax_focused_ui_element.as_concrete_TypeRef(),
-        &mut focused_element,
-    );
-
-    CFRelease(system_wide);
-
-    if result != AX_ERROR_SUCCESS || focused_element.is_null() {
-        return Err(format!(
-            "Failed to get focused element, error code: {}",
-            result
-        ));
-    }
-
-    let text_length = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef())
-        .map(|s| s.len() as isize)
-        .unwrap_or(0);
-
-    if text_length > 0 {
-        let select_all_range = CFRange {
-            location: 0,
-            length: text_length,
-        };
-        let range_value = AXValueCreate(AX_VALUE_TYPE_CF_RANGE, &select_all_range);
-        if !range_value.is_null() {
-            AXUIElementSetAttributeValue(
-                focused_element,
-                ax_selected_text_range.as_concrete_TypeRef(),
-                range_value,
-            );
-            CFRelease(range_value);
-            std::thread::sleep(std::time::Duration::from_millis(10));
-        }
-    }
-
-    CFRelease(focused_element);
-
-    let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
-        .map_err(|_| "Failed to create event source".to_string())?;
-
-    let key_down = CGEvent::new_keyboard_event(source.clone(), 0, true)
-        .map_err(|_| "Failed to create key-down event".to_string())?;
-    key_down.set_string(value);
-    key_down.post(CGEventTapLocation::HID);
-
-    let key_up = CGEvent::new_keyboard_event(source, 0, false)
-        .map_err(|_| "Failed to create key-up event".to_string())?;
-    key_up.set_string("");
-    key_up.post(CGEventTapLocation::HID);
-
-    Ok(())
 }

@@ -426,32 +426,3 @@ fn try_get_selected_text() -> Result<Option<String>, windows::core::Error> {
         Ok(None)
     }
 }
-
-pub fn set_text_field_value(value: &str) -> Result<(), String> {
-    try_set_text_field_value(value).map_err(|e| format!("Failed to set text field value: {:?}", e))
-}
-
-fn try_set_text_field_value(value: &str) -> Result<(), windows::core::Error> {
-    unsafe {
-        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-
-        let automation: IUIAutomation =
-            CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)?;
-
-        let focused = automation.GetFocusedElement()?;
-
-        let pattern = focused.GetCurrentPattern(UIA_ValuePatternId)?;
-
-        if pattern.as_raw().is_null() {
-            return Err(windows::core::Error::new(
-                windows::core::HRESULT(-1),
-                "Focused element does not support ValuePattern",
-            ));
-        }
-
-        let value_pattern: IUIAutomationValuePattern = pattern.cast()?;
-        value_pattern.SetValue(&BSTR::from(value))?;
-
-        Ok(())
-    }
-}
