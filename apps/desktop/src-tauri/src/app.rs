@@ -196,18 +196,24 @@ fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         (1920.0, 1080.0)
     };
 
-    WebviewWindowBuilder::new(app, "unified-overlay", unified_overlay_webview_url(app)?)
-        .decorations(false)
-        .always_on_top(true)
-        .transparent(true)
-        .skip_taskbar(true)
-        .resizable(false)
-        .shadow(false)
-        .focusable(false)
-        .visible(false)
-        .inner_size(width, height)
-        .position(0.0, 0.0)
-        .build()?;
+    let mut builder =
+        WebviewWindowBuilder::new(app, "unified-overlay", unified_overlay_webview_url(app)?)
+            .decorations(false)
+            .always_on_top(true)
+            .transparent(true)
+            .skip_taskbar(true)
+            .resizable(false)
+            .shadow(false)
+            .focusable(false)
+            .inner_size(width, height)
+            .position(0.0, 0.0);
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        builder = builder.visible(false);
+    }
+
+    builder.build()?;
 
     Ok(())
 }
