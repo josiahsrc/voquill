@@ -97,6 +97,18 @@ export const RootSideEffects = () => {
     [],
   );
 
+  const resetRecordingState = useCallback(async () => {
+    isRecordingRef.current = false;
+    strategyRef.current = null;
+    try {
+      await invoke("stop_recording");
+    } catch (e) {
+      console.warn("Failed to stop recording during reset", e);
+    }
+    sessionRef.current?.cleanup();
+    sessionRef.current = null;
+  }, []);
+
   useAsyncEffect(async () => {
     if (keyPermAuthorized) {
       await invoke("start_key_listener");
@@ -217,6 +229,8 @@ export const RootSideEffects = () => {
         await strategy.setPhase("idle");
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
+        isRecordingRef.current = false;
+        strategyRef.current = null;
         sessionRef.current?.cleanup();
         sessionRef.current = null;
       } finally {
@@ -240,7 +254,8 @@ export const RootSideEffects = () => {
 
     const strategy = strategyRef.current;
     if (!strategy) {
-      console.error("No recording strategy found");
+      console.warn("No recording strategy found, attempting recovery");
+      await resetRecordingState();
       return;
     }
 
@@ -328,7 +343,7 @@ export const RootSideEffects = () => {
       session?.cleanup();
       refreshMember();
     }
-  }, []);
+  }, [resetRecordingState]);
 
   const startDictationRecording = useCallback(async () => {
     produceAppState((draft) => {
@@ -433,11 +448,13 @@ export const RootSideEffects = () => {
     const strategy = strategyRef.current;
     if (strategy) {
       await strategy.cleanup();
-      strategyRef.current = null;
-      produceAppState((draft) => {
-        draft.activeRecordingMode = null;
-      });
     }
+    if (isRecordingRef.current || strategyRef.current) {
+      await resetRecordingState();
+    }
+    produceAppState((draft) => {
+      draft.activeRecordingMode = null;
+    });
   });
 
   return null;
