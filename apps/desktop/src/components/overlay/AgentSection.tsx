@@ -11,10 +11,16 @@ import {
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import { emitTo } from "@tauri-apps/api/event";
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { FormattedMessage } from "react-intl";
 import { useOverlayDrag } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
+import {
+  AGENT_DICTATE_HOTKEY,
+  getHotkeyCombosForAction,
+} from "../../utils/keyboard.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
+import { HotkeyBadge } from "../common/HotkeyBadge";
 
 const AGENT_OVERLAY_WIDTH = 300;
 const LEFT_MARGIN = 16;
@@ -288,6 +294,9 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
   const levels = useAppStore((state) => state.audioLevels);
   const windowState = useAppStore((state) => state.agent.windowState);
   const messages = windowState?.messages ?? [];
+  const hotkeyCombos = useAppStore((state) =>
+    getHotkeyCombosForAction(state, AGENT_DICTATE_HOTKEY),
+  );
 
   const isVisible = phase !== "idle";
   const isRecording = phase === "recording";
@@ -458,10 +467,61 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
           <MessageBubble
             message={{ sender: "agent", text: "What can I help you with?" }}
           />
+          {messages.length === 0 && showFinishButton && hotkeyCombos[0] && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.7rem",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                mt: -0.5,
+                mb: 1,
+              }}
+            >
+              <FormattedMessage defaultMessage="Press" />{" "}
+              <HotkeyBadge
+                keys={hotkeyCombos[0]}
+                sx={{ fontSize: "0.65rem", py: 0, px: 0.5 }}
+              />{" "}
+              <FormattedMessage defaultMessage="to respond" />
+            </Typography>
+          )}
 
-          {messages.map((message, index) => (
-            <MessageBubble key={index} message={message} />
-          ))}
+          {messages.map((message, index) => {
+            const isLastMessage = index === messages.length - 1;
+            const isAgentMessage = message.sender === "agent";
+            const showHotkeyHint =
+              isLastMessage && isAgentMessage && showFinishButton;
+
+            return (
+              <Box key={index}>
+                <MessageBubble message={message} />
+                {showHotkeyHint && hotkeyCombos[0] && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontSize: "0.7rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      mt: -0.5,
+                      mb: 1,
+                    }}
+                  >
+                    <FormattedMessage defaultMessage="Press" />{" "}
+                    <HotkeyBadge
+                      keys={hotkeyCombos[0]}
+                      sx={{ fontSize: "0.65rem", py: 0, px: 0.5 }}
+                    />{" "}
+                    <FormattedMessage defaultMessage="to respond" />
+                  </Typography>
+                )}
+              </Box>
+            );
+          })}
 
           {showUserRecordingBubble && (
             <UserRecordingBubble levels={levels} isProcessing={false} />
