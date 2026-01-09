@@ -32,7 +32,7 @@ export const PostProcessingMethodForm = () => {
         </Button>
         <Button
           variant="contained"
-          onClick={() => goToOnboardingPage("hotkeys")}
+          onClick={() => goToOnboardingPage("agentMode")}
           disabled={!canContinue}
         >
           <FormattedMessage defaultMessage="Continue" />

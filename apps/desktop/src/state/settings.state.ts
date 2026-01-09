@@ -1,5 +1,6 @@
 import {
   CPU_DEVICE_VALUE,
+  DEFAULT_AGENT_MODE,
   DEFAULT_MODEL_SIZE,
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
@@ -26,15 +27,9 @@ export type SettingsTranscriptionState = {
   gpuEnumerationEnabled: boolean;
 };
 
-export type SettingsPostProcessingState = {
+export type SettingsGenerativeState = {
   mode: PostProcessingMode;
   selectedApiKeyId: string | null;
-  // OpenRouter-specific state
-  openRouterModels: OpenRouterModel[];
-  openRouterModelsStatus: ActionStatus;
-  openRouterSearchQuery: string;
-  openRouterProviders: OpenRouterProvider[];
-  openRouterProvidersStatus: ActionStatus;
 };
 
 export type SettingsState = {
@@ -47,14 +42,21 @@ export type SettingsState = {
   profileDialogOpen: boolean;
   aiTranscriptionDialogOpen: boolean;
   aiPostProcessingDialogOpen: boolean;
+  agentModeDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
-  aiPostProcessing: SettingsPostProcessingState;
+  aiPostProcessing: SettingsGenerativeState;
+  agentMode: SettingsGenerativeState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
   hotkeysStatus: ActionStatus;
   autoLaunchEnabled: boolean;
   autoLaunchStatus: ActionStatus;
+  openRouterModels: OpenRouterModel[];
+  openRouterModelsStatus: ActionStatus;
+  openRouterSearchQuery: string;
+  openRouterProviders: OpenRouterProvider[];
+  openRouterProvidersStatus: ActionStatus;
 };
 
 export const INITIAL_SETTINGS_STATE: SettingsState = {
@@ -67,6 +69,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   profileDialogOpen: false,
   aiTranscriptionDialogOpen: false,
   aiPostProcessingDialogOpen: false,
+  agentModeDialogOpen: false,
   aiTranscription: {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,
@@ -77,11 +80,10 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,
     selectedApiKeyId: null,
-    openRouterModels: [],
-    openRouterModelsStatus: "idle",
-    openRouterSearchQuery: "",
-    openRouterProviders: [],
-    openRouterProvidersStatus: "idle",
+  },
+  agentMode: {
+    mode: DEFAULT_AGENT_MODE,
+    selectedApiKeyId: null,
   },
   apiKeys: [],
   apiKeysStatus: "idle",
@@ -89,4 +91,9 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   hotkeysStatus: "idle",
   autoLaunchEnabled: false,
   autoLaunchStatus: "idle",
+  openRouterModels: [],
+  openRouterModelsStatus: "idle",
+  openRouterSearchQuery: "",
+  openRouterProviders: [],
+  openRouterProvidersStatus: "idle",
 };

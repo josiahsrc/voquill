@@ -7,7 +7,7 @@ import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import {
   getEffectivePlan,
-  getMemberExceedsWordLimitByState,
+  getMemberExceedsLimitByState,
 } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -157,7 +157,7 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const config = state.settings.aiTranscription;
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const cloudAvailable = getHasCloudAccess(state);
-  const exceedsLimits = getMemberExceedsWordLimitByState(state);
+  const exceedsLimits = getMemberExceedsLimitByState(state);
   const warnings: string[] = [];
 
   if (config.mode === "cloud") {
@@ -218,23 +218,31 @@ export type GenerativePrefs =
   | ApiGenerativePrefs
   | NoneGenerativePrefs;
 
-export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
-  const config = state.settings.aiPostProcessing;
+type GenerativeConfigInput = {
+  mode: "none" | "api" | "cloud";
+  selectedApiKeyId: string | null;
+};
+
+const getGenPrefsInternal = (
+  state: AppState,
+  config: GenerativeConfigInput,
+  context: string,
+): GenerativePrefs => {
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
-  const exceedsLimits = getMemberExceedsWordLimitByState(state);
+  const exceedsLimits = getMemberExceedsLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
 
   if (config.mode === "cloud") {
     if (cloudAvailable) {
       if (exceedsLimits) {
-        warnings.push("Cloud post-processing limit exceeded.");
+        warnings.push(`Cloud ${context} limit exceeded.`);
       } else {
         return { mode: "cloud", warnings };
       }
     } else {
       warnings.push(
-        "Cloud post-processing is not available. Please check your subscription.",
+        `Cloud ${context} is not available. Please check your subscription.`,
       );
     }
   }
@@ -251,9 +259,21 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
         warnings,
       };
     } else {
-      warnings.push("No API key configured for API post-processing.");
+      warnings.push(`No API key configured for API ${context}.`);
     }
   }
 
   return { mode: "none", warnings };
+};
+
+export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
+  return getGenPrefsInternal(
+    state,
+    state.settings.aiPostProcessing,
+    "post-processing",
+  );
+};
+
+export const getAgentModePrefs = (state: AppState): GenerativePrefs => {
+  return getGenPrefsInternal(state, state.settings.agentMode, "agent mode");
 };

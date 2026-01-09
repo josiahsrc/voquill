@@ -1,4 +1,5 @@
 import {
+  AgentMode,
   Nullable,
   PostProcessingMode,
   TranscriptionMode,
@@ -21,6 +22,9 @@ type LocalUserPreferences = {
   activeToneId: Nullable<string>;
   gotStartedAt: Nullable<number>;
   gpuEnumerationEnabled: boolean;
+  agentMode: Nullable<AgentMode>;
+  agentModeApiKeyId: Nullable<string>;
+  lastSeenFeature: Nullable<string>;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -53,6 +57,9 @@ const fromLocalPreferences = (
   activeToneId: preferences.activeToneId,
   gotStartedAt: preferences.gotStartedAt,
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
+  agentMode: preferences.agentMode,
+  agentModeApiKeyId: preferences.agentModeApiKeyId,
+  lastSeenFeature: preferences.lastSeenFeature,
 });
 
 const toLocalPreferences = (
@@ -70,6 +77,9 @@ const toLocalPreferences = (
   activeToneId: preferences.activeToneId ?? null,
   gotStartedAt: preferences.gotStartedAt ?? null,
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
+  agentMode: preferences.agentMode ?? null,
+  agentModeApiKeyId: preferences.agentModeApiKeyId ?? null,
+  lastSeenFeature: preferences.lastSeenFeature ?? null,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

@@ -19,7 +19,7 @@ export const loadOpenRouterModels = async (): Promise<void> => {
   }
 
   produceAppState((draft) => {
-    draft.settings.aiPostProcessing.openRouterModelsStatus = "loading";
+    draft.settings.openRouterModelsStatus = "loading";
   });
 
   try {
@@ -27,13 +27,13 @@ export const loadOpenRouterModels = async (): Promise<void> => {
     const models = await repo.fetchModels();
 
     produceAppState((draft) => {
-      draft.settings.aiPostProcessing.openRouterModels = models;
-      draft.settings.aiPostProcessing.openRouterModelsStatus = "success";
+      draft.settings.openRouterModels = models;
+      draft.settings.openRouterModelsStatus = "success";
     });
   } catch (error) {
     console.error("Failed to load OpenRouter models:", error);
     produceAppState((draft) => {
-      draft.settings.aiPostProcessing.openRouterModelsStatus = "error";
+      draft.settings.openRouterModelsStatus = "error";
     });
   }
 };
@@ -46,25 +46,25 @@ export const loadOpenRouterProviders = async (): Promise<void> => {
   const state = getAppState();
 
   // Don't refetch if already loaded
-  if (state.settings.aiPostProcessing.openRouterProvidersStatus === "success") {
+  if (state.settings.openRouterProvidersStatus === "success") {
     return;
   }
 
   produceAppState((draft) => {
-    draft.settings.aiPostProcessing.openRouterProvidersStatus = "loading";
+    draft.settings.openRouterProvidersStatus = "loading";
   });
 
   try {
     const { providers } = await openrouterFetchProviders();
 
     produceAppState((draft) => {
-      draft.settings.aiPostProcessing.openRouterProviders = providers;
-      draft.settings.aiPostProcessing.openRouterProvidersStatus = "success";
+      draft.settings.openRouterProviders = providers;
+      draft.settings.openRouterProvidersStatus = "success";
     });
   } catch (error) {
     console.error("Failed to load OpenRouter providers:", error);
     produceAppState((draft) => {
-      draft.settings.aiPostProcessing.openRouterProvidersStatus = "error";
+      draft.settings.openRouterProvidersStatus = "error";
     });
   }
 };
@@ -74,7 +74,7 @@ export const loadOpenRouterProviders = async (): Promise<void> => {
  */
 export const setOpenRouterSearchQuery = (query: string): void => {
   produceAppState((draft) => {
-    draft.settings.aiPostProcessing.openRouterSearchQuery = query;
+    draft.settings.openRouterSearchQuery = query;
   });
 };
 
@@ -83,9 +83,9 @@ export const setOpenRouterSearchQuery = (query: string): void => {
  */
 export const clearOpenRouterModels = (): void => {
   produceAppState((draft) => {
-    draft.settings.aiPostProcessing.openRouterModels = [];
-    draft.settings.aiPostProcessing.openRouterModelsStatus = "idle";
-    draft.settings.aiPostProcessing.openRouterSearchQuery = "";
+    draft.settings.openRouterModels = [];
+    draft.settings.openRouterModelsStatus = "idle";
+    draft.settings.openRouterSearchQuery = "";
   });
 };
 

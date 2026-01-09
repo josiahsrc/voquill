@@ -11,6 +11,10 @@ import {
 } from "@repo/types";
 import { z } from "zod";
 
+export const CLOUD_MODELS = ["medium", "large"] as const;
+export type CloudModel = (typeof CLOUD_MODELS)[number];
+export const CloudModelZod = z.enum(CLOUD_MODELS);
+
 type HandlerDefinitions = {
   // emulator
   "emulator/resetWordsToday": {
@@ -77,6 +81,7 @@ type HandlerDefinitions = {
       prompt: string;
       simulate?: Nullable<boolean>;
       jsonResponse?: Nullable<JsonResponse>;
+      model?: Nullable<CloudModel>;
     };
     output: {
       text: string;
@@ -174,6 +179,7 @@ export const AiGenerateTextInputZod = z
     prompt: z.string().max(25_000),
     simulate: z.boolean().nullable().optional(),
     jsonResponse: JsonResponseZod.nullable().optional(),
+    model: CloudModelZod.nullable().optional(),
   })
   .strict() satisfies z.ZodType<HandlerInput<"ai/generateText">>;
 

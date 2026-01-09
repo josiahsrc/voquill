@@ -14,6 +14,9 @@
         if (params.get("toast") === "1") {
           document.documentElement.dataset.toast = "true";
         }
+        if (params.get("agent") === "1") {
+          document.documentElement.dataset.agent = "true";
+        }
       })();
     </script>
     <style>
@@ -35,7 +38,9 @@
       :root[data-overlay="true"],
       :root[data-overlay="true"] body,
       :root[data-toast="true"],
-      :root[data-toast="true"] body {
+      :root[data-toast="true"] body,
+      :root[data-agent="true"],
+      :root[data-agent="true"] body {
         background-color: transparent;
       }
 

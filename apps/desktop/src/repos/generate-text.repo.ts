@@ -1,4 +1,4 @@
-import { invokeHandler } from "@repo/functions";
+import { invokeHandler, type CloudModel } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
   GenerateTextModel,
@@ -33,11 +33,19 @@ export abstract class BaseGenerateTextRepo extends BaseRepo {
 }
 
 export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
+  private model: CloudModel;
+
+  constructor(model: CloudModel = "medium") {
+    super();
+    this.model = model;
+  }
+
   async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
     const response = await invokeHandler("ai/generateText", {
       system: input.system,
       prompt: input.prompt,
       jsonResponse: input.jsonResponse,
+      model: this.model,
     });
 
     return {

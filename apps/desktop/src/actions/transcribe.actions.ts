@@ -12,7 +12,7 @@ import {
   getTranscriptionRepo,
 } from "../repos";
 import { getAppState, produceAppState } from "../store";
-import { AccessibilityInfo } from "../types/accessibility.types";
+import { TextFieldInfo } from "../types/accessibility.types";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
@@ -61,7 +61,7 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
-  a11yInfo: Nullable<AccessibilityInfo>;
+  a11yInfo: Nullable<TextFieldInfo>;
 };
 
 export type PostProcessMetadata = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AccessibilityInfo } from "../types/accessibility.types";
+import type { TextFieldInfo } from "../types/accessibility.types";
 import {
   applySpacingInContext,
   extractFollowingText,
@@ -10,7 +10,7 @@ import {
 
 describe("extractPrecedingText", () => {
   it("should return text before cursor up to limit", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world, this is a test.",
       cursorPosition: 12,
       selectionLength: 0,
@@ -19,7 +19,7 @@ describe("extractPrecedingText", () => {
   });
 
   it("should truncate to limit when preceding text is longer", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "The quick brown fox jumps over the lazy dog.",
       cursorPosition: 20, // "The quick brown fox "
       selectionLength: 0,
@@ -28,7 +28,7 @@ describe("extractPrecedingText", () => {
   });
 
   it("should return full preceding text when shorter than limit", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hi there!",
       cursorPosition: 3,
       selectionLength: 0,
@@ -37,7 +37,7 @@ describe("extractPrecedingText", () => {
   });
 
   it("should return null when cursor is at start", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 0,
@@ -46,7 +46,7 @@ describe("extractPrecedingText", () => {
   });
 
   it("should return null when textContent is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 0,
@@ -55,7 +55,7 @@ describe("extractPrecedingText", () => {
   });
 
   it("should return null when cursorPosition is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 0,
@@ -64,7 +64,7 @@ describe("extractPrecedingText", () => {
   });
 
   it("should handle cursor at end of text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Short",
       cursorPosition: 5,
       selectionLength: 0,
@@ -73,7 +73,7 @@ describe("extractPrecedingText", () => {
   });
 
   it("should handle limit of 0", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: 0,
@@ -84,7 +84,7 @@ describe("extractPrecedingText", () => {
 
 describe("extractSelectedText", () => {
   it("should return selected text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world, this is a test.",
       cursorPosition: 6,
       selectionLength: 5, // "world"
@@ -93,7 +93,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should return null when no selection", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: 0,
@@ -102,7 +102,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should return null when selectionLength is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: null,
@@ -111,7 +111,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should return null when textContent is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 3,
@@ -120,7 +120,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should return null when cursorPosition is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 3,
@@ -129,7 +129,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should handle selection at start of text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 5,
@@ -138,7 +138,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should handle selection at end of text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 6,
       selectionLength: 5,
@@ -147,7 +147,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should handle full text selection", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 11,
@@ -156,7 +156,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should return null for out of bounds selection", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello",
       cursorPosition: 3,
       selectionLength: 10, // Would go past end
@@ -165,7 +165,7 @@ describe("extractSelectedText", () => {
   });
 
   it("should return null for negative cursor position", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: -1,
       selectionLength: 3,
@@ -176,7 +176,7 @@ describe("extractSelectedText", () => {
 
 describe("extractFollowingText", () => {
   it("should return text after cursor up to limit", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world, this is a test.",
       cursorPosition: 13, // after "Hello world, "
       selectionLength: 0,
@@ -185,7 +185,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should truncate to limit when following text is longer", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "The quick brown fox jumps over the lazy dog.",
       cursorPosition: 0,
       selectionLength: 0,
@@ -194,7 +194,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should return full following text when shorter than limit", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 6,
       selectionLength: 0,
@@ -203,7 +203,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should return null when cursor is at end", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 11,
       selectionLength: 0,
@@ -212,7 +212,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should return null when textContent is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 0,
@@ -221,7 +221,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should return null when cursorPosition is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 0,
@@ -230,7 +230,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should account for selection length", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world, this is a test.",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected
@@ -240,7 +240,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should handle cursor at start with no selection", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello",
       cursorPosition: 0,
       selectionLength: 0,
@@ -249,7 +249,7 @@ describe("extractFollowingText", () => {
   });
 
   it("should handle limit of 0", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 0,
@@ -260,7 +260,7 @@ describe("extractFollowingText", () => {
 
 describe("extractTextFieldContext", () => {
   it("should extract all context parts", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world, this is a test.",
       cursorPosition: 12,
       selectionLength: 5, // " this" is selected
@@ -278,7 +278,7 @@ describe("extractTextFieldContext", () => {
   });
 
   it("should return null when no context is available", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: null,
       cursorPosition: null,
       selectionLength: null,
@@ -287,7 +287,7 @@ describe("extractTextFieldContext", () => {
   });
 
   it("should respect custom preceding limit", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "The quick brown fox jumps.",
       cursorPosition: 20, // "The quick brown fox "
       selectionLength: 0,
@@ -298,7 +298,7 @@ describe("extractTextFieldContext", () => {
   });
 
   it("should respect custom following limit", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "The quick brown fox jumps.",
       cursorPosition: 0,
       selectionLength: 0,
@@ -308,7 +308,7 @@ describe("extractTextFieldContext", () => {
   });
 
   it("should return context with only preceding text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 11, // at end
       selectionLength: 0,
@@ -322,7 +322,7 @@ describe("extractTextFieldContext", () => {
   });
 
   it("should return context with only following text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 0,
       selectionLength: 0,
@@ -336,7 +336,7 @@ describe("extractTextFieldContext", () => {
   });
 
   it("should return context with only selected text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello",
       cursorPosition: 0,
       selectionLength: 5, // full text selected
@@ -350,7 +350,7 @@ describe("extractTextFieldContext", () => {
   });
 
   it("should handle mid-sentence cursor with no selection", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "The quick brown fox jumps over the lazy dog.",
       cursorPosition: 20, // after "The quick brown fox "
       selectionLength: 0,
@@ -372,7 +372,7 @@ describe("extractTextFieldContext", () => {
     // Create a long text
     const longText = "a".repeat(300) + "|CURSOR|" + "b".repeat(200);
     const cursorPos = 300;
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: longText,
       cursorPosition: cursorPos,
       selectionLength: 8, // "|CURSOR|"
@@ -387,7 +387,7 @@ describe("extractTextFieldContext", () => {
 
 describe("applySpacingInContext", () => {
   it("should add space before when inserting after non-whitespace", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 5, // after "Hello"
       selectionLength: 0,
@@ -400,7 +400,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should add space after when inserting before non-whitespace", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 6, // before "world"
       selectionLength: 0,
@@ -413,7 +413,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should add spaces both before and after when surrounded by non-whitespace", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Helloworld",
       cursorPosition: 5, // between "Hello" and "world"
       selectionLength: 0,
@@ -426,7 +426,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add space before when there is already a space before", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 6, // after "Hello " (space)
       selectionLength: 0,
@@ -439,7 +439,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add space after when there is already a space after", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 5, // before " world"
       selectionLength: 0,
@@ -452,7 +452,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add spaces when text already has surrounding spaces", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 6, // at the space position, replacing it
       selectionLength: 0,
@@ -466,7 +466,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add space before when at start of text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "world",
       cursorPosition: 0,
       selectionLength: 0,
@@ -479,7 +479,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add space after when at end of text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello",
       cursorPosition: 5, // at end
       selectionLength: 0,
@@ -492,7 +492,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add any spaces when inserting into empty field", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "",
       cursorPosition: 0,
       selectionLength: 0,
@@ -505,7 +505,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should return text as-is when textContent is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: null,
       cursorPosition: 5,
       selectionLength: 0,
@@ -518,7 +518,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should return text as-is when cursorPosition is null", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: null,
       selectionLength: 0,
@@ -531,7 +531,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should return empty string when inserting empty text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 5,
       selectionLength: 0,
@@ -544,7 +544,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add space before when text to insert starts with space", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Helloworld",
       cursorPosition: 5,
       selectionLength: 0,
@@ -557,7 +557,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should not add space after when text to insert ends with space", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Helloworld",
       cursorPosition: 5,
       selectionLength: 0,
@@ -570,7 +570,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should handle newline as whitespace before cursor", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello\nworld",
       cursorPosition: 6, // after newline
       selectionLength: 0,
@@ -583,7 +583,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should handle newline as whitespace after cursor", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello\nworld",
       cursorPosition: 5, // before newline
       selectionLength: 0,
@@ -596,7 +596,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should handle tab as whitespace", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello\tworld",
       cursorPosition: 6, // after tab
       selectionLength: 0,
@@ -609,7 +609,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should account for selection when determining following text", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected
@@ -623,7 +623,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should add space after when replacing selected text with content following", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello world today",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected
@@ -637,7 +637,7 @@ describe("applySpacingInContext", () => {
   });
 
   it("should add space when replacing with non-whitespace following", () => {
-    const info: AccessibilityInfo = {
+    const info: TextFieldInfo = {
       textContent: "Hello worldtoday",
       cursorPosition: 6,
       selectionLength: 5, // "world" is selected

@@ -8,9 +8,11 @@ import {
 } from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
+import { CURRENT_FEATURE } from "../utils/feature.utils";
 import { PricingPlan } from "../utils/price.utils";
 import {
   GenerativePrefs,
+  getAgentModePrefs,
   getGenerativePrefs,
   getMyEffectiveUserId,
   getTranscriptionPrefs,
@@ -82,6 +84,7 @@ export const submitOnboarding = async () => {
   };
 
   const postProcessingPreference: GenerativePrefs = getGenerativePrefs(state);
+  const agentModePreference: GenerativePrefs = getAgentModePrefs(state);
 
   produceAppState((draft) => {
     draft.onboarding.submitting = true;
@@ -131,6 +134,12 @@ export const submitOnboarding = async () => {
       postProcessingOllamaModel: null,
       activeToneId: null,
       gotStartedAt: null,
+      agentMode: agentModePreference.mode,
+      agentModeApiKeyId:
+        agentModePreference.mode === "api"
+          ? agentModePreference.apiKeyId
+          : null,
+      lastSeenFeature: CURRENT_FEATURE,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

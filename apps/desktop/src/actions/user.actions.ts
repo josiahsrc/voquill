@@ -63,6 +63,9 @@ export const createDefaultPreferences = (userId: string): UserPreferences => ({
   activeToneId: null,
   gotStartedAt: null,
   gpuEnumerationEnabled: false,
+  agentMode: null,
+  agentModeApiKeyId: null,
+  lastSeenFeature: null,
 });
 
 const updateUserPreferences = async (
@@ -209,6 +212,9 @@ const persistAiPreferences = async (): Promise<void> => {
     preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
     preferences.postProcessingApiKeyId =
       state.settings.aiPostProcessing.selectedApiKeyId ?? null;
+    preferences.agentMode = state.settings.agentMode.mode;
+    preferences.agentModeApiKeyId =
+      state.settings.agentMode.selectedApiKeyId ?? null;
     preferences.transcriptionMode = state.settings.aiTranscription.mode;
     preferences.transcriptionApiKeyId =
       state.settings.aiTranscription.selectedApiKeyId ?? null;
@@ -291,6 +297,26 @@ export const setPreferredPostProcessingApiKeyId = async (
   await persistAiPreferences();
 };
 
+export const setPreferredAgentMode = async (
+  mode: string,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.agentMode.mode = mode as any;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setPreferredAgentModeApiKeyId = async (
+  id: Nullable<string>,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.agentMode.selectedApiKeyId = id;
+  });
+
+  await persistAiPreferences();
+};
+
 export const syncAiPreferences = persistAiPreferences;
 
 export const migrateLocalUserToCloud = async (): Promise<void> => {
@@ -339,4 +365,10 @@ export const clearGotStartedAt = async (): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.gotStartedAt = null;
   }, "Failed to clear got started timestamp. Please try again.");
+};
+
+export const markFeatureSeen = async (feature: string): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.lastSeenFeature = feature;
+  }, "Failed to save feature seen status. Please try again.");
 };

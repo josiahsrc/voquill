@@ -1,4 +1,5 @@
 import type {
+  AgentMode,
   Nullable,
   PostProcessingMode,
   TranscriptionMode,
@@ -17,4 +18,7 @@ export type UserPreferences = {
   activeToneId: Nullable<string>;
   gotStartedAt: Nullable<number>;
   gpuEnumerationEnabled: boolean;
+  agentMode: Nullable<AgentMode>;
+  agentModeApiKeyId: Nullable<string>;
+  lastSeenFeature: Nullable<string>;
 };

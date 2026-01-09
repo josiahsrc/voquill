@@ -1,8 +1,13 @@
-import { AppTarget } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
+import { useIntl } from "react-intl";
+import type { RecordingMode } from "../../state/app.state";
+import { AgentStrategy } from "../../strategies/agent.strategy";
+import { BaseStrategy } from "../../strategies/base.strategy";
+import { DictationStrategy } from "../../strategies/dictation.strategy";
+import type { StrategyContext } from "../../types/strategy.types";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -17,10 +22,6 @@ import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
-import {
-  postProcessTranscript,
-  storeTranscription,
-} from "../../actions/transcribe.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
@@ -28,7 +29,7 @@ import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import { getAppState, produceAppState, useAppStore } from "../../store";
-import type { AccessibilityInfo } from "../../types/accessibility.types";
+import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
@@ -38,8 +39,11 @@ import {
   TranscriptionSession,
 } from "../../types/transcription-session.types";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
-import { DICTATE_HOTKEY } from "../../utils/keyboard.utils";
-import { getMemberExceedsWordLimitByState } from "../../utils/member.utils";
+import {
+  AGENT_DICTATE_HOTKEY,
+  DICTATE_HOTKEY,
+} from "../../utils/keyboard.utils";
+import { getMemberExceedsLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
@@ -67,14 +71,9 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
-type RecordingResult = {
-  transcript: string | null;
-  currentApp: AppTarget | null;
-};
-
 type StopRecordingResult = [
   StopRecordingResponse | null,
-  AccessibilityInfo | null,
+  TextFieldInfo | null,
 ];
 
 export const RootSideEffects = () => {
@@ -84,10 +83,31 @@ export const RootSideEffects = () => {
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
+  const strategyRef = useRef<BaseStrategy | null>(null);
   const userId = useAppStore((state) => state.auth?.uid);
   const keyPermAuthorized = useAppStore((state) =>
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
+  const intl = useIntl();
+
+  const strategyContext: StrategyContext = useMemo(
+    () => ({
+      overlayLoadingTokenRef,
+    }),
+    [],
+  );
+
+  const resetRecordingState = useCallback(async () => {
+    isRecordingRef.current = false;
+    strategyRef.current = null;
+    try {
+      await invoke("stop_recording");
+    } catch (e) {
+      console.warn("Failed to stop recording during reset", e);
+    }
+    sessionRef.current?.cleanup();
+    sessionRef.current = null;
+  }, []);
 
   useAsyncEffect(async () => {
     if (keyPermAuthorized) {
@@ -141,11 +161,13 @@ export const RootSideEffects = () => {
       return;
     }
 
-    if (getMemberExceedsWordLimitByState(state)) {
+    if (getMemberExceedsLimitByState(state)) {
       playAlertSound();
       showToast({
-        title: "Word limit reached",
-        message: "You've used all your free words for today.",
+        title: intl.formatMessage({ defaultMessage: "Word limit reached" }),
+        message: intl.formatMessage({
+          defaultMessage: "You've used all your free words for today.",
+        }),
         toastType: "error",
         action: "upgrade",
         duration: 8_000,
@@ -161,6 +183,18 @@ export const RootSideEffects = () => {
 
     const user = getMyUser(state);
     const preferredMicrophone = user?.preferredMicrophone ?? null;
+    const currentMode = getAppState().activeRecordingMode;
+
+    // Create or reuse strategy based on mode
+    let strategy = strategyRef.current;
+    if (!strategy) {
+      const mode: RecordingMode = currentMode ?? "dictate";
+      strategy =
+        mode === "agent"
+          ? new AgentStrategy(strategyContext)
+          : new DictationStrategy(strategyContext);
+      strategyRef.current = strategy;
+    }
 
     const promise = (async () => {
       try {
@@ -174,8 +208,10 @@ export const RootSideEffects = () => {
         // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("start_recording_clip");
 
+        await strategy.onBeforeStart();
+
         const [, startRecordingResult] = await Promise.all([
-          invoke<void>("set_phase", { phase: "recording" }),
+          strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
             args: { preferredMicrophone },
           }),
@@ -190,9 +226,11 @@ export const RootSideEffects = () => {
         await sessionRef.current.onRecordingStart(sampleRate);
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
-        await invoke<void>("set_phase", { phase: "idle" });
+        await strategy.setPhase("idle");
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
+        isRecordingRef.current = false;
+        strategyRef.current = null;
         sessionRef.current?.cleanup();
         sessionRef.current = null;
       } finally {
@@ -202,7 +240,7 @@ export const RootSideEffects = () => {
 
     startPendingRef.current = promise;
     await promise;
-  }, []);
+  }, [intl, strategyContext]);
 
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
@@ -211,6 +249,13 @@ export const RootSideEffects = () => {
 
     if (stopPendingRef.current) {
       await stopPendingRef.current;
+      return;
+    }
+
+    const strategy = strategyRef.current;
+    if (!strategy) {
+      console.warn("No recording strategy found, attempting recovery");
+      await resetRecordingState();
       return;
     }
 
@@ -226,7 +271,7 @@ export const RootSideEffects = () => {
       }
 
       let audio: StopRecordingResponse | null = null;
-      let a11yInfo: AccessibilityInfo | null = null;
+      let a11yInfo: TextFieldInfo | null = null;
       try {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
@@ -235,10 +280,10 @@ export const RootSideEffects = () => {
         tryPlayAudioChime("stop_recording_clip");
 
         const [, outAudio, outA11yInfo] = await Promise.all([
-          invoke<void>("set_phase", { phase: "loading" }),
+          strategy.setPhase("loading"),
           invoke<StopRecordingResponse>("stop_recording"),
-          invoke<AccessibilityInfo>("get_accessibility_info").catch((error) => {
-            console.warn("[a11y] Failed to get accessibility info:", error);
+          invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
+            console.warn("[a11y] Failed to get text field info:", error);
             return null;
           }),
         ]);
@@ -264,11 +309,6 @@ export const RootSideEffects = () => {
     const session = sessionRef.current;
     sessionRef.current = null;
 
-    let recordingResult: RecordingResult = {
-      transcript: null,
-      currentApp: null,
-    };
-
     try {
       if (session && audio) {
         const [currentApp, transcribeResult] = await Promise.all([
@@ -278,67 +318,79 @@ export const RootSideEffects = () => {
         const toneId = currentApp?.toneId ?? null;
         const rawTranscript = transcribeResult.rawTranscript;
 
-        let transcript = rawTranscript;
-        let postProcessMetadata = {};
-        const allWarnings = [...transcribeResult.warnings];
-
         if (rawTranscript) {
-          const ppResult = await postProcessTranscript({
+          const { shouldContinue } = await strategy.handleTranscript({
             rawTranscript,
             toneId,
             a11yInfo,
+            currentApp,
+            loadingToken,
+            audio,
           });
-          transcript = ppResult.transcript;
-          postProcessMetadata = ppResult.metadata;
-          allWarnings.push(...ppResult.warnings);
+
+          if (!shouldContinue) {
+            // Exit: clean up strategy and reset mode
+            await strategy.cleanup();
+            strategyRef.current = null;
+            produceAppState((draft) => {
+              draft.activeRecordingMode = null;
+            });
+          }
+          // If shouldContinue is true, keep strategy and mode for next turn
         }
-
-        // don't await so we don't block pasting
-        storeTranscription({
-          audio,
-          rawTranscript,
-          transcript,
-          transcriptionMetadata: transcribeResult.metadata,
-          postProcessMetadata,
-          warnings: allWarnings,
-        });
-
-        recordingResult = {
-          transcript,
-          currentApp,
-        };
       }
     } finally {
       session?.cleanup();
-
-      if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
-        overlayLoadingTokenRef.current = null;
-        await invoke<void>("set_phase", { phase: "idle" });
-      }
-
-      const finalTranscript = recordingResult.transcript;
-      if (finalTranscript) {
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 20);
-        });
-
-        try {
-          const keybind = recordingResult.currentApp?.pasteKeybind ?? null;
-          await invoke<void>("paste", { text: finalTranscript, keybind });
-        } catch (error) {
-          console.error("Failed to paste transcription", error);
-          showErrorSnackbar("Unable to paste transcription.");
-        }
-      }
-
       refreshMember();
     }
-  }, []);
+  }, [resetRecordingState]);
+
+  const startDictationRecording = useCallback(async () => {
+    produceAppState((draft) => {
+      draft.activeRecordingMode = "dictate";
+    });
+    await startRecording();
+  }, [startRecording]);
+
+  const stopDictationRecording = useCallback(async () => {
+    await stopRecording();
+  }, [stopRecording]);
+
+  const startAgentRecording = useCallback(async () => {
+    const state = getAppState();
+    if (state.settings.agentMode.mode === "none") {
+      playAlertSound();
+      showToast({
+        title: intl.formatMessage({ defaultMessage: "Agent mode disabled" }),
+        message: intl.formatMessage({
+          defaultMessage: "Enable agent mode in settings to use this feature.",
+        }),
+        toastType: "error",
+        action: "open_agent_settings",
+        duration: 8_000,
+      });
+      return;
+    }
+    produceAppState((draft) => {
+      draft.activeRecordingMode = "agent";
+    });
+    await startRecording();
+  }, [intl, startRecording]);
+
+  const stopAgentRecording = useCallback(async () => {
+    await stopRecording();
+  }, [stopRecording]);
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    onActivate: startRecording,
-    onDeactivate: stopRecording,
+    onActivate: startDictationRecording,
+    onDeactivate: stopDictationRecording,
+  });
+
+  useHotkeyHold({
+    actionName: AGENT_DICTATE_HOTKEY,
+    onActivate: startAgentRecording,
+    onDeactivate: stopAgentRecording,
   });
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
@@ -384,7 +436,25 @@ export const RootSideEffects = () => {
     if (payload.action === "upgrade") {
       surfaceMainWindow();
       openUpgradePlanDialog();
+    } else if (payload.action === "open_agent_settings") {
+      surfaceMainWindow();
+      produceAppState((draft) => {
+        draft.settings.agentModeDialogOpen = true;
+      });
     }
+  });
+
+  useTauriListen<void>("agent-overlay-close", async () => {
+    const strategy = strategyRef.current;
+    if (strategy) {
+      await strategy.cleanup();
+    }
+    if (isRecordingRef.current || strategyRef.current) {
+      await resetRecordingState();
+    }
+    produceAppState((draft) => {
+      draft.activeRecordingMode = null;
+    });
   });
 
   return null;

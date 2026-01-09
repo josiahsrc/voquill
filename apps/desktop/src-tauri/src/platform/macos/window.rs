@@ -4,6 +4,8 @@ use cocoa::base::{id, nil, YES};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
 
+const NS_FLOATING_WINDOW_LEVEL: i64 = 3;
+
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
     let (tx, rx) = mpsc::channel();
@@ -51,6 +53,37 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let result = rx
         .recv()
         .map_err(|_| "failed to surface window on main thread".to_string())?;
+
+    result
+}
+
+pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let ns_window_ptr = window_for_handle
+                    .ns_window()
+                    .map_err(|err| err.to_string())?;
+
+                unsafe {
+                    let ns_window = ns_window_ptr as id;
+                    ns_window.setLevel_(NS_FLOATING_WINDOW_LEVEL);
+                    ns_window.orderFrontRegardless();
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    let result = rx
+        .recv()
+        .map_err(|_| "failed to show overlay on main thread".to_string())?;
 
     result
 }

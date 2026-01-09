@@ -1,5 +1,5 @@
 import { Member, Nullable } from "@repo/types";
-import { getMemberExceedsWordLimit, getRec } from "@repo/utilities";
+import { getMemberExceedsLimits, getRec } from "@repo/utilities";
 import { getIntl } from "../i18n";
 import type { AppState } from "../state/app.state";
 import { EffectivePlan } from "../types/member.types";
@@ -31,12 +31,12 @@ export const getIsPaying = (state: AppState): boolean => {
   return member.plan !== "free";
 };
 
-export const getMemberExceedsWordLimitByState = (state: AppState): boolean => {
+export const getMemberExceedsLimitByState = (state: AppState): boolean => {
   const member = getMyMember(state);
   const config = state.config;
   if (!member || !config) {
     return false;
   }
 
-  return getMemberExceedsWordLimit(member, config);
+  return getMemberExceedsLimits(member, config);
 };

@@ -1,4 +1,4 @@
-import type { AccessibilityInfo } from "../types/accessibility.types";
+import type { TextFieldInfo } from "../types/accessibility.types";
 
 export type TextFieldContext = {
   precedingText: string | null;
@@ -15,7 +15,7 @@ const DEFAULT_PRECEDING_CHAR_LIMIT = 200;
 const DEFAULT_FOLLOWING_CHAR_LIMIT = 100;
 
 export const extractPrecedingText = (
-  info: AccessibilityInfo,
+  info: TextFieldInfo,
   charLimit: number,
 ): string | null => {
   if (info.textContent == null || info.cursorPosition == null) {
@@ -43,7 +43,7 @@ export const extractPrecedingText = (
   return fullPreceding.slice(-charLimit);
 };
 
-export const extractSelectedText = (info: AccessibilityInfo): string | null => {
+export const extractSelectedText = (info: TextFieldInfo): string | null => {
   if (
     info.textContent == null ||
     info.cursorPosition == null ||
@@ -65,7 +65,7 @@ export const extractSelectedText = (info: AccessibilityInfo): string | null => {
 };
 
 export const extractFollowingText = (
-  info: AccessibilityInfo,
+  info: TextFieldInfo,
   charLimit: number,
 ): string | null => {
   if (info.textContent == null || info.cursorPosition == null) {
@@ -92,7 +92,7 @@ export const extractFollowingText = (
 };
 
 export const extractTextFieldContext = (
-  info: AccessibilityInfo | null,
+  info: TextFieldInfo | null,
   options?: ExtractContextOptions,
 ): TextFieldContext | null => {
   if (!info) {
@@ -125,7 +125,7 @@ const isWhitespace = (char: string): boolean => {
 
 export const applySpacingInContext = (args: {
   textToInsert: string;
-  info: AccessibilityInfo;
+  info: TextFieldInfo;
 }): string => {
   const { textToInsert, info } = args;
 

@@ -3,6 +3,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { Outlet } from "react-router-dom";
 import { useAsyncData } from "../../hooks/async.hooks";
 import { DashboardMenu } from "./DashboardMenu";
+import { FeatureReleaseDialog } from "./FeatureReleaseDialog";
 import { TutorialDialog } from "../tutorial/TutorialDialog";
 
 export default function DashboardPage() {
@@ -11,6 +12,7 @@ export default function DashboardPage() {
   return (
     <>
       <TutorialDialog />
+      <FeatureReleaseDialog />
       <Stack direction="row" sx={{ height: "100%", width: "100%" }}>
         <Box
           sx={{

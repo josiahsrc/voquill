@@ -6,10 +6,10 @@ import {
   SettingsOutlined,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
-import { DiscordListTile } from "./DiscordListTile";
 import { FormattedMessage } from "react-intl";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ListTile } from "../common/ListTile";
+import { DiscordListTile } from "./DiscordListTile";
 
 const settingsPath = "/dashboard/settings";
 
@@ -40,6 +40,11 @@ const navItems: NavItem[] = [
     path: "/dashboard/styling",
     icon: <PaletteOutlined />,
   },
+  // {
+  //   label: <FormattedMessage defaultMessage="Apps" />,
+  //   path: "/dashboard/apps",
+  //   icon: <AppsOutlined />,
+  // },
 ];
 
 export type DashboardMenuProps = {

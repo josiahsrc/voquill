@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, Stack } from "@mui/material";
 import { useAppStore } from "../../store";
+import { AgentModeTutorial } from "./AgentModeTutorial";
 import { DictateTutorial } from "./DictateTutorial";
 import { FinishTutorial } from "./FinishTutorial";
 import { getShouldShowTutorialDialog } from "../../utils/user.utils";
@@ -16,7 +17,8 @@ export const TutorialDialog = () => {
       <DialogContent>
         <Stack spacing={3}>
           {stepIndex === 0 && <DictateTutorial />}
-          {stepIndex === 1 && <FinishTutorial />}
+          {stepIndex === 1 && <AgentModeTutorial />}
+          {stepIndex === 2 && <FinishTutorial />}
         </Stack>
       </DialogContent>
     </Dialog>

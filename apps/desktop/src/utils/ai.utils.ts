@@ -2,6 +2,7 @@ import { UserPreferences } from "@repo/types";
 import { AppState } from "../state/app.state";
 import {
   CPU_DEVICE_VALUE,
+  DEFAULT_AGENT_MODE,
   DEFAULT_MODEL_SIZE,
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
@@ -34,4 +35,9 @@ export const applyAiPreferences = (
   draft.settings.aiPostProcessing.mode = postProcessingMode;
   draft.settings.aiPostProcessing.selectedApiKeyId =
     preferences.postProcessingApiKeyId ?? null;
+
+  const agentMode = preferences.agentMode ?? DEFAULT_AGENT_MODE;
+  draft.settings.agentMode.mode = agentMode as any;
+  draft.settings.agentMode.selectedApiKeyId =
+    preferences.agentModeApiKeyId ?? null;
 };

@@ -1,6 +1,6 @@
 export type ToastType = "info" | "error";
 
-export type ToastAction = "upgrade";
+export type ToastAction = "upgrade" | "open_agent_settings";
 
 export type Toast = {
   id: string;

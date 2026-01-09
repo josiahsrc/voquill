@@ -18,10 +18,9 @@ import { connectStorageEmulator, getStorage } from "firebase/storage";
 import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
-import { OverlayRoot } from "./components/overlay/OverlayRoot";
+import { UnifiedOverlayRoot } from "./components/overlay/UnifiedOverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
-import { ToastRoot } from "./components/toast";
 import { getIntlConfig } from "./i18n";
 import { theme } from "./theme";
 import { createEffectiveAuth } from "./utils/auth.utils";
@@ -85,7 +84,6 @@ const searchParams =
     : null;
 
 const isOverlayWindow = searchParams?.get("overlay") === "1";
-const isToastWindow = searchParams?.get("toast") === "1";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
@@ -118,13 +116,7 @@ const Main = ({ children }: ChildrenProps) => {
 if (isOverlayWindow) {
   root.render(
     <Main>
-      <OverlayRoot />
-    </Main>,
-  );
-} else if (isToastWindow) {
-  root.render(
-    <Main>
-      <ToastRoot />
+      <UnifiedOverlayRoot />
     </Main>,
   );
 } else {

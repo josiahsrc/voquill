@@ -3,7 +3,8 @@ use tauri::WebviewWindow;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     BringWindowToTop, SetForegroundWindow, SetWindowPos, ShowWindow, HWND_NOTOPMOST, HWND_TOPMOST,
-    SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW,
+    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW,
+    SW_SHOWNOACTIVATE,
 };
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
@@ -60,6 +61,42 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let result = rx
         .recv()
         .map_err(|_| "failed to surface window on main thread".to_string())?;
+
+    result
+}
+
+pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let hwnd: HWND = window_for_handle.hwnd().map_err(|err| err.to_string())?;
+
+                unsafe {
+                    ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+                    SetWindowPos(
+                        hwnd,
+                        Some(HWND_TOPMOST),
+                        0,
+                        0,
+                        0,
+                        0,
+                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
+                    );
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    let result = rx
+        .recv()
+        .map_err(|_| "failed to show overlay on main thread".to_string())?;
 
     result
 }

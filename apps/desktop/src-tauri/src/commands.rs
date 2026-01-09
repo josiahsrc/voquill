@@ -41,10 +41,16 @@ pub struct CurrentAppInfoResponse {
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AccessibilityInfo {
+pub struct TextFieldInfo {
     pub cursor_position: Option<usize>,
     pub selection_length: Option<usize>,
     pub text_content: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenContextInfo {
+    pub screen_context: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -230,6 +236,48 @@ pub fn list_microphones() -> Vec<crate::platform::audio::InputDeviceDescriptor> 
 #[tauri::command]
 pub fn list_gpus() -> Vec<crate::system::gpu::GpuAdapterInfo> {
     crate::system::gpu::list_available_gpus()
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenVisibleArea {
+    pub top_inset: f64,
+    pub bottom_inset: f64,
+    pub left_inset: f64,
+    pub right_inset: f64,
+}
+
+#[tauri::command]
+pub fn get_screen_visible_area() -> ScreenVisibleArea {
+    #[cfg(target_os = "macos")]
+    {
+        use cocoa::appkit::NSScreen;
+        use cocoa::base::nil;
+
+        unsafe {
+            let screen = NSScreen::mainScreen(nil);
+            if screen != nil {
+                let frame = NSScreen::frame(screen);
+                let visible = NSScreen::visibleFrame(screen);
+
+                return ScreenVisibleArea {
+                    top_inset: (frame.origin.y + frame.size.height)
+                        - (visible.origin.y + visible.size.height),
+                    bottom_inset: visible.origin.y - frame.origin.y,
+                    left_inset: visible.origin.x - frame.origin.x,
+                    right_inset: (frame.origin.x + frame.size.width)
+                        - (visible.origin.x + visible.size.width),
+                };
+            }
+        }
+    }
+
+    ScreenVisibleArea {
+        top_inset: 0.0,
+        bottom_inset: 0.0,
+        left_inset: 0.0,
+        right_inset: 0.0,
+    }
 }
 
 #[tauri::command]
@@ -997,6 +1045,15 @@ pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn show_overlay_no_focus(app: AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("unified-overlay")
+        .ok_or_else(|| "unified-overlay window not found".to_string())?;
+    crate::platform::window::show_overlay_no_focus(&window)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
     let join_result =
         tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text, keybind.as_deref())).await;
@@ -1046,8 +1103,22 @@ pub fn stop_key_listener() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn get_accessibility_info() -> Result<AccessibilityInfo, String> {
-    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_accessibility_info)
+pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
+    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_text_field_info)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn get_screen_context() -> Result<ScreenContextInfo, String> {
+    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_screen_context)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn get_selected_text() -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_selected_text)
         .await
         .map_err(|err| err.to_string())
 }

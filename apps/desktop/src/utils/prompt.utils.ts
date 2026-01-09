@@ -264,3 +264,76 @@ export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
 export const PROCESSED_TRANSCRIPTION_JSON_SCHEMA =
   zodToJsonSchema(PROCESSED_TRANSCRIPTION_SCHEMA, "Schema").definitions
     ?.Schema ?? {};
+
+export const buildSystemAgentPrompt = (locale: Locale): string => {
+  const intl = getIntl(locale);
+  return intl.formatMessage(
+    {
+      defaultMessage:
+        "You are a helpful AI assistant that executes user commands. The user will dictate instructions via voice, and you will execute those instructions and return the output. Your job is to understand what the user wants and produce it. Examples: 'write a poem about cats' → write the poem; 'summarize this article' → provide the summary; 'create a shopping list' → create the list; 'draft an email to my boss' → draft the email. Always return just the requested output, ready to be pasted.",
+    },
+    {},
+  );
+};
+
+export const buildLocalizedAgentPrompt = (
+  transcript: string,
+  locale: Locale,
+  toneTemplate?: string | null,
+): string => {
+  const intl = getIntl(locale);
+  const languageName = LANGUAGE_DISPLAY_NAMES[locale];
+
+  // Use tone template if provided to adjust the agent's response style
+  let base: string;
+  if (toneTemplate) {
+    base = `
+The user has dictated the following command or request. Follow it precisely.
+
+Style instructions to apply to your response:
+\`\`\`
+${toneTemplate}
+\`\`\`
+
+Here is what the user dictated:
+-------
+${transcript}
+-------
+
+Execute the command and provide your response in ${languageName}.
+`;
+    console.log(
+      "[Agent Prompt] Using tone template, result length:",
+      base.length,
+    );
+  } else {
+    console.log("[Agent Prompt] Using default prompt (no tone template)");
+    base = intl.formatMessage(
+      {
+        defaultMessage: `
+The user has dictated the following command:
+-------
+{transcript}
+-------
+
+Execute this command and provide the output in {languageName}.
+
+Instructions:
+- If the user asks you to write, create, draft, or compose something → produce that content
+- If the user asks you to summarize, analyze, or explain something → provide the summary/analysis/explanation
+- If the user asks you to transform or rewrite something → apply the transformation
+- If the user provides a statement without a clear command → clean it up and present it clearly
+
+Return ONLY the requested output, nothing else. The output will be pasted directly into the user's application.
+        `,
+      },
+      {
+        languageName,
+        transcript,
+      },
+    );
+  }
+
+  console.log("Agent prompt", prompt);
+  return base;
+};

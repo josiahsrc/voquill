@@ -34,7 +34,7 @@ export const HotkeySelectionForm = () => {
     status !== "loading" && (savedHotkeyCount > 0 || defaultHotkeys.length > 0);
 
   const handleNext = () => {
-    goToOnboardingPage("microphone");
+    goToOnboardingPage("agentHotkey");
   };
 
   const [primaryHotkey] = hotkeys;
@@ -87,7 +87,7 @@ export const HotkeySelectionForm = () => {
           }}
         >
           <Typography variant="headlineMedium">
-            <FormattedMessage defaultMessage="Try it out:" />
+            <FormattedMessage defaultMessage="Try it out" />
           </Typography>
           <Typography variant="body2" color="text.secondary">
             <FormattedMessage defaultMessage="Try pressing your dictation shortcut to see if it works!" />
