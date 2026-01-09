@@ -241,11 +241,12 @@ export const FeatureReleaseDialog = () => {
 
   const getPageContent = () => {
     if (pageIndex === 0) return <IntroPage />;
-    if (pageIndex === 1) return <HotkeyPage />;
     if (isCommunity) {
-      if (pageIndex === 2) return <ProcessorPage />;
+      if (pageIndex === 1) return <ProcessorPage />;
+      if (pageIndex === 2) return <HotkeyPage />;
       if (pageIndex === 3) return <TryItPage />;
     } else {
+      if (pageIndex === 1) return <HotkeyPage />;
       if (pageIndex === 2) return <TryItPage />;
     }
     return null;
