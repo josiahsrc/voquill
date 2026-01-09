@@ -3,11 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
-import type { RecordingMode } from "../../state/app.state";
-import { AgentStrategy } from "../../strategies/agent.strategy";
-import { BaseStrategy } from "../../strategies/base.strategy";
-import { DictationStrategy } from "../../strategies/dictation.strategy";
-import type { StrategyContext } from "../../types/strategy.types";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -28,12 +23,17 @@ import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
+import type { RecordingMode } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
+import { AgentStrategy } from "../../strategies/agent.strategy";
+import { BaseStrategy } from "../../strategies/base.strategy";
+import { DictationStrategy } from "../../strategies/dictation.strategy";
 import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
 import { OverlayPhase } from "../../types/overlay.types";
+import type { StrategyContext } from "../../types/strategy.types";
 import {
   StopRecordingResponse,
   TranscriptionSession,
@@ -71,10 +71,7 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
-type StopRecordingResult = [
-  StopRecordingResponse | null,
-  TextFieldInfo | null,
-];
+type StopRecordingResult = [StopRecordingResponse | null, TextFieldInfo | null];
 
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
@@ -154,10 +151,6 @@ export const RootSideEffects = () => {
     }
 
     if (isRecordingRef.current) {
-      return;
-    }
-
-    if (!getIsOnboarded(state)) {
       return;
     }
 
@@ -346,6 +339,11 @@ export const RootSideEffects = () => {
   }, [resetRecordingState]);
 
   const startDictationRecording = useCallback(async () => {
+    const state = getAppState();
+    if (!getIsOnboarded(state)) {
+      return;
+    }
+
     produceAppState((draft) => {
       draft.activeRecordingMode = "dictate";
     });
@@ -358,6 +356,10 @@ export const RootSideEffects = () => {
 
   const startAgentRecording = useCallback(async () => {
     const state = getAppState();
+    if (!getIsOnboarded(state)) {
+      return;
+    }
+
     if (state.settings.agentMode.mode === "none") {
       playAlertSound();
       showToast({
@@ -371,6 +373,7 @@ export const RootSideEffects = () => {
       });
       return;
     }
+
     produceAppState((draft) => {
       draft.activeRecordingMode = "agent";
     });
