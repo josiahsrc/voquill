@@ -136,6 +136,7 @@ export const UpdateDialog = () => {
       fullWidth
       maxWidth="sm"
       disableEscapeKeyDown={isUpdating}
+      sx={{ zIndex: 9999 }}
     >
       <DialogTitle>
         <FormattedMessage defaultMessage="Update available" />
