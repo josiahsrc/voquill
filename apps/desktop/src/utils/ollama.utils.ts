@@ -2,6 +2,11 @@ import { fetch } from "@tauri-apps/plugin-http";
 
 export const OLLAMA_DEFAULT_URL = "http://127.0.0.1:11434";
 
+export const getOllamaHeaders = (apiKey?: string): HeadersInit => ({
+  Origin: "http://localhost",
+  ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+});
+
 export type OllamaTestIntegrationArgs = {
   baseUrl?: string;
   apiKey?: string;
@@ -11,9 +16,7 @@ export const ollamaTestIntegration = async ({
   baseUrl = OLLAMA_DEFAULT_URL,
   apiKey,
 }: OllamaTestIntegrationArgs): Promise<boolean> => {
-  const headers: HeadersInit | undefined = apiKey
-    ? { Authorization: `Bearer ${apiKey}` }
-    : undefined;
+  const headers = getOllamaHeaders(apiKey);
 
   let response: Response;
   try {
