@@ -77,6 +77,7 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
               lineHeight: 1.4,
               wordBreak: "break-word",
               fontSize: "0.8125rem",
+              whiteSpace: "pre-wrap",
             }}
           >
             {message.text}
@@ -103,6 +104,7 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
             lineHeight: 1.5,
             wordBreak: "break-word",
             fontSize: "0.8125rem",
+            whiteSpace: "pre-wrap",
           }}
         >
           {message.text}
@@ -151,6 +153,7 @@ const MessageBubble = ({ message }: MessageBubbleProps) => {
           lineHeight: 1.5,
           wordBreak: "break-word",
           fontSize: "0.8125rem",
+          whiteSpace: "pre-wrap",
         }}
       >
         {message.text}
