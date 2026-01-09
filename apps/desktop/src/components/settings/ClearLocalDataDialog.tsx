@@ -97,6 +97,9 @@ export const ClearLocalDataDialog = () => {
             disabled={isClearing}
             placeholder={CONFIRMATION_PHRASE}
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
           />
           {errorMessage && (
             <Alert severity="error" variant="outlined">

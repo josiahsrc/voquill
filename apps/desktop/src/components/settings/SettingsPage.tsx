@@ -348,11 +348,11 @@ export default function SettingsPage() {
         <FormattedMessage defaultMessage="Be careful with these actions. They can have significant consequences for your account." />
       }
     >
-      <ListTile
+      {!isSignedIn && <ListTile
         title={<FormattedMessage defaultMessage="Clear local data" />}
         leading={<DeleteForeverOutlined />}
         onClick={openClearLocalDataDialog}
-      />
+      />}
       {isSignedIn && (
         <ListTile
           sx={{ mt: 1 }}

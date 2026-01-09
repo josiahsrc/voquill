@@ -9,6 +9,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { showSnackbar } from "../../actions/app.actions";
@@ -36,6 +37,7 @@ export const DeleteAccountDialog = () => {
 
     try {
       await getAuthRepo().deleteMyAccount();
+      await invoke("clear_local_data");
       setConfirmationEmail("");
       showSnackbar("You account has been deleted", { duration: 15000 });
       produceAppState((state) => {
@@ -100,6 +102,10 @@ export const DeleteAccountDialog = () => {
           onChange={handleEmailChange}
           size="small"
           sx={{ mb: 2 }}
+          autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
         />
       </DialogContent>
       <DialogActions>
