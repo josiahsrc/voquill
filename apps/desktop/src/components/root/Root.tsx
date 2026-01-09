@@ -1,7 +1,8 @@
 import { Box } from "@mui/material";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
+import { trackPageView } from "../../lib/analytics";
 import { HeaderPortalProvider } from "./HeaderPortalContext";
 import { LoadingApp } from "./LoadingApp";
 import { PermissionSideEffects } from "./PermissionSideEffects";
@@ -19,6 +20,12 @@ function ErrorFallback({ error }: { error: Error }) {
 }
 
 export default function Root() {
+  const location = useLocation();
+
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+
   return (
     <>
       <PermissionSideEffects />

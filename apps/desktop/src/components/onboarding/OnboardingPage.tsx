@@ -1,6 +1,7 @@
 import { Stack } from "@mui/material";
 import { useEffect } from "react";
 import { loadPrices } from "../../actions/pricing.actions";
+import { trackOnboardingStep } from "../../lib/analytics";
 import { produceAppState, useAppStore } from "../../store";
 import { getMyMember } from "../../utils/member.utils";
 import { AgentHotkeySelectionForm } from "./AgentHotkeySelectionForm";
@@ -28,6 +29,10 @@ export default function OnboardingPage() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    trackOnboardingStep(currentPage);
+  }, [currentPage]);
 
   return (
     <Stack
