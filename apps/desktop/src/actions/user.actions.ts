@@ -355,7 +355,6 @@ export const setLanguageSwitchEnabled = async (
   produceAppState((draft) => {
     draft.settings.languageSwitch.enabled = enabled;
 
-    // If enabling and no secondary language is set, set a default
     if (enabled && !draft.settings.languageSwitch.secondaryLanguage) {
       const user = getMyUser(state);
       const primaryLanguage =
@@ -364,7 +363,6 @@ export const setLanguageSwitchEnabled = async (
         getDefaultSecondaryLanguage(primaryLanguage);
     }
 
-    // Reset active language to primary when disabled
     if (!enabled) {
       draft.settings.languageSwitch.activeLanguage = "primary";
     }

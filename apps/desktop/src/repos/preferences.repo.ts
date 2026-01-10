@@ -66,7 +66,6 @@ const fromLocalPreferences = (
   agentModeApiKeyId: preferences.agentModeApiKeyId,
   lastSeenFeature: preferences.lastSeenFeature,
   isEnterprise: preferences.isEnterprise,
-  // Language switch feature
   languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
   secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
   languageSwitchHotkey: preferences.languageSwitchHotkey
@@ -96,7 +95,6 @@ const toLocalPreferences = (
   agentModeApiKeyId: preferences.agentModeApiKeyId ?? null,
   lastSeenFeature: preferences.lastSeenFeature ?? null,
   isEnterprise: preferences.isEnterprise,
-  // Language switch feature
   languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
   secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
   languageSwitchHotkey: preferences.languageSwitchHotkey

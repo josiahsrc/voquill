@@ -233,7 +233,6 @@ export const useCustomHotkeyFire = (args: {
     const previousKeysHeld = previousKeysHeldRef.current;
     const combo = args.combo;
 
-    // Normalize keys for comparison
     const normalize = (key: string) => key.toLowerCase();
     const normalizedCombo = combo.map(normalize);
     const normalizedKeysHeld = keysHeld.map(normalize);
