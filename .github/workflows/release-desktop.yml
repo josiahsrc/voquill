@@ -172,7 +172,7 @@ jobs:
 
           if [[ "${RELEASE_ENV}" == "dev" ]]; then
             CHANNEL_RELEASE_TAG="desktop-dev"
-            RELEASE_FLAVOR="dev"
+            RELEASE_FLAVOR="prod"
             RELEASE_SUFFIX="-dev"
           else
             CHANNEL_RELEASE_TAG="desktop-prod"
@@ -496,17 +496,10 @@ jobs:
       - name: Set Google OAuth credentials
         id: google-oauth
         shell: bash
-        env:
-          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
         run: |
           set -euo pipefail
-          if [[ "${RELEASE_ENV}" == "prod" ]]; then
-            echo "client_id=777461284594-dhgao2eek53ppl4o188ik2i9cigdcmnp.apps.googleusercontent.com" >> "$GITHUB_OUTPUT"
-            echo "client_secret=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" >> "$GITHUB_OUTPUT"
-          else
-            echo "client_id=778214168359-nbgt0dedeol36gl425o5nqt5kaksh38u.apps.googleusercontent.com" >> "$GITHUB_OUTPUT"
-            echo "client_secret=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" >> "$GITHUB_OUTPUT"
-          fi
+          echo "client_id=777461284594-dhgao2eek53ppl4o188ik2i9cigdcmnp.apps.googleusercontent.com" >> "$GITHUB_OUTPUT"
+          echo "client_secret=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" >> "$GITHUB_OUTPUT"
 
       - name: Compute Tauri CLI args
         id: tauri-cli-args
