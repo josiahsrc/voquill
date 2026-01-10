@@ -10,14 +10,20 @@ import {
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
-import { AGENT_DICTATE_HOTKEY, DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import {
+  AGENT_DICTATE_HOTKEY,
+  DICTATE_HOTKEY,
+} from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
+import { LanguageSwitchHotkeySetting } from "./LanguageSwitchHotkeySetting";
 
 export const ShortcutsDialog = () => {
-  const { open, hotkeysStatus } = useAppStore((state) => ({
-    open: state.settings.shortcutsDialogOpen,
-    hotkeysStatus: state.settings.hotkeysStatus,
-  }));
+  const { open, hotkeysStatus } = useAppStore(
+    (state) => ({
+      open: state.settings.shortcutsDialogOpen,
+      hotkeysStatus: state.settings.hotkeysStatus,
+    }),
+  );
 
   const handleClose = () => {
     produceAppState((draft) => {
@@ -55,6 +61,7 @@ export const ShortcutsDialog = () => {
           }
           actionName={AGENT_DICTATE_HOTKEY}
         />
+        <LanguageSwitchHotkeySetting />
       </Stack>
     );
   };

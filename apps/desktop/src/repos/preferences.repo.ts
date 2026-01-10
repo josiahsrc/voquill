@@ -26,6 +26,10 @@ type LocalUserPreferences = {
   agentModeApiKeyId: Nullable<string>;
   lastSeenFeature: Nullable<string>;
   isEnterprise: boolean;
+  languageSwitchEnabled: boolean;
+  secondaryDictationLanguage: Nullable<string>;
+  languageSwitchHotkey: Nullable<string>;
+  activeDictationLanguage: Nullable<string>;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -62,6 +66,14 @@ const fromLocalPreferences = (
   agentModeApiKeyId: preferences.agentModeApiKeyId,
   lastSeenFeature: preferences.lastSeenFeature,
   isEnterprise: preferences.isEnterprise,
+  languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
+  secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
+  languageSwitchHotkey: preferences.languageSwitchHotkey
+    ? JSON.parse(preferences.languageSwitchHotkey)
+    : null,
+  activeDictationLanguage:
+    (preferences.activeDictationLanguage as "primary" | "secondary") ??
+    "primary",
 });
 
 const toLocalPreferences = (
@@ -83,6 +95,12 @@ const toLocalPreferences = (
   agentModeApiKeyId: preferences.agentModeApiKeyId ?? null,
   lastSeenFeature: preferences.lastSeenFeature ?? null,
   isEnterprise: preferences.isEnterprise,
+  languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
+  secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
+  languageSwitchHotkey: preferences.languageSwitchHotkey
+    ? JSON.stringify(preferences.languageSwitchHotkey)
+    : null,
+  activeDictationLanguage: preferences.activeDictationLanguage ?? "primary",
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

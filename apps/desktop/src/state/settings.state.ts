@@ -1,4 +1,10 @@
 import {
+  ApiKey,
+  ApiKeyProvider,
+  OpenRouterModel,
+  OpenRouterProvider,
+} from "@repo/types";
+import {
   CPU_DEVICE_VALUE,
   DEFAULT_AGENT_MODE,
   DEFAULT_MODEL_SIZE,
@@ -8,12 +14,8 @@ import {
   type TranscriptionMode,
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
-import {
-  ApiKey,
-  ApiKeyProvider,
-  OpenRouterModel,
-  OpenRouterProvider,
-} from "@repo/types";
+
+import { Nullable } from "@repo/types";
 
 export type SettingsApiKeyProvider = ApiKeyProvider;
 
@@ -32,6 +34,13 @@ export type SettingsGenerativeState = {
   selectedApiKeyId: string | null;
 };
 
+export type LanguageSwitchState = {
+  enabled: boolean;
+  secondaryLanguage: Nullable<string>;
+  hotkey: Nullable<string[]>;
+  activeLanguage: "primary" | "secondary";
+};
+
 export type SettingsState = {
   changePasswordDialogOpen: boolean;
   deleteAccountDialog: boolean;
@@ -46,6 +55,7 @@ export type SettingsState = {
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
   agentMode: SettingsGenerativeState;
+  languageSwitch: LanguageSwitchState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
@@ -84,6 +94,12 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   agentMode: {
     mode: DEFAULT_AGENT_MODE,
     selectedApiKeyId: null,
+  },
+  languageSwitch: {
+    enabled: false,
+    secondaryLanguage: null,
+    hotkey: null,
+    activeLanguage: "primary",
   },
   apiKeys: [],
   apiKeysStatus: "idle",
