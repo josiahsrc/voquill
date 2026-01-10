@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CardContent,
+  Link,
   Stack,
   Typography,
   type SxProps,
@@ -59,7 +60,7 @@ const PlanCard = ({
   return (
     <Card
       sx={{
-        width: { xs: "100%", sm: 350 },
+        width: { xs: "100%", sm: 260 },
         border: "3px solid",
         borderColor: color ?? "transparent",
         backgroundColor: "level0",
@@ -334,6 +335,54 @@ export const PlanList = ({
     </PlanCard>
   );
 
+  const enterpriseCard = (
+    <PlanCard
+      title={<FormattedMessage defaultMessage="Enterprise" />}
+      price={
+        <Stack>
+          <Typography variant="h5" fontWeight={600}>
+            <FormattedMessage defaultMessage="Custom" />
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            <FormattedMessage defaultMessage="Contact for pricing" />
+          </Typography>
+        </Stack>
+      }
+      cardSx={{ borderColor: "level1" }}
+      button={
+        <Button
+          variant="outlined"
+          size="small"
+          component={Link}
+          href="mailto:hello@voquill.com"
+          fullWidth
+          sx={{ py: 0.5 }}
+        >
+          <FormattedMessage defaultMessage="Contact us" />
+        </Button>
+      }
+    >
+      <CheckmarkRow disabled>
+        <FormattedMessage defaultMessage="Everything in Pro" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="On-premise deployment" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Custom integrations" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Data privacy & compliance" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Dedicated support" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Bring your own cloud" />
+      </CheckmarkRow>
+    </PlanCard>
+  );
+
   return (
     <Stack
       sx={{
@@ -357,6 +406,7 @@ export const PlanList = ({
       >
         {trialCard}
         {proCard}
+        {enterpriseCard}
       </Stack>
     </Stack>
   );

@@ -36,7 +36,7 @@ export const PlanSelectionForm = () => {
   };
 
   return (
-    <FormContainer sx={{ maxWidth: 750 }}>
+    <FormContainer sx={{ maxWidth: 900 }}>
       <ConfirmDialog
         isOpen={confirmLocalSetupOpen}
         onCancel={handleCancelLocalSetup}
