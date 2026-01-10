@@ -1,3 +1,4 @@
+import { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 
 const SURFACE_WINDOW_FLAG_KEY = "voquill:surface-main-window-on-launch";
@@ -32,6 +33,14 @@ export const surfaceMainWindow = async (): Promise<void> => {
   }
 
   await surfaceWindowPromise;
+};
+
+export const setTrayTitle = async (title: Nullable<string>): Promise<void> => {
+  try {
+    await invoke<void>("set_tray_title", { title });
+  } catch (error) {
+    console.error("Failed to set tray title", error);
+  }
 };
 
 export const markSurfaceWindowForNextLaunch = (): void => {

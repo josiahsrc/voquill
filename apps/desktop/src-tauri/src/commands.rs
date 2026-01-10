@@ -1103,6 +1103,17 @@ pub fn stop_key_listener() -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
+    use tauri::tray::TrayIconId;
+    if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
+        tray.set_title(title.as_deref())
+            .map_err(|err| err.to_string())
+    } else {
+        Ok(())
+    }
+}
+
+#[tauri::command]
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
     tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_text_field_info)
         .await

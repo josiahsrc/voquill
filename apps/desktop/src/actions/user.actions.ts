@@ -67,6 +67,10 @@ export const createDefaultPreferences = (): UserPreferences => ({
   agentModeApiKeyId: null,
   lastSeenFeature: null,
   isEnterprise: false,
+  languageSwitchEnabled: false,
+  secondaryDictationLanguage: null,
+  languageSwitchHotkey: null,
+  activeDictationLanguage: "primary",
 });
 
 const updateUserPreferences = async (
@@ -225,6 +229,14 @@ export const persistAiPreferences = async (): Promise<void> => {
       state.settings.aiTranscription.modelSize ?? null;
     preferences.gpuEnumerationEnabled =
       state.settings.aiTranscription.gpuEnumerationEnabled;
+    preferences.languageSwitchEnabled =
+      state.settings.languageSwitch.enabled ?? false;
+    preferences.secondaryDictationLanguage =
+      state.settings.languageSwitch.secondaryLanguage ?? null;
+    preferences.languageSwitchHotkey =
+      state.settings.languageSwitch.hotkey ?? null;
+    preferences.activeDictationLanguage =
+      state.settings.languageSwitch.activeLanguage ?? "primary";
   }, "Failed to save AI preferences. Please try again.");
 };
 
@@ -329,6 +341,86 @@ export const setPreferredAgentModeApiKeyId = async (
 };
 
 export const syncAiPreferences = persistAiPreferences;
+
+export const getDefaultSecondaryLanguage = (primaryLanguage: string): string => {
+  const baseLanguage = primaryLanguage.split("-")[0].toLowerCase();
+  return baseLanguage === "en" ? "fr" : "en";
+};
+
+export const setLanguageSwitchEnabled = async (
+  enabled: boolean,
+): Promise<void> => {
+  const state = getAppState();
+
+  produceAppState((draft) => {
+    draft.settings.languageSwitch.enabled = enabled;
+
+    // If enabling and no secondary language is set, set a default
+    if (enabled && !draft.settings.languageSwitch.secondaryLanguage) {
+      const user = getMyUser(state);
+      const primaryLanguage =
+        user?.preferredLanguage ?? "en";
+      draft.settings.languageSwitch.secondaryLanguage =
+        getDefaultSecondaryLanguage(primaryLanguage);
+    }
+
+    // Reset active language to primary when disabled
+    if (!enabled) {
+      draft.settings.languageSwitch.activeLanguage = "primary";
+    }
+  });
+
+  await persistAiPreferences();
+};
+
+export const setSecondaryDictationLanguage = async (
+  language: Nullable<string>,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.languageSwitch.secondaryLanguage = language;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setLanguageSwitchHotkey = async (
+  hotkey: Nullable<string[]>,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.languageSwitch.hotkey = hotkey;
+  });
+
+  await persistAiPreferences();
+};
+
+export const toggleActiveDictationLanguage = async (): Promise<void> => {
+  const state = getAppState();
+  const { enabled, secondaryLanguage, activeLanguage } =
+    state.settings.languageSwitch;
+
+  if (!enabled || !secondaryLanguage) {
+    return;
+  }
+
+  const newActiveLanguage =
+    activeLanguage === "primary" ? "secondary" : "primary";
+
+  produceAppState((draft) => {
+    draft.settings.languageSwitch.activeLanguage = newActiveLanguage;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setActiveDictationLanguage = async (
+  language: "primary" | "secondary",
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.languageSwitch.activeLanguage = language;
+  });
+
+  await persistAiPreferences();
+};
 
 export const migrateLocalUserToCloud = async (): Promise<void> => {
   const state = getAppState();

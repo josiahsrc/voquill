@@ -215,3 +215,42 @@ export const useHotkeyFire = (args: {
     previousKeysHeldRef.current = keysHeld;
   }, [keysHeld, availableCombos, args]);
 };
+
+export const useCustomHotkeyFire = (args: {
+  combo: string[] | null;
+  enabled: boolean;
+  onFire?: () => void;
+}) => {
+  const keysHeld = useAppStore((state) => state.keysHeld);
+  const previousKeysHeldRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (!args.enabled || !args.combo || args.combo.length === 0) {
+      previousKeysHeldRef.current = keysHeld;
+      return;
+    }
+
+    const previousKeysHeld = previousKeysHeldRef.current;
+    const combo = args.combo;
+
+    // Normalize keys for comparison
+    const normalize = (key: string) => key.toLowerCase();
+    const normalizedCombo = combo.map(normalize);
+    const normalizedKeysHeld = keysHeld.map(normalize);
+    const normalizedPreviousKeysHeld = previousKeysHeld.map(normalize);
+
+    const allKeysNowHeld = normalizedCombo.every((key) =>
+      normalizedKeysHeld.includes(key),
+    );
+
+    const notAllKeysPreviouslyHeld = !normalizedCombo.every((key) =>
+      normalizedPreviousKeysHeld.includes(key),
+    );
+
+    if (allKeysNowHeld && notAllKeysPreviouslyHeld) {
+      args.onFire?.();
+    }
+
+    previousKeysHeldRef.current = keysHeld;
+  }, [keysHeld, args]);
+};

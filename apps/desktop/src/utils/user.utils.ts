@@ -58,12 +58,32 @@ export const getDetectedSystemLocale = (): string => {
   return detectLocale() ?? DEFAULT_LOCALE;
 };
 
-export const getMyDictationLanguage = (state: AppState): string => {
+/**
+ * Gets the primary dictation language (user's preferred language or system locale).
+ */
+export const getMyPrimaryDictationLanguage = (state: AppState): string => {
   const user = getMyUser(state);
   if (user?.preferredLanguage) {
     return user.preferredLanguage;
   }
   return getDetectedSystemLocale();
+};
+
+export const getMyDictationLanguage = (state: AppState): string => {
+  const { enabled, secondaryLanguage, activeLanguage } =
+    state.settings.languageSwitch;
+
+  if (enabled && activeLanguage === "secondary" && secondaryLanguage) {
+    return secondaryLanguage;
+  }
+
+  return getMyPrimaryDictationLanguage(state);
+};
+
+export const getMyDictationLanguageCode = (state: AppState): string => {
+  const language = getMyDictationLanguage(state);
+  const baseCode = language.split("-")[0];
+  return baseCode.toUpperCase().slice(0, 2);
 };
 
 export const getMyUserPreferences = (
