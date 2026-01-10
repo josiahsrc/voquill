@@ -66,6 +66,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   agentMode: null,
   agentModeApiKeyId: null,
   lastSeenFeature: null,
+  isEnterprise: false,
 });
 
 const updateUserPreferences = async (

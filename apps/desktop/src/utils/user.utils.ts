@@ -25,7 +25,8 @@ export const getIsOnboarded = (state: AppState): boolean => {
 };
 
 export const getHasCloudAccess = (state: AppState): boolean => {
-  return getEffectivePlan(state) !== "community";
+  const effectivePlan = getEffectivePlan(state);
+  return effectivePlan === "pro" || effectivePlan === "free";
 };
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> =>

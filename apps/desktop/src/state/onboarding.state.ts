@@ -23,6 +23,7 @@ export type OnboardingState = {
   selectedPlan: PricingPlan | null;
   loggingIn: boolean;
   preferredMicrophone: Nullable<string>;
+  isEnterprise: boolean;
 };
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
@@ -34,6 +35,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   selectedPlan: null,
   loggingIn: false,
   preferredMicrophone: null,
+  isEnterprise: false,
 };
 
 if (getIsDevMode()) {

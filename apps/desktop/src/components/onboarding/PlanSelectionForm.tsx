@@ -62,6 +62,7 @@ export const PlanSelectionForm = () => {
       </Stack>
 
       <PlanList
+        showEnterprise={true}
         onSelect={handleSelectPlan}
         text="Continue"
         ignoreCurrentPlan

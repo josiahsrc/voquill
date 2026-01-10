@@ -73,6 +73,7 @@ pub const API_KEY_AZURE_REGION_MIGRATION_SQL: &str =
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");
+pub const IS_ENTERPRISE_MIGRATION_SQL: &str = include_str!("migrations/039_is_enterprise.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -302,6 +303,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 38,
             description: "add_last_seen_feature",
             sql: LAST_SEEN_FEATURE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 39,
+            description: "add_is_enterprise",
+            sql: IS_ENTERPRISE_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

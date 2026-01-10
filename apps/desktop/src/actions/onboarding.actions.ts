@@ -58,6 +58,11 @@ export const resetOnboarding = () => {
 export const selectOnboardingPlan = (plan: PricingPlan) => {
   produceAppState((draft) => {
     draft.onboarding.selectedPlan = plan;
+    draft.onboarding.isEnterprise = plan === "enterprise";
+    if (plan === "enterprise") {
+      navigateToOnboardingPage(draft.onboarding, "transcription");
+      return;
+    }
 
     const targetPageKey: OnboardingPageKey =
       plan === "community" ? "transcription" : "login";
@@ -140,6 +145,7 @@ export const submitOnboarding = async () => {
           ? agentModePreference.apiKeyId
           : null,
       lastSeenFeature: CURRENT_FEATURE,
+      isEnterprise: state.onboarding.isEnterprise,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

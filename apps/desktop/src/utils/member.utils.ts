@@ -9,11 +9,16 @@ export const getMyMember = (state: AppState): Nullable<Member> => {
 };
 
 export const getEffectivePlan = (state: AppState): EffectivePlan => {
+  if (state.userPrefs?.isEnterprise) {
+    return "enterprise";
+  }
   return getMyMember(state)?.plan ?? "community";
 };
 
 export const planToDisplayName = (plan: EffectivePlan): string => {
-  if (plan === "community") {
+  if (plan === "enterprise") {
+    return getIntl().formatMessage({ defaultMessage: "Enterprise" });
+  } else if (plan === "community") {
     return getIntl().formatMessage({ defaultMessage: "Community" });
   } else if (plan === "free") {
     return getIntl().formatMessage({ defaultMessage: "Trial" });
