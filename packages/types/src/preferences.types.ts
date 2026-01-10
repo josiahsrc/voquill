@@ -21,4 +21,5 @@ export type UserPreferences = {
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
   lastSeenFeature: Nullable<string>;
+  isEnterprise: boolean;
 };

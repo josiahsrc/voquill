@@ -4,7 +4,12 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Stack,
+  TextField,
   Typography,
   type SxProps,
 } from "@mui/material";
@@ -16,6 +21,8 @@ import { useOnEnter } from "../../hooks/helper.hooks";
 import { useAppStore } from "../../store";
 import { getEffectivePlan } from "../../utils/member.utils";
 import { getDollarPriceFromKey, PricingPlan } from "../../utils/price.utils";
+
+const ENTERPRISE_INVITE_CODE = "5AX9G";
 
 type CheckmarkRowProps = {
   children?: React.ReactNode;
@@ -59,7 +66,7 @@ const PlanCard = ({
   return (
     <Card
       sx={{
-        width: { xs: "100%", sm: 350 },
+        width: { xs: "100%", sm: 260 },
         border: "3px solid",
         borderColor: color ?? "transparent",
         backgroundColor: "level0",
@@ -175,6 +182,7 @@ export type PlanListProps = {
   text?: string;
   sx?: SxProps;
   ignoreCurrentPlan?: boolean;
+  showEnterprise?: boolean;
 };
 
 export const PlanList = ({
@@ -183,10 +191,14 @@ export const PlanList = ({
   text,
   disabled,
   ignoreCurrentPlan,
+  showEnterprise,
 }: PlanListProps) => {
   const intl = useIntl();
   const effectivePlan = useAppStore(getEffectivePlan);
   const [isYearly, setIsYearly] = useState(true);
+  const [inviteCodeDialogOpen, setInviteCodeDialogOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCodeError, setInviteCodeError] = useState(false);
 
   const proMonthlyPrice = useAppStore((state) =>
     getDollarPriceFromKey(state, "pro_monthly"),
@@ -220,6 +232,25 @@ export const PlanList = ({
       text: text ?? intl.formatMessage({ defaultMessage: "Continue" }),
       disabled,
     };
+  };
+
+  const handleEnterpriseClick = () => {
+    setInviteCodeDialogOpen(true);
+    setInviteCode("");
+    setInviteCodeError(false);
+  };
+
+  const handleInviteCodeSubmit = () => {
+    if (inviteCode.toUpperCase() === ENTERPRISE_INVITE_CODE) {
+      setInviteCodeDialogOpen(false);
+      onSelect("enterprise");
+    } else {
+      setInviteCodeError(true);
+    }
+  };
+
+  const handleInviteCodeCancel = () => {
+    setInviteCodeDialogOpen(false);
   };
 
   const trialCard = (
@@ -334,30 +365,128 @@ export const PlanList = ({
     </PlanCard>
   );
 
-  return (
-    <Stack
-      sx={{
-        flexDirection: "column",
-        alignItems: "center",
-        ...sx,
-      }}
+  const enterpriseCard = (
+    <PlanCard
+      title={<FormattedMessage defaultMessage="Enterprise" />}
+      price={
+        <Stack>
+          <Typography variant="h5" fontWeight={600}>
+            <FormattedMessage defaultMessage="Custom" />
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            <FormattedMessage defaultMessage="Contact for pricing" />
+          </Typography>
+        </Stack>
+      }
+      cardSx={{ borderColor: "level1" }}
+      button={
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleEnterpriseClick}
+          disabled={disabled}
+          fullWidth
+          sx={{ py: 0.5 }}
+        >
+          {text ?? intl.formatMessage({ defaultMessage: "Continue" })}
+        </Button>
+      }
     >
-      <BillingToggle
-        isYearly={isYearly}
-        onToggle={() => setIsYearly(!isYearly)}
-      />
+      <CheckmarkRow disabled>
+        <FormattedMessage defaultMessage="Everything in Pro" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="On-premise deployment" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Custom integrations" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Data privacy & compliance" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Dedicated support" />
+      </CheckmarkRow>
+      <CheckmarkRow>
+        <FormattedMessage defaultMessage="Bring your own cloud" />
+      </CheckmarkRow>
+    </PlanCard>
+  );
+
+  const enterpriseDialog = (
+    <Dialog open={inviteCodeDialogOpen} onClose={handleInviteCodeCancel} maxWidth="xs" fullWidth>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Enter invite code" />
+      </DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <FormattedMessage defaultMessage="Contact sales@voquill.com to get an enterprise account with dedicated support." />
+        </Typography>
+        <TextField
+          autoFocus
+          fullWidth
+          variant="outlined"
+          value={inviteCode}
+          onChange={(e) => {
+            setInviteCode(e.target.value);
+            setInviteCodeError(false);
+          }}
+          error={inviteCodeError}
+          helperText={
+            inviteCodeError ? (
+              <FormattedMessage defaultMessage="Invalid invite code" />
+            ) : undefined
+          }
+          placeholder={intl.formatMessage({
+            defaultMessage: "Enter your code",
+          })}
+          sx={{ mt: 1 }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleInviteCodeSubmit();
+            }
+          }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleInviteCodeCancel}>
+          <FormattedMessage defaultMessage="Cancel" />
+        </Button>
+        <Button onClick={handleInviteCodeSubmit} variant="contained">
+          <FormattedMessage defaultMessage="Continue" />
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  return (
+    <>
+      {enterpriseDialog}
       <Stack
         sx={{
-          flexDirection: "row",
-          gap: 2,
-          alignItems: "stretch",
-          justifyContent: "center",
-          flexWrap: "wrap",
+          flexDirection: "column",
+          alignItems: "center",
+          ...sx,
         }}
       >
-        {trialCard}
-        {proCard}
+        <BillingToggle
+          isYearly={isYearly}
+          onToggle={() => setIsYearly(!isYearly)}
+        />
+        <Stack
+          sx={{
+            flexDirection: "row",
+            gap: 2,
+            alignItems: "stretch",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          {trialCard}
+          {proCard}
+          {showEnterprise && enterpriseCard}
+        </Stack>
       </Stack>
-    </Stack>
+    </>
   );
 };

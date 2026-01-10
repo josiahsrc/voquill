@@ -34,4 +34,6 @@ pub struct UserPreferences {
     pub paste_keybind: Option<String>,
     #[serde(default)]
     pub last_seen_feature: Option<String>,
+    #[serde(default)]
+    pub is_enterprise: bool,
 }

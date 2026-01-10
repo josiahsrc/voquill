@@ -25,6 +25,7 @@ type LocalUserPreferences = {
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
   lastSeenFeature: Nullable<string>;
+  isEnterprise: boolean;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -60,6 +61,7 @@ const fromLocalPreferences = (
   agentMode: preferences.agentMode,
   agentModeApiKeyId: preferences.agentModeApiKeyId,
   lastSeenFeature: preferences.lastSeenFeature,
+  isEnterprise: preferences.isEnterprise,
 });
 
 const toLocalPreferences = (
@@ -80,6 +82,7 @@ const toLocalPreferences = (
   agentMode: preferences.agentMode ?? null,
   agentModeApiKeyId: preferences.agentModeApiKeyId ?? null,
   lastSeenFeature: preferences.lastSeenFeature ?? null,
+  isEnterprise: preferences.isEnterprise,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

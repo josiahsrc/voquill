@@ -36,7 +36,7 @@ export const PlanSelectionForm = () => {
   };
 
   return (
-    <FormContainer sx={{ maxWidth: 750 }}>
+    <FormContainer sx={{ maxWidth: 900 }}>
       <ConfirmDialog
         isOpen={confirmLocalSetupOpen}
         onCancel={handleCancelLocalSetup}
@@ -62,6 +62,7 @@ export const PlanSelectionForm = () => {
       </Stack>
 
       <PlanList
+        showEnterprise={true}
         onSelect={handleSelectPlan}
         text="Continue"
         ignoreCurrentPlan
