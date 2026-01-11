@@ -24,6 +24,5 @@ export type UserPreferences = {
   isEnterprise: boolean;
   languageSwitchEnabled: boolean;
   secondaryDictationLanguage: Nullable<string>;
-  languageSwitchHotkey: Nullable<string[]>;
   activeDictationLanguage: "primary" | "secondary";
 };

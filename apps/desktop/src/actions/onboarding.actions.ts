@@ -148,7 +148,6 @@ export const submitOnboarding = async () => {
       isEnterprise: state.onboarding.isEnterprise,
       languageSwitchEnabled: false,
       secondaryDictationLanguage: null,
-      languageSwitchHotkey: null,
       activeDictationLanguage: "primary",
     };
 

@@ -179,6 +179,7 @@ export const useHotkeyHold = (args: {
 
 export const useHotkeyFire = (args: {
   actionName: string;
+  isDisabled?: boolean;
   onFire?: () => void;
 }) => {
   const keysHeld = useAppStore((state) => state.keysHeld);
@@ -189,18 +190,30 @@ export const useHotkeyFire = (args: {
   const previousKeysHeldRef = useRef<string[]>([]);
 
   useEffect(() => {
+    if (args.isDisabled) {
+      previousKeysHeldRef.current = keysHeld;
+      return;
+    }
+
     const previousKeysHeld = previousKeysHeldRef.current;
 
     // Check if any combo was just pressed (transition from not pressed to pressed)
     const wasComboPressed = availableCombos.some((combo) => {
-      if (combo.keys.length === 0) return false;
+      if (combo.length === 0) return false;
+
+      const normalize = (key: string) => key.toLowerCase();
+      const normalizedCombo = combo.map(normalize);
+      const normalizedKeysHeld = keysHeld.map(normalize);
+      const normalizedPreviousKeysHeld = previousKeysHeld.map(normalize);
 
       // Check if all keys in the combo are NOW held
-      const allKeysNowHeld = combo.every((key) => keysHeld.includes(key));
+      const allKeysNowHeld = normalizedCombo.every((key) =>
+        normalizedKeysHeld.includes(key),
+      );
 
       // Check if NOT all keys were held previously
-      const notAllKeysPreviouslyHeld = !combo.every((key) =>
-        previousKeysHeld.includes(key),
+      const notAllKeysPreviouslyHeld = !normalizedCombo.every((key) =>
+        normalizedPreviousKeysHeld.includes(key),
       );
 
       // Fire only on the transition from not-pressed to pressed
@@ -214,42 +227,4 @@ export const useHotkeyFire = (args: {
     // Update the ref for the next comparison
     previousKeysHeldRef.current = keysHeld;
   }, [keysHeld, availableCombos, args]);
-};
-
-export const useCustomHotkeyFire = (args: {
-  combo: string[] | null;
-  enabled: boolean;
-  onFire?: () => void;
-}) => {
-  const keysHeld = useAppStore((state) => state.keysHeld);
-  const previousKeysHeldRef = useRef<string[]>([]);
-
-  useEffect(() => {
-    if (!args.enabled || !args.combo || args.combo.length === 0) {
-      previousKeysHeldRef.current = keysHeld;
-      return;
-    }
-
-    const previousKeysHeld = previousKeysHeldRef.current;
-    const combo = args.combo;
-
-    const normalize = (key: string) => key.toLowerCase();
-    const normalizedCombo = combo.map(normalize);
-    const normalizedKeysHeld = keysHeld.map(normalize);
-    const normalizedPreviousKeysHeld = previousKeysHeld.map(normalize);
-
-    const allKeysNowHeld = normalizedCombo.every((key) =>
-      normalizedKeysHeld.includes(key),
-    );
-
-    const notAllKeysPreviouslyHeld = !normalizedCombo.every((key) =>
-      normalizedPreviousKeysHeld.includes(key),
-    );
-
-    if (allKeysNowHeld && notAllKeysPreviouslyHeld) {
-      args.onFire?.();
-    }
-
-    previousKeysHeldRef.current = keysHeld;
-  }, [keysHeld, args]);
 };

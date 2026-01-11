@@ -21,7 +21,7 @@ import { checkForAppUpdates } from "../../actions/updater.actions";
 import { toggleActiveDictationLanguage } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
-import { useCustomHotkeyFire, useHotkeyHold } from "../../hooks/hotkey.hooks";
+import { useHotkeyFire, useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import type { RecordingMode } from "../../state/app.state";
@@ -39,11 +39,15 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
-import { trackAgentStart, trackDictationStart } from "../../utils/analytics.utils";
+import {
+  trackAgentStart,
+  trackDictationStart,
+} from "../../utils/analytics.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
+  LANGUAGE_SWITCH_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { getMemberExceedsLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
@@ -402,16 +406,16 @@ export const RootSideEffects = () => {
     onDeactivate: stopAgentRecording,
   });
 
-  const languageSwitchSettings = useAppStore(
-    (state) => state.settings.languageSwitch,
+  const languageSwitchEnabled = useAppStore(
+    (state) => state.settings.languageSwitch.enabled,
   );
   const handleLanguageSwitch = useCallback(() => {
     void toggleActiveDictationLanguage();
   }, []);
 
-  useCustomHotkeyFire({
-    combo: languageSwitchSettings.hotkey,
-    enabled: languageSwitchSettings.enabled,
+  useHotkeyFire({
+    actionName: LANGUAGE_SWITCH_HOTKEY,
+    isDisabled: !languageSwitchEnabled,
     onFire: handleLanguageSwitch,
   });
 

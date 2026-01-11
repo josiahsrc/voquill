@@ -45,8 +45,6 @@ export const applyAiPreferences = (
     preferences.languageSwitchEnabled ?? false;
   draft.settings.languageSwitch.secondaryLanguage =
     preferences.secondaryDictationLanguage ?? null;
-  draft.settings.languageSwitch.hotkey =
-    preferences.languageSwitchHotkey ?? null;
   draft.settings.languageSwitch.activeLanguage =
     preferences.activeDictationLanguage ?? "primary";
 };

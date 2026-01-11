@@ -27,10 +27,9 @@ pub async fn upsert_user_preferences(
              is_enterprise,
              language_switch_enabled,
              secondary_dictation_language,
-             language_switch_hotkey,
              active_dictation_language
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -50,7 +49,6 @@ pub async fn upsert_user_preferences(
             is_enterprise = excluded.is_enterprise,
             language_switch_enabled = excluded.language_switch_enabled,
             secondary_dictation_language = excluded.secondary_dictation_language,
-            language_switch_hotkey = excluded.language_switch_hotkey,
             active_dictation_language = excluded.active_dictation_language",
     )
     .bind(&preferences.user_id)
@@ -72,7 +70,6 @@ pub async fn upsert_user_preferences(
     .bind(preferences.is_enterprise)
     .bind(preferences.language_switch_enabled)
     .bind(&preferences.secondary_dictation_language)
-    .bind(&preferences.language_switch_hotkey)
     .bind(&preferences.active_dictation_language)
     .execute(&pool)
     .await?;
@@ -105,7 +102,6 @@ pub async fn fetch_user_preferences(
             is_enterprise,
             language_switch_enabled,
             secondary_dictation_language,
-            language_switch_hotkey,
             active_dictation_language
          FROM user_preferences
          WHERE user_id = ?1
@@ -173,9 +169,6 @@ pub async fn fetch_user_preferences(
             .unwrap_or(false),
         secondary_dictation_language: row
             .try_get::<Option<String>, _>("secondary_dictation_language")
-            .unwrap_or(None),
-        language_switch_hotkey: row
-            .try_get::<Option<String>, _>("language_switch_hotkey")
             .unwrap_or(None),
         active_dictation_language: row
             .try_get::<Option<String>, _>("active_dictation_language")

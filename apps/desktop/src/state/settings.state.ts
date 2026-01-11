@@ -37,7 +37,6 @@ export type SettingsGenerativeState = {
 export type LanguageSwitchState = {
   enabled: boolean;
   secondaryLanguage: Nullable<string>;
-  hotkey: Nullable<string[]>;
   activeLanguage: "primary" | "secondary";
 };
 
@@ -98,7 +97,6 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   languageSwitch: {
     enabled: false,
     secondaryLanguage: null,
-    hotkey: null,
     activeLanguage: "primary",
   },
   apiKeys: [],

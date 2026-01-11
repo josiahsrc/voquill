@@ -1,9 +1,9 @@
 import {
-  AgentMode,
-  Nullable,
-  PostProcessingMode,
-  TranscriptionMode,
-  UserPreferences,
+    AgentMode,
+    Nullable,
+    PostProcessingMode,
+    TranscriptionMode,
+    UserPreferences,
 } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { LOCAL_USER_ID } from "../utils/user.utils";
@@ -28,7 +28,6 @@ type LocalUserPreferences = {
   isEnterprise: boolean;
   languageSwitchEnabled: boolean;
   secondaryDictationLanguage: Nullable<string>;
-  languageSwitchHotkey: Nullable<string>;
   activeDictationLanguage: Nullable<string>;
 };
 
@@ -68,9 +67,6 @@ const fromLocalPreferences = (
   isEnterprise: preferences.isEnterprise,
   languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
   secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
-  languageSwitchHotkey: preferences.languageSwitchHotkey
-    ? JSON.parse(preferences.languageSwitchHotkey)
-    : null,
   activeDictationLanguage:
     (preferences.activeDictationLanguage as "primary" | "secondary") ??
     "primary",
@@ -97,9 +93,6 @@ const toLocalPreferences = (
   isEnterprise: preferences.isEnterprise,
   languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
   secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
-  languageSwitchHotkey: preferences.languageSwitchHotkey
-    ? JSON.stringify(preferences.languageSwitchHotkey)
-    : null,
   activeDictationLanguage: preferences.activeDictationLanguage ?? "primary",
 });
 

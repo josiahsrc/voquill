@@ -41,7 +41,5 @@ pub struct UserPreferences {
     #[serde(default)]
     pub secondary_dictation_language: Option<String>,
     #[serde(default)]
-    pub language_switch_hotkey: Option<String>,
-    #[serde(default)]
     pub active_dictation_language: Option<String>,
 }
