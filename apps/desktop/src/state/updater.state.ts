@@ -18,6 +18,7 @@ export type UpdaterState = {
   totalBytes: number | null;
   downloadProgress: number | null;
   errorMessage: string | null;
+  dismissedUntil: number | null;
 };
 
 export const INITIAL_UPDATER_STATE: UpdaterState = {
@@ -32,4 +33,5 @@ export const INITIAL_UPDATER_STATE: UpdaterState = {
   totalBytes: null,
   downloadProgress: null,
   errorMessage: null,
+  dismissedUntil: null,
 };

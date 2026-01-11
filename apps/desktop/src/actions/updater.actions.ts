@@ -84,12 +84,12 @@ export const checkForAppUpdates = async (): Promise<void> => {
     availableUpdate = update;
 
     const updateVersion = update.version;
-    const lastUpdateVersion = getAppState().updater.lastUpdateVersion;
+    const { lastUpdateVersion, dialogOpen } = getAppState().updater;
     if (updateVersion && updateVersion === lastUpdateVersion) {
       return;
     }
 
-    if (getAppState().updater.dialogOpen) {
+    if (dialogOpen) {
       return;
     }
 
@@ -131,9 +131,12 @@ export const openUpdateDialog = async (): Promise<void> => {
   await checkForAppUpdates();
 };
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 export const dismissUpdateDialog = (): void => {
   produceAppState((draft) => {
     draft.updater.dialogOpen = false;
+    draft.updater.dismissedUntil = Date.now() + ONE_DAY_MS;
   });
 };
 
