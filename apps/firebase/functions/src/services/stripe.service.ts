@@ -4,14 +4,14 @@ import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { priceKeyById } from "@repo/pricing";
 import { Nullable } from "@repo/types";
 import { dedup, getRec } from "@repo/utilities";
+import * as admin from "firebase-admin";
 import { AuthData } from "firebase-functions/tasks";
 import stripe from "stripe";
-import * as admin from "firebase-admin";
 import { checkAccess } from "../utils/check.utils";
 import { ClientError, UnauthenticatedError } from "../utils/error.utils";
 import {
-	getStripe,
 	getOrCreateStripeDatabaseMember,
+	getStripe,
 } from "../utils/stripe.utils";
 
 export const createCheckoutSession = async (args: {
@@ -61,6 +61,7 @@ export const createCheckoutSession = async (args: {
 
 	const session = await stripe.checkout.sessions.create({
 		ui_mode: "embedded",
+		allow_promotion_codes: true,
 		payment_method_options: {
 			card: {
 				request_three_d_secure: "automatic",
