@@ -5,6 +5,8 @@ import { countWords } from "@repo/utilities/src/string";
 import type { JsonResponse } from "@repo/types";
 
 export const AZURE_OPENAI_MODELS = [
+  "gpt-5-mini",
+  "gpt-5-nano",
   "gpt-4o",
   "gpt-4o-mini",
   "gpt-4",

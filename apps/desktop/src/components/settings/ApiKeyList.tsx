@@ -22,6 +22,7 @@ import {
 import {
   aldeaTestIntegration,
   assemblyaiTestIntegration,
+  AZURE_OPENAI_MODELS,
   azureOpenAITestIntegration,
   azureTestIntegration,
   GENERATE_TEXT_MODELS,
@@ -367,11 +368,11 @@ const getModelsForProvider = (
         ? OPENAI_TRANSCRIPTION_MODELS
         : OPENAI_GENERATE_TEXT_MODELS;
     case "openrouter":
-      // OpenRouter doesn't support transcription, only post-processing
       return context === "transcription" ? [] : OPENROUTER_FAVORITE_MODELS;
     case "ollama":
-      // Ollama models are fetched dynamically via OllamaModelPicker
       return [];
+    case "azure":
+      return context === "transcription" ? [] : AZURE_OPENAI_MODELS;
     case "aldea":
       return [];
     case "assemblyai":
