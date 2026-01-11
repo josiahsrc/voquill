@@ -22,6 +22,7 @@ import {
 import {
   aldeaTestIntegration,
   assemblyaiTestIntegration,
+  azureOpenAITestIntegration,
   azureTestIntegration,
   GENERATE_TEXT_MODELS,
   groqTestIntegration,
@@ -80,15 +81,21 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [key, setKey] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("");
   const [azureRegion, setAzureRegion] = useState("");
+  const [azureOpenAIEndpoint, setAzureOpenAIEndpoint] = useState("");
   const [saving, setSaving] = useState(false);
 
   const isOllama = provider === "ollama";
   const isAzure = provider === "azure";
+  const isAzureOpenAI = isAzure && context === "post-processing";
+  const isAzureSTT = isAzure && context === "transcription";
+
   const canSave = isOllama
     ? !!name
-    : isAzure
+    : isAzureSTT
       ? !!name && !!key && !!azureRegion
-      : !!name && !!key;
+      : isAzureOpenAI
+        ? !!name && !!key && !!azureOpenAIEndpoint
+        : !!name && !!key;
 
   const handleSave = useCallback(async () => {
     if (!canSave || saving) {
@@ -98,19 +105,37 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
     setSaving(true);
     try {
       const keyToSave = key || "";
-      const baseUrl = isOllama ? ollamaUrl || OLLAMA_DEFAULT_URL : undefined;
-      const azureRegionValue = isAzure ? azureRegion : undefined;
+      const baseUrl = isOllama
+        ? ollamaUrl || OLLAMA_DEFAULT_URL
+        : isAzureOpenAI
+          ? azureOpenAIEndpoint
+          : undefined;
+      const azureRegionValue = isAzureSTT ? azureRegion : undefined;
       await onSave(name, provider, keyToSave, baseUrl, azureRegionValue);
       setName("");
       setKey("");
       setOllamaUrl("");
       setAzureRegion("");
+      setAzureOpenAIEndpoint("");
     } catch (error) {
       console.error("Failed to save API key", error);
     } finally {
       setSaving(false);
     }
-  }, [canSave, isOllama, isAzure, name, key, ollamaUrl, azureRegion, provider, onSave, saving]);
+  }, [
+    canSave,
+    isOllama,
+    isAzureOpenAI,
+    isAzureSTT,
+    name,
+    key,
+    ollamaUrl,
+    azureRegion,
+    azureOpenAIEndpoint,
+    provider,
+    onSave,
+    saving,
+  ]);
 
   return (
     <Paper
@@ -144,14 +169,17 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       >
         <MenuItem value="groq">Groq</MenuItem>
         <MenuItem value="openai">OpenAI</MenuItem>
-        {/* OpenRouter and Ollama only support LLM, not transcription */}
+        {/* OpenRouter, Ollama, and Azure OpenAI only support LLM, not transcription */}
         {context === "post-processing" && (
           <MenuItem value="openrouter">OpenRouter</MenuItem>
         )}
         {context === "post-processing" && (
           <MenuItem value="ollama">Ollama</MenuItem>
         )}
-        {/* Aldea, AssemblyAI, and Azure only support transcription, not post-processing */}
+        {context === "post-processing" && (
+          <MenuItem value="azure">Azure OpenAI</MenuItem>
+        )}
+        {/* Aldea, AssemblyAI, and Azure STT only support transcription, not post-processing */}
         {context === "transcription" && <MenuItem value="aldea">Aldea</MenuItem>}
         {context === "transcription" && (
           <MenuItem value="assemblyai">AssemblyAI</MenuItem>
@@ -159,30 +187,57 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         {context === "transcription" && <MenuItem value="azure">Azure</MenuItem>}
       </TextField>
       {isAzure ? (
-        <>
-          <TextField
-            label={<FormattedMessage defaultMessage="Azure Region" />}
-            value={azureRegion}
-            onChange={(event) => setAzureRegion(event.target.value)}
-            placeholder="e.g., eastus, westus, northeurope"
-            size="small"
-            fullWidth
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="Azure service region (e.g., eastus)" />
-            }
-          />
-          <TextField
-            label={<FormattedMessage defaultMessage="Subscription Key" />}
-            value={key}
-            onChange={(event) => setKey(event.target.value)}
-            placeholder="Paste your Azure subscription key"
-            size="small"
-            fullWidth
-            type="password"
-            disabled={saving}
-          />
-        </>
+        context === "transcription" ? (
+          <>
+            <TextField
+              label={<FormattedMessage defaultMessage="Azure Region" />}
+              value={azureRegion}
+              onChange={(event) => setAzureRegion(event.target.value)}
+              placeholder="e.g., eastus, westus, northeurope"
+              size="small"
+              fullWidth
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Azure service region for Speech-to-Text" />
+              }
+            />
+            <TextField
+              label={<FormattedMessage defaultMessage="Subscription Key" />}
+              value={key}
+              onChange={(event) => setKey(event.target.value)}
+              placeholder="Paste your Azure subscription key"
+              size="small"
+              fullWidth
+              type="password"
+              disabled={saving}
+            />
+          </>
+        ) : (
+          <>
+            <TextField
+              label={<FormattedMessage defaultMessage="Azure OpenAI Endpoint" />}
+              value={azureOpenAIEndpoint}
+              onChange={(event) => setAzureOpenAIEndpoint(event.target.value)}
+              placeholder="https://my-resource.openai.azure.com"
+              size="small"
+              fullWidth
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Your Azure OpenAI resource endpoint URL" />
+              }
+            />
+            <TextField
+              label={<FormattedMessage defaultMessage="API Key" />}
+              value={key}
+              onChange={(event) => setKey(event.target.value)}
+              placeholder="Paste your Azure OpenAI API key"
+              size="small"
+              fullWidth
+              type="password"
+              disabled={saving}
+            />
+          </>
+        )
       ) : isOllama ? (
         <>
           <TextField
@@ -249,7 +304,10 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   );
 };
 
-const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
+const testApiKey = async (
+  apiKey: SettingsApiKey,
+  context: ApiKeyListContext,
+): Promise<boolean> => {
   if (apiKey.provider === "ollama") {
     return ollamaTestIntegration({
       baseUrl: apiKey.baseUrl || OLLAMA_DEFAULT_URL,
@@ -273,13 +331,23 @@ const testApiKey = async (apiKey: SettingsApiKey): Promise<boolean> => {
     case "assemblyai":
       return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
     case "azure":
-      if (!apiKey.azureRegion) {
-        throw new Error("Azure region is required.");
+      if (context === "post-processing") {
+        if (!apiKey.baseUrl) {
+          throw new Error("Azure OpenAI endpoint is required.");
+        }
+        return azureOpenAITestIntegration({
+          apiKey: apiKey.keyFull,
+          endpoint: apiKey.baseUrl,
+        });
+      } else {
+        if (!apiKey.azureRegion) {
+          throw new Error("Azure region is required.");
+        }
+        return azureTestIntegration({
+          subscriptionKey: apiKey.keyFull,
+          region: apiKey.azureRegion,
+        });
       }
-      return azureTestIntegration({
-        subscriptionKey: apiKey.keyFull,
-        region: apiKey.azureRegion,
-      });
     default:
       throw new Error("Testing is not available for this provider.");
   }
@@ -502,6 +570,16 @@ export const ApiKeyList = ({
     ) {
       return false;
     }
+    // Azure can be either STT or OpenAI - filter based on stored config
+    if (key.provider === "azure") {
+      if (context === "transcription") {
+        // Show only Azure STT keys (those with azureRegion)
+        return !!key.azureRegion;
+      } else {
+        // Show only Azure OpenAI keys (those with baseUrl/endpoint)
+        return !!key.baseUrl;
+      }
+    }
     return true;
   });
   const status = useAppStore((state) => state.settings.apiKeysStatus);
@@ -551,23 +629,26 @@ export const ApiKeyList = ({
     [onChange],
   );
 
-  const handleTestApiKey = useCallback(async (apiKey: SettingsApiKey) => {
-    setTestingApiKeyId(apiKey.id);
-    try {
-      const success = await testApiKey(apiKey);
-      if (success) {
-        showSnackbar("Integration successful", { mode: "success" });
-      } else {
-        showErrorSnackbar("Integration failed. Provide a valid API key.");
+  const handleTestApiKey = useCallback(
+    async (apiKey: SettingsApiKey) => {
+      setTestingApiKeyId(apiKey.id);
+      try {
+        const success = await testApiKey(apiKey, context);
+        if (success) {
+          showSnackbar("Integration successful", { mode: "success" });
+        } else {
+          showErrorSnackbar("Integration failed. Provide a valid API key.");
+        }
+      } catch (error) {
+        showErrorSnackbar(
+          error instanceof Error ? error.message : "API key test failed.",
+        );
+      } finally {
+        setTestingApiKeyId(null);
       }
-    } catch (error) {
-      showErrorSnackbar(
-        error instanceof Error ? error.message : "API key test failed.",
-      );
-    } finally {
-      setTestingApiKeyId(null);
-    }
-  }, []);
+    },
+    [context],
+  );
 
   const handleRequestDelete = useCallback((apiKey: SettingsApiKey) => {
     setApiKeyToDelete(apiKey);

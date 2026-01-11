@@ -1,6 +1,7 @@
 import { invokeHandler, type CloudModel } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
+  azureOpenAIGenerateText,
   GenerateTextModel,
   groqGenerateTextResponse,
   OpenAIGenerateTextModel,
@@ -181,6 +182,38 @@ export class OpenRouterGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • OpenRouter",
+      },
+    };
+  }
+}
+
+export class AzureOpenAIGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private endpoint: string;
+  private deploymentName: string;
+
+  constructor(apiKey: string, endpoint: string, deploymentName: string | null) {
+    super();
+    this.apiKey = apiKey;
+    this.endpoint = endpoint;
+    this.deploymentName = deploymentName ?? "gpt-4o-mini";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await azureOpenAIGenerateText({
+      apiKey: this.apiKey,
+      endpoint: this.endpoint,
+      deploymentName: this.deploymentName,
+      system: input.system ?? undefined,
+      prompt: input.prompt,
+      jsonResponse: input.jsonResponse,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • Azure OpenAI",
       },
     };
   }
