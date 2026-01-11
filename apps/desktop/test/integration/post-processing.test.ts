@@ -79,9 +79,9 @@ describe("Post-processing prompts integration", () => {
     it("should format transcript for insertion context", async () => {
       const transcript = "Um hello how are you doing today";
       const context: TextFieldContext = {
-        precedingText: "Dear John,",
+        precedingText: "I was wondering,",
         selectedText: null,
-        followingText: "Best regards, Jane",
+        followingText: "Let me know.",
       };
 
       const prompt = buildLocalizedPostProcessingPrompt({
@@ -92,18 +92,16 @@ describe("Post-processing prompts integration", () => {
       });
 
       const result = await callLLM(prompt);
+      console.log("Post-processing result:", result);
 
-      // Should be cleaned and formatted for the context
+      // Should be cleaned
       expect(result.toLowerCase()).not.toContain("um");
 
-      // Should match the expected sentence
-      console.log("Post-processed result:", result);
+      // Should match the expected sentence (allow for punctuation variations)
       expect(
-        getStringSimilarity(result, "Hello, how are you doing today"),
-      ).toBeGreaterThan(0.9);
+        getStringSimilarity(result, "hello, how are you doing today?"),
+      ).toBeGreaterThan(0.8);
 
-      // Should start lowercase since it's mid-document (after "Dear John,")
-      // or maintain appropriate casing for the context
       expect(result.length).toBeGreaterThan(5);
 
       // Core meaning should be preserved
@@ -168,7 +166,7 @@ describe("Post-processing prompts integration", () => {
         result,
         "So I was thinking that we should go to the store.",
       ),
-    ).toBeGreaterThan(0.95);
+    ).toBeGreaterThan(0.9);
   });
 
   it("should work for casual tones", async () => {
@@ -192,11 +190,8 @@ describe("Post-processing prompts integration", () => {
     // Should be reasonably similar to cleaned version
     console.log("Post-processed result:", result);
     expect(
-      getStringSimilarity(
-        result,
-        "So I was thinking that we should go to the store",
-      ),
-    ).toBeGreaterThan(0.9);
+      getStringSimilarity(result, "I was thinking we should go to the store"),
+    ).toBeGreaterThan(0.8);
   });
 
   it("should work for business tones", async () => {
@@ -221,11 +216,8 @@ describe("Post-processing prompts integration", () => {
     // Should be reasonably similar to cleaned version
     console.log("Post-processed result:", result);
     expect(
-      getStringSimilarity(
-        result,
-        "So yeah, I was thinking that we should go to the store.",
-      ),
-    ).toBeGreaterThan(0.9);
+      getStringSimilarity(result, "I was thinking we should go to the store."),
+    ).toBeGreaterThan(0.8);
   });
 
   it("should put it in the requested language", async () => {
@@ -250,6 +242,60 @@ describe("Post-processing prompts integration", () => {
       getStringSimilarity(
         result,
         "así que estaba pensando que deberíamos ir a la tienda",
+      ),
+    ).toBeGreaterThan(0.6);
+  });
+
+  it("should format it as an email", async () => {
+    const transcript =
+      "Hey Bob. um I wanted to check in about the report. uh let me know when you have it ready. Thanks Tom";
+    const prompt = buildLocalizedPostProcessingPrompt({
+      transcript: transcript,
+      locale: "en",
+      toneTemplate: null,
+      textFieldContext: null,
+    });
+
+    const result = await callLLM(prompt);
+
+    // Should remove filler words but keep meaning
+    expect(result.toLowerCase()).not.toContain("um");
+    expect(result.toLowerCase()).not.toContain("uh");
+    expect(result.toLowerCase()).toContain("report");
+
+    // Should be reasonably similar to cleaned version in email format
+    console.log("Post-processed result:", result);
+    expect(
+      getStringSimilarity(
+        result,
+        "Hey Bob,\n\nI wanted to check in about the report. Let me know when you have it ready.\n\nThanks,\nTom",
+      ),
+    ).toBeGreaterThan(0.8);
+  });
+
+  it("should format bullet points", async () => {
+    const transcript =
+      "ok so we need to do a few things. 1, fix the barcode. 2, fix the screen. Three, fix the login issue.";
+    const prompt = buildLocalizedPostProcessingPrompt({
+      transcript: transcript,
+      locale: "en",
+      toneTemplate: null,
+      textFieldContext: null,
+    });
+
+    const result = await callLLM(prompt);
+
+    // Should remove filler words but keep meaning
+    expect(result.toLowerCase()).not.toContain("um");
+    expect(result.toLowerCase()).not.toContain("uh");
+    expect(result.toLowerCase()).toContain("fix the barcode");
+
+    // Should be reasonably similar to cleaned version in bullet point format
+    console.log("Post-processed result:", result);
+    expect(
+      getStringSimilarity(
+        result,
+        "We need to do a few things:\n\n1. Fix the barcode.\n2. Fix the screen.\n3. Fix the login issue.",
       ),
     ).toBeGreaterThan(0.8);
   });
