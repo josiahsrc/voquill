@@ -1106,8 +1106,11 @@ pub fn stop_key_listener() -> Result<(), String> {
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
-        tray.set_title(title.as_deref())
-            .map_err(|err| err.to_string())
+        let title_ref = match &title {
+            Some(t) if !t.is_empty() => Some(t.as_str()),
+            _ => Some(""),
+        };
+        tray.set_title(title_ref).map_err(|err| err.to_string())
     } else {
         Ok(())
     }
