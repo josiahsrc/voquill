@@ -167,6 +167,19 @@ ${toneTemplate}
 `;
 };
 
+const FORMATTING_RULES = `
+FORMATTING RULES (MUST APPLY):
+
+EMAIL FORMAT:
+When the transcript contains a greeting followed by a proper noun (hi/hey/hello/dear + name) OR ends with a sign-off followed by a proper noun (thanks/thank you/best/cheers/sincerely/regards + name), format as an email. Place the greeting on its own line followed by a comma, separate body content into paragraphs with blank lines between them, and place the sign-off on its own line followed by a comma with the sender name on the next line.
+
+LIST FORMAT:
+Format as a list when the transcript contains three or more distinct items of the same category or type. Detect lists by identifying parallel structures where items are separated by conjunctions, pauses, or transitions. Use numbered format (1. 2. 3.) when the speaker used ordinal or cardinal enumeration words, or when the items represent sequential steps or a ranked order. Use bulleted format (- item) for all other lists where items are parallel but order is not significant. Place each item on its own line. Remove enumeration words and connective words between items.
+
+DEFAULT FORMAT:
+When no email or list patterns are detected, output as flowing prose. Insert paragraph breaks at natural topic transitions.
+`;
+
 export const buildLocalizedPostProcessingPrompt = ({
   transcript,
   locale,
@@ -199,6 +212,7 @@ INPUTS:
 
 TASK: Rewrite the user dictation so it fits seamlessly between "Text before" and "Text after".
 ${styleSection}
+${FORMATTING_RULES}
 RULES (must follow):
 1. Use only the user's dictation words. Do not add new words or reintroduce words from the selected text unless they also appear in the dictation.
 2. Remove only speech disfluencies (e.g., "um", "uh", stutters, false starts). Keep all meaningful words.
@@ -213,86 +227,37 @@ RULES (must follow):
    - Use a comma if "Text after" continues the same sentence; use a period/question mark only if appropriate.
 6. Output must be plain text with no quotes, labels, or extra commentary.
 
-FORMATTING RULES:
-- Listen for verbal formatting cues and apply them:
-  * 'new line' or 'next line' → insert a line break
-  * 'new paragraph' or 'next paragraph' → insert two line breaks
-  * 'bullet point' or 'dash' followed by content → format as a bullet point (use • or -)
-  * 'number one', 'first', 'secondly', etc. when listing → format as numbered list
-  * 'comma' → insert a comma
-  * 'period' or 'full stop' → insert a period
-  * 'question mark' → insert ?
-  * 'exclamation point' or 'exclamation mark' → insert !
-  * 'colon' → insert :
-  * 'semicolon' → insert ;
-  * 'open parenthesis' / 'close parenthesis' → insert ( )
-  * 'quote' / 'end quote' or 'unquote' → insert quotation marks
-- EMAILS - automatically detect and format emails with proper structure:
-  * Greeting ("Hi Bob," "Dear Sarah," "Hello,") → own line, followed by blank line
-  * Body paragraphs → separate different topics/questions with blank lines between them
-  * Closing ("Best," "Thanks," "Regards," "Sincerely,") → blank line before, then closing on its own line
-  * Signature/name → on its own line after the closing
-- PARAGRAPHS - intelligently add blank lines between:
-  * Different topics or subjects
-  * Distinct questions or thoughts
-  * When the speaker shifts focus
-- LISTS - format as bulleted or numbered list with each item on its own line
-- Match the formatting style of any nearby/existing text in the field
-
 Your response must be in ${languageName}. Return only the replacement text.`;
   } else if (hasContext) {
     // Inserting at cursor without selection
-    base = `You are inserting dictated text into an existing document at the cursor position.
+    base = `You are cleaning dictated text that will be inserted into an existing document.
 
-SURROUNDING CONTEXT:
+SURROUNDING CONTEXT (for capitalization reference only):
 ${textFieldContext.precedingText ? `Text before cursor: "${textFieldContext.precedingText}"` : "Start of document"}
 ${textFieldContext.followingText ? `Text after cursor: "${textFieldContext.followingText}"` : "End of document"}
 
-TRANSCRIPT TO PROCESS:
+TRANSCRIPT TO CLEAN:
 ${transcript}
 ${styleSection}
+${FORMATTING_RULES}
 INSTRUCTIONS:
-1. Clean up only obvious speech disfluencies (stutters, false starts, filler sounds like "um", "uh")
-2. DO NOT remove meaningful words - keep the full content of what was said
-3. Adjust capitalization based on position: lowercase if mid-sentence, capitalize if starting new sentence
-4. The result should flow naturally with the surrounding text
-5. Formatting:
-   - LISTS: Format multiple items as a bulleted or numbered list with each item on its own line.
-   - VERBAL CUES: "new line" → line break; "new paragraph" → blank line; "bullet point" → bullet item.
-   - EMAILS: Automatically structure with proper line breaks:
-     * Greeting on its own line, followed by a blank line
-     * Separate topics/questions with blank lines between them
-     * Closing ("Best," "Thanks,") on its own line after a blank line
-     * Name/signature on its own line after closing
-   - PARAGRAPHS: Add blank lines between different topics, distinct questions, or when focus shifts.
+1. Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+2. Preserve all meaningful content from the transcript
+3. Adjust capitalization based on whether text before cursor ends with sentence-ending punctuation
+4. Apply the formatting rules above to detect and format emails and lists
 
-Return ONLY the processed transcript in ${languageName}.`;
+CRITICAL: Your output must contain ONLY the cleaned transcript. Never include the "text before cursor" or "text after cursor" in your output. Those are provided solely for capitalization context.
+
+Return ONLY the cleaned transcript in ${languageName}.`;
   } else {
     // No context - just clean the transcript
-    base = `Clean the ${languageName} transcript below.
+    base = `Clean and format the ${languageName} transcript below.
 ${styleSection}
-Remove only clear false starts, stutters, repeated sounds, and isolated filler words.
-Do not remove any complete words, phrases, clauses, or sentences that contribute meaning, emotion, tone, emphasis, or intent.
-Do not remove or shorten any part of the transcript unless it is purely a disfluency and contains no meaningful content on its own.
-Do not delete or compress multiple words into fewer words.
-Do not alter or reorganize the original wording, structure, or flow beyond removing those disfluencies.
-
-FORMATTING RULES:
-- VERBAL CUES - listen for and apply:
-  * "new line" or "next line" → insert a line break
-  * "new paragraph" or "next paragraph" → insert a blank line
-  * "bullet point" or "dash" followed by content → format as a bullet item
-  * "number one", "first", "secondly", etc. when enumerating → format as numbered list
-- LISTS - format multiple items with each on its own line (bulleted or numbered).
-- EMAILS - automatically detect and format with proper structure:
-  * Greeting ("Hi Bob," "Dear Sarah," "Hello,") → own line, followed by blank line
-  * Body → separate different topics or questions with blank lines between them
-  * Closing ("Best," "Thanks," "Regards," "Sincerely,") → blank line before, then on its own line
-  * Signature/name → on its own line after the closing
-- PARAGRAPHS - intelligently add blank lines between:
-  * Different topics or subjects
-  * Distinct questions or thoughts  
-  * When the speaker shifts focus or changes subject
+${FORMATTING_RULES}
+CLEANING RULES:
+- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Preserve all meaningful content
+- Apply the formatting rules above to detect and format emails and lists
 
 Here is the transcript:
 -------
