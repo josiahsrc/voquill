@@ -3,6 +3,7 @@ import { getPlatform } from "./platform.utils";
 
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
+export const LANGUAGE_SWITCH_HOTKEY = "language-switch";
 
 export const getPrettyKeyName = (key: string): string => {
   const lower = key.toLowerCase();
@@ -49,6 +50,11 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
     macos: [["Shift", "Function"]],
     windows: [["Shift", "F8"]],
     linux: [["Shift", "F8"]],
+  },
+  [LANGUAGE_SWITCH_HOTKEY]: {
+    macos: [["controlLeft", "ShiftLeft", "KeyL"]],
+    windows: [["ControlLeft", "ShiftLeft", "KeyL"]],
+    linux: [["ControlLeft", "ShiftLeft", "KeyL"]],
   },
 };
 

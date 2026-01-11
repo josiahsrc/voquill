@@ -1,9 +1,9 @@
 import {
-  AgentMode,
-  Nullable,
-  PostProcessingMode,
-  TranscriptionMode,
-  UserPreferences,
+    AgentMode,
+    Nullable,
+    PostProcessingMode,
+    TranscriptionMode,
+    UserPreferences,
 } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { LOCAL_USER_ID } from "../utils/user.utils";
@@ -26,6 +26,9 @@ type LocalUserPreferences = {
   agentModeApiKeyId: Nullable<string>;
   lastSeenFeature: Nullable<string>;
   isEnterprise: boolean;
+  languageSwitchEnabled: boolean;
+  secondaryDictationLanguage: Nullable<string>;
+  activeDictationLanguage: Nullable<string>;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -62,6 +65,11 @@ const fromLocalPreferences = (
   agentModeApiKeyId: preferences.agentModeApiKeyId,
   lastSeenFeature: preferences.lastSeenFeature,
   isEnterprise: preferences.isEnterprise,
+  languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
+  secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
+  activeDictationLanguage:
+    (preferences.activeDictationLanguage as "primary" | "secondary") ??
+    "primary",
 });
 
 const toLocalPreferences = (
@@ -83,6 +91,9 @@ const toLocalPreferences = (
   agentModeApiKeyId: preferences.agentModeApiKeyId ?? null,
   lastSeenFeature: preferences.lastSeenFeature ?? null,
   isEnterprise: preferences.isEnterprise,
+  languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
+  secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
+  activeDictationLanguage: preferences.activeDictationLanguage ?? "primary",
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

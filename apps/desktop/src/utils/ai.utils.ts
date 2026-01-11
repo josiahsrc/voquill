@@ -40,4 +40,11 @@ export const applyAiPreferences = (
   draft.settings.agentMode.mode = agentMode as any;
   draft.settings.agentMode.selectedApiKeyId =
     preferences.agentModeApiKeyId ?? null;
+
+  draft.settings.languageSwitch.enabled =
+    preferences.languageSwitchEnabled ?? false;
+  draft.settings.languageSwitch.secondaryLanguage =
+    preferences.secondaryDictationLanguage ?? null;
+  draft.settings.languageSwitch.activeLanguage =
+    preferences.activeDictationLanguage ?? "primary";
 };

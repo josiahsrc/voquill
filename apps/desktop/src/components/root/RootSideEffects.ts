@@ -1,9 +1,8 @@
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
-import { trackAgentStart, trackDictationStart } from "../../utils/analytics.utils";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -19,9 +18,10 @@ import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
+import { toggleActiveDictationLanguage } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
-import { useHotkeyHold } from "../../hooks/hotkey.hooks";
+import { useHotkeyFire, useHotkeyHold } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import type { RecordingMode } from "../../state/app.state";
@@ -39,20 +39,27 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
+import {
+  trackAgentStart,
+  trackDictationStart,
+} from "../../utils/analytics.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
+  LANGUAGE_SWITCH_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { getMemberExceedsLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
+  getMyDictationLanguageCode,
   getMyUser,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import {
   consumeSurfaceWindowFlag,
+  setTrayTitle,
   surfaceMainWindow,
 } from "../../utils/window.utils";
 
@@ -417,6 +424,19 @@ export const RootSideEffects = () => {
     onDeactivate: stopAgentRecording,
   });
 
+  const languageSwitchEnabled = useAppStore(
+    (state) => state.settings.languageSwitch.enabled,
+  );
+  const handleLanguageSwitch = useCallback(() => {
+    void toggleActiveDictationLanguage();
+  }, []);
+
+  useHotkeyFire({
+    actionName: LANGUAGE_SWITCH_HOTKEY,
+    isDisabled: !languageSwitchEnabled,
+    onFire: handleLanguageSwitch,
+  });
+
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
     await tryRegisterCurrentAppTarget();
   });
@@ -480,6 +500,17 @@ export const RootSideEffects = () => {
       draft.activeRecordingMode = null;
     });
   });
+
+  const trayLanguageCode = useAppStore((state) => {
+    if (!state.settings.languageSwitch.enabled) {
+      return null;
+    }
+    return getMyDictationLanguageCode(state);
+  });
+
+  useEffect(() => {
+    void setTrayTitle(trayLanguageCode);
+  }, [trayLanguageCode]);
 
   return null;
 };

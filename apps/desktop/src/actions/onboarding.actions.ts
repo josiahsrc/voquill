@@ -146,6 +146,9 @@ export const submitOnboarding = async () => {
           : null,
       lastSeenFeature: CURRENT_FEATURE,
       isEnterprise: state.onboarding.isEnterprise,
+      languageSwitchEnabled: false,
+      secondaryDictationLanguage: null,
+      activeDictationLanguage: "primary",
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

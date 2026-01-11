@@ -1,5 +1,5 @@
-import { Add, Close, RestartAlt } from "@mui/icons-material";
-import { Button, IconButton, Stack, Typography } from "@mui/material";
+import { Add, CancelOutlined, Close, RestartAlt } from "@mui/icons-material";
+import { Button, IconButton, Stack, Switch, Typography } from "@mui/material";
 import type { Hotkey } from "@repo/types";
 import type { ReactNode } from "react";
 import { FormattedMessage } from "react-intl";
@@ -16,6 +16,8 @@ export type HotkeySettingProps = {
   description: ReactNode;
   actionName: string;
   buttonSize?: "small" | "medium";
+  enabled?: boolean;
+  onEnabledChange?: (enabled: boolean) => void;
 };
 
 const areCombosEqual = (a: string[], b: string[]) =>
@@ -26,7 +28,11 @@ export const HotkeySetting = ({
   description,
   actionName,
   buttonSize = "small",
+  enabled,
+  onEnabledChange,
 }: HotkeySettingProps) => {
+  const hasEnabledToggle = enabled !== undefined;
+  const isEnabled = enabled ?? true;
   const hotkeys = useAppStore((state) =>
     state.settings.hotkeyIds
       .map((id) => state.hotkeyById[id])
@@ -104,68 +110,111 @@ export const HotkeySetting = ({
       <FormattedMessage defaultMessage="Add another" />
     );
 
+  const handleToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newEnabled = event.target.checked;
+    onEnabledChange?.(newEnabled);
+
+    // When enabling, set up a default hotkey if none exists
+    if (newEnabled && !primaryHotkey && defaultCombos.length > 0) {
+      void saveKey(undefined, defaultCombos[0]);
+    }
+  };
+
+  const handleDisable = () => {
+    onEnabledChange?.(false);
+  };
+
   return (
     <Stack direction="row" spacing={2} alignItems="flex-start">
       <Stack spacing={1} flex={1}>
-        <Typography variant="body1" fontWeight="bold">
-          {title}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography variant="body1" fontWeight="bold">
+            {title}
+          </Typography>
+          {hasEnabledToggle && (
+            <Switch
+              size="small"
+              checked={isEnabled}
+              onChange={handleToggle}
+              inputProps={{
+                "aria-label": "Enable hotkey",
+              }}
+            />
+          )}
+        </Stack>
         <Typography variant="body2">{description}</Typography>
       </Stack>
-      <Stack spacing={1} alignItems="flex-end">
-        <Stack direction="row" spacing={1} alignItems="center">
-          <HotKey value={primaryValue} onChange={handlePrimaryChange} />
-          {primaryHotkey && defaultCombos.length === 0 && (
-            <IconButton
-              size="small"
-              onClick={() => handleDeleteHotkey(primaryHotkey.id)}
-            >
-              <Close color="disabled" />
-            </IconButton>
-          )}
-          {primaryHotkey &&
-            defaultCombos.length > 0 &&
-            !isPrimaryUsingDefault && (
+      {isEnabled && (
+        <Stack spacing={1} alignItems="flex-end">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <HotKey value={primaryValue} onChange={handlePrimaryChange} />
+            {hasEnabledToggle ? (
               <IconButton
                 size="small"
-                aria-label="Revert to default hotkey"
-                onClick={handleRevertPrimary}
+                onClick={handleDisable}
+                aria-label="Disable hotkey"
               >
-                <RestartAlt color="disabled" />
+                <CancelOutlined color="disabled" />
               </IconButton>
+            ) : (
+              <>
+                {primaryHotkey && defaultCombos.length === 0 && (
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteHotkey(primaryHotkey.id)}
+                  >
+                    <Close color="disabled" />
+                  </IconButton>
+                )}
+                {primaryHotkey &&
+                  defaultCombos.length > 0 &&
+                  !isPrimaryUsingDefault && (
+                    <IconButton
+                      size="small"
+                      aria-label="Revert to default hotkey"
+                      onClick={handleRevertPrimary}
+                    >
+                      <RestartAlt color="disabled" />
+                    </IconButton>
+                  )}
+              </>
             )}
-        </Stack>
-        {additionalHotkeys.map((hotkey) => (
-          <Stack
-            key={hotkey.id}
-            direction="row"
-            spacing={1}
-            alignItems="center"
-          >
-            <HotKey
-              value={hotkey.keys}
-              onChange={(keys) => saveKey(hotkey.id, keys)}
-            />
-            <IconButton
-              size="small"
-              onClick={() => handleDeleteHotkey(hotkey.id)}
-            >
-              <Close color="disabled" />
-            </IconButton>
           </Stack>
-        ))}
-        <Button
-          variant="text"
-          startIcon={<Add />}
-          size={buttonSize}
-          sx={{ py: 0.5 }}
-          onClick={() => saveKey()}
-        >
-          <Typography variant="body2" fontWeight={500}>
-            {buttonLabel}
-          </Typography>
-        </Button>
-      </Stack>
+          {!hasEnabledToggle &&
+            additionalHotkeys.map((hotkey) => (
+              <Stack
+                key={hotkey.id}
+                direction="row"
+                spacing={1}
+                alignItems="center"
+              >
+                <HotKey
+                  value={hotkey.keys}
+                  onChange={(keys) => saveKey(hotkey.id, keys)}
+                />
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteHotkey(hotkey.id)}
+                >
+                  <Close color="disabled" />
+                </IconButton>
+              </Stack>
+            ))}
+          {!hasEnabledToggle && (
+            <Button
+              variant="text"
+              startIcon={<Add />}
+              size={buttonSize}
+              sx={{ py: 0.5 }}
+              onClick={() => saveKey()}
+            >
+              <Typography variant="body2" fontWeight={500}>
+                {buttonLabel}
+              </Typography>
+            </Button>
+          )}
+        </Stack>
+      )}
     </Stack>
   );
 };

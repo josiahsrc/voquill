@@ -22,4 +22,7 @@ export type UserPreferences = {
   agentModeApiKeyId: Nullable<string>;
   lastSeenFeature: Nullable<string>;
   isEnterprise: boolean;
+  languageSwitchEnabled: boolean;
+  secondaryDictationLanguage: Nullable<string>;
+  activeDictationLanguage: "primary" | "secondary";
 };

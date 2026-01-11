@@ -1,28 +1,40 @@
 import {
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  Typography,
+    Button,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Stack,
+    Typography,
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
+import { setLanguageSwitchEnabled } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
-import { AGENT_DICTATE_HOTKEY, DICTATE_HOTKEY } from "../../utils/keyboard.utils";
+import {
+    AGENT_DICTATE_HOTKEY,
+    DICTATE_HOTKEY,
+    LANGUAGE_SWITCH_HOTKEY,
+} from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {
-  const { open, hotkeysStatus } = useAppStore((state) => ({
-    open: state.settings.shortcutsDialogOpen,
-    hotkeysStatus: state.settings.hotkeysStatus,
-  }));
+  const { open, hotkeysStatus, languageSwitchEnabled } = useAppStore(
+    (state) => ({
+      open: state.settings.shortcutsDialogOpen,
+      hotkeysStatus: state.settings.hotkeysStatus,
+      languageSwitchEnabled: state.settings.languageSwitch.enabled,
+    }),
+  );
 
   const handleClose = () => {
     produceAppState((draft) => {
       draft.settings.shortcutsDialogOpen = false;
     });
+  };
+
+  const handleLanguageSwitchEnabledChange = (enabled: boolean) => {
+    void setLanguageSwitchEnabled(enabled);
   };
 
   const renderContent = () => {
@@ -54,6 +66,17 @@ export const ShortcutsDialog = () => {
             <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
           }
           actionName={AGENT_DICTATE_HOTKEY}
+        />
+        <HotkeySetting
+          title={
+            <FormattedMessage defaultMessage="Switch dictation language" />
+          }
+          description={
+            <FormattedMessage defaultMessage="Quickly switch between your primary and secondary dictation languages." />
+          }
+          actionName={LANGUAGE_SWITCH_HOTKEY}
+          enabled={languageSwitchEnabled}
+          onEnabledChange={handleLanguageSwitchEnabledChange}
         />
       </Stack>
     );
