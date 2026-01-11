@@ -320,6 +320,8 @@ export const RootSideEffects = () => {
             currentApp,
             loadingToken,
             audio,
+            transcriptionMetadata: transcribeResult.metadata,
+            transcriptionWarnings: transcribeResult.warnings,
           });
 
           if (!shouldContinue) {

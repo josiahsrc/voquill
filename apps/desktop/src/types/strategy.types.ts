@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import type { AppTarget } from "@repo/types";
 import type { TextFieldInfo } from "./accessibility.types";
 import type { StopRecordingResponse } from "./transcription-session.types";
+import type { TranscribeAudioMetadata } from "../actions/transcribe.actions";
 
 export type HandleTranscriptParams = {
   rawTranscript: string;
@@ -10,6 +11,8 @@ export type HandleTranscriptParams = {
   currentApp: AppTarget | null;
   loadingToken: symbol | null;
   audio: StopRecordingResponse;
+  transcriptionMetadata: TranscribeAudioMetadata;
+  transcriptionWarnings: string[];
 };
 
 export type HandleTranscriptResult = {
