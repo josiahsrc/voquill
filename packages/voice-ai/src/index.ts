@@ -4,3 +4,4 @@ export * from "./aldea.utils";
 export * from "./assemblyai.utils";
 export * from "./openrouter.utils";
 export * from "./azure.utils";
+export * from "./azure-openai.utils";

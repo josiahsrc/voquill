@@ -14,6 +14,7 @@ import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
 import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
 import {
+  AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
   CloudGenerateTextRepo,
   GroqGenerateTextRepo,
@@ -143,6 +144,18 @@ const getGenTextRepoInternal = ({
       repo = new OpenAIGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
+      );
+    } else if (prefs.provider === "azure") {
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const endpoint = apiKeyRecord?.baseUrl || "";
+      const deploymentName = prefs.postProcessingModel || "gpt-4o-mini";
+      if (!endpoint) {
+        prefs.warnings.push("No endpoint configured for Azure OpenAI.");
+      }
+      repo = new AzureOpenAIGenerateTextRepo(
+        prefs.apiKeyValue,
+        endpoint,
+        deploymentName,
       );
     } else {
       repo = new GroqGenerateTextRepo(

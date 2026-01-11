@@ -320,6 +320,8 @@ export const RootSideEffects = () => {
             currentApp,
             loadingToken,
             audio,
+            transcriptionMetadata: transcribeResult.metadata,
+            transcriptionWarnings: transcribeResult.warnings,
           });
 
           if (!shouldContinue) {
@@ -331,6 +333,22 @@ export const RootSideEffects = () => {
             });
           }
           // If shouldContinue is true, keep strategy and mode for next turn
+        } else {
+          // No transcript: reset overlay to idle and clean up
+          if (
+            loadingToken &&
+            overlayLoadingTokenRef.current === loadingToken
+          ) {
+            overlayLoadingTokenRef.current = null;
+            await invoke<void>("set_phase", { phase: "idle" });
+          }
+
+          // Clean up strategy and reset mode
+          await strategy.cleanup();
+          strategyRef.current = null;
+          produceAppState((draft) => {
+            draft.activeRecordingMode = null;
+          });
         }
       }
     } finally {

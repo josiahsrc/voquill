@@ -27,6 +27,8 @@ export class DictationStrategy extends BaseStrategy {
     currentApp,
     loadingToken,
     audio,
+    transcriptionMetadata,
+    transcriptionWarnings,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
     // 1. Post-process the transcript
     const { transcript, metadata, warnings } = await postProcessTranscript({
@@ -40,9 +42,9 @@ export class DictationStrategy extends BaseStrategy {
       audio,
       rawTranscript,
       transcript,
-      transcriptionMetadata: {},
+      transcriptionMetadata,
       postProcessMetadata: metadata,
-      warnings,
+      warnings: [...transcriptionWarnings, ...warnings],
     });
 
     // 3. Set overlay to idle
