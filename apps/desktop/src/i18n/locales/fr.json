@@ -44,8 +44,9 @@
   "audio_snapshot_unavailable_for_this_transcription": "Instantané audio non disponible pour cette transcription.",
   "authorized": "Autorisé",
   "automatic": "Automatique",
+  "azure_openai_endpoint": "Azure OpenAI Endpoint",
   "azure_region": "Région Azure",
-  "azure_service_region_e_g_eastus": "Région du service Azure (ex., eastus)",
+  "azure_service_region_for_speech_to_text": "Région du service Azure pour la reconnaissance vocale",
   "back": "Retour",
   "back_to_plans": "Retour aux forfaits",
   "basic_agent_mode": "Mode agent basique",
@@ -273,6 +274,7 @@
   "provider": "Fournisseur",
   "provider_priority": "Priorité du fournisseur",
   "punny": "Jeux de mots",
+  "quickly_switch_between_your_primary_and_secondary_dictation": "Basculez rapidement entre vos langues de dictée principale et secondaire.",
   "raw_transcript_unavailable": "Transcription brute non disponible.",
   "raw_transcription": "Transcription brute",
   "recommended": "Recommandé",
@@ -297,6 +299,7 @@
   "save_33": "Économisez 33%",
   "save_changes": "Enregistrer les modifications",
   "saving": "Enregistrement...",
+  "secondary_language": "Langue secondaire",
   "select_a_model": "Sélectionnez un modèle",
   "select_which_ai_provider_to_use_for_agent_mode": "Sélectionnez le fournisseur d'IA à utiliser pour le Mode Agent",
   "selected": "Sélectionné",
@@ -324,6 +327,7 @@
   "styles": "Styles",
   "subscribe": "S'abonner",
   "subscription_key": "Clé d'abonnement",
+  "switch_dictation_language": "Changer de langue de dictée",
   "tell_voquill_how_to_enhance_your_transcripts_after_they_are": "Dites à Voquill comment améliorer vos transcriptions après leur création.",
   "terminal_ctrl_shift_v": "Terminal (Ctrl+Shift+V)",
   "terms_conditions": "Conditions générales",
@@ -404,5 +408,6 @@
   "you_ll_need_an_account_first": "Vous avez d'abord besoin d'un compte",
   "you_re_all_set": "Vous êtes prêt !",
   "you_re_currently_on_version_version_the_app_will_restart_aft": "Vous utilisez actuellement la version {version}. L'application redémarrera une fois la mise à jour terminée.",
-  "you_ve_used_all_your_free_words_for_today": "Vous avez utilisé tous vos mots gratuits pour aujourd'hui."
+  "you_ve_used_all_your_free_words_for_today": "Vous avez utilisé tous vos mots gratuits pour aujourd'hui.",
+  "your_azure_openai_resource_endpoint_url": "URL du point de terminaison de votre ressource Azure OpenAI"
 }

@@ -44,8 +44,9 @@
   "audio_snapshot_unavailable_for_this_transcription": "이 음성 인식에 대한 오디오 스냅샷을 사용할 수 없습니다.",
   "authorized": "승인됨",
   "automatic": "자동",
+  "azure_openai_endpoint": "Azure OpenAI Endpoint",
   "azure_region": "Azure 지역",
-  "azure_service_region_e_g_eastus": "Azure 서비스 지역 (예: eastus)",
+  "azure_service_region_for_speech_to_text": "음성-텍스트 변환용 Azure 서비스 지역",
   "back": "뒤로",
   "back_to_plans": "요금제로 돌아가기",
   "basic_agent_mode": "기본 에이전트 모드",
@@ -273,6 +274,7 @@
   "provider": "제공자",
   "provider_priority": "제공자 우선순위",
   "punny": "재치있는",
+  "quickly_switch_between_your_primary_and_secondary_dictation": "기본 및 보조 받아쓰기 언어를 빠르게 전환합니다.",
   "raw_transcript_unavailable": "원본 텍스트를 사용할 수 없습니다.",
   "raw_transcription": "원본 음성 인식",
   "recommended": "권장",
@@ -297,6 +299,7 @@
   "save_33": "33% 절약",
   "save_changes": "변경 사항 저장",
   "saving": "저장 중...",
+  "secondary_language": "보조 언어",
   "select_a_model": "모델 선택",
   "select_which_ai_provider_to_use_for_agent_mode": "에이전트 모드에 사용할 AI 제공업체를 선택하세요",
   "selected": "선택됨",
@@ -324,6 +327,7 @@
   "styles": "스타일",
   "subscribe": "구독",
   "subscription_key": "구독 키",
+  "switch_dictation_language": "받아쓰기 언어 전환",
   "tell_voquill_how_to_enhance_your_transcripts_after_they_are": "텍스트가 생성된 후 Voquill이 어떻게 개선할지 알려주세요.",
   "terminal_ctrl_shift_v": "터미널 (Ctrl+Shift+V)",
   "terms_conditions": "이용약관",
@@ -404,5 +408,6 @@
   "you_ll_need_an_account_first": "먼저 계정이 필요합니다",
   "you_re_all_set": "모든 준비가 완료되었습니다!",
   "you_re_currently_on_version_version_the_app_will_restart_aft": "현재 버전 {version}을(를) 사용 중입니다. 업데이트가 완료되면 앱이 다시 시작됩니다.",
-  "you_ve_used_all_your_free_words_for_today": "오늘의 무료 단어를 모두 사용했습니다."
+  "you_ve_used_all_your_free_words_for_today": "오늘의 무료 단어를 모두 사용했습니다.",
+  "your_azure_openai_resource_endpoint_url": "Azure OpenAI 리소스 엔드포인트 URL"
 }

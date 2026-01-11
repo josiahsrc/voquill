@@ -44,8 +44,9 @@
   "audio_snapshot_unavailable_for_this_transcription": "Snapshot de áudio indisponível para esta transcrição.",
   "authorized": "Autorizado",
   "automatic": "Automático",
+  "azure_openai_endpoint": "Azure OpenAI Endpoint",
   "azure_region": "Região do Azure",
-  "azure_service_region_e_g_eastus": "Região do serviço Azure (ex., eastus)",
+  "azure_service_region_for_speech_to_text": "Região do serviço Azure para conversão de voz em texto",
   "back": "Voltar",
   "back_to_plans": "Voltar para planos",
   "basic_agent_mode": "Modo agente básico",
@@ -273,6 +274,7 @@
   "provider": "Provedor",
   "provider_priority": "Prioridade do provedor",
   "punny": "Trocadilhos",
+  "quickly_switch_between_your_primary_and_secondary_dictation": "Alterne rapidamente entre os seus idiomas de ditado principal e secundário.",
   "raw_transcript_unavailable": "Transcrição bruta indisponível.",
   "raw_transcription": "Transcrição bruta",
   "recommended": "Recomendado",
@@ -297,6 +299,7 @@
   "save_33": "Poupe 33%",
   "save_changes": "Salvar alterações",
   "saving": "Salvando...",
+  "secondary_language": "Idioma secundário",
   "select_a_model": "Selecione um modelo",
   "select_which_ai_provider_to_use_for_agent_mode": "Selecione qual fornecedor de IA usar para o Modo Agente",
   "selected": "Selecionado",
@@ -324,6 +327,7 @@
   "styles": "Estilos",
   "subscribe": "Assinar",
   "subscription_key": "Chave de subscrição",
+  "switch_dictation_language": "Alternar idioma de ditado",
   "tell_voquill_how_to_enhance_your_transcripts_after_they_are": "Diga ao Voquill como aprimorar suas transcrições depois que forem criadas.",
   "terminal_ctrl_shift_v": "Terminal (Ctrl+Shift+V)",
   "terms_conditions": "Termos e condições",
@@ -404,5 +408,6 @@
   "you_ll_need_an_account_first": "Você precisará de uma conta primeiro",
   "you_re_all_set": "Você está pronto!",
   "you_re_currently_on_version_version_the_app_will_restart_aft": "Você está atualmente na versão {version}. O aplicativo será reiniciado após a conclusão da atualização.",
-  "you_ve_used_all_your_free_words_for_today": "Utilizou todas as suas palavras grátis de hoje."
+  "you_ve_used_all_your_free_words_for_today": "Utilizou todas as suas palavras grátis de hoje.",
+  "your_azure_openai_resource_endpoint_url": "URL do endpoint do seu recurso Azure OpenAI"
 }
