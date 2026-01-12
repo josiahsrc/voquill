@@ -89,6 +89,10 @@ export const getMyUserPreferences = (
   return state.userPrefs;
 };
 
+export const getMyPreferredMicrophone = (state: AppState): Nullable<string> => {
+  return state.userPrefs?.preferredMicrophone ?? null;
+};
+
 export const getShouldGoToOnboarding = (state: AppState): boolean => {
   const prefs = getMyUserPreferences(state);
   const gotStartedAt = prefs?.gotStartedAt;

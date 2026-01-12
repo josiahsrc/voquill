@@ -111,13 +111,14 @@ export const submitOnboarding = async () => {
       onboarded: true,
       onboardedAt: now,
       timezone: null,
-      preferredMicrophone: normalizedMicrophone,
+      preferredMicrophone: null,
       preferredLanguage: DEFAULT_LOCALE,
       wordsThisMonth: 0,
       wordsThisMonthMonth: null,
       wordsTotal: 0,
       playInteractionChime: true,
       hasFinishedTutorial: false,
+      hasMigratedPreferredMicrophone: true,
     };
 
     const preferences: UserPreferences = {
@@ -149,6 +150,7 @@ export const submitOnboarding = async () => {
       languageSwitchEnabled: false,
       secondaryDictationLanguage: null,
       activeDictationLanguage: "primary",
+      preferredMicrophone: normalizedMicrophone,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

@@ -21,6 +21,8 @@ pub struct User {
     pub play_interaction_chime: bool,
     #[serde(default)]
     pub has_finished_tutorial: bool,
+    #[serde(default)]
+    pub has_migrated_preferred_microphone: bool,
 }
 
 const fn default_play_interaction_chime() -> bool {

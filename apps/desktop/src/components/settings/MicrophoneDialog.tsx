@@ -13,7 +13,7 @@ import { Nullable } from "@repo/types";
 import { useCallback, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { setPreferredMicrophone } from "../../actions/user.actions";
-import { useMyUser } from "../../hooks/user.hooks";
+import { useMyPreferredMicrophone } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import { SettingSection } from "../common/SettingSection";
 import { MicrophoneSelector } from "../microphone/MicrophoneSelector";
@@ -21,9 +21,7 @@ import { MicrophoneTester } from "../microphone/MicrophoneTester";
 
 export const MicrophoneDialog = () => {
   const open = useAppStore((state) => state.settings.microphoneDialogOpen);
-  const user = useMyUser();
-
-  const savedPreference = user?.preferredMicrophone ?? null;
+  const savedPreference = useMyPreferredMicrophone();
 
   const [selected, setSelected] = useState<Nullable<string>>(savedPreference);
   const [hasChanges, setHasChanges] = useState(false);

@@ -76,6 +76,8 @@ pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
 pub const IS_ENTERPRISE_MIGRATION_SQL: &str = include_str!("migrations/039_is_enterprise.sql");
 pub const LANGUAGE_SWITCH_MIGRATION_SQL: &str =
     include_str!("migrations/040_language_switch.sql");
+pub const MICROPHONE_TO_PREFERENCES_MIGRATION_SQL: &str =
+    include_str!("migrations/041_microphone_to_preferences.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -317,6 +319,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 40,
             description: "add_language_switch",
             sql: LANGUAGE_SWITCH_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 41,
+            description: "move_microphone_to_preferences",
+            sql: MICROPHONE_TO_PREFERENCES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

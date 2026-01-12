@@ -25,4 +25,5 @@ export type UserPreferences = {
   languageSwitchEnabled: boolean;
   secondaryDictationLanguage: Nullable<string>;
   activeDictationLanguage: "primary" | "secondary";
+  preferredMicrophone: Nullable<string>;
 };

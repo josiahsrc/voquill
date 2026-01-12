@@ -27,9 +27,10 @@ pub async fn upsert_user_preferences(
              is_enterprise,
              language_switch_enabled,
              secondary_dictation_language,
-             active_dictation_language
+             active_dictation_language,
+             preferred_microphone
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -49,7 +50,8 @@ pub async fn upsert_user_preferences(
             is_enterprise = excluded.is_enterprise,
             language_switch_enabled = excluded.language_switch_enabled,
             secondary_dictation_language = excluded.secondary_dictation_language,
-            active_dictation_language = excluded.active_dictation_language",
+            active_dictation_language = excluded.active_dictation_language,
+            preferred_microphone = excluded.preferred_microphone",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -71,6 +73,7 @@ pub async fn upsert_user_preferences(
     .bind(preferences.language_switch_enabled)
     .bind(&preferences.secondary_dictation_language)
     .bind(&preferences.active_dictation_language)
+    .bind(&preferences.preferred_microphone)
     .execute(&pool)
     .await?;
 
@@ -102,7 +105,8 @@ pub async fn fetch_user_preferences(
             is_enterprise,
             language_switch_enabled,
             secondary_dictation_language,
-            active_dictation_language
+            active_dictation_language,
+            preferred_microphone
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -172,6 +176,9 @@ pub async fn fetch_user_preferences(
             .unwrap_or(None),
         active_dictation_language: row
             .try_get::<Option<String>, _>("active_dictation_language")
+            .unwrap_or(None),
+        preferred_microphone: row
+            .try_get::<Option<String>, _>("preferred_microphone")
             .unwrap_or(None),
     });
 

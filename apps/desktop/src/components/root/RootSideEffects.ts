@@ -18,7 +18,11 @@ import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
 import { checkForAppUpdates } from "../../actions/updater.actions";
-import { toggleActiveDictationLanguage } from "../../actions/user.actions";
+import {
+  migratePreferredMicrophoneToPreferences,
+  refreshCurrentUser,
+  toggleActiveDictationLanguage,
+} from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useHotkeyFire, useHotkeyHold } from "../../hooks/hotkey.hooks";
@@ -54,7 +58,7 @@ import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
   getMyDictationLanguageCode,
-  getMyUser,
+  getMyPreferredMicrophone,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import {
@@ -130,8 +134,12 @@ export const RootSideEffects = () => {
       loadTones(),
       loadAppTargets(),
       refreshMember(),
+      refreshCurrentUser(),
     ];
     await Promise.allSettled(loaders);
+
+    // migrate after we're sure we have current user loaded
+    await migratePreferredMicrophoneToPreferences();
   }, [userId]);
 
   useAsyncEffect(async () => {
@@ -187,8 +195,7 @@ export const RootSideEffects = () => {
       return;
     }
 
-    const user = getMyUser(state);
-    const preferredMicrophone = user?.preferredMicrophone ?? null;
+    const preferredMicrophone = getMyPreferredMicrophone(state);
     const currentMode = getAppState().activeRecordingMode;
 
     // Create or reuse strategy based on mode
