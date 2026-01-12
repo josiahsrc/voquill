@@ -46,7 +46,7 @@ const pricingPlans: PricingPlan[] = [
       { text: "Everything in Personal", deemphasized: true },
       "AI dictation",
       "Advanced agent mode",
-      "MCP integrations",
+      "Cross-device sync",
       "Unlimited words per month",
       "Priority support",
     ],

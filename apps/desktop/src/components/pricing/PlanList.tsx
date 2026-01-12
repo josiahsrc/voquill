@@ -357,7 +357,7 @@ export const PlanList = ({
         <FormattedMessage defaultMessage="Advanced agent mode" />
       </CheckmarkRow>
       <CheckmarkRow>
-        <FormattedMessage defaultMessage="MCP integrations" />
+        <FormattedMessage defaultMessage="Cross-device sync" />
       </CheckmarkRow>
       <CheckmarkRow>
         <FormattedMessage defaultMessage="Priority support" />
