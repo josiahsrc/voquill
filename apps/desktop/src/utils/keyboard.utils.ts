@@ -46,11 +46,6 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
     windows: [["F8"]],
     linux: [["F8"]],
   },
-  [AGENT_DICTATE_HOTKEY]: {
-    macos: [["Shift", "Function"]],
-    windows: [["Shift", "F8"]],
-    linux: [["Shift", "F8"]],
-  },
   [LANGUAGE_SWITCH_HOTKEY]: {
     macos: [["controlLeft", "ShiftLeft", "KeyL"]],
     windows: [["ControlLeft", "ShiftLeft", "KeyL"]],

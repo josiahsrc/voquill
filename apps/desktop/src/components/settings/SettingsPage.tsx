@@ -20,6 +20,7 @@ import {
 } from "@mui/icons-material";
 import {
   Box,
+  Chip,
   Link,
   MenuItem,
   Select,
@@ -343,7 +344,12 @@ export default function SettingsPage() {
         onClick={openPostProcessingDialog}
       />
       <ListTile
-        title={<FormattedMessage defaultMessage="Agent mode" />}
+        title={
+          <Stack direction="row" alignItems="center">
+            <FormattedMessage defaultMessage="Agent mode" />
+            <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
+          </Stack>
+        }
         leading={<AutoAwesomeOutlined />}
         onClick={openAgentModeDialog}
       />
@@ -402,11 +408,13 @@ export default function SettingsPage() {
         <FormattedMessage defaultMessage="Be careful with these actions. They can have significant consequences for your account." />
       }
     >
-      {!isSignedIn && <ListTile
-        title={<FormattedMessage defaultMessage="Clear local data" />}
-        leading={<DeleteForeverOutlined />}
-        onClick={openClearLocalDataDialog}
-      />}
+      {!isSignedIn && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Clear local data" />}
+          leading={<DeleteForeverOutlined />}
+          onClick={openClearLocalDataDialog}
+        />
+      )}
       {isSignedIn && (
         <ListTile
           sx={{ mt: 1 }}

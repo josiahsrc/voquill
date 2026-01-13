@@ -1,6 +1,7 @@
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -24,8 +25,9 @@ export const AIAgentModeDialog = () => {
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: "flex", alignItems: "center" }}>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <FormattedMessage defaultMessage="Agent mode" />
+        <Chip label="Beta" size="small" color="primary" />
         <IconButton
           onClick={handleClose}
           size="small"

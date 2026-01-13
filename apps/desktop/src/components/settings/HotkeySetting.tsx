@@ -200,19 +200,20 @@ export const HotkeySetting = ({
                 </IconButton>
               </Stack>
             ))}
-          {!hasEnabledToggle && (
-            <Button
-              variant="text"
-              startIcon={<Add />}
-              size={buttonSize}
-              sx={{ py: 0.5 }}
-              onClick={() => saveKey()}
-            >
-              <Typography variant="body2" fontWeight={500}>
-                {buttonLabel}
-              </Typography>
-            </Button>
-          )}
+          {!hasEnabledToggle &&
+            (hotkeys.length > 0 || defaultCombos.length > 0) && (
+              <Button
+                variant="text"
+                startIcon={<Add />}
+                size={buttonSize}
+                sx={{ py: 0.5 }}
+                onClick={() => saveKey()}
+              >
+                <Typography variant="body2" fontWeight={500}>
+                  {buttonLabel}
+                </Typography>
+              </Button>
+            )}
         </Stack>
       )}
     </Stack>

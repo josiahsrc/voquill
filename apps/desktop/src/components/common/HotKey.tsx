@@ -100,7 +100,7 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
     const v = value ?? [];
     return v.length > 0
       ? [false, v.map((k) => getPrettyKeyName(k)).join(" + ")]
-      : [true, intl.formatMessage({ defaultMessage: "Change hotkey" })];
+      : [true, intl.formatMessage({ defaultMessage: "Set hotkey" })];
   }, [value, focused, hasInteracted, intl]);
 
   return (

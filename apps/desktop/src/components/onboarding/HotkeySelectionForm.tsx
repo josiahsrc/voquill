@@ -34,7 +34,7 @@ export const HotkeySelectionForm = () => {
     status !== "loading" && (savedHotkeyCount > 0 || defaultHotkeys.length > 0);
 
   const handleNext = () => {
-    goToOnboardingPage("agentHotkey");
+    goToOnboardingPage("microphone");
   };
 
   const [primaryHotkey] = hotkeys;
