@@ -62,6 +62,19 @@ export function HeroSection() {
           <Link to="/download" className={styles.heroMoreLink}>
             <FormattedMessage defaultMessage="More download options" />
           </Link>
+          <a
+            href="https://www.producthunt.com/products/voquill?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-voquill-2"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.productHuntBadge}
+          >
+            <img
+              src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1061874&theme=dark"
+              alt="Voquill - The open source WisprFlow alternative | Product Hunt"
+              width="250"
+              height="54"
+            />
+          </a>
         </div>
       </div>
       <HeroGraphic />

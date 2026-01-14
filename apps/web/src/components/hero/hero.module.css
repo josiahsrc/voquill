@@ -46,6 +46,11 @@
   flex-shrink: 0;
 }
 
+.productHuntBadge img {
+  margin-top: 16px;
+  display: block;
+}
+
 .heroNote {
   font-size: 0.95rem;
   color: var(--text-muted);
