@@ -24,6 +24,7 @@ pub async fn fetch_terms(pool: SqlitePool) -> Result<Vec<Term>, sqlx::Error> {
     let rows = sqlx::query(
         "SELECT id, created_at, created_by_user_id, source_value, destination_value, is_replacement, is_deleted
          FROM terms
+         WHERE is_deleted = 0
          ORDER BY created_at DESC",
     )
     .fetch_all(&pool)

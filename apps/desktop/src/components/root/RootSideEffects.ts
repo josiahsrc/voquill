@@ -127,19 +127,17 @@ export const RootSideEffects = () => {
   }, [keyPermAuthorized]);
 
   useAsyncEffect(async () => {
+    await Promise.allSettled([refreshMember(), refreshCurrentUser()]);
+
     const loaders: Promise<unknown>[] = [
       loadHotkeys(),
       loadApiKeys(),
       loadDictionary(),
       loadTones(),
       loadAppTargets(),
-      refreshMember(),
-      refreshCurrentUser(),
+      migratePreferredMicrophoneToPreferences(),
     ];
     await Promise.allSettled(loaders);
-
-    // migrate after we're sure we have current user loaded
-    await migratePreferredMicrophoneToPreferences();
   }, [userId]);
 
   useAsyncEffect(async () => {
