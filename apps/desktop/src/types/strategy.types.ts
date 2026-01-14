@@ -1,8 +1,15 @@
+import type { AppTarget, Nullable } from "@repo/types";
 import type { RefObject } from "react";
-import type { AppTarget } from "@repo/types";
-import type { TextFieldInfo } from "./accessibility.types";
-import type { StopRecordingResponse } from "./transcription-session.types";
 import type { TranscribeAudioMetadata } from "../actions/transcribe.actions";
+import type { TextFieldInfo } from "./accessibility.types";
+import type { ToastAction } from "./toast.types";
+import type { StopRecordingResponse } from "./transcription-session.types";
+
+export type StrategyValidationError = {
+  title: string;
+  body: string;
+  action: Nullable<ToastAction>;
+};
 
 export type HandleTranscriptParams = {
   rawTranscript: string;

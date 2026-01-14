@@ -53,7 +53,6 @@ import {
   DICTATE_HOTKEY,
   LANGUAGE_SWITCH_HOTKEY,
 } from "../../utils/keyboard.utils";
-import { getMemberExceedsLimitByState } from "../../utils/member.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
@@ -173,15 +172,26 @@ export const RootSideEffects = () => {
       return;
     }
 
-    if (getMemberExceedsLimitByState(state)) {
+    // Create or reuse strategy based on mode
+    const currentMode = getAppState().activeRecordingMode;
+    let strategy = strategyRef.current;
+    if (!strategy) {
+      const mode: RecordingMode = currentMode ?? "dictate";
+      strategy =
+        mode === "agent"
+          ? new AgentStrategy(strategyContext)
+          : new DictationStrategy(strategyContext);
+      strategyRef.current = strategy;
+    }
+
+    const validationError = strategy.validateAvailability();
+    if (validationError) {
       playAlertSound();
       showToast({
-        title: intl.formatMessage({ defaultMessage: "Word limit reached" }),
-        message: intl.formatMessage({
-          defaultMessage: "You've used all your free words for today.",
-        }),
+        title: validationError.title,
+        message: validationError.body,
         toastType: "error",
-        action: "upgrade",
+        action: validationError.action ?? undefined,
         duration: 8_000,
       });
       return;
@@ -194,19 +204,6 @@ export const RootSideEffects = () => {
     }
 
     const preferredMicrophone = getMyPreferredMicrophone(state);
-    const currentMode = getAppState().activeRecordingMode;
-
-    // Create or reuse strategy based on mode
-    let strategy = strategyRef.current;
-    if (!strategy) {
-      const mode: RecordingMode = currentMode ?? "dictate";
-      strategy =
-        mode === "agent"
-          ? new AgentStrategy(strategyContext)
-          : new DictationStrategy(strategyContext);
-      strategyRef.current = strategy;
-    }
-
     const promise = (async () => {
       try {
         overlayLoadingTokenRef.current = null;
@@ -391,20 +388,6 @@ export const RootSideEffects = () => {
   const startAgentRecording = useCallback(async () => {
     const state = getAppState();
     if (!getIsOnboarded(state)) {
-      return;
-    }
-
-    if (state.settings.agentMode.mode === "none") {
-      playAlertSound();
-      showToast({
-        title: intl.formatMessage({ defaultMessage: "Agent mode disabled" }),
-        message: intl.formatMessage({
-          defaultMessage: "Enable agent mode in settings to use this feature.",
-        }),
-        toastType: "error",
-        action: "open_agent_settings",
-        duration: 8_000,
-      });
       return;
     }
 

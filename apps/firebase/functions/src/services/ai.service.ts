@@ -11,7 +11,8 @@ import {
 	incrementTokenCount,
 	incrementWordCount,
 	validateAudioInput,
-	validateMemberWithinLimits,
+	validateMemberWithinTokenLimits,
+	validateMemberWithinWordLimits,
 } from "../utils/voice.utils";
 
 const MAX_BLOB_BYTES = 16 * 1024 * 1024; // 16 MB
@@ -35,7 +36,7 @@ export const runTranscribeAudio = async ({
 
 	const access = await checkAccess(auth);
 	const { ext } = validateAudioInput({ audioMimeType: input.audioMimeType });
-	await validateMemberWithinLimits({ auth: access.auth });
+	await validateMemberWithinWordLimits({ auth: access.auth });
 
 	let transcript: string;
 	let wordsUsed: number;
@@ -73,7 +74,7 @@ export const runGenerateText = async ({
 	input: HandlerInput<"ai/generateText">;
 }): Promise<HandlerOutput<"ai/generateText">> => {
 	const access = await checkAccess(auth);
-	await validateMemberWithinLimits({ auth: access.auth });
+	await validateMemberWithinTokenLimits({ auth: access.auth });
 
 	let generatedText: string;
 	let tokensUsed: number;

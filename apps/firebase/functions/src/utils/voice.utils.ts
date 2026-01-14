@@ -21,26 +21,40 @@ export const validateAudioInput = (args: {
 	return { ext: audioExt };
 };
 
-export const validateMemberWithinLimits = async (args: {
+export const validateMemberWithinWordLimits = async (args: {
 	auth: AuthData;
 }): Promise<{ member: Member }> => {
-	const member = await firemix().get(mixpath.members(args.auth.uid));
-	if (!member) {
+	const memberRecord = await firemix().get(mixpath.members(args.auth.uid));
+	if (!memberRecord) {
 		console.warn("no member found for user", args.auth.uid);
 		throw new ClientError("You must be a member");
 	}
 
-	if (getMemberExceedsWordLimit(memberFromDatabase(member.data), FULL_CONFIG)) {
-		console.warn("member exceeds word limit", member.data);
+	const member = memberFromDatabase(memberRecord.data);
+	if (getMemberExceedsWordLimit(member, FULL_CONFIG)) {
+		console.warn("member exceeds word limit", member);
 		throw new ClientError("You have exceeded your word limit");
 	}
 
-	if (getMemberExceedsTokenLimit(memberFromDatabase(member.data), FULL_CONFIG)) {
-		console.warn("member exceeds token limit", member.data);
+	return { member };
+};
+
+export const validateMemberWithinTokenLimits = async (args: {
+	auth: AuthData;
+}): Promise<{ member: Member }> => {
+	const memberRecord = await firemix().get(mixpath.members(args.auth.uid));
+	if (!memberRecord) {
+		console.warn("no member found for user", args.auth.uid);
+		throw new ClientError("You must be a member");
+	}
+
+	const member = memberFromDatabase(memberRecord.data);
+	if (getMemberExceedsTokenLimit(member, FULL_CONFIG)) {
+		console.warn("member exceeds token limit", member);
 		throw new ClientError("You have exceeded your token limit");
 	}
 
-	return { member: memberFromDatabase(member.data) };
+	return { member };
 };
 
 export const incrementWordCount = async (args: {

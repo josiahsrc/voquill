@@ -1,6 +1,9 @@
+import type { Nullable } from "@repo/types";
 import { emitTo } from "@tauri-apps/api/event";
 import { Agent } from "../agent/agent";
+import { getIntl } from "../i18n";
 import { getAgentRepo } from "../repos";
+import { getAppState } from "../store";
 import { DraftTool } from "../tools/draft.tool";
 import { GetContextTool } from "../tools/get-context.tool";
 import { getToolsForServers } from "../tools/mcp.tool";
@@ -14,7 +17,9 @@ import type { OverlayPhase } from "../types/overlay.types";
 import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
+  StrategyValidationError,
 } from "../types/strategy.types";
+import { getMemberExceedsLimitByState } from "../utils/member.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class AgentStrategy extends BaseStrategy {
@@ -26,6 +31,36 @@ export class AgentStrategy extends BaseStrategy {
   private stopTool: StopTool | null = null;
   private draftTool: DraftTool | null = null;
   private currentDraft: string | null = null;
+
+  validateAvailability(): Nullable<StrategyValidationError> {
+    const state = getAppState();
+    const agentMode = state.settings.agentMode.mode;
+    if (agentMode === "none") {
+      return {
+        title: getIntl().formatMessage({
+          defaultMessage: "Agent mode disabled",
+        }),
+        body: getIntl().formatMessage({
+          defaultMessage: "Enable agent mode in settings to use this feature.",
+        }),
+        action: "open_agent_settings",
+      };
+    }
+
+    if (agentMode === "cloud" && getMemberExceedsLimitByState(state)) {
+      return {
+        title: getIntl().formatMessage({
+          defaultMessage: "Word limit reached",
+        }),
+        body: getIntl().formatMessage({
+          defaultMessage: "You've used all your free words for today.",
+        }),
+        action: "upgrade",
+      };
+    }
+
+    return null;
+  }
 
   private async emitState(state: AgentWindowState | null): Promise<void> {
     await emitTo("unified-overlay", "agent_window_state", { state });
