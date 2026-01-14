@@ -177,9 +177,6 @@ produceAppState((draft) => {
 ### Internationalization Workflow
 
 1. Use `<FormattedMessage defaultMessage="..." />` or `useIntl()` in components (NO id prop)
-2. Run `npm run i18n:extract` to extract messages to `src/i18n/locales/en.json`
-3. Run `npm run i18n:sync` to propagate new keys to other locale files
-4. Manually add translations to each locale JSON file
 
 ### Repository Selection
 
