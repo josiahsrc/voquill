@@ -45,7 +45,7 @@ const pricingPlans: PricingPlan[] = [
     features: [
       { text: "Everything in Personal", deemphasized: true },
       "AI dictation",
-      "Advanced agent mode",
+      // "Advanced agent mode",
       "Cross-device sync",
       "Unlimited words per month",
       "Priority support",

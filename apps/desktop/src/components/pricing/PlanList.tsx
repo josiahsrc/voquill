@@ -353,9 +353,9 @@ export const PlanList = ({
       <CheckmarkRow>
         <FormattedMessage defaultMessage="Access to beta features" />
       </CheckmarkRow>
-      <CheckmarkRow>
+      {/* <CheckmarkRow>
         <FormattedMessage defaultMessage="Advanced agent mode" />
-      </CheckmarkRow>
+      </CheckmarkRow> */}
       <CheckmarkRow>
         <FormattedMessage defaultMessage="Cross-device sync" />
       </CheckmarkRow>
