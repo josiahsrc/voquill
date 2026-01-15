@@ -52,7 +52,7 @@ describe("Post-processing prompts integration", () => {
         "um so I was thinking that uh we should go to the store";
       const prompt = buildLocalizedPostProcessingPrompt({
         transcript: transcript,
-        locale: "en",
+        dictationLanguage: "en",
         toneTemplate: null,
         textFieldContext: null,
       });
@@ -86,7 +86,7 @@ describe("Post-processing prompts integration", () => {
 
       const prompt = buildLocalizedPostProcessingPrompt({
         transcript: transcript,
-        locale: "en",
+        dictationLanguage: "en",
         toneTemplate: null,
         textFieldContext: context,
       });
@@ -120,7 +120,7 @@ describe("Post-processing prompts integration", () => {
 
       const prompt = buildLocalizedPostProcessingPrompt({
         transcript: transcript,
-        locale: "en",
+        dictationLanguage: "en",
         toneTemplate: null,
         textFieldContext: context,
       });
@@ -147,7 +147,7 @@ describe("Post-processing prompts integration", () => {
     const transcript = "um so I was thinking that uh we should go to the store";
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
-      locale: "en",
+      dictationLanguage: "en",
       toneTemplate: tone?.promptTemplate || null,
       textFieldContext: null,
     });
@@ -175,7 +175,7 @@ describe("Post-processing prompts integration", () => {
     const transcript = "um so I was thinking that uh we should go to the store";
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
-      locale: "en",
+      dictationLanguage: "en",
       toneTemplate: tone?.promptTemplate || null,
       textFieldContext: null,
     });
@@ -201,7 +201,7 @@ describe("Post-processing prompts integration", () => {
       "um so yeah I was sort of thinking that uh we should go to the store";
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
-      locale: "en",
+      dictationLanguage: "en",
       toneTemplate: tone?.promptTemplate || null,
       textFieldContext: null,
     });
@@ -224,7 +224,7 @@ describe("Post-processing prompts integration", () => {
     const transcript = "um so I was thinking that uh we should go to the store";
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
-      locale: "es",
+      dictationLanguage: "es",
       toneTemplate: null,
       textFieldContext: null,
     });
@@ -251,7 +251,7 @@ describe("Post-processing prompts integration", () => {
       "Hey Bob. um I wanted to check in about the report. uh let me know when you have it ready. Thanks Tom";
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
-      locale: "en",
+      dictationLanguage: "en",
       toneTemplate: null,
       textFieldContext: null,
     });
@@ -278,7 +278,7 @@ describe("Post-processing prompts integration", () => {
       "ok so we need to do a few things. 1, fix the barcode. 2, fix the screen. Three, fix the login issue.";
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
-      locale: "en",
+      dictationLanguage: "en",
       toneTemplate: null,
       textFieldContext: null,
     });
