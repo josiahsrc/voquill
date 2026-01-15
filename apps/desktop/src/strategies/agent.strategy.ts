@@ -1,5 +1,6 @@
 import type { Nullable } from "@repo/types";
 import { emitTo } from "@tauri-apps/api/event";
+import { showToast } from "../actions/toast.actions";
 import { Agent } from "../agent/agent";
 import { getIntl } from "../i18n";
 import { getAgentRepo } from "../repos";
@@ -124,71 +125,82 @@ export class AgentStrategy extends BaseStrategy {
     loadingToken,
     currentApp,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
+    const clearLoadingToken = () => {
+      if (
+        loadingToken &&
+        this.context.overlayLoadingTokenRef.current === loadingToken
+      ) {
+        this.context.overlayLoadingTokenRef.current = null;
+      }
+    };
+
     if (!this.agent) {
       this.agent = await this.initAgent();
       if (!this.agent) {
-        if (
-          loadingToken &&
-          this.context.overlayLoadingTokenRef.current === loadingToken
-        ) {
-          this.context.overlayLoadingTokenRef.current = null;
-        }
+        clearLoadingToken();
         return { shouldContinue: false };
       }
     }
 
-    this.writeToTextFieldTool?.setPasteKeybind(
-      currentApp?.pasteKeybind ?? null,
-    );
+    try {
+      this.writeToTextFieldTool?.setPasteKeybind(
+        currentApp?.pasteKeybind ?? null,
+      );
 
-    this.uiMessages.push({ text: rawTranscript, sender: "me" });
-    await this.emitState({ messages: this.uiMessages });
-
-    const liveTools: string[] = [];
-    this.uiMessages.push({ text: "", sender: "agent", tools: liveTools });
-
-    const result = await this.agent.run(rawTranscript, {
-      onToolExecuted: (tool) => {
-        liveTools.push(tool.displayName);
-        this.emitState({ messages: this.uiMessages }).catch(console.error);
-      },
-    });
-    console.log("Agent response:", result.response);
-    console.log("Agent history:", result.history);
-
-    this.uiMessages.pop();
-
-    if (result.response) {
-      const lastHistoryMessage = result.history[result.history.length - 1];
-      const toolDisplayNames =
-        lastHistoryMessage?.type === "assistant"
-          ? lastHistoryMessage.tools.map((t) => t.displayName)
-          : [];
-
-      this.uiMessages.push({
-        text: result.response,
-        sender: "agent",
-        isError: result.isError,
-        tools: toolDisplayNames,
-        draft: this.currentDraft ?? undefined,
-      });
-      this.currentDraft = null;
+      this.uiMessages.push({ text: rawTranscript, sender: "me" });
       await this.emitState({ messages: this.uiMessages });
-    }
 
-    if (
-      loadingToken &&
-      this.context.overlayLoadingTokenRef.current === loadingToken
-    ) {
-      this.context.overlayLoadingTokenRef.current = null;
-    }
+      const liveTools: string[] = [];
+      this.uiMessages.push({ text: "", sender: "agent", tools: liveTools });
 
-    if (this.shouldStop) {
+      const result = await this.agent.run(rawTranscript, {
+        onToolExecuted: (tool) => {
+          liveTools.push(tool.displayName);
+          this.emitState({ messages: this.uiMessages }).catch(console.error);
+        },
+      });
+      console.log("Agent response:", result.response);
+      console.log("Agent history:", result.history);
+
+      this.uiMessages.pop();
+
+      if (result.response) {
+        const lastHistoryMessage = result.history[result.history.length - 1];
+        const toolDisplayNames =
+          lastHistoryMessage?.type === "assistant"
+            ? lastHistoryMessage.tools.map((t) => t.displayName)
+            : [];
+
+        this.uiMessages.push({
+          text: result.response,
+          sender: "agent",
+          isError: result.isError,
+          tools: toolDisplayNames,
+          draft: this.currentDraft ?? undefined,
+        });
+        this.currentDraft = null;
+        await this.emitState({ messages: this.uiMessages });
+      }
+
+      clearLoadingToken();
+
+      if (this.shouldStop) {
+        await this.cleanup();
+        return { shouldContinue: false };
+      }
+
+      return { shouldContinue: true };
+    } catch (error) {
+      console.error("Agent failed to process request", error);
+      await showToast({
+        title: "Agent request failed",
+        message: error instanceof Error ? error.message : "An error occurred.",
+        toastType: "error",
+      });
+      clearLoadingToken();
       await this.cleanup();
       return { shouldContinue: false };
     }
-
-    return { shouldContinue: true };
   }
 
   async cleanup(): Promise<void> {

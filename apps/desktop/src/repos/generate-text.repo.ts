@@ -2,6 +2,8 @@ import { invokeHandler, type CloudModel } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
   azureOpenAIGenerateText,
+  deepseekGenerateTextResponse,
+  DeepseekModel,
   GenerateTextModel,
   groqGenerateTextResponse,
   OpenAIGenerateTextModel,
@@ -214,6 +216,35 @@ export class AzureOpenAIGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • Azure OpenAI",
+      },
+    };
+  }
+}
+
+export class DeepseekGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private model: DeepseekModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.apiKey = apiKey;
+    this.model = (model as DeepseekModel) ?? "deepseek-chat";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await deepseekGenerateTextResponse({
+      apiKey: this.apiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • DeepSeek",
       },
     };
   }
