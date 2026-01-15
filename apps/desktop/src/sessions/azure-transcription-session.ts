@@ -1,13 +1,19 @@
-import { createAzureStreamingSession, AzureStreamingSession } from "@repo/voice-ai";
+import {
+  AzureStreamingSession,
+  createAzureStreamingSession,
+} from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { getAppState } from "../store";
 import {
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
-import { getAppState } from "../store";
-import { getMyDictationLanguage, getMyPreferredLocale } from "../utils/user.utils";
-import { buildLocalizedTranscriptionPrompt, collectDictionaryEntries } from "../utils/prompt.utils";
+import {
+  buildLocalizedTranscriptionPrompt,
+  collectDictionaryEntries,
+} from "../utils/prompt.utils";
+import { getMyDictationLanguage } from "../utils/user.utils";
 
 export class AzureTranscriptionSession implements TranscriptionSession {
   private session: AzureStreamingSession | null = null;
@@ -27,9 +33,8 @@ export class AzureTranscriptionSession implements TranscriptionSession {
 
       const state = getAppState();
       const language = getMyDictationLanguage(state);
-      const locale = getMyPreferredLocale(state);
       const dictionaryEntries = collectDictionaryEntries(state);
-      const prompt = buildLocalizedTranscriptionPrompt(dictionaryEntries, locale);
+      const prompt = buildLocalizedTranscriptionPrompt(dictionaryEntries);
 
       this.session = await createAzureStreamingSession({
         subscriptionKey: this.subscriptionKey,
@@ -43,7 +48,10 @@ export class AzureTranscriptionSession implements TranscriptionSession {
         "audio_chunk",
         (event) => {
           this.receivedChunkCount++;
-          if (this.receivedChunkCount <= 3 || this.receivedChunkCount % 10 === 0) {
+          if (
+            this.receivedChunkCount <= 3 ||
+            this.receivedChunkCount % 10 === 0
+          ) {
             console.log(
               `[Azure] Received chunk #${this.receivedChunkCount}, samples:`,
               event.payload.samples.length,
