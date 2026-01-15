@@ -9,6 +9,7 @@ export const API_KEY_PROVIDERS = [
   "openrouter",
   "ollama",
   "azure",
+  "deepseek",
 ] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 

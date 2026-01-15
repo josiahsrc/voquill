@@ -17,6 +17,7 @@ import {
   AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
   CloudGenerateTextRepo,
+  DeepseekGenerateTextRepo,
   GroqGenerateTextRepo,
   OllamaGenerateTextRepo,
   OpenAIGenerateTextRepo,
@@ -156,6 +157,11 @@ const getGenTextRepoInternal = ({
         prefs.apiKeyValue,
         endpoint,
         deploymentName,
+      );
+    } else if (prefs.provider === "deepseek") {
+      repo = new DeepseekGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
       );
     } else {
       repo = new GroqGenerateTextRepo(

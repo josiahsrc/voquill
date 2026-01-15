@@ -1,6 +1,7 @@
 import type { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { showErrorSnackbar } from "../actions/app.actions";
+import { showToast } from "../actions/toast.actions";
 import {
   postProcessTranscript,
   storeTranscription,
@@ -56,42 +57,56 @@ export class DictationStrategy extends BaseStrategy {
     transcriptionMetadata,
     transcriptionWarnings,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
-    // 1. Post-process the transcript
-    const { transcript, metadata, warnings } = await postProcessTranscript({
-      rawTranscript,
-      toneId,
-      a11yInfo,
-    });
-
-    // 2. Store transcription (don't await - don't block pasting)
-    storeTranscription({
-      audio,
-      rawTranscript,
-      transcript,
-      transcriptionMetadata,
-      postProcessMetadata: metadata,
-      warnings: [...transcriptionWarnings, ...warnings],
-    });
-
-    // 3. Set overlay to idle
-    if (
-      loadingToken &&
-      this.context.overlayLoadingTokenRef.current === loadingToken
-    ) {
-      this.context.overlayLoadingTokenRef.current = null;
-      await invoke<void>("set_phase", { phase: "idle" });
-    }
-
-    // 4. Paste the transcript
-    if (transcript) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 20));
-      try {
-        const keybind = currentApp?.pasteKeybind ?? null;
-        await invoke<void>("paste", { text: transcript, keybind });
-      } catch (error) {
-        console.error("Failed to paste transcription", error);
-        showErrorSnackbar("Unable to paste transcription.");
+    const resetPhase = async () => {
+      if (
+        loadingToken &&
+        this.context.overlayLoadingTokenRef.current === loadingToken
+      ) {
+        this.context.overlayLoadingTokenRef.current = null;
+        await invoke<void>("set_phase", { phase: "idle" });
       }
+    };
+
+    try {
+      // 1. Post-process the transcript
+      const { transcript, metadata, warnings } = await postProcessTranscript({
+        rawTranscript,
+        toneId,
+        a11yInfo,
+      });
+
+      // 2. Store transcription (don't await - don't block pasting)
+      storeTranscription({
+        audio,
+        rawTranscript,
+        transcript,
+        transcriptionMetadata,
+        postProcessMetadata: metadata,
+        warnings: [...transcriptionWarnings, ...warnings],
+      });
+
+      // 3. Set overlay to idle
+      await resetPhase();
+
+      // 4. Paste the transcript
+      if (transcript) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 20));
+        try {
+          const keybind = currentApp?.pasteKeybind ?? null;
+          await invoke<void>("paste", { text: transcript, keybind });
+        } catch (error) {
+          console.error("Failed to paste transcription", error);
+          showErrorSnackbar("Unable to paste transcription.");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to process transcription", error);
+      await showToast({
+        title: "Transcription failed",
+        message: error instanceof Error ? error.message : "An error occurred.",
+        toastType: "error",
+      });
+      await resetPhase();
     }
 
     // Dictation is always single-turn

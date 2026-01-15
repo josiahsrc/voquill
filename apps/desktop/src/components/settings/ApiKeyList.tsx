@@ -25,6 +25,8 @@ import {
   AZURE_OPENAI_MODELS,
   azureOpenAITestIntegration,
   azureTestIntegration,
+  DEEPSEEK_MODELS,
+  deepseekTestIntegration,
   GENERATE_TEXT_MODELS,
   groqTestIntegration,
   OPENAI_GENERATE_TEXT_MODELS,
@@ -170,7 +172,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       >
         <MenuItem value="groq">Groq</MenuItem>
         <MenuItem value="openai">OpenAI</MenuItem>
-        {/* OpenRouter, Ollama, and Azure OpenAI only support LLM, not transcription */}
+        {/* OpenRouter, Ollama, DeepSeek, and Azure OpenAI only support LLM, not transcription */}
         {context === "post-processing" && (
           <MenuItem value="openrouter">OpenRouter</MenuItem>
         )}
@@ -178,14 +180,21 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
           <MenuItem value="ollama">Ollama</MenuItem>
         )}
         {context === "post-processing" && (
+          <MenuItem value="deepseek">DeepSeek</MenuItem>
+        )}
+        {context === "post-processing" && (
           <MenuItem value="azure">Azure OpenAI</MenuItem>
         )}
         {/* Aldea, AssemblyAI, and Azure STT only support transcription, not post-processing */}
-        {context === "transcription" && <MenuItem value="aldea">Aldea</MenuItem>}
+        {context === "transcription" && (
+          <MenuItem value="aldea">Aldea</MenuItem>
+        )}
         {context === "transcription" && (
           <MenuItem value="assemblyai">AssemblyAI</MenuItem>
         )}
-        {context === "transcription" && <MenuItem value="azure">Azure</MenuItem>}
+        {context === "transcription" && (
+          <MenuItem value="azure">Azure</MenuItem>
+        )}
       </TextField>
       {isAzure ? (
         context === "transcription" ? (
@@ -216,7 +225,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         ) : (
           <>
             <TextField
-              label={<FormattedMessage defaultMessage="Azure OpenAI Endpoint" />}
+              label={
+                <FormattedMessage defaultMessage="Azure OpenAI Endpoint" />
+              }
               value={azureOpenAIEndpoint}
               onChange={(event) => setAzureOpenAIEndpoint(event.target.value)}
               placeholder="https://my-resource.openai.azure.com"
@@ -331,6 +342,8 @@ const testApiKey = async (
       return aldeaTestIntegration({ apiKey: apiKey.keyFull });
     case "assemblyai":
       return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
+    case "deepseek":
+      return deepseekTestIntegration({ apiKey: apiKey.keyFull });
     case "azure":
       if (context === "post-processing") {
         if (!apiKey.baseUrl) {
@@ -371,6 +384,8 @@ const getModelsForProvider = (
       return context === "transcription" ? [] : OPENROUTER_FAVORITE_MODELS;
     case "ollama":
       return [];
+    case "deepseek":
+      return context === "transcription" ? [] : DEEPSEEK_MODELS;
     case "azure":
       return context === "transcription" ? [] : AZURE_OPENAI_MODELS;
     case "aldea":
@@ -557,10 +572,12 @@ export const ApiKeyList = ({
 
   // Filter API keys based on context
   const apiKeys = allApiKeys.filter((key) => {
-    // OpenRouter and Ollama only support post-processing
+    // OpenRouter, Ollama, and DeepSeek only support post-processing
     if (
       context === "transcription" &&
-      (key.provider === "openrouter" || key.provider === "ollama")
+      (key.provider === "openrouter" ||
+        key.provider === "ollama" ||
+        key.provider === "deepseek")
     ) {
       return false;
     }
