@@ -17,7 +17,10 @@ import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
-import { checkForAppUpdates } from "../../actions/updater.actions";
+import {
+  checkForAppUpdates,
+  dismissUpdateDialog,
+} from "../../actions/updater.actions";
 import {
   migratePreferredMicrophoneToPreferences,
   refreshCurrentUser,
@@ -87,6 +90,7 @@ type StopRecordingResult = [StopRecordingResponse | null, TextFieldInfo | null];
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
   const stopPendingRef = useRef<Promise<StopRecordingResult> | null>(null);
+  const updateInitializedRef = useRef(false);
   const isRecordingRef = useRef(false);
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
@@ -149,12 +153,15 @@ export const RootSideEffects = () => {
     }
   }, []);
 
+  // check for app updates every minute
   useIntervalAsync(
     60 * 1000,
     async () => {
-      const dismissedUntil = getAppState().updater.dismissedUntil;
-      if (dismissedUntil && Date.now() < dismissedUntil) {
-        return;
+      // show update dialogs after one hour on first-boot
+      if (!updateInitializedRef.current) {
+        const ONE_HOUR = 60 * 60 * 1000;
+        dismissUpdateDialog(ONE_HOUR);
+        updateInitializedRef.current = true;
       }
 
       await checkForAppUpdates();

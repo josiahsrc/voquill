@@ -83,20 +83,12 @@ export const checkForAppUpdates = async (): Promise<void> => {
 
     availableUpdate = update;
 
-    const updateVersion = update.version;
-    const { lastUpdateVersion, dialogOpen } = getAppState().updater;
-    if (updateVersion && updateVersion === lastUpdateVersion) {
-      return;
-    }
-
-    if (dialogOpen) {
-      return;
-    }
+    const { dialogOpen, dismissedUntil } = getAppState().updater;
+    const shouldAutoShowDialog =
+      !dialogOpen && (!dismissedUntil || Date.now() >= dismissedUntil);
 
     produceAppState((draft) => {
       draft.updater.status = "ready";
-      draft.updater.lastUpdateVersion = lastUpdateVersion;
-      draft.updater.dialogOpen = true;
       draft.updater.currentVersion = update.currentVersion;
       draft.updater.availableVersion = update.version;
       draft.updater.releaseDate = update.date ?? null;
@@ -105,9 +97,14 @@ export const checkForAppUpdates = async (): Promise<void> => {
       draft.updater.downloadProgress = null;
       draft.updater.downloadedBytes = null;
       draft.updater.totalBytes = null;
+      if (shouldAutoShowDialog) {
+        draft.updater.dialogOpen = true;
+      }
     });
 
-    await surfaceMainWindow();
+    if (shouldAutoShowDialog) {
+      await surfaceMainWindow();
+    }
   };
 
   checkingPromise = run();
@@ -131,12 +128,12 @@ export const openUpdateDialog = async (): Promise<void> => {
   await checkForAppUpdates();
 };
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
-export const dismissUpdateDialog = (): void => {
+export const dismissUpdateDialog = (duration = THREE_DAYS_MS): void => {
   produceAppState((draft) => {
     draft.updater.dialogOpen = false;
-    draft.updater.dismissedUntil = Date.now() + ONE_DAY_MS;
+    draft.updater.dismissedUntil = Date.now() + duration;
   });
 };
 

@@ -1,6 +1,6 @@
 import {
   AccountCircleOutlined,
-  ArrowUpwardOutlined,
+  RocketLaunchOutlined,
 } from "@mui/icons-material";
 import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
@@ -98,7 +98,7 @@ export const AppHeader = () => {
           openUpgradePlanDialog();
           close();
         },
-        leading: <ArrowUpwardOutlined />,
+        leading: <RocketLaunchOutlined />,
       },
     ]),
   ];
@@ -110,7 +110,7 @@ export const AppHeader = () => {
         {plan === "free" && (
           <Button
             onClick={() => openUpgradePlanDialog()}
-            startIcon={<ArrowUpwardOutlined />}
+            startIcon={<RocketLaunchOutlined />}
             variant="blue"
             sx={{
               fontWeight: 600,

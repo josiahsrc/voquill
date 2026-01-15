@@ -1,4 +1,4 @@
-import { ArrowUpwardOutlined } from "@mui/icons-material";
+import { RocketLaunchOutlined } from "@mui/icons-material";
 import { Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
@@ -20,7 +20,7 @@ export const VoquillCloudSetting = () => {
         <Button
           variant="blue"
           onClick={openUpgradePlanDialog}
-          endIcon={<ArrowUpwardOutlined />}
+          endIcon={<RocketLaunchOutlined />}
         >
           <FormattedMessage defaultMessage="Upgrade to Pro" />
         </Button>

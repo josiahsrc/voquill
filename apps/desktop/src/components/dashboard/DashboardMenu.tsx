@@ -10,6 +10,7 @@ import { FormattedMessage } from "react-intl";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ListTile } from "../common/ListTile";
 import { DiscordListTile } from "./DiscordListTile";
+import { UpdateListTile } from "./UpdateListTile";
 
 const settingsPath = "/dashboard/settings";
 
@@ -83,6 +84,7 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
     <Stack alignItems="stretch" sx={{ height: "100%" }}>
       <Box sx={{ flexGrow: 1, overflowY: "auto" }}>{list}</Box>
       <Box sx={{ mt: 2, p: 2 }}>
+        <UpdateListTile />
         <DiscordListTile />
         <ListTile
           key={settingsPath}
