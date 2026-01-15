@@ -5,11 +5,12 @@ import {
   type Update,
 } from "@tauri-apps/plugin-updater";
 import { getAppState, produceAppState } from "../store";
-import { showErrorSnackbar } from "./app.actions";
+import { daysToMilliseconds } from "../utils/time.utils";
 import {
   markSurfaceWindowForNextLaunch,
   surfaceMainWindow,
 } from "../utils/window.utils";
+import { showErrorSnackbar } from "./app.actions";
 
 let availableUpdate: Update | null = null;
 let checkingPromise: Promise<void> | null = null;
@@ -128,7 +129,7 @@ export const openUpdateDialog = async (): Promise<void> => {
   await checkForAppUpdates();
 };
 
-const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+const THREE_DAYS_MS = daysToMilliseconds(3);
 
 export const dismissUpdateDialog = (duration = THREE_DAYS_MS): void => {
   produceAppState((draft) => {

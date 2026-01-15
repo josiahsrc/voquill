@@ -68,6 +68,7 @@ import {
   setTrayTitle,
   surfaceMainWindow,
 } from "../../utils/window.utils";
+import { daysToMilliseconds } from "../../utils/time.utils";
 
 type StartRecordingResponse = {
   sampleRate: number;
@@ -159,8 +160,7 @@ export const RootSideEffects = () => {
     async () => {
       // show update dialogs after one hour on first-boot
       if (!updateInitializedRef.current) {
-        const ONE_HOUR = 60 * 60 * 1000;
-        dismissUpdateDialog(ONE_HOUR);
+        dismissUpdateDialog(daysToMilliseconds(1));
         updateInitializedRef.current = true;
       }
 
