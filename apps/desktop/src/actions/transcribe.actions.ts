@@ -33,7 +33,6 @@ import {
 import {
   getMyDictationLanguage,
   getMyEffectiveUserId,
-  getMyPreferredLocale,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { addWordsToCurrentUser } from "./user.actions";
@@ -104,15 +103,12 @@ export const transcribeAudio = async ({
   } = getTranscribeAudioRepo();
   warnings.push(...transcribeWarnings);
 
-  const preferredLocale = getMyPreferredLocale(state);
   const dictationLanguage = getMyDictationLanguage(state);
   const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
-  const transcriptionPrompt = buildLocalizedTranscriptionPrompt(
-    dictionaryEntries,
-    preferredLocale,
-  );
+  const transcriptionPrompt =
+    buildLocalizedTranscriptionPrompt(dictionaryEntries);
 
   const transcribeStart = performance.now();
   const transcribeOutput = await transcribeRepo.transcribeAudio({
@@ -163,7 +159,7 @@ export const postProcessTranscript = async ({
   let processedTranscript = rawTranscript;
 
   if (genRepo) {
-    const preferredLocale = getMyPreferredLocale(state);
+    const dictationLanguage = getMyDictationLanguage(state);
     const myPrefs = state.userPrefs;
     const tone =
       getRec(state.toneById, toneId) ??
@@ -173,12 +169,12 @@ export const postProcessTranscript = async ({
     const textFieldContext = extractTextFieldContext(a11yInfo);
     const ppPrompt = buildLocalizedPostProcessingPrompt({
       transcript: rawTranscript,
-      locale: preferredLocale,
+      dictationLanguage,
       toneTemplate: tone?.promptTemplate ?? null,
       textFieldContext: textFieldContext ?? null,
     });
 
-    const ppSystem = buildSystemPostProcessingTonePrompt(preferredLocale);
+    const ppSystem = buildSystemPostProcessingTonePrompt();
 
     const postprocessStart = performance.now();
     const genOutput = await genRepo.generateText({

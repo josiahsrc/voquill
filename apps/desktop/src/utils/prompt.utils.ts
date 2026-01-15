@@ -1,11 +1,13 @@
-import { IntlShape } from "react-intl";
 import z from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 import { Locale } from "../i18n/config";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
 import type { TextFieldContext } from "./accessibility.utils";
-import { LANGUAGE_DISPLAY_NAMES } from "./language.utils";
+import {
+  getDisplayNameForLanguage,
+  LANGUAGE_DISPLAY_NAMES,
+} from "./language.utils";
 
 const sanitizeGlossaryValue = (value: string): string =>
   // oxlint-disable-next-line no-control-regex
@@ -77,20 +79,8 @@ export type DictionaryEntries = {
   replacements: ReplacementRule[];
 };
 
-const buildDictionaryContext = (
-  entries: DictionaryEntries,
-  intl: IntlShape,
-): string | null => {
-  const sections: string[] = [
-    intl.formatMessage(
-      {
-        defaultMessage: "Glossary: {terms}",
-      },
-      {
-        terms: ["Voquill", ...entries.sources].join(", "),
-      },
-    ),
-  ];
+const buildDictionaryContext = (entries: DictionaryEntries): string | null => {
+  const sections: string[] = [`Glossary: ${entries.sources.join(", ")}`];
 
   if (entries.replacements.length > 0) {
     const formattedRules = entries.replacements
@@ -98,15 +88,7 @@ const buildDictionaryContext = (
       .join("\n");
 
     sections.push(
-      intl.formatMessage(
-        {
-          defaultMessage:
-            "Apply these replacement rules exactly before returning the transcript:\n{rules}\nEvery occurrence of the source phrase must appear in the final transcript as the destination value.",
-        },
-        {
-          rules: formattedRules,
-        },
-      ),
+      `Apply these replacement rules exactly before returning the transcript:\n${formattedRules}\nEvery occurrence of the source phrase must appear in the final transcript as the destination value.`,
     );
   }
 
@@ -115,39 +97,20 @@ const buildDictionaryContext = (
   }
 
   sections.push(
-    intl.formatMessage({
-      defaultMessage:
-        "Do not mention these rules; simply return the cleaned transcript.",
-    }),
+    `Do not mention these rules; simply return the cleaned transcript.`,
   );
 
-  return intl.formatMessage(
-    {
-      defaultMessage: "Dictionary context for editing:\n{sections}",
-    },
-    {
-      sections: sections.join("\n\n"),
-    },
-  );
+  return `Dictionary context for editing:\n${sections.join("\n\n")}`;
 };
 
 export const buildLocalizedTranscriptionPrompt = (
   entries: DictionaryEntries,
-  locale: Locale,
 ): string => {
-  const intl = getIntl(locale);
-  return buildDictionaryContext(entries, intl) ?? "";
+  return buildDictionaryContext(entries) ?? "";
 };
 
-export const buildSystemPostProcessingTonePrompt = (locale: Locale): string => {
-  const intl = getIntl(locale);
-  return intl.formatMessage(
-    {
-      defaultMessage:
-        "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same.",
-    },
-    {},
-  );
+export const buildSystemPostProcessingTonePrompt = (): string => {
+  return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same.";
 };
 
 const buildStyleSection = (toneTemplate: string | null | undefined): string => {
@@ -182,16 +145,16 @@ When no email or list patterns are detected, output as flowing prose. Insert par
 
 export const buildLocalizedPostProcessingPrompt = ({
   transcript,
-  locale,
+  dictationLanguage,
   toneTemplate,
   textFieldContext,
 }: {
   transcript: string;
-  locale: Locale;
+  dictationLanguage: string;
   toneTemplate?: string | null;
   textFieldContext?: TextFieldContext | null;
 }): string => {
-  const languageName = LANGUAGE_DISPLAY_NAMES[locale];
+  const languageName = getDisplayNameForLanguage(dictationLanguage);
   const hasContext = textFieldContext != null;
   const hasSelection =
     textFieldContext?.selectedText &&
@@ -227,7 +190,7 @@ RULES (must follow):
    - Use a comma if "Text after" continues the same sentence; use a period/question mark only if appropriate.
 6. Output must be plain text with no quotes, labels, or extra commentary.
 
-Your response must be in ${languageName}. Return only the replacement text.`;
+Your response MUST be in ${languageName}. Return only the replacement text.`;
   } else if (hasContext) {
     // Inserting at cursor without selection
     base = `You are cleaning dictated text that will be inserted into an existing document.
@@ -264,7 +227,7 @@ Here is the transcript:
 ${transcript}
 -------
 
-Your response must be in ${languageName}.`;
+Your response MUST be in ${languageName}.`;
   }
 
   return base;
@@ -282,15 +245,8 @@ export const PROCESSED_TRANSCRIPTION_JSON_SCHEMA =
   zodToJsonSchema(PROCESSED_TRANSCRIPTION_SCHEMA, "Schema").definitions
     ?.Schema ?? {};
 
-export const buildSystemAgentPrompt = (locale: Locale): string => {
-  const intl = getIntl(locale);
-  return intl.formatMessage(
-    {
-      defaultMessage:
-        "You are a helpful AI assistant that executes user commands. The user will dictate instructions via voice, and you will execute those instructions and return the output. Your job is to understand what the user wants and produce it. Examples: 'write a poem about cats' → write the poem; 'summarize this article' → provide the summary; 'create a shopping list' → create the list; 'draft an email to my boss' → draft the email. Always return just the requested output, ready to be pasted.",
-    },
-    {},
-  );
+export const buildSystemAgentPrompt = (): string => {
+  return "You are a helpful AI assistant that executes user commands. The user will dictate instructions via voice, and you will execute those instructions and return the output. Your job is to understand what the user wants and produce it. Examples: 'write a poem about cats' → write the poem; 'summarize this article' → provide the summary; 'create a shopping list' → create the list; 'draft an email to my boss' → draft the email. Always return just the requested output, ready to be pasted.";
 };
 
 export const buildLocalizedAgentPrompt = (
