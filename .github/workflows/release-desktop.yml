@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - main
+      - windows-installer
     paths:
       - "apps/desktop/**"
+      - "apps/windows-installer/**"
       - "packages/**"
       - ".github/workflows/release-desktop.yml"
   workflow_dispatch:
