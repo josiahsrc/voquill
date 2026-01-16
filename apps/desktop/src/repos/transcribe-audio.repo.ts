@@ -4,6 +4,8 @@ import { batchAsync } from "@repo/utilities";
 import {
   aldeaTranscribeAudio,
   azureTranscribeAudio,
+  geminiTranscribeAudio,
+  GeminiTranscriptionModel,
   groqTranscribeAudio,
   openaiTranscribeAudio,
   OpenAITranscriptionModel,
@@ -477,6 +479,53 @@ export class AzureTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       metadata: {
         inferenceDevice: "API • Azure",
         modelSize: null,
+        transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class GeminiTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private geminiApiKey: string;
+  private model: GeminiTranscriptionModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.geminiApiKey = apiKey;
+    this.model = (model as GeminiTranscriptionModel) ?? "gemini-2.5-flash";
+  }
+
+  protected getSegmentDurationSec(): number {
+    return 60;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 5;
+  }
+
+  protected getBatchChunkCount(): number {
+    return 3;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wavBuffer = buildWaveFile(input.samples, input.sampleRate);
+
+    const { text: transcript } = await geminiTranscribeAudio({
+      apiKey: this.geminiApiKey,
+      model: this.model,
+      blob: wavBuffer,
+      mimeType: "audio/wav",
+      prompt: input.prompt ?? undefined,
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • Gemini",
+        modelSize: this.model,
         transcriptionMode: "api",
       },
     };

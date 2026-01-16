@@ -10,6 +10,7 @@ export const API_KEY_PROVIDERS = [
   "ollama",
   "azure",
   "deepseek",
+  "gemini",
 ] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 

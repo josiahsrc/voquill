@@ -4,6 +4,8 @@ import {
   azureOpenAIGenerateText,
   deepseekGenerateTextResponse,
   DeepseekModel,
+  geminiGenerateTextResponse,
+  GeminiGenerateTextModel,
   GenerateTextModel,
   groqGenerateTextResponse,
   OpenAIGenerateTextModel,
@@ -245,6 +247,35 @@ export class DeepseekGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • DeepSeek",
+      },
+    };
+  }
+}
+
+export class GeminiGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private model: GeminiGenerateTextModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.apiKey = apiKey;
+    this.model = (model as GeminiGenerateTextModel) ?? "gemini-2.5-flash";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await geminiGenerateTextResponse({
+      apiKey: this.apiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • Gemini",
       },
     };
   }

@@ -27,6 +27,9 @@ import {
   azureTestIntegration,
   DEEPSEEK_MODELS,
   deepseekTestIntegration,
+  GEMINI_GENERATE_TEXT_MODELS,
+  geminiTestIntegration,
+  GEMINI_TRANSCRIPTION_MODELS,
   GENERATE_TEXT_MODELS,
   groqTestIntegration,
   OPENAI_GENERATE_TEXT_MODELS,
@@ -172,6 +175,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       >
         <MenuItem value="groq">Groq</MenuItem>
         <MenuItem value="openai">OpenAI</MenuItem>
+        <MenuItem value="gemini">Gemini</MenuItem>
         {/* OpenRouter, Ollama, DeepSeek, and Azure OpenAI only support LLM, not transcription */}
         {context === "post-processing" && (
           <MenuItem value="openrouter">OpenRouter</MenuItem>
@@ -344,6 +348,8 @@ const testApiKey = async (
       return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
     case "deepseek":
       return deepseekTestIntegration({ apiKey: apiKey.keyFull });
+    case "gemini":
+      return geminiTestIntegration({ apiKey: apiKey.keyFull });
     case "azure":
       if (context === "post-processing") {
         if (!apiKey.baseUrl) {
@@ -380,6 +386,10 @@ const getModelsForProvider = (
       return context === "transcription"
         ? OPENAI_TRANSCRIPTION_MODELS
         : OPENAI_GENERATE_TEXT_MODELS;
+    case "gemini":
+      return context === "transcription"
+        ? GEMINI_TRANSCRIPTION_MODELS
+        : GEMINI_GENERATE_TEXT_MODELS;
     case "openrouter":
       return context === "transcription" ? [] : OPENROUTER_FAVORITE_MODELS;
     case "ollama":
