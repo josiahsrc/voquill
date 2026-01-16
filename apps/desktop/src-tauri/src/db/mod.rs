@@ -78,6 +78,7 @@ pub const LANGUAGE_SWITCH_MIGRATION_SQL: &str =
     include_str!("migrations/040_language_switch.sql");
 pub const MICROPHONE_TO_PREFERENCES_MIGRATION_SQL: &str =
     include_str!("migrations/041_microphone_to_preferences.sql");
+pub const USER_COHORT_MIGRATION_SQL: &str = include_str!("migrations/042_user_cohort.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -325,6 +326,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 41,
             description: "move_microphone_to_preferences",
             sql: MICROPHONE_TO_PREFERENCES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 42,
+            description: "add_user_cohort",
+            sql: USER_COHORT_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

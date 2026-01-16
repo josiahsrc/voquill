@@ -19,6 +19,7 @@ export type DatabaseUser = {
   wordsThisMonthMonth: Nullable<string>;
   wordsTotal: number;
   hasMigratedPreferredMicrophone?: boolean;
+  cohort?: Nullable<string>;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
@@ -41,5 +42,6 @@ export const UserZod = z
     wordsThisMonthMonth: z.string().nullable(),
     wordsTotal: z.number(),
     hasMigratedPreferredMicrophone: z.boolean().optional(),
+    cohort: z.string().nullable().optional(),
   })
   .strict() satisfies z.ZodType<User>;

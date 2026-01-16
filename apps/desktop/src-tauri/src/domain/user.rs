@@ -23,6 +23,8 @@ pub struct User {
     pub has_finished_tutorial: bool,
     #[serde(default)]
     pub has_migrated_preferred_microphone: bool,
+    #[serde(default)]
+    pub cohort: Option<String>,
 }
 
 const fn default_play_interaction_chime() -> bool {

@@ -1,6 +1,7 @@
 import { User, UserPreferences } from "@repo/types";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
+import { CURRENT_COHORT } from "../utils/analytics.utils";
 import {
   INITIAL_ONBOARDING_STATE,
   OnboardingPageKey,
@@ -119,6 +120,7 @@ export const submitOnboarding = async () => {
       playInteractionChime: true,
       hasFinishedTutorial: false,
       hasMigratedPreferredMicrophone: true,
+      cohort: CURRENT_COHORT,
     };
 
     const preferences: UserPreferences = {
