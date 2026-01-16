@@ -16,9 +16,10 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              words_total,
              play_interaction_chime,
              has_finished_tutorial,
-             has_migrated_preferred_microphone
+             has_migrated_preferred_microphone,
+             cohort
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
@@ -30,7 +31,8 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
             words_total = excluded.words_total,
             play_interaction_chime = excluded.play_interaction_chime,
             has_finished_tutorial = excluded.has_finished_tutorial,
-            has_migrated_preferred_microphone = excluded.has_migrated_preferred_microphone",
+            has_migrated_preferred_microphone = excluded.has_migrated_preferred_microphone,
+            cohort = excluded.cohort",
     )
     .bind(&user.id)
     .bind(&user.name)
@@ -44,6 +46,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(if user.play_interaction_chime { 1 } else { 0 })
     .bind(if user.has_finished_tutorial { 1 } else { 0 })
     .bind(if user.has_migrated_preferred_microphone { 1 } else { 0 })
+    .bind(&user.cohort)
     .execute(&pool)
     .await?;
 
@@ -64,7 +67,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             words_total,
             play_interaction_chime,
             has_finished_tutorial,
-            has_migrated_preferred_microphone
+            has_migrated_preferred_microphone,
+            cohort
          FROM user_profiles
          LIMIT 1",
     )
@@ -96,6 +100,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 play_interaction_chime: play_interaction_raw != 0,
                 has_finished_tutorial: tutorial_finished_raw != 0,
                 has_migrated_preferred_microphone: migrated_microphone_raw != 0,
+                cohort: row.try_get::<Option<String>, _>("cohort").unwrap_or(None),
             })
         }
         None => None,

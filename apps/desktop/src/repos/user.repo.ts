@@ -17,6 +17,7 @@ type LocalUser = {
   wordsTotal: number;
   playInteractionChime?: boolean;
   hasFinishedTutorial?: boolean;
+  cohort?: string | null;
 };
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -43,6 +44,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     wordsTotal: localUser.wordsTotal ?? 0,
     playInteractionChime,
     hasFinishedTutorial: localUser.hasFinishedTutorial ?? false,
+    cohort: localUser.cohort ?? null,
   };
 };
 
@@ -58,6 +60,7 @@ const toLocalUser = (user: User): LocalUser => ({
   wordsTotal: user.wordsTotal,
   playInteractionChime: user.playInteractionChime,
   hasFinishedTutorial: user.hasFinishedTutorial,
+  cohort: user.cohort ?? null,
 });
 
 export abstract class BaseUserRepo extends BaseRepo {

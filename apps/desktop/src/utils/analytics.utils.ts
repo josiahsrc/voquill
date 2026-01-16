@@ -1,5 +1,7 @@
 import mixpanel from "mixpanel-browser";
 
+export const CURRENT_COHORT = "2025-01-a";
+
 export function trackPageView(pageName: string) {
   mixpanel.track("Page View", { page: pageName, appPage: pageName });
 }

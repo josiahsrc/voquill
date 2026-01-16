@@ -215,6 +215,7 @@ export const AppSideEffects = () => {
       userCreatedAt: auth?.metadata?.creationTime ?? null,
       onboarded: cloudUser?.onboarded ?? localUser?.onboarded ?? false,
       daysSinceOnboarded,
+      cohort: cloudUser?.cohort ?? localUser?.cohort ?? null,
     });
   }, [initialized, auth, member, cloudUser, localUser]);
 
