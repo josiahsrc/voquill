@@ -3,7 +3,14 @@ import {
   getCurrentWindow,
   Window,
 } from "@tauri-apps/api/window";
-import { useCallback, useEffect, useMemo, useRef, useState, RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  RefObject,
+} from "react";
 
 type ContentRef = RefObject<HTMLElement | null>;
 
@@ -26,10 +33,30 @@ export const useUnifiedClickThrough = ({
 
     let isOverContent = false;
     let animationFrame: number;
+    let timeoutId: number | undefined;
+    let lastCursor: { x: number; y: number } | null = null;
 
     const checkCursorPosition = async () => {
+      const startTime = performance.now();
+
       try {
         const cursor = await cursorPosition();
+
+        // Early exit: Skip if cursor hasn't moved
+        if (
+          lastCursor &&
+          cursor.x === lastCursor.x &&
+          cursor.y === lastCursor.y
+        ) {
+          // Throttle: wait at least 50ms before next check (~20fps instead of ~60fps)
+          timeoutId = window.setTimeout(() => {
+            animationFrame = requestAnimationFrame(checkCursorPosition);
+          }, 50);
+          return;
+        }
+
+        lastCursor = cursor;
+
         const windowPos = await windowRef.outerPosition();
         const scaleFactor = (await windowRef.scaleFactor()) ?? 1;
 
@@ -62,13 +89,21 @@ export const useUnifiedClickThrough = ({
         // Ignore errors (window may be closing)
       }
 
-      animationFrame = requestAnimationFrame(checkCursorPosition);
+      // Throttle: wait at least 50ms between checks
+      const elapsed = performance.now() - startTime;
+      const delay = Math.max(0, 50 - elapsed);
+      timeoutId = window.setTimeout(() => {
+        animationFrame = requestAnimationFrame(checkCursorPosition);
+      }, delay);
     };
 
     windowRef.setIgnoreCursorEvents(true).catch(console.error);
     animationFrame = requestAnimationFrame(checkCursorPosition);
 
     return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
       cancelAnimationFrame(animationFrame);
       windowRef.setIgnoreCursorEvents(true).catch(console.error);
     };
@@ -111,7 +146,7 @@ export const useOverlayDrag = ({
         offsetY: offset.y,
       };
     },
-    [offset]
+    [offset],
   );
 
   const reset = useCallback(() => {

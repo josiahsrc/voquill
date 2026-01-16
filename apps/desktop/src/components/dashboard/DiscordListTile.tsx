@@ -49,6 +49,7 @@ const DiscordIconWithBadge = () => (
         borderRadius: "50%",
         backgroundColor: "#22c55e",
         animation: "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
+        willChange: "transform, opacity",
         "@keyframes ping": {
           "0%": {
             transform: "scale(1)",

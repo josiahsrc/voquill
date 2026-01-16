@@ -34,10 +34,10 @@ const Liquid: React.FC<LiquidProps> = ({
         <defs>
           <style>{`
             @keyframes rotate { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-            .out-top    { animation: rotate ${duration}s linear infinite;    transform-origin: 13px 25px; }
-            .in-top     { animation: rotate ${duration / 2}s linear infinite; transform-origin: 13px 25px; }
-            .out-bottom { animation: rotate ${duration * 1.25}s linear infinite; transform-origin: 84px 93px; }
-            .in-bottom  { animation: rotate ${duration * 0.75}s linear infinite; transform-origin: 84px 93px; }
+            .out-top    { animation: rotate ${duration}s linear infinite;    transform-origin: 13px 25px; will-change: transform; }
+            .in-top     { animation: rotate ${duration / 2}s linear infinite; transform-origin: 13px 25px; will-change: transform; }
+            .out-bottom { animation: rotate ${duration * 1.25}s linear infinite; transform-origin: 84px 93px; will-change: transform; }
+            .in-bottom  { animation: rotate ${duration * 0.75}s linear infinite; transform-origin: 84px 93px; will-change: transform; }
           `}</style>
         </defs>
         <path
