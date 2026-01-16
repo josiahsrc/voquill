@@ -81,26 +81,45 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 let app_handle = app.handle();
 
-                use crate::platform::{Recorder, Transcriber};
+                use crate::platform::Recorder;
                 use std::sync::Arc;
 
-                let default_model_size = crate::system::models::WhisperModelSize::default();
-                let model_path =
-                    crate::system::models::ensure_whisper_model(&app_handle, default_model_size)
-                        .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+                let transcriber_state = crate::state::TranscriberState::new();
 
-                let transcriber: Arc<dyn Transcriber> = Arc::new(
-                    crate::platform::whisper::WhisperTranscriber::new(&model_path).map_err(
-                        |err| -> Box<dyn std::error::Error> {
-                            Box::new(std::io::Error::new(std::io::ErrorKind::Other, err))
-                        },
-                    )?,
-                );
                 let recorder: Arc<dyn Recorder> =
                     Arc::new(crate::platform::audio::RecordingManager::new());
 
                 app.manage(recorder);
-                app.manage(transcriber);
+                app.manage(transcriber_state);
+
+                let pool_for_bg = pool.clone();
+                let app_handle_for_bg = app_handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    let transcription_mode =
+                        crate::db::preferences_queries::fetch_transcription_mode(pool_for_bg)
+                            .await
+                            .ok()
+                            .flatten();
+
+                    let should_init_whisper = match transcription_mode.as_deref() {
+                        None | Some("local") => true,
+                        _ => false,
+                    };
+
+                    if should_init_whisper {
+                        eprintln!("[app] Transcription mode is local or unset, initializing Whisper in background...");
+                        if let Err(err) =
+                            initialize_transcriber_background(&app_handle_for_bg).await
+                        {
+                            eprintln!("[app] Background Whisper initialization failed: {err}");
+                        }
+                    } else {
+                        eprintln!(
+                            "[app] Transcription mode is '{}', skipping Whisper initialization",
+                            transcription_mode.as_deref().unwrap_or("unknown")
+                        );
+                    }
+                });
 
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
@@ -174,6 +193,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,
+            crate::commands::initialize_local_transcriber,
         ])
 }
 
@@ -233,4 +253,33 @@ fn unified_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::W
     }
 
     Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
+}
+
+async fn initialize_transcriber_background(app: &tauri::AppHandle) -> Result<(), String> {
+    use std::sync::Arc;
+    use tauri::Manager;
+
+    let transcriber_state = app.state::<crate::state::TranscriberState>();
+    if transcriber_state.is_initialized() {
+        return Ok(());
+    }
+
+    let default_model_size = crate::system::models::WhisperModelSize::default();
+    let app_clone = app.clone();
+    let model_path = tauri::async_runtime::spawn_blocking(move || {
+        crate::system::models::ensure_whisper_model(&app_clone, default_model_size)
+            .map_err(|err| err.to_string())
+    })
+    .await
+    .map_err(|err| err.to_string())??;
+
+    let new_transcriber: Arc<dyn crate::platform::Transcriber> = Arc::new(
+        crate::platform::whisper::WhisperTranscriber::new(&model_path)
+            .map_err(|err| format!("Failed to initialize Whisper transcriber: {err}"))?,
+    );
+
+    let _ = transcriber_state.initialize(new_transcriber);
+    eprintln!("[app] Background Whisper initialization completed successfully");
+
+    Ok(())
 }

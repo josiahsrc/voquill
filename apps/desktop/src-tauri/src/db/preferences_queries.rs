@@ -197,3 +197,16 @@ pub async fn clear_missing_active_tones(pool: SqlitePool) -> Result<(), sqlx::Er
 
     Ok(())
 }
+
+pub const LOCAL_USER_ID: &str = "local-user-id";
+
+pub async fn fetch_transcription_mode(pool: SqlitePool) -> Result<Option<String>, sqlx::Error> {
+    let row: Option<Option<String>> = sqlx::query_scalar(
+        "SELECT transcription_mode FROM user_preferences WHERE user_id = ?1 LIMIT 1",
+    )
+    .bind(LOCAL_USER_ID)
+    .fetch_optional(&pool)
+    .await?;
+
+    Ok(row.flatten())
+}

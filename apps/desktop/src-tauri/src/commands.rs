@@ -871,7 +871,7 @@ pub async fn transcribe_audio(
     samples: Vec<f64>,
     sample_rate: u32,
     options: Option<TranscriptionOptionsDto>,
-    transcriber: State<'_, Arc<dyn crate::platform::Transcriber>>,
+    transcriber_state: State<'_, crate::state::TranscriberState>,
 ) -> Result<String, String> {
     let mut request = TranscriptionRequest::default();
     let mut model_size = WhisperModelSize::default();
@@ -933,11 +933,23 @@ pub async fn transcribe_audio(
         .map_err(|err| err.to_string())??
     };
 
+    let transcriber = if let Some(existing) = transcriber_state.get() {
+        existing.clone()
+    } else {
+        eprintln!("[transcribe_audio] Transcriber not initialized, performing lazy initialization...");
+        let init_model_path = model_path.clone();
+        let new_transcriber: Arc<dyn crate::platform::Transcriber> = Arc::new(
+            crate::platform::whisper::WhisperTranscriber::new(&init_model_path)
+                .map_err(|err| format!("Failed to initialize Whisper transcriber: {err}"))?,
+        );
+        let _ = transcriber_state.initialize(new_transcriber.clone());
+        new_transcriber
+    };
+
     let model_path_string = model_path.to_string_lossy().into_owned();
     request.model_path = Some(model_path_string);
 
     let request = Some(request);
-    let transcriber = transcriber.inner().clone();
     let join_result = tauri::async_runtime::spawn_blocking(move || {
         let original_len = samples.len();
         let mut filtered = Vec::with_capacity(original_len);
@@ -1135,4 +1147,37 @@ pub async fn get_selected_text() -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_selected_text)
         .await
         .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn initialize_local_transcriber(
+    app: AppHandle,
+    transcriber_state: State<'_, crate::state::TranscriberState>,
+) -> Result<bool, String> {
+    if transcriber_state.is_initialized() {
+        return Ok(false);
+    }
+
+    eprintln!("[initialize_local_transcriber] Pre-warming Whisper transcriber...");
+
+    let default_model_size = WhisperModelSize::default();
+    let model_path = {
+        let handle = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::system::models::ensure_whisper_model(&handle, default_model_size)
+                .map_err(|err| err.to_string())
+        })
+        .await
+        .map_err(|err| err.to_string())??
+    };
+
+    let new_transcriber: Arc<dyn crate::platform::Transcriber> = Arc::new(
+        crate::platform::whisper::WhisperTranscriber::new(&model_path)
+            .map_err(|err| format!("Failed to initialize Whisper transcriber: {err}"))?,
+    );
+
+    transcriber_state.initialize(new_transcriber)?;
+    eprintln!("[initialize_local_transcriber] Whisper transcriber initialized successfully");
+
+    Ok(true)
 }
