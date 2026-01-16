@@ -1,11 +1,11 @@
 import mixpanel from "mixpanel-browser";
 
 export function trackPageView(pageName: string) {
-  mixpanel.track("Page View", { page: pageName });
+  mixpanel.track("Page View", { page: pageName, appPage: pageName });
 }
 
 export function trackOnboardingStep(step: string) {
-  mixpanel.track("Onboarding Step", { step });
+  mixpanel.track("Onboarding Step", { step, appStep: step });
 }
 
 export function trackDictationStart() {
@@ -17,5 +17,5 @@ export function trackAgentStart() {
 }
 
 export function trackButtonClick(name: string) {
-  mixpanel.track("Button Click", { name });
+  mixpanel.track("Button Click", { name, appButtonName: name });
 }

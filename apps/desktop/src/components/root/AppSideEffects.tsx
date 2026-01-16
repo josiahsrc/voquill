@@ -1,6 +1,8 @@
 import { invokeHandler } from "@repo/functions";
 import { Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
+import dayjs from "dayjs";
+import mixpanel from "mixpanel-browser";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
@@ -11,11 +13,13 @@ import {
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
+import { detectLocale } from "../../i18n";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
 import { getIsDevMode } from "../../utils/env.utils";
+import { getPlatform } from "../../utils/platform.utils";
 import { LOCAL_USER_ID } from "../../utils/user.utils";
 
 type StreamRet = Nullable<[Nullable<Member>, Nullable<User>]>;
@@ -172,6 +176,47 @@ export const AppSideEffects = () => {
       }
     })();
   }, [userId, memberPlan, localUser, cloudUser]);
+
+  const auth = useAppStore((state) => state.auth);
+  const prevUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialized) {
+      return;
+    }
+
+    const currentUserId = auth?.uid ?? null;
+    const prevUserId = prevUserIdRef.current;
+    if (prevUserId && !currentUserId) {
+      mixpanel.reset();
+    }
+
+    if (currentUserId && currentUserId !== prevUserId) {
+      mixpanel.identify(currentUserId);
+    }
+
+    prevUserIdRef.current = currentUserId;
+
+    const isPro = member?.plan === "pro";
+    const isFree = member?.plan === "free";
+    const isCommunity = !currentUserId;
+    const onboardedAt = cloudUser?.onboardedAt ?? localUser?.onboardedAt;
+    const daysSinceOnboarded = onboardedAt
+      ? dayjs().diff(dayjs(onboardedAt), "day")
+      : 0;
+
+    mixpanel.register({
+      userId: currentUserId,
+      planStatus: member?.plan ?? "community",
+      isPro,
+      isFree,
+      isCommunity,
+      platform: getPlatform(),
+      locale: detectLocale(),
+      userCreatedAt: auth?.metadata?.creationTime ?? null,
+      onboarded: cloudUser?.onboarded ?? localUser?.onboarded ?? false,
+      daysSinceOnboarded,
+    });
+  }, [initialized, auth, member, cloudUser, localUser]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({
