@@ -576,7 +576,7 @@ jobs:
         shell: pwsh
         run: |
           $nsisDir = "D:\cargo\release\bundle\nsis"
-          $nsisInstaller = Get-ChildItem -Path $nsisDir -Filter "Voquill_*-setup.exe" | Select-Object -First 1
+          $nsisInstaller = Get-ChildItem -Path $nsisDir -Filter "*-setup.exe" | Select-Object -First 1
 
           if (-not $nsisInstaller) {
             Write-Error "Could not find NSIS installer in $nsisDir"
