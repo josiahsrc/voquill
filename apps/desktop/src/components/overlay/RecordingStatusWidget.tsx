@@ -17,13 +17,11 @@ export const RecordingStatusWidget = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: `${theme.spacing(0.75)} ${theme.spacing(2)}`,
-        borderRadius: theme.spacing(2.25),
-        backgroundColor: alpha(theme.palette.common.black, 0.92),
-        backdropFilter: "blur(14px)",
-        boxShadow: `0 10px 35px ${alpha(theme.palette.common.black, 0.36)}`,
-        minWidth: theme.spacing(16),
-        height: theme.spacing(4),
+        padding: `${theme.spacing(0.5)} ${theme.spacing(1.5)}`,
+        borderRadius: theme.spacing(2),
+        backgroundColor: "transparent",
+        minWidth: theme.spacing(12),
+        height: theme.spacing(3),
         pointerEvents: "none",
         overflow: "hidden",
       }}
@@ -31,8 +29,8 @@ export const RecordingStatusWidget = () => {
       <Box
         sx={{
           position: "relative",
-          width: theme.spacing(16),
-          height: theme.spacing(3),
+          width: theme.spacing(12),
+          height: theme.spacing(2.5),
         }}
       >
         {isProcessing ? (
@@ -53,8 +51,8 @@ export const RecordingStatusWidget = () => {
             active={isListening}
             processing={isProcessing}
             strokeColor={theme.palette.common.white}
-            width={120}
-            height={36}
+            width={96}
+            height={24}
             style={{
               opacity: isProcessing ? 0 : 1,
               transition: "opacity 160ms ease",

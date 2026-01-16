@@ -9,7 +9,7 @@ import {
   PhysicalPosition,
   PhysicalSize,
 } from "@tauri-apps/api/window";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useUnifiedClickThrough } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
 import { getPlatform } from "../../utils/platform.utils";
@@ -39,7 +39,12 @@ export const UnifiedOverlayRoot = () => {
   const isAgentActive = agentPhase !== "idle";
   const isToastActive = currentToast !== null;
 
-  const isAnyActive = isWaveformActive || isAgentActive || isToastActive;
+  const platform = getPlatform();
+  const isMacOS = platform === "macos";
+
+  // On Windows/Linux, always show the overlay for the persistent pill indicator
+  const shouldAlwaysShowOverlay = !isMacOS;
+  const isAnyActive = isWaveformActive || isAgentActive || isToastActive || shouldAlwaysShowOverlay;
 
   useUnifiedClickThrough({
     contentRefs: [toastRef, agentRef],
@@ -55,84 +60,92 @@ export const UnifiedOverlayRoot = () => {
     windowRef.setIgnoreCursorEvents(true).catch(console.error);
   }, [windowRef]);
 
+  // Track which monitor the overlay is currently on
+  const currentMonitorRef = useRef<string | null>(null);
+
+  const updateOverlayPosition = useCallback(async () => {
+    try {
+      const [monitors, cursor, visibleArea] = await Promise.all([
+        availableMonitors().catch(() => null),
+        cursorPosition().catch(() => null),
+        invoke<ScreenVisibleArea>("get_screen_visible_area").catch(() => null),
+      ]);
+
+      const targetMonitor =
+        monitors?.find((monitor) => {
+          if (!cursor) {
+            return false;
+          }
+          const withinX =
+            cursor.x >= monitor.position.x &&
+            cursor.x < monitor.position.x + monitor.size.width;
+          const withinY =
+            cursor.y >= monitor.position.y &&
+            cursor.y < monitor.position.y + monitor.size.height;
+          return withinX && withinY;
+        }) ??
+        monitors?.[0] ??
+        null;
+
+      if (!targetMonitor) {
+        return;
+      }
+
+      // Create a unique identifier for this monitor
+      const monitorId = `${targetMonitor.position.x},${targetMonitor.position.y},${targetMonitor.size.width},${targetMonitor.size.height}`;
+
+      // Only update position if monitor changed
+      if (currentMonitorRef.current === monitorId) {
+        return;
+      }
+
+      currentMonitorRef.current = monitorId;
+
+      const currentPlatform = getPlatform();
+      const scaleFactor = targetMonitor.scaleFactor ?? 1;
+
+      const topInset = visibleArea?.topInset ?? 0;
+      const bottomInset = visibleArea?.bottomInset ?? 0;
+      const leftInset = visibleArea?.leftInset ?? 0;
+      const rightInset = visibleArea?.rightInset ?? 0;
+
+      if (currentPlatform === "windows") {
+        await windowRef.setSize(
+          new PhysicalSize(
+            targetMonitor.size.width,
+            targetMonitor.size.height,
+          ),
+        );
+        await windowRef.setPosition(
+          new PhysicalPosition(
+            targetMonitor.position.x,
+            targetMonitor.position.y,
+          ),
+        );
+      } else {
+        const logicalWidth =
+          targetMonitor.size.width / scaleFactor - leftInset - rightInset;
+        const logicalHeight =
+          targetMonitor.size.height / scaleFactor - topInset - bottomInset;
+        const logicalX = targetMonitor.position.x / scaleFactor + leftInset;
+        const logicalY = targetMonitor.position.y / scaleFactor + topInset;
+
+        await windowRef.setSize(new LogicalSize(logicalWidth, logicalHeight));
+        await windowRef.setPosition(new LogicalPosition(logicalX, logicalY));
+      }
+    } catch (err) {
+      console.error("Failed to update overlay position", err);
+    }
+  }, [windowRef]);
+
+  // Effect to handle visibility and initial positioning
   useEffect(() => {
     let canceled = false;
 
     const syncVisibility = async () => {
       try {
         if (isAnyActive) {
-          const [monitors, cursor, visibleArea] = await Promise.all([
-            availableMonitors().catch(() => null),
-            cursorPosition().catch(() => null),
-            invoke<ScreenVisibleArea>("get_screen_visible_area").catch(
-              () => null,
-            ),
-          ]);
-
-          const targetMonitor =
-            monitors?.find((monitor) => {
-              if (!cursor) {
-                return false;
-              }
-              const withinX =
-                cursor.x >= monitor.position.x &&
-                cursor.x < monitor.position.x + monitor.size.width;
-              const withinY =
-                cursor.y >= monitor.position.y &&
-                cursor.y < monitor.position.y + monitor.size.height;
-              return withinX && withinY;
-            }) ??
-            monitors?.[0] ??
-            null;
-
-          if (canceled) {
-            return;
-          }
-
-          if (targetMonitor) {
-            const platform = getPlatform();
-            const scaleFactor = targetMonitor.scaleFactor ?? 1;
-
-            const topInset = visibleArea?.topInset ?? 0;
-            const bottomInset = visibleArea?.bottomInset ?? 0;
-            const leftInset = visibleArea?.leftInset ?? 0;
-            const rightInset = visibleArea?.rightInset ?? 0;
-
-            if (platform === "windows") {
-              await windowRef.setSize(
-                new PhysicalSize(
-                  targetMonitor.size.width,
-                  targetMonitor.size.height,
-                ),
-              );
-              await windowRef.setPosition(
-                new PhysicalPosition(
-                  targetMonitor.position.x,
-                  targetMonitor.position.y,
-                ),
-              );
-            } else {
-              const logicalWidth =
-                targetMonitor.size.width / scaleFactor -
-                leftInset -
-                rightInset;
-              const logicalHeight =
-                targetMonitor.size.height / scaleFactor -
-                topInset -
-                bottomInset;
-              const logicalX =
-                targetMonitor.position.x / scaleFactor + leftInset;
-              const logicalY =
-                targetMonitor.position.y / scaleFactor + topInset;
-
-              await windowRef.setSize(
-                new LogicalSize(logicalWidth, logicalHeight),
-              );
-              await windowRef.setPosition(
-                new LogicalPosition(logicalX, logicalY),
-              );
-            }
-          }
+          await updateOverlayPosition();
 
           if (canceled) {
             return;
@@ -154,7 +167,22 @@ export const UnifiedOverlayRoot = () => {
     return () => {
       canceled = true;
     };
-  }, [windowRef, isAnyActive]);
+  }, [windowRef, isAnyActive, updateOverlayPosition]);
+
+  // Periodically check cursor position to update overlay on monitor change
+  useEffect(() => {
+    if (!shouldAlwaysShowOverlay) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      updateOverlayPosition().catch(() => {});
+    }, 500); // Check every 500ms
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [shouldAlwaysShowOverlay, updateOverlayPosition]);
 
   return (
     <>
