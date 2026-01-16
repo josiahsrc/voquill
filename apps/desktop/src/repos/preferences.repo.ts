@@ -30,6 +30,7 @@ type LocalUserPreferences = {
   secondaryDictationLanguage: Nullable<string>;
   activeDictationLanguage: Nullable<string>;
   preferredMicrophone: Nullable<string>;
+  ignoreUpdateDialog: boolean;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -72,6 +73,7 @@ const fromLocalPreferences = (
     (preferences.activeDictationLanguage as "primary" | "secondary") ??
     "primary",
   preferredMicrophone: preferences.preferredMicrophone ?? null,
+  ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
 });
 
 const toLocalPreferences = (
@@ -97,6 +99,7 @@ const toLocalPreferences = (
   secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
   activeDictationLanguage: preferences.activeDictationLanguage ?? "primary",
   preferredMicrophone: preferences.preferredMicrophone ?? null,
+  ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

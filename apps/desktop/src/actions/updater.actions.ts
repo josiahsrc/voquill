@@ -6,6 +6,7 @@ import {
 } from "@tauri-apps/plugin-updater";
 import { getAppState, produceAppState } from "../store";
 import { daysToMilliseconds } from "../utils/time.utils";
+import { getMyUserPreferences } from "../utils/user.utils";
 import {
   markSurfaceWindowForNextLaunch,
   surfaceMainWindow,
@@ -84,9 +85,14 @@ export const checkForAppUpdates = async (): Promise<void> => {
 
     availableUpdate = update;
 
-    const { dialogOpen, dismissedUntil } = getAppState().updater;
+    const state = getAppState();
+    const { dialogOpen, dismissedUntil } = state.updater;
+    const ignoreUpdateDialog =
+      getMyUserPreferences(state)?.ignoreUpdateDialog ?? false;
     const shouldAutoShowDialog =
-      !dialogOpen && (!dismissedUntil || Date.now() >= dismissedUntil);
+      !ignoreUpdateDialog &&
+      !dialogOpen &&
+      (!dismissedUntil || Date.now() >= dismissedUntil);
 
     produceAppState((draft) => {
       draft.updater.status = "ready";

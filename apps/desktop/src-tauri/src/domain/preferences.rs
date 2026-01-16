@@ -44,4 +44,6 @@ pub struct UserPreferences {
     pub active_dictation_language: Option<String>,
     #[serde(default)]
     pub preferred_microphone: Option<String>,
+    #[serde(default)]
+    pub ignore_update_dialog: bool,
 }

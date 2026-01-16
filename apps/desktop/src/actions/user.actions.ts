@@ -71,6 +71,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   secondaryDictationLanguage: null,
   activeDictationLanguage: "primary",
   preferredMicrophone: null,
+  ignoreUpdateDialog: false,
 });
 
 const updateUserPreferences = async (
@@ -484,4 +485,10 @@ export const markFeatureSeen = async (feature: string): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.lastSeenFeature = feature;
   }, "Failed to save feature seen status. Please try again.");
+};
+
+export const setIgnoreUpdateDialog = async (ignore: boolean): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.ignoreUpdateDialog = ignore;
+  }, "Failed to save update dialog preference. Please try again.");
 };

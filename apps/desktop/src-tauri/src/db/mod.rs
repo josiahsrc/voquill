@@ -79,6 +79,8 @@ pub const LANGUAGE_SWITCH_MIGRATION_SQL: &str =
 pub const MICROPHONE_TO_PREFERENCES_MIGRATION_SQL: &str =
     include_str!("migrations/041_microphone_to_preferences.sql");
 pub const USER_COHORT_MIGRATION_SQL: &str = include_str!("migrations/042_user_cohort.sql");
+pub const IGNORE_UPDATE_DIALOG_MIGRATION_SQL: &str =
+    include_str!("migrations/043_ignore_update_dialog.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -332,6 +334,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 42,
             description: "add_user_cohort",
             sql: USER_COHORT_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 43,
+            description: "add_ignore_update_dialog",
+            sql: IGNORE_UPDATE_DIALOG_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

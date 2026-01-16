@@ -10,6 +10,7 @@ import {
   LockOutlined,
   LogoutOutlined,
   MicOutlined,
+  MoreVertOutlined,
   PaymentOutlined,
   PersonRemoveOutlined,
   PrivacyTipOutlined,
@@ -153,6 +154,12 @@ export default function SettingsPage() {
     });
   };
 
+  const openMoreSettingsDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.moreSettingsDialogOpen = true;
+    });
+  };
+
   const openClearLocalDataDialog = () => {
     produceAppState((draft) => {
       draft.settings.clearLocalDataDialogOpen = true;
@@ -218,6 +225,11 @@ export default function SettingsPage() {
         title={<FormattedMessage defaultMessage="Hotkey shortcuts" />}
         leading={<KeyboardAltOutlined />}
         onClick={openShortcutsDialog}
+      />
+      <ListTile
+        title={<FormattedMessage defaultMessage="More settings" />}
+        leading={<MoreVertOutlined />}
+        onClick={openMoreSettingsDialog}
       />
     </Section>
   );

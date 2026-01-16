@@ -26,4 +26,5 @@ export type UserPreferences = {
   secondaryDictationLanguage: Nullable<string>;
   activeDictationLanguage: "primary" | "secondary";
   preferredMicrophone: Nullable<string>;
+  ignoreUpdateDialog: boolean;
 };
