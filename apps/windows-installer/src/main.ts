@@ -49,14 +49,18 @@ class Installer {
 
       if (stage === "complete") {
         this.state = "complete";
+        this.render();
+        setTimeout(() => {
+          this.launchApp();
+        }, 1000);
       } else if (stage === "error") {
         this.state = "error";
         this.errorMessage = message;
+        this.render();
       } else {
         this.state = "installing";
+        this.render();
       }
-
-      this.render();
     });
   }
 

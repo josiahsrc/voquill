@@ -10,9 +10,9 @@
   --bg-tertiary: #1a1a25;
   --text-primary: #ffffff;
   --text-secondary: #a0a0b0;
-  --accent: #6366f1;
-  --accent-glow: rgba(99, 102, 241, 0.4);
-  --success: #22c55e;
+  --accent: #ffffff;
+  --accent-glow: rgba(255, 255, 255, 0.4);
+  --success: #ffffff;
   --error: #ef4444;
   --border-radius: 16px;
 }
@@ -100,8 +100,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  gap: 24px;
+  padding: 32px;
+  gap: 20px;
 }
 
 .logo-container {
@@ -122,7 +122,7 @@ body {
 }
 
 .logo.installing {
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: pulse 4s ease-in-out infinite;
 }
 
 @keyframes pulse {
@@ -138,7 +138,7 @@ body {
 
 .logo.complete {
   color: var(--success);
-  filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.4));
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
   animation: none;
 }
 
@@ -178,7 +178,7 @@ body {
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent) 0%, #818cf8 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, rgba(255, 255, 255, 0.8) 100%);
   border-radius: 3px;
   transition: width 0.3s ease-out;
   position: relative;
@@ -197,7 +197,7 @@ body {
     rgba(255, 255, 255, 0.3) 50%,
     transparent 100%
   );
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 4s infinite;
 }
 
 @keyframes shimmer {
@@ -206,7 +206,7 @@ body {
 }
 
 .progress-bar.complete {
-  background: linear-gradient(90deg, var(--success) 0%, #4ade80 100%);
+  background: linear-gradient(90deg, var(--success) 0%, rgba(255, 255, 255, 0.8) 100%);
 }
 
 .progress-bar.complete::after {
@@ -228,7 +228,7 @@ body {
 }
 
 .btn {
-  padding: 10px 24px;
+  padding: 12px 28px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
@@ -238,8 +238,8 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--accent) 0%, rgba(255, 255, 255, 0.8) 100%);
+  color: #0a0a0f;
   box-shadow: 0 4px 14px var(--accent-glow);
 }
 

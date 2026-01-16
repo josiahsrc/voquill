@@ -2,9 +2,10 @@
 
 use std::path::PathBuf;
 use std::process::Stdio;
-use tauri::{AppHandle, Emitter, Manager};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tauri::{AppHandle, Emitter};
 use tokio::process::Command;
+
+const EMBEDDED_INSTALLER: &[u8] = include_bytes!("../installer/Voquill_Setup.exe");
 
 #[derive(Clone, serde::Serialize)]
 struct InstallProgress {
@@ -13,20 +14,12 @@ struct InstallProgress {
     message: String,
 }
 
-fn get_bundled_installer(app: &AppHandle) -> Result<PathBuf, String> {
-    let resource_path = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Failed to get resource dir: {}", e))?;
+fn extract_installer() -> Result<PathBuf, String> {
+    let temp_dir = std::env::temp_dir();
+    let installer_path = temp_dir.join("Voquill_Setup.exe");
 
-    let installer_path = resource_path.join("installer").join("Voquill_Setup.exe");
-
-    if !installer_path.exists() {
-        return Err(format!(
-            "Bundled installer not found at: {}",
-            installer_path.display()
-        ));
-    }
+    std::fs::write(&installer_path, EMBEDDED_INSTALLER)
+        .map_err(|e| format!("Failed to extract installer: {}", e))?;
 
     Ok(installer_path)
 }
@@ -46,7 +39,7 @@ fn emit_progress(app: &AppHandle, stage: &str, progress: u8, message: &str) {
 async fn start_installation(app: AppHandle) -> Result<(), String> {
     emit_progress(&app, "preparing", 5, "Preparing installation...");
 
-    let installer_path = get_bundled_installer(&app)?;
+    let installer_path = extract_installer()?;
 
     emit_progress(&app, "installing", 15, "Starting Voquill setup...");
 
@@ -59,13 +52,13 @@ async fn start_installation(app: AppHandle) -> Result<(), String> {
 
     emit_progress(&app, "installing", 30, "Installing Voquill...");
 
-    let mut progress = 30u8;
-    let progress_increment = 50u8;
-    let steps = 10;
+    let progress_start = 30u32;
+    let progress_range = 55u32;
+    let steps = 10u32;
 
     for i in 0..steps {
         tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-        progress = 30 + ((i + 1) * progress_increment / steps) as u8;
+        let progress = (progress_start + ((i + 1) * progress_range / steps)) as u8;
         emit_progress(&app, "installing", progress.min(85), "Installing Voquill...");
     }
 
@@ -73,6 +66,8 @@ async fn start_installation(app: AppHandle) -> Result<(), String> {
         .wait()
         .await
         .map_err(|e| format!("Failed to wait for installer: {}", e))?;
+
+    let _ = std::fs::remove_file(&installer_path);
 
     if !status.success() {
         emit_progress(&app, "error", 0, "Installation failed");
