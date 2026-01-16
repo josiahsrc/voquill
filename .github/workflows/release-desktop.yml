@@ -569,6 +569,49 @@ jobs:
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
 
+      - name: Build Windows portable installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $nsisDir = "D:\cargo\release\bundle\nsis"
+          $nsisInstaller = Get-ChildItem -Path $nsisDir -Filter "Voquill_*-setup.exe" | Select-Object -First 1
+
+          if (-not $nsisInstaller) {
+            Write-Error "Could not find NSIS installer in $nsisDir"
+            exit 1
+          }
+
+          Write-Host "Found NSIS installer: $($nsisInstaller.FullName)"
+
+          $destDir = "apps/windows-installer/src-tauri/installer"
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          Copy-Item $nsisInstaller.FullName "$destDir/Voquill_Setup.exe"
+
+          Write-Host "Building portable Windows installer..."
+          Set-Location apps/windows-installer
+          npm install
+          npm run tauri:build
+
+      - name: Upload Windows portable installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+        run: |
+          $installerExe = "apps/windows-installer/src-tauri/target/release/Voquill Installer.exe"
+
+          if (-not (Test-Path $installerExe)) {
+            Write-Error "Could not find portable installer executable at $installerExe"
+            exit 1
+          }
+
+          $destName = "Voquill_Portable_Installer.exe"
+          Copy-Item $installerExe $destName
+
+          Write-Host "Uploading $destName to release $env:RELEASE_TAG"
+          gh release upload $env:RELEASE_TAG $destName --clobber
+
   update-channel:
     name: Update channel release asset
     needs: [metadata, build]
