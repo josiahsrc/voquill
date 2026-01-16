@@ -1,11 +1,12 @@
+/*
 import { ArrowBack, ArrowForward } from "@mui/icons-material";
 import { Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
-import { goToOnboardingPage } from "../../actions/onboarding.actions";
-import { FormContainer } from "./OnboardingShared";
-import { useAppStore } from "../../store";
-import { getIsLoggedIn } from "../../utils/user.utils";
+import { goToOnboardingPage } from "../../../actions/onboarding.actions";
+import { FormContainer } from "../OnboardingShared";
+import { useAppStore } from "../../../store";
+import { getIsLoggedIn } from "../../../utils/user.utils";
 
 export const WelcomeForm = () => {
   const navigate = useNavigate();
@@ -49,3 +50,4 @@ export const WelcomeForm = () => {
     </FormContainer>
   );
 };
+*/

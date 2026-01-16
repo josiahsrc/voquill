@@ -1,19 +1,20 @@
+/*
 import { ArrowForward } from "@mui/icons-material";
 import { Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   goToOnboardingPage,
-} from "../../actions/onboarding.actions";
-import { useAppStore } from "../../store";
+} from "../../../actions/onboarding.actions";
+import { useAppStore } from "../../../store";
 import {
   DICTATE_HOTKEY,
   getDefaultHotkeyCombosForAction,
-} from "../../utils/keyboard.utils";
-import { getEffectivePlan } from "../../utils/member.utils";
-import { KeyPressSimulator } from "../common/KeyPressSimulator";
-import { HotkeySetting } from "../settings/HotkeySetting";
-import { FormContainer } from "./OnboardingShared";
+} from "../../../utils/keyboard.utils";
+import { getEffectivePlan } from "../../../utils/member.utils";
+import { KeyPressSimulator } from "../../common/KeyPressSimulator";
+import { HotkeySetting } from "../../settings/HotkeySetting";
+import { FormContainer } from "../OnboardingShared";
 
 export const HotkeySelectionForm = () => {
   const { status, hotkeys } = useAppStore((state) => ({
@@ -119,3 +120,4 @@ export const HotkeySelectionForm = () => {
     </FormContainer>
   );
 };
+*/

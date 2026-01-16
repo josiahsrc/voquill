@@ -1,12 +1,13 @@
+/*
 import { ArrowForward } from "@mui/icons-material";
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   goBackOnboardingPage,
   goToOnboardingPage,
-} from "../../actions/onboarding.actions";
-import { produceAppState, useAppStore } from "../../store";
-import { FormContainer } from "./OnboardingShared";
+} from "../../../actions/onboarding.actions";
+import { produceAppState, useAppStore } from "../../../store";
+import { FormContainer } from "../OnboardingShared";
 
 export const NameForm = () => {
   const intl = useIntl();
@@ -67,3 +68,4 @@ export const NameForm = () => {
     </FormContainer>
   );
 };
+*/

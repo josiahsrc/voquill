@@ -10,7 +10,6 @@ import {
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { CURRENT_FEATURE } from "../utils/feature.utils";
-import { PricingPlan } from "../utils/price.utils";
 import {
   GenerativePrefs,
   getAgentModePrefs,
@@ -56,19 +55,15 @@ export const resetOnboarding = () => {
   });
 };
 
-export const selectOnboardingPlan = (plan: PricingPlan) => {
+export const setOnboardingIsMac = (isMac: boolean) => {
   produceAppState((draft) => {
-    draft.onboarding.selectedPlan = plan;
-    draft.onboarding.isEnterprise = plan === "enterprise";
-    if (plan === "enterprise") {
-      navigateToOnboardingPage(draft.onboarding, "transcription");
-      return;
-    }
+    draft.onboarding.isMac = isMac;
+  });
+};
 
-    const targetPageKey: OnboardingPageKey =
-      plan === "community" ? "transcription" : "login";
-
-    navigateToOnboardingPage(draft.onboarding, targetPageKey);
+export const setDidSignUpWithAccount = (didSignUp: boolean) => {
+  produceAppState((draft) => {
+    draft.onboarding.didSignUpWithAccount = didSignUp;
   });
 };
 

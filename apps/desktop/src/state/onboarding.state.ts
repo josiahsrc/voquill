@@ -3,14 +3,17 @@ import { getIsDevMode } from "../utils/env.utils";
 import { PricingPlan } from "../utils/price.utils";
 
 export type OnboardingPageKey =
-  | "welcome"
-  | "name"
-  | "plan"
-  | "login"
-  | "transcription"
-  | "postProcessing"
-  | "hotkeys"
-  | "microphone";
+  | "signIn"
+  | "chooseTranscription"
+  | "chooseLlm"
+  | "username"
+  | "company"
+  | "micPerms"
+  | "a11yPerms"
+  | "keybindings"
+  | "micCheck"
+  | "unlockedPro"
+  | "tutorial";
 
 export type OnboardingState = {
   name: string;
@@ -22,11 +25,14 @@ export type OnboardingState = {
   loggingIn: boolean;
   preferredMicrophone: Nullable<string>;
   isEnterprise: boolean;
+  company: string;
+  isMac: boolean;
+  didSignUpWithAccount: boolean;
 };
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   name: "",
-  currentPage: "welcome",
+  currentPage: "signIn",
   history: [],
   submitting: false,
   tryItOutInput: "",
@@ -34,6 +40,9 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   loggingIn: false,
   preferredMicrophone: null,
   isEnterprise: false,
+  company: "",
+  isMac: false,
+  didSignUpWithAccount: false,
 };
 
 if (getIsDevMode()) {

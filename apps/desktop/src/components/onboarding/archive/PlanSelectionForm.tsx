@@ -1,3 +1,4 @@
+/*
 import { ArrowForward } from "@mui/icons-material";
 import { Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
@@ -5,12 +6,12 @@ import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   selectOnboardingPlan,
-} from "../../actions/onboarding.actions";
-import { trackButtonClick } from "../../utils/analytics.utils";
-import { PricingPlan } from "../../utils/price.utils";
-import { ConfirmDialog } from "../common/ConfirmDialog";
-import { PlanList } from "../pricing/PlanList";
-import { FormContainer } from "./OnboardingShared";
+} from "../../../actions/onboarding.actions";
+import { trackButtonClick } from "../../../utils/analytics.utils";
+import { PricingPlan } from "../../../utils/price.utils";
+import { ConfirmDialog } from "../../common/ConfirmDialog";
+import { PlanList } from "../../pricing/PlanList";
+import { FormContainer } from "../OnboardingShared";
 
 export const PlanSelectionForm = () => {
   const [confirmLocalSetupOpen, setConfirmLocalSetupOpen] = useState(false);
@@ -85,3 +86,4 @@ export const PlanSelectionForm = () => {
     </FormContainer>
   );
 };
+*/

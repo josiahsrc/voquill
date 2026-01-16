@@ -1,16 +1,17 @@
+/*
 import { Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   goToOnboardingPage,
-} from "../../actions/onboarding.actions";
-import { useAppStore } from "../../store";
-import { AITranscriptionConfiguration } from "../settings/AITranscriptionConfiguration";
-import { FormContainer } from "./OnboardingShared";
+} from "../../../actions/onboarding.actions";
+import { useAppStore } from "../../../store";
+import { AIPostProcessingConfiguration } from "../../settings/AIPostProcessingConfiguration";
+import { FormContainer } from "../OnboardingShared";
 
-export const TranscriptionMethodForm = () => {
+export const PostProcessingMethodForm = () => {
   const { mode, selectedApiKeyId } = useAppStore(
-    (state) => state.settings.aiTranscription,
+    (state) => state.settings.aiPostProcessing,
   );
 
   const canContinue = mode === "api" ? Boolean(selectedApiKeyId) : true;
@@ -18,13 +19,13 @@ export const TranscriptionMethodForm = () => {
   return (
     <FormContainer>
       <Typography variant="h4" fontWeight={600} gutterBottom>
-        <FormattedMessage defaultMessage="Choose your transcription setup" />
+        <FormattedMessage defaultMessage="Pick your post-processing" />
       </Typography>
       <Typography variant="body1" color="text.secondary" mb={4}>
-        <FormattedMessage defaultMessage="Decide how Voquill should transcribe your recordings—locally or through an API-powered service." />
+        <FormattedMessage defaultMessage="Choose if Voquill should enhance transcripts automatically after they are transcribed." />
       </Typography>
 
-      <AITranscriptionConfiguration hideCloudOption={true} />
+      <AIPostProcessingConfiguration hideCloudOption={true} />
 
       <Stack direction="row" justifyContent="space-between" mt={4} pb={4}>
         <Button onClick={() => goBackOnboardingPage()}>
@@ -32,7 +33,7 @@ export const TranscriptionMethodForm = () => {
         </Button>
         <Button
           variant="contained"
-          onClick={() => goToOnboardingPage("postProcessing")}
+          onClick={() => goToOnboardingPage("hotkeys")}
           disabled={!canContinue}
         >
           <FormattedMessage defaultMessage="Continue" />
@@ -41,3 +42,4 @@ export const TranscriptionMethodForm = () => {
     </FormContainer>
   );
 };
+*/

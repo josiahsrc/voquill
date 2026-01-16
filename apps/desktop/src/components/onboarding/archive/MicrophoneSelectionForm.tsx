@@ -1,3 +1,4 @@
+/*
 import { Check } from "@mui/icons-material";
 import { Button, Stack, Typography } from "@mui/material";
 import { Nullable } from "@repo/types";
@@ -6,12 +7,12 @@ import { FormattedMessage } from "react-intl";
 import {
   goBackOnboardingPage,
   submitOnboarding,
-} from "../../actions/onboarding.actions";
-import { useAppStore, produceAppState } from "../../store";
-import { getEffectivePlan } from "../../utils/member.utils";
-import { MicrophoneSelector } from "../microphone/MicrophoneSelector";
-import { MicrophoneTester } from "../microphone/MicrophoneTester";
-import { FormContainer } from "./OnboardingShared";
+} from "../../../actions/onboarding.actions";
+import { useAppStore, produceAppState } from "../../../store";
+import { getEffectivePlan } from "../../../utils/member.utils";
+import { MicrophoneSelector } from "../../microphone/MicrophoneSelector";
+import { MicrophoneTester } from "../../microphone/MicrophoneTester";
+import { FormContainer } from "../OnboardingShared";
 
 export const MicrophoneSelectionForm = () => {
   const submitting = useAppStore((state) => state.onboarding.submitting);
@@ -103,3 +104,4 @@ export const MicrophoneSelectionForm = () => {
     </FormContainer>
   );
 };
+*/
