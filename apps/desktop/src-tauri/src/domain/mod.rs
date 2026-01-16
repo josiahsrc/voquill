@@ -14,7 +14,7 @@ pub mod user;
 pub use api_key::{ApiKey, ApiKeyCreateRequest, ApiKeyUpdateRequest, ApiKeyView};
 pub use app_target::{AppTarget, EVT_REGISTER_CURRENT_APP};
 pub use hotkey::Hotkey;
-pub use keyboard::{KeysHeldPayload, EVT_KEYS_HELD};
+pub use keyboard::{KeysHeldPayload, MouseClickPayload, EVT_KEYS_HELD, EVT_MOUSE_CLICK};
 pub use overlay::{OverlayPhase, OverlayPhasePayload, EVT_OVERLAY_PHASE};
 pub use permissions::{PermissionKind, PermissionState, PermissionStatus};
 pub use preferences::UserPreferences;

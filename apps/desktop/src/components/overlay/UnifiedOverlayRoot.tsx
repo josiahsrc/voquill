@@ -46,6 +46,8 @@ export const UnifiedOverlayRoot = () => {
   const shouldAlwaysShowOverlay = !isMacOS;
   const isAnyActive = isWaveformActive || isAgentActive || isToastActive || shouldAlwaysShowOverlay;
 
+  // WaveformSection handles its own hover/click detection via cursor polling,
+  // so we don't include it in the click-through refs
   useUnifiedClickThrough({
     contentRefs: [toastRef, agentRef],
     enabled: isAnyActive,

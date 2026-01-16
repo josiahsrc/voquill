@@ -421,6 +421,18 @@ export const RootSideEffects = () => {
     onDeactivate: stopAgentRecording,
   });
 
+  // Handle click-to-toggle from the waveform pill overlay
+  const isRecordingDictation = useAppStore(
+    (state) => state.activeRecordingMode === "dictate",
+  );
+  useTauriListen<void>("waveform-toggle-dictation", async () => {
+    if (isRecordingDictation) {
+      await stopDictationRecording();
+    } else {
+      await startDictationRecording();
+    }
+  });
+
   const languageSwitchEnabled = useAppStore(
     (state) => state.settings.languageSwitch.enabled,
   );

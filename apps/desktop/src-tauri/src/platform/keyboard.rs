@@ -1,5 +1,5 @@
-use crate::domain::{KeysHeldPayload, EVT_KEYS_HELD};
-use rdev::{Event, EventType, Key as RdevKey};
+use crate::domain::{KeysHeldPayload, MouseClickPayload, EVT_KEYS_HELD, EVT_MOUSE_CLICK};
+use rdev::{Button, Event, EventType, Key as RdevKey};
 use std::collections::HashSet;
 use std::env;
 use std::io::{BufRead, BufReader, BufWriter, ErrorKind, Write};
@@ -40,6 +40,9 @@ impl KeyEventEmitter {
             EventType::KeyRelease(key) => {
                 self.update_pressed_keys(key, false);
             }
+            EventType::ButtonPress(button) => {
+                self.emit_mouse_click(button);
+            }
             _ => {}
         }
     }
@@ -78,6 +81,21 @@ impl KeyEventEmitter {
     fn emit(&self, payload: KeysHeldPayload) {
         if let Err(err) = self.app.emit_to(EventTarget::any(), EVT_KEYS_HELD, payload) {
             eprintln!("Failed to emit keys-held event: {err}");
+        }
+    }
+
+    fn emit_mouse_click(&self, button: Button) {
+        let button_name = match button {
+            Button::Left => "left",
+            Button::Right => "right",
+            Button::Middle => "middle",
+            Button::Unknown(_) => "unknown",
+        };
+        let payload = MouseClickPayload {
+            button: button_name.to_string(),
+        };
+        if let Err(err) = self.app.emit_to(EventTarget::any(), EVT_MOUSE_CLICK, payload) {
+            eprintln!("Failed to emit mouse-click event: {err}");
         }
     }
 }
@@ -140,6 +158,7 @@ pub fn stop_key_listener() -> Result<(), String> {
 enum WireEventKind {
     Press,
     Release,
+    MouseClick,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -147,6 +166,8 @@ struct KeyboardEventPayload {
     kind: WireEventKind,
     key_label: String,
     raw_code: Option<u32>,
+    #[serde(default)]
+    mouse_button: Option<String>,
 }
 
 fn debug_keys_enabled() -> bool {
@@ -320,11 +341,24 @@ fn pump_stream(stream: TcpStream, emitter: Arc<KeyEventEmitter>) -> Result<(), S
 }
 
 fn event_from_payload(payload: KeyboardEventPayload) -> Option<Event> {
-    let key = key_from_payload(&payload.key_label, payload.raw_code)?;
-
     let event_type = match payload.kind {
-        WireEventKind::Press => EventType::KeyPress(key),
-        WireEventKind::Release => EventType::KeyRelease(key),
+        WireEventKind::Press => {
+            let key = key_from_payload(&payload.key_label, payload.raw_code)?;
+            EventType::KeyPress(key)
+        }
+        WireEventKind::Release => {
+            let key = key_from_payload(&payload.key_label, payload.raw_code)?;
+            EventType::KeyRelease(key)
+        }
+        WireEventKind::MouseClick => {
+            let button = match payload.mouse_button.as_deref() {
+                Some("left") => Button::Left,
+                Some("right") => Button::Right,
+                Some("middle") => Button::Middle,
+                _ => Button::Unknown(0),
+            };
+            EventType::ButtonPress(button)
+        }
     };
 
     Some(Event {
@@ -401,12 +435,28 @@ pub fn run_listener_process() -> Result<(), String> {
                     kind: WireEventKind::Press,
                     key_label: key_to_label(key),
                     raw_code: key_raw_code(key),
+                    mouse_button: None,
                 }),
                 EventType::KeyRelease(key) => Some(KeyboardEventPayload {
                     kind: WireEventKind::Release,
                     key_label: key_to_label(key),
                     raw_code: key_raw_code(key),
+                    mouse_button: None,
                 }),
+                EventType::ButtonPress(button) => {
+                    let button_name = match button {
+                        Button::Left => "left",
+                        Button::Right => "right",
+                        Button::Middle => "middle",
+                        Button::Unknown(_) => "unknown",
+                    };
+                    Some(KeyboardEventPayload {
+                        kind: WireEventKind::MouseClick,
+                        key_label: String::new(),
+                        raw_code: None,
+                        mouse_button: Some(button_name.to_string()),
+                    })
+                }
                 _ => None,
             };
 
