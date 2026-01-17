@@ -39,11 +39,8 @@ export const UnifiedOverlayRoot = () => {
   const isAgentActive = agentPhase !== "idle";
   const isToastActive = currentToast !== null;
 
-  const platform = getPlatform();
-  const isMacOS = platform === "macos";
-
-  // On Windows/Linux, always show the overlay for the persistent pill indicator
-  const shouldAlwaysShowOverlay = !isMacOS;
+  // Always show the overlay for the persistent pill indicator
+  const shouldAlwaysShowOverlay = true;
   const isAnyActive = isWaveformActive || isAgentActive || isToastActive || shouldAlwaysShowOverlay;
 
   // WaveformSection handles its own hover/click detection via cursor polling,

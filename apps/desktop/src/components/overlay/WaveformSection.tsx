@@ -10,7 +10,6 @@ import {
   getHotkeyCombosForAction,
   getPrettyKeyName,
 } from "../../utils/keyboard.utils";
-import { getPlatform } from "../../utils/platform.utils";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
 
 const EXPANDED_WIDTH = 180;
@@ -28,7 +27,6 @@ export const WaveformSection = () => {
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );
   const isExpanded = phase !== "idle";
-  const isMacOS = getPlatform() === "macos";
   const [isHovered, setIsHovered] = useState(false);
   const pillRef = useRef<HTMLDivElement>(null);
   const isHoveredRef = useRef(false);
@@ -74,19 +72,17 @@ export const WaveformSection = () => {
   }, [isExpanded, checkIsOverPill]);
 
   useEffect(() => {
-    if (isMacOS || isExpanded) {
+    if (isExpanded) {
       setIsHovered(false);
       return;
     }
 
     const interval = setInterval(checkHover, 100);
     return () => clearInterval(interval);
-  }, [isMacOS, isExpanded, checkHover]);
+  }, [isExpanded, checkHover]);
 
   // Listen for global mouse clicks and toggle dictation if over pill
   useEffect(() => {
-    if (isMacOS) return;
-
     const unlistenPromise = listen<{ button: string }>(
       "global-mouse-click",
       async (event) => {
@@ -104,11 +100,7 @@ export const WaveformSection = () => {
     return () => {
       unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
     };
-  }, [isMacOS, checkIsOverPill]);
-
-  if (isMacOS) {
-    return null;
-  }
+  }, [checkIsOverPill]);
 
   // Format the first hotkey combo for display
   const hotkeyLabel =
@@ -191,6 +183,7 @@ export const WaveformSection = () => {
             theme.palette.common.black,
             isExpanded ? 0.92 : isHovered ? 0.75 : 0.6,
           ),
+          border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
           backdropFilter: "blur(14px)",
           boxShadow: isExpanded
             ? `0 10px 35px ${alpha(theme.palette.common.black, 0.36)}`
