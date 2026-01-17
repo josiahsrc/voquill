@@ -30,6 +30,7 @@ export const WaveformSection = () => {
   const isExpanded = phase !== "idle";
   const [isHovered, setIsHovered] = useState(false);
   const pillRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const isHoveredRef = useRef(false);
 
   // Keep ref in sync with state for use in event handlers
@@ -37,7 +38,7 @@ export const WaveformSection = () => {
     isHoveredRef.current = isHovered;
   }, [isHovered]);
 
-  // Check if cursor is over the pill
+  // Check if cursor is over the pill (with padding for hover detection)
   const checkIsOverPill = useCallback(async (): Promise<boolean> => {
     if (!pillRef.current) return false;
 
@@ -57,6 +58,45 @@ export const WaveformSection = () => {
         relativeY >= rect.top - HOVER_PADDING &&
         relativeY <= rect.bottom + HOVER_PADDING
       );
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Check if cursor is directly over the pill or tooltip (no padding, for click detection)
+  const checkIsDirectlyOverPill = useCallback(async (): Promise<boolean> => {
+    if (!pillRef.current) return false;
+
+    try {
+      const cursor = await cursorPosition();
+      const window = getCurrentWindow();
+      const windowPos = await window.outerPosition();
+      const scaleFactor = (await window.scaleFactor()) ?? 1;
+
+      const relativeX = (cursor.x - windowPos.x) / scaleFactor;
+      const relativeY = (cursor.y - windowPos.y) / scaleFactor;
+
+      const pillRect = pillRef.current.getBoundingClientRect();
+      const isOverPill =
+        relativeX >= pillRect.left &&
+        relativeX <= pillRect.right &&
+        relativeY >= pillRect.top &&
+        relativeY <= pillRect.bottom;
+
+      if (isOverPill) return true;
+
+      // Also check if over the tooltip
+      if (tooltipRef.current) {
+        const tooltipRect = tooltipRef.current.getBoundingClientRect();
+        const isOverTooltip =
+          relativeX >= tooltipRect.left &&
+          relativeX <= tooltipRect.right &&
+          relativeY >= tooltipRect.top &&
+          relativeY <= tooltipRect.bottom;
+        if (isOverTooltip) return true;
+      }
+
+      return false;
     } catch {
       return false;
     }
@@ -90,9 +130,9 @@ export const WaveformSection = () => {
         // Only respond to left clicks
         if (event.payload.button !== "left") return;
 
-        // Check if cursor is over the pill
-        const isOver = await checkIsOverPill();
-        if (isOver || isHoveredRef.current) {
+        // Check if cursor is directly over the pill (not just in hover area)
+        const isOver = await checkIsDirectlyOverPill();
+        if (isOver) {
           emitTo("main", "waveform-toggle-dictation", {}).catch(console.error);
         }
       },
@@ -101,7 +141,7 @@ export const WaveformSection = () => {
     return () => {
       unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
     };
-  }, [checkIsOverPill]);
+  }, [checkIsDirectlyOverPill]);
 
   // Format the first hotkey combo for display
   const hotkeyLabel =
@@ -138,6 +178,7 @@ export const WaveformSection = () => {
     >
       {/* Tooltip */}
       <Box
+        ref={tooltipRef}
         sx={{
           opacity: isHovered && !isExpanded ? 1 : 0,
           transform: isHovered && !isExpanded ? "translateY(0)" : "translateY(4px)",
