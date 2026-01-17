@@ -1,4 +1,4 @@
-import { ArrowForward, Check, TouchApp } from "@mui/icons-material";
+import { ArrowForward, Check, Email, TouchApp } from "@mui/icons-material";
 import discordIcon from "../../assets/discord.svg";
 import {
   Box,
@@ -12,7 +12,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { BouncyTooltip } from "./BouncyTooltip";
 
-const pulse = keyframes`
+const pulseDiscord = keyframes`
   0%, 100% {
     border-color: rgba(88, 101, 242, 0.4);
     box-shadow: 0 0 0 0 rgba(88, 101, 242, 0.4);
@@ -20,6 +20,17 @@ const pulse = keyframes`
   50% {
     border-color: rgba(88, 101, 242, 1);
     box-shadow: 0 0 0 4px rgba(88, 101, 242, 0.3);
+  }
+`;
+
+const pulseEmail = keyframes`
+  0%, 100% {
+    border-color: rgba(26, 115, 232, 0.4);
+    box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4);
+  }
+  50% {
+    border-color: rgba(26, 115, 232, 1);
+    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.3);
   }
 `;
 import { showConfetti, showErrorSnackbar } from "../../actions/app.actions";
@@ -53,6 +64,7 @@ export const TutorialForm = () => {
   );
   const primaryHotkey = hotkeyCombos[0] ?? [];
   const keysHeld = useAppStore((state) => state.keysHeld);
+  const userName = useAppStore((state) => state.onboarding.name) || "Alex";
 
   useEffect(() => {
     if (primaryHotkey.length === 0) return;
@@ -103,16 +115,12 @@ export const TutorialForm = () => {
     defaultMessage: "Bagels are the breakfast of champions.",
   });
 
-  const step2Placeholder = intl.formatMessage({
-    defaultMessage: `Hi Sarah,
+  const step2Placeholder = `Hey Sarah,
 
-Thanks for reaching out about the project timeline. I wanted to follow up on our conversation from yesterday.
-
-I've reviewed the requirements and I think we can have the first draft ready by Friday. Let me know if that works for your team.
+Great meeting you yesterday! Looking forward to next steps.
 
 Best,
-Alex`,
-  });
+${userName}`;
 
   const form = (
     <OnboardingFormLayout
@@ -166,7 +174,40 @@ Alex`,
     </OnboardingFormLayout>
   );
 
-  const rightContent = (
+  const bouncyTooltips = (
+    <>
+      <BouncyTooltip
+        visible={!isFieldFocused && !hasStartedDictating}
+        delay={0.4}
+      >
+        <TouchApp fontSize="small" />
+        <Typography variant="body2" fontWeight={500}>
+          <FormattedMessage defaultMessage="Click on the text field" />
+        </Typography>
+      </BouncyTooltip>
+      <BouncyTooltip
+        visible={isFieldFocused && !hasStartedDictating}
+        delay={0.4}
+      >
+        <Typography variant="body2" fontWeight={500}>
+          <FormattedMessage defaultMessage="Now press and hold" />
+        </Typography>
+        <HotkeyBadge
+          keys={primaryHotkey}
+          sx={{
+            bgcolor: "rgba(255,255,255,0.2)",
+            borderColor: "rgba(255,255,255,0.3)",
+            color: "primary.contrastText",
+          }}
+        />
+        <Typography variant="body2" fontWeight={500}>
+          <FormattedMessage defaultMessage="to dictate" />
+        </Typography>
+      </BouncyTooltip>
+    </>
+  );
+
+  const discordContent = (
     <Box sx={{ maxWidth: 400, width: "100%", position: "relative", pb: 6 }}>
       <Stack
         spacing={0}
@@ -240,9 +281,9 @@ Alex`,
           </Box>
           <TextField
             multiline
-            minRows={stepIndex === 0 ? 2 : 8}
+            minRows={2}
             fullWidth
-            placeholder={stepIndex === 0 ? step1Placeholder : step2Placeholder}
+            placeholder={step1Placeholder}
             value={dictationValue}
             onChange={handleDictationChange}
             disabled={submitting}
@@ -256,7 +297,7 @@ Alex`,
                   ? { borderColor: "#1e1f22" }
                   : {
                       borderWidth: 2,
-                      animation: `${pulse} 1.5s ease-in-out infinite`,
+                      animation: `${pulseDiscord} 1.5s ease-in-out infinite`,
                     },
                 "&:hover fieldset": {
                   borderColor: isFieldFocused ? "#1e1f22" : undefined,
@@ -276,36 +317,137 @@ Alex`,
           />
         </Box>
       </Stack>
-      <BouncyTooltip
-        visible={!isFieldFocused && !hasStartedDictating}
-        delay={0.4}
-      >
-        <TouchApp fontSize="small" />
-        <Typography variant="body2" fontWeight={500}>
-          <FormattedMessage defaultMessage="Click on the text field" />
-        </Typography>
-      </BouncyTooltip>
-      <BouncyTooltip
-        visible={isFieldFocused && !hasStartedDictating}
-        delay={0.4}
-      >
-        <Typography variant="body2" fontWeight={500}>
-          <FormattedMessage defaultMessage="Now press and hold" />
-        </Typography>
-        <HotkeyBadge
-          keys={primaryHotkey}
-          sx={{
-            bgcolor: "rgba(255,255,255,0.2)",
-            borderColor: "rgba(255,255,255,0.3)",
-            color: "primary.contrastText",
-          }}
-        />
-        <Typography variant="body2" fontWeight={500}>
-          <FormattedMessage defaultMessage="to dictate" />
-        </Typography>
-      </BouncyTooltip>
+      {bouncyTooltips}
     </Box>
   );
+
+  const emailContent = (
+    <Box sx={{ maxWidth: 400, width: "100%", position: "relative", pb: 6 }}>
+      <Stack
+        spacing={0}
+        sx={{
+          bgcolor: "#ffffff",
+          borderRadius: 1.33,
+          width: "100%",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            px: 2,
+            py: 1.5,
+            borderBottom: "1px solid #e0e0e0",
+            bgcolor: "#f5f5f5",
+          }}
+        >
+          <Email sx={{ fontSize: 20, color: "#d93025" }} />
+          <Typography variant="body2" fontWeight={600} sx={{ color: "#202124" }}>
+            Email
+          </Typography>
+        </Box>
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                mb: 1,
+                pb: 1,
+                borderBottom: "1px solid #e0e0e0",
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{ color: "#5f6368" }}
+              >
+                To:
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#202124" }}>
+                sarah@company.com
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                pb: 1,
+                borderBottom: "1px solid #e0e0e0",
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{ color: "#5f6368" }}
+              >
+                Subject:
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#202124" }}>
+                Great chatting yesterday! 🎉
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ position: "relative" }}>
+            <TextField
+              multiline
+              minRows={8}
+              fullWidth
+              value={dictationValue}
+              onChange={handleDictationChange}
+              disabled={submitting}
+              onFocus={() => setIsFieldFocused(true)}
+              onBlur={() => setIsFieldFocused(false)}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  bgcolor: "#ffffff",
+                  borderRadius: 1,
+                  "& fieldset": isFieldFocused
+                    ? { borderColor: "#e0e0e0" }
+                    : {
+                        borderWidth: 2,
+                        animation: `${pulseEmail} 1.5s ease-in-out infinite`,
+                      },
+                  "&:hover fieldset": {
+                    borderColor: isFieldFocused ? "#e0e0e0" : undefined,
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#1a73e8",
+                  },
+                },
+                "& .MuiInputBase-input": {
+                  color: "#202124",
+                },
+              }}
+            />
+            {dictationValue.length === 0 && (
+              <Typography
+                variant="body1"
+                sx={{
+                  position: "absolute",
+                  top: 16.5,
+                  left: 14,
+                  right: 14,
+                  color: "#5f6368",
+                  pointerEvents: "none",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {step2Placeholder}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      </Stack>
+      {bouncyTooltips}
+    </Box>
+  );
+
+  const rightContent = stepIndex === 0 ? discordContent : emailContent;
 
   return (
     <DualPaneLayout
