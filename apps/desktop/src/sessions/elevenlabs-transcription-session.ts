@@ -238,7 +238,7 @@ const startElevenLabsStreaming = async (
               finalizeResolver(getText());
               finalizeResolver = null;
             }
-          }, 3000);
+          }, 6000);
         } else {
           cleanup();
           resolveFinalize(getText());
