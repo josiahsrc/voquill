@@ -1,9 +1,9 @@
 import {
   AllInclusive,
   ArrowForward,
-  AutoAwesome,
   Devices,
   Mic,
+  Spellcheck,
 } from "@mui/icons-material";
 import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
@@ -72,9 +72,9 @@ export const UnlockedProForm = () => {
             </Typography>
           </Stack>
           <Stack direction="row" spacing={1.5} alignItems="center">
-            <AutoAwesome sx={{ color: "text.secondary", fontSize: 20 }} />
+            <Spellcheck sx={{ color: "text.secondary", fontSize: 20 }} />
             <Typography variant="body1">
-              <FormattedMessage defaultMessage="Agent mode" />
+              <FormattedMessage defaultMessage="Word dictionary" />
             </Typography>
           </Stack>
         </Stack>

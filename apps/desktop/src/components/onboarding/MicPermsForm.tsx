@@ -81,5 +81,13 @@ export const MicPermsForm = () => {
     </Box>
   );
 
-  return <DualPaneLayout left={form} right={rightContent} />;
+  return (
+    <DualPaneLayout
+      left={form}
+      right={rightContent}
+      rightSx={{
+        bgcolor: "transparent",
+      }}
+    />
+  );
 };

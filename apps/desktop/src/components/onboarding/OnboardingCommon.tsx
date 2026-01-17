@@ -1,5 +1,5 @@
 import { ArrowBack } from "@mui/icons-material";
-import { Box, Button, Stack, SxProps } from "@mui/material";
+import { Box, Button, Stack, SxProps, useColorScheme } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { goBackOnboardingPage } from "../../actions/onboarding.actions";
@@ -119,6 +119,9 @@ export const DualPaneLayout = ({
   rightSx,
   flex = [1, 1],
 }: DualPaneLayoutProps) => {
+  const { mode, systemMode } = useColorScheme();
+  const isDarkTheme = mode === "dark" || (mode === "system" && systemMode === "dark");
+
   return (
     <Box
       sx={{
@@ -154,7 +157,7 @@ export const DualPaneLayout = ({
             alignItems: "center",
             justifyContent: "center",
             borderRadius: 4,
-            bgcolor: "transparent",
+            bgcolor: "level1",
             minWidth: 0,
             minHeight: 0,
             overflow: "hidden",
@@ -163,9 +166,7 @@ export const DualPaneLayout = ({
               maxWidth: "100%",
               maxHeight: "100%",
               objectFit: "contain",
-              '[data-mui-color-scheme="dark"] &': {
-                filter: "invert(1) hue-rotate(180deg)",
-              },
+              filter: isDarkTheme ? "invert(1) hue-rotate(360deg)" : "none",
             },
             ...rightSx,
           }}

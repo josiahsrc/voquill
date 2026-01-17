@@ -80,5 +80,13 @@ export const A11yPermsForm = () => {
     </Box>
   );
 
-  return <DualPaneLayout left={form} right={rightContent} />;
+  return (
+    <DualPaneLayout
+      left={form}
+      right={rightContent}
+      rightSx={{
+        bgcolor: "transparent",
+      }}
+    />
+  );
 };
