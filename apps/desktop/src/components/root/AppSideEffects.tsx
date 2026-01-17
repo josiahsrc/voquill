@@ -192,6 +192,11 @@ export const AppSideEffects = () => {
 
     if (currentUserId && currentUserId !== prevUserId) {
       mixpanel.identify(currentUserId);
+      mixpanel.people.set({
+        $email: auth?.email ?? undefined,
+        $name: auth?.displayName ?? undefined,
+        $created: auth?.metadata?.creationTime ?? undefined,
+      });
     }
 
     prevUserIdRef.current = currentUserId;
