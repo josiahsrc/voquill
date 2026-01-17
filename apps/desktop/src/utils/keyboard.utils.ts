@@ -3,6 +3,7 @@ import { getPlatform } from "./platform.utils";
 
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
+export const AGENT_OVERLAY_CLOSE_HOTKEY = "agent-overlay-close";
 export const LANGUAGE_SWITCH_HOTKEY = "language-switch";
 
 export const getPrettyKeyName = (key: string): string => {
@@ -45,6 +46,11 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
     macos: [["Function"]],
     windows: [["F8"]],
     linux: [["F8"]],
+  },
+  [AGENT_OVERLAY_CLOSE_HOTKEY]: {
+    macos: [["Escape"]],
+    windows: [["Escape"]],
+    linux: [["Escape"]],
   },
   [LANGUAGE_SWITCH_HOTKEY]: {
     macos: [["controlLeft", "ShiftLeft", "KeyL"]],

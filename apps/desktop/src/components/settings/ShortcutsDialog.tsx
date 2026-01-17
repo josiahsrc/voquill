@@ -1,21 +1,23 @@
 import {
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Stack,
-    Typography,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  Typography,
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { setLanguageSwitchEnabled } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import {
-    AGENT_DICTATE_HOTKEY,
-    DICTATE_HOTKEY,
-    LANGUAGE_SWITCH_HOTKEY,
+  AGENT_DICTATE_HOTKEY,
+  AGENT_OVERLAY_CLOSE_HOTKEY,
+  DICTATE_HOTKEY,
+  LANGUAGE_SWITCH_HOTKEY,
 } from "../../utils/keyboard.utils";
+
 import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {
@@ -66,6 +68,13 @@ export const ShortcutsDialog = () => {
             <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
           }
           actionName={AGENT_DICTATE_HOTKEY}
+        />
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Close agent panel" />}
+          description={
+            <FormattedMessage defaultMessage="Close the agent panel (useful when the panel is not clickable on Windows)." />
+          }
+          actionName={AGENT_OVERLAY_CLOSE_HOTKEY}
         />
         <HotkeySetting
           title={

@@ -11,6 +11,7 @@ import {
   useState,
   RefObject,
 } from "react";
+import { getPlatform } from "../utils/platform.utils";
 
 type ContentRef = RefObject<HTMLElement | null>;
 
@@ -27,9 +28,17 @@ export const useUnifiedClickThrough = ({
 }: UseUnifiedClickThroughOptions) => {
   const defaultWindowRef = useMemo(() => getCurrentWindow(), []);
   const windowRef = providedWindowRef ?? defaultWindowRef;
+  const platform = useMemo(() => getPlatform(), []);
 
   useEffect(() => {
     if (!enabled) return;
+
+    // Windows-specific: never toggle ignore cursor events.
+    // Toggling this on a transparent always-on-top window can cause the overlay to stop painting.
+    if (platform === "windows") {
+      windowRef.setIgnoreCursorEvents(true).catch(console.error);
+      return;
+    }
 
     let isOverContent = false;
     let animationFrame: number;
@@ -107,7 +116,7 @@ export const useUnifiedClickThrough = ({
       cancelAnimationFrame(animationFrame);
       windowRef.setIgnoreCursorEvents(true).catch(console.error);
     };
-  }, [windowRef, enabled, contentRefs]);
+  }, [windowRef, enabled, contentRefs, platform]);
 };
 
 type UseOverlayDragOptions = {

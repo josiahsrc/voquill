@@ -1,5 +1,6 @@
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import { emitTo } from "@tauri-apps/api/event";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
@@ -53,9 +54,11 @@ import {
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import {
   AGENT_DICTATE_HOTKEY,
+  AGENT_OVERLAY_CLOSE_HOTKEY,
   DICTATE_HOTKEY,
   LANGUAGE_SWITCH_HOTKEY,
 } from "../../utils/keyboard.utils";
+
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
@@ -432,6 +435,13 @@ export const RootSideEffects = () => {
     actionName: LANGUAGE_SWITCH_HOTKEY,
     isDisabled: !languageSwitchEnabled,
     onFire: handleLanguageSwitch,
+  });
+
+  useHotkeyFire({
+    actionName: AGENT_OVERLAY_CLOSE_HOTKEY,
+    onFire: () => {
+      emitTo("main", "agent-overlay-close", {}).catch(console.error);
+    },
   });
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
