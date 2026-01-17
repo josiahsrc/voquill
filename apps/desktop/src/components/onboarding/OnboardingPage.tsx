@@ -5,20 +5,19 @@ import { useAppStore } from "../../store";
 import { A11yPermsForm } from "./A11yPermsForm";
 import { ChooseLlmForm } from "./ChooseLlmForm";
 import { ChooseTranscriptionForm } from "./ChooseTranscriptionForm";
-import { CompanyForm } from "./CompanyForm";
 import { KeybindingsForm } from "./KeybindingsForm";
 import { MicCheckForm } from "./MicCheckForm";
 import { MicPermsForm } from "./MicPermsForm";
 import { SignInForm } from "./SignInForm";
 import { TutorialForm } from "./TutorialForm";
 import { UnlockedProForm } from "./UnlockedProForm";
-import { UsernameForm } from "./UsernameForm";
+import { UserDetailsForm } from "./UserDetailsForm";
 
 export default function OnboardingPage() {
   const currentPage = useAppStore((state) => state.onboarding.currentPage);
 
   useEffect(() => {
-    trackOnboardingStep(currentPage);
+    trackOnboardingStep(`v2_${currentPage}`);
   }, [currentPage]);
 
   return (
@@ -31,8 +30,7 @@ export default function OnboardingPage() {
       {currentPage === "signIn" && <SignInForm />}
       {currentPage === "chooseTranscription" && <ChooseTranscriptionForm />}
       {currentPage === "chooseLlm" && <ChooseLlmForm />}
-      {currentPage === "username" && <UsernameForm />}
-      {currentPage === "company" && <CompanyForm />}
+      {currentPage === "userDetails" && <UserDetailsForm />}
       {currentPage === "micPerms" && <MicPermsForm />}
       {currentPage === "a11yPerms" && <A11yPermsForm />}
       {currentPage === "keybindings" && <KeybindingsForm />}

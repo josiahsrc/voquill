@@ -6,8 +6,7 @@ export type OnboardingPageKey =
   | "signIn"
   | "chooseTranscription"
   | "chooseLlm"
-  | "username"
-  | "company"
+  | "userDetails"
   | "micPerms"
   | "a11yPerms"
   | "keybindings"
@@ -17,6 +16,7 @@ export type OnboardingPageKey =
 
 export type OnboardingState = {
   name: string;
+  title: string;
   currentPage: OnboardingPageKey;
   history: OnboardingPageKey[];
   submitting: boolean;
@@ -32,6 +32,7 @@ export type OnboardingState = {
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   name: "",
+  title: "",
   currentPage: "signIn",
   history: [],
   submitting: false,

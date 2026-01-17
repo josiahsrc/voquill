@@ -18,11 +18,11 @@ export const SignInForm = () => {
   };
 
   const handleContinueWithGoogle = () => {
-    goToOnboardingPage("username");
+    goToOnboardingPage("userDetails");
   };
 
   const handleCreateAccount = () => {
-    goToOnboardingPage("username");
+    goToOnboardingPage("userDetails");
   };
 
   const rightContent = (

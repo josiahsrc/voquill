@@ -18,7 +18,7 @@ export const ChooseLlmForm = () => {
   const canContinue = mode === "api" ? Boolean(selectedApiKeyId) : true;
 
   const handleContinue = () => {
-    goToOnboardingPage("username");
+    goToOnboardingPage("userDetails");
   };
 
   const form = (
