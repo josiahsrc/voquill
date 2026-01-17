@@ -60,7 +60,7 @@ export const OnboardingFormLayout = ({
       >
         {children}
       </Box>
-      <Box sx={{ height: 16, flex: 2 }} />
+      <Box sx={{ height: 16, flex: 4 }} />
       <Box sx={{ display: "flex", justifyContent: "flex-end" }}>{actions}</Box>
     </Stack>
   );
