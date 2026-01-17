@@ -18,10 +18,12 @@ export const SignInForm = () => {
   };
 
   const handleContinueWithGoogle = () => {
+    setDidSignUpWithAccount(true);
     goToOnboardingPage("userDetails");
   };
 
   const handleCreateAccount = () => {
+    setDidSignUpWithAccount(true);
     goToOnboardingPage("userDetails");
   };
 
