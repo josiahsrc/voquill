@@ -24,6 +24,10 @@ export const getIsOnboarded = (state: AppState): boolean => {
   return Boolean(getMyUser(state)?.onboarded);
 };
 
+export const getIsDictationUnlocked = (state: AppState): boolean => {
+  return getIsOnboarded(state) || state.onboarding.dictationOverrideEnabled;
+};
+
 export const getHasCloudAccess = (state: AppState): boolean => {
   const effectivePlan = getEffectivePlan(state);
   return effectivePlan === "pro" || effectivePlan === "free";

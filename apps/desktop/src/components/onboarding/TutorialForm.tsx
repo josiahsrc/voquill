@@ -36,7 +36,7 @@ const pulseEmail = keyframes`
 import { showConfetti, showErrorSnackbar } from "../../actions/app.actions";
 import { submitOnboarding } from "../../actions/onboarding.actions";
 import { finishTutorial } from "../../actions/user.actions";
-import { useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
@@ -76,6 +76,17 @@ export const TutorialForm = () => {
       setHasStartedDictating(true);
     }
   }, [keysHeld, primaryHotkey]);
+
+  useEffect(() => {
+    produceAppState((draft) => {
+      draft.onboarding.dictationOverrideEnabled = true;
+    });
+    return () => {
+      produceAppState((draft) => {
+        draft.onboarding.dictationOverrideEnabled = false;
+      });
+    };
+  }, []);
 
   const isLastStep = stepIndex === PAGE_COUNT - 1;
   const canContinue = dictationValue.trim().length > 0;

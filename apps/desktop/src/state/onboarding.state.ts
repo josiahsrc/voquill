@@ -28,6 +28,7 @@ export type OnboardingState = {
   company: string;
   isMac: boolean;
   didSignUpWithAccount: boolean;
+  dictationOverrideEnabled: boolean;
 };
 
 export const INITIAL_ONBOARDING_STATE: OnboardingState = {
@@ -44,6 +45,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   company: "",
   isMac: false,
   didSignUpWithAccount: false,
+  dictationOverrideEnabled: false,
 };
 
 if (getIsDevMode()) {

@@ -58,7 +58,7 @@ import {
 } from "../../utils/keyboard.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
-  getIsOnboarded,
+  getIsDictationUnlocked,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
   getTranscriptionPrefs,
@@ -377,7 +377,7 @@ export const RootSideEffects = () => {
 
   const startDictationRecording = useCallback(async () => {
     const state = getAppState();
-    if (!getIsOnboarded(state)) {
+    if (!getIsDictationUnlocked(state)) {
       return;
     }
 
@@ -394,7 +394,7 @@ export const RootSideEffects = () => {
 
   const startAgentRecording = useCallback(async () => {
     const state = getAppState();
-    if (!getIsOnboarded(state)) {
+    if (!getIsDictationUnlocked(state)) {
       return;
     }
 
