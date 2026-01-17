@@ -26,7 +26,7 @@ export default function OnboardingPage() {
       direction="row"
       alignItems="center"
       justifyContent="center"
-      sx={{ height: "100%", pb: 4 }}
+      sx={{ height: "100%" }}
     >
       {currentPage === "signIn" && <SignInForm />}
       {currentPage === "chooseTranscription" && <ChooseTranscriptionForm />}

@@ -1,56 +1,78 @@
-import { ArrowBack, ArrowForward } from "@mui/icons-material";
-import { Button, Stack, Typography } from "@mui/material";
+import { ArrowForward, Email, Google } from "@mui/icons-material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
-import { useNavigate } from "react-router-dom";
 import {
   goToOnboardingPage,
   setDidSignUpWithAccount,
 } from "../../actions/onboarding.actions";
-import { FormContainer } from "./OnboardingShared";
+import {
+  BackButton,
+  DualPaneLayout,
+  OnboardingFormLayout,
+} from "./OnboardingCommon";
 
 export const SignInForm = () => {
-  const navigate = useNavigate();
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
   const handleLocal = () => {
     setDidSignUpWithAccount(false);
     goToOnboardingPage("chooseTranscription");
   };
 
-  const handleSignedUp = () => {
-    setDidSignUpWithAccount(true);
-    goToOnboardingPage("username");
+  const handleContinueWithGoogle = () => {
+    // TODO: Wire up Google sign-in
   };
 
-  return (
-    <FormContainer>
-      <Typography variant="h4" fontWeight={600} gutterBottom>
-        <FormattedMessage defaultMessage="Sign In" />
-      </Typography>
-      <Typography variant="body1" color="text.secondary" mb={4}>
-        <FormattedMessage defaultMessage="Choose how you want to get started." />
-      </Typography>
+  const handleCreateAccount = () => {
+    // TODO: Wire up create account
+  };
 
-      <Stack direction="row" spacing={2} justifyContent="space-between" mt={4}>
-        <Button startIcon={<ArrowBack />} onClick={handleGoBack}>
-          <FormattedMessage defaultMessage="Back" />
-        </Button>
-        <Stack direction="row" spacing={2}>
-          <Button variant="outlined" onClick={handleLocal}>
-            <FormattedMessage defaultMessage="Local" />
-          </Button>
-          <Button
-            variant="contained"
-            endIcon={<ArrowForward />}
-            onClick={handleSignedUp}
-          >
-            <FormattedMessage defaultMessage="Sign Up with Account" />
-          </Button>
-        </Stack>
-      </Stack>
-    </FormContainer>
+  const rightContent = (
+    <Box
+      component="img"
+      src="https://illustrations.popsy.co/amber/student-going-to-school.svg"
+      alt="Illustration"
+      sx={{ maxWidth: 400, maxHeight: 400 }}
+    />
   );
+
+  const form = (
+    <OnboardingFormLayout
+      back={<BackButton />}
+      actions={
+        <Button
+          onClick={handleLocal}
+          variant="text"
+          endIcon={<ArrowForward />}
+          sx={{ color: "text.disabled", fontWeight: 400 }}
+        >
+          <FormattedMessage defaultMessage="Local set up" />
+        </Button>
+      }
+    >
+      <Stack spacing={2}>
+        <Typography variant="h4" fontWeight={600} pb={1}>
+          <FormattedMessage defaultMessage="Create your account" />
+        </Typography>
+
+        <Button
+          fullWidth
+          variant="contained"
+          startIcon={<Google />}
+          onClick={handleContinueWithGoogle}
+        >
+          <FormattedMessage defaultMessage="Continue with Google" />
+        </Button>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<Email />}
+          onClick={handleCreateAccount}
+        >
+          <FormattedMessage defaultMessage="Sign up with email" />
+        </Button>
+      </Stack>
+    </OnboardingFormLayout>
+  );
+
+  return <DualPaneLayout left={form} right={rightContent} />;
 };
