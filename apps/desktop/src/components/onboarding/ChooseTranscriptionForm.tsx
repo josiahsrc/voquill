@@ -1,34 +1,63 @@
 import { ArrowForward } from "@mui/icons-material";
-import { Button, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
+import { goToOnboardingPage } from "../../actions/onboarding.actions";
+import { useAppStore } from "../../store";
+import { AITranscriptionConfiguration } from "../settings/AITranscriptionConfiguration";
 import {
-  goBackOnboardingPage,
-  goToOnboardingPage,
-} from "../../actions/onboarding.actions";
-import { FormContainer } from "./OnboardingShared";
+  BackButton,
+  DualPaneLayout,
+  OnboardingFormLayout,
+} from "./OnboardingCommon";
 
 export const ChooseTranscriptionForm = () => {
-  return (
-    <FormContainer>
-      <Typography variant="h4" fontWeight={600} gutterBottom>
-        <FormattedMessage defaultMessage="Choose Transcription" />
-      </Typography>
-      <Typography variant="body1" color="text.secondary" mb={4}>
-        <FormattedMessage defaultMessage="Select your transcription method." />
-      </Typography>
+  const { mode, selectedApiKeyId } = useAppStore(
+    (state) => state.settings.aiTranscription,
+  );
 
-      <Stack direction="row" justifyContent="space-between" mt={4}>
-        <Button onClick={() => goBackOnboardingPage()}>
-          <FormattedMessage defaultMessage="Back" />
-        </Button>
+  const canContinue = mode === "api" ? Boolean(selectedApiKeyId) : true;
+
+  const handleContinue = () => {
+    goToOnboardingPage("chooseLlm");
+  };
+
+  const form = (
+    <OnboardingFormLayout
+      back={<BackButton />}
+      actions={
         <Button
           variant="contained"
           endIcon={<ArrowForward />}
-          onClick={() => goToOnboardingPage("chooseLlm")}
+          onClick={handleContinue}
+          disabled={!canContinue}
         >
-          <FormattedMessage defaultMessage="Next" />
+          <FormattedMessage defaultMessage="Continue" />
         </Button>
+      }
+    >
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="h4" fontWeight={600} pb={1}>
+            <FormattedMessage defaultMessage="Set up transcription" />
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            <FormattedMessage defaultMessage="Decide how Voquill should process your recordings. Locally or through an API." />
+          </Typography>
+        </Box>
+
+        <AITranscriptionConfiguration hideCloudOption={true} />
       </Stack>
-    </FormContainer>
+    </OnboardingFormLayout>
   );
+
+  const rightContent = (
+    <Box
+      component="img"
+      src="https://illustrations.popsy.co/amber/remote-work.svg"
+      alt="Illustration"
+      sx={{ maxWidth: 400, maxHeight: 400 }}
+    />
+  );
+
+  return <DualPaneLayout left={form} right={rightContent} />;
 };

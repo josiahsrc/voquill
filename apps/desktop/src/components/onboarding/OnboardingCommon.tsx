@@ -11,7 +11,7 @@ export const BackButton = () => {
   const handleClick = () => {
     const state = getAppState();
     const stack = state.onboarding.history;
-    if (stack.length <= 1) {
+    if (stack.length === 0) {
       navigate(-1);
     } else {
       goBackOnboardingPage();
@@ -44,24 +44,64 @@ export const OnboardingFormLayout = ({
     <Stack
       sx={{
         flex: 1,
-        gap: 2,
+        minHeight: 0,
       }}
     >
-      <Box>{back}</Box>
-      <Box sx={{ height: 16, flex: 1 }} />
       <Box
         sx={{
-          display: "flex",
-          flex: 1,
-          flexDirection: "column",
-          alignItems: "stretch",
-          justifyContent: "center",
+          flexShrink: 0,
+          position: "relative",
+          zIndex: 1,
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: -16,
+            height: 16,
+            background: (theme) =>
+              `linear-gradient(to bottom, ${theme.vars?.palette.background.default}, transparent)`,
+            pointerEvents: "none",
+          },
         }}
       >
-        {children}
+        {back}
       </Box>
-      <Box sx={{ height: 16, flex: 4 }} />
-      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>{actions}</Box>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          scrollbarGutter: "stable",
+          display: "flex",
+          flexDirection: "column",
+          py: 2,
+        }}
+      >
+        <Box sx={{ my: "auto" }}>{children}</Box>
+      </Box>
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: "flex",
+          justifyContent: "flex-end",
+          position: "relative",
+          zIndex: 1,
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: -16,
+            height: 16,
+            background: (theme) =>
+              `linear-gradient(to top, ${theme.vars?.palette.background.default}, transparent)`,
+            pointerEvents: "none",
+          },
+        }}
+      >
+        {actions}
+      </Box>
     </Stack>
   );
 };
@@ -83,10 +123,10 @@ export const DualPaneLayout = ({
         display: "flex",
         flexDirection: "row",
         alignItems: "stretch",
-        gap: 4,
+        gap: 5,
         width: "100%",
         height: "100%",
-        p: 4,
+        p: 5,
         pt: 2,
       }}
     >
@@ -96,6 +136,8 @@ export const DualPaneLayout = ({
             flex: flex[0],
             display: "flex",
             flexDirection: "column",
+            minHeight: 0,
+            minWidth: 0,
           }}
         >
           {left}
@@ -107,9 +149,18 @@ export const DualPaneLayout = ({
           sx={{
             flex: flex[1],
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
             borderRadius: 2,
             bgcolor: "level1",
+            minWidth: 0,
+            minHeight: 0,
+            overflow: "hidden",
+            "& img": {
+              maxWidth: "100%",
+              maxHeight: "100%",
+              objectFit: "contain",
+            },
           }}
         >
           {right}
