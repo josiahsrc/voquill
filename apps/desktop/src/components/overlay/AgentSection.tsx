@@ -17,8 +17,10 @@ import { useAppStore } from "../../store";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
 import {
   AGENT_DICTATE_HOTKEY,
+  AGENT_OVERLAY_CLOSE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import { getPlatform } from "../../utils/platform.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 
@@ -297,6 +299,11 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
   const hotkeyCombos = useAppStore((state) =>
     getHotkeyCombosForAction(state, AGENT_DICTATE_HOTKEY),
   );
+  const closeHotkeyCombos = useAppStore((state) =>
+    getHotkeyCombosForAction(state, AGENT_OVERLAY_CLOSE_HOTKEY),
+  );
+
+  const isWindows = getPlatform() === "windows";
 
   const isVisible = phase !== "idle";
   const isRecording = phase === "recording";
@@ -438,6 +445,7 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
           <IconButton
             onClick={handleClose}
             size="small"
+            disabled={isWindows}
             sx={{
               width: 24,
               height: 24,
@@ -448,7 +456,14 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
               },
             }}
           >
-            <CloseIcon sx={{ fontSize: 14 }} />
+            {isWindows ? (
+              <HotkeyBadge
+                keys={closeHotkeyCombos[0] ?? ["Escape"]}
+                sx={{ fontSize: "0.65rem", py: 0, px: 0.5 }}
+              />
+            ) : (
+              <CloseIcon sx={{ fontSize: 14 }} />
+            )}
           </IconButton>
         </Box>
         <Box
@@ -539,19 +554,32 @@ export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
                 display: "flex",
                 justifyContent: "flex-end",
                 mt: 1,
+                alignItems: "center",
+                gap: 1,
               }}
             >
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleClose}
-                sx={{
-                  textTransform: "none",
-                  fontSize: "0.8125rem",
-                }}
-              >
-                Finish
-              </Button>
+              {isWindows ? (
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  <FormattedMessage defaultMessage="Press" />{" "}
+                  <HotkeyBadge
+                    keys={closeHotkeyCombos[0] ?? ["Escape"]}
+                    sx={{ fontSize: "0.65rem", py: 0, px: 0.5 }}
+                  />{" "}
+                  <FormattedMessage defaultMessage="to close" />
+                </Typography>
+              ) : (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleClose}
+                  sx={{
+                    textTransform: "none",
+                    fontSize: "0.8125rem",
+                  }}
+                >
+                  Finish
+                </Button>
+              )}
             </Box>
           )}
         </Box>
