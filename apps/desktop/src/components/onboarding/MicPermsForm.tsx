@@ -1,34 +1,65 @@
-import { ArrowForward } from "@mui/icons-material";
-import { Button, Stack, Typography } from "@mui/material";
+import { ArrowForward, Mic } from "@mui/icons-material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
+import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import {
-  goBackOnboardingPage,
-  goToOnboardingPage,
-} from "../../actions/onboarding.actions";
-import { FormContainer } from "./OnboardingShared";
+  BackButton,
+  DualPaneLayout,
+  OnboardingFormLayout,
+} from "./OnboardingCommon";
 
 export const MicPermsForm = () => {
-  return (
-    <FormContainer>
-      <Typography variant="h4" fontWeight={600} gutterBottom>
-        <FormattedMessage defaultMessage="Microphone Permissions" />
-      </Typography>
-      <Typography variant="body1" color="text.secondary" mb={4}>
-        <FormattedMessage defaultMessage="Grant microphone permissions." />
-      </Typography>
+  const handleEnable = () => {
+    // TODO: Request microphone permissions
+  };
 
-      <Stack direction="row" justifyContent="space-between" mt={4}>
-        <Button onClick={() => goBackOnboardingPage()}>
-          <FormattedMessage defaultMessage="Back" />
-        </Button>
+  const handleContinue = () => {
+    goToOnboardingPage("a11yPerms");
+  };
+
+  const form = (
+    <OnboardingFormLayout
+      back={<BackButton />}
+      actions={
         <Button
           variant="contained"
           endIcon={<ArrowForward />}
-          onClick={() => goToOnboardingPage("a11yPerms")}
+          onClick={handleContinue}
         >
-          <FormattedMessage defaultMessage="Next" />
+          <FormattedMessage defaultMessage="Continue" />
+        </Button>
+      }
+    >
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="h4" fontWeight={600} pb={1}>
+            <FormattedMessage defaultMessage="Set up your microphone" />
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            <FormattedMessage defaultMessage="Voquill only activates your microphone when you choose to start recording." />
+          </Typography>
+        </Box>
+
+        <Button
+          variant="outlined"
+          startIcon={<Mic />}
+          onClick={handleEnable}
+          sx={{ alignSelf: "flex-start" }}
+        >
+          <FormattedMessage defaultMessage="Enable microphone" />
         </Button>
       </Stack>
-    </FormContainer>
+    </OnboardingFormLayout>
   );
+
+  const rightContent = (
+    <Box
+      component="img"
+      src="https://illustrations.popsy.co/amber/podcast.svg"
+      alt="Illustration"
+      sx={{ maxWidth: 400, maxHeight: 400 }}
+    />
+  );
+
+  return <DualPaneLayout left={form} right={rightContent} />;
 };

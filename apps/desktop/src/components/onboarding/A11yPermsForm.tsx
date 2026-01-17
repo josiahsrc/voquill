@@ -1,34 +1,65 @@
-import { ArrowForward } from "@mui/icons-material";
-import { Button, Stack, Typography } from "@mui/material";
+import { AccessibilityNew, ArrowForward } from "@mui/icons-material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
+import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import {
-  goBackOnboardingPage,
-  goToOnboardingPage,
-} from "../../actions/onboarding.actions";
-import { FormContainer } from "./OnboardingShared";
+  BackButton,
+  DualPaneLayout,
+  OnboardingFormLayout,
+} from "./OnboardingCommon";
 
 export const A11yPermsForm = () => {
-  return (
-    <FormContainer>
-      <Typography variant="h4" fontWeight={600} gutterBottom>
-        <FormattedMessage defaultMessage="Accessibility Permissions" />
-      </Typography>
-      <Typography variant="body1" color="text.secondary" mb={4}>
-        <FormattedMessage defaultMessage="Grant accessibility permissions." />
-      </Typography>
+  const handleEnable = () => {
+    // TODO: Request accessibility permissions
+  };
 
-      <Stack direction="row" justifyContent="space-between" mt={4}>
-        <Button onClick={() => goBackOnboardingPage()}>
-          <FormattedMessage defaultMessage="Back" />
-        </Button>
+  const handleContinue = () => {
+    goToOnboardingPage("keybindings");
+  };
+
+  const form = (
+    <OnboardingFormLayout
+      back={<BackButton />}
+      actions={
         <Button
           variant="contained"
           endIcon={<ArrowForward />}
-          onClick={() => goToOnboardingPage("keybindings")}
+          onClick={handleContinue}
         >
-          <FormattedMessage defaultMessage="Next" />
+          <FormattedMessage defaultMessage="Continue" />
+        </Button>
+      }
+    >
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="h4" fontWeight={600} pb={1}>
+            <FormattedMessage defaultMessage="Enable accessibility" />
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            <FormattedMessage defaultMessage="Voquill needs accessibility permissions to paste transcriptions into focused text fields." />
+          </Typography>
+        </Box>
+
+        <Button
+          variant="outlined"
+          startIcon={<AccessibilityNew />}
+          onClick={handleEnable}
+          sx={{ alignSelf: "flex-start" }}
+        >
+          <FormattedMessage defaultMessage="Enable accessibility" />
         </Button>
       </Stack>
-    </FormContainer>
+    </OnboardingFormLayout>
   );
+
+  const rightContent = (
+    <Box
+      component="img"
+      src="https://illustrations.popsy.co/amber/creative-work.svg"
+      alt="Illustration"
+      sx={{ maxWidth: 400, maxHeight: 400 }}
+    />
+  );
+
+  return <DualPaneLayout left={form} right={rightContent} />;
 };

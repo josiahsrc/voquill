@@ -3,6 +3,7 @@ import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
+import { isMacOS } from "../../utils/env.utils";
 import {
   BackButton,
   DualPaneLayout,
@@ -55,7 +56,11 @@ export const UserDetailsForm = () => {
   };
 
   const handleContinue = () => {
-    goToOnboardingPage("micPerms");
+    if (isMacOS()) {
+      goToOnboardingPage("micPerms");
+    } else {
+      goToOnboardingPage("keybindings");
+    }
   };
 
   const form = (
