@@ -1,5 +1,5 @@
 import { ArrowBack } from "@mui/icons-material";
-import { Box, Button, Stack } from "@mui/material";
+import { Box, Button, Stack, SxProps } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { goBackOnboardingPage } from "../../actions/onboarding.actions";
@@ -109,12 +109,14 @@ export const OnboardingFormLayout = ({
 export type DualPaneLayoutProps = {
   left?: React.ReactNode;
   right?: React.ReactNode;
+  rightSx?: SxProps;
   flex?: [number, number];
 };
 
 export const DualPaneLayout = ({
   left,
   right,
+  rightSx,
   flex = [1, 1],
 }: DualPaneLayoutProps) => {
   return (
@@ -161,6 +163,7 @@ export const DualPaneLayout = ({
               maxHeight: "100%",
               objectFit: "contain",
             },
+            ...rightSx,
           }}
         >
           {right}
