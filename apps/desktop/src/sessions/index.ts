@@ -4,11 +4,13 @@ import { TranscriptionPrefs } from "../utils/user.utils";
 import { AssemblyAITranscriptionSession } from "./assemblyai-transcription-session";
 import { AzureTranscriptionSession } from "./azure-transcription-session";
 import { BatchTranscriptionSession } from "./batch-transcription-session";
+import { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
 import { getAppState } from "../store";
 
 export { AssemblyAITranscriptionSession } from "./assemblyai-transcription-session";
 export { AzureTranscriptionSession } from "./azure-transcription-session";
 export { BatchTranscriptionSession } from "./batch-transcription-session";
+export { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
 
 export const createTranscriptionSession = (
   prefs: TranscriptionPrefs,
@@ -17,6 +19,8 @@ export const createTranscriptionSession = (
     switch (prefs.provider) {
       case "assemblyai":
         return new AssemblyAITranscriptionSession(prefs.apiKeyValue);
+      case "elevenlabs":
+        return new ElevenLabsTranscriptionSession(prefs.apiKeyValue);
       case "azure": {
         const state = getAppState();
         const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);

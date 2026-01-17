@@ -27,6 +27,7 @@ import {
   azureTestIntegration,
   DEEPSEEK_MODELS,
   deepseekTestIntegration,
+  elevenlabsTestIntegration,
   GEMINI_GENERATE_TEXT_MODELS,
   geminiTestIntegration,
   GEMINI_TRANSCRIPTION_MODELS,
@@ -189,12 +190,15 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         {context === "post-processing" && (
           <MenuItem value="azure">Azure OpenAI</MenuItem>
         )}
-        {/* Aldea, AssemblyAI, and Azure STT only support transcription, not post-processing */}
+        {/* Aldea, AssemblyAI, ElevenLabs, and Azure STT only support transcription, not post-processing */}
         {context === "transcription" && (
           <MenuItem value="aldea">Aldea</MenuItem>
         )}
         {context === "transcription" && (
           <MenuItem value="assemblyai">AssemblyAI</MenuItem>
+        )}
+        {context === "transcription" && (
+          <MenuItem value="elevenlabs">ElevenLabs</MenuItem>
         )}
         {context === "transcription" && (
           <MenuItem value="azure">Azure</MenuItem>
@@ -346,6 +350,8 @@ const testApiKey = async (
       return aldeaTestIntegration({ apiKey: apiKey.keyFull });
     case "assemblyai":
       return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
+    case "elevenlabs":
+      return elevenlabsTestIntegration({ apiKey: apiKey.keyFull });
     case "deepseek":
       return deepseekTestIntegration({ apiKey: apiKey.keyFull });
     case "gemini":
@@ -401,6 +407,8 @@ const getModelsForProvider = (
     case "aldea":
       return [];
     case "assemblyai":
+      return [];
+    case "elevenlabs":
       return [];
     default:
       return [];
@@ -591,10 +599,12 @@ export const ApiKeyList = ({
     ) {
       return false;
     }
-    // Aldea and AssemblyAI only support transcription
+    // Aldea, AssemblyAI, and ElevenLabs only support transcription
     if (
       context === "post-processing" &&
-      (key.provider === "aldea" || key.provider === "assemblyai")
+      (key.provider === "aldea" ||
+        key.provider === "assemblyai" ||
+        key.provider === "elevenlabs")
     ) {
       return false;
     }
