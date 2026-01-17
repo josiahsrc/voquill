@@ -133,7 +133,7 @@ export const WaveformSection = () => {
     <Box
       sx={{
         position: "absolute",
-        bottom: "20%",
+        bottom: "5%",
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
@@ -173,17 +173,7 @@ export const WaveformSection = () => {
             <FormattedMessage
               defaultMessage="Click or hold {hotkey} to start dictating"
               values={{
-                hotkey: (
-                  <Box
-                    component="span"
-                    sx={{
-                      color: theme.palette.primary.main,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {hotkeyLabel}
-                  </Box>
-                ),
+                hotkey: hotkeyLabel,
               }}
             />
           </Typography>
