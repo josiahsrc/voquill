@@ -120,7 +120,8 @@ export const DualPaneLayout = ({
   flex = [1, 1],
 }: DualPaneLayoutProps) => {
   const { mode, systemMode } = useColorScheme();
-  const isDarkTheme = mode === "dark" || (mode === "system" && systemMode === "dark");
+  const isDarkTheme =
+    mode === "dark" || (mode === "system" && systemMode === "dark");
 
   return (
     <Box
@@ -166,7 +167,7 @@ export const DualPaneLayout = ({
               maxWidth: "100%",
               maxHeight: "100%",
               objectFit: "contain",
-              filter: isDarkTheme ? "invert(1) hue-rotate(360deg)" : "none",
+              filter: isDarkTheme ? "invert(1) hue-rotate(185deg)" : "none",
             },
             ...rightSx,
           }}
