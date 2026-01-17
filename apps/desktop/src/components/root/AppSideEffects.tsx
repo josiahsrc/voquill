@@ -195,6 +195,7 @@ export const AppSideEffects = () => {
       mixpanel.people.set({
         $email: auth?.email ?? undefined,
         $name: auth?.displayName ?? undefined,
+        $created: auth?.metadata?.creationTime ?? undefined,
       });
     }
 
