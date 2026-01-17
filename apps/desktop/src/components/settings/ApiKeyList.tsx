@@ -25,6 +25,7 @@ import {
   AZURE_OPENAI_MODELS,
   azureOpenAITestIntegration,
   azureTestIntegration,
+  deepgramTestIntegration,
   DEEPSEEK_MODELS,
   deepseekTestIntegration,
   elevenlabsTestIntegration,
@@ -190,12 +191,15 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         {context === "post-processing" && (
           <MenuItem value="azure">Azure OpenAI</MenuItem>
         )}
-        {/* Aldea, AssemblyAI, ElevenLabs, and Azure STT only support transcription, not post-processing */}
+        {/* Aldea, AssemblyAI, Deepgram, ElevenLabs, and Azure STT only support transcription, not post-processing */}
         {context === "transcription" && (
           <MenuItem value="aldea">Aldea</MenuItem>
         )}
         {context === "transcription" && (
           <MenuItem value="assemblyai">AssemblyAI</MenuItem>
+        )}
+        {context === "transcription" && (
+          <MenuItem value="deepgram">Deepgram</MenuItem>
         )}
         {context === "transcription" && (
           <MenuItem value="elevenlabs">ElevenLabs</MenuItem>
@@ -350,6 +354,8 @@ const testApiKey = async (
       return aldeaTestIntegration({ apiKey: apiKey.keyFull });
     case "assemblyai":
       return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
+    case "deepgram":
+      return deepgramTestIntegration({ apiKey: apiKey.keyFull });
     case "elevenlabs":
       return elevenlabsTestIntegration({ apiKey: apiKey.keyFull });
     case "deepseek":
@@ -407,6 +413,8 @@ const getModelsForProvider = (
     case "aldea":
       return [];
     case "assemblyai":
+      return [];
+    case "deepgram":
       return [];
     case "elevenlabs":
       return [];
@@ -599,11 +607,12 @@ export const ApiKeyList = ({
     ) {
       return false;
     }
-    // Aldea, AssemblyAI, and ElevenLabs only support transcription
+    // Aldea, AssemblyAI, Deepgram, and ElevenLabs only support transcription
     if (
       context === "post-processing" &&
       (key.provider === "aldea" ||
         key.provider === "assemblyai" ||
+        key.provider === "deepgram" ||
         key.provider === "elevenlabs")
     ) {
       return false;
