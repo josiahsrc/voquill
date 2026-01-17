@@ -601,7 +601,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
         run: |
-          $installerExe = "apps/windows-installer/src-tauri/target/release/Voquill Installer.exe"
+          $installerExe = "D:\cargo\release\voquill-installer.exe"
 
           if (-not (Test-Path $installerExe)) {
             Write-Error "Could not find portable installer executable at $installerExe"
