@@ -190,12 +190,6 @@ export const AppSideEffects = () => {
       mixpanel.reset();
     }
 
-    if (currentUserId && currentUserId !== prevUserId) {
-      mixpanel.identify(currentUserId);
-    }
-
-    prevUserIdRef.current = currentUserId;
-
     const isPro = member?.plan === "pro";
     const isFree = member?.plan === "free";
     const isCommunity = !currentUserId;
@@ -203,20 +197,55 @@ export const AppSideEffects = () => {
     const daysSinceOnboarded = onboardedAt
       ? dayjs().diff(dayjs(onboardedAt), "day")
       : 0;
+    const cohort = cloudUser?.cohort ?? localUser?.cohort ?? null;
+    const platform = getPlatform();
+    const locale = detectLocale();
+    const onboarded = cloudUser?.onboarded ?? localUser?.onboarded ?? false;
+    const planStatus = member?.plan ?? "community";
 
-    mixpanel.register({
-      userId: currentUserId,
-      planStatus: member?.plan ?? "community",
+    if (currentUserId && currentUserId !== prevUserId) {
+      mixpanel.identify(currentUserId);
+
+      mixpanel.people.set_once({
+        $created: auth?.metadata?.creationTime ?? undefined,
+        initialPlatform: platform,
+        initialLocale: locale,
+        initialCohort: cohort,
+      });
+
+      mixpanel.register_once({
+        initialPlatform: platform,
+        initialLocale: locale,
+        initialCohort: cohort,
+      });
+    }
+
+    mixpanel.people.set({
+      $email: auth?.email ?? undefined,
+      $name: auth?.displayName ?? undefined,
+      planStatus,
       isPro,
       isFree,
       isCommunity,
-      platform: getPlatform(),
-      locale: detectLocale(),
-      userCreatedAt: auth?.metadata?.creationTime ?? null,
-      onboarded: cloudUser?.onboarded ?? localUser?.onboarded ?? false,
-      daysSinceOnboarded,
-      cohort: cloudUser?.cohort ?? localUser?.cohort ?? null,
+      onboarded,
+      onboardedAt: onboardedAt ?? undefined,
+      cohort,
     });
+
+    mixpanel.register({
+      userId: currentUserId,
+      planStatus,
+      isPro,
+      isFree,
+      isCommunity,
+      platform,
+      locale,
+      onboarded,
+      daysSinceOnboarded,
+      cohort,
+    });
+
+    prevUserIdRef.current = currentUserId;
   }, [initialized, auth, member, cloudUser, localUser]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
