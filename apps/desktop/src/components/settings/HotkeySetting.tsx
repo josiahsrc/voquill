@@ -1,6 +1,7 @@
 import { Add, CancelOutlined, Close, RestartAlt } from "@mui/icons-material";
 import { Button, IconButton, Stack, Switch, Typography } from "@mui/material";
 import type { Hotkey } from "@repo/types";
+import { emitTo } from "@tauri-apps/api/event";
 import type { ReactNode } from "react";
 import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
@@ -59,6 +60,10 @@ export const HotkeySetting = ({
         draft.settings.hotkeysStatus = "success";
       });
       await getHotkeyRepo().saveHotkey(newValue);
+      // Sync hotkey to overlay window
+      emitTo("unified-overlay", "hotkey_update", { hotkey: newValue }).catch(
+        console.error,
+      );
     } catch (error) {
       console.error("Failed to save hotkey", error);
       showErrorSnackbar("Failed to save hotkey. Please try again.");
@@ -74,6 +79,8 @@ export const HotkeySetting = ({
         );
       });
       await getHotkeyRepo().deleteHotkey(id);
+      // Sync hotkey deletion to overlay window
+      emitTo("unified-overlay", "hotkey_delete", { id }).catch(console.error);
     } catch (error) {
       console.error("Failed to delete hotkey", error);
       showErrorSnackbar("Failed to delete hotkey. Please try again.");

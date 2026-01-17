@@ -10,6 +10,7 @@ import {
   getHotkeyCombosForAction,
   getPrettyKeyName,
 } from "../../utils/keyboard.utils";
+import { getPlatform } from "../../utils/platform.utils";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
 
 const EXPANDED_WIDTH = 180;
@@ -125,7 +126,7 @@ export const WaveformSection = () => {
     <Box
       sx={{
         position: "absolute",
-        bottom: "5%",
+        bottom: getPlatform() === "macos" ? "12px" : "5%",
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
