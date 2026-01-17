@@ -54,11 +54,30 @@ export const A11yPermsForm = () => {
 
   const rightContent = (
     <Box
-      component="img"
-      src="https://illustrations.popsy.co/amber/creative-work.svg"
-      alt="Illustration"
-      sx={{ maxWidth: 400, maxHeight: 400 }}
-    />
+      sx={{
+        borderRadius: "12px",
+        border: "1px solid gray",
+        overflow: "hidden",
+        maxHeight: "100%",
+      }}
+    >
+      <Box
+        component="video"
+        src="/src/assets/enable-a11y.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        sx={{
+          display: "block",
+          margin: "-2px",
+          width: "auto",
+          height: "auto",
+          maxWidth: "calc(100% + 4px)",
+          maxHeight: "calc(100% + 4px)",
+        }}
+      />
+    </Box>
   );
 
   return <DualPaneLayout left={form} right={rightContent} />;

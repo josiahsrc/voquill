@@ -153,15 +153,19 @@ export const DualPaneLayout = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: 2,
-            bgcolor: "level1",
+            borderRadius: 4,
+            bgcolor: "transparent",
             minWidth: 0,
             minHeight: 0,
             overflow: "hidden",
+            p: 1,
             "& img": {
               maxWidth: "100%",
               maxHeight: "100%",
               objectFit: "contain",
+              '[data-mui-color-scheme="dark"] &': {
+                filter: "invert(1) hue-rotate(180deg)",
+              },
             },
             ...rightSx,
           }}

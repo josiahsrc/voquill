@@ -54,11 +54,31 @@ export const MicPermsForm = () => {
 
   const rightContent = (
     <Box
-      component="img"
-      src="https://illustrations.popsy.co/amber/podcast.svg"
-      alt="Illustration"
-      sx={{ maxWidth: 400, maxHeight: 400 }}
-    />
+      sx={{
+        borderRadius: "24px",
+        border: "1px solid gray",
+        overflow: "hidden",
+        maxHeight: "100%",
+        margin: 8,
+      }}
+    >
+      <Box
+        component="video"
+        src="/src/assets/enable-mic.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        sx={{
+          display: "block",
+          margin: "-10px",
+          width: "auto",
+          height: "auto",
+          maxWidth: "calc(100% + 20px)",
+          maxHeight: "calc(100% + 20px)",
+        }}
+      />
+    </Box>
   );
 
   return <DualPaneLayout left={form} right={rightContent} />;
