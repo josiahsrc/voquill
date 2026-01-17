@@ -1091,11 +1091,6 @@ pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
     let resolved =
         OverlayPhase::from_str(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
 
-    #[cfg(target_os = "macos")]
-    if let Err(err) = crate::platform::macos::notch_overlay::set_phase(resolved.clone()) {
-        eprintln!("Failed to set macOS overlay phase: {err}");
-    }
-
     let payload = OverlayPhasePayload {
         phase: resolved.clone(),
     };

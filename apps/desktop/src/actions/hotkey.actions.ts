@@ -1,3 +1,4 @@
+import { emitTo } from "@tauri-apps/api/event";
 import { getHotkeyRepo } from "../repos";
 import { produceAppState } from "../store";
 import { registerHotkeys } from "../utils/app.utils";
@@ -15,6 +16,12 @@ export const loadHotkeys = async (): Promise<void> => {
       draft.settings.hotkeyIds = hotkeys.map((hotkey) => hotkey.id);
       draft.settings.hotkeysStatus = "success";
     });
+    // Sync all hotkeys to overlay window
+    for (const hotkey of hotkeys) {
+      emitTo("unified-overlay", "hotkey_update", { hotkey }).catch(
+        console.error,
+      );
+    }
   } catch (error) {
     console.error("Failed to load hotkeys", error);
     produceAppState((draft) => {

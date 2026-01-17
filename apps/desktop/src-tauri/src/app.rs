@@ -200,11 +200,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     use tauri::{Manager, WebviewWindowBuilder};
 
-    #[cfg(target_os = "macos")]
-    {
-        crate::platform::macos::notch_overlay::prepare_overlay(app)?;
-    }
-
     if app.get_webview_window("unified-overlay").is_some() {
         return Ok(());
     }
