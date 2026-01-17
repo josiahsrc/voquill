@@ -208,13 +208,12 @@ ${userName}`;
   );
 
   const discordContent = (
-    <Box sx={{ maxWidth: 400, width: "100%", position: "relative", pb: 6 }}>
+    <Box sx={{ position: "relative", pb: 6 }}>
       <Stack
         spacing={0}
         sx={{
           bgcolor: "#313338",
           borderRadius: 1.33,
-          width: "100%",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
           overflow: "hidden",
           position: "relative",
@@ -322,13 +321,12 @@ ${userName}`;
   );
 
   const emailContent = (
-    <Box sx={{ maxWidth: 400, width: "100%", position: "relative", pb: 6 }}>
+    <Box sx={{ position: "relative", pb: 6 }}>
       <Stack
         spacing={0}
         sx={{
           bgcolor: "#ffffff",
           borderRadius: 1.33,
-          width: "100%",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
           overflow: "hidden",
           position: "relative",
@@ -346,7 +344,11 @@ ${userName}`;
           }}
         >
           <Email sx={{ fontSize: 20, color: "#d93025" }} />
-          <Typography variant="body2" fontWeight={600} sx={{ color: "#202124" }}>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            sx={{ color: "#202124" }}
+          >
             Email
           </Typography>
         </Box>
@@ -362,10 +364,7 @@ ${userName}`;
                 borderBottom: "1px solid #e0e0e0",
               }}
             >
-              <Typography
-                variant="caption"
-                sx={{ color: "#5f6368" }}
-              >
+              <Typography variant="caption" sx={{ color: "#5f6368" }}>
                 To:
               </Typography>
               <Typography variant="body2" sx={{ color: "#202124" }}>
@@ -381,10 +380,7 @@ ${userName}`;
                 borderBottom: "1px solid #e0e0e0",
               }}
             >
-              <Typography
-                variant="caption"
-                sx={{ color: "#5f6368" }}
-              >
+              <Typography variant="caption" sx={{ color: "#5f6368" }}>
                 Subject:
               </Typography>
               <Typography variant="body2" sx={{ color: "#202124" }}>
@@ -447,7 +443,38 @@ ${userName}`;
     </Box>
   );
 
-  const rightContent = stepIndex === 0 ? discordContent : emailContent;
+  const stepper = (
+    <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 2 }}>
+      {[0, 1].map((index) => (
+        <Box
+          key={index}
+          onClick={() => {
+            setStepIndex(index);
+            setDictationValue("");
+            setHasStartedDictating(false);
+          }}
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            bgcolor: stepIndex === index ? "primary.main" : "action.disabled",
+            transition: "background-color 0.2s ease",
+            cursor: "pointer",
+            "&:hover": {
+              bgcolor: stepIndex === index ? "primary.main" : "action.hover",
+            },
+          }}
+        />
+      ))}
+    </Stack>
+  );
+
+  const rightContent = (
+    <Stack sx={{ width: "100%", maxWidth: 400, alignItems: "stretch" }}>
+      {stepIndex === 0 ? discordContent : emailContent}
+      {stepper}
+    </Stack>
+  );
 
   return (
     <DualPaneLayout
