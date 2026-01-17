@@ -107,7 +107,9 @@ export const KeybindingsForm = () => {
   const handleChangeShortcut = () => {
     lastEmittedRef.current = [];
     setIsListening(true);
-    boxRef.current?.focus();
+    setTimeout(() => {
+      boxRef.current?.focus();
+    }, 0);
   };
 
   const handleConfirm = () => {
@@ -118,7 +120,7 @@ export const KeybindingsForm = () => {
     <OnboardingFormLayout back={<BackButton />} actions={<div />}>
       <Stack spacing={2} pb={8}>
         <Typography variant="h4" fontWeight={600}>
-          <FormattedMessage defaultMessage="Try your dictation shortcut" />
+          <FormattedMessage defaultMessage="Test your keyboard shortcut" />
         </Typography>
         <Typography variant="body1" color="text.secondary">
           <FormattedMessage
@@ -149,11 +151,18 @@ export const KeybindingsForm = () => {
     </OnboardingFormLayout>
   );
 
+  const handleBlur = (e: React.FocusEvent) => {
+    if (boxRef.current?.contains(e.relatedTarget as Node)) {
+      return;
+    }
+    setIsListening(false);
+  };
+
   const rightContent = (
     <Stack
       ref={boxRef}
       tabIndex={0}
-      onBlur={() => setIsListening(false)}
+      onBlur={handleBlur}
       spacing={3}
       sx={{
         bgcolor: "level1",
@@ -165,7 +174,7 @@ export const KeybindingsForm = () => {
     >
       <Typography variant="h6" fontWeight={600}>
         {isListening ? (
-          <FormattedMessage defaultMessage="Press your preferred key combination" />
+          <FormattedMessage defaultMessage="Press your hotkey combo, then release" />
         ) : (
           <FormattedMessage defaultMessage="Does the key light up green when pressed?" />
         )}
@@ -178,46 +187,62 @@ export const KeybindingsForm = () => {
           p: 3,
           display: "flex",
           justifyContent: "center",
+          alignItems: "center",
+          minHeight: 80,
+          border: "2px solid",
+          borderColor: isListening ? "primary.main" : "transparent",
+          ...(isListening && {
+            animation: "borderPulse 1s ease-in-out infinite",
+          }),
+          "@keyframes borderPulse": {
+            "0%, 100%": {
+              borderColor: "#1976d2",
+            },
+            "50%": {
+              borderColor: "#90caf9",
+            },
+          },
         }}
       >
         {isListening ? (
-          <Box
-            sx={{
-              minWidth: 48,
-              height: 48,
-              px: 2,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              bgcolor: "level2",
-              border: "2px dashed",
-              borderColor: "primary.main",
-              borderRadius: 1,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              <FormattedMessage defaultMessage="Waiting for input..." />
-            </Typography>
-          </Box>
+          keysHeld.length > 0 ? (
+            <KeyPressSimulator keys={keysHeld} />
+          ) : (
+            <Box
+              sx={{
+                height: 48,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                <FormattedMessage defaultMessage="Press your new key combo..." />
+              </Typography>
+            </Box>
+          )
         ) : (
           <KeyPressSimulator keys={currentKeys} />
         )}
       </Box>
 
-      {!isListening && (
-        <Stack direction="row" spacing={2} justifyContent="flex-end">
-          <Button variant="text" onClick={handleChangeShortcut}>
-            <FormattedMessage defaultMessage="Change hotkey" />
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirm}
-            endIcon={<ArrowForward />}
-          >
-            <FormattedMessage defaultMessage="It works" />
-          </Button>
-        </Stack>
-      )}
+      <Stack direction="row" spacing={2} justifyContent="flex-end">
+        <Button
+          variant="text"
+          onClick={handleChangeShortcut}
+          disabled={isListening}
+        >
+          <FormattedMessage defaultMessage="Change hotkey" />
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleConfirm}
+          endIcon={<ArrowForward />}
+          disabled={isListening}
+        >
+          <FormattedMessage defaultMessage="It works" />
+        </Button>
+      </Stack>
     </Stack>
   );
 
