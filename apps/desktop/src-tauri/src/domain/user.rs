@@ -6,6 +6,10 @@ pub struct User {
     pub id: String,
     pub name: String,
     pub bio: String,
+    #[serde(default)]
+    pub company: Option<String>,
+    #[serde(default)]
+    pub title: Option<String>,
     pub onboarded: bool,
     #[serde(default)]
     pub preferred_microphone: Option<String>,
