@@ -1,7 +1,13 @@
-import { AccessibilityNew, ArrowForward } from "@mui/icons-material";
+import { ArrowForward, Check, OpenInNew } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
+import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
+import { produceAppState, useAppStore } from "../../store";
+import {
+  isPermissionAuthorized,
+  requestAccessibilityPermission,
+} from "../../utils/permission.utils";
 import {
   BackButton,
   DualPaneLayout,
@@ -9,9 +15,27 @@ import {
 } from "./OnboardingCommon";
 
 export const A11yPermsForm = () => {
-  const handleEnable = () => {
-    // TODO: Request accessibility permissions
-  };
+  const [requesting, setRequesting] = useState(false);
+  const a11yPermission = useAppStore((state) => state.permissions.accessibility);
+  const isAuthorized = isPermissionAuthorized(a11yPermission?.state);
+
+  const handleAllow = useCallback(async () => {
+    if (requesting || isAuthorized) {
+      return;
+    }
+
+    setRequesting(true);
+    try {
+      const result = await requestAccessibilityPermission();
+      produceAppState((draft) => {
+        draft.permissions.accessibility = result;
+      });
+    } catch (error) {
+      console.error("Failed to request accessibility permission", error);
+    } finally {
+      setRequesting(false);
+    }
+  }, [requesting, isAuthorized]);
 
   const handleContinue = () => {
     goToOnboardingPage("keybindings");
@@ -25,6 +49,7 @@ export const A11yPermsForm = () => {
           variant="contained"
           endIcon={<ArrowForward />}
           onClick={handleContinue}
+          disabled={!isAuthorized}
         >
           <FormattedMessage defaultMessage="Continue" />
         </Button>
@@ -40,14 +65,27 @@ export const A11yPermsForm = () => {
           </Typography>
         </Box>
 
-        <Button
-          variant="outlined"
-          startIcon={<AccessibilityNew />}
-          onClick={handleEnable}
-          sx={{ alignSelf: "flex-start" }}
-        >
-          <FormattedMessage defaultMessage="Enable accessibility" />
-        </Button>
+        {isAuthorized ? (
+          <Button
+            variant="outlined"
+            color="success"
+            startIcon={<Check />}
+            disabled
+            sx={{ alignSelf: "flex-start" }}
+          >
+            <FormattedMessage defaultMessage="Access granted" />
+          </Button>
+        ) : (
+          <Button
+            variant="outlined"
+            onClick={() => void handleAllow()}
+            disabled={requesting}
+            endIcon={<OpenInNew />}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            <FormattedMessage defaultMessage="Allow access" />
+          </Button>
+        )}
       </Stack>
     </OnboardingFormLayout>
   );
