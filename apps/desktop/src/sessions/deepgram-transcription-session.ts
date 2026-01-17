@@ -6,17 +6,17 @@ import {
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
 
-type AssemblyAIStreamingSession = {
+type DeepgramStreamingSession = {
   finalize: () => Promise<string>;
   cleanup: () => void;
 };
 
-const startAssemblyAIStreaming = async (
+const startDeepgramStreaming = async (
   apiKey: string,
   sampleRate: number,
-): Promise<AssemblyAIStreamingSession> => {
-  console.log("[AssemblyAI WebSocket] Starting with sample rate:", sampleRate);
-  const MIN_CHUNK_DURATION_MS = 50;
+): Promise<DeepgramStreamingSession> => {
+  console.log("[Deepgram WebSocket] Starting with sample rate:", sampleRate);
+  const MIN_CHUNK_DURATION_MS = 20;
   const MAX_CHUNK_DURATION_MS = 100;
   const minSamplesPerChunk = Math.max(
     1,
@@ -30,18 +30,19 @@ const startAssemblyAIStreaming = async (
     let ws: WebSocket | null = null;
     let unlisten: UnlistenFn | null = null;
     let finalTranscript = "";
+    let partialTranscript = "";
     let isFinalized = false;
     let receivedChunkCount = 0;
     let sentChunkCount = 0;
     let pendingSampleCount = 0;
     let pendingChunks: Float32Array[] = [];
 
-    let currentTurn = 0;
-    let extra = "";
-
     const getText = () => {
       return (
-        finalTranscript + (extra ? (finalTranscript ? " " : "") + extra : "")
+        finalTranscript +
+        (partialTranscript
+          ? (finalTranscript ? " " : "") + partialTranscript
+          : "")
       );
     };
 
@@ -110,12 +111,12 @@ const startAssemblyAIStreaming = async (
           if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
             const durationMs = (chunk.length / sampleRate) * 1000;
             console.log(
-              `[AssemblyAI WebSocket] Sent chunk #${sentChunkCount} (${chunk.length} samples ~${durationMs.toFixed(1)} ms, ${pcm16.byteLength} bytes)`,
+              `[Deepgram WebSocket] Sent chunk #${sentChunkCount} (${chunk.length} samples ~${durationMs.toFixed(1)} ms, ${pcm16.byteLength} bytes)`,
             );
           }
         } catch (error) {
           console.error(
-            "[AssemblyAI WebSocket] Error sending buffered chunk:",
+            "[Deepgram WebSocket] Error sending buffered chunk:",
             error,
           );
           break;
@@ -135,97 +136,84 @@ const startAssemblyAIStreaming = async (
       resetBuffers();
     };
 
+    let finalizeResolver: ((text: string) => void) | null = null;
+    let finalizeTimeout: ReturnType<typeof setTimeout> | null = null;
+
     const finalize = (): Promise<string> => {
       return new Promise((resolveFinalize) => {
-        // resolveFinalize(finalTranscript);
         console.log(
-          "[AssemblyAI WebSocket] Finalize called, isFinalized:",
+          "[Deepgram WebSocket] Finalize called, isFinalized:",
           isFinalized,
           "ws state:",
           ws?.readyState,
         );
         if (isFinalized) {
           console.log(
-            "[AssemblyAI WebSocket] Already finalized, returning transcript",
+            "[Deepgram WebSocket] Already finalized, returning transcript",
           );
           resolveFinalize(getText());
           return;
         }
 
         isFinalized = true;
+        finalizeResolver = resolveFinalize;
         flushPendingSamples(true);
-        console.log(
-          "[AssemblyAI WebSocket] Total chunks sent:",
-          sentChunkCount,
-        );
+        console.log("[Deepgram WebSocket] Total chunks sent:", sentChunkCount);
 
         if (ws && ws.readyState === WebSocket.OPEN) {
-          console.log("[AssemblyAI WebSocket] Sending Terminate message...");
-          // Send termination message
-          ws.send(JSON.stringify({ type: "Terminate" }));
+          console.log("[Deepgram WebSocket] Sending CloseStream message...");
+          ws.send(JSON.stringify({ type: "CloseStream" }));
 
-          // Wait a bit for final transcript
-          const timeout = setTimeout(() => {
+          finalizeTimeout = setTimeout(() => {
             console.log(
-              "[AssemblyAI WebSocket] Timeout reached, finalizing with transcript:",
+              "[Deepgram WebSocket] Timeout reached, finalizing with transcript:",
               getText(),
             );
             cleanup();
-            resolveFinalize(getText());
-          }, 2000);
-
-          // Override onclose to resolve when WebSocket closes
-          const originalOnClose = ws.onclose;
-          const currentWs = ws;
-          ws.onclose = () => {
-            clearTimeout(timeout);
-            if (originalOnClose && currentWs)
-              originalOnClose.call(currentWs, {} as CloseEvent);
-            cleanup();
-            console.log(
-              "[AssemblyAI WebSocket] WebSocket closed, finalizing with transcript:",
-              getText(),
-            );
-            resolveFinalize(getText());
-          };
+            if (finalizeResolver) {
+              finalizeResolver(getText());
+              finalizeResolver = null;
+            }
+          }, 3000);
         } else {
           cleanup();
-          resolveFinalize(finalTranscript);
+          resolveFinalize(getText());
         }
       });
     };
 
-    // Open WebSocket
-    const wsUrl = `wss://streaming.assemblyai.com/v3/ws?sample_rate=${sampleRate}&token=${apiKey}`;
-    console.log("[AssemblyAI WebSocket] Connecting to:", wsUrl, apiKey);
-    ws = new WebSocket(wsUrl);
+    const completeFinalize = () => {
+      if (finalizeTimeout) {
+        clearTimeout(finalizeTimeout);
+        finalizeTimeout = null;
+      }
+      if (finalizeResolver) {
+        console.log(
+          "[Deepgram WebSocket] Completing finalize with transcript:",
+          getText(),
+        );
+        cleanup();
+        finalizeResolver(getText());
+        finalizeResolver = null;
+      }
+    };
+
+    const wsUrl = `wss://api.deepgram.com/v1/listen?encoding=linear16&sample_rate=${sampleRate}&model=nova-3&punctuate=true&smart_format=true&interim_results=true&endpointing=300`;
+    console.log("[Deepgram WebSocket] Connecting to:", wsUrl);
+    ws = new WebSocket(wsUrl, ["token", apiKey]);
 
     ws.onopen = async () => {
-      console.log("[AssemblyAI WebSocket] Connected, sending auth...");
-      console.log(
-        "[AssemblyAI WebSocket] API Key present:",
-        !!apiKey,
-        "length:",
-        apiKey?.length ?? 0,
-      );
-      console.log(
-        "[AssemblyAI WebSocket] API Key preview:",
-        apiKey?.substring(0, 10) + "...",
-      );
-      // Send auth via first message
+      console.log("[Deepgram WebSocket] Connected");
 
-      // Listen for audio chunks from Rust
       try {
-        console.log(
-          "[AssemblyAI WebSocket] Setting up audio_chunk listener...",
-        );
+        console.log("[Deepgram WebSocket] Setting up audio_chunk listener...");
         unlisten = await listen<{ samples: number[] }>(
           "audio_chunk",
           (event) => {
             receivedChunkCount++;
             if (receivedChunkCount <= 3 || receivedChunkCount % 10 === 0) {
               console.log(
-                `[AssemblyAI WebSocket] Received chunk #${receivedChunkCount}, samples:`,
+                `[Deepgram WebSocket] Received chunk #${receivedChunkCount}, samples:`,
                 event.payload.samples.length,
               );
             }
@@ -240,7 +228,7 @@ const startAssemblyAIStreaming = async (
                 flushPendingSamples(false);
               } catch (error) {
                 console.error(
-                  "[AssemblyAI WebSocket] Error sending audio chunk:",
+                  "[Deepgram WebSocket] Error sending audio chunk:",
                   error,
                 );
               }
@@ -248,14 +236,10 @@ const startAssemblyAIStreaming = async (
           },
         );
 
-        console.log("[AssemblyAI WebSocket] Session ready, listener attached");
-        // Session is ready
+        console.log("[Deepgram WebSocket] Session ready, listener attached");
         resolve({ finalize, cleanup });
       } catch (error) {
-        console.error(
-          "[AssemblyAI WebSocket] Error setting up listener:",
-          error,
-        );
+        console.error("[Deepgram WebSocket] Error setting up listener:", error);
         cleanup();
         reject(error);
       }
@@ -264,53 +248,62 @@ const startAssemblyAIStreaming = async (
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        const messageType = data.type;
         console.log(
-          "[AssemblyAI WebSocket] Received message:",
-          data.type,
+          "[Deepgram WebSocket] Received message:",
+          messageType,
           data,
         );
 
-        if (data.type === "Turn" && data.end_of_turn) {
-          // Final formatted transcript
-          finalTranscript +=
-            (finalTranscript ? " " : "") + (data.transcript || "");
-          console.log(
-            "[AssemblyAI WebSocket] Final formatted transcript received:",
-            finalTranscript.substring(0, 100),
-          );
-          if (currentTurn === data.turn_order) {
-            extra = "";
-          }
-        } else if (data.type === "Turn") {
-          if (currentTurn != data.turn_order) {
-            currentTurn = data.turn_order;
+        if (messageType === "Results") {
+          const transcript = data.channel?.alternatives?.[0]?.transcript || "";
+          const isFinal = data.is_final === true;
+          const speechFinal = data.speech_final === true;
 
-            extra = data.transcript;
+          if (isFinal && transcript) {
+            finalTranscript += (finalTranscript ? " " : "") + transcript;
+            partialTranscript = "";
+            console.log(
+              "[Deepgram WebSocket] Final transcript received:",
+              finalTranscript.substring(0, 100),
+            );
+            if (speechFinal && isFinalized) {
+              completeFinalize();
+            }
+          } else if (!isFinal && transcript) {
+            partialTranscript = transcript;
           }
+        } else if (messageType === "Metadata") {
+          console.log("[Deepgram WebSocket] Metadata received:", data);
+        } else if (messageType === "Error" || data.error) {
+          console.error("[Deepgram WebSocket] Error from server:", data);
         }
       } catch (error) {
-        console.error("[AssemblyAI WebSocket] Error parsing message:", error);
+        console.error("[Deepgram WebSocket] Error parsing message:", error);
       }
     };
 
     ws.onerror = (error) => {
-      console.error("[AssemblyAI WebSocket] WebSocket error:", error);
+      console.error("[Deepgram WebSocket] WebSocket error:", error);
       cleanup();
       reject(new Error("WebSocket connection failed"));
     };
 
     ws.onclose = (event) => {
-      console.log("[AssemblyAI WebSocket] WebSocket closed:", {
+      console.log("[Deepgram WebSocket] WebSocket closed:", {
         code: event.code,
         reason: event.reason,
       });
+      if (isFinalized && finalizeResolver) {
+        completeFinalize();
+      }
       cleanup();
     };
   });
 };
 
-export class AssemblyAITranscriptionSession implements TranscriptionSession {
-  private session: AssemblyAIStreamingSession | null = null;
+export class DeepgramTranscriptionSession implements TranscriptionSession {
+  private session: DeepgramStreamingSession | null = null;
   private apiKey: string;
 
   constructor(apiKey: string) {
@@ -319,12 +312,11 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
-      console.log("[AssemblyAI] Starting streaming session...");
-      this.session = await startAssemblyAIStreaming(this.apiKey, sampleRate);
-      console.log("[AssemblyAI] Streaming session started successfully");
+      console.log("[Deepgram] Starting streaming session...");
+      this.session = await startDeepgramStreaming(this.apiKey, sampleRate);
+      console.log("[Deepgram] Streaming session started successfully");
     } catch (error) {
-      console.error("[AssemblyAI] Failed to start streaming:", error);
-      // Continue recording anyway - finalize will handle missing session
+      console.error("[Deepgram] Failed to start streaming:", error);
     }
   }
 
@@ -335,21 +327,21 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
       return {
         rawTranscript: null,
         metadata: {
-          inferenceDevice: "API • AssemblyAI (Streaming)",
+          inferenceDevice: "API • Deepgram (Streaming)",
           transcriptionMode: "api",
         },
-        warnings: ["AssemblyAI streaming session was not established"],
+        warnings: ["Deepgram streaming session was not established"],
       };
     }
 
     try {
-      console.log("[AssemblyAI] Finalizing streaming session...");
+      console.log("[Deepgram] Finalizing streaming session...");
       const finalizeStart = performance.now();
       const transcript = await this.session.finalize();
       const durationMs = Math.round(performance.now() - finalizeStart);
 
-      console.log("[AssemblyAI] Transcript timing:", { durationMs });
-      console.log("[AssemblyAI] Received transcript:", {
+      console.log("[Deepgram] Transcript timing:", { durationMs });
+      console.log("[Deepgram] Received transcript:", {
         length: transcript?.length ?? 0,
         preview:
           transcript?.substring(0, 50) +
@@ -359,22 +351,22 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
       return {
         rawTranscript: transcript || null,
         metadata: {
-          inferenceDevice: "API • AssemblyAI (Streaming)",
+          inferenceDevice: "API • Deepgram (Streaming)",
           transcriptionMode: "api",
           transcriptionDurationMs: durationMs,
         },
         warnings: [],
       };
     } catch (error) {
-      console.error("[AssemblyAI] Failed to finalize session:", error);
+      console.error("[Deepgram] Failed to finalize session:", error);
       return {
         rawTranscript: null,
         metadata: {
-          inferenceDevice: "API • AssemblyAI (Streaming)",
+          inferenceDevice: "API • Deepgram (Streaming)",
           transcriptionMode: "api",
         },
         warnings: [
-          `AssemblyAI finalization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Deepgram finalization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         ],
       };
     }
