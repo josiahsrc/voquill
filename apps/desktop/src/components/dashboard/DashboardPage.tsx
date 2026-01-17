@@ -4,7 +4,6 @@ import { Outlet } from "react-router-dom";
 import { useAsyncData } from "../../hooks/async.hooks";
 import { DashboardMenu } from "./DashboardMenu";
 import { FeatureReleaseDialog } from "./FeatureReleaseDialog";
-import { TutorialDialog } from "../tutorial/TutorialDialog";
 import { PermissionsDialog } from "./PermissionsDialog";
 
 export default function DashboardPage() {
@@ -12,7 +11,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      <TutorialDialog />
       <FeatureReleaseDialog />
       <PermissionsDialog />
       <Stack direction="row" sx={{ height: "100%", width: "100%" }}>

@@ -119,20 +119,6 @@ export const getMyUserName = (state: AppState): string => {
   return user?.name || "Guest";
 };
 
-export const getHasFinishedTutorial = (state: AppState): boolean => {
-  const user = getMyUser(state);
-  return user?.hasFinishedTutorial ?? false;
-};
-
-export const getShouldShowTutorialDialog = (state: AppState): boolean => {
-  const user = getMyUser(state);
-  if (!user) {
-    return false;
-  }
-
-  return !getHasFinishedTutorial(state);
-};
-
 export const getIsSignedIn = (state: AppState): boolean => {
   return !!state.auth;
 };
