@@ -1,5 +1,4 @@
 import { ArrowForward, Check, Email, TouchApp } from "@mui/icons-material";
-import discordIcon from "../../assets/discord.svg";
 import {
   Box,
   Button,
@@ -8,9 +7,28 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { motion } from "framer-motion";
 import { ChangeEvent, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { showConfetti, showErrorSnackbar } from "../../actions/app.actions";
+import {
+  finishOnboarding,
+  submitOnboarding,
+} from "../../actions/onboarding.actions";
+import discordIcon from "../../assets/discord.svg";
+import { produceAppState, useAppStore } from "../../store";
+import {
+  DICTATE_HOTKEY,
+  getHotkeyCombosForAction,
+} from "../../utils/keyboard.utils";
+import { DictationInstruction } from "../common/DictationInstruction";
+import { HotkeyBadge } from "../common/HotkeyBadge";
 import { BouncyTooltip } from "./BouncyTooltip";
+import {
+  BackButton,
+  DualPaneLayout,
+  OnboardingFormLayout,
+} from "./OnboardingCommon";
 
 const pulseDiscord = keyframes`
   0%, 100% {
@@ -33,21 +51,6 @@ const pulseEmail = keyframes`
     box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.3);
   }
 `;
-import { showConfetti, showErrorSnackbar } from "../../actions/app.actions";
-import { submitOnboarding } from "../../actions/onboarding.actions";
-import { finishTutorial } from "../../actions/user.actions";
-import { produceAppState, useAppStore } from "../../store";
-import {
-  DICTATE_HOTKEY,
-  getHotkeyCombosForAction,
-} from "../../utils/keyboard.utils";
-import { DictationInstruction } from "../common/DictationInstruction";
-import { HotkeyBadge } from "../common/HotkeyBadge";
-import {
-  BackButton,
-  DualPaneLayout,
-  OnboardingFormLayout,
-} from "./OnboardingCommon";
 
 const PAGE_COUNT = 2;
 
@@ -55,6 +58,7 @@ export const TutorialForm = () => {
   const intl = useIntl();
   const [stepIndex, setStepIndex] = useState(0);
   const [dictationValue, setDictationValue] = useState("");
+  const [initializing, setInitializing] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isFieldFocused, setIsFieldFocused] = useState(false);
   const [hasStartedDictating, setHasStartedDictating] = useState(false);
@@ -78,10 +82,25 @@ export const TutorialForm = () => {
   }, [keysHeld, primaryHotkey]);
 
   useEffect(() => {
-    produceAppState((draft) => {
-      draft.onboarding.dictationOverrideEnabled = true;
-    });
+    let cancelled = false;
+    const init = async () => {
+      try {
+        await submitOnboarding();
+        if (cancelled) {
+          return;
+        }
+        produceAppState((draft) => {
+          draft.onboarding.dictationOverrideEnabled = true;
+        });
+      } finally {
+        if (!cancelled) {
+          setInitializing(false);
+        }
+      }
+    };
+    init();
     return () => {
+      cancelled = true;
       produceAppState((draft) => {
         draft.onboarding.dictationOverrideEnabled = false;
       });
@@ -113,8 +132,7 @@ export const TutorialForm = () => {
   const handleFinish = async () => {
     setSubmitting(true);
     try {
-      await finishTutorial();
-      await submitOnboarding();
+      await finishOnboarding();
       showConfetti();
     } catch (err) {
       showErrorSnackbar(err);
@@ -482,8 +500,16 @@ ${userName}`;
 
   const rightContent = (
     <Stack sx={{ width: "100%", maxWidth: 400, alignItems: "stretch" }}>
-      {stepIndex === 0 ? discordContent : emailContent}
-      {stepper}
+      {!initializing && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          {stepIndex === 0 ? discordContent : emailContent}
+          {stepper}
+        </motion.div>
+      )}
     </Stack>
   );
 

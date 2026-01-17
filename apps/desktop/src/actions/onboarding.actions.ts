@@ -1,7 +1,6 @@
 import { User, UserPreferences } from "@repo/types";
 import { DEFAULT_LOCALE } from "../i18n/config";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
-import { CURRENT_COHORT } from "../utils/analytics.utils";
 import {
   INITIAL_ONBOARDING_STATE,
   OnboardingPageKey,
@@ -9,18 +8,21 @@ import {
 } from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
+import { CURRENT_COHORT } from "../utils/analytics.utils";
 import { CURRENT_FEATURE } from "../utils/feature.utils";
 import {
   GenerativePrefs,
   getAgentModePrefs,
   getGenerativePrefs,
   getMyEffectiveUserId,
+  getMyUser,
   getTranscriptionPrefs,
   setCurrentUser,
   setUserPreferences,
   TranscriptionPrefs,
 } from "../utils/user.utils";
-import { showErrorSnackbar, showSnackbar } from "./app.actions";
+import { showErrorSnackbar } from "./app.actions";
+import { refreshMember } from "./member.actions";
 
 const navigateToOnboardingPage = (
   onboarding: OnboardingState,
@@ -103,9 +105,11 @@ export const submitOnboarding = async () => {
       createdAt: now,
       updatedAt: now,
       name: trimmedName,
+      title: state.onboarding.title.trim() || null,
+      company: state.onboarding.company.trim() || null,
       bio: null,
-      onboarded: true,
-      onboardedAt: now,
+      onboarded: false,
+      onboardedAt: null,
       timezone: null,
       preferredMicrophone: null,
       preferredLanguage: DEFAULT_LOCALE,
@@ -163,12 +167,43 @@ export const submitOnboarding = async () => {
       draft.onboarding.name = savedUser.name;
     });
 
-    showSnackbar("You're all set! Onboarding complete.", { mode: "success" });
+    await refreshMember();
     return savedUser;
   } catch (err) {
     produceAppState((draft) => {
       draft.onboarding.submitting = false;
     });
     showErrorSnackbar(err);
+  }
+};
+
+export const finishOnboarding = async () => {
+  const state = getAppState();
+  const existingUser = getMyUser(state);
+  if (!existingUser) {
+    throw new Error("Cannot finish onboarding: user not found");
+  }
+
+  try {
+    const repo = getUserRepo();
+    const now = new Date().toISOString();
+
+    const updatedUser: User = {
+      ...existingUser,
+      updatedAt: now,
+      onboarded: true,
+      onboardedAt: now,
+      hasFinishedTutorial: true,
+    };
+
+    const savedUser = await repo.setUser(updatedUser);
+    produceAppState((draft) => {
+      setCurrentUser(draft, savedUser);
+    });
+
+    return savedUser;
+  } catch (err) {
+    showErrorSnackbar(err);
+    throw err;
   }
 };
