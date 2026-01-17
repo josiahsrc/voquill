@@ -178,7 +178,7 @@ ${userName}`;
     <>
       <BouncyTooltip
         visible={!isFieldFocused && !hasStartedDictating}
-        delay={0.4}
+        delay={0.7}
       >
         <TouchApp fontSize="small" />
         <Typography variant="body2" fontWeight={500}>
@@ -187,7 +187,7 @@ ${userName}`;
       </BouncyTooltip>
       <BouncyTooltip
         visible={isFieldFocused && !hasStartedDictating}
-        delay={0.4}
+        delay={0.7}
       >
         <Typography variant="body2" fontWeight={500}>
           <FormattedMessage defaultMessage="Now press and hold" />
