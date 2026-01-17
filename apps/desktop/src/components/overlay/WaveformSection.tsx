@@ -13,13 +13,13 @@ import {
 import { getPlatform } from "../../utils/platform.utils";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
 
-const EXPANDED_WIDTH = 180;
+const EXPANDED_WIDTH = 120;
 const EXPANDED_HEIGHT = 32;
 const COLLAPSED_WIDTH = 48;
 const COLLAPSED_HEIGHT = 6;
 const HOVERED_WIDTH = 56;
 const HOVERED_HEIGHT = 8;
-const HOVER_PADDING = 20; // Extra padding around pill for easier hover detection
+const HOVER_PADDING = 6; // Extra padding around pill for easier hover detection
 
 export const WaveformSection = () => {
   const theme = useTheme();
@@ -30,7 +30,6 @@ export const WaveformSection = () => {
   const isExpanded = phase !== "idle";
   const [isHovered, setIsHovered] = useState(false);
   const pillRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
   const isHoveredRef = useRef(false);
 
   // Keep ref in sync with state for use in event handlers
@@ -63,7 +62,7 @@ export const WaveformSection = () => {
     }
   }, []);
 
-  // Check if cursor is directly over the pill or tooltip (no padding, for click detection)
+  // Check if cursor is directly over the pill (no padding, for click detection)
   const checkIsDirectlyOverPill = useCallback(async (): Promise<boolean> => {
     if (!pillRef.current) return false;
 
@@ -76,27 +75,13 @@ export const WaveformSection = () => {
       const relativeX = (cursor.x - windowPos.x) / scaleFactor;
       const relativeY = (cursor.y - windowPos.y) / scaleFactor;
 
-      const pillRect = pillRef.current.getBoundingClientRect();
-      const isOverPill =
-        relativeX >= pillRect.left &&
-        relativeX <= pillRect.right &&
-        relativeY >= pillRect.top &&
-        relativeY <= pillRect.bottom;
-
-      if (isOverPill) return true;
-
-      // Also check if over the tooltip
-      if (tooltipRef.current) {
-        const tooltipRect = tooltipRef.current.getBoundingClientRect();
-        const isOverTooltip =
-          relativeX >= tooltipRect.left &&
-          relativeX <= tooltipRect.right &&
-          relativeY >= tooltipRect.top &&
-          relativeY <= tooltipRect.bottom;
-        if (isOverTooltip) return true;
-      }
-
-      return false;
+      const rect = pillRef.current.getBoundingClientRect();
+      return (
+        relativeX >= rect.left &&
+        relativeX <= rect.right &&
+        relativeY >= rect.top &&
+        relativeY <= rect.bottom
+      );
     } catch {
       return false;
     }
@@ -178,7 +163,6 @@ export const WaveformSection = () => {
     >
       {/* Tooltip */}
       <Box
-        ref={tooltipRef}
         sx={{
           opacity: isHovered && !isExpanded ? 1 : 0,
           transform: isHovered && !isExpanded ? "translateY(0)" : "translateY(4px)",
