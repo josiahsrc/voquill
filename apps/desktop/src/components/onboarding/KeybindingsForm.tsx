@@ -223,6 +223,7 @@ export const KeybindingsForm = () => {
 
   return (
     <DualPaneLayout
+      flex={[2, 3]}
       left={form}
       right={rightContent}
       rightSx={{ bgcolor: "transparent" }}
