@@ -1,7 +1,13 @@
-import { ArrowForward, Mic } from "@mui/icons-material";
+import { ArrowForward, Check, OpenInNew } from "@mui/icons-material";
 import { Box, Button, Stack, Typography } from "@mui/material";
+import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
+import { produceAppState, useAppStore } from "../../store";
+import {
+  isPermissionAuthorized,
+  requestMicrophonePermission,
+} from "../../utils/permission.utils";
 import {
   BackButton,
   DualPaneLayout,
@@ -9,9 +15,27 @@ import {
 } from "./OnboardingCommon";
 
 export const MicPermsForm = () => {
-  const handleEnable = () => {
-    // TODO: Request microphone permissions
-  };
+  const [requesting, setRequesting] = useState(false);
+  const micPermission = useAppStore((state) => state.permissions.microphone);
+  const isAuthorized = isPermissionAuthorized(micPermission?.state);
+
+  const handleAllow = useCallback(async () => {
+    if (requesting || isAuthorized) {
+      return;
+    }
+
+    setRequesting(true);
+    try {
+      const result = await requestMicrophonePermission();
+      produceAppState((draft) => {
+        draft.permissions.microphone = result;
+      });
+    } catch (error) {
+      console.error("Failed to request microphone permission", error);
+    } finally {
+      setRequesting(false);
+    }
+  }, [requesting, isAuthorized]);
 
   const handleContinue = () => {
     goToOnboardingPage("a11yPerms");
@@ -25,6 +49,7 @@ export const MicPermsForm = () => {
           variant="contained"
           endIcon={<ArrowForward />}
           onClick={handleContinue}
+          disabled={!isAuthorized}
         >
           <FormattedMessage defaultMessage="Continue" />
         </Button>
@@ -40,14 +65,27 @@ export const MicPermsForm = () => {
           </Typography>
         </Box>
 
-        <Button
-          variant="outlined"
-          startIcon={<Mic />}
-          onClick={handleEnable}
-          sx={{ alignSelf: "flex-start" }}
-        >
-          <FormattedMessage defaultMessage="Enable microphone" />
-        </Button>
+        {isAuthorized ? (
+          <Button
+            variant="outlined"
+            color="success"
+            startIcon={<Check />}
+            disabled
+            sx={{ alignSelf: "flex-start" }}
+          >
+            <FormattedMessage defaultMessage="Access granted" />
+          </Button>
+        ) : (
+          <Button
+            variant="outlined"
+            onClick={() => void handleAllow()}
+            disabled={requesting}
+            endIcon={<OpenInNew />}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            <FormattedMessage defaultMessage="Allow access" />
+          </Button>
+        )}
       </Stack>
     </OnboardingFormLayout>
   );
