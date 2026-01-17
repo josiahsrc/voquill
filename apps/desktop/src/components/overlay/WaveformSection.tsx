@@ -17,8 +17,8 @@ const EXPANDED_WIDTH = 120;
 const EXPANDED_HEIGHT = 32;
 const COLLAPSED_WIDTH = 48;
 const COLLAPSED_HEIGHT = 6;
-const HOVERED_WIDTH = 56;
-const HOVERED_HEIGHT = 8;
+const HOVERED_WIDTH = 72;
+const HOVERED_HEIGHT = 12;
 const HOVER_PADDING = 6; // Extra padding around pill for easier hover detection
 
 export const WaveformSection = () => {
