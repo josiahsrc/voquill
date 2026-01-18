@@ -28,8 +28,14 @@ export type TranscriptionSessionResult = {
   warnings: string[];
 };
 
+export type RecordingStartOptions = {
+  sampleRate: number;
+  glossary?: string[];
+  language?: string;
+};
+
 export interface TranscriptionSession {
-  onRecordingStart(sampleRate: number): Promise<void>;
+  onRecordingStart(options: RecordingStartOptions): Promise<void>;
   finalize(
     audio: StopRecordingResponse,
     options?: FinalizeOptions,

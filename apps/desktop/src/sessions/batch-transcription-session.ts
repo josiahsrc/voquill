@@ -1,6 +1,7 @@
 import { transcribeAudio } from "../actions/transcribe.actions";
 import {
   FinalizeOptions,
+  RecordingStartOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -12,7 +13,7 @@ import { showErrorSnackbar } from "../actions/app.actions";
  * Only handles transcription, not post-processing.
  */
 export class BatchTranscriptionSession implements TranscriptionSession {
-  async onRecordingStart(_sampleRate: number): Promise<void> {
+  async onRecordingStart(_options: RecordingStartOptions): Promise<void> {
     // No-op for batch transcription - we process after recording stops
   }
 

@@ -2,6 +2,7 @@ import { convertFloat32ToPCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
   FinalizeOptions,
+  RecordingStartOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -311,10 +312,10 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
     this.apiKey = apiKey;
   }
 
-  async onRecordingStart(sampleRate: number): Promise<void> {
+  async onRecordingStart(options: RecordingStartOptions): Promise<void> {
     try {
       console.log("[Deepgram] Starting streaming session...");
-      this.session = await startDeepgramStreaming(this.apiKey, sampleRate);
+      this.session = await startDeepgramStreaming(this.apiKey, options.sampleRate);
       console.log("[Deepgram] Streaming session started successfully");
     } catch (error) {
       console.error("[Deepgram] Failed to start streaming:", error);

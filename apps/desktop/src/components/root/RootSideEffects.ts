@@ -245,7 +245,16 @@ export const RootSideEffects = () => {
             ? startRecordingResult.sampleRate
             : 16000;
 
-        await sessionRef.current.onRecordingStart(sampleRate);
+        // Get glossary and language for transcription services
+        const currentState = getAppState();
+        const dictEntries = collectDictionaryEntries(currentState);
+        const language = getMyDictationLanguage(currentState);
+
+        await sessionRef.current.onRecordingStart({
+          sampleRate,
+          glossary: dictEntries.sources,
+          language,
+        });
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
         await strategy.setPhase("idle");

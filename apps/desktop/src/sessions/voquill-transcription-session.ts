@@ -2,6 +2,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
   DictionaryContext,
   FinalizeOptions,
+  RecordingStartOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -21,7 +22,7 @@ type JsonResponseSchema = {
 
 type ClientMessage =
   | { type: "auth"; idToken: string }
-  | { type: "config"; sampleRate: number }
+  | { type: "config"; sampleRate: number; glossary?: string[]; language?: string }
   | { type: "audio"; samples: number[] }
   | {
       type: "finalize";
@@ -74,8 +75,13 @@ type VoquillStreamingSession = {
 
 const startVoquillStreaming = async (
   sampleRate: number,
+  glossary?: string[],
+  language?: string,
 ): Promise<VoquillStreamingSession> => {
   console.log("[Voquill WebSocket] Starting with sample rate:", sampleRate);
+  if (glossary && glossary.length > 0) {
+    console.log(`[Voquill WebSocket] Using ${glossary.length} glossary terms`);
+  }
 
   const auth = getEffectiveAuth();
   const currentUser = auth.currentUser;
@@ -191,7 +197,7 @@ const startVoquillStreaming = async (
       switch (message.type) {
         case "authenticated":
           console.log("[Voquill WebSocket] Authenticated:", message.uid);
-          send({ type: "config", sampleRate });
+          send({ type: "config", sampleRate, glossary, language });
           break;
 
         case "ready":
@@ -333,10 +339,14 @@ const startVoquillStreaming = async (
 export class VoquillTranscriptionSession implements TranscriptionSession {
   private session: VoquillStreamingSession | null = null;
 
-  async onRecordingStart(sampleRate: number): Promise<void> {
+  async onRecordingStart(options: RecordingStartOptions): Promise<void> {
     try {
       console.log("[Voquill] Starting streaming session...");
-      this.session = await startVoquillStreaming(sampleRate);
+      this.session = await startVoquillStreaming(
+        options.sampleRate,
+        options.glossary,
+        options.language,
+      );
       console.log("[Voquill] Streaming session started successfully");
     } catch (error) {
       console.error("[Voquill] Failed to start streaming:", error);

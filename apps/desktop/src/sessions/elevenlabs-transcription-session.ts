@@ -2,6 +2,7 @@ import { convertFloat32ToBase64PCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
   FinalizeOptions,
+  RecordingStartOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -371,10 +372,10 @@ export class ElevenLabsTranscriptionSession implements TranscriptionSession {
     this.apiKey = apiKey;
   }
 
-  async onRecordingStart(sampleRate: number): Promise<void> {
+  async onRecordingStart(options: RecordingStartOptions): Promise<void> {
     try {
       console.log("[ElevenLabs] Starting streaming session...");
-      this.session = await startElevenLabsStreaming(this.apiKey, sampleRate);
+      this.session = await startElevenLabsStreaming(this.apiKey, options.sampleRate);
       console.log("[ElevenLabs] Streaming session started successfully");
     } catch (error) {
       console.error("[ElevenLabs] Failed to start streaming:", error);

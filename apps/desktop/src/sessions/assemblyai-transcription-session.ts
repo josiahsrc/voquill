@@ -2,6 +2,7 @@ import { convertFloat32ToPCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
   FinalizeOptions,
+  RecordingStartOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -318,10 +319,10 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
     this.apiKey = apiKey;
   }
 
-  async onRecordingStart(sampleRate: number): Promise<void> {
+  async onRecordingStart(options: RecordingStartOptions): Promise<void> {
     try {
       console.log("[AssemblyAI] Starting streaming session...");
-      this.session = await startAssemblyAIStreaming(this.apiKey, sampleRate);
+      this.session = await startAssemblyAIStreaming(this.apiKey, options.sampleRate);
       console.log("[AssemblyAI] Streaming session started successfully");
     } catch (error) {
       console.error("[AssemblyAI] Failed to start streaming:", error);

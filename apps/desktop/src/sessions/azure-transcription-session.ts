@@ -6,6 +6,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { getAppState } from "../store";
 import {
   FinalizeOptions,
+  RecordingStartOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -28,19 +29,19 @@ export class AzureTranscriptionSession implements TranscriptionSession {
     this.region = region;
   }
 
-  async onRecordingStart(sampleRate: number): Promise<void> {
+  async onRecordingStart(options: RecordingStartOptions): Promise<void> {
     try {
       console.log("[Azure] Starting streaming session...");
 
       const state = getAppState();
-      const language = getMyDictationLanguage(state);
+      const language = options.language || getMyDictationLanguage(state);
       const dictionaryEntries = collectDictionaryEntries(state);
       const prompt = buildLocalizedTranscriptionPrompt(dictionaryEntries);
 
       this.session = await createAzureStreamingSession({
         subscriptionKey: this.subscriptionKey,
         region: this.region,
-        sampleRate,
+        sampleRate: options.sampleRate,
         language,
         prompt: prompt || undefined,
       });
