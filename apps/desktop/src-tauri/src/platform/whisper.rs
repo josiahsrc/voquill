@@ -641,13 +641,15 @@ fn is_vulkan_available() -> bool {
         .chain(std::iter::once(0))
         .collect();
 
-    let handle = unsafe { windows::Win32::System::LibraryLoader::LoadLibraryW(
-        windows::core::PCWSTR(dll_name.as_ptr())
-    ) };
+    let handle = unsafe {
+        windows::Win32::System::LibraryLoader::LoadLibraryW(
+            windows::core::PCWSTR(dll_name.as_ptr()),
+        )
+    };
 
     match handle {
-        Ok(h) => {
-            let _ = unsafe { windows::Win32::System::LibraryLoader::FreeLibrary(h) };
+        Ok(_) => {
+            // Keep the library loaded - we're going to use it anyway
             eprintln!("[whisper] Vulkan runtime (vulkan-1.dll) is available");
             true
         }
