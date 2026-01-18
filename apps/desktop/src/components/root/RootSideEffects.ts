@@ -58,6 +58,10 @@ import {
 } from "../../utils/keyboard.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
+  daysToMilliseconds,
+  hoursToMilliseconds,
+} from "../../utils/time.utils";
+import {
   getIsDictationUnlocked,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
@@ -68,7 +72,6 @@ import {
   setTrayTitle,
   surfaceMainWindow,
 } from "../../utils/window.utils";
-import { daysToMilliseconds } from "../../utils/time.utils";
 
 type StartRecordingResponse = {
   sampleRate: number;
@@ -143,6 +146,14 @@ export const RootSideEffects = () => {
     ];
     await Promise.allSettled(loaders);
   }, [userId]);
+
+  useIntervalAsync(
+    hoursToMilliseconds(1),
+    async () => {
+      await Promise.allSettled([refreshMember(), refreshCurrentUser()]);
+    },
+    [],
+  );
 
   useAsyncEffect(async () => {
     await syncAutoLaunchSetting();
