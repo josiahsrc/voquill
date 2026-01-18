@@ -422,6 +422,7 @@ ${userName}`;
               multiline
               minRows={8}
               fullWidth
+              autoFocus={true}
               value={dictationValue}
               onChange={handleDictationChange}
               disabled={submitting}
