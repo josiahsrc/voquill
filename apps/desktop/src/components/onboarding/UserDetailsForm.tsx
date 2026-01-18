@@ -17,7 +17,7 @@ export const UserDetailsForm = () => {
   const company = useAppStore((state) => state.onboarding.company);
   const submitting = useAppStore((state) => state.onboarding.submitting);
 
-  const canContinue = name && title && company && !submitting;
+  const canContinue = name && !submitting;
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     produceAppState((draft) => {
