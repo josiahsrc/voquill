@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import {
   isPermissionAuthorized,
   requestMicrophonePermission,
@@ -24,6 +25,7 @@ export const MicPermsForm = () => {
       return;
     }
 
+    trackButtonClick("onboarding_mic_allow_access");
     setRequesting(true);
     try {
       const result = await requestMicrophonePermission();
@@ -38,6 +40,7 @@ export const MicPermsForm = () => {
   }, [requesting, isAuthorized]);
 
   const handleContinue = () => {
+    trackButtonClick("onboarding_mic_perms_continue");
     goToOnboardingPage("a11yPerms");
   };
 

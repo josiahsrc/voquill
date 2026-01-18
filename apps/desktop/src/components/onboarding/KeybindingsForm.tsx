@@ -6,6 +6,7 @@ import { showErrorSnackbar } from "../../actions/app.actions";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import { registerHotkeys } from "../../utils/app.utils";
 import { createId } from "../../utils/id.utils";
 import {
@@ -105,6 +106,7 @@ export const KeybindingsForm = () => {
   };
 
   const handleChangeShortcut = () => {
+    trackButtonClick("onboarding_change_hotkey");
     lastEmittedRef.current = [];
     setIsListening(true);
     setTimeout(() => {
@@ -113,6 +115,7 @@ export const KeybindingsForm = () => {
   };
 
   const handleConfirm = () => {
+    trackButtonClick("onboarding_hotkey_works");
     goToOnboardingPage("micCheck");
   };
 

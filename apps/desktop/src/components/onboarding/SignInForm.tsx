@@ -17,6 +17,7 @@ import {
   setDidSignUpWithAccount,
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { LoginForm } from "../login/LoginForm";
 import { TermsNotice } from "../login/TermsNotice";
@@ -47,25 +48,30 @@ export const SignInForm = () => {
   }, [isSignedIn, awaitingSignInNavigation]);
 
   const handleClickLocalSetup = () => {
+    trackButtonClick("onboarding_local_setup");
     setConfirmLocalSetupOpen(true);
   };
 
   const handleConfirmLocalSetup = () => {
+    trackButtonClick("onboarding_confirm_local_setup");
     setConfirmLocalSetupOpen(false);
     setDidSignUpWithAccount(false);
     goToOnboardingPage("chooseTranscription");
   };
 
   const handleCancelLocalSetup = () => {
+    trackButtonClick("onboarding_cancel_local_setup");
     setConfirmLocalSetupOpen(false);
   };
 
   const handleContinueWithGoogle = () => {
+    trackButtonClick("onboarding_continue_with_google");
     setAwaitingSignInNavigation(true);
     submitSignInWithGoogle();
   };
 
   const handleOpenEmailDialog = () => {
+    trackButtonClick("onboarding_sign_up_with_email");
     setAwaitingSignInNavigation(true);
     setEmailDialogOpen(true);
   };
@@ -76,11 +82,13 @@ export const SignInForm = () => {
   };
 
   const handleContinue = () => {
+    trackButtonClick("onboarding_continue_signed_in");
     setDidSignUpWithAccount(true);
     goToOnboardingPage("userDetails");
   };
 
   const handleSignOut = async () => {
+    trackButtonClick("onboarding_sign_out");
     await signOut();
   };
 

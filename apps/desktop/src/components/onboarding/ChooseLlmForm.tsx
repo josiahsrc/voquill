@@ -3,6 +3,7 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import { AIPostProcessingConfiguration } from "../settings/AIPostProcessingConfiguration";
 import {
   BackButton,
@@ -18,6 +19,7 @@ export const ChooseLlmForm = () => {
   const canContinue = mode === "api" ? Boolean(selectedApiKeyId) : true;
 
   const handleContinue = () => {
+    trackButtonClick("onboarding_llm_continue");
     goToOnboardingPage("userDetails");
   };
 

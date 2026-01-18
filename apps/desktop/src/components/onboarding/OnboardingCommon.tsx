@@ -4,11 +4,13 @@ import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { goBackOnboardingPage } from "../../actions/onboarding.actions";
 import { getAppState } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 
 export const BackButton = () => {
   const navigate = useNavigate();
 
   const handleClick = () => {
+    trackButtonClick("onboarding_back");
     const state = getAppState();
     const stack = state.onboarding.history;
     if (stack.length === 0) {

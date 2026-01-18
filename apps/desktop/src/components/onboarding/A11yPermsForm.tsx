@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import {
   isPermissionAuthorized,
   requestAccessibilityPermission,
@@ -24,6 +25,7 @@ export const A11yPermsForm = () => {
       return;
     }
 
+    trackButtonClick("onboarding_a11y_allow_access");
     setRequesting(true);
     try {
       const result = await requestAccessibilityPermission();
@@ -38,6 +40,7 @@ export const A11yPermsForm = () => {
   }, [requesting, isAuthorized]);
 
   const handleContinue = () => {
+    trackButtonClick("onboarding_a11y_perms_continue");
     goToOnboardingPage("keybindings");
   };
 

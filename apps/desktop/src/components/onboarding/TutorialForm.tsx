@@ -17,6 +17,7 @@ import {
 } from "../../actions/onboarding.actions";
 import discordIcon from "../../assets/discord.svg";
 import { produceAppState, useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
@@ -118,14 +119,17 @@ export const TutorialForm = () => {
 
   const handleContinue = async () => {
     if (!isLastStep) {
+      trackButtonClick("onboarding_tutorial_continue");
       setStepIndex(stepIndex + 1);
       setDictationValue("");
     } else {
+      trackButtonClick("onboarding_tutorial_finish");
       await handleFinish();
     }
   };
 
   const handleSkip = async () => {
+    trackButtonClick("onboarding_tutorial_skip");
     await handleFinish();
   };
 

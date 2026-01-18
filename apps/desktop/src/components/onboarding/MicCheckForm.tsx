@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
 import { MicrophoneSelector } from "../microphone/MicrophoneSelector";
 import {
@@ -91,15 +92,18 @@ export const MicCheckForm = () => {
   }, [isGlobalRecording, isRecording, isStarting, stopRecording]);
 
   const handleChangeMicrophone = async () => {
+    trackButtonClick("onboarding_try_another_mic");
     await stopRecording();
     setShowMicSelector(true);
   };
 
   const handleMicSelected = () => {
+    trackButtonClick("onboarding_use_this_mic");
     setShowMicSelector(false);
   };
 
   const handleConfirm = async () => {
+    trackButtonClick("onboarding_mic_looks_good");
     await stopRecording();
     if (didSignUpWithAccount) {
       goToOnboardingPage("unlockedPro");
