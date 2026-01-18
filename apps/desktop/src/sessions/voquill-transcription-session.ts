@@ -10,11 +10,22 @@ const WEBSOCKET_SERVER_URL =
   import.meta.env.VITE_VOQUILL_SERVER_URL ??
   "wss://voquill-server-6bep2yuvca-uc.a.run.app";
 
+type JsonResponseSchema = {
+  name: string;
+  description?: string;
+  schema: Record<string, unknown>;
+};
+
 type ClientMessage =
   | { type: "auth"; idToken: string }
   | { type: "config"; sampleRate: number }
   | { type: "audio"; samples: number[] }
-  | { type: "finalize"; prompt?: string; context?: string };
+  | {
+      type: "finalize";
+      systemPrompt?: string;
+      userPrompt?: string;
+      jsonResponse?: JsonResponseSchema;
+    };
 
 type ServerMessage =
   | { type: "authenticated"; uid: string; wordsRemaining: number }
@@ -23,8 +34,14 @@ type ServerMessage =
   | { type: "result"; text: string; rawText: string; wordsUsed: number }
   | { type: "error"; code: string; message: string };
 
+export type VoquillFinalizeOptions = {
+  systemPrompt?: string;
+  userPrompt?: string;
+  jsonResponse?: JsonResponseSchema;
+};
+
 type VoquillStreamingSession = {
-  finalize: (prompt?: string) => Promise<string>;
+  finalize: (options?: VoquillFinalizeOptions) => Promise<string>;
   cleanup: () => void;
 };
 
@@ -71,7 +88,7 @@ const startVoquillStreaming = async (
       }
     };
 
-    const finalize = (prompt?: string): Promise<string> => {
+    const finalize = (options?: VoquillFinalizeOptions): Promise<string> => {
       return new Promise((resolveFinalize, rejectFinalize) => {
         console.log(
           "[Voquill WebSocket] Finalize called, isFinalized:",
@@ -91,7 +108,12 @@ const startVoquillStreaming = async (
 
         if (isReady && ws && ws.readyState === WebSocket.OPEN) {
           console.log("[Voquill WebSocket] Sending finalize message...");
-          send({ type: "finalize", prompt });
+          send({
+            type: "finalize",
+            systemPrompt: options?.systemPrompt,
+            userPrompt: options?.userPrompt,
+            jsonResponse: options?.jsonResponse,
+          });
 
           finalizeTimeout = setTimeout(() => {
             console.log("[Voquill WebSocket] Timeout waiting for result");
@@ -234,10 +256,10 @@ const startVoquillStreaming = async (
 
 export class VoquillTranscriptionSession implements TranscriptionSession {
   private session: VoquillStreamingSession | null = null;
-  private prompt?: string;
+  private options?: VoquillFinalizeOptions;
 
-  constructor(prompt?: string) {
-    this.prompt = prompt;
+  constructor(options?: VoquillFinalizeOptions) {
+    this.options = options;
   }
 
   async onRecordingStart(sampleRate: number): Promise<void> {
@@ -268,7 +290,7 @@ export class VoquillTranscriptionSession implements TranscriptionSession {
     try {
       console.log("[Voquill] Finalizing streaming session...");
       const finalizeStart = performance.now();
-      const transcript = await this.session.finalize(this.prompt);
+      const transcript = await this.session.finalize(this.options);
       const durationMs = Math.round(performance.now() - finalizeStart);
 
       console.log("[Voquill] Transcript timing:", { durationMs });

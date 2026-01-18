@@ -537,11 +537,22 @@ const WEBSOCKET_SERVER_URL =
   import.meta.env.VITE_VOQUILL_SERVER_URL ??
   "wss://voquill-server-6bep2yuvca-uc.a.run.app";
 
+type JsonResponseSchema = {
+  name: string;
+  description?: string;
+  schema: Record<string, unknown>;
+};
+
 type WebSocketClientMessage =
   | { type: "auth"; idToken: string }
   | { type: "config"; sampleRate: number }
   | { type: "audio"; samples: number[] }
-  | { type: "finalize"; prompt?: string; context?: string };
+  | {
+      type: "finalize";
+      systemPrompt?: string;
+      userPrompt?: string;
+      jsonResponse?: JsonResponseSchema;
+    };
 
 type WebSocketServerMessage =
   | { type: "authenticated"; uid: string; wordsRemaining: number }
@@ -612,11 +623,8 @@ export class WebSocketTranscribeAudioRepo extends BaseTranscribeAudioRepo {
           case "ready":
             // Step 3: Stream audio in chunks
             this.streamAudio(ws, input.samples);
-            // Step 4: Finalize
-            this.send(ws, {
-              type: "finalize",
-              prompt: input.prompt ?? undefined,
-            });
+            // Step 4: Finalize - server will use default prompts for post-processing
+            this.send(ws, { type: "finalize" });
             break;
 
           case "result":
