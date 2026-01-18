@@ -167,6 +167,160 @@ describe("resetWordsThisMonthCron", () => {
 	});
 });
 
+describe("cancelProTrialsCron", () => {
+	it("should cancel expired pro trials", async () => {
+		const expiredTrialMember = memberToDatabase(
+			buildMember({
+				id: firemix().id(),
+				plan: "pro",
+				isOnTrial: true,
+				trialEndsAt: dayjs().subtract(1, "hour").toISOString(),
+			}),
+		);
+
+		await firemix().set(
+			mixpath.members(expiredTrialMember.id),
+			expiredTrialMember,
+		);
+
+		await invokeHandler("emulator/cancelProTrials", {});
+
+		await retry({
+			fn: async () => {
+				const memberSnap = await firemix().get(
+					mixpath.members(expiredTrialMember.id),
+				);
+
+				expect(memberSnap?.data.plan).toBe("free");
+				expect(memberSnap?.data.isOnTrial).toBe(false);
+				expect(memberSnap?.data.trialEndsAt?.toMillis()).toEqual(
+					expiredTrialMember.trialEndsAt?.toMillis(),
+				);
+			},
+			retries: 10,
+			delay: 1000,
+		});
+	});
+
+	it("should not cancel active pro trials", async () => {
+		const activeTrialMember = memberToDatabase(
+			buildMember({
+				id: firemix().id(),
+				plan: "pro",
+				isOnTrial: true,
+				trialEndsAt: dayjs().add(1, "day").toISOString(),
+			}),
+		);
+
+		await firemix().set(
+			mixpath.members(activeTrialMember.id),
+			activeTrialMember,
+		);
+
+		await invokeHandler("emulator/cancelProTrials", {});
+
+		await retry({
+			fn: async () => {
+				const memberSnap = await firemix().get(
+					mixpath.members(activeTrialMember.id),
+				);
+
+				expect(memberSnap?.data.plan).toBe("pro");
+				expect(memberSnap?.data.isOnTrial).toBe(true);
+				expect(memberSnap?.data.trialEndsAt?.toMillis()).toEqual(
+					activeTrialMember.trialEndsAt?.toMillis(),
+				);
+			},
+			retries: 10,
+			delay: 1000,
+		});
+	});
+
+	it("should not affect members without trial fields", async () => {
+		const noTrialMember = memberToDatabase(
+			buildMember({
+				id: firemix().id(),
+				plan: "pro",
+				isOnTrial: undefined,
+				trialEndsAt: undefined,
+			}),
+		);
+
+		await firemix().set(mixpath.members(noTrialMember.id), noTrialMember);
+
+		await invokeHandler("emulator/cancelProTrials", {});
+
+		await retry({
+			fn: async () => {
+				const memberSnap = await firemix().get(
+					mixpath.members(noTrialMember.id),
+				);
+
+				expect(memberSnap?.data.plan).toBe("pro");
+				expect(memberSnap?.data.isOnTrial).toBeUndefined();
+				expect(memberSnap?.data.trialEndsAt).toBeFalsy();
+			},
+			retries: 10,
+			delay: 1000,
+		});
+	});
+
+	it("should not affect free members without trial", async () => {
+		const freeMember = memberToDatabase(
+			buildMember({
+				id: firemix().id(),
+				plan: "free",
+				isOnTrial: undefined,
+				trialEndsAt: undefined,
+			}),
+		);
+
+		await firemix().set(mixpath.members(freeMember.id), freeMember);
+
+		await invokeHandler("emulator/cancelProTrials", {});
+
+		await retry({
+			fn: async () => {
+				const memberSnap = await firemix().get(mixpath.members(freeMember.id));
+
+				expect(memberSnap?.data.plan).toBe("free");
+				expect(memberSnap?.data.isOnTrial).toBeUndefined();
+				expect(memberSnap?.data.trialEndsAt).toBeFalsy();
+			},
+			retries: 10,
+			delay: 1000,
+		});
+	});
+
+	it("should not affect members with isOnTrial false", async () => {
+		const notOnTrialMember = memberToDatabase(
+			buildMember({
+				id: firemix().id(),
+				plan: "pro",
+				isOnTrial: false,
+				trialEndsAt: dayjs().subtract(1, "hour").toISOString(),
+			}),
+		);
+
+		await firemix().set(mixpath.members(notOnTrialMember.id), notOnTrialMember);
+
+		await invokeHandler("emulator/cancelProTrials", {});
+
+		await retry({
+			fn: async () => {
+				const memberSnap = await firemix().get(
+					mixpath.members(notOnTrialMember.id),
+				);
+
+				expect(memberSnap?.data.plan).toBe("pro");
+				expect(memberSnap?.data.isOnTrial).toBe(false);
+			},
+			retries: 10,
+			delay: 1000,
+		});
+	});
+});
+
 describe("api", () => {
 	it("lets me manage my member", async () => {
 		const creds = await createUserCreds();

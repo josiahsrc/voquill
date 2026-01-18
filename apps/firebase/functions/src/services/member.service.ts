@@ -115,3 +115,23 @@ export const getMyMember = async (args: {
 		member: member?.data ? memberFromDatabase(member.data) : null,
 	};
 };
+
+export const handleCancelProTrials = async (): Promise<void> => {
+	const now = firemix().now();
+
+	const members = await firemix().query(
+		mixpath.members(),
+		["where", "isOnTrial", "==", true],
+		["where", "trialEndsAt", "<=", now],
+	);
+
+	await firemix().executeBatchWrite(
+		members.map(
+			(member) => (b) =>
+				b.update(mixpath.members(member.id), {
+					plan: "free",
+					isOnTrial: false,
+				}),
+		),
+	);
+};

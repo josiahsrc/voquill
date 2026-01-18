@@ -36,6 +36,9 @@ export const memberToDatabase = (member: Member): DatabaseMember => ({
 	thisMonthResetAt: firemix().timestampFromDate(
 		new Date(member.thisMonthResetAt),
 	),
+	trialEndsAt: member.trialEndsAt
+		? firemix().timestampFromDate(new Date(member.trialEndsAt))
+		: null,
 });
 
 export const memberFromDatabase = (dbMember: DatabaseMember): Member => ({
@@ -44,6 +47,9 @@ export const memberFromDatabase = (dbMember: DatabaseMember): Member => ({
 	updatedAt: dbMember.updatedAt.toDate().toISOString(),
 	todayResetAt: dbMember.todayResetAt.toDate().toISOString(),
 	thisMonthResetAt: dbMember.thisMonthResetAt.toDate().toISOString(),
+	trialEndsAt: dbMember.trialEndsAt
+		? dbMember.trialEndsAt.toDate().toISOString()
+		: null,
 });
 
 export const termToDatabase = (term: Term): DatabaseTerm => ({
