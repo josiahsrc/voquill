@@ -9,8 +9,8 @@ import { setUp, tearDown } from "../helpers/setup";
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { retry } from "@repo/utilities";
-import { buildMember } from "../helpers/entities";
-import { memberToDatabase } from "../../src/utils/type.utils";
+import { buildMember, buildUser } from "../helpers/entities";
+import { memberToDatabase, userToDatabase } from "../../src/utils/type.utils";
 
 beforeAll(setUp);
 afterAll(tearDown);
@@ -243,13 +243,21 @@ describe("resetWordsThisMonthCron", () => {
 });
 
 describe("cancelProTrialsCron", () => {
-	it("should cancel expired pro trials", async () => {
+	it("should cancel expired pro trials and update user document", async () => {
+		const memberId = firemix().id();
 		const expiredTrialMember = memberToDatabase(
 			buildMember({
-				id: firemix().id(),
+				id: memberId,
 				plan: "pro",
 				isOnTrial: true,
 				trialEndsAt: dayjs().subtract(1, "hour").toISOString(),
+			}),
+		);
+
+		const user = userToDatabase(
+			buildUser({
+				id: memberId,
+				shouldShowUpgradeDialog: undefined,
 			}),
 		);
 
@@ -257,6 +265,7 @@ describe("cancelProTrialsCron", () => {
 			mixpath.members(expiredTrialMember.id),
 			expiredTrialMember,
 		);
+		await firemix().set(mixpath.users(memberId), user);
 
 		await invokeHandler("emulator/cancelProTrials", {});
 
@@ -271,6 +280,9 @@ describe("cancelProTrialsCron", () => {
 				expect(memberSnap?.data.trialEndsAt?.toMillis()).toEqual(
 					expiredTrialMember.trialEndsAt?.toMillis(),
 				);
+
+				const userSnap = await firemix().get(mixpath.users(memberId));
+				expect(userSnap?.data.shouldShowUpgradeDialog).toBe(true);
 			},
 			retries: 10,
 			delay: 1000,

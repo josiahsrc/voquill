@@ -5,6 +5,7 @@ import { useAsyncData } from "../../hooks/async.hooks";
 import { DashboardMenu } from "./DashboardMenu";
 import { FeatureReleaseDialog } from "./FeatureReleaseDialog";
 import { PermissionsDialog } from "./PermissionsDialog";
+import { UpgradeDialog } from "./UpgradeDialog";
 
 export default function DashboardPage() {
   const data = useAsyncData(getVersion, []);
@@ -13,6 +14,7 @@ export default function DashboardPage() {
     <>
       <FeatureReleaseDialog />
       <PermissionsDialog />
+      <UpgradeDialog />
       <Stack direction="row" sx={{ height: "100%", width: "100%" }}>
         <Box
           sx={{

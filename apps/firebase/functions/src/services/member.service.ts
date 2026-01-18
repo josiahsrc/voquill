@@ -1,4 +1,4 @@
-import { firemix } from "@firemix/mixed";
+import { firemix, FiremixBatchDelegate } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { Member, Nullable } from "@repo/types";
@@ -125,13 +125,19 @@ export const handleCancelProTrials = async (): Promise<void> => {
 		["where", "trialEndsAt", "<=", now],
 	);
 
-	await firemix().executeBatchWrite(
-		members.map(
+	await firemix().executeBatchWrite([
+		...members.map<FiremixBatchDelegate>(
 			(member) => (b) =>
 				b.update(mixpath.members(member.id), {
 					plan: "free",
 					isOnTrial: false,
 				}),
 		),
-	);
+		...members.map<FiremixBatchDelegate>(
+			(member) => (b) =>
+				b.update(mixpath.users(member.id), {
+					shouldShowUpgradeDialog: true,
+				}),
+		),
+	]);
 };

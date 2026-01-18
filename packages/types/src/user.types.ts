@@ -22,6 +22,7 @@ export type DatabaseUser = {
   wordsTotal: number;
   hasMigratedPreferredMicrophone?: boolean;
   cohort?: Nullable<string>;
+  shouldShowUpgradeDialog?: boolean;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
@@ -47,5 +48,6 @@ export const UserZod = z
     wordsTotal: z.number(),
     hasMigratedPreferredMicrophone: z.boolean().optional(),
     cohort: z.string().nullable().optional(),
+    shouldShowUpgradeDialog: z.boolean().optional(),
   })
   .strict() satisfies z.ZodType<User>;

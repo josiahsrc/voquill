@@ -446,6 +446,7 @@ export const migrateLocalUserToCloud = async (): Promise<void> => {
     id: userId,
     createdAt: localUser.createdAt ?? now,
     updatedAt: now,
+    shouldShowUpgradeDialog: false,
   };
 
   try {
@@ -481,4 +482,14 @@ export const setIgnoreUpdateDialog = async (ignore: boolean): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.ignoreUpdateDialog = ignore;
   }, "Failed to save update dialog preference. Please try again.");
+};
+
+export const markUpgradeDialogSeen = async (): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.shouldShowUpgradeDialog = false;
+    },
+    "Unable to mark upgrade dialog as seen. User not found.",
+    "Failed to mark upgrade dialog as seen. Please try again.",
+  );
 };
