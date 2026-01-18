@@ -1,0 +1,12 @@
+{
+  "productName": "Voquill GPU (dev)",
+  "identifier": "com.voquill.desktop.gpu.dev",
+  "mainBinaryName": "Voquill GPU (dev)",
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/josiahsrc/voquill/releases/download/desktop-gpu-dev/latest.json"
+      ]
+    }
+  }
+}
