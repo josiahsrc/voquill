@@ -1,0 +1,41 @@
+# Maintainer: Josiah Saunders <contact@josiahsaunders.com>
+# Contributor: Erik Nelson <erik@nsk.io>
+pkgname=voquill-bin
+_pkgname=voquill
+pkgver=0.0.293
+pkgrel=1
+pkgdesc="Open source voice dictation tool - the WisprFlow alternative"
+arch=('x86_64')
+url="https://github.com/josiahsrc/voquill"
+license=('AGPL-3.0-only')
+depends=(
+    'alsa-lib'
+    'cairo'
+    'gcc-libs'
+    'gdk-pixbuf2'
+    'glib2'
+    'glibc'
+    'gtk3'
+    'hicolor-icon-theme'
+    'libayatana-appindicator'
+    'libsoup3'
+    'libx11'
+    'libxext'
+    'libxtst'
+    'pango'
+    'vulkan-icd-loader'
+    'webkit2gtk-4.1'
+    'xdotool'
+)
+provides=("${_pkgname}")
+conflicts=("${_pkgname}")
+options=('!strip' '!debug')
+source=("${pkgname}-${pkgver}.deb::https://github.com/josiahsrc/voquill/releases/download/desktop-v${pkgver}/Voquill_${pkgver}_amd64.deb")
+sha256sums=('80d97b09fecc14213d94202a0cd67afd16f97832a93e7d9b29e8ee476ff838a3')
+
+package() {
+    bsdtar -xf data.tar.gz -C "${pkgdir}/"
+
+    # Create lowercase symlink for convenience
+    ln -sf Voquill "${pkgdir}/usr/bin/voquill"
+}
