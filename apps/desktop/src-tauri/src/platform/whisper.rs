@@ -632,11 +632,45 @@ fn gpu_usage_disabled_via_env() -> bool {
 }
 
 #[cfg(all(target_os = "windows", feature = "windows-gpu"))]
+fn is_vulkan_available() -> bool {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+
+    let dll_name: Vec<u16> = OsStr::new("vulkan-1.dll")
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+
+    let handle = unsafe { windows::Win32::System::LibraryLoader::LoadLibraryW(
+        windows::core::PCWSTR(dll_name.as_ptr())
+    ) };
+
+    match handle {
+        Ok(h) => {
+            let _ = unsafe { windows::Win32::System::LibraryLoader::FreeLibrary(h) };
+            eprintln!("[whisper] Vulkan runtime (vulkan-1.dll) is available");
+            true
+        }
+        Err(_) => {
+            eprintln!("[whisper] Vulkan runtime (vulkan-1.dll) not found; GPU acceleration unavailable");
+            false
+        }
+    }
+}
+
+#[cfg(all(target_os = "windows", feature = "windows-gpu"))]
 fn configure_windows_gpu_auto(params: &mut WhisperContextParameters) -> WindowsGpuAttempt {
     use std::panic;
 
     if gpu_usage_disabled_via_env() {
         eprintln!("[whisper] GPU usage disabled via {DISABLE_ENV}; using CPU.");
+        return WindowsGpuAttempt {
+            attempted: false,
+            device_name: None,
+        };
+    }
+
+    if !is_vulkan_available() {
         return WindowsGpuAttempt {
             attempted: false,
             device_name: None,
@@ -710,6 +744,12 @@ fn configure_windows_gpu_selection(
         return Err(format!(
             "GPU usage disabled via {DISABLE_ENV}; unable to select GPU device"
         ));
+    }
+
+    if !is_vulkan_available() {
+        return Err(
+            "Vulkan runtime not available; GPU acceleration unavailable".to_string()
+        );
     }
 
     eprintln!("[whisper] Attempting to enumerate Vulkan devices for selection...");
