@@ -13,6 +13,7 @@ import {
 } from "@repo/voice-ai";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
+import { getEffectiveAuth } from "../utils/auth.utils";
 import {
   CPU_DEVICE_VALUE,
   DEFAULT_MODEL_SIZE,
@@ -529,5 +530,150 @@ export class GeminiTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         transcriptionMode: "api",
       },
     };
+  }
+}
+
+const WEBSOCKET_SERVER_URL =
+  import.meta.env.VITE_VOQUILL_SERVER_URL ??
+  "wss://voquill-server-6bep2yuvca-uc.a.run.app";
+
+type WebSocketClientMessage =
+  | { type: "auth"; idToken: string }
+  | { type: "config"; sampleRate: number }
+  | { type: "audio"; samples: number[] }
+  | { type: "finalize"; prompt?: string; context?: string };
+
+type WebSocketServerMessage =
+  | { type: "authenticated"; uid: string; wordsRemaining: number }
+  | { type: "ready" }
+  | { type: "transcript"; text: string; source: string; durationMs: number }
+  | { type: "result"; text: string; rawText: string; wordsUsed: number }
+  | { type: "error"; code: string; message: string };
+
+export class WebSocketTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private serverUrl: string;
+
+  constructor(serverUrl?: string) {
+    super();
+    this.serverUrl = serverUrl ?? WEBSOCKET_SERVER_URL;
+  }
+
+  // WebSocket handles its own chunking, so we use large segments
+  protected getSegmentDurationSec(): number {
+    return 300; // 5 minutes max
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 0; // No overlap needed
+  }
+
+  protected getBatchChunkCount(): number {
+    return 1; // Process one at a time
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const auth = getEffectiveAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      throw new Error("Not authenticated. Please sign in first.");
+    }
+
+    const idToken = await currentUser.getIdToken();
+
+    return new Promise((resolve, reject) => {
+      const ws = new WebSocket(this.serverUrl);
+      let resolved = false;
+
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          ws.close();
+          reject(new Error("WebSocket transcription timed out"));
+        }
+      }, 120000); // 2 minute timeout
+
+      ws.onopen = () => {
+        // Step 1: Authenticate
+        this.send(ws, { type: "auth", idToken });
+      };
+
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data) as WebSocketServerMessage;
+
+        switch (message.type) {
+          case "authenticated":
+            // Step 2: Configure session
+            this.send(ws, { type: "config", sampleRate: input.sampleRate });
+            break;
+
+          case "ready":
+            // Step 3: Stream audio in chunks
+            this.streamAudio(ws, input.samples);
+            // Step 4: Finalize
+            this.send(ws, {
+              type: "finalize",
+              prompt: input.prompt ?? undefined,
+            });
+            break;
+
+          case "result":
+            // Success - we got the final result
+            clearTimeout(timeout);
+            resolved = true;
+            ws.close();
+            resolve({
+              text: message.text,
+              metadata: {
+                inferenceDevice: "Voquill Server",
+                transcriptionMode: "cloud",
+              },
+            });
+            break;
+
+          case "error":
+            clearTimeout(timeout);
+            resolved = true;
+            ws.close();
+            reject(new Error(`${message.code}: ${message.message}`));
+            break;
+
+          case "transcript":
+            // Intermediate transcript - ignore for now, wait for result
+            break;
+        }
+      };
+
+      ws.onerror = (error) => {
+        if (!resolved) {
+          clearTimeout(timeout);
+          resolved = true;
+          reject(new Error(`WebSocket error: ${error}`));
+        }
+      };
+
+      ws.onclose = () => {
+        if (!resolved) {
+          clearTimeout(timeout);
+          resolved = true;
+          reject(new Error("WebSocket closed unexpectedly"));
+        }
+      };
+    });
+  }
+
+  private send(ws: WebSocket, message: WebSocketClientMessage): void {
+    ws.send(JSON.stringify(message));
+  }
+
+  private streamAudio(ws: WebSocket, samples: Float32Array): void {
+    const CHUNK_SIZE = 4096;
+
+    for (let i = 0; i < samples.length; i += CHUNK_SIZE) {
+      const chunk = samples.slice(i, i + CHUNK_SIZE);
+      this.send(ws, { type: "audio", samples: Array.from(chunk) });
+    }
   }
 }

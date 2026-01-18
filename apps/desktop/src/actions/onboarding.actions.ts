@@ -133,6 +133,7 @@ export const submitOnboarding = async () => {
           : null,
       transcriptionDevice: null,
       transcriptionModelSize: null,
+      cloudBackend: "websocket",
       postProcessingMode: postProcessingPreference.mode,
       postProcessingApiKeyId:
         postProcessingPreference.mode === "api"

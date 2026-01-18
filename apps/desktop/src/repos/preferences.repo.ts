@@ -54,6 +54,7 @@ const fromLocalPreferences = (
   transcriptionApiKeyId: preferences.transcriptionApiKeyId,
   transcriptionDevice: preferences.transcriptionDevice,
   transcriptionModelSize: preferences.transcriptionModelSize,
+  cloudBackend: "websocket",
   postProcessingMode: normalizePostProcessingMode(
     preferences.postProcessingMode,
   ),

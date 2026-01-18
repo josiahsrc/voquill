@@ -37,11 +37,11 @@ import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
-  CloudTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
+  WebSocketTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
 import {
   BaseTranscriptionRepo,
@@ -206,10 +206,11 @@ export type TranscribeAudioRepoOutput = {
 };
 
 export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
-  const prefs = getTranscriptionPrefs(getAppState());
+  const state = getAppState();
+  const prefs = getTranscriptionPrefs(state);
   if (prefs.mode === "cloud") {
     return {
-      repo: new CloudTranscribeAudioRepo(),
+      repo: new WebSocketTranscribeAudioRepo(),
       apiKeyId: null,
       warnings: prefs.warnings,
     };

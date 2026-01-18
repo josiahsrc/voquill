@@ -31,6 +31,8 @@ import { maybeArrayElements } from "./AIPostProcessingConfiguration";
 import { ApiKeyList } from "./ApiKeyList";
 import { VoquillCloudSetting } from "./VoquillCloudSetting";
 import { isMacOS } from "../../utils/env.utils";
+import { getHasCloudAccess, getIsSignedIn } from "../../utils/user.utils";
+import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 
 type ModelOption = {
   value: string;
@@ -65,6 +67,8 @@ export const AITranscriptionConfiguration = ({
   hideCloudOption,
 }: AITranscriptionConfigurationProps) => {
   const transcription = useAppStore((state) => state.settings.aiTranscription);
+  const isSignedIn = useAppStore(getIsSignedIn);
+  const hasCloudAccess = useAppStore(getHasCloudAccess);
   const [gpuEnumerationError, setGpuEnumerationError] = useState<string | null>(
     null,
   );
@@ -74,8 +78,6 @@ export const AITranscriptionConfiguration = ({
   const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(
     transcription.gpuEnumerationEnabled,
   );
-
-  console.log("t", transcription);
 
   // Single click handler - does everything in one place
   const handleEnableHardwareAcceleration = useCallback(async () => {
@@ -134,6 +136,10 @@ export const AITranscriptionConfiguration = ({
 
   const handleApiKeyChange = useCallback((id: string | null) => {
     void setPreferredTranscriptionApiKeyId(id);
+  }, []);
+
+  const handleGetStarted = useCallback(() => {
+    openUpgradePlanDialog();
   }, []);
 
   return (
@@ -260,7 +266,25 @@ export const AITranscriptionConfiguration = ({
         />
       )}
 
-      {transcription.mode === "cloud" && <VoquillCloudSetting />}
+      {transcription.mode === "cloud" && (
+        <Stack spacing={2} sx={{ width: "100%" }}>
+          {!isSignedIn || !hasCloudAccess ? (
+            <Stack spacing={1} alignItems="flex-start">
+              <Typography variant="body1">
+                <FormattedMessage defaultMessage="Sign in to use Voquill Cloud" />
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <FormattedMessage defaultMessage="Create an account or sign in to access cloud-powered transcription." />
+              </Typography>
+              <Button variant="contained" onClick={handleGetStarted}>
+                <FormattedMessage defaultMessage="Get started" />
+              </Button>
+            </Stack>
+          ) : (
+            <VoquillCloudSetting />
+          )}
+        </Stack>
+      )}
     </Stack>
   );
 };

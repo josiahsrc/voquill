@@ -1,6 +1,7 @@
 import {
   ApiKey,
   ApiKeyProvider,
+  CloudBackend,
   OpenRouterModel,
   OpenRouterProvider,
 } from "@repo/types";
@@ -27,6 +28,7 @@ export type SettingsTranscriptionState = {
   device: string;
   selectedApiKeyId: string | null;
   gpuEnumerationEnabled: boolean;
+  cloudBackend: CloudBackend;
 };
 
 export type SettingsGenerativeState = {
@@ -87,6 +89,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     device: CPU_DEVICE_VALUE,
     selectedApiKeyId: null,
     gpuEnumerationEnabled: false,
+    cloudBackend: "websocket",
   },
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,

@@ -1,4 +1,4 @@
-import { Nullable, User, UserPreferences } from "@repo/types";
+import { CloudBackend, Nullable, User, UserPreferences } from "@repo/types";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
@@ -56,6 +56,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   transcriptionApiKeyId: null,
   transcriptionDevice: null,
   transcriptionModelSize: null,
+  cloudBackend: "websocket",
   postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
   postProcessingApiKeyId: null,
   postProcessingOllamaUrl: null,
@@ -141,7 +142,6 @@ export const refreshCurrentUser = async (): Promise<void> => {
         setCurrentUser(draft, user);
       }
 
-      console.log("REFRESHING", userId, preferences);
       if (preferences) {
         setUserPreferences(draft, preferences);
       } else {
@@ -253,6 +253,8 @@ export const persistAiPreferences = async (): Promise<void> => {
       state.settings.aiTranscription.modelSize ?? null;
     preferences.gpuEnumerationEnabled =
       state.settings.aiTranscription.gpuEnumerationEnabled;
+    preferences.cloudBackend =
+      state.settings.aiTranscription.cloudBackend ?? "websocket";
     preferences.languageSwitchEnabled =
       state.settings.languageSwitch.enabled ?? false;
     preferences.secondaryDictationLanguage =
@@ -317,6 +319,16 @@ export const setGpuEnumerationEnabled = async (
 ): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiTranscription.gpuEnumerationEnabled = enabled;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setCloudBackend = async (
+  backend: CloudBackend,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.cloudBackend = backend;
   });
 
   await persistAiPreferences();

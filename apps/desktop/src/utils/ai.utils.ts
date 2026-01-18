@@ -29,6 +29,8 @@ export const applyAiPreferences = (
     preferences.transcriptionModelSize ?? DEFAULT_MODEL_SIZE;
   draft.settings.aiTranscription.gpuEnumerationEnabled =
     preferences.gpuEnumerationEnabled ?? false;
+  draft.settings.aiTranscription.cloudBackend =
+    preferences.cloudBackend ?? "websocket";
 
   const postProcessingMode =
     preferences.postProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;

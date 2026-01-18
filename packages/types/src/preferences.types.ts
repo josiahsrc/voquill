@@ -5,12 +5,15 @@ import type {
   TranscriptionMode,
 } from "./common.types";
 
+export type CloudBackend = "firebase" | "websocket";
+
 export type UserPreferences = {
   userId: string;
   transcriptionMode: Nullable<TranscriptionMode>;
   transcriptionApiKeyId: Nullable<string>;
   transcriptionDevice: Nullable<string>;
   transcriptionModelSize: Nullable<string>;
+  cloudBackend: Nullable<CloudBackend>;
   postProcessingMode: Nullable<PostProcessingMode>;
   postProcessingApiKeyId: Nullable<string>;
   postProcessingOllamaUrl: Nullable<string>;

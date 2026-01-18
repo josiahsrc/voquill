@@ -6,6 +6,7 @@ import { AzureTranscriptionSession } from "./azure-transcription-session";
 import { BatchTranscriptionSession } from "./batch-transcription-session";
 import { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 import { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
+import { VoquillTranscriptionSession } from "./voquill-transcription-session";
 import { getAppState } from "../store";
 
 export { AssemblyAITranscriptionSession } from "./assemblyai-transcription-session";
@@ -13,10 +14,15 @@ export { AzureTranscriptionSession } from "./azure-transcription-session";
 export { BatchTranscriptionSession } from "./batch-transcription-session";
 export { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 export { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
+export { VoquillTranscriptionSession } from "./voquill-transcription-session";
 
 export const createTranscriptionSession = (
   prefs: TranscriptionPrefs,
 ): TranscriptionSession => {
+  if (prefs.mode === "cloud") {
+    return new VoquillTranscriptionSession();
+  }
+
   if (prefs.mode === "api") {
     switch (prefs.provider) {
       case "assemblyai":
