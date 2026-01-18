@@ -1,10 +1,24 @@
 import { ArrowForward, Email, Google } from "@mui/icons-material";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  Link,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
+import { signOut, submitSignInWithGoogle } from "../../actions/login.actions";
 import {
   goToOnboardingPage,
+  setAwaitingSignInNavigation,
   setDidSignUpWithAccount,
 } from "../../actions/onboarding.actions";
+import { useAppStore } from "../../store";
+import { LoginForm } from "../login/LoginForm";
+import { TermsNotice } from "../login/TermsNotice";
 import {
   BackButton,
   DualPaneLayout,
@@ -12,19 +26,51 @@ import {
 } from "./OnboardingCommon";
 
 export const SignInForm = () => {
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+
+  const auth = useAppStore((state) => state.auth);
+  const loginStatus = useAppStore((state) => state.login.status);
+  const awaitingSignInNavigation = useAppStore(
+    (state) => state.onboarding.awaitingSignInNavigation,
+  );
+  const isSignedIn = Boolean(auth);
+
+  useEffect(() => {
+    if (isSignedIn && awaitingSignInNavigation) {
+      setAwaitingSignInNavigation(false);
+      setEmailDialogOpen(false);
+      setDidSignUpWithAccount(true);
+      goToOnboardingPage("userDetails");
+    }
+  }, [isSignedIn, awaitingSignInNavigation]);
+
   const handleLocal = () => {
     setDidSignUpWithAccount(false);
     goToOnboardingPage("chooseTranscription");
   };
 
   const handleContinueWithGoogle = () => {
+    setAwaitingSignInNavigation(true);
+    submitSignInWithGoogle();
+  };
+
+  const handleOpenEmailDialog = () => {
+    setAwaitingSignInNavigation(true);
+    setEmailDialogOpen(true);
+  };
+
+  const handleCloseEmailDialog = () => {
+    setAwaitingSignInNavigation(false);
+    setEmailDialogOpen(false);
+  };
+
+  const handleContinue = () => {
     setDidSignUpWithAccount(true);
     goToOnboardingPage("userDetails");
   };
 
-  const handleCreateAccount = () => {
-    setDidSignUpWithAccount(true);
-    goToOnboardingPage("userDetails");
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   const rightContent = (
@@ -36,7 +82,43 @@ export const SignInForm = () => {
     />
   );
 
-  const form = (
+  const signedInContent = (
+    <OnboardingFormLayout
+      actions={
+        <Button
+          variant="contained"
+          endIcon={<ArrowForward />}
+          onClick={handleContinue}
+        >
+          <FormattedMessage defaultMessage="Continue" />
+        </Button>
+      }
+    >
+      <Stack spacing={2}>
+        <Typography variant="h4" fontWeight={600} pb={1}>
+          <FormattedMessage defaultMessage="Welcome back" />
+        </Typography>
+
+        <Typography variant="body1" color="text.secondary">
+          <FormattedMessage
+            defaultMessage="You are signed in as {email}"
+            values={{ email: auth?.email }}
+          />
+        </Typography>
+
+        <Link
+          component="button"
+          variant="body2"
+          onClick={handleSignOut}
+          sx={{ alignSelf: "flex-start" }}
+        >
+          <FormattedMessage defaultMessage="Sign out" />
+        </Link>
+      </Stack>
+    </OnboardingFormLayout>
+  );
+
+  const signInContent = (
     <OnboardingFormLayout
       back={<BackButton />}
       actions={
@@ -60,6 +142,7 @@ export const SignInForm = () => {
           variant="contained"
           startIcon={<Google />}
           onClick={handleContinueWithGoogle}
+          disabled={loginStatus === "loading"}
         >
           <FormattedMessage defaultMessage="Continue with Google" />
         </Button>
@@ -68,13 +151,29 @@ export const SignInForm = () => {
           fullWidth
           variant="outlined"
           startIcon={<Email />}
-          onClick={handleCreateAccount}
+          onClick={handleOpenEmailDialog}
+          disabled={loginStatus === "loading"}
         >
           <FormattedMessage defaultMessage="Sign up with email" />
         </Button>
+
+        <TermsNotice align="left" />
       </Stack>
+
+      <Dialog
+        open={emailDialogOpen}
+        onClose={handleCloseEmailDialog}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent>
+          <LoginForm hideGoogleButton hideModeSwitch defaultMode="signUp" />
+        </DialogContent>
+      </Dialog>
     </OnboardingFormLayout>
   );
+
+  const form = isSignedIn ? signedInContent : signInContent;
 
   return <DualPaneLayout left={form} right={rightContent} />;
 };

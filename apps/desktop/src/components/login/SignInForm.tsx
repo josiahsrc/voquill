@@ -14,7 +14,11 @@ import { getCanSubmitLogin } from "../../utils/login.utils";
 import { useState } from "react";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
-export const SignInForm = () => {
+type SignInFormProps = {
+  hideGoogleButton?: boolean;
+};
+
+export const SignInForm = ({ hideGoogleButton = false }: SignInFormProps) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const email = useAppStore((state) => state.login.email);
@@ -47,11 +51,14 @@ export const SignInForm = () => {
 
   return (
     <Stack spacing={2}>
-      <SignInWithGoogleButton />
-
-      <Divider>
-        <FormattedMessage defaultMessage="or" />
-      </Divider>
+      {!hideGoogleButton && (
+        <>
+          <SignInWithGoogleButton />
+          <Divider>
+            <FormattedMessage defaultMessage="or" />
+          </Divider>
+        </>
+      )}
 
       <TextField
         label={<FormattedMessage defaultMessage="Email" />}

@@ -69,6 +69,12 @@ export const setDidSignUpWithAccount = (didSignUp: boolean) => {
   });
 };
 
+export const setAwaitingSignInNavigation = (awaiting: boolean) => {
+  produceAppState((draft) => {
+    draft.onboarding.awaitingSignInNavigation = awaiting;
+  });
+};
+
 export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
