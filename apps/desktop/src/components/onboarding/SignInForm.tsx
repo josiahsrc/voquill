@@ -17,6 +17,7 @@ import {
   setDidSignUpWithAccount,
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 import { LoginForm } from "../login/LoginForm";
 import { TermsNotice } from "../login/TermsNotice";
 import {
@@ -27,6 +28,7 @@ import {
 
 export const SignInForm = () => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [confirmLocalSetupOpen, setConfirmLocalSetupOpen] = useState(false);
 
   const auth = useAppStore((state) => state.auth);
   const loginStatus = useAppStore((state) => state.login.status);
@@ -44,9 +46,18 @@ export const SignInForm = () => {
     }
   }, [isSignedIn, awaitingSignInNavigation]);
 
-  const handleLocal = () => {
+  const handleClickLocalSetup = () => {
+    setConfirmLocalSetupOpen(true);
+  };
+
+  const handleConfirmLocalSetup = () => {
+    setConfirmLocalSetupOpen(false);
     setDidSignUpWithAccount(false);
     goToOnboardingPage("chooseTranscription");
+  };
+
+  const handleCancelLocalSetup = () => {
+    setConfirmLocalSetupOpen(false);
   };
 
   const handleContinueWithGoogle = () => {
@@ -123,7 +134,7 @@ export const SignInForm = () => {
       back={<BackButton />}
       actions={
         <Button
-          onClick={handleLocal}
+          onClick={handleClickLocalSetup}
           variant="text"
           endIcon={<ArrowForward />}
           sx={{ color: "text.disabled", fontWeight: 400 }}
@@ -170,6 +181,18 @@ export const SignInForm = () => {
           <LoginForm hideGoogleButton hideModeSwitch defaultMode="signUp" />
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        isOpen={confirmLocalSetupOpen}
+        onCancel={handleCancelLocalSetup}
+        onConfirm={handleConfirmLocalSetup}
+        title={<FormattedMessage defaultMessage="⚠️ Advanced Setup Required" />}
+        content={
+          <FormattedMessage defaultMessage="Local set up is complicated and requires a strong technical background. We recommend the free plan for most users." />
+        }
+        confirmLabel={<FormattedMessage defaultMessage="Accept" />}
+        cancelLabel={<FormattedMessage defaultMessage="Go back" />}
+      />
     </OnboardingFormLayout>
   );
 
