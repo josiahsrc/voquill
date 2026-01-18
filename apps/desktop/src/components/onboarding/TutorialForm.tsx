@@ -144,7 +144,7 @@ export const TutorialForm = () => {
     defaultMessage: "Bagels are the breakfast of champions.",
   });
 
-  const step2Placeholder = `Hey Sarah,
+  const step2Placeholder = `Hey Bob,
 
 Great meeting you yesterday! Looking forward to next steps.
 

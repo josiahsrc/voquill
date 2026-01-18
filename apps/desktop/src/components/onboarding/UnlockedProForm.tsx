@@ -9,6 +9,7 @@ import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
+import { setAllModesToCloud } from "../../actions/user.actions";
 import { Logo } from "../common/Logo";
 import {
   BackButton,
@@ -36,7 +37,8 @@ const scaleIn = {
 };
 
 export const UnlockedProForm = () => {
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    await setAllModesToCloud();
     goToOnboardingPage("tutorial");
   };
 
