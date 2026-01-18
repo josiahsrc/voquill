@@ -5,6 +5,7 @@ import {
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { getAppState } from "../store";
 import {
+  FinalizeOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -81,6 +82,7 @@ export class AzureTranscriptionSession implements TranscriptionSession {
 
   async finalize(
     _audio: StopRecordingResponse,
+    _options?: FinalizeOptions,
   ): Promise<TranscriptionSessionResult> {
     if (!this.session) {
       return {

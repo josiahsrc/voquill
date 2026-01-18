@@ -61,6 +61,7 @@ export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
   a11yInfo: Nullable<TextFieldInfo>;
+  skipLlm?: boolean;
 };
 
 export type PostProcessMetadata = {
@@ -143,11 +144,34 @@ export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
   a11yInfo,
+  skipLlm,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
   const metadata: PostProcessMetadata = {};
   const warnings: string[] = [];
+
+  let processedTranscript = rawTranscript;
+
+  // Skip LLM post-processing if already done (e.g., by cloud server)
+  if (skipLlm) {
+    metadata.postProcessMode = "none";
+
+    if (a11yInfo) {
+      processedTranscript = applySpacingInContext({
+        textToInsert: processedTranscript,
+        info: a11yInfo,
+      });
+    } else {
+      processedTranscript = processedTranscript.trim();
+    }
+
+    return {
+      transcript: processedTranscript,
+      warnings: dedup(warnings),
+      metadata,
+    };
+  }
 
   const {
     repo: genRepo,
@@ -155,8 +179,6 @@ export const postProcessTranscript = async ({
     warnings: genWarnings,
   } = getGenerateTextRepo();
   warnings.push(...genWarnings);
-
-  let processedTranscript = rawTranscript;
 
   if (genRepo) {
     const dictationLanguage = getMyDictationLanguage(state);

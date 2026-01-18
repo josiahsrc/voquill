@@ -59,10 +59,17 @@ import {
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   getIsOnboarded,
+  getMyDictationLanguage,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
+  getMyUserPreferences,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
+import {
+  buildSystemPostProcessingTonePrompt,
+  collectDictionaryEntries,
+} from "../../utils/prompt.utils";
+import type { FinalizeOptions } from "../../types/transcription-session.types";
 import {
   consumeSurfaceWindowFlag,
   setTrayTitle,
@@ -326,22 +333,44 @@ export const RootSideEffects = () => {
 
     try {
       if (session && audio) {
-        const [currentApp, transcribeResult] = await Promise.all([
-          tryRegisterCurrentAppTarget(),
-          session.finalize(audio),
-        ]);
+        // Get current app first to get the toneId for building finalize options
+        const currentApp = await tryRegisterCurrentAppTarget();
         const toneId = currentApp?.toneId ?? null;
+
+        // Build finalize options with tone, language, and dictionary for cloud mode
+        const state = getAppState();
+        const myPrefs = getMyUserPreferences(state);
+        const tone =
+          getRec(state.toneById, toneId) ??
+          getRec(state.toneById, myPrefs?.activeToneId) ??
+          null;
+        const dictEntries = collectDictionaryEntries(state);
+        const language = getMyDictationLanguage(state);
+
+        const finalizeOptions: FinalizeOptions = {
+          systemPrompt: buildSystemPostProcessingTonePrompt(),
+          toneTemplate: tone?.promptTemplate ?? null,
+          language,
+          dictionaryContext: {
+            glossary: dictEntries.sources,
+            replacements: dictEntries.replacements,
+          },
+        };
+
+        const transcribeResult = await session.finalize(audio, finalizeOptions);
         const rawTranscript = transcribeResult.rawTranscript;
 
         if (rawTranscript) {
           const { shouldContinue } = await strategy.handleTranscript({
             rawTranscript,
+            processedTranscript: transcribeResult.transcript,
             toneId,
             a11yInfo,
             currentApp,
             loadingToken,
             audio,
             transcriptionMetadata: transcribeResult.metadata,
+            postProcessMetadata: transcribeResult.postProcessMetadata,
             transcriptionWarnings: transcribeResult.warnings,
           });
 

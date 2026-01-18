@@ -1,10 +1,13 @@
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
+  DictionaryContext,
+  FinalizeOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
 import { getEffectiveAuth } from "../utils/auth.utils";
+import { PROCESSED_TRANSCRIPTION_JSON_SCHEMA } from "../utils/prompt.utils";
 
 const WEBSOCKET_SERVER_URL =
   import.meta.env.VITE_VOQUILL_SERVER_URL ??
@@ -23,25 +26,49 @@ type ClientMessage =
   | {
       type: "finalize";
       systemPrompt?: string;
-      userPrompt?: string;
+      toneTemplate?: string | null;
+      language?: string;
+      dictionaryContext?: DictionaryContext;
       jsonResponse?: JsonResponseSchema;
     };
+
+type ServerResultMessage = {
+  type: "result";
+  text: string;
+  rawText: string;
+  wordsUsed: number;
+  transcriptionSource: string;
+  transcriptionDurationMs: number;
+  llmDurationMs: number;
+  totalDurationMs: number;
+};
 
 type ServerMessage =
   | { type: "authenticated"; uid: string; wordsRemaining: number }
   | { type: "ready" }
   | { type: "transcript"; text: string; source: string; durationMs: number }
-  | { type: "result"; text: string; rawText: string; wordsUsed: number }
+  | ServerResultMessage
   | { type: "error"; code: string; message: string };
 
 export type VoquillFinalizeOptions = {
   systemPrompt?: string;
-  userPrompt?: string;
+  toneTemplate?: string | null;
+  language?: string;
+  dictionaryContext?: DictionaryContext;
   jsonResponse?: JsonResponseSchema;
 };
 
+type VoquillFinalizeResult = {
+  text: string;
+  rawText: string;
+  transcriptionSource: string;
+  transcriptionDurationMs: number;
+  llmDurationMs: number;
+  totalDurationMs: number;
+};
+
 type VoquillStreamingSession = {
-  finalize: (options?: VoquillFinalizeOptions) => Promise<string>;
+  finalize: (options?: VoquillFinalizeOptions) => Promise<VoquillFinalizeResult>;
   cleanup: () => void;
 };
 
@@ -78,7 +105,8 @@ const startVoquillStreaming = async (
       }
     };
 
-    let finalizeResolver: ((text: string) => void) | null = null;
+    let finalizeResolver: ((result: VoquillFinalizeResult) => void) | null =
+      null;
     let finalizeRejecter: ((error: Error) => void) | null = null;
     let finalizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -88,7 +116,9 @@ const startVoquillStreaming = async (
       }
     };
 
-    const finalize = (options?: VoquillFinalizeOptions): Promise<string> => {
+    const finalize = (
+      options?: VoquillFinalizeOptions,
+    ): Promise<VoquillFinalizeResult> => {
       return new Promise((resolveFinalize, rejectFinalize) => {
         console.log(
           "[Voquill WebSocket] Finalize called, isFinalized:",
@@ -98,7 +128,14 @@ const startVoquillStreaming = async (
         );
 
         if (isFinalized) {
-          resolveFinalize("");
+          resolveFinalize({
+            text: "",
+            rawText: "",
+            transcriptionSource: "unknown",
+            transcriptionDurationMs: 0,
+            llmDurationMs: 0,
+            totalDurationMs: 0,
+          });
           return;
         }
 
@@ -111,7 +148,9 @@ const startVoquillStreaming = async (
           send({
             type: "finalize",
             systemPrompt: options?.systemPrompt,
-            userPrompt: options?.userPrompt,
+            toneTemplate: options?.toneTemplate,
+            language: options?.language,
+            dictionaryContext: options?.dictionaryContext,
             jsonResponse: options?.jsonResponse,
           });
 
@@ -119,12 +158,21 @@ const startVoquillStreaming = async (
             console.log("[Voquill WebSocket] Timeout waiting for result");
             cleanup();
             if (finalizeResolver) {
-              finalizeResolver("");
+              finalizeResolver({
+                text: "",
+                rawText: "",
+                transcriptionSource: "timeout",
+                transcriptionDurationMs: 0,
+                llmDurationMs: 0,
+                totalDurationMs: 30000,
+              });
               finalizeResolver = null;
             }
           }, 30000);
         } else {
-          console.log("[Voquill WebSocket] Not ready, will finalize when ready");
+          console.log(
+            "[Voquill WebSocket] Not ready, will finalize when ready",
+          );
         }
       });
     };
@@ -147,7 +195,9 @@ const startVoquillStreaming = async (
           break;
 
         case "ready":
-          console.log("[Voquill WebSocket] Session ready, setting up audio listener...");
+          console.log(
+            "[Voquill WebSocket] Session ready, setting up audio listener...",
+          );
           isReady = true;
 
           try {
@@ -163,9 +213,10 @@ const startVoquillStreaming = async (
                 }
 
                 if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
-                  const samples = event.payload.samples instanceof Float32Array
-                    ? Array.from(event.payload.samples)
-                    : event.payload.samples;
+                  const samples =
+                    event.payload.samples instanceof Float32Array
+                      ? Array.from(event.payload.samples)
+                      : event.payload.samples;
 
                   send({ type: "audio", samples });
                   sentChunkCount++;
@@ -182,7 +233,10 @@ const startVoquillStreaming = async (
             console.log("[Voquill WebSocket] Audio listener attached");
             resolve({ finalize, cleanup });
           } catch (error) {
-            console.error("[Voquill WebSocket] Error setting up listener:", error);
+            console.error(
+              "[Voquill WebSocket] Error setting up listener:",
+              error,
+            );
             cleanup();
             reject(error);
           }
@@ -198,7 +252,11 @@ const startVoquillStreaming = async (
         case "result":
           console.log("[Voquill WebSocket] Final result received:", {
             textLength: message.text.length,
-            wordsUsed: message.wordsUsed,
+            rawTextLength: message.rawText.length,
+            transcriptionSource: message.transcriptionSource,
+            transcriptionDurationMs: message.transcriptionDurationMs,
+            llmDurationMs: message.llmDurationMs,
+            totalDurationMs: message.totalDurationMs,
           });
 
           if (finalizeTimeout) {
@@ -209,13 +267,24 @@ const startVoquillStreaming = async (
           cleanup();
 
           if (finalizeResolver) {
-            finalizeResolver(message.text);
+            finalizeResolver({
+              text: message.text,
+              rawText: message.rawText,
+              transcriptionSource: message.transcriptionSource,
+              transcriptionDurationMs: message.transcriptionDurationMs,
+              llmDurationMs: message.llmDurationMs,
+              totalDurationMs: message.totalDurationMs,
+            });
             finalizeResolver = null;
           }
           break;
 
         case "error":
-          console.error("[Voquill WebSocket] Server error:", message.code, message.message);
+          console.error(
+            "[Voquill WebSocket] Server error:",
+            message.code,
+            message.message,
+          );
 
           if (finalizeTimeout) {
             clearTimeout(finalizeTimeout);
@@ -247,7 +316,14 @@ const startVoquillStreaming = async (
       });
 
       if (finalizeResolver) {
-        finalizeResolver("");
+        finalizeResolver({
+          text: "",
+          rawText: "",
+          transcriptionSource: "closed",
+          transcriptionDurationMs: 0,
+          llmDurationMs: 0,
+          totalDurationMs: 0,
+        });
         finalizeResolver = null;
       }
     };
@@ -256,11 +332,6 @@ const startVoquillStreaming = async (
 
 export class VoquillTranscriptionSession implements TranscriptionSession {
   private session: VoquillStreamingSession | null = null;
-  private options?: VoquillFinalizeOptions;
-
-  constructor(options?: VoquillFinalizeOptions) {
-    this.options = options;
-  }
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
@@ -275,10 +346,12 @@ export class VoquillTranscriptionSession implements TranscriptionSession {
 
   async finalize(
     _audio: StopRecordingResponse,
+    options?: FinalizeOptions,
   ): Promise<TranscriptionSessionResult> {
     if (!this.session) {
       return {
         rawTranscript: null,
+        transcript: null,
         metadata: {
           inferenceDevice: "Voquill Cloud (Streaming)",
           transcriptionMode: "cloud",
@@ -289,23 +362,43 @@ export class VoquillTranscriptionSession implements TranscriptionSession {
 
     try {
       console.log("[Voquill] Finalizing streaming session...");
-      const finalizeStart = performance.now();
-      const transcript = await this.session.finalize(this.options);
-      const durationMs = Math.round(performance.now() - finalizeStart);
 
-      console.log("[Voquill] Transcript timing:", { durationMs });
-      console.log("[Voquill] Received transcript:", {
-        length: transcript?.length ?? 0,
-        preview:
-          transcript?.substring(0, 50) +
-          (transcript && transcript.length > 50 ? "..." : ""),
+      const result = await this.session.finalize({
+        systemPrompt: options?.systemPrompt,
+        toneTemplate: options?.toneTemplate,
+        language: options?.language,
+        dictionaryContext: options?.dictionaryContext,
+        jsonResponse: {
+          name: "transcription_cleaning",
+          description: "JSON response with the processed transcription",
+          schema: PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
+        },
+      });
+
+      console.log("[Voquill] Result:", {
+        textLength: result.text?.length ?? 0,
+        rawTextLength: result.rawText?.length ?? 0,
+        transcriptionSource: result.transcriptionSource,
+        transcriptionDurationMs: result.transcriptionDurationMs,
+        llmDurationMs: result.llmDurationMs,
+        totalDurationMs: result.totalDurationMs,
       });
 
       return {
-        rawTranscript: transcript || null,
+        rawTranscript: result.rawText || null,
+        transcript: result.text || null,
         metadata: {
-          inferenceDevice: "Voquill Cloud (Streaming)",
+          inferenceDevice: "Voquill Cloud",
           transcriptionMode: "cloud",
+          transcriptionDurationMs: result.transcriptionDurationMs,
+        },
+        postProcessMetadata: {
+          postProcessMode: "cloud",
+          postProcessDevice: "Voquill Cloud",
+          postprocessDurationMs: result.llmDurationMs,
+          postProcessPrompt: options?.toneTemplate
+            ? `[Tone applied: custom style]\n\nStyle instructions:\n${options.toneTemplate}`
+            : "[Default cleaning prompt applied on server]",
         },
         warnings: [],
       };
@@ -313,6 +406,7 @@ export class VoquillTranscriptionSession implements TranscriptionSession {
       console.error("[Voquill] Failed to finalize session:", error);
       return {
         rawTranscript: null,
+        transcript: null,
         metadata: {
           inferenceDevice: "Voquill Cloud (Streaming)",
           transcriptionMode: "cloud",

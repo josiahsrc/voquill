@@ -49,12 +49,14 @@ export class DictationStrategy extends BaseStrategy {
 
   async handleTranscript({
     rawTranscript,
+    processedTranscript,
     toneId,
     a11yInfo,
     currentApp,
     loadingToken,
     audio,
     transcriptionMetadata,
+    postProcessMetadata: sessionPostProcessMetadata,
     transcriptionWarnings,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
     const resetPhase = async () => {
@@ -68,21 +70,35 @@ export class DictationStrategy extends BaseStrategy {
     };
 
     try {
-      // 1. Post-process the transcript
-      const { transcript, metadata, warnings } = await postProcessTranscript({
-        rawTranscript,
-        toneId,
-        a11yInfo,
-      });
+      let transcript: string;
+      let postProcessMetadata = sessionPostProcessMetadata ?? {};
+      let postProcessWarnings: string[] = [];
 
-      // 2. Store transcription (don't await - don't block pasting)
+      // Use processed transcript from session if available (cloud mode)
+      // Otherwise run local post-processing
+      if (processedTranscript) {
+        transcript = processedTranscript;
+      } else {
+        const skipLlm = transcriptionMetadata.transcriptionMode === "cloud";
+        const result = await postProcessTranscript({
+          rawTranscript,
+          toneId,
+          a11yInfo,
+          skipLlm,
+        });
+        transcript = result.transcript;
+        postProcessMetadata = result.metadata;
+        postProcessWarnings = result.warnings;
+      }
+
+      // Store transcription (don't await - don't block pasting)
       storeTranscription({
         audio,
         rawTranscript,
         transcript,
         transcriptionMetadata,
-        postProcessMetadata: metadata,
-        warnings: [...transcriptionWarnings, ...warnings],
+        postProcessMetadata,
+        warnings: [...transcriptionWarnings, ...postProcessWarnings],
       });
 
       // 3. Set overlay to idle

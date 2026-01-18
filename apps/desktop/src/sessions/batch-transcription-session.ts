@@ -1,5 +1,6 @@
 import { transcribeAudio } from "../actions/transcribe.actions";
 import {
+  FinalizeOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -17,6 +18,7 @@ export class BatchTranscriptionSession implements TranscriptionSession {
 
   async finalize(
     audio: StopRecordingResponse,
+    _options?: FinalizeOptions,
   ): Promise<TranscriptionSessionResult> {
     const payloadSamples = Array.isArray(audio.samples)
       ? audio.samples

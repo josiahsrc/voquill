@@ -1,6 +1,9 @@
 import type { AppTarget, Nullable } from "@repo/types";
 import type { RefObject } from "react";
-import type { TranscribeAudioMetadata } from "../actions/transcribe.actions";
+import type {
+  PostProcessMetadata,
+  TranscribeAudioMetadata,
+} from "../actions/transcribe.actions";
 import type { TextFieldInfo } from "./accessibility.types";
 import type { ToastAction } from "./toast.types";
 import type { StopRecordingResponse } from "./transcription-session.types";
@@ -13,12 +16,14 @@ export type StrategyValidationError = {
 
 export type HandleTranscriptParams = {
   rawTranscript: string;
+  processedTranscript?: string | null;
   toneId: string | null;
   a11yInfo: TextFieldInfo | null;
   currentApp: AppTarget | null;
   loadingToken: symbol | null;
   audio: StopRecordingResponse;
   transcriptionMetadata: TranscribeAudioMetadata;
+  postProcessMetadata?: PostProcessMetadata;
   transcriptionWarnings: string[];
 };
 

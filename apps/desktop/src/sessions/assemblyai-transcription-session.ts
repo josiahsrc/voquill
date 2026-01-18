@@ -1,6 +1,7 @@
 import { convertFloat32ToPCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
+  FinalizeOptions,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -330,6 +331,7 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
 
   async finalize(
     _audio: StopRecordingResponse,
+    _options?: FinalizeOptions,
   ): Promise<TranscriptionSessionResult> {
     if (!this.session) {
       return {

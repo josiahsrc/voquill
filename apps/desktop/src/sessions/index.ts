@@ -14,10 +14,7 @@ export { AzureTranscriptionSession } from "./azure-transcription-session";
 export { BatchTranscriptionSession } from "./batch-transcription-session";
 export { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 export { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
-export {
-  VoquillTranscriptionSession,
-  type VoquillFinalizeOptions,
-} from "./voquill-transcription-session";
+export { VoquillTranscriptionSession } from "./voquill-transcription-session";
 
 export const createTranscriptionSession = (
   prefs: TranscriptionPrefs,
