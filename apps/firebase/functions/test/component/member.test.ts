@@ -51,6 +51,81 @@ describe("tryInitializeMember", () => {
 		expect(memberSnap?.data).toBeDefined();
 		expect(memberSnap?.data.id).toBe(creds.id);
 	});
+
+	it("initializes new members with pro trial", async () => {
+		const creds = await createUserCreds();
+		await markUserAsSubscribed();
+		await signInWithCreds(creds);
+
+		// wait for auth to create the member
+		await retry({
+			fn: async () => {
+				const memberSnap = await firemix().get(mixpath.members(creds.id));
+				expect(memberSnap).toBeDefined();
+			},
+			retries: 10,
+			delay: 100,
+		});
+
+		// delete the member so we can test initialization
+		await firemix().delete(mixpath.members(creds.id));
+
+		// call tryInitializeMember
+		await invokeHandler("member/tryInitialize", {});
+
+		// verify the member is created with pro trial
+		const memberSnap = await firemix().get(mixpath.members(creds.id));
+		expect(memberSnap?.data.plan).toBe("pro");
+		expect(memberSnap?.data.isOnTrial).toBe(true);
+		expect(memberSnap?.data.trialEndsAt).toBeDefined();
+
+		const trialEndsAt = memberSnap?.data.trialEndsAt?.toMillis();
+		const oneWeekFromNow = dayjs().add(1, "week");
+		expect(trialEndsAt).toBeGreaterThanOrEqual(
+			oneWeekFromNow.subtract(1, "minute").toDate().getTime(),
+		);
+		expect(trialEndsAt).toBeLessThanOrEqual(
+			oneWeekFromNow.add(1, "minute").toDate().getTime(),
+		);
+	});
+
+	it("does not reset existing member to pro trial", async () => {
+		const creds = await createUserCreds();
+		await markUserAsSubscribed();
+		await signInWithCreds(creds);
+
+		// wait for auth to create the member
+		await retry({
+			fn: async () => {
+				const memberSnap = await firemix().get(mixpath.members(creds.id));
+				expect(memberSnap).toBeDefined();
+			},
+			retries: 10,
+			delay: 100,
+		});
+
+		// delete the member and create a free member manually
+		await firemix().delete(mixpath.members(creds.id));
+
+		const freeMember = memberToDatabase(
+			buildMember({
+				id: creds.id,
+				plan: "free",
+				isOnTrial: false,
+				trialEndsAt: undefined,
+			}),
+		);
+		await firemix().set(mixpath.members(creds.id), freeMember);
+
+		// call tryInitializeMember
+		await invokeHandler("member/tryInitialize", {});
+
+		// verify the member was NOT changed to pro trial
+		const memberSnap = await firemix().get(mixpath.members(creds.id));
+		expect(memberSnap?.data.plan).toBe("free");
+		expect(memberSnap?.data.isOnTrial).toBe(false);
+		expect(memberSnap?.data.trialEndsAt).toBeFalsy();
+	});
 });
 
 describe("resetWordsTodayCron", () => {
