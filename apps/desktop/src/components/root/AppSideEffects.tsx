@@ -16,6 +16,7 @@ import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { detectLocale } from "../../i18n";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
+import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
 import { getIsDevMode } from "../../utils/env.utils";
@@ -199,7 +200,6 @@ export const AppSideEffects = () => {
     const daysSinceOnboarded = onboardedAt
       ? dayjs().diff(dayjs(onboardedAt), "day")
       : 0;
-    const cohort = cloudUser?.cohort ?? localUser?.cohort ?? null;
     const platform = getPlatform();
     const locale = detectLocale();
     const onboarded = cloudUser?.onboarded ?? localUser?.onboarded ?? false;
@@ -212,13 +212,13 @@ export const AppSideEffects = () => {
         $created: auth?.metadata?.creationTime ?? undefined,
         initialPlatform: platform,
         initialLocale: locale,
-        initialCohort: cohort,
+        initialCohort: CURRENT_COHORT,
       });
 
       mixpanel.register_once({
         initialPlatform: platform,
         initialLocale: locale,
-        initialCohort: cohort,
+        initialCohort: CURRENT_COHORT,
       });
     }
 
@@ -233,7 +233,7 @@ export const AppSideEffects = () => {
       isPaying,
       onboarded,
       onboardedAt: onboardedAt ?? undefined,
-      cohort,
+      cohort: CURRENT_COHORT,
     });
 
     mixpanel.register({
@@ -246,7 +246,7 @@ export const AppSideEffects = () => {
       locale,
       onboarded,
       daysSinceOnboarded,
-      cohort,
+      cohort: CURRENT_COHORT,
     });
 
     prevUserIdRef.current = currentUserId;
