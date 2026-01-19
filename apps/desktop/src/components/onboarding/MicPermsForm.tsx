@@ -3,6 +3,7 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
+import enableMicVideo from "../../assets/enable-mic.mp4";
 import { produceAppState, useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
 import {
@@ -105,7 +106,7 @@ export const MicPermsForm = () => {
     >
       <Box
         component="video"
-        src="/src/assets/enable-mic.mp4"
+        src={enableMicVideo}
         autoPlay
         loop
         muted

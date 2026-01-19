@@ -3,6 +3,7 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { goToOnboardingPage } from "../../actions/onboarding.actions";
+import enableA11yVideo from "../../assets/enable-a11y.mp4";
 import { produceAppState, useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
 import {
@@ -104,7 +105,7 @@ export const A11yPermsForm = () => {
     >
       <Box
         component="video"
-        src="/src/assets/enable-a11y.mp4"
+        src={enableA11yVideo}
         autoPlay
         loop
         muted
