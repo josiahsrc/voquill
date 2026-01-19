@@ -62,7 +62,6 @@ export const useHotkeyHold = (args: {
     lockedRef.current = false;
     ignoreActivationRef.current = false;
     activationTimestampRef.current = null;
-    lastReleaseRef.current = null;
 
     if (wasActive) {
       onDeactivateRef.current?.();
@@ -77,11 +76,14 @@ export const useHotkeyHold = (args: {
   }, [clearPendingDeactivation, deactivate]);
 
   useEffect(() => {
-    if (activeRef.current && !wasPressedRef.current) {
+    if (
+      activeRef.current &&
+      !wasPressedRef.current &&
+      lastReleaseRef.current === null
+    ) {
       activeRef.current = false;
       lockedRef.current = false;
       ignoreActivationRef.current = false;
-      lastReleaseRef.current = null;
       activationTimestampRef.current = null;
     }
 
