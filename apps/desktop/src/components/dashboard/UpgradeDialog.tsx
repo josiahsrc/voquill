@@ -174,14 +174,14 @@ export const UpgradeDialog = () => {
               onClick={handleUpgrade}
               endIcon={<ArrowForward />}
             >
-              <FormattedMessage defaultMessage="Restore Pro plan" />
+              <FormattedMessage defaultMessage="Keep Pro plan" />
             </Button>
             <Button
               onClick={handleDismiss}
               fullWidth
               sx={{ color: "text.secondary" }}
             >
-              <FormattedMessage defaultMessage="Stay on free plan" />
+              <FormattedMessage defaultMessage="Downgrade to free plan" />
             </Button>
           </Stack>
         </Stack>
