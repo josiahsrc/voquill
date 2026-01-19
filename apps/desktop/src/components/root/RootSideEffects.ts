@@ -62,7 +62,7 @@ import {
   hoursToMilliseconds,
 } from "../../utils/time.utils";
 import {
-  getIsOnboarded,
+  getIsDictationUnlocked,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
   getTranscriptionPrefs,
@@ -388,7 +388,7 @@ export const RootSideEffects = () => {
 
   const startDictationRecording = useCallback(async () => {
     const state = getAppState();
-    if (!getIsOnboarded(state)) {
+    if (!getIsDictationUnlocked(state)) {
       return;
     }
 
@@ -405,7 +405,7 @@ export const RootSideEffects = () => {
 
   const startAgentRecording = useCallback(async () => {
     const state = getAppState();
-    if (!getIsOnboarded(state)) {
+    if (!getIsDictationUnlocked(state)) {
       return;
     }
 

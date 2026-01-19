@@ -225,16 +225,6 @@ export const setUserName = async (name: string): Promise<void> => {
   );
 };
 
-export const finishTutorial = async (): Promise<void> => {
-  await updateUser(
-    (user) => {
-      user.hasFinishedTutorial = true;
-    },
-    "Unable to update tutorial status. User not found.",
-    "Failed to update tutorial status. Please try again.",
-  );
-};
-
 export const persistAiPreferences = async (): Promise<void> => {
   const state = getAppState();
   await updateUserPreferences((preferences) => {
@@ -456,6 +446,7 @@ export const migrateLocalUserToCloud = async (): Promise<void> => {
     id: userId,
     createdAt: localUser.createdAt ?? now,
     updatedAt: now,
+    shouldShowUpgradeDialog: false,
   };
 
   try {
@@ -491,4 +482,14 @@ export const setIgnoreUpdateDialog = async (ignore: boolean): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.ignoreUpdateDialog = ignore;
   }, "Failed to save update dialog preference. Please try again.");
+};
+
+export const markUpgradeDialogSeen = async (): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.shouldShowUpgradeDialog = false;
+    },
+    "Unable to mark upgrade dialog as seen. User not found.",
+    "Failed to mark upgrade dialog as seen. Please try again.",
+  );
 };
