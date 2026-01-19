@@ -9,6 +9,7 @@ import {
 import { useCallback } from "react";
 import { useOnExit } from "../../hooks/helper.hooks";
 import { produceAppState, useAppStore } from "../../store";
+import { trackPaymentComplete } from "../../utils/analytics.utils";
 import { registerMembers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
 
@@ -31,6 +32,8 @@ export const PaymentDialog = () => {
   };
 
   const handleComplete = () => {
+    trackPaymentComplete();
+
     // retrieve the member (process is async so we retry a few times)
     retry({
       fn: async () => {

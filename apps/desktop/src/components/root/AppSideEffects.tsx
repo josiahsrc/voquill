@@ -193,6 +193,8 @@ export const AppSideEffects = () => {
     const isPro = member?.plan === "pro";
     const isFree = member?.plan === "free";
     const isCommunity = !currentUserId;
+    const isTrial = member?.isOnTrial ?? false;
+    const isPaying = !isTrial && isPro;
     const onboardedAt = cloudUser?.onboardedAt ?? localUser?.onboardedAt;
     const daysSinceOnboarded = onboardedAt
       ? dayjs().diff(dayjs(onboardedAt), "day")
@@ -227,6 +229,8 @@ export const AppSideEffects = () => {
       isPro,
       isFree,
       isCommunity,
+      isTrial,
+      isPaying,
       onboarded,
       onboardedAt: onboardedAt ?? undefined,
       cohort,

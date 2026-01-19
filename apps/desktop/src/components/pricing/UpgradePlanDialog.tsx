@@ -21,6 +21,7 @@ import { PricingPlan } from "../../utils/price.utils";
 import { LoginForm } from "../login/LoginForm";
 import { FormContainer } from "../onboarding/OnboardingShared";
 import { PlanList } from "./PlanList";
+import { trackButtonClick } from "../../utils/analytics.utils";
 
 export const UpgradePlanDialog = () => {
   const intl = useIntl();
@@ -45,10 +46,12 @@ export const UpgradePlanDialog = () => {
   }, [currLoggedIn, currPlan, targPlan]);
 
   const handleClose = () => {
+    trackButtonClick("close_upgrade_plan_dialog");
     closeUpgradePlanDialog();
   };
 
   const handleClickPlan = (plan: PricingPlan) => {
+    trackButtonClick("select_plan_in_upgrade_dialog", { desiredPlan: plan });
     selectUpgradePlan(plan);
   };
 

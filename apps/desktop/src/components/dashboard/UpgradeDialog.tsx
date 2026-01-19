@@ -17,6 +17,7 @@ import { useAppStore } from "../../store";
 import { getMyMember } from "../../utils/member.utils";
 import { getMyUser } from "../../utils/user.utils";
 import { surfaceMainWindow } from "../../utils/window.utils";
+import { trackButtonClick, trackPageView } from "../../utils/analytics.utils";
 
 const MIN_WORDS_THRESHOLD = 100;
 
@@ -51,14 +52,18 @@ export const UpgradeDialog = () => {
 
     if (!shouldShow) {
       hasFocusedRef.current = false;
+    } else {
+      trackPageView("upgrade_dialog_after_trial_end");
     }
   }, [shouldShow]);
 
   const handleDismiss = async () => {
+    trackButtonClick("dismiss_upgrade_dialog_after_trial_end");
     await markUpgradeDialogSeen();
   };
 
   const handleUpgrade = async () => {
+    trackButtonClick("upgrade_from_dialog_after_trial_end");
     await markUpgradeDialogSeen();
     openUpgradePlanDialog();
   };
