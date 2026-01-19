@@ -42,6 +42,7 @@ type ServerResultMessage = {
   transcriptionDurationMs: number;
   llmDurationMs: number;
   totalDurationMs: number;
+  postProcessPrompt: string;
 };
 
 type ServerMessage =
@@ -66,6 +67,7 @@ type VoquillFinalizeResult = {
   transcriptionDurationMs: number;
   llmDurationMs: number;
   totalDurationMs: number;
+  postProcessPrompt: string;
 };
 
 type VoquillStreamingSession = {
@@ -141,6 +143,7 @@ const startVoquillStreaming = async (
             transcriptionDurationMs: 0,
             llmDurationMs: 0,
             totalDurationMs: 0,
+            postProcessPrompt: "",
           });
           return;
         }
@@ -171,6 +174,7 @@ const startVoquillStreaming = async (
                 transcriptionDurationMs: 0,
                 llmDurationMs: 0,
                 totalDurationMs: 30000,
+                postProcessPrompt: "",
               });
               finalizeResolver = null;
             }
@@ -280,6 +284,7 @@ const startVoquillStreaming = async (
               transcriptionDurationMs: message.transcriptionDurationMs,
               llmDurationMs: message.llmDurationMs,
               totalDurationMs: message.totalDurationMs,
+              postProcessPrompt: message.postProcessPrompt,
             });
             finalizeResolver = null;
           }
@@ -329,6 +334,7 @@ const startVoquillStreaming = async (
           transcriptionDurationMs: 0,
           llmDurationMs: 0,
           totalDurationMs: 0,
+          postProcessPrompt: "",
         });
         finalizeResolver = null;
       }
@@ -406,9 +412,7 @@ export class VoquillTranscriptionSession implements TranscriptionSession {
           postProcessMode: "cloud",
           postProcessDevice: "Voquill Cloud",
           postprocessDurationMs: result.llmDurationMs,
-          postProcessPrompt: options?.toneTemplate
-            ? `[Tone applied: custom style]\n\nStyle instructions:\n${options.toneTemplate}`
-            : "[Default cleaning prompt applied on server]",
+          postProcessPrompt: result.postProcessPrompt,
         },
         warnings: [],
       };
