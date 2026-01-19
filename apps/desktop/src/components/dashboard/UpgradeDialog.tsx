@@ -2,6 +2,7 @@ import { ArrowForward, Close } from "@mui/icons-material";
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   IconButton,
   LinearProgress,
@@ -14,10 +15,10 @@ import { FormattedMessage } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { markUpgradeDialogSeen } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
+import { trackButtonClick, trackPageView } from "../../utils/analytics.utils";
 import { getMyMember } from "../../utils/member.utils";
 import { getMyUser } from "../../utils/user.utils";
 import { surfaceMainWindow } from "../../utils/window.utils";
-import { trackButtonClick, trackPageView } from "../../utils/analytics.utils";
 
 const MIN_WORDS_THRESHOLD = 100;
 
@@ -29,8 +30,14 @@ export const UpgradeDialog = () => {
   );
 
   const member = useAppStore(getMyMember);
-  const wordsToday = member?.wordsToday ?? 0;
+  const wordsToday = member?.wordsToday || 0;
+  const wordsTotal = member?.wordsTotal || 0;
   const memberPlan = member?.plan ?? "free";
+  const avgTalkingSpeedWpm = 135;
+  const avgTypingSpeedWpm = 40;
+  const timeTalked = wordsTotal / avgTalkingSpeedWpm;
+  const timeTyped = wordsTotal / avgTypingSpeedWpm;
+  const totalTimeSaved = timeTyped - timeTalked;
 
   const freeWordsPerDay = useAppStore(
     (state) => state.config?.freeWordsPerDay ?? 1_000,
@@ -106,14 +113,38 @@ export const UpgradeDialog = () => {
           overflow: "auto",
         }}
       >
-        <Stack spacing={4} alignItems="center" maxWidth={420}>
+        <Stack spacing={4} alignItems="center" maxWidth={480}>
           <Stack spacing={2} alignItems="center" textAlign="center">
             <Typography variant="h4" fontWeight={700}>
-              <FormattedMessage defaultMessage="Your Pro trial has ended" />
+              <FormattedMessage defaultMessage="Don't lose unlimited dictation" />
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              <FormattedMessage defaultMessage="Thanks for trying Voquill Pro! Restore your Pro plan to keep unlimited dictation and premium features." />
+              <FormattedMessage defaultMessage="You've been dictating without limits all week. Keep unlimited words, faster processing, and priority features." />
             </Typography>
+            {totalTimeSaved > 4 && (
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  label={
+                    <FormattedMessage
+                      defaultMessage="{words} words dictated"
+                      values={{ words: wordsTotal.toLocaleString() }}
+                    />
+                  }
+                  size="small"
+                />
+                <Chip
+                  label={
+                    <FormattedMessage
+                      defaultMessage="{hours} hours saved"
+                      values={{
+                        hours: Math.round(totalTimeSaved / 60).toLocaleString(),
+                      }}
+                    />
+                  }
+                  size="small"
+                />
+              </Stack>
+            )}
           </Stack>
 
           <Box
@@ -167,15 +198,24 @@ export const UpgradeDialog = () => {
           </Box>
 
           <Stack spacing={1.5} width="100%">
-            <Button
-              variant="blue"
-              size="large"
-              fullWidth
-              onClick={handleUpgrade}
-              endIcon={<ArrowForward />}
-            >
-              <FormattedMessage defaultMessage="Keep Pro plan" />
-            </Button>
+            <Stack spacing={0.5}>
+              <Button
+                variant="blue"
+                size="large"
+                fullWidth
+                onClick={handleUpgrade}
+                endIcon={<ArrowForward />}
+              >
+                <FormattedMessage defaultMessage="Keep Pro plan" />
+              </Button>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                textAlign="center"
+              >
+                <FormattedMessage defaultMessage="Cancel anytime, no questions asked" />
+              </Typography>
+            </Stack>
             <Button
               onClick={handleDismiss}
               fullWidth
