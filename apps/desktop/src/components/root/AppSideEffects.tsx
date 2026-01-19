@@ -233,7 +233,7 @@ export const AppSideEffects = () => {
       isPaying,
       onboarded,
       onboardedAt: onboardedAt ?? undefined,
-      cohort: CURRENT_COHORT,
+      activeSystemCohort: CURRENT_COHORT,
     });
 
     mixpanel.register({
@@ -246,7 +246,7 @@ export const AppSideEffects = () => {
       locale,
       onboarded,
       daysSinceOnboarded,
-      cohort: CURRENT_COHORT,
+      activeSystemCohort: CURRENT_COHORT,
     });
 
     prevUserIdRef.current = currentUserId;
