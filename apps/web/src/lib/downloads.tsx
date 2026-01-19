@@ -38,8 +38,13 @@ export type PlatformDownload = {
 
 export const DEFAULT_PLATFORM: Platform = "mac";
 
-export const RELEASE_API_URL =
-  "https://api.github.com/repos/josiahsrc/voquill/releases/latest";
+const RELEASES_API_URL =
+  "https://api.github.com/repos/josiahsrc/voquill/releases";
+
+const RELEASE_TAG_PATTERNS = {
+  cpu: /^desktop-v\d/,
+  gpu: /^desktop-gpu-v\d/,
+};
 
 export function getPlatformConfig(
   intl = getIntl(),
@@ -102,10 +107,45 @@ function getManifestKeyDetails(
       label: intl.formatMessage({ defaultMessage: "Windows (x64)" }),
       description: intl.formatMessage({ defaultMessage: ".msi installer" }),
     },
+    "windows-x86_64-gpu": {
+      platform: "windows",
+      label: intl.formatMessage({ defaultMessage: "Windows (x64 GPU)" }),
+      description: intl.formatMessage({
+        defaultMessage: ".msi installer with Vulkan acceleration",
+      }),
+    },
     "linux-x86_64": {
       platform: "linux",
       label: intl.formatMessage({ defaultMessage: "Linux (x86_64)" }),
       description: intl.formatMessage({ defaultMessage: "AppImage" }),
+    },
+    "linux-x86_64-gpu": {
+      platform: "linux",
+      label: intl.formatMessage({ defaultMessage: "Linux (x86_64 GPU)" }),
+      description: intl.formatMessage({
+        defaultMessage: "AppImage with Vulkan acceleration",
+      }),
+    },
+    "linux-x86_64-gpu-deb": {
+      platform: "linux",
+      label: intl.formatMessage({ defaultMessage: "Linux (x86_64 GPU)" }),
+      description: intl.formatMessage({
+        defaultMessage: ".deb with Vulkan acceleration",
+      }),
+    },
+    "linux-x86_64-gpu-rpm": {
+      platform: "linux",
+      label: intl.formatMessage({ defaultMessage: "Linux (x86_64 GPU)" }),
+      description: intl.formatMessage({
+        defaultMessage: ".rpm with Vulkan acceleration",
+      }),
+    },
+    "windows-x86_64-gpu-nsis": {
+      platform: "windows",
+      label: intl.formatMessage({ defaultMessage: "Windows (x64 GPU)" }),
+      description: intl.formatMessage({
+        defaultMessage: ".exe installer with Vulkan acceleration",
+      }),
     },
   };
 }
@@ -134,15 +174,15 @@ const ASSET_KEY_MAPPINGS: Array<{
   keys: string[];
 }> = [
   {
-    match: (name) => /\.AppImage$/i.test(name),
+    match: (name) => /^Voquill[._](?!GPU).*\.AppImage$/i.test(name),
     keys: ["linux-x86_64", "linux-x86_64-appimage"],
   },
   {
-    match: (name) => /\.deb$/i.test(name),
+    match: (name) => /^Voquill[._](?!GPU).*\.deb$/i.test(name),
     keys: ["linux-x86_64-deb"],
   },
   {
-    match: (name) => /\.rpm$/i.test(name),
+    match: (name) => /^Voquill[._](?!GPU).*\.rpm$/i.test(name),
     keys: ["linux-x86_64-rpm"],
   },
   {
@@ -163,30 +203,67 @@ const ASSET_KEY_MAPPINGS: Array<{
     ],
   },
   {
-    match: (name) => /\.msi$/i.test(name),
+    match: (name) => /^Voquill[._](?!GPU).*\.msi$/i.test(name),
     keys: ["windows-x86_64", "windows-x86_64-msi"],
   },
   {
-    match: (name) => /x64.*setup.*\.exe$/i.test(name),
+    match: (name) => /^Voquill[._](?!GPU).*setup.*\.exe$/i.test(name),
     keys: ["windows-x86_64-nsis"],
+  },
+  {
+    match: (name) => /Voquill\.GPU.*\.AppImage$/i.test(name),
+    keys: ["linux-x86_64-gpu"],
+  },
+  {
+    match: (name) => /Voquill\.GPU.*\.deb$/i.test(name),
+    keys: ["linux-x86_64-gpu-deb"],
+  },
+  {
+    match: (name) => /Voquill\.GPU.*\.rpm$/i.test(name),
+    keys: ["linux-x86_64-gpu-rpm"],
+  },
+  {
+    match: (name) => /Voquill\.GPU.*\.msi$/i.test(name),
+    keys: ["windows-x86_64-gpu"],
+  },
+  {
+    match: (name) => /Voquill\.GPU.*setup.*\.exe$/i.test(name),
+    keys: ["windows-x86_64-gpu-nsis"],
   },
 ];
 
 export async function fetchReleaseManifest(signal?: AbortSignal) {
   try {
-    const response = await fetch(RELEASE_API_URL, {
+    const response = await fetch(RELEASES_API_URL, {
       signal,
       headers: {
         Accept: "application/vnd.github+json",
       },
     });
+    if (!response.ok) return undefined;
 
-    if (!response.ok) {
-      return undefined;
-    }
+    const allReleases = (await response.json()) as GithubRelease[];
 
-    const data = (await response.json()) as GithubRelease;
-    const manifest = transformGithubRelease(data);
+    const latestCpu = allReleases.find(
+      (r) => r.tag_name && RELEASE_TAG_PATTERNS.cpu.test(r.tag_name),
+    );
+    const latestGpu = allReleases.find(
+      (r) => r.tag_name && RELEASE_TAG_PATTERNS.gpu.test(r.tag_name),
+    );
+
+    const validReleases = [latestCpu, latestGpu].filter(
+      (r): r is GithubRelease => r !== undefined,
+    );
+    if (validReleases.length === 0) return undefined;
+
+    const allAssets = validReleases.flatMap((r) => r.assets ?? []);
+    const firstRelease = validReleases[0];
+    const combined: GithubRelease = {
+      ...firstRelease,
+      assets: allAssets,
+    };
+
+    const manifest = transformGithubRelease(combined);
     return manifest ?? undefined;
   } catch {
     return undefined;
@@ -244,6 +321,12 @@ export function extractDownloads(manifest: ReleaseManifest) {
         PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform);
       if (platformOrder !== 0) {
         return platformOrder;
+      }
+
+      const aIsGpu = a.key.includes("gpu");
+      const bIsGpu = b.key.includes("gpu");
+      if (aIsGpu !== bIsGpu) {
+        return aIsGpu ? 1 : -1;
       }
 
       return a.label.localeCompare(b.label);
