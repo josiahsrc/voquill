@@ -72,6 +72,8 @@ export const createDefaultPreferences = (): UserPreferences => ({
   activeDictationLanguage: "primary",
   preferredMicrophone: null,
   ignoreUpdateDialog: false,
+  incognitoModeEnabled: false,
+  incognitoModeIncludeInStats: false,
 });
 
 const updateUserPreferences = async (
@@ -482,6 +484,26 @@ export const setIgnoreUpdateDialog = async (ignore: boolean): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.ignoreUpdateDialog = ignore;
   }, "Failed to save update dialog preference. Please try again.");
+};
+
+export const setIncognitoModeEnabled = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.incognitoModeEnabled = enabled;
+    if (!enabled) {
+      // Reset to default when disabling for clarity.
+      preferences.incognitoModeIncludeInStats = false;
+    }
+  }, "Failed to save incognito mode preference. Please try again.");
+};
+
+export const setIncognitoModeIncludeInStats = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.incognitoModeIncludeInStats = enabled;
+  }, "Failed to save incognito mode stats preference. Please try again.");
 };
 
 export const markUpgradeDialogSeen = async (): Promise<void> => {

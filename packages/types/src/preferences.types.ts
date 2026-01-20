@@ -27,4 +27,6 @@ export type UserPreferences = {
   activeDictationLanguage: "primary" | "secondary";
   preferredMicrophone: Nullable<string>;
   ignoreUpdateDialog: boolean;
+  incognitoModeEnabled: boolean;
+  incognitoModeIncludeInStats: boolean;
 };

@@ -2,6 +2,7 @@ import {
   ArrowOutwardRounded,
   AutoAwesomeOutlined,
   AutoFixHighOutlined,
+  BarChartOutlined,
   DeleteForeverOutlined,
   DescriptionOutlined,
   GraphicEqOutlined,
@@ -16,6 +17,7 @@ import {
   PrivacyTipOutlined,
   RocketLaunchOutlined,
   SwapHorizOutlined,
+  VisibilityOffOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
 } from "@mui/icons-material";
@@ -39,6 +41,8 @@ import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
 import {
+  setIncognitoModeEnabled,
+  setIncognitoModeIncludeInStats,
   setPreferredLanguage,
   setSecondaryDictationLanguage,
 } from "../../actions/user.actions";
@@ -81,6 +85,14 @@ export default function SettingsPage() {
     languageSwitchEnabled: state.settings.languageSwitch.enabled,
     secondaryLanguage: state.settings.languageSwitch.secondaryLanguage,
   }));
+
+  const { incognitoModeEnabled, incognitoModeIncludeInStats } = useAppStore(
+    (state) => ({
+      incognitoModeEnabled: state.userPrefs?.incognitoModeEnabled ?? false,
+      incognitoModeIncludeInStats:
+        state.userPrefs?.incognitoModeIncludeInStats ?? false,
+    }),
+  );
 
   const dictationLanguageWarning = useAppStore((state) => {
     const hasPostProcessingEnabled =
@@ -177,6 +189,18 @@ export default function SettingsPage() {
     void setAutoLaunchEnabled(enabled);
   };
 
+  const handleToggleIncognitoMode = (event: ChangeEvent<HTMLInputElement>) => {
+    const enabled = event.target.checked;
+    void setIncognitoModeEnabled(enabled);
+  };
+
+  const handleToggleIncognitoIncludeInStats = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const enabled = event.target.checked;
+    void setIncognitoModeIncludeInStats(enabled);
+  };
+
   const handleManageSubscription = async () => {
     setManageSubscriptionLoading(true);
     try {
@@ -241,6 +265,32 @@ export default function SettingsPage() {
         <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
       }
     >
+      <ListTile
+        title={<FormattedMessage defaultMessage="Incognito mode" />}
+        leading={<VisibilityOffOutlined />}
+        disableRipple={true}
+        trailing={
+          <Switch
+            edge="end"
+            checked={incognitoModeEnabled}
+            onChange={handleToggleIncognitoMode}
+          />
+        }
+      />
+      {incognitoModeEnabled && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Include incognito in stats" />}
+          leading={<BarChartOutlined />}
+          disableRipple={true}
+          trailing={
+            <Switch
+              edge="end"
+              checked={incognitoModeIncludeInStats}
+              onChange={handleToggleIncognitoIncludeInStats}
+            />
+          }
+        />
+      )}
       <ListTile
         title={<FormattedMessage defaultMessage="Dictation language" />}
         leading={<LanguageOutlined />}
