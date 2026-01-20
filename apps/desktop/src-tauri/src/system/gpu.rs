@@ -118,8 +118,8 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     };
 
     // Set a timeout for the child process
-    let timeout = Duration::from_secs(10);
-    let start = std::time::Instant::now();
+    let _timeout = Duration::from_secs(10);
+    let _start = std::time::Instant::now();
 
     // Read stdout completely
     let mut stdout = match child.stdout.take() {
@@ -159,7 +159,10 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     // Parse JSON output
     match serde_json::from_str::<Vec<GpuAdapterInfo>>(&output.trim()) {
         Ok(gpus) => {
-            eprintln!("[gpu] Successfully enumerated {} GPU(s) via child process", gpus.len());
+            eprintln!(
+                "[gpu] Successfully enumerated {} GPU(s) via child process",
+                gpus.len()
+            );
             gpus
         }
         Err(err) => {

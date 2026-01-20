@@ -561,7 +561,8 @@ fn find_device_by_name(host: &cpal::Host, target_name: &str) -> Option<Device> {
                 // On Linux, also check if the friendly name matches
                 #[cfg(target_os = "linux")]
                 {
-                    let friendly_name = crate::platform::linux::audio::get_friendly_device_name(&name);
+                    let friendly_name =
+                        crate::platform::linux::audio::get_friendly_device_name(&name);
                     if friendly_name.to_ascii_lowercase() == target_normalized {
                         return Some(device);
                     }
@@ -761,7 +762,7 @@ fn start_recording_on_host(
 struct DeviceCandidate {
     device: Device,
     name: Option<String>,
-    normalized_name: Option<String>,
+    _normalized_name: Option<String>,
     priority: u32,
     avoid_reason: Option<String>,
     matches_preferred: bool,
@@ -799,17 +800,16 @@ fn device_candidates_for_host(
 
     if let Some(default_device) = host.default_input_device() {
         let name = default_device.name().ok();
-        let normalized_name = name
+        let key = name
             .as_deref()
-            .map(|value| value.trim().to_ascii_lowercase());
-        let key = normalized_name
-            .clone()
+            .map(|value| value.trim().to_ascii_lowercase())
             .unwrap_or_else(|| "<unknown>".to_string());
 
         let matches_preferred = preferred_lower
             .as_ref()
             .and_then(|pref| {
-                name.as_deref().map(|device_name| device_matches_preferred(device_name, pref))
+                name.as_deref()
+                    .map(|device_name| device_matches_preferred(device_name, pref))
             })
             .unwrap_or(false);
 
@@ -827,7 +827,7 @@ fn device_candidates_for_host(
         candidates.push(DeviceCandidate {
             device: default_device,
             name,
-            normalized_name: Some(key),
+            _normalized_name: Some(key),
             priority,
             avoid_reason,
             matches_preferred,
@@ -838,11 +838,9 @@ fn device_candidates_for_host(
     if let Ok(devices) = host.input_devices() {
         for device in devices {
             let name = device.name().ok();
-            let normalized_name = name
+            let key = name
                 .as_deref()
-                .map(|value| value.trim().to_ascii_lowercase());
-            let key = normalized_name
-                .clone()
+                .map(|value| value.trim().to_ascii_lowercase())
                 .unwrap_or_else(|| "<unknown>".to_string());
 
             if seen.contains(&key) {
@@ -852,7 +850,8 @@ fn device_candidates_for_host(
             let matches_preferred = preferred_lower
                 .as_ref()
                 .and_then(|pref| {
-                    name.as_deref().map(|device_name| device_matches_preferred(device_name, pref))
+                    name.as_deref()
+                        .map(|device_name| device_matches_preferred(device_name, pref))
                 })
                 .unwrap_or(false);
 
@@ -877,7 +876,7 @@ fn device_candidates_for_host(
             candidates.push(DeviceCandidate {
                 device,
                 name,
-                normalized_name: Some(key),
+                _normalized_name: Some(key),
                 priority,
                 avoid_reason,
                 matches_preferred,
