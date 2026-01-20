@@ -174,6 +174,8 @@ export const submitOnboarding = async () => {
       activeDictationLanguage: "primary",
       preferredMicrophone: normalizedMicrophone,
       ignoreUpdateDialog: false,
+      incognitoModeEnabled: false,
+      incognitoModeIncludeInStats: false,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
