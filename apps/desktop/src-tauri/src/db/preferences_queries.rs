@@ -29,9 +29,11 @@ pub async fn upsert_user_preferences(
              secondary_dictation_language,
              active_dictation_language,
              preferred_microphone,
-             ignore_update_dialog
+             ignore_update_dialog,
+             incognito_mode_enabled,
+             incognito_mode_include_in_stats
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -53,7 +55,9 @@ pub async fn upsert_user_preferences(
             secondary_dictation_language = excluded.secondary_dictation_language,
             active_dictation_language = excluded.active_dictation_language,
             preferred_microphone = excluded.preferred_microphone,
-            ignore_update_dialog = excluded.ignore_update_dialog",
+            ignore_update_dialog = excluded.ignore_update_dialog,
+            incognito_mode_enabled = excluded.incognito_mode_enabled,
+            incognito_mode_include_in_stats = excluded.incognito_mode_include_in_stats",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -77,6 +81,8 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.active_dictation_language)
     .bind(&preferences.preferred_microphone)
     .bind(preferences.ignore_update_dialog)
+    .bind(preferences.incognito_mode_enabled)
+    .bind(preferences.incognito_mode_include_in_stats)
     .execute(&pool)
     .await?;
 
@@ -110,7 +116,9 @@ pub async fn fetch_user_preferences(
             secondary_dictation_language,
             active_dictation_language,
             preferred_microphone,
-            ignore_update_dialog
+            ignore_update_dialog,
+            incognito_mode_enabled,
+            incognito_mode_include_in_stats
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -186,6 +194,14 @@ pub async fn fetch_user_preferences(
             .unwrap_or(None),
         ignore_update_dialog: row
             .try_get::<i64, _>("ignore_update_dialog")
+            .map(|v| v != 0)
+            .unwrap_or(false),
+        incognito_mode_enabled: row
+            .try_get::<i64, _>("incognito_mode_enabled")
+            .map(|v| v != 0)
+            .unwrap_or(false),
+        incognito_mode_include_in_stats: row
+            .try_get::<i64, _>("incognito_mode_include_in_stats")
             .map(|v| v != 0)
             .unwrap_or(false),
     });

@@ -31,6 +31,8 @@ type LocalUserPreferences = {
   activeDictationLanguage: Nullable<string>;
   preferredMicrophone: Nullable<string>;
   ignoreUpdateDialog: boolean;
+  incognitoModeEnabled: boolean;
+  incognitoModeIncludeInStats: boolean;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -74,6 +76,8 @@ const fromLocalPreferences = (
     "primary",
   preferredMicrophone: preferences.preferredMicrophone ?? null,
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
+  incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
+  incognitoModeIncludeInStats: preferences.incognitoModeIncludeInStats ?? false,
 });
 
 const toLocalPreferences = (
@@ -100,6 +104,8 @@ const toLocalPreferences = (
   activeDictationLanguage: preferences.activeDictationLanguage ?? "primary",
   preferredMicrophone: preferences.preferredMicrophone ?? null,
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
+  incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
+  incognitoModeIncludeInStats: preferences.incognitoModeIncludeInStats ?? false,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

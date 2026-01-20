@@ -46,4 +46,8 @@ pub struct UserPreferences {
     pub preferred_microphone: Option<String>,
     #[serde(default)]
     pub ignore_update_dialog: bool,
+    #[serde(default)]
+    pub incognito_mode_enabled: bool,
+    #[serde(default)]
+    pub incognito_mode_include_in_stats: bool,
 }
