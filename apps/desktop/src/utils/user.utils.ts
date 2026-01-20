@@ -145,6 +145,9 @@ export type CloudTranscriptionPrefs = BaseTranscriptionPrefs & {
 
 export type LocalTranscriptionPrefs = BaseTranscriptionPrefs & {
   mode: "local";
+  gpuEnumerationEnabled: boolean;
+  transcriptionDevice: string | null;
+  transcriptionModelSize: string | null;
 };
 
 export type ApiTranscriptionPrefs = BaseTranscriptionPrefs & {
@@ -197,7 +200,13 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
     }
   }
 
-  return { mode: "local", warnings };
+  return {
+    mode: "local",
+    warnings,
+    gpuEnumerationEnabled: config.gpuEnumerationEnabled,
+    transcriptionDevice: config.device ?? null,
+    transcriptionModelSize: config.modelSize ?? null,
+  };
 };
 
 type BaseGenerativePrefs = {

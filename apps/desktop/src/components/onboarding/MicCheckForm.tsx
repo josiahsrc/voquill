@@ -3,7 +3,10 @@ import { Box, Button, Stack, Typography, useTheme } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { goToOnboardingPage } from "../../actions/onboarding.actions";
+import {
+  goToOnboardingPage,
+  setOnboardingPreferredMicrophone,
+} from "../../actions/onboarding.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
@@ -20,7 +23,9 @@ export const MicCheckForm = () => {
     "idle" | "starting" | "recording" | "stopping"
   >("idle");
   const [showMicSelector, setShowMicSelector] = useState(false);
-  const [preferredMic, setPreferredMic] = useState<string | null>(null);
+  const preferredMicrophone = useAppStore(
+    (state) => state.onboarding.preferredMicrophone,
+  );
 
   const audioLevels = useAppStore((state) => state.audioLevels);
   const overlayPhase = useAppStore((state) => state.overlayPhase);
@@ -42,14 +47,14 @@ export const MicCheckForm = () => {
 
     try {
       await invoke<void>("start_recording", {
-        args: { preferredMicrophone: preferredMic },
+        args: { preferredMicrophone },
       });
       setRecordingState("recording");
     } catch (error) {
       console.error("Failed to start recording", error);
       setRecordingState("idle");
     }
-  }, [isGlobalRecording, recordingState, preferredMic]);
+  }, [isGlobalRecording, recordingState, preferredMicrophone]);
 
   const stopRecording = useCallback(async () => {
     if (recordingState !== "recording" && recordingState !== "starting") {
@@ -83,7 +88,7 @@ export const MicCheckForm = () => {
     return () => {
       void stopRecordingRef.current();
     };
-  }, [showMicSelector, preferredMic]);
+  }, [showMicSelector, preferredMicrophone]);
 
   useEffect(() => {
     if (isGlobalRecording && (isRecording || isStarting)) {
@@ -142,8 +147,10 @@ export const MicCheckForm = () => {
             <FormattedMessage defaultMessage="Choose a different microphone" />
           </Typography>
           <MicrophoneSelector
-            value={preferredMic}
-            onChange={(value) => setPreferredMic(value)}
+            value={preferredMicrophone}
+            onChange={(value) => {
+              setOnboardingPreferredMicrophone(value);
+            }}
           />
           <Stack direction="row" justifyContent="flex-end">
             <Button
