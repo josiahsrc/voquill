@@ -208,8 +208,9 @@ export const AppSideEffects = () => {
     if (currentUserId && currentUserId !== prevUserId) {
       mixpanel.identify(currentUserId);
 
+      // Set creation time to ISO 8601 (2024-01-01T12:00:00.000Z) for Mixpanel
       mixpanel.people.set_once({
-        $created: auth?.metadata?.creationTime ?? undefined,
+        $created: new Date().toISOString(),
         initialPlatform: platform,
         initialLocale: locale,
         initialCohort: CURRENT_COHORT,
