@@ -350,30 +350,24 @@ export const storeTranscription = async (
   let storedTranscription: Transcription;
 
   try {
-    if (incognitoEnabled) {
-      storedTranscription = transcription;
-    } else {
-      storedTranscription =
-        await getTranscriptionRepo().createTranscription(transcription);
-    }
+    storedTranscription =
+      await getTranscriptionRepo().createTranscription(transcription);
   } catch (error) {
     console.error("Failed to store transcription", error);
     showErrorSnackbar("Unable to save transcription. Please try again.");
     return { transcription: null, wordCount: 0 };
   }
 
-  if (!incognitoEnabled) {
-    produceAppState((draft) => {
-      draft.transcriptionById[storedTranscription.id] = storedTranscription;
-      const existingIds = draft.transcriptions.transcriptionIds.filter(
-        (identifier) => identifier !== storedTranscription.id,
-      );
-      draft.transcriptions.transcriptionIds = [
-        storedTranscription.id,
-        ...existingIds,
-      ];
-    });
-  }
+  produceAppState((draft) => {
+    draft.transcriptionById[storedTranscription.id] = storedTranscription;
+    const existingIds = draft.transcriptions.transcriptionIds.filter(
+      (identifier) => identifier !== storedTranscription.id,
+    );
+    draft.transcriptions.transcriptionIds = [
+      storedTranscription.id,
+      ...existingIds,
+    ];
+  });
 
   if (wordsAdded > 0) {
     try {
