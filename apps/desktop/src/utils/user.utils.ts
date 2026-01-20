@@ -24,6 +24,10 @@ export const getIsOnboarded = (state: AppState): boolean => {
   return Boolean(getMyUser(state)?.onboarded);
 };
 
+export const getIsDictationUnlocked = (state: AppState): boolean => {
+  return getIsOnboarded(state) || state.onboarding.dictationOverrideEnabled;
+};
+
 export const getHasCloudAccess = (state: AppState): boolean => {
   const effectivePlan = getEffectivePlan(state);
   return effectivePlan === "pro" || effectivePlan === "free";
@@ -113,20 +117,6 @@ export const getShouldGoToOnboarding = (state: AppState): boolean => {
 export const getMyUserName = (state: AppState): string => {
   const user = getMyUser(state);
   return user?.name || "Guest";
-};
-
-export const getHasFinishedTutorial = (state: AppState): boolean => {
-  const user = getMyUser(state);
-  return user?.hasFinishedTutorial ?? false;
-};
-
-export const getShouldShowTutorialDialog = (state: AppState): boolean => {
-  const user = getMyUser(state);
-  if (!user) {
-    return false;
-  }
-
-  return !getHasFinishedTutorial(state);
 };
 
 export const getIsSignedIn = (state: AppState): boolean => {

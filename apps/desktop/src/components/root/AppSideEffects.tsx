@@ -16,6 +16,7 @@ import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { detectLocale } from "../../i18n";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
+import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
 import { getIsDevMode } from "../../utils/env.utils";
@@ -190,33 +191,65 @@ export const AppSideEffects = () => {
       mixpanel.reset();
     }
 
-    if (currentUserId && currentUserId !== prevUserId) {
-      mixpanel.identify(currentUserId);
-    }
-
-    prevUserIdRef.current = currentUserId;
-
     const isPro = member?.plan === "pro";
     const isFree = member?.plan === "free";
     const isCommunity = !currentUserId;
+    const isTrial = member?.isOnTrial ?? false;
+    const isPaying = !isTrial && isPro;
     const onboardedAt = cloudUser?.onboardedAt ?? localUser?.onboardedAt;
     const daysSinceOnboarded = onboardedAt
       ? dayjs().diff(dayjs(onboardedAt), "day")
       : 0;
+    const platform = getPlatform();
+    const locale = detectLocale();
+    const onboarded = cloudUser?.onboarded ?? localUser?.onboarded ?? false;
+    const planStatus = member?.plan ?? "community";
 
-    mixpanel.register({
-      userId: currentUserId,
-      planStatus: member?.plan ?? "community",
+    if (currentUserId && currentUserId !== prevUserId) {
+      mixpanel.identify(currentUserId);
+
+      mixpanel.people.set_once({
+        $created: auth?.metadata?.creationTime ?? undefined,
+        initialPlatform: platform,
+        initialLocale: locale,
+        initialCohort: CURRENT_COHORT,
+      });
+
+      mixpanel.register_once({
+        initialPlatform: platform,
+        initialLocale: locale,
+        initialCohort: CURRENT_COHORT,
+      });
+    }
+
+    mixpanel.people.set({
+      $email: auth?.email ?? undefined,
+      $name: auth?.displayName ?? undefined,
+      planStatus,
       isPro,
       isFree,
       isCommunity,
-      platform: getPlatform(),
-      locale: detectLocale(),
-      userCreatedAt: auth?.metadata?.creationTime ?? null,
-      onboarded: cloudUser?.onboarded ?? localUser?.onboarded ?? false,
-      daysSinceOnboarded,
-      cohort: cloudUser?.cohort ?? localUser?.cohort ?? null,
+      isTrial,
+      isPaying,
+      onboarded,
+      onboardedAt: onboardedAt ?? undefined,
+      activeSystemCohort: CURRENT_COHORT,
     });
+
+    mixpanel.register({
+      userId: currentUserId,
+      planStatus,
+      isPro,
+      isFree,
+      isCommunity,
+      platform,
+      locale,
+      onboarded,
+      daysSinceOnboarded,
+      activeSystemCohort: CURRENT_COHORT,
+    });
+
+    prevUserIdRef.current = currentUserId;
   }, [initialized, auth, member, cloudUser, localUser]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that

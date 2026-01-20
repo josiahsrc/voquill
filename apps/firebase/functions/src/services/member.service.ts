@@ -1,4 +1,4 @@
-import { firemix } from "@firemix/mixed";
+import { firemix, FiremixBatchDelegate } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { Member, Nullable } from "@repo/types";
@@ -114,4 +114,30 @@ export const getMyMember = async (args: {
 	return {
 		member: member?.data ? memberFromDatabase(member.data) : null,
 	};
+};
+
+export const handleCancelProTrials = async (): Promise<void> => {
+	const now = firemix().now();
+
+	const members = await firemix().query(
+		mixpath.members(),
+		["where", "isOnTrial", "==", true],
+		["where", "trialEndsAt", "<=", now],
+	);
+
+	await firemix().executeBatchWrite([
+		...members.map<FiremixBatchDelegate>(
+			(member) => (b) =>
+				b.update(mixpath.members(member.id), {
+					plan: "free",
+					isOnTrial: false,
+				}),
+		),
+		...members.map<FiremixBatchDelegate>(
+			(member) => (b) =>
+				b.update(mixpath.users(member.id), {
+					shouldShowUpgradeDialog: true,
+				}),
+		),
+	]);
 };

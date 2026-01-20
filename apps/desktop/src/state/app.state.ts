@@ -35,7 +35,6 @@ import {
   INITIAL_TRANSCRIPTIONS_STATE,
   TranscriptionsState,
 } from "./transcriptions.state";
-import { INITIAL_TUTORIAL_STATE, TutorialState } from "./tutorial.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
@@ -77,7 +76,6 @@ export type AppState = {
   payment: PaymentState;
   pricing: PricingState;
   login: LoginState;
-  tutorial: TutorialState;
   agent: AgentState;
 
   snackbarMessage?: string;
@@ -131,5 +129,4 @@ export const INITIAL_APP_STATE: AppState = {
   payment: INITIAL_PAYMENT_STATE,
   pricing: INITIAL_PRICING_STATE,
   login: INITIAL_LOGIN_STATE,
-  tutorial: INITIAL_TUTORIAL_STATE,
 };

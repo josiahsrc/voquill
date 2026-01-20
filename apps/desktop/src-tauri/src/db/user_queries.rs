@@ -8,6 +8,8 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              id,
              name,
              bio,
+             company,
+             title,
              onboarded,
              preferred_microphone,
              preferred_language,
@@ -19,10 +21,12 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              has_migrated_preferred_microphone,
              cohort
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
+            company = excluded.company,
+            title = excluded.title,
             onboarded = excluded.onboarded,
             preferred_microphone = excluded.preferred_microphone,
             preferred_language = excluded.preferred_language,
@@ -37,6 +41,8 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(&user.id)
     .bind(&user.name)
     .bind(&user.bio)
+    .bind(&user.company)
+    .bind(&user.title)
     .bind(if user.onboarded { 1 } else { 0 })
     .bind(&user.preferred_microphone)
     .bind(&user.preferred_language)
@@ -59,6 +65,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             id,
             name,
             bio,
+            company,
+            title,
             onboarded,
             preferred_microphone,
             preferred_language,
@@ -89,6 +97,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 id: row.get::<String, _>("id"),
                 name: row.get::<String, _>("name"),
                 bio: row.get::<String, _>("bio"),
+                company: row.try_get::<Option<String>, _>("company").unwrap_or(None),
+                title: row.try_get::<Option<String>, _>("title").unwrap_or(None),
                 onboarded: onboarded_raw != 0,
                 preferred_microphone: row.get::<Option<String>, _>("preferred_microphone"),
                 preferred_language: row.get::<Option<String>, _>("preferred_language"),

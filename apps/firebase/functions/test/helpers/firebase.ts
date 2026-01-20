@@ -32,7 +32,12 @@ import {
 	getShowWarnings,
 } from "./env";
 
+let firebaseInitialized = false;
+
 export async function initializeFirebase() {
+	if (firebaseInitialized) {
+		return;
+	}
 	process.env.FIRESTORE_EMULATOR_HOST = getFirestoreEmulatorHost();
 	process.env.FIREBASE_AUTH_EMULATOR_HOST = getFirebaseAuthEmulatorHost();
 	process.env.GCLOUD_PROJECT = getGcloudProject();
@@ -102,12 +107,18 @@ export async function initializeFirebase() {
 		rtdbParts[0] ?? "",
 		parseInt(rtdbParts[1] ?? ""),
 	);
+
+	firebaseInitialized = true;
 }
 
 export async function closeFirebase() {
+	if (!firebaseInitialized) {
+		return;
+	}
 	await admin.firestore().terminate();
 	await admin.app().delete();
 	await terminate(getFirestore());
+	firebaseInitialized = false;
 }
 
 export type UserCreds = {

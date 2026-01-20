@@ -55,15 +55,17 @@ export const useHotkeyHold = (args: {
   );
 
   const deactivate = useCallback(() => {
-    if (!activeRef.current) {
-      return;
-    }
+    const wasActive = activeRef.current;
 
     clearPendingDeactivation();
     activeRef.current = false;
     lockedRef.current = false;
+    ignoreActivationRef.current = false;
     activationTimestampRef.current = null;
-    onDeactivateRef.current?.();
+
+    if (wasActive) {
+      onDeactivateRef.current?.();
+    }
   }, [clearPendingDeactivation]);
 
   useEffect(() => {
@@ -74,6 +76,17 @@ export const useHotkeyHold = (args: {
   }, [clearPendingDeactivation, deactivate]);
 
   useEffect(() => {
+    if (
+      activeRef.current &&
+      !wasPressedRef.current &&
+      lastReleaseRef.current === null
+    ) {
+      activeRef.current = false;
+      lockedRef.current = false;
+      ignoreActivationRef.current = false;
+      activationTimestampRef.current = null;
+    }
+
     if (availableCombos.length === 0) {
       ignoreActivationRef.current = false;
       wasPressedRef.current = false;
