@@ -75,6 +75,12 @@ export const setAwaitingSignInNavigation = (awaiting: boolean) => {
   });
 };
 
+export const setOnboardingPreferredMicrophone = (microphone: string | null) => {
+  produceAppState((draft) => {
+    draft.onboarding.preferredMicrophone = microphone;
+  });
+};
+
 export const submitOnboarding = async () => {
   const state = getAppState();
   const trimmedName = state.onboarding.name.trim();
@@ -129,15 +135,24 @@ export const submitOnboarding = async () => {
     };
 
     const preferences: UserPreferences = {
-      gpuEnumerationEnabled: false,
+      gpuEnumerationEnabled:
+        transcriptionPreference.mode === "local"
+          ? transcriptionPreference.gpuEnumerationEnabled
+          : false,
       userId,
       transcriptionMode: transcriptionPreference.mode,
       transcriptionApiKeyId:
         transcriptionPreference.mode === "api"
           ? transcriptionPreference.apiKeyId
           : null,
-      transcriptionDevice: null,
-      transcriptionModelSize: null,
+      transcriptionDevice:
+        transcriptionPreference.mode === "local"
+          ? transcriptionPreference.transcriptionDevice
+          : null,
+      transcriptionModelSize:
+        transcriptionPreference.mode === "local"
+          ? transcriptionPreference.transcriptionModelSize
+          : null,
       postProcessingMode: postProcessingPreference.mode,
       postProcessingApiKeyId:
         postProcessingPreference.mode === "api"

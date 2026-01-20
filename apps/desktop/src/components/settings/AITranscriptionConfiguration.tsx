@@ -23,6 +23,7 @@ import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { useAppStore } from "../../store";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
 import { buildDeviceLabel, type GpuInfo } from "../../types/gpu.types";
+import { isGPUBuild } from "../../utils/env.utils";
 import {
   SegmentedControl,
   SegmentedControlOption,
@@ -30,7 +31,6 @@ import {
 import { maybeArrayElements } from "./AIPostProcessingConfiguration";
 import { ApiKeyList } from "./ApiKeyList";
 import { VoquillCloudSetting } from "./VoquillCloudSetting";
-import { isMacOS } from "../../utils/env.utils";
 
 type ModelOption = {
   value: string;
@@ -159,7 +159,7 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          {!transcription.gpuEnumerationEnabled && !isMacOS() && (
+          {!transcription.gpuEnumerationEnabled && isGPUBuild() && (
             <Alert
               severity="info"
               sx={{
