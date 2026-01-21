@@ -13,6 +13,7 @@ export const API_KEY_PROVIDERS = [
   "azure",
   "deepseek",
   "gemini",
+  "google",
 ] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 
@@ -28,4 +29,5 @@ export type ApiKey = {
   openRouterConfig?: Nullable<OpenRouterConfig>;
   baseUrl?: string | null;
   azureRegion?: string | null;
+  gcpProject?: string | null;
 };

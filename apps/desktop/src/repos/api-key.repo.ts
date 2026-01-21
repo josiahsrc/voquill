@@ -15,6 +15,7 @@ type LocalApiKey = {
   openrouterConfig?: string | null;
   baseUrl?: string | null;
   azureRegion?: string | null;
+  gcpProject?: string | null;
 };
 
 const parseOpenRouterConfig = (
@@ -40,6 +41,7 @@ const fromLocalApiKey = (apiKey: LocalApiKey): ApiKey => ({
   openRouterConfig: parseOpenRouterConfig(apiKey.openrouterConfig),
   baseUrl: apiKey.baseUrl ?? null,
   azureRegion: apiKey.azureRegion ?? null,
+  gcpProject: apiKey.gcpProject ?? null,
 });
 
 export type CreateApiKeyPayload = {
@@ -49,6 +51,7 @@ export type CreateApiKeyPayload = {
   key: string;
   baseUrl?: string;
   azureRegion?: string;
+  gcpProject?: string;
 };
 
 export type UpdateApiKeyPayload = {

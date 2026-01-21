@@ -6,6 +6,7 @@ import { AzureTranscriptionSession } from "./azure-transcription-session";
 import { BatchTranscriptionSession } from "./batch-transcription-session";
 import { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 import { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
+import { GoogleChirpTranscriptionSession } from "./google-chirp-transcription-session";
 import { VoquillTranscriptionSession } from "./voquill-transcription-session";
 import { getAppState } from "../store";
 
@@ -14,6 +15,7 @@ export { AzureTranscriptionSession } from "./azure-transcription-session";
 export { BatchTranscriptionSession } from "./batch-transcription-session";
 export { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 export { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
+export { GoogleChirpTranscriptionSession } from "./google-chirp-transcription-session";
 export { VoquillTranscriptionSession } from "./voquill-transcription-session";
 
 export const createTranscriptionSession = (
@@ -37,6 +39,8 @@ export const createTranscriptionSession = (
         const region = apiKeyRecord?.azureRegion || "eastus";
         return new AzureTranscriptionSession(prefs.apiKeyValue, region);
       }
+      case "google":
+        return new GoogleChirpTranscriptionSession(prefs.apiKeyValue);
     }
   }
 

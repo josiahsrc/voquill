@@ -36,6 +36,8 @@ pub use windows::window;
 pub mod app_info;
 
 pub mod audio;
+pub mod google_auth;
+pub mod google_speech;
 pub mod whisper;
 
 #[cfg(desktop)]

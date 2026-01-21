@@ -1,5 +1,6 @@
 pub mod api_key;
 pub mod app_target;
+pub mod google_chirp;
 pub mod hotkey;
 pub mod keyboard;
 pub mod overlay;
@@ -13,6 +14,10 @@ pub mod user;
 
 pub use api_key::{ApiKey, ApiKeyCreateRequest, ApiKeyUpdateRequest, ApiKeyView};
 pub use app_target::{AppTarget, EVT_REGISTER_CURRENT_APP};
+pub use google_chirp::{
+    GoogleChirpErrorPayload, GoogleChirpTranscriptPayload, EVT_GOOGLE_CHIRP_ERROR,
+    EVT_GOOGLE_CHIRP_TRANSCRIPT,
+};
 pub use hotkey::Hotkey;
 pub use keyboard::{KeysHeldPayload, EVT_KEYS_HELD};
 pub use overlay::{OverlayPhase, OverlayPhasePayload, EVT_OVERLAY_PHASE};

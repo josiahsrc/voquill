@@ -58,13 +58,12 @@ import {
 } from "../../utils/keyboard.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
-  getIsOnboarded,
-  getMyDictationLanguage,
   daysToMilliseconds,
   hoursToMilliseconds,
 } from "../../utils/time.utils";
 import {
   getIsDictationUnlocked,
+  getMyDictationLanguage,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
   getMyUserPreferences,

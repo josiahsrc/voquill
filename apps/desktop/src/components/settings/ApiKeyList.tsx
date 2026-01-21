@@ -78,6 +78,7 @@ type AddApiKeyCardProps = {
     key: string,
     baseUrl?: string,
     azureRegion?: string,
+    gcpProject?: string,
   ) => Promise<void>;
   onCancel: () => void;
   context: ApiKeyListContext;
@@ -90,12 +91,14 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [ollamaUrl, setOllamaUrl] = useState("");
   const [azureRegion, setAzureRegion] = useState("");
   const [azureOpenAIEndpoint, setAzureOpenAIEndpoint] = useState("");
+  const [gcpProject, setGcpProject] = useState("");
   const [saving, setSaving] = useState(false);
 
   const isOllama = provider === "ollama";
   const isAzure = provider === "azure";
   const isAzureOpenAI = isAzure && context === "post-processing";
   const isAzureSTT = isAzure && context === "transcription";
+  const isGoogle = provider === "google";
 
   const canSave = isOllama
     ? !!name
@@ -103,7 +106,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       ? !!name && !!key && !!azureRegion
       : isAzureOpenAI
         ? !!name && !!key && !!azureOpenAIEndpoint
-        : !!name && !!key;
+        : isGoogle
+          ? !!name && !!key
+          : !!name && !!key;
 
   const handleSave = useCallback(async () => {
     if (!canSave || saving) {
@@ -119,12 +124,14 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
           ? azureOpenAIEndpoint
           : undefined;
       const azureRegionValue = isAzureSTT ? azureRegion : undefined;
-      await onSave(name, provider, keyToSave, baseUrl, azureRegionValue);
+      const gcpProjectValue = isGoogle ? gcpProject : undefined;
+      await onSave(name, provider, keyToSave, baseUrl, azureRegionValue, gcpProjectValue);
       setName("");
       setKey("");
       setOllamaUrl("");
       setAzureRegion("");
       setAzureOpenAIEndpoint("");
+      setGcpProject("");
     } catch (error) {
       console.error("Failed to save API key", error);
     } finally {
@@ -135,11 +142,13 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
     isOllama,
     isAzureOpenAI,
     isAzureSTT,
+    isGoogle,
     name,
     key,
     ollamaUrl,
     azureRegion,
     azureOpenAIEndpoint,
+    gcpProject,
     provider,
     onSave,
     saving,
@@ -206,6 +215,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         )}
         {context === "transcription" && (
           <MenuItem value="azure">Azure</MenuItem>
+        )}
+        {context === "transcription" && (
+          <MenuItem value="google">Google Cloud (Chirp)</MenuItem>
         )}
       </TextField>
       {isAzure ? (
@@ -289,6 +301,62 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
               <FormattedMessage defaultMessage="Only needed if your Ollama instance requires authentication" />
             }
           />
+        </>
+      ) : isGoogle ? (
+        <>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Button
+              variant="outlined"
+              component="label"
+              disabled={saving}
+              size="small"
+            >
+              <FormattedMessage defaultMessage="Select Service Account JSON File" />
+              <input
+                type="file"
+                accept=".json,application/json"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      const content = e.target?.result as string;
+                      try {
+                        const parsed = JSON.parse(content);
+                        if (parsed.project_id) {
+                          setGcpProject(parsed.project_id);
+                          setKey(content);
+                        } else {
+                          setGcpProject("");
+                          setKey("");
+                          alert("Invalid service account JSON: missing project_id");
+                        }
+                      } catch {
+                        setGcpProject("");
+                        setKey("");
+                        alert("Invalid JSON file");
+                      }
+                    };
+                    reader.readAsText(file);
+                  }
+                }}
+              />
+            </Button>
+            {gcpProject && (
+              <Typography variant="body2" color="text.secondary">
+                <FormattedMessage
+                  defaultMessage="Project: {projectId}"
+                  values={{ projectId: gcpProject }}
+                />
+              </Typography>
+            )}
+            {key && (
+              <Typography variant="caption" color="success.main">
+                <FormattedMessage defaultMessage="✓ Service account loaded" />
+              </Typography>
+            )}
+          </Box>
         </>
       ) : (
         <TextField
@@ -380,6 +448,8 @@ const testApiKey = async (
           region: apiKey.azureRegion,
         });
       }
+    case "google":
+      throw new Error("Testing is not yet available for Google Cloud. Save the key and try transcribing.");
     default:
       throw new Error("Testing is not available for this provider.");
   }
@@ -417,6 +487,8 @@ const getModelsForProvider = (
     case "deepgram":
       return [];
     case "elevenlabs":
+      return [];
+    case "google":
       return [];
     default:
       return [];
@@ -607,13 +679,14 @@ export const ApiKeyList = ({
     ) {
       return false;
     }
-    // Aldea, AssemblyAI, Deepgram, and ElevenLabs only support transcription
+    // Aldea, AssemblyAI, Deepgram, ElevenLabs, and Google only support transcription
     if (
       context === "post-processing" &&
       (key.provider === "aldea" ||
         key.provider === "assemblyai" ||
         key.provider === "deepgram" ||
-        key.provider === "elevenlabs")
+        key.provider === "elevenlabs" ||
+        key.provider === "google")
     ) {
       return false;
     }
@@ -660,6 +733,7 @@ export const ApiKeyList = ({
       key: string,
       baseUrl?: string,
       azureRegion?: string,
+      gcpProject?: string,
     ) => {
       const created = await createApiKey({
         id: generateApiKeyId(),
@@ -668,6 +742,7 @@ export const ApiKeyList = ({
         key,
         baseUrl,
         azureRegion,
+        gcpProject,
       });
 
       onChange(created.id);

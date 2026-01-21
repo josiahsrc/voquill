@@ -83,6 +83,8 @@ pub const IGNORE_UPDATE_DIALOG_MIGRATION_SQL: &str =
     include_str!("migrations/043_ignore_update_dialog.sql");
 pub const USER_COMPANY_TITLE_MIGRATION_SQL: &str =
     include_str!("migrations/044_user_company_title.sql");
+pub const API_KEY_GCP_PROJECT_MIGRATION_SQL: &str =
+    include_str!("migrations/045_api_key_gcp_project.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -348,6 +350,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 44,
             description: "add_user_company_title",
             sql: USER_COMPANY_TITLE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 45,
+            description: "add_api_key_gcp_project",
+            sql: API_KEY_GCP_PROJECT_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

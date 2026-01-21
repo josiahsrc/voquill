@@ -91,6 +91,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 app.manage(recorder);
                 app.manage(transcriber_state);
+                app.manage(crate::state::GoogleChirpState::new());
 
                 let pool_for_bg = pool.clone();
                 let app_handle_for_bg = app_handle.clone();
@@ -194,6 +195,10 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,
             crate::commands::initialize_local_transcriber,
+            crate::commands::start_google_chirp_stream,
+            crate::commands::send_google_chirp_audio,
+            crate::commands::finalize_google_chirp_stream,
+            crate::commands::cleanup_google_chirp_stream,
         ])
 }
 

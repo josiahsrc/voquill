@@ -5,10 +5,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, EventTarget, Manager, State};
 
 use crate::domain::{
-    ApiKey, ApiKeyCreateRequest, ApiKeyView, AudioChunkPayload, OverlayPhase, OverlayPhasePayload,
-    RecordingLevelPayload, TranscriptionAudioSnapshot, EVT_AUDIO_CHUNK, EVT_OVERLAY_PHASE,
-    EVT_REC_LEVEL,
+    ApiKey, ApiKeyCreateRequest, ApiKeyView, AudioChunkPayload, GoogleChirpErrorPayload,
+    GoogleChirpTranscriptPayload, OverlayPhase, OverlayPhasePayload, RecordingLevelPayload,
+    TranscriptionAudioSnapshot, EVT_AUDIO_CHUNK, EVT_GOOGLE_CHIRP_ERROR,
+    EVT_GOOGLE_CHIRP_TRANSCRIPT, EVT_OVERLAY_PHASE, EVT_REC_LEVEL,
 };
+use crate::platform::google_speech::{GoogleChirpConfig, GoogleChirpSession};
 use crate::platform::{
     ChunkCallback, GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest,
 };
@@ -529,6 +531,7 @@ pub async fn api_key_create(
         key,
         base_url,
         azure_region,
+        gcp_project,
     } = api_key;
 
     let protected = protect_api_key(&key);
@@ -548,6 +551,7 @@ pub async fn api_key_create(
         openrouter_config: None,
         base_url,
         azure_region,
+        gcp_project,
     };
 
     crate::db::api_key_queries::insert_api_key(database.pool(), &stored)
@@ -1180,4 +1184,93 @@ pub async fn initialize_local_transcriber(
     eprintln!("[initialize_local_transcriber] Whisper transcriber initialized successfully");
 
     Ok(true)
+}
+
+#[tauri::command]
+pub async fn start_google_chirp_stream(
+    app: AppHandle,
+    service_account_json: String,
+    sample_rate: u32,
+    language: String,
+    google_chirp_state: State<'_, crate::state::GoogleChirpState>,
+) -> Result<(), String> {
+    eprintln!(
+        "[Google Chirp] Starting stream with sample_rate={}, language={}",
+        sample_rate, language
+    );
+
+    let app_for_transcript = app.clone();
+    let app_for_error = app.clone();
+
+    let transcript_callback = move |text: String, is_final: bool| {
+        let payload = GoogleChirpTranscriptPayload { text, is_final };
+        if let Err(err) =
+            app_for_transcript.emit_to(EventTarget::any(), EVT_GOOGLE_CHIRP_TRANSCRIPT, payload)
+        {
+            eprintln!("Failed to emit google_chirp_transcript event: {err}");
+        }
+    };
+
+    let error_callback = move |error: String| {
+        let payload = GoogleChirpErrorPayload { error };
+        if let Err(err) =
+            app_for_error.emit_to(EventTarget::any(), EVT_GOOGLE_CHIRP_ERROR, payload)
+        {
+            eprintln!("Failed to emit google_chirp_error event: {err}");
+        }
+    };
+
+    let config = GoogleChirpConfig {
+        service_account_json,
+        sample_rate,
+        language,
+    };
+
+    let session = GoogleChirpSession::new(config, transcript_callback, error_callback)
+        .await
+        .map_err(|e| format!("Failed to create Google Chirp session: {}", e))?;
+
+    google_chirp_state.set_session(session).await;
+
+    eprintln!("[Google Chirp] Stream started successfully");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_google_chirp_audio(
+    samples: Vec<f32>,
+    google_chirp_state: State<'_, crate::state::GoogleChirpState>,
+) -> Result<(), String> {
+    let session_arc = google_chirp_state.session_arc();
+    let guard = session_arc.lock().await;
+
+    if let Some(session) = guard.as_ref() {
+        session.send_audio(samples).await
+    } else {
+        Err("No active Google Chirp session".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn finalize_google_chirp_stream(
+    google_chirp_state: State<'_, crate::state::GoogleChirpState>,
+) -> Result<String, String> {
+    let session_arc = google_chirp_state.session_arc();
+    let mut guard = session_arc.lock().await;
+
+    if let Some(session) = guard.as_mut() {
+        let transcript = session.finalize().await;
+        Ok(transcript)
+    } else {
+        Err("No active Google Chirp session".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn cleanup_google_chirp_stream(
+    google_chirp_state: State<'_, crate::state::GoogleChirpState>,
+) -> Result<(), String> {
+    eprintln!("[Google Chirp] Cleaning up stream...");
+    let _ = google_chirp_state.take_session().await;
+    Ok(())
 }

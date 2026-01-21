@@ -4,8 +4,8 @@ use crate::domain::{ApiKey, ApiKeyUpdateRequest};
 
 pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey, sqlx::Error> {
     sqlx::query(
-        "INSERT INTO api_keys (id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model, openrouter_config, base_url, azure_region)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+        "INSERT INTO api_keys (id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model, openrouter_config, base_url, azure_region, gcp_project)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
     )
     .bind(&api_key.id)
     .bind(&api_key.name)
@@ -20,6 +20,7 @@ pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey
     .bind(&api_key.openrouter_config)
     .bind(&api_key.base_url)
     .bind(&api_key.azure_region)
+    .bind(&api_key.gcp_project)
     .execute(&pool)
     .await?;
 
@@ -28,7 +29,7 @@ pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey
 
 pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error> {
     let rows = sqlx::query(
-        "SELECT id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model, openrouter_config, base_url, azure_region
+        "SELECT id, name, provider, created_at, salt, key_hash, key_ciphertext, key_suffix, transcription_model, post_processing_model, openrouter_config, base_url, azure_region, gcp_project
          FROM api_keys
          ORDER BY created_at DESC",
     )
@@ -51,6 +52,7 @@ pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error
             openrouter_config: row.get::<Option<String>, _>("openrouter_config"),
             base_url: row.get::<Option<String>, _>("base_url"),
             azure_region: row.get::<Option<String>, _>("azure_region"),
+            gcp_project: row.get::<Option<String>, _>("gcp_project"),
         })
         .collect();
 
