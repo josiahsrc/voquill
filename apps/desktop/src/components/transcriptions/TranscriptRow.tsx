@@ -24,6 +24,7 @@ import {
 } from "../../actions/transcriptions.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
+import { isLinux } from "../../utils/env.utils";
 import { TypographyWithMore } from "../common/TypographyWithMore";
 import { TranscriptionToneMenu } from "./TranscriptionToneMenu";
 
@@ -104,18 +105,61 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   }, [transcription?.inferenceDevice, transcription?.modelSize]);
 
   const audioSnapshot = transcription?.audio;
-  const audioSrc = useMemo(() => {
-    if (!audioSnapshot) {
-      return null;
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!audioSnapshot?.filePath) {
+      setAudioSrc(null);
+      return;
     }
 
-    try {
-      return convertFileSrc(audioSnapshot.filePath);
-    } catch (error) {
-      console.error("Failed to resolve audio file path", error);
-      return null;
-    }
+    let cancelled = false;
+
+    const loadAudio = async () => {
+      try {
+        const assetUrl = convertFileSrc(audioSnapshot.filePath);
+
+        if (isLinux()) {
+          const response = await fetch(assetUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch audio: ${response.status}`);
+          }
+          const blob = await response.blob();
+          if (cancelled) return;
+
+          if (blobUrlRef.current) {
+            URL.revokeObjectURL(blobUrlRef.current);
+          }
+          const blobUrl = URL.createObjectURL(blob);
+          blobUrlRef.current = blobUrl;
+          setAudioSrc(blobUrl);
+        } else {
+          setAudioSrc(assetUrl);
+        }
+      } catch (error) {
+        console.error("Failed to load audio file", error);
+        if (!cancelled) {
+          setAudioSrc(null);
+        }
+      }
+    };
+
+    void loadAudio();
+
+    return () => {
+      cancelled = true;
+    };
   }, [audioSnapshot?.filePath]);
+
+  useEffect(() => {
+    return () => {
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+    };
+  }, []);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
