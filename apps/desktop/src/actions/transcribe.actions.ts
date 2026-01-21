@@ -107,8 +107,22 @@ export const transcribeAudio = async ({
   const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
-  const transcriptionPrompt =
+  const baseTranscriptionPrompt =
     buildLocalizedTranscriptionPrompt(dictionaryEntries);
+  const transcriptionPrompt = (() => {
+    // Adding a patch to generate text precisely when dealing with different
+    //   variants of Chinese.
+    // See reference: https://github.com/openai/whisper/discussions/277
+    if (dictationLanguage === "zh-CN") {
+      return `以下是普通话的句子。\n\n${baseTranscriptionPrompt}`.trim();
+    }
+
+    if (dictationLanguage === "zh-TW" || dictationLanguage === "zh-HK") {
+      return `以下是普通話的句子。\n\n${baseTranscriptionPrompt}`.trim();
+    }
+
+    return baseTranscriptionPrompt;
+  })();
 
   const transcribeStart = performance.now();
   const transcribeOutput = await transcribeRepo.transcribeAudio({
