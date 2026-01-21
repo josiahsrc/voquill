@@ -9,10 +9,7 @@ import { GetContextTool } from "../tools/get-context.tool";
 import { getToolsForServers } from "../tools/mcp.tool";
 import { StopTool } from "../tools/stop.tool";
 import { WriteToTextFieldTool } from "../tools/write-to-text-field.tool";
-import type {
-  AgentWindowMessage,
-  AgentWindowState,
-} from "../types/agent-window.types";
+import type { AgentWindowMessage } from "../types/agent-window.types";
 import type { OverlayPhase } from "../types/overlay.types";
 import type {
   HandleTranscriptParams,
@@ -62,9 +59,16 @@ export class AgentStrategy extends BaseStrategy {
     return null;
   }
 
-  private updateWindowState(state: AgentWindowState | null): void {
+  private updateWindowState(messages: AgentWindowMessage[] | null): void {
     produceAppState((draft) => {
-      draft.agent.windowState = state;
+      draft.agent.windowState = messages
+        ? {
+            messages: messages.map((m) => ({
+              ...m,
+              tools: m.tools ? [...m.tools] : undefined,
+            })),
+          }
+        : null;
     });
   }
 
@@ -91,7 +95,7 @@ export class AgentStrategy extends BaseStrategy {
     this.draftTool = new DraftTool();
     this.draftTool.setOnDraftUpdated((draft) => {
       this.currentDraft = draft;
-      this.updateWindowState({ messages: this.uiMessages });
+      this.updateWindowState(this.uiMessages);
     });
 
     this.writeToTextFieldTool = new WriteToTextFieldTool();
@@ -151,7 +155,7 @@ export class AgentStrategy extends BaseStrategy {
       );
 
       this.uiMessages.push({ text: rawTranscript, sender: "me" });
-      this.updateWindowState({ messages: this.uiMessages });
+      this.updateWindowState(this.uiMessages);
 
       const liveTools: string[] = [];
       this.uiMessages.push({ text: "", sender: "agent", tools: liveTools });
@@ -159,7 +163,7 @@ export class AgentStrategy extends BaseStrategy {
       const result = await this.agent.run(rawTranscript, {
         onToolExecuted: (tool) => {
           liveTools.push(tool.displayName);
-          this.updateWindowState({ messages: this.uiMessages });
+          this.updateWindowState(this.uiMessages);
         },
       });
       console.log("Agent response:", result.response);
@@ -182,7 +186,7 @@ export class AgentStrategy extends BaseStrategy {
           draft: this.currentDraft ?? undefined,
         });
         this.currentDraft = null;
-        this.updateWindowState({ messages: this.uiMessages });
+        this.updateWindowState(this.uiMessages);
       }
 
       clearLoadingToken();
