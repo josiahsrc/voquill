@@ -235,7 +235,16 @@ fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         }
     };
 
-    builder.build()?;
+    let window = builder.build()?;
+
+    // Make it so when you click on the overlay, it doesn't make the main app take focus
+    #[cfg(target_os = "macos")]
+    {
+        if let Err(err) = crate::platform::macos::window::configure_overlay_non_activating(&window)
+        {
+            eprintln!("Failed to configure overlay as non-activating: {err}");
+        }
+    }
 
     Ok(())
 }
