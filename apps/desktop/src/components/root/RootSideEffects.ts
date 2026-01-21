@@ -40,7 +40,7 @@ import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
-import { OverlayPhase } from "../../types/overlay.types";
+import type { OverlayPhase } from "../../types/overlay.types";
 import type { StrategyContext } from "../../types/strategy.types";
 import {
   StopRecordingResponse,

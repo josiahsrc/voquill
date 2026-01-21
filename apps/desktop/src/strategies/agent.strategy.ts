@@ -1,10 +1,9 @@
 import type { Nullable } from "@repo/types";
-import { emitTo } from "@tauri-apps/api/event";
 import { showToast } from "../actions/toast.actions";
 import { Agent } from "../agent/agent";
 import { getIntl } from "../i18n";
 import { getAgentRepo } from "../repos";
-import { getAppState } from "../store";
+import { getAppState, produceAppState } from "../store";
 import { DraftTool } from "../tools/draft.tool";
 import { GetContextTool } from "../tools/get-context.tool";
 import { getToolsForServers } from "../tools/mcp.tool";
@@ -63,8 +62,10 @@ export class AgentStrategy extends BaseStrategy {
     return null;
   }
 
-  private async emitState(state: AgentWindowState | null): Promise<void> {
-    await emitTo("unified-overlay", "agent_window_state", { state });
+  private updateWindowState(state: AgentWindowState | null): void {
+    produceAppState((draft) => {
+      draft.agent.windowState = state;
+    });
   }
 
   private async initAgent(): Promise<Agent | null> {
@@ -90,7 +91,7 @@ export class AgentStrategy extends BaseStrategy {
     this.draftTool = new DraftTool();
     this.draftTool.setOnDraftUpdated((draft) => {
       this.currentDraft = draft;
-      this.emitState({ messages: this.uiMessages }).catch(console.error);
+      this.updateWindowState({ messages: this.uiMessages });
     });
 
     this.writeToTextFieldTool = new WriteToTextFieldTool();
@@ -110,14 +111,16 @@ export class AgentStrategy extends BaseStrategy {
 
   async onBeforeStart(): Promise<void> {
     if (this.isFirstTurn) {
-      await this.emitState(null);
+      this.updateWindowState(null);
       this.isFirstTurn = false;
       this.agent = await this.initAgent();
     }
   }
 
   async setPhase(phase: OverlayPhase): Promise<void> {
-    await emitTo("unified-overlay", "agent_overlay_phase", { phase });
+    produceAppState((draft) => {
+      draft.agent.overlayPhase = phase;
+    });
   }
 
   async handleTranscript({
@@ -148,7 +151,7 @@ export class AgentStrategy extends BaseStrategy {
       );
 
       this.uiMessages.push({ text: rawTranscript, sender: "me" });
-      await this.emitState({ messages: this.uiMessages });
+      this.updateWindowState({ messages: this.uiMessages });
 
       const liveTools: string[] = [];
       this.uiMessages.push({ text: "", sender: "agent", tools: liveTools });
@@ -156,7 +159,7 @@ export class AgentStrategy extends BaseStrategy {
       const result = await this.agent.run(rawTranscript, {
         onToolExecuted: (tool) => {
           liveTools.push(tool.displayName);
-          this.emitState({ messages: this.uiMessages }).catch(console.error);
+          this.updateWindowState({ messages: this.uiMessages });
         },
       });
       console.log("Agent response:", result.response);
@@ -179,7 +182,7 @@ export class AgentStrategy extends BaseStrategy {
           draft: this.currentDraft ?? undefined,
         });
         this.currentDraft = null;
-        await this.emitState({ messages: this.uiMessages });
+        this.updateWindowState({ messages: this.uiMessages });
       }
 
       clearLoadingToken();
@@ -212,7 +215,9 @@ export class AgentStrategy extends BaseStrategy {
     this.writeToTextFieldTool = null;
     this.draftTool = null;
     this.currentDraft = null;
-    await emitTo("unified-overlay", "agent_overlay_phase", { phase: "idle" });
-    await this.emitState(null);
+    produceAppState((draft) => {
+      draft.agent.overlayPhase = "idle";
+      draft.agent.windowState = null;
+    });
   }
 }

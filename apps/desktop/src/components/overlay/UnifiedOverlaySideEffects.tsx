@@ -2,8 +2,10 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
-import type { AgentWindowState } from "../../types/agent-window.types";
-import type { OverlayPhase } from "../../types/overlay.types";
+import type {
+  OverlayPhase,
+  OverlaySyncPayload,
+} from "../../types/overlay.types";
 import type { Toast } from "../../types/toast.types";
 
 type OverlayPhasePayload = {
@@ -12,10 +14,6 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
-};
-
-type AgentWindowStatePayload = {
-  state: AgentWindowState | null;
 };
 
 type ToastPayload = {
@@ -49,18 +47,9 @@ export const UnifiedOverlaySideEffects = () => {
     });
   });
 
-  useTauriListen<AgentWindowStatePayload>("agent_window_state", (payload) => {
+  useTauriListen<OverlaySyncPayload>("overlay_sync", (payload) => {
     produceAppState((draft) => {
-      draft.agent.windowState = payload.state;
-    });
-  });
-
-  useTauriListen<OverlayPhasePayload>("agent_overlay_phase", (payload) => {
-    produceAppState((draft) => {
-      draft.agent.overlayPhase = payload.phase;
-      if (payload.phase !== "recording") {
-        draft.audioLevels = [];
-      }
+      Object.assign(draft, payload);
     });
   });
 
