@@ -1,8 +1,14 @@
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { useRef } from "react";
+import { FormattedMessage } from "react-intl";
 import { useAppStore } from "../../store";
+import {
+  DICTATE_HOTKEY,
+  getHotkeyCombosForAction,
+} from "../../utils/keyboard.utils";
 import { getPlatform } from "../../utils/platform.utils";
+import { HotkeyBadge } from "../common/HotkeyBadge";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
 
 const EXPANDED_WIDTH = 120;
@@ -16,7 +22,11 @@ export const WaveformSection = () => {
   const theme = useTheme();
   const overlayPhase = useAppStore((state) => state.overlayPhase);
   const cursor = useAppStore((state) => state.overlayCursor);
+  const combos = useAppStore((state) =>
+    getHotkeyCombosForAction(state, DICTATE_HOTKEY),
+  );
   const isHoveredRef = useRef(false);
+  const hotkeyKeys = combos.length > 0 ? combos[0] : ["?"];
 
   const checkCursorInBounds = (width: number, height: number) => {
     if (!cursor) return false;
@@ -56,6 +66,59 @@ export const WaveformSection = () => {
         pointerEvents: "none",
       }}
     >
+      {/* Tooltip */}
+      <Box
+        sx={{
+          opacity: isExpanded ? 1 : 0,
+          transform: isExpanded ? "translateY(0)" : "translateY(4px)",
+          transition: "all 150ms ease-out",
+          marginBottom: theme.spacing(1),
+          pointerEvents: "none",
+        }}
+      >
+        <Box
+          sx={{
+            backgroundColor: alpha(theme.palette.common.black, 0.92),
+            backdropFilter: "blur(14px)",
+            borderRadius: theme.spacing(1.5),
+            padding: `${theme.spacing(0.75)} ${theme.spacing(1.5)}`,
+            boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.3)}`,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: theme.palette.common.white,
+              whiteSpace: "nowrap",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+            }}
+            component="span"
+          >
+            <FormattedMessage
+              defaultMessage="You can also hold {hotkey} to dictate"
+              values={{
+                hotkey: (
+                  <HotkeyBadge
+                    keys={hotkeyKeys}
+                    sx={{
+                      bgcolor: alpha(theme.palette.common.white, 0.15),
+                      borderColor: alpha(theme.palette.common.white, 0.3),
+                      color: theme.palette.common.white,
+                      fontSize: "inherit",
+                      py: 0,
+                      px: 0.75,
+                    }}
+                  />
+                ),
+              }}
+            />
+          </Typography>
+        </Box>
+      </Box>
+
       <Box
         data-overlay-interactive
         sx={{
