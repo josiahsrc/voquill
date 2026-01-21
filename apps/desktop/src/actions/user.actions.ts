@@ -72,6 +72,8 @@ export const createDefaultPreferences = (): UserPreferences => ({
   activeDictationLanguage: "primary",
   preferredMicrophone: null,
   ignoreUpdateDialog: false,
+  incognitoModeEnabled: false,
+  incognitoModeIncludeInStats: false,
 });
 
 const updateUserPreferences = async (
@@ -222,16 +224,6 @@ export const setUserName = async (name: string): Promise<void> => {
     },
     "Unable to update username. User not found.",
     "Failed to save username. Please try again.",
-  );
-};
-
-export const finishTutorial = async (): Promise<void> => {
-  await updateUser(
-    (user) => {
-      user.hasFinishedTutorial = true;
-    },
-    "Unable to update tutorial status. User not found.",
-    "Failed to update tutorial status. Please try again.",
   );
 };
 
@@ -456,6 +448,7 @@ export const migrateLocalUserToCloud = async (): Promise<void> => {
     id: userId,
     createdAt: localUser.createdAt ?? now,
     updatedAt: now,
+    shouldShowUpgradeDialog: false,
   };
 
   try {
@@ -491,4 +484,34 @@ export const setIgnoreUpdateDialog = async (ignore: boolean): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.ignoreUpdateDialog = ignore;
   }, "Failed to save update dialog preference. Please try again.");
+};
+
+export const setIncognitoModeEnabled = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.incognitoModeEnabled = enabled;
+    if (!enabled) {
+      // Reset to default when disabling for clarity.
+      preferences.incognitoModeIncludeInStats = false;
+    }
+  }, "Failed to save incognito mode preference. Please try again.");
+};
+
+export const setIncognitoModeIncludeInStats = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.incognitoModeIncludeInStats = enabled;
+  }, "Failed to save incognito mode stats preference. Please try again.");
+};
+
+export const markUpgradeDialogSeen = async (): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.shouldShowUpgradeDialog = false;
+    },
+    "Unable to mark upgrade dialog as seen. User not found.",
+    "Failed to mark upgrade dialog as seen. Please try again.",
+  );
 };

@@ -58,7 +58,11 @@ import {
 } from "../../utils/keyboard.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
-  getIsOnboarded,
+  daysToMilliseconds,
+  hoursToMilliseconds,
+} from "../../utils/time.utils";
+import {
+  getIsDictationUnlocked,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
   getTranscriptionPrefs,
@@ -68,7 +72,6 @@ import {
   setTrayTitle,
   surfaceMainWindow,
 } from "../../utils/window.utils";
-import { daysToMilliseconds } from "../../utils/time.utils";
 
 type StartRecordingResponse = {
   sampleRate: number;
@@ -143,6 +146,14 @@ export const RootSideEffects = () => {
     ];
     await Promise.allSettled(loaders);
   }, [userId]);
+
+  useIntervalAsync(
+    hoursToMilliseconds(1),
+    async () => {
+      await Promise.allSettled([refreshMember(), refreshCurrentUser()]);
+    },
+    [],
+  );
 
   useAsyncEffect(async () => {
     await syncAutoLaunchSetting();
@@ -377,7 +388,7 @@ export const RootSideEffects = () => {
 
   const startDictationRecording = useCallback(async () => {
     const state = getAppState();
-    if (!getIsOnboarded(state)) {
+    if (!getIsDictationUnlocked(state)) {
       return;
     }
 
@@ -394,7 +405,7 @@ export const RootSideEffects = () => {
 
   const startAgentRecording = useCallback(async () => {
     const state = getAppState();
-    if (!getIsOnboarded(state)) {
+    if (!getIsDictationUnlocked(state)) {
       return;
     }
 

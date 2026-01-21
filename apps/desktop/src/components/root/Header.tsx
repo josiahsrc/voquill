@@ -6,7 +6,6 @@ import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
 import { useMemo } from "react";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
-import { signOut } from "../../actions/login.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { useHeaderPortal } from "../../hooks/header.hooks";
 import { useIsOnboarded } from "../../hooks/user.hooks";
@@ -17,7 +16,7 @@ import {
   planToDisplayName,
 } from "../../utils/member.utils";
 import { getInitials } from "../../utils/string.utils";
-import { getIsLoggedIn, getMyUser } from "../../utils/user.utils";
+import { getMyUser } from "../../utils/user.utils";
 import { LogoWithText } from "../common/LogoWithText";
 import {
   MenuPopoverBuilder,
@@ -55,7 +54,6 @@ export const AppHeader = () => {
   const nav = useNavigate();
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
-  const isLoggedIn = useAppStore(getIsLoggedIn);
   const planName = useAppStore((state) =>
     planToDisplayName(getEffectivePlan(state)),
   );
@@ -70,11 +68,6 @@ export const AppHeader = () => {
   const myInitials = useMemo(() => getInitials(myName), [myName]);
 
   const handleLogoClick = () => {
-    nav("/");
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
     nav("/");
   };
 
@@ -167,12 +160,6 @@ export const AppHeader = () => {
           )}
         </MenuPopoverBuilder>
       </Stack>
-    );
-  } else if (isLoggedIn) {
-    rightContent = (
-      <Button onClick={handleSignOut}>
-        <FormattedMessage defaultMessage="Sign Out" />
-      </Button>
     );
   }
 

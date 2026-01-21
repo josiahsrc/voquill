@@ -1,10 +1,11 @@
-use std::ffi::CStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(target_os = "macos")]
 use cocoa::base::{id, nil};
 #[cfg(target_os = "macos")]
 use objc::{class, msg_send, sel, sel_impl};
+#[cfg(target_os = "macos")]
+use std::ffi::CStr;
 #[cfg(target_os = "macos")]
 use std::os::raw::c_char;
 

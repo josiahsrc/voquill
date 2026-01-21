@@ -2,6 +2,8 @@ export * from "./groq.utils";
 export * from "./openai.utils";
 export * from "./aldea.utils";
 export * from "./assemblyai.utils";
+export * from "./elevenlabs.utils";
+export * from "./deepgram.utils";
 export * from "./openrouter.utils";
 export * from "./azure.utils";
 export * from "./azure-openai.utils";

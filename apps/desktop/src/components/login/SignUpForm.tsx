@@ -19,7 +19,15 @@ import {
   getSignUpPasswordValidation,
 } from "../../utils/login.utils";
 
-export const SignUpForm = () => {
+type SignUpFormProps = {
+  hideGoogleButton?: boolean;
+  hideModeSwitch?: boolean;
+};
+
+export const SignUpForm = ({
+  hideGoogleButton = false,
+  hideModeSwitch = false,
+}: SignUpFormProps) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
@@ -68,11 +76,14 @@ export const SignUpForm = () => {
 
   return (
     <Stack spacing={2}>
-      <SignInWithGoogleButton />
-
-      <Divider>
-        <FormattedMessage defaultMessage="or" />
-      </Divider>
+      {!hideGoogleButton && (
+        <>
+          <SignInWithGoogleButton />
+          <Divider>
+            <FormattedMessage defaultMessage="or" />
+          </Divider>
+        </>
+      )}
 
       <TextField
         label={<FormattedMessage defaultMessage="Email" />}
@@ -136,13 +147,15 @@ export const SignUpForm = () => {
         <FormattedMessage defaultMessage="Create account" />
       </Button>
 
-      <Link
-        component="button"
-        onClick={handleClickLogin}
-        sx={{ alignSelf: "center" }}
-      >
-        <FormattedMessage defaultMessage="Already have an account? Log in" />
-      </Link>
+      {!hideModeSwitch && (
+        <Link
+          component="button"
+          onClick={handleClickLogin}
+          sx={{ alignSelf: "center" }}
+        >
+          <FormattedMessage defaultMessage="Already have an account? Log in" />
+        </Link>
+      )}
     </Stack>
   );
 };

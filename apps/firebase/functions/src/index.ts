@@ -17,6 +17,7 @@ import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
 import { getFullConfigResp } from "./services/config.service";
 import {
 	getMyMember,
+	handleCancelProTrials,
 	handleResetLimitsThisMonth,
 	handleResetLimitsToday,
 	handleTryInitializeMember,
@@ -133,6 +134,9 @@ export const handler = onCall(
 			} else if (name === "emulator/clearRateLimits") {
 				validateData(EmptyObjectZod, args ?? {});
 				data = await clearRateLimits();
+			} else if (name === "emulator/cancelProTrials") {
+				validateData(EmptyObjectZod, args ?? {});
+				data = await handleCancelProTrials();
 			} else if (name === "ai/transcribeAudio") {
 				data = await runTranscribeAudio({
 					auth,

@@ -1,6 +1,7 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { DatabaseMember } from "@repo/types";
+import dayjs from "dayjs";
 
 /** Transactional so that anyone can call this whenever they want */
 export const tryInitializeMember = async (
@@ -13,12 +14,16 @@ export const tryInitializeMember = async (
 			return member.data;
 		}
 
+		const trialEndsAt = dayjs().add(1, "week").toDate();
+
 		const newMember: DatabaseMember = {
 			id: userId,
 			createdAt: firemix().now(),
 			updatedAt: firemix().now(),
 			type: "user",
-			plan: "free",
+			plan: "pro",
+			isOnTrial: true,
+			trialEndsAt: firemix().timestampFromDate(trialEndsAt),
 			todayResetAt: firemix().now(),
 			thisMonthResetAt: firemix().now(),
 			wordsToday: 0,

@@ -6,6 +6,8 @@ export const API_KEY_PROVIDERS = [
   "openai",
   "aldea",
   "assemblyai",
+  "elevenlabs",
+  "deepgram",
   "openrouter",
   "ollama",
   "azure",

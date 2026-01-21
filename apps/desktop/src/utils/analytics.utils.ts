@@ -18,6 +18,13 @@ export function trackAgentStart() {
   mixpanel.track("Activate Agent Mode");
 }
 
-export function trackButtonClick(name: string) {
-  mixpanel.track("Button Click", { name });
+export function trackPaymentComplete() {
+  mixpanel.track("Payment Complete");
+}
+
+export function trackButtonClick(
+  name: string,
+  props?: Record<string, unknown>,
+) {
+  mixpanel.track("Button Click", { name, ...props });
 }
