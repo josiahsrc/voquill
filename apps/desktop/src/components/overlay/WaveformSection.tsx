@@ -1,5 +1,6 @@
 import { Box } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import { useRef } from "react";
 import { useAppStore } from "../../store";
 import { getPlatform } from "../../utils/platform.utils";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
@@ -9,10 +10,37 @@ const EXPANDED_HEIGHT = 32;
 const COLLAPSED_WIDTH = 48;
 const COLLAPSED_HEIGHT = 6;
 
+const HOVER_PADDING = 8;
+
 export const WaveformSection = () => {
   const theme = useTheme();
   const overlayPhase = useAppStore((state) => state.overlayPhase);
-  const isExpanded = overlayPhase !== "idle";
+  const cursor = useAppStore((state) => state.overlayCursor);
+  const isHoveredRef = useRef(false);
+
+  const checkCursorInBounds = (width: number, height: number) => {
+    if (!cursor) return false;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const bottomOffset = getPlatform() === "macos" ? 12 : screenHeight * 0.05;
+    const waveformCenterX = screenWidth / 2;
+    const waveformCenterY = screenHeight - bottomOffset - height / 2;
+    const dx = Math.abs(cursor.x - waveformCenterX);
+    const dy = Math.abs(cursor.y - waveformCenterY);
+    return dx <= width / 2 + HOVER_PADDING && dy <= height / 2 + HOVER_PADDING;
+  };
+
+  if (isHoveredRef.current) {
+    if (!checkCursorInBounds(EXPANDED_WIDTH * 1.5, EXPANDED_HEIGHT * 1.5)) {
+      isHoveredRef.current = false;
+    }
+  } else {
+    if (checkCursorInBounds(COLLAPSED_WIDTH, COLLAPSED_HEIGHT)) {
+      isHoveredRef.current = true;
+    }
+  }
+
+  const isExpanded = overlayPhase !== "idle" || isHoveredRef.current;
 
   return (
     <Box

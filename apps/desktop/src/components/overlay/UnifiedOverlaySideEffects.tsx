@@ -1,5 +1,9 @@
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef } from "react";
+import {
+  cursorPosition,
+  getCurrentWindow,
+} from "@tauri-apps/api/window";
+import { useEffect, useMemo, useRef } from "react";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import type {
@@ -26,6 +30,38 @@ export const UnifiedOverlaySideEffects = () => {
   const currentToast = useAppStore((state) => state.currentToast);
   const toastQueue = useAppStore((state) => state.toastQueue);
   const timerRef = useRef<number | null>(null);
+  const windowRef = useMemo(() => getCurrentWindow(), []);
+
+  useEffect(() => {
+    let animationFrame: number;
+    let canceled = false;
+
+    const poll = async () => {
+      if (canceled) return;
+      try {
+        const pos = await cursorPosition();
+        const windowPos = await windowRef.outerPosition();
+        const scale = await windowRef.scaleFactor();
+        produceAppState((draft) => {
+          draft.overlayCursor = {
+            x: Math.round((pos.x - windowPos.x) / scale),
+            y: Math.round((pos.y - windowPos.y) / scale),
+          };
+        });
+      } catch {
+        // ignore
+      }
+      if (!canceled) {
+        animationFrame = requestAnimationFrame(poll);
+      }
+    };
+
+    poll();
+    return () => {
+      canceled = true;
+      cancelAnimationFrame(animationFrame);
+    };
+  }, [windowRef]);
 
   useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
     produceAppState((draft) => {
