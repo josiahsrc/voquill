@@ -52,10 +52,23 @@ export const WaveformSection = () => {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-end",
         pointerEvents: "none",
       }}
     >
+      {/* Hit area for cursor detection - always present */}
+      <Box
+        data-overlay-interactive
+        sx={{
+          position: "absolute",
+          width: EXPANDED_WIDTH,
+          height: EXPANDED_HEIGHT,
+          bottom: 0,
+          pointerEvents: "auto",
+          cursor: "pointer",
+        }}
+      />
+      {/* Visual waveform pill */}
       <Box
         sx={{
           width: isExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH,
