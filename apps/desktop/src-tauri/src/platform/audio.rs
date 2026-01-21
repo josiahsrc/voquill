@@ -932,7 +932,7 @@ pub fn list_input_devices() -> Vec<InputDeviceDescriptor> {
             let key = label.to_ascii_lowercase();
             #[cfg(not(target_os = "linux"))]
             let key = candidate
-                .normalized_name
+                ._normalized_name
                 .clone()
                 .unwrap_or_else(|| label.to_ascii_lowercase());
 
