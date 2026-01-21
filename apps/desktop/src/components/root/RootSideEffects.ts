@@ -58,13 +58,12 @@ import {
 } from "../../utils/keyboard.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
-  getIsOnboarded,
-  getMyDictationLanguage,
   daysToMilliseconds,
   hoursToMilliseconds,
 } from "../../utils/time.utils";
 import {
   getIsDictationUnlocked,
+  getMyDictationLanguage,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
   getMyUserPreferences,
@@ -439,6 +438,7 @@ export const RootSideEffects = () => {
   }, [startRecording]);
 
   const stopDictationRecording = useCallback(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 150));
     await stopRecording();
   }, [stopRecording]);
 
@@ -456,6 +456,7 @@ export const RootSideEffects = () => {
   }, [intl, startRecording]);
 
   const stopAgentRecording = useCallback(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 150));
     await stopRecording();
   }, [stopRecording]);
 

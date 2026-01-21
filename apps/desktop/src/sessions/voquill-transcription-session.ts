@@ -1,4 +1,4 @@
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { listen } from "@tauri-apps/api/event";
 import {
   DictionaryContext,
   FinalizeOptions,
@@ -94,19 +94,28 @@ const startVoquillStreaming = async (
 
   const idToken = await currentUser.getIdToken();
 
+  const audioQueue: number[][] = [];
+  const unlisten = await listen<{ samples: number[] }>("audio_chunk", (event) => {
+    const samples =
+      event.payload.samples instanceof Float32Array
+        ? Array.from(event.payload.samples)
+        : event.payload.samples;
+    audioQueue.push(samples);
+  });
+
   return new Promise((resolve, reject) => {
     let ws: WebSocket | null = null;
-    let unlisten: UnlistenFn | null = null;
     let isFinalized = false;
     let isReady = false;
     let sentChunkCount = 0;
-    let receivedChunkCount = 0;
+    let flushInterval: ReturnType<typeof setInterval> | null = null;
 
     const cleanup = () => {
-      if (unlisten) {
-        unlisten();
-        unlisten = null;
+      if (flushInterval) {
+        clearInterval(flushInterval);
+        flushInterval = null;
       }
+      unlisten();
       if (ws && ws.readyState !== WebSocket.CLOSED) {
         ws.close();
         ws = null;
@@ -206,50 +215,40 @@ const startVoquillStreaming = async (
 
         case "ready":
           console.log(
-            "[Voquill WebSocket] Session ready, setting up audio listener...",
+            "[Voquill WebSocket] Session ready, flushing queued audio...",
           );
           isReady = true;
 
-          try {
-            unlisten = await listen<{ samples: number[] }>(
-              "audio_chunk",
-              (event) => {
-                receivedChunkCount++;
-                if (receivedChunkCount <= 3 || receivedChunkCount % 10 === 0) {
+          const flushQueue = () => {
+            while (audioQueue.length > 0) {
+              const samples = audioQueue.shift()!;
+              if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
+                send({ type: "audio", samples });
+                sentChunkCount++;
+                if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
                   console.log(
-                    `[Voquill WebSocket] Received chunk #${receivedChunkCount}, samples:`,
-                    event.payload.samples.length,
+                    `[Voquill WebSocket] Sent chunk #${sentChunkCount} (${samples.length} samples)`,
                   );
                 }
+              }
+            }
+          };
 
-                if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
-                  const samples =
-                    event.payload.samples instanceof Float32Array
-                      ? Array.from(event.payload.samples)
-                      : event.payload.samples;
+          flushQueue();
+          console.log(
+            `[Voquill WebSocket] Flushed ${sentChunkCount} queued chunks`,
+          );
 
-                  send({ type: "audio", samples });
-                  sentChunkCount++;
+          flushInterval = setInterval(() => {
+            if (isFinalized) {
+              clearInterval(flushInterval!);
+              flushInterval = null;
+              return;
+            }
+            flushQueue();
+          }, 50);
 
-                  if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
-                    console.log(
-                      `[Voquill WebSocket] Sent chunk #${sentChunkCount}`,
-                    );
-                  }
-                }
-              },
-            );
-
-            console.log("[Voquill WebSocket] Audio listener attached");
-            resolve({ finalize, cleanup });
-          } catch (error) {
-            console.error(
-              "[Voquill WebSocket] Error setting up listener:",
-              error,
-            );
-            cleanup();
-            reject(error);
-          }
+          resolve({ finalize, cleanup });
           break;
 
         case "transcript":
