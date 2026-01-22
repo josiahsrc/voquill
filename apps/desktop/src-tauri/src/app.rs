@@ -30,11 +30,13 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let _ = window.hide();
-                #[cfg(target_os = "macos")]
                 if window.label() == "main" {
-                    if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
-                        eprintln!("Failed to hide dock icon: {err}");
+                    let _ = window.hide();
+                    #[cfg(target_os = "macos")]
+                    {
+                        if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
+                            eprintln!("Failed to hide dock icon: {err}");
+                        }
                     }
                 }
             }
@@ -163,6 +165,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::transcribe_audio,
             crate::commands::surface_main_window,
             crate::commands::show_overlay_no_focus,
+            crate::commands::set_overlay_click_through,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,

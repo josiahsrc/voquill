@@ -34,7 +34,6 @@ export const UnifiedOverlayRoot = () => {
     document.body.style.margin = "0";
     document.documentElement.style.backgroundColor = "transparent";
 
-    windowRef.hide().catch(console.error);
     windowRef.setIgnoreCursorEvents(true).catch(console.error);
   }, [windowRef]);
 

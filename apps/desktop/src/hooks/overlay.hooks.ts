@@ -1,14 +1,13 @@
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, Window } from "@tauri-apps/api/window";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "../store";
 
 const INTERACTIVE_ATTR = "data-overlay-interactive";
+
+async function setClickThrough(clickThrough: boolean): Promise<void> {
+  await invoke("set_overlay_click_through", { clickThrough });
+}
 
 type UseOverlayClickThroughOptions = {
   enabled: boolean;
@@ -37,15 +36,15 @@ export const useOverlayClickThrough = ({
 
     if (isOverInteractive !== isOverInteractiveRef.current) {
       isOverInteractiveRef.current = isOverInteractive;
-      windowRef.setIgnoreCursorEvents(!isOverInteractive).catch(() => {});
+      setClickThrough(!isOverInteractive).catch(() => {});
     }
   }, [cursor, enabled, windowRef]);
 
   useEffect(() => {
     if (!enabled) return;
-    windowRef.setIgnoreCursorEvents(true).catch(() => {});
+    setClickThrough(true).catch(() => {});
     return () => {
-      windowRef.setIgnoreCursorEvents(true).catch(() => {});
+      setClickThrough(true).catch(() => {});
     };
   }, [enabled, windowRef]);
 };

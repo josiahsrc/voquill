@@ -16,7 +16,10 @@ import type {
   OverlaySyncPayload,
 } from "../../types/overlay.types";
 import type { Toast } from "../../types/toast.types";
-import { getPlatform } from "../../utils/platform.utils";
+import {
+  cursorToViewportPosition,
+  getPlatform,
+} from "../../utils/platform.utils";
 
 type OverlayPhasePayload = {
   phase: OverlayPhase;
@@ -71,6 +74,7 @@ async function repositionOverlay(
         monitor.y * monitor.scaleFactor,
       ),
     );
+    // await invoke("show_overlay_no_focus");
   } else {
     await windowRef.setSize(
       new LogicalSize(monitor.visibleWidth, monitor.visibleHeight),
@@ -94,20 +98,25 @@ export const UnifiedOverlaySideEffects = () => {
   useIntervalAsync(CURSOR_POLL_MS, async () => {
     if (isRepositioningRef.current) return;
 
+    const platform = getPlatform();
     const targetMonitor = await invoke<MonitorAtCursor | null>(
       "get_monitor_at_cursor",
     ).catch(() => null);
 
     if (targetMonitor) {
       produceAppState((draft) => {
-        draft.overlayCursor = {
-          x: Math.round(targetMonitor.cursorX - targetMonitor.visibleX),
-          y: Math.round(
-            targetMonitor.visibleHeight -
-              (targetMonitor.cursorY - targetMonitor.visibleY),
-          ),
-        };
+        draft.overlayCursor = cursorToViewportPosition({
+          cursorX: targetMonitor.cursorX,
+          cursorY: targetMonitor.cursorY,
+          visibleX: targetMonitor.visibleX,
+          visibleY: targetMonitor.visibleY,
+          visibleHeight: targetMonitor.visibleHeight,
+        });
       });
+    }
+
+    if (platform === "windows") {
+      await invoke("show_overlay_no_focus").catch(() => {});
     }
 
     if (!targetMonitor) return;
