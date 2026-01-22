@@ -86,8 +86,8 @@ export const WaveformSection = () => {
       {/* Tooltip */}
       <Box
         sx={{
-          opacity: isExpanded ? 1 : 0,
-          transform: isExpanded ? "translateY(0)" : "translateY(4px)",
+          opacity: isHoveredRef.current ? 1 : 0,
+          transform: isHoveredRef.current ? "translateY(0)" : "translateY(4px)",
           transition: "all 150ms ease-out",
           marginBottom: theme.spacing(1),
           pointerEvents: "none",
