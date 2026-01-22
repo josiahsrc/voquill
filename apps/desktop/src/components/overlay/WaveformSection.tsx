@@ -55,7 +55,7 @@ export const WaveformSection = () => {
   }
 
   const handleClickDictate = () => {
-    emitTo("main", "onClickDictate", {}).catch(console.error);
+    emitTo("main", "on-click-dictate", {}).catch(console.error);
   };
 
   if (dictationPillVisibility === "hidden") {

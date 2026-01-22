@@ -543,7 +543,7 @@ export const RootSideEffects = () => {
     });
   });
 
-  useTauriListen<void>("onClickDictate", () => {
+  useTauriListen<void>("on-click-dictate", () => {
     dictationController.toggle();
   });
 
