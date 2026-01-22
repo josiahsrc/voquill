@@ -1,5 +1,6 @@
 import { Box, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import { emitTo } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { FormattedMessage } from "react-intl";
 import { useAppStore } from "../../store";
@@ -49,6 +50,10 @@ export const WaveformSection = () => {
       isHoveredRef.current = true;
     }
   }
+
+  const handleClickDictate = () => {
+    emitTo("main", "onClickDictate", {}).catch(console.error);
+  };
 
   const isExpanded = overlayPhase !== "idle" || isHoveredRef.current;
 
@@ -121,6 +126,7 @@ export const WaveformSection = () => {
 
       <Box
         data-overlay-interactive
+        onClick={handleClickDictate}
         sx={{
           width: isExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH,
           height: isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,

@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
+import { ActivationController } from "../../utils/activation-controller";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -105,6 +106,29 @@ export const RootSideEffects = () => {
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
   const intl = useIntl();
+
+  const startDictationRef = useRef<() => void>(() => {});
+  const stopDictationRef = useRef<() => void>(() => {});
+  const startAgentRef = useRef<() => void>(() => {});
+  const stopAgentRef = useRef<() => void>(() => {});
+
+  const dictationController = useMemo(
+    () =>
+      new ActivationController(
+        () => startDictationRef.current(),
+        () => stopDictationRef.current(),
+      ),
+    [],
+  );
+
+  const agentController = useMemo(
+    () =>
+      new ActivationController(
+        () => startAgentRef.current(),
+        () => stopAgentRef.current(),
+      ),
+    [],
+  );
 
   const strategyContext: StrategyContext = useMemo(
     () => ({
@@ -420,16 +444,26 @@ export const RootSideEffects = () => {
     await stopRecording();
   }, [stopRecording]);
 
+  useEffect(() => {
+    startDictationRef.current = startDictationRecording;
+    stopDictationRef.current = stopDictationRecording;
+    startAgentRef.current = startAgentRecording;
+    stopAgentRef.current = stopAgentRecording;
+  }, [
+    startDictationRecording,
+    stopDictationRecording,
+    startAgentRecording,
+    stopAgentRecording,
+  ]);
+
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    onActivate: startDictationRecording,
-    onDeactivate: stopDictationRecording,
+    controller: dictationController,
   });
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
-    onActivate: startAgentRecording,
-    onDeactivate: stopAgentRecording,
+    controller: agentController,
   });
 
   const languageSwitchEnabled = useAppStore(
@@ -507,6 +541,10 @@ export const RootSideEffects = () => {
     produceAppState((draft) => {
       draft.activeRecordingMode = null;
     });
+  });
+
+  useTauriListen<void>("onClickDictate", () => {
+    dictationController.toggle();
   });
 
   const trayLanguageCode = useAppStore((state) => {
