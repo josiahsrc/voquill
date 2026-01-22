@@ -108,16 +108,16 @@ export const RootSideEffects = () => {
   );
   const intl = useIntl();
 
-  const startDictationRef = useRef<() => void>(() => {});
-  const stopDictationRef = useRef<() => void>(() => {});
-  const startAgentRef = useRef<() => void>(() => {});
-  const stopAgentRef = useRef<() => void>(() => {});
+  const startDictationRef = useRef<(() => void) | null>(null);
+  const stopDictationRef = useRef<(() => void) | null>(null);
+  const startAgentRef = useRef<(() => void) | null>(null);
+  const stopAgentRef = useRef<(() => void) | null>(null);
 
   const dictationController = useMemo(
     () =>
       new ActivationController(
-        () => startDictationRef.current(),
-        () => stopDictationRef.current(),
+        () => startDictationRef.current?.(),
+        () => stopDictationRef.current?.(),
       ),
     [],
   );
@@ -125,8 +125,8 @@ export const RootSideEffects = () => {
   const agentController = useMemo(
     () =>
       new ActivationController(
-        () => startAgentRef.current(),
-        () => stopAgentRef.current(),
+        () => startAgentRef.current?.(),
+        () => stopAgentRef.current?.(),
       ),
     [],
   );
@@ -446,17 +446,10 @@ export const RootSideEffects = () => {
     await stopRecording();
   }, [stopRecording]);
 
-  useEffect(() => {
-    startDictationRef.current = startDictationRecording;
-    stopDictationRef.current = stopDictationRecording;
-    startAgentRef.current = startAgentRecording;
-    stopAgentRef.current = stopAgentRecording;
-  }, [
-    startDictationRecording,
-    stopDictationRecording,
-    startAgentRecording,
-    stopAgentRecording,
-  ]);
+  startDictationRef.current = startDictationRecording;
+  stopDictationRef.current = stopDictationRecording;
+  startAgentRef.current = startAgentRecording;
+  stopAgentRef.current = stopAgentRecording;
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
