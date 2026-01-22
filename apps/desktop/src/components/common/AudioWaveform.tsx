@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
+import { useEffect, useRef } from "react";
 
 const TAU = Math.PI * 2;
 const LEVEL_SMOOTHING = 0.18;
@@ -13,6 +13,7 @@ const MAX_AMPLITUDE = 1.3;
 const PROCESSING_BASE_LEVEL = 0.16;
 const DEFAULT_WIDTH = 120;
 const DEFAULT_HEIGHT = 36;
+const BASELINE_OFFSET = 3;
 
 type WaveConfig = {
   frequency: number;
@@ -93,7 +94,7 @@ export const AudioWaveform = ({
   waveRefs.current.length = WAVE_CONFIG.length;
 
   useEffect(() => {
-    const baseline = height / 2;
+    const baseline = height / 2 + BASELINE_OFFSET;
     const defaultPath = `M 0 ${baseline} L ${width} ${baseline}`;
     waveRefs.current.forEach((path, index) => {
       if (!path) {
@@ -144,7 +145,7 @@ export const AudioWaveform = ({
       state.currentLevel = 0;
       state.phase = 0;
 
-      const baseline = height / 2;
+      const baseline = height / 2 + BASELINE_OFFSET;
       const defaultPath = `M 0 ${baseline} L ${width} ${baseline}`;
 
       waveRefs.current.forEach((path, index) => {
@@ -188,7 +189,7 @@ export const AudioWaveform = ({
       const advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * level;
       state.phase = (state.phase + advance) % TAU;
 
-      const baseline = height / 2;
+      const baseline = height / 2 + BASELINE_OFFSET;
       const waveHeight = height;
       const waveWidth = width;
 
@@ -249,8 +250,8 @@ export const AudioWaveform = ({
       }}
     >
       <svg
-        width="100%"
-        height="100%"
+        width={width}
+        height={height}
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
         aria-hidden="true"
