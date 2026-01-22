@@ -109,9 +109,9 @@ export const transcribeAudio = async ({
   // Force a default language if empty to avoid incorrect auto-detection by Whisper
   if (!whisperLanguage || whisperLanguage.trim() === "") {
     console.warn(
-      `[Transcription] Empty language detected, forcing French by default`,
+      `[Transcription] Empty language detected, forcing English by default`,
     );
-    whisperLanguage = "fr";
+    whisperLanguage = "en";
   }
 
   console.log(`[Transcription] Dictation language: ${dictationLanguage}`);
