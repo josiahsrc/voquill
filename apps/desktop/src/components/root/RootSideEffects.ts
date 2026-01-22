@@ -46,7 +46,10 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
-import { ActivationController } from "../../utils/activation-controller";
+import {
+  debouncedToggle,
+  getOrCreateController,
+} from "../../utils/activation.utils";
 import {
   trackAgentStart,
   trackAppUsed,
@@ -115,7 +118,8 @@ export const RootSideEffects = () => {
 
   const dictationController = useMemo(
     () =>
-      new ActivationController(
+      getOrCreateController(
+        "dictation",
         () => startDictationRef.current?.(),
         () => stopDictationRef.current?.(),
       ),
@@ -124,7 +128,8 @@ export const RootSideEffects = () => {
 
   const agentController = useMemo(
     () =>
-      new ActivationController(
+      getOrCreateController(
+        "agent",
         () => startAgentRef.current?.(),
         () => stopAgentRef.current?.(),
       ),
@@ -539,7 +544,7 @@ export const RootSideEffects = () => {
   });
 
   useTauriListen<void>("on-click-dictate", () => {
-    dictationController.toggle();
+    debouncedToggle("dictation", dictationController);
   });
 
   const trayLanguageCode = useAppStore((state) => {
