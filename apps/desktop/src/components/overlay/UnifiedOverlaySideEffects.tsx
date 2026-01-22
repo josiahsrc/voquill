@@ -16,7 +16,10 @@ import type {
   OverlaySyncPayload,
 } from "../../types/overlay.types";
 import type { Toast } from "../../types/toast.types";
-import { getPlatform } from "../../utils/platform.utils";
+import {
+  cursorToViewportPosition,
+  getPlatform,
+} from "../../utils/platform.utils";
 
 type OverlayPhasePayload = {
   phase: OverlayPhase;
@@ -102,13 +105,13 @@ export const UnifiedOverlaySideEffects = () => {
 
     if (targetMonitor) {
       produceAppState((draft) => {
-        draft.overlayCursor = {
-          x: Math.round(targetMonitor.cursorX - targetMonitor.visibleX),
-          y: Math.round(
-            targetMonitor.visibleHeight -
-              (targetMonitor.cursorY - targetMonitor.visibleY),
-          ),
-        };
+        draft.overlayCursor = cursorToViewportPosition({
+          cursorX: targetMonitor.cursorX,
+          cursorY: targetMonitor.cursorY,
+          visibleX: targetMonitor.visibleX,
+          visibleY: targetMonitor.visibleY,
+          visibleHeight: targetMonitor.visibleHeight,
+        });
       });
     }
 

@@ -8,7 +8,10 @@ import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
-import { getPlatform } from "../../utils/platform.utils";
+import {
+  getOverlayBottomOffset,
+  getOverlayBottomOffsetPx,
+} from "../../utils/platform.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
@@ -41,7 +44,7 @@ export const WaveformSection = () => {
     if (!cursor) return false;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const bottomOffset = getPlatform() === "macos" ? 12 : screenHeight * 0.05;
+    const bottomOffset = getOverlayBottomOffsetPx();
     const waveformCenterX = screenWidth / 2;
     const waveformCenterY = screenHeight - bottomOffset - height / 2;
     const dx = Math.abs(cursor.x - waveformCenterX);
@@ -75,7 +78,7 @@ export const WaveformSection = () => {
     <Box
       sx={{
         position: "absolute",
-        bottom: getPlatform() === "macos" ? "12px" : "5%",
+        bottom: getOverlayBottomOffset(),
         left: "50%",
         transform: isVisible ? "translateX(-50%)" : "translateX(-50%) translateY(8px)",
         opacity: isVisible ? 1 : 0,
