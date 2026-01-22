@@ -248,6 +248,11 @@ pub struct ScreenVisibleArea {
 }
 
 #[tauri::command]
+pub fn get_monitor_at_cursor() -> Option<crate::domain::MonitorAtCursor> {
+    crate::platform::monitor::get_monitor_at_cursor()
+}
+
+#[tauri::command]
 pub fn get_screen_visible_area() -> ScreenVisibleArea {
     #[cfg(target_os = "macos")]
     {

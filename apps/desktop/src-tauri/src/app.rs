@@ -147,6 +147,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::list_microphones,
             crate::commands::list_gpus,
             crate::commands::get_screen_visible_area,
+            crate::commands::get_monitor_at_cursor,
             crate::commands::check_microphone_permission,
             crate::commands::request_microphone_permission,
             crate::commands::check_accessibility_permission,
