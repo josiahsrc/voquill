@@ -11,7 +11,6 @@ import {
 } from "@tauri-apps/api/window";
 import { useEffect, useMemo } from "react";
 import { useOverlayClickThrough } from "../../hooks/overlay.hooks";
-import { useAppStore } from "../../store";
 import { getPlatform } from "../../utils/platform.utils";
 import { AgentSection } from "./AgentSection";
 import { ToastSection } from "./ToastSection";
@@ -24,36 +23,6 @@ interface ScreenVisibleArea {
   leftInset: number;
   rightInset: number;
 }
-
-// DEBUG: Remove later
-const CursorDebug = () => {
-  const cursor = useAppStore((state) => state.overlayCursor);
-  const element = cursor ? document.elementFromPoint(cursor.x, cursor.y) : null;
-  const isInteractive = element?.closest("[data-overlay-interactive]") !== null;
-
-  return (
-    <Box
-      sx={{
-        position: "absolute",
-        bottom: 80,
-        left: "50%",
-        transform: "translateX(-50%)",
-        backgroundColor: "rgba(0,0,0,0.9)",
-        color: "white",
-        padding: "8px 12px",
-        borderRadius: 1,
-        fontSize: 11,
-        fontFamily: "monospace",
-        pointerEvents: "none",
-        whiteSpace: "pre",
-      }}
-    >
-      {cursor
-        ? `pos: ${cursor.x}, ${cursor.y}\nel: ${element?.tagName || "null"}\ninteractive: ${isInteractive}`
-        : "loading..."}
-    </Box>
-  );
-};
 
 export const UnifiedOverlayRoot = () => {
   const windowRef = useMemo(() => getCurrentWindow(), []);
@@ -126,17 +95,11 @@ export const UnifiedOverlayRoot = () => {
             );
           } else {
             const logicalWidth =
-              targetMonitor.size.width / scaleFactor -
-              leftInset -
-              rightInset;
+              targetMonitor.size.width / scaleFactor - leftInset - rightInset;
             const logicalHeight =
-              targetMonitor.size.height / scaleFactor -
-              topInset -
-              bottomInset;
-            const logicalX =
-              targetMonitor.position.x / scaleFactor + leftInset;
-            const logicalY =
-              targetMonitor.position.y / scaleFactor + topInset;
+              targetMonitor.size.height / scaleFactor - topInset - bottomInset;
+            const logicalX = targetMonitor.position.x / scaleFactor + leftInset;
+            const logicalY = targetMonitor.position.y / scaleFactor + topInset;
 
             await windowRef.setSize(
               new LogicalSize(logicalWidth, logicalHeight),
@@ -159,7 +122,7 @@ export const UnifiedOverlayRoot = () => {
       }
     };
 
-    syncVisibility().catch(() => { });
+    syncVisibility().catch(() => {});
 
     return () => {
       canceled = true;
@@ -180,7 +143,6 @@ export const UnifiedOverlayRoot = () => {
           pointerEvents: "none",
         }}
       >
-        <CursorDebug />
         <WaveformSection />
         <ToastSection />
         <AgentSection />
