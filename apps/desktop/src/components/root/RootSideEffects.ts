@@ -266,6 +266,7 @@ export const RootSideEffects = () => {
 
         await strategy.onBeforeStart();
 
+        console.log("[startRecording] starting recording with mic:", preferredMicrophone);
         const [, startRecordingResult] = await Promise.all([
           strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
