@@ -13,7 +13,6 @@ const MAX_AMPLITUDE = 1.3;
 const PROCESSING_BASE_LEVEL = 0.16;
 const DEFAULT_WIDTH = 120;
 const DEFAULT_HEIGHT = 36;
-const BASELINE_OFFSET = 3;
 
 type WaveConfig = {
   frequency: number;
@@ -65,6 +64,7 @@ export type AudioWaveformProps = {
   strokeWidth?: number;
   className?: string;
   style?: CSSProperties;
+  baselineOffset?: number;
 };
 
 export const AudioWaveform = ({
@@ -77,6 +77,7 @@ export const AudioWaveform = ({
   strokeWidth = 1.6,
   className,
   style,
+  baselineOffset = 0,
 }: AudioWaveformProps) => {
   const theme = useTheme();
   const resolvedColor = strokeColor ?? theme.vars?.palette.primary.main;
@@ -94,7 +95,7 @@ export const AudioWaveform = ({
   waveRefs.current.length = WAVE_CONFIG.length;
 
   useEffect(() => {
-    const baseline = height / 2 + BASELINE_OFFSET;
+    const baseline = height / 2 + baselineOffset;
     const defaultPath = `M 0 ${baseline} L ${width} ${baseline}`;
     waveRefs.current.forEach((path, index) => {
       if (!path) {
@@ -145,7 +146,7 @@ export const AudioWaveform = ({
       state.currentLevel = 0;
       state.phase = 0;
 
-      const baseline = height / 2 + BASELINE_OFFSET;
+      const baseline = height / 2 + baselineOffset;
       const defaultPath = `M 0 ${baseline} L ${width} ${baseline}`;
 
       waveRefs.current.forEach((path, index) => {
@@ -189,7 +190,7 @@ export const AudioWaveform = ({
       const advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * level;
       state.phase = (state.phase + advance) % TAU;
 
-      const baseline = height / 2 + BASELINE_OFFSET;
+      const baseline = height / 2 + baselineOffset;
       const waveHeight = height;
       const waveWidth = width;
 
@@ -250,8 +251,8 @@ export const AudioWaveform = ({
       }}
     >
       <svg
-        width={width}
-        height={height}
+        width="100%"
+        height="100%"
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
         aria-hidden="true"

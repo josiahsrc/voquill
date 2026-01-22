@@ -82,6 +82,7 @@ export const RecordingStatusWidget = () => {
             strokeColor={theme.palette.common.white}
             width={120}
             height={36}
+            baselineOffset={3}
           />
         </Box>
         <Box
