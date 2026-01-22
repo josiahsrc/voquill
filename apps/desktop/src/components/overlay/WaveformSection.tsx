@@ -9,7 +9,10 @@ import {
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
 import { getPlatform } from "../../utils/platform.utils";
-import { getEffectivePillVisibility } from "../../utils/user.utils";
+import {
+  getEffectivePillVisibility,
+  getIsDictationUnlocked,
+} from "../../utils/user.utils";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
 
@@ -30,6 +33,7 @@ export const WaveformSection = () => {
   const dictationPillVisibility = useAppStore((state) =>
     getEffectivePillVisibility(state.userPrefs?.dictationPillVisibility),
   );
+  const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
   const isHoveredRef = useRef(false);
   const hotkeyKeys = combos.length > 0 ? combos[0] : ["?"];
 
@@ -61,6 +65,7 @@ export const WaveformSection = () => {
 
   const isOverlayActive = overlayPhase !== "idle";
   const isVisible =
+    isDictationUnlocked &&
     dictationPillVisibility !== "hidden" &&
     (isOverlayActive || dictationPillVisibility !== "while_active");
 

@@ -1,32 +1,61 @@
 import { emitTo } from "@tauri-apps/api/event";
 import { isEqual } from "lodash-es";
 import { useEffect, useRef } from "react";
+import type { AppState } from "../../state/app.state";
 import { useAppStore } from "../../store";
 import type { OverlaySyncPayload } from "../../types/overlay.types";
 
-export const OverlaySyncSideEffects = () => {
-  const overlaySyncPayload = useAppStore(
-    (state): OverlaySyncPayload => ({
-      hotkeyById: state.hotkeyById,
-      agent: state.agent,
-      userPrefs: state.userPrefs,
-    }),
-  );
-
-  const prevSyncPayloadRef = useRef<OverlaySyncPayload | null>(null);
+const useOverlaySync = <T>(
+  selector: (state: AppState) => T,
+  toPayload: (value: T) => OverlaySyncPayload,
+) => {
+  const value = useAppStore(selector);
+  const prevRef = useRef<T | null>(null);
+  const toPayloadRef = useRef(toPayload);
+  toPayloadRef.current = toPayload;
 
   useEffect(() => {
-    if (
-      prevSyncPayloadRef.current !== null &&
-      isEqual(prevSyncPayloadRef.current, overlaySyncPayload)
-    ) {
+    if (prevRef.current !== null && isEqual(prevRef.current, value)) {
       return;
     }
-    prevSyncPayloadRef.current = overlaySyncPayload;
-    emitTo("unified-overlay", "overlay_sync", overlaySyncPayload).catch(
-      console.error,
-    );
-  }, [overlaySyncPayload]);
+    prevRef.current = value;
+    emitTo(
+      "unified-overlay",
+      "overlay_sync",
+      toPayloadRef.current(value),
+    ).catch(console.error);
+  }, [value]);
+};
+
+export const OverlaySyncSideEffects = () => {
+  useOverlaySync(
+    (s) => s.hotkeyById,
+    (hotkeyById) => ({ hotkeyById }),
+  );
+  useOverlaySync(
+    (s) => s.agent,
+    (agent) => ({ agent }),
+  );
+  useOverlaySync(
+    (s) => s.userPrefs,
+    (userPrefs) => ({ userPrefs }),
+  );
+  useOverlaySync(
+    (s) => s.userById,
+    (userById) => ({ userById }),
+  );
+  useOverlaySync(
+    (s) => s.auth,
+    (auth) => ({ auth }),
+  );
+  useOverlaySync(
+    (s) => s.memberById,
+    (memberById) => ({ memberById }),
+  );
+  useOverlaySync(
+    (s) => s.onboarding,
+    (onboarding) => ({ onboarding }),
+  );
 
   return null;
 };
