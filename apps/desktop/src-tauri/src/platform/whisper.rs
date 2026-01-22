@@ -388,9 +388,11 @@ impl Transcriber for WhisperTranscriber {
             .filter(|value| !value.is_empty());
 
         // If no language specified, don't call set_language - Whisper will auto-detect
-        eprintln!("[whisper] using language code: {:?}", language_code);
         if let Some(language) = language_code {
+            eprintln!("[whisper] Forcing language: {}", language);
             params.set_language(Some(language));
+        } else {
+            eprintln!("[whisper] WARNING: No language specified, using auto-detection (may produce incorrect results)");
         }
 
         params.set_translate(false);

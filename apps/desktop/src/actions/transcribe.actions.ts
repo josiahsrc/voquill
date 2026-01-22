@@ -104,7 +104,18 @@ export const transcribeAudio = async ({
   warnings.push(...transcribeWarnings);
 
   const dictationLanguage = getMyDictationLanguage(state);
-  const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
+  let whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
+
+  // Forcer une langue par défaut si vide pour éviter l'auto-détection incorrecte par Whisper
+  if (!whisperLanguage || whisperLanguage.trim() === "") {
+    console.warn(
+      `[Transcription] Langue vide détectée, forçage du français par défaut`,
+    );
+    whisperLanguage = "fr";
+  }
+
+  console.log(`[Transcription] Langue de dictée: ${dictationLanguage}`);
+  console.log(`[Transcription] Langue Whisper utilisée: ${whisperLanguage}`);
 
   const dictionaryEntries = collectDictionaryEntries(state);
   const baseTranscriptionPrompt =
