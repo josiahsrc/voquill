@@ -3,7 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
-import { ActivationController } from "../../utils/activation-controller";
 import { loadApiKeys } from "../../actions/api-key.actions";
 import {
   loadAppTargets,
@@ -47,8 +46,10 @@ import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
+import { ActivationController } from "../../utils/activation-controller";
 import {
   trackAgentStart,
+  trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
@@ -367,6 +368,7 @@ export const RootSideEffects = () => {
         ]);
         const toneId = currentApp?.toneId ?? null;
         const rawTranscript = transcribeResult.rawTranscript;
+        trackAppUsed(currentApp?.name ?? "Unknown");
 
         if (rawTranscript) {
           const { shouldContinue } = await strategy.handleTranscript({

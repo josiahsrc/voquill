@@ -1,3 +1,4 @@
+import type { SelectChangeEvent } from "@mui/material";
 import {
   Button,
   Dialog,
@@ -9,7 +10,6 @@ import {
   Stack,
   Switch,
 } from "@mui/material";
-import type { SelectChangeEvent } from "@mui/material";
 import type { DictationPillVisibility } from "@repo/types";
 import { ChangeEvent } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -20,7 +20,10 @@ import {
   setIncognitoModeIncludeInStats,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
-import { getMyUserPreferences } from "../../utils/user.utils";
+import {
+  getEffectivePillVisibility,
+  getMyUserPreferences,
+} from "../../utils/user.utils";
 import { SettingSection } from "../common/SettingSection";
 
 export const MoreSettingsDialog = () => {
@@ -38,7 +41,7 @@ export const MoreSettingsDialog = () => {
       prefs?.ignoreUpdateDialog ?? false,
       prefs?.incognitoModeEnabled ?? false,
       prefs?.incognitoModeIncludeInStats ?? false,
-      prefs?.dictationPillVisibility ?? "while_active",
+      getEffectivePillVisibility(prefs?.dictationPillVisibility),
     ] as const;
   });
 

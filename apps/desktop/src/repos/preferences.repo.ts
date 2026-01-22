@@ -7,7 +7,7 @@ import {
   UserPreferences,
 } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { LOCAL_USER_ID } from "../utils/user.utils";
+import { getEffectivePillVisibility, LOCAL_USER_ID } from "../utils/user.utils";
 import { BaseRepo } from "./base.repo";
 
 type LocalUserPreferences = {
@@ -80,8 +80,9 @@ const fromLocalPreferences = (
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
   incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
   incognitoModeIncludeInStats: preferences.incognitoModeIncludeInStats ?? false,
-  dictationPillVisibility:
-    preferences.dictationPillVisibility ?? "while_active",
+  dictationPillVisibility: getEffectivePillVisibility(
+    preferences.dictationPillVisibility,
+  ),
 });
 
 const toLocalPreferences = (
@@ -110,8 +111,9 @@ const toLocalPreferences = (
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
   incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
   incognitoModeIncludeInStats: preferences.incognitoModeIncludeInStats ?? false,
-  dictationPillVisibility:
-    preferences.dictationPillVisibility ?? "while_active",
+  dictationPillVisibility: getEffectivePillVisibility(
+    preferences.dictationPillVisibility,
+  ),
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

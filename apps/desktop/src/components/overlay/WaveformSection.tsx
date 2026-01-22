@@ -9,6 +9,7 @@ import {
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
 import { getPlatform } from "../../utils/platform.utils";
+import { getEffectivePillVisibility } from "../../utils/user.utils";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 import { RecordingStatusWidget } from "./RecordingStatusWidget";
 
@@ -26,8 +27,8 @@ export const WaveformSection = () => {
   const combos = useAppStore((state) =>
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );
-  const dictationPillVisibility = useAppStore(
-    (state) => state.userPrefs?.dictationPillVisibility ?? "while_active",
+  const dictationPillVisibility = useAppStore((state) =>
+    getEffectivePillVisibility(state.userPrefs?.dictationPillVisibility),
   );
   const isHoveredRef = useRef(false);
   const hotkeyKeys = combos.length > 0 ? combos[0] : ["?"];
