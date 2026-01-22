@@ -716,7 +716,7 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn start_recording(
+pub async fn start_recording(
     app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
     args: Option<StartRecordingArgs>,
@@ -741,19 +741,30 @@ pub fn start_recording(
         }
     });
 
-    match recorder.start(Some(level_emitter), Some(chunk_emitter)) {
+    let recorder_clone = Arc::clone(&recorder);
+    let start_result = tauri::async_runtime::spawn_blocking(move || {
+        match recorder_clone.start(Some(level_emitter), Some(chunk_emitter)) {
+            Ok(()) => Ok(()),
+            Err(err) => {
+                let already_recording = (&*err)
+                    .downcast_ref::<crate::errors::RecordingError>()
+                    .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
+                    .unwrap_or(false);
+                Err((err.to_string(), already_recording))
+            }
+        }
+    })
+    .await
+    .map_err(|err| format!("Recording task panicked: {err}"))?;
+
+    match start_result {
         Ok(()) => {
             let reported_sample_rate = recorder.current_sample_rate().unwrap_or(16_000);
             Ok(StartRecordingResponse {
                 sample_rate: reported_sample_rate,
             })
         }
-        Err(err) => {
-            let already_recording = (&*err)
-                .downcast_ref::<crate::errors::RecordingError>()
-                .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
-                .unwrap_or(false);
-
+        Err((message, already_recording)) => {
             if already_recording {
                 let reported_sample_rate = recorder.current_sample_rate().unwrap_or(16_000);
                 return Ok(StartRecordingResponse {
@@ -761,7 +772,6 @@ pub fn start_recording(
                 });
             }
 
-            let message = err.to_string();
             eprintln!("Failed to start recording via command: {message}");
             Err(message)
         }
