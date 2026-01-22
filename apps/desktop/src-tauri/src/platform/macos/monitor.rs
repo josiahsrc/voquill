@@ -4,6 +4,28 @@ use cocoa::base::nil;
 use cocoa::foundation::NSArray;
 use objc::{msg_send, sel, sel_impl};
 
+const DEFAULT_BOTTOM_OFFSET: f64 = 12.0;
+const DOCK_PADDING: f64 = 8.0;
+
+pub fn get_bottom_offset() -> f64 {
+    unsafe {
+        let screen = NSScreen::mainScreen(nil);
+        if screen == nil {
+            return DEFAULT_BOTTOM_OFFSET;
+        }
+
+        let frame = NSScreen::frame(screen);
+        let visible = NSScreen::visibleFrame(screen);
+        let bottom_inset = visible.origin.y - frame.origin.y;
+
+        if bottom_inset > 1.0 {
+            bottom_inset + DOCK_PADDING
+        } else {
+            DEFAULT_BOTTOM_OFFSET
+        }
+    }
+}
+
 pub fn get_monitor_at_cursor() -> Option<MonitorAtCursor> {
     unsafe {
         let mouse_loc = NSEvent::mouseLocation(nil);

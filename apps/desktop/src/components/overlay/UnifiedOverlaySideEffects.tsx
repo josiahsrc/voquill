@@ -47,9 +47,14 @@ interface MonitorAtCursor {
   cursorY: number;
 }
 
+interface OverlayBottomOffset {
+  offsetPx: number;
+}
+
 const DEFAULT_TOAST_DURATION_MS = 3000;
 const CURSOR_POLL_MS = 100;
 const SWITCH_DEBOUNCE_MS = 200;
+const BOTTOM_OFFSET_POLL_MS = 500;
 
 function getMonitorId(monitor: MonitorAtCursor): string {
   return `${monitor.x},${monitor.y}`;
@@ -143,6 +148,20 @@ export const UnifiedOverlaySideEffects = () => {
       isRepositioningRef.current = false;
     }
   }, [windowRef]);
+
+  useIntervalAsync(BOTTOM_OFFSET_POLL_MS, async () => {
+    const result = await invoke<OverlayBottomOffset>("get_bottom_offset").catch(
+      () => null,
+    );
+
+    if (result !== null) {
+      produceAppState((draft) => {
+        if (draft.overlayBottomOffsetPx !== result.offsetPx) {
+          draft.overlayBottomOffsetPx = result.offsetPx;
+        }
+      });
+    }
+  }, []);
 
   useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
     produceAppState((draft) => {

@@ -247,9 +247,22 @@ pub struct ScreenVisibleArea {
     pub right_inset: f64,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayBottomOffset {
+    pub offset_px: f64,
+}
+
 #[tauri::command]
 pub fn get_monitor_at_cursor() -> Option<crate::domain::MonitorAtCursor> {
     crate::platform::monitor::get_monitor_at_cursor()
+}
+
+#[tauri::command]
+pub fn get_bottom_offset() -> OverlayBottomOffset {
+    OverlayBottomOffset {
+        offset_px: crate::platform::monitor::get_bottom_offset(),
+    }
 }
 
 #[tauri::command]

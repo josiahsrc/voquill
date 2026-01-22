@@ -9,10 +9,6 @@ import {
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
 import {
-  getOverlayBottomOffset,
-  getOverlayBottomOffsetPx,
-} from "../../utils/platform.utils";
-import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
 } from "../../utils/user.utils";
@@ -30,6 +26,7 @@ export const WaveformSection = () => {
   const theme = useTheme();
   const overlayPhase = useAppStore((state) => state.overlayPhase);
   const cursor = useAppStore((state) => state.overlayCursor);
+  const bottomOffsetPx = useAppStore((state) => state.overlayBottomOffsetPx);
   const combos = useAppStore((state) =>
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );
@@ -44,9 +41,8 @@ export const WaveformSection = () => {
     if (!cursor) return false;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const bottomOffset = getOverlayBottomOffsetPx();
     const waveformCenterX = screenWidth / 2;
-    const waveformCenterY = screenHeight - bottomOffset - height / 2;
+    const waveformCenterY = screenHeight - bottomOffsetPx - height / 2;
     const dx = Math.abs(cursor.x - waveformCenterX);
     const dy = Math.abs(cursor.y - waveformCenterY);
     return dx <= width / 2 + HOVER_PADDING && dy <= height / 2 + HOVER_PADDING;
@@ -78,13 +74,13 @@ export const WaveformSection = () => {
     <Box
       sx={{
         position: "absolute",
-        bottom: getOverlayBottomOffset(),
+        bottom: `${bottomOffsetPx}px`,
         left: "50%",
         transform: isVisible ? "translateX(-50%)" : "translateX(-50%) translateY(8px)",
         opacity: isVisible ? 1 : 0,
         transition: isVisible
-          ? "opacity 100ms ease-out, transform 100ms ease-out, visibility 0ms"
-          : "opacity 100ms ease-out, transform 100ms ease-out, visibility 0ms 100ms",
+          ? "opacity 100ms ease-out, transform 100ms ease-out, bottom 200ms ease-out, visibility 0ms"
+          : "opacity 100ms ease-out, transform 100ms ease-out, bottom 200ms ease-out, visibility 0ms 100ms",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

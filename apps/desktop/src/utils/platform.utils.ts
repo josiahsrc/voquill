@@ -55,20 +55,3 @@ export const cursorToViewportPosition = (
   }
 };
 
-export const getOverlayBottomOffsetPx = (): number => {
-  const plt = getPlatform();
-  switch (plt) {
-    case "macos":
-      return 12;
-    case "windows":
-      return 48;
-    case "linux":
-      return 48;
-    default:
-      return 48;
-  }
-};
-
-export const getOverlayBottomOffset = (): string => {
-  return `${getOverlayBottomOffsetPx()}px`;
-};
