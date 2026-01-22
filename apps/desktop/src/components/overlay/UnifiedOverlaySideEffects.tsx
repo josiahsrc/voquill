@@ -71,6 +71,7 @@ async function repositionOverlay(
         monitor.y * monitor.scaleFactor,
       ),
     );
+    // await invoke("show_overlay_no_focus");
   } else {
     await windowRef.setSize(
       new LogicalSize(monitor.visibleWidth, monitor.visibleHeight),
@@ -94,6 +95,7 @@ export const UnifiedOverlaySideEffects = () => {
   useIntervalAsync(CURSOR_POLL_MS, async () => {
     if (isRepositioningRef.current) return;
 
+    const platform = getPlatform();
     const targetMonitor = await invoke<MonitorAtCursor | null>(
       "get_monitor_at_cursor",
     ).catch(() => null);
@@ -108,6 +110,10 @@ export const UnifiedOverlaySideEffects = () => {
           ),
         };
       });
+    }
+
+    if (platform === "windows") {
+      await invoke("show_overlay_no_focus").catch(() => {});
     }
 
     if (!targetMonitor) return;
