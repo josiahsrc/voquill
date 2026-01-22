@@ -59,14 +59,10 @@ export const WaveformSection = () => {
     emitTo("main", "on-click-dictate", {}).catch(console.error);
   };
 
-  if (dictationPillVisibility === "hidden") {
-    return null;
-  }
-
   const isOverlayActive = overlayPhase !== "idle";
-  if (!isOverlayActive && dictationPillVisibility === "while_active") {
-    return null;
-  }
+  const isVisible =
+    dictationPillVisibility !== "hidden" &&
+    (isOverlayActive || dictationPillVisibility !== "while_active");
 
   const isExpanded = isOverlayActive || isHoveredRef.current;
 
@@ -76,12 +72,17 @@ export const WaveformSection = () => {
         position: "absolute",
         bottom: getPlatform() === "macos" ? "12px" : "5%",
         left: "50%",
-        transform: "translateX(-50%)",
+        transform: isVisible ? "translateX(-50%)" : "translateX(-50%) translateY(8px)",
+        opacity: isVisible ? 1 : 0,
+        transition: isVisible
+          ? "opacity 100ms ease-out, transform 100ms ease-out, visibility 0ms"
+          : "opacity 100ms ease-out, transform 100ms ease-out, visibility 0ms 100ms",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "flex-end",
         pointerEvents: "none",
+        visibility: isVisible ? "visible" : "hidden",
       }}
     >
       {/* Tooltip */}
