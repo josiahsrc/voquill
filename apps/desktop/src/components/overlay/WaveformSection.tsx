@@ -26,6 +26,9 @@ export const WaveformSection = () => {
   const combos = useAppStore((state) =>
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );
+  const dictationPillVisibility = useAppStore(
+    (state) => state.userPrefs?.dictationPillVisibility ?? "while_active",
+  );
   const isHoveredRef = useRef(false);
   const hotkeyKeys = combos.length > 0 ? combos[0] : ["?"];
 
@@ -55,7 +58,16 @@ export const WaveformSection = () => {
     emitTo("main", "onClickDictate", {}).catch(console.error);
   };
 
-  const isExpanded = overlayPhase !== "idle" || isHoveredRef.current;
+  if (dictationPillVisibility === "hidden") {
+    return null;
+  }
+
+  const isOverlayActive = overlayPhase !== "idle";
+  if (!isOverlayActive && dictationPillVisibility === "while_active") {
+    return null;
+  }
+
+  const isExpanded = isOverlayActive || isHoveredRef.current;
 
   return (
     <Box

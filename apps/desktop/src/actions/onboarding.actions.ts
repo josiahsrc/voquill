@@ -176,6 +176,7 @@ export const submitOnboarding = async () => {
       ignoreUpdateDialog: false,
       incognitoModeEnabled: false,
       incognitoModeIncludeInStats: false,
+      dictationPillVisibility: "while_active",
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

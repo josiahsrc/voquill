@@ -25,3 +25,5 @@ export type TranscriptionMode = "local" | "api" | "cloud";
 export type PostProcessingMode = "none" | "api" | "cloud";
 
 export type AgentMode = "none" | "api" | "cloud";
+
+export type DictationPillVisibility = "hidden" | "while_active" | "persistent";

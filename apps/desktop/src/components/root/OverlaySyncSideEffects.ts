@@ -9,6 +9,7 @@ export const OverlaySyncSideEffects = () => {
     (state): OverlaySyncPayload => ({
       hotkeyById: state.hotkeyById,
       agent: state.agent,
+      userPrefs: state.userPrefs,
     }),
   );
 
