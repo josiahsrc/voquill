@@ -349,11 +349,7 @@ fn simple_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::We
 }
 
 fn start_cursor_follower(app: tauri::AppHandle) {
-    use std::sync::atomic::{AtomicU64, Ordering};
-    use std::sync::Arc;
     use std::time::Duration;
-
-    let last_state = Arc::new(AtomicU64::new(0));
 
     std::thread::spawn(move || {
         loop {
@@ -362,24 +358,6 @@ fn start_cursor_follower(app: tauri::AppHandle) {
             let Some(monitor) = crate::platform::monitor::get_monitor_at_cursor() else {
                 continue;
             };
-
-            let state_hash = {
-                let mut hasher = std::collections::hash_map::DefaultHasher::new();
-                std::hash::Hash::hash(&monitor.x.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.y.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.width.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.height.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.visible_x.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.visible_width.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.scale_factor.to_bits(), &mut hasher);
-                std::hash::Hasher::finish(&hasher)
-            };
-
-            let prev_state = last_state.load(Ordering::Relaxed);
-            if state_hash == prev_state {
-                continue;
-            }
-            last_state.store(state_hash, Ordering::Relaxed);
 
             let Some(window) = app.get_webview_window("simple-overlay") else {
                 continue;
@@ -408,6 +386,11 @@ fn start_cursor_follower(app: tauri::AppHandle) {
 
             let x = logical_visible_x + (logical_visible_width - width) / 2.0;
             let y = logical_height - height - bottom_margin;
+
+            eprintln!(
+                "[cursor_follower] scale={:.2} height={:.0} logical_height={:.0} y={:.0}",
+                monitor.scale_factor, monitor.height, logical_height, y
+            );
 
             let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(
                 x, y,
