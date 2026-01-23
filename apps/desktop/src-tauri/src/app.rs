@@ -353,7 +353,11 @@ fn start_cursor_follower(app: tauri::AppHandle) {
     use std::sync::Arc;
     use std::time::Duration;
 
-    let last_state = Arc::new(AtomicU64::new(0));
+    let last_x = Arc::new(AtomicU64::new(0));
+    let last_y = Arc::new(AtomicU64::new(0));
+    let last_width = Arc::new(AtomicU64::new(0));
+    let last_height = Arc::new(AtomicU64::new(0));
+    let last_scale = Arc::new(AtomicU64::new(0));
 
     std::thread::spawn(move || {
         loop {
@@ -363,23 +367,27 @@ fn start_cursor_follower(app: tauri::AppHandle) {
                 continue;
             };
 
-            let state_hash = {
-                let mut hasher = std::collections::hash_map::DefaultHasher::new();
-                std::hash::Hash::hash(&monitor.x.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.y.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.width.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.height.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.visible_x.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.visible_width.to_bits(), &mut hasher);
-                std::hash::Hash::hash(&monitor.scale_factor.to_bits(), &mut hasher);
-                std::hash::Hasher::finish(&hasher)
-            };
+            let x_bits = monitor.visible_x.to_bits();
+            let y_bits = monitor.y.to_bits();
+            let width_bits = monitor.visible_width.to_bits();
+            let height_bits = monitor.height.to_bits();
+            let scale_bits = monitor.scale_factor.to_bits();
 
-            let prev_state = last_state.load(Ordering::Relaxed);
-            if state_hash == prev_state {
+            let changed = x_bits != last_x.load(Ordering::Relaxed)
+                || y_bits != last_y.load(Ordering::Relaxed)
+                || width_bits != last_width.load(Ordering::Relaxed)
+                || height_bits != last_height.load(Ordering::Relaxed)
+                || scale_bits != last_scale.load(Ordering::Relaxed);
+
+            if !changed {
                 continue;
             }
-            last_state.store(state_hash, Ordering::Relaxed);
+
+            last_x.store(x_bits, Ordering::Relaxed);
+            last_y.store(y_bits, Ordering::Relaxed);
+            last_width.store(width_bits, Ordering::Relaxed);
+            last_height.store(height_bits, Ordering::Relaxed);
+            last_scale.store(scale_bits, Ordering::Relaxed);
 
             let Some(window) = app.get_webview_window("simple-overlay") else {
                 continue;
