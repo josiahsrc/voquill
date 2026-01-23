@@ -381,9 +381,17 @@ fn start_cursor_follower(app: tauri::AppHandle) {
                 continue;
             };
 
+            let scale = monitor.scale_factor;
             let width = 400.0;
-            let x = monitor.visible_x + (monitor.visible_width - width) / 2.0;
-            let y = monitor.height - 200.0 - 52.0;
+            let height = 200.0;
+            let bottom_margin = 52.0;
+
+            let logical_visible_x = monitor.visible_x / scale;
+            let logical_visible_width = monitor.visible_width / scale;
+            let logical_height = monitor.height / scale;
+
+            let x = logical_visible_x + (logical_visible_width - width) / 2.0;
+            let y = logical_height - height - bottom_margin;
 
             let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(
                 x, y,
