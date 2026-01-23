@@ -64,14 +64,14 @@ async function repositionOverlay(
   if (platform === "windows") {
     await windowRef.setSize(
       new PhysicalSize(
-        monitor.width * monitor.scaleFactor,
-        monitor.height * monitor.scaleFactor,
+        monitor.visibleWidth,
+        monitor.visibleHeight,
       ),
     );
     await windowRef.setPosition(
       new PhysicalPosition(
-        monitor.x * monitor.scaleFactor,
-        monitor.y * monitor.scaleFactor,
+        monitor.visibleX,
+        monitor.visibleY,
       ),
     );
   } else if (platform === "macos") {
@@ -107,11 +107,9 @@ export const UnifiedOverlaySideEffects = () => {
   useIntervalAsync(CURSOR_POLL_MS, async () => {
     if (isRepositioningRef.current) return;
 
-    const platform = getPlatform();
     const targetMonitor = await invoke<MonitorAtCursor | null>(
       "get_monitor_at_cursor",
     ).catch(() => null);
-
     if (targetMonitor) {
       produceAppState((draft) => {
         draft.overlayCursor = cursorToViewportPosition({
@@ -124,10 +122,6 @@ export const UnifiedOverlaySideEffects = () => {
       });
     }
 
-    if (platform === "windows") {
-      await invoke("show_overlay_no_focus").catch(() => {});
-    }
-
     if (!targetMonitor) return;
 
     const targetId = getMonitorKey(targetMonitor);
@@ -136,8 +130,6 @@ export const UnifiedOverlaySideEffects = () => {
       currentMonitorIdRef.current = targetId;
       return;
     }
-
-    if (targetId === currentMonitorIdRef.current) return;
 
     const now = Date.now();
     if (now - lastSwitchTimeRef.current < SWITCH_DEBOUNCE_MS) return;

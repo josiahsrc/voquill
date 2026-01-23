@@ -140,6 +140,7 @@ export const UnifiedOverlayRoot = () => {
           bottom: 0,
           backgroundColor: "transparent",
           pointerEvents: "none",
+          border: "10px solid red",
         }}
       >
         <WaveformSection />
