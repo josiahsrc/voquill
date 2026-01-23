@@ -1,10 +1,10 @@
 use crate::platform::macos::dock;
-use cocoa::appkit::{NSApp, NSApplication, NSWindow};
+use cocoa::appkit::{
+    NSApp, NSApplication, NSMainMenuWindowLevel, NSWindow, NSWindowCollectionBehavior,
+};
 use cocoa::base::{id, nil, NO as COCOA_NO, YES};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
-
-const NS_FLOATING_WINDOW_LEVEL: i64 = 3;
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
@@ -70,7 +70,11 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
 
                 unsafe {
                     let ns_window = ns_window_ptr as id;
-                    ns_window.setLevel_(NS_FLOATING_WINDOW_LEVEL);
+                    ns_window.setLevel_(i64::from(NSMainMenuWindowLevel) + 1);
+                    ns_window.setCollectionBehavior_(
+                        NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces
+                            | NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary,
+                    );
                     ns_window.orderFrontRegardless();
                 }
 
