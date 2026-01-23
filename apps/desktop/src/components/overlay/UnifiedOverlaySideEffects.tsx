@@ -1,10 +1,25 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { useEffect, useRef } from "react";
+import {
+  getCurrentWindow,
+  LogicalPosition,
+  LogicalSize,
+  PhysicalPosition,
+  PhysicalSize,
+} from "@tauri-apps/api/window";
+import { useEffect, useMemo, useRef } from "react";
+import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
-import type { AgentWindowState } from "../../types/agent-window.types";
-import type { OverlayPhase } from "../../types/overlay.types";
+import type {
+  OverlayPhase,
+  OverlaySyncPayload,
+} from "../../types/overlay.types";
 import type { Toast } from "../../types/toast.types";
+import {
+  cursorToViewportPosition,
+  getPlatform,
+} from "../../utils/platform.utils";
 
 type OverlayPhasePayload = {
   phase: OverlayPhase;
@@ -14,20 +29,129 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
-type AgentWindowStatePayload = {
-  state: AgentWindowState | null;
-};
-
 type ToastPayload = {
   toast: Toast;
 };
 
+interface MonitorAtCursor {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visibleX: number;
+  visibleY: number;
+  visibleWidth: number;
+  visibleHeight: number;
+  scaleFactor: number;
+  cursorX: number;
+  cursorY: number;
+}
+
 const DEFAULT_TOAST_DURATION_MS = 3000;
+const CURSOR_POLL_MS = 100;
+const SWITCH_DEBOUNCE_MS = 200;
+
+function getMonitorKey(monitor: MonitorAtCursor): string {
+  return `${monitor.x},${monitor.y},${monitor.visibleX},${monitor.visibleY},${monitor.visibleWidth},${monitor.visibleHeight}`;
+}
+
+async function repositionOverlay(
+  windowRef: ReturnType<typeof getCurrentWindow>,
+  monitor: MonitorAtCursor,
+): Promise<void> {
+  const platform = getPlatform();
+
+  if (platform === "windows") {
+    await windowRef.setSize(
+      new PhysicalSize(
+        monitor.width * monitor.scaleFactor,
+        monitor.height * monitor.scaleFactor,
+      ),
+    );
+    await windowRef.setPosition(
+      new PhysicalPosition(
+        monitor.x * monitor.scaleFactor,
+        monitor.y * monitor.scaleFactor,
+      ),
+    );
+  } else if (platform === "macos") {
+    await windowRef.setSize(
+      new LogicalSize(monitor.visibleWidth, monitor.visibleHeight),
+    );
+    // Convert from Cocoa's bottom-left origin to Tauri's top-left origin
+    // Cocoa: visibleY is distance from screen bottom to visible area bottom
+    // Tauri: y is distance from screen top to window top
+    const topY = monitor.height - monitor.visibleY - monitor.visibleHeight;
+    await windowRef.setPosition(new LogicalPosition(monitor.visibleX, topY));
+  } else {
+    // Linux: GTK already uses top-left origin, so visibleY is correct
+    await windowRef.setSize(
+      new LogicalSize(monitor.visibleWidth, monitor.visibleHeight),
+    );
+    await windowRef.setPosition(
+      new LogicalPosition(monitor.visibleX, monitor.visibleY),
+    );
+  }
+}
 
 export const UnifiedOverlaySideEffects = () => {
   const currentToast = useAppStore((state) => state.currentToast);
   const toastQueue = useAppStore((state) => state.toastQueue);
   const timerRef = useRef<number | null>(null);
+  const windowRef = useMemo(() => getCurrentWindow(), []);
+
+  const currentMonitorIdRef = useRef<string | null>(null);
+  const lastSwitchTimeRef = useRef(0);
+  const isRepositioningRef = useRef(false);
+
+  useIntervalAsync(CURSOR_POLL_MS, async () => {
+    if (isRepositioningRef.current) return;
+
+    const platform = getPlatform();
+    const targetMonitor = await invoke<MonitorAtCursor | null>(
+      "get_monitor_at_cursor",
+    ).catch(() => null);
+
+    if (targetMonitor) {
+      produceAppState((draft) => {
+        draft.overlayCursor = cursorToViewportPosition({
+          cursorX: targetMonitor.cursorX,
+          cursorY: targetMonitor.cursorY,
+          visibleX: targetMonitor.visibleX,
+          visibleY: targetMonitor.visibleY,
+          visibleHeight: targetMonitor.visibleHeight,
+        });
+      });
+    }
+
+    if (platform === "windows") {
+      await invoke("show_overlay_no_focus").catch(() => {});
+    }
+
+    if (!targetMonitor) return;
+
+    const targetId = getMonitorKey(targetMonitor);
+
+    if (currentMonitorIdRef.current === null) {
+      currentMonitorIdRef.current = targetId;
+      return;
+    }
+
+    if (targetId === currentMonitorIdRef.current) return;
+
+    const now = Date.now();
+    if (now - lastSwitchTimeRef.current < SWITCH_DEBOUNCE_MS) return;
+
+    isRepositioningRef.current = true;
+    lastSwitchTimeRef.current = now;
+
+    try {
+      await repositionOverlay(windowRef, targetMonitor);
+      currentMonitorIdRef.current = targetId;
+    } finally {
+      isRepositioningRef.current = false;
+    }
+  }, [windowRef]);
 
   useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
     produceAppState((draft) => {
@@ -49,18 +173,9 @@ export const UnifiedOverlaySideEffects = () => {
     });
   });
 
-  useTauriListen<AgentWindowStatePayload>("agent_window_state", (payload) => {
+  useTauriListen<OverlaySyncPayload>("overlay_sync", (payload) => {
     produceAppState((draft) => {
-      draft.agent.windowState = payload.state;
-    });
-  });
-
-  useTauriListen<OverlayPhasePayload>("agent_overlay_phase", (payload) => {
-    produceAppState((draft) => {
-      draft.agent.overlayPhase = payload.phase;
-      if (payload.phase !== "recording") {
-        draft.audioLevels = [];
-      }
+      Object.assign(draft, payload);
     });
   });
 
