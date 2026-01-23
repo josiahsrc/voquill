@@ -1,5 +1,6 @@
 import {
   AgentMode,
+  CloudBackend,
   DictationPillVisibility,
   Nullable,
   PostProcessingMode,
@@ -35,6 +36,7 @@ type LocalUserPreferences = {
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
   dictationPillVisibility: DictationPillVisibility;
+  cloudBackend: Nullable<string>;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -50,6 +52,11 @@ const normalizePostProcessingMode = (
   return "none";
 };
 
+const normalizeCloudBackend = (backend: Nullable<string>): CloudBackend => {
+  if (backend === "v2") return "v2";
+  return "v1";
+};
+
 const fromLocalPreferences = (
   preferences: LocalUserPreferences,
 ): UserPreferences => ({
@@ -58,7 +65,7 @@ const fromLocalPreferences = (
   transcriptionApiKeyId: preferences.transcriptionApiKeyId,
   transcriptionDevice: preferences.transcriptionDevice,
   transcriptionModelSize: preferences.transcriptionModelSize,
-  cloudBackend: "websocket",
+  cloudBackend: normalizeCloudBackend(preferences.cloudBackend),
   postProcessingMode: normalizePostProcessingMode(
     preferences.postProcessingMode,
   ),
@@ -115,6 +122,7 @@ const toLocalPreferences = (
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),
+  cloudBackend: preferences.cloudBackend ?? null,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

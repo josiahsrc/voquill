@@ -20,7 +20,12 @@ export const createTranscriptionSession = (
   prefs: TranscriptionPrefs,
 ): TranscriptionSession => {
   if (prefs.mode === "cloud") {
-    return new VoquillTranscriptionSession();
+    const state = getAppState();
+    const cloudBackend = state.userPrefs?.cloudBackend ?? "v1";
+    if (cloudBackend === "v2") {
+      return new VoquillTranscriptionSession();
+    }
+    return new BatchTranscriptionSession();
   }
 
   if (prefs.mode === "api") {

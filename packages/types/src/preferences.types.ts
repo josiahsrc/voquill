@@ -6,7 +6,7 @@ import type {
   TranscriptionMode,
 } from "./common.types";
 
-export type CloudBackend = "firebase" | "websocket";
+export type CloudBackend = "v1" | "v2";
 
 export type UserPreferences = {
   userId: string;

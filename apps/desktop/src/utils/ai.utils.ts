@@ -30,7 +30,7 @@ export const applyAiPreferences = (
   draft.settings.aiTranscription.gpuEnumerationEnabled =
     preferences.gpuEnumerationEnabled ?? false;
   draft.settings.aiTranscription.cloudBackend =
-    preferences.cloudBackend ?? "websocket";
+    preferences.cloudBackend ?? "v1";
 
   const postProcessingMode =
     preferences.postProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;

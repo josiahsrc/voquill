@@ -52,6 +52,8 @@ pub struct UserPreferences {
     pub incognito_mode_include_in_stats: bool,
     #[serde(default = "default_dictation_pill_visibility")]
     pub dictation_pill_visibility: String,
+    #[serde(default)]
+    pub cloud_backend: Option<String>,
 }
 
 fn default_dictation_pill_visibility() -> String {

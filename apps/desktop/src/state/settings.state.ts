@@ -89,7 +89,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     device: CPU_DEVICE_VALUE,
     selectedApiKeyId: null,
     gpuEnumerationEnabled: false,
-    cloudBackend: "websocket",
+    cloudBackend: "v2",
   },
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,

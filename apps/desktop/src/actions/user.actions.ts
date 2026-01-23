@@ -62,7 +62,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   transcriptionApiKeyId: null,
   transcriptionDevice: null,
   transcriptionModelSize: null,
-  cloudBackend: "websocket",
+  cloudBackend: "v2",
   postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
   postProcessingApiKeyId: null,
   postProcessingOllamaUrl: null,
@@ -254,7 +254,7 @@ export const persistAiPreferences = async (): Promise<void> => {
     preferences.gpuEnumerationEnabled =
       state.settings.aiTranscription.gpuEnumerationEnabled;
     preferences.cloudBackend =
-      state.settings.aiTranscription.cloudBackend ?? "websocket";
+      state.settings.aiTranscription.cloudBackend ?? "v1";
     preferences.languageSwitchEnabled =
       state.settings.languageSwitch.enabled ?? false;
     preferences.secondaryDictationLanguage =

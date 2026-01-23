@@ -74,17 +74,15 @@ export class DictationStrategy extends BaseStrategy {
       let postProcessMetadata = sessionPostProcessMetadata ?? {};
       let postProcessWarnings: string[] = [];
 
-      // Use processed transcript from session if available (cloud mode)
-      // Otherwise run local post-processing
+      // Use processed transcript from session if available (v2 cloud backend)
+      // Otherwise run local post-processing (v1 cloud backend, API, or local)
       if (processedTranscript) {
         transcript = processedTranscript;
       } else {
-        const skipLlm = transcriptionMetadata.transcriptionMode === "cloud";
         const result = await postProcessTranscript({
           rawTranscript,
           toneId,
           a11yInfo,
-          skipLlm,
         });
         transcript = result.transcript;
         postProcessMetadata = result.metadata;

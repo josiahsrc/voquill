@@ -145,7 +145,7 @@ export const submitOnboarding = async () => {
         transcriptionPreference.mode === "api"
           ? transcriptionPreference.apiKeyId
           : null,
-      cloudBackend: "websocket",
+      cloudBackend: "v2",
       transcriptionDevice:
         transcriptionPreference.mode === "local"
           ? transcriptionPreference.transcriptionDevice
