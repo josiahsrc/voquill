@@ -59,7 +59,8 @@ export const WaveformSection = () => {
     }
   }
 
-  const handleClickDictate = () => {
+  const handleMouseDownDictate = (e: React.MouseEvent) => {
+    e.preventDefault();
     emitTo("main", "on-click-dictate", {}).catch(console.error);
   };
 
@@ -145,7 +146,7 @@ export const WaveformSection = () => {
 
       <Box
         data-overlay-interactive
-        onClick={handleClickDictate}
+        onMouseDown={handleMouseDownDictate}
         sx={{
           width: isExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH,
           height: isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
