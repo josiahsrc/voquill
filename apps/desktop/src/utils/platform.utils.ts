@@ -34,23 +34,23 @@ type CursorToViewportParams = {
   visibleX: number;
   visibleY: number;
   visibleHeight: number;
+  scaleFactor?: number;
 };
 
 export const cursorToViewportPosition = (
   params: CursorToViewportParams,
 ): { x: number; y: number } => {
-  const { cursorX, cursorY, visibleX, visibleY, visibleHeight } = params;
+  const { cursorX, cursorY, visibleX, visibleY, visibleHeight, scaleFactor = 1 } = params;
   const plt = getPlatform();
 
-  const x = Math.round(cursorX - visibleX);
-
   if (plt === "macos") {
-    // macOS: Screen coordinates have Y=0 at bottom, need to invert for viewport
+    const x = Math.round(cursorX - visibleX);
     const y = Math.round(visibleHeight - (cursorY - visibleY));
     return { x, y };
   } else {
-    // Windows/Linux: Screen coordinates have Y=0 at top, same as viewport
-    const y = Math.round(cursorY - visibleY);
+    // Windows/Linux: coordinates are in physical pixels, convert to CSS pixels
+    const x = Math.round((cursorX - visibleX) / scaleFactor);
+    const y = Math.round((cursorY - visibleY) / scaleFactor);
     return { x, y };
   }
 };

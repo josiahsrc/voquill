@@ -118,6 +118,7 @@ export const UnifiedOverlaySideEffects = () => {
           visibleX: targetMonitor.visibleX,
           visibleY: targetMonitor.visibleY,
           visibleHeight: targetMonitor.visibleHeight,
+          scaleFactor: targetMonitor.scaleFactor,
         });
       });
     }
