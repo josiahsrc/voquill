@@ -1065,6 +1065,14 @@ pub fn set_overlay_click_through(app: AppHandle, click_through: bool) -> Result<
 }
 
 #[tauri::command]
+pub fn restore_overlay_focus() {
+    #[cfg(target_os = "windows")]
+    {
+        crate::platform::windows::window::restore_foreground_window();
+    }
+}
+
+#[tauri::command]
 pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
     let join_result =
         tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text, keybind.as_deref())).await;

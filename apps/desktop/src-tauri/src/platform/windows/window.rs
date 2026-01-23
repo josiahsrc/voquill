@@ -1,12 +1,15 @@
+use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, GetWindowLongW, SetForegroundWindow, SetWindowLongW, SetWindowPos,
-    ShowWindow, GWL_EXSTYLE, HWND_NOTOPMOST, HWND_TOPMOST, SWP_FRAMECHANGED, SWP_NOACTIVATE,
-    SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW, SW_SHOWNOACTIVATE,
-    WS_EX_NOACTIVATE, WS_EX_TRANSPARENT,
+    BringWindowToTop, GetForegroundWindow, GetWindowLongW, SetForegroundWindow, SetWindowLongW,
+    SetWindowPos, ShowWindow, GWL_EXSTYLE, HWND_NOTOPMOST, HWND_TOPMOST, SWP_FRAMECHANGED,
+    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW,
+    SW_SHOWNOACTIVATE, WS_EX_NOACTIVATE, WS_EX_TRANSPARENT,
 };
+
+static SAVED_FOREGROUND_HWND: AtomicIsize = AtomicIsize::new(0);
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
@@ -103,6 +106,10 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
 }
 
 pub fn set_overlay_click_through(window: &WebviewWindow, click_through: bool) -> Result<(), String> {
+    if !click_through {
+        save_foreground_window();
+    }
+
     let window_for_handle = window.clone();
     let (tx, rx) = mpsc::channel();
 
@@ -183,4 +190,19 @@ pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), St
 
     rx.recv()
         .map_err(|_| "failed to configure overlay as non-activating on main thread".to_string())?
+}
+
+pub fn save_foreground_window() {
+    let hwnd = unsafe { GetForegroundWindow() };
+    SAVED_FOREGROUND_HWND.store(hwnd.0 as isize, Ordering::SeqCst);
+}
+
+pub fn restore_foreground_window() {
+    let hwnd_value = SAVED_FOREGROUND_HWND.load(Ordering::SeqCst);
+    if hwnd_value != 0 {
+        let hwnd = HWND(hwnd_value as *mut _);
+        unsafe {
+            let _ = SetForegroundWindow(hwnd);
+        }
+    }
 }

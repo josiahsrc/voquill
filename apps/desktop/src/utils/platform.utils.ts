@@ -61,9 +61,9 @@ export const getOverlayBottomOffset = (): number => {
     case "macos":
       return 12;
     case "linux":
-      return 13;
+      return 8;
     case "windows":
-      return 14;
+      return 8;
     default:
       return 12;
   }

@@ -1,5 +1,6 @@
 import { Box, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
 import { useRef } from "react";
 import { FormattedMessage } from "react-intl";
@@ -61,6 +62,7 @@ export const WaveformSection = () => {
 
   const handleMouseDownDictate = (e: React.MouseEvent) => {
     e.preventDefault();
+    invoke("restore_overlay_focus").catch(() => {});
     emitTo("main", "on-click-dictate", {}).catch(console.error);
   };
 
