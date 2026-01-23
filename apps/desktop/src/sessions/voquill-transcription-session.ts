@@ -4,6 +4,7 @@ import {
   FinalizeOptions,
   RecordingStartOptions,
   StopRecordingResponse,
+  TextFieldContext,
   TranscriptionSession,
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
@@ -30,6 +31,7 @@ type ClientMessage =
       toneTemplate?: string | null;
       language?: string;
       dictionaryContext?: DictionaryContext;
+      textFieldContext?: TextFieldContext | null;
       jsonResponse?: JsonResponseSchema;
     };
 
@@ -57,6 +59,7 @@ export type VoquillFinalizeOptions = {
   toneTemplate?: string | null;
   language?: string;
   dictionaryContext?: DictionaryContext;
+  textFieldContext?: TextFieldContext | null;
   jsonResponse?: JsonResponseSchema;
 };
 
@@ -169,6 +172,7 @@ const startVoquillStreaming = async (
             toneTemplate: options?.toneTemplate,
             language: options?.language,
             dictionaryContext: options?.dictionaryContext,
+            textFieldContext: options?.textFieldContext,
             jsonResponse: options?.jsonResponse,
           });
 
@@ -383,6 +387,7 @@ export class VoquillTranscriptionSession implements TranscriptionSession {
         toneTemplate: options?.toneTemplate,
         language: options?.language,
         dictionaryContext: options?.dictionaryContext,
+        textFieldContext: options?.textFieldContext,
         jsonResponse: {
           name: "transcription_cleaning",
           description: "JSON response with the processed transcription",

@@ -73,6 +73,7 @@ import {
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
 } from "../../utils/prompt.utils";
+import { extractTextFieldContext } from "../../utils/accessibility.utils";
 import type { FinalizeOptions } from "../../types/transcription-session.types";
 import {
   consumeSurfaceWindowFlag,
@@ -367,6 +368,7 @@ export const RootSideEffects = () => {
         const dictEntries = collectDictionaryEntries(state);
         const language = getMyDictationLanguage(state);
 
+        const textFieldContext = extractTextFieldContext(a11yInfo);
         const finalizeOptions: FinalizeOptions = {
           systemPrompt: buildSystemPostProcessingTonePrompt(),
           toneTemplate: tone?.promptTemplate ?? null,
@@ -375,6 +377,7 @@ export const RootSideEffects = () => {
             glossary: dictEntries.sources,
             replacements: dictEntries.replacements,
           },
+          textFieldContext,
         };
 
         const transcribeResult = await session.finalize(audio, finalizeOptions);
@@ -438,7 +441,6 @@ export const RootSideEffects = () => {
   }, [startRecording]);
 
   const stopDictationRecording = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 150));
     await stopRecording();
   }, [stopRecording]);
 
@@ -456,7 +458,6 @@ export const RootSideEffects = () => {
   }, [intl, startRecording]);
 
   const stopAgentRecording = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 150));
     await stopRecording();
   }, [stopRecording]);
 

@@ -13,11 +13,18 @@ export type DictionaryContext = {
   replacements: { source: string; destination: string }[];
 };
 
+export type TextFieldContext = {
+  precedingText: string | null;
+  selectedText: string | null;
+  followingText: string | null;
+};
+
 export type FinalizeOptions = {
   systemPrompt?: string;
   toneTemplate?: string | null;
   language?: string;
   dictionaryContext?: DictionaryContext;
+  textFieldContext?: TextFieldContext | null;
 };
 
 export type TranscriptionSessionResult = {

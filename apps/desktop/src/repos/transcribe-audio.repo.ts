@@ -543,14 +543,28 @@ type JsonResponseSchema = {
   schema: Record<string, unknown>;
 };
 
+type DictionaryContext = {
+  glossary: string[];
+  replacements: { source: string; destination: string }[];
+};
+
+type TextFieldContext = {
+  precedingText: string | null;
+  selectedText: string | null;
+  followingText: string | null;
+};
+
 type WebSocketClientMessage =
   | { type: "auth"; idToken: string }
-  | { type: "config"; sampleRate: number }
+  | { type: "config"; sampleRate: number; glossary?: string[]; language?: string }
   | { type: "audio"; samples: number[] }
   | {
       type: "finalize";
       systemPrompt?: string;
-      userPrompt?: string;
+      toneTemplate?: string | null;
+      language?: string;
+      dictionaryContext?: DictionaryContext;
+      textFieldContext?: TextFieldContext | null;
       jsonResponse?: JsonResponseSchema;
     };
 
@@ -561,12 +575,23 @@ type WebSocketServerMessage =
   | { type: "result"; text: string; rawText: string; wordsUsed: number }
   | { type: "error"; code: string; message: string };
 
+export type WebSocketPostProcessConfig = {
+  systemPrompt?: string;
+  toneTemplate?: string | null;
+  language?: string;
+  dictionaryContext?: DictionaryContext;
+  textFieldContext?: TextFieldContext | null;
+  glossary?: string[];
+};
+
 export class WebSocketTranscribeAudioRepo extends BaseTranscribeAudioRepo {
   private serverUrl: string;
+  private postProcessConfig: WebSocketPostProcessConfig;
 
-  constructor(serverUrl?: string) {
+  constructor(serverUrl?: string, postProcessConfig?: WebSocketPostProcessConfig) {
     super();
     this.serverUrl = serverUrl ?? WEBSOCKET_SERVER_URL;
+    this.postProcessConfig = postProcessConfig ?? {};
   }
 
   // WebSocket handles its own chunking, so we use large segments
@@ -616,15 +641,27 @@ export class WebSocketTranscribeAudioRepo extends BaseTranscribeAudioRepo {
 
         switch (message.type) {
           case "authenticated":
-            // Step 2: Configure session
-            this.send(ws, { type: "config", sampleRate: input.sampleRate });
+            // Step 2: Configure session with glossary and language
+            this.send(ws, {
+              type: "config",
+              sampleRate: input.sampleRate,
+              glossary: this.postProcessConfig.glossary,
+              language: this.postProcessConfig.language,
+            });
             break;
 
           case "ready":
             // Step 3: Stream audio in chunks
             this.streamAudio(ws, input.samples);
-            // Step 4: Finalize - server will use default prompts for post-processing
-            this.send(ws, { type: "finalize" });
+            // Step 4: Finalize with post-processing config
+            this.send(ws, {
+              type: "finalize",
+              systemPrompt: this.postProcessConfig.systemPrompt,
+              toneTemplate: this.postProcessConfig.toneTemplate,
+              language: this.postProcessConfig.language,
+              dictionaryContext: this.postProcessConfig.dictionaryContext,
+              textFieldContext: this.postProcessConfig.textFieldContext,
+            });
             break;
 
           case "result":
