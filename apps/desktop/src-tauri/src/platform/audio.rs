@@ -9,9 +9,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-#[cfg(target_os = "macos")]
-use crate::platform::macos::notch_overlay;
-
 /// Cached device info for quick recording start.
 /// We remember the last successfully used device to avoid re-enumeration.
 #[derive(Clone)]
@@ -1044,15 +1041,6 @@ where
 
                 if let Ok(mut shared_buffer) = callback_buffer.lock() {
                     shared_buffer.extend_from_slice(&mono_samples);
-                }
-
-                #[cfg(target_os = "macos")]
-                {
-                    if sample_count > 0 {
-                        let rms = (sum_squares / sample_count as f64).sqrt();
-                        let amplitude = (rms * 0.9 + peak * 0.85).min(1.5);
-                        notch_overlay::register_amplitude(amplitude.min(1.0));
-                    }
                 }
             },
             |err| eprintln!("[recording] stream error: {err}"),

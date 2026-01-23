@@ -1,4 +1,5 @@
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import type { Hotkey } from "@repo/types";
 import { useEffect, useRef } from "react";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -22,12 +23,32 @@ type ToastPayload = {
   toast: Toast;
 };
 
+type HotkeyUpdatePayload = {
+  hotkey: Hotkey;
+};
+
+type HotkeyDeletePayload = {
+  id: string;
+};
+
 const DEFAULT_TOAST_DURATION_MS = 3000;
 
 export const UnifiedOverlaySideEffects = () => {
   const currentToast = useAppStore((state) => state.currentToast);
   const toastQueue = useAppStore((state) => state.toastQueue);
   const timerRef = useRef<number | null>(null);
+
+  useTauriListen<HotkeyUpdatePayload>("hotkey_update", (payload) => {
+    produceAppState((draft) => {
+      draft.hotkeyById[payload.hotkey.id] = payload.hotkey;
+    });
+  });
+
+  useTauriListen<HotkeyDeletePayload>("hotkey_delete", (payload) => {
+    produceAppState((draft) => {
+      delete draft.hotkeyById[payload.id];
+    });
+  });
 
   useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
     produceAppState((draft) => {
