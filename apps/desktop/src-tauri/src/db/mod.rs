@@ -74,8 +74,7 @@ pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mo
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");
 pub const IS_ENTERPRISE_MIGRATION_SQL: &str = include_str!("migrations/039_is_enterprise.sql");
-pub const LANGUAGE_SWITCH_MIGRATION_SQL: &str =
-    include_str!("migrations/040_language_switch.sql");
+pub const LANGUAGE_SWITCH_MIGRATION_SQL: &str = include_str!("migrations/040_language_switch.sql");
 pub const MICROPHONE_TO_PREFERENCES_MIGRATION_SQL: &str =
     include_str!("migrations/041_microphone_to_preferences.sql");
 pub const USER_COHORT_MIGRATION_SQL: &str = include_str!("migrations/042_user_cohort.sql");
@@ -83,6 +82,9 @@ pub const IGNORE_UPDATE_DIALOG_MIGRATION_SQL: &str =
     include_str!("migrations/043_ignore_update_dialog.sql");
 pub const USER_COMPANY_TITLE_MIGRATION_SQL: &str =
     include_str!("migrations/044_user_company_title.sql");
+pub const INCOGNITO_MODE_MIGRATION_SQL: &str = include_str!("migrations/045_incognito_mode.sql");
+pub const DICTATION_PILL_VISIBILITY_MIGRATION_SQL: &str =
+    include_str!("migrations/046_dictation_pill_visibility.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -348,6 +350,18 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 44,
             description: "add_user_company_title",
             sql: USER_COMPANY_TITLE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 45,
+            description: "add_incognito_mode",
+            sql: INCOGNITO_MODE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 46,
+            description: "add_dictation_pill_visibility",
+            sql: DICTATION_PILL_VISIBILITY_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

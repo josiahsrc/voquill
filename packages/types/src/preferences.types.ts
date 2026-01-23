@@ -1,5 +1,6 @@
 import type {
   AgentMode,
+  DictationPillVisibility,
   Nullable,
   PostProcessingMode,
   TranscriptionMode,
@@ -30,4 +31,7 @@ export type UserPreferences = {
   activeDictationLanguage: "primary" | "secondary";
   preferredMicrophone: Nullable<string>;
   ignoreUpdateDialog: boolean;
+  incognitoModeEnabled: boolean;
+  incognitoModeIncludeInStats: boolean;
+  dictationPillVisibility: DictationPillVisibility;
 };

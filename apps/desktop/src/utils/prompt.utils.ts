@@ -113,6 +113,13 @@ export const buildSystemPostProcessingTonePrompt = (): string => {
   return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same.";
 };
 
+const ifNotEnglish = (languageCode: string, prompt: string): string => {
+  if (languageCode === "en") {
+    return "";
+  }
+  return ` ${prompt}`;
+};
+
 const buildStyleSection = (toneTemplate: string | null | undefined): string => {
   if (!toneTemplate) {
     return `
@@ -190,7 +197,7 @@ RULES (must follow):
    - Use a comma if "Text after" continues the same sentence; use a period/question mark only if appropriate.
 6. Output must be plain text with no quotes, labels, or extra commentary.
 
-Your response MUST be in ${languageName}. Return only the replacement text.`;
+Your response MUST be in ${languageName}.${ifNotEnglish(dictationLanguage, "DO NOT translate to English or any other language.")} Return only the replacement text.`;
   } else if (hasContext) {
     // Inserting at cursor without selection
     base = `You are cleaning dictated text that will be inserted into an existing document.
@@ -211,7 +218,7 @@ INSTRUCTIONS:
 
 CRITICAL: Your output must contain ONLY the cleaned transcript. Never include the "text before cursor" or "text after cursor" in your output. Those are provided solely for capitalization context.
 
-Return ONLY the cleaned transcript in ${languageName}.`;
+Return ONLY the cleaned transcript in ${languageName}.${ifNotEnglish(dictationLanguage, "Do not translate to English.")}`;
   } else {
     // No context - just clean the transcript
     base = `Clean and format the ${languageName} transcript below.
@@ -227,7 +234,7 @@ Here is the transcript:
 ${transcript}
 -------
 
-Your response MUST be in ${languageName}.`;
+Your response MUST be in ${languageName}.${ifNotEnglish(dictationLanguage, "Do not translate to English.")}`;
   }
 
   return base;

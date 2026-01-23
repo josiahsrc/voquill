@@ -1,114 +1,55 @@
-import {
-  cursorPosition,
-  getCurrentWindow,
-  Window,
-} from "@tauri-apps/api/window";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  RefObject,
-} from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow, Window } from "@tauri-apps/api/window";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAppStore } from "../store";
 
-type ContentRef = RefObject<HTMLElement | null>;
+const INTERACTIVE_ATTR = "data-overlay-interactive";
 
-type UseUnifiedClickThroughOptions = {
-  contentRefs: ContentRef[];
+async function setClickThrough(clickThrough: boolean): Promise<void> {
+  await invoke("set_overlay_click_through", { clickThrough });
+}
+
+type UseOverlayClickThroughOptions = {
   enabled: boolean;
   windowRef?: Window;
 };
 
-export const useUnifiedClickThrough = ({
-  contentRefs,
+export const useOverlayClickThrough = ({
   enabled,
   windowRef: providedWindowRef,
-}: UseUnifiedClickThroughOptions) => {
+}: UseOverlayClickThroughOptions) => {
   const defaultWindowRef = useMemo(() => getCurrentWindow(), []);
   const windowRef = providedWindowRef ?? defaultWindowRef;
+  const cursor = useAppStore((state) => state.overlayCursor);
+  const isOverInteractiveRef = useRef(false);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const isOverInteractive = (() => {
+      if (!cursor) return false;
+      const element = document.elementFromPoint(cursor.x, cursor.y);
+      return element?.closest(`[${INTERACTIVE_ATTR}]`) !== null;
+    })();
+
+    if (isOverInteractive !== isOverInteractiveRef.current) {
+      isOverInteractiveRef.current = isOverInteractive;
+      setClickThrough(!isOverInteractive).catch(() => {});
+    }
+  }, [cursor, enabled, windowRef]);
 
   useEffect(() => {
     if (!enabled) return;
-
-    let isOverContent = false;
-    let animationFrame: number;
-    let timeoutId: number | undefined;
-    let lastCursor: { x: number; y: number } | null = null;
-
-    const checkCursorPosition = async () => {
-      const startTime = performance.now();
-
-      try {
-        const cursor = await cursorPosition();
-
-        // Early exit: Skip if cursor hasn't moved
-        if (
-          lastCursor &&
-          cursor.x === lastCursor.x &&
-          cursor.y === lastCursor.y
-        ) {
-          // Throttle: wait at least 50ms before next check (~20fps instead of ~60fps)
-          timeoutId = window.setTimeout(() => {
-            animationFrame = requestAnimationFrame(checkCursorPosition);
-          }, 50);
-          return;
-        }
-
-        lastCursor = cursor;
-
-        const windowPos = await windowRef.outerPosition();
-        const scaleFactor = (await windowRef.scaleFactor()) ?? 1;
-
-        const relativeX = (cursor.x - windowPos.x) / scaleFactor;
-        const relativeY = (cursor.y - windowPos.y) / scaleFactor;
-
-        let nowOverContent = false;
-
-        for (const ref of contentRefs) {
-          const content = ref.current;
-          if (!content) continue;
-
-          const rect = content.getBoundingClientRect();
-          if (
-            relativeX >= rect.left &&
-            relativeX <= rect.right &&
-            relativeY >= rect.top &&
-            relativeY <= rect.bottom
-          ) {
-            nowOverContent = true;
-            break;
-          }
-        }
-
-        if (nowOverContent !== isOverContent) {
-          isOverContent = nowOverContent;
-          await windowRef.setIgnoreCursorEvents(!nowOverContent);
-        }
-      } catch {
-        // Ignore errors (window may be closing)
-      }
-
-      // Throttle: wait at least 50ms between checks
-      const elapsed = performance.now() - startTime;
-      const delay = Math.max(0, 50 - elapsed);
-      timeoutId = window.setTimeout(() => {
-        animationFrame = requestAnimationFrame(checkCursorPosition);
-      }, delay);
-    };
-
-    windowRef.setIgnoreCursorEvents(true).catch(console.error);
-    animationFrame = requestAnimationFrame(checkCursorPosition);
-
+    setClickThrough(true).catch(() => {});
     return () => {
-      if (timeoutId !== undefined) {
-        clearTimeout(timeoutId);
-      }
-      cancelAnimationFrame(animationFrame);
-      windowRef.setIgnoreCursorEvents(true).catch(console.error);
+      setClickThrough(true).catch(() => {});
     };
-  }, [windowRef, enabled, contentRefs]);
+  }, [enabled, windowRef]);
 };
+
+export const useUnifiedClickThrough = useOverlayClickThrough;
 
 type UseOverlayDragOptions = {
   elementWidth: number;

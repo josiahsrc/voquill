@@ -23,6 +23,7 @@ import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { useAppStore } from "../../store";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
 import { buildDeviceLabel, type GpuInfo } from "../../types/gpu.types";
+import { isGPUBuild } from "../../utils/env.utils";
 import {
   SegmentedControl,
   SegmentedControlOption,
@@ -165,7 +166,7 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          {!transcription.gpuEnumerationEnabled && !isMacOS() && (
+          {!transcription.gpuEnumerationEnabled && isGPUBuild() && (
             <Alert
               severity="info"
               sx={{

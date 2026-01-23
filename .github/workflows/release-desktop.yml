@@ -362,6 +362,7 @@ jobs:
       RELEASE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       VITE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      VITE_GPU_BUILD: ${{ matrix.gpu_variant }}
       VOQUILL_BUILD_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       VOQUILL_DESKTOP_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}

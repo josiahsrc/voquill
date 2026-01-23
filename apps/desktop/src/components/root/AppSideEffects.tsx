@@ -21,7 +21,11 @@ import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getPlatform } from "../../utils/platform.utils";
-import { LOCAL_USER_ID } from "../../utils/user.utils";
+import {
+  getEffectivePillVisibility,
+  getMyUserPreferences,
+  LOCAL_USER_ID,
+} from "../../utils/user.utils";
 
 type StreamRet = Nullable<[Nullable<Member>, Nullable<User>]>;
 
@@ -49,6 +53,7 @@ export const AppSideEffects = () => {
     const uid = state.auth?.uid;
     return uid ? (state.userById[uid] ?? null) : null;
   });
+  const prefs = useAppStore((state) => getMyUserPreferences(state));
 
   const onAuthStateChanged = (user: AuthUser | null) => {
     authReadyRef.current = true;
@@ -208,8 +213,9 @@ export const AppSideEffects = () => {
     if (currentUserId && currentUserId !== prevUserId) {
       mixpanel.identify(currentUserId);
 
+      // Set creation time to ISO 8601 (2024-01-01T12:00:00.000Z) for Mixpanel
       mixpanel.people.set_once({
-        $created: auth?.metadata?.creationTime ?? undefined,
+        $created: new Date().toISOString(),
         initialPlatform: platform,
         initialLocale: locale,
         initialCohort: CURRENT_COHORT,
@@ -234,6 +240,8 @@ export const AppSideEffects = () => {
       onboarded,
       onboardedAt: onboardedAt ?? undefined,
       activeSystemCohort: CURRENT_COHORT,
+      daysSinceOnboarded,
+      pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
     });
 
     mixpanel.register({
@@ -247,10 +255,11 @@ export const AppSideEffects = () => {
       onboarded,
       daysSinceOnboarded,
       activeSystemCohort: CURRENT_COHORT,
+      pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
     });
 
     prevUserIdRef.current = currentUserId;
-  }, [initialized, auth, member, cloudUser, localUser]);
+  }, [initialized, auth, member, cloudUser, localUser, prefs]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({

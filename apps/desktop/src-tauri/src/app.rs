@@ -30,11 +30,13 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let _ = window.hide();
-                #[cfg(target_os = "macos")]
                 if window.label() == "main" {
-                    if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
-                        eprintln!("Failed to hide dock icon: {err}");
+                    let _ = window.hide();
+                    #[cfg(target_os = "macos")]
+                    {
+                        if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
+                            eprintln!("Failed to hide dock icon: {err}");
+                        }
                     }
                 }
             }
@@ -147,6 +149,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::list_microphones,
             crate::commands::list_gpus,
             crate::commands::get_screen_visible_area,
+            crate::commands::get_monitor_at_cursor,
             crate::commands::check_microphone_permission,
             crate::commands::request_microphone_permission,
             crate::commands::check_accessibility_permission,
@@ -162,6 +165,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::transcribe_audio,
             crate::commands::surface_main_window,
             crate::commands::show_overlay_no_focus,
+            crate::commands::set_overlay_click_through,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
@@ -200,11 +204,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     use tauri::{Manager, WebviewWindowBuilder};
 
-    #[cfg(target_os = "macos")]
-    {
-        crate::platform::macos::notch_overlay::prepare_overlay(app)?;
-    }
-
     if app.get_webview_window("unified-overlay").is_some() {
         return Ok(());
     }
@@ -217,24 +216,34 @@ fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         (1920.0, 1080.0)
     };
 
-    let mut builder =
-        WebviewWindowBuilder::new(app, "unified-overlay", unified_overlay_webview_url(app)?)
-            .decorations(false)
-            .always_on_top(true)
-            .transparent(true)
-            .skip_taskbar(true)
-            .resizable(false)
-            .shadow(false)
-            .focusable(false)
-            .inner_size(width, height)
-            .position(0.0, 0.0);
+    let builder = {
+        let builder =
+            WebviewWindowBuilder::new(app, "unified-overlay", unified_overlay_webview_url(app)?)
+                .decorations(false)
+                .always_on_top(true)
+                .transparent(true)
+                .skip_taskbar(true)
+                .resizable(false)
+                .shadow(false)
+                .focusable(false)
+                .inner_size(width, height)
+                .position(0.0, 0.0);
 
-    #[cfg(not(target_os = "linux"))]
-    {
-        builder = builder.visible(false);
+        #[cfg(not(target_os = "linux"))]
+        {
+            builder.visible(false)
+        }
+        #[cfg(target_os = "linux")]
+        {
+            builder
+        }
+    };
+
+    let window = builder.build()?;
+
+    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
+        eprintln!("Failed to configure overlay as non-activating: {err}");
     }
-
-    builder.build()?;
 
     Ok(())
 }

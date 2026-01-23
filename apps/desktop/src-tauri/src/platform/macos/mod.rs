@@ -1,6 +1,6 @@
 pub mod accessibility;
 pub mod dock;
 pub mod input;
-pub mod notch_overlay;
+pub mod monitor;
 pub mod permissions;
 pub mod window;

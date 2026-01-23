@@ -24,6 +24,7 @@ struct CFRange {
 }
 
 #[link(name = "ApplicationServices", kind = "framework")]
+#[allow(dead_code)]
 extern "C" {
     fn AXUIElementCreateSystemWide() -> AXUIElementRef;
     fn AXUIElementCopyAttributeValue(

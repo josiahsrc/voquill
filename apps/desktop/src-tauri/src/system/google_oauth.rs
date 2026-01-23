@@ -268,7 +268,8 @@ struct TokenResponse {
     access_token: String,
     expires_in: i64,
     refresh_token: Option<String>,
-    scope: String,
+    #[serde(rename = "scope")]
+    _scope: String,
     token_type: String,
     id_token: String,
 }
@@ -369,8 +370,10 @@ async fn verify_id_token(
 struct GoogleIdTokenClaims {
     iss: String,
     sub: String,
-    aud: Audience,
-    exp: i64,
+    #[serde(rename = "aud")]
+    _aud: Audience,
+    #[serde(rename = "exp")]
+    _exp: i64,
     email: Option<String>,
     name: Option<String>,
     picture: Option<String>,
@@ -379,6 +382,6 @@ struct GoogleIdTokenClaims {
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum Audience {
-    Single(String),
-    Multiple(Vec<String>),
+    Single(#[allow(dead_code)] String),
+    Multiple(#[allow(dead_code)] Vec<String>),
 }

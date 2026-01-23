@@ -65,15 +65,3 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
         }
     }
 }
-
-fn get_vendor_name(vendor_id: u32) -> &'static str {
-    match vendor_id {
-        0x1002 => "AMD",
-        0x8086 => "Intel",
-        0x10DE => "NVIDIA",
-        0x1414 => "Microsoft",
-        0x5143 => "Qualcomm",
-        0x13B5 => "ARM",
-        _ => "Unknown",
-    }
-}
