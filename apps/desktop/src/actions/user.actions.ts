@@ -1,4 +1,10 @@
-import { CloudBackend, DictationPillVisibility, Nullable, User, UserPreferences } from "@repo/types";
+import {
+  CloudBackend,
+  Nullable,
+  User,
+  UserPreferences,
+  DictationPillVisibility,
+} from "@repo/types";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
@@ -318,9 +324,7 @@ export const setGpuEnumerationEnabled = async (
   await persistAiPreferences();
 };
 
-export const setCloudBackend = async (
-  backend: CloudBackend,
-): Promise<void> => {
+export const setCloudBackend = async (backend: CloudBackend): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.aiTranscription.cloudBackend = backend;
   });

@@ -31,7 +31,6 @@ import {
 import { maybeArrayElements } from "./AIPostProcessingConfiguration";
 import { ApiKeyList } from "./ApiKeyList";
 import { VoquillCloudSetting } from "./VoquillCloudSetting";
-import { isMacOS } from "../../utils/env.utils";
 import { getHasCloudAccess, getIsSignedIn } from "../../utils/user.utils";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 
