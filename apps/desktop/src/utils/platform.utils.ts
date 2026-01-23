@@ -34,13 +34,12 @@ type CursorToViewportParams = {
   visibleX: number;
   visibleY: number;
   visibleHeight: number;
-  scaleFactor?: number;
 };
 
 export const cursorToViewportPosition = (
   params: CursorToViewportParams,
 ): { x: number; y: number } => {
-  const { cursorX, cursorY, visibleX, visibleY, visibleHeight, scaleFactor = 1 } = params;
+  const { cursorX, cursorY, visibleX, visibleY, visibleHeight } = params;
   const plt = getPlatform();
 
   if (plt === "macos") {
@@ -49,8 +48,11 @@ export const cursorToViewportPosition = (
     return { x, y };
   } else {
     // Windows/Linux: coordinates are in physical pixels, convert to CSS pixels
-    const x = Math.round((cursorX - visibleX) / scaleFactor);
-    const y = Math.round((cursorY - visibleY) / scaleFactor);
+    // Use browser's devicePixelRatio instead of Rust-reported scaleFactor
+    // to ensure consistency with how the webview renders the UI
+    const dpr = window.devicePixelRatio || 1;
+    const x = Math.round((cursorX - visibleX) / dpr);
+    const y = Math.round((cursorY - visibleY) / dpr);
     return { x, y };
   }
 };
