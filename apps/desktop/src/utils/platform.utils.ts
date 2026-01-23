@@ -55,3 +55,17 @@ export const cursorToViewportPosition = (
   }
 };
 
+export const getOverlayBottomOffset = (): number => {
+  const plt = getPlatform();
+  switch (plt) {
+    case "macos":
+      return 12;
+    case "linux":
+      return 13;
+    case "windows":
+      return 14;
+    default:
+      return 12;
+  }
+};
+

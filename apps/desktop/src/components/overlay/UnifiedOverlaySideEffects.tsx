@@ -47,17 +47,12 @@ interface MonitorAtCursor {
   cursorY: number;
 }
 
-interface OverlayBottomOffset {
-  offsetPx: number;
-}
-
 const DEFAULT_TOAST_DURATION_MS = 3000;
 const CURSOR_POLL_MS = 100;
 const SWITCH_DEBOUNCE_MS = 200;
-const BOTTOM_OFFSET_POLL_MS = 500;
 
-function getMonitorId(monitor: MonitorAtCursor): string {
-  return `${monitor.x},${monitor.y}`;
+function getMonitorKey(monitor: MonitorAtCursor): string {
+  return `${monitor.x},${monitor.y},${monitor.visibleX},${monitor.visibleY},${monitor.visibleWidth},${monitor.visibleHeight}`;
 }
 
 async function repositionOverlay(
@@ -79,8 +74,17 @@ async function repositionOverlay(
         monitor.y * monitor.scaleFactor,
       ),
     );
-    // await invoke("show_overlay_no_focus");
+  } else if (platform === "macos") {
+    await windowRef.setSize(
+      new LogicalSize(monitor.visibleWidth, monitor.visibleHeight),
+    );
+    // Convert from Cocoa's bottom-left origin to Tauri's top-left origin
+    // Cocoa: visibleY is distance from screen bottom to visible area bottom
+    // Tauri: y is distance from screen top to window top
+    const topY = monitor.height - monitor.visibleY - monitor.visibleHeight;
+    await windowRef.setPosition(new LogicalPosition(monitor.visibleX, topY));
   } else {
+    // Linux: GTK already uses top-left origin, so visibleY is correct
     await windowRef.setSize(
       new LogicalSize(monitor.visibleWidth, monitor.visibleHeight),
     );
@@ -126,7 +130,7 @@ export const UnifiedOverlaySideEffects = () => {
 
     if (!targetMonitor) return;
 
-    const targetId = getMonitorId(targetMonitor);
+    const targetId = getMonitorKey(targetMonitor);
 
     if (currentMonitorIdRef.current === null) {
       currentMonitorIdRef.current = targetId;
@@ -148,20 +152,6 @@ export const UnifiedOverlaySideEffects = () => {
       isRepositioningRef.current = false;
     }
   }, [windowRef]);
-
-  useIntervalAsync(BOTTOM_OFFSET_POLL_MS, async () => {
-    const result = await invoke<OverlayBottomOffset>("get_bottom_offset").catch(
-      () => null,
-    );
-
-    if (result !== null) {
-      produceAppState((draft) => {
-        if (draft.overlayBottomOffsetPx !== result.offsetPx) {
-          draft.overlayBottomOffsetPx = result.offsetPx;
-        }
-      });
-    }
-  }, []);
 
   useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
     produceAppState((draft) => {

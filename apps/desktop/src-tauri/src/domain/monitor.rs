@@ -13,3 +13,12 @@ pub struct MonitorAtCursor {
     pub cursor_x: f64,
     pub cursor_y: f64,
 }
+
+#[derive(serde::Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenVisibleArea {
+    pub top_inset: f64,
+    pub bottom_inset: f64,
+    pub left_inset: f64,
+    pub right_inset: f64,
+}

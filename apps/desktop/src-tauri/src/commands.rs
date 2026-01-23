@@ -238,64 +238,14 @@ pub fn list_gpus() -> Vec<crate::system::gpu::GpuAdapterInfo> {
     crate::system::gpu::list_available_gpus()
 }
 
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ScreenVisibleArea {
-    pub top_inset: f64,
-    pub bottom_inset: f64,
-    pub left_inset: f64,
-    pub right_inset: f64,
-}
-
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OverlayBottomOffset {
-    pub offset_px: f64,
-}
-
 #[tauri::command]
 pub fn get_monitor_at_cursor() -> Option<crate::domain::MonitorAtCursor> {
     crate::platform::monitor::get_monitor_at_cursor()
 }
 
 #[tauri::command]
-pub fn get_bottom_offset() -> OverlayBottomOffset {
-    OverlayBottomOffset {
-        offset_px: crate::platform::monitor::get_bottom_offset(),
-    }
-}
-
-#[tauri::command]
-pub fn get_screen_visible_area() -> ScreenVisibleArea {
-    #[cfg(target_os = "macos")]
-    {
-        use cocoa::appkit::NSScreen;
-        use cocoa::base::nil;
-
-        unsafe {
-            let screen = NSScreen::mainScreen(nil);
-            if screen != nil {
-                let frame = NSScreen::frame(screen);
-                let visible = NSScreen::visibleFrame(screen);
-
-                return ScreenVisibleArea {
-                    top_inset: (frame.origin.y + frame.size.height)
-                        - (visible.origin.y + visible.size.height),
-                    bottom_inset: visible.origin.y - frame.origin.y,
-                    left_inset: visible.origin.x - frame.origin.x,
-                    right_inset: (frame.origin.x + frame.size.width)
-                        - (visible.origin.x + visible.size.width),
-                };
-            }
-        }
-    }
-
-    ScreenVisibleArea {
-        top_inset: 0.0,
-        bottom_inset: 0.0,
-        left_inset: 0.0,
-        right_inset: 0.0,
-    }
+pub fn get_screen_visible_area() -> crate::domain::ScreenVisibleArea {
+    crate::platform::monitor::get_screen_visible_area()
 }
 
 #[tauri::command]

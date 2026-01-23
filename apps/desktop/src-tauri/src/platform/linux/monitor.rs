@@ -1,42 +1,6 @@
-use crate::domain::MonitorAtCursor;
+use crate::domain::{MonitorAtCursor, ScreenVisibleArea};
 use gtk::gdk;
 use gtk::prelude::*;
-
-const DEFAULT_BOTTOM_OFFSET: f64 = 48.0;
-const TASKBAR_PADDING: f64 = 8.0;
-
-pub fn get_bottom_offset() -> f64 {
-    let Some(display) = gdk::Display::default() else {
-        return DEFAULT_BOTTOM_OFFSET;
-    };
-
-    let Some(seat) = display.default_seat() else {
-        return DEFAULT_BOTTOM_OFFSET;
-    };
-
-    let Some(pointer) = seat.pointer() else {
-        return DEFAULT_BOTTOM_OFFSET;
-    };
-
-    let (_, x, y) = pointer.position();
-
-    let Some(monitor) = display.monitor_at_point(x, y) else {
-        return DEFAULT_BOTTOM_OFFSET;
-    };
-
-    let geometry = monitor.geometry();
-    let workarea = monitor.workarea();
-
-    let screen_bottom = geometry.y() + geometry.height();
-    let workarea_bottom = workarea.y() + workarea.height();
-    let bottom_inset = (screen_bottom - workarea_bottom) as f64;
-
-    if bottom_inset > 1.0 {
-        bottom_inset + TASKBAR_PADDING
-    } else {
-        DEFAULT_BOTTOM_OFFSET
-    }
-}
 
 pub fn get_monitor_at_cursor() -> Option<MonitorAtCursor> {
     let display = gdk::Display::default()?;
@@ -63,4 +27,34 @@ pub fn get_monitor_at_cursor() -> Option<MonitorAtCursor> {
         cursor_x: x as f64,
         cursor_y: y as f64,
     })
+}
+
+pub fn get_screen_visible_area() -> ScreenVisibleArea {
+    let Some(display) = gdk::Display::default() else {
+        return ScreenVisibleArea::default();
+    };
+
+    let Some(seat) = display.default_seat() else {
+        return ScreenVisibleArea::default();
+    };
+
+    let Some(pointer) = seat.pointer() else {
+        return ScreenVisibleArea::default();
+    };
+
+    let (_, x, y) = pointer.position();
+
+    let Some(monitor) = display.monitor_at_point(x, y) else {
+        return ScreenVisibleArea::default();
+    };
+
+    let geometry = monitor.geometry();
+    let workarea = monitor.workarea();
+
+    ScreenVisibleArea {
+        top_inset: (workarea.y() - geometry.y()) as f64,
+        bottom_inset: ((geometry.y() + geometry.height()) - (workarea.y() + workarea.height())) as f64,
+        left_inset: (workarea.x() - geometry.x()) as f64,
+        right_inset: ((geometry.x() + geometry.width()) - (workarea.x() + workarea.width())) as f64,
+    }
 }

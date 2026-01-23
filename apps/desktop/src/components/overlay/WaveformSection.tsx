@@ -8,6 +8,7 @@ import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import { getOverlayBottomOffset } from "../../utils/platform.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
@@ -26,7 +27,7 @@ export const WaveformSection = () => {
   const theme = useTheme();
   const overlayPhase = useAppStore((state) => state.overlayPhase);
   const cursor = useAppStore((state) => state.overlayCursor);
-  const bottomOffsetPx = useAppStore((state) => state.overlayBottomOffsetPx);
+  const bottomOffsetPx = getOverlayBottomOffset();
   const combos = useAppStore((state) =>
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );

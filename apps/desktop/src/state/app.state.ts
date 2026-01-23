@@ -89,7 +89,6 @@ export type AppState = {
   currentToast: Toast | null;
 
   overlayCursor: Nullable<Vector2>;
-  overlayBottomOffsetPx: number;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -123,7 +122,6 @@ export const INITIAL_APP_STATE: AppState = {
   toastQueue: [],
   currentToast: null,
   overlayCursor: null,
-  overlayBottomOffsetPx: 12,
   agent: INITIAL_AGENT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
