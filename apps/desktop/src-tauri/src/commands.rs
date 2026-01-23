@@ -1061,6 +1061,35 @@ pub fn restore_overlay_focus() {
 }
 
 #[tauri::command]
+pub fn set_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
+    let window = app
+        .get_webview_window("unified-overlay")
+        .ok_or_else(|| "unified-overlay window not found".to_string())?;
+
+    #[cfg(target_os = "windows")]
+    {
+        crate::platform::windows::window::set_overlay_click_through(&window, click_through)?;
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        window
+            .set_ignore_cursor_events(click_through)
+            .map_err(|err| err.to_string())?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn restore_overlay_focus() {
+    #[cfg(target_os = "windows")]
+    {
+        crate::platform::windows::window::restore_foreground_window();
+    }
+}
+
+#[tauri::command]
 pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
     let join_result =
         tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text, keybind.as_deref())).await;
