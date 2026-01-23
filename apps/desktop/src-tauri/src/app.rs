@@ -349,12 +349,13 @@ fn simple_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::We
 }
 
 fn start_cursor_follower(app: tauri::AppHandle) {
-    use std::sync::atomic::{AtomicI64, Ordering};
+    use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
     use std::sync::Arc;
     use std::time::Duration;
 
     let last_monitor_x = Arc::new(AtomicI64::new(i64::MIN));
     let last_monitor_y = Arc::new(AtomicI64::new(i64::MIN));
+    let last_scale_bits = Arc::new(AtomicU64::new(0));
 
     std::thread::spawn(move || {
         loop {
@@ -366,16 +367,19 @@ fn start_cursor_follower(app: tauri::AppHandle) {
 
             let monitor_x = monitor.x as i64;
             let monitor_y = monitor.y as i64;
+            let scale_bits = monitor.scale_factor.to_bits();
 
             let prev_x = last_monitor_x.load(Ordering::Relaxed);
             let prev_y = last_monitor_y.load(Ordering::Relaxed);
+            let prev_scale = last_scale_bits.load(Ordering::Relaxed);
 
-            if monitor_x == prev_x && monitor_y == prev_y {
+            if monitor_x == prev_x && monitor_y == prev_y && scale_bits == prev_scale {
                 continue;
             }
 
             last_monitor_x.store(monitor_x, Ordering::Relaxed);
             last_monitor_y.store(monitor_y, Ordering::Relaxed);
+            last_scale_bits.store(scale_bits, Ordering::Relaxed);
 
             let Some(window) = app.get_webview_window("simple-overlay") else {
                 continue;
