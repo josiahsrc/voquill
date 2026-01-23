@@ -2,7 +2,6 @@ pub mod api_key;
 pub mod app_target;
 pub mod hotkey;
 pub mod keyboard;
-pub mod monitor;
 pub mod overlay;
 pub mod permissions;
 pub mod preferences;
@@ -23,7 +22,6 @@ pub use recording::{
     AudioChunkPayload, RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult,
     EVT_AUDIO_CHUNK, EVT_REC_LEVEL,
 };
-pub use monitor::{MonitorAtCursor, ScreenVisibleArea};
 pub use term::Term;
 pub use tone::Tone;
 pub use transcription::{Transcription, TranscriptionAudioSnapshot};

@@ -83,8 +83,6 @@ pub const IGNORE_UPDATE_DIALOG_MIGRATION_SQL: &str =
 pub const USER_COMPANY_TITLE_MIGRATION_SQL: &str =
     include_str!("migrations/044_user_company_title.sql");
 pub const INCOGNITO_MODE_MIGRATION_SQL: &str = include_str!("migrations/045_incognito_mode.sql");
-pub const DICTATION_PILL_VISIBILITY_MIGRATION_SQL: &str =
-    include_str!("migrations/046_dictation_pill_visibility.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -356,12 +354,6 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 45,
             description: "add_incognito_mode",
             sql: INCOGNITO_MODE_MIGRATION_SQL,
-            kind: tauri_plugin_sql::MigrationKind::Up,
-        },
-        tauri_plugin_sql::Migration {
-            version: 46,
-            description: "add_dictation_pill_visibility",
-            sql: DICTATION_PILL_VISIBILITY_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
 
 const TAU = Math.PI * 2;
 const LEVEL_SMOOTHING = 0.18;
@@ -64,7 +64,6 @@ export type AudioWaveformProps = {
   strokeWidth?: number;
   className?: string;
   style?: CSSProperties;
-  baselineOffset?: number;
 };
 
 export const AudioWaveform = ({
@@ -77,7 +76,6 @@ export const AudioWaveform = ({
   strokeWidth = 1.6,
   className,
   style,
-  baselineOffset = 0,
 }: AudioWaveformProps) => {
   const theme = useTheme();
   const resolvedColor = strokeColor ?? theme.vars?.palette.primary.main;
@@ -95,7 +93,7 @@ export const AudioWaveform = ({
   waveRefs.current.length = WAVE_CONFIG.length;
 
   useEffect(() => {
-    const baseline = height / 2 + baselineOffset;
+    const baseline = height / 2;
     const defaultPath = `M 0 ${baseline} L ${width} ${baseline}`;
     waveRefs.current.forEach((path, index) => {
       if (!path) {
@@ -146,7 +144,7 @@ export const AudioWaveform = ({
       state.currentLevel = 0;
       state.phase = 0;
 
-      const baseline = height / 2 + baselineOffset;
+      const baseline = height / 2;
       const defaultPath = `M 0 ${baseline} L ${width} ${baseline}`;
 
       waveRefs.current.forEach((path, index) => {
@@ -190,7 +188,7 @@ export const AudioWaveform = ({
       const advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * level;
       state.phase = (state.phase + advance) % TAU;
 
-      const baseline = height / 2 + baselineOffset;
+      const baseline = height / 2;
       const waveHeight = height;
       const waveWidth = width;
 

@@ -1,6 +1,6 @@
 import mixpanel from "mixpanel-browser";
 
-export const CURRENT_COHORT = "2025-01-b";
+export const CURRENT_COHORT = "2025-01-a";
 
 export function trackPageView(pageName: string) {
   mixpanel.track("Page View", { page: pageName });
@@ -27,8 +27,4 @@ export function trackButtonClick(
   props?: Record<string, unknown>,
 ) {
   mixpanel.track("Button Click", { name, ...props });
-}
-
-export function trackAppUsed(appName: string) {
-  mixpanel.track("App Used", { appName });
 }

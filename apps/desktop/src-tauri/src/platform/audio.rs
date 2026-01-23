@@ -9,6 +9,9 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
+#[cfg(target_os = "macos")]
+use crate::platform::macos::notch_overlay;
+
 /// Cached device info for quick recording start.
 /// We remember the last successfully used device to avoid re-enumeration.
 #[derive(Clone)]
@@ -980,11 +983,26 @@ where
             config,
             move |data: &[T], _| {
                 let mut mono_samples = Vec::with_capacity(data.len() / channel_count + 1);
+                #[cfg(target_os = "macos")]
+                let mut sum_squares = 0.0f64;
+                #[cfg(target_os = "macos")]
+                let mut sample_count = 0usize;
+                #[cfg(target_os = "macos")]
+                let mut peak = 0.0f64;
 
                 if channel_count == 1 {
                     for sample in data {
                         let value = (*sample).to_sample::<f32>();
                         mono_samples.push(value);
+                        #[cfg(target_os = "macos")]
+                        {
+                            let sample64 = value as f64;
+                            sum_squares += sample64 * sample64;
+                            sample_count += 1;
+                            if sample64.abs() > peak {
+                                peak = sample64.abs();
+                            }
+                        }
                     }
                 } else {
                     let mut index = 0;
@@ -999,6 +1017,15 @@ where
                             let sample_value = data[sample_index].to_sample::<f32>();
                             sum += sample_value;
                             samples_in_frame += 1;
+                            #[cfg(target_os = "macos")]
+                            {
+                                let sample64 = sample_value as f64;
+                                sum_squares += sample64 * sample64;
+                                sample_count += 1;
+                                if sample64.abs() > peak {
+                                    peak = sample64.abs();
+                                }
+                            }
                         }
                         if samples_in_frame > 0 {
                             mono_samples.push(sum / samples_in_frame as f32);
@@ -1017,6 +1044,15 @@ where
 
                 if let Ok(mut shared_buffer) = callback_buffer.lock() {
                     shared_buffer.extend_from_slice(&mono_samples);
+                }
+
+                #[cfg(target_os = "macos")]
+                {
+                    if sample_count > 0 {
+                        let rms = (sum_squares / sample_count as f64).sqrt();
+                        let amplitude = (rms * 0.9 + peak * 0.85).min(1.5);
+                        notch_overlay::register_amplitude(amplitude.min(1.0));
+                    }
                 }
             },
             |err| eprintln!("[recording] stream error: {err}"),

@@ -1,38 +1,98 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useAppStore } from "../store";
-import type { ActivationController } from "../utils/activation.utils";
 import { getHotkeyCombosForAction } from "../utils/keyboard.utils";
+
+const LOCK_MS = 400;
 
 export const useHotkeyHold = (args: {
   actionName: string;
-  controller: ActivationController;
+  onActivate?: () => void;
+  onDeactivate?: () => void;
 }) => {
-  const { controller } = args;
   const keysHeld = useAppStore((s) => s.keysHeld);
   const availableCombos = useAppStore((state) =>
     getHotkeyCombosForAction(state, args.actionName),
   );
 
+  const onActivateRef = useRef(args.onActivate);
+  const onDeactivateRef = useRef(args.onDeactivate);
+
+  useEffect(() => {
+    onActivateRef.current = args.onActivate;
+  }, [args.onActivate]);
+
+  useEffect(() => {
+    onDeactivateRef.current = args.onDeactivate;
+  }, [args.onDeactivate]);
+
+  const activeRef = useRef(false);
+  const lockedRef = useRef(false);
+  const ignoreActivationRef = useRef(false);
+  const deactivateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activationTimestampRef = useRef<number | null>(null);
+  const lastReleaseRef = useRef<number | null>(null);
   const wasPressedRef = useRef(false);
+
+  const clearPendingDeactivation = useCallback(() => {
+    if (deactivateTimerRef.current) {
+      clearTimeout(deactivateTimerRef.current);
+      deactivateTimerRef.current = null;
+    }
+  }, []);
+
+  const activate = useCallback(
+    (timestamp: number) => {
+      if (activeRef.current) {
+        return;
+      }
+
+      clearPendingDeactivation();
+      activeRef.current = true;
+      activationTimestampRef.current = timestamp;
+      onActivateRef.current?.();
+    },
+    [clearPendingDeactivation],
+  );
+
+  const deactivate = useCallback(() => {
+    const wasActive = activeRef.current;
+
+    clearPendingDeactivation();
+    activeRef.current = false;
+    lockedRef.current = false;
+    ignoreActivationRef.current = false;
+    activationTimestampRef.current = null;
+
+    if (wasActive) {
+      onDeactivateRef.current?.();
+    }
+  }, [clearPendingDeactivation]);
 
   useEffect(() => {
     return () => {
-      controller.dispose();
+      clearPendingDeactivation();
+      deactivate();
     };
-  }, [controller]);
+  }, [clearPendingDeactivation, deactivate]);
 
   useEffect(() => {
     if (
-      controller.isActive &&
+      activeRef.current &&
       !wasPressedRef.current &&
-      !controller.hasHadRelease
+      lastReleaseRef.current === null
     ) {
-      controller.forceReset();
+      activeRef.current = false;
+      lockedRef.current = false;
+      ignoreActivationRef.current = false;
+      activationTimestampRef.current = null;
     }
 
     if (availableCombos.length === 0) {
+      ignoreActivationRef.current = false;
       wasPressedRef.current = false;
-      controller.reset();
+      lastReleaseRef.current = null;
+      clearPendingDeactivation();
+      deactivate();
       return;
     }
 
@@ -60,19 +120,74 @@ export const useHotkeyHold = (args: {
     const wasPressed = wasPressedRef.current;
 
     if (isPressed && !wasPressed) {
-      if (controller.shouldIgnoreActivation) {
+      if (ignoreActivationRef.current) {
         wasPressedRef.current = isPressed;
         return;
       }
 
-      controller.handlePress();
+      const now = Date.now();
+
+      if (lockedRef.current) {
+        lockedRef.current = false;
+        ignoreActivationRef.current = true;
+        deactivate();
+        wasPressedRef.current = isPressed;
+        return;
+      }
+
+      const lastRelease = lastReleaseRef.current;
+      // A quick re-press before the auto-release window locks the hotkey on.
+      const doubleTap =
+        activeRef.current &&
+        lastRelease !== null &&
+        now - lastRelease <= LOCK_MS;
+
+      clearPendingDeactivation();
+
+      if (!activeRef.current) {
+        activate(now);
+      }
+
+      if (doubleTap && activeRef.current) {
+        lockedRef.current = true;
+      }
     } else if (!isPressed && wasPressed) {
-      controller.clearIgnore();
-      controller.handleRelease();
+      ignoreActivationRef.current = false;
+      lastReleaseRef.current = Date.now();
+
+      if (!activeRef.current) {
+        wasPressedRef.current = isPressed;
+        return;
+      }
+
+      if (lockedRef.current) {
+        wasPressedRef.current = isPressed;
+        return;
+      }
+
+      const now = Date.now();
+      const activatedAt = activationTimestampRef.current ?? now;
+      const elapsed = now - activatedAt;
+      const remaining = LOCK_MS - elapsed;
+
+      if (remaining <= 0) {
+        deactivate();
+      } else {
+        clearPendingDeactivation();
+        deactivateTimerRef.current = setTimeout(() => {
+          deactivate();
+        }, remaining);
+      }
     }
 
     wasPressedRef.current = isPressed;
-  }, [keysHeld, availableCombos, controller]);
+  }, [
+    keysHeld,
+    availableCombos,
+    activate,
+    deactivate,
+    clearPendingDeactivation,
+  ]);
 };
 
 export const useHotkeyFire = (args: {

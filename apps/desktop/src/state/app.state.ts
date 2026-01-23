@@ -36,7 +36,6 @@ import {
   TranscriptionsState,
 } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
-import { Vector2 } from "../types/math.types";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -87,8 +86,6 @@ export type AppState = {
 
   toastQueue: Toast[];
   currentToast: Toast | null;
-
-  overlayCursor: Nullable<Vector2>;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -121,7 +118,6 @@ export const INITIAL_APP_STATE: AppState = {
   snackbarTransitionDuration: undefined,
   toastQueue: [],
   currentToast: null,
-  overlayCursor: null,
   agent: INITIAL_AGENT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
