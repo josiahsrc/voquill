@@ -1,6 +1,5 @@
 import type {
   AgentMode,
-  DictationPillVisibility,
   Nullable,
   PostProcessingMode,
   TranscriptionMode,
@@ -30,5 +29,4 @@ export type UserPreferences = {
   ignoreUpdateDialog: boolean;
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
-  dictationPillVisibility: DictationPillVisibility;
 };

@@ -73,28 +73,3 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
 
     result
 }
-
-pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), String> {
-    let window_for_handle = window.clone();
-    let (tx, rx) = mpsc::channel();
-
-    window
-        .run_on_main_thread(move || {
-            let result = (|| -> Result<(), String> {
-                let gtk_window = window_for_handle
-                    .gtk_window()
-                    .map_err(|err| err.to_string())?;
-
-                gtk_window.set_accept_focus(false);
-                gtk_window.set_focus_on_map(false);
-
-                Ok(())
-            })();
-
-            let _ = tx.send(result);
-        })
-        .map_err(|err| err.to_string())?;
-
-    rx.recv()
-        .map_err(|_| "failed to configure overlay as non-activating on main thread".to_string())?
-}

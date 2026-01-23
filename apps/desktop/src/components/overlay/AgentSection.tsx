@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import { emitTo } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useOverlayDrag } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
@@ -288,7 +288,7 @@ const AgentThinkingBubble = () => {
   );
 };
 
-export const AgentSection = () => {
+export const AgentSection = forwardRef<HTMLDivElement>((_, ref) => {
   const theme = useTheme();
   const phase = useAppStore((state) => state.agent.overlayPhase);
   const levels = useAppStore((state) => state.audioLevels);
@@ -400,7 +400,7 @@ export const AgentSection = () => {
       }}
     >
       <Paper
-        data-overlay-interactive
+        ref={ref}
         key={animationKey}
         elevation={4}
         sx={{
@@ -574,4 +574,6 @@ export const AgentSection = () => {
       </Paper>
     </Box>
   );
-};
+});
+
+AgentSection.displayName = "AgentSection";

@@ -19,10 +19,7 @@ pub(crate) fn paste_text_into_focused_field(text: &str, keybind: Option<&str>) -
         enigo.key_up(Key::Shift);
         enigo.key_up(Key::Control);
         enigo.key_up(Key::Alt);
-        enigo.key_up(Key::Meta);
-        thread::sleep(Duration::from_millis(50));
-        enigo.key_click(Key::Escape);
-        thread::sleep(Duration::from_millis(50));
+        thread::sleep(Duration::from_millis(30));
         enigo.key_sequence(target);
         Ok(())
     })
@@ -36,18 +33,13 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
         .set_text(text.to_string())
         .map_err(|err| format!("failed to store clipboard text: {err}"))?;
 
-    thread::sleep(Duration::from_millis(50));
+    thread::sleep(Duration::from_millis(40));
 
     let mut enigo = Enigo::new();
-
     enigo.key_up(Key::Shift);
     enigo.key_up(Key::Control);
     enigo.key_up(Key::Alt);
-    enigo.key_up(Key::Meta);
-    thread::sleep(Duration::from_millis(50));
-
-    enigo.key_click(Key::Escape);
-    thread::sleep(Duration::from_millis(50));
+    thread::sleep(Duration::from_millis(30));
 
     // Use configurable keybind or default to Ctrl+V
     let use_shift = keybind == Some("ctrl+shift+v");
@@ -57,7 +49,7 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
         enigo.key_down(Key::Shift);
     }
     enigo.key_down(Key::Layout('v'));
-    thread::sleep(Duration::from_millis(20));
+    thread::sleep(Duration::from_millis(15));
     enigo.key_up(Key::Layout('v'));
     if use_shift {
         enigo.key_up(Key::Shift);
