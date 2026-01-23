@@ -135,6 +135,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 if let Some(simple_window) = app_handle.get_webview_window("simple-overlay") {
                     let _ = crate::platform::window::show_overlay_no_focus(&simple_window);
                 }
+
+                start_cursor_follower(app_handle.clone());
             }
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
@@ -344,6 +346,50 @@ fn simple_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::We
     }
 
     Ok(tauri::WebviewUrl::App("index.html?simple-overlay=1".into()))
+}
+
+fn start_cursor_follower(app: tauri::AppHandle) {
+    use std::sync::atomic::{AtomicI64, Ordering};
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    let last_monitor_x = Arc::new(AtomicI64::new(i64::MIN));
+    let last_monitor_y = Arc::new(AtomicI64::new(i64::MIN));
+
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(Duration::from_millis(100));
+
+            let Some(monitor) = crate::platform::monitor::get_monitor_at_cursor() else {
+                continue;
+            };
+
+            let monitor_x = monitor.x as i64;
+            let monitor_y = monitor.y as i64;
+
+            let prev_x = last_monitor_x.load(Ordering::Relaxed);
+            let prev_y = last_monitor_y.load(Ordering::Relaxed);
+
+            if monitor_x == prev_x && monitor_y == prev_y {
+                continue;
+            }
+
+            last_monitor_x.store(monitor_x, Ordering::Relaxed);
+            last_monitor_y.store(monitor_y, Ordering::Relaxed);
+
+            let Some(window) = app.get_webview_window("simple-overlay") else {
+                continue;
+            };
+
+            let width = 400.0;
+            let x = monitor.visible_x + (monitor.visible_width - width) / 2.0;
+            let y = monitor.visible_y + monitor.visible_height * 0.75;
+
+            let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(
+                x, y,
+            )));
+        }
+    });
 }
 
 async fn initialize_transcriber_background(app: &tauri::AppHandle) -> Result<(), String> {
