@@ -82,14 +82,14 @@ export const UnifiedOverlayRoot = () => {
           if (platform === "windows") {
             await windowRef.setSize(
               new PhysicalSize(
-                targetMonitor.size.width,
-                targetMonitor.size.height,
+                targetMonitor.size.width - leftInset - rightInset,
+                targetMonitor.size.height - topInset - bottomInset,
               ),
             );
             await windowRef.setPosition(
               new PhysicalPosition(
-                targetMonitor.position.x,
-                targetMonitor.position.y,
+                targetMonitor.position.x + leftInset,
+                targetMonitor.position.y + topInset,
               ),
             );
           } else {
