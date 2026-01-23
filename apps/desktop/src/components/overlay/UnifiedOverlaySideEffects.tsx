@@ -4,8 +4,6 @@ import {
   getCurrentWindow,
   LogicalPosition,
   LogicalSize,
-  PhysicalPosition,
-  PhysicalSize,
 } from "@tauri-apps/api/window";
 import { useEffect, useMemo, useRef } from "react";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
@@ -62,18 +60,8 @@ async function repositionOverlay(
   const platform = getPlatform();
 
   if (platform === "windows") {
-    await windowRef.setSize(
-      new PhysicalSize(
-        monitor.width * monitor.scaleFactor,
-        monitor.height * monitor.scaleFactor,
-      ),
-    );
-    await windowRef.setPosition(
-      new PhysicalPosition(
-        monitor.x * monitor.scaleFactor,
-        monitor.y * monitor.scaleFactor,
-      ),
-    );
+    await windowRef.setSize(new LogicalSize(monitor.width, monitor.height));
+    await windowRef.setPosition(new LogicalPosition(monitor.x, monitor.y));
   } else if (platform === "macos") {
     await windowRef.setSize(
       new LogicalSize(monitor.visibleWidth, monitor.visibleHeight),
