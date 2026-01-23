@@ -19,6 +19,7 @@ import { connectStorageEmulator, getStorage } from "firebase/storage";
 import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
+import { SimpleOverlayRoot } from "./components/overlay/SimpleOverlayRoot";
 import { UnifiedOverlayRoot } from "./components/overlay/UnifiedOverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
@@ -94,6 +95,7 @@ const searchParams =
     : null;
 
 const isOverlayWindow = searchParams?.get("overlay") === "1";
+const isSimpleOverlayWindow = searchParams?.get("simple-overlay") === "1";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
@@ -123,7 +125,13 @@ const Main = ({ children }: ChildrenProps) => {
   );
 };
 
-if (isOverlayWindow) {
+if (isSimpleOverlayWindow) {
+  root.render(
+    <Main>
+      <SimpleOverlayRoot />
+    </Main>,
+  );
+} else if (isOverlayWindow) {
   root.render(
     <Main>
       <UnifiedOverlayRoot />

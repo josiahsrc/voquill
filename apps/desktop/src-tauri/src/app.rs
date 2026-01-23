@@ -128,6 +128,13 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 ensure_unified_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                ensure_simple_overlay_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                if let Some(simple_window) = app_handle.get_webview_window("simple-overlay") {
+                    let _ = crate::platform::window::show_overlay_no_focus(&simple_window);
+                }
             }
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
@@ -167,6 +174,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::show_overlay_no_focus,
             crate::commands::set_overlay_click_through,
             crate::commands::restore_overlay_focus,
+            crate::commands::show_simple_overlay,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
@@ -263,6 +271,79 @@ fn unified_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::W
     }
 
     Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
+}
+
+pub fn ensure_simple_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::{Manager, WebviewWindowBuilder};
+
+    if app.get_webview_window("simple-overlay").is_some() {
+        return Ok(());
+    }
+
+    let width = 400.0;
+    let height = 200.0;
+
+    let (screen_width, screen_height) = if let Some(monitor) = app.primary_monitor().ok().flatten()
+    {
+        let size = monitor.size();
+        let scale = monitor.scale_factor();
+        (size.width as f64 / scale, size.height as f64 / scale)
+    } else {
+        (1920.0, 1080.0)
+    };
+
+    let x = (screen_width - width) / 2.0;
+    let y = screen_height * 0.75;
+
+    let builder = {
+        let builder = WebviewWindowBuilder::new(
+            app,
+            "simple-overlay",
+            simple_overlay_webview_url(app)?,
+        )
+        .decorations(false)
+        .always_on_top(true)
+        .transparent(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .focusable(false)
+        .inner_size(width, height)
+        .position(x, y);
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            builder.visible(false)
+        }
+        #[cfg(target_os = "linux")]
+        {
+            builder
+        }
+    };
+
+    let window = builder.build()?;
+
+    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
+        eprintln!("Failed to configure simple overlay as non-activating: {err}");
+    }
+
+    Ok(())
+}
+
+fn simple_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
+    #[cfg(debug_assertions)]
+    {
+        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
+            let query = match dev_url.query() {
+                Some(existing) if !existing.is_empty() => format!("{existing}&simple-overlay=1"),
+                _ => "simple-overlay=1".to_string(),
+            };
+            dev_url.set_query(Some(&query));
+            return Ok(tauri::WebviewUrl::External(dev_url));
+        }
+    }
+
+    Ok(tauri::WebviewUrl::App("index.html?simple-overlay=1".into()))
 }
 
 async fn initialize_transcriber_background(app: &tauri::AppHandle) -> Result<(), String> {
