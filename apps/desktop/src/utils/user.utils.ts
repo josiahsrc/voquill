@@ -1,4 +1,10 @@
-import { ApiKeyProvider, Nullable, User, UserPreferences } from "@repo/types";
+import {
+  ApiKeyProvider,
+  DictationPillVisibility,
+  Nullable,
+  User,
+  UserPreferences,
+} from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
@@ -292,4 +298,18 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
 
 export const getAgentModePrefs = (state: AppState): GenerativePrefs => {
   return getGenPrefsInternal(state, state.settings.agentMode, "agent mode");
+};
+
+export const getEffectivePillVisibility = (
+  visibility?: Nullable<string>,
+): DictationPillVisibility => {
+  if (
+    visibility === "hidden" ||
+    visibility === "while_active" ||
+    visibility === "persistent"
+  ) {
+    return visibility;
+  }
+
+  return "while_active";
 };

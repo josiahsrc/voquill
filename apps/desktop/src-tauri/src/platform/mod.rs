@@ -7,6 +7,8 @@ pub use linux::accessibility;
 #[cfg(target_os = "linux")]
 pub use linux::input;
 #[cfg(target_os = "linux")]
+pub use linux::monitor;
+#[cfg(target_os = "linux")]
 pub use linux::permissions;
 #[cfg(target_os = "linux")]
 pub use linux::window;
@@ -18,6 +20,8 @@ pub use macos::accessibility;
 #[cfg(target_os = "macos")]
 pub use macos::input;
 #[cfg(target_os = "macos")]
+pub use macos::monitor;
+#[cfg(target_os = "macos")]
 pub use macos::permissions;
 #[cfg(target_os = "macos")]
 pub use macos::window;
@@ -28,6 +32,8 @@ pub mod windows;
 pub use windows::accessibility;
 #[cfg(target_os = "windows")]
 pub use windows::input;
+#[cfg(target_os = "windows")]
+pub use windows::monitor;
 #[cfg(target_os = "windows")]
 pub use windows::permissions;
 #[cfg(target_os = "windows")]

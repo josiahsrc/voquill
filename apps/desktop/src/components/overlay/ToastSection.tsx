@@ -1,6 +1,6 @@
 import { Box, keyframes } from "@mui/material";
 import { emitTo } from "@tauri-apps/api/event";
-import { forwardRef, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { produceAppState, useAppStore } from "../../store";
 import { ToastAction } from "../../types/toast.types";
 import { ToastItem } from "../toast/ToastItem";
@@ -35,7 +35,7 @@ const slideOut = keyframes`
   }
 `;
 
-export const ToastSection = forwardRef<HTMLDivElement>((_, ref) => {
+export const ToastSection = () => {
   const currentToast = useAppStore((state) => state.currentToast);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [displayedToast, setDisplayedToast] = useState(currentToast);
@@ -91,7 +91,7 @@ export const ToastSection = forwardRef<HTMLDivElement>((_, ref) => {
       }}
     >
       <Box
-        ref={ref}
+        data-overlay-interactive
         sx={{
           animation: `${isAnimatingOut ? slideOut : slideIn} ${isAnimatingOut ? ANIMATION_OUT_MS : ANIMATION_IN_MS}ms ease-out forwards`,
           pointerEvents: "auto",
@@ -106,6 +106,4 @@ export const ToastSection = forwardRef<HTMLDivElement>((_, ref) => {
       </Box>
     </Box>
   );
-});
-
-ToastSection.displayName = "ToastSection";
+};

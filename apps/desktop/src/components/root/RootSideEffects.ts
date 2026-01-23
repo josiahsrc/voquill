@@ -40,14 +40,19 @@ import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
-import { OverlayPhase } from "../../types/overlay.types";
+import type { OverlayPhase } from "../../types/overlay.types";
 import type { StrategyContext } from "../../types/strategy.types";
 import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
 import {
+  debouncedToggle,
+  getOrCreateController,
+} from "../../utils/activation.utils";
+import {
   trackAgentStart,
+  trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
@@ -105,6 +110,31 @@ export const RootSideEffects = () => {
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
   const intl = useIntl();
+
+  const startDictationRef = useRef<(() => void) | null>(null);
+  const stopDictationRef = useRef<(() => void) | null>(null);
+  const startAgentRef = useRef<(() => void) | null>(null);
+  const stopAgentRef = useRef<(() => void) | null>(null);
+
+  const dictationController = useMemo(
+    () =>
+      getOrCreateController(
+        "dictation",
+        () => startDictationRef.current?.(),
+        () => stopDictationRef.current?.(),
+      ),
+    [],
+  );
+
+  const agentController = useMemo(
+    () =>
+      getOrCreateController(
+        "agent",
+        () => startAgentRef.current?.(),
+        () => stopAgentRef.current?.(),
+      ),
+    [],
+  );
 
   const strategyContext: StrategyContext = useMemo(
     () => ({
@@ -236,6 +266,7 @@ export const RootSideEffects = () => {
 
         await strategy.onBeforeStart();
 
+        console.log("[startRecording] starting recording with mic:", preferredMicrophone);
         const [, startRecordingResult] = await Promise.all([
           strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
@@ -343,6 +374,7 @@ export const RootSideEffects = () => {
         ]);
         const toneId = currentApp?.toneId ?? null;
         const rawTranscript = transcribeResult.rawTranscript;
+        trackAppUsed(currentApp?.name ?? "Unknown");
 
         if (rawTranscript) {
           const { shouldContinue } = await strategy.handleTranscript({
@@ -420,16 +452,19 @@ export const RootSideEffects = () => {
     await stopRecording();
   }, [stopRecording]);
 
+  startDictationRef.current = startDictationRecording;
+  stopDictationRef.current = stopDictationRecording;
+  startAgentRef.current = startAgentRecording;
+  stopAgentRef.current = stopAgentRecording;
+
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    onActivate: startDictationRecording,
-    onDeactivate: stopDictationRecording,
+    controller: dictationController,
   });
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
-    onActivate: startAgentRecording,
-    onDeactivate: stopAgentRecording,
+    controller: agentController,
   });
 
   const languageSwitchEnabled = useAppStore(
@@ -507,6 +542,10 @@ export const RootSideEffects = () => {
     produceAppState((draft) => {
       draft.activeRecordingMode = null;
     });
+  });
+
+  useTauriListen<void>("on-click-dictate", () => {
+    debouncedToggle("dictation", dictationController);
   });
 
   const trayLanguageCode = useAppStore((state) => {
