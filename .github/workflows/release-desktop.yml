@@ -280,6 +280,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -571,6 +572,63 @@ jobs:
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
 
+      - name: Azure login for code signing
+        if: matrix.os == 'windows-latest'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign Windows NSIS installer
+        if: matrix.os == 'windows-latest'
+        uses: azure/trusted-signing-action@v0
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: ${{ vars.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ vars.AZURE_CERT_PROFILE_NAME }}
+          files-folder: D:\cargo\release\bundle\nsis
+          files-folder-filter: exe
+
+      - name: Verify NSIS installer signature
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $nsisDir = "D:\cargo\release\bundle\nsis"
+          $installers = Get-ChildItem -Path $nsisDir -Filter "*.exe"
+
+          foreach ($installer in $installers) {
+            Write-Host "Verifying signature for: $($installer.Name)"
+            $sig = Get-AuthenticodeSignature -FilePath $installer.FullName
+
+            if ($sig.Status -ne "Valid") {
+              Write-Error "Signature verification failed for $($installer.Name): $($sig.Status)"
+              Write-Error "Status Message: $($sig.StatusMessage)"
+              exit 1
+            }
+
+            Write-Host "  Status: $($sig.Status)"
+            Write-Host "  Signer: $($sig.SignerCertificate.Subject)"
+            Write-Host "  Timestamp: $($sig.TimeStamperCertificate.Subject)"
+          }
+
+          Write-Host "All NSIS installers signed successfully"
+
+      - name: Re-upload signed NSIS installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+        run: |
+          $nsisDir = "D:\cargo\release\bundle\nsis"
+          $installers = Get-ChildItem -Path $nsisDir -Filter "*.exe"
+
+          foreach ($installer in $installers) {
+            Write-Host "Uploading signed installer: $($installer.Name)"
+            gh release upload $env:RELEASE_TAG $installer.FullName --clobber
+          }
+
       - name: Build Windows portable installer
         if: matrix.os == 'windows-latest'
         shell: pwsh
@@ -593,6 +651,37 @@ jobs:
           Set-Location apps/windows-installer
           npm install
           npm run tauri:build
+
+      - name: Sign Windows portable installer
+        if: matrix.os == 'windows-latest'
+        uses: azure/trusted-signing-action@v0
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: ${{ vars.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ vars.AZURE_CERT_PROFILE_NAME }}
+          files-folder: D:\cargo\release
+          files-folder-filter: exe
+          file-digest: SHA256
+
+      - name: Verify portable installer signature
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $installerExe = "D:\cargo\release\voquill-installer.exe"
+
+          Write-Host "Verifying signature for portable installer..."
+          $sig = Get-AuthenticodeSignature -FilePath $installerExe
+
+          if ($sig.Status -ne "Valid") {
+            Write-Error "Signature verification failed: $($sig.Status)"
+            Write-Error "Status Message: $($sig.StatusMessage)"
+            exit 1
+          }
+
+          Write-Host "  Status: $($sig.Status)"
+          Write-Host "  Signer: $($sig.SignerCertificate.Subject)"
+          Write-Host "  Timestamp: $($sig.TimeStamperCertificate.Subject)"
+          Write-Host "Portable installer signed successfully"
 
       - name: Upload Windows portable installer
         if: matrix.os == 'windows-latest'
