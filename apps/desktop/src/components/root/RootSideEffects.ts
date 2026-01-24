@@ -570,7 +570,9 @@ export const RootSideEffects = () => {
     const visibility = getEffectivePillVisibility(
       state.userPrefs?.dictationPillVisibility,
     );
-    return visibility === "persistent";
+    // Enable hover detection whenever the pill can be visible
+    // This allows clicking the pill to start dictation
+    return visibility !== "hidden";
   });
 
   useEffect(() => {
