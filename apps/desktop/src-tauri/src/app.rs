@@ -126,17 +126,25 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                // ensure_unified_overlay_window(&app_handle)
-                //     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
-                ensure_simple_overlay_window(&app_handle)
+                crate::overlay::ensure_simple_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-                if let Some(simple_window) = app_handle.get_webview_window("simple-overlay") {
+                crate::overlay::ensure_pill_overlay_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                if let Some(simple_window) =
+                    app_handle.get_webview_window(crate::overlay::SIMPLE_OVERLAY_LABEL)
+                {
                     let _ = crate::platform::window::show_overlay_no_focus(&simple_window);
                 }
 
-                start_cursor_follower(app_handle.clone());
+                if let Some(pill_window) =
+                    app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
+                {
+                    let _ = crate::platform::window::show_overlay_no_focus(&pill_window);
+                }
+
+                crate::overlay::start_cursor_follower(app_handle.clone());
             }
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
@@ -210,199 +218,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_selected_text,
             crate::commands::initialize_local_transcriber,
         ])
-}
-
-fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    use tauri::{Manager, WebviewWindowBuilder};
-
-    if app.get_webview_window("unified-overlay").is_some() {
-        return Ok(());
-    }
-
-    let (width, height) = if let Some(monitor) = app.primary_monitor().ok().flatten() {
-        let size = monitor.size();
-        let scale = monitor.scale_factor();
-        (size.width as f64 / scale, size.height as f64 / scale)
-    } else {
-        (1920.0, 1080.0)
-    };
-
-    let builder = {
-        let builder =
-            WebviewWindowBuilder::new(app, "unified-overlay", unified_overlay_webview_url(app)?)
-                .decorations(false)
-                .always_on_top(true)
-                .transparent(true)
-                .skip_taskbar(true)
-                .resizable(false)
-                .shadow(false)
-                .focusable(false)
-                .inner_size(width, height)
-                .position(0.0, 0.0);
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            builder.visible(false)
-        }
-        #[cfg(target_os = "linux")]
-        {
-            builder
-        }
-    };
-
-    let window = builder.build()?;
-
-    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
-        eprintln!("Failed to configure overlay as non-activating: {err}");
-    }
-
-    Ok(())
-}
-
-fn unified_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
-    #[cfg(debug_assertions)]
-    {
-        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
-            let query = match dev_url.query() {
-                Some(existing) if !existing.is_empty() => format!("{existing}&overlay=1"),
-                _ => "overlay=1".to_string(),
-            };
-            dev_url.set_query(Some(&query));
-            return Ok(tauri::WebviewUrl::External(dev_url));
-        }
-    }
-
-    Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
-}
-
-pub fn ensure_simple_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    use tauri::{Manager, WebviewWindowBuilder};
-
-    if app.get_webview_window("simple-overlay").is_some() {
-        return Ok(());
-    }
-
-    let width = 400.0;
-    let height = 200.0;
-
-    let (screen_width, screen_height) = if let Some(monitor) = app.primary_monitor().ok().flatten()
-    {
-        let size = monitor.size();
-        let scale = monitor.scale_factor();
-        (size.width as f64 / scale, size.height as f64 / scale)
-    } else {
-        (1920.0, 1080.0)
-    };
-
-    let x = (screen_width - width) / 2.0;
-    let y = screen_height * 0.75;
-
-    let builder = {
-        let builder = WebviewWindowBuilder::new(
-            app,
-            "simple-overlay",
-            simple_overlay_webview_url(app)?,
-        )
-        .decorations(false)
-        .always_on_top(true)
-        .transparent(true)
-        .skip_taskbar(true)
-        .resizable(false)
-        .shadow(false)
-        .focusable(false)
-        .inner_size(width, height)
-        .position(x, y);
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            builder.visible(false)
-        }
-        #[cfg(target_os = "linux")]
-        {
-            builder
-        }
-    };
-
-    let window = builder.build()?;
-
-    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
-        eprintln!("Failed to configure simple overlay as non-activating: {err}");
-    }
-
-    Ok(())
-}
-
-fn simple_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
-    #[cfg(debug_assertions)]
-    {
-        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
-            let query = match dev_url.query() {
-                Some(existing) if !existing.is_empty() => format!("{existing}&simple-overlay=1"),
-                _ => "simple-overlay=1".to_string(),
-            };
-            dev_url.set_query(Some(&query));
-            return Ok(tauri::WebviewUrl::External(dev_url));
-        }
-    }
-
-    Ok(tauri::WebviewUrl::App("index.html?simple-overlay=1".into()))
-}
-
-fn start_cursor_follower(app: tauri::AppHandle) {
-    use std::time::Duration;
-
-    std::thread::spawn(move || {
-        loop {
-            std::thread::sleep(Duration::from_millis(100));
-
-            let Some(monitor) = crate::platform::monitor::get_monitor_at_cursor() else {
-                continue;
-            };
-
-            let Some(window) = app.get_webview_window("simple-overlay") else {
-                continue;
-            };
-
-            let width = 400.0;
-            let height = 200.0;
-            let bottom_margin = 52.0;
-
-            #[cfg(target_os = "macos")]
-            let (logical_visible_x, logical_visible_width, logical_height) = (
-                monitor.visible_x,
-                monitor.visible_width,
-                monitor.height,
-            );
-
-            #[cfg(not(target_os = "macos"))]
-            let (logical_visible_x, logical_visible_width, logical_height) = {
-                let scale = monitor.scale_factor;
-                (
-                    monitor.visible_x / scale,
-                    monitor.visible_width / scale,
-                    monitor.height / scale,
-                )
-            };
-
-            let target_x = logical_visible_x + (logical_visible_width - width) / 2.0;
-            let target_y = logical_height - height - bottom_margin;
-
-            let should_update = match window.outer_position() {
-                Ok(current_pos) => {
-                    let current_x = current_pos.x as f64 / monitor.scale_factor;
-                    let current_y = current_pos.y as f64 / monitor.scale_factor;
-                    (target_x - current_x).abs() > 1.0 || (target_y - current_y).abs() > 1.0
-                }
-                Err(_) => true,
-            };
-
-            if should_update {
-                let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(
-                    target_x, target_y,
-                )));
-            }
-        }
-    });
 }
 
 async fn initialize_transcriber_background(app: &tauri::AppHandle) -> Result<(), String> {
