@@ -1,9 +1,11 @@
 import { Box, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import { invoke } from "@tauri-apps/api/core";
+import { emitTo } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { useAppStore } from "../../store";
 import { useTauriListen } from "../../hooks/tauri.hooks";
+import { useAppStore } from "../../store";
 import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
@@ -29,7 +31,6 @@ export const PillOverlayRoot = () => {
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );
   const hotkeyKeys = combos.length > 0 ? combos[0] : ["?"];
-
   useEffect(() => {
     document.body.style.margin = "0";
     document.body.style.padding = "0";
@@ -40,6 +41,12 @@ export const PillOverlayRoot = () => {
   useTauriListen<PillHoverPayload>("pill_hover", (payload) => {
     setIsHovered(payload.hovered);
   });
+
+  const handleMouseDownDictate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    invoke("restore_overlay_focus").catch(() => {});
+    emitTo("main", "on-click-dictate", {}).catch(console.error);
+  };
 
   return (
     <Box
@@ -114,6 +121,7 @@ export const PillOverlayRoot = () => {
         }}
       >
         <Box
+          onMouseDown={handleMouseDownDictate}
           sx={{
             width: isHovered ? EXPANDED_PILL_WIDTH : MIN_PILL_WIDTH,
             height: isHovered ? EXPANDED_PILL_HEIGHT : MIN_PILL_HEIGHT,
@@ -130,6 +138,7 @@ export const PillOverlayRoot = () => {
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
+            pointerEvents: "auto",
           }}
         >
           <Typography
