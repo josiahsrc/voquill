@@ -1091,9 +1091,9 @@ pub fn restore_overlay_focus() {
 
 #[tauri::command]
 pub fn show_simple_overlay(app: AppHandle) -> Result<(), String> {
-    crate::app::ensure_simple_overlay_window(&app).map_err(|err| err.to_string())?;
+    crate::overlay::ensure_simple_overlay_window(&app).map_err(|err| err.to_string())?;
     let window = app
-        .get_webview_window("simple-overlay")
+        .get_webview_window(crate::overlay::SIMPLE_OVERLAY_LABEL)
         .ok_or_else(|| "simple-overlay window not found".to_string())?;
     crate::platform::window::show_overlay_no_focus(&window)?;
     Ok(())
