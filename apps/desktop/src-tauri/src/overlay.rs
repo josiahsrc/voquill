@@ -18,7 +18,6 @@ pub const UNIFIED_OVERLAY_LABEL: &str = "unified-overlay";
 
 const BOTTOM_MARGIN: f64 = 52.0;
 const CURSOR_POLL_INTERVAL_MS: u64 = 100;
-const POSITION_THRESHOLD: f64 = 1.0;
 const DEFAULT_SCREEN_WIDTH: f64 = 1920.0;
 const DEFAULT_SCREEN_HEIGHT: f64 = 1080.0;
 
@@ -205,16 +204,21 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
             };
 
             #[cfg(target_os = "macos")]
-            let (logical_visible_x, logical_visible_width, logical_height) =
-                (monitor.visible_x, monitor.visible_width, monitor.height);
+            let (visible_x, visible_y, visible_width, visible_height) = (
+                monitor.visible_x,
+                monitor.visible_y,
+                monitor.visible_width,
+                monitor.visible_height,
+            );
 
             #[cfg(not(target_os = "macos"))]
-            let (logical_visible_x, logical_visible_width, logical_height) = {
+            let (visible_x, visible_y, visible_width, visible_height) = {
                 let scale = monitor.scale_factor;
                 (
                     monitor.visible_x / scale,
+                    monitor.visible_y / scale,
                     monitor.visible_width / scale,
-                    monitor.height / scale,
+                    monitor.visible_height / scale,
                 )
             };
 
@@ -223,29 +227,20 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                     continue;
                 };
 
-                let target_x = logical_visible_x + (logical_visible_width - config.width) / 2.0;
-                let target_y = logical_height - config.height - BOTTOM_MARGIN;
+                let target_x = visible_x + (visible_width - config.width) / 2.0;
+                let target_y = visible_y + visible_height - config.height - BOTTOM_MARGIN;
 
-                let should_update = match window.outer_position() {
-                    Ok(current_pos) => {
-                        let current_x = current_pos.x as f64 / monitor.scale_factor;
-                        let current_y = current_pos.y as f64 / monitor.scale_factor;
-                        (target_x - current_x).abs() > POSITION_THRESHOLD
-                            || (target_y - current_y).abs() > POSITION_THRESHOLD
-                    }
-                    Err(_) => true,
-                };
+                let physical_x = (target_x * monitor.scale_factor) as i32;
+                let physical_y = (target_y * monitor.scale_factor) as i32;
 
-                if should_update {
-                    let _ = window.set_position(tauri::Position::Logical(
-                        tauri::LogicalPosition::new(target_x, target_y),
-                    ));
-                }
+                let _ = window.set_position(tauri::Position::Physical(
+                    tauri::PhysicalPosition::new(physical_x, physical_y),
+                ));
             }
 
             if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-                let pill_x = logical_visible_x + (logical_visible_width - PILL_OVERLAY_WIDTH) / 2.0;
-                let pill_y = logical_height - PILL_OVERLAY_HEIGHT - BOTTOM_MARGIN;
+                let pill_x = visible_x + (visible_width - PILL_OVERLAY_WIDTH) / 2.0;
+                let pill_y = visible_y + visible_height - PILL_OVERLAY_HEIGHT - BOTTOM_MARGIN;
 
                 #[cfg(target_os = "macos")]
                 let cursor_y_from_top = monitor.height - monitor.cursor_y;
