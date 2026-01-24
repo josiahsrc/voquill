@@ -20,7 +20,6 @@ import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { PillOverlayRoot } from "./components/overlay/PillOverlayRoot";
-import { SimpleOverlayRoot } from "./components/overlay/SimpleOverlayRoot";
 import { ToastOverlayRoot } from "./components/overlay/ToastOverlayRoot";
 import { UnifiedOverlayRoot } from "./components/overlay/UnifiedOverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
@@ -97,7 +96,6 @@ const searchParams =
     : null;
 
 const isOverlayWindow = searchParams?.get("overlay") === "1";
-const isSimpleOverlayWindow = searchParams?.get("simple-overlay") === "1";
 const isPillOverlayWindow = searchParams?.get("pill-overlay") === "1";
 const isToastOverlayWindow = searchParams?.get("toast-overlay") === "1";
 
@@ -139,12 +137,6 @@ if (isPillOverlayWindow) {
   root.render(
     <Main>
       <ToastOverlayRoot />
-    </Main>,
-  );
-} else if (isSimpleOverlayWindow) {
-  root.render(
-    <Main>
-      <SimpleOverlayRoot />
     </Main>,
   );
 } else if (isOverlayWindow) {

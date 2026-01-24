@@ -1,10 +1,6 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, WebviewWindowBuilder};
 
-pub const SIMPLE_OVERLAY_LABEL: &str = "simple-overlay";
-pub const SIMPLE_OVERLAY_WIDTH: f64 = 400.0;
-pub const SIMPLE_OVERLAY_HEIGHT: f64 = 200.0;
-
 pub const PILL_OVERLAY_LABEL: &str = "pill-overlay";
 pub const PILL_OVERLAY_WIDTH: f64 = 256.0;
 pub const PILL_OVERLAY_HEIGHT: f64 = 96.0;
@@ -142,21 +138,6 @@ pub fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()
     Ok(())
 }
 
-pub fn ensure_simple_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    if app.get_webview_window(SIMPLE_OVERLAY_LABEL).is_some() {
-        return Ok(());
-    }
-
-    let url = build_overlay_webview_url(app, "simple-overlay")?;
-    create_overlay_window(
-        app,
-        SIMPLE_OVERLAY_LABEL,
-        SIMPLE_OVERLAY_WIDTH,
-        SIMPLE_OVERLAY_HEIGHT,
-        url,
-    )
-}
-
 pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     if app.get_webview_window(PILL_OVERLAY_LABEL).is_some() {
         return Ok(());
@@ -225,25 +206,6 @@ pub fn ensure_toast_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
     Ok(())
 }
 
-struct OverlayConfig {
-    label: &'static str,
-    width: f64,
-    height: f64,
-}
-
-const TRACKED_OVERLAYS: &[OverlayConfig] = &[
-    OverlayConfig {
-        label: SIMPLE_OVERLAY_LABEL,
-        width: SIMPLE_OVERLAY_WIDTH,
-        height: SIMPLE_OVERLAY_HEIGHT,
-    },
-    OverlayConfig {
-        label: PILL_OVERLAY_LABEL,
-        width: PILL_OVERLAY_WIDTH,
-        height: PILL_OVERLAY_HEIGHT,
-    },
-];
-
 pub fn start_cursor_follower(app: tauri::AppHandle) {
     use std::time::Duration;
     use tauri::Manager;
@@ -280,19 +242,14 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
 
             let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
 
-            // TODO: Simplify since we don't need simple overlay anymore
-            for config in TRACKED_OVERLAYS {
-                let Some(window) = app.get_webview_window(config.label) else {
-                    continue;
-                };
-
-                let target_x = visible_x + (visible_width - config.width) / 2.0;
-                let target_y = visible_y + visible_height - config.height - bottom_offset;
+            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+                let target_x = visible_x + (visible_width - PILL_OVERLAY_WIDTH) / 2.0;
+                let target_y = visible_y + visible_height - PILL_OVERLAY_HEIGHT - bottom_offset;
 
                 let physical_x = (target_x * monitor.scale_factor) as i32;
                 let physical_y = (target_y * monitor.scale_factor) as i32;
 
-                let _ = window.set_position(tauri::Position::Physical(
+                let _ = pill_window.set_position(tauri::Position::Physical(
                     tauri::PhysicalPosition::new(physical_x, physical_y),
                 ));
             }

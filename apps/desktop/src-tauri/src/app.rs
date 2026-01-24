@@ -127,20 +127,11 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                // crate::overlay::ensure_simple_overlay_window(&app_handle)
-                //     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
                 crate::overlay::ensure_pill_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
                 crate::overlay::ensure_toast_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
-                if let Some(simple_window) =
-                    app_handle.get_webview_window(crate::overlay::SIMPLE_OVERLAY_LABEL)
-                {
-                    let _ = crate::platform::window::show_overlay_no_focus(&simple_window);
-                }
 
                 if let Some(pill_window) =
                     app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
@@ -195,7 +186,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::set_overlay_click_through,
             crate::commands::set_toast_overlay_click_through,
             crate::commands::restore_overlay_focus,
-            crate::commands::show_simple_overlay,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
