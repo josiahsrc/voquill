@@ -22,13 +22,24 @@ pub struct OverlayPhasePayload {
     pub phase: OverlayPhase,
 }
 
-impl OverlayPhase {
-    pub fn from_str(value: &str) -> Option<Self> {
-        match value {
-            "idle" => Some(Self::Idle),
-            "recording" => Some(Self::Recording),
-            "loading" => Some(Self::Loading),
-            _ => None,
+impl std::str::FromStr for OverlayPhase {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "idle" => Ok(Self::Idle),
+            "recording" => Ok(Self::Recording),
+            "loading" => Ok(Self::Loading),
+            _ => {
+                // if allow to ignore Upper or Lower Case , add follow
+                let s_lower = s.to_ascii_lowercase();
+                match s_lower.as_str() {
+                    "idle" => Ok(Self::Idle),
+                    "recording" => Ok(Self::Recording),
+                    "loading" => Ok(Self::Loading),
+                    _ => Err(()),
+                }
+            }
         }
     }
 }
