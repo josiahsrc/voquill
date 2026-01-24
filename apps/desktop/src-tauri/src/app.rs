@@ -352,8 +352,6 @@ fn start_cursor_follower(app: tauri::AppHandle) {
     use std::time::Duration;
 
     std::thread::spawn(move || {
-        let mut last_state: Option<(f64, f64, f64, f64, f64, f64)> = None;
-
         loop {
             std::thread::sleep(Duration::from_millis(100));
 
@@ -386,19 +384,21 @@ fn start_cursor_follower(app: tauri::AppHandle) {
                 )
             };
 
-            let x = logical_visible_x + (logical_visible_width - width) / 2.0;
-            let y = logical_height - height - bottom_margin;
+            let target_x = logical_visible_x + (logical_visible_width - width) / 2.0;
+            let target_y = logical_height - height - bottom_margin;
 
-            let current_state = (x, y, logical_visible_x, logical_visible_width, logical_height, monitor.scale_factor);
-            let should_update = match last_state {
-                Some(last) => current_state != last,
-                None => true,
+            let should_update = match window.outer_position() {
+                Ok(current_pos) => {
+                    let current_x = current_pos.x as f64 / monitor.scale_factor;
+                    let current_y = current_pos.y as f64 / monitor.scale_factor;
+                    (target_x - current_x).abs() > 1.0 || (target_y - current_y).abs() > 1.0
+                }
+                Err(_) => true,
             };
 
             if should_update {
-                last_state = Some(current_state);
                 let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(
-                    x, y,
+                    target_x, target_y,
                 )));
             }
         }
