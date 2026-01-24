@@ -9,14 +9,14 @@ pub fn set_overlay_position(
     window_height: f64,
     margin: f64,
 ) {
-    // Linux uses Physical positions (same as Windows)
-    // Monitor values may be in application units, convert to logical for calculation
+    // GDK returns coordinates in logical (application) pixels already,
+    // so we use them directly without dividing by scale
     let scale = monitor.scale_factor;
 
-    let visible_x = monitor.visible_x / scale;
-    let visible_y = monitor.visible_y / scale;
-    let visible_width = monitor.visible_width / scale;
-    let visible_height = monitor.visible_height / scale;
+    let visible_x = monitor.visible_x;
+    let visible_y = monitor.visible_y;
+    let visible_width = monitor.visible_width;
+    let visible_height = monitor.visible_height;
 
     let (target_x, target_y) = match anchor {
         OverlayAnchor::BottomCenter => {

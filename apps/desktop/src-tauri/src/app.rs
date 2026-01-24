@@ -348,34 +348,50 @@ fn simple_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::We
     Ok(tauri::WebviewUrl::App("index.html?simple-overlay=1".into()))
 }
 
-fn start_cursor_follower(app: tauri::AppHandle) {
+fn update_cursor_follower(app: &tauri::AppHandle) {
     use crate::domain::OverlayAnchor;
+
+    let Some(monitor) = crate::platform::monitor::get_monitor_at_cursor() else {
+        return;
+    };
+
+    let Some(window) = app.get_webview_window("simple-overlay") else {
+        return;
+    };
+
+    let width = 400.0;
+    let height = 200.0;
+    let margin = 52.0;
+
+    crate::platform::position::set_overlay_position(
+        &window,
+        &monitor,
+        OverlayAnchor::BottomCenter,
+        width,
+        height,
+        margin,
+    );
+}
+
+#[cfg(target_os = "linux")]
+fn start_cursor_follower(app: tauri::AppHandle) {
+    use gtk::glib::{self, ControlFlow};
+    use std::time::Duration;
+
+    glib::timeout_add_local(Duration::from_millis(100), move || {
+        update_cursor_follower(&app);
+        ControlFlow::Continue
+    });
+}
+
+#[cfg(not(target_os = "linux"))]
+fn start_cursor_follower(app: tauri::AppHandle) {
     use std::time::Duration;
 
     std::thread::spawn(move || {
         loop {
             std::thread::sleep(Duration::from_millis(100));
-
-            let Some(monitor) = crate::platform::monitor::get_monitor_at_cursor() else {
-                continue;
-            };
-
-            let Some(window) = app.get_webview_window("simple-overlay") else {
-                continue;
-            };
-
-            let width = 400.0;
-            let height = 200.0;
-            let margin = 52.0;
-
-            crate::platform::position::set_overlay_position(
-                &window,
-                &monitor,
-                OverlayAnchor::BottomCenter,
-                width,
-                height,
-                margin,
-            );
+            update_cursor_follower(&app);
         }
     });
 }
