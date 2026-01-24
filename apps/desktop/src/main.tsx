@@ -22,7 +22,6 @@ import { IntlProvider } from "react-intl";
 import { AgentOverlayRoot } from "./components/overlay/AgentOverlayRoot";
 import { PillOverlayRoot } from "./components/overlay/PillOverlayRoot";
 import { ToastOverlayRoot } from "./components/overlay/ToastOverlayRoot";
-import { UnifiedOverlayRoot } from "./components/overlay/UnifiedOverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
 import { getIntlConfig } from "./i18n";
@@ -96,7 +95,6 @@ const searchParams =
     ? new URLSearchParams(window.location.search)
     : null;
 
-const isOverlayWindow = searchParams?.get("overlay") === "1";
 const isPillOverlayWindow = searchParams?.get("pill-overlay") === "1";
 const isToastOverlayWindow = searchParams?.get("toast-overlay") === "1";
 const isAgentOverlayWindow = searchParams?.get("agent-overlay") === "1";
@@ -145,12 +143,6 @@ if (isPillOverlayWindow) {
   root.render(
     <Main>
       <AgentOverlayRoot />
-    </Main>,
-  );
-} else if (isOverlayWindow) {
-  root.render(
-    <Main>
-      <UnifiedOverlayRoot />
     </Main>,
   );
 } else {

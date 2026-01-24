@@ -12,8 +12,6 @@ pub const EXPANDED_PILL_HEIGHT: f64 = 32.0;
 pub const EXPANDED_PILL_HOVERABLE_WIDTH: f64 = EXPANDED_PILL_WIDTH + 16.0;
 pub const EXPANDED_PILL_HOVERABLE_HEIGHT: f64 = EXPANDED_PILL_HEIGHT + 16.0;
 
-pub const UNIFIED_OVERLAY_LABEL: &str = "unified-overlay";
-
 pub const TOAST_OVERLAY_LABEL: &str = "toast-overlay";
 pub const TOAST_OVERLAY_WIDTH: f64 = 380.0;
 pub const TOAST_OVERLAY_HEIGHT: f64 = 164.0;
@@ -99,46 +97,6 @@ fn create_overlay_window(
 
     if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
         eprintln!("Failed to configure {label} as non-activating: {err}");
-    }
-
-    Ok(())
-}
-
-#[allow(dead_code)]
-pub fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    if app.get_webview_window(UNIFIED_OVERLAY_LABEL).is_some() {
-        return Ok(());
-    }
-
-    let (width, height) = get_primary_screen_size(app);
-
-    let builder = {
-        let url = build_overlay_webview_url(app, "overlay")?;
-        let builder = WebviewWindowBuilder::new(app, UNIFIED_OVERLAY_LABEL, url)
-            .decorations(false)
-            .always_on_top(true)
-            .transparent(true)
-            .skip_taskbar(true)
-            .resizable(false)
-            .shadow(false)
-            .focusable(false)
-            .inner_size(width, height)
-            .position(0.0, 0.0);
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            builder.visible(false)
-        }
-        #[cfg(target_os = "linux")]
-        {
-            builder
-        }
-    };
-
-    let window = builder.build()?;
-
-    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
-        eprintln!("Failed to configure overlay as non-activating: {err}");
     }
 
     Ok(())

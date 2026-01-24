@@ -6,6 +6,7 @@ import { useAppStore } from "../../store";
 import type { OverlaySyncPayload } from "../../types/overlay.types";
 
 const useOverlaySync = <T>(
+  targets: string[],
   selector: (state: AppState) => T,
   toPayload: (value: T) => OverlaySyncPayload,
 ) => {
@@ -18,41 +19,49 @@ const useOverlaySync = <T>(
     if (prevRef.current !== null && isEqual(prevRef.current, value)) {
       return;
     }
+
     prevRef.current = value;
-    emitTo(
-      "unified-overlay",
-      "overlay_sync",
-      toPayloadRef.current(value),
-    ).catch(console.error);
+    for (const target of targets) {
+      emitTo(target, "overlay_sync", toPayloadRef.current(value)).catch(
+        console.error,
+      );
+    }
   }, [value]);
 };
 
 export const OverlaySyncSideEffects = () => {
   useOverlaySync(
+    ["pill-overlay", "toast-overlay", "agent-overlay"],
     (s) => s.hotkeyById,
     (hotkeyById) => ({ hotkeyById }),
   );
   useOverlaySync(
+    ["pill-overlay", "toast-overlay", "agent-overlay"],
     (s) => s.agent,
     (agent) => ({ agent }),
   );
   useOverlaySync(
+    ["pill-overlay", "toast-overlay", "agent-overlay"],
     (s) => s.userPrefs,
     (userPrefs) => ({ userPrefs }),
   );
   useOverlaySync(
+    ["pill-overlay", "toast-overlay", "agent-overlay"],
     (s) => s.userById,
     (userById) => ({ userById }),
   );
   useOverlaySync(
+    ["pill-overlay", "toast-overlay", "agent-overlay"],
     (s) => s.auth,
     (auth) => ({ auth }),
   );
   useOverlaySync(
+    ["pill-overlay", "toast-overlay", "agent-overlay"],
     (s) => s.memberById,
     (memberById) => ({ memberById }),
   );
   useOverlaySync(
+    ["pill-overlay", "toast-overlay", "agent-overlay"],
     (s) => s.onboarding,
     (onboarding) => ({ onboarding }),
   );

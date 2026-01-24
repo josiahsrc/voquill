@@ -3,7 +3,6 @@
   "identifier": "overlay",
   "description": "Capability for all overlay windows",
   "windows": [
-    "unified-overlay",
     "pill-overlay",
     "toast-overlay",
     "agent-overlay"

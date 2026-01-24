@@ -12,7 +12,6 @@ import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import { emitTo } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { useOverlayDrag } from "../../hooks/overlay.hooks";
 import { useAppStore } from "../../store";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
 import {
@@ -308,16 +307,6 @@ export const AgentSection = () => {
   const prevMessagesLengthRef = useRef(0);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
-  const {
-    offset: dragOffset,
-    isDragging,
-    handleDragStart,
-  } = useOverlayDrag({
-    elementWidth: AGENT_OVERLAY_WIDTH,
-    headerHeight: HEADER_HEIGHT,
-    initialMargin: { left: LEFT_MARGIN, top: TOP_MARGIN },
-  });
-
   const handleClose = useCallback(() => {
     emitTo("main", "agent-overlay-close", {}).catch(console.error);
   }, []);
@@ -390,9 +379,9 @@ export const AgentSection = () => {
     <Box
       sx={{
         position: "absolute",
-        top: `${TOP_MARGIN + dragOffset.y}px`,
-        left: `${LEFT_MARGIN + dragOffset.x}px`,
-        bottom: `${TOP_MARGIN - dragOffset.y}px`,
+        top: `${TOP_MARGIN}px`,
+        left: `${LEFT_MARGIN}px`,
+        bottom: `${TOP_MARGIN}px`,
         display: "flex",
         justifyContent: "flex-start",
         alignItems: "flex-start",
@@ -418,7 +407,6 @@ export const AgentSection = () => {
         }}
       >
         <Box
-          onMouseDown={handleDragStart}
           sx={{
             position: "absolute",
             top: 0,
@@ -431,7 +419,6 @@ export const AgentSection = () => {
             alignItems: "flex-start",
             padding: theme.spacing(0.5),
             pointerEvents: "auto",
-            cursor: isDragging ? "grabbing" : "grab",
             userSelect: "none",
           }}
         >

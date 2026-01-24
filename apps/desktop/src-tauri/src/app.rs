@@ -191,8 +191,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::storage_get_download_url,
             crate::commands::transcribe_audio,
             crate::commands::surface_main_window,
-            crate::commands::show_overlay_no_focus,
-            crate::commands::set_overlay_click_through,
             crate::commands::set_toast_overlay_click_through,
             crate::commands::set_agent_overlay_click_through,
             crate::commands::restore_overlay_focus,
