@@ -93,3 +93,108 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
 
     rx.recv().map_err(|_| "failed to show overlay on main thread".to_string())?
 }
+
+pub fn set_overlay_click_through(window: &WebviewWindow, click_through: bool) -> Result<(), String> {
+    if !click_through {
+        save_foreground_window();
+    }
+
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let hwnd: HWND = window_for_handle.hwnd().map_err(|err| err.to_string())?;
+
+                unsafe {
+                    let current_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
+
+                    let new_style = if click_through {
+                        current_style | WS_EX_TRANSPARENT.0 as i32 | WS_EX_LAYERED.0 as i32
+                    } else {
+                        current_style & !(WS_EX_TRANSPARENT.0 as i32)
+                    };
+
+                    if new_style != current_style {
+                        SetWindowLongW(hwnd, GWL_EXSTYLE, new_style);
+
+                        if click_through {
+                            set_layered_window_attributes(hwnd, 255);
+                        }
+
+                        SetWindowPos(
+                            hwnd,
+                            Some(HWND_TOPMOST),
+                            0,
+                            0,
+                            0,
+                            0,
+                            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+                        );
+                    }
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    rx.recv()
+        .map_err(|_| "failed to set overlay click through on main thread".to_string())?
+}
+
+pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), String> {
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let hwnd: HWND = window_for_handle.hwnd().map_err(|err| err.to_string())?;
+
+                unsafe {
+                    let current_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
+                    let new_style = current_style | WS_EX_NOACTIVATE.0 as i32;
+
+                    if new_style != current_style {
+                        SetWindowLongW(hwnd, GWL_EXSTYLE, new_style);
+                        SetWindowPos(
+                            hwnd,
+                            Some(HWND_TOPMOST),
+                            0,
+                            0,
+                            0,
+                            0,
+                            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+                        );
+                    }
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    rx.recv()
+        .map_err(|_| "failed to configure overlay as non-activating on main thread".to_string())?
+}
+
+pub fn save_foreground_window() {
+    let hwnd = unsafe { GetForegroundWindow() };
+    SAVED_FOREGROUND_HWND.store(hwnd.0 as isize, Ordering::SeqCst);
+}
+
+pub fn restore_foreground_window() {
+    let hwnd_value = SAVED_FOREGROUND_HWND.load(Ordering::SeqCst);
+    if hwnd_value != 0 {
+        let hwnd = HWND(hwnd_value as *mut _);
+        unsafe {
+            let _ = SetForegroundWindow(hwnd);
+        }
+    }
+}
