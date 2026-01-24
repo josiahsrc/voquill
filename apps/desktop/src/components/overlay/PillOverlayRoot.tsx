@@ -6,11 +6,18 @@ import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
-import type { OverlayPhase } from "../../types/overlay.types";
+import type {
+  OverlayPhase,
+  OverlaySyncPayload,
+} from "../../types/overlay.types";
 import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import {
+  getEffectivePillVisibility,
+  getIsDictationUnlocked,
+} from "../../utils/user.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 
@@ -81,6 +88,23 @@ export const PillOverlayRoot = () => {
     });
   });
 
+  useTauriListen<OverlaySyncPayload>("overlay_sync", (payload) => {
+    produceAppState((draft) => {
+      Object.assign(draft, payload);
+    });
+  });
+
+  const dictationPillVisibility = useAppStore((state) =>
+    getEffectivePillVisibility(state.userPrefs?.dictationPillVisibility),
+  );
+  const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
+
+  const isOverlayActive = !isIdle;
+  const isVisible =
+    isDictationUnlocked &&
+    dictationPillVisibility !== "hidden" &&
+    (isOverlayActive || dictationPillVisibility !== "while_active");
+
   const handleMouseDownDictate = (e: React.MouseEvent) => {
     e.preventDefault();
     invoke("restore_overlay_focus").catch(() => {});
@@ -96,6 +120,12 @@ export const PillOverlayRoot = () => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "flex-end",
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(8px)",
+        transition: isVisible
+          ? "opacity 100ms ease-out, transform 100ms ease-out"
+          : "opacity 100ms ease-out, transform 100ms ease-out, visibility 0ms 100ms",
+        visibility: isVisible ? "visible" : "hidden",
       }}
     >
       {/* Tooltip */}
