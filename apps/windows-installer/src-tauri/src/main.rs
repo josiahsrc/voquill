@@ -91,26 +91,27 @@ async fn launch_app() -> Result<(), String> {
 }
 
 fn get_installed_app_path() -> Result<PathBuf, String> {
-    let local_app_data = std::env::var("LOCALAPPDATA")
-        .map_err(|_| "Could not find LOCALAPPDATA")?;
+    let local_app_data = std::env::var("LOCALAPPDATA").ok();
+    let program_files = std::env::var("PROGRAMFILES").ok();
 
-    let app_path = PathBuf::from(local_app_data)
-        .join("Voquill")
-        .join("Voquill.exe");
+    let candidates = [
+        ("Voquill (dev)", "Voquill (dev).exe"),
+        ("Voquill", "Voquill.exe"),
+    ];
 
-    if app_path.exists() {
-        return Ok(app_path);
-    }
-
-    let program_files = std::env::var("PROGRAMFILES")
-        .map_err(|_| "Could not find PROGRAMFILES")?;
-
-    let app_path = PathBuf::from(program_files)
-        .join("Voquill")
-        .join("Voquill.exe");
-
-    if app_path.exists() {
-        return Ok(app_path);
+    for (folder, exe) in candidates {
+        if let Some(ref local) = local_app_data {
+            let path = PathBuf::from(local).join(folder).join(exe);
+            if path.exists() {
+                return Ok(path);
+            }
+        }
+        if let Some(ref pf) = program_files {
+            let path = PathBuf::from(pf).join(folder).join(exe);
+            if path.exists() {
+                return Ok(path);
+            }
+        }
     }
 
     Err("Could not find installed Voquill application".to_string())

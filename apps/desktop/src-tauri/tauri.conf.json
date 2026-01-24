@@ -61,7 +61,10 @@
     },
     "updater": {
       "endpoints": [],
-      "pubkey": "__UPDATER_PUBLIC_KEY__"
+      "pubkey": "__UPDATER_PUBLIC_KEY__",
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
