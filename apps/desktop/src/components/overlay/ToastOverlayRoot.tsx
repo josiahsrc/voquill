@@ -21,8 +21,6 @@ export const ToastOverlayRoot = () => {
           right: 0,
           bottom: 0,
           pointerEvents: "none",
-          backgroundColor: "red",
-          border: "4px solid red",
         }}
       >
         <ToastSection />

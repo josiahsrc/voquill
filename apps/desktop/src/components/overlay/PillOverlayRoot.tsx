@@ -120,13 +120,12 @@ export const PillOverlayRoot = () => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "flex-end",
-        bgcolor: "red",
-        // opacity: isVisible ? 1 : 0,
-        // transform: isVisible ? "translateY(0)" : "translateY(8px)",
-        // transition: isVisible
-        //   ? "opacity 100ms ease-out, transform 100ms ease-out"
-        //   : "opacity 100ms ease-out, transform 100ms ease-out, visibility 0ms 100ms",
-        // visibility: isVisible ? "visible" : "hidden",
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0)" : "translateY(8px)",
+        transition: isVisible
+          ? "opacity 100ms ease-out, transform 100ms ease-out"
+          : "opacity 100ms ease-out, transform 100ms ease-out, visibility 0ms 100ms",
+        visibility: isVisible ? "visible" : "hidden",
       }}
     >
       {/* Tooltip */}
