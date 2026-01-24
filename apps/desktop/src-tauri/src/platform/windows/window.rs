@@ -17,10 +17,10 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
                 let hwnd: HWND = window_for_handle.hwnd().map_err(|err| err.to_string())?;
 
                 unsafe {
-                    ShowWindow(hwnd, SW_RESTORE);
-                    ShowWindow(hwnd, SW_SHOW);
-                    SetForegroundWindow(hwnd);
-                    SetWindowPos(
+                   let _ = ShowWindow(hwnd, SW_RESTORE);
+                   let _ = ShowWindow(hwnd, SW_SHOW);
+                   let _ = SetForegroundWindow(hwnd);
+                   let _ = SetWindowPos(
                         hwnd,
                         Some(HWND_TOPMOST),
                         0,
@@ -29,7 +29,7 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
                         0,
                         SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
                     );
-                    SetWindowPos(
+                   let _ = SetWindowPos(
                         hwnd,
                         Some(HWND_NOTOPMOST),
                         0,
@@ -38,7 +38,7 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
                         0,
                         SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
                     );
-                    BringWindowToTop(hwnd);
+                   let _ = BringWindowToTop(hwnd);
                 }
 
                 if let Err(err) = window_for_handle.unminimize() {
@@ -75,8 +75,8 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
                 let hwnd: HWND = window_for_handle.hwnd().map_err(|err| err.to_string())?;
 
                 unsafe {
-                    ShowWindow(hwnd, SW_SHOWNOACTIVATE);
-                    SetWindowPos(
+                   let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+                   let _ = SetWindowPos(
                         hwnd,
                         Some(HWND_TOPMOST),
                         0,
