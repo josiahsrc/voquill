@@ -8,15 +8,14 @@
     <script>
       (function () {
         const params = new URLSearchParams(window.location.search);
-        if (params.get("overlay") === "1") {
+        if (params.get("toast-overlay") === "1") {
           document.documentElement.dataset.overlay = "true";
         }
-        // TODO: Is this still needed?
-        if (params.get("toast-overlay") === "1") {
-          document.documentElement.dataset.toast = "true";
+        if (params.get("agent-overlay") === "1") {
+          document.documentElement.dataset.overlay = "true";
         }
-        if (params.get("agent") === "1") {
-          document.documentElement.dataset.agent = "true";
+        if (params.get("pill-overlay") === "1") {
+          document.documentElement.dataset.overlay = "true";
         }
       })();
     </script>
@@ -37,11 +36,7 @@
       }
 
       :root[data-overlay="true"],
-      :root[data-overlay="true"] body,
-      :root[data-toast="true"],
-      :root[data-toast="true"] body,
-      :root[data-agent="true"],
-      :root[data-agent="true"] body {
+      :root[data-overlay="true"] body {
         background-color: transparent;
       }
 

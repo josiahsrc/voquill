@@ -5,7 +5,8 @@
   "windows": [
     "unified-overlay",
     "pill-overlay",
-    "toast-overlay"
+    "toast-overlay",
+    "agent-overlay"
   ],
   "permissions": [
     "core:default",

@@ -20,6 +20,12 @@ pub const TOAST_OVERLAY_HEIGHT: f64 = 164.0;
 pub const TOAST_OVERLAY_TOP_OFFSET: f64 = 0.0;
 pub const TOAST_OVERLAY_RIGHT_OFFSET: f64 = 0.0;
 
+pub const AGENT_OVERLAY_LABEL: &str = "agent-overlay";
+pub const AGENT_OVERLAY_WIDTH: f64 = 332.0;
+pub const AGENT_OVERLAY_HEIGHT: f64 = 632.0;
+pub const AGENT_OVERLAY_LEFT_OFFSET: f64 = 16.0;
+pub const AGENT_OVERLAY_TOP_OFFSET: f64 = 16.0;
+
 const CURSOR_POLL_INTERVAL_MS: u64 = 60;
 const DEFAULT_SCREEN_WIDTH: f64 = 1920.0;
 const DEFAULT_SCREEN_HEIGHT: f64 = 1080.0;
@@ -206,6 +212,51 @@ pub fn ensure_toast_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
     Ok(())
 }
 
+pub fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    if app.get_webview_window(AGENT_OVERLAY_LABEL).is_some() {
+        return Ok(());
+    }
+
+    let url = build_overlay_webview_url(app, "agent-overlay")?;
+
+    let x = AGENT_OVERLAY_LEFT_OFFSET;
+    let y = AGENT_OVERLAY_TOP_OFFSET;
+
+    let builder = {
+        let builder = WebviewWindowBuilder::new(app, AGENT_OVERLAY_LABEL, url)
+            .decorations(false)
+            .always_on_top(true)
+            .transparent(true)
+            .skip_taskbar(true)
+            .resizable(false)
+            .shadow(false)
+            .focusable(false)
+            .inner_size(AGENT_OVERLAY_WIDTH, AGENT_OVERLAY_HEIGHT)
+            .position(x, y);
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            builder.visible(false)
+        }
+        #[cfg(target_os = "linux")]
+        {
+            builder
+        }
+    };
+
+    let window = builder.build()?;
+
+    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
+        eprintln!("Failed to configure {AGENT_OVERLAY_LABEL} as non-activating: {err}");
+    }
+
+    if let Some(window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
+        let _ = window.set_ignore_cursor_events(true);
+    }
+
+    Ok(())
+}
+
 pub fn start_cursor_follower(app: tauri::AppHandle) {
     use std::time::Duration;
     use tauri::Manager;
@@ -263,6 +314,18 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 let physical_y = (target_y * monitor.scale_factor) as i32;
 
                 let _ = toast_window.set_position(tauri::Position::Physical(
+                    tauri::PhysicalPosition::new(physical_x, physical_y),
+                ));
+            }
+
+            if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
+                let target_x = visible_x + AGENT_OVERLAY_LEFT_OFFSET;
+                let target_y = visible_y + AGENT_OVERLAY_TOP_OFFSET;
+
+                let physical_x = (target_x * monitor.scale_factor) as i32;
+                let physical_y = (target_y * monitor.scale_factor) as i32;
+
+                let _ = agent_window.set_position(tauri::Position::Physical(
                     tauri::PhysicalPosition::new(physical_x, physical_y),
                 ));
             }
