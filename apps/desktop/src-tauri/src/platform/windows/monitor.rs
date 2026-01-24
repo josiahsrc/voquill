@@ -51,6 +51,10 @@ pub fn get_monitor_at_cursor() -> Option<MonitorAtCursor> {
     }
 }
 
+pub fn get_bottom_pill_offset() -> f64 {
+    8.0
+}
+
 pub fn get_screen_visible_area() -> ScreenVisibleArea {
     unsafe {
         let mut cursor_pos = POINT::default();

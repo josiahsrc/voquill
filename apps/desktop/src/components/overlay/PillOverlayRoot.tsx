@@ -14,11 +14,11 @@ import {
 import { AudioWaveform } from "../common/AudioWaveform";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 
-export const PILL_OVERLAY_WIDTH = 300;
+export const PILL_OVERLAY_WIDTH = 256;
 export const PILL_OVERLAY_HEIGHT = 96;
 export const MIN_PILL_WIDTH = 48;
 export const MIN_PILL_HEIGHT = 6;
-export const MIN_PILL_HOVER_PADDING = 12;
+export const MIN_PILL_HOVER_PADDING = 4;
 export const EXPANDED_PILL_WIDTH = 120;
 export const EXPANDED_PILL_HEIGHT = 32;
 

@@ -4,6 +4,10 @@ use cocoa::base::nil;
 use cocoa::foundation::NSArray;
 use objc::{msg_send, sel, sel_impl};
 
+pub fn get_bottom_pill_offset() -> f64 {
+    8.0
+}
+
 pub fn get_screen_visible_area() -> ScreenVisibleArea {
     unsafe {
         let mouse_loc = NSEvent::mouseLocation(nil);
@@ -59,7 +63,7 @@ pub fn get_monitor_at_cursor() -> Option<MonitorAtCursor> {
                     width: frame.size.width,
                     height: frame.size.height,
                     visible_x: visible.origin.x,
-                    visible_y: visible.origin.y,
+                    visible_y: frame.size.height - (visible.origin.y + visible.size.height),
                     visible_width: visible.size.width,
                     visible_height: visible.size.height,
                     scale_factor: backing_scale,

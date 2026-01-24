@@ -29,6 +29,10 @@ pub fn get_monitor_at_cursor() -> Option<MonitorAtCursor> {
     })
 }
 
+pub fn get_bottom_pill_offset() -> f64 {
+    8.0
+}
+
 pub fn get_screen_visible_area() -> ScreenVisibleArea {
     let Some(display) = gdk::Display::default() else {
         return ScreenVisibleArea::default();
@@ -53,7 +57,8 @@ pub fn get_screen_visible_area() -> ScreenVisibleArea {
 
     ScreenVisibleArea {
         top_inset: (workarea.y() - geometry.y()) as f64,
-        bottom_inset: ((geometry.y() + geometry.height()) - (workarea.y() + workarea.height())) as f64,
+        bottom_inset: ((geometry.y() + geometry.height()) - (workarea.y() + workarea.height()))
+            as f64,
         left_inset: (workarea.x() - geometry.x()) as f64,
         right_inset: ((geometry.x() + geometry.width()) - (workarea.x() + workarea.width())) as f64,
     }

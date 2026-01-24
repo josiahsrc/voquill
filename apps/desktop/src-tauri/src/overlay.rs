@@ -6,18 +6,19 @@ pub const SIMPLE_OVERLAY_WIDTH: f64 = 400.0;
 pub const SIMPLE_OVERLAY_HEIGHT: f64 = 200.0;
 
 pub const PILL_OVERLAY_LABEL: &str = "pill-overlay";
-pub const PILL_OVERLAY_WIDTH: f64 = 300.0;
+pub const PILL_OVERLAY_WIDTH: f64 = 256.0;
 pub const PILL_OVERLAY_HEIGHT: f64 = 96.0;
 pub const MIN_PILL_WIDTH: f64 = 48.0;
 pub const MIN_PILL_HEIGHT: f64 = 6.0;
-pub const MIN_PILL_HOVER_PADDING: f64 = 12.0;
+pub const MIN_PILL_HOVER_PADDING: f64 = 4.0;
 pub const EXPANDED_PILL_WIDTH: f64 = 120.0;
 pub const EXPANDED_PILL_HEIGHT: f64 = 32.0;
+pub const EXPANDED_PILL_HOVERABLE_WIDTH: f64 = EXPANDED_PILL_WIDTH + 16.0;
+pub const EXPANDED_PILL_HOVERABLE_HEIGHT: f64 = EXPANDED_PILL_HEIGHT + 16.0;
 
 pub const UNIFIED_OVERLAY_LABEL: &str = "unified-overlay";
 
-const BOTTOM_MARGIN: f64 = 52.0;
-const CURSOR_POLL_INTERVAL_MS: u64 = 100;
+const CURSOR_POLL_INTERVAL_MS: u64 = 60;
 const DEFAULT_SCREEN_WIDTH: f64 = 1920.0;
 const DEFAULT_SCREEN_HEIGHT: f64 = 1080.0;
 
@@ -224,13 +225,15 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 )
             };
 
+            let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
+
             for config in TRACKED_OVERLAYS {
                 let Some(window) = app.get_webview_window(config.label) else {
                     continue;
                 };
 
                 let target_x = visible_x + (visible_width - config.width) / 2.0;
-                let target_y = visible_y + visible_height - config.height - BOTTOM_MARGIN;
+                let target_y = visible_y + visible_height - config.height - bottom_offset;
 
                 let physical_x = (target_x * monitor.scale_factor) as i32;
                 let physical_y = (target_y * monitor.scale_factor) as i32;
@@ -241,8 +244,9 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
             }
 
             if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-                let pill_x = visible_x + (visible_width - PILL_OVERLAY_WIDTH) / 2.0;
-                let pill_y = visible_y + visible_height - PILL_OVERLAY_HEIGHT - BOTTOM_MARGIN;
+                let pill_x = visible_x + (visible_width - EXPANDED_PILL_HOVERABLE_WIDTH) / 2.0;
+                let pill_y =
+                    visible_y + visible_height - EXPANDED_PILL_HOVERABLE_HEIGHT - bottom_offset;
 
                 #[cfg(target_os = "macos")]
                 let cursor_y_from_top = monitor.height - monitor.cursor_y;
@@ -255,14 +259,16 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 let cursor_x = monitor.cursor_x / monitor.scale_factor;
 
                 let in_full_pill = cursor_x >= pill_x
-                    && cursor_x <= pill_x + PILL_OVERLAY_WIDTH
+                    && cursor_x <= pill_x + EXPANDED_PILL_HOVERABLE_WIDTH
                     && cursor_y_from_top >= pill_y
-                    && cursor_y_from_top <= pill_y + PILL_OVERLAY_HEIGHT;
+                    && cursor_y_from_top <= pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT;
 
                 let hover_zone_width = MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING * 2.0;
                 let hover_zone_height = MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING * 2.0;
-                let hover_zone_x = pill_x + (PILL_OVERLAY_WIDTH - hover_zone_width) / 2.0;
-                let hover_zone_y = pill_y + PILL_OVERLAY_HEIGHT - hover_zone_height;
+                let hover_zone_x =
+                    pill_x + (EXPANDED_PILL_HOVERABLE_WIDTH - hover_zone_width) / 2.0;
+                let hover_zone_y = pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT - hover_zone_height
+                    + MIN_PILL_HOVER_PADDING;
 
                 let in_mini_pill = cursor_x >= hover_zone_x
                     && cursor_x <= hover_zone_x + hover_zone_width
