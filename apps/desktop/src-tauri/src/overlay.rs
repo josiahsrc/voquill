@@ -192,9 +192,11 @@ const TRACKED_OVERLAYS: &[OverlayConfig] = &[
 
 pub fn start_cursor_follower(app: tauri::AppHandle) {
     use std::time::Duration;
+    use tauri::Manager;
 
     std::thread::spawn(move || {
         let pill_hovered = AtomicBool::new(false);
+        let pill_expanded = AtomicBool::new(false);
 
         loop {
             std::thread::sleep(Duration::from_millis(CURSOR_POLL_INTERVAL_MS));
@@ -276,13 +278,28 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 };
 
                 let was_hovered = pill_hovered.load(Ordering::Relaxed);
-                if new_hovered != was_hovered {
+                let hovered_changed = new_hovered != was_hovered;
+                if hovered_changed {
                     pill_hovered.store(new_hovered, Ordering::Relaxed);
-                    let _ = pill_window.set_ignore_cursor_events(!new_hovered);
-                    let payload = crate::domain::PillHoverPayload {
+                }
+
+                let overlay_state = app.state::<crate::state::OverlayState>();
+                let is_active = !overlay_state.is_idle();
+                let new_expanded = new_hovered || is_active;
+
+                let was_expanded = pill_expanded.load(Ordering::Relaxed);
+                let expanded_changed = new_expanded != was_expanded;
+                if expanded_changed {
+                    let _ = pill_window.set_ignore_cursor_events(!new_expanded);
+                    pill_expanded.store(new_expanded, Ordering::Relaxed);
+                }
+
+                if hovered_changed || expanded_changed {
+                    let payload = crate::domain::PillExpandedPayload {
+                        expanded: new_expanded,
                         hovered: new_hovered,
                     };
-                    let _ = app.emit(crate::domain::EVT_PILL_HOVER, payload);
+                    let _ = app.emit(crate::domain::EVT_PILL_EXPANDED, payload);
                 }
             }
         }

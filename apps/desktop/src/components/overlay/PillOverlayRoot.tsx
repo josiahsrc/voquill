@@ -22,7 +22,8 @@ export const MIN_PILL_HOVER_PADDING = 12;
 export const EXPANDED_PILL_WIDTH = 120;
 export const EXPANDED_PILL_HEIGHT = 32;
 
-type PillHoverPayload = {
+type PillExpandedPayload = {
+  expanded: boolean;
   hovered: boolean;
 };
 
@@ -35,6 +36,7 @@ type RecordingLevelPayload = {
 };
 
 export const PillOverlayRoot = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const theme = useTheme();
   const combos = useAppStore((state) =>
@@ -47,7 +49,6 @@ export const PillOverlayRoot = () => {
   const isIdle = phase === "idle";
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
-  const isExpanded = isHovered || !isIdle;
 
   useEffect(() => {
     document.body.style.margin = "0";
@@ -56,7 +57,8 @@ export const PillOverlayRoot = () => {
     document.body.style.backgroundColor = "transparent";
   }, []);
 
-  useTauriListen<PillHoverPayload>("pill_hover", (payload) => {
+  useTauriListen<PillExpandedPayload>("pill_expanded", (payload) => {
+    setIsExpanded(payload.expanded);
     setIsHovered(payload.hovered);
   });
 
@@ -193,20 +195,22 @@ export const PillOverlayRoot = () => {
             }}
           >
             {/* Click to dictate text */}
-            <Typography
-              sx={{
-                position: "absolute",
-                color: alpha(theme.palette.common.white, 0.4),
-                fontSize: "11px",
-                fontWeight: 500,
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-                opacity: isIdle ? 1 : 0,
-                transition: "opacity 150ms ease-out",
-              }}
-            >
-              <FormattedMessage defaultMessage="Click to dictate" />
-            </Typography>
+            {isHovered && (
+              <Typography
+                sx={{
+                  position: "absolute",
+                  color: alpha(theme.palette.common.white, 0.4),
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.02em",
+                  whiteSpace: "nowrap",
+                  opacity: isIdle ? 1 : 0,
+                  transition: "opacity 150ms ease-out",
+                }}
+              >
+                <FormattedMessage defaultMessage="Click to dictate" />
+              </Typography>
+            )}
 
             {/* Processing indicator */}
             <Box

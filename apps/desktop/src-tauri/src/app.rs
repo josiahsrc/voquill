@@ -63,6 +63,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
             app.manage(crate::state::GoogleOAuthState::from_env());
+            app.manage(crate::state::OverlayState::new());
 
             #[cfg(desktop)]
             {

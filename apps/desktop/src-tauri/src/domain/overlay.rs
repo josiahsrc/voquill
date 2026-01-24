@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 pub const EVT_OVERLAY_PHASE: &str = "overlay_phase";
-pub const EVT_PILL_HOVER: &str = "pill_hover";
+pub const EVT_PILL_EXPANDED: &str = "pill_expanded";
 
 #[derive(Clone, Debug, Serialize)]
-pub struct PillHoverPayload {
+pub struct PillExpandedPayload {
+    pub expanded: bool,
     pub hovered: bool,
 }
 

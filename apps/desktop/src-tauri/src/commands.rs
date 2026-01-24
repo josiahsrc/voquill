@@ -1104,9 +1104,15 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> 
 }
 
 #[tauri::command]
-pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
+pub fn set_phase(
+    app: AppHandle,
+    phase: String,
+    overlay_state: State<'_, crate::state::OverlayState>,
+) -> Result<(), String> {
     let resolved =
         OverlayPhase::from_str(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
+
+    overlay_state.set_phase(&resolved);
 
     let payload = OverlayPhasePayload {
         phase: resolved.clone(),
