@@ -48,3 +48,47 @@ pub fn set_overlay_position(
         physical_x, physical_y,
     )));
 }
+
+pub fn is_cursor_in_bounds(
+    monitor: &MonitorAtCursor,
+    anchor: OverlayAnchor,
+    bounds_width: f64,
+    bounds_height: f64,
+    margin: f64,
+) -> bool {
+    // Linux monitor values may be scaled, convert to logical
+    let scale = monitor.scale_factor;
+
+    let visible_x = monitor.visible_x / scale;
+    let visible_y = monitor.visible_y / scale;
+    let visible_width = monitor.visible_width / scale;
+    let visible_height = monitor.visible_height / scale;
+
+    // Calculate bounds position based on anchor (same logic as set_overlay_position)
+    let (bounds_x, bounds_y) = match anchor {
+        OverlayAnchor::BottomCenter => {
+            let x = visible_x + (visible_width - bounds_width) / 2.0;
+            let y = visible_y + visible_height - bounds_height - margin;
+            (x, y)
+        }
+        OverlayAnchor::TopRight => {
+            let x = visible_x + visible_width - bounds_width - margin;
+            let y = visible_y + margin;
+            (x, y)
+        }
+        OverlayAnchor::TopLeft => {
+            let x = visible_x + margin;
+            let y = visible_y + margin;
+            (x, y)
+        }
+    };
+
+    // Convert cursor from physical to logical coordinates
+    let cursor_x = monitor.cursor_x / scale;
+    let cursor_y = monitor.cursor_y / scale;
+
+    cursor_x >= bounds_x
+        && cursor_x <= bounds_x + bounds_width
+        && cursor_y >= bounds_y
+        && cursor_y <= bounds_y + bounds_height
+}
