@@ -2,9 +2,10 @@ use std::sync::mpsc;
 use tauri::WebviewWindow;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, SetForegroundWindow, SetWindowPos, ShowWindow, HWND_NOTOPMOST, HWND_TOPMOST,
-    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW,
-    SW_SHOWNOACTIVATE,
+    BringWindowToTop, SetForegroundWindow, SetWindowPos,
+    ShowWindow, HWND_NOTOPMOST, HWND_TOPMOST,
+    SWP_NOACTIVATE,
+     SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_RESTORE, SW_SHOW, SW_SHOWNOACTIVATE,
 };
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
@@ -90,5 +91,5 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
         })
         .map_err(|err| err.to_string())?;
 
-    rx.recv().map_err(|_| "failed to show overlay on main thread".to_string())?
+rx.recv().map_err(|_| "failed to show overlay on main thread".to_string())?
 }
