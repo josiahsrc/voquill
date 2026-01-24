@@ -1,19 +1,14 @@
 import { Box } from "@mui/material";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { AgentOverlaySideEffects } from "./AgentOverlaySideEffects";
 import { AgentSection } from "./AgentSection";
 
 export const AgentOverlayRoot = () => {
-  const windowRef = useMemo(() => getCurrentWindow(), []);
-
   useEffect(() => {
     document.body.style.backgroundColor = "transparent";
     document.body.style.margin = "0";
     document.documentElement.style.backgroundColor = "transparent";
-
-    windowRef.setIgnoreCursorEvents(true).catch(console.error);
-  }, [windowRef]);
+  }, []);
 
   return (
     <>
