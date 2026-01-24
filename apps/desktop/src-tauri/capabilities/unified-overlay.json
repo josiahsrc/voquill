@@ -3,7 +3,8 @@
   "identifier": "unified-overlay",
   "description": "Capability for the unified overlay window (waveform, toast, agent)",
   "windows": [
-    "unified-overlay"
+    "unified-overlay",
+    "pill-overlay"
   ],
   "permissions": [
     "core:default",

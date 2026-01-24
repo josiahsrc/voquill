@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 pub const EVT_OVERLAY_PHASE: &str = "overlay_phase";
+pub const EVT_PILL_HOVER: &str = "pill_hover";
+
+#[derive(Clone, Debug, Serialize)]
+pub struct PillHoverPayload {
+    pub hovered: bool,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

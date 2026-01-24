@@ -1,4 +1,5 @@
-use tauri::{Manager, WebviewWindowBuilder};
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::{Emitter, Manager, WebviewWindowBuilder};
 
 pub const SIMPLE_OVERLAY_LABEL: &str = "simple-overlay";
 pub const SIMPLE_OVERLAY_WIDTH: f64 = 400.0;
@@ -183,6 +184,8 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
     use std::time::Duration;
 
     std::thread::spawn(move || {
+        let pill_hovered = AtomicBool::new(false);
+
         loop {
             std::thread::sleep(Duration::from_millis(CURSOR_POLL_INTERVAL_MS));
 
@@ -191,11 +194,8 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
             };
 
             #[cfg(target_os = "macos")]
-            let (logical_visible_x, logical_visible_width, logical_height) = (
-                monitor.visible_x,
-                monitor.visible_width,
-                monitor.height,
-            );
+            let (logical_visible_x, logical_visible_width, logical_height) =
+                (monitor.visible_x, monitor.visible_width, monitor.height);
 
             #[cfg(not(target_os = "macos"))]
             let (logical_visible_x, logical_visible_width, logical_height) = {
@@ -229,6 +229,38 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                     let _ = window.set_position(tauri::Position::Logical(
                         tauri::LogicalPosition::new(target_x, target_y),
                     ));
+                }
+            }
+
+            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+                let pill_x = logical_visible_x + (logical_visible_width - PILL_OVERLAY_WIDTH) / 2.0;
+                let pill_y = logical_height - PILL_OVERLAY_HEIGHT - BOTTOM_MARGIN;
+
+                #[cfg(target_os = "macos")]
+                let cursor_y_from_top = monitor.height - monitor.cursor_y;
+                #[cfg(not(target_os = "macos"))]
+                let cursor_y_from_top = monitor.cursor_y / monitor.scale_factor;
+
+                #[cfg(target_os = "macos")]
+                let cursor_x = monitor.cursor_x;
+                #[cfg(not(target_os = "macos"))]
+                let cursor_x = monitor.cursor_x / monitor.scale_factor;
+
+                let is_hovered = cursor_x >= pill_x
+                    && cursor_x <= pill_x + PILL_OVERLAY_WIDTH
+                    && cursor_y_from_top >= pill_y
+                    && cursor_y_from_top <= pill_y + PILL_OVERLAY_HEIGHT;
+
+                let was_hovered = pill_hovered.load(Ordering::Relaxed);
+                if is_hovered != was_hovered {
+                    pill_hovered.store(is_hovered, Ordering::Relaxed);
+                    let payload = crate::domain::PillHoverPayload {
+                        hovered: is_hovered,
+                    };
+                    match pill_window.emit(crate::domain::EVT_PILL_HOVER, payload) {
+                        Ok(_) => eprintln!("[hover] emit succeeded"),
+                        Err(err) => eprintln!("[hover] emit failed: {err}"),
+                    }
                 }
             }
         }
