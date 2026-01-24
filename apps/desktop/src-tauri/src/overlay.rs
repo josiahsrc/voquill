@@ -255,18 +255,20 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 let target_x = visible_x + (visible_width - PILL_OVERLAY_WIDTH) / 2.0;
                 let target_y = visible_y + visible_height - PILL_OVERLAY_HEIGHT - bottom_offset;
 
+                let physical_x = (target_x * monitor.scale_factor) as i32;
+                let physical_y = (target_y * monitor.scale_factor) as i32;
+
                 let should_update = match pill_window.outer_position() {
                     Ok(current_pos) => {
-                        let current_x = current_pos.x as f64 / monitor.scale_factor;
-                        let current_y = current_pos.y as f64 / monitor.scale_factor;
-                        (target_x - current_x).abs() > 1.0 || (target_y - current_y).abs() > 1.0
+                        (physical_x - current_pos.x).abs() > 1
+                            || (physical_y - current_pos.y).abs() > 1
                     }
                     Err(_) => true,
                 };
 
                 if should_update {
-                    let _ = pill_window.set_position(tauri::Position::Logical(
-                        tauri::LogicalPosition::new(target_x, target_y),
+                    let _ = pill_window.set_position(tauri::Position::Physical(
+                        tauri::PhysicalPosition::new(physical_x, physical_y),
                     ));
                 }
             }
@@ -276,18 +278,20 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                     visible_x + visible_width - TOAST_OVERLAY_WIDTH - TOAST_OVERLAY_RIGHT_OFFSET;
                 let target_y = visible_y + TOAST_OVERLAY_TOP_OFFSET;
 
+                let physical_x = (target_x * monitor.scale_factor) as i32;
+                let physical_y = (target_y * monitor.scale_factor) as i32;
+
                 let should_update = match toast_window.outer_position() {
                     Ok(current_pos) => {
-                        let current_x = current_pos.x as f64 / monitor.scale_factor;
-                        let current_y = current_pos.y as f64 / monitor.scale_factor;
-                        (target_x - current_x).abs() > 1.0 || (target_y - current_y).abs() > 1.0
+                        (physical_x - current_pos.x).abs() > 1
+                            || (physical_y - current_pos.y).abs() > 1
                     }
                     Err(_) => true,
                 };
 
                 if should_update {
-                    let _ = toast_window.set_position(tauri::Position::Logical(
-                        tauri::LogicalPosition::new(target_x, target_y),
+                    let _ = toast_window.set_position(tauri::Position::Physical(
+                        tauri::PhysicalPosition::new(physical_x, physical_y),
                     ));
                 }
             }
@@ -296,18 +300,20 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 let target_x = visible_x + AGENT_OVERLAY_LEFT_OFFSET;
                 let target_y = visible_y + AGENT_OVERLAY_TOP_OFFSET;
 
+                let physical_x = (target_x * monitor.scale_factor) as i32;
+                let physical_y = (target_y * monitor.scale_factor) as i32;
+
                 let should_update = match agent_window.outer_position() {
                     Ok(current_pos) => {
-                        let current_x = current_pos.x as f64 / monitor.scale_factor;
-                        let current_y = current_pos.y as f64 / monitor.scale_factor;
-                        (target_x - current_x).abs() > 1.0 || (target_y - current_y).abs() > 1.0
+                        (physical_x - current_pos.x).abs() > 1
+                            || (physical_y - current_pos.y).abs() > 1
                     }
                     Err(_) => true,
                 };
 
                 if should_update {
-                    let _ = agent_window.set_position(tauri::Position::Logical(
-                        tauri::LogicalPosition::new(target_x, target_y),
+                    let _ = agent_window.set_position(tauri::Position::Physical(
+                        tauri::PhysicalPosition::new(physical_x, physical_y),
                     ));
                 }
             }
