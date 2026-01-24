@@ -1,19 +1,14 @@
 import { Box } from "@mui/material";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { ToastOverlaySideEffects } from "./ToastOverlaySideEffects";
 import { ToastSection } from "./ToastSection";
 
 export const ToastOverlayRoot = () => {
-  const windowRef = useMemo(() => getCurrentWindow(), []);
-
   useEffect(() => {
     document.body.style.backgroundColor = "transparent";
     document.body.style.margin = "0";
     document.documentElement.style.backgroundColor = "transparent";
-
-    windowRef.setIgnoreCursorEvents(true).catch(console.error);
-  }, [windowRef]);
+  }, []);
 
   return (
     <>
@@ -26,6 +21,8 @@ export const ToastOverlayRoot = () => {
           right: 0,
           bottom: 0,
           pointerEvents: "none",
+          backgroundColor: "red",
+          border: "4px solid red",
         }}
       >
         <ToastSection />

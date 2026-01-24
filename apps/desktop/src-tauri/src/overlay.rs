@@ -116,10 +116,6 @@ pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         url,
     )?;
 
-    if let Some(window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-        let _ = crate::platform::window::set_overlay_click_through(&window, true);
-    }
-
     Ok(())
 }
 
@@ -135,36 +131,21 @@ pub fn ensure_toast_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
     let x = screen_width - TOAST_OVERLAY_WIDTH - TOAST_OVERLAY_RIGHT_OFFSET;
     let y = TOAST_OVERLAY_TOP_OFFSET;
 
-    let builder = {
-        let builder = WebviewWindowBuilder::new(app, TOAST_OVERLAY_LABEL, url)
-            .decorations(false)
-            .always_on_top(true)
-            .transparent(true)
-            .skip_taskbar(true)
-            .resizable(false)
-            .shadow(false)
-            .focusable(false)
-            .inner_size(TOAST_OVERLAY_WIDTH, TOAST_OVERLAY_HEIGHT)
-            .position(x, y);
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            builder.visible(false)
-        }
-        #[cfg(target_os = "linux")]
-        {
-            builder
-        }
-    };
+    let builder = WebviewWindowBuilder::new(app, TOAST_OVERLAY_LABEL, url)
+        .decorations(false)
+        .always_on_top(true)
+        .transparent(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .focusable(false)
+        .inner_size(TOAST_OVERLAY_WIDTH, TOAST_OVERLAY_HEIGHT)
+        .position(x, y);
 
     let window = builder.build()?;
 
     if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
         eprintln!("Failed to configure {TOAST_OVERLAY_LABEL} as non-activating: {err}");
-    }
-
-    if let Some(window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
-        let _ = crate::platform::window::set_overlay_click_through(&window, true);
     }
 
     Ok(())
@@ -206,10 +187,6 @@ pub fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
 
     if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
         eprintln!("Failed to configure {AGENT_OVERLAY_LABEL} as non-activating: {err}");
-    }
-
-    if let Some(window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
-        let _ = crate::platform::window::set_overlay_click_through(&window, true);
     }
 
     Ok(())

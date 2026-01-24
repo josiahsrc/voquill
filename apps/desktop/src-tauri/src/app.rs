@@ -140,18 +140,21 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
                 {
                     let _ = crate::platform::window::show_overlay_no_focus(&pill_window);
+                    let _ = crate::platform::window::set_overlay_click_through(&pill_window, true);
                 }
 
                 if let Some(toast_window) =
                     app_handle.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
                 {
                     let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
+                    let _ = crate::platform::window::set_overlay_click_through(&toast_window, true);
                 }
 
                 if let Some(agent_window) =
                     app_handle.get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
                 {
                     let _ = crate::platform::window::show_overlay_no_focus(&agent_window);
+                    let _ = crate::platform::window::set_overlay_click_through(&agent_window, true);
                 }
 
                 crate::overlay::start_cursor_follower(app_handle.clone());
