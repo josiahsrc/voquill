@@ -126,8 +126,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                crate::overlay::ensure_simple_overlay_window(&app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+                // crate::overlay::ensure_simple_overlay_window(&app_handle)
+                //     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
                 crate::overlay::ensure_pill_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;

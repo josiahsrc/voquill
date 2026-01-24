@@ -160,7 +160,13 @@ pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         PILL_OVERLAY_WIDTH,
         PILL_OVERLAY_HEIGHT,
         url,
-    )
+    )?;
+
+    if let Some(window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+        let _ = window.set_ignore_cursor_events(true);
+    }
+
+    Ok(())
 }
 
 struct OverlayConfig {
@@ -234,7 +240,7 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 }
             }
 
-            if let Some(_pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
                 let pill_x = logical_visible_x + (logical_visible_width - PILL_OVERLAY_WIDTH) / 2.0;
                 let pill_y = logical_height - PILL_OVERLAY_HEIGHT - BOTTOM_MARGIN;
 
@@ -272,6 +278,7 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 let was_hovered = pill_hovered.load(Ordering::Relaxed);
                 if new_hovered != was_hovered {
                     pill_hovered.store(new_hovered, Ordering::Relaxed);
+                    let _ = pill_window.set_ignore_cursor_events(!new_hovered);
                     let payload = crate::domain::PillHoverPayload {
                         hovered: new_hovered,
                     };
