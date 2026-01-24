@@ -1040,19 +1040,7 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
         .get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
         .ok_or_else(|| "toast-overlay window not found".to_string())?;
 
-    #[cfg(target_os = "windows")]
-    {
-        crate::platform::windows::window::set_overlay_click_through(&window, click_through)?;
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        window
-            .set_ignore_cursor_events(click_through)
-            .map_err(|err| err.to_string())?;
-    }
-
-    Ok(())
+    crate::platform::window::set_overlay_click_through(&window, click_through)
 }
 
 #[tauri::command]
@@ -1061,19 +1049,7 @@ pub fn set_agent_overlay_click_through(app: AppHandle, click_through: bool) -> R
         .get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
         .ok_or_else(|| "agent-overlay window not found".to_string())?;
 
-    #[cfg(target_os = "windows")]
-    {
-        crate::platform::windows::window::set_overlay_click_through(&window, click_through)?;
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        window
-            .set_ignore_cursor_events(click_through)
-            .map_err(|err| err.to_string())?;
-    }
-
-    Ok(())
+    crate::platform::window::set_overlay_click_through(&window, click_through)
 }
 
 #[tauri::command]

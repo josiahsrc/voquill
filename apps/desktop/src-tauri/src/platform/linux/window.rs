@@ -98,3 +98,9 @@ pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), St
     rx.recv()
         .map_err(|_| "failed to configure overlay as non-activating on main thread".to_string())?
 }
+
+pub fn set_overlay_click_through(window: &WebviewWindow, click_through: bool) -> Result<(), String> {
+    window
+        .set_ignore_cursor_events(click_through)
+        .map_err(|err| err.to_string())
+}
