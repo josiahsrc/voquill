@@ -8,6 +8,8 @@ pub const SIMPLE_OVERLAY_HEIGHT: f64 = 200.0;
 pub const PILL_OVERLAY_LABEL: &str = "pill-overlay";
 pub const PILL_OVERLAY_WIDTH: f64 = 196.0;
 pub const PILL_OVERLAY_HEIGHT: f64 = 128.0;
+pub const MIN_PILL_WIDTH: f64 = 98.0;
+pub const MIN_PILL_HEIGHT: f64 = 32.0;
 
 pub const UNIFIED_OVERLAY_LABEL: &str = "unified-overlay";
 
@@ -232,7 +234,7 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 }
             }
 
-            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+            if let Some(_pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
                 let pill_x = logical_visible_x + (logical_visible_width - PILL_OVERLAY_WIDTH) / 2.0;
                 let pill_y = logical_height - PILL_OVERLAY_HEIGHT - BOTTOM_MARGIN;
 
@@ -246,21 +248,34 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 #[cfg(not(target_os = "macos"))]
                 let cursor_x = monitor.cursor_x / monitor.scale_factor;
 
-                let is_hovered = cursor_x >= pill_x
+                let in_full_pill = cursor_x >= pill_x
                     && cursor_x <= pill_x + PILL_OVERLAY_WIDTH
                     && cursor_y_from_top >= pill_y
                     && cursor_y_from_top <= pill_y + PILL_OVERLAY_HEIGHT;
 
+                let mini_pill_x = pill_x + (PILL_OVERLAY_WIDTH - MIN_PILL_WIDTH) / 2.0;
+                let mini_pill_y = pill_y + PILL_OVERLAY_HEIGHT - MIN_PILL_HEIGHT;
+
+                let in_mini_pill = cursor_x >= mini_pill_x
+                    && cursor_x <= mini_pill_x + MIN_PILL_WIDTH
+                    && cursor_y_from_top >= mini_pill_y
+                    && cursor_y_from_top <= mini_pill_y + MIN_PILL_HEIGHT;
+
+                let new_hovered = if in_mini_pill {
+                    true
+                } else if !in_full_pill {
+                    false
+                } else {
+                    pill_hovered.load(Ordering::Relaxed)
+                };
+
                 let was_hovered = pill_hovered.load(Ordering::Relaxed);
-                if is_hovered != was_hovered {
-                    pill_hovered.store(is_hovered, Ordering::Relaxed);
+                if new_hovered != was_hovered {
+                    pill_hovered.store(new_hovered, Ordering::Relaxed);
                     let payload = crate::domain::PillHoverPayload {
-                        hovered: is_hovered,
+                        hovered: new_hovered,
                     };
-                    match pill_window.emit(crate::domain::EVT_PILL_HOVER, payload) {
-                        Ok(_) => eprintln!("[hover] emit succeeded"),
-                        Err(err) => eprintln!("[hover] emit failed: {err}"),
-                    }
+                    let _ = app.emit(crate::domain::EVT_PILL_HOVER, payload);
                 }
             }
         }
