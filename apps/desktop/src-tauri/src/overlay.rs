@@ -192,155 +192,125 @@ pub fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
     Ok(())
 }
 
-pub fn start_cursor_follower(app: tauri::AppHandle) {
+struct CursorFollowerState {
+    pill_hovered: AtomicBool,
+    pill_expanded: AtomicBool,
+}
+
+fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
     use crate::domain::OverlayAnchor;
+
+    let Some(monitor) = crate::platform::monitor::get_monitor_at_cursor() else {
+        return;
+    };
+
+    let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
+
+    if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+        crate::platform::position::set_overlay_position(
+            &pill_window,
+            &monitor,
+            OverlayAnchor::BottomCenter,
+            PILL_OVERLAY_WIDTH,
+            PILL_OVERLAY_HEIGHT,
+            bottom_offset,
+        );
+    }
+
+    if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
+        crate::platform::position::set_overlay_position(
+            &toast_window,
+            &monitor,
+            OverlayAnchor::TopRight,
+            TOAST_OVERLAY_WIDTH,
+            TOAST_OVERLAY_HEIGHT,
+            TOAST_OVERLAY_RIGHT_OFFSET,
+        );
+    }
+
+    if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
+        crate::platform::position::set_overlay_position(
+            &agent_window,
+            &monitor,
+            OverlayAnchor::TopLeft,
+            AGENT_OVERLAY_WIDTH,
+            AGENT_OVERLAY_HEIGHT,
+            AGENT_OVERLAY_LEFT_OFFSET,
+        );
+    }
+
+    if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+        let overlay_state = app.state::<crate::state::OverlayState>();
+        let hover_enabled = overlay_state.is_pill_hover_enabled();
+
+        let new_hovered = if hover_enabled {
+            crate::platform::position::is_cursor_in_bounds(
+                &monitor,
+                OverlayAnchor::BottomCenter,
+                EXPANDED_PILL_HOVERABLE_WIDTH,
+                EXPANDED_PILL_HOVERABLE_HEIGHT,
+                bottom_offset,
+            )
+        } else {
+            false
+        };
+
+        let was_hovered = state.pill_hovered.load(Ordering::Relaxed);
+        let hovered_changed = new_hovered != was_hovered;
+        if hovered_changed {
+            state.pill_hovered.store(new_hovered, Ordering::Relaxed);
+        }
+
+        let is_active = !overlay_state.is_idle();
+        let new_expanded = new_hovered || is_active;
+
+        let was_expanded = state.pill_expanded.load(Ordering::Relaxed);
+        let expanded_changed = new_expanded != was_expanded;
+        if expanded_changed {
+            let _ = crate::platform::window::set_overlay_click_through(&pill_window, !new_expanded);
+            state.pill_expanded.store(new_expanded, Ordering::Relaxed);
+        }
+
+        if hovered_changed || expanded_changed {
+            let payload = crate::domain::PillExpandedPayload {
+                expanded: new_expanded,
+                hovered: new_hovered,
+            };
+            let _ = app.emit(crate::domain::EVT_PILL_EXPANDED, payload);
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub fn start_cursor_follower(app: tauri::AppHandle) {
+    use gtk::glib::{self, ControlFlow};
+    use std::sync::Arc;
     use std::time::Duration;
-    use tauri::Manager;
+
+    let state = Arc::new(CursorFollowerState {
+        pill_hovered: AtomicBool::new(false),
+        pill_expanded: AtomicBool::new(false),
+    });
+
+    glib::timeout_add_local(Duration::from_millis(CURSOR_POLL_INTERVAL_MS), move || {
+        update_cursor_follower(&app, &state);
+        ControlFlow::Continue
+    });
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn start_cursor_follower(app: tauri::AppHandle) {
+    use std::time::Duration;
 
     std::thread::spawn(move || {
-        let pill_hovered = AtomicBool::new(false);
-        let pill_expanded = AtomicBool::new(false);
+        let state = CursorFollowerState {
+            pill_hovered: AtomicBool::new(false),
+            pill_expanded: AtomicBool::new(false),
+        };
 
         loop {
             std::thread::sleep(Duration::from_millis(CURSOR_POLL_INTERVAL_MS));
-
-            let Some(monitor) = crate::platform::monitor::get_monitor_at_cursor() else {
-                continue;
-            };
-
-            let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
-
-            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-                crate::platform::position::set_overlay_position(
-                    &pill_window,
-                    &monitor,
-                    OverlayAnchor::BottomCenter,
-                    PILL_OVERLAY_WIDTH,
-                    PILL_OVERLAY_HEIGHT,
-                    bottom_offset,
-                );
-            }
-
-            if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
-                crate::platform::position::set_overlay_position(
-                    &toast_window,
-                    &monitor,
-                    OverlayAnchor::TopRight,
-                    TOAST_OVERLAY_WIDTH,
-                    TOAST_OVERLAY_HEIGHT,
-                    TOAST_OVERLAY_RIGHT_OFFSET,
-                );
-            }
-
-            if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
-                crate::platform::position::set_overlay_position(
-                    &agent_window,
-                    &monitor,
-                    OverlayAnchor::TopLeft,
-                    AGENT_OVERLAY_WIDTH,
-                    AGENT_OVERLAY_HEIGHT,
-                    AGENT_OVERLAY_LEFT_OFFSET,
-                );
-            }
-
-            // Get visible area for hover detection (platform-specific)
-            #[cfg(target_os = "macos")]
-            let (visible_x, visible_y, visible_width, visible_height) = (
-                monitor.visible_x,
-                monitor.visible_y,
-                monitor.visible_width,
-                monitor.visible_height,
-            );
-
-            #[cfg(not(target_os = "macos"))]
-            let (visible_x, visible_y, visible_width, visible_height) = {
-                let scale = monitor.scale_factor;
-                (
-                    monitor.visible_x / scale,
-                    monitor.visible_y / scale,
-                    monitor.visible_width / scale,
-                    monitor.visible_height / scale,
-                )
-            };
-
-            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-                let overlay_state = app.state::<crate::state::OverlayState>();
-                let hover_enabled = overlay_state.is_pill_hover_enabled();
-
-                let new_hovered = if hover_enabled {
-                    let pill_x = visible_x + (visible_width - EXPANDED_PILL_HOVERABLE_WIDTH) / 2.0;
-                    let pill_y =
-                        visible_y + visible_height - EXPANDED_PILL_HOVERABLE_HEIGHT - bottom_offset;
-
-                    #[cfg(target_os = "macos")]
-                    let cursor_y_from_top = monitor.height - monitor.cursor_y;
-                    #[cfg(not(target_os = "macos"))]
-                    let cursor_y_from_top = monitor.cursor_y / monitor.scale_factor;
-
-                    #[cfg(target_os = "macos")]
-                    let cursor_x = monitor.cursor_x;
-                    #[cfg(not(target_os = "macos"))]
-                    let cursor_x = monitor.cursor_x / monitor.scale_factor;
-
-                    let in_full_pill = cursor_x >= pill_x
-                        && cursor_x <= pill_x + EXPANDED_PILL_HOVERABLE_WIDTH
-                        && cursor_y_from_top >= pill_y
-                        && cursor_y_from_top <= pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT;
-
-                    let hover_zone_width = MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING * 2.0;
-                    let hover_zone_height = MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING * 2.0;
-                    let hover_zone_x =
-                        pill_x + (EXPANDED_PILL_HOVERABLE_WIDTH - hover_zone_width) / 2.0;
-                    #[cfg(target_os = "macos")]
-                    let hover_zone_y = pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT - hover_zone_height
-                        + MIN_PILL_HOVER_PADDING;
-                    #[cfg(not(target_os = "macos"))]
-                    let hover_zone_y =
-                        pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT - hover_zone_height - MIN_PILL_HOVER_PADDING;
-
-                    let in_mini_pill = cursor_x >= hover_zone_x
-                        && cursor_x <= hover_zone_x + hover_zone_width
-                        && cursor_y_from_top >= hover_zone_y
-                        && cursor_y_from_top <= hover_zone_y + hover_zone_height;
-
-                    if in_mini_pill {
-                        true
-                    } else if !in_full_pill {
-                        false
-                    } else {
-                        pill_hovered.load(Ordering::Relaxed)
-                    }
-                } else {
-                    false
-                };
-
-                let was_hovered = pill_hovered.load(Ordering::Relaxed);
-                let hovered_changed = new_hovered != was_hovered;
-                if hovered_changed {
-                    pill_hovered.store(new_hovered, Ordering::Relaxed);
-                }
-
-                let is_active = !overlay_state.is_idle();
-                let new_expanded = new_hovered || is_active;
-
-                let was_expanded = pill_expanded.load(Ordering::Relaxed);
-                let expanded_changed = new_expanded != was_expanded;
-                if expanded_changed {
-                    let _ = crate::platform::window::set_overlay_click_through(
-                        &pill_window,
-                        !new_expanded,
-                    );
-                    pill_expanded.store(new_expanded, Ordering::Relaxed);
-                }
-
-                if hovered_changed || expanded_changed {
-                    let payload = crate::domain::PillExpandedPayload {
-                        expanded: new_expanded,
-                        hovered: new_hovered,
-                    };
-                    let _ = app.emit(crate::domain::EVT_PILL_EXPANDED, payload);
-                }
-            }
+            update_cursor_follower(&app, &state);
         }
     });
 }

@@ -9,18 +9,14 @@ pub fn set_overlay_position(
     window_height: f64,
     margin: f64,
 ) {
-    // Linux (GTK/GDK) uses standard screen coordinates (same as Windows):
-    // - Y=0 is at the top
-    // - Y increases downward
-    // - Window position is the top-left corner
-    //
-    // Monitor values may be in application units, convert to logical for calculation
+    // GDK returns coordinates in logical (application) pixels already,
+    // so we use them directly without dividing by scale
     let scale = monitor.scale_factor;
 
-    let visible_x = monitor.visible_x / scale;
-    let visible_y = monitor.visible_y / scale;
-    let visible_width = monitor.visible_width / scale;
-    let visible_height = monitor.visible_height / scale;
+    let visible_x = monitor.visible_x;
+    let visible_y = monitor.visible_y;
+    let visible_width = monitor.visible_width;
+    let visible_height = monitor.visible_height;
 
     let (target_x, target_y) = match anchor {
         OverlayAnchor::BottomCenter => {
@@ -40,7 +36,7 @@ pub fn set_overlay_position(
         }
     };
 
-    // Convert back to physical pixels
+    // Convert to physical pixels for PhysicalPosition
     let physical_x = (target_x * scale) as i32;
     let physical_y = (target_y * scale) as i32;
 
@@ -56,13 +52,12 @@ pub fn is_cursor_in_bounds(
     bounds_height: f64,
     margin: f64,
 ) -> bool {
-    // Linux monitor values may be scaled, convert to logical
-    let scale = monitor.scale_factor;
-
-    let visible_x = monitor.visible_x / scale;
-    let visible_y = monitor.visible_y / scale;
-    let visible_width = monitor.visible_width / scale;
-    let visible_height = monitor.visible_height / scale;
+    // GDK returns coordinates in logical (application) pixels already,
+    // so we use them directly without dividing by scale
+    let visible_x = monitor.visible_x;
+    let visible_y = monitor.visible_y;
+    let visible_width = monitor.visible_width;
+    let visible_height = monitor.visible_height;
 
     // Calculate bounds position based on anchor (same logic as set_overlay_position)
     let (bounds_x, bounds_y) = match anchor {
@@ -83,9 +78,9 @@ pub fn is_cursor_in_bounds(
         }
     };
 
-    // Convert cursor from physical to logical coordinates
-    let cursor_x = monitor.cursor_x / scale;
-    let cursor_y = monitor.cursor_y / scale;
+    // GDK cursor coordinates are also in logical pixels
+    let cursor_x = monitor.cursor_x;
+    let cursor_y = monitor.cursor_y;
 
     cursor_x >= bounds_x
         && cursor_x <= bounds_x + bounds_width
