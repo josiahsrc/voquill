@@ -91,5 +91,9 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
         })
         .map_err(|err| err.to_string())?;
 
-rx.recv().map_err(|_| "failed to show overlay on main thread".to_string())?
+
+
+    rx
+        .recv()
+        .map_err(|_| "failed to show overlay on main thread".to_string())?
 }
