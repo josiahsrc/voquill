@@ -6,10 +6,13 @@ pub const SIMPLE_OVERLAY_WIDTH: f64 = 400.0;
 pub const SIMPLE_OVERLAY_HEIGHT: f64 = 200.0;
 
 pub const PILL_OVERLAY_LABEL: &str = "pill-overlay";
-pub const PILL_OVERLAY_WIDTH: f64 = 196.0;
-pub const PILL_OVERLAY_HEIGHT: f64 = 128.0;
-pub const MIN_PILL_WIDTH: f64 = 98.0;
-pub const MIN_PILL_HEIGHT: f64 = 32.0;
+pub const PILL_OVERLAY_WIDTH: f64 = 300.0;
+pub const PILL_OVERLAY_HEIGHT: f64 = 96.0;
+pub const MIN_PILL_WIDTH: f64 = 48.0;
+pub const MIN_PILL_HEIGHT: f64 = 6.0;
+pub const MIN_PILL_HOVER_PADDING: f64 = 12.0;
+pub const EXPANDED_PILL_WIDTH: f64 = 120.0;
+pub const EXPANDED_PILL_HEIGHT: f64 = 32.0;
 
 pub const UNIFIED_OVERLAY_LABEL: &str = "unified-overlay";
 
@@ -259,13 +262,15 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                     && cursor_y_from_top >= pill_y
                     && cursor_y_from_top <= pill_y + PILL_OVERLAY_HEIGHT;
 
-                let mini_pill_x = pill_x + (PILL_OVERLAY_WIDTH - MIN_PILL_WIDTH) / 2.0;
-                let mini_pill_y = pill_y + PILL_OVERLAY_HEIGHT - MIN_PILL_HEIGHT;
+                let hover_zone_width = MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING * 2.0;
+                let hover_zone_height = MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING * 2.0;
+                let hover_zone_x = pill_x + (PILL_OVERLAY_WIDTH - hover_zone_width) / 2.0;
+                let hover_zone_y = pill_y + PILL_OVERLAY_HEIGHT - hover_zone_height;
 
-                let in_mini_pill = cursor_x >= mini_pill_x
-                    && cursor_x <= mini_pill_x + MIN_PILL_WIDTH
-                    && cursor_y_from_top >= mini_pill_y
-                    && cursor_y_from_top <= mini_pill_y + MIN_PILL_HEIGHT;
+                let in_mini_pill = cursor_x >= hover_zone_x
+                    && cursor_x <= hover_zone_x + hover_zone_width
+                    && cursor_y_from_top >= hover_zone_y
+                    && cursor_y_from_top <= hover_zone_y + hover_zone_height;
 
                 let new_hovered = if in_mini_pill {
                     true
