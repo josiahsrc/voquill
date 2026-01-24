@@ -1,10 +1,11 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "unified-overlay",
-  "description": "Capability for the unified overlay window (waveform, toast, agent)",
+  "identifier": "overlay",
+  "description": "Capability for all overlay windows",
   "windows": [
     "unified-overlay",
-    "pill-overlay"
+    "pill-overlay",
+    "toast-overlay"
   ],
   "permissions": [
     "core:default",

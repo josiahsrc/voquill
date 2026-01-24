@@ -133,6 +133,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 crate::overlay::ensure_pill_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
+                crate::overlay::ensure_toast_overlay_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
                 if let Some(simple_window) =
                     app_handle.get_webview_window(crate::overlay::SIMPLE_OVERLAY_LABEL)
                 {
@@ -143,6 +146,12 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
                 {
                     let _ = crate::platform::window::show_overlay_no_focus(&pill_window);
+                }
+
+                if let Some(toast_window) =
+                    app_handle.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
+                {
+                    let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
                 }
 
                 crate::overlay::start_cursor_follower(app_handle.clone());
@@ -184,6 +193,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::surface_main_window,
             crate::commands::show_overlay_no_focus,
             crate::commands::set_overlay_click_through,
+            crate::commands::set_toast_overlay_click_through,
             crate::commands::restore_overlay_focus,
             crate::commands::show_simple_overlay,
             crate::commands::paste,

@@ -1,5 +1,6 @@
-import { Box, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
+import { showToast } from "../../actions/toast.actions";
 import { useAppStore } from "../../store";
 import { getMyUser, getMyUserName } from "../../utils/user.utils";
 import { DictationInstruction } from "../common/DictationInstruction";
@@ -26,6 +27,21 @@ export default function HomePage() {
             values={{ name: userName }}
           />
         </Typography>
+        <Box sx={{ mt: 4 }}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              showToast({
+                title: "Test Toast",
+                message: "This is a test toast notification!",
+                toastType: "info",
+                action: "open_agent_settings",
+              });
+            }}
+          >
+            Test Toast
+          </Button>
+        </Box>
         <Box sx={{ my: 8 }}>
           <Stack
             direction="row"

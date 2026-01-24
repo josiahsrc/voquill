@@ -18,6 +18,12 @@ pub const EXPANDED_PILL_HOVERABLE_HEIGHT: f64 = EXPANDED_PILL_HEIGHT + 16.0;
 
 pub const UNIFIED_OVERLAY_LABEL: &str = "unified-overlay";
 
+pub const TOAST_OVERLAY_LABEL: &str = "toast-overlay";
+pub const TOAST_OVERLAY_WIDTH: f64 = 380.0;
+pub const TOAST_OVERLAY_HEIGHT: f64 = 164.0;
+pub const TOAST_OVERLAY_TOP_OFFSET: f64 = 0.0;
+pub const TOAST_OVERLAY_RIGHT_OFFSET: f64 = 0.0;
+
 const CURSOR_POLL_INTERVAL_MS: u64 = 60;
 const DEFAULT_SCREEN_WIDTH: f64 = 1920.0;
 const DEFAULT_SCREEN_HEIGHT: f64 = 1080.0;
@@ -172,6 +178,53 @@ pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+pub fn ensure_toast_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    if app.get_webview_window(TOAST_OVERLAY_LABEL).is_some() {
+        return Ok(());
+    }
+
+    let (screen_width, _screen_height) = get_primary_screen_size(app);
+
+    let url = build_overlay_webview_url(app, "toast-overlay")?;
+
+    let x = screen_width - TOAST_OVERLAY_WIDTH - TOAST_OVERLAY_RIGHT_OFFSET;
+    let y = TOAST_OVERLAY_TOP_OFFSET;
+
+    let builder = {
+        let builder = WebviewWindowBuilder::new(app, TOAST_OVERLAY_LABEL, url)
+            .decorations(false)
+            .always_on_top(true)
+            .transparent(true)
+            .skip_taskbar(true)
+            .resizable(false)
+            .shadow(false)
+            .focusable(false)
+            .inner_size(TOAST_OVERLAY_WIDTH, TOAST_OVERLAY_HEIGHT)
+            .position(x, y);
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            builder.visible(false)
+        }
+        #[cfg(target_os = "linux")]
+        {
+            builder
+        }
+    };
+
+    let window = builder.build()?;
+
+    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
+        eprintln!("Failed to configure {TOAST_OVERLAY_LABEL} as non-activating: {err}");
+    }
+
+    if let Some(window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
+        let _ = window.set_ignore_cursor_events(true);
+    }
+
+    Ok(())
+}
+
 struct OverlayConfig {
     label: &'static str,
     width: f64,
@@ -227,6 +280,7 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
 
             let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
 
+            // TODO: Simplify since we don't need simple overlay anymore
             for config in TRACKED_OVERLAYS {
                 let Some(window) = app.get_webview_window(config.label) else {
                     continue;
@@ -239,6 +293,19 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 let physical_y = (target_y * monitor.scale_factor) as i32;
 
                 let _ = window.set_position(tauri::Position::Physical(
+                    tauri::PhysicalPosition::new(physical_x, physical_y),
+                ));
+            }
+
+            if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
+                let target_x =
+                    visible_x + visible_width - TOAST_OVERLAY_WIDTH - TOAST_OVERLAY_RIGHT_OFFSET;
+                let target_y = visible_y + TOAST_OVERLAY_TOP_OFFSET;
+
+                let physical_x = (target_x * monitor.scale_factor) as i32;
+                let physical_y = (target_y * monitor.scale_factor) as i32;
+
+                let _ = toast_window.set_position(tauri::Position::Physical(
                     tauri::PhysicalPosition::new(physical_x, physical_y),
                 ));
             }

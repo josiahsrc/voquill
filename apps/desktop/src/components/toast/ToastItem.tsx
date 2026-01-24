@@ -168,6 +168,7 @@ export const ToastItem = ({ toast, onClose, onAction }: ToastItemProps) => {
         })}
       >
         <Box
+          key={toast.id}
           sx={(theme) => ({
             height: "100%",
             backgroundColor:

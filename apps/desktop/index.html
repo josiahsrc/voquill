@@ -4,14 +4,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri + React + Typescript</title>
+    <title>Voquill</title>
     <script>
       (function () {
         const params = new URLSearchParams(window.location.search);
         if (params.get("overlay") === "1") {
           document.documentElement.dataset.overlay = "true";
         }
-        if (params.get("toast") === "1") {
+        // TODO: Is this still needed?
+        if (params.get("toast-overlay") === "1") {
           document.documentElement.dataset.toast = "true";
         }
         if (params.get("agent") === "1") {

@@ -1065,6 +1065,27 @@ pub fn set_overlay_click_through(app: AppHandle, click_through: bool) -> Result<
 }
 
 #[tauri::command]
+pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
+    let window = app
+        .get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
+        .ok_or_else(|| "toast-overlay window not found".to_string())?;
+
+    #[cfg(target_os = "windows")]
+    {
+        crate::platform::windows::window::set_overlay_click_through(&window, click_through)?;
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        window
+            .set_ignore_cursor_events(click_through)
+            .map_err(|err| err.to_string())?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn restore_overlay_focus() {
     #[cfg(target_os = "windows")]
     {

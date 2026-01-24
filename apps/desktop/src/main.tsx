@@ -21,6 +21,7 @@ import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
 import { PillOverlayRoot } from "./components/overlay/PillOverlayRoot";
 import { SimpleOverlayRoot } from "./components/overlay/SimpleOverlayRoot";
+import { ToastOverlayRoot } from "./components/overlay/ToastOverlayRoot";
 import { UnifiedOverlayRoot } from "./components/overlay/UnifiedOverlayRoot";
 import { AppWithLoading } from "./components/root/AppWithLoading";
 import { SnackbarEmitter } from "./components/root/SnackbarEmitter";
@@ -98,6 +99,7 @@ const searchParams =
 const isOverlayWindow = searchParams?.get("overlay") === "1";
 const isSimpleOverlayWindow = searchParams?.get("simple-overlay") === "1";
 const isPillOverlayWindow = searchParams?.get("pill-overlay") === "1";
+const isToastOverlayWindow = searchParams?.get("toast-overlay") === "1";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 
@@ -131,6 +133,12 @@ if (isPillOverlayWindow) {
   root.render(
     <Main>
       <PillOverlayRoot />
+    </Main>,
+  );
+} else if (isToastOverlayWindow) {
+  root.render(
+    <Main>
+      <ToastOverlayRoot />
     </Main>,
   );
 } else if (isSimpleOverlayWindow) {
