@@ -368,39 +368,33 @@ fn start_cursor_follower(app: tauri::AppHandle) {
             let bottom_margin = 52.0;
 
             #[cfg(target_os = "macos")]
-            let (logical_visible_x, logical_visible_width, logical_height) = (
+            let (visible_x, visible_y, visible_width, visible_height) = (
                 monitor.visible_x,
+                monitor.visible_y,
                 monitor.visible_width,
-                monitor.height,
+                monitor.visible_height,
             );
 
             #[cfg(not(target_os = "macos"))]
-            let (logical_visible_x, logical_visible_width, logical_height) = {
+            let (visible_x, visible_y, visible_width, visible_height) = {
                 let scale = monitor.scale_factor;
                 (
                     monitor.visible_x / scale,
+                    monitor.visible_y / scale,
                     monitor.visible_width / scale,
-                    monitor.height / scale,
+                    monitor.visible_height / scale,
                 )
             };
 
-            let target_x = logical_visible_x + (logical_visible_width - width) / 2.0;
-            let target_y = logical_height - height - bottom_margin;
+            let target_x = visible_x + (visible_width - width) / 2.0;
+            let target_y = visible_y + visible_height - height - bottom_margin;
 
-            let should_update = match window.outer_position() {
-                Ok(current_pos) => {
-                    let current_x = current_pos.x as f64 / monitor.scale_factor;
-                    let current_y = current_pos.y as f64 / monitor.scale_factor;
-                    (target_x - current_x).abs() > 1.0 || (target_y - current_y).abs() > 1.0
-                }
-                Err(_) => true,
-            };
+            let physical_x = (target_x * monitor.scale_factor) as i32;
+            let physical_y = (target_y * monitor.scale_factor) as i32;
 
-            if should_update {
-                let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(
-                    target_x, target_y,
-                )));
-            }
+            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(
+                physical_x, physical_y,
+            )));
         }
     });
 }
