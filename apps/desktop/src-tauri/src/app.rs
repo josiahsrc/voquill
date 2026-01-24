@@ -15,7 +15,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         }))
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec![AUTOSTART_HIDDEN_ARG.into()]),
+            Some(vec![AUTOSTART_HIDDEN_ARG]),
         ))
         .plugin(tauri_plugin_process::init())
         .plugin(
@@ -47,7 +47,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             let db_url = {
                 let handle = app.handle();
-                crate::system::paths::database_url(&handle)
+                crate::system::paths::database_url(handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?
             };
 
@@ -101,10 +101,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                             .ok()
                             .flatten();
 
-                    let should_init_whisper = match transcription_mode.as_deref() {
-                        None | Some("local") => true,
-                        _ => false,
-                    };
+                    let should_init_whisper = matches!(transcription_mode.as_deref(), None | Some("local"));
 
                     if should_init_whisper {
                         eprintln!("[app] Transcription mode is local or unset, initializing Whisper in background...");
@@ -124,7 +121,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                ensure_unified_overlay_window(&app_handle)
+                ensure_unified_overlay_window(app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             }
 

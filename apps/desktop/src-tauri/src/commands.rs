@@ -749,7 +749,7 @@ pub fn start_recording(
             })
         }
         Err(err) => {
-            let already_recording = (&*err)
+            let already_recording = (*err)
                 .downcast_ref::<crate::errors::RecordingError>()
                 .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
                 .unwrap_or(false);
@@ -784,7 +784,7 @@ pub async fn stop_recording(
             })
         }
         Err(err) => {
-            let not_recording = (&*err)
+            let not_recording = (*err)
                 .downcast_ref::<crate::errors::RecordingError>()
                 .map(|inner| matches!(inner, crate::errors::RecordingError::NotRecording))
                 .unwrap_or(false);
@@ -1088,8 +1088,9 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> 
 
 #[tauri::command]
 pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
-    let resolved =
-        OverlayPhase::from_str(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
+    let resolved = phase
+        .parse::<OverlayPhase>()
+        .map_err(|_| format!("invalid phase: {phase}"))?;
 
     #[cfg(target_os = "macos")]
     if let Err(err) = crate::platform::macos::notch_overlay::set_phase(resolved.clone()) {

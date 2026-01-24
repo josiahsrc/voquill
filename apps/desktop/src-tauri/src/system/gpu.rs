@@ -33,8 +33,7 @@ fn enumerate_gpus_directly() -> Vec<GpuAdapterInfo> {
 
     // Wrap the entire GPU enumeration in catch_unwind to handle driver crashes
     let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-        let mut descriptor = wgpu::InstanceDescriptor::default();
-        descriptor.backends = wgpu::Backends::all();
+        let descriptor = wgpu::InstanceDescriptor::default();
         let instance = wgpu::Instance::new(descriptor);
 
         instance
@@ -157,7 +156,7 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     }
 
     // Parse JSON output
-    match serde_json::from_str::<Vec<GpuAdapterInfo>>(&output.trim()) {
+    match serde_json::from_str::<Vec<GpuAdapterInfo>>(output.trim()) {
         Ok(gpus) => {
             eprintln!(
                 "[gpu] Successfully enumerated {} GPU(s) via child process",

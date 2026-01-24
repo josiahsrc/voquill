@@ -71,7 +71,7 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.agent_mode)
     .bind(&preferences.agent_mode_api_key_id)
     .bind(&preferences.active_tone_id)
-    .bind(&preferences.got_started_at)
+    .bind(preferences.got_started_at)
     .bind(preferences.gpu_enumeration_enabled)
     .bind(&preferences.paste_keybind)
     .bind(&preferences.last_seen_feature)
