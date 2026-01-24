@@ -1,3 +1,11 @@
+#[derive(Clone, Copy, Debug, Default)]
+pub enum OverlayAnchor {
+    #[default]
+    BottomCenter,
+    TopRight,
+    TopLeft,
+}
+
 #[derive(serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct MonitorAtCursor {

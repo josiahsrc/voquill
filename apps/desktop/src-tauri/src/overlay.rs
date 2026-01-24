@@ -216,6 +216,7 @@ pub fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
 }
 
 pub fn start_cursor_follower(app: tauri::AppHandle) {
+    use crate::domain::OverlayAnchor;
     use std::time::Duration;
     use tauri::Manager;
 
@@ -230,6 +231,42 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                 continue;
             };
 
+            let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
+
+            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+                crate::platform::position::set_overlay_position(
+                    &pill_window,
+                    &monitor,
+                    OverlayAnchor::BottomCenter,
+                    PILL_OVERLAY_WIDTH,
+                    PILL_OVERLAY_HEIGHT,
+                    bottom_offset,
+                );
+            }
+
+            if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
+                crate::platform::position::set_overlay_position(
+                    &toast_window,
+                    &monitor,
+                    OverlayAnchor::TopRight,
+                    TOAST_OVERLAY_WIDTH,
+                    TOAST_OVERLAY_HEIGHT,
+                    TOAST_OVERLAY_RIGHT_OFFSET,
+                );
+            }
+
+            if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
+                crate::platform::position::set_overlay_position(
+                    &agent_window,
+                    &monitor,
+                    OverlayAnchor::TopLeft,
+                    AGENT_OVERLAY_WIDTH,
+                    AGENT_OVERLAY_HEIGHT,
+                    AGENT_OVERLAY_LEFT_OFFSET,
+                );
+            }
+
+            // Get visible area for hover detection (platform-specific)
             #[cfg(target_os = "macos")]
             let (visible_x, visible_y, visible_width, visible_height) = (
                 monitor.visible_x,
@@ -248,75 +285,6 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                     monitor.visible_height / scale,
                 )
             };
-
-            let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
-
-            if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-                let target_x = visible_x + (visible_width - PILL_OVERLAY_WIDTH) / 2.0;
-                let target_y = visible_y + visible_height - PILL_OVERLAY_HEIGHT - bottom_offset;
-
-                let physical_x = (target_x * monitor.scale_factor) as i32;
-                let physical_y = (target_y * monitor.scale_factor) as i32;
-
-                let should_update = match pill_window.outer_position() {
-                    Ok(current_pos) => {
-                        (physical_x - current_pos.x).abs() > 1
-                            || (physical_y - current_pos.y).abs() > 1
-                    }
-                    Err(_) => true,
-                };
-
-                if should_update {
-                    let _ = pill_window.set_position(tauri::Position::Physical(
-                        tauri::PhysicalPosition::new(physical_x, physical_y),
-                    ));
-                }
-            }
-
-            if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
-                let target_x =
-                    visible_x + visible_width - TOAST_OVERLAY_WIDTH - TOAST_OVERLAY_RIGHT_OFFSET;
-                let target_y = visible_y + TOAST_OVERLAY_TOP_OFFSET;
-
-                let physical_x = (target_x * monitor.scale_factor) as i32;
-                let physical_y = (target_y * monitor.scale_factor) as i32;
-
-                let should_update = match toast_window.outer_position() {
-                    Ok(current_pos) => {
-                        (physical_x - current_pos.x).abs() > 1
-                            || (physical_y - current_pos.y).abs() > 1
-                    }
-                    Err(_) => true,
-                };
-
-                if should_update {
-                    let _ = toast_window.set_position(tauri::Position::Physical(
-                        tauri::PhysicalPosition::new(physical_x, physical_y),
-                    ));
-                }
-            }
-
-            if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
-                let target_x = visible_x + AGENT_OVERLAY_LEFT_OFFSET;
-                let target_y = visible_y + AGENT_OVERLAY_TOP_OFFSET;
-
-                let physical_x = (target_x * monitor.scale_factor) as i32;
-                let physical_y = (target_y * monitor.scale_factor) as i32;
-
-                let should_update = match agent_window.outer_position() {
-                    Ok(current_pos) => {
-                        (physical_x - current_pos.x).abs() > 1
-                            || (physical_y - current_pos.y).abs() > 1
-                    }
-                    Err(_) => true,
-                };
-
-                if should_update {
-                    let _ = agent_window.set_position(tauri::Position::Physical(
-                        tauri::PhysicalPosition::new(physical_x, physical_y),
-                    ));
-                }
-            }
 
             if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
                 let overlay_state = app.state::<crate::state::OverlayState>();
