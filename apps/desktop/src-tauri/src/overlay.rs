@@ -314,8 +314,12 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                     let hover_zone_height = MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING * 2.0;
                     let hover_zone_x =
                         pill_x + (EXPANDED_PILL_HOVERABLE_WIDTH - hover_zone_width) / 2.0;
+                    #[cfg(target_os = "macos")]
                     let hover_zone_y = pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT - hover_zone_height
                         + MIN_PILL_HOVER_PADDING;
+                    #[cfg(not(target_os = "macos"))]
+                    let hover_zone_y =
+                        pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT - hover_zone_height - MIN_PILL_HOVER_PADDING;
 
                     let in_mini_pill = cursor_x >= hover_zone_x
                         && cursor_x <= hover_zone_x + hover_zone_width
