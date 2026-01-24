@@ -1125,6 +1125,14 @@ pub fn set_phase(
 }
 
 #[tauri::command]
+pub fn set_pill_hover_enabled(
+    enabled: bool,
+    overlay_state: State<'_, crate::state::OverlayState>,
+) {
+    overlay_state.set_pill_hover_enabled(enabled);
+}
+
+#[tauri::command]
 pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
     crate::platform::keyboard::start_key_listener(&app)
 }

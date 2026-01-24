@@ -67,6 +67,7 @@ import {
   hoursToMilliseconds,
 } from "../../utils/time.utils";
 import {
+  getEffectivePillVisibility,
   getIsDictationUnlocked,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
@@ -266,7 +267,10 @@ export const RootSideEffects = () => {
 
         await strategy.onBeforeStart();
 
-        console.log("[startRecording] starting recording with mic:", preferredMicrophone);
+        console.log(
+          "[startRecording] starting recording with mic:",
+          preferredMicrophone,
+        );
         const [, startRecordingResult] = await Promise.all([
           strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
@@ -558,6 +562,22 @@ export const RootSideEffects = () => {
   useEffect(() => {
     void setTrayTitle(trayLanguageCode);
   }, [trayLanguageCode]);
+
+  const pillHoverEnabled = useAppStore((state) => {
+    if (!getIsDictationUnlocked(state)) {
+      return false;
+    }
+    const visibility = getEffectivePillVisibility(
+      state.userPrefs?.dictationPillVisibility,
+    );
+    return visibility === "persistent";
+  });
+
+  useEffect(() => {
+    invoke("set_pill_hover_enabled", { enabled: pillHoverEnabled }).catch(
+      console.error,
+    );
+  }, [pillHoverEnabled]);
 
   return null;
 };

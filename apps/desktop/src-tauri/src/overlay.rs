@@ -289,43 +289,50 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
             }
 
             if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-                let pill_x = visible_x + (visible_width - EXPANDED_PILL_HOVERABLE_WIDTH) / 2.0;
-                let pill_y =
-                    visible_y + visible_height - EXPANDED_PILL_HOVERABLE_HEIGHT - bottom_offset;
+                let overlay_state = app.state::<crate::state::OverlayState>();
+                let hover_enabled = overlay_state.is_pill_hover_enabled();
 
-                #[cfg(target_os = "macos")]
-                let cursor_y_from_top = monitor.height - monitor.cursor_y;
-                #[cfg(not(target_os = "macos"))]
-                let cursor_y_from_top = monitor.cursor_y / monitor.scale_factor;
+                let new_hovered = if hover_enabled {
+                    let pill_x = visible_x + (visible_width - EXPANDED_PILL_HOVERABLE_WIDTH) / 2.0;
+                    let pill_y =
+                        visible_y + visible_height - EXPANDED_PILL_HOVERABLE_HEIGHT - bottom_offset;
 
-                #[cfg(target_os = "macos")]
-                let cursor_x = monitor.cursor_x;
-                #[cfg(not(target_os = "macos"))]
-                let cursor_x = monitor.cursor_x / monitor.scale_factor;
+                    #[cfg(target_os = "macos")]
+                    let cursor_y_from_top = monitor.height - monitor.cursor_y;
+                    #[cfg(not(target_os = "macos"))]
+                    let cursor_y_from_top = monitor.cursor_y / monitor.scale_factor;
 
-                let in_full_pill = cursor_x >= pill_x
-                    && cursor_x <= pill_x + EXPANDED_PILL_HOVERABLE_WIDTH
-                    && cursor_y_from_top >= pill_y
-                    && cursor_y_from_top <= pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT;
+                    #[cfg(target_os = "macos")]
+                    let cursor_x = monitor.cursor_x;
+                    #[cfg(not(target_os = "macos"))]
+                    let cursor_x = monitor.cursor_x / monitor.scale_factor;
 
-                let hover_zone_width = MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING * 2.0;
-                let hover_zone_height = MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING * 2.0;
-                let hover_zone_x =
-                    pill_x + (EXPANDED_PILL_HOVERABLE_WIDTH - hover_zone_width) / 2.0;
-                let hover_zone_y = pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT - hover_zone_height
-                    + MIN_PILL_HOVER_PADDING;
+                    let in_full_pill = cursor_x >= pill_x
+                        && cursor_x <= pill_x + EXPANDED_PILL_HOVERABLE_WIDTH
+                        && cursor_y_from_top >= pill_y
+                        && cursor_y_from_top <= pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT;
 
-                let in_mini_pill = cursor_x >= hover_zone_x
-                    && cursor_x <= hover_zone_x + hover_zone_width
-                    && cursor_y_from_top >= hover_zone_y
-                    && cursor_y_from_top <= hover_zone_y + hover_zone_height;
+                    let hover_zone_width = MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING * 2.0;
+                    let hover_zone_height = MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING * 2.0;
+                    let hover_zone_x =
+                        pill_x + (EXPANDED_PILL_HOVERABLE_WIDTH - hover_zone_width) / 2.0;
+                    let hover_zone_y = pill_y + EXPANDED_PILL_HOVERABLE_HEIGHT - hover_zone_height
+                        + MIN_PILL_HOVER_PADDING;
 
-                let new_hovered = if in_mini_pill {
-                    true
-                } else if !in_full_pill {
-                    false
+                    let in_mini_pill = cursor_x >= hover_zone_x
+                        && cursor_x <= hover_zone_x + hover_zone_width
+                        && cursor_y_from_top >= hover_zone_y
+                        && cursor_y_from_top <= hover_zone_y + hover_zone_height;
+
+                    if in_mini_pill {
+                        true
+                    } else if !in_full_pill {
+                        false
+                    } else {
+                        pill_hovered.load(Ordering::Relaxed)
+                    }
                 } else {
-                    pill_hovered.load(Ordering::Relaxed)
+                    false
                 };
 
                 let was_hovered = pill_hovered.load(Ordering::Relaxed);
@@ -334,7 +341,6 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
                     pill_hovered.store(new_hovered, Ordering::Relaxed);
                 }
 
-                let overlay_state = app.state::<crate::state::OverlayState>();
                 let is_active = !overlay_state.is_idle();
                 let new_expanded = new_hovered || is_active;
 

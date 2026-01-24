@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use crate::domain::OverlayPhase;
 
@@ -8,6 +8,7 @@ const PHASE_LOADING: u8 = 2;
 
 pub struct OverlayState {
     phase: AtomicU8,
+    pill_hover_enabled: AtomicBool,
 }
 
 impl Default for OverlayState {
@@ -20,6 +21,7 @@ impl OverlayState {
     pub fn new() -> Self {
         Self {
             phase: AtomicU8::new(PHASE_IDLE),
+            pill_hover_enabled: AtomicBool::new(false),
         }
     }
 
@@ -42,5 +44,13 @@ impl OverlayState {
 
     pub fn is_idle(&self) -> bool {
         self.phase.load(Ordering::Relaxed) == PHASE_IDLE
+    }
+
+    pub fn set_pill_hover_enabled(&self, enabled: bool) {
+        self.pill_hover_enabled.store(enabled, Ordering::Relaxed);
+    }
+
+    pub fn is_pill_hover_enabled(&self) -> bool {
+        self.pill_hover_enabled.load(Ordering::Relaxed)
     }
 }
