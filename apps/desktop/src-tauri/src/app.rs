@@ -133,6 +133,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 //     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
                 crate::overlay::ensure_toast_overlay_window(&app_handle)
+                ensure_unified_overlay_window(app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
                 crate::overlay::ensure_agent_overlay_window(&app_handle)
