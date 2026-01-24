@@ -11,6 +11,8 @@ pub use linux::monitor;
 #[cfg(target_os = "linux")]
 pub use linux::permissions;
 #[cfg(target_os = "linux")]
+pub use linux::position;
+#[cfg(target_os = "linux")]
 pub use linux::window;
 
 #[cfg(target_os = "macos")]
@@ -24,6 +26,8 @@ pub use macos::monitor;
 #[cfg(target_os = "macos")]
 pub use macos::permissions;
 #[cfg(target_os = "macos")]
+pub use macos::position;
+#[cfg(target_os = "macos")]
 pub use macos::window;
 
 #[cfg(target_os = "windows")]
@@ -36,6 +40,8 @@ pub use windows::input;
 pub use windows::monitor;
 #[cfg(target_os = "windows")]
 pub use windows::permissions;
+#[cfg(target_os = "windows")]
+pub use windows::position;
 #[cfg(target_os = "windows")]
 pub use windows::window;
 

@@ -349,6 +349,7 @@ fn simple_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::We
 }
 
 fn start_cursor_follower(app: tauri::AppHandle) {
+    use crate::domain::OverlayAnchor;
     use std::time::Duration;
 
     std::thread::spawn(move || {
@@ -365,36 +366,16 @@ fn start_cursor_follower(app: tauri::AppHandle) {
 
             let width = 400.0;
             let height = 200.0;
-            let bottom_margin = 52.0;
+            let margin = 52.0;
 
-            #[cfg(target_os = "macos")]
-            let (visible_x, visible_y, visible_width, visible_height) = (
-                monitor.visible_x,
-                monitor.visible_y,
-                monitor.visible_width,
-                monitor.visible_height,
+            crate::platform::position::set_overlay_position(
+                &window,
+                &monitor,
+                OverlayAnchor::BottomCenter,
+                width,
+                height,
+                margin,
             );
-
-            #[cfg(not(target_os = "macos"))]
-            let (visible_x, visible_y, visible_width, visible_height) = {
-                let scale = monitor.scale_factor;
-                (
-                    monitor.visible_x / scale,
-                    monitor.visible_y / scale,
-                    monitor.visible_width / scale,
-                    monitor.visible_height / scale,
-                )
-            };
-
-            let target_x = visible_x + (visible_width - width) / 2.0;
-            let target_y = visible_y + visible_height - height - bottom_margin;
-
-            let physical_x = (target_x * monitor.scale_factor) as i32;
-            let physical_y = (target_y * monitor.scale_factor) as i32;
-
-            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(
-                physical_x, physical_y,
-            )));
         }
     });
 }

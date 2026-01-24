@@ -23,7 +23,7 @@ pub use recording::{
     AudioChunkPayload, RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult,
     EVT_AUDIO_CHUNK, EVT_REC_LEVEL,
 };
-pub use monitor::{MonitorAtCursor, ScreenVisibleArea};
+pub use monitor::{MonitorAtCursor, OverlayAnchor, ScreenVisibleArea};
 pub use term::Term;
 pub use tone::Tone;
 pub use transcription::{Transcription, TranscriptionAudioSnapshot};
