@@ -85,6 +85,8 @@ pub const USER_COMPANY_TITLE_MIGRATION_SQL: &str =
 pub const INCOGNITO_MODE_MIGRATION_SQL: &str = include_str!("migrations/045_incognito_mode.sql");
 pub const DICTATION_PILL_VISIBILITY_MIGRATION_SQL: &str =
     include_str!("migrations/046_dictation_pill_visibility.sql");
+pub const TRANSCRIPTION_SANITIZED_TRANSCRIPT_MIGRATION_SQL: &str =
+    include_str!("migrations/047_transcription_sanitized_transcript.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -362,6 +364,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 46,
             description: "add_dictation_pill_visibility",
             sql: DICTATION_PILL_VISIBILITY_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 47,
+            description: "add_transcription_sanitized_transcript",
+            sql: TRANSCRIPTION_SANITIZED_TRANSCRIPT_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

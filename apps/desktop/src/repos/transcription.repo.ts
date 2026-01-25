@@ -20,6 +20,7 @@ type LocalTranscription = {
   modelSize?: string | null;
   inferenceDevice?: string | null;
   rawTranscript?: string | null;
+  sanitizedTranscript?: string | null;
   transcriptionPrompt?: string | null;
   postProcessPrompt?: string | null;
   transcriptionApiKeyId?: string | null;
@@ -57,6 +58,7 @@ const toLocalTranscription = (
   modelSize: transcription.modelSize ?? null,
   inferenceDevice: transcription.inferenceDevice ?? null,
   rawTranscript: transcription.rawTranscript ?? null,
+  sanitizedTranscript: transcription.sanitizedTranscript ?? null,
   transcriptionPrompt: transcription.transcriptionPrompt ?? null,
   postProcessPrompt: transcription.postProcessPrompt ?? null,
   transcriptionApiKeyId: transcription.transcriptionApiKeyId ?? null,
@@ -86,6 +88,7 @@ const fromLocalTranscription = (
   modelSize: transcription.modelSize ?? undefined,
   inferenceDevice: transcription.inferenceDevice ?? undefined,
   rawTranscript: transcription.rawTranscript ?? undefined,
+  sanitizedTranscript: transcription.sanitizedTranscript ?? undefined,
   transcriptionPrompt: transcription.transcriptionPrompt ?? undefined,
   postProcessPrompt: transcription.postProcessPrompt ?? undefined,
   transcriptionApiKeyId: transcription.transcriptionApiKeyId ?? undefined,

@@ -28,6 +28,7 @@ export type HandleTranscriptParams = {
 export type HandleTranscriptResult = {
   shouldContinue: boolean;
   transcript: string | null;
+  sanitizedTranscript: string | null;
   postProcessMetadata: PostProcessMetadata;
   postProcessWarnings: string[];
 };

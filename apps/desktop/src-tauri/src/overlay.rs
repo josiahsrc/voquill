@@ -247,8 +247,8 @@ fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
             crate::platform::position::is_cursor_in_bounds(
                 &monitor,
                 OverlayAnchor::BottomCenter,
-                EXPANDED_PILL_HOVERABLE_WIDTH,
-                EXPANDED_PILL_HOVERABLE_HEIGHT,
+                MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING,
+                MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING,
                 bottom_offset,
             )
         } else {
