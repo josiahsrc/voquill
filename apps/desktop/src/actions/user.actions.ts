@@ -1,4 +1,9 @@
-import { Nullable, User, UserPreferences } from "@repo/types";
+import {
+  DictationPillVisibility,
+  Nullable,
+  User,
+  UserPreferences,
+} from "@repo/types";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
@@ -74,6 +79,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   ignoreUpdateDialog: false,
   incognitoModeEnabled: false,
   incognitoModeIncludeInStats: false,
+  dictationPillVisibility: "while_active",
 });
 
 const updateUserPreferences = async (
@@ -166,32 +172,33 @@ export const setPreferredMicrophone = async (
   }, "Failed to save microphone preference. Please try again.");
 };
 
-export const migratePreferredMicrophoneToPreferences = async (): Promise<void> => {
-  const state = getAppState();
-  const user = getMyUser(state);
-  if (!user) {
-    return;
-  }
+export const migratePreferredMicrophoneToPreferences =
+  async (): Promise<void> => {
+    const state = getAppState();
+    const user = getMyUser(state);
+    if (!user) {
+      return;
+    }
 
-  if (user.hasMigratedPreferredMicrophone) {
-    return;
-  }
+    if (user.hasMigratedPreferredMicrophone) {
+      return;
+    }
 
-  const microphoneToMigrate = user.preferredMicrophone ?? null;
-  if (microphoneToMigrate) {
-    await updateUserPreferences((preferences) => {
-      preferences.preferredMicrophone = microphoneToMigrate;
-    }, "Failed to migrate microphone preference.");
-  }
+    const microphoneToMigrate = user.preferredMicrophone ?? null;
+    if (microphoneToMigrate) {
+      await updateUserPreferences((preferences) => {
+        preferences.preferredMicrophone = microphoneToMigrate;
+      }, "Failed to migrate microphone preference.");
+    }
 
-  await updateUser(
-    (u) => {
-      u.hasMigratedPreferredMicrophone = true;
-    },
-    "Unable to mark microphone as migrated. User not found.",
-    "Failed to mark microphone as migrated.",
-  );
-};
+    await updateUser(
+      (u) => {
+        u.hasMigratedPreferredMicrophone = true;
+      },
+      "Unable to mark microphone as migrated. User not found.",
+      "Failed to mark microphone as migrated.",
+    );
+  };
 
 export const setPreferredLanguage = async (
   language: Nullable<string>,
@@ -504,6 +511,14 @@ export const setIncognitoModeIncludeInStats = async (
   await updateUserPreferences((preferences) => {
     preferences.incognitoModeIncludeInStats = enabled;
   }, "Failed to save incognito mode stats preference. Please try again.");
+};
+
+export const setDictationPillVisibility = async (
+  visibility: DictationPillVisibility,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.dictationPillVisibility = visibility;
+  }, "Failed to save dictation pill visibility preference. Please try again.");
 };
 
 export const markUpgradeDialogSeen = async (): Promise<void> => {

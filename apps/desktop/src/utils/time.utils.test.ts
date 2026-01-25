@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { daysToMilliseconds, hoursToMilliseconds } from "./time.utils";
+import {
+  daysToMilliseconds,
+  hoursToMilliseconds,
+  minutesToMilliseconds,
+} from "./time.utils";
 
 describe("daysToMilliseconds", () => {
   it("should work", () => {
@@ -14,5 +18,13 @@ describe("hoursToMilliseconds", () => {
     expect(hoursToMilliseconds(1)).toBe(3600000);
     expect(hoursToMilliseconds(0)).toBe(0);
     expect(hoursToMilliseconds(2.5)).toBe(9000000);
+  });
+});
+
+describe("minutesToMilliseconds", () => {
+  it("should work", () => {
+    expect(minutesToMilliseconds(1)).toBe(60000);
+    expect(minutesToMilliseconds(0)).toBe(0);
+    expect(minutesToMilliseconds(2.5)).toBe(150000);
   });
 });

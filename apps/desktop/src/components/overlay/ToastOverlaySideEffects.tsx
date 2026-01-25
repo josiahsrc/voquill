@@ -1,22 +1,10 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
-import type { AgentWindowState } from "../../types/agent-window.types";
-import type { OverlayPhase } from "../../types/overlay.types";
+import type { OverlaySyncPayload } from "../../types/overlay.types";
 import type { Toast } from "../../types/toast.types";
-
-type OverlayPhasePayload = {
-  phase: OverlayPhase;
-};
-
-type RecordingLevelPayload = {
-  levels?: number[];
-};
-
-type AgentWindowStatePayload = {
-  state: AgentWindowState | null;
-};
 
 type ToastPayload = {
   toast: Toast;
@@ -24,43 +12,14 @@ type ToastPayload = {
 
 const DEFAULT_TOAST_DURATION_MS = 3000;
 
-export const UnifiedOverlaySideEffects = () => {
+export const ToastOverlaySideEffects = () => {
   const currentToast = useAppStore((state) => state.currentToast);
   const toastQueue = useAppStore((state) => state.toastQueue);
   const timerRef = useRef<number | null>(null);
 
-  useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
+  useTauriListen<OverlaySyncPayload>("overlay_sync", (payload) => {
     produceAppState((draft) => {
-      draft.overlayPhase = payload.phase;
-      if (payload.phase !== "recording") {
-        draft.audioLevels = [];
-      }
-    });
-  });
-
-  useTauriListen<RecordingLevelPayload>("recording_level", (payload) => {
-    const raw = Array.isArray(payload.levels) ? payload.levels : [];
-    const sanitized = raw.map((value) =>
-      typeof value === "number" && Number.isFinite(value) ? value : 0,
-    );
-
-    produceAppState((draft) => {
-      draft.audioLevels = sanitized;
-    });
-  });
-
-  useTauriListen<AgentWindowStatePayload>("agent_window_state", (payload) => {
-    produceAppState((draft) => {
-      draft.agent.windowState = payload.state;
-    });
-  });
-
-  useTauriListen<OverlayPhasePayload>("agent_overlay_phase", (payload) => {
-    produceAppState((draft) => {
-      draft.agent.overlayPhase = payload.phase;
-      if (payload.phase !== "recording") {
-        draft.audioLevels = [];
-      }
+      Object.assign(draft, payload);
     });
   });
 
@@ -114,6 +73,13 @@ export const UnifiedOverlaySideEffects = () => {
       };
     }
   }, [currentToast?.id, currentToast?.duration]);
+
+  useEffect(() => {
+    const hasToasts = currentToast !== null || toastQueue.length > 0;
+    invoke("set_toast_overlay_click_through", {
+      clickThrough: !hasToasts,
+    }).catch(console.error);
+  }, [currentToast, toastQueue.length]);
 
   return null;
 };

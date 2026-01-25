@@ -31,9 +31,10 @@ pub async fn upsert_user_preferences(
              preferred_microphone,
              ignore_update_dialog,
              incognito_mode_enabled,
-             incognito_mode_include_in_stats
+             incognito_mode_include_in_stats,
+             dictation_pill_visibility
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -57,7 +58,8 @@ pub async fn upsert_user_preferences(
             preferred_microphone = excluded.preferred_microphone,
             ignore_update_dialog = excluded.ignore_update_dialog,
             incognito_mode_enabled = excluded.incognito_mode_enabled,
-            incognito_mode_include_in_stats = excluded.incognito_mode_include_in_stats",
+            incognito_mode_include_in_stats = excluded.incognito_mode_include_in_stats,
+            dictation_pill_visibility = excluded.dictation_pill_visibility",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -83,6 +85,7 @@ pub async fn upsert_user_preferences(
     .bind(preferences.ignore_update_dialog)
     .bind(preferences.incognito_mode_enabled)
     .bind(preferences.incognito_mode_include_in_stats)
+    .bind(&preferences.dictation_pill_visibility)
     .execute(&pool)
     .await?;
 
@@ -118,7 +121,8 @@ pub async fn fetch_user_preferences(
             preferred_microphone,
             ignore_update_dialog,
             incognito_mode_enabled,
-            incognito_mode_include_in_stats
+            incognito_mode_include_in_stats,
+            dictation_pill_visibility
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -204,6 +208,9 @@ pub async fn fetch_user_preferences(
             .try_get::<i64, _>("incognito_mode_include_in_stats")
             .map(|v| v != 0)
             .unwrap_or(false),
+        dictation_pill_visibility: row
+            .try_get::<String, _>("dictation_pill_visibility")
+            .unwrap_or_else(|_| "while_active".to_string()),
     });
 
     Ok(preferences)

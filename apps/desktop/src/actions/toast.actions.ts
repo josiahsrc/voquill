@@ -19,6 +19,5 @@ export async function showToast(options: ShowToastOptions): Promise<void> {
     action: options.action,
   };
 
-  // Emit event to the unified overlay window
-  await emitTo("unified-overlay", "toast", { toast });
+  await emitTo("toast-overlay", "toast", { toast });
 }
