@@ -16,6 +16,7 @@ export abstract class BaseStrategy {
   abstract handleTranscript(
     params: HandleTranscriptParams,
   ): Promise<HandleTranscriptResult>;
+  abstract shouldStoreTranscript(): boolean;
 
   abstract cleanup(): Promise<void>;
 }

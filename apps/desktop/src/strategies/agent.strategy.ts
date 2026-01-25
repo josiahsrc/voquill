@@ -29,6 +29,10 @@ export class AgentStrategy extends BaseStrategy {
   private draftTool: DraftTool | null = null;
   private currentDraft: string | null = null;
 
+  shouldStoreTranscript(): boolean {
+    return false;
+  }
+
   validateAvailability(): Nullable<StrategyValidationError> {
     const state = getAppState();
     const agentMode = state.settings.agentMode.mode;
@@ -145,7 +149,12 @@ export class AgentStrategy extends BaseStrategy {
       this.agent = await this.initAgent();
       if (!this.agent) {
         clearLoadingToken();
-        return { shouldContinue: false };
+        return {
+          shouldContinue: false,
+          transcript: null,
+          postProcessMetadata: {},
+          postProcessWarnings: [],
+        };
       }
     }
 
@@ -193,20 +202,37 @@ export class AgentStrategy extends BaseStrategy {
 
       if (this.shouldStop) {
         await this.cleanup();
-        return { shouldContinue: false };
+        return {
+          shouldContinue: false,
+          transcript: null,
+          postProcessMetadata: {},
+          postProcessWarnings: [],
+        };
       }
 
-      return { shouldContinue: true };
+      return {
+        shouldContinue: true,
+        transcript: null,
+        postProcessMetadata: {},
+        postProcessWarnings: [],
+      };
     } catch (error) {
       console.error("Agent failed to process request", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An error occurred.";
       await showToast({
         title: "Agent request failed",
-        message: error instanceof Error ? error.message : "An error occurred.",
+        message: errorMessage,
         toastType: "error",
       });
       clearLoadingToken();
       await this.cleanup();
-      return { shouldContinue: false };
+      return {
+        shouldContinue: false,
+        transcript: null,
+        postProcessMetadata: {},
+        postProcessWarnings: [errorMessage],
+      };
     }
   }
 

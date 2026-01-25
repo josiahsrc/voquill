@@ -17,6 +17,7 @@ import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
+import { storeTranscription } from "../../actions/transcribe.actions";
 import {
   checkForAppUpdates,
   dismissUpdateDialog,
@@ -440,8 +441,12 @@ export const RootSideEffects = () => {
         const rawTranscript = transcribeResult.rawTranscript;
         trackAppUsed(currentApp?.name ?? "Unknown");
 
+        let transcript: string | null = null;
+        let postProcessMetadata = {};
+        let postProcessWarnings: string[] = [];
+
         if (rawTranscript) {
-          const { shouldContinue } = await strategy.handleTranscript({
+          const result = await strategy.handleTranscript({
             rawTranscript,
             toneId,
             a11yInfo,
@@ -452,27 +457,38 @@ export const RootSideEffects = () => {
             transcriptionWarnings: transcribeResult.warnings,
           });
 
-          if (!shouldContinue) {
-            // Exit: clean up strategy and reset mode
+          transcript = result.transcript;
+          postProcessMetadata = result.postProcessMetadata;
+          postProcessWarnings = result.postProcessWarnings;
+
+          if (!result.shouldContinue) {
             await strategy.cleanup();
             strategyRef.current = null;
             produceAppState((draft) => {
               draft.activeRecordingMode = null;
             });
           }
-          // If shouldContinue is true, keep strategy and mode for next turn
         } else {
-          // No transcript: reset overlay to idle and clean up
           if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
             overlayLoadingTokenRef.current = null;
             await invoke<void>("set_phase", { phase: "idle" });
           }
 
-          // Clean up strategy and reset mode
           await strategy.cleanup();
           strategyRef.current = null;
           produceAppState((draft) => {
             draft.activeRecordingMode = null;
+          });
+        }
+
+        if (strategy.shouldStoreTranscript()) {
+          storeTranscription({
+            audio,
+            rawTranscript: rawTranscript ?? null,
+            transcript,
+            transcriptionMetadata: transcribeResult.metadata,
+            postProcessMetadata,
+            warnings: [...transcribeResult.warnings, ...postProcessWarnings],
           });
         }
       }
