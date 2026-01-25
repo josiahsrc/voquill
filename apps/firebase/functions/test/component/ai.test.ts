@@ -23,6 +23,10 @@ const createMember = async () => {
 	await signInWithCreds(creds);
 	await markUserAsSubscribed();
 	await invokeHandler("member/tryInitialize", {});
+	await firemix().update(mixpath.members(creds.id), {
+		plan: "free",
+		isOnTrial: false,
+	});
 	return creds;
 };
 

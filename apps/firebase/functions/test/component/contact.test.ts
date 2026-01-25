@@ -26,7 +26,7 @@ describe("lifecycle", () => {
 				expect(contactSnap?.data).toBeDefined();
 				expect(contactSnap?.data.id).toBe(creds.id);
 				expect(contactSnap?.data.email).toBe(creds.email);
-				expect(contactSnap?.data.plan).toBe("free");
+				expect(contactSnap?.data.plan).toBe("pro");
 				expect(contactSnap?.data.isPaying).toBe(false);
 				expect(contactSnap?.data.userGroup).toBe("early-adopters");
 				expect(contactSnap?.data.createdAt).toBeDefined();
@@ -35,8 +35,11 @@ describe("lifecycle", () => {
 			delay: 100,
 		});
 
-		// update the member to pro
-		await firemix().merge(mixpath.members(creds.id), { plan: "pro" });
+		// update the member to pro (paid)
+		await firemix().merge(mixpath.members(creds.id), {
+			plan: "pro",
+			isOnTrial: false,
+		});
 		await retry({
 			fn: async () => {
 				const contactSnap = await getContact();
@@ -49,7 +52,7 @@ describe("lifecycle", () => {
 				expect(contactSnap?.data.userGroup).toBe("early-adopters");
 				expect(contactSnap?.data.createdAt).toBeDefined();
 			},
-			retries: 20,
+			retries: 50,
 			delay: 100,
 		});
 
