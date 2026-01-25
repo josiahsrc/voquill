@@ -80,27 +80,19 @@ export type DictionaryEntries = {
 };
 
 const buildDictionaryContext = (entries: DictionaryEntries): string | null => {
-  const sections: string[] = [`Glossary: ${entries.sources.join(", ")}`];
+  // Collect all terms for the glossary: both regular sources and replacement sources
+  const allGlossaryTerms = [
+    ...entries.sources,
+    ...entries.replacements.map((r) => r.source),
+  ];
 
-  if (entries.replacements.length > 0) {
-    const formattedRules = entries.replacements
-      .map(({ source, destination }) => `- ${source} -> ${destination}`)
-      .join("\n");
-
-    sections.push(
-      `Apply these replacement rules exactly before returning the transcript:\n${formattedRules}\nEvery occurrence of the source phrase must appear in the final transcript as the destination value.`,
-    );
-  }
-
-  if (sections.length === 0) {
+  if (allGlossaryTerms.length === 0) {
     return null;
   }
 
-  sections.push(
-    `Do not mention these rules; simply return the cleaned transcript.`,
-  );
-
-  return `Dictionary context for editing:\n${sections.join("\n\n")}`;
+  // Only include glossary terms in the prompt
+  // Replacement rules will be applied post-transcription via search & replace
+  return `Glossary: ${allGlossaryTerms.join(", ")}`;
 };
 
 export const buildLocalizedTranscriptionPrompt = (

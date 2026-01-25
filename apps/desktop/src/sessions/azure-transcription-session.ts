@@ -13,6 +13,7 @@ import {
   buildLocalizedTranscriptionPrompt,
   collectDictionaryEntries,
 } from "../utils/prompt.utils";
+import { applyReplacementRules } from "../utils/replacement.utils";
 import { getMyDictationLanguage } from "../utils/user.utils";
 
 export class AzureTranscriptionSession implements TranscriptionSession {
@@ -96,7 +97,7 @@ export class AzureTranscriptionSession implements TranscriptionSession {
     try {
       console.log("[Azure] Finalizing streaming session...");
       const finalizeStart = performance.now();
-      const transcript = await this.session.finalize();
+      let transcript = await this.session.finalize();
       const durationMs = Math.round(performance.now() - finalizeStart);
 
       console.log("[Azure] Transcript timing:", { durationMs });
@@ -106,6 +107,13 @@ export class AzureTranscriptionSession implements TranscriptionSession {
           transcript?.substring(0, 50) +
           (transcript && transcript.length > 50 ? "..." : ""),
       });
+
+      // Apply replacement rules immediately after transcription
+      if (transcript) {
+        const state = getAppState();
+        const dictionaryEntries = collectDictionaryEntries(state);
+        transcript = applyReplacementRules(transcript, dictionaryEntries);
+      }
 
       return {
         rawTranscript: transcript || null,

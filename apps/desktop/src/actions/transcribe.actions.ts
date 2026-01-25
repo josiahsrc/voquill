@@ -30,6 +30,7 @@ import {
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
+import { applyReplacementRules } from "../utils/replacement.utils";
 import {
   getMyDictationLanguage,
   getMyEffectiveUserId,
@@ -132,7 +133,11 @@ export const transcribeAudio = async ({
     language: whisperLanguage,
   });
   const transcribeDuration = performance.now() - transcribeStart;
-  const rawTranscript = transcribeOutput.text.trim();
+  let rawTranscript = transcribeOutput.text.trim();
+
+  // Apply replacement rules immediately after transcription
+  // This uses search & replace to convert glossary keys to their destination values
+  rawTranscript = applyReplacementRules(rawTranscript, dictionaryEntries);
 
   metadata.modelSize = state.settings.aiTranscription.modelSize || null;
   metadata.inferenceDevice = transcribeOutput.metadata?.inferenceDevice || null;
@@ -270,7 +275,10 @@ export const storeTranscription = async (
       return samples.length;
     }
 
-    if (samples && typeof (samples as { length?: number }).length === "number") {
+    if (
+      samples &&
+      typeof (samples as { length?: number }).length === "number"
+    ) {
       return (samples as { length: number }).length;
     }
 
