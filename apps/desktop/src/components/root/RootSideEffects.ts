@@ -65,6 +65,7 @@ import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   daysToMilliseconds,
   hoursToMilliseconds,
+  minutesToMilliseconds,
 } from "../../utils/time.utils";
 import {
   getEffectivePillVisibility,
@@ -78,6 +79,10 @@ import {
   setTrayTitle,
   surfaceMainWindow,
 } from "../../utils/window.utils";
+
+// These limits are here to help prevent people from accidentally leaving their mic on
+const RECORDING_WARNING_DURATION_MS = minutesToMilliseconds(4);
+const RECORDING_AUTO_STOP_DURATION_MS = minutesToMilliseconds(5);
 
 type StartRecordingResponse = {
   sampleRate: number;
@@ -106,6 +111,8 @@ export const RootSideEffects = () => {
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
   const strategyRef = useRef<BaseStrategy | null>(null);
+  const recordingWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const userId = useAppStore((state) => state.auth?.uid);
   const keyPermAuthorized = useAppStore((state) =>
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
@@ -116,6 +123,7 @@ export const RootSideEffects = () => {
   const stopDictationRef = useRef<(() => void) | null>(null);
   const startAgentRef = useRef<(() => void) | null>(null);
   const stopAgentRef = useRef<(() => void) | null>(null);
+  const stopRecordingRef = useRef<(() => void) | null>(null);
 
   const dictationController = useMemo(
     () =>
@@ -144,9 +152,21 @@ export const RootSideEffects = () => {
     [],
   );
 
+  const clearRecordingTimers = useCallback(() => {
+    if (recordingWarningTimerRef.current) {
+      clearTimeout(recordingWarningTimerRef.current);
+      recordingWarningTimerRef.current = null;
+    }
+    if (recordingAutoStopTimerRef.current) {
+      clearTimeout(recordingAutoStopTimerRef.current);
+      recordingAutoStopTimerRef.current = null;
+    }
+  }, []);
+
   const resetRecordingState = useCallback(async () => {
     isRecordingRef.current = false;
     strategyRef.current = null;
+    clearRecordingTimers();
     try {
       await invoke("stop_recording");
     } catch (e) {
@@ -154,7 +174,7 @@ export const RootSideEffects = () => {
     }
     sessionRef.current?.cleanup();
     sessionRef.current = null;
-  }, []);
+  }, [clearRecordingTimers]);
 
   useAsyncEffect(async () => {
     if (keyPermAuthorized) {
@@ -285,8 +305,46 @@ export const RootSideEffects = () => {
             : 16000;
 
         await sessionRef.current.onRecordingStart(sampleRate);
+
+        clearRecordingTimers();
+        recordingWarningTimerRef.current = setTimeout(() => {
+          showToast({
+            title: intl.formatMessage({
+              defaultMessage: "Recording ending soon",
+            }),
+            message: intl.formatMessage({
+              defaultMessage:
+                "Audio recording will automatically stop in 60 seconds.",
+            }),
+            toastType: "info",
+            duration: 5_000,
+          });
+        }, RECORDING_WARNING_DURATION_MS);
+
+        recordingAutoStopTimerRef.current = setTimeout(() => {
+          showToast({
+            title: intl.formatMessage({
+              defaultMessage: "Recording stopped",
+            }),
+            message: intl.formatMessage({
+              defaultMessage:
+                "Audio recording was automatically stopped due to duration limit.",
+            }),
+            toastType: "info",
+            duration: 5_000,
+          });
+
+          dictationController.reset();
+          agentController.reset();
+          void stopRecordingRef.current?.();
+        }, RECORDING_AUTO_STOP_DURATION_MS);
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
+
+        clearRecordingTimers();
+        dictationController.reset();
+        agentController.reset();
+
         await strategy.setPhase("idle");
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
@@ -301,7 +359,7 @@ export const RootSideEffects = () => {
 
     startPendingRef.current = promise;
     await promise;
-  }, [intl, strategyContext]);
+  }, [clearRecordingTimers, intl, strategyContext]);
 
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
@@ -312,6 +370,8 @@ export const RootSideEffects = () => {
       await stopPendingRef.current;
       return;
     }
+
+    clearRecordingTimers();
 
     const strategy = strategyRef.current;
     if (!strategy) {
@@ -420,7 +480,7 @@ export const RootSideEffects = () => {
       session?.cleanup();
       refreshMember();
     }
-  }, [resetRecordingState]);
+  }, [clearRecordingTimers, resetRecordingState]);
 
   const startDictationRecording = useCallback(async () => {
     const state = getAppState();
@@ -460,6 +520,7 @@ export const RootSideEffects = () => {
   stopDictationRef.current = stopDictationRecording;
   startAgentRef.current = startAgentRecording;
   stopAgentRef.current = stopAgentRecording;
+  stopRecordingRef.current = stopRecording;
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
