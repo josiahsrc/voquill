@@ -13,6 +13,7 @@ import {
   DICTATE_HOTKEY,
   getDefaultHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import { HotkeyBadge } from "../common/HotkeyBadge";
 import { KeyPressSimulator } from "../common/KeyPressSimulator";
 import {
   BackButton,
@@ -127,25 +128,10 @@ export const KeybindingsForm = () => {
         </Typography>
         <Typography variant="body1" color="text.secondary">
           <FormattedMessage
-            defaultMessage="The {fnKey} key works great for most users."
+            defaultMessage="The {recommendedKey} key works great for most users."
             values={{
-              fnKey: (
-                <Box
-                  component="span"
-                  sx={{
-                    display: "inline-block",
-                    px: 0.75,
-                    py: 0.25,
-                    bgcolor: "level1",
-                    borderRadius: 0.5,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    fontFamily: "monospace",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  fn
-                </Box>
+              recommendedKey: (
+                <HotkeyBadge keys={defaultCombos[0] ?? []} />
               ),
             }}
           />

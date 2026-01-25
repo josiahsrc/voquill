@@ -77,7 +77,11 @@ export const TutorialForm = () => {
     const allHotkeyKeysHeld = primaryHotkey.every((key) =>
       keysHeld.includes(key),
     );
-    if (allHotkeyKeysHeld && keysHeld.length >= hotkeySet.size) {
+    if (
+      allHotkeyKeysHeld &&
+      keysHeld.length >= hotkeySet.size &&
+      isFieldFocused
+    ) {
       setHasStartedDictating(true);
     }
   }, [keysHeld, primaryHotkey]);
