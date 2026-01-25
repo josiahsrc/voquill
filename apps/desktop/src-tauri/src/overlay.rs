@@ -242,13 +242,26 @@ fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
     if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
         let overlay_state = app.state::<crate::state::OverlayState>();
         let hover_enabled = overlay_state.is_pill_hover_enabled();
+        let was_expanded = state.pill_expanded.load(Ordering::Relaxed);
+
+        let (hover_width, hover_height) = if was_expanded {
+            (
+                EXPANDED_PILL_HOVERABLE_WIDTH,
+                EXPANDED_PILL_HOVERABLE_HEIGHT,
+            )
+        } else {
+            (
+                MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING * 2.0,
+                MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING * 2.0,
+            )
+        };
 
         let new_hovered = if hover_enabled {
             crate::platform::position::is_cursor_in_bounds(
                 &monitor,
                 OverlayAnchor::BottomCenter,
-                MIN_PILL_WIDTH + MIN_PILL_HOVER_PADDING,
-                MIN_PILL_HEIGHT + MIN_PILL_HOVER_PADDING,
+                hover_width,
+                hover_height,
                 bottom_offset,
             )
         } else {
