@@ -229,6 +229,11 @@ export const TranscriptionDetailsDialog = () => {
     [transcription?.rawTranscript, transcription?.transcript],
   );
 
+  const sanitizedTranscriptText = useMemo(
+    () => transcription?.sanitizedTranscript ?? null,
+    [transcription?.sanitizedTranscript],
+  );
+
   const postProcessPrompt = useMemo(() => {
     let prompt = transcription?.postProcessPrompt?.trim() ?? "";
     if (rawTranscriptText) {
@@ -385,6 +390,15 @@ export const TranscriptionDetailsDialog = () => {
                     ),
                     monospace: true,
                   },
+                )}
+                {sanitizedTranscriptText && (
+                  renderTextBlock(
+                    <FormattedMessage defaultMessage="After replacements" />,
+                    sanitizedTranscriptText,
+                    {
+                      monospace: true,
+                    },
+                  )
                 )}
                 {renderTextBlock(
                   <FormattedMessage defaultMessage="Final transcription" />,

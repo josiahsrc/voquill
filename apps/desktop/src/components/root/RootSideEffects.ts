@@ -442,6 +442,7 @@ export const RootSideEffects = () => {
         trackAppUsed(currentApp?.name ?? "Unknown");
 
         let transcript: string | null = null;
+        let sanitizedTranscript: string | null = null;
         let postProcessMetadata = {};
         let postProcessWarnings: string[] = [];
 
@@ -458,6 +459,7 @@ export const RootSideEffects = () => {
           });
 
           transcript = result.transcript;
+          sanitizedTranscript = result.sanitizedTranscript;
           postProcessMetadata = result.postProcessMetadata;
           postProcessWarnings = result.postProcessWarnings;
 
@@ -485,6 +487,7 @@ export const RootSideEffects = () => {
           storeTranscription({
             audio,
             rawTranscript: rawTranscript ?? null,
+            sanitizedTranscript,
             transcript,
             transcriptionMetadata: transcribeResult.metadata,
             postProcessMetadata,

@@ -70,6 +70,7 @@ export class DictationStrategy extends BaseStrategy {
     };
 
     let transcript: string | null = null;
+    let sanitizedTranscript: string | null = null;
     let postProcessMetadata: PostProcessMetadata = {};
     let postProcessWarnings: string[] = [];
 
@@ -81,13 +82,10 @@ export class DictationStrategy extends BaseStrategy {
           sourceValue: term.sourceValue,
           destinationValue: term.destinationValue,
         }));
-      const transcriptWithReplacements = applyReplacements(
-        rawTranscript,
-        replacementRules,
-      );
+      sanitizedTranscript = applyReplacements(rawTranscript, replacementRules);
 
       const result = await postProcessTranscript({
-        rawTranscript: transcriptWithReplacements,
+        rawTranscript: sanitizedTranscript,
         toneId,
         a11yInfo,
       });
@@ -126,6 +124,7 @@ export class DictationStrategy extends BaseStrategy {
     return {
       shouldContinue: false,
       transcript,
+      sanitizedTranscript,
       postProcessMetadata,
       postProcessWarnings,
     };

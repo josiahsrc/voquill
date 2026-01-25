@@ -33,6 +33,7 @@ fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
         model_size: row.try_get::<Option<String>, _>("model_size")?,
         inference_device: row.try_get::<Option<String>, _>("inference_device")?,
         raw_transcript: row.try_get::<Option<String>, _>("raw_transcript")?,
+        sanitized_transcript: row.try_get::<Option<String>, _>("sanitized_transcript")?,
         transcription_prompt: row.try_get::<Option<String>, _>("transcription_prompt")?,
         post_process_prompt: row.try_get::<Option<String>, _>("post_process_prompt")?,
         transcription_api_key_id: row.try_get::<Option<String>, _>("transcription_api_key_id")?,
@@ -60,6 +61,7 @@ pub async fn insert_transcription(
              model_size,
              inference_device,
              raw_transcript,
+             sanitized_transcript,
              transcription_prompt,
              post_process_prompt,
              transcription_api_key_id,
@@ -71,7 +73,7 @@ pub async fn insert_transcription(
              postprocess_duration_ms,
              warnings_json
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
     )
     .bind(&transcription.id)
     .bind(&transcription.transcript)
@@ -86,6 +88,7 @@ pub async fn insert_transcription(
     .bind(transcription.model_size.as_deref())
     .bind(transcription.inference_device.as_deref())
     .bind(transcription.raw_transcript.as_deref())
+    .bind(transcription.sanitized_transcript.as_deref())
     .bind(transcription.transcription_prompt.as_deref())
     .bind(transcription.post_process_prompt.as_deref())
     .bind(transcription.transcription_api_key_id.as_deref())
@@ -116,6 +119,7 @@ pub async fn fetch_transcriptions(
                 model_size,
                 inference_device,
                 raw_transcript,
+                sanitized_transcript,
                 transcription_prompt,
                 post_process_prompt,
                 transcription_api_key_id,
@@ -157,16 +161,17 @@ pub async fn update_transcription(
              model_size = ?6,
              inference_device = ?7,
              raw_transcript = ?8,
-             transcription_prompt = ?9,
-             post_process_prompt = ?10,
-             transcription_api_key_id = ?11,
-             post_process_api_key_id = ?12,
-             transcription_mode = ?13,
-             post_process_mode = ?14,
-             post_process_device = ?15,
-             transcription_duration_ms = ?16,
-             postprocess_duration_ms = ?17,
-             warnings_json = ?18
+             sanitized_transcript = ?9,
+             transcription_prompt = ?10,
+             post_process_prompt = ?11,
+             transcription_api_key_id = ?12,
+             post_process_api_key_id = ?13,
+             transcription_mode = ?14,
+             post_process_mode = ?15,
+             post_process_device = ?16,
+             transcription_duration_ms = ?17,
+             postprocess_duration_ms = ?18,
+             warnings_json = ?19
          WHERE id = ?1",
     )
     .bind(&transcription.id)
@@ -182,6 +187,7 @@ pub async fn update_transcription(
     .bind(transcription.model_size.as_deref())
     .bind(transcription.inference_device.as_deref())
     .bind(transcription.raw_transcript.as_deref())
+    .bind(transcription.sanitized_transcript.as_deref())
     .bind(transcription.transcription_prompt.as_deref())
     .bind(transcription.post_process_prompt.as_deref())
     .bind(transcription.transcription_api_key_id.as_deref())
@@ -204,6 +210,7 @@ pub async fn update_transcription(
                 model_size,
                 inference_device,
                 raw_transcript,
+                sanitized_transcript,
                 transcription_prompt,
                 post_process_prompt,
                 transcription_api_key_id,

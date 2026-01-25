@@ -152,6 +152,7 @@ export class AgentStrategy extends BaseStrategy {
         return {
           shouldContinue: false,
           transcript: null,
+          sanitizedTranscript: null,
           postProcessMetadata: {},
           postProcessWarnings: [],
         };
@@ -205,6 +206,7 @@ export class AgentStrategy extends BaseStrategy {
         return {
           shouldContinue: false,
           transcript: null,
+          sanitizedTranscript: null,
           postProcessMetadata: {},
           postProcessWarnings: [],
         };
@@ -213,6 +215,7 @@ export class AgentStrategy extends BaseStrategy {
       return {
         shouldContinue: true,
         transcript: null,
+        sanitizedTranscript: null,
         postProcessMetadata: {},
         postProcessWarnings: [],
       };
@@ -229,6 +232,7 @@ export class AgentStrategy extends BaseStrategy {
       await this.cleanup();
       return {
         shouldContinue: false,
+        sanitizedTranscript: null,
         transcript: null,
         postProcessMetadata: {},
         postProcessWarnings: [errorMessage],
