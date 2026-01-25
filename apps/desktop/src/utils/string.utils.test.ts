@@ -402,6 +402,68 @@ describe("applyReplacements", () => {
     const rules = [{ sourceValue: "v2", destinationValue: "version 2" }];
     expect(applyReplacements("I use v2", rules)).toBe("I use version 2");
   });
+
+  it("should handle Spanish words with punctuation", () => {
+    const rules = [{ sourceValue: "señor", destinationValue: "caballero" }];
+    expect(applyReplacements("¡Hola, señor!", rules)).toBe("¡Hola, caballero!");
+    expect(applyReplacements("¿Cómo está, señor?", rules)).toBe(
+      "¿Cómo está, caballero?",
+    );
+  });
+
+  it("should handle French words with accents", () => {
+    const rules = [{ sourceValue: "français", destinationValue: "French" }];
+    expect(applyReplacements("Je parle français.", rules)).toBe(
+      "Je parle French.",
+    );
+    expect(applyReplacements("«français»", rules)).toBe("«French»");
+  });
+
+  it("should handle German words with umlauts", () => {
+    const rules = [{ sourceValue: "größe", destinationValue: "size" }];
+    expect(applyReplacements("Die größe ist gut.", rules)).toBe(
+      "Die size ist gut.",
+    );
+  });
+
+  it("should handle Chinese characters with spaces", () => {
+    const rules = [{ sourceValue: "你好", destinationValue: "hello" }];
+    // Works when words are separated by spaces
+    expect(applyReplacements("你好 世界", rules)).toBe("hello 世界");
+    expect(applyReplacements("「你好」", rules)).toBe("「hello」");
+    // Without spaces, the entire string is one token and won't match
+    expect(applyReplacements("你好，世界", rules)).toBe("你好，世界");
+  });
+
+  it("should handle Japanese characters with spaces", () => {
+    const rules = [{ sourceValue: "こんにちは", destinationValue: "hello" }];
+    // Works when words are separated by spaces
+    expect(applyReplacements("こんにちは 世界", rules)).toBe("hello 世界");
+    expect(applyReplacements("「こんにちは」", rules)).toBe("「hello」");
+    // Without spaces, the entire string is one token and won't match
+    expect(applyReplacements("こんにちは、世界", rules)).toBe("こんにちは、世界");
+  });
+
+  it("should handle Korean characters", () => {
+    const rules = [{ sourceValue: "안녕", destinationValue: "hello" }];
+    expect(applyReplacements("안녕, 세상", rules)).toBe("hello, 세상");
+  });
+
+  it("should handle Russian Cyrillic characters", () => {
+    const rules = [{ sourceValue: "привет", destinationValue: "hello" }];
+    expect(applyReplacements("привет, мир!", rules)).toBe("hello, мир!");
+    expect(applyReplacements("«привет»", rules)).toBe("«hello»");
+  });
+
+  it("should handle Arabic characters", () => {
+    const rules = [{ sourceValue: "مرحبا", destinationValue: "hello" }];
+    expect(applyReplacements("مرحبا، عالم", rules)).toBe("hello، عالم");
+  });
+
+  it("should handle Greek characters", () => {
+    const rules = [{ sourceValue: "γεια", destinationValue: "hello" }];
+    expect(applyReplacements("γεια, κόσμε!", rules)).toBe("hello, κόσμε!");
+  });
 });
 
 describe("applySymbolConversions", () => {
