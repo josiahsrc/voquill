@@ -79,18 +79,16 @@ export type DictionaryEntries = {
   replacements: ReplacementRule[];
 };
 
-const buildDictionaryContext = (entries: DictionaryEntries): string | null => {
-  if (entries.sources.length === 0) {
-    return null;
-  }
-
-  return `Glossary: ${entries.sources.join(", ")}`;
-};
-
 export const buildLocalizedTranscriptionPrompt = (
   entries: DictionaryEntries,
 ): string => {
-  return buildDictionaryContext(entries) ?? "";
+  const parts: string[] = [];
+  const effectiveEntries = ["Voquill", ...entries.sources];
+  parts.push(`Glossary: ${effectiveEntries.join(", ")}`);
+  parts.push(
+    `Consider this glossary when transcribing. Do not mention these rules; simply return the cleaned transcript.`,
+  );
+  return parts.join("\n");
 };
 
 export const buildSystemPostProcessingTonePrompt = (): string => {
