@@ -1,5 +1,9 @@
-use enigo::{Enigo, Key, KeyboardControllable};
-use std::{env, thread, time::Duration};
+use std::{env, mem, thread, time::Duration};
+use windows::Win32::UI::Input::KeyboardAndMouse::{
+    GetAsyncKeyState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP,
+    VIRTUAL_KEY, VK_CONTROL, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_MENU, VK_RCONTROL,
+    VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
+};
 
 pub(crate) fn paste_text_into_focused_field(text: &str, keybind: Option<&str>) -> Result<(), String> {
     if text.trim().is_empty() {
@@ -15,17 +19,75 @@ pub(crate) fn paste_text_into_focused_field(text: &str, keybind: Option<&str>) -
 
     paste_via_clipboard(target, keybind).or_else(|err| {
         eprintln!("Clipboard paste failed ({err}). Falling back to simulated typing.");
+        use enigo::{Enigo, KeyboardControllable};
         let mut enigo = Enigo::new();
-        enigo.key_up(Key::Shift);
-        enigo.key_up(Key::Control);
-        enigo.key_up(Key::Alt);
-        enigo.key_up(Key::Meta);
-        thread::sleep(Duration::from_millis(50));
-        enigo.key_click(Key::Escape);
+        release_modifier_keys();
         thread::sleep(Duration::from_millis(50));
         enigo.key_sequence(target);
         Ok(())
     })
+}
+
+fn release_modifier_keys() {
+    let modifiers = [
+        VK_SHIFT,
+        VK_CONTROL,
+        VK_MENU,
+        VK_LSHIFT,
+        VK_RSHIFT,
+        VK_LCONTROL,
+        VK_RCONTROL,
+        VK_LMENU,
+        VK_RMENU,
+        VK_LWIN,
+        VK_RWIN,
+    ];
+
+    for vk in modifiers {
+        if is_key_pressed(vk) {
+            send_key_up(vk);
+        }
+    }
+}
+
+fn is_key_pressed(vk: VIRTUAL_KEY) -> bool {
+    unsafe { GetAsyncKeyState(vk.0 as i32) < 0 }
+}
+
+fn send_key_down(vk: VIRTUAL_KEY) {
+    let input = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: vk,
+                wScan: 0,
+                dwFlags: Default::default(),
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    unsafe {
+        SendInput(&[input], mem::size_of::<INPUT>() as i32);
+    }
+}
+
+fn send_key_up(vk: VIRTUAL_KEY) {
+    let input = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: vk,
+                wScan: 0,
+                dwFlags: KEYEVENTF_KEYUP,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    unsafe {
+        SendInput(&[input], mem::size_of::<INPUT>() as i32);
+    }
 }
 
 fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
@@ -38,31 +100,22 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
 
     thread::sleep(Duration::from_millis(50));
 
-    let mut enigo = Enigo::new();
+    release_modifier_keys();
+    thread::sleep(Duration::from_millis(30));
 
-    enigo.key_up(Key::Shift);
-    enigo.key_up(Key::Control);
-    enigo.key_up(Key::Alt);
-    enigo.key_up(Key::Meta);
-    thread::sleep(Duration::from_millis(50));
-
-    enigo.key_click(Key::Escape);
-    thread::sleep(Duration::from_millis(50));
-
-    // Use configurable keybind or default to Ctrl+V
     let use_shift = keybind == Some("ctrl+shift+v");
 
-    enigo.key_down(Key::Control);
+    send_key_down(VK_CONTROL);
     if use_shift {
-        enigo.key_down(Key::Shift);
+        send_key_down(VK_SHIFT);
     }
-    enigo.key_down(Key::Layout('v'));
+    send_key_down(VK_V);
     thread::sleep(Duration::from_millis(20));
-    enigo.key_up(Key::Layout('v'));
+    send_key_up(VK_V);
     if use_shift {
-        enigo.key_up(Key::Shift);
+        send_key_up(VK_SHIFT);
     }
-    enigo.key_up(Key::Control);
+    send_key_up(VK_CONTROL);
 
     if let Some(old) = previous {
         thread::spawn(move || {
