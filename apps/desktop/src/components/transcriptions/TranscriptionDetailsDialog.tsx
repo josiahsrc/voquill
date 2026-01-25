@@ -282,6 +282,115 @@ export const TranscriptionDetailsDialog = () => {
           <Stack spacing={3}>
             <Box>
               <Typography variant="overline" color="text.secondary">
+                <FormattedMessage defaultMessage="Outputs" />
+              </Typography>
+              <Stack spacing={1.25} sx={{ mt: 1 }}>
+                {renderTextBlock(
+                  <FormattedMessage defaultMessage="Raw transcription" />,
+                  rawTranscriptText,
+                  {
+                    placeholder: (
+                      <FormattedMessage defaultMessage="Raw transcript unavailable." />
+                    ),
+                    monospace: true,
+                  },
+                )}
+                {sanitizedTranscriptText &&
+                  renderTextBlock(
+                    <FormattedMessage defaultMessage="After replacements" />,
+                    sanitizedTranscriptText,
+                    {
+                      monospace: true,
+                    },
+                  )}
+                {renderTextBlock(
+                  <FormattedMessage defaultMessage="Final transcription" />,
+                  finalTranscriptText,
+                  {
+                    placeholder: (
+                      <FormattedMessage defaultMessage="Final transcript unavailable." />
+                    ),
+                    monospace: true,
+                  },
+                )}
+              </Stack>
+            </Box>
+
+            {warnings.length > 0 && (
+              <>
+                <Divider />
+
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    <FormattedMessage defaultMessage="Warnings" />
+                  </Typography>
+                  <Stack spacing={1} sx={{ mt: 1 }}>
+                    {warnings.map((warning, index) => (
+                      <Box
+                        key={`warning-${index}`}
+                        sx={(theme) => ({
+                          p: 1,
+                          borderRadius: 1,
+                          bgcolor:
+                            theme.vars?.palette.level1 ??
+                            theme.palette.background.default,
+                        })}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={(theme) => ({
+                            color:
+                              theme.vars?.palette.warning?.main ??
+                              theme.palette.warning.main,
+                          })}
+                        >
+                          {warning}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              </>
+            )}
+
+            {(transcriptionDurationLabel || postprocessDurationLabel) && (
+              <>
+                <Divider />
+
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    <FormattedMessage defaultMessage="Performance" />
+                  </Typography>
+                  <Stack spacing={1.25} sx={{ mt: 1 }}>
+                    {transcriptionDurationLabel && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          <FormattedMessage defaultMessage="Transcription Duration" />
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {transcriptionDurationLabel}
+                        </Typography>
+                      </Box>
+                    )}
+                    {postprocessDurationLabel && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          <FormattedMessage defaultMessage="Post-processing Duration" />
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {postprocessDurationLabel}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Box>
+              </>
+            )}
+
+            <Divider />
+
+            <Box>
+              <Typography variant="overline" color="text.secondary">
                 <FormattedMessage defaultMessage="Transcription Step" />
               </Typography>
               <Stack spacing={1.25} sx={{ mt: 1 }}>
@@ -370,118 +479,6 @@ export const TranscriptionDetailsDialog = () => {
                     ),
                     monospace: true,
                   },
-                )}
-              </Stack>
-            </Box>
-
-            <Divider />
-
-            <Box>
-              <Typography variant="overline" color="text.secondary">
-                <FormattedMessage defaultMessage="Outputs" />
-              </Typography>
-              <Stack spacing={1.25} sx={{ mt: 1 }}>
-                {renderTextBlock(
-                  <FormattedMessage defaultMessage="Raw transcription" />,
-                  rawTranscriptText,
-                  {
-                    placeholder: (
-                      <FormattedMessage defaultMessage="Raw transcript unavailable." />
-                    ),
-                    monospace: true,
-                  },
-                )}
-                {sanitizedTranscriptText && (
-                  renderTextBlock(
-                    <FormattedMessage defaultMessage="After replacements" />,
-                    sanitizedTranscriptText,
-                    {
-                      monospace: true,
-                    },
-                  )
-                )}
-                {renderTextBlock(
-                  <FormattedMessage defaultMessage="Final transcription" />,
-                  finalTranscriptText,
-                  {
-                    placeholder: (
-                      <FormattedMessage defaultMessage="Final transcript unavailable." />
-                    ),
-                    monospace: true,
-                  },
-                )}
-              </Stack>
-            </Box>
-
-            {(transcriptionDurationLabel || postprocessDurationLabel) && (
-              <>
-                <Divider />
-
-                <Box>
-                  <Typography variant="overline" color="text.secondary">
-                    <FormattedMessage defaultMessage="Performance" />
-                  </Typography>
-                  <Stack spacing={1.25} sx={{ mt: 1 }}>
-                    {transcriptionDurationLabel && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          <FormattedMessage defaultMessage="Transcription Duration" />
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600}>
-                          {transcriptionDurationLabel}
-                        </Typography>
-                      </Box>
-                    )}
-                    {postprocessDurationLabel && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          <FormattedMessage defaultMessage="Post-processing Duration" />
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600}>
-                          {postprocessDurationLabel}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                </Box>
-              </>
-            )}
-
-            <Divider />
-
-            <Box>
-              <Typography variant="overline" color="text.secondary">
-                <FormattedMessage defaultMessage="Warnings" />
-              </Typography>
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                {warnings.length > 0 ? (
-                  warnings.map((warning, index) => (
-                    <Box
-                      key={`warning-${index}`}
-                      sx={(theme) => ({
-                        p: 1,
-                        borderRadius: 1,
-                        bgcolor:
-                          theme.vars?.palette.level1 ??
-                          theme.palette.background.default,
-                      })}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={(theme) => ({
-                          color:
-                            theme.vars?.palette.warning?.main ??
-                            theme.palette.warning.main,
-                        })}
-                      >
-                        {warning}
-                      </Typography>
-                    </Box>
-                  ))
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    <FormattedMessage defaultMessage="No warnings recorded for this transcription." />
-                  </Typography>
                 )}
               </Stack>
             </Box>
