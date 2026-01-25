@@ -25,6 +25,8 @@ import {
   AZURE_OPENAI_MODELS,
   azureOpenAITestIntegration,
   azureTestIntegration,
+  CLAUDE_MODELS,
+  claudeTestIntegration,
   deepgramTestIntegration,
   DEEPSEEK_MODELS,
   deepseekTestIntegration,
@@ -187,6 +189,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         )}
         {context === "post-processing" && (
           <MenuItem value="deepseek">DeepSeek</MenuItem>
+        )}
+        {context === "post-processing" && (
+          <MenuItem value="claude">Claude</MenuItem>
         )}
         {context === "post-processing" && (
           <MenuItem value="azure">Azure OpenAI</MenuItem>
@@ -362,6 +367,8 @@ const testApiKey = async (
       return deepseekTestIntegration({ apiKey: apiKey.keyFull });
     case "gemini":
       return geminiTestIntegration({ apiKey: apiKey.keyFull });
+    case "claude":
+      return claudeTestIntegration({ apiKey: apiKey.keyFull });
     case "azure":
       if (context === "post-processing") {
         if (!apiKey.baseUrl) {
@@ -408,6 +415,8 @@ const getModelsForProvider = (
       return [];
     case "deepseek":
       return context === "transcription" ? [] : DEEPSEEK_MODELS;
+    case "claude":
+      return context === "transcription" ? [] : CLAUDE_MODELS;
     case "azure":
       return context === "transcription" ? [] : AZURE_OPENAI_MODELS;
     case "aldea":
@@ -598,12 +607,13 @@ export const ApiKeyList = ({
 
   // Filter API keys based on context
   const apiKeys = allApiKeys.filter((key) => {
-    // OpenRouter, Ollama, and DeepSeek only support post-processing
+    // OpenRouter, Ollama, DeepSeek, and Claude only support post-processing
     if (
       context === "transcription" &&
       (key.provider === "openrouter" ||
         key.provider === "ollama" ||
-        key.provider === "deepseek")
+        key.provider === "deepseek" ||
+        key.provider === "claude")
     ) {
       return false;
     }

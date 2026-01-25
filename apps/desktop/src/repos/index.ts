@@ -16,6 +16,7 @@ import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
 import {
   AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
+  ClaudeGenerateTextRepo,
   CloudGenerateTextRepo,
   DeepseekGenerateTextRepo,
   GeminiGenerateTextRepo,
@@ -167,6 +168,11 @@ const getGenTextRepoInternal = ({
       );
     } else if (prefs.provider === "gemini") {
       repo = new GeminiGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
+      );
+    } else if (prefs.provider === "claude") {
+      repo = new ClaudeGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
