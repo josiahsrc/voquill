@@ -80,6 +80,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
     const previousIds = [...getAppState().dictionary.termIds];
 
     produceAppState((draft) => {
+      delete draft.termById[id];
       draft.dictionary.termIds = draft.dictionary.termIds.filter(
         (termId) => termId !== id,
       );

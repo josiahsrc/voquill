@@ -15,6 +15,7 @@ import type {
   StrategyValidationError,
 } from "../types/strategy.types";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
+import { applyReplacements } from "../utils/string.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class DictationStrategy extends BaseStrategy {
@@ -73,8 +74,20 @@ export class DictationStrategy extends BaseStrategy {
     let postProcessWarnings: string[] = [];
 
     try {
-      const result = await postProcessTranscript({
+      const state = getAppState();
+      const replacementRules = Object.values(state.termById)
+        .filter((term) => term.isReplacement)
+        .map((term) => ({
+          sourceValue: term.sourceValue,
+          destinationValue: term.destinationValue,
+        }));
+      const transcriptWithReplacements = applyReplacements(
         rawTranscript,
+        replacementRules,
+      );
+
+      const result = await postProcessTranscript({
+        rawTranscript: transcriptWithReplacements,
         toneId,
         a11yInfo,
       });

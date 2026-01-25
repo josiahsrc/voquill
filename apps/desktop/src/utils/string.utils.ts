@@ -75,3 +75,45 @@ export const getInitials = (fullName: string): string => {
     (lastName ? lastName.charAt(0).toUpperCase() : "")
   );
 };
+
+export type ReplacementRule = {
+  sourceValue: string;
+  destinationValue: string;
+};
+
+const SIMILARITY_THRESHOLD = 0.8;
+
+export const applyReplacements = (
+  text: string,
+  rules: ReplacementRule[],
+): string => {
+  if (rules.length === 0) return text;
+
+  const words = text.split(/(\s+)/);
+  const result: string[] = [];
+
+  for (const segment of words) {
+    if (/^\s+$/.test(segment)) {
+      result.push(segment);
+      continue;
+    }
+
+    let bestMatch: ReplacementRule | null = null;
+    let bestSimilarity = 0;
+
+    for (const rule of rules) {
+      const similarity = getStringSimilarity(
+        segment.toLowerCase(),
+        rule.sourceValue.toLowerCase(),
+      );
+      if (similarity >= SIMILARITY_THRESHOLD && similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestMatch = rule;
+      }
+    }
+
+    result.push(bestMatch ? bestMatch.destinationValue : segment);
+  }
+
+  return result.join("");
+};
