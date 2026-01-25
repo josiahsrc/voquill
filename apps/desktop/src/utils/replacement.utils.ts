@@ -5,7 +5,7 @@ import { DictionaryEntries } from "./prompt.utils";
  * This allows matching words regardless of case and surrounding punctuation.
  */
 export const normalizeWord = (word: string): string => {
-  return word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""); // Remove all non-letter/non-number characters
+  return word.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""); // Remove all characters except letters and numbers
 };
 
 /**
@@ -14,6 +14,8 @@ export const normalizeWord = (word: string): string => {
  * any replacement rule key (case-insensitive, punctuation-removed).
  * If matched, replaces ONLY that word with the destination value, preserving
  * all other parts of the transcript including punctuation and spacing.
+ *
+ * Note: If multiple rules have the same normalized source, the last rule wins.
  */
 export const applyReplacementRules = (
   transcript: string,
@@ -24,6 +26,7 @@ export const applyReplacementRules = (
   }
 
   // Build a map of normalized source -> destination for O(1) lookup
+  // Note: If multiple rules have the same normalized source, the last one wins
   const replacementMap = new Map<string, string>();
   for (const rule of dictionaryEntries.replacements) {
     const normalizedSource = normalizeWord(rule.source);
