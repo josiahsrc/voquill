@@ -235,6 +235,11 @@ describe("applyReplacements", () => {
         { sourceValue: "Rafa", destinationValue: "Rapha" },
       ]),
     ).toBe("Paffa is great");
+    expect(
+      applyReplacements("Rafa's is awesome.", [
+        { sourceValue: "Rafa", destinationValue: "Rapha" },
+      ]),
+    ).toBe("Rapha's is awesome.");
   });
 
   it("should return original text when text is empty", () => {

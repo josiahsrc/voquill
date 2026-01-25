@@ -106,14 +106,17 @@ const extractPunctuation = (
   trailingPunctuation: string;
 } => {
   const leadingMatch = word.match(/^([^\p{L}\p{N}]*)/u);
-  const trailingMatch = word.match(/([^\p{L}\p{N}]*)$/u);
-
   const leadingPunctuation = leadingMatch?.[1] ?? "";
-  const trailingPunctuation = trailingMatch?.[1] ?? "";
 
-  const wordOnly = word.slice(
-    leadingPunctuation.length,
-    word.length - trailingPunctuation.length || undefined,
+  const afterLeading = word.slice(leadingPunctuation.length);
+
+  const trailingMatch = afterLeading.match(/('s)?([^\p{L}\p{N}]*)$/iu);
+  const possessiveSuffix = trailingMatch?.[1] ?? "";
+  const trailingPunctuation = possessiveSuffix + (trailingMatch?.[2] ?? "");
+
+  const wordOnly = afterLeading.slice(
+    0,
+    afterLeading.length - trailingPunctuation.length || undefined,
   );
 
   return { word: wordOnly, leadingPunctuation, trailingPunctuation };
