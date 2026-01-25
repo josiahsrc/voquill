@@ -15,7 +15,10 @@ import type {
   StrategyValidationError,
 } from "../types/strategy.types";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
-import { applyReplacements } from "../utils/string.utils";
+import {
+  applyReplacements,
+  applySymbolConversions,
+} from "../utils/string.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class DictationStrategy extends BaseStrategy {
@@ -82,7 +85,12 @@ export class DictationStrategy extends BaseStrategy {
           sourceValue: term.sourceValue,
           destinationValue: term.destinationValue,
         }));
-      sanitizedTranscript = applyReplacements(rawTranscript, replacementRules);
+
+      const afterReplacements = applyReplacements(
+        rawTranscript,
+        replacementRules,
+      );
+      sanitizedTranscript = applySymbolConversions(afterReplacements);
 
       const result = await postProcessTranscript({
         rawTranscript: sanitizedTranscript,

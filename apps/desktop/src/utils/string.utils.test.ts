@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyReplacements,
+  applySymbolConversions,
   editDistance,
   getFirstAndLastName,
   getInitials,
@@ -223,11 +224,12 @@ describe("applyReplacements", () => {
         { sourceValue: "Rafa", destinationValue: "Rapha" },
       ]),
     ).toBe("Rapha is great");
+    // "Raffa" vs "Rafa" is 80% similar (1 edit, 5 chars), below 95% threshold
     expect(
       applyReplacements("Raffa is great", [
         { sourceValue: "Rafa", destinationValue: "Rapha" },
       ]),
-    ).toBe("Rapha is great");
+    ).toBe("Raffa is great");
     expect(
       applyReplacements("Paffa is great", [
         { sourceValue: "Rafa", destinationValue: "Rapha" },
@@ -283,10 +285,10 @@ describe("applyReplacements", () => {
     expect(applyReplacements("foo\nfoo\tfoo", rules)).toBe("bar\nbar\tbar");
   });
 
-  it("should replace similar words within threshold", () => {
+  it("should not replace words that are similar but below 95% threshold", () => {
     const rules = [{ sourceValue: "hello", destinationValue: "hi" }];
-    // "hallo" is 80% similar to "hello" (1 edit, 5 chars)
-    expect(applyReplacements("hallo world", rules)).toBe("hi world");
+    // "hallo" is 80% similar to "hello" (1 edit, 5 chars), below 95% threshold
+    expect(applyReplacements("hallo world", rules)).toBe("hallo world");
   });
 
   it("should not replace words below similarity threshold", () => {
@@ -306,6 +308,7 @@ describe("applyReplacements", () => {
   });
 
   it("should handle punctuation attached to words when rule includes punctuation", () => {
+    // Rule punctuation is stripped for matching, input punctuation is preserved
     const rules = [{ sourceValue: "hello,", destinationValue: "hi," }];
     expect(applyReplacements("hello, world!", rules)).toBe("hi, world!");
   });
@@ -313,7 +316,53 @@ describe("applyReplacements", () => {
   it("should match words with punctuation via similarity", () => {
     const rules = [{ sourceValue: "hello", destinationValue: "hi" }];
     // "hello," vs "hello" is 5/6 = 83% similar, above threshold
-    expect(applyReplacements("hello, world", rules)).toBe("hi world");
+    expect(applyReplacements("hello, world", rules)).toBe("hi, world");
+  });
+
+  it("should preserve trailing punctuation when replacing words", () => {
+    const rules = [{ sourceValue: "hello", destinationValue: "hi" }];
+    expect(applyReplacements("hello.", rules)).toBe("hi.");
+    expect(applyReplacements("hello!", rules)).toBe("hi!");
+    expect(applyReplacements("hello?", rules)).toBe("hi?");
+    expect(applyReplacements("hello;", rules)).toBe("hi;");
+    expect(applyReplacements("hello:", rules)).toBe("hi:");
+  });
+
+  it("should preserve leading punctuation when replacing words", () => {
+    const rules = [{ sourceValue: "hello", destinationValue: "hi" }];
+    expect(applyReplacements("(hello world", rules)).toBe("(hi world");
+    expect(applyReplacements("\"hello world", rules)).toBe("\"hi world");
+    expect(applyReplacements("'hello world", rules)).toBe("'hi world");
+  });
+
+  it("should preserve both leading and trailing punctuation", () => {
+    const rules = [{ sourceValue: "hello", destinationValue: "hi" }];
+    expect(applyReplacements("(hello)", rules)).toBe("(hi)");
+    expect(applyReplacements("\"hello\"", rules)).toBe("\"hi\"");
+    expect(applyReplacements("'hello'", rules)).toBe("'hi'");
+    expect(applyReplacements("[hello]", rules)).toBe("[hi]");
+  });
+
+  it("should handle newlines and tabs with punctuation", () => {
+    const rules = [{ sourceValue: "hello", destinationValue: "hi" }];
+    expect(applyReplacements("hello,\n\nworld!", rules)).toBe("hi,\n\nworld!");
+    expect(applyReplacements("\thello;", rules)).toBe("\thi;");
+  });
+
+  it("should preserve multiple trailing punctuation marks", () => {
+    const rules = [{ sourceValue: "hello", destinationValue: "hi" }];
+    expect(applyReplacements("hello!!!", rules)).toBe("hi!!!");
+    expect(applyReplacements("hello...", rules)).toBe("hi...");
+    expect(applyReplacements("hello?!", rules)).toBe("hi?!");
+  });
+
+  it("should handle punctuation in sentences", () => {
+    const rules = [{ sourceValue: "LLM", destinationValue: "Claude" }];
+    expect(applyReplacements("I love LLM!", rules)).toBe("I love Claude!");
+    expect(applyReplacements("Is LLM good?", rules)).toBe("Is Claude good?");
+    expect(applyReplacements("LLM, the best AI.", rules)).toBe(
+      "Claude, the best AI.",
+    );
   });
 
   it("should not modify words that don't match any rule", () => {
@@ -352,5 +401,37 @@ describe("applyReplacements", () => {
   it("should handle numbers in words", () => {
     const rules = [{ sourceValue: "v2", destinationValue: "version 2" }];
     expect(applyReplacements("I use v2", rules)).toBe("I use version 2");
+  });
+});
+
+describe("applySymbolConversions", () => {
+  it("should convert hashtag followed by word", () => {
+    expect(applySymbolConversions("hashtag Rapha is awesome")).toBe(
+      "#Rapha is awesome",
+    );
+    expect(applySymbolConversions("pound sign test")).toBe("#test");
+    expect(applySymbolConversions("poundsign test")).toBe("#test");
+  });
+
+  it("should handle punctuation after symbol word", () => {
+    expect(applySymbolConversions("Hashtag, this is great")).toBe(
+      "#this is great",
+    );
+  });
+
+  it("should handle multiple symbols in one string", () => {
+    expect(applySymbolConversions("hashtag one at user")).toBe("#one at user");
+  });
+
+  it("should not convert symbol words not followed by another word", () => {
+    expect(applySymbolConversions("I love hashtag")).toBe("I love hashtag");
+  });
+
+  it("should return original text when no symbols present", () => {
+    expect(applySymbolConversions("hello world")).toBe("hello world");
+  });
+
+  it("should handle empty string", () => {
+    expect(applySymbolConversions("")).toBe("");
   });
 });

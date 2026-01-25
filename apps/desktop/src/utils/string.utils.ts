@@ -81,7 +81,43 @@ export type ReplacementRule = {
   destinationValue: string;
 };
 
-const SIMILARITY_THRESHOLD = 0.8;
+const SYMBOL_CONVERSIONS: Array<{ pattern: RegExp; replacement: string }> = [
+  { pattern: /\bhashtag[,;:.!?]?\s+(\w)/gi, replacement: "#$1" },
+  { pattern: /\bpound\s*sign[,;:.!?]?\s+(\w)/gi, replacement: "#$1" },
+];
+
+export const applySymbolConversions = (text: string): string => {
+  let result = text;
+
+  for (const { pattern, replacement } of SYMBOL_CONVERSIONS) {
+    result = result.replace(pattern, replacement);
+  }
+
+  return result;
+};
+
+const SIMILARITY_THRESHOLD = 0.95;
+
+const extractPunctuation = (
+  word: string,
+): {
+  word: string;
+  leadingPunctuation: string;
+  trailingPunctuation: string;
+} => {
+  const leadingMatch = word.match(/^([^\p{L}\p{N}]*)/u);
+  const trailingMatch = word.match(/([^\p{L}\p{N}]*)$/u);
+
+  const leadingPunctuation = leadingMatch?.[1] ?? "";
+  const trailingPunctuation = trailingMatch?.[1] ?? "";
+
+  const wordOnly = word.slice(
+    leadingPunctuation.length,
+    word.length - trailingPunctuation.length || undefined,
+  );
+
+  return { word: wordOnly, leadingPunctuation, trailingPunctuation };
+};
 
 export const applyReplacements = (
   text: string,
@@ -98,13 +134,24 @@ export const applyReplacements = (
       continue;
     }
 
+    const { word, leadingPunctuation, trailingPunctuation } =
+      extractPunctuation(segment);
+
+    if (!word) {
+      result.push(segment);
+      continue;
+    }
+
     let bestMatch: ReplacementRule | null = null;
     let bestSimilarity = 0;
 
     for (const rule of rules) {
+      const { word: ruleWord } = extractPunctuation(rule.sourceValue);
+      if (!ruleWord) continue;
+
       const similarity = getStringSimilarity(
-        segment.toLowerCase(),
-        rule.sourceValue.toLowerCase(),
+        word.toLowerCase(),
+        ruleWord.toLowerCase(),
       );
       if (similarity >= SIMILARITY_THRESHOLD && similarity > bestSimilarity) {
         bestSimilarity = similarity;
@@ -112,7 +159,10 @@ export const applyReplacements = (
       }
     }
 
-    result.push(bestMatch ? bestMatch.destinationValue : segment);
+    const { word: destinationWord } = bestMatch
+      ? extractPunctuation(bestMatch.destinationValue)
+      : { word };
+    result.push(leadingPunctuation + destinationWord + trailingPunctuation);
   }
 
   return result.join("");

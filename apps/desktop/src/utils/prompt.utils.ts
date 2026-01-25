@@ -123,7 +123,7 @@ const FORMATTING_RULES = `
 FORMATTING RULES (MUST APPLY):
 
 EMAIL FORMAT:
-When the transcript contains a greeting followed by a proper noun (hi/hey/hello/dear + name) OR ends with a sign-off followed by a proper noun (thanks/thank you/best/cheers/sincerely/regards + name), format as an email. Place the greeting on its own line followed by a comma, separate body content into paragraphs with blank lines between them, and place the sign-off on its own line followed by a comma with the sender name on the next line.
+When the transcript contains ends with a sign-off followed by a proper noun (thanks/thank you/best/cheers/sincerely/regards + name), format as an email. Place the greeting on its own line followed by a comma, separate body content into paragraphs with blank lines between them, and place the sign-off on its own line followed by a comma with the sender name on the next line.
 
 LIST FORMAT:
 Format as a list when the transcript contains three or more distinct items of the same category or type. Detect lists by identifying parallel structures where items are separated by conjunctions, pauses, or transitions. Use numbered format (1. 2. 3.) when the speaker used ordinal or cardinal enumeration words, or when the items represent sequential steps or a ranked order. Use bulleted format (- item) for all other lists where items are parallel but order is not significant. Place each item on its own line. Remove enumeration words and connective words between items.
@@ -178,6 +178,7 @@ RULES (must follow):
    - Do not end with punctuation that makes the combined text ungrammatical.
    - Use a comma if "Text after" continues the same sentence; use a period/question mark only if appropriate.
 6. Output must be plain text with no quotes, labels, or extra commentary.
+7. Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 
 Your response MUST be in ${languageName}.${ifNotEnglish(dictationLanguage, "DO NOT translate to English or any other language.")} Return only the replacement text.`;
   } else if (hasContext) {
@@ -197,6 +198,7 @@ INSTRUCTIONS:
 2. Preserve all meaningful content from the transcript
 3. Adjust capitalization based on whether text before cursor ends with sentence-ending punctuation
 4. Apply the formatting rules above to detect and format emails and lists
+5. Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 
 CRITICAL: Your output must contain ONLY the cleaned transcript. Never include the "text before cursor" or "text after cursor" in your output. Those are provided solely for capitalization context.
 
@@ -210,6 +212,7 @@ CLEANING RULES:
 - Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
 - Preserve all meaningful content
 - Apply the formatting rules above to detect and format emails and lists
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 
 Here is the transcript:
 -------
