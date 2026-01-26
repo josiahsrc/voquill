@@ -1087,8 +1087,9 @@ pub fn set_phase(
     phase: String,
     overlay_state: State<'_, crate::state::OverlayState>,
 ) -> Result<(), String> {
-    let resolved =
-        OverlayPhase::from_str(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
+    let resolved: OverlayPhase = phase
+        .parse()
+        .map_err(|_| format!("invalid phase: {phase}"))?;
 
     overlay_state.set_phase(&resolved);
 

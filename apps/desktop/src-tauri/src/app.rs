@@ -104,10 +104,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                             .ok()
                             .flatten();
 
-                    let should_init_whisper = match transcription_mode.as_deref() {
-                        None | Some("local") => true,
-                        _ => false,
-                    };
+                    let should_init_whisper = matches!(transcription_mode.as_deref(), None | Some("local"));
 
                     if should_init_whisper {
                         eprintln!("[app] Transcription mode is local or unset, initializing Whisper in background...");

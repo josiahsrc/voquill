@@ -301,7 +301,7 @@ fn get_control_type(element: &IUIAutomationElement) -> i32 {
         element
             .GetCurrentPropertyValue(UIA_ControlTypePropertyId)
             .ok()
-            .and_then(|v| v.Anonymous.Anonymous.Anonymous.lVal.try_into().ok())
+            .and_then(|v| Option::from(v.Anonymous.Anonymous.Anonymous.lVal))
             .unwrap_or(0)
     }
 }
