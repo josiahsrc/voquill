@@ -7,9 +7,14 @@ on:
     paths:
       - "apps/desktop/**"
       - "packages/**"
+      - ".github/workflows/test-desktop-integration.yml"
   pull_request:
     branches:
       - main
+    paths:
+      - "apps/desktop/**"
+      - "packages/**"
+      - ".github/workflows/test-desktop-integration.yml"
 
 jobs:
   integration-tests:

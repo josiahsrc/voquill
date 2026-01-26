@@ -7,6 +7,7 @@ on:
     paths:
       - "apps/desktop/**"
       - "packages/**"
+      - ".github/workflows/lint-desktop.yml"
 
 jobs:
   lint:
