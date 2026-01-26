@@ -238,14 +238,46 @@ pub fn list_gpus() -> Vec<crate::system::gpu::GpuAdapterInfo> {
     crate::system::gpu::list_available_gpus()
 }
 
-#[tauri::command]
-pub fn get_monitor_at_cursor() -> Option<crate::domain::MonitorAtCursor> {
-    crate::platform::monitor::get_monitor_at_cursor()
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenVisibleArea {
+    pub top_inset: f64,
+    pub bottom_inset: f64,
+    pub left_inset: f64,
+    pub right_inset: f64,
 }
 
 #[tauri::command]
-pub fn get_screen_visible_area() -> crate::domain::ScreenVisibleArea {
-    crate::platform::monitor::get_screen_visible_area()
+pub fn get_screen_visible_area() -> ScreenVisibleArea {
+    #[cfg(target_os = "macos")]
+    {
+        use cocoa::appkit::NSScreen;
+        use cocoa::base::nil;
+
+        unsafe {
+            let screen = NSScreen::mainScreen(nil);
+            if screen != nil {
+                let frame = NSScreen::frame(screen);
+                let visible = NSScreen::visibleFrame(screen);
+
+                return ScreenVisibleArea {
+                    top_inset: (frame.origin.y + frame.size.height)
+                        - (visible.origin.y + visible.size.height),
+                    bottom_inset: visible.origin.y - frame.origin.y,
+                    left_inset: visible.origin.x - frame.origin.x,
+                    right_inset: (frame.origin.x + frame.size.width)
+                        - (visible.origin.x + visible.size.width),
+                };
+            }
+        }
+    }
+
+    ScreenVisibleArea {
+        top_inset: 0.0,
+        bottom_inset: 0.0,
+        left_inset: 0.0,
+        right_inset: 0.0,
+    }
 }
 
 #[tauri::command]
@@ -684,7 +716,7 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn start_recording(
+pub fn start_recording(
     app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
     args: Option<StartRecordingArgs>,
@@ -709,30 +741,19 @@ pub async fn start_recording(
         }
     });
 
-    let recorder_clone = Arc::clone(&recorder);
-    let start_result = tauri::async_runtime::spawn_blocking(move || {
-        match recorder_clone.start(Some(level_emitter), Some(chunk_emitter)) {
-            Ok(()) => Ok(()),
-            Err(err) => {
-                let already_recording = (&*err)
-                    .downcast_ref::<crate::errors::RecordingError>()
-                    .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
-                    .unwrap_or(false);
-                Err((err.to_string(), already_recording))
-            }
-        }
-    })
-    .await
-    .map_err(|err| format!("Recording task panicked: {err}"))?;
-
-    match start_result {
+    match recorder.start(Some(level_emitter), Some(chunk_emitter)) {
         Ok(()) => {
             let reported_sample_rate = recorder.current_sample_rate().unwrap_or(16_000);
             Ok(StartRecordingResponse {
                 sample_rate: reported_sample_rate,
             })
         }
-        Err((message, already_recording)) => {
+        Err(err) => {
+            let already_recording = (*err)
+                .downcast_ref::<crate::errors::RecordingError>()
+                .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
+                .unwrap_or(false);
+
             if already_recording {
                 let reported_sample_rate = recorder.current_sample_rate().unwrap_or(16_000);
                 return Ok(StartRecordingResponse {
@@ -740,6 +761,7 @@ pub async fn start_recording(
                 });
             }
 
+            let message = err.to_string();
             eprintln!("Failed to start recording via command: {message}");
             Err(message)
         }
@@ -762,7 +784,7 @@ pub async fn stop_recording(
             })
         }
         Err(err) => {
-            let not_recording = (&*err)
+            let not_recording = (*err)
                 .downcast_ref::<crate::errors::RecordingError>()
                 .map(|inner| matches!(inner, crate::errors::RecordingError::NotRecording))
                 .unwrap_or(false);
@@ -1035,58 +1057,12 @@ pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
-    let window = app
-        .get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
-        .ok_or_else(|| "toast-overlay window not found".to_string())?;
-
-    crate::platform::window::set_overlay_click_through(&window, click_through)
-}
-
-#[tauri::command]
-pub fn set_agent_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
-    let window = app
-        .get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
-        .ok_or_else(|| "agent-overlay window not found".to_string())?;
-
-    crate::platform::window::set_overlay_click_through(&window, click_through)
-}
-
-#[tauri::command]
-pub fn restore_overlay_focus() {
-    #[cfg(target_os = "windows")]
-    {
-        crate::platform::windows::window::restore_foreground_window();
-    }
-}
-
-#[tauri::command]
-pub fn set_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
+pub fn show_overlay_no_focus(app: AppHandle) -> Result<(), String> {
     let window = app
         .get_webview_window("unified-overlay")
         .ok_or_else(|| "unified-overlay window not found".to_string())?;
-
-    #[cfg(target_os = "windows")]
-    {
-        crate::platform::windows::window::set_overlay_click_through(&window, click_through)?;
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        window
-            .set_ignore_cursor_events(click_through)
-            .map_err(|err| err.to_string())?;
-    }
-
+    crate::platform::window::show_overlay_no_focus(&window)?;
     Ok(())
-}
-
-#[tauri::command]
-pub fn restore_overlay_focus() {
-    #[cfg(target_os = "windows")]
-    {
-        crate::platform::windows::window::restore_foreground_window();
-    }
 }
 
 #[tauri::command]
@@ -1111,15 +1087,15 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> 
 }
 
 #[tauri::command]
-pub fn set_phase(
-    app: AppHandle,
-    phase: String,
-    overlay_state: State<'_, crate::state::OverlayState>,
-) -> Result<(), String> {
-    let resolved =
-        OverlayPhase::from_str(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
+pub fn set_phase(app: AppHandle, phase: String) -> Result<(), String> {
+    let resolved = phase
+        .parse::<OverlayPhase>()
+        .map_err(|_| format!("invalid phase: {phase}"))?;
 
-    overlay_state.set_phase(&resolved);
+    #[cfg(target_os = "macos")]
+    if let Err(err) = crate::platform::macos::notch_overlay::set_phase(resolved.clone()) {
+        eprintln!("Failed to set macOS overlay phase: {err}");
+    }
 
     let payload = OverlayPhasePayload {
         phase: resolved.clone(),
@@ -1127,14 +1103,6 @@ pub fn set_phase(
 
     app.emit_to(EventTarget::any(), EVT_OVERLAY_PHASE, payload)
         .map_err(|err| err.to_string())
-}
-
-#[tauri::command]
-pub fn set_pill_hover_enabled(
-    enabled: bool,
-    overlay_state: State<'_, crate::state::OverlayState>,
-) {
-    overlay_state.set_pill_hover_enabled(enabled);
 }
 
 #[tauri::command]
