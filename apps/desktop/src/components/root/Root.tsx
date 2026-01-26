@@ -5,6 +5,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { trackPageView } from "../../utils/analytics.utils";
 import { HeaderPortalProvider } from "./HeaderPortalContext";
 import { LoadingApp } from "./LoadingApp";
+import { OverlaySyncSideEffects } from "./OverlaySyncSideEffects";
 import { PermissionSideEffects } from "./PermissionSideEffects";
 import { RootConfetti } from "./RootConfetti";
 import { RootDialogs } from "./RootDialogs";
@@ -31,6 +32,7 @@ export default function Root() {
       <PermissionSideEffects />
       <RootConfetti />
       <RootSideEffects />
+      <OverlaySyncSideEffects />
       <RootDialogs />
       <HeaderPortalProvider>
         <ErrorBoundary FallbackComponent={ErrorFallback}>

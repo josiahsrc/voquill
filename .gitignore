@@ -6,6 +6,7 @@ node_modules
 .pnp.js
 .ignore
 .claude
+.venv
 
 # Local env files
 .env
@@ -42,3 +43,4 @@ yarn-error.log*
 *.pem
 
 target/
+nul

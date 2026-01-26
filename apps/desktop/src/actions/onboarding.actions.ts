@@ -23,6 +23,7 @@ import {
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { refreshMember } from "./member.actions";
+import { setAutoLaunchEnabled } from "./settings.actions";
 
 const navigateToOnboardingPage = (
   onboarding: OnboardingState,
@@ -176,6 +177,7 @@ export const submitOnboarding = async () => {
       ignoreUpdateDialog: false,
       incognitoModeEnabled: false,
       incognitoModeIncludeInStats: false,
+      dictationPillVisibility: "persistent",
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
@@ -223,6 +225,8 @@ export const finishOnboarding = async () => {
     produceAppState((draft) => {
       setCurrentUser(draft, savedUser);
     });
+
+    await setAutoLaunchEnabled(true);
 
     return savedUser;
   } catch (err) {

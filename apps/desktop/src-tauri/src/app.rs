@@ -30,11 +30,13 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let _ = window.hide();
-                #[cfg(target_os = "macos")]
                 if window.label() == "main" {
-                    if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
-                        eprintln!("Failed to hide dock icon: {err}");
+                    let _ = window.hide();
+                    #[cfg(target_os = "macos")]
+                    {
+                        if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
+                            eprintln!("Failed to hide dock icon: {err}");
+                        }
                     }
                 }
             }
@@ -61,6 +63,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
             app.manage(crate::state::GoogleOAuthState::from_env());
+            app.manage(crate::state::OverlayState::new());
 
             #[cfg(desktop)]
             {
@@ -124,8 +127,37 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                ensure_unified_overlay_window(&app_handle)
+                crate::overlay::ensure_pill_overlay_window(&app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                crate::overlay::ensure_toast_overlay_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                crate::overlay::ensure_agent_overlay_window(&app_handle)
+                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+
+                if let Some(pill_window) =
+                    app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
+                {
+                    let _ = crate::platform::window::show_overlay_no_focus(&pill_window);
+                    let _ = crate::platform::window::set_overlay_click_through(&pill_window, true);
+                }
+
+                if let Some(toast_window) =
+                    app_handle.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
+                {
+                    let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
+                    let _ = crate::platform::window::set_overlay_click_through(&toast_window, true);
+                }
+
+                if let Some(agent_window) =
+                    app_handle.get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
+                {
+                    let _ = crate::platform::window::show_overlay_no_focus(&agent_window);
+                    let _ = crate::platform::window::set_overlay_click_through(&agent_window, true);
+                }
+
+                crate::overlay::start_cursor_follower(app_handle.clone());
             }
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
@@ -147,6 +179,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::list_microphones,
             crate::commands::list_gpus,
             crate::commands::get_screen_visible_area,
+            crate::commands::get_monitor_at_cursor,
             crate::commands::check_microphone_permission,
             crate::commands::request_microphone_permission,
             crate::commands::check_accessibility_permission,
@@ -161,7 +194,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::storage_get_download_url,
             crate::commands::transcribe_audio,
             crate::commands::surface_main_window,
-            crate::commands::show_overlay_no_focus,
+            crate::commands::set_toast_overlay_click_through,
+            crate::commands::set_agent_overlay_click_through,
+            crate::commands::restore_overlay_focus,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
@@ -187,6 +222,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::tone_delete,
             crate::commands::clear_local_data,
             crate::commands::set_phase,
+            crate::commands::set_pill_hover_enabled,
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::play_audio,
@@ -195,70 +231,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_selected_text,
             crate::commands::initialize_local_transcriber,
         ])
-}
-
-fn ensure_unified_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    use tauri::{Manager, WebviewWindowBuilder};
-
-    #[cfg(target_os = "macos")]
-    {
-        crate::platform::macos::notch_overlay::prepare_overlay(app)?;
-    }
-
-    if app.get_webview_window("unified-overlay").is_some() {
-        return Ok(());
-    }
-
-    let (width, height) = if let Some(monitor) = app.primary_monitor().ok().flatten() {
-        let size = monitor.size();
-        let scale = monitor.scale_factor();
-        (size.width as f64 / scale, size.height as f64 / scale)
-    } else {
-        (1920.0, 1080.0)
-    };
-
-    let builder = {
-        let builder =
-            WebviewWindowBuilder::new(app, "unified-overlay", unified_overlay_webview_url(app)?)
-                .decorations(false)
-                .always_on_top(true)
-                .transparent(true)
-                .skip_taskbar(true)
-                .resizable(false)
-                .shadow(false)
-                .focusable(false)
-                .inner_size(width, height)
-                .position(0.0, 0.0);
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            builder.visible(false)
-        }
-        #[cfg(target_os = "linux")]
-        {
-            builder
-        }
-    };
-
-    builder.build()?;
-
-    Ok(())
-}
-
-fn unified_overlay_webview_url(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewUrl> {
-    #[cfg(debug_assertions)]
-    {
-        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
-            let query = match dev_url.query() {
-                Some(existing) if !existing.is_empty() => format!("{existing}&overlay=1"),
-                _ => "overlay=1".to_string(),
-            };
-            dev_url.set_query(Some(&query));
-            return Ok(tauri::WebviewUrl::External(dev_url));
-        }
-    }
-
-    Ok(tauri::WebviewUrl::App("index.html?overlay=1".into()))
 }
 
 async fn initialize_transcriber_background(app: &tauri::AppHandle) -> Result<(), String> {

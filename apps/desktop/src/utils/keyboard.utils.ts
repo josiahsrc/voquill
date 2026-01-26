@@ -43,8 +43,8 @@ type PlatformHotkeyCombos = {
 export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
   [DICTATE_HOTKEY]: {
     macos: [["Function"]],
-    windows: [["F8"]],
-    linux: [["F8"]],
+    windows: [["MetaLeft", "ControlLeft"]],
+    linux: [["MetaLeft", "ControlLeft"]],
   },
   [LANGUAGE_SWITCH_HOTKEY]: {
     macos: [["controlLeft", "ShiftLeft", "KeyL"]],

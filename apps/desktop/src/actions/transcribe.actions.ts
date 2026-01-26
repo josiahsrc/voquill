@@ -248,6 +248,7 @@ export const postProcessTranscript = async ({
 export type StoreTranscriptionInput = {
   audio: StopRecordingResponse;
   rawTranscript: string | null;
+  sanitizedTranscript: string | null;
   transcript: string | null;
   transcriptionMetadata: TranscribeAudioMetadata;
   postProcessMetadata: PostProcessMetadata;
@@ -345,6 +346,7 @@ export const storeTranscription = async (
     modelSize: input.transcriptionMetadata.modelSize ?? null,
     inferenceDevice: input.transcriptionMetadata.inferenceDevice ?? null,
     rawTranscript: input.rawTranscript ?? input.transcript ?? "",
+    sanitizedTranscript: input.sanitizedTranscript ?? null,
     transcriptionPrompt:
       input.transcriptionMetadata.transcriptionPrompt ?? null,
     postProcessPrompt: input.postProcessMetadata.postProcessPrompt ?? null,

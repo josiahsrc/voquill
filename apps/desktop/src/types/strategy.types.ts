@@ -1,6 +1,9 @@
 import type { AppTarget, Nullable } from "@repo/types";
 import type { RefObject } from "react";
-import type { TranscribeAudioMetadata } from "../actions/transcribe.actions";
+import type {
+  PostProcessMetadata,
+  TranscribeAudioMetadata,
+} from "../actions/transcribe.actions";
 import type { TextFieldInfo } from "./accessibility.types";
 import type { ToastAction } from "./toast.types";
 import type { StopRecordingResponse } from "./transcription-session.types";
@@ -24,6 +27,10 @@ export type HandleTranscriptParams = {
 
 export type HandleTranscriptResult = {
   shouldContinue: boolean;
+  transcript: string | null;
+  sanitizedTranscript: string | null;
+  postProcessMetadata: PostProcessMetadata;
+  postProcessWarnings: string[];
 };
 
 export type StrategyContext = {

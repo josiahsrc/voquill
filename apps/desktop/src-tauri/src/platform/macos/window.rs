@@ -1,10 +1,10 @@
 use crate::platform::macos::dock;
-use cocoa::appkit::{NSApp, NSApplication, NSWindow};
-use cocoa::base::{id, nil, YES};
+use cocoa::appkit::{
+    NSApp, NSApplication, NSMainMenuWindowLevel, NSWindow, NSWindowCollectionBehavior,
+};
+use cocoa::base::{id, nil, NO as COCOA_NO, YES};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
-
-const NS_FLOATING_WINDOW_LEVEL: i64 = 3;
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
@@ -70,7 +70,11 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
 
                 unsafe {
                     let ns_window = ns_window_ptr as id;
-                    ns_window.setLevel_(NS_FLOATING_WINDOW_LEVEL);
+                    ns_window.setLevel_(i64::from(NSMainMenuWindowLevel) + 1);
+                    ns_window.setCollectionBehavior_(
+                        NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces
+                            | NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary,
+                    );
                     ns_window.orderFrontRegardless();
                 }
 
@@ -86,4 +90,53 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
         .map_err(|_| "failed to show overlay on main thread".to_string())?;
 
     result
+}
+
+pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), String> {
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let ns_window_ptr = window_for_handle
+                    .ns_window()
+                    .map_err(|err| err.to_string())?;
+
+                unsafe {
+                    use objc::{msg_send, sel, sel_impl};
+
+                    let ns_window = ns_window_ptr as id;
+
+                    // NSWindowCollectionBehavior flags to prevent activation:
+                    // - canJoinAllSpaces (1 << 0)
+                    // - stationary (1 << 4) - window doesn't move with space switches
+                    // - fullScreenAuxiliary (1 << 8) - auxiliary window for full screen
+                    // - fullScreenDisallowsTiling (1 << 11)
+                    let behavior: u64 = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 11);
+                    let _: () = msg_send![ns_window, setCollectionBehavior: behavior];
+
+                    // Prevent the window from becoming key or main
+                    let _: () = msg_send![ns_window, setHidesOnDeactivate: COCOA_NO];
+
+                    // Set window to not activate app on click using private API
+                    // _setPreventsActivation: is a private method but works reliably
+                    let _: () = msg_send![ns_window, _setPreventsActivation: YES];
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    rx.recv()
+        .map_err(|_| "failed to configure overlay on main thread".to_string())?
+}
+
+pub fn set_overlay_click_through(window: &WebviewWindow, click_through: bool) -> Result<(), String> {
+    window
+        .set_ignore_cursor_events(click_through)
+        .map_err(|err| err.to_string())
 }

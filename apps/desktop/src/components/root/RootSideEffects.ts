@@ -17,6 +17,7 @@ import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import { loadTones } from "../../actions/tone.actions";
+import { storeTranscription } from "../../actions/transcribe.actions";
 import {
   checkForAppUpdates,
   dismissUpdateDialog,
@@ -40,14 +41,19 @@ import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
-import { OverlayPhase } from "../../types/overlay.types";
+import type { OverlayPhase } from "../../types/overlay.types";
 import type { StrategyContext } from "../../types/strategy.types";
 import {
   StopRecordingResponse,
   TranscriptionSession,
 } from "../../types/transcription-session.types";
 import {
+  debouncedToggle,
+  getOrCreateController,
+} from "../../utils/activation.utils";
+import {
   trackAgentStart,
+  trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
@@ -60,8 +66,10 @@ import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   daysToMilliseconds,
   hoursToMilliseconds,
+  minutesToMilliseconds,
 } from "../../utils/time.utils";
 import {
+  getEffectivePillVisibility,
   getIsDictationUnlocked,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
@@ -72,6 +80,10 @@ import {
   setTrayTitle,
   surfaceMainWindow,
 } from "../../utils/window.utils";
+
+// These limits are here to help prevent people from accidentally leaving their mic on
+const RECORDING_WARNING_DURATION_MS = minutesToMilliseconds(4);
+const RECORDING_AUTO_STOP_DURATION_MS = minutesToMilliseconds(5);
 
 type StartRecordingResponse = {
   sampleRate: number;
@@ -100,11 +112,39 @@ export const RootSideEffects = () => {
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
   const strategyRef = useRef<BaseStrategy | null>(null);
+  const recordingWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const userId = useAppStore((state) => state.auth?.uid);
   const keyPermAuthorized = useAppStore((state) =>
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
   const intl = useIntl();
+
+  const startDictationRef = useRef<(() => void) | null>(null);
+  const stopDictationRef = useRef<(() => void) | null>(null);
+  const startAgentRef = useRef<(() => void) | null>(null);
+  const stopAgentRef = useRef<(() => void) | null>(null);
+  const stopRecordingRef = useRef<(() => void) | null>(null);
+
+  const dictationController = useMemo(
+    () =>
+      getOrCreateController(
+        "dictation",
+        () => startDictationRef.current?.(),
+        () => stopDictationRef.current?.(),
+      ),
+    [],
+  );
+
+  const agentController = useMemo(
+    () =>
+      getOrCreateController(
+        "agent",
+        () => startAgentRef.current?.(),
+        () => stopAgentRef.current?.(),
+      ),
+    [],
+  );
 
   const strategyContext: StrategyContext = useMemo(
     () => ({
@@ -113,9 +153,21 @@ export const RootSideEffects = () => {
     [],
   );
 
+  const clearRecordingTimers = useCallback(() => {
+    if (recordingWarningTimerRef.current) {
+      clearTimeout(recordingWarningTimerRef.current);
+      recordingWarningTimerRef.current = null;
+    }
+    if (recordingAutoStopTimerRef.current) {
+      clearTimeout(recordingAutoStopTimerRef.current);
+      recordingAutoStopTimerRef.current = null;
+    }
+  }, []);
+
   const resetRecordingState = useCallback(async () => {
     isRecordingRef.current = false;
     strategyRef.current = null;
+    clearRecordingTimers();
     try {
       await invoke("stop_recording");
     } catch (e) {
@@ -123,7 +175,7 @@ export const RootSideEffects = () => {
     }
     sessionRef.current?.cleanup();
     sessionRef.current = null;
-  }, []);
+  }, [clearRecordingTimers]);
 
   useAsyncEffect(async () => {
     if (keyPermAuthorized) {
@@ -236,6 +288,10 @@ export const RootSideEffects = () => {
 
         await strategy.onBeforeStart();
 
+        console.log(
+          "[startRecording] starting recording with mic:",
+          preferredMicrophone,
+        );
         const [, startRecordingResult] = await Promise.all([
           strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
@@ -250,8 +306,46 @@ export const RootSideEffects = () => {
             : 16000;
 
         await sessionRef.current.onRecordingStart(sampleRate);
+
+        clearRecordingTimers();
+        recordingWarningTimerRef.current = setTimeout(() => {
+          showToast({
+            title: intl.formatMessage({
+              defaultMessage: "Recording ending soon",
+            }),
+            message: intl.formatMessage({
+              defaultMessage:
+                "Audio recording will automatically stop in 60 seconds.",
+            }),
+            toastType: "info",
+            duration: 5_000,
+          });
+        }, RECORDING_WARNING_DURATION_MS);
+
+        recordingAutoStopTimerRef.current = setTimeout(() => {
+          showToast({
+            title: intl.formatMessage({
+              defaultMessage: "Recording stopped",
+            }),
+            message: intl.formatMessage({
+              defaultMessage:
+                "Audio recording was automatically stopped due to duration limit.",
+            }),
+            toastType: "info",
+            duration: 5_000,
+          });
+
+          dictationController.reset();
+          agentController.reset();
+          void stopRecordingRef.current?.();
+        }, RECORDING_AUTO_STOP_DURATION_MS);
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
+
+        clearRecordingTimers();
+        dictationController.reset();
+        agentController.reset();
+
         await strategy.setPhase("idle");
         showErrorSnackbar("Unable to start recording. Please try again.");
         suppressUntilRef.current = Date.now() + 1_000;
@@ -266,7 +360,7 @@ export const RootSideEffects = () => {
 
     startPendingRef.current = promise;
     await promise;
-  }, [intl, strategyContext]);
+  }, [clearRecordingTimers, intl, strategyContext]);
 
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
@@ -277,6 +371,8 @@ export const RootSideEffects = () => {
       await stopPendingRef.current;
       return;
     }
+
+    clearRecordingTimers();
 
     const strategy = strategyRef.current;
     if (!strategy) {
@@ -343,9 +439,15 @@ export const RootSideEffects = () => {
         ]);
         const toneId = currentApp?.toneId ?? null;
         const rawTranscript = transcribeResult.rawTranscript;
+        trackAppUsed(currentApp?.name ?? "Unknown");
+
+        let transcript: string | null = null;
+        let sanitizedTranscript: string | null = null;
+        let postProcessMetadata = {};
+        let postProcessWarnings: string[] = [];
 
         if (rawTranscript) {
-          const { shouldContinue } = await strategy.handleTranscript({
+          const result = await strategy.handleTranscript({
             rawTranscript,
             toneId,
             a11yInfo,
@@ -356,27 +458,40 @@ export const RootSideEffects = () => {
             transcriptionWarnings: transcribeResult.warnings,
           });
 
-          if (!shouldContinue) {
-            // Exit: clean up strategy and reset mode
+          transcript = result.transcript;
+          sanitizedTranscript = result.sanitizedTranscript;
+          postProcessMetadata = result.postProcessMetadata;
+          postProcessWarnings = result.postProcessWarnings;
+
+          if (!result.shouldContinue) {
             await strategy.cleanup();
             strategyRef.current = null;
             produceAppState((draft) => {
               draft.activeRecordingMode = null;
             });
           }
-          // If shouldContinue is true, keep strategy and mode for next turn
         } else {
-          // No transcript: reset overlay to idle and clean up
           if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
             overlayLoadingTokenRef.current = null;
             await invoke<void>("set_phase", { phase: "idle" });
           }
 
-          // Clean up strategy and reset mode
           await strategy.cleanup();
           strategyRef.current = null;
           produceAppState((draft) => {
             draft.activeRecordingMode = null;
+          });
+        }
+
+        if (strategy.shouldStoreTranscript()) {
+          storeTranscription({
+            audio,
+            rawTranscript: rawTranscript ?? null,
+            sanitizedTranscript,
+            transcript,
+            transcriptionMetadata: transcribeResult.metadata,
+            postProcessMetadata,
+            warnings: [...transcribeResult.warnings, ...postProcessWarnings],
           });
         }
       }
@@ -384,7 +499,7 @@ export const RootSideEffects = () => {
       session?.cleanup();
       refreshMember();
     }
-  }, [resetRecordingState]);
+  }, [clearRecordingTimers, resetRecordingState]);
 
   const startDictationRecording = useCallback(async () => {
     const state = getAppState();
@@ -420,16 +535,20 @@ export const RootSideEffects = () => {
     await stopRecording();
   }, [stopRecording]);
 
+  startDictationRef.current = startDictationRecording;
+  stopDictationRef.current = stopDictationRecording;
+  startAgentRef.current = startAgentRecording;
+  stopAgentRef.current = stopAgentRecording;
+  stopRecordingRef.current = stopRecording;
+
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    onActivate: startDictationRecording,
-    onDeactivate: stopDictationRecording,
+    controller: dictationController,
   });
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
-    onActivate: startAgentRecording,
-    onDeactivate: stopAgentRecording,
+    controller: agentController,
   });
 
   const languageSwitchEnabled = useAppStore(
@@ -509,6 +628,10 @@ export const RootSideEffects = () => {
     });
   });
 
+  useTauriListen<void>("on-click-dictate", () => {
+    debouncedToggle("dictation", dictationController);
+  });
+
   const trayLanguageCode = useAppStore((state) => {
     if (!state.settings.languageSwitch.enabled) {
       return null;
@@ -519,6 +642,22 @@ export const RootSideEffects = () => {
   useEffect(() => {
     void setTrayTitle(trayLanguageCode);
   }, [trayLanguageCode]);
+
+  const pillHoverEnabled = useAppStore((state) => {
+    if (!getIsDictationUnlocked(state)) {
+      return false;
+    }
+    const visibility = getEffectivePillVisibility(
+      state.userPrefs?.dictationPillVisibility,
+    );
+    return visibility === "persistent";
+  });
+
+  useEffect(() => {
+    invoke("set_pill_hover_enabled", { enabled: pillHoverEnabled }).catch(
+      console.error,
+    );
+  }, [pillHoverEnabled]);
 
   return null;
 };
