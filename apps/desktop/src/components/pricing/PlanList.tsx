@@ -414,7 +414,12 @@ export const PlanList = ({
   );
 
   const enterpriseDialog = (
-    <Dialog open={inviteCodeDialogOpen} onClose={handleInviteCodeCancel} maxWidth="xs" fullWidth>
+    <Dialog
+      open={inviteCodeDialogOpen}
+      onClose={handleInviteCodeCancel}
+      maxWidth="xs"
+      fullWidth
+    >
       <DialogTitle>
         <FormattedMessage defaultMessage="Enter invite code" />
       </DialogTitle>

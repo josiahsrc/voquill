@@ -271,7 +271,10 @@ export const storeTranscription = async (
       return samples.length;
     }
 
-    if (samples && typeof (samples as { length?: number }).length === "number") {
+    if (
+      samples &&
+      typeof (samples as { length?: number }).length === "number"
+    ) {
       return (samples as { length: number }).length;
     }
 

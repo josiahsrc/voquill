@@ -84,7 +84,10 @@ export const LoginForm = ({
         )}
         {mode === "signUp" && (
           <Collapse key="signUp" timeout={400} unmountOnExit>
-            <SignUpForm hideGoogleButton={hideGoogleButton} hideModeSwitch={hideModeSwitch} />
+            <SignUpForm
+              hideGoogleButton={hideGoogleButton}
+              hideModeSwitch={hideModeSwitch}
+            />
           </Collapse>
         )}
         {mode === "resetPassword" && (
