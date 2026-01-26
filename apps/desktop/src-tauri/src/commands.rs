@@ -714,7 +714,7 @@ pub async fn start_recording(
         match recorder_clone.start(Some(level_emitter), Some(chunk_emitter)) {
             Ok(()) => Ok(()),
             Err(err) => {
-                let already_recording = (&*err)
+                let already_recording = (*err)
                     .downcast_ref::<crate::errors::RecordingError>()
                     .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
                     .unwrap_or(false);
@@ -762,7 +762,7 @@ pub async fn stop_recording(
             })
         }
         Err(err) => {
-            let not_recording = (&*err)
+            let not_recording = (*err)
                 .downcast_ref::<crate::errors::RecordingError>()
                 .map(|inner| matches!(inner, crate::errors::RecordingError::NotRecording))
                 .unwrap_or(false);

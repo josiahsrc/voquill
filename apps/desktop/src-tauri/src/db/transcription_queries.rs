@@ -18,10 +18,7 @@ fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
         duration_ms: audio_duration.unwrap_or_default(),
     });
     let warnings = match warnings_json {
-        Some(json) => match serde_json::from_str::<Vec<String>>(&json) {
-            Ok(parsed) => Some(parsed),
-            Err(_) => None,
-        },
+        Some(json) => serde_json::from_str::<Vec<String>>(&json).ok(),
         None => None,
     };
 

@@ -157,7 +157,7 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     }
 
     // Parse JSON output
-    match serde_json::from_str::<Vec<GpuAdapterInfo>>(&output.trim()) {
+    match serde_json::from_str::<Vec<GpuAdapterInfo>>(output.trim()) {
         Ok(gpus) => {
             eprintln!(
                 "[gpu] Successfully enumerated {} GPU(s) via child process",
