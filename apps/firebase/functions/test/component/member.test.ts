@@ -1,16 +1,16 @@
-import dayjs from "dayjs";
+import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
 import { invokeHandler } from "@repo/functions";
+import { retry } from "@repo/utilities";
+import dayjs from "dayjs";
+import { memberToDatabase, userToDatabase } from "../../src/utils/type.utils";
+import { buildMember, buildUser } from "../helpers/entities";
 import {
 	createUserCreds,
 	markUserAsSubscribed,
 	signInWithCreds,
 } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
-import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { retry } from "@repo/utilities";
-import { buildMember, buildUser } from "../helpers/entities";
-import { memberToDatabase, userToDatabase } from "../../src/utils/type.utils";
 
 beforeAll(setUp);
 afterAll(tearDown);
@@ -287,6 +287,38 @@ describe("cancelProTrialsCron", () => {
 			retries: 10,
 			delay: 1000,
 		});
+	});
+
+	it("should handle when the user document does not exist", async () => {
+		const memberId = firemix().id();
+		const expiredTrialMember = memberToDatabase(
+			buildMember({
+				id: memberId,
+				plan: "pro",
+				isOnTrial: true,
+				trialEndsAt: dayjs().subtract(1, "hour").toISOString(),
+			}),
+		);
+
+		await firemix().set(
+			mixpath.members(expiredTrialMember.id),
+			expiredTrialMember,
+		);
+
+		// Ensure the user document does not exist
+		await firemix()
+			.delete(mixpath.users(memberId))
+			.catch(() => {});
+
+		await invokeHandler("emulator/cancelProTrials", {});
+		const memberSnap = await firemix().get(
+			mixpath.members(expiredTrialMember.id),
+		);
+		expect(memberSnap?.data.plan).toBe("free");
+		expect(memberSnap?.data.isOnTrial).toBe(false);
+
+		const userSnap = await firemix().get(mixpath.users(memberId));
+		expect(userSnap?.data).toBeUndefined();
 	});
 
 	it("should not cancel active pro trials", async () => {
