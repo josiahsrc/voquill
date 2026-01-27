@@ -30,8 +30,8 @@ export const UpdateListTile = () => {
           borderRadius: "inherit",
           padding: "1px",
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.6) 50%, transparent 100%)",
-          width: "200%",
+            "linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.6), transparent)",
+          backgroundSize: "200% 100%",
           animation: "shimmer 3s ease-in-out infinite",
           willChange: "transform",
           mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
@@ -42,8 +42,8 @@ export const UpdateListTile = () => {
           pointerEvents: "none",
         },
         "@keyframes shimmer": {
-          "0%": { transform: "translateX(0%)" },
-          "100%": { transform: "translateX(-50%)" },
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
         },
       }}
     />
