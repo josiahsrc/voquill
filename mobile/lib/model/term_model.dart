@@ -1,9 +1,13 @@
+import 'package:draft/draft.dart';
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'term_model.g.dart';
+part 'term_model.draft.dart';
 
 @JsonSerializable()
-class Term {
+@draft
+class Term with EquatableMixin {
   final String id;
   final String createdAt;
   final String sourceValue;
@@ -20,4 +24,13 @@ class Term {
 
   factory Term.fromJson(Map<String, dynamic> json) => _$TermFromJson(json);
   Map<String, dynamic> toJson() => _$TermToJson(this);
+
+  @override
+  List<Object?> get props => [
+    id,
+    createdAt,
+    sourceValue,
+    destinationValue,
+    isReplacement,
+  ];
 }

@@ -1,9 +1,13 @@
+import 'package:draft/draft.dart';
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'config_model.g.dart';
+part 'config_model.draft.dart';
 
 @JsonSerializable()
-class FullConfig {
+@draft
+class FullConfig with EquatableMixin {
   final int freeWordsPerDay;
   final int freeWordsPerMonth;
   final int freeTokensPerDay;
@@ -27,4 +31,16 @@ class FullConfig {
   factory FullConfig.fromJson(Map<String, dynamic> json) =>
       _$FullConfigFromJson(json);
   Map<String, dynamic> toJson() => _$FullConfigToJson(this);
+
+  @override
+  List<Object?> get props => [
+    freeWordsPerDay,
+    freeWordsPerMonth,
+    freeTokensPerDay,
+    freeTokensPerMonth,
+    proWordsPerDay,
+    proWordsPerMonth,
+    proTokensPerDay,
+    proTokensPerMonth,
+  ];
 }

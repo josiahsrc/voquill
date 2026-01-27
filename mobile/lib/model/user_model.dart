@@ -1,9 +1,13 @@
+import 'package:draft/draft.dart';
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'user_model.g.dart';
+part 'user_model.draft.dart';
 
 @JsonSerializable()
-class User {
+@draft
+class User with EquatableMixin {
   final String id;
   final String createdAt;
   final String updatedAt;
@@ -50,4 +54,28 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
   Map<String, dynamic> toJson() => _$UserToJson(this);
+
+  @override
+  List<Object?> get props => [
+    id,
+    createdAt,
+    updatedAt,
+    name,
+    bio,
+    company,
+    title,
+    onboarded,
+    onboardedAt,
+    timezone,
+    preferredLanguage,
+    preferredMicrophone,
+    playInteractionChime,
+    hasFinishedTutorial,
+    wordsThisMonth,
+    wordsThisMonthMonth,
+    wordsTotal,
+    hasMigratedPreferredMicrophone,
+    cohort,
+    shouldShowUpgradeDialog,
+  ];
 }

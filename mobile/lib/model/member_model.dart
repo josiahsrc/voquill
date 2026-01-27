@@ -1,6 +1,9 @@
+import 'package:draft/draft.dart';
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'member_model.g.dart';
+part 'member_model.draft.dart';
 
 enum MemberPlan {
   @JsonValue('free')
@@ -10,7 +13,8 @@ enum MemberPlan {
 }
 
 @JsonSerializable()
-class Member {
+@draft
+class Member with EquatableMixin {
   final String id;
   final String type;
   final String createdAt;
@@ -51,4 +55,25 @@ class Member {
 
   factory Member.fromJson(Map<String, dynamic> json) => _$MemberFromJson(json);
   Map<String, dynamic> toJson() => _$MemberToJson(this);
+
+  @override
+  List<Object?> get props => [
+    id,
+    type,
+    createdAt,
+    updatedAt,
+    plan,
+    stripeCustomerId,
+    priceId,
+    wordsToday,
+    wordsThisMonth,
+    wordsTotal,
+    tokensToday,
+    tokensThisMonth,
+    tokensTotal,
+    todayResetAt,
+    thisMonthResetAt,
+    isOnTrial,
+    trialEndsAt,
+  ];
 }
