@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { emitTo } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -43,6 +44,12 @@ export const AgentOverlaySideEffects = () => {
       Object.assign(draft, payload);
     });
   });
+
+  useEffect(() => {
+    emitTo("main", "overlay_ready", { windowLabel: "agent-overlay" }).catch(
+      console.error,
+    );
+  }, []);
 
   useEffect(() => {
     const isVisible = agentPhase !== "idle";

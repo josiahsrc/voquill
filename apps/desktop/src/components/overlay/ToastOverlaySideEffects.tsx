@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { emitTo, listen, UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -22,6 +22,12 @@ export const ToastOverlaySideEffects = () => {
       Object.assign(draft, payload);
     });
   });
+
+  useEffect(() => {
+    emitTo("main", "overlay_ready", { windowLabel: "toast-overlay" }).catch(
+      console.error,
+    );
+  }, []);
 
   useEffect(() => {
     let unlisten: UnlistenFn | null = null;

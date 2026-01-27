@@ -94,6 +94,12 @@ export const PillOverlayRoot = () => {
     });
   });
 
+  useEffect(() => {
+    emitTo("main", "overlay_ready", { windowLabel: "pill-overlay" }).catch(
+      console.error,
+    );
+  }, []);
+
   const dictationPillVisibility = useAppStore((state) =>
     getEffectivePillVisibility(state.userPrefs?.dictationPillVisibility),
   );

@@ -18,10 +18,9 @@ pub fn set_overlay_position(
 
     let (target_x, target_y) = match anchor {
         OverlayAnchor::BottomCenter => {
-            // Center horizontally within visible area
             let x = monitor.visible_x + (monitor.visible_width - window_width) / 2.0;
-            // Position at bottom of the full monitor height (overlays can overlap dock)
-            let y = monitor.height - window_height - margin;
+            let bottom_of_visible = monitor.visible_y + monitor.visible_height;
+            let y = bottom_of_visible - window_height - margin;
             (x, y)
         }
         OverlayAnchor::TopRight => {
@@ -53,11 +52,11 @@ pub fn is_cursor_in_bounds(
     bounds_height: f64,
     margin: f64,
 ) -> bool {
-    // Calculate bounds position based on anchor (same logic as set_overlay_position)
     let (bounds_x, bounds_y) = match anchor {
         OverlayAnchor::BottomCenter => {
             let x = monitor.visible_x + (monitor.visible_width - bounds_width) / 2.0;
-            let y = monitor.height - bounds_height - margin;
+            let bottom_of_visible = monitor.visible_y + monitor.visible_height;
+            let y = bottom_of_visible - bounds_height - margin;
             (x, y)
         }
         OverlayAnchor::TopRight => {
