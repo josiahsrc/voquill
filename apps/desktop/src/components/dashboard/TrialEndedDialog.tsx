@@ -22,7 +22,7 @@ import { surfaceMainWindow } from "../../utils/window.utils";
 
 const MIN_WORDS_THRESHOLD = 100;
 
-export const UpgradeDialog = () => {
+export const TrialEndedDialog = () => {
   const hasFocusedRef = useRef(false);
 
   const shouldShowUpgradeDialog = useAppStore(
