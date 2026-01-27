@@ -114,10 +114,10 @@ class WelcomePage extends StatelessWidget {
   }
 
   void _handleGetStarted(BuildContext context) {
-    context.go('/onboarding');
+    context.push('/onboarding');
   }
 
   void _handleLogin(BuildContext context) {
-    context.go('/login');
+    context.push('/login');
   }
 }
