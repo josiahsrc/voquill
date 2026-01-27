@@ -32,6 +32,7 @@ dependencies:
   firebase_core: ^4.4.0
   firebase_auth: ^6.1.4
   cloud_functions: ^6.0.6
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
   flutter_test:
@@ -43,3 +44,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
