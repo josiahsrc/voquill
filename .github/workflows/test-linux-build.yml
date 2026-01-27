@@ -20,10 +20,10 @@ jobs:
             artifact_name: desktop-linux-cpu
             gpu_variant: false
 
-          # - label: Linux (GPU)
-          #   args: "--features linux-gpu"
-          #   artifact_name: desktop-linux-gpu
-          #   gpu_variant: true
+          - label: Linux (GPU)
+            args: "--features linux-gpu"
+            artifact_name: desktop-linux-gpu
+            gpu_variant: true
     env:
       VITE_FLAVOR: prod
       VOQUILL_BUILD_FLAVOR: prod
