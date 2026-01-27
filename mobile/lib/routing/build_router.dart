@@ -1,8 +1,10 @@
 import 'package:app/routing/guard_redirect.dart';
+import 'package:app/widgets/dashboard/dashboard_page.dart';
 import 'package:app/widgets/error/error_page.dart';
 import 'package:app/widgets/error/not_found_page.dart';
-import 'package:app/widgets/home/home_page.dart';
+import 'package:app/widgets/onboarding/onboarding_page.dart';
 import 'package:app/widgets/splash/splash_page.dart';
+import 'package:app/widgets/welcome/welcome_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,9 +30,19 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
         name: 'error',
       ),
       GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomePage(),
-        name: 'home',
+        path: '/welcome',
+        builder: (context, state) => const WelcomePage(),
+        name: 'welcome',
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingPage(),
+        name: 'onboarding',
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardPage(),
+        name: 'dashboard',
       ),
     ],
   );

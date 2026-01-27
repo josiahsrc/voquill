@@ -74,7 +74,11 @@ class _AppState extends State<App> {
       // refresh routes with state changes
       useAppStore().listen((context, state) {
         context.read<RouteRefresher>().refresh();
-      }, condition: (a, b) => a.status != b.status),
+      },
+          condition: (a, b) =>
+              a.status != b.status ||
+              a.auth != b.auth ||
+              a.isOnboarded != b.isOnboarded),
 
       // show snackbar messages
       useAppStore().listen((context, state) {

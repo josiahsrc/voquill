@@ -37,6 +37,24 @@ class HasLoadedCondition extends NavigationCondition {
   }
 }
 
+class IsLoggedInCondition extends NavigationCondition {
+  const IsLoggedInCondition();
+
+  @override
+  bool evaluate(AppState state, String currentLocation) {
+    return state.isLoggedIn;
+  }
+}
+
+class IsOnboardedCondition extends NavigationCondition {
+  const IsOnboardedCondition();
+
+  @override
+  bool evaluate(AppState state, String currentLocation) {
+    return state.isOnboarded;
+  }
+}
+
 class IsAtLocationCondition extends NavigationCondition {
   final String location;
 

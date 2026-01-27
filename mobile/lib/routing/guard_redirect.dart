@@ -7,10 +7,49 @@ final _graph = NavigationGraph([
   // Error handling - highest priority
   NavigationRule(condition: HasErrorCondition(), targetRoute: '/error'),
 
-  // Splash screen logic
+  // Splash screen -> welcome when loaded
   NavigationRule(
     condition: AndCondition([IsAtLocationCondition('/'), HasLoadedCondition()]),
-    targetRoute: '/home',
+    targetRoute: '/welcome',
+  ),
+
+  // Welcome page guards (matching desktop Guard.tsx)
+  // If onboarded -> dashboard
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/welcome'),
+      IsOnboardedCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
+  // If logged in but not onboarded -> onboarding
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/welcome'),
+      IsLoggedInCondition(),
+      NotCondition(IsOnboardedCondition()),
+    ]),
+    targetRoute: '/onboarding',
+  ),
+
+  // Onboarding page guards
+  // If onboarded -> dashboard
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/onboarding'),
+      IsOnboardedCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
+
+  // Dashboard page guards
+  // If not onboarded -> welcome
+  NavigationRule(
+    condition: AndCondition([
+      MatchesLocationRegex(RegExp(r'^/dashboard')),
+      NotCondition(IsOnboardedCondition()),
+    ]),
+    targetRoute: '/welcome',
   ),
 ]);
 
