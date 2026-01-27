@@ -400,6 +400,8 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri -> target
+          # Cache key includes native-off to invalidate builds compiled with -march=native
+          key: ${{ matrix.os }}-${{ matrix.gpu_variant && 'gpu' || 'cpu' }}-native-off
 
       - name: Set Windows-only build environment
         if: matrix.os == 'windows-latest'
