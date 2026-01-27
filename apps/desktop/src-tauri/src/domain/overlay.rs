@@ -22,13 +22,15 @@ pub struct OverlayPhasePayload {
     pub phase: OverlayPhase,
 }
 
-impl OverlayPhase {
-    pub fn from_str(value: &str) -> Option<Self> {
+impl std::str::FromStr for OverlayPhase {
+    type Err = ();
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
-            "idle" => Some(Self::Idle),
-            "recording" => Some(Self::Recording),
-            "loading" => Some(Self::Loading),
-            _ => None,
+            "idle" => Ok(Self::Idle),
+            "recording" => Ok(Self::Recording),
+            "loading" => Ok(Self::Loading),
+            _ => Err(()),
         }
     }
 }
