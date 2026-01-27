@@ -400,6 +400,8 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri -> target
+          # Cache key includes native-off to invalidate builds compiled with -march=native
+          key: ${{ matrix.os }}-${{ matrix.gpu_variant && 'gpu' || 'cpu' }}-native-off
 
       - name: Set Windows-only build environment
         if: matrix.os == 'windows-latest'
@@ -432,6 +434,13 @@ jobs:
             libgtk-3-dev "$WEBKIT_PKG" \
             libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf
 
+      - name: Set Linux CPU build environment
+        if: matrix.os == 'ubuntu-22.04' && matrix.gpu_variant == false
+        shell: bash
+        run: |
+          # Disable -march=native to ensure compatibility with older CPUs (no AVX2 requirement)
+          echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF" >> "$GITHUB_ENV"
+
       - name: Install Vulkan SDK (Linux)
         if: matrix.os == 'ubuntu-22.04' && matrix.gpu_variant == true
         shell: bash
@@ -444,6 +453,13 @@ jobs:
           sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
           sudo apt-get update
           sudo apt-get install -y vulkan-sdk
+
+      - name: Set Linux GPU build environment
+        if: matrix.os == 'ubuntu-22.04' && matrix.gpu_variant == true
+        shell: bash
+        run: |
+          # Disable -march=native for broader compatibility, enable Vulkan
+          echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: npm ci
