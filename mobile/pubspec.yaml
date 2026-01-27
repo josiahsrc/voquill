@@ -29,6 +29,9 @@ dependencies:
   path: ^1.9.1
   json_annotation: ^4.9.0
   http: ^1.6.0
+  firebase_core: ^4.4.0
+  firebase_auth: ^6.1.4
+  cloud_functions: ^6.0.6
 
 dev_dependencies:
   flutter_test:
