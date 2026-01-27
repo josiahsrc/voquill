@@ -20,10 +20,10 @@ jobs:
             artifact_name: desktop-linux-cpu
             gpu_variant: false
 
-          - label: Linux (GPU)
-            args: "--features linux-gpu"
-            artifact_name: desktop-linux-gpu
-            gpu_variant: true
+          # - label: Linux (GPU)
+          #   args: "--features linux-gpu"
+          #   artifact_name: desktop-linux-gpu
+          #   gpu_variant: true
     env:
       VITE_FLAVOR: prod
       VOQUILL_BUILD_FLAVOR: prod
@@ -49,6 +49,8 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri -> target
+          # Include gpu_variant in cache key to separate CPU/GPU builds
+          key: linux-${{ matrix.gpu_variant && 'gpu' || 'cpu' }}-native-off
 
       - name: Install system dependencies (Linux)
         shell: bash
@@ -79,11 +81,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y vulkan-sdk
 
+      - name: Set CPU build environment
+        if: matrix.gpu_variant == false
+        shell: bash
+        run: |
+          # Disable -march=native to ensure compatibility with older CPUs (no AVX2 requirement)
+          echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF" >> "$GITHUB_ENV"
+
+      - name: Set GPU build environment
+        if: matrix.gpu_variant == true
+        shell: bash
+        run: |
+          # Disable -march=native for broader compatibility, enable Vulkan
+          echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: npm ci
 
       - name: Turbo build desktop workspace
         run: npm run build -- --filter=desktop...
+
+      - name: Verify build environment
+        run: |
+          echo "WHISPER_CMAKE_ARGS=$WHISPER_CMAKE_ARGS"
 
       - name: Build Tauri app
         shell: bash
