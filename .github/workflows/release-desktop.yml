@@ -9,6 +9,8 @@ on:
       - "apps/desktop/**"
       - "apps/windows-installer/**"
       - "packages/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/release-desktop.yml"
   workflow_dispatch:
     inputs:
