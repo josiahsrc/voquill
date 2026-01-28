@@ -37,6 +37,9 @@ enum Flavor {
     }
   }
 
+  String get termsUrl => 'https://voquill.com/terms';
+  String get privacyUrl => 'https://voquill.com/privacy';
+
   static void load() {
     final flavorOpt = Flavor.values.firstWhereOrNull(
       (element) => element.name == appFlavor,
