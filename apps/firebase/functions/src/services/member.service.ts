@@ -1,9 +1,10 @@
-import { firemix } from "@firemix/mixed";
+import { firemix, FiremixBatchDelegate, FiremixResult } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
 import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { Member, Nullable } from "@repo/types";
+import { DatabaseUser, Member, Nullable } from "@repo/types";
 import dayjs from "dayjs";
 import { AuthData } from "firebase-functions/tasks";
+import { whereNotNull } from "../utils/array.utils";
 import { checkAccess } from "../utils/check.utils";
 import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
 import { tryInitializeMember } from "../utils/member.utils";
@@ -114,4 +115,37 @@ export const getMyMember = async (args: {
 	return {
 		member: member?.data ? memberFromDatabase(member.data) : null,
 	};
+};
+
+export const handleCancelProTrials = async (): Promise<void> => {
+	const now = firemix().now();
+
+	const members = await firemix().query(
+		mixpath.members(),
+		["where", "isOnTrial", "==", true],
+		["where", "trialEndsAt", "<=", now],
+	);
+
+	let users: FiremixResult<DatabaseUser>[] = [];
+	if (members.length > 0) {
+		users = whereNotNull(
+			await firemix().getMany(members.map((m) => mixpath.users(m.id))),
+		);
+	}
+
+	await firemix().executeBatchWrite([
+		...members.map<FiremixBatchDelegate>(
+			(member) => (b) =>
+				b.update(mixpath.members(member.id), {
+					plan: "free",
+					isOnTrial: false,
+				}),
+		),
+		...users.map<FiremixBatchDelegate>(
+			(user) => (b) =>
+				b.update(mixpath.users(user.id), {
+					shouldShowUpgradeDialog: true,
+				}),
+		),
+	]);
 };

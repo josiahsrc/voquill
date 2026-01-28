@@ -22,6 +22,8 @@ pub struct Transcription {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub raw_transcript: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub sanitized_transcript: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_prompt: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub post_process_prompt: Option<String>,

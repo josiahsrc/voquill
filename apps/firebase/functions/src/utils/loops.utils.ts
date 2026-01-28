@@ -60,7 +60,11 @@ const upsertLoopsContact = async (userId: string, create: boolean) => {
 	const user = await firemix().get(mixpath.users(userId));
 	const member = await firemix().get(mixpath.members(userId));
 	const nameParts = getFirstAndLastName(user?.data.name ?? "");
-	const isPaying = member && member.data.plan && member.data.plan !== "free";
+	const isPaying =
+		member &&
+		member.data.plan &&
+		member.data.plan !== "free" &&
+		!member.data.isOnTrial;
 
 	const contactProperties: ContactProperties = {
 		userId,

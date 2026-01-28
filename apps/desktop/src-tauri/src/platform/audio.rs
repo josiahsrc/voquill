@@ -9,9 +9,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-#[cfg(target_os = "macos")]
-use crate::platform::macos::notch_overlay;
-
 /// Cached device info for quick recording start.
 /// We remember the last successfully used device to avoid re-enumeration.
 #[derive(Clone)]
@@ -561,7 +558,8 @@ fn find_device_by_name(host: &cpal::Host, target_name: &str) -> Option<Device> {
                 // On Linux, also check if the friendly name matches
                 #[cfg(target_os = "linux")]
                 {
-                    let friendly_name = crate::platform::linux::audio::get_friendly_device_name(&name);
+                    let friendly_name =
+                        crate::platform::linux::audio::get_friendly_device_name(&name);
                     if friendly_name.to_ascii_lowercase() == target_normalized {
                         return Some(device);
                     }
@@ -761,7 +759,7 @@ fn start_recording_on_host(
 struct DeviceCandidate {
     device: Device,
     name: Option<String>,
-    normalized_name: Option<String>,
+    _normalized_name: Option<String>,
     priority: u32,
     avoid_reason: Option<String>,
     matches_preferred: bool,
@@ -799,17 +797,16 @@ fn device_candidates_for_host(
 
     if let Some(default_device) = host.default_input_device() {
         let name = default_device.name().ok();
-        let normalized_name = name
+        let key = name
             .as_deref()
-            .map(|value| value.trim().to_ascii_lowercase());
-        let key = normalized_name
-            .clone()
+            .map(|value| value.trim().to_ascii_lowercase())
             .unwrap_or_else(|| "<unknown>".to_string());
 
         let matches_preferred = preferred_lower
             .as_ref()
             .and_then(|pref| {
-                name.as_deref().map(|device_name| device_matches_preferred(device_name, pref))
+                name.as_deref()
+                    .map(|device_name| device_matches_preferred(device_name, pref))
             })
             .unwrap_or(false);
 
@@ -827,7 +824,7 @@ fn device_candidates_for_host(
         candidates.push(DeviceCandidate {
             device: default_device,
             name,
-            normalized_name: Some(key),
+            _normalized_name: Some(key),
             priority,
             avoid_reason,
             matches_preferred,
@@ -838,11 +835,9 @@ fn device_candidates_for_host(
     if let Ok(devices) = host.input_devices() {
         for device in devices {
             let name = device.name().ok();
-            let normalized_name = name
+            let key = name
                 .as_deref()
-                .map(|value| value.trim().to_ascii_lowercase());
-            let key = normalized_name
-                .clone()
+                .map(|value| value.trim().to_ascii_lowercase())
                 .unwrap_or_else(|| "<unknown>".to_string());
 
             if seen.contains(&key) {
@@ -852,7 +847,8 @@ fn device_candidates_for_host(
             let matches_preferred = preferred_lower
                 .as_ref()
                 .and_then(|pref| {
-                    name.as_deref().map(|device_name| device_matches_preferred(device_name, pref))
+                    name.as_deref()
+                        .map(|device_name| device_matches_preferred(device_name, pref))
                 })
                 .unwrap_or(false);
 
@@ -877,7 +873,7 @@ fn device_candidates_for_host(
             candidates.push(DeviceCandidate {
                 device,
                 name,
-                normalized_name: Some(key),
+                _normalized_name: Some(key),
                 priority,
                 avoid_reason,
                 matches_preferred,
@@ -933,7 +929,7 @@ pub fn list_input_devices() -> Vec<InputDeviceDescriptor> {
             let key = label.to_ascii_lowercase();
             #[cfg(not(target_os = "linux"))]
             let key = candidate
-                .normalized_name
+                ._normalized_name
                 .clone()
                 .unwrap_or_else(|| label.to_ascii_lowercase());
 
@@ -984,26 +980,11 @@ where
             config,
             move |data: &[T], _| {
                 let mut mono_samples = Vec::with_capacity(data.len() / channel_count + 1);
-                #[cfg(target_os = "macos")]
-                let mut sum_squares = 0.0f64;
-                #[cfg(target_os = "macos")]
-                let mut sample_count = 0usize;
-                #[cfg(target_os = "macos")]
-                let mut peak = 0.0f64;
 
                 if channel_count == 1 {
                     for sample in data {
                         let value = (*sample).to_sample::<f32>();
                         mono_samples.push(value);
-                        #[cfg(target_os = "macos")]
-                        {
-                            let sample64 = value as f64;
-                            sum_squares += sample64 * sample64;
-                            sample_count += 1;
-                            if sample64.abs() > peak {
-                                peak = sample64.abs();
-                            }
-                        }
                     }
                 } else {
                     let mut index = 0;
@@ -1018,15 +999,6 @@ where
                             let sample_value = data[sample_index].to_sample::<f32>();
                             sum += sample_value;
                             samples_in_frame += 1;
-                            #[cfg(target_os = "macos")]
-                            {
-                                let sample64 = sample_value as f64;
-                                sum_squares += sample64 * sample64;
-                                sample_count += 1;
-                                if sample64.abs() > peak {
-                                    peak = sample64.abs();
-                                }
-                            }
                         }
                         if samples_in_frame > 0 {
                             mono_samples.push(sum / samples_in_frame as f32);
@@ -1045,15 +1017,6 @@ where
 
                 if let Ok(mut shared_buffer) = callback_buffer.lock() {
                     shared_buffer.extend_from_slice(&mono_samples);
-                }
-
-                #[cfg(target_os = "macos")]
-                {
-                    if sample_count > 0 {
-                        let rms = (sum_squares / sample_count as f64).sqrt();
-                        let amplitude = (rms * 0.9 + peak * 0.85).min(1.5);
-                        notch_overlay::register_amplitude(amplitude.min(1.0));
-                    }
                 }
             },
             |err| eprintln!("[recording] stream error: {err}"),

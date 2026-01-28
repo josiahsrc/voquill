@@ -2,10 +2,8 @@ import { fetch } from "@tauri-apps/plugin-http";
 
 export const OLLAMA_DEFAULT_URL = "http://127.0.0.1:11434";
 
-export const getOllamaHeaders = (apiKey?: string): HeadersInit => ({
-  Origin: "http://localhost",
-  ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-});
+export const getOllamaHeaders = (apiKey?: string): HeadersInit =>
+  apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
 
 export type OllamaTestIntegrationArgs = {
   baseUrl?: string;

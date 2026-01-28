@@ -64,9 +64,8 @@ pub fn warm_audio_output() {
                 eprintln!("[audio] Failed to create audio output: {err}");
                 // Still process requests, but they'll fail gracefully
                 for request in rx {
-                    if let AudioRequest::Play(bytes) = request {
-                        play_clip_fallback(bytes);
-                    }
+                    let AudioRequest::Play(bytes) = request;
+                    play_clip_fallback(bytes);
                 }
                 return;
             }

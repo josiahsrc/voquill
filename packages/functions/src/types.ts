@@ -29,6 +29,10 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: EmptyObject;
   };
+  "emulator/cancelProTrials": {
+    input: EmptyObject;
+    output: EmptyObject;
+  };
 
   // term
   "term/listMyTerms": {

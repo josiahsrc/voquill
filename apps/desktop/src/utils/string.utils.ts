@@ -75,3 +75,98 @@ export const getInitials = (fullName: string): string => {
     (lastName ? lastName.charAt(0).toUpperCase() : "")
   );
 };
+
+export type ReplacementRule = {
+  sourceValue: string;
+  destinationValue: string;
+};
+
+const SYMBOL_CONVERSIONS: Array<{ pattern: RegExp; replacement: string }> = [
+  { pattern: /\bhashtag[,;:.!?]?\s+(\w)/gi, replacement: "#$1" },
+  { pattern: /\bpound\s*sign[,;:.!?]?\s+(\w)/gi, replacement: "#$1" },
+];
+
+export const applySymbolConversions = (text: string): string => {
+  let result = text;
+
+  for (const { pattern, replacement } of SYMBOL_CONVERSIONS) {
+    result = result.replace(pattern, replacement);
+  }
+
+  return result;
+};
+
+const SIMILARITY_THRESHOLD = 0.95;
+
+const extractPunctuation = (
+  word: string,
+): {
+  word: string;
+  leadingPunctuation: string;
+  trailingPunctuation: string;
+} => {
+  const leadingMatch = word.match(/^([^\p{L}\p{N}]*)/u);
+  const leadingPunctuation = leadingMatch?.[1] ?? "";
+
+  const afterLeading = word.slice(leadingPunctuation.length);
+
+  const trailingMatch = afterLeading.match(/('s)?([^\p{L}\p{N}]*)$/iu);
+  const possessiveSuffix = trailingMatch?.[1] ?? "";
+  const trailingPunctuation = possessiveSuffix + (trailingMatch?.[2] ?? "");
+
+  const wordOnly = afterLeading.slice(
+    0,
+    afterLeading.length - trailingPunctuation.length || undefined,
+  );
+
+  return { word: wordOnly, leadingPunctuation, trailingPunctuation };
+};
+
+export const applyReplacements = (
+  text: string,
+  rules: ReplacementRule[],
+): string => {
+  if (rules.length === 0) return text;
+
+  const words = text.split(/(\s+)/);
+  const result: string[] = [];
+
+  for (const segment of words) {
+    if (/^\s+$/.test(segment)) {
+      result.push(segment);
+      continue;
+    }
+
+    const { word, leadingPunctuation, trailingPunctuation } =
+      extractPunctuation(segment);
+
+    if (!word) {
+      result.push(segment);
+      continue;
+    }
+
+    let bestMatch: ReplacementRule | null = null;
+    let bestSimilarity = 0;
+
+    for (const rule of rules) {
+      const { word: ruleWord } = extractPunctuation(rule.sourceValue);
+      if (!ruleWord) continue;
+
+      const similarity = getStringSimilarity(
+        word.toLowerCase(),
+        ruleWord.toLowerCase(),
+      );
+      if (similarity >= SIMILARITY_THRESHOLD && similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestMatch = rule;
+      }
+    }
+
+    const { word: destinationWord } = bestMatch
+      ? extractPunctuation(bestMatch.destinationValue)
+      : { word };
+    result.push(leadingPunctuation + destinationWord + trailingPunctuation);
+  }
+
+  return result.join("");
+};

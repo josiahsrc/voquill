@@ -4,7 +4,7 @@ import { showErrorSnackbar } from "../actions/app.actions";
 import { showToast } from "../actions/toast.actions";
 import {
   postProcessTranscript,
-  storeTranscription,
+  type PostProcessMetadata,
 } from "../actions/transcribe.actions";
 import { getIntl } from "../i18n";
 import { getAppState } from "../store";
@@ -15,9 +15,17 @@ import type {
   StrategyValidationError,
 } from "../types/strategy.types";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
+import {
+  applyReplacements,
+  applySymbolConversions,
+} from "../utils/string.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class DictationStrategy extends BaseStrategy {
+  shouldStoreTranscript(): boolean {
+    return true;
+  }
+
   validateAvailability(): Nullable<StrategyValidationError> {
     const state = getAppState();
 
@@ -53,9 +61,6 @@ export class DictationStrategy extends BaseStrategy {
     a11yInfo,
     currentApp,
     loadingToken,
-    audio,
-    transcriptionMetadata,
-    transcriptionWarnings,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
     const resetPhase = async () => {
       if (
@@ -67,28 +72,38 @@ export class DictationStrategy extends BaseStrategy {
       }
     };
 
+    let transcript: string | null = null;
+    let sanitizedTranscript: string | null = null;
+    let postProcessMetadata: PostProcessMetadata = {};
+    let postProcessWarnings: string[] = [];
+
     try {
-      // 1. Post-process the transcript
-      const { transcript, metadata, warnings } = await postProcessTranscript({
+      const state = getAppState();
+      const replacementRules = Object.values(state.termById)
+        .filter((term) => term.isReplacement)
+        .map((term) => ({
+          sourceValue: term.sourceValue,
+          destinationValue: term.destinationValue,
+        }));
+
+      const afterReplacements = applyReplacements(
         rawTranscript,
+        replacementRules,
+      );
+      sanitizedTranscript = applySymbolConversions(afterReplacements);
+
+      const result = await postProcessTranscript({
+        rawTranscript: sanitizedTranscript,
         toneId,
         a11yInfo,
       });
 
-      // 2. Store transcription (don't await - don't block pasting)
-      storeTranscription({
-        audio,
-        rawTranscript,
-        transcript,
-        transcriptionMetadata,
-        postProcessMetadata: metadata,
-        warnings: [...transcriptionWarnings, ...warnings],
-      });
+      transcript = result.transcript;
+      postProcessMetadata = result.metadata;
+      postProcessWarnings = result.warnings;
 
-      // 3. Set overlay to idle
       await resetPhase();
 
-      // 4. Paste the transcript
       if (transcript) {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
@@ -101,16 +116,26 @@ export class DictationStrategy extends BaseStrategy {
       }
     } catch (error) {
       console.error("Failed to process transcription", error);
+
+      const errorMessage =
+        error instanceof Error ? error.message : "An error occurred.";
+      postProcessWarnings.push(errorMessage);
+
       await showToast({
         title: "Transcription failed",
-        message: error instanceof Error ? error.message : "An error occurred.",
+        message: errorMessage,
         toastType: "error",
       });
       await resetPhase();
     }
 
-    // Dictation is always single-turn
-    return { shouldContinue: false };
+    return {
+      shouldContinue: false,
+      transcript,
+      sanitizedTranscript,
+      postProcessMetadata,
+      postProcessWarnings,
+    };
   }
 
   async cleanup(): Promise<void> {

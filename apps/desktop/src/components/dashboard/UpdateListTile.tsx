@@ -33,6 +33,7 @@ export const UpdateListTile = () => {
             "linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.6), transparent)",
           backgroundSize: "200% 100%",
           animation: "shimmer 3s ease-in-out infinite",
+          willChange: "transform",
           mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
           maskComposite: "exclude",
           WebkitMask:

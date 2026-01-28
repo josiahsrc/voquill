@@ -10,6 +10,7 @@ export type Transcription = {
   modelSize?: string | null;
   inferenceDevice?: string | null;
   rawTranscript?: string | null;
+  sanitizedTranscript?: string | null;
   transcriptionPrompt?: string | null;
   postProcessPrompt?: string | null;
   transcriptionApiKeyId?: string | null;

@@ -44,4 +44,16 @@ pub struct UserPreferences {
     pub active_dictation_language: Option<String>,
     #[serde(default)]
     pub preferred_microphone: Option<String>,
+    #[serde(default)]
+    pub ignore_update_dialog: bool,
+    #[serde(default)]
+    pub incognito_mode_enabled: bool,
+    #[serde(default)]
+    pub incognito_mode_include_in_stats: bool,
+    #[serde(default = "default_dictation_pill_visibility")]
+    pub dictation_pill_visibility: String,
+}
+
+fn default_dictation_pill_visibility() -> String {
+    "while_active".to_string()
 }

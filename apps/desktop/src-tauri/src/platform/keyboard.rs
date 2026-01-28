@@ -147,6 +147,8 @@ struct KeyboardEventPayload {
     kind: WireEventKind,
     key_label: String,
     raw_code: Option<u32>,
+    #[serde(default)]
+    scan_code: u32,
 }
 
 fn debug_keys_enabled() -> bool {
@@ -308,6 +310,17 @@ fn pump_stream(stream: TcpStream, emitter: Arc<KeyEventEmitter>) -> Result<(), S
 
         match serde_json::from_str::<KeyboardEventPayload>(&line) {
             Ok(payload) => {
+                #[cfg(target_os = "windows")]
+                if payload.scan_code == 0 {
+                    if debug_keys_enabled() {
+                        eprintln!(
+                            "[keys] Ignoring injected event (scan_code=0): {:?} {}",
+                            payload.kind, payload.key_label
+                        );
+                    }
+                    continue;
+                }
+
                 if let Some(event) = event_from_payload(payload) {
                     emitter.handle_event(&event);
                 }
@@ -401,11 +414,13 @@ pub fn run_listener_process() -> Result<(), String> {
                     kind: WireEventKind::Press,
                     key_label: key_to_label(key),
                     raw_code: key_raw_code(key),
+                    scan_code: event.position_code,
                 }),
                 EventType::KeyRelease(key) => Some(KeyboardEventPayload {
                     kind: WireEventKind::Release,
                     key_label: key_to_label(key),
                     raw_code: key_raw_code(key),
+                    scan_code: event.position_code,
                 }),
                 _ => None,
             };

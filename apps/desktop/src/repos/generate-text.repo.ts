@@ -2,8 +2,12 @@ import { invokeHandler, type CloudModel } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
   azureOpenAIGenerateText,
+  claudeGenerateTextResponse,
+  ClaudeModel,
   deepseekGenerateTextResponse,
   DeepseekModel,
+  geminiGenerateTextResponse,
+  GeminiGenerateTextModel,
   GenerateTextModel,
   groqGenerateTextResponse,
   OpenAIGenerateTextModel,
@@ -245,6 +249,64 @@ export class DeepseekGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • DeepSeek",
+      },
+    };
+  }
+}
+
+export class GeminiGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private model: GeminiGenerateTextModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.apiKey = apiKey;
+    this.model = (model as GeminiGenerateTextModel) ?? "gemini-2.5-flash";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await geminiGenerateTextResponse({
+      apiKey: this.apiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • Gemini",
+      },
+    };
+  }
+}
+
+export class ClaudeGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private model: ClaudeModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.apiKey = apiKey;
+    this.model = (model as ClaudeModel) ?? "claude-sonnet-4-20250514";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await claudeGenerateTextResponse({
+      apiKey: this.apiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • Claude",
       },
     };
   }

@@ -8,6 +8,8 @@ export type DatabaseUser = {
   updatedAt: FiremixTimestamp;
   name: string;
   bio?: Nullable<string>;
+  company?: Nullable<string>;
+  title?: Nullable<string>;
   onboarded: boolean;
   onboardedAt: Nullable<FiremixTimestamp>;
   timezone?: Nullable<string>;
@@ -19,6 +21,8 @@ export type DatabaseUser = {
   wordsThisMonthMonth: Nullable<string>;
   wordsTotal: number;
   hasMigratedPreferredMicrophone?: boolean;
+  cohort?: Nullable<string>;
+  shouldShowUpgradeDialog?: boolean;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
@@ -30,6 +34,8 @@ export const UserZod = z
     updatedAt: z.string(),
     name: z.string(),
     bio: z.string().nullable().optional(),
+    company: z.string().nullable().optional(),
+    title: z.string().nullable().optional(),
     onboarded: z.boolean(),
     onboardedAt: z.string().nullable(),
     timezone: z.string().nullable().optional(),
@@ -41,5 +47,7 @@ export const UserZod = z
     wordsThisMonthMonth: z.string().nullable(),
     wordsTotal: z.number(),
     hasMigratedPreferredMicrophone: z.boolean().optional(),
+    cohort: z.string().nullable().optional(),
+    shouldShowUpgradeDialog: z.boolean().optional(),
   })
   .strict() satisfies z.ZodType<User>;

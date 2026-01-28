@@ -1,4 +1,5 @@
 import { Collapse, Stack, Typography } from "@mui/material";
+import { useEffect } from "react";
 import { FormattedMessage } from "react-intl";
 import { useSearchParams } from "react-router-dom";
 import { TransitionGroup } from "react-transition-group";
@@ -10,6 +11,7 @@ import { ResetPasswordForm } from "./ResetPasswordForm";
 import { ResetSentForm } from "./ResetSentForm";
 import { SignInForm } from "./SignInForm";
 import { SignUpForm } from "./SignUpForm";
+import { TermsNotice } from "./TermsNotice";
 
 const mapMode = (mode: string | null): LoginMode | null => {
   if (mode === "register") return "signUp";
@@ -24,7 +26,17 @@ const useMode = () => {
   return queryMode || stateMode;
 };
 
-export const LoginForm = () => {
+type LoginFormProps = {
+  hideGoogleButton?: boolean;
+  hideModeSwitch?: boolean;
+  defaultMode?: LoginMode;
+};
+
+export const LoginForm = ({
+  hideGoogleButton = false,
+  hideModeSwitch = false,
+  defaultMode,
+}: LoginFormProps) => {
   const mode = useMode();
   const errorMessage = useAppStore((state) => state.login.errorMessage);
 
@@ -43,6 +55,14 @@ export const LoginForm = () => {
     });
   });
 
+  useEffect(() => {
+    if (defaultMode) {
+      produceAppState((draft) => {
+        draft.login.mode = defaultMode;
+      });
+    }
+  }, [defaultMode]);
+
   return (
     <Stack spacing={1.5}>
       <Typography variant="body1" fontWeight="bold">
@@ -59,12 +79,12 @@ export const LoginForm = () => {
       <TransitionGroup>
         {mode === "signIn" && (
           <Collapse key="signIn" timeout={400} unmountOnExit>
-            <SignInForm />
+            <SignInForm hideGoogleButton={hideGoogleButton} />
           </Collapse>
         )}
         {mode === "signUp" && (
           <Collapse key="signUp" timeout={400} unmountOnExit>
-            <SignUpForm />
+            <SignUpForm hideGoogleButton={hideGoogleButton} hideModeSwitch={hideModeSwitch} />
           </Collapse>
         )}
         {mode === "resetPassword" && (
@@ -79,27 +99,7 @@ export const LoginForm = () => {
         )}
       </TransitionGroup>
 
-      <Typography
-        variant="body2"
-        color="textSecondary"
-        textAlign="center"
-        sx={{ maxWidth: 300, alignSelf: "center", fontSize: "0.75rem" }}
-      >
-        <FormattedMessage defaultMessage="By using this service, you agree to our" />{" "}
-        <a
-          href="/terms"
-          style={{ color: "inherit", textDecoration: "underline" }}
-        >
-          <FormattedMessage defaultMessage="Terms & Conditions" />
-        </a>{" "}
-        <FormattedMessage defaultMessage="and" />{" "}
-        <a
-          href="/privacy"
-          style={{ color: "inherit", textDecoration: "underline" }}
-        >
-          <FormattedMessage defaultMessage="Privacy Policy" />
-        </a>
-      </Typography>
+      <TermsNotice />
 
       {errorMessage && (
         <Typography color="error" textAlign="center">

@@ -8,6 +8,8 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              id,
              name,
              bio,
+             company,
+             title,
              onboarded,
              preferred_microphone,
              preferred_language,
@@ -16,12 +18,15 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              words_total,
              play_interaction_chime,
              has_finished_tutorial,
-             has_migrated_preferred_microphone
+             has_migrated_preferred_microphone,
+             cohort
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
+            company = excluded.company,
+            title = excluded.title,
             onboarded = excluded.onboarded,
             preferred_microphone = excluded.preferred_microphone,
             preferred_language = excluded.preferred_language,
@@ -30,11 +35,14 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
             words_total = excluded.words_total,
             play_interaction_chime = excluded.play_interaction_chime,
             has_finished_tutorial = excluded.has_finished_tutorial,
-            has_migrated_preferred_microphone = excluded.has_migrated_preferred_microphone",
+            has_migrated_preferred_microphone = excluded.has_migrated_preferred_microphone,
+            cohort = excluded.cohort",
     )
     .bind(&user.id)
     .bind(&user.name)
     .bind(&user.bio)
+    .bind(&user.company)
+    .bind(&user.title)
     .bind(if user.onboarded { 1 } else { 0 })
     .bind(&user.preferred_microphone)
     .bind(&user.preferred_language)
@@ -44,6 +52,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(if user.play_interaction_chime { 1 } else { 0 })
     .bind(if user.has_finished_tutorial { 1 } else { 0 })
     .bind(if user.has_migrated_preferred_microphone { 1 } else { 0 })
+    .bind(&user.cohort)
     .execute(&pool)
     .await?;
 
@@ -56,6 +65,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             id,
             name,
             bio,
+            company,
+            title,
             onboarded,
             preferred_microphone,
             preferred_language,
@@ -64,7 +75,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             words_total,
             play_interaction_chime,
             has_finished_tutorial,
-            has_migrated_preferred_microphone
+            has_migrated_preferred_microphone,
+            cohort
          FROM user_profiles
          LIMIT 1",
     )
@@ -85,6 +97,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 id: row.get::<String, _>("id"),
                 name: row.get::<String, _>("name"),
                 bio: row.get::<String, _>("bio"),
+                company: row.try_get::<Option<String>, _>("company").unwrap_or(None),
+                title: row.try_get::<Option<String>, _>("title").unwrap_or(None),
                 onboarded: onboarded_raw != 0,
                 preferred_microphone: row.get::<Option<String>, _>("preferred_microphone"),
                 preferred_language: row.get::<Option<String>, _>("preferred_language"),
@@ -96,6 +110,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 play_interaction_chime: play_interaction_raw != 0,
                 has_finished_tutorial: tutorial_finished_raw != 0,
                 has_migrated_preferred_microphone: migrated_microphone_raw != 0,
+                cohort: row.try_get::<Option<String>, _>("cohort").unwrap_or(None),
             })
         }
         None => None,

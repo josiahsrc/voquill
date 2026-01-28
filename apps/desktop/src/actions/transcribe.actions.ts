@@ -107,8 +107,22 @@ export const transcribeAudio = async ({
   const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
-  const transcriptionPrompt =
+  const baseTranscriptionPrompt =
     buildLocalizedTranscriptionPrompt(dictionaryEntries);
+  const transcriptionPrompt = (() => {
+    // Adding a patch to generate text precisely when dealing with different
+    //   variants of Chinese.
+    // See reference: https://github.com/openai/whisper/discussions/277
+    if (dictationLanguage === "zh-CN") {
+      return `以下是普通话的句子。\n\n${baseTranscriptionPrompt}`.trim();
+    }
+
+    if (dictationLanguage === "zh-TW" || dictationLanguage === "zh-HK") {
+      return `以下是普通話的句子。\n\n${baseTranscriptionPrompt}`.trim();
+    }
+
+    return baseTranscriptionPrompt;
+  })();
 
   const transcribeStart = performance.now();
   const transcribeOutput = await transcribeRepo.transcribeAudio({
@@ -234,6 +248,7 @@ export const postProcessTranscript = async ({
 export type StoreTranscriptionInput = {
   audio: StopRecordingResponse;
   rawTranscript: string | null;
+  sanitizedTranscript: string | null;
   transcript: string | null;
   transcriptionMetadata: TranscribeAudioMetadata;
   postProcessMetadata: PostProcessMetadata;
@@ -248,10 +263,20 @@ export type StoreTranscriptionOutput = {
 export const storeTranscription = async (
   input: StoreTranscriptionInput,
 ): Promise<StoreTranscriptionOutput> => {
-  const payloadSamples = Array.isArray(input.audio.samples)
-    ? input.audio.samples
-    : Array.from(input.audio.samples ?? []);
   const rate = input.audio.sampleRate;
+
+  const sampleCount = (() => {
+    const samples = input.audio.samples as unknown;
+    if (Array.isArray(samples)) {
+      return samples.length;
+    }
+
+    if (samples && typeof (samples as { length?: number }).length === "number") {
+      return (samples as { length: number }).length;
+    }
+
+    return 0;
+  })();
 
   if (rate == null || Number.isNaN(rate)) {
     console.error("Received audio payload without sample rate", input.audio);
@@ -259,25 +284,51 @@ export const storeTranscription = async (
     return { transcription: null, wordCount: 0 };
   }
 
-  if (rate <= 0 || payloadSamples.length === 0) {
+  if (rate <= 0 || sampleCount === 0) {
     return { transcription: null, wordCount: 0 };
   }
 
   const state = getAppState();
+  const incognitoEnabled = state.userPrefs?.incognitoModeEnabled ?? false;
+  const includeInStats = state.userPrefs?.incognitoModeIncludeInStats ?? false;
+  const wordsAdded = input.transcript ? countWords(input.transcript) : 0;
+
+  if (incognitoEnabled) {
+    if (wordsAdded > 0 && includeInStats) {
+      try {
+        await addWordsToCurrentUser(wordsAdded);
+      } catch (error) {
+        console.error("Failed to update usage metrics", error);
+      }
+    }
+
+    return { transcription: null, wordCount: wordsAdded };
+  }
+
+  const payloadSamples = Array.isArray(input.audio.samples)
+    ? input.audio.samples
+    : Array.from(input.audio.samples ?? []);
+
+  if (rate <= 0 || payloadSamples.length === 0) {
+    return { transcription: null, wordCount: 0 };
+  }
+
   const transcriptionId = createId();
 
   let audioSnapshot: TranscriptionAudioSnapshot | undefined;
-  try {
-    audioSnapshot = await invoke<TranscriptionAudioSnapshot>(
-      "store_transcription_audio",
-      {
-        id: transcriptionId,
-        samples: payloadSamples,
-        sampleRate: rate,
-      },
-    );
-  } catch (error) {
-    console.error("Failed to persist audio snapshot", error);
+  if (!incognitoEnabled) {
+    try {
+      audioSnapshot = await invoke<TranscriptionAudioSnapshot>(
+        "store_transcription_audio",
+        {
+          id: transcriptionId,
+          samples: payloadSamples,
+          sampleRate: rate,
+        },
+      );
+    } catch (error) {
+      console.error("Failed to persist audio snapshot", error);
+    }
   }
 
   const transcriptionFailed =
@@ -295,6 +346,7 @@ export const storeTranscription = async (
     modelSize: input.transcriptionMetadata.modelSize ?? null,
     inferenceDevice: input.transcriptionMetadata.inferenceDevice ?? null,
     rawTranscript: input.rawTranscript ?? input.transcript ?? "",
+    sanitizedTranscript: input.sanitizedTranscript ?? null,
     transcriptionPrompt:
       input.transcriptionMetadata.transcriptionPrompt ?? null,
     postProcessPrompt: input.postProcessMetadata.postProcessPrompt ?? null,
@@ -333,7 +385,6 @@ export const storeTranscription = async (
     ];
   });
 
-  const wordsAdded = input.transcript ? countWords(input.transcript) : 0;
   if (wordsAdded > 0) {
     try {
       await addWordsToCurrentUser(wordsAdded);

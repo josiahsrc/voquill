@@ -6,10 +6,14 @@ export const API_KEY_PROVIDERS = [
   "openai",
   "aldea",
   "assemblyai",
+  "elevenlabs",
+  "deepgram",
   "openrouter",
   "ollama",
   "azure",
   "deepseek",
+  "gemini",
+  "claude",
 ] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];
 

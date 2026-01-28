@@ -25,8 +25,15 @@ import {
   AZURE_OPENAI_MODELS,
   azureOpenAITestIntegration,
   azureTestIntegration,
+  CLAUDE_MODELS,
+  claudeTestIntegration,
+  deepgramTestIntegration,
   DEEPSEEK_MODELS,
   deepseekTestIntegration,
+  elevenlabsTestIntegration,
+  GEMINI_GENERATE_TEXT_MODELS,
+  geminiTestIntegration,
+  GEMINI_TRANSCRIPTION_MODELS,
   GENERATE_TEXT_MODELS,
   groqTestIntegration,
   OPENAI_GENERATE_TEXT_MODELS,
@@ -172,6 +179,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       >
         <MenuItem value="groq">Groq</MenuItem>
         <MenuItem value="openai">OpenAI</MenuItem>
+        <MenuItem value="gemini">Gemini</MenuItem>
         {/* OpenRouter, Ollama, DeepSeek, and Azure OpenAI only support LLM, not transcription */}
         {context === "post-processing" && (
           <MenuItem value="openrouter">OpenRouter</MenuItem>
@@ -183,14 +191,23 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
           <MenuItem value="deepseek">DeepSeek</MenuItem>
         )}
         {context === "post-processing" && (
+          <MenuItem value="claude">Claude</MenuItem>
+        )}
+        {context === "post-processing" && (
           <MenuItem value="azure">Azure OpenAI</MenuItem>
         )}
-        {/* Aldea, AssemblyAI, and Azure STT only support transcription, not post-processing */}
+        {/* Aldea, AssemblyAI, Deepgram, ElevenLabs, and Azure STT only support transcription, not post-processing */}
         {context === "transcription" && (
           <MenuItem value="aldea">Aldea</MenuItem>
         )}
         {context === "transcription" && (
           <MenuItem value="assemblyai">AssemblyAI</MenuItem>
+        )}
+        {context === "transcription" && (
+          <MenuItem value="deepgram">Deepgram</MenuItem>
+        )}
+        {context === "transcription" && (
+          <MenuItem value="elevenlabs">ElevenLabs</MenuItem>
         )}
         {context === "transcription" && (
           <MenuItem value="azure">Azure</MenuItem>
@@ -342,8 +359,16 @@ const testApiKey = async (
       return aldeaTestIntegration({ apiKey: apiKey.keyFull });
     case "assemblyai":
       return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
+    case "deepgram":
+      return deepgramTestIntegration({ apiKey: apiKey.keyFull });
+    case "elevenlabs":
+      return elevenlabsTestIntegration({ apiKey: apiKey.keyFull });
     case "deepseek":
       return deepseekTestIntegration({ apiKey: apiKey.keyFull });
+    case "gemini":
+      return geminiTestIntegration({ apiKey: apiKey.keyFull });
+    case "claude":
+      return claudeTestIntegration({ apiKey: apiKey.keyFull });
     case "azure":
       if (context === "post-processing") {
         if (!apiKey.baseUrl) {
@@ -380,17 +405,27 @@ const getModelsForProvider = (
       return context === "transcription"
         ? OPENAI_TRANSCRIPTION_MODELS
         : OPENAI_GENERATE_TEXT_MODELS;
+    case "gemini":
+      return context === "transcription"
+        ? GEMINI_TRANSCRIPTION_MODELS
+        : GEMINI_GENERATE_TEXT_MODELS;
     case "openrouter":
       return context === "transcription" ? [] : OPENROUTER_FAVORITE_MODELS;
     case "ollama":
       return [];
     case "deepseek":
       return context === "transcription" ? [] : DEEPSEEK_MODELS;
+    case "claude":
+      return context === "transcription" ? [] : CLAUDE_MODELS;
     case "azure":
       return context === "transcription" ? [] : AZURE_OPENAI_MODELS;
     case "aldea":
       return [];
     case "assemblyai":
+      return [];
+    case "deepgram":
+      return [];
+    case "elevenlabs":
       return [];
     default:
       return [];
@@ -572,19 +607,23 @@ export const ApiKeyList = ({
 
   // Filter API keys based on context
   const apiKeys = allApiKeys.filter((key) => {
-    // OpenRouter, Ollama, and DeepSeek only support post-processing
+    // OpenRouter, Ollama, DeepSeek, and Claude only support post-processing
     if (
       context === "transcription" &&
       (key.provider === "openrouter" ||
         key.provider === "ollama" ||
-        key.provider === "deepseek")
+        key.provider === "deepseek" ||
+        key.provider === "claude")
     ) {
       return false;
     }
-    // Aldea and AssemblyAI only support transcription
+    // Aldea, AssemblyAI, Deepgram, and ElevenLabs only support transcription
     if (
       context === "post-processing" &&
-      (key.provider === "aldea" || key.provider === "assemblyai")
+      (key.provider === "aldea" ||
+        key.provider === "assemblyai" ||
+        key.provider === "deepgram" ||
+        key.provider === "elevenlabs")
     ) {
       return false;
     }

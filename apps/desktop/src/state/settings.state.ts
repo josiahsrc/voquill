@@ -51,6 +51,7 @@ export type SettingsState = {
   aiTranscriptionDialogOpen: boolean;
   aiPostProcessingDialogOpen: boolean;
   agentModeDialogOpen: boolean;
+  moreSettingsDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
   agentMode: SettingsGenerativeState;
@@ -79,6 +80,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiTranscriptionDialogOpen: false,
   aiPostProcessingDialogOpen: false,
   agentModeDialogOpen: false,
+  moreSettingsDialogOpen: false,
   aiTranscription: {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,

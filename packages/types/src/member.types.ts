@@ -19,6 +19,8 @@ export type DatabaseMember = {
   tokensTotal: number;
   todayResetAt: FiremixTimestamp;
   thisMonthResetAt: FiremixTimestamp;
+  isOnTrial?: Nullable<boolean>;
+  trialEndsAt?: Nullable<FiremixTimestamp>;
 };
 
 export type Member = Replace<DatabaseMember, FiremixTimestamp, string>;

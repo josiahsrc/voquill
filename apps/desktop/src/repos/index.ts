@@ -16,8 +16,10 @@ import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
 import {
   AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
+  ClaudeGenerateTextRepo,
   CloudGenerateTextRepo,
   DeepseekGenerateTextRepo,
+  GeminiGenerateTextRepo,
   GroqGenerateTextRepo,
   OllamaGenerateTextRepo,
   OpenAIGenerateTextRepo,
@@ -37,6 +39,7 @@ import {
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
   CloudTranscribeAudioRepo,
+  GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
@@ -163,6 +166,16 @@ const getGenTextRepoInternal = ({
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
+    } else if (prefs.provider === "gemini") {
+      repo = new GeminiGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
+      );
+    } else if (prefs.provider === "claude") {
+      repo = new ClaudeGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
+      );
     } else {
       repo = new GroqGenerateTextRepo(
         prefs.apiKeyValue,
@@ -221,6 +234,11 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
       const region = apiKeyRecord?.azureRegion || "eastus";
       repo = new AzureTranscribeAudioRepo(prefs.apiKeyValue, region);
+    } else if (prefs.provider === "gemini") {
+      repo = new GeminiTranscribeAudioRepo(
+        prefs.apiKeyValue,
+        prefs.transcriptionModel,
+      );
     } else {
       repo = new GroqTranscribeAudioRepo(
         prefs.apiKeyValue,

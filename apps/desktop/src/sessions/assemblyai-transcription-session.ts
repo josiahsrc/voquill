@@ -17,7 +17,7 @@ const startAssemblyAIStreaming = async (
 ): Promise<AssemblyAIStreamingSession> => {
   console.log("[AssemblyAI WebSocket] Starting with sample rate:", sampleRate);
   const MIN_CHUNK_DURATION_MS = 50;
-  const MAX_CHUNK_DURATION_MS = 950;
+  const MAX_CHUNK_DURATION_MS = 100;
   const minSamplesPerChunk = Math.max(
     1,
     Math.ceil((sampleRate * MIN_CHUNK_DURATION_MS) / 1000),

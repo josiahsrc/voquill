@@ -1,4 +1,10 @@
-import { ApiKeyProvider, Nullable, User, UserPreferences } from "@repo/types";
+import {
+  ApiKeyProvider,
+  DictationPillVisibility,
+  Nullable,
+  User,
+  UserPreferences,
+} from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
@@ -22,6 +28,10 @@ export const getHasEmailProvider = (state: AppState): boolean => {
 
 export const getIsOnboarded = (state: AppState): boolean => {
   return Boolean(getMyUser(state)?.onboarded);
+};
+
+export const getIsDictationUnlocked = (state: AppState): boolean => {
+  return getIsOnboarded(state) || state.onboarding.dictationOverrideEnabled;
 };
 
 export const getHasCloudAccess = (state: AppState): boolean => {
@@ -115,20 +125,6 @@ export const getMyUserName = (state: AppState): string => {
   return user?.name || "Guest";
 };
 
-export const getHasFinishedTutorial = (state: AppState): boolean => {
-  const user = getMyUser(state);
-  return user?.hasFinishedTutorial ?? false;
-};
-
-export const getShouldShowTutorialDialog = (state: AppState): boolean => {
-  const user = getMyUser(state);
-  if (!user) {
-    return false;
-  }
-
-  return !getHasFinishedTutorial(state);
-};
-
 export const getIsSignedIn = (state: AppState): boolean => {
   return !!state.auth;
 };
@@ -155,6 +151,9 @@ export type CloudTranscriptionPrefs = BaseTranscriptionPrefs & {
 
 export type LocalTranscriptionPrefs = BaseTranscriptionPrefs & {
   mode: "local";
+  gpuEnumerationEnabled: boolean;
+  transcriptionDevice: string | null;
+  transcriptionModelSize: string | null;
 };
 
 export type ApiTranscriptionPrefs = BaseTranscriptionPrefs & {
@@ -207,7 +206,13 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
     }
   }
 
-  return { mode: "local", warnings };
+  return {
+    mode: "local",
+    warnings,
+    gpuEnumerationEnabled: config.gpuEnumerationEnabled,
+    transcriptionDevice: config.device ?? null,
+    transcriptionModelSize: config.modelSize ?? null,
+  };
 };
 
 type BaseGenerativePrefs = {
@@ -293,4 +298,18 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
 
 export const getAgentModePrefs = (state: AppState): GenerativePrefs => {
   return getGenPrefsInternal(state, state.settings.agentMode, "agent mode");
+};
+
+export const getEffectivePillVisibility = (
+  visibility?: Nullable<string>,
+): DictationPillVisibility => {
+  if (
+    visibility === "hidden" ||
+    visibility === "while_active" ||
+    visibility === "persistent"
+  ) {
+    return visibility;
+  }
+
+  return "while_active";
 };

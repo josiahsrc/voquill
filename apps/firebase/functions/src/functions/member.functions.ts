@@ -1,6 +1,7 @@
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import {
+	handleCancelProTrials,
 	handleResetLimitsThisMonth,
 	handleResetLimitsToday,
 	trySend1000WordsEvent,
@@ -17,6 +18,11 @@ export const resetWordsTodayCron = onSchedule("0 * * * *", async () => {
 // Every hour
 export const resetWordsThisMonthCron = onSchedule("0 * * * *", async () => {
 	await handleResetLimitsThisMonth();
+});
+
+// Every hour
+export const cancelProTrialsCron = onSchedule("0 * * * *", async () => {
+	await handleCancelProTrials();
 });
 
 export const onWrite = onDocumentWritten(
