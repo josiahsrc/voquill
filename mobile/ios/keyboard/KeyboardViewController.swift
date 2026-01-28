@@ -463,13 +463,47 @@ class KeyboardViewController: UIInputViewController {
         case .recording:
             stopAudioCapture()
             applyPhase(.loading, animated: true)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-                self?.textDocumentProxy.insertText("Hello World")
-                self?.applyPhase(.idle, animated: true)
+            fetchWeather { [weak self] result in
+                DispatchQueue.main.async {
+                    self?.textDocumentProxy.insertText(result)
+                    self?.applyPhase(.idle, animated: true)
+                }
             }
         case .loading:
             break
         }
+    }
+
+    // MARK: - Weather API
+
+    private func fetchWeather(completion: @escaping (String) -> Void) {
+        // Salt Lake City, Utah coordinates
+        let urlString = "https://api.open-meteo.com/v1/forecast?latitude=40.76&longitude=-111.89&current_weather=true&temperature_unit=fahrenheit"
+        guard let url = URL(string: urlString) else {
+            completion("Could not fetch weather")
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, error == nil else {
+                completion("Could not fetch weather")
+                return
+            }
+
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let currentWeather = json["current_weather"] as? [String: Any],
+                   let temperature = currentWeather["temperature"] as? Double {
+                    let tempInt = Int(round(temperature))
+                    completion("It's currently \(tempInt)°F in Utah")
+                } else {
+                    completion("Could not parse weather data")
+                }
+            } catch {
+                completion("Could not parse weather data")
+            }
+        }
+        task.resume()
     }
 
     // MARK: - Audio
