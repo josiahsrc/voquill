@@ -5,7 +5,7 @@ use std::process::Stdio;
 use tauri::{AppHandle, Emitter};
 use tokio::process::Command;
 
-const EMBEDDED_INSTALLER: &[u8] = include_bytes!("../../installer/Voquill_Setup.exe");
+const EMBEDDED_INSTALLER: &[u8] = include_bytes!("../installer/Voquill_Setup.exe");
 
 #[derive(Clone, serde::Serialize)]
 struct InstallProgress {
