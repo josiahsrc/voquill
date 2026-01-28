@@ -1,20 +1,20 @@
 import {
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Stack,
-    Typography,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  Typography,
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { setLanguageSwitchEnabled } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import {
-    AGENT_DICTATE_HOTKEY,
-    DICTATE_HOTKEY,
-    LANGUAGE_SWITCH_HOTKEY,
+  AGENT_DICTATE_HOTKEY,
+  DICTATE_HOTKEY,
+  LANGUAGE_SWITCH_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
 

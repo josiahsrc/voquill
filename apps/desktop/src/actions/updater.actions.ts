@@ -24,7 +24,7 @@ const isBusy = () => {
 
 export const checkForAppUpdates = async (): Promise<void> => {
   if (checkingPromise || isBusy()) {
-    return checkingPromise ?? Promise.resolve();
+    return checkingPromise ?? await Promise.resolve();
   }
 
   const run = async () => {
