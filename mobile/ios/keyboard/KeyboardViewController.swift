@@ -26,16 +26,39 @@ class AudioWaveformView: UIView {
 
     var waveColor: UIColor = .label
 
+    private let fadeLayer = CAGradientLayer()
+
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = .clear
-        isOpaque = false
+        setupFade()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        setupFade()
+    }
+
+    private func setupFade() {
         backgroundColor = .clear
         isOpaque = false
+        fadeLayer.colors = [
+            UIColor.clear.cgColor,
+            UIColor.white.cgColor,
+            UIColor.white.cgColor,
+            UIColor.clear.cgColor
+        ]
+        fadeLayer.locations = [0, 0.12, 0.88, 1.0]
+        fadeLayer.startPoint = CGPoint(x: 0, y: 0.5)
+        fadeLayer.endPoint = CGPoint(x: 1, y: 0.5)
+        layer.mask = fadeLayer
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        fadeLayer.frame = bounds
+        CATransaction.commit()
     }
 
     func startAnimating() {
