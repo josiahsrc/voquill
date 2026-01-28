@@ -1,11 +1,13 @@
 import UIKit
 import AVFoundation
 
+// MARK: - Audio Waveform
+
 class AudioWaveformView: UIView {
     private var displayLink: CADisplayLink?
     private var phase: CGFloat = 0
-    private var currentLevel: CGFloat = 0.15
-    private var targetLevel: CGFloat = 0.15
+    private var currentLevel: CGFloat = 0.0
+    private var targetLevel: CGFloat = 0.0
 
     private let basePhaseStep: CGFloat = 0.14
     private let attackSmoothing: CGFloat = 0.25
@@ -24,7 +26,13 @@ class AudioWaveformView: UIView {
         WaveConfig(frequency: 1.25, multiplier: 0.6, phaseOffset: 1.7, opacity: 0.35)
     ]
 
-    var waveColor: UIColor = .label
+    var waveColor: UIColor = .label {
+        didSet { setNeedsDisplay() }
+    }
+
+    var isActive: Bool = false {
+        didSet { if !isActive { targetLevel = 0 } }
+    }
 
     private let fadeLayer = CAGradientLayer()
 
@@ -71,8 +79,6 @@ class AudioWaveformView: UIView {
     func stopAnimating() {
         displayLink?.invalidate()
         displayLink = nil
-        currentLevel = 0.15
-        targetLevel = 0.15
     }
 
     func updateLevel(_ level: CGFloat) {
@@ -83,7 +89,9 @@ class AudioWaveformView: UIView {
         let smoothing = targetLevel > currentLevel ? attackSmoothing : decaySmoothing
         currentLevel += (targetLevel - currentLevel) * smoothing
 
-        phase += basePhaseStep + (currentLevel * 0.06)
+        if isActive {
+            phase += basePhaseStep + (currentLevel * 0.06)
+        }
         if phase > .pi * 2 { phase -= .pi * 2 }
 
         setNeedsDisplay()
@@ -92,6 +100,19 @@ class AudioWaveformView: UIView {
     override func draw(_ rect: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         let w = rect.width, h = rect.height, mid = h / 2
+
+        if !isActive && currentLevel < 0.01 {
+            // Draw flat line when idle
+            let path = UIBezierPath()
+            path.move(to: CGPoint(x: 0, y: mid))
+            path.addLine(to: CGPoint(x: w, y: mid))
+            ctx.saveGState()
+            waveColor.setStroke()
+            path.lineWidth = 2.5
+            path.stroke()
+            ctx.restoreGState()
+            return
+        }
 
         for cfg in waveConfigs {
             let amp = h * 0.45 * currentLevel * cfg.multiplier
@@ -116,19 +137,149 @@ class AudioWaveformView: UIView {
     }
 }
 
+// MARK: - Indeterminate Progress Bar
+
+class IndeterminateProgressView: UIView {
+    private var displayLink: CADisplayLink?
+    private var time: CGFloat = 0
+
+    var barColor: UIColor = .label
+
+    private let fadeLayer = CAGradientLayer()
+    private let cycleDuration: CGFloat = 1.8
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        backgroundColor = .clear
+        isOpaque = false
+        fadeLayer.colors = [
+            UIColor.clear.cgColor,
+            UIColor.white.cgColor,
+            UIColor.white.cgColor,
+            UIColor.clear.cgColor
+        ]
+        fadeLayer.locations = [0, 0.12, 0.88, 1.0]
+        fadeLayer.startPoint = CGPoint(x: 0, y: 0.5)
+        fadeLayer.endPoint = CGPoint(x: 1, y: 0.5)
+        layer.mask = fadeLayer
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        fadeLayer.frame = bounds
+        CATransaction.commit()
+    }
+
+    func startAnimating() {
+        stopAnimating()
+        time = 0
+        displayLink = CADisplayLink(target: self, selector: #selector(tick))
+        displayLink?.preferredFramesPerSecond = 60
+        displayLink?.add(to: .main, forMode: .common)
+    }
+
+    func stopAnimating() {
+        displayLink?.invalidate()
+        displayLink = nil
+    }
+
+    private func easeInOut(_ t: CGFloat) -> CGFloat {
+        if t < 0.5 {
+            return 2 * t * t
+        } else {
+            return -1 + (4 - 2 * t) * t
+        }
+    }
+
+    @objc private func tick() {
+        time += 1.0 / 60.0
+        if time > cycleDuration { time -= cycleDuration }
+        setNeedsDisplay()
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard let ctx = UIGraphicsGetCurrentContext() else { return }
+        let w = rect.width, h = rect.height, mid = h / 2
+
+        // Track line
+        let trackPath = UIBezierPath()
+        trackPath.move(to: CGPoint(x: 0, y: mid))
+        trackPath.addLine(to: CGPoint(x: w, y: mid))
+        ctx.saveGState()
+        barColor.withAlphaComponent(0.15).setStroke()
+        trackPath.lineWidth = 2.5
+        trackPath.lineCapStyle = .round
+        trackPath.stroke()
+        ctx.restoreGState()
+
+        let t = time / cycleDuration
+
+        // Head moves with easeInOut across the full range
+        let headT = easeInOut(min(t * 1.2, 1.0))
+        let head = -0.1 + headT * 1.2
+
+        // Tail starts later and catches up
+        let tailRaw = max((t - 0.2) / 0.8, 0)
+        let tailT = easeInOut(min(tailRaw, 1.0))
+        let tail = -0.1 + tailT * 1.2
+
+        let startX = tail * w
+        let endX = head * w
+        let clampedStart = max(0, min(w, startX))
+        let clampedEnd = max(0, min(w, endX))
+
+        if clampedEnd > clampedStart + 1 {
+            let barPath = UIBezierPath()
+            barPath.move(to: CGPoint(x: clampedStart, y: mid))
+            barPath.addLine(to: CGPoint(x: clampedEnd, y: mid))
+            ctx.saveGState()
+            barColor.setStroke()
+            barPath.lineWidth = 2.5
+            barPath.lineCapStyle = .round
+            barPath.stroke()
+            ctx.restoreGState()
+        }
+    }
+}
+
+// MARK: - Keyboard Controller
+
 class KeyboardViewController: UIInputViewController {
 
-    private let idleView = UIView()
-    private let recordingView = UIView()
-    private var waveformView: AudioWaveformView?
+    enum Phase {
+        case idle, recording, loading
+    }
+
+    private var currentPhase: Phase = .idle
+
+    private var waveformView: AudioWaveformView!
+    private var progressView: IndeterminateProgressView!
+    private var pillButton: UIView!
+    private var pillIcon: UIImageView!
+    private var pillLabel: UILabel!
     private var nextKeyboardButton: UIButton?
+    private var labelToIconConstraint: NSLayoutConstraint!
+    private var labelCenteredConstraint: NSLayoutConstraint!
 
     private var audioRecorder: AVAudioRecorder?
     private var levelTimer: Timer?
+    private var smoothedLevel: Float = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
         buildUI()
+        applyPhase(.idle, animated: false)
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -138,7 +289,18 @@ class KeyboardViewController: UIInputViewController {
 
     private func updateColorsForAppearance() {
         let isDark = traitCollection.userInterfaceStyle == .dark
-        waveformView?.waveColor = isDark ? .white : .black
+        let activeColor: UIColor = isDark ? .white : .black
+        let idleColor: UIColor = isDark ? UIColor.white.withAlphaComponent(0.25) : UIColor.black.withAlphaComponent(0.2)
+        progressView.barColor = activeColor
+
+        switch currentPhase {
+        case .idle:
+            waveformView.waveColor = idleColor
+        case .recording:
+            waveformView.waveColor = activeColor
+        case .loading:
+            progressView.barColor = activeColor
+        }
     }
 
     private func buildUI() {
@@ -148,105 +310,67 @@ class KeyboardViewController: UIInputViewController {
         hc.priority = .defaultHigh
         hc.isActive = true
 
-        // === IDLE VIEW ===
-        idleView.translatesAutoresizingMaskIntoConstraints = false
-        idleView.backgroundColor = .clear
-        view.addSubview(idleView)
-        NSLayoutConstraint.activate([
-            idleView.topAnchor.constraint(equalTo: view.topAnchor),
-            idleView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -44),
-            idleView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            idleView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
+        // === WAVEFORM ===
+        waveformView = AudioWaveformView()
+        waveformView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(waveformView)
 
-        let micBg = UIView()
-        micBg.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-        micBg.layer.cornerRadius = 40
-        micBg.translatesAutoresizingMaskIntoConstraints = false
-        idleView.addSubview(micBg)
-
-        let micBtn = UIButton(type: .system)
-        micBtn.setImage(UIImage(systemName: "mic.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 32)), for: .normal)
-        micBtn.tintColor = .white
-        micBtn.translatesAutoresizingMaskIntoConstraints = false
-        micBtn.addTarget(self, action: #selector(onMicTap), for: .touchUpInside)
-        micBg.addSubview(micBtn)
-
-        let label = UILabel()
-        label.text = "Tap to dictate"
-        label.textColor = .secondaryLabel
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        idleView.addSubview(label)
+        // === PROGRESS ===
+        progressView = IndeterminateProgressView()
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        progressView.alpha = 0
+        view.addSubview(progressView)
 
         NSLayoutConstraint.activate([
-            micBg.centerXAnchor.constraint(equalTo: idleView.centerXAnchor),
-            micBg.centerYAnchor.constraint(equalTo: idleView.centerYAnchor, constant: -10),
-            micBg.widthAnchor.constraint(equalToConstant: 80),
-            micBg.heightAnchor.constraint(equalToConstant: 80),
-            micBtn.centerXAnchor.constraint(equalTo: micBg.centerXAnchor),
-            micBtn.centerYAnchor.constraint(equalTo: micBg.centerYAnchor),
-            label.centerXAnchor.constraint(equalTo: idleView.centerXAnchor),
-            label.topAnchor.constraint(equalTo: micBg.bottomAnchor, constant: 12)
+            waveformView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            waveformView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            waveformView.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
+            waveformView.heightAnchor.constraint(equalToConstant: 110),
+
+            progressView.leadingAnchor.constraint(equalTo: waveformView.leadingAnchor),
+            progressView.trailingAnchor.constraint(equalTo: waveformView.trailingAnchor),
+            progressView.topAnchor.constraint(equalTo: waveformView.topAnchor),
+            progressView.heightAnchor.constraint(equalTo: waveformView.heightAnchor)
         ])
 
-        // === RECORDING VIEW ===
-        recordingView.translatesAutoresizingMaskIntoConstraints = false
-        recordingView.backgroundColor = .clear
-        recordingView.isHidden = true
-        view.addSubview(recordingView)
-        NSLayoutConstraint.activate([
-            recordingView.topAnchor.constraint(equalTo: view.topAnchor),
-            recordingView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -44),
-            recordingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            recordingView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
+        // === PILL BUTTON ===
+        pillButton = UIView()
+        pillButton.translatesAutoresizingMaskIntoConstraints = false
+        pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+        pillButton.layer.cornerRadius = 24
+        pillButton.isUserInteractionEnabled = true
+        view.addSubview(pillButton)
 
-        let listenLbl = UILabel()
-        listenLbl.text = "Listening..."
-        listenLbl.textColor = .label
-        listenLbl.font = .systemFont(ofSize: 16, weight: .semibold)
-        listenLbl.translatesAutoresizingMaskIntoConstraints = false
-        recordingView.addSubview(listenLbl)
+        let tap = UITapGestureRecognizer(target: self, action: #selector(onPillTap))
+        pillButton.addGestureRecognizer(tap)
 
-        let wv = AudioWaveformView()
-        wv.translatesAutoresizingMaskIntoConstraints = false
-        recordingView.addSubview(wv)
-        waveformView = wv
+        pillIcon = UIImageView()
+        pillIcon.translatesAutoresizingMaskIntoConstraints = false
+        pillIcon.tintColor = .white
+        pillIcon.contentMode = .scaleAspectFit
+        pillButton.addSubview(pillIcon)
 
-        let stopBg = UIView()
-        stopBg.backgroundColor = .systemRed
-        stopBg.layer.cornerRadius = 24
-        stopBg.translatesAutoresizingMaskIntoConstraints = false
-        recordingView.addSubview(stopBg)
-
-        let stopBtn = UIButton(type: .system)
-        stopBtn.setImage(UIImage(systemName: "stop.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18)), for: .normal)
-        stopBtn.tintColor = .white
-        stopBtn.translatesAutoresizingMaskIntoConstraints = false
-        stopBtn.addTarget(self, action: #selector(onStopTap), for: .touchUpInside)
-        stopBg.addSubview(stopBtn)
+        pillLabel = UILabel()
+        pillLabel.translatesAutoresizingMaskIntoConstraints = false
+        pillLabel.textColor = .white
+        pillLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        pillButton.addSubview(pillLabel)
 
         NSLayoutConstraint.activate([
-            listenLbl.centerXAnchor.constraint(equalTo: recordingView.centerXAnchor),
-            listenLbl.topAnchor.constraint(equalTo: recordingView.topAnchor, constant: 16),
+            pillButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            pillButton.topAnchor.constraint(equalTo: waveformView.bottomAnchor, constant: 16),
+            pillButton.heightAnchor.constraint(equalToConstant: 48),
 
-            wv.centerXAnchor.constraint(equalTo: recordingView.centerXAnchor),
-            wv.topAnchor.constraint(equalTo: listenLbl.bottomAnchor, constant: 12),
-            wv.leadingAnchor.constraint(equalTo: recordingView.leadingAnchor, constant: 16),
-            wv.trailingAnchor.constraint(equalTo: recordingView.trailingAnchor, constant: -16),
-            wv.heightAnchor.constraint(equalToConstant: 110),
+            pillIcon.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 20),
+            pillIcon.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
+            pillIcon.widthAnchor.constraint(equalToConstant: 20),
+            pillIcon.heightAnchor.constraint(equalToConstant: 20),
 
-            stopBg.centerXAnchor.constraint(equalTo: recordingView.centerXAnchor),
-            stopBg.topAnchor.constraint(equalTo: wv.bottomAnchor, constant: 12),
-            stopBg.widthAnchor.constraint(equalToConstant: 48),
-            stopBg.heightAnchor.constraint(equalToConstant: 48),
-
-            stopBtn.centerXAnchor.constraint(equalTo: stopBg.centerXAnchor),
-            stopBtn.centerYAnchor.constraint(equalTo: stopBg.centerYAnchor)
+            pillLabel.trailingAnchor.constraint(equalTo: pillButton.trailingAnchor, constant: -20),
+            pillLabel.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor)
         ])
 
-        // === NEXT KEYBOARD BUTTON ===
+        // === NEXT KEYBOARD ===
         let nkb = UIButton(type: .system)
         nkb.setImage(UIImage(systemName: "globe", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18)), for: .normal)
         nkb.tintColor = .label
@@ -262,24 +386,92 @@ class KeyboardViewController: UIInputViewController {
             nkb.heightAnchor.constraint(equalToConstant: 36)
         ])
 
+        labelToIconConstraint = pillLabel.leadingAnchor.constraint(equalTo: pillIcon.trailingAnchor, constant: 8)
+        labelCenteredConstraint = pillLabel.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 20)
+        labelToIconConstraint.isActive = true
+
+        waveformView.startAnimating()
         updateColorsForAppearance()
     }
 
-    @objc private func onMicTap() {
-        idleView.isHidden = true
-        recordingView.isHidden = false
-        waveformView?.startAnimating()
-        startAudioCapture()
+    private func applyPhase(_ phase: Phase, animated: Bool) {
+        currentPhase = phase
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        let activeColor: UIColor = isDark ? .white : .black
+        let idleColor: UIColor = isDark ? UIColor.white.withAlphaComponent(0.25) : UIColor.black.withAlphaComponent(0.2)
+
+        let changes: () -> Void
+        switch phase {
+        case .idle:
+            changes = {
+                self.waveformView.alpha = 1
+                self.progressView.alpha = 0
+                self.waveformView.isActive = false
+                self.waveformView.waveColor = idleColor
+                self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+                self.pillIcon.image = UIImage(systemName: "mic.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))
+                self.pillIcon.isHidden = false
+                self.labelCenteredConstraint.isActive = false
+                self.labelToIconConstraint.isActive = true
+                self.pillLabel.text = "Tap to dictate"
+                self.pillButton.isUserInteractionEnabled = true
+            }
+            progressView.stopAnimating()
+
+        case .recording:
+            changes = {
+                self.waveformView.alpha = 1
+                self.progressView.alpha = 0
+                self.waveformView.isActive = true
+                self.waveformView.waveColor = activeColor
+                self.pillButton.backgroundColor = .systemRed
+                self.pillIcon.image = UIImage(systemName: "stop.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold))
+                self.pillIcon.isHidden = false
+                self.labelCenteredConstraint.isActive = false
+                self.labelToIconConstraint.isActive = true
+                self.pillLabel.text = "Stop dictating"
+                self.pillButton.isUserInteractionEnabled = true
+            }
+
+        case .loading:
+            changes = {
+                self.waveformView.alpha = 0
+                self.progressView.alpha = 1
+                self.pillButton.backgroundColor = UIColor.systemGray3
+                self.pillIcon.image = nil
+                self.pillIcon.isHidden = true
+                self.labelToIconConstraint.isActive = false
+                self.labelCenteredConstraint.isActive = true
+                self.pillLabel.text = "Loading..."
+                self.pillButton.isUserInteractionEnabled = false
+            }
+            progressView.startAnimating()
+        }
+
+        if animated {
+            UIView.animate(withDuration: 0.15, delay: 0, options: .curveEaseInOut, animations: changes)
+        } else {
+            changes()
+        }
     }
 
-    @objc private func onStopTap() {
-        stopAudioCapture()
-        waveformView?.stopAnimating()
-        recordingView.isHidden = true
-        idleView.isHidden = false
+    @objc private func onPillTap() {
+        switch currentPhase {
+        case .idle:
+            applyPhase(.recording, animated: true)
+            startAudioCapture()
+        case .recording:
+            stopAudioCapture()
+            applyPhase(.loading, animated: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.applyPhase(.idle, animated: true)
+            }
+        case .loading:
+            break
+        }
     }
 
-    private var smoothedLevel: Float = 0
+    // MARK: - Audio
 
     private func startAudioCapture() {
         smoothedLevel = 0
@@ -307,9 +499,9 @@ class KeyboardViewController: UIInputViewController {
                 self?.updateLevels()
             }
         } catch {
-            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                let fakeLevel = CGFloat.random(in: 0.3...0.7)
-                self?.waveformView?.updateLevel(fakeLevel)
+            // Fallback simulated
+            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+                self?.waveformView?.updateLevel(CGFloat.random(in: 0.3...0.7))
             }
         }
     }
@@ -319,36 +511,27 @@ class KeyboardViewController: UIInputViewController {
         recorder.updateMeters()
 
         let avgPower = recorder.averagePower(forChannel: 0)
-
-        // dB to linear, then apply a curve for better feel
-        // avgPower ranges from -160 (silence) to 0 (max)
-        // Normalize to 0-1 using a practical range of -50 to 0
         let clampedPower = max(avgPower, -50)
-        let normalized = (clampedPower + 50) / 50  // 0 to 1
-
-        // Apply a curve so small sounds are more visible
+        let normalized = (clampedPower + 50) / 50
         let curved = pow(normalized, 0.7)
 
-        // Smooth at the source too for extra stability
         let attack: Float = 0.4
         let decay: Float = 0.4
         let s = curved > smoothedLevel ? attack : decay
         smoothedLevel += (curved - smoothedLevel) * s
 
-        let final = max(smoothedLevel, 0.08)
-
-        waveformView?.updateLevel(CGFloat(final))
+        waveformView.updateLevel(CGFloat(max(smoothedLevel, 0.08)))
     }
 
     private func stopAudioCapture() {
         levelTimer?.invalidate()
         levelTimer = nil
-
         audioRecorder?.stop()
         audioRecorder = nil
-
         try? AVAudioSession.sharedInstance().setActive(false)
     }
+
+    // MARK: - System
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
@@ -357,9 +540,11 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if !recordingView.isHidden {
-            onStopTap()
+        if currentPhase == .recording {
+            stopAudioCapture()
         }
+        waveformView.stopAnimating()
+        progressView.stopAnimating()
     }
 
     override func textWillChange(_ textInput: UITextInput?) {}
