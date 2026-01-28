@@ -464,6 +464,7 @@ class KeyboardViewController: UIInputViewController {
             stopAudioCapture()
             applyPhase(.loading, animated: true)
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.textDocumentProxy.insertText("Hello World")
                 self?.applyPhase(.idle, animated: true)
             }
         case .loading:
