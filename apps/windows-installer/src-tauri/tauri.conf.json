@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.voquill.installer",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "vite",
     "devUrl": "http://localhost:1421",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"

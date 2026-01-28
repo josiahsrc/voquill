@@ -18,7 +18,8 @@ tempfile = "3"
 windows = { version = "0.58", features = [
   "Win32_Foundation",
   "Win32_System_Threading",
-  "Win32_UI_WindowsAndMessaging"
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_Graphics_Dwm"
 ] }
 
 [profile.release]
