@@ -36,3 +36,7 @@ export function getSttModel(): string {
 export function getLlmModel(): string {
   return process.env.LLM_MODEL || "llama3.2:1b";
 }
+
+export function getGatewayVersion(): string {
+  return process.env.GATEWAY_VERSION || "0.0.1";
+}

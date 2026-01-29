@@ -45,6 +45,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "./utils/error.utils";
+import { getGatewayVersion } from "./utils/env.utils";
 import { validateData } from "./utils/validation.utils";
 
 const app = express();
@@ -130,6 +131,9 @@ app.post("/handler", async (req: Request, res: Response) => {
         auth,
         input: validateData(AiTranscribeAudioInputZod, input),
       });
+    } else if (name === "system/getVersion") {
+      validateData(EmptyObjectZod, input);
+      data = { version: getGatewayVersion() };
     } else if (name === "config/getFullConfig") {
       validateData(EmptyObjectZod, input);
       data = await getFullConfig();

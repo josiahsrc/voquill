@@ -210,6 +210,14 @@ type HandlerDefinitions = {
     };
   };
 
+  // system
+  "system/getVersion": {
+    input: EmptyObject;
+    output: {
+      version: string;
+    };
+  };
+
   // config
   "config/getFullConfig": {
     input: EmptyObject;

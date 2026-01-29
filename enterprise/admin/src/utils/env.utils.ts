@@ -9,3 +9,7 @@ export function isDev(): boolean {
 export function getAppName(): string {
   return import.meta.env.VITE_APP_NAME || "Voquill Enterprise";
 }
+
+export function getAppVersion(): string {
+  return import.meta.env.VITE_VERSION || "0.0.1";
+}
