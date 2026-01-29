@@ -7,12 +7,12 @@ import {
   IconButton,
   Typography,
 } from "@mui/material";
-import type { SttProvider } from "@repo/types";
+import type { LlmProvider } from "@repo/types";
 import { useEffect, useMemo, useState } from "react";
 import {
-  deleteSttProvider,
-  loadSttProviders,
-} from "../../actions/stt-providers.actions";
+  deleteLlmProvider,
+  loadLlmProviders,
+} from "../../actions/llm-providers.actions";
 import { useAppStore } from "../../store";
 import { AppTable, type ColumnDef } from "../common/AppTable";
 import { CenteredMessage } from "../common/CenteredMessage";
@@ -22,17 +22,17 @@ import {
 } from "../common/MenuPopover";
 import { TabLayout } from "../common/TabLayout";
 import {
-  SttProviderDialog,
+  LlmProviderDialog,
   emptyForm,
   formFromProvider,
-} from "./SttProviderDialog";
+} from "./LlmProviderDialog";
 
 const ProviderActionsMenu = ({
   provider,
   onEdit,
 }: {
-  provider: SttProvider;
-  onEdit: (p: SttProvider) => void;
+  provider: LlmProvider;
+  onEdit: (p: LlmProvider) => void;
 }) => {
   const items: MenuPopoverItem[] = [
     {
@@ -50,7 +50,7 @@ const ProviderActionsMenu = ({
       title: "Delete",
       leading: <Delete fontSize="small" />,
       onClick: ({ close }) => {
-        deleteSttProvider(provider.id);
+        deleteLlmProvider(provider.id);
         close();
       },
     },
@@ -67,23 +67,23 @@ const ProviderActionsMenu = ({
   );
 };
 
-export default function SttProvidersTab() {
-  const providerIds = useAppStore((state) => state.sttProviders.providerIds);
-  const providerById = useAppStore((state) => state.sttProviderById);
-  const status = useAppStore((state) => state.sttProviders.status);
+export default function LlmProvidersTab() {
+  const providerIds = useAppStore((state) => state.llmProviders.providerIds);
+  const providerById = useAppStore((state) => state.llmProviderById);
+  const status = useAppStore((state) => state.llmProviders.status);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
 
   useEffect(() => {
-    loadSttProviders();
+    loadLlmProviders();
   }, []);
 
   const providers = useMemo(
     () =>
       providerIds
         .map((id) => providerById[id])
-        .filter(Boolean) as SttProvider[],
+        .filter(Boolean) as LlmProvider[],
     [providerIds, providerById],
   );
 
@@ -92,12 +92,12 @@ export default function SttProvidersTab() {
     setDialogOpen(true);
   };
 
-  const openEdit = (provider: SttProvider) => {
+  const openEdit = (provider: LlmProvider) => {
     setForm(formFromProvider(provider));
     setDialogOpen(true);
   };
 
-  const columns: ColumnDef<SttProvider>[] = [
+  const columns: ColumnDef<LlmProvider>[] = [
     {
       header: "Name",
       cell: (row) => row.name,
@@ -164,10 +164,10 @@ export default function SttProvidersTab() {
 
   if (status === "error") {
     return (
-      <TabLayout title="Transcription Providers">
+      <TabLayout title="AI Providers">
         <CenteredMessage>
           <Typography color="error">Failed to load providers.</Typography>
-          <Button variant="outlined" onClick={() => loadSttProviders()}>
+          <Button variant="outlined" onClick={() => loadLlmProviders()}>
             Retry
           </Button>
         </CenteredMessage>
@@ -177,7 +177,7 @@ export default function SttProvidersTab() {
 
   return (
     <TabLayout
-      title="Transcription Providers"
+      title="AI Providers"
       trailing={
         <Button
           startIcon={<Add />}
@@ -195,10 +195,10 @@ export default function SttProvidersTab() {
         defaultSortColumnIndex={0}
         fixedItemHeight={52}
         sx={{ height: "100%" }}
-        emptyMessage="No transcription providers configured"
+        emptyMessage="No AI providers configured"
       />
 
-      <SttProviderDialog
+      <LlmProviderDialog
         open={dialogOpen}
         form={form}
         onFormChange={setForm}

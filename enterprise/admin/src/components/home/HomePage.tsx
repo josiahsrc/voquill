@@ -1,4 +1,5 @@
 import {
+  AutoFixHighOutlined,
   ClassOutlined,
   GroupOutlined,
   MicOutlined,
@@ -27,6 +28,11 @@ const NAV_ITEMS = [
     label: "Transcription Providers",
     path: "/stt-providers",
     icon: <MicOutlined />,
+  },
+  {
+    label: "AI Providers",
+    path: "/llm-providers",
+    icon: <AutoFixHighOutlined />,
   },
   { label: "Settings", path: "/settings", icon: <SettingsOutlined /> },
 ];

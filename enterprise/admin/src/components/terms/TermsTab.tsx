@@ -164,6 +164,7 @@ export default function TermsTab() {
         defaultSortColumnIndex={0}
         fixedItemHeight={52}
         sx={{ height: "100%" }}
+        emptyMessage="No global dictionary terms"
       />
 
       <TermDialog

@@ -1,4 +1,4 @@
-import type { SttProvider, Term, UserWithAuth } from "@repo/types";
+import type { LlmProvider, SttProvider, Term, UserWithAuth } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -37,5 +37,14 @@ export const registerSttProviders = (
 ): void => {
   for (const provider of providers) {
     draft.sttProviderById[provider.id] = provider;
+  }
+};
+
+export const registerLlmProviders = (
+  draft: AppState,
+  providers: LlmProvider[],
+): void => {
+  for (const provider of providers) {
+    draft.llmProviderById[provider.id] = provider;
   }
 };

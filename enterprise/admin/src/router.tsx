@@ -18,6 +18,9 @@ const TermsTab = lazyLoad(() => import("./components/terms/TermsTab"));
 const SttProvidersTab = lazyLoad(
   () => import("./components/stt-providers/SttProvidersTab"),
 );
+const LlmProvidersTab = lazyLoad(
+  () => import("./components/llm-providers/LlmProvidersTab"),
+);
 const SettingsTab = lazyLoad(() => import("./components/settings/SettingsTab"));
 
 const router = createBrowserRouter([
@@ -33,6 +36,7 @@ const router = createBrowserRouter([
       { path: "users", element: <UsersTab /> },
       { path: "terms", element: <TermsTab /> },
       { path: "stt-providers", element: <SttProvidersTab /> },
+      { path: "llm-providers", element: <LlmProvidersTab /> },
       { path: "settings", element: <SettingsTab /> },
     ],
   },

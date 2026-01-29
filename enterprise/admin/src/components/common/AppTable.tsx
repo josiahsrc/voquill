@@ -49,6 +49,7 @@ export interface AppTableProps<T> {
   defaultSortColumnIndex?: number;
   defaultSortDirection?: SortDirection;
   fixedItemHeight?: number;
+  emptyMessage?: string;
 }
 
 type SortDirection = "asc" | "desc";
@@ -62,6 +63,7 @@ export function AppTable<T>({
   defaultSortColumnIndex,
   defaultSortDirection = "asc",
   fixedItemHeight,
+  emptyMessage,
 }: AppTableProps<T>) {
   const [sortIdx, setSortIdx] = React.useState<number | null>(
     defaultSortColumnIndex ?? null,
@@ -222,7 +224,7 @@ export function AppTable<T>({
   }, [footer]);
 
   return (
-    <Paper sx={sx}>
+    <Paper sx={{ ...((sx ?? {}) as any), position: "relative" }}>
       <TableVirtuoso
         data={sortedRows}
         components={VirtuosoComponents}
@@ -231,6 +233,23 @@ export function AppTable<T>({
         fixedFooterContent={(footer ? FixedFooterContent : undefined) as any}
         fixedItemHeight={fixedItemHeight}
       />
+      {emptyMessage && sortedRows.length === 0 && (
+        <TableCell
+          component="div"
+          sx={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "text.secondary",
+            pointerEvents: "none",
+            border: "none",
+          }}
+        >
+          {emptyMessage}
+        </TableCell>
+      )}
     </Paper>
   );
 }

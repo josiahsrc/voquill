@@ -154,6 +154,7 @@ export default function UsersTab() {
         defaultSortColumnIndex={0}
         fixedItemHeight={52}
         sx={{ height: "100%" }}
+        emptyMessage="No users"
       />
     </TabLayout>
   );
