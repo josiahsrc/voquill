@@ -43,6 +43,7 @@ import {
   openrouterTestIntegration,
   TRANSCRIPTION_MODELS,
 } from "@repo/voice-ai";
+import { speachesTestIntegration } from "../../utils/speaches.utils";
 import { useCallback, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {
@@ -80,6 +81,7 @@ type AddApiKeyCardProps = {
     key: string,
     baseUrl?: string,
     azureRegion?: string,
+    transcriptionModel?: string,
   ) => Promise<void>;
   onCancel: () => void;
   context: ApiKeyListContext;
@@ -92,20 +94,25 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [ollamaUrl, setOllamaUrl] = useState("");
   const [azureRegion, setAzureRegion] = useState("");
   const [azureOpenAIEndpoint, setAzureOpenAIEndpoint] = useState("");
+  const [speachesUrl, setSpeachesUrl] = useState("");
+  const [speachesModel, setSpeachesModel] = useState("");
   const [saving, setSaving] = useState(false);
 
   const isOllama = provider === "ollama";
   const isAzure = provider === "azure";
   const isAzureOpenAI = isAzure && context === "post-processing";
   const isAzureSTT = isAzure && context === "transcription";
+  const isSpeaches = provider === "speaches";
 
   const canSave = isOllama
     ? !!name
-    : isAzureSTT
-      ? !!name && !!key && !!azureRegion
-      : isAzureOpenAI
-        ? !!name && !!key && !!azureOpenAIEndpoint
-        : !!name && !!key;
+    : isSpeaches
+      ? !!name
+      : isAzureSTT
+        ? !!name && !!key && !!azureRegion
+        : isAzureOpenAI
+          ? !!name && !!key && !!azureOpenAIEndpoint
+          : !!name && !!key;
 
   const handleSave = useCallback(async () => {
     if (!canSave || saving) {
@@ -117,16 +124,21 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       const keyToSave = key || "";
       const baseUrl = isOllama
         ? ollamaUrl || OLLAMA_DEFAULT_URL
-        : isAzureOpenAI
-          ? azureOpenAIEndpoint
-          : undefined;
+        : isSpeaches
+          ? speachesUrl || "http://localhost:8000"
+          : isAzureOpenAI
+            ? azureOpenAIEndpoint
+            : undefined;
       const azureRegionValue = isAzureSTT ? azureRegion : undefined;
-      await onSave(name, provider, keyToSave, baseUrl, azureRegionValue);
+      const transcriptionModelValue = isSpeaches ? speachesModel || undefined : undefined;
+      await onSave(name, provider, keyToSave, baseUrl, azureRegionValue, transcriptionModelValue);
       setName("");
       setKey("");
       setOllamaUrl("");
       setAzureRegion("");
       setAzureOpenAIEndpoint("");
+      setSpeachesUrl("");
+      setSpeachesModel("");
     } catch (error) {
       console.error("Failed to save API key", error);
     } finally {
@@ -135,11 +147,14 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   }, [
     canSave,
     isOllama,
+    isSpeaches,
     isAzureOpenAI,
     isAzureSTT,
     name,
     key,
     ollamaUrl,
+    speachesUrl,
+    speachesModel,
     azureRegion,
     azureOpenAIEndpoint,
     provider,
@@ -211,6 +226,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         )}
         {context === "transcription" && (
           <MenuItem value="azure">Azure</MenuItem>
+        )}
+        {context === "transcription" && (
+          <MenuItem value="speaches">Speaches</MenuItem>
         )}
       </TextField>
       {isAzure ? (
@@ -295,6 +313,33 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
             }
           />
         </>
+      ) : isSpeaches ? (
+        <>
+          <TextField
+            label={<FormattedMessage defaultMessage="Speaches URL" />}
+            value={speachesUrl}
+            onChange={(event) => setSpeachesUrl(event.target.value)}
+            placeholder="http://localhost:8000"
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="URL of your local Speaches Docker instance" />
+            }
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="Model" />}
+            value={speachesModel}
+            onChange={(event) => setSpeachesModel(event.target.value)}
+            placeholder="Systran/faster-whisper-large-v3"
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
+            }
+          />
+        </>
       ) : (
         <TextField
           label={<FormattedMessage defaultMessage="API key" />}
@@ -341,6 +386,12 @@ const testApiKey = async (
     return ollamaTestIntegration({
       baseUrl: apiKey.baseUrl || OLLAMA_DEFAULT_URL,
       apiKey: apiKey.keyFull || undefined,
+    });
+  }
+
+  if (apiKey.provider === "speaches") {
+    return speachesTestIntegration({
+      baseUrl: apiKey.baseUrl || "http://localhost:8000",
     });
   }
 
@@ -426,6 +477,8 @@ const getModelsForProvider = (
     case "deepgram":
       return [];
     case "elevenlabs":
+      return [];
+    case "speaches":
       return [];
     default:
       return [];
@@ -567,6 +620,20 @@ const ApiKeyCard = ({
             disabled={testing || deleting}
           />
         </Box>
+      ) : apiKey.provider === "speaches" ? (
+        <TextField
+          label={<FormattedMessage defaultMessage="Model" />}
+          value={currentModel ?? ""}
+          onChange={(event) => onModelChange(event.target.value || null)}
+          onClick={(e) => e.stopPropagation()}
+          placeholder="Systran/faster-whisper-large-v3"
+          size="small"
+          fullWidth
+          disabled={testing || deleting}
+          helperText={
+            <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
+          }
+        />
       ) : models.length > 0 ? (
         <FormControl fullWidth size="small">
           <InputLabel id={`model-select-label-${apiKey.id}`}>
@@ -617,13 +684,14 @@ export const ApiKeyList = ({
     ) {
       return false;
     }
-    // Aldea, AssemblyAI, Deepgram, and ElevenLabs only support transcription
+    // Aldea, AssemblyAI, Deepgram, ElevenLabs, and Speaches only support transcription
     if (
       context === "post-processing" &&
       (key.provider === "aldea" ||
         key.provider === "assemblyai" ||
         key.provider === "deepgram" ||
-        key.provider === "elevenlabs")
+        key.provider === "elevenlabs" ||
+        key.provider === "speaches")
     ) {
       return false;
     }
@@ -670,6 +738,7 @@ export const ApiKeyList = ({
       key: string,
       baseUrl?: string,
       azureRegion?: string,
+      transcriptionModel?: string,
     ) => {
       const created = await createApiKey({
         id: generateApiKeyId(),
@@ -679,6 +748,10 @@ export const ApiKeyList = ({
         baseUrl,
         azureRegion,
       });
+
+      if (transcriptionModel) {
+        await updateApiKey({ id: created.id, transcriptionModel });
+      }
 
       onChange(created.id);
       setShowAddCard(false);
