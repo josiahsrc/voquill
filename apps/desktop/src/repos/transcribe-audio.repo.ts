@@ -11,6 +11,7 @@ import {
   OpenAITranscriptionModel,
   TranscriptionModel,
 } from "@repo/voice-ai";
+import { speachesTranscribeAudio } from "../utils/speaches.utils";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
 import {
@@ -525,6 +526,53 @@ export class GeminiTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: transcript,
       metadata: {
         inferenceDevice: "API • Gemini",
+        modelSize: this.model,
+        transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class SpeachesTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private baseUrl: string;
+  private model: string;
+
+  constructor(baseUrl: string, model: string) {
+    super();
+    this.baseUrl = baseUrl;
+    this.model = model;
+  }
+
+  protected getSegmentDurationSec(): number {
+    return 60;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 5;
+  }
+
+  protected getBatchChunkCount(): number {
+    return 3;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wavBuffer = buildWaveFile(input.samples, input.sampleRate);
+
+    const { text: transcript } = await speachesTranscribeAudio({
+      baseUrl: this.baseUrl,
+      model: this.model,
+      blob: wavBuffer,
+      ext: "wav",
+      prompt: input.prompt ?? undefined,
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • Speaches",
         modelSize: this.model,
         transcriptionMode: "api",
       },
