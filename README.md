@@ -22,7 +22,7 @@ Voquill is an open-source, cross-platform speech-to-text workspace that lets you
 - Choose your engine: run Whisper locally (with optional GPU acceleration) or point to Groq's hosted Whisper via your own API key.
 - AI text cleanup: remove filler words and false starts automatically with the post-processing pipeline in `@repo/voice-ai`.
 - Personal dictionary: create glossary terms and replacement rules so recurring names and phrases stay accurate.
-- Batteries included: Tauri auto-updates, Firebase functions for billing and demos, and shared utilities/types that keep every surface consistent.
+- Batteries included: Tauri auto-updates, Firebase functions for billing and demos, and shared utilities/types 
 
 ## Monorepo Layout
 
