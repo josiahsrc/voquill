@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { describe, it, expect, beforeAll } from "vitest";
-import { invoke } from "../helpers";
+import { invoke, createTestSttProvider } from "../helpers";
 
 const MUFFIN_MAN_WAV = resolve(
   __dirname,
@@ -19,6 +19,7 @@ describe("ai/transcribeAudio integration", () => {
       password: "password123",
     });
     token = data.token;
+    await createTestSttProvider(token);
     audioBase64 = readFileSync(MUFFIN_MAN_WAV).toString("base64");
   });
 

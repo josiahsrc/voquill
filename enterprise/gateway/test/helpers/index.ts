@@ -43,3 +43,36 @@ export async function invoke(name: string, input: unknown, token?: string) {
   }
   return body.data;
 }
+
+export async function createTestSttProvider(token: string): Promise<void> {
+  const adminToken = await promoteToAdmin(token);
+  await invoke(
+    "sttProvider/upsert",
+    {
+      provider: {
+        id: "00000000-0000-0000-0000-000000000001",
+        provider: "openai",
+        name: "Test Speaches",
+        url: "http://speaches:8000/v1",
+        model: "Systran/faster-whisper-base",
+        apiKey: "sk-test-stt-provider-key",
+        isEnabled: true,
+      },
+    },
+    adminToken,
+  );
+}
+
+async function promoteToAdmin(token: string): Promise<string> {
+  const payload = JSON.parse(
+    Buffer.from(token.split(".")[1], "base64").toString(),
+  );
+  await query("UPDATE auth SET is_admin = true WHERE id = $1", [
+    payload.userId,
+  ]);
+  const data = await invoke("auth/login", {
+    email: payload.email,
+    password: "password123",
+  });
+  return data.token;
+}

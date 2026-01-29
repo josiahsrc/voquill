@@ -60,6 +60,14 @@ export async function upsertSttProvider(opts: {
   }
 }
 
+export async function listEnabledSttProvidersWithKeys(): Promise<SttProviderRow[]> {
+  const pool = getPool();
+  const result = await pool.query(
+    "SELECT * FROM stt_providers WHERE is_enabled = true ORDER BY created_at",
+  );
+  return result.rows;
+}
+
 export async function deleteSttProvider(id: string): Promise<void> {
   const pool = getPool();
   await pool.query("DELETE FROM stt_providers WHERE id = $1", [id]);

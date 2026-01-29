@@ -21,16 +21,8 @@ export function clearEnvCache() {
   _numberedEnvCache.clear();
 }
 
-export function getSttServerUrls(): string[] {
-  return getNumberedEnv("STT_SERVER_URL");
-}
-
 export function getLlmServerUrls(): string[] {
   return getNumberedEnv("LLM_SERVER_URL");
-}
-
-export function getSttModel(): string {
-  return process.env.STT_MODEL || "Systran/faster-whisper-base";
 }
 
 export function getLlmModel(): string {

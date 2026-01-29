@@ -19,8 +19,6 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/voquill
       - JWT_SECRET=development-secret-change-in-production
-      - STT_SERVER_URL_0=http://speaches:8000/v1
-      - STT_MODEL=Systran/faster-whisper-base
       - LLM_SERVER_URL_0=http://ollama:11434
       - LLM_MODEL=llama3.2:1b
     depends_on:

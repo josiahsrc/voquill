@@ -1,4 +1,4 @@
-import { invoke } from "../helpers";
+import { invoke, createTestSttProvider } from "../helpers";
 
 describe("ai/transcribeAudio", () => {
   let token: string;
@@ -10,6 +10,7 @@ describe("ai/transcribeAudio", () => {
       password: "password123",
     });
     token = data.token;
+    await createTestSttProvider(token);
   });
 
   it("returns simulated transcription", async () => {

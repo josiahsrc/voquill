@@ -1,9 +1,11 @@
 import type { HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
-import OpenAI, { toFile } from "openai";
+import OpenAI from "openai";
+import { listEnabledSttProvidersWithKeys } from "../repo/stt-provider.repo";
 import { requireAuth } from "../utils/auth.utils";
-import { getLlmModel, getLlmServerUrls, getSttModel, getSttServerUrls } from "../utils/env.utils";
+import { getLlmModel, getLlmServerUrls } from "../utils/env.utils";
 import { ClientError } from "../utils/error.utils";
+import { createTranscriptionApi } from "../utils/stt-provider.utils";
 
 const MAX_BLOB_BYTES = 16 * 1024 * 1024;
 
@@ -19,8 +21,8 @@ const MIME_TO_EXT: Record<string, string> = {
   "audio/flac": "flac",
 };
 
-let sttIndex = 0;
 let llmIndex = 0;
+let sttIndex = 0;
 
 function getNextLlmClient(): OpenAI {
   const urls = getLlmServerUrls();
@@ -30,16 +32,6 @@ function getNextLlmClient(): OpenAI {
   const url = urls[llmIndex % urls.length];
   llmIndex++;
   return new OpenAI({ baseURL: `${url}/v1`, apiKey: "-" });
-}
-
-function getNextSttClient(): OpenAI {
-  const urls = getSttServerUrls();
-  if (urls.length === 0) {
-    throw new Error("No STT_SERVER_URL_N environment variables configured");
-  }
-  const url = urls[sttIndex % urls.length];
-  sttIndex++;
-  return new OpenAI({ baseURL: url, apiKey: "-" });
 }
 
 export async function transcribeAudio(opts: {
@@ -68,14 +60,19 @@ export async function transcribeAudio(opts: {
     return { text: "Simulated response" };
   }
 
-  const client = getNextSttClient();
-  const file = await toFile(blob, `audio.${ext}`, {
-    type: input.audioMimeType,
-  });
-  const result = await client.audio.transcriptions.create({
-    file,
-    model: getSttModel(),
-    prompt: input.prompt ?? undefined,
+  const providers = await listEnabledSttProvidersWithKeys();
+  if (providers.length === 0) {
+    throw new Error("No enabled STT providers configured");
+  }
+
+  const provider = providers[sttIndex % providers.length];
+  sttIndex++;
+
+  const transcription = createTranscriptionApi(provider);
+  const result = await transcription.transcribe({
+    audioBuffer: blob,
+    mimeType: input.audioMimeType,
+    prompt: input.prompt,
     language: input.language,
   });
 
