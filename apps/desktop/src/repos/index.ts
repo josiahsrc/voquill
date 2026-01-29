@@ -43,6 +43,7 @@ import {
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
+  SpeachesTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
 import {
   BaseTranscriptionRepo,
@@ -239,6 +240,15 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
         prefs.apiKeyValue,
         prefs.transcriptionModel,
       );
+    } else if (prefs.provider === "speaches") {
+      const state = getAppState();
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl || "http://localhost:8000";
+      const model = prefs.transcriptionModel || "Systran/faster-whisper-large-v3";
+      if (!model) {
+        prefs.warnings.push("No model configured for Speaches transcription.");
+      }
+      repo = new SpeachesTranscribeAudioRepo(baseUrl, model || "Systran/faster-whisper-large-v3");
     } else {
       repo = new GroqTranscribeAudioRepo(
         prefs.apiKeyValue,
