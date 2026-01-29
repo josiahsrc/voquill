@@ -7,5 +7,7 @@ export type LlmProviderRow = {
   api_key_suffix: string;
   model: string;
   is_enabled: boolean;
+  pull_status: string;
+  pull_error: string | null;
   created_at: Date;
 };

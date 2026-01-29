@@ -11,6 +11,8 @@ function rowToLlmProvider(row: LlmProviderRow): LlmProvider {
     apiKeySuffix: row.api_key_suffix,
     model: row.model,
     isEnabled: row.is_enabled,
+    pullStatus: row.pull_status as LlmProvider["pullStatus"],
+    pullError: row.pull_error,
     createdAt: row.created_at.toISOString(),
   };
 }

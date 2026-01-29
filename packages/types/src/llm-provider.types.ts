@@ -1,3 +1,4 @@
+import type { PullStatus } from "./common.types";
 import z from "zod";
 
 export type LlmProvider = {
@@ -8,6 +9,8 @@ export type LlmProvider = {
   apiKeySuffix: string;
   model: string;
   isEnabled: boolean;
+  pullStatus: PullStatus;
+  pullError: string | null;
   createdAt: string;
 };
 

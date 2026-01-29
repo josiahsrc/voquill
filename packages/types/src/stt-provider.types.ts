@@ -1,3 +1,4 @@
+import type { PullStatus } from "./common.types";
 import z from "zod";
 
 export type SttProvider = {
@@ -8,6 +9,8 @@ export type SttProvider = {
   apiKeySuffix: string;
   model: string;
   isEnabled: boolean;
+  pullStatus: PullStatus;
+  pullError: string | null;
   createdAt: string;
 };
 
