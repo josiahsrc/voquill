@@ -1,11 +1,19 @@
 import type { HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
 import { v4 as uuid } from "uuid";
-import { listSttProviders, upsertSttProvider, deleteSttProvider } from "../repo/stt-provider.repo";
+import {
+  listSttProviders,
+  upsertSttProvider,
+  deleteSttProvider,
+  getSttProviderRowById,
+  getSttProviderById,
+  updateSttPullStatus,
+} from "../repo/stt-provider.repo";
 import { requireAuth } from "../utils/auth.utils";
 import { encryptApiKey } from "../utils/crypto.utils";
 import { getEncryptionSecret } from "../utils/env.utils";
-import { UnauthorizedError } from "../utils/error.utils";
+import { NotFoundError, UnauthorizedError } from "../utils/error.utils";
+import { createTranscriptionApi } from "../utils/stt-provider.utils";
 
 function requireAdmin(auth: AuthContext): void {
   if (!auth.isAdmin) {
@@ -59,4 +67,28 @@ export async function deleteSttProviderHandler(opts: {
   requireAdmin(auth);
   await deleteSttProvider(opts.input.providerId);
   return {};
+}
+
+export async function pullSttProviderHandler(opts: {
+  auth: Nullable<AuthContext>;
+  input: HandlerInput<"sttProvider/pull">;
+}): Promise<HandlerOutput<"sttProvider/pull">> {
+  const auth = requireAuth(opts.auth);
+  requireAdmin(auth);
+
+  const row = await getSttProviderRowById(opts.input.providerId);
+  if (!row) {
+    throw new NotFoundError("STT provider not found");
+  }
+
+  const api = createTranscriptionApi(row);
+  const result = await api.pullModel();
+  if (result.done) {
+    await updateSttPullStatus(row.id, "complete", null);
+  } else {
+    await updateSttPullStatus(row.id, "error", result.error ?? "Unknown error");
+  }
+
+  const provider = await getSttProviderById(row.id);
+  return { provider };
 }

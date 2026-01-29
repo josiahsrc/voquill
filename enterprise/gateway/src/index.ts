@@ -8,6 +8,7 @@ import {
   AuthRegisterInputZod,
   DeleteLlmProviderInputZod,
   DeleteSttProviderInputZod,
+  PullSttProviderInputZod,
   DeleteTermInputZod,
   EmptyObjectZod,
   SetMyUserInputZod,
@@ -42,6 +43,7 @@ import {
 import {
   deleteSttProviderHandler,
   listSttProvidersHandler,
+  pullSttProviderHandler,
   upsertSttProviderHandler,
 } from "./services/stt-provider.service";
 import {
@@ -154,6 +156,11 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await deleteSttProviderHandler({
         auth,
         input: validateData(DeleteSttProviderInputZod, input),
+      });
+    } else if (name === "sttProvider/pull") {
+      data = await pullSttProviderHandler({
+        auth,
+        input: validateData(PullSttProviderInputZod, input),
       });
     } else if (name === "llmProvider/list") {
       validateData(EmptyObjectZod, input);

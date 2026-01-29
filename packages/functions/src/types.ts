@@ -241,6 +241,14 @@ type HandlerDefinitions = {
     };
     output: EmptyObject;
   };
+  "sttProvider/pull": {
+    input: {
+      providerId: string;
+    };
+    output: {
+      provider: Nullable<SttProvider>;
+    };
+  };
 
   // llm providers
   "llmProvider/list": {
@@ -393,6 +401,12 @@ export const DeleteSttProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"sttProvider/delete">>;
+
+export const PullSttProviderInputZod = z
+  .object({
+    providerId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"sttProvider/pull">>;
 
 export const UpsertLlmProviderInputZod = z
   .object({
