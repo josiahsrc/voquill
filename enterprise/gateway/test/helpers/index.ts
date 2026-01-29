@@ -1,6 +1,8 @@
 import pg from "pg";
 
-const BASE_URL = process.env.GATEWAY_URL || "http://localhost:3000";
+export * from "./audio";
+
+const BASE_URL = process.env.GATEWAY_URL || "http://localhost:4630";
 const DATABASE_URL =
   process.env.DATABASE_URL ||
   "postgres://postgres:postgres@localhost:5432/voquill";
@@ -14,7 +16,10 @@ export function getTestPool(): pg.Pool {
   return pool;
 }
 
-export async function query(sql: string, params?: unknown[]): Promise<pg.QueryResult> {
+export async function query(
+  sql: string,
+  params?: unknown[],
+): Promise<pg.QueryResult> {
   return getTestPool().query(sql, params);
 }
 

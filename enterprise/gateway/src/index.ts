@@ -3,6 +3,7 @@ import {
   AiTranscribeAudioInputZod,
   AuthLoginInputZod,
   AuthMakeAdminInputZod,
+  AuthRefreshInputZod,
   AuthRegisterInputZod,
   DeleteTermInputZod,
   EmptyObjectZod,
@@ -10,16 +11,33 @@ import {
   UpsertTermInputZod,
   type HandlerName,
 } from "@repo/functions";
+import cors from "cors";
 import type { Request, Response } from "express";
 import express from "express";
-import cors from "cors";
 import { runMigrations } from "./db/migrate";
-import { login, logout, makeAdmin, refresh, register } from "./services/auth.service";
 import { generateText, transcribeAudio } from "./services/ai.service";
+import {
+  login,
+  logout,
+  makeAdmin,
+  refresh,
+  register,
+} from "./services/auth.service";
 import { getFullConfig } from "./services/config.service";
 import { getMyMember, tryInitialize } from "./services/member.service";
-import { listMyTerms, upsertMyTerm, deleteMyTerm, listGlobalTermsHandler, upsertGlobalTermHandler, deleteGlobalTermHandler } from "./services/term.service";
-import { getMyUser, setMyUser, listAllUsersHandler } from "./services/user.service";
+import {
+  deleteGlobalTermHandler,
+  deleteMyTerm,
+  listGlobalTermsHandler,
+  listMyTerms,
+  upsertGlobalTermHandler,
+  upsertMyTerm,
+} from "./services/term.service";
+import {
+  getMyUser,
+  listAllUsersHandler,
+  setMyUser,
+} from "./services/user.service";
 import { extractAuth } from "./utils/auth.utils";
 import {
   ClientError,
@@ -53,8 +71,7 @@ app.post("/handler", async (req: Request, res: Response) => {
       validateData(EmptyObjectZod, input);
       data = await logout();
     } else if (name === "auth/refresh") {
-      validateData(EmptyObjectZod, input);
-      data = await refresh({ auth });
+      data = await refresh({ input: validateData(AuthRefreshInputZod, input) });
     } else if (name === "auth/makeAdmin") {
       data = await makeAdmin({
         auth,
@@ -141,7 +158,7 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4630;
 
 async function main() {
   await runMigrations();

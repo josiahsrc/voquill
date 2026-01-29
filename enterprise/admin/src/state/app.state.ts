@@ -8,6 +8,7 @@ export type AppState = {
   initialized: boolean;
   auth: Nullable<AuthContext>;
   token: Nullable<string>;
+  refreshToken: Nullable<string>;
 
   termById: Record<string, Term>;
 
@@ -25,6 +26,7 @@ export const INITIAL_APP_STATE: AppState = {
   initialized: false,
   auth: null,
   token: null,
+  refreshToken: null,
 
   termById: {},
 

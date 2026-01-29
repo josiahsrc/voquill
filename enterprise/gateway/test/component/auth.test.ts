@@ -11,6 +11,8 @@ describe("auth", () => {
 
     expect(data.token).toBeDefined();
     expect(typeof data.token).toBe("string");
+    expect(data.refreshToken).toBeDefined();
+    expect(typeof data.refreshToken).toBe("string");
     expect(data.auth).toBeDefined();
     expect(data.auth.id).toBeDefined();
     expect(data.auth.email).toBe(email);
@@ -28,6 +30,7 @@ describe("auth", () => {
     const data = await invoke("auth/login", { email, password });
 
     expect(data.token).toBeDefined();
+    expect(data.refreshToken).toBeDefined();
     expect(data.auth).toBeDefined();
     expect(data.auth.id).toBeDefined();
     expect(data.auth.email).toBe(email);
@@ -76,20 +79,21 @@ describe("auth", () => {
 
   describe("auth/refresh", () => {
     const refreshEmail = `refresh-${Date.now()}@example.com`;
-    let token: string;
+    let refreshToken: string;
     let userId: string;
 
     beforeAll(async () => {
       const data = await invoke("auth/register", { email: refreshEmail, password });
-      token = data.token;
+      refreshToken = data.refreshToken;
       userId = data.auth.id;
     });
 
     it("returns a fresh token with current auth data", async () => {
-      const data = await invoke("auth/refresh", {}, token);
+      const data = await invoke("auth/refresh", { refreshToken });
 
       expect(data.token).toBeDefined();
       expect(typeof data.token).toBe("string");
+      expect(data.refreshToken).toBeDefined();
       expect(data.auth.id).toBe(userId);
       expect(data.auth.email).toBe(refreshEmail);
       expect(data.auth.isAdmin).toBe(false);
@@ -98,15 +102,15 @@ describe("auth", () => {
     it("reflects updated isAdmin after promotion", async () => {
       await query("UPDATE auth SET is_admin = TRUE WHERE id = $1", [userId]);
 
-      const data = await invoke("auth/refresh", {}, token);
+      const data = await invoke("auth/refresh", { refreshToken });
 
       expect(data.auth.isAdmin).toBe(true);
       const payload = jwt.decode(data.token) as AuthContext;
       expect(payload.isAdmin).toBe(true);
     });
 
-    it("rejects refresh without a token", async () => {
-      await expect(invoke("auth/refresh", {})).rejects.toThrow("401");
+    it("rejects refresh without a refresh token", async () => {
+      await expect(invoke("auth/refresh", {})).rejects.toThrow();
     });
   });
 
@@ -197,6 +201,76 @@ describe("auth", () => {
       await expect(
         invoke("auth/makeAdmin", { userId: adminId, isAdmin: true }, adminToken)
       ).rejects.toThrow("400");
+    });
+  });
+
+  describe("token types", () => {
+    const tokenEmail = `tokens-${Date.now()}@example.com`;
+
+    it("returns distinct auth and refresh tokens on register", async () => {
+      const data = await invoke("auth/register", { email: tokenEmail, password });
+      expect(data.token).not.toBe(data.refreshToken);
+
+      const authPayload = jwt.decode(data.token) as Record<string, unknown>;
+      expect(authPayload.userId).toBe(data.auth.id);
+      expect(authPayload.email).toBe(tokenEmail);
+      expect(authPayload.type).toBeUndefined();
+
+      const refreshPayload = jwt.decode(data.refreshToken) as Record<string, unknown>;
+      expect(refreshPayload.userId).toBe(data.auth.id);
+      expect(refreshPayload.type).toBe("refresh");
+      expect(refreshPayload.email).toBeUndefined();
+    });
+
+    it("returns distinct auth and refresh tokens on login", async () => {
+      const data = await invoke("auth/login", { email: tokenEmail, password });
+      expect(data.token).not.toBe(data.refreshToken);
+
+      const refreshPayload = jwt.decode(data.refreshToken) as Record<string, unknown>;
+      expect(refreshPayload.type).toBe("refresh");
+    });
+
+    it("auth token has short expiry, refresh token has long expiry", async () => {
+      const data = await invoke("auth/login", { email: tokenEmail, password });
+
+      const authPayload = jwt.decode(data.token) as { exp: number };
+      const refreshPayload = jwt.decode(data.refreshToken) as { exp: number };
+
+      const authExpiresIn = authPayload.exp * 1000 - Date.now();
+      const refreshExpiresIn = refreshPayload.exp * 1000 - Date.now();
+
+      expect(authExpiresIn).toBeLessThan(11 * 60 * 1000);
+      expect(refreshExpiresIn).toBeGreaterThan(59 * 24 * 60 * 60 * 1000);
+    });
+
+    it("refresh returns a new auth token and new refresh token", async () => {
+      const login = await invoke("auth/login", { email: tokenEmail, password });
+      const refreshed = await invoke("auth/refresh", { refreshToken: login.refreshToken });
+
+      expect(refreshed.token).toBeDefined();
+      expect(refreshed.refreshToken).toBeDefined();
+      expect(refreshed.token).not.toBe(login.token);
+      expect(refreshed.auth.email).toBe(tokenEmail);
+    });
+
+    it("cannot use an auth token as a refresh token", async () => {
+      const data = await invoke("auth/login", { email: tokenEmail, password });
+      await expect(
+        invoke("auth/refresh", { refreshToken: data.token })
+      ).rejects.toThrow("401");
+    });
+
+    it("cannot use a refresh token as a Bearer auth token", async () => {
+      const data = await invoke("auth/login", { email: tokenEmail, password });
+      await expect(
+        invoke("user/getMyUser", {}, data.refreshToken)
+      ).rejects.toThrow("401");
+    });
+
+    it("rejects refresh with an invalid token string", async () => {
+      await expect(
+        invoke("auth/refresh", { refreshToken: "garbage.token.value" })
+      ).rejects.toThrow();
     });
   });
 });

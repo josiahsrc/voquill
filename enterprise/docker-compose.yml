@@ -15,7 +15,7 @@ services:
       dockerfile: enterprise/gateway/Dockerfile
       target: dev
     ports:
-      - "3000:3000"
+      - "4630:4630"
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/voquill
       - JWT_SECRET=development-secret-change-in-production

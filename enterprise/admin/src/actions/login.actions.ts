@@ -4,12 +4,14 @@ import { invoke } from "../utils/api.utils";
 import { getAppState, produceAppState } from "../store";
 import { INITIAL_LOGIN_STATE, type LoginMode } from "../state/login.state";
 
-export function setAuthToken(token: string) {
+export function setAuthTokens(token: string, refreshToken: string) {
   const payload = jwtDecode<AuthContext>(token);
   localStorage.setItem("token", token);
+  localStorage.setItem("refreshToken", refreshToken);
   produceAppState((draft) => {
     draft.auth = payload;
     draft.token = token;
+    draft.refreshToken = refreshToken;
   });
 }
 
@@ -31,7 +33,7 @@ export async function submitSignIn() {
 
   try {
     const data = await invoke("auth/login", { email, password });
-    setAuthToken(data.token);
+    setAuthTokens(data.token, data.refreshToken);
 
     produceAppState((draft) => {
       draft.login.status = "success";
@@ -63,15 +65,15 @@ export async function submitSignUp() {
 
   try {
     const data = await invoke("auth/register", { email, password });
-    setAuthToken(data.token);
+    setAuthTokens(data.token, data.refreshToken);
 
     try {
       await invoke("auth/makeAdmin", {
         userId: data.auth.id,
         isAdmin: true,
       });
-      const refreshed = await invoke("auth/refresh", {});
-      setAuthToken(refreshed.token);
+      const refreshed = await invoke("auth/refresh", { refreshToken: data.refreshToken });
+      setAuthTokens(refreshed.token, refreshed.refreshToken);
     } catch (e) {
       console.log("Failed to make the first registered user an admin", e);
     }
@@ -90,9 +92,11 @@ export async function submitSignUp() {
 
 export function signOut() {
   localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
   produceAppState((draft) => {
     draft.auth = null;
     draft.token = null;
+    draft.refreshToken = null;
     draft.login = INITIAL_LOGIN_STATE;
   });
 }

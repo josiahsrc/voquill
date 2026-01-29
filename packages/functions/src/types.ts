@@ -26,6 +26,7 @@ type HandlerDefinitions = {
     };
     output: {
       token: string;
+      refreshToken: string;
       auth: Auth;
     };
   };
@@ -36,6 +37,7 @@ type HandlerDefinitions = {
     };
     output: {
       token: string;
+      refreshToken: string;
       auth: Auth;
     };
   };
@@ -44,9 +46,12 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
   "auth/refresh": {
-    input: EmptyObject;
+    input: {
+      refreshToken: string;
+    };
     output: {
       token: string;
+      refreshToken: string;
       auth: Auth;
     };
   };
@@ -304,3 +309,9 @@ export const AuthLoginInputZod = z
     password: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"auth/login">>;
+
+export const AuthRefreshInputZod = z
+  .object({
+    refreshToken: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/refresh">>;

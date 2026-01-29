@@ -9,7 +9,7 @@ import {
   setIsAdmin,
   hasAnyAdmin,
 } from "../repo/auth.repo";
-import { requireAuth, signAuthToken } from "../utils/auth.utils";
+import { requireAuth, signAuthToken, signRefreshToken, verifyRefreshToken } from "../utils/auth.utils";
 import {
   ClientError,
   ConflictError,
@@ -28,7 +28,7 @@ export async function register(
   const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
   const auth = await createAuth(input.email, passwordHash);
 
-  return { token: signAuthToken(auth), auth };
+  return { token: signAuthToken(auth), refreshToken: signRefreshToken(auth), auth };
 }
 
 export async function login(
@@ -52,19 +52,19 @@ export async function login(
     createdAt: row.created_at.toISOString(),
   };
 
-  return { token: signAuthToken(auth), auth };
+  return { token: signAuthToken(auth), refreshToken: signRefreshToken(auth), auth };
 }
 
 export async function refresh(opts: {
-  auth: Nullable<AuthContext>;
+  input: HandlerInput<"auth/refresh">;
 }): Promise<HandlerOutput<"auth/refresh">> {
-  const authCtx = requireAuth(opts.auth);
-  const auth = await findAuthById(authCtx.userId);
+  const { userId } = verifyRefreshToken(opts.input.refreshToken);
+  const auth = await findAuthById(userId);
   if (!auth) {
     throw new UnauthorizedError("User not found");
   }
 
-  return { token: signAuthToken(auth), auth };
+  return { token: signAuthToken(auth), refreshToken: signRefreshToken(auth), auth };
 }
 
 export async function makeAdmin(opts: {

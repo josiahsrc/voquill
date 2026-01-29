@@ -1,5 +1,5 @@
 export function getGatewayUrl(): string {
-  return import.meta.env.VITE_GATEWAY_URL || "http://localhost:3000";
+  return import.meta.env.VITE_GATEWAY_URL || "http://localhost:4630";
 }
 
 export function isDev(): boolean {
