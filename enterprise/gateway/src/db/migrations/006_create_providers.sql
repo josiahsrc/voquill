@@ -1,5 +1,6 @@
-CREATE TABLE stt_providers (
+CREATE TABLE providers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  purpose VARCHAR(20) NOT NULL CHECK (purpose IN ('transcription', 'ai')),
   provider VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
   url TEXT NOT NULL,

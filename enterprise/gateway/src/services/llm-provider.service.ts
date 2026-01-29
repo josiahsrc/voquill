@@ -1,11 +1,7 @@
 import type { HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
 import { v4 as uuid } from "uuid";
-import {
-  listLlmProviders,
-  upsertLlmProvider,
-  deleteLlmProvider,
-} from "../repo/llm-provider.repo";
+import { listProviders, upsertProvider, deleteProvider } from "../repo/provider.repo";
 import { requireAuth } from "../utils/auth.utils";
 import { encryptApiKey } from "../utils/crypto.utils";
 import { getEncryptionSecret } from "../utils/env.utils";
@@ -22,7 +18,7 @@ export async function listLlmProvidersHandler(opts: {
 }): Promise<HandlerOutput<"llmProvider/list">> {
   const auth = requireAuth(opts.auth);
   requireAdmin(auth);
-  const providers = await listLlmProviders();
+  const providers = await listProviders("ai");
   return { providers };
 }
 
@@ -42,7 +38,7 @@ export async function upsertLlmProviderHandler(opts: {
       }
     : {};
 
-  await upsertLlmProvider({
+  await upsertProvider("ai", {
     id: provider.id || uuid(),
     provider: provider.provider,
     name: provider.name,
@@ -61,6 +57,6 @@ export async function deleteLlmProviderHandler(opts: {
 }): Promise<HandlerOutput<"llmProvider/delete">> {
   const auth = requireAuth(opts.auth);
   requireAdmin(auth);
-  await deleteLlmProvider(opts.input.providerId);
+  await deleteProvider(opts.input.providerId);
   return {};
 }

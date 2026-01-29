@@ -1,5 +1,8 @@
-export type SttProviderRow = {
+export type ProviderPurpose = "transcription" | "ai";
+
+export type ProviderRow = {
   id: string;
+  purpose: ProviderPurpose;
   provider: string;
   name: string;
   url: string;
