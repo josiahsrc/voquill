@@ -23,11 +23,17 @@ export interface ColumnDef<T> {
   getSortKey?: (row: T) => string | number;
   weight?: number;
   width?: number;
+  align?: "left" | "center" | "right";
 }
 
 const DefaultRow = React.forwardRef<HTMLDivElement, DivRowProps>(
   (props, ref) => (
-    <MuiTableRow ref={ref as any} component="div" {...(props as any)} />
+    <MuiTableRow
+      ref={ref as any}
+      component="div"
+      {...(props as any)}
+      sx={{ "&:hover": { backgroundColor: "action.hover" } }}
+    />
   ),
 );
 
@@ -42,6 +48,7 @@ export interface AppTableProps<T> {
   footer?: React.ReactNode;
   defaultSortColumnIndex?: number;
   defaultSortDirection?: SortDirection;
+  fixedItemHeight?: number;
 }
 
 type SortDirection = "asc" | "desc";
@@ -54,6 +61,7 @@ export function AppTable<T>({
   footer,
   defaultSortColumnIndex,
   defaultSortDirection = "asc",
+  fixedItemHeight,
 }: AppTableProps<T>) {
   const [sortIdx, setSortIdx] = React.useState<number | null>(
     defaultSortColumnIndex ?? null,
@@ -95,6 +103,22 @@ export function AppTable<T>({
     return `calc((100% - ${fixedWidth}px) * ${ratio})`;
   });
 
+  const FixedHeightRow = React.useMemo(() => {
+    if (fixedItemHeight == null) return RowComponent ?? DefaultRow;
+    return React.forwardRef<HTMLDivElement, DivRowProps>((props, ref) => (
+      <MuiTableRow
+        ref={ref as any}
+        component="div"
+        {...(props as any)}
+        sx={{
+          height: fixedItemHeight,
+          overflow: "hidden",
+          "&:hover": { backgroundColor: "action.hover" },
+        }}
+      />
+    ));
+  }, [RowComponent, fixedItemHeight]);
+
   const VirtuosoComponents: TableComponents<T> = React.useMemo(
     () => ({
       Scroller: React.forwardRef<
@@ -126,7 +150,7 @@ export function AppTable<T>({
         <MuiTableBody ref={ref as any} component="div" {...(props as any)} />
       )) as any,
 
-      TableRow: (RowComponent ?? DefaultRow) as any,
+      TableRow: FixedHeightRow as any,
 
       TableFooter: React.forwardRef<
         HTMLDivElement,
@@ -135,7 +159,7 @@ export function AppTable<T>({
         <MuiTableFooter ref={ref as any} component="div" {...(props as any)} />
       )) as any,
     }),
-    [RowComponent],
+    [FixedHeightRow],
   );
 
   const FixedHeaderContent = () => (
@@ -150,6 +174,7 @@ export function AppTable<T>({
             key={idx}
             variant="head"
             component="div"
+            align={col.align}
             sx={{
               width: colWidths[idx],
               cursor: sortable ? "pointer" : undefined,
@@ -177,7 +202,15 @@ export function AppTable<T>({
   const RowContent = (_: number, row: T) => (
     <>
       {columns.map((col, idx) => (
-        <TableCell component="div" key={idx} sx={{ width: colWidths[idx] }}>
+        <TableCell
+          component="div"
+          key={idx}
+          align={col.align}
+          sx={{
+            width: colWidths[idx],
+            ...(fixedItemHeight != null && { py: 0.5 }),
+          }}
+        >
           {col.cell(row)}
         </TableCell>
       ))}
@@ -196,6 +229,7 @@ export function AppTable<T>({
         fixedHeaderContent={FixedHeaderContent}
         itemContent={RowContent}
         fixedFooterContent={(footer ? FixedFooterContent : undefined) as any}
+        fixedItemHeight={fixedItemHeight}
       />
     </Paper>
   );

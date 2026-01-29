@@ -21,7 +21,7 @@ import { getAppName } from "../../utils/env.utils";
 
 const NAV_ITEMS = [
   { label: "Users", path: "/users", icon: <GroupOutlined /> },
-  { label: "Terms", path: "/terms", icon: <ClassOutlined /> },
+  { label: "Global Dictionary", path: "/terms", icon: <ClassOutlined /> },
   { label: "Settings", path: "/settings", icon: <SettingsOutlined /> },
 ];
 

@@ -87,6 +87,7 @@ const columns: ColumnDef<UserWithAuth>[] = [
     header: "Actions",
     cell: (row) => <UserActionsMenu user={row} />,
     width: 80,
+    align: "right",
   },
 ];
 
