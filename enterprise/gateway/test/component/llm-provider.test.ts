@@ -41,11 +41,11 @@ describe("llm provider", () => {
       "llmProvider/upsert",
       {
         provider: {
-          provider: "openai",
-          name: "Production OpenAI",
-          url: "https://api.openai.com/v1",
+          provider: "ollama",
+          name: "Production Ollama",
+          url: "http://ollama:11434/v1",
           apiKey: "sk-test-key-1234567890abcdef",
-          model: "gpt-4",
+          model: "llama3",
           isEnabled: true,
         },
       },
@@ -54,10 +54,10 @@ describe("llm provider", () => {
 
     const data = await invoke("llmProvider/list", {}, adminToken);
     expect(data.providers).toHaveLength(1);
-    expect(data.providers[0].provider).toBe("openai");
-    expect(data.providers[0].name).toBe("Production OpenAI");
-    expect(data.providers[0].url).toBe("https://api.openai.com/v1");
-    expect(data.providers[0].model).toBe("gpt-4");
+    expect(data.providers[0].provider).toBe("ollama");
+    expect(data.providers[0].name).toBe("Production Ollama");
+    expect(data.providers[0].url).toBe("http://ollama:11434/v1");
+    expect(data.providers[0].model).toBe("llama3");
     expect(data.providers[0].isEnabled).toBe(true);
     expect(data.providers[0].apiKeySuffix).toBe("cdef");
     createdId = data.providers[0].id;
@@ -77,9 +77,9 @@ describe("llm provider", () => {
       {
         provider: {
           id: createdId,
-          provider: "openai",
-          name: "Updated OpenAI",
-          url: "https://api.openai.com/v2",
+          provider: "ollama",
+          name: "Updated Ollama",
+          url: "http://ollama:11434/v2",
           apiKey: "sk-new-key-abcdefghijklmnop",
           model: "gpt-4-turbo",
           isEnabled: false,
@@ -90,8 +90,8 @@ describe("llm provider", () => {
 
     const data = await invoke("llmProvider/list", {}, adminToken);
     expect(data.providers).toHaveLength(1);
-    expect(data.providers[0].name).toBe("Updated OpenAI");
-    expect(data.providers[0].url).toBe("https://api.openai.com/v2");
+    expect(data.providers[0].name).toBe("Updated Ollama");
+    expect(data.providers[0].url).toBe("http://ollama:11434/v2");
     expect(data.providers[0].model).toBe("gpt-4-turbo");
     expect(data.providers[0].isEnabled).toBe(false);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
@@ -103,9 +103,9 @@ describe("llm provider", () => {
       {
         provider: {
           id: createdId,
-          provider: "openai",
+          provider: "ollama",
           name: "No Key Change",
-          url: "https://api.openai.com/v3",
+          url: "http://ollama:11434/v3",
           model: "gpt-4o",
           isEnabled: true,
         },
@@ -116,7 +116,7 @@ describe("llm provider", () => {
     const data = await invoke("llmProvider/list", {}, adminToken);
     expect(data.providers).toHaveLength(1);
     expect(data.providers[0].name).toBe("No Key Change");
-    expect(data.providers[0].url).toBe("https://api.openai.com/v3");
+    expect(data.providers[0].url).toBe("http://ollama:11434/v3");
     expect(data.providers[0].model).toBe("gpt-4o");
     expect(data.providers[0].isEnabled).toBe(true);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
@@ -128,9 +128,9 @@ describe("llm provider", () => {
       {
         provider: {
           id: createdId,
-          provider: "openai",
+          provider: "ollama",
           name: "Empty Key",
-          url: "https://api.openai.com/v4",
+          url: "http://ollama:11434/v4",
           apiKey: "",
           model: "gpt-4o-mini",
           isEnabled: false,
@@ -165,7 +165,7 @@ describe("llm provider", () => {
         "llmProvider/upsert",
         {
           provider: {
-            provider: "openai",
+            provider: "ollama",
             name: "Test",
             url: "https://example.com",
             apiKey: "sk-test",

@@ -16,7 +16,7 @@ import { upsertLlmProvider } from "../../actions/llm-providers.actions";
 import { useAppStore } from "../../store";
 
 const SCHEMA_OPTIONS = [
-  { value: "openai", label: "OpenAI" },
+  { value: "ollama", label: "Ollama" },
 ] as const;
 
 export type LlmProviderFormState = {

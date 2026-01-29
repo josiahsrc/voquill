@@ -12,7 +12,7 @@ export abstract class BaseTranscriptionApi {
   abstract transcribe(input: TranscribeInput): Promise<{ text: string }>;
 }
 
-export class OpenAITranscriptionApi extends BaseTranscriptionApi {
+export class SpeachesTranscriptionApi extends BaseTranscriptionApi {
   private client: OpenAI;
   private model: string;
 

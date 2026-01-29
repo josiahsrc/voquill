@@ -16,7 +16,7 @@ import { upsertSttProvider } from "../../actions/stt-providers.actions";
 import { useAppStore } from "../../store";
 
 const SCHEMA_OPTIONS = [
-  { value: "openai", label: "OpenAI" },
+  { value: "speaches", label: "Speaches" },
 ] as const;
 
 export type SttProviderFormState = {

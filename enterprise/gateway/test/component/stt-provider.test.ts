@@ -39,9 +39,9 @@ describe("stt provider", () => {
       "sttProvider/upsert",
       {
         provider: {
-          provider: "openai",
-          name: "Production OpenAI",
-          url: "https://api.openai.com/v1",
+          provider: "speaches",
+          name: "Production Speaches",
+          url: "https://api.speaches.com/v1",
           apiKey: "sk-test-key-1234567890abcdef",
           model: "whisper-1",
           isEnabled: true,
@@ -52,9 +52,9 @@ describe("stt provider", () => {
 
     const data = await invoke("sttProvider/list", {}, adminToken);
     expect(data.providers).toHaveLength(1);
-    expect(data.providers[0].provider).toBe("openai");
-    expect(data.providers[0].name).toBe("Production OpenAI");
-    expect(data.providers[0].url).toBe("https://api.openai.com/v1");
+    expect(data.providers[0].provider).toBe("speaches");
+    expect(data.providers[0].name).toBe("Production Speaches");
+    expect(data.providers[0].url).toBe("https://api.speaches.com/v1");
     expect(data.providers[0].model).toBe("whisper-1");
     expect(data.providers[0].isEnabled).toBe(true);
     expect(data.providers[0].apiKeySuffix).toBe("cdef");
@@ -75,9 +75,9 @@ describe("stt provider", () => {
       {
         provider: {
           id: createdId,
-          provider: "openai",
-          name: "Updated OpenAI",
-          url: "https://api.openai.com/v2",
+          provider: "speaches",
+          name: "Updated Speaches",
+          url: "https://api.speaches.com/v2",
           apiKey: "sk-new-key-abcdefghijklmnop",
           model: "whisper-2",
           isEnabled: false,
@@ -88,8 +88,8 @@ describe("stt provider", () => {
 
     const data = await invoke("sttProvider/list", {}, adminToken);
     expect(data.providers).toHaveLength(1);
-    expect(data.providers[0].name).toBe("Updated OpenAI");
-    expect(data.providers[0].url).toBe("https://api.openai.com/v2");
+    expect(data.providers[0].name).toBe("Updated Speaches");
+    expect(data.providers[0].url).toBe("https://api.speaches.com/v2");
     expect(data.providers[0].model).toBe("whisper-2");
     expect(data.providers[0].isEnabled).toBe(false);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
@@ -101,9 +101,9 @@ describe("stt provider", () => {
       {
         provider: {
           id: createdId,
-          provider: "openai",
+          provider: "speaches",
           name: "No Key Change",
-          url: "https://api.openai.com/v3",
+          url: "https://api.speaches.com/v3",
           model: "whisper-3",
           isEnabled: true,
         },
@@ -114,7 +114,7 @@ describe("stt provider", () => {
     const data = await invoke("sttProvider/list", {}, adminToken);
     expect(data.providers).toHaveLength(1);
     expect(data.providers[0].name).toBe("No Key Change");
-    expect(data.providers[0].url).toBe("https://api.openai.com/v3");
+    expect(data.providers[0].url).toBe("https://api.speaches.com/v3");
     expect(data.providers[0].model).toBe("whisper-3");
     expect(data.providers[0].isEnabled).toBe(true);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
@@ -126,9 +126,9 @@ describe("stt provider", () => {
       {
         provider: {
           id: createdId,
-          provider: "openai",
+          provider: "speaches",
           name: "Empty Key",
-          url: "https://api.openai.com/v4",
+          url: "https://api.speaches.com/v4",
           apiKey: "",
           model: "whisper-4",
           isEnabled: false,
@@ -163,7 +163,7 @@ describe("stt provider", () => {
         "sttProvider/upsert",
         {
           provider: {
-            provider: "openai",
+            provider: "speaches",
             name: "Test",
             url: "https://example.com",
             apiKey: "sk-test",

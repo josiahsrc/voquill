@@ -51,7 +51,7 @@ export async function createTestSttProvider(token: string): Promise<void> {
     {
       provider: {
         id: "00000000-0000-0000-0000-000000000001",
-        provider: "openai",
+        provider: "speaches",
         name: "Test Speaches",
         url: "http://speaches:8000/v1",
         model: "Systran/faster-whisper-base",
