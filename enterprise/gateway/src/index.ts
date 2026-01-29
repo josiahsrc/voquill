@@ -6,9 +6,11 @@ import {
   AuthMakeAdminInputZod,
   AuthRefreshInputZod,
   AuthRegisterInputZod,
+  DeleteSttProviderInputZod,
   DeleteTermInputZod,
   EmptyObjectZod,
   SetMyUserInputZod,
+  UpsertSttProviderInputZod,
   UpsertTermInputZod,
   type HandlerName,
 } from "@repo/functions";
@@ -35,6 +37,11 @@ import {
   upsertGlobalTermHandler,
   upsertMyTerm,
 } from "./services/term.service";
+import {
+  deleteSttProviderHandler,
+  listSttProvidersHandler,
+  upsertSttProviderHandler,
+} from "./services/stt-provider.service";
 import {
   getMyUser,
   listAllUsersHandler,
@@ -127,6 +134,19 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await deleteGlobalTermHandler({
         auth,
         input: validateData(DeleteTermInputZod, input),
+      });
+    } else if (name === "sttProvider/list") {
+      validateData(EmptyObjectZod, input);
+      data = await listSttProvidersHandler({ auth });
+    } else if (name === "sttProvider/upsert") {
+      data = await upsertSttProviderHandler({
+        auth,
+        input: validateData(UpsertSttProviderInputZod, input),
+      });
+    } else if (name === "sttProvider/delete") {
+      data = await deleteSttProviderHandler({
+        auth,
+        input: validateData(DeleteSttProviderInputZod, input),
       });
     } else if (name === "ai/generateText") {
       data = await generateText({

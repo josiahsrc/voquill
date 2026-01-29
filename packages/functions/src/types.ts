@@ -1,6 +1,7 @@
 import {
   FullConfig,
   Member,
+  SttProviderInputZod,
   Term,
   TermZod,
   UserZod,
@@ -8,6 +9,8 @@ import {
   type EmptyObject,
   type JsonResponse,
   type Nullable,
+  type SttProvider,
+  type SttProviderInput,
   type User,
   type UserWithAuth,
 } from "@repo/types";
@@ -216,6 +219,26 @@ type HandlerDefinitions = {
     };
   };
 
+  // stt providers
+  "sttProvider/list": {
+    input: EmptyObject;
+    output: {
+      providers: SttProvider[];
+    };
+  };
+  "sttProvider/upsert": {
+    input: {
+      provider: SttProviderInput;
+    };
+    output: EmptyObject;
+  };
+  "sttProvider/delete": {
+    input: {
+      providerId: string;
+    };
+    output: EmptyObject;
+  };
+
   // system
   "system/getVersion": {
     input: EmptyObject;
@@ -335,3 +358,15 @@ export const AuthRefreshInputZod = z
     refreshToken: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"auth/refresh">>;
+
+export const UpsertSttProviderInputZod = z
+  .object({
+    provider: SttProviderInputZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"sttProvider/upsert">>;
+
+export const DeleteSttProviderInputZod = z
+  .object({
+    providerId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"sttProvider/delete">>;
