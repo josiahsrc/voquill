@@ -1,7 +1,7 @@
 import type { HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
 import { v4 as uuid } from "uuid";
-import { listProviders, upsertProvider, deleteProvider } from "../repo/provider.repo";
+import { listSttProviders, upsertSttProvider, deleteSttProvider } from "../repo/stt-provider.repo";
 import { requireAuth } from "../utils/auth.utils";
 import { encryptApiKey } from "../utils/crypto.utils";
 import { getEncryptionSecret } from "../utils/env.utils";
@@ -18,7 +18,7 @@ export async function listSttProvidersHandler(opts: {
 }): Promise<HandlerOutput<"sttProvider/list">> {
   const auth = requireAuth(opts.auth);
   requireAdmin(auth);
-  const providers = await listProviders("transcription");
+  const providers = await listSttProviders();
   return { providers };
 }
 
@@ -38,7 +38,7 @@ export async function upsertSttProviderHandler(opts: {
       }
     : {};
 
-  await upsertProvider("transcription", {
+  await upsertSttProvider({
     id: provider.id || uuid(),
     provider: provider.provider,
     name: provider.name,
@@ -57,6 +57,6 @@ export async function deleteSttProviderHandler(opts: {
 }): Promise<HandlerOutput<"sttProvider/delete">> {
   const auth = requireAuth(opts.auth);
   requireAdmin(auth);
-  await deleteProvider(opts.input.providerId);
+  await deleteSttProvider(opts.input.providerId);
   return {};
 }
