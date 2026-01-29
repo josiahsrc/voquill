@@ -6,10 +6,12 @@ import {
   AuthMakeAdminInputZod,
   AuthRefreshInputZod,
   AuthRegisterInputZod,
+  DeleteLlmProviderInputZod,
   DeleteSttProviderInputZod,
   DeleteTermInputZod,
   EmptyObjectZod,
   SetMyUserInputZod,
+  UpsertLlmProviderInputZod,
   UpsertSttProviderInputZod,
   UpsertTermInputZod,
   type HandlerName,
@@ -42,6 +44,11 @@ import {
   listSttProvidersHandler,
   upsertSttProviderHandler,
 } from "./services/stt-provider.service";
+import {
+  deleteLlmProviderHandler,
+  listLlmProvidersHandler,
+  upsertLlmProviderHandler,
+} from "./services/llm-provider.service";
 import {
   getMyUser,
   listAllUsersHandler,
@@ -147,6 +154,19 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await deleteSttProviderHandler({
         auth,
         input: validateData(DeleteSttProviderInputZod, input),
+      });
+    } else if (name === "llmProvider/list") {
+      validateData(EmptyObjectZod, input);
+      data = await listLlmProvidersHandler({ auth });
+    } else if (name === "llmProvider/upsert") {
+      data = await upsertLlmProviderHandler({
+        auth,
+        input: validateData(UpsertLlmProviderInputZod, input),
+      });
+    } else if (name === "llmProvider/delete") {
+      data = await deleteLlmProviderHandler({
+        auth,
+        input: validateData(DeleteLlmProviderInputZod, input),
       });
     } else if (name === "ai/generateText") {
       data = await generateText({

@@ -1,6 +1,7 @@
 import {
   FullConfig,
   Member,
+  LlmProviderInputZod,
   SttProviderInputZod,
   Term,
   TermZod,
@@ -8,6 +9,8 @@ import {
   type Auth,
   type EmptyObject,
   type JsonResponse,
+  type LlmProvider,
+  type LlmProviderInput,
   type Nullable,
   type SttProvider,
   type SttProviderInput,
@@ -239,6 +242,26 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
 
+  // llm providers
+  "llmProvider/list": {
+    input: EmptyObject;
+    output: {
+      providers: LlmProvider[];
+    };
+  };
+  "llmProvider/upsert": {
+    input: {
+      provider: LlmProviderInput;
+    };
+    output: EmptyObject;
+  };
+  "llmProvider/delete": {
+    input: {
+      providerId: string;
+    };
+    output: EmptyObject;
+  };
+
   // system
   "system/getVersion": {
     input: EmptyObject;
@@ -370,3 +393,15 @@ export const DeleteSttProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"sttProvider/delete">>;
+
+export const UpsertLlmProviderInputZod = z
+  .object({
+    provider: LlmProviderInputZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"llmProvider/upsert">>;
+
+export const DeleteLlmProviderInputZod = z
+  .object({
+    providerId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"llmProvider/delete">>;
