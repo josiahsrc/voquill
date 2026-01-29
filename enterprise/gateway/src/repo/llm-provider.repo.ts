@@ -78,6 +78,14 @@ export async function upsertLlmProvider(opts: {
   }
 }
 
+export async function listEnabledLlmProvidersWithKeys(): Promise<LlmProviderRow[]> {
+  const pool = getPool();
+  const result = await pool.query(
+    "SELECT * FROM llm_providers WHERE is_enabled = true ORDER BY created_at",
+  );
+  return result.rows;
+}
+
 export async function deleteLlmProvider(id: string): Promise<void> {
   const pool = getPool();
   await pool.query("DELETE FROM llm_providers WHERE id = $1", [id]);

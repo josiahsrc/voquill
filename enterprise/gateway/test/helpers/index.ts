@@ -63,6 +63,25 @@ export async function createTestSttProvider(token: string): Promise<void> {
   );
 }
 
+export async function createTestLlmProvider(token: string): Promise<void> {
+  const adminToken = await promoteToAdmin(token);
+  await invoke(
+    "llmProvider/upsert",
+    {
+      provider: {
+        id: "00000000-0000-0000-0000-000000000002",
+        provider: "ollama",
+        name: "Test Ollama",
+        url: "http://ollama:11434",
+        model: "llama3.2:1b",
+        apiKey: "sk-test-llm-provider-key",
+        isEnabled: true,
+      },
+    },
+    adminToken,
+  );
+}
+
 async function promoteToAdmin(token: string): Promise<string> {
   const payload = JSON.parse(
     Buffer.from(token.split(".")[1], "base64").toString(),

@@ -1,10 +1,10 @@
 import type { HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
-import OpenAI from "openai";
+import { listEnabledLlmProvidersWithKeys } from "../repo/llm-provider.repo";
 import { listEnabledSttProvidersWithKeys } from "../repo/stt-provider.repo";
 import { requireAuth } from "../utils/auth.utils";
-import { getLlmModel, getLlmServerUrls } from "../utils/env.utils";
 import { ClientError } from "../utils/error.utils";
+import { createLlmApi } from "../utils/llm-provider.utils";
 import { createTranscriptionApi } from "../utils/stt-provider.utils";
 
 const MAX_BLOB_BYTES = 16 * 1024 * 1024;
@@ -23,16 +23,6 @@ const MIME_TO_EXT: Record<string, string> = {
 
 let llmIndex = 0;
 let sttIndex = 0;
-
-function getNextLlmClient(): OpenAI {
-  const urls = getLlmServerUrls();
-  if (urls.length === 0) {
-    throw new Error("No LLM_SERVER_URL_N environment variables configured");
-  }
-  const url = urls[llmIndex % urls.length];
-  llmIndex++;
-  return new OpenAI({ baseURL: `${url}/v1`, apiKey: "-" });
-}
 
 export async function transcribeAudio(opts: {
   auth: Nullable<AuthContext>;
@@ -90,18 +80,21 @@ export async function generateText(opts: {
     return { text: "Simulated generated text." };
   }
 
-  const client = getNextLlmClient();
-  const messages: OpenAI.ChatCompletionMessageParam[] = [];
-  if (input.system) {
-    messages.push({ role: "system", content: input.system });
+  const providers = await listEnabledLlmProvidersWithKeys();
+  if (providers.length === 0) {
+    throw new Error("No enabled LLM providers configured");
   }
-  messages.push({ role: "user", content: input.prompt });
 
-  const result = await client.chat.completions.create({
-    model: getLlmModel(),
-    messages,
-    ...(input.jsonResponse ? { response_format: { type: "json_object" } } : {}),
+  const provider = providers[llmIndex % providers.length];
+  llmIndex++;
+
+  const llmApi = createLlmApi(provider);
+  const result = await llmApi.generateText({
+    system: input.system ?? undefined,
+    prompt: input.prompt,
+    model: provider.model,
+    jsonResponse: input.jsonResponse ?? undefined,
   });
 
-  return { text: result.choices[0]?.message?.content ?? "" };
+  return { text: result.text };
 }

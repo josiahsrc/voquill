@@ -8,11 +8,11 @@ export type TranscribeInput = {
   language?: string;
 };
 
-export abstract class BaseTranscriptionApi {
+export abstract class BaseSttApi {
   abstract transcribe(input: TranscribeInput): Promise<{ text: string }>;
 }
 
-export class SpeachesTranscriptionApi extends BaseTranscriptionApi {
+export class SpeachesSttApi extends BaseSttApi {
   private client: OpenAI;
   private model: string;
 

@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { describe, it, expect, beforeAll } from "vitest";
-import { invoke, createTestSttProvider } from "../helpers";
+import { invoke, createTestSttProvider, createTestLlmProvider } from "../helpers";
 
 const MUFFIN_MAN_WAV = resolve(
   __dirname,
@@ -66,6 +66,7 @@ describe("ai/generateText integration", () => {
       password: "password123",
     });
     token = data.token;
+    await createTestLlmProvider(token);
   });
 
   it("generates text with a simple prompt", { timeout: 60_000 }, async () => {
