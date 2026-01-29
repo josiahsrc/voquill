@@ -1,4 +1,4 @@
-import type { Term, UserWithAuth } from "@repo/types";
+import type { SttProvider, Term, UserWithAuth } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -28,5 +28,14 @@ export const registerTerms = (draft: AppState, terms: Term[]): void => {
 export const registerUsers = (draft: AppState, users: UserWithAuth[]): void => {
   for (const user of users) {
     draft.userWithAuthById[user.id] = user;
+  }
+};
+
+export const registerSttProviders = (
+  draft: AppState,
+  providers: SttProvider[],
+): void => {
+  for (const provider of providers) {
+    draft.sttProviderById[provider.id] = provider;
   }
 };

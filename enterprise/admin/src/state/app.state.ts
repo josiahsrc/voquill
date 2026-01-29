@@ -1,5 +1,15 @@
-import type { AuthContext, Nullable, Term, UserWithAuth } from "@repo/types";
+import type {
+  AuthContext,
+  Nullable,
+  SttProvider,
+  Term,
+  UserWithAuth,
+} from "@repo/types";
 import { INITIAL_LOGIN_STATE, type LoginState } from "./login.state";
+import {
+  INITIAL_STT_PROVIDERS_STATE,
+  type SttProvidersState,
+} from "./stt-providers.state";
 import { INITIAL_TERMS_STATE, type TermsState } from "./terms.state";
 import { INITIAL_USERS_STATE, type UsersState } from "./users.state";
 
@@ -13,10 +23,12 @@ export type AppState = {
 
   termById: Record<string, Term>;
   userWithAuthById: Record<string, UserWithAuth>;
+  sttProviderById: Record<string, SttProvider>;
 
   login: LoginState;
   terms: TermsState;
   users: UsersState;
+  sttProviders: SttProvidersState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -33,10 +45,12 @@ export const INITIAL_APP_STATE: AppState = {
 
   termById: {},
   userWithAuthById: {},
+  sttProviderById: {},
 
   login: INITIAL_LOGIN_STATE,
   terms: INITIAL_TERMS_STATE,
   users: INITIAL_USERS_STATE,
+  sttProviders: INITIAL_STT_PROVIDERS_STATE,
 
   snackbarCounter: 0,
   snackbarMode: "info",

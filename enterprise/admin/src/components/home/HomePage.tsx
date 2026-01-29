@@ -1,6 +1,7 @@
 import {
-  GroupOutlined,
   ClassOutlined,
+  GroupOutlined,
+  MicOutlined,
   SettingsOutlined,
 } from "@mui/icons-material";
 import {
@@ -22,6 +23,11 @@ import { getAppName } from "../../utils/env.utils";
 const NAV_ITEMS = [
   { label: "Users", path: "/users", icon: <GroupOutlined /> },
   { label: "Global Dictionary", path: "/terms", icon: <ClassOutlined /> },
+  {
+    label: "Transcription Providers",
+    path: "/stt-providers",
+    icon: <MicOutlined />,
+  },
   { label: "Settings", path: "/settings", icon: <SettingsOutlined /> },
 ];
 

@@ -1,7 +1,11 @@
 import { Suspense } from "react";
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
-import { Guard } from "./components/routing/Guard";
+import {
+  createBrowserRouter,
+  Navigate,
+  RouterProvider,
+} from "react-router-dom";
 import { LoadingScreen } from "./components/root/LoadingScreen";
+import { Guard } from "./components/routing/Guard";
 import { lazyLoad } from "./utils/lazy.utils";
 
 const HomePage = lazyLoad(() => import("./components/home/HomePage"));
@@ -11,6 +15,9 @@ const PermissionDeniedPage = lazyLoad(
 );
 const UsersTab = lazyLoad(() => import("./components/users/UsersTab"));
 const TermsTab = lazyLoad(() => import("./components/terms/TermsTab"));
+const SttProvidersTab = lazyLoad(
+  () => import("./components/stt-providers/SttProvidersTab"),
+);
 const SettingsTab = lazyLoad(() => import("./components/settings/SettingsTab"));
 
 const router = createBrowserRouter([
@@ -25,6 +32,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/users" replace /> },
       { path: "users", element: <UsersTab /> },
       { path: "terms", element: <TermsTab /> },
+      { path: "stt-providers", element: <SttProvidersTab /> },
       { path: "settings", element: <SettingsTab /> },
     ],
   },
