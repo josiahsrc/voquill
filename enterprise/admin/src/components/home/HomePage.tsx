@@ -62,7 +62,7 @@ export default function HomePage() {
           ))}
         </List>
       </Stack>
-      <Box sx={{ flexGrow: 1, overflow: "auto", p: 3 }}>
+      <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
         <Suspense>
           <Outlet />
         </Suspense>

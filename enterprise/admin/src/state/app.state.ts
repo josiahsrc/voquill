@@ -1,6 +1,7 @@
-import type { AuthContext, Nullable, Term } from "@repo/types";
+import type { AuthContext, Nullable, Term, UserWithAuth } from "@repo/types";
 import { INITIAL_LOGIN_STATE, type LoginState } from "./login.state";
 import { INITIAL_TERMS_STATE, type TermsState } from "./terms.state";
+import { INITIAL_USERS_STATE, type UsersState } from "./users.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -11,9 +12,11 @@ export type AppState = {
   refreshToken: Nullable<string>;
 
   termById: Record<string, Term>;
+  userWithAuthById: Record<string, UserWithAuth>;
 
   login: LoginState;
   terms: TermsState;
+  users: UsersState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -29,9 +32,11 @@ export const INITIAL_APP_STATE: AppState = {
   refreshToken: null,
 
   termById: {},
+  userWithAuthById: {},
 
   login: INITIAL_LOGIN_STATE,
   terms: INITIAL_TERMS_STATE,
+  users: INITIAL_USERS_STATE,
 
   snackbarCounter: 0,
   snackbarMode: "info",

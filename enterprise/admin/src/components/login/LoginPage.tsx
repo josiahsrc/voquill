@@ -17,7 +17,7 @@ import {
 } from '@mui/material'
 
 export default function LoginPage() {
-  const { email, password, confirmPassword, mode, status, errorMessage } =
+  const { name, email, password, confirmPassword, mode, status, errorMessage } =
     useAppStore((state) => state.login)
 
   const isCreateAccount = mode === 'signUp'
@@ -65,6 +65,20 @@ export default function LoginPage() {
             onSubmit={handleSubmit}
             sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
           >
+            {isCreateAccount && (
+              <TextField
+                label="Full Name"
+                fullWidth
+                size="small"
+                value={name}
+                disabled={isLoading}
+                onChange={(e) =>
+                  produceAppState((draft) => {
+                    draft.login.name = e.target.value
+                  })
+                }
+              />
+            )}
             <TextField
               label="Email"
               type="email"

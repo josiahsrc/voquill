@@ -34,7 +34,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - 'preload_models=["Systran/faster-whisper-base"]'
+      - 'preload_models=["Systran/faster-whisper-base", "istupakov/parakeet-tdt-0.6b-v3-onnx"]'
     volumes:
       - speaches_data:/home/ubuntu/.cache
     networks:

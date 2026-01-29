@@ -1,4 +1,4 @@
-import type { Term } from "@repo/types";
+import type { Term, UserWithAuth } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -22,5 +22,11 @@ export const setSnackbar = (
 export const registerTerms = (draft: AppState, terms: Term[]): void => {
   for (const term of terms) {
     draft.termById[term.id] = term;
+  }
+};
+
+export const registerUsers = (draft: AppState, users: UserWithAuth[]): void => {
+  for (const user of users) {
+    draft.userWithAuthById[user.id] = user;
   }
 };

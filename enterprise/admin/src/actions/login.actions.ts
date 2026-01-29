@@ -1,8 +1,8 @@
-import { jwtDecode } from "jwt-decode";
 import type { AuthContext } from "@repo/types";
-import { invoke } from "../utils/api.utils";
-import { getAppState, produceAppState } from "../store";
+import { jwtDecode } from "jwt-decode";
 import { INITIAL_LOGIN_STATE, type LoginMode } from "../state/login.state";
+import { getAppState, produceAppState } from "../store";
+import { invoke } from "../utils/api.utils";
 
 export function setAuthTokens(token: string, refreshToken: string) {
   const payload = jwtDecode<AuthContext>(token);
@@ -48,7 +48,7 @@ export async function submitSignIn() {
 }
 
 export async function submitSignUp() {
-  const { email, password, confirmPassword } = getAppState().login;
+  const { name, email, password, confirmPassword } = getAppState().login;
 
   if (password !== confirmPassword) {
     produceAppState((draft) => {
@@ -72,12 +72,33 @@ export async function submitSignUp() {
         userId: data.auth.id,
         isAdmin: true,
       });
-      const refreshed = await invoke("auth/refresh", { refreshToken: data.refreshToken });
+      const refreshed = await invoke("auth/refresh", {
+        refreshToken: data.refreshToken,
+      });
       setAuthTokens(refreshed.token, refreshed.refreshToken);
     } catch (e) {
-      console.log("Failed to make the first registered user an admin", e);
+      console.error("[signup] failed to make admin:", e);
     }
 
+    try {
+      await invoke("user/setMyUser", {
+        value: {
+          id: data.auth.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          name,
+          onboarded: false,
+          onboardedAt: null,
+          playInteractionChime: false,
+          hasFinishedTutorial: false,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+        },
+      });
+    } catch (e) {
+      console.error("[signup] failed to create user profile:", e);
+    }
     produceAppState((draft) => {
       draft.login.status = "success";
     });
