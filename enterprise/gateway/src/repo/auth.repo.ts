@@ -61,6 +61,17 @@ export async function hasAnyAdmin(): Promise<boolean> {
   return result.rows.length > 0;
 }
 
+export async function deleteAuthById(id: string): Promise<void> {
+  const pool = getPool();
+  await pool.query("DELETE FROM terms WHERE user_id = $1", [id]);
+  await pool.query("DELETE FROM members WHERE id = $1", [id]);
+  await pool.query("DELETE FROM users WHERE id = $1", [id]);
+  const result = await pool.query("DELETE FROM auth WHERE id = $1", [id]);
+  if (result.rowCount === 0) {
+    throw new Error("User not found");
+  }
+}
+
 export async function existsByEmail(email: string): Promise<boolean> {
   const pool = getPool();
   const result = await pool.query("SELECT id FROM auth WHERE email = $1", [

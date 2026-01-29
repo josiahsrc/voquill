@@ -8,6 +8,7 @@ import {
   createAuth,
   setIsAdmin,
   hasAnyAdmin,
+  deleteAuthById,
 } from "../repo/auth.repo";
 import { requireAuth, signAuthToken, signRefreshToken, verifyRefreshToken } from "../utils/auth.utils";
 import {
@@ -82,6 +83,21 @@ export async function makeAdmin(opts: {
   }
 
   await setIsAdmin(opts.input.userId, opts.input.isAdmin);
+  return {};
+}
+
+export async function deleteUser(opts: {
+  auth: Nullable<AuthContext>;
+  input: HandlerInput<"auth/deleteUser">;
+}): Promise<HandlerOutput<"auth/deleteUser">> {
+  const auth = requireAuth(opts.auth);
+  if (!auth.isAdmin) {
+    throw new UnauthorizedError("Admin access required");
+  }
+  if (auth.userId === opts.input.userId) {
+    throw new ClientError("You cannot delete your own account");
+  }
+  await deleteAuthById(opts.input.userId);
   return {};
 }
 

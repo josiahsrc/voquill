@@ -1,6 +1,7 @@
 import {
   AiGenerateTextInputZod,
   AiTranscribeAudioInputZod,
+  AuthDeleteUserInputZod,
   AuthLoginInputZod,
   AuthMakeAdminInputZod,
   AuthRefreshInputZod,
@@ -17,6 +18,7 @@ import express from "express";
 import { runMigrations } from "./db/migrate";
 import { generateText, transcribeAudio } from "./services/ai.service";
 import {
+  deleteUser,
   login,
   logout,
   makeAdmin,
@@ -77,6 +79,11 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await makeAdmin({
         auth,
         input: validateData(AuthMakeAdminInputZod, input),
+      });
+    } else if (name === "auth/deleteUser") {
+      data = await deleteUser({
+        auth,
+        input: validateData(AuthDeleteUserInputZod, input),
       });
     } else if (name === "user/setMyUser") {
       data = await setMyUser({

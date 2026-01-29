@@ -1,5 +1,6 @@
 import {
   AdminPanelSettings,
+  DeleteOutline,
   MoreVert,
   RemoveOutlined,
 } from "@mui/icons-material";
@@ -12,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { UserWithAuth } from "@repo/types";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { loadUsers, setUserAdmin } from "../../actions/users.actions";
 import { useAppStore } from "../../store";
 import { AppTable, type ColumnDef } from "../common/AppTable";
@@ -22,10 +23,12 @@ import {
   type MenuPopoverItem,
 } from "../common/MenuPopover";
 import { TabLayout } from "../common/TabLayout";
+import { DeleteUserDialog } from "./DeleteUserDialog";
 
 const UserActionsMenu = ({ user }: { user: UserWithAuth }) => {
   const currentUserId = useAppStore((state) => state.auth?.userId);
   const isSelf = user.id === currentUserId;
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isSelf) return <RemoveOutlined fontSize="small" color="disabled" />;
 
@@ -39,16 +42,33 @@ const UserActionsMenu = ({ user }: { user: UserWithAuth }) => {
         close();
       },
     },
+    { kind: "divider" },
+    {
+      kind: "listItem",
+      title: <Typography color="error">Delete user</Typography>,
+      leading: <DeleteOutline fontSize="small" color="error" />,
+      onClick: ({ close }) => {
+        close();
+        setDeleteOpen(true);
+      },
+    },
   ];
 
   return (
-    <MenuPopoverBuilder items={items}>
-      {({ ref, open }) => (
-        <IconButton ref={ref as any} size="small" onClick={open}>
-          <MoreVert fontSize="small" />
-        </IconButton>
-      )}
-    </MenuPopoverBuilder>
+    <>
+      <MenuPopoverBuilder items={items}>
+        {({ ref, open }) => (
+          <IconButton ref={ref as any} size="small" onClick={open}>
+            <MoreVert fontSize="small" />
+          </IconButton>
+        )}
+      </MenuPopoverBuilder>
+      <DeleteUserDialog
+        user={user}
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+      />
+    </>
   );
 };
 
@@ -132,6 +152,7 @@ export default function UsersTab() {
         rows={users}
         columns={columns}
         defaultSortColumnIndex={0}
+        fixedItemHeight={52}
         sx={{ height: "100%" }}
       />
     </TabLayout>

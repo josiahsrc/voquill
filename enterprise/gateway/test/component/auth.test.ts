@@ -204,6 +204,91 @@ describe("auth", () => {
     });
   });
 
+  describe("deleteUser", () => {
+    const adminEmail = `del-admin-${Date.now()}@example.com`;
+    const targetEmail = `del-target-${Date.now()}@example.com`;
+    const password = "password123";
+    let adminToken: string;
+    let adminId: string;
+    let targetToken: string;
+    let targetId: string;
+
+    beforeAll(async () => {
+      await query("UPDATE auth SET is_admin = FALSE");
+
+      const adminData = await invoke("auth/register", { email: adminEmail, password });
+      adminId = adminData.auth.id;
+
+      const targetData = await invoke("auth/register", { email: targetEmail, password });
+      targetToken = targetData.token;
+      targetId = targetData.auth.id;
+
+      await invoke("member/tryInitialize", {}, targetData.token);
+      await invoke("user/setMyUser", {
+        value: {
+          id: targetId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          name: "Target",
+          onboarded: false,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: false,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+        },
+      }, targetData.token);
+      await invoke("term/upsertMyTerm", {
+        term: { id: `del-term-${Date.now()}`, createdAt: new Date().toISOString(), sourceValue: "foo", destinationValue: "bar", isReplacement: false },
+      }, targetData.token);
+
+      await invoke("auth/makeAdmin", { userId: adminId, isAdmin: true }, targetData.token);
+      const refreshed = await invoke("auth/login", { email: adminEmail, password });
+      adminToken = refreshed.token;
+    });
+
+    it("rejects deleteUser without a token", async () => {
+      await expect(
+        invoke("auth/deleteUser", { userId: targetId })
+      ).rejects.toThrow("401");
+    });
+
+    it("rejects deleteUser from a non-admin user", async () => {
+      await expect(
+        invoke("auth/deleteUser", { userId: targetId }, targetToken)
+      ).rejects.toThrow("401");
+    });
+
+    it("rejects deleting yourself", async () => {
+      await expect(
+        invoke("auth/deleteUser", { userId: adminId }, adminToken)
+      ).rejects.toThrow("400");
+    });
+
+    it("deletes auth, user, member, and terms rows", async () => {
+      await invoke("auth/deleteUser", { userId: targetId }, adminToken);
+
+      const auth = await query("SELECT id FROM auth WHERE id = $1", [targetId]);
+      expect(auth.rows.length).toBe(0);
+
+      const users = await query("SELECT id FROM users WHERE id = $1", [targetId]);
+      expect(users.rows.length).toBe(0);
+
+      const members = await query("SELECT id FROM members WHERE id = $1", [targetId]);
+      expect(members.rows.length).toBe(0);
+
+      const terms = await query("SELECT id FROM terms WHERE user_id = $1", [targetId]);
+      expect(terms.rows.length).toBe(0);
+    });
+
+    it("deleted user cannot log in", async () => {
+      await expect(
+        invoke("auth/login", { email: targetEmail, password })
+      ).rejects.toThrow("401");
+    });
+  });
+
   describe("token types", () => {
     const tokenEmail = `tokens-${Date.now()}@example.com`;
 

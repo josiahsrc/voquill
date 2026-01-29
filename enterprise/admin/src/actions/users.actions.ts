@@ -23,6 +23,14 @@ export async function loadUsers() {
   }
 }
 
+export async function deleteUser(userId: string) {
+  await invoke("auth/deleteUser", { userId });
+  produceAppState((draft) => {
+    draft.users.userIds = draft.users.userIds.filter((id) => id !== userId);
+    delete draft.userWithAuthById[userId];
+  });
+}
+
 export async function setUserAdmin(userId: string, isAdmin: boolean) {
   await invoke("auth/makeAdmin", { userId, isAdmin });
   produceAppState((draft) => {
