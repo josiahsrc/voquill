@@ -28,8 +28,8 @@ export async function upsertLlmProvider(opts: {
   provider: string;
   name: string;
   url: string;
-  apiKeyEncrypted: string;
-  apiKeySuffix: string;
+  apiKeyEncrypted?: string;
+  apiKeySuffix?: string;
   model: string;
   isEnabled: boolean;
 }): Promise<void> {
@@ -54,7 +54,7 @@ export async function upsertLlmProvider(opts: {
         opts.isEnabled,
       ],
     );
-  } else {
+  } else if (opts.apiKeyEncrypted) {
     await pool.query(
       `UPDATE llm_providers SET provider = $1, name = $2, url = $3, api_key_encrypted = $4, api_key_suffix = $5, model = $6, is_enabled = $7
        WHERE id = $8`,
@@ -68,6 +68,12 @@ export async function upsertLlmProvider(opts: {
         opts.isEnabled,
         opts.id,
       ],
+    );
+  } else {
+    await pool.query(
+      `UPDATE llm_providers SET provider = $1, name = $2, url = $3, model = $4, is_enabled = $5
+       WHERE id = $6`,
+      [opts.provider, opts.name, opts.url, opts.model, opts.isEnabled, opts.id],
     );
   }
 }

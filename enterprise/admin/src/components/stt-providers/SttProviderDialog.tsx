@@ -97,7 +97,7 @@ export const SttProviderDialog = ({
     form.schema &&
     form.url.trim() &&
     form.model.trim() &&
-    form.apiKey.trim();
+    (isEdit || form.apiKey.trim());
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -145,6 +145,7 @@ export const SttProviderDialog = ({
           type="password"
           value={form.apiKey}
           onChange={(e) => onFormChange({ ...form, apiKey: e.target.value })}
+          helperText={isEdit ? "Leave empty to keep the current key" : undefined}
         />
         <TextField
           label="Model"

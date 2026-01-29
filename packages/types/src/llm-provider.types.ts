@@ -16,7 +16,7 @@ export type LlmProviderInput = {
   provider: string;
   name: string;
   url: string;
-  apiKey: string;
+  apiKey?: string;
   model: string;
   isEnabled: boolean;
 };
@@ -27,7 +27,7 @@ export const LlmProviderInputZod = z
     provider: z.string().min(1),
     name: z.string().min(1),
     url: z.string().min(1),
-    apiKey: z.string().min(1),
+    apiKey: z.string().optional(),
     model: z.string().min(1),
     isEnabled: z.boolean(),
   })

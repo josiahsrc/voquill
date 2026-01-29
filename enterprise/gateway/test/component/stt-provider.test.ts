@@ -95,6 +95,55 @@ describe("stt provider", () => {
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
+  it("preserves API key when upsert omits apiKey", async () => {
+    await invoke(
+      "sttProvider/upsert",
+      {
+        provider: {
+          id: createdId,
+          provider: "openai",
+          name: "No Key Change",
+          url: "https://api.openai.com/v3",
+          model: "whisper-3",
+          isEnabled: true,
+        },
+      },
+      adminToken,
+    );
+
+    const data = await invoke("sttProvider/list", {}, adminToken);
+    expect(data.providers).toHaveLength(1);
+    expect(data.providers[0].name).toBe("No Key Change");
+    expect(data.providers[0].url).toBe("https://api.openai.com/v3");
+    expect(data.providers[0].model).toBe("whisper-3");
+    expect(data.providers[0].isEnabled).toBe(true);
+    expect(data.providers[0].apiKeySuffix).toBe("mnop");
+  });
+
+  it("preserves API key when upsert sends empty apiKey", async () => {
+    await invoke(
+      "sttProvider/upsert",
+      {
+        provider: {
+          id: createdId,
+          provider: "openai",
+          name: "Empty Key",
+          url: "https://api.openai.com/v4",
+          apiKey: "",
+          model: "whisper-4",
+          isEnabled: false,
+        },
+      },
+      adminToken,
+    );
+
+    const data = await invoke("sttProvider/list", {}, adminToken);
+    expect(data.providers).toHaveLength(1);
+    expect(data.providers[0].name).toBe("Empty Key");
+    expect(data.providers[0].model).toBe("whisper-4");
+    expect(data.providers[0].apiKeySuffix).toBe("mnop");
+  });
+
   it("deletes a provider", async () => {
     await invoke("sttProvider/delete", { providerId: createdId }, adminToken);
 

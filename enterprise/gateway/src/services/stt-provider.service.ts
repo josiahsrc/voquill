@@ -30,17 +30,20 @@ export async function upsertSttProviderHandler(opts: {
   requireAdmin(auth);
 
   const { provider } = opts.input;
-  const secret = getEncryptionSecret();
-  const apiKeyEncrypted = encryptApiKey(provider.apiKey, secret);
-  const apiKeySuffix = provider.apiKey.slice(-4);
+
+  const apiKeyFields = provider.apiKey
+    ? {
+        apiKeyEncrypted: encryptApiKey(provider.apiKey, getEncryptionSecret()),
+        apiKeySuffix: provider.apiKey.slice(-4),
+      }
+    : {};
 
   await upsertSttProvider({
     id: provider.id || uuid(),
     provider: provider.provider,
     name: provider.name,
     url: provider.url,
-    apiKeyEncrypted,
-    apiKeySuffix,
+    ...apiKeyFields,
     model: provider.model,
     isEnabled: provider.isEnabled,
   });

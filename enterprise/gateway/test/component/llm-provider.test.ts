@@ -97,6 +97,55 @@ describe("llm provider", () => {
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
+  it("preserves API key when upsert omits apiKey", async () => {
+    await invoke(
+      "llmProvider/upsert",
+      {
+        provider: {
+          id: createdId,
+          provider: "openai",
+          name: "No Key Change",
+          url: "https://api.openai.com/v3",
+          model: "gpt-4o",
+          isEnabled: true,
+        },
+      },
+      adminToken,
+    );
+
+    const data = await invoke("llmProvider/list", {}, adminToken);
+    expect(data.providers).toHaveLength(1);
+    expect(data.providers[0].name).toBe("No Key Change");
+    expect(data.providers[0].url).toBe("https://api.openai.com/v3");
+    expect(data.providers[0].model).toBe("gpt-4o");
+    expect(data.providers[0].isEnabled).toBe(true);
+    expect(data.providers[0].apiKeySuffix).toBe("mnop");
+  });
+
+  it("preserves API key when upsert sends empty apiKey", async () => {
+    await invoke(
+      "llmProvider/upsert",
+      {
+        provider: {
+          id: createdId,
+          provider: "openai",
+          name: "Empty Key",
+          url: "https://api.openai.com/v4",
+          apiKey: "",
+          model: "gpt-4o-mini",
+          isEnabled: false,
+        },
+      },
+      adminToken,
+    );
+
+    const data = await invoke("llmProvider/list", {}, adminToken);
+    expect(data.providers).toHaveLength(1);
+    expect(data.providers[0].name).toBe("Empty Key");
+    expect(data.providers[0].model).toBe("gpt-4o-mini");
+    expect(data.providers[0].apiKeySuffix).toBe("mnop");
+  });
+
   it("deletes a provider", async () => {
     await invoke("llmProvider/delete", { providerId: createdId }, adminToken);
 
