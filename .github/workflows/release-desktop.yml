@@ -779,7 +779,7 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+          RELEASE_TAG: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
         run: |
           $installerExe = "D:\cargo\release\voquill-installer.exe"
 
