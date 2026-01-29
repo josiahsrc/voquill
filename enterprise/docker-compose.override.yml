@@ -1,0 +1,15 @@
+# Local development overrides.
+# Bind-mounts source directories for hot-reload and uses ephemeral postgres data.
+services:
+  admin:
+    volumes:
+      - ./admin/src:/app/enterprise/admin/src
+      - ./admin/index.html:/app/enterprise/admin/index.html
+      - ./admin/public:/app/enterprise/admin/public
+
+  gateway:
+    volumes:
+      - ./gateway/src:/app/enterprise/gateway/src
+
+  postgres:
+    volumes: []

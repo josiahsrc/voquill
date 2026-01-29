@@ -1,0 +1,43 @@
+{
+  "name": "@repo/enterprise-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/index.js --external:bcrypt --external:pg --external:pg-native --external:express --external:jsonwebtoken && rm -rf dist/db/migrations && cp -r src/db/migrations dist/db/migrations",
+    "dev": "nodemon --exec \"npm run build && node dist/index.js\"",
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
+    "test:component": "vitest run test/component",
+    "test:integration": "vitest run test/integration",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@repo/functions": "*",
+    "@repo/types": "*",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3",
+    "openai": "^6.17.0",
+    "pg": "^8.17.2",
+    "uuid": "^8.3.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.16.0",
+    "@types/uuid": "^10.0.0",
+    "esbuild": "^0.25.11",
+    "nodemon": "^3.1.11",
+    "typescript": "5.9.2",
+    "vitest": "^4.0.18"
+  }
+}

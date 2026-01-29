@@ -19,7 +19,7 @@ services:
     ports:
       - "11430:11434"
     volumes:
-      - ./config/ollama/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./ollama/Caddyfile:/etc/caddy/Caddyfile:ro
     networks:
       - voquill-net
     depends_on:

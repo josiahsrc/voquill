@@ -4,10 +4,12 @@ import {
   Term,
   TermZod,
   UserZod,
+  type Auth,
   type EmptyObject,
   type JsonResponse,
   type Nullable,
   type User,
+  type UserWithAuth,
 } from "@repo/types";
 import { z } from "zod";
 
@@ -16,6 +18,46 @@ export type CloudModel = (typeof CLOUD_MODELS)[number];
 export const CloudModelZod = z.enum(CLOUD_MODELS);
 
 type HandlerDefinitions = {
+  // auth (enterprise only)
+  "auth/register": {
+    input: {
+      email: string;
+      password: string;
+    };
+    output: {
+      token: string;
+      auth: Auth;
+    };
+  };
+  "auth/login": {
+    input: {
+      email: string;
+      password: string;
+    };
+    output: {
+      token: string;
+      auth: Auth;
+    };
+  };
+  "auth/logout": {
+    input: EmptyObject;
+    output: EmptyObject;
+  };
+  "auth/refresh": {
+    input: EmptyObject;
+    output: {
+      token: string;
+      auth: Auth;
+    };
+  };
+  "auth/makeAdmin": {
+    input: {
+      userId: string;
+      isAdmin: boolean;
+    };
+    output: EmptyObject;
+  };
+
   // emulator
   "emulator/resetWordsToday": {
     input: EmptyObject;
@@ -48,6 +90,24 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
   "term/deleteMyTerm": {
+    input: {
+      termId: string;
+    };
+    output: EmptyObject;
+  };
+  "term/listGlobalTerms": {
+    input: EmptyObject;
+    output: {
+      terms: Term[];
+    };
+  };
+  "term/upsertGlobalTerm": {
+    input: {
+      term: Term;
+    };
+    output: EmptyObject;
+  };
+  "term/deleteGlobalTerm": {
     input: {
       termId: string;
     };
@@ -103,6 +163,13 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: {
       user: Nullable<User>;
+    };
+  };
+
+  "user/listAllUsers": {
+    input: EmptyObject;
+    output: {
+      users: UserWithAuth[];
     };
   };
 
@@ -216,3 +283,24 @@ export const DeleteTermInputZod = z
     termId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"term/deleteMyTerm">>;
+
+export const AuthRegisterInputZod = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/register">>;
+
+export const AuthMakeAdminInputZod = z
+  .object({
+    userId: z.string().min(1),
+    isAdmin: z.boolean(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/makeAdmin">>;
+
+export const AuthLoginInputZod = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/login">>;

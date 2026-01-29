@@ -1,0 +1,77 @@
+services:
+  admin:
+    build:
+      context: ..
+      dockerfile: enterprise/admin/Dockerfile
+      target: dev
+    ports:
+      - "5100:5173"
+    networks:
+      - voquill
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: enterprise/gateway/Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/voquill
+      - JWT_SECRET=development-secret-change-in-production
+      - STT_SERVER_URL_0=http://speaches:8000/v1
+      - STT_MODEL=Systran/faster-whisper-base
+      - LLM_SERVER_URL_0=http://ollama:11434
+      - LLM_MODEL=llama3.2:1b
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - voquill
+
+  speaches:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    ports:
+      - "8000:8000"
+    environment:
+      - 'preload_models=["Systran/faster-whisper-base"]'
+    volumes:
+      - speaches_data:/home/ubuntu/.cache
+    networks:
+      - voquill
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - voquill
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=voquill
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - voquill
+
+networks:
+  voquill:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  speaches_data:
+  ollama_data:
