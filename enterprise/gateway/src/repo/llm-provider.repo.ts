@@ -88,6 +88,35 @@ export async function listEnabledLlmProvidersWithKeys(): Promise<LlmProviderRow[
   return result.rows;
 }
 
+export async function getLlmProviderRowById(
+  id: string,
+): Promise<LlmProviderRow | null> {
+  const pool = getPool();
+  const result = await pool.query("SELECT * FROM llm_providers WHERE id = $1", [
+    id,
+  ]);
+  return result.rows[0] ?? null;
+}
+
+export async function getLlmProviderById(
+  id: string,
+): Promise<LlmProvider | null> {
+  const row = await getLlmProviderRowById(id);
+  return row ? rowToLlmProvider(row) : null;
+}
+
+export async function updateLlmPullStatus(
+  id: string,
+  pullStatus: string,
+  pullError: string | null,
+): Promise<void> {
+  const pool = getPool();
+  await pool.query(
+    "UPDATE llm_providers SET pull_status = $1, pull_error = $2 WHERE id = $3",
+    [pullStatus, pullError, id],
+  );
+}
+
 export async function deleteLlmProvider(id: string): Promise<void> {
   const pool = getPool();
   await pool.query("DELETE FROM llm_providers WHERE id = $1", [id]);

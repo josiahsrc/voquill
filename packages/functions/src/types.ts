@@ -269,6 +269,14 @@ type HandlerDefinitions = {
     };
     output: EmptyObject;
   };
+  "llmProvider/pull": {
+    input: {
+      providerId: string;
+    };
+    output: {
+      provider: Nullable<LlmProvider>;
+    };
+  };
 
   // system
   "system/getVersion": {
@@ -419,3 +427,9 @@ export const DeleteLlmProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"llmProvider/delete">>;
+
+export const PullLlmProviderInputZod = z
+  .object({
+    providerId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"llmProvider/pull">>;

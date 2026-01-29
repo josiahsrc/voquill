@@ -7,6 +7,7 @@ import {
   AuthRefreshInputZod,
   AuthRegisterInputZod,
   DeleteLlmProviderInputZod,
+  PullLlmProviderInputZod,
   DeleteSttProviderInputZod,
   PullSttProviderInputZod,
   DeleteTermInputZod,
@@ -49,6 +50,7 @@ import {
 import {
   deleteLlmProviderHandler,
   listLlmProvidersHandler,
+  pullLlmProviderHandler,
   upsertLlmProviderHandler,
 } from "./services/llm-provider.service";
 import {
@@ -174,6 +176,11 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await deleteLlmProviderHandler({
         auth,
         input: validateData(DeleteLlmProviderInputZod, input),
+      });
+    } else if (name === "llmProvider/pull") {
+      data = await pullLlmProviderHandler({
+        auth,
+        input: validateData(PullLlmProviderInputZod, input),
       });
     } else if (name === "ai/generateText") {
       data = await generateText({

@@ -12,5 +12,6 @@ export function createLlmApi(row: LlmProviderRow): BaseLlmApi {
   return new OllamaLlmApi({
     url: row.url,
     apiKey,
+    model: row.model,
   });
 }

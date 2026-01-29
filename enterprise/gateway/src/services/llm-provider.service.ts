@@ -5,11 +5,15 @@ import {
   listLlmProviders,
   upsertLlmProvider,
   deleteLlmProvider,
+  getLlmProviderRowById,
+  getLlmProviderById,
+  updateLlmPullStatus,
 } from "../repo/llm-provider.repo";
 import { requireAuth } from "../utils/auth.utils";
 import { encryptApiKey } from "../utils/crypto.utils";
 import { getEncryptionSecret } from "../utils/env.utils";
-import { UnauthorizedError } from "../utils/error.utils";
+import { NotFoundError, UnauthorizedError } from "../utils/error.utils";
+import { createLlmApi } from "../utils/llm-provider.utils";
 
 function requireAdmin(auth: AuthContext): void {
   if (!auth.isAdmin) {
@@ -63,4 +67,28 @@ export async function deleteLlmProviderHandler(opts: {
   requireAdmin(auth);
   await deleteLlmProvider(opts.input.providerId);
   return {};
+}
+
+export async function pullLlmProviderHandler(opts: {
+  auth: Nullable<AuthContext>;
+  input: HandlerInput<"llmProvider/pull">;
+}): Promise<HandlerOutput<"llmProvider/pull">> {
+  const auth = requireAuth(opts.auth);
+  requireAdmin(auth);
+
+  const row = await getLlmProviderRowById(opts.input.providerId);
+  if (!row) {
+    throw new NotFoundError("LLM provider not found");
+  }
+
+  const api = createLlmApi(row);
+  const result = await api.pullModel();
+  if (result.done) {
+    await updateLlmPullStatus(row.id, "complete", null);
+  } else {
+    await updateLlmPullStatus(row.id, "error", result.error ?? "Unknown error");
+  }
+
+  const provider = await getLlmProviderById(row.id);
+  return { provider };
 }
