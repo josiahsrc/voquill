@@ -1185,3 +1185,24 @@ pub async fn initialize_local_transcriber(
 
     Ok(true)
 }
+
+/// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
+///
+/// Platform paths:
+///   - macOS:  ~/Library/Application Support/com.voquill.desktop/enterprise.json
+///   - Linux:  ~/.config/com.voquill.desktop/enterprise.json
+///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json
+#[tauri::command]
+pub fn read_enterprise_config(app: AppHandle) -> Result<Option<String>, String> {
+    let mut path = app
+        .path()
+        .app_config_dir()
+        .map_err(|err| err.to_string())?;
+    path.push("enterprise.json");
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    let content = std::fs::read_to_string(&path).map_err(|err| err.to_string())?;
+    Ok(Some(content))
+}

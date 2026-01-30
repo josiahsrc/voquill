@@ -19,6 +19,10 @@ import { AuthUser } from "../../types/auth.types";
 import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
+import {
+  getEnterpriseConfig,
+  loadEnterpriseConfig,
+} from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
@@ -35,10 +39,14 @@ const AUTH_READY_TIMEOUT_MS = 4_000;
 // 10 minutes
 const CONFIG_REFRESH_INTERVAL_MS = 1000 * 60 * 10;
 
+// 60 seconds
+const ENTERPRISE_CONFIG_REFRESH_INTERVAL_MS = 1000 * 60;
+
 export const AppSideEffects = () => {
   const [authReady, setAuthReady] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
   const [initReady, setInitReady] = useState(false);
+  const [enterpriseReady, setEnterpriseReady] = useState(false);
   const authReadyRef = useRef(false);
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
@@ -103,6 +111,15 @@ export const AppSideEffects = () => {
     }
   }, []);
 
+  useIntervalAsync(ENTERPRISE_CONFIG_REFRESH_INTERVAL_MS, async () => {
+    await loadEnterpriseConfig();
+    const config = getEnterpriseConfig();
+    produceAppState((draft) => {
+      draft.enterprise.gatewayUrl = config?.gatewayUrl ?? null;
+    });
+    setEnterpriseReady(true);
+  }, []);
+
   useStreamWithSideEffects({
     builder: (): Observable<StreamRet> => {
       if (!authReady) {
@@ -149,12 +166,12 @@ export const AppSideEffects = () => {
   }, [authReady]);
 
   useEffect(() => {
-    if (streamReady && initReady && !initialized) {
+    if (streamReady && initReady && !initialized && enterpriseReady) {
       produceAppState((draft) => {
         draft.initialized = true;
       });
     }
-  }, [streamReady, initReady, initialized]);
+  }, [streamReady, initReady, initialized, enterpriseReady]);
 
   const isMigratingLocalUserRef = useRef(false);
   const memberPlan = member?.plan;
