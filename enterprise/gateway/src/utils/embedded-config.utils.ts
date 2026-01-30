@@ -13,9 +13,16 @@ export function getEmbeddedConfig(): EmbeddedConfig {
     return cached;
   }
 
-  const packed = Buffer.from(getEmbeddedConfigB64(), "base64");
-  const publicKey = getPublicSigningKey();
-  const decrypted = decryptWithPublicKey(packed, publicKey);
-  cached = JSON.parse(decrypted.toString("utf-8")) as EmbeddedConfig;
-  return cached;
+  try {
+    const packed = Buffer.from(getEmbeddedConfigB64(), "base64");
+    const publicKey = getPublicSigningKey();
+    const decrypted = decryptWithPublicKey(packed, publicKey);
+    cached = JSON.parse(decrypted.toString("utf-8")) as EmbeddedConfig;
+    return cached;
+  } catch (error) {
+    console.error("Failed to get embedded config:", error);
+    throw new Error(
+      "You must obtain a valid enterprise license to use this software.",
+    );
+  }
 }

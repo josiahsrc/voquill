@@ -51,4 +51,13 @@ describe("validateLicense", () => {
       "Enterprise license has expired",
     );
   });
+
+  it("throws when embedded config fails to load", () => {
+    mockGetEmbeddedConfig.mockImplementation(() => {
+      throw new Error("Failed to decrypt embedded config");
+    });
+    expect(() => validateLicense(new Date("2026-06-15"))).toThrow(
+      "Failed to decrypt embedded config",
+    );
+  });
 });
