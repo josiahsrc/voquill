@@ -22,7 +22,7 @@ export class SpeachesSttApi extends BaseSttApi {
   constructor(opts: { url: string; apiKey: string; model: string }) {
     super();
     this.client = new OpenAI({
-      baseURL: `${opts.url}/v1`,
+      baseURL: opts.url,
       apiKey: opts.apiKey,
     });
     this.model = opts.model;
@@ -46,15 +46,12 @@ export class SpeachesSttApi extends BaseSttApi {
 
   async pullModel(): Promise<{ done: boolean; error?: string }> {
     try {
-      const res = await fetch(
-        `${this.baseURL}/models/${encodeURIComponent(this.model)}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-          },
+      const res = await fetch(`${this.baseURL}/models/${this.model}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
         },
-      );
+      });
       if (res.ok) {
         return { done: true };
       }

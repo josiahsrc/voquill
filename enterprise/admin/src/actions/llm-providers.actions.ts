@@ -28,6 +28,13 @@ export async function upsertLlmProvider(provider: LlmProviderInput) {
 }
 
 export async function pullLlmProvider(providerId: string) {
+  produceAppState((draft) => {
+    const provider = draft.llmProviderById[providerId];
+    if (provider) {
+      provider.pullStatus = "in_progress";
+      provider.pullError = null;
+    }
+  });
   const data = await invoke("llmProvider/pull", { providerId });
   if (data.provider) {
     produceAppState((draft) => {

@@ -28,6 +28,13 @@ export async function upsertSttProvider(provider: SttProviderInput) {
 }
 
 export async function pullSttProvider(providerId: string) {
+  produceAppState((draft) => {
+    const provider = draft.sttProviderById[providerId];
+    if (provider) {
+      provider.pullStatus = "in_progress";
+      provider.pullError = null;
+    }
+  });
   const data = await invoke("sttProvider/pull", { providerId });
   if (data.provider) {
     produceAppState((draft) => {

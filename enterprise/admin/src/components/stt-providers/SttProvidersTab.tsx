@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   deleteSttProvider,
   loadSttProviders,
+  pullSttProvider,
 } from "../../actions/stt-providers.actions";
 import { useAppStore } from "../../store";
 import { AppTable, type ColumnDef } from "../common/AppTable";
@@ -156,7 +157,13 @@ export default function SttProvidersTab() {
         if (row.pullStatus === "error") {
           return (
             <Tooltip title={row.pullError ?? "Unknown error"}>
-              <Chip label="Error" size="small" color="error" variant="outlined" />
+              <Chip
+                label="Retry"
+                size="small"
+                color="error"
+                variant="outlined"
+                onClick={() => pullSttProvider(row.id)}
+              />
             </Tooltip>
           );
         }
