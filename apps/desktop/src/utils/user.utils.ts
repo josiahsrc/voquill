@@ -77,6 +77,11 @@ export const getMyPrimaryDictationLanguage = (state: AppState): string => {
 };
 
 export const getMyDictationLanguage = (state: AppState): string => {
+  const override = state.dictationLanguageOverride;
+  if (override) {
+    return override;
+  }
+
   const { enabled, secondaryLanguage, activeLanguage } =
     state.settings.languageSwitch;
 

@@ -29,7 +29,11 @@ import {
 } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
-import { useHotkeyFire, useHotkeyHold } from "../../hooks/hotkey.hooks";
+import {
+  useHotkeyFire,
+  useHotkeyHold,
+  useHotkeyHoldMany,
+} from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import type { RecordingMode } from "../../state/app.state";
@@ -61,6 +65,7 @@ import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
   LANGUAGE_SWITCH_HOTKEY,
+  getAdditionalLanguageEntries,
 } from "../../utils/keyboard.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
@@ -71,8 +76,10 @@ import {
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
+  getMyDictationLanguage,
   getMyDictationLanguageCode,
   getMyPreferredMicrophone,
+  getMyPrimaryDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import {
@@ -497,6 +504,9 @@ export const RootSideEffects = () => {
       }
     } finally {
       session?.cleanup();
+      produceAppState((draft) => {
+        draft.dictationLanguageOverride = null;
+      });
       refreshMember();
     }
   }, [clearRecordingTimers, resetRecordingState]);
@@ -510,6 +520,9 @@ export const RootSideEffects = () => {
     trackDictationStart();
     produceAppState((draft) => {
       draft.activeRecordingMode = "dictate";
+      draft.dictationLanguageOverride = state.settings.languageSwitch.enabled
+        ? getMyDictationLanguage(state)
+        : getMyPrimaryDictationLanguage(state);
     });
     await startRecording();
   }, [startRecording]);
@@ -562,6 +575,37 @@ export const RootSideEffects = () => {
     actionName: LANGUAGE_SWITCH_HOTKEY,
     isDisabled: !languageSwitchEnabled,
     onFire: handleLanguageSwitch,
+  });
+
+  const additionalLanguageEntries = useAppStore((state) => {
+    if (state.settings.languageSwitch.enabled) {
+      return [];
+    }
+    return getAdditionalLanguageEntries(state);
+  });
+  const additionalLanguageControllers = useMemo(
+    () =>
+      additionalLanguageEntries.map((entry) => ({
+        actionName: entry.actionName,
+        controller: getOrCreateController(
+          entry.actionName,
+          () => {
+            produceAppState((draft) => {
+              draft.activeRecordingMode = "dictate";
+              draft.dictationLanguageOverride = entry.language;
+            });
+            void startRecording();
+          },
+          () => {
+            void stopRecording();
+          },
+        ),
+      })),
+    [additionalLanguageEntries, startRecording, stopRecording],
+  );
+
+  useHotkeyHoldMany({
+    actions: additionalLanguageControllers,
   });
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
