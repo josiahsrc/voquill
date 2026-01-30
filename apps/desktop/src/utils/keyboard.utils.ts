@@ -4,6 +4,21 @@ import { getPlatform } from "./platform.utils";
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
 export const LANGUAGE_SWITCH_HOTKEY = "language-switch";
+export const ADDITIONAL_LANGUAGE_HOTKEY_PREFIX = "additional-language:";
+
+export const getAdditionalLanguageActionName = (language: string): string =>
+  `${ADDITIONAL_LANGUAGE_HOTKEY_PREFIX}${language}`;
+
+export const getAdditionalLanguageCode = (
+  actionName: string,
+): string | null => {
+  if (!actionName.startsWith(ADDITIONAL_LANGUAGE_HOTKEY_PREFIX)) {
+    return null;
+  }
+
+  const raw = actionName.slice(ADDITIONAL_LANGUAGE_HOTKEY_PREFIX.length);
+  return raw.length > 0 ? raw : null;
+};
 
 export const getPrettyKeyName = (key: string): string => {
   const lower = key.toLowerCase();
@@ -86,4 +101,33 @@ export const getHotkeyCombosForAction = (
   }
 
   return getDefaultHotkeyCombosForAction(actionName);
+};
+
+export type AdditionalLanguageEntry = {
+  actionName: string;
+  language: string;
+  hotkeyCombos: string[][];
+};
+
+export const getAdditionalLanguageEntries = (
+  state: AppState,
+): AdditionalLanguageEntry[] => {
+  return Object.values(state.hotkeyById)
+    .filter(
+      (hotkey) =>
+        hotkey &&
+        hotkey.actionName.startsWith(ADDITIONAL_LANGUAGE_HOTKEY_PREFIX),
+    )
+    .map((hotkey) => {
+      const language = getAdditionalLanguageCode(hotkey.actionName);
+      if (!language) {
+        return null;
+      }
+      return {
+        actionName: hotkey.actionName,
+        language,
+        hotkeyCombos: getHotkeyCombosForAction(state, hotkey.actionName),
+      };
+    })
+    .filter((entry): entry is AdditionalLanguageEntry => Boolean(entry));
 };

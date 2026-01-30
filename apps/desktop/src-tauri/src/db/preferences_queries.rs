@@ -1,6 +1,27 @@
 use sqlx::{Row, SqlitePool};
 
 use crate::domain::UserPreferences;
+const SEP: &str = "::";
+
+fn serialize_additional_languages(
+    languages: &Option<Vec<String>>,
+) -> Option<String> {
+    languages.as_ref().map(|languages|
+        languages.join(&SEP.to_string())
+    )
+}
+
+fn deserialize_additional_languages(
+    value: Option<String>,
+) -> Option<Vec<String>> {
+    value.map(|v| {
+        if v.is_empty() {
+            Vec::new()
+        } else {
+            v.split(SEP).map(|s| s.to_owned()).collect()
+        }
+    })
+}
 
 pub async fn upsert_user_preferences(
     pool: SqlitePool,
@@ -28,13 +49,14 @@ pub async fn upsert_user_preferences(
              language_switch_enabled,
              secondary_dictation_language,
              active_dictation_language,
+             additional_dictation_languages,
              preferred_microphone,
              ignore_update_dialog,
              incognito_mode_enabled,
              incognito_mode_include_in_stats,
              dictation_pill_visibility
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -55,6 +77,7 @@ pub async fn upsert_user_preferences(
             language_switch_enabled = excluded.language_switch_enabled,
             secondary_dictation_language = excluded.secondary_dictation_language,
             active_dictation_language = excluded.active_dictation_language,
+            additional_dictation_languages = excluded.additional_dictation_languages,
             preferred_microphone = excluded.preferred_microphone,
             ignore_update_dialog = excluded.ignore_update_dialog,
             incognito_mode_enabled = excluded.incognito_mode_enabled,
@@ -81,6 +104,7 @@ pub async fn upsert_user_preferences(
     .bind(preferences.language_switch_enabled)
     .bind(&preferences.secondary_dictation_language)
     .bind(&preferences.active_dictation_language)
+    .bind(serialize_additional_languages(&preferences.additional_dictation_languages))
     .bind(&preferences.preferred_microphone)
     .bind(preferences.ignore_update_dialog)
     .bind(preferences.incognito_mode_enabled)
@@ -118,6 +142,7 @@ pub async fn fetch_user_preferences(
             language_switch_enabled,
             secondary_dictation_language,
             active_dictation_language,
+            additional_dictation_languages,
             preferred_microphone,
             ignore_update_dialog,
             incognito_mode_enabled,
@@ -193,6 +218,9 @@ pub async fn fetch_user_preferences(
         active_dictation_language: row
             .try_get::<Option<String>, _>("active_dictation_language")
             .unwrap_or(None),
+        additional_dictation_languages: deserialize_additional_languages(row
+            .try_get::<Option<String>, _>("additional_dictation_languages")
+            .unwrap_or(None)),
         preferred_microphone: row
             .try_get::<Option<String>, _>("preferred_microphone")
             .unwrap_or(None),
