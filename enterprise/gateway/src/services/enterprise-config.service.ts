@@ -5,6 +5,7 @@ import {
   upsertEnterpriseConfig,
 } from "../repo/enterprise-config.repo";
 import { requireAuth } from "../utils/auth.utils";
+import { getEmbeddedConfig } from "../utils/embedded-config.utils";
 import { requireAdmin } from "../utils/validation.utils";
 
 export async function getEnterpriseConfigHandler(opts: {
@@ -12,7 +13,16 @@ export async function getEnterpriseConfigHandler(opts: {
 }): Promise<HandlerOutput<"enterprise/getConfig">> {
   requireAuth(opts.auth);
   const config = await getEnterpriseConfig();
-  return { config };
+  const embedded = getEmbeddedConfig();
+  return {
+    config,
+    license: {
+      org: embedded?.org ?? "Invalid",
+      maxSeats: embedded?.max_seats ?? 0,
+      issued: embedded?.issued ?? "Invalid",
+      expires: embedded?.expires ?? "Invalid",
+    },
+  };
 }
 
 export async function upsertEnterpriseConfigHandler(opts: {

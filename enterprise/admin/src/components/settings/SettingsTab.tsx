@@ -21,7 +21,8 @@ import { TabLayout } from "../common/TabLayout";
 
 export default function SettingsTab() {
   const serverVersion = useAppStore((s) => s.settings.serverVersion);
-  const enterpriseConfig = useAppStore((s) => s.settings.enterpriseConfig);
+  const enterpriseConfig = useAppStore((s) => s.enterpriseConfig);
+  const license = useAppStore((s) => s.enterpriseLicense);
 
   useEffect(() => {
     loadSettings();
@@ -38,7 +39,33 @@ export default function SettingsTab() {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Company Settings
+              License
+            </Typography>
+            {license === null ? (
+              <CircularProgress size={20} />
+            ) : (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                <Typography variant="body2">
+                  Organization: {license.org}
+                </Typography>
+                <Typography variant="body2">
+                  Max Seats: {license.maxSeats}
+                </Typography>
+                <Typography variant="body2">
+                  Issued: {license.issued}
+                </Typography>
+                <Typography variant="body2">
+                  Expires: {license.expires}
+                </Typography>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Client App
             </Typography>
             {enterpriseConfig === null ? (
               <CircularProgress size={20} />

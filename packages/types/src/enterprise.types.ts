@@ -5,6 +5,13 @@ export type EnterpriseConfig = {
   allowChangeTranscriptionMethod: boolean;
 };
 
+export type EnterpriseLicense = {
+  org: string;
+  maxSeats: number;
+  issued: string;
+  expires: string;
+};
+
 export const EnterpriseConfigZod = z
   .object({
     allowChangePostProcessing: z.boolean(),

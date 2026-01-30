@@ -37,6 +37,16 @@ describe("enterprise config", () => {
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
   });
 
+  it("returns license from embedded config", async () => {
+    const data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.license).toEqual({
+      org: "Example Corp",
+      maxSeats: 5,
+      issued: "2026-01-01",
+      expires: "2027-01-01",
+    });
+  });
+
   it("upsert sets booleans and get reflects changes", async () => {
     await invoke(
       "enterprise/upsertConfig",

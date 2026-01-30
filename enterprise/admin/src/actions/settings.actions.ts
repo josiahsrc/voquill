@@ -15,7 +15,8 @@ export async function loadSettings() {
 
     produceAppState((draft) => {
       draft.settings.serverVersion = versionData.version;
-      draft.settings.enterpriseConfig = configData.config;
+      draft.enterpriseConfig = configData.config;
+      draft.enterpriseLicense = configData.license;
       draft.settings.status = "success";
     });
   } catch {
@@ -27,7 +28,7 @@ export async function loadSettings() {
 
 export async function updateEnterpriseConfig(config: EnterpriseConfig) {
   produceAppState((draft) => {
-    draft.settings.enterpriseConfig = config;
+    draft.enterpriseConfig = config;
   });
   await invoke("enterprise/upsertConfig", { config });
 }

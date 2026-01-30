@@ -2,6 +2,7 @@ import {
   EnterpriseConfigZod,
   FullConfig,
   Member,
+  type EnterpriseLicense,
   LlmProviderInputZod,
   SttProviderInputZod,
   Term,
@@ -293,6 +294,7 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: {
       config: EnterpriseConfig;
+      license: EnterpriseLicense;
     };
   };
   "enterprise/upsertConfig": {

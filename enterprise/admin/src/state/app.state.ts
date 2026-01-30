@@ -1,5 +1,7 @@
 import type {
   AuthContext,
+  EnterpriseConfig,
+  EnterpriseLicense,
   LlmProvider,
   Nullable,
   SttProvider,
@@ -30,6 +32,9 @@ export type AppState = {
   token: Nullable<string>;
   refreshToken: Nullable<string>;
 
+  enterpriseConfig: Nullable<EnterpriseConfig>;
+  enterpriseLicense: Nullable<EnterpriseLicense>;
+
   termById: Record<string, Term>;
   userWithAuthById: Record<string, UserWithAuth>;
   sttProviderById: Record<string, SttProvider>;
@@ -54,6 +59,9 @@ export const INITIAL_APP_STATE: AppState = {
   auth: null,
   token: null,
   refreshToken: null,
+
+  enterpriseConfig: null,
+  enterpriseLicense: null,
 
   termById: {},
   userWithAuthById: {},
