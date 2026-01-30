@@ -11,7 +11,7 @@ use crate::domain::TranscriptionAudioSnapshot;
 const AUDIO_DIR_NAME: &str = "transcription-audio";
 
 fn map_hound_error(err: hound::Error) -> io::Error {
-    io::Error::new(io::ErrorKind::Other, err.to_string())
+    io::Error::other(err.to_string())
 }
 
 fn sanitize_id(id: &str) -> String {
@@ -31,7 +31,7 @@ pub fn audio_dir(app: &tauri::AppHandle) -> io::Result<PathBuf> {
     let mut path = app
         .path()
         .app_data_dir()
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err.to_string()))?;
+        .map_err(|err| io::Error::other(err.to_string()))?;
     path.push(AUDIO_DIR_NAME);
     fs::create_dir_all(&path)?;
     Ok(path)

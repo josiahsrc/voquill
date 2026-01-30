@@ -80,7 +80,9 @@ export const WaveformSection = () => {
         position: "absolute",
         bottom: `${bottomOffsetPx}px`,
         left: "50%",
-        transform: isVisible ? "translateX(-50%)" : "translateX(-50%) translateY(8px)",
+        transform: isVisible
+          ? "translateX(-50%)"
+          : "translateX(-50%) translateY(8px)",
         opacity: isVisible ? 1 : 0,
         transition: isVisible
           ? "opacity 100ms ease-out, transform 100ms ease-out, bottom 200ms ease-out, visibility 0ms"
