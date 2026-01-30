@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import jwt from "jsonwebtoken";
 import type { Auth, AuthContext } from "@repo/types";
+import jwt from "jsonwebtoken";
+import { describe, expect, it } from "vitest";
 import {
+  extractAuth,
+  requireAuth,
   signAuthToken,
   signRefreshToken,
   verifyRefreshToken,
-  extractAuth,
-  requireAuth,
-} from "../../src/utils/auth.utils";
+} from "./auth.utils";
 
 const SECRET = "development-secret";
 
@@ -49,7 +49,10 @@ describe("signAuthToken", () => {
 describe("signRefreshToken", () => {
   it("produces a valid JWT with type=refresh", () => {
     const token = signRefreshToken(mockAuth);
-    const payload = jwt.verify(token, SECRET) as { userId: string; type: string };
+    const payload = jwt.verify(token, SECRET) as {
+      userId: string;
+      type: string;
+    };
 
     expect(payload.userId).toBe(mockAuth.id);
     expect(payload.type).toBe("refresh");
@@ -88,11 +91,9 @@ describe("verifyRefreshToken", () => {
   });
 
   it("rejects an expired refresh token", () => {
-    const token = jwt.sign(
-      { userId: mockAuth.id, type: "refresh" },
-      SECRET,
-      { expiresIn: "0s" },
-    );
+    const token = jwt.sign({ userId: mockAuth.id, type: "refresh" }, SECRET, {
+      expiresIn: "0s",
+    });
     expect(() => verifyRefreshToken(token)).toThrow();
   });
 
@@ -131,7 +132,12 @@ describe("extractAuth", () => {
 
   it("returns null for expired token", () => {
     const token = jwt.sign(
-      { userId: "u1", email: "e@e.com", isAdmin: false, expiresAt: new Date().toISOString() },
+      {
+        userId: "u1",
+        email: "e@e.com",
+        isAdmin: false,
+        expiresAt: new Date().toISOString(),
+      },
       SECRET,
       { expiresIn: "0s" },
     );
@@ -139,7 +145,9 @@ describe("extractAuth", () => {
   });
 
   it("returns null for invalid signature", () => {
-    const token = jwt.sign({ userId: "u1" }, "wrong-secret", { expiresIn: "1h" });
+    const token = jwt.sign({ userId: "u1" }, "wrong-secret", {
+      expiresIn: "1h",
+    });
     expect(extractAuth(`Bearer ${token}`)).toBeNull();
   });
 
@@ -156,7 +164,12 @@ describe("extractAuth", () => {
 
 describe("requireAuth", () => {
   it("returns auth when present", () => {
-    const ctx: AuthContext = { userId: "u1", email: "e@e.com", isAdmin: false, expiresAt: "" };
+    const ctx: AuthContext = {
+      userId: "u1",
+      email: "e@e.com",
+      isAdmin: false,
+      expiresAt: "",
+    };
     expect(requireAuth(ctx)).toBe(ctx);
   });
 

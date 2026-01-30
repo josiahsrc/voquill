@@ -10,7 +10,7 @@
     "start": "node dist/index.js",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "test:unit": "vitest run test/unit",
+    "test:unit": "vitest run src",
     "test:component": "vitest run test/component",
     "test:integration": "vitest run test/integration",
     "test:watch": "vitest"

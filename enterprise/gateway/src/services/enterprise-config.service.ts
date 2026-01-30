@@ -17,10 +17,10 @@ export async function getEnterpriseConfigHandler(opts: {
   return {
     config,
     license: {
-      org: embedded?.org ?? "Invalid",
-      maxSeats: embedded?.max_seats ?? 0,
-      issued: embedded?.issued ?? "Invalid",
-      expires: embedded?.expires ?? "Invalid",
+      org: embedded.org,
+      maxSeats: embedded.max_seats,
+      issued: embedded.issued,
+      expires: embedded.expires,
     },
   };
 }

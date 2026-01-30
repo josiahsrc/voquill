@@ -7,11 +7,11 @@ import {
   AuthRefreshInputZod,
   AuthRegisterInputZod,
   DeleteLlmProviderInputZod,
-  PullLlmProviderInputZod,
   DeleteSttProviderInputZod,
-  PullSttProviderInputZod,
   DeleteTermInputZod,
   EmptyObjectZod,
+  PullLlmProviderInputZod,
+  PullSttProviderInputZod,
   SetMyUserInputZod,
   UpsertEnterpriseConfigInputZod,
   UpsertLlmProviderInputZod,
@@ -37,7 +37,19 @@ import {
   getEnterpriseConfigHandler,
   upsertEnterpriseConfigHandler,
 } from "./services/enterprise-config.service";
+import {
+  deleteLlmProviderHandler,
+  listLlmProvidersHandler,
+  pullLlmProviderHandler,
+  upsertLlmProviderHandler,
+} from "./services/llm-provider.service";
 import { getMyMember, tryInitialize } from "./services/member.service";
+import {
+  deleteSttProviderHandler,
+  listSttProvidersHandler,
+  pullSttProviderHandler,
+  upsertSttProviderHandler,
+} from "./services/stt-provider.service";
 import {
   deleteGlobalTermHandler,
   deleteMyTerm,
@@ -47,31 +59,19 @@ import {
   upsertMyTerm,
 } from "./services/term.service";
 import {
-  deleteSttProviderHandler,
-  listSttProvidersHandler,
-  pullSttProviderHandler,
-  upsertSttProviderHandler,
-} from "./services/stt-provider.service";
-import {
-  deleteLlmProviderHandler,
-  listLlmProvidersHandler,
-  pullLlmProviderHandler,
-  upsertLlmProviderHandler,
-} from "./services/llm-provider.service";
-import {
   getMyUser,
   listAllUsersHandler,
   setMyUser,
 } from "./services/user.service";
 import { extractAuth } from "./utils/auth.utils";
+import { getGatewayVersion } from "./utils/env.utils";
 import {
   ClientError,
   ConflictError,
   NotFoundError,
   UnauthorizedError,
 } from "./utils/error.utils";
-import { getGatewayVersion } from "./utils/env.utils";
-import { validateData } from "./utils/validation.utils";
+import { validateData, validateLicense } from "./utils/validation.utils";
 
 const app = express();
 app.use(cors());
@@ -84,8 +84,9 @@ type HandlerRequest = {
 
 app.post("/handler", async (req: Request, res: Response) => {
   try {
-    const { name, input } = req.body as HandlerRequest;
+    validateLicense(new Date());
 
+    const { name, input } = req.body as HandlerRequest;
     const auth = extractAuth(req.headers.authorization);
 
     let data: unknown;

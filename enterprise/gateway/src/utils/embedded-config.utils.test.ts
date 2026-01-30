@@ -22,8 +22,8 @@ describe("embedded config", () => {
     expect(config).toHaveProperty("max_seats");
     expect(config).toHaveProperty("issued");
     expect(config).toHaveProperty("expires");
-    expect(typeof config?.org).toBe("string");
-    expect(typeof config?.max_seats).toBe("number");
+    expect(typeof config.org).toBe("string");
+    expect(typeof config.max_seats).toBe("number");
   });
 
   it("returns null if EMBEDDED_CONFIG_B64 is not set", () => {

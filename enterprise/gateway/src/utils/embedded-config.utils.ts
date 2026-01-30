@@ -8,7 +8,7 @@ export function clearEmbeddedConfigCache(): void {
   cached = null;
 }
 
-export function getEmbeddedConfig(): EmbeddedConfig | null {
+export function getEmbeddedConfig(): EmbeddedConfig {
   if (cached) {
     return cached;
   }
