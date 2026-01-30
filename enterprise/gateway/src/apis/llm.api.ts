@@ -56,15 +56,20 @@ export class OllamaLlmApi extends BaseLlmApi {
   }
 
   async pullModel(): Promise<{ done: boolean; error?: string }> {
-    const res = await fetch(`${this.baseURL}/api/pull`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: this.model }),
-    });
-    if (res.ok) {
-      return { done: true };
+    try {
+      const res = await fetch(`${this.baseURL}/api/pull`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: this.model }),
+      });
+      if (res.ok) {
+        return { done: true };
+      }
+      const text = await res.text().catch(() => res.statusText);
+      return { done: false, error: text };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { done: false, error: message };
     }
-    const text = await res.text().catch(() => res.statusText);
-    return { done: false, error: text };
   }
 }

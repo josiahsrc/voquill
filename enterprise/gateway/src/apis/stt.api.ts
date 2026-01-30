@@ -45,19 +45,24 @@ export class SpeachesSttApi extends BaseSttApi {
   }
 
   async pullModel(): Promise<{ done: boolean; error?: string }> {
-    const res = await fetch(
-      `${this.baseURL}/models/${encodeURIComponent(this.model)}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+    try {
+      const res = await fetch(
+        `${this.baseURL}/models/${encodeURIComponent(this.model)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+          },
         },
-      },
-    );
-    if (res.ok) {
-      return { done: true };
+      );
+      if (res.ok) {
+        return { done: true };
+      }
+      const text = await res.text().catch(() => res.statusText);
+      return { done: false, error: text };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { done: false, error: message };
     }
-    const text = await res.text().catch(() => res.statusText);
-    return { done: false, error: text };
   }
 }
