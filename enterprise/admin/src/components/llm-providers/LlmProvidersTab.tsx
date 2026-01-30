@@ -5,6 +5,7 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import type { LlmProvider } from "@repo/types";
@@ -105,7 +106,7 @@ export default function LlmProvidersTab() {
       weight: 2,
     },
     {
-      header: "Schema",
+      header: "Provider",
       cell: (row) => row.provider,
       weight: 1,
     },
@@ -145,6 +146,23 @@ export default function LlmProvidersTab() {
         />
       ),
       width: 90,
+    },
+    {
+      header: "Pull Status",
+      cell: (row) => {
+        if (row.pullStatus === "complete") {
+          return <Chip label="Pulled" size="small" color="success" variant="outlined" />;
+        }
+        if (row.pullStatus === "error") {
+          return (
+            <Tooltip title={row.pullError ?? "Unknown error"}>
+              <Chip label="Error" size="small" color="error" variant="outlined" />
+            </Tooltip>
+          );
+        }
+        return <Chip label="Pulling…" size="small" icon={<CircularProgress size={14} />} variant="outlined" />;
+      },
+      width: 120,
     },
     {
       header: "Actions",

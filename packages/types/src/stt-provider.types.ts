@@ -30,7 +30,7 @@ export const SttProviderInputZod = z
     provider: z.string().min(1),
     name: z.string().min(1),
     url: z.string().min(1),
-    apiKey: z.string().optional(),
+    apiKey: z.string().default(""),
     model: z.string().min(1),
     isEnabled: z.boolean(),
   })

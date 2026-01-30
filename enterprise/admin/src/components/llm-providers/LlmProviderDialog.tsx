@@ -14,15 +14,17 @@ import type { LlmProvider } from "@repo/types";
 import { useState } from "react";
 import { upsertLlmProvider } from "../../actions/llm-providers.actions";
 import { useAppStore } from "../../store";
+import { getLlmProviderModels } from "../../utils/provider-models.utils";
+import { ModelAutocomplete } from "../common/ModelAutocomplete";
 
-const SCHEMA_OPTIONS = [
+const PROVIDER_OPTIONS = [
   { value: "ollama", label: "Ollama" },
 ] as const;
 
 export type LlmProviderFormState = {
   id: string;
   name: string;
-  schema: string;
+  provider: string;
   url: string;
   apiKey: string;
   model: string;
@@ -32,7 +34,7 @@ export type LlmProviderFormState = {
 const EMPTY_FORM: LlmProviderFormState = {
   id: "",
   name: "",
-  schema: "",
+  provider: "",
   url: "",
   apiKey: "",
   model: "",
@@ -47,7 +49,7 @@ export function formFromProvider(p: LlmProvider): LlmProviderFormState {
   return {
     id: p.id,
     name: p.name,
-    schema: p.provider,
+    provider: p.provider,
     url: p.url,
     apiKey: "",
     model: p.model,
@@ -70,6 +72,7 @@ export const LlmProviderDialog = ({
 }: LlmProviderDialogProps) => {
   const providerById = useAppStore((state) => state.llmProviderById);
   const [saving, setSaving] = useState(false);
+  const models = getLlmProviderModels(form.provider);
 
   const isEdit = Boolean(form.id && providerById[form.id]);
 
@@ -79,7 +82,7 @@ export const LlmProviderDialog = ({
       await upsertLlmProvider({
         ...(form.id ? { id: form.id } : {}),
         name: form.name,
-        provider: form.schema,
+        provider: form.provider,
         url: form.url,
         apiKey: form.apiKey,
         model: form.model,
@@ -94,10 +97,9 @@ export const LlmProviderDialog = ({
   const canSave =
     !saving &&
     form.name.trim() &&
-    form.schema &&
+    form.provider &&
     form.url.trim() &&
-    form.model.trim() &&
-    (isEdit || form.apiKey.trim());
+    form.model.trim();
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -118,14 +120,14 @@ export const LlmProviderDialog = ({
           onChange={(e) => onFormChange({ ...form, name: e.target.value })}
         />
         <TextField
-          label="Schema"
+          label="Provider"
           fullWidth
           size="small"
           select
-          value={form.schema}
-          onChange={(e) => onFormChange({ ...form, schema: e.target.value })}
+          value={form.provider}
+          onChange={(e) => onFormChange({ ...form, provider: e.target.value })}
         >
-          {SCHEMA_OPTIONS.map((opt) => (
+          {PROVIDER_OPTIONS.map((opt) => (
             <MenuItem key={opt.value} value={opt.value}>
               {opt.label}
             </MenuItem>
@@ -147,12 +149,11 @@ export const LlmProviderDialog = ({
           onChange={(e) => onFormChange({ ...form, apiKey: e.target.value })}
           helperText={isEdit ? "Leave empty to keep the current key" : undefined}
         />
-        <TextField
+        <ModelAutocomplete
           label="Model"
-          fullWidth
-          size="small"
           value={form.model}
-          onChange={(e) => onFormChange({ ...form, model: e.target.value })}
+          onChange={(value) => onFormChange({ ...form, model: value })}
+          options={models}
         />
         <FormControlLabel
           control={

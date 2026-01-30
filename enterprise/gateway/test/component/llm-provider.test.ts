@@ -146,6 +146,36 @@ describe("llm provider", () => {
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
+  it("creates a provider without an API key", async () => {
+    await invoke(
+      "llmProvider/upsert",
+      {
+        provider: {
+          provider: "ollama",
+          name: "No Key Provider",
+          url: "http://ollama:11434/v5",
+          model: "llama3-nokey",
+          isEnabled: true,
+        },
+      },
+      adminToken,
+    );
+
+    const data = await invoke("llmProvider/list", {}, adminToken);
+    const noKeyProvider = data.providers.find(
+      (p: any) => p.name === "No Key Provider",
+    );
+    expect(noKeyProvider).toBeDefined();
+    expect(noKeyProvider.apiKeySuffix).toBe("");
+    expect(noKeyProvider.model).toBe("llama3-nokey");
+
+    await invoke(
+      "llmProvider/delete",
+      { providerId: noKeyProvider.id },
+      adminToken,
+    );
+  });
+
   it("deletes a provider", async () => {
     await invoke("llmProvider/delete", { providerId: createdId }, adminToken);
 

@@ -20,6 +20,7 @@ import { Suspense } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import AppLogo from "../../assets/app-logo.svg?react";
 import { getAppName } from "../../utils/env.utils";
+import HomeSideEffects from "./HomeSideEffects";
 
 const NAV_ITEMS = [
   { label: "Users", path: "/users", icon: <GroupOutlined /> },
@@ -45,6 +46,7 @@ export default function HomePage() {
 
   return (
     <Stack direction="row" sx={{ height: "100%" }}>
+      <HomeSideEffects />
       <Stack
         sx={{
           width: SIDEBAR_WIDTH,

@@ -27,6 +27,15 @@ export async function upsertSttProvider(provider: SttProviderInput) {
   await loadSttProviders();
 }
 
+export async function pullSttProvider(providerId: string) {
+  const data = await invoke("sttProvider/pull", { providerId });
+  if (data.provider) {
+    produceAppState((draft) => {
+      registerSttProviders(draft, [data.provider!]);
+    });
+  }
+}
+
 export async function deleteSttProvider(providerId: string) {
   await invoke("sttProvider/delete", { providerId });
   produceAppState((draft) => {

@@ -27,6 +27,15 @@ export async function upsertLlmProvider(provider: LlmProviderInput) {
   await loadLlmProviders();
 }
 
+export async function pullLlmProvider(providerId: string) {
+  const data = await invoke("llmProvider/pull", { providerId });
+  if (data.provider) {
+    produceAppState((draft) => {
+      registerLlmProviders(draft, [data.provider!]);
+    });
+  }
+}
+
 export async function deleteLlmProvider(providerId: string) {
   await invoke("llmProvider/delete", { providerId });
   produceAppState((draft) => {

@@ -144,6 +144,36 @@ describe("stt provider", () => {
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
+  it("creates a provider without an API key", async () => {
+    await invoke(
+      "sttProvider/upsert",
+      {
+        provider: {
+          provider: "speaches",
+          name: "No Key Provider",
+          url: "https://api.speaches.com/v5",
+          model: "whisper-5",
+          isEnabled: true,
+        },
+      },
+      adminToken,
+    );
+
+    const data = await invoke("sttProvider/list", {}, adminToken);
+    const noKeyProvider = data.providers.find(
+      (p: any) => p.name === "No Key Provider",
+    );
+    expect(noKeyProvider).toBeDefined();
+    expect(noKeyProvider.apiKeySuffix).toBe("");
+    expect(noKeyProvider.model).toBe("whisper-5");
+
+    await invoke(
+      "sttProvider/delete",
+      { providerId: noKeyProvider.id },
+      adminToken,
+    );
+  });
+
   it("deletes a provider", async () => {
     await invoke("sttProvider/delete", { providerId: createdId }, adminToken);
 
