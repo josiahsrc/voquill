@@ -12,6 +12,10 @@ import {
 } from "./llm-providers.state";
 import { INITIAL_LOGIN_STATE, type LoginState } from "./login.state";
 import {
+  INITIAL_SETTINGS_STATE,
+  type SettingsState,
+} from "./settings.state";
+import {
   INITIAL_STT_PROVIDERS_STATE,
   type SttProvidersState,
 } from "./stt-providers.state";
@@ -34,6 +38,7 @@ export type AppState = {
   login: LoginState;
   terms: TermsState;
   users: UsersState;
+  settings: SettingsState;
   sttProviders: SttProvidersState;
   llmProviders: LlmProvidersState;
 
@@ -56,6 +61,7 @@ export const INITIAL_APP_STATE: AppState = {
   llmProviderById: {},
 
   login: INITIAL_LOGIN_STATE,
+  settings: INITIAL_SETTINGS_STATE,
   terms: INITIAL_TERMS_STATE,
   users: INITIAL_USERS_STATE,
   sttProviders: INITIAL_STT_PROVIDERS_STATE,

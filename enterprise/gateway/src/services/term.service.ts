@@ -2,7 +2,7 @@ import type { HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
 import { requireAuth } from "../utils/auth.utils";
 import { listTermsByUserId, upsertTerm, deleteTerm, listGlobalTerms, upsertGlobalTerm, deleteGlobalTerm } from "../repo/term.repo";
-import { UnauthorizedError } from "../utils/error.utils";
+import { requireAdmin } from "../utils/validation.utils";
 
 export async function listMyTerms(opts: {
   auth: Nullable<AuthContext>;
@@ -28,12 +28,6 @@ export async function deleteMyTerm(opts: {
   const auth = requireAuth(opts.auth);
   await deleteTerm(auth.userId, opts.input.termId);
   return {};
-}
-
-function requireAdmin(auth: AuthContext): void {
-  if (!auth.isAdmin) {
-    throw new UnauthorizedError("Admin access required");
-  }
 }
 
 export async function listGlobalTermsHandler(opts: {

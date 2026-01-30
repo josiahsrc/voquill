@@ -1,4 +1,5 @@
 import {
+  EnterpriseConfigZod,
   FullConfig,
   Member,
   LlmProviderInputZod,
@@ -8,6 +9,7 @@ import {
   UserZod,
   type Auth,
   type EmptyObject,
+  type EnterpriseConfig,
   type JsonResponse,
   type LlmProvider,
   type LlmProviderInput,
@@ -286,6 +288,20 @@ type HandlerDefinitions = {
     };
   };
 
+  // enterprise config
+  "enterprise/getConfig": {
+    input: EmptyObject;
+    output: {
+      config: EnterpriseConfig;
+    };
+  };
+  "enterprise/upsertConfig": {
+    input: {
+      config: EnterpriseConfig;
+    };
+    output: EmptyObject;
+  };
+
   // config
   "config/getFullConfig": {
     input: EmptyObject;
@@ -433,3 +449,9 @@ export const PullLlmProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"llmProvider/pull">>;
+
+export const UpsertEnterpriseConfigInputZod = z
+  .object({
+    config: EnterpriseConfigZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"enterprise/upsertConfig">>;

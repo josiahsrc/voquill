@@ -12,14 +12,9 @@ import {
 import { requireAuth } from "../utils/auth.utils";
 import { encryptApiKey } from "../utils/crypto.utils";
 import { getEncryptionSecret } from "../utils/env.utils";
-import { NotFoundError, UnauthorizedError } from "../utils/error.utils";
+import { NotFoundError } from "../utils/error.utils";
 import { createLlmApi } from "../utils/llm-provider.utils";
-
-function requireAdmin(auth: AuthContext): void {
-  if (!auth.isAdmin) {
-    throw new UnauthorizedError("Admin access required");
-  }
-}
+import { requireAdmin } from "../utils/validation.utils";
 
 export async function listLlmProvidersHandler(opts: {
   auth: Nullable<AuthContext>;

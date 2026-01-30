@@ -13,6 +13,7 @@ import {
   DeleteTermInputZod,
   EmptyObjectZod,
   SetMyUserInputZod,
+  UpsertEnterpriseConfigInputZod,
   UpsertLlmProviderInputZod,
   UpsertSttProviderInputZod,
   UpsertTermInputZod,
@@ -32,6 +33,10 @@ import {
   register,
 } from "./services/auth.service";
 import { getFullConfig } from "./services/config.service";
+import {
+  getEnterpriseConfigHandler,
+  upsertEnterpriseConfigHandler,
+} from "./services/enterprise-config.service";
 import { getMyMember, tryInitialize } from "./services/member.service";
 import {
   deleteGlobalTermHandler,
@@ -195,6 +200,14 @@ app.post("/handler", async (req: Request, res: Response) => {
     } else if (name === "system/getVersion") {
       validateData(EmptyObjectZod, input);
       data = { version: getGatewayVersion() };
+    } else if (name === "enterprise/getConfig") {
+      validateData(EmptyObjectZod, input);
+      data = await getEnterpriseConfigHandler({ auth });
+    } else if (name === "enterprise/upsertConfig") {
+      data = await upsertEnterpriseConfigHandler({
+        auth,
+        input: validateData(UpsertEnterpriseConfigInputZod, input),
+      });
     } else if (name === "config/getFullConfig") {
       validateData(EmptyObjectZod, input);
       data = await getFullConfig();
