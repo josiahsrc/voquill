@@ -1,17 +1,15 @@
 import { v4 as uuid } from "uuid";
-import { invoke, query } from "../helpers";
+import { invoke, query, createTestAuth, cleanupTestAuths } from "../helpers";
 
 describe("term", () => {
+  afterAll(cleanupTestAuths);
+
   let token: string;
   let termId1: string;
   let termId2: string;
 
   beforeAll(async () => {
-    const email = `term-test-${Date.now()}@example.com`;
-    const data = await invoke("auth/register", {
-      email,
-      password: "password123",
-    });
+    const data = await createTestAuth();
     token = data.token;
     termId1 = uuid();
     termId2 = uuid();
@@ -106,10 +104,7 @@ describe("term", () => {
 
     beforeAll(async () => {
       const adminEmail = `global-term-admin-${Date.now()}@example.com`;
-      const adminData = await invoke("auth/register", {
-        email: adminEmail,
-        password: "password123",
-      });
+      const adminData = await createTestAuth(adminEmail);
       await query("UPDATE auth SET is_admin = TRUE WHERE id = $1", [adminData.auth.id]);
       const refreshed = await invoke("auth/login", {
         email: adminEmail,
@@ -118,10 +113,7 @@ describe("term", () => {
       adminToken = refreshed.token;
 
       const userEmail = `global-term-user-${Date.now()}@example.com`;
-      const userData = await invoke("auth/register", {
-        email: userEmail,
-        password: "password123",
-      });
+      const userData = await createTestAuth(userEmail);
       userToken = userData.token;
 
       globalTermId = uuid();

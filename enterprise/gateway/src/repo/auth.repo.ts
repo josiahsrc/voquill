@@ -72,6 +72,12 @@ export async function deleteAuthById(id: string): Promise<void> {
   }
 }
 
+export async function countAll(): Promise<number> {
+  const pool = getPool();
+  const result = await pool.query("SELECT COUNT(*) AS count FROM auth");
+  return parseInt(result.rows[0].count, 10);
+}
+
 export async function existsByEmail(email: string): Promise<boolean> {
   const pool = getPool();
   const result = await pool.query("SELECT id FROM auth WHERE email = $1", [

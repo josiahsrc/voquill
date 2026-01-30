@@ -34,13 +34,43 @@ export async function findUserById(id: string): Promise<Nullable<User>> {
   return rowToUser(result.rows[0]);
 }
 
+function defaultUser(id: string): User {
+  return {
+    id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    name: "",
+    bio: null,
+    company: null,
+    title: null,
+    onboarded: false,
+    onboardedAt: null,
+    timezone: null,
+    preferredLanguage: null,
+    preferredMicrophone: null,
+    playInteractionChime: true,
+    hasFinishedTutorial: false,
+    wordsThisMonth: 0,
+    wordsThisMonthMonth: null,
+    wordsTotal: 0,
+    hasMigratedPreferredMicrophone: false,
+    cohort: null,
+    shouldShowUpgradeDialog: false,
+  };
+}
+
 export async function listAllUsers(): Promise<UserWithAuth[]> {
   const pool = getPool();
   const result = await pool.query(
-    `SELECT u.*, a.email, a.is_admin FROM users u JOIN auth a ON u.id = a.id ORDER BY u.created_at`,
+    `SELECT a.id, a.email, a.is_admin, a.created_at AS auth_created_at, u.*
+     FROM auth a
+     LEFT JOIN users u ON u.id = a.id
+     ORDER BY a.created_at`,
   );
   return result.rows.map((row) => ({
-    ...rowToUser(row),
+    ...defaultUser(row.id),
+    createdAt: row.auth_created_at.toISOString(),
+    ...(row.created_at ? rowToUser(row) : {}),
     email: row.email,
     isAdmin: row.is_admin,
   }));
@@ -48,7 +78,7 @@ export async function listAllUsers(): Promise<UserWithAuth[]> {
 
 export async function upsertUser(
   id: string,
-  value: Partial<User>
+  value: Partial<User>,
 ): Promise<void> {
   const pool = getPool();
 
@@ -82,7 +112,7 @@ export async function upsertUser(
         value.hasMigratedPreferredMicrophone ?? false,
         value.cohort ?? null,
         value.shouldShowUpgradeDialog ?? false,
-      ]
+      ],
     );
     return;
   }
@@ -126,6 +156,6 @@ export async function upsertUser(
 
   await pool.query(
     `UPDATE users SET ${fields.join(", ")} WHERE id = $${paramIndex}`,
-    values
+    values,
   );
 }

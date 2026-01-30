@@ -1,14 +1,12 @@
-import { invoke } from "../helpers";
+import { invoke, createTestAuth, cleanupTestAuths } from "../helpers";
 
 describe("member", () => {
+  afterAll(cleanupTestAuths);
+
   let token: string;
 
   beforeAll(async () => {
-    const email = `member-test-${Date.now()}@example.com`;
-    const data = await invoke("auth/register", {
-      email,
-      password: "password123",
-    });
+    const data = await createTestAuth();
     token = data.token;
   });
 

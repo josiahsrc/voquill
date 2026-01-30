@@ -1,14 +1,12 @@
-import { invoke, createTestSttProvider } from "../helpers";
+import { invoke, createTestSttProvider, createTestAuth, cleanupTestAuths } from "../helpers";
+
+afterAll(cleanupTestAuths);
 
 describe("ai/transcribeAudio", () => {
   let token: string;
 
   beforeAll(async () => {
-    const email = `ai-test-${Date.now()}@example.com`;
-    const data = await invoke("auth/register", {
-      email,
-      password: "password123",
-    });
+    const data = await createTestAuth();
     token = data.token;
     await createTestSttProvider(token);
   });
@@ -57,11 +55,7 @@ describe("ai/generateText", () => {
   let token: string;
 
   beforeAll(async () => {
-    const email = `ai-gen-test-${Date.now()}@example.com`;
-    const data = await invoke("auth/register", {
-      email,
-      password: "password123",
-    });
+    const data = await createTestAuth();
     token = data.token;
   });
 

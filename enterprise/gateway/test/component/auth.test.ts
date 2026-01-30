@@ -1,13 +1,15 @@
 import jwt from "jsonwebtoken";
 import type { AuthContext } from "@repo/types";
-import { invoke, query } from "../helpers";
+import { invoke, query, createTestAuth, cleanupTestAuths } from "../helpers";
 
 describe("auth", () => {
+  afterAll(cleanupTestAuths);
+
   const email = `test-${Date.now()}@example.com`;
   const password = "password123";
 
   it("registers a new user", async () => {
-    const data = await invoke("auth/register", { email, password });
+    const data = await createTestAuth(email, password);
 
     expect(data.token).toBeDefined();
     expect(typeof data.token).toBe("string");
@@ -78,12 +80,14 @@ describe("auth", () => {
   });
 
   describe("auth/refresh", () => {
+    afterAll(cleanupTestAuths);
+
     const refreshEmail = `refresh-${Date.now()}@example.com`;
     let refreshToken: string;
     let userId: string;
 
     beforeAll(async () => {
-      const data = await invoke("auth/register", { email: refreshEmail, password });
+      const data = await createTestAuth(refreshEmail, password);
       refreshToken = data.refreshToken;
       userId = data.auth.id;
     });
@@ -121,6 +125,8 @@ describe("auth", () => {
   });
 
   describe("Make First Admin", () => {
+    afterAll(cleanupTestAuths);
+
     const firstAdminEmail = `first-admin-${Date.now()}@example.com`;
 
     beforeAll(async () => {
@@ -128,7 +134,7 @@ describe("auth", () => {
     });
 
     it("allows a user to make themselves admin when no admins exist", async () => {
-      const data = await invoke("auth/register", { email: firstAdminEmail, password });
+      const data = await createTestAuth(firstAdminEmail, password);
 
       await invoke(
         "auth/makeAdmin",
@@ -145,6 +151,8 @@ describe("auth", () => {
   });
 
   describe("makeAdmin", () => {
+    afterAll(cleanupTestAuths);
+
     const adminEmail = `admin-${Date.now()}@example.com`;
     const targetEmail = `target-${Date.now()}@example.com`;
     let adminToken: string;
@@ -155,10 +163,10 @@ describe("auth", () => {
     beforeAll(async () => {
       await query("UPDATE auth SET is_admin = FALSE");
 
-      const bootstrapData = await invoke("auth/register", { email: adminEmail, password });
+      const bootstrapData = await createTestAuth(adminEmail, password);
       adminId = bootstrapData.auth.id;
 
-      const targetData = await invoke("auth/register", { email: targetEmail, password });
+      const targetData = await createTestAuth(targetEmail, password);
       targetToken = targetData.token;
       targetId = targetData.auth.id;
 
@@ -205,6 +213,8 @@ describe("auth", () => {
   });
 
   describe("deleteUser", () => {
+    afterAll(cleanupTestAuths);
+
     const adminEmail = `del-admin-${Date.now()}@example.com`;
     const targetEmail = `del-target-${Date.now()}@example.com`;
     const password = "password123";
@@ -216,10 +226,10 @@ describe("auth", () => {
     beforeAll(async () => {
       await query("UPDATE auth SET is_admin = FALSE");
 
-      const adminData = await invoke("auth/register", { email: adminEmail, password });
+      const adminData = await createTestAuth(adminEmail, password);
       adminId = adminData.auth.id;
 
-      const targetData = await invoke("auth/register", { email: targetEmail, password });
+      const targetData = await createTestAuth(targetEmail, password);
       targetToken = targetData.token;
       targetId = targetData.auth.id;
 
@@ -289,11 +299,36 @@ describe("auth", () => {
     });
   });
 
+  describe("seat limit", () => {
+    beforeAll(async () => {
+      await query("DELETE FROM terms");
+      await query("DELETE FROM members");
+      await query("DELETE FROM users");
+      await query("DELETE FROM auth");
+    });
+    afterAll(cleanupTestAuths);
+
+    it("allows registering up to max seats and rejects the next", async () => {
+      for (let i = 0; i < 5; i++) {
+        await createTestAuth();
+      }
+
+      await expect(
+        invoke("auth/register", {
+          email: `seat-overflow-${Date.now()}@example.com`,
+          password: "password123",
+        }),
+      ).rejects.toThrow("seats");
+    });
+  });
+
   describe("token types", () => {
+    afterAll(cleanupTestAuths);
+
     const tokenEmail = `tokens-${Date.now()}@example.com`;
 
     it("returns distinct auth and refresh tokens on register", async () => {
-      const data = await invoke("auth/register", { email: tokenEmail, password });
+      const data = await createTestAuth(tokenEmail, password);
       expect(data.token).not.toBe(data.refreshToken);
 
       const authPayload = jwt.decode(data.token) as Record<string, unknown>;

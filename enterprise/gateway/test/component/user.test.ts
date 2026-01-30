@@ -1,14 +1,12 @@
-import { invoke, query } from "../helpers";
+import { invoke, query, createTestAuth, cleanupTestAuths } from "../helpers";
 
 describe("user", () => {
+  afterAll(cleanupTestAuths);
+
   let token: string;
 
   beforeAll(async () => {
-    const email = `user-test-${Date.now()}@example.com`;
-    const data = await invoke("auth/register", {
-      email,
-      password: "password123",
-    });
+    const data = await createTestAuth();
     token = data.token;
   });
 
@@ -92,10 +90,7 @@ describe("user", () => {
 
     beforeAll(async () => {
       adminEmail = `list-users-admin-${Date.now()}@example.com`;
-      const adminData = await invoke("auth/register", {
-        email: adminEmail,
-        password: "password123",
-      });
+      const adminData = await createTestAuth(adminEmail);
       await query("UPDATE auth SET is_admin = TRUE WHERE id = $1", [adminData.auth.id]);
       const refreshed = await invoke("auth/login", {
         email: adminEmail,
@@ -124,10 +119,7 @@ describe("user", () => {
       );
 
       userEmail = `list-users-regular-${Date.now()}@example.com`;
-      const userData = await invoke("auth/register", {
-        email: userEmail,
-        password: "password123",
-      });
+      const userData = await createTestAuth(userEmail);
       userToken = userData.token;
 
       await invoke(
@@ -175,6 +167,18 @@ describe("user", () => {
       expect(regular).toBeDefined();
       expect(regular.name).toBe("Regular User");
       expect(typeof regular.isAdmin).toBe("boolean");
+    });
+
+    it("includes auth-only users who have no user profile", async () => {
+      const authOnlyEmail = `auth-only-${Date.now()}@example.com`;
+      await createTestAuth(authOnlyEmail);
+
+      const data = await invoke("user/listAllUsers", {}, adminToken);
+      const authOnly = data.users.find((u: { email: string }) => u.email === authOnlyEmail);
+      expect(authOnly).toBeDefined();
+      expect(authOnly.email).toBe(authOnlyEmail);
+      expect(authOnly.name).toBe("");
+      expect(authOnly.wordsTotal).toBe(0);
     });
   });
 });

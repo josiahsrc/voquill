@@ -1,6 +1,7 @@
 import {
   AdminPanelSettings,
   DeleteOutline,
+  InfoOutlined,
   MoreVert,
   RemoveOutlined,
 } from "@mui/icons-material";
@@ -10,10 +11,11 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import type { UserWithAuth } from "@repo/types";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { loadUsers, setUserAdmin } from "../../actions/users.actions";
 import { useAppStore } from "../../store";
 import { AppTable, type ColumnDef } from "../common/AppTable";
@@ -115,10 +117,7 @@ export default function UsersTab() {
   const userIds = useAppStore((state) => state.users.userIds);
   const userById = useAppStore((state) => state.userWithAuthById);
   const status = useAppStore((state) => state.users.status);
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  const license = useAppStore((state) => state.enterpriseLicense);
 
   const users = useMemo(
     () => userIds.map((id) => userById[id]).filter(Boolean) as UserWithAuth[],
@@ -147,7 +146,44 @@ export default function UsersTab() {
   }
 
   return (
-    <TabLayout title="Users">
+    <TabLayout
+      title={
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          Users
+          {license && (
+            <>
+              <Typography variant="body2" color="text.secondary">
+                ({users.length} / {license.maxSeats} seats)
+              </Typography>
+              <Tooltip
+                title={
+                  <>
+                    Reach out to{" "}
+                    <a
+                      href="mailto:enterprise@voquill.com"
+                      style={{ color: "inherit" }}
+                    >
+                      enterprise@voquill.com
+                    </a>{" "}
+                    to request more seats.
+                  </>
+                }
+                arrow
+                slotProps={{ popper: { sx: { pointerEvents: "auto" } } }}
+              >
+                <InfoOutlined
+                  sx={{
+                    fontSize: 16,
+                    color: "text.secondary",
+                    cursor: "pointer",
+                  }}
+                />
+              </Tooltip>
+            </>
+          )}
+        </Box>
+      }
+    >
       <AppTable
         rows={users}
         columns={columns}

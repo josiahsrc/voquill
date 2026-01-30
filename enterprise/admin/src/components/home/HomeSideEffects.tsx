@@ -2,10 +2,12 @@ import {
   loadLlmProviders,
   pullLlmProvider,
 } from "../../actions/llm-providers.actions";
+import { loadSettings } from "../../actions/settings.actions";
 import {
   loadSttProviders,
   pullSttProvider,
 } from "../../actions/stt-providers.actions";
+import { loadUsers } from "../../actions/users.actions";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { getAppState } from "../../store";
 
@@ -33,6 +35,10 @@ export default function HomeSideEffects() {
         await pullLlmProvider(id);
       }
     }
+  }, []);
+
+  useIntervalAsync(TEN_SECONDS, async () => {
+    await Promise.allSettled([loadSettings(), loadUsers()]);
   }, []);
 
   return null;

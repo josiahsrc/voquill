@@ -9,12 +9,8 @@ import {
   Typography,
 } from "@mui/material";
 import type { EnterpriseConfig } from "@repo/types";
-import { useEffect } from "react";
 import { signOut } from "../../actions/login.actions";
-import {
-  loadSettings,
-  updateEnterpriseConfig,
-} from "../../actions/settings.actions";
+import { updateEnterpriseConfig } from "../../actions/settings.actions";
 import { useAppStore } from "../../store";
 import { getAppVersion } from "../../utils/env.utils";
 import { TabLayout } from "../common/TabLayout";
@@ -23,10 +19,6 @@ export default function SettingsTab() {
   const serverVersion = useAppStore((s) => s.settings.serverVersion);
   const enterpriseConfig = useAppStore((s) => s.enterpriseConfig);
   const license = useAppStore((s) => s.enterpriseLicense);
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
 
   function handleToggle(key: keyof EnterpriseConfig, value: boolean) {
     if (!enterpriseConfig) return;

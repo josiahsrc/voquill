@@ -9,6 +9,7 @@ import {
   setIsAdmin,
   hasAnyAdmin,
   deleteAuthById,
+  countAll,
 } from "../repo/auth.repo";
 import { requireAuth, signAuthToken, signRefreshToken, verifyRefreshToken } from "../utils/auth.utils";
 import {
@@ -16,6 +17,7 @@ import {
   ConflictError,
   UnauthorizedError,
 } from "../utils/error.utils";
+import { getEmbeddedConfig } from "../utils/embedded-config.utils";
 
 const SALT_ROUNDS = 10;
 
@@ -24,6 +26,14 @@ export async function register(
 ): Promise<HandlerOutput<"auth/register">> {
   if (await existsByEmail(input.email)) {
     throw new ConflictError("User with this email already exists");
+  }
+
+  const { max_seats } = getEmbeddedConfig();
+  const currentUserCount = await countAll();
+  if (currentUserCount >= max_seats) {
+    throw new ClientError(
+      "Your organization has reached its maximum number of seats. Please ask your administrator to request more seats.",
+    );
   }
 
   const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);

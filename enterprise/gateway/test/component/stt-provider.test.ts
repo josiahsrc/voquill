@@ -1,15 +1,14 @@
-import { invoke, query } from "../helpers";
+import { invoke, query, createTestAuth, cleanupTestAuths } from "../helpers";
 
 describe("stt provider", () => {
+  afterAll(cleanupTestAuths);
+
   let adminToken: string;
   let userToken: string;
 
   beforeAll(async () => {
     const adminEmail = `stt-admin-${Date.now()}@example.com`;
-    const adminData = await invoke("auth/register", {
-      email: adminEmail,
-      password: "password123",
-    });
+    const adminData = await createTestAuth(adminEmail);
     await query("UPDATE auth SET is_admin = TRUE WHERE id = $1", [adminData.auth.id]);
     const refreshed = await invoke("auth/login", {
       email: adminEmail,
@@ -18,10 +17,7 @@ describe("stt provider", () => {
     adminToken = refreshed.token;
 
     const userEmail = `stt-user-${Date.now()}@example.com`;
-    const userData = await invoke("auth/register", {
-      email: userEmail,
-      password: "password123",
-    });
+    const userData = await createTestAuth(userEmail);
     userToken = userData.token;
 
     await query("DELETE FROM stt_providers");

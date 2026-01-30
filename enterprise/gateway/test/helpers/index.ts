@@ -82,6 +82,27 @@ export async function createTestLlmProvider(token: string): Promise<void> {
   );
 }
 
+const pendingCleanupIds: string[] = [];
+
+export async function createTestAuth(
+  email = `test-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
+  password = "password123",
+): Promise<{ token: string; refreshToken: string; auth: { id: string; email: string; isAdmin: boolean; createdAt: string } }> {
+  const data = await invoke("auth/register", { email, password });
+  pendingCleanupIds.push(data.auth.id);
+  return data;
+}
+
+export async function cleanupTestAuths(): Promise<void> {
+  const ids = pendingCleanupIds.splice(0);
+  for (const id of ids) {
+    await query("DELETE FROM terms WHERE user_id = $1", [id]);
+    await query("DELETE FROM members WHERE id = $1", [id]);
+    await query("DELETE FROM users WHERE id = $1", [id]);
+    await query("DELETE FROM auth WHERE id = $1", [id]);
+  }
+}
+
 async function promoteToAdmin(token: string): Promise<string> {
   const payload = JSON.parse(
     Buffer.from(token.split(".")[1], "base64").toString(),
