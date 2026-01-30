@@ -27,6 +27,10 @@ import { INITIAL_PAYMENT_STATE, PaymentState } from "./payment.state";
 import { INITIAL_PRICING_STATE, PricingState } from "./pricing.state";
 import { INITIAL_SETTINGS_STATE, SettingsState } from "./settings.state";
 import {
+  INITIAL_ENTERPRISE_STATE,
+  type EnterpriseState,
+} from "./enterprise.state";
+import {
   INITIAL_TONE_EDITOR_STATE,
   ToneEditorState,
 } from "./tone-editor.state";
@@ -78,6 +82,7 @@ export type AppState = {
   pricing: PricingState;
   login: LoginState;
   agent: AgentState;
+  enterprise: EnterpriseState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -123,6 +128,7 @@ export const INITIAL_APP_STATE: AppState = {
   currentToast: null,
   overlayCursor: null,
   agent: INITIAL_AGENT_STATE,
+  enterprise: INITIAL_ENTERPRISE_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,
