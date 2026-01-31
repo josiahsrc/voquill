@@ -69,7 +69,8 @@ export type AppState = {
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
   enterpriseConfig: Nullable<EnterpriseConfig>;
-  enterpriseLicense?: Nullable<EnterpriseLicense>;
+  enterpriseLicense: Nullable<EnterpriseLicense>;
+  isEnterprise: boolean;
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
@@ -100,6 +101,8 @@ export const INITIAL_APP_STATE: AppState = {
   isRecordingHotkey: false,
   activeRecordingMode: null,
   enterpriseConfig: null,
+  enterpriseLicense: null,
+  isEnterprise: false,
   memberById: {},
   userById: {},
   termById: {},

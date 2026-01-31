@@ -127,8 +127,11 @@ export const AppSideEffects = () => {
 
     let config: Nullable<EnterpriseConfig> = null;
     let license: Nullable<EnterpriseLicense> = null;
+    let isEnterprise = false;
+
     const repo = getEnterpriseRepo();
     if (repo) {
+      isEnterprise = true;
       [config, license] = await repo.getConfig().catch((e) => {
         console.error("Failed to refresh enterprise config:", e);
         return [null, null];
@@ -138,6 +141,7 @@ export const AppSideEffects = () => {
     produceAppState((draft) => {
       draft.enterpriseConfig = config;
       draft.enterpriseLicense = license;
+      draft.isEnterprise = isEnterprise;
     });
 
     setEnterpriseReady(true);
