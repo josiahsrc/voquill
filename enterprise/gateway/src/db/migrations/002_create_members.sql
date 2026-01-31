@@ -3,7 +3,7 @@ CREATE TABLE members (
   type VARCHAR(20) NOT NULL DEFAULT 'user',
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  plan VARCHAR(20) NOT NULL DEFAULT 'free',
+  plan VARCHAR(20) NOT NULL DEFAULT 'pro',
   stripe_customer_id VARCHAR(255),
   price_id VARCHAR(255),
   words_today INTEGER DEFAULT 0,
