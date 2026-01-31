@@ -31,7 +31,7 @@ import { AuthUser } from "../../types/auth.types";
 import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
-import { loadEnterpriseConfig } from "../../utils/enterprise.utils";
+import { loadEnterpriseTarget } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
@@ -124,7 +124,7 @@ export const AppSideEffects = () => {
   }, []);
 
   useIntervalAsync(ENTERPRISE_REFRESH_INTERVAL_MS, async () => {
-    await loadEnterpriseConfig();
+    await loadEnterpriseTarget();
 
     let config: Nullable<EnterpriseConfig> = null;
     let license: Nullable<EnterpriseLicense> = null;

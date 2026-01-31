@@ -2,34 +2,34 @@ import type { HandlerInput, HandlerName, HandlerOutput } from "@repo/functions";
 import type { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 
-type EnterpriseConfig = {
+type EnterpriseTarget = {
   gatewayUrl: string;
 };
 
-let _cachedConfig: Nullable<EnterpriseConfig> = null;
+let _cachedTarget: Nullable<EnterpriseTarget> = null;
 
-export async function loadEnterpriseConfig(): Promise<void> {
-  const raw = await invoke<string | null>("read_enterprise_config").catch(
+export async function loadEnterpriseTarget(): Promise<void> {
+  const raw = await invoke<string | null>("read_enterprise_target").catch(
     () => null,
   );
 
   if (raw) {
     try {
-      _cachedConfig = JSON.parse(raw) as EnterpriseConfig;
+      _cachedTarget = JSON.parse(raw) as EnterpriseTarget;
     } catch {
-      _cachedConfig = null;
+      _cachedTarget = null;
     }
   } else {
-    _cachedConfig = null;
+    _cachedTarget = null;
   }
 }
 
-export function getEnterpriseConfig(): Nullable<EnterpriseConfig> {
-  return _cachedConfig;
+export function getEnterpriseTarget(): Nullable<EnterpriseTarget> {
+  return _cachedTarget;
 }
 
 export function getIsEnterpriseEnabled(): boolean {
-  return Boolean(getEnterpriseConfig());
+  return Boolean(getEnterpriseTarget());
 }
 
 export async function invokeEnterprise<N extends HandlerName>(
@@ -40,7 +40,7 @@ export async function invokeEnterprise<N extends HandlerName>(
     "Content-Type": "application/json",
   };
 
-  const config = getEnterpriseConfig();
+  const config = getEnterpriseTarget();
   if (!config) {
     throw new Error("Enterprise configuration is not loaded");
   }

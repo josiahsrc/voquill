@@ -8,10 +8,9 @@ import { requireAuth } from "../utils/auth.utils";
 import { getEmbeddedConfig } from "../utils/embedded-config.utils";
 import { requireAdmin } from "../utils/validation.utils";
 
-export async function getEnterpriseConfigHandler(opts: {
-  auth: Nullable<AuthContext>;
-}): Promise<HandlerOutput<"enterprise/getConfig">> {
-  requireAuth(opts.auth);
+export async function getEnterpriseConfigHandler(): Promise<
+  HandlerOutput<"enterprise/getConfig">
+> {
   const config = await getEnterpriseConfig();
   const embedded = getEmbeddedConfig();
   return {

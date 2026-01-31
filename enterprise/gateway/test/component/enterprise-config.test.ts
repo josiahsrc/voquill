@@ -1,4 +1,4 @@
-import { invoke, query, createTestAuth, cleanupTestAuths } from "../helpers";
+import { cleanupTestAuths, createTestAuth, invoke, query } from "../helpers";
 
 describe("enterprise config", () => {
   afterAll(cleanupTestAuths);
@@ -92,7 +92,7 @@ describe("enterprise config", () => {
     ).rejects.toThrow("401");
   });
 
-  it("get requires auth", async () => {
-    await expect(invoke("enterprise/getConfig", {})).rejects.toThrow("401");
+  it("get does not require auth", async () => {
+    await expect(invoke("enterprise/getConfig", {})).resolves.toBeDefined();
   });
 });

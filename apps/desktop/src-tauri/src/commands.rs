@@ -1193,12 +1193,13 @@ pub async fn initialize_local_transcriber(
 ///   - Linux:  ~/.config/com.voquill.desktop/enterprise.json
 ///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json
 #[tauri::command]
-pub fn read_enterprise_config(app: AppHandle) -> Result<Option<String>, String> {
+pub fn read_enterprise_target(app: AppHandle) -> Result<Option<String>, String> {
     let mut path = app
         .path()
         .app_config_dir()
         .map_err(|err| err.to_string())?;
     path.push("enterprise.json");
+    eprintln!("[ENTERPRISE] Reading enterprise target from {:?}", path);
     if !path.exists() {
         return Ok(None);
     }

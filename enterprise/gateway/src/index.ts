@@ -203,7 +203,7 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = { version: getGatewayVersion() };
     } else if (name === "enterprise/getConfig") {
       validateData(EmptyObjectZod, input);
-      data = await getEnterpriseConfigHandler({ auth });
+      data = await getEnterpriseConfigHandler();
     } else if (name === "enterprise/upsertConfig") {
       data = await upsertEnterpriseConfigHandler({
         auth,
