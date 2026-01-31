@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - enterprise
     paths:
       - "enterprise/admin/**"
       - ".github/workflows/release-enterprise-admin.yml"
