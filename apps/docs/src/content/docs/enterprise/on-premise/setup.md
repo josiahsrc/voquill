@@ -20,6 +20,8 @@ services:
     image: ghcr.io/josiahsrc/voquill/enterprise-admin:latest
     ports:
       - "5100:5173"
+    environment:
+      - VITE_GATEWAY_URL=http://localhost:4630
     networks:
       - voquill
 

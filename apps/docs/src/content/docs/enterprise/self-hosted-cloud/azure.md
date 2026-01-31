@@ -63,13 +63,17 @@ For production deployments, store secrets in Azure Key Vault and reference them 
 
 ## 4. Deploy the Admin Portal
 
+Set `VITE_GATEWAY_URL` to the public URL of the gateway container you deployed in the previous step. The admin portal needs this to communicate with the gateway.
+
 ```bash
 az container create \
   --resource-group voquill \
   --name voquill-admin \
   --image ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
   --ports 5173 \
-  --ip-address Public
+  --ip-address Public \
+  --environment-variables \
+    VITE_GATEWAY_URL="http://your-gateway-ip:4630"
 ```
 
 Note the public IP addresses assigned to each container. Use the gateway IP when configuring desktop clients and the admin IP to access the admin portal.
