@@ -13,16 +13,18 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { detectLocale } from "../../i18n";
+import {
+  getAuthRepo,
+  getConfigRepo,
+  getMemberRepo,
+  getUserRepo,
+} from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { CURRENT_COHORT } from "../../utils/analytics.utils";
-import { getConfigRepo, getMemberRepo, getUserRepo } from "../../repos";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
-import {
-  getEnterpriseConfig,
-  loadEnterpriseConfig,
-} from "../../utils/enterprise.utils";
+import { loadEnterpriseConfig } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
@@ -38,6 +40,9 @@ const AUTH_READY_TIMEOUT_MS = 4_000;
 
 // 10 minutes
 const CONFIG_REFRESH_INTERVAL_MS = 1000 * 60 * 10;
+
+// 5 minutes
+const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 // 60 seconds
 const ENTERPRISE_CONFIG_REFRESH_INTERVAL_MS = 1000 * 60;
@@ -113,11 +118,11 @@ export const AppSideEffects = () => {
 
   useIntervalAsync(ENTERPRISE_CONFIG_REFRESH_INTERVAL_MS, async () => {
     await loadEnterpriseConfig();
-    const config = getEnterpriseConfig();
-    produceAppState((draft) => {
-      draft.enterprise.gatewayUrl = config?.gatewayUrl ?? null;
-    });
     setEnterpriseReady(true);
+  }, []);
+
+  useIntervalAsync(TOKEN_REFRESH_INTERVAL_MS, async () => {
+    await getAuthRepo().refreshTokens();
   }, []);
 
   useStreamWithSideEffects({

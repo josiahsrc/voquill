@@ -1,7 +1,6 @@
 import type { HandlerInput, HandlerName, HandlerOutput } from "@repo/functions";
 import type { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { getAppState } from "../store";
 
 type EnterpriseConfig = {
   gatewayUrl: string;
@@ -41,11 +40,17 @@ export async function invokeEnterprise<N extends HandlerName>(
     "Content-Type": "application/json",
   };
 
-  const { token, gatewayUrl } = getAppState().enterprise;
+  const config = getEnterpriseConfig();
+  if (!config) {
+    throw new Error("Enterprise configuration is not loaded");
+  }
+
+  const token = localStorage.getItem("enterprise_token");
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const gatewayUrl = config.gatewayUrl;
   if (!gatewayUrl) {
     throw new Error("Enterprise gateway URL is not configured");
   }
