@@ -6,12 +6,7 @@ import { getStripeRepo } from "../repos";
 import type { AppState } from "../state/app.state";
 import { isDev, isEmulators, isProd } from "./env.utils";
 
-export const PRICING_PLANS = [
-  "community",
-  "free",
-  "enterprise",
-  ...PRICE_KEYS,
-] as const;
+export const PRICING_PLANS = ["community", "free", ...PRICE_KEYS] as const;
 export type PricingPlan = (typeof PRICING_PLANS)[number];
 
 export const convertPricingPlanToMemberPlan = (
@@ -70,7 +65,8 @@ export const getPricesWithRuntimeCaching = async () => {
     getPriceIdFromKey("pro_yearly"),
   ];
 
-  pendingPromise = getStripeRepo().getPrices(pricesIds);
+  pendingPromise =
+    getStripeRepo()?.getPrices(pricesIds) ?? Promise.resolve({ prices: {} });
 
   try {
     cachedPrices = await pendingPromise;

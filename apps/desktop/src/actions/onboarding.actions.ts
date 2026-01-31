@@ -9,6 +9,7 @@ import {
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { CURRENT_COHORT } from "../utils/analytics.utils";
+import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { CURRENT_FEATURE } from "../utils/feature.utils";
 import {
   GenerativePrefs,
@@ -169,7 +170,7 @@ export const submitOnboarding = async () => {
           ? agentModePreference.apiKeyId
           : null,
       lastSeenFeature: CURRENT_FEATURE,
-      isEnterprise: state.onboarding.isEnterprise,
+      isEnterprise: getIsEnterpriseEnabled(),
       languageSwitchEnabled: false,
       secondaryDictationLanguage: null,
       activeDictationLanguage: "primary",

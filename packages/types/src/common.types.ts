@@ -20,11 +20,11 @@ export type JsonResponse = {
   schema: Record<string, unknown>;
 };
 
-export type TranscriptionMode = "local" | "api" | "cloud" | "enterprise";
+export type TranscriptionMode = "local" | "api" | "cloud";
 
-export type PostProcessingMode = "none" | "api" | "cloud" | "enterprise";
+export type PostProcessingMode = "none" | "api" | "cloud";
 
-export type AgentMode = "none" | "api" | "cloud";
+export type AgentMode = PostProcessingMode;
 
 export type DictationPillVisibility = "hidden" | "while_active" | "persistent";
 

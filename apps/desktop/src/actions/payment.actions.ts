@@ -20,11 +20,7 @@ export const tryOpenPaymentDialogForPricingPlan = (
     return false;
   }
 
-  if (
-    castedPlan === "free" ||
-    castedPlan === "community" ||
-    castedPlan === "enterprise"
-  ) {
+  if (castedPlan === "free" || castedPlan === "community") {
     return false;
   }
 

@@ -35,7 +35,7 @@ export const getIsDictationUnlocked = (state: AppState): boolean => {
 
 export const getHasCloudAccess = (state: AppState): boolean => {
   const effectivePlan = getEffectivePlan(state);
-  return effectivePlan === "pro" || effectivePlan === "free";
+  return effectivePlan !== "community";
 };
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> =>
@@ -163,15 +163,10 @@ export type ApiTranscriptionPrefs = BaseTranscriptionPrefs & {
   transcriptionModel: string | null;
 };
 
-export type EnterpriseTranscriptionPrefs = BaseTranscriptionPrefs & {
-  mode: "enterprise";
-};
-
 export type TranscriptionPrefs =
   | CloudTranscriptionPrefs
   | LocalTranscriptionPrefs
-  | ApiTranscriptionPrefs
-  | EnterpriseTranscriptionPrefs;
+  | ApiTranscriptionPrefs;
 
 export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const config = state.settings.aiTranscription;
@@ -179,10 +174,6 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const cloudAvailable = getHasCloudAccess(state);
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const warnings: string[] = [];
-
-  if (config.mode === "enterprise") {
-    return { mode: "enterprise", warnings };
-  }
 
   if (config.mode === "cloud") {
     if (cloudAvailable) {
@@ -245,18 +236,13 @@ export type NoneGenerativePrefs = BaseGenerativePrefs & {
   mode: "none";
 };
 
-export type EnterpriseGenerativePrefs = BaseGenerativePrefs & {
-  mode: "enterprise";
-};
-
 export type GenerativePrefs =
   | CloudGenerativePrefs
   | ApiGenerativePrefs
-  | NoneGenerativePrefs
-  | EnterpriseGenerativePrefs;
+  | NoneGenerativePrefs;
 
 type GenerativeConfigInput = {
-  mode: "none" | "api" | "cloud" | "enterprise";
+  mode: "none" | "api" | "cloud";
   selectedApiKeyId: string | null;
 };
 
@@ -269,10 +255,6 @@ const getGenPrefsInternal = (
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
-
-  if (config.mode === "enterprise") {
-    return { mode: "enterprise", warnings };
-  }
 
   if (config.mode === "cloud") {
     if (cloudAvailable) {

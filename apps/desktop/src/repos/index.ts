@@ -156,15 +156,11 @@ const getGenTextRepoInternal = ({
 }): GenerateTextRepoOutput => {
   const state = getAppState();
 
-  if (prefs.mode === "enterprise") {
+  if (prefs.mode === "cloud") {
     return {
-      repo: new EnterpriseGenerateTextRepo(cloudModel),
-      apiKeyId: null,
-      warnings: prefs.warnings,
-    };
-  } else if (prefs.mode === "cloud") {
-    return {
-      repo: new CloudGenerateTextRepo(cloudModel),
+      repo: getIsEnterpriseEnabled()
+        ? new EnterpriseGenerateTextRepo()
+        : new CloudGenerateTextRepo(cloudModel),
       apiKeyId: null,
       warnings: prefs.warnings,
     };
@@ -262,15 +258,11 @@ export type TranscribeAudioRepoOutput = {
 export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
   const prefs = getTranscriptionPrefs(getAppState());
 
-  if (prefs.mode === "enterprise") {
+  if (prefs.mode === "cloud") {
     return {
-      repo: new EnterpriseTranscribeAudioRepo(),
-      apiKeyId: null,
-      warnings: prefs.warnings,
-    };
-  } else if (prefs.mode === "cloud") {
-    return {
-      repo: new CloudTranscribeAudioRepo(),
+      repo: getIsEnterpriseEnabled()
+        ? new EnterpriseTranscribeAudioRepo()
+        : new CloudTranscribeAudioRepo(),
       apiKeyId: null,
       warnings: prefs.warnings,
     };
