@@ -3,10 +3,6 @@ import { produceAppState } from "../store";
 import { invoke } from "../utils/api.utils";
 
 export async function loadSettings() {
-  produceAppState((draft) => {
-    draft.settings.status = "loading";
-  });
-
   try {
     const [versionData, configData] = await Promise.all([
       invoke("system/getVersion", {}),

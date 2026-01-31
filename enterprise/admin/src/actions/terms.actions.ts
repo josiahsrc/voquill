@@ -4,10 +4,6 @@ import { produceAppState } from "../store";
 import { registerTerms } from "../utils/app.utils";
 
 export async function loadGlobalTerms() {
-  produceAppState((draft) => {
-    draft.terms.status = "loading";
-  });
-
   try {
     const data = await invoke("term/listGlobalTerms", {});
     produceAppState((draft) => {

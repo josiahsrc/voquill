@@ -8,5 +8,5 @@ export type SettingsState = {
 
 export const INITIAL_SETTINGS_STATE: SettingsState = {
   serverVersion: null,
-  status: "idle",
+  status: "loading",
 };

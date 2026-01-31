@@ -4,10 +4,6 @@ import { invoke } from "../utils/api.utils";
 import { registerLlmProviders } from "../utils/app.utils";
 
 export async function loadLlmProviders() {
-  produceAppState((draft) => {
-    draft.llmProviders.status = "loading";
-  });
-
   try {
     const data = await invoke("llmProvider/list", {});
     produceAppState((draft) => {

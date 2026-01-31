@@ -7,5 +7,5 @@ export type SttProvidersState = {
 
 export const INITIAL_STT_PROVIDERS_STATE: SttProvidersState = {
   providerIds: [],
-  status: "idle",
+  status: "loading",
 };

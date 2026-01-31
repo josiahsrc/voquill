@@ -7,5 +7,5 @@ export type UsersState = {
 
 export const INITIAL_USERS_STATE: UsersState = {
   userIds: [],
-  status: "idle",
+  status: "loading",
 };

@@ -7,5 +7,5 @@ export type TermsState = {
 
 export const INITIAL_TERMS_STATE: TermsState = {
   termIds: [],
-  status: "idle",
+  status: "loading",
 };

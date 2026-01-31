@@ -4,10 +4,6 @@ import { invoke } from "../utils/api.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 export async function loadUsers() {
-  produceAppState((draft) => {
-    draft.users.status = "loading";
-  });
-
   try {
     const data = await invoke("user/listAllUsers", {});
     produceAppState((draft) => {

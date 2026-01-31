@@ -7,5 +7,5 @@ export type LlmProvidersState = {
 
 export const INITIAL_LLM_PROVIDERS_STATE: LlmProvidersState = {
   providerIds: [],
-  status: "idle",
+  status: "loading",
 };

@@ -4,10 +4,6 @@ import { invoke } from "../utils/api.utils";
 import { registerSttProviders } from "../utils/app.utils";
 
 export async function loadSttProviders() {
-  produceAppState((draft) => {
-    draft.sttProviders.status = "loading";
-  });
-
   try {
     const data = await invoke("sttProvider/list", {});
     produceAppState((draft) => {
