@@ -1,0 +1,22 @@
+CREATE TABLE users (
+  id UUID PRIMARY KEY REFERENCES auth(id),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  name VARCHAR(255) NOT NULL DEFAULT '',
+  bio TEXT,
+  company VARCHAR(255),
+  title VARCHAR(255),
+  onboarded BOOLEAN DEFAULT FALSE,
+  onboarded_at TIMESTAMP,
+  timezone VARCHAR(100),
+  preferred_language VARCHAR(10),
+  preferred_microphone VARCHAR(255),
+  play_interaction_chime BOOLEAN DEFAULT TRUE,
+  has_finished_tutorial BOOLEAN DEFAULT FALSE,
+  words_this_month INTEGER DEFAULT 0,
+  words_this_month_month VARCHAR(20),
+  words_total INTEGER DEFAULT 0,
+  has_migrated_preferred_microphone BOOLEAN DEFAULT FALSE,
+  cohort VARCHAR(100),
+  should_show_upgrade_dialog BOOLEAN DEFAULT FALSE
+);

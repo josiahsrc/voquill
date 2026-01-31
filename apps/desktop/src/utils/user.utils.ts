@@ -21,9 +21,8 @@ export const getIsLoggedIn = (state: AppState): boolean => {
 
 export const getHasEmailProvider = (state: AppState): boolean => {
   const auth = state.auth;
-  const providers = auth?.providerData ?? [];
-  const providerIds = providers.map((p) => p.providerId);
-  return providerIds.includes("password");
+  const providers = auth?.providers ?? [];
+  return providers.includes("password");
 };
 
 export const getIsOnboarded = (state: AppState): boolean => {
@@ -36,7 +35,7 @@ export const getIsDictationUnlocked = (state: AppState): boolean => {
 
 export const getHasCloudAccess = (state: AppState): boolean => {
   const effectivePlan = getEffectivePlan(state);
-  return effectivePlan === "pro" || effectivePlan === "free";
+  return effectivePlan !== "community";
 };
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> =>

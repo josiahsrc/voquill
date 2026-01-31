@@ -3,8 +3,11 @@ import { FormattedMessage } from "react-intl";
 import { Link } from "react-router-dom";
 import { LoginForm } from "./LoginForm";
 import { ArrowBack } from "@mui/icons-material";
+import { useAppStore } from "../../store";
 
 export default function LoginPage() {
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
+
   return (
     <Stack sx={{ p: 2, minHeight: "100%", pb: { xs: 4, md: 8 } }}>
       <Stack
@@ -24,7 +27,7 @@ export default function LoginPage() {
             overflow: "hidden",
           }}
         >
-          <LoginForm />
+          <LoginForm hideGoogleButton={isEnterprise} />
         </Card>
         <Button component={Link} to="/" startIcon={<ArrowBack />}>
           <FormattedMessage defaultMessage="Go back" />

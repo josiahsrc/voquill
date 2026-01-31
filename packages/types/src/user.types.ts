@@ -27,6 +27,11 @@ export type DatabaseUser = {
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
 
+export type UserWithAuth = User & {
+  email: string;
+  isAdmin: boolean;
+};
+
 export const UserZod = z
   .object({
     id: z.string(),

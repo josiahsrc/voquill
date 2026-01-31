@@ -17,6 +17,7 @@ export const UserDetailsForm = () => {
   const title = useAppStore((state) => state.onboarding.title);
   const company = useAppStore((state) => state.onboarding.company);
   const submitting = useAppStore((state) => state.onboarding.submitting);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
 
   const canContinue = name && !submitting;
 
@@ -108,41 +109,45 @@ export const UserDetailsForm = () => {
             }}
           />
 
-          <TextField
-            variant="outlined"
-            size="small"
-            label={<FormattedMessage defaultMessage="Title" />}
-            placeholder={intl.formatMessage({
-              defaultMessage: "Vice President",
-            })}
-            value={title}
-            onChange={handleTitleChange}
-            onBlur={handleTitleBlur}
-            autoComplete="organization-title"
-            slotProps={{
-              inputLabel: { shrink: true },
-              htmlInput: {
-                "data-voquill-ignore": "true",
-              },
-            }}
-          />
+          {!isEnterprise && (
+            <>
+              <TextField
+                variant="outlined"
+                size="small"
+                label={<FormattedMessage defaultMessage="Title" />}
+                placeholder={intl.formatMessage({
+                  defaultMessage: "Vice President",
+                })}
+                value={title}
+                onChange={handleTitleChange}
+                onBlur={handleTitleBlur}
+                autoComplete="organization-title"
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  htmlInput: {
+                    "data-voquill-ignore": "true",
+                  },
+                }}
+              />
 
-          <TextField
-            variant="outlined"
-            size="small"
-            label={<FormattedMessage defaultMessage="Company" />}
-            placeholder={intl.formatMessage({ defaultMessage: "Acme Inc." })}
-            value={company}
-            onChange={handleCompanyChange}
-            onBlur={handleCompanyBlur}
-            autoComplete="organization"
-            slotProps={{
-              inputLabel: { shrink: true },
-              htmlInput: {
-                "data-voquill-ignore": "true",
-              },
-            }}
-          />
+              <TextField
+                variant="outlined"
+                size="small"
+                label={<FormattedMessage defaultMessage="Company" />}
+                placeholder={intl.formatMessage({ defaultMessage: "Acme Inc." })}
+                value={company}
+                onChange={handleCompanyChange}
+                onBlur={handleCompanyBlur}
+                autoComplete="organization"
+                slotProps={{
+                  inputLabel: { shrink: true },
+                  htmlInput: {
+                    "data-voquill-ignore": "true",
+                  },
+                }}
+              />
+            </>
+          )}
         </Stack>
       </Stack>
     </OnboardingFormLayout>

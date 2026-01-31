@@ -44,7 +44,7 @@ const updateUser = async (
   updateCallback(payload);
 
   try {
-    const saved = await repo.setUser(payload);
+    const saved = await repo.setMyUser(payload);
     produceAppState((draft) => {
       setCurrentUser(draft, saved);
     });
@@ -141,7 +141,7 @@ export const refreshCurrentUser = async (): Promise<void> => {
 
   try {
     const [user, preferences] = await Promise.all([
-      getUserRepo().getUser(userId),
+      getUserRepo().getMyUser(),
       getUserPreferencesRepo().getUserPreferences(),
     ]);
     produceAppState((draft) => {
@@ -459,7 +459,7 @@ export const migrateLocalUserToCloud = async (): Promise<void> => {
   };
 
   try {
-    const saved = await repo.setUser(payload);
+    const saved = await repo.setMyUser(payload);
     produceAppState((draft) => {
       setCurrentUser(draft, saved);
     });

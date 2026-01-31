@@ -1,4 +1,5 @@
 {
+  "vitest.maximumConfigs": 10,
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },

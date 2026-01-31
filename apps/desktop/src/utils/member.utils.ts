@@ -9,7 +9,7 @@ export const getMyMember = (state: AppState): Nullable<Member> => {
 };
 
 export const getEffectivePlan = (state: AppState): EffectivePlan => {
-  if (state.userPrefs?.isEnterprise) {
+  if (state.isEnterprise) {
     return "enterprise";
   }
   return getMyMember(state)?.plan ?? "community";

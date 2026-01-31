@@ -32,6 +32,7 @@ export const SignInForm = () => {
   const [confirmLocalSetupOpen, setConfirmLocalSetupOpen] = useState(false);
 
   const auth = useAppStore((state) => state.auth);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
   const loginStatus = useAppStore((state) => state.login.status);
   const awaitingSignInNavigation = useAppStore(
     (state) => state.onboarding.awaitingSignInNavigation,
@@ -141,14 +142,16 @@ export const SignInForm = () => {
     <OnboardingFormLayout
       back={<BackButton />}
       actions={
-        <Button
-          onClick={handleClickLocalSetup}
-          variant="text"
-          endIcon={<ArrowForward />}
-          sx={{ color: "text.disabled", fontWeight: 400 }}
-        >
-          <FormattedMessage defaultMessage="Local set up" />
-        </Button>
+        !isEnterprise && (
+          <Button
+            onClick={handleClickLocalSetup}
+            variant="text"
+            endIcon={<ArrowForward />}
+            sx={{ color: "text.disabled", fontWeight: 400 }}
+          >
+            <FormattedMessage defaultMessage="Local set up" />
+          </Button>
+        )
       }
     >
       <Stack spacing={2}>
@@ -156,15 +159,17 @@ export const SignInForm = () => {
           <FormattedMessage defaultMessage="Create your account" />
         </Typography>
 
-        <Button
-          fullWidth
-          variant="contained"
-          startIcon={<Google />}
-          onClick={handleContinueWithGoogle}
-          disabled={loginStatus === "loading"}
-        >
-          <FormattedMessage defaultMessage="Continue with Google" />
-        </Button>
+        {!isEnterprise && (
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<Google />}
+            onClick={handleContinueWithGoogle}
+            disabled={loginStatus === "loading"}
+          >
+            <FormattedMessage defaultMessage="Continue with Google" />
+          </Button>
+        )}
 
         <Button
           fullWidth

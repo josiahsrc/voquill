@@ -15,7 +15,7 @@
     "typescript": "5.9.2"
   },
   "overrides": {
-    "@types/react": "19.1.13"
+    "@types/react": "19.2.10"
   },
   "engines": {
     "node": ">=18"
@@ -24,6 +24,7 @@
   "workspaces": [
     "apps/*",
     "apps/firebase/functions",
-    "packages/*"
+    "packages/*",
+    "enterprise/*"
   ]
 }

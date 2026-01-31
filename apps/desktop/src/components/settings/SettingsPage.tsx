@@ -31,7 +31,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -42,7 +41,7 @@ import {
   setPreferredLanguage,
   setSecondaryDictationLanguage,
 } from "../../actions/user.actions";
-import { getAuthRepo } from "../../repos";
+import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import {
   DICTATION_LANGUAGE_OPTIONS,
@@ -62,6 +61,7 @@ import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
   const isPaying = useAppStore(getIsPaying);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -180,11 +180,12 @@ export default function SettingsPage() {
   const handleManageSubscription = async () => {
     setManageSubscriptionLoading(true);
     try {
-      const data = await invokeHandler(
-        "stripe/createCustomerPortalSession",
-        {},
-      );
-      openUrl(data.url);
+      const url = await getStripeRepo()?.createCustomerPortalSession();
+      if (url) {
+        openUrl(url);
+      } else {
+        showErrorSnackbar("Unable to open manage subscription page.");
+      }
     } catch (error) {
       showErrorSnackbar(error);
     } finally {
@@ -382,7 +383,7 @@ export default function SettingsPage() {
           onClick={openChangePasswordDialog}
         />
       )}
-      {isPaying && (
+      {isPaying && !isEnterprise && (
         <ListTile
           title={<FormattedMessage defaultMessage="Manage subscription" />}
           leading={<PaymentOutlined />}
@@ -447,7 +448,7 @@ export default function SettingsPage() {
         {general}
         {processing}
         {advanced}
-        {dangerZone}
+        {!isEnterprise && dangerZone}
       </Stack>
     </DashboardEntryLayout>
   );

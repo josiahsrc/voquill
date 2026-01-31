@@ -8,6 +8,7 @@ export type DatabaseTerm = {
   sourceValue: string;
   destinationValue: string;
   isReplacement: boolean;
+  isGlobal?: boolean;
 };
 
 export type Term = Replace<DatabaseTerm, FiremixTimestamp, string>;
@@ -25,5 +26,6 @@ export const TermZod = z
     sourceValue: z.string(),
     destinationValue: z.string(),
     isReplacement: z.boolean(),
+    isGlobal: z.boolean().optional(),
   })
   .strict() satisfies z.ZodType<Term>;

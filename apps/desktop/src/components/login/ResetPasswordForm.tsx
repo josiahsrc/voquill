@@ -6,6 +6,7 @@ import { produceAppState, useAppStore } from "../../store";
 import { getCanSubmitResetPassword } from "../../utils/login.utils";
 
 export const ResetPasswordForm = () => {
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
   const email = useAppStore((state) => state.login.email);
   const canSubmit = useAppStore((state) => getCanSubmitResetPassword(state));
 
@@ -22,6 +23,19 @@ export const ResetPasswordForm = () => {
   const handleSubmit = async () => {
     await submitResetPassword();
   };
+
+  if (isEnterprise) {
+    return (
+      <Stack spacing={2} alignItems="center">
+        <Typography variant="body2">
+          <FormattedMessage defaultMessage="Contact your administrator to reset your password. They can either reset your password or delete your account and have you create a new one." />
+        </Typography>
+        <Button size="small" startIcon={<ArrowBack />} onClick={handleClickBack}>
+          <FormattedMessage defaultMessage="Back" />
+        </Button>
+      </Stack>
+    );
+  }
 
   return (
     <Stack spacing={2} alignItems="center">

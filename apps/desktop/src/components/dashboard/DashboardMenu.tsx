@@ -4,13 +4,16 @@ import {
   HomeOutlined,
   PaletteOutlined,
   SettingsOutlined,
+  HelpOutline,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ListTile } from "../common/ListTile";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { DiscordListTile } from "./DiscordListTile";
 import { UpdateListTile } from "./UpdateListTile";
+import { useAppStore } from "../../store";
 
 const settingsPath = "/dashboard/settings";
 
@@ -41,11 +44,6 @@ const navItems: NavItem[] = [
     path: "/dashboard/styling",
     icon: <PaletteOutlined />,
   },
-  // {
-  //   label: <FormattedMessage defaultMessage="Apps" />,
-  //   path: "/dashboard/apps",
-  //   icon: <AppsOutlined />,
-  // },
 ];
 
 export type DashboardMenuProps = {
@@ -55,6 +53,7 @@ export type DashboardMenuProps = {
 export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
   const location = useLocation();
   const nav = useNavigate();
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
 
   const onChooseHandler = (path: string) => {
     onChoose?.();
@@ -85,7 +84,15 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
       <Box sx={{ flexGrow: 1, overflowY: "auto" }}>{list}</Box>
       <Box sx={{ mt: 2, p: 2 }}>
         <UpdateListTile />
-        <DiscordListTile />
+        {isEnterprise ? (
+          <ListTile
+            onClick={() => openUrl("mailto:support@voquill.com")}
+            leading={<HelpOutline />}
+            title={<FormattedMessage defaultMessage="Support" />}
+          />
+        ) : (
+          <DiscordListTile />
+        )}
         <ListTile
           key={settingsPath}
           onClick={() => onChooseHandler(settingsPath)}
