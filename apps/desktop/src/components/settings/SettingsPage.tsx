@@ -61,6 +61,7 @@ import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
   const isPaying = useAppStore(getIsPaying);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -179,8 +180,12 @@ export default function SettingsPage() {
   const handleManageSubscription = async () => {
     setManageSubscriptionLoading(true);
     try {
-      const url = await getStripeRepo().createCustomerPortalSession();
-      openUrl(url);
+      const url = await getStripeRepo()?.createCustomerPortalSession();
+      if (url) {
+        openUrl(url);
+      } else {
+        showErrorSnackbar("Unable to open manage subscription page.");
+      }
     } catch (error) {
       showErrorSnackbar(error);
     } finally {
@@ -378,7 +383,7 @@ export default function SettingsPage() {
           onClick={openChangePasswordDialog}
         />
       )}
-      {isPaying && (
+      {isPaying && !isEnterprise && (
         <ListTile
           title={<FormattedMessage defaultMessage="Manage subscription" />}
           leading={<PaymentOutlined />}
@@ -443,7 +448,7 @@ export default function SettingsPage() {
         {general}
         {processing}
         {advanced}
-        {dangerZone}
+        {!isEnterprise && dangerZone}
       </Stack>
     </DashboardEntryLayout>
   );
