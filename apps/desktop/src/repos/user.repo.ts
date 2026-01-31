@@ -2,6 +2,7 @@ import { invokeHandler } from "@repo/functions";
 import { Nullable, User } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { nowIso } from "../utils/date.utils";
+import { invokeEnterprise } from "../utils/enterprise.utils";
 import { LOCAL_USER_ID } from "../utils/user.utils";
 import { BaseRepo } from "./base.repo";
 
@@ -70,12 +71,12 @@ const toLocalUser = (user: User): LocalUser => ({
 });
 
 export abstract class BaseUserRepo extends BaseRepo {
-  abstract setUser(user: User): Promise<User>;
+  abstract setMyUser(user: User): Promise<User>;
   abstract getMyUser(): Promise<Nullable<User>>;
 }
 
 export class LocalUserRepo extends BaseUserRepo {
-  async setUser(user: User): Promise<User> {
+  async setMyUser(user: User): Promise<User> {
     const stored = await invoke<LocalUser>("user_set_one", {
       user: toLocalUser(user),
     });
@@ -91,13 +92,27 @@ export class LocalUserRepo extends BaseUserRepo {
 }
 
 export class CloudUserRepo extends BaseUserRepo {
-  async setUser(user: User): Promise<User> {
+  async setMyUser(user: User): Promise<User> {
     await invokeHandler("user/setMyUser", { value: user });
     return user;
   }
 
   async getMyUser(): Promise<Nullable<User>> {
     const user = await invokeHandler("user/getMyUser", {}).then(
+      (res) => res.user,
+    );
+    return user;
+  }
+}
+
+export class EnterpriseUserRepo extends BaseUserRepo {
+  async setMyUser(user: User): Promise<User> {
+    await invokeEnterprise("user/setMyUser", { value: user });
+    return user;
+  }
+
+  async getMyUser(): Promise<Nullable<User>> {
+    const user = await invokeEnterprise("user/getMyUser", {}).then(
       (res) => res.user,
     );
     return user;

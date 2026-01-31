@@ -53,6 +53,8 @@ import {
   LocalTranscriptionRepo,
 } from "./transcription.repo";
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
+import { EnterpriseRepo } from "./enterprise.repo";
+import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
@@ -66,6 +68,14 @@ export const getStripeRepo = (): BaseStripeRepo => {
 
 export const getConfigRepo = (): BaseConfigRepo => {
   return new CloudConfigRepo();
+};
+
+export const getEnterpriseRepo = (): Nullable<EnterpriseRepo> => {
+  if (getIsEnterpriseEnabled()) {
+    return new EnterpriseRepo();
+  }
+
+  return null;
 };
 
 export const getAuthRepo = (): BaseAuthRepo => {

@@ -6,8 +6,8 @@ import {
   ClaudeModel,
   deepseekGenerateTextResponse,
   DeepseekModel,
-  geminiGenerateTextResponse,
   GeminiGenerateTextModel,
+  geminiGenerateTextResponse,
   GenerateTextModel,
   groqGenerateTextResponse,
   OpenAIGenerateTextModel,
@@ -17,6 +17,7 @@ import {
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
+import { invokeEnterprise } from "../utils/enterprise.utils";
 import { BaseRepo } from "./base.repo";
 
 export type GenerateTextInput = {
@@ -307,6 +308,31 @@ export class ClaudeGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • Claude",
+      },
+    };
+  }
+}
+
+export class EnterpriseGenerateTextRepo extends BaseGenerateTextRepo {
+  private model: CloudModel;
+
+  constructor(model: CloudModel = "medium") {
+    super();
+    this.model = model;
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await invokeEnterprise("ai/generateText", {
+      system: input.system,
+      prompt: input.prompt,
+      jsonResponse: input.jsonResponse,
+      model: this.model,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "cloud",
       },
     };
   }

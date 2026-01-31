@@ -181,7 +181,7 @@ export const submitOnboarding = async () => {
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
-      repo.setUser(user),
+      repo.setMyUser(user),
       preferencesRepo.setUserPreferences(preferences),
     ]);
 
@@ -221,7 +221,7 @@ export const finishOnboarding = async () => {
       hasFinishedTutorial: true,
     };
 
-    const savedUser = await repo.setUser(updatedUser);
+    const savedUser = await repo.setMyUser(updatedUser);
     produceAppState((draft) => {
       setCurrentUser(draft, savedUser);
     });

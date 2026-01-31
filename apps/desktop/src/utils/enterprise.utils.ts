@@ -29,6 +29,10 @@ export function getEnterpriseConfig(): Nullable<EnterpriseConfig> {
   return _cachedConfig;
 }
 
+export function getIsEnterpriseEnabled(): boolean {
+  return Boolean(getEnterpriseConfig());
+}
+
 export async function invokeEnterprise<N extends HandlerName>(
   name: N,
   input: HandlerInput<N>,
