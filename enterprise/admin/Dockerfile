@@ -3,10 +3,15 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json turbo.json ./
+COPY packages/typescript-config ./packages/typescript-config
+COPY packages/types ./packages/types
+COPY packages/functions ./packages/functions
 COPY enterprise/admin ./enterprise/admin
 COPY enterprise/LICENCE ./enterprise/LICENCE
 
-RUN npm ci --workspace=enterprise/admin
+RUN npm ci
+RUN npm run build --workspace=@repo/types
+RUN npm run build --workspace=@repo/functions
 
 FROM node:20-alpine AS dev
 

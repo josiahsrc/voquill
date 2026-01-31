@@ -14,6 +14,7 @@ COPY enterprise/LICENCE ./enterprise/LICENCE
 
 RUN npm ci
 RUN npm run build --workspace=@repo/types
+RUN npm run build --workspace=@repo/utilities
 RUN npm run build --workspace=@repo/functions
 RUN npm run build --workspace=@repo/enterprise-gateway
 
