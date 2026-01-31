@@ -33,7 +33,7 @@ describe("enterprise config", () => {
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
   });
 
-  it("returns license from embedded config", async () => {
+  it("returns license from license key", async () => {
     const data = await invoke("enterprise/getConfig", {}, userToken);
     expect(data.license).toEqual({
       org: "Example Corp",

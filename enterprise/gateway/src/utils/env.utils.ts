@@ -10,10 +10,10 @@ export function getGatewayVersion(): string {
   return process.env.GATEWAY_VERSION || "0.0.1";
 }
 
-export function getEmbeddedConfigB64(): string {
-  const b64 = process.env.EMBEDDED_CONFIG_B64;
+export function getLicenseKey(): string {
+  const b64 = process.env.LICENSE_KEY;
   if (!b64) {
-    throw new Error("EMBEDDED_CONFIG_B64 environment variable is not set");
+    throw new Error("LICENSE_KEY environment variable is not set");
   }
   return b64;
 }

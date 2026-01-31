@@ -1,6 +1,6 @@
 import type { AuthContext } from "@repo/types";
 import { z } from "zod";
-import { getEmbeddedConfig } from "./embedded-config.utils";
+import { getLicenseKey } from "./license-key.utils";
 import { ClientError, UnauthorizedError } from "./error.utils";
 
 export function requireAdmin(auth: AuthContext): void {
@@ -21,7 +21,7 @@ export const validateData = <T>(schema: z.ZodSchema<T>, data: unknown): T => {
 };
 
 export function validateLicense(now: Date): void {
-  const config = getEmbeddedConfig();
+  const config = getLicenseKey();
   const issued = new Date(config.issued);
   const expires = new Date(config.expires);
 

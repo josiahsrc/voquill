@@ -18,7 +18,7 @@ import {
   ConflictError,
   UnauthorizedError,
 } from "../utils/error.utils";
-import { getEmbeddedConfig } from "../utils/embedded-config.utils";
+import { getLicenseKey } from "../utils/license-key.utils";
 
 const SALT_ROUNDS = 10;
 
@@ -29,7 +29,7 @@ export async function register(
     throw new ConflictError("User with this email already exists");
   }
 
-  const { max_seats } = getEmbeddedConfig();
+  const { max_seats } = getLicenseKey();
   const currentUserCount = await countAll();
   if (currentUserCount >= max_seats) {
     throw new ClientError(

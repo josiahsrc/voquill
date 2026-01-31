@@ -5,14 +5,14 @@ import {
   upsertEnterpriseConfig,
 } from "../repo/enterprise-config.repo";
 import { requireAuth } from "../utils/auth.utils";
-import { getEmbeddedConfig } from "../utils/embedded-config.utils";
+import { getLicenseKey } from "../utils/license-key.utils";
 import { requireAdmin } from "../utils/validation.utils";
 
 export async function getEnterpriseConfigHandler(): Promise<
   HandlerOutput<"enterprise/getConfig">
 > {
   const config = await getEnterpriseConfig();
-  const embedded = getEmbeddedConfig();
+  const embedded = getLicenseKey();
   return {
     config,
     license: {

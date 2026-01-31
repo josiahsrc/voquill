@@ -19,7 +19,7 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/voquill
       - JWT_SECRET=development-secret-change-in-production
-      - EMBEDDED_CONFIG_B64="AQAPCPsx2kDyMdbidOt9L40DFL6yCIYg1gBFUceEFCHk6gc/c10G8k/ox/kF/Rf7+f6JFbdLACoAXfUZWphElLbXBkher0YznDIHaPcJwk8/puCQyJaWojHnwa3SQiCrm0+m2j1Ljwm1VZjLvWRmbNPvgKlsYkpMtONthZCoT8bJnTdNVMOH2jrW9+y8wiF6XafayS+RCOhlbWRQxiYUGkTlA4z31lKTKz75EtMHEYE22JgRCH8DmlcNCDzyC5FHHqnq06Anp8eiAzjQY/08a+xh3UqgERADj55yJ7TEyZMSYXIaWmVpKp5rLc3fGAS+3MTimYe0SQna2iYCBH4peiQ1n9kPsJ8hcpz+NEbjlO69fcoDdiSHpqyKBFkFQ+VNiVbhen99y28BaB3VIeMeoaca+/TIaIpUj1w+hPn8BL7lFSRtXM/MP4P8ZlbzPqbs/VKgUO7Gw2rNazNttVm9+T5zoGlsIw6yBhMBh5Xw3nWpqTBcG0uZUJwUR4R5oMLgR1U="
+      - LICENSE_KEY="AQAPCPsx2kDyMdbidOt9L40DFL6yCIYg1gBFUceEFCHk6gc/c10G8k/ox/kF/Rf7+f6JFbdLACoAXfUZWphElLbXBkher0YznDIHaPcJwk8/puCQyJaWojHnwa3SQiCrm0+m2j1Ljwm1VZjLvWRmbNPvgKlsYkpMtONthZCoT8bJnTdNVMOH2jrW9+y8wiF6XafayS+RCOhlbWRQxiYUGkTlA4z31lKTKz75EtMHEYE22JgRCH8DmlcNCDzyC5FHHqnq06Anp8eiAzjQY/08a+xh3UqgERADj55yJ7TEyZMSYXIaWmVpKp5rLc3fGAS+3MTimYe0SQna2iYCBH4peiQ1n9kPsJ8hcpz+NEbjlO69fcoDdiSHpqyKBFkFQ+VNiVbhen99y28BaB3VIeMeoaca+/TIaIpUj1w+hPn8BL7lFSRtXM/MP4P8ZlbzPqbs/VKgUO7Gw2rNazNttVm9+T5zoGlsIw6yBhMBh5Xw3nWpqTBcG0uZUJwUR4R5oMLgR1U="
     depends_on:
       postgres:
         condition: service_healthy
