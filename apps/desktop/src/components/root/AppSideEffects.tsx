@@ -30,7 +30,6 @@ import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
-import { getEffectiveAuth } from "../../utils/auth.utils";
 import { loadEnterpriseTarget } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getPlatform } from "../../utils/platform.utils";
@@ -97,7 +96,7 @@ export const AppSideEffects = () => {
       }
     }, AUTH_READY_TIMEOUT_MS);
 
-    const unsubscribe = getEffectiveAuth().onAuthStateChanged(
+    const unsubscribe = getAuthRepo().onAuthStateChanged(
       onAuthStateChanged,
       (error) => {
         showErrorSnackbar(error);
