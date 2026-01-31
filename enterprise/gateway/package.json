@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/index.js --external:bcrypt --external:pg --external:pg-native --external:express --external:jsonwebtoken && rm -rf dist/db/migrations && mkdir -p dist/db && cp -r src/db/migrations dist/db/migrations",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/index.js --external:bcrypt --external:pg-native --external:express && rm -rf dist/db/migrations && mkdir -p dist/db && cp -r src/db/migrations dist/db/migrations",
     "dev": "nodemon --exec \"npm run build && node dist/index.js\"",
     "start": "node dist/index.js",
     "check-types": "tsc --noEmit",
