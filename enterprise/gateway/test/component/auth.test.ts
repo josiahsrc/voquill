@@ -297,6 +297,20 @@ describe("auth", () => {
         invoke("auth/login", { email: targetEmail, password })
       ).rejects.toThrow("401");
     });
+
+    it("deletes an auth-only user with no user profile", async () => {
+      const authOnly = await createTestAuth();
+
+      const data = await invoke("user/listAllUsers", {}, adminToken);
+      const listed = data.users.find((u: { id: string }) => u.id === authOnly.auth.id);
+      expect(listed).toBeDefined();
+      expect(listed.id).toBe(authOnly.auth.id);
+
+      await invoke("auth/deleteUser", { userId: authOnly.auth.id }, adminToken);
+
+      const auth = await query("SELECT id FROM auth WHERE id = $1", [authOnly.auth.id]);
+      expect(auth.rows.length).toBe(0);
+    });
   });
 
   describe("seat limit", () => {

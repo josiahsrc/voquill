@@ -62,7 +62,7 @@ function defaultUser(id: string): User {
 export async function listAllUsers(): Promise<UserWithAuth[]> {
   const pool = getPool();
   const result = await pool.query(
-    `SELECT a.id, a.email, a.is_admin, a.created_at AS auth_created_at, u.*
+    `SELECT u.*, a.id, a.email, a.is_admin, a.created_at AS auth_created_at
      FROM auth a
      LEFT JOIN users u ON u.id = a.id
      ORDER BY a.created_at`,
