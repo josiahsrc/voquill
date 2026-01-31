@@ -1,5 +1,5 @@
 ---
-title: Initial Setup
+title: On-Premise Setup
 description: Set up Voquill Enterprise on your own infrastructure using Docker.
 ---
 
