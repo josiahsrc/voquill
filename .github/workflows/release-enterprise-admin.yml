@@ -184,3 +184,11 @@ jobs:
             VITE_VERSION=${{ needs.metadata.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Log published images
+        run: |
+          echo "Published enterprise-admin images:"
+          IFS=',' read -ra TAGS <<< "${{ steps.tags.outputs.tags }}"
+          for tag in "${TAGS[@]}"; do
+            echo "  → ${tag}"
+          done
