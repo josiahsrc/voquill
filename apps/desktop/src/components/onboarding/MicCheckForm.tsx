@@ -19,6 +19,8 @@ import {
 
 export const MicCheckForm = () => {
   const theme = useTheme();
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
+
   const [recordingState, setRecordingState] = useState<
     "idle" | "starting" | "recording" | "stopping"
   >("idle");
@@ -110,7 +112,7 @@ export const MicCheckForm = () => {
   const handleConfirm = async () => {
     trackButtonClick("onboarding_mic_looks_good");
     await stopRecording();
-    if (didSignUpWithAccount) {
+    if (didSignUpWithAccount && !isEnterprise) {
       goToOnboardingPage("unlockedPro");
     } else {
       goToOnboardingPage("tutorial");

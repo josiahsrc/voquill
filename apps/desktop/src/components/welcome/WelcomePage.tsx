@@ -75,7 +75,12 @@ export default function WelcomePage() {
               </Typography>
             </Stack>
             <Typography variant="body1" color="text.secondary">
-              {enterpriseName || (
+              {enterpriseName ? (
+                <FormattedMessage
+                  defaultMessage="Voice OS for {enterpriseName}"
+                  values={{ enterpriseName }}
+                />
+              ) : (
                 <FormattedMessage defaultMessage="Voice is your new keyboard." />
               )}
             </Typography>
