@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - main
+      - windows-installer
     paths:
       - "apps/desktop/**"
+      - "apps/windows-installer/**"
       - "packages/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/release-desktop.yml"
   workflow_dispatch:
     inputs:
@@ -307,6 +311,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -395,19 +400,18 @@ jobs:
         with:
           targets: ${{ matrix.rust_targets }}
 
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            apps/desktop/src-tauri -> target
-          # Cache key includes native-off to invalidate builds compiled with -march=native
-          key: ${{ matrix.os }}-${{ matrix.gpu_variant && 'gpu' || 'cpu' }}-native-off
-
       - name: Set Windows-only build environment
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           echo "CARGO_TARGET_DIR=D:\cargo" >> $env:GITHUB_ENV
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            apps/desktop/src-tauri -> ${{ matrix.os == 'windows-latest' && 'D:\cargo' || 'target' }}
+          key: ${{ matrix.os }}-${{ matrix.gpu_variant && 'gpu' || 'cpu' }}-native-off
 
       - name: Set Windows GPU build environment
         if: matrix.os == 'windows-latest' && matrix.gpu_variant == true
@@ -462,7 +466,7 @@ jobs:
           echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Install Vulkan SDK (Windows)
         if: matrix.os == 'windows-latest' && matrix.gpu_variant == true
@@ -657,6 +661,137 @@ jobs:
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
+
+      - name: Azure login for code signing
+        if: matrix.os == 'windows-latest'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign Windows NSIS installer
+        if: matrix.os == 'windows-latest'
+        uses: azure/trusted-signing-action@v0
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: ${{ vars.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ vars.AZURE_CERT_PROFILE_NAME }}
+          files-folder: D:\cargo\release\bundle\nsis
+          files-folder-filter: exe
+
+      - name: Verify NSIS installer signature
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $nsisDir = "D:\cargo\release\bundle\nsis"
+          $installers = Get-ChildItem -Path $nsisDir -Filter "*.exe"
+
+          foreach ($installer in $installers) {
+            Write-Host "Verifying signature for: $($installer.Name)"
+            $sig = Get-AuthenticodeSignature -FilePath $installer.FullName
+
+            if ($sig.Status -ne "Valid") {
+              Write-Error "Signature verification failed for $($installer.Name): $($sig.Status)"
+              Write-Error "Status Message: $($sig.StatusMessage)"
+              exit 1
+            }
+
+            Write-Host "  Status: $($sig.Status)"
+            Write-Host "  Signer: $($sig.SignerCertificate.Subject)"
+            Write-Host "  Timestamp: $($sig.TimeStamperCertificate.Subject)"
+          }
+
+          Write-Host "All NSIS installers signed successfully"
+
+      - name: Re-upload signed NSIS installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+        run: |
+          $nsisDir = "D:\cargo\release\bundle\nsis"
+          $installers = Get-ChildItem -Path $nsisDir -Filter "*.exe"
+
+          foreach ($installer in $installers) {
+            Write-Host "Uploading signed installer: $($installer.Name)"
+            gh release upload $env:RELEASE_TAG $installer.FullName --clobber
+          }
+
+      - name: Build Windows portable installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $nsisDir = "D:\cargo\release\bundle\nsis"
+          $nsisInstaller = Get-ChildItem -Path $nsisDir -Filter "*-setup.exe" | Select-Object -First 1
+
+          if (-not $nsisInstaller) {
+            Write-Error "Could not find NSIS installer in $nsisDir"
+            exit 1
+          }
+
+          Write-Host "Found NSIS installer: $($nsisInstaller.FullName)"
+
+          $destDir = "apps/windows-installer/src-tauri/installer"
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          Copy-Item $nsisInstaller.FullName "$destDir/Voquill_Setup.exe"
+
+          Write-Host "Building portable Windows installer..."
+          Set-Location apps/windows-installer
+          npm install
+          npm run tauri:build
+
+      - name: Sign Windows portable installer
+        if: matrix.os == 'windows-latest'
+        uses: azure/trusted-signing-action@v0
+        with:
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: ${{ vars.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ vars.AZURE_CERT_PROFILE_NAME }}
+          files-folder: D:\cargo\release
+          files-folder-filter: exe
+          file-digest: SHA256
+
+      - name: Verify portable installer signature
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $installerExe = "D:\cargo\release\voquill-installer.exe"
+
+          Write-Host "Verifying signature for portable installer..."
+          $sig = Get-AuthenticodeSignature -FilePath $installerExe
+
+          if ($sig.Status -ne "Valid") {
+            Write-Error "Signature verification failed: $($sig.Status)"
+            Write-Error "Status Message: $($sig.StatusMessage)"
+            exit 1
+          }
+
+          Write-Host "  Status: $($sig.Status)"
+          Write-Host "  Signer: $($sig.SignerCertificate.Subject)"
+          Write-Host "  Timestamp: $($sig.TimeStamperCertificate.Subject)"
+          Write-Host "Portable installer signed successfully"
+
+      - name: Upload Windows portable installer
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
+        run: |
+          $installerExe = "D:\cargo\release\voquill-installer.exe"
+
+          if (-not (Test-Path $installerExe)) {
+            Write-Error "Could not find portable installer executable at $installerExe"
+            exit 1
+          }
+
+          $destName = "Voquill_Portable_Installer.exe"
+          Copy-Item $installerExe $destName
+
+          Write-Host "Uploading $destName to release $env:RELEASE_TAG"
+          gh release upload $env:RELEASE_TAG $destName --clobber
 
   update-channel:
     name: Update channel release (${{ matrix.variant }})
