@@ -1,3 +1,4 @@
+import { FormattedMessage } from 'react-intl'
 import AppLogo from '../../assets/app-logo.svg?react'
 import { getAppName } from '../../utils/env.utils'
 import { useAppStore } from '../../store'
@@ -50,7 +51,7 @@ export default function LoginPage() {
               {getAppName()}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {isCreateAccount ? 'Create your account' : 'Sign in to your account'}
+              {isCreateAccount ? <FormattedMessage defaultMessage="Create your account" /> : <FormattedMessage defaultMessage="Sign in to your account" />}
             </Typography>
           </Box>
 

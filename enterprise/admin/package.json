@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "i18n:extract": "node scripts/i18n-extract-with-prune.mjs",
+    "i18n:sync": "node scripts/i18n-sync.mjs",
+    "i18n": "npm run i18n:extract && npm run i18n:sync"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -21,6 +24,7 @@
     "lodash-es": "^4.17.23",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-intl": "^7.1.14",
     "react-router-dom": "^6.30.1",
     "react-virtuoso": "^4.18.1",
     "uuid": "^13.0.0",
@@ -28,12 +32,14 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@formatjs/cli": "^6.12.0",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.1.1",
+    "babel-plugin-formatjs": "^10.5.41",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
