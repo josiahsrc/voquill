@@ -14,6 +14,10 @@ export default defineConfig({
 					label: 'Guides',
 					autogenerate: { directory: 'guides' },
 				},
+				{
+					label: 'Enterprise',
+					autogenerate: { directory: 'enterprise' },
+				},
 			],
 		}),
 	],
