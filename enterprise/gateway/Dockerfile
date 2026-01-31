@@ -27,6 +27,9 @@ CMD ["npm", "run", "dev", "--workspace=@repo/enterprise-gateway"]
 
 FROM node:20-alpine AS production
 
+ARG GATEWAY_VERSION=0.0.1
+ENV GATEWAY_VERSION=${GATEWAY_VERSION}
+
 WORKDIR /app
 
 COPY --from=builder /app/enterprise/gateway/dist ./dist

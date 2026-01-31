@@ -18,6 +18,9 @@ CMD ["npm", "run", "dev", "--workspace=enterprise/admin", "--", "--host"]
 
 FROM node:20-alpine AS production
 
+ARG VITE_VERSION=0.0.1
+ENV VITE_VERSION=${VITE_VERSION}
+
 RUN npm install -g serve
 
 WORKDIR /app
