@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - enterprise
     paths:
       - "apps/docs/**"
       - ".github/workflows/release-docs.yml"

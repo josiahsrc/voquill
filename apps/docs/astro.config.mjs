@@ -50,6 +50,17 @@ export default defineConfig({
 								{ label: 'Updates & Renewal', slug: 'enterprise/on-premise/renewal' },
 							],
 						},
+						{
+							label: 'Admin Portal',
+							collapsed: true,
+							items: [
+								{ label: 'Overview', slug: 'enterprise/admin-portal/overview' },
+								{ label: 'Users', slug: 'enterprise/admin-portal/users' },
+								{ label: 'Global Dictionary', slug: 'enterprise/admin-portal/global-dictionary' },
+								{ label: 'Transcription & AI Providers', slug: 'enterprise/admin-portal/transcription-providers' },
+								{ label: 'Settings', slug: 'enterprise/admin-portal/settings' },
+							],
+						},
 					],
 				},
 			],
