@@ -149,16 +149,16 @@ export default function LlmProvidersTab() {
       width: 90,
     },
     {
-      header: "Pull Status",
+      header: "Status",
       cell: (row) => {
         if (row.pullStatus === "complete") {
-          return <Chip label="Pulled" size="small" color="success" variant="outlined" />;
+          return <Chip label="Synced" size="small" color="success" variant="outlined" />;
         }
         if (row.pullStatus === "error") {
           return (
             <Tooltip title={row.pullError ?? "Unknown error"}>
               <Chip
-                label="Retry"
+                label="Error"
                 size="small"
                 color="error"
                 variant="outlined"
@@ -167,7 +167,7 @@ export default function LlmProvidersTab() {
             </Tooltip>
           );
         }
-        return <Chip label="Pulling…" size="small" icon={<CircularProgress size={14} />} variant="outlined" />;
+        return <Chip label="Syncing…" size="small" icon={<CircularProgress size={14} />} variant="outlined" />;
       },
       width: 120,
     },

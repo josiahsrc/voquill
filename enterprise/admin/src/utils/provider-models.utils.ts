@@ -36,10 +36,21 @@ const OLLAMA_MODELS = [
   "mistral:7b",
 ];
 
+const GROQ_LLM_MODELS = [
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "meta-llama/llama-guard-4-12b",
+  "llama-3.3-70b-versatile",
+];
+
+const GROQ_STT_MODELS = ["whisper-large-v3-turbo", "whisper-large-v3"];
+
 export function getSttProviderModels(provider: string): string[] | null {
   switch (provider) {
     case "speaches":
       return SPEACHES_MODELS;
+    case "groq":
+      return GROQ_STT_MODELS;
     default:
       return null;
   }
@@ -49,6 +60,11 @@ export function getLlmProviderModels(provider: string): string[] | null {
   switch (provider) {
     case "ollama":
       return OLLAMA_MODELS;
+    case "groq":
+      return GROQ_LLM_MODELS;
+    case "synthetic-ai":
+    case "open-router":
+      return null;
     default:
       return null;
   }

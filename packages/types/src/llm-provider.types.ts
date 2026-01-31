@@ -27,11 +27,11 @@ export type LlmProviderInput = {
 export const LlmProviderInputZod = z
   .object({
     id: z.string().optional(),
-    provider: z.string().min(1),
-    name: z.string().min(1),
-    url: z.string().min(1),
+    provider: z.string(),
+    name: z.string(),
+    url: z.string(),
     apiKey: z.string().default(""),
-    model: z.string().min(1),
+    model: z.string(),
     isEnabled: z.boolean(),
   })
   .strict() satisfies z.ZodType<LlmProviderInput>;

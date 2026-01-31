@@ -1,5 +1,5 @@
-import type { PullStatus } from "./common.types";
 import z from "zod";
+import type { PullStatus } from "./common.types";
 
 export type SttProvider = {
   id: string;
@@ -27,11 +27,11 @@ export type SttProviderInput = {
 export const SttProviderInputZod = z
   .object({
     id: z.string().optional(),
-    provider: z.string().min(1),
-    name: z.string().min(1),
-    url: z.string().min(1),
+    provider: z.string(),
+    name: z.string(),
+    url: z.string(),
     apiKey: z.string().default(""),
-    model: z.string().min(1),
+    model: z.string(),
     isEnabled: z.boolean(),
   })
   .strict() satisfies z.ZodType<SttProviderInput>;

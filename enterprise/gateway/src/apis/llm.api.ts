@@ -24,19 +24,16 @@ export abstract class BaseLlmApi {
   abstract pullModel(): Promise<PullModelResponse>;
 }
 
-export class OllamaLlmApi extends BaseLlmApi {
+abstract class BaseOpenAILlmApi extends BaseLlmApi {
   private client: OpenAI;
-  private baseURL: string;
-  private model: string;
+  protected model: string;
 
-  constructor(opts: { url: string; apiKey: string; model: string }) {
+  constructor(opts: { baseURL: string; apiKey: string; model: string }) {
     super();
-    const url = `${opts.url}/v1`;
     this.client = new OpenAI({
-      baseURL: url,
-      apiKey: opts.apiKey || "ollama",
+      baseURL: opts.baseURL,
+      apiKey: opts.apiKey,
     });
-    this.baseURL = url;
     this.model = opts.model;
   }
 
@@ -48,7 +45,7 @@ export class OllamaLlmApi extends BaseLlmApi {
     messages.push({ role: "user", content: input.prompt });
 
     const result = await this.client.chat.completions.create({
-      model: input.model,
+      model: this.model,
       messages,
       ...(input.jsonResponse
         ? {
@@ -65,6 +62,38 @@ export class OllamaLlmApi extends BaseLlmApi {
     });
 
     return { text: result.choices[0]?.message?.content ?? "" };
+  }
+
+  async pullModel(): Promise<PullModelResponse> {
+    return { done: true };
+  }
+}
+
+export class GroqLlmApi extends BaseOpenAILlmApi {
+  constructor(opts: { apiKey: string; model: string }) {
+    super({ baseURL: "https://api.groq.com/openai/v1", ...opts });
+  }
+}
+
+export class SyntheticAiLlmApi extends BaseOpenAILlmApi {
+  constructor(opts: { apiKey: string; model: string }) {
+    super({ baseURL: "https://api.synthetic.new/openai/v1", ...opts });
+  }
+}
+
+export class OpenRouterLlmApi extends BaseOpenAILlmApi {
+  constructor(opts: { apiKey: string; model: string }) {
+    super({ baseURL: "https://openrouter.ai/api/v1", ...opts });
+  }
+}
+
+export class OllamaLlmApi extends BaseOpenAILlmApi {
+  private baseURL: string;
+
+  constructor(opts: { url: string; apiKey: string; model: string }) {
+    const baseURL = `${opts.url}/v1`;
+    super({ baseURL, apiKey: opts.apiKey || "ollama", model: opts.model });
+    this.baseURL = baseURL;
   }
 
   async pullModel(): Promise<PullModelResponse> {

@@ -13,6 +13,38 @@ export abstract class BaseSttApi {
   abstract pullModel(): Promise<{ done: boolean; error?: string }>;
 }
 
+export class GroqSttApi extends BaseSttApi {
+  private client: OpenAI;
+  private model: string;
+
+  constructor(opts: { apiKey: string; model: string }) {
+    super();
+    this.client = new OpenAI({
+      baseURL: "https://api.groq.com/openai/v1",
+      apiKey: opts.apiKey,
+    });
+    this.model = opts.model;
+  }
+
+  async transcribe(input: TranscribeInput): Promise<{ text: string }> {
+    const ext = input.mimeType.split("/").pop() ?? "wav";
+    const file = await toFile(input.audioBuffer, `audio.${ext}`, {
+      type: input.mimeType,
+    });
+    const result = await this.client.audio.transcriptions.create({
+      file,
+      model: this.model,
+      prompt: input.prompt ?? undefined,
+      language: input.language,
+    });
+    return { text: result.text };
+  }
+
+  async pullModel(): Promise<{ done: boolean; error?: string }> {
+    return { done: true };
+  }
+}
+
 export class SpeachesSttApi extends BaseSttApi {
   private client: OpenAI;
   private model: string;

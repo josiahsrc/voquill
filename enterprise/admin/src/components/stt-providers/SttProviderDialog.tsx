@@ -19,7 +19,10 @@ import { ModelAutocomplete } from "../common/ModelAutocomplete";
 
 const PROVIDER_OPTIONS = [
   { value: "speaches", label: "Speaches" },
+  { value: "groq", label: "Groq" },
 ] as const;
+
+const PROVIDERS_WITH_URL = new Set(["speaches"]);
 
 export type SttProviderFormState = {
   id: string;
@@ -94,11 +97,13 @@ export const SttProviderDialog = ({
     }
   };
 
+  const needsUrl = PROVIDERS_WITH_URL.has(form.provider);
+
   const canSave =
     !saving &&
     form.name.trim() &&
     form.provider &&
-    form.url.trim() &&
+    (!needsUrl || form.url.trim()) &&
     form.model.trim();
 
   return (
@@ -112,13 +117,6 @@ export const SttProviderDialog = ({
           pt: "16px !important",
         }}
       >
-        <TextField
-          label="Name"
-          fullWidth
-          size="small"
-          value={form.name}
-          onChange={(e) => onFormChange({ ...form, name: e.target.value })}
-        />
         <TextField
           label="Provider"
           fullWidth
@@ -134,12 +132,21 @@ export const SttProviderDialog = ({
           ))}
         </TextField>
         <TextField
-          label="URL"
+          label="Name"
           fullWidth
           size="small"
-          value={form.url}
-          onChange={(e) => onFormChange({ ...form, url: e.target.value })}
+          value={form.name}
+          onChange={(e) => onFormChange({ ...form, name: e.target.value })}
         />
+        {needsUrl && (
+          <TextField
+            label="URL"
+            fullWidth
+            size="small"
+            value={form.url}
+            onChange={(e) => onFormChange({ ...form, url: e.target.value })}
+          />
+        )}
         <TextField
           label="API Key"
           fullWidth
