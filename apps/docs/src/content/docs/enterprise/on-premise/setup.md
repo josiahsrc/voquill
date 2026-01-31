@@ -31,7 +31,7 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/voquill
       - JWT_SECRET=fill-me-in
       - ENCRYPTION_SECRET=fill-me-in
-      - LICENSE_KEY=your-license-key
+      - LICENSE_KEY=your-license-key # email enterprise@voquill.com
     depends_on:
       postgres:
         condition: service_healthy
