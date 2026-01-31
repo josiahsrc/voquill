@@ -13,6 +13,7 @@ import {
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
 import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
+import { BaseConfigRepo, CloudConfigRepo } from "./config.repo";
 import {
   AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
@@ -26,12 +27,14 @@ import {
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
+import { BaseMemberRepo, CloudMemberRepo } from "./member.repo";
 import { BaseOllamaRepo, OllamaRepo } from "./ollama.repo";
 import {
   BaseUserPreferencesRepo,
   LocalUserPreferencesRepo,
 } from "./preferences.repo";
 import { BaseStorageRepo, LocalStorageRepo } from "./storage.repo";
+import { BaseStripeRepo, CloudStripeRepo } from "./stripe.repo";
 import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
 import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
 import {
@@ -52,6 +55,18 @@ import {
 import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
 
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
+
+export const getMemberRepo = (): BaseMemberRepo => {
+  return new CloudMemberRepo();
+};
+
+export const getStripeRepo = (): BaseStripeRepo => {
+  return new CloudStripeRepo();
+};
+
+export const getConfigRepo = (): BaseConfigRepo => {
+  return new CloudConfigRepo();
+};
 
 export const getAuthRepo = (): BaseAuthRepo => {
   return new CloudAuthRepo();
@@ -244,11 +259,15 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       const state = getAppState();
       const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
       const baseUrl = apiKeyRecord?.baseUrl || "http://localhost:8000";
-      const model = prefs.transcriptionModel || "Systran/faster-whisper-large-v3";
+      const model =
+        prefs.transcriptionModel || "Systran/faster-whisper-large-v3";
       if (!model) {
         prefs.warnings.push("No model configured for Speaches transcription.");
       }
-      repo = new SpeachesTranscribeAudioRepo(baseUrl, model || "Systran/faster-whisper-large-v3");
+      repo = new SpeachesTranscribeAudioRepo(
+        baseUrl,
+        model || "Systran/faster-whisper-large-v3",
+      );
     } else {
       repo = new GroqTranscribeAudioRepo(
         prefs.apiKeyValue,

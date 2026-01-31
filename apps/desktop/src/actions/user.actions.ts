@@ -141,7 +141,7 @@ export const refreshCurrentUser = async (): Promise<void> => {
 
   try {
     const [user, preferences] = await Promise.all([
-      getUserRepo().getUser(userId),
+      getUserRepo().getMyUser(),
       getUserPreferencesRepo().getUserPreferences(),
     ]);
     produceAppState((draft) => {

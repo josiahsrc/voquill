@@ -31,7 +31,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -42,7 +41,7 @@ import {
   setPreferredLanguage,
   setSecondaryDictationLanguage,
 } from "../../actions/user.actions";
-import { getAuthRepo } from "../../repos";
+import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import {
   DICTATION_LANGUAGE_OPTIONS,
@@ -180,11 +179,8 @@ export default function SettingsPage() {
   const handleManageSubscription = async () => {
     setManageSubscriptionLoading(true);
     try {
-      const data = await invokeHandler(
-        "stripe/createCustomerPortalSession",
-        {},
-      );
-      openUrl(data.url);
+      const url = await getStripeRepo().createCustomerPortalSession();
+      openUrl(url);
     } catch (error) {
       showErrorSnackbar(error);
     } finally {

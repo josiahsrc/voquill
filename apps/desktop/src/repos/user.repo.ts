@@ -71,7 +71,7 @@ const toLocalUser = (user: User): LocalUser => ({
 
 export abstract class BaseUserRepo extends BaseRepo {
   abstract setUser(user: User): Promise<User>;
-  abstract getUser(id: string): Promise<Nullable<User>>;
+  abstract getMyUser(): Promise<Nullable<User>>;
 }
 
 export class LocalUserRepo extends BaseUserRepo {
@@ -83,7 +83,7 @@ export class LocalUserRepo extends BaseUserRepo {
     return fromLocalUser(stored);
   }
 
-  async getUser(): Promise<Nullable<User>> {
+  async getMyUser(): Promise<Nullable<User>> {
     const user = await invoke<Nullable<LocalUser>>("user_get_one");
 
     return user ? fromLocalUser(user) : null;
@@ -96,7 +96,7 @@ export class CloudUserRepo extends BaseUserRepo {
     return user;
   }
 
-  async getUser(): Promise<Nullable<User>> {
+  async getMyUser(): Promise<Nullable<User>> {
     const user = await invokeHandler("user/getMyUser", {}).then(
       (res) => res.user,
     );

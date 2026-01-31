@@ -1,4 +1,3 @@
-import { invokeHandler } from "@repo/functions";
 import { Member, Nullable, User } from "@repo/types";
 import { listify } from "@repo/utilities";
 import dayjs from "dayjs";
@@ -17,6 +16,7 @@ import { detectLocale } from "../../i18n";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { CURRENT_COHORT } from "../../utils/analytics.utils";
+import { getConfigRepo, getMemberRepo, getUserRepo } from "../../repos";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import { getEffectiveAuth } from "../../utils/auth.utils";
 import {
@@ -100,8 +100,8 @@ export const AppSideEffects = () => {
   }, []);
 
   useIntervalAsync(CONFIG_REFRESH_INTERVAL_MS, async () => {
-    const config = await invokeHandler("config/getFullConfig", {})
-      .then((res) => res.config)
+    const config = await getConfigRepo()
+      .getFullConfig()
       .catch(() => null);
 
     if (config) {
@@ -132,13 +132,13 @@ export const AppSideEffects = () => {
 
       return combineLatest([
         from(
-          invokeHandler("member/getMyMember", {})
-            .then((res) => res.member)
+          getMemberRepo()
+            .getMyMember()
             .catch(() => null),
         ),
         from(
-          invokeHandler("user/getMyUser", {})
-            .then((res) => res.user)
+          getUserRepo()
+            .getMyUser()
             .catch(() => null),
         ),
       ]);

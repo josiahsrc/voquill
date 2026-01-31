@@ -1,7 +1,8 @@
-import { HandlerOutput, invokeHandler } from "@repo/functions";
+import type { HandlerOutput } from "@repo/functions";
 import { PRICE_KEYS, Prices, type PriceKey } from "@repo/pricing";
 import { MemberPlan } from "@repo/types";
 import { getRec } from "@repo/utilities";
+import { getStripeRepo } from "../repos";
 import type { AppState } from "../state/app.state";
 import { isDev, isEmulators, isProd } from "./env.utils";
 
@@ -69,9 +70,7 @@ export const getPricesWithRuntimeCaching = async () => {
     getPriceIdFromKey("pro_yearly"),
   ];
 
-  pendingPromise = invokeHandler("stripe/getPrices", {
-    priceIds: pricesIds,
-  });
+  pendingPromise = getStripeRepo().getPrices(pricesIds);
 
   try {
     cachedPrices = await pendingPromise;
