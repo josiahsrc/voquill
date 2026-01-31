@@ -1,34 +1,50 @@
 import mixpanel from "mixpanel-browser";
+import { getIsEnterpriseEnabled } from "./enterprise.utils";
 
 export const CURRENT_COHORT = "2025-01-b";
 
+export function getMixpanel() {
+  if (getIsEnterpriseEnabled()) {
+    // Disable Mixpanel for Enterprise users
+    return null;
+  }
+
+  const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;
+  if (!mixpanelToken) {
+    // Mixpanel token is not set, do not initialize Mixpanel
+    return null;
+  }
+
+  return mixpanel;
+}
+
 export function trackPageView(pageName: string) {
-  mixpanel.track("Page View", { page: pageName });
+  getMixpanel()?.track("Page View", { page: pageName });
 }
 
 export function trackOnboardingStep(step: string) {
-  mixpanel.track("Onboarding Step", { step });
+  getMixpanel()?.track("Onboarding Step", { step });
 }
 
 export function trackDictationStart() {
-  mixpanel.track("Activate Dictation Mode");
+  getMixpanel()?.track("Activate Dictation Mode");
 }
 
 export function trackAgentStart() {
-  mixpanel.track("Activate Agent Mode");
+  getMixpanel()?.track("Activate Agent Mode");
 }
 
 export function trackPaymentComplete() {
-  mixpanel.track("Payment Complete");
+  getMixpanel()?.track("Payment Complete");
 }
 
 export function trackButtonClick(
   name: string,
   props?: Record<string, unknown>,
 ) {
-  mixpanel.track("Button Click", { name, ...props });
+  getMixpanel()?.track("Button Click", { name, ...props });
 }
 
 export function trackAppUsed(appName: string) {
-  mixpanel.track("App Used", { appName });
+  getMixpanel()?.track("App Used", { appName });
 }
