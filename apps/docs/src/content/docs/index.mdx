@@ -1,17 +1,17 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: Voquill Docs
+description: Documentation for Voquill, the cross-platform voice-to-text desktop app.
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
+  tagline: Cross-platform voice-to-text, powered by AI.
   image:
     file: ../../assets/houston.webp
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Getting Started
+      link: /getting-started/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
+    - text: Visit voquill.com
+      link: https://voquill.com
       icon: external
       variant: minimal
 ---
@@ -21,20 +21,16 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 ## Next steps
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Getting Started" icon="rocket">
+		New to Voquill? Learn how to install the app and make your first transcription.
 	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
+	<Card title="Transcription Modes" icon="setting">
+		Choose between local, API, or cloud transcription depending on your needs.
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Enterprise" icon="star">
+		Deploy Voquill across your organization with centralized management and admin controls.
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Tones & Dictionary" icon="pencil">
+		Customize how your transcriptions are cleaned up with tones and domain-specific vocabulary.
 	</Card>
 </CardGrid>
