@@ -9,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { EnterpriseConfig } from "@repo/types";
+import { FormattedMessage, useIntl } from "react-intl";
 import { signOut } from "../../actions/login.actions";
 import { updateEnterpriseConfig } from "../../actions/settings.actions";
 import { useAppStore } from "../../store";
@@ -16,6 +17,7 @@ import { getAppVersion } from "../../utils/env.utils";
 import { TabLayout } from "../common/TabLayout";
 
 export default function SettingsTab() {
+  const intl = useIntl();
   const serverVersion = useAppStore((s) => s.settings.serverVersion);
   const enterpriseConfig = useAppStore((s) => s.enterpriseConfig);
   const license = useAppStore((s) => s.enterpriseLicense);
@@ -26,28 +28,42 @@ export default function SettingsTab() {
   }
 
   return (
-    <TabLayout title="Settings">
+    <TabLayout
+      title={intl.formatMessage({ defaultMessage: "Settings" })}
+    >
       <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              License
+              <FormattedMessage defaultMessage="License" />
             </Typography>
             {license === null ? (
               <CircularProgress size={20} />
             ) : (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
                 <Typography variant="body2">
-                  Organization: {license.org}
+                  <FormattedMessage
+                    defaultMessage="Organization: {org}"
+                    values={{ org: license.org }}
+                  />
                 </Typography>
                 <Typography variant="body2">
-                  Max Seats: {license.maxSeats}
+                  <FormattedMessage
+                    defaultMessage="Max Seats: {maxSeats}"
+                    values={{ maxSeats: license.maxSeats }}
+                  />
                 </Typography>
                 <Typography variant="body2">
-                  Issued: {license.issued}
+                  <FormattedMessage
+                    defaultMessage="Issued: {issued}"
+                    values={{ issued: license.issued }}
+                  />
                 </Typography>
                 <Typography variant="body2">
-                  Expires: {license.expires}
+                  <FormattedMessage
+                    defaultMessage="Expires: {expires}"
+                    values={{ expires: license.expires }}
+                  />
                 </Typography>
               </Box>
             )}
@@ -57,7 +73,7 @@ export default function SettingsTab() {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Client App
+              <FormattedMessage defaultMessage="Client App" />
             </Typography>
             {enterpriseConfig === null ? (
               <CircularProgress size={20} />
@@ -72,7 +88,9 @@ export default function SettingsTab() {
                       }
                     />
                   }
-                  label="Allow users to change post-processing method"
+                  label={
+                    <FormattedMessage defaultMessage="Allow users to change post-processing method" />
+                  }
                 />
                 <FormControlLabel
                   control={
@@ -83,7 +101,9 @@ export default function SettingsTab() {
                       }
                     />
                   }
-                  label="Allow users to change transcription method"
+                  label={
+                    <FormattedMessage defaultMessage="Allow users to change transcription method" />
+                  }
                 />
               </Box>
             )}
@@ -93,18 +113,28 @@ export default function SettingsTab() {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Version
+              <FormattedMessage defaultMessage="Version" />
             </Typography>
-            <Typography variant="body2">Admin: {getAppVersion()}</Typography>
             <Typography variant="body2">
-              Server: {serverVersion ?? <CircularProgress size={12} />}
+              <FormattedMessage
+                defaultMessage="Admin: {version}"
+                values={{ version: getAppVersion() }}
+              />
+            </Typography>
+            <Typography variant="body2">
+              <FormattedMessage
+                defaultMessage="Server: {version}"
+                values={{
+                  version: serverVersion ?? <CircularProgress size={12} />,
+                }}
+              />
             </Typography>
           </CardContent>
         </Card>
 
         <Box>
           <Button variant="outlined" color="error" onClick={signOut}>
-            Sign Out
+            <FormattedMessage defaultMessage="Sign Out" />
           </Button>
         </Box>
       </Box>

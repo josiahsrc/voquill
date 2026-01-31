@@ -1,4 +1,5 @@
 import { Box, Typography, Button } from "@mui/material";
+import { FormattedMessage } from "react-intl";
 import { signOut } from "../../actions/login.actions";
 
 export default function PermissionDeniedPage() {
@@ -14,14 +15,13 @@ export default function PermissionDeniedPage() {
       }}
     >
       <Typography variant="h5" fontWeight={600}>
-        Permission Denied
+        <FormattedMessage defaultMessage="Permission Denied" />
       </Typography>
       <Typography color="text.secondary" textAlign="center" maxWidth={400}>
-        You don't have admin access to this server. Contact your administrator
-        to request access.
+        <FormattedMessage defaultMessage="You don't have admin access to this server. Contact your administrator to request access." />
       </Typography>
       <Button variant="contained" onClick={signOut}>
-        Sign Out
+        <FormattedMessage defaultMessage="Sign Out" />
       </Button>
     </Box>
   );

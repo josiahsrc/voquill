@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import type { UserWithAuth } from "@repo/types";
 import { useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import { resetPassword } from "../../actions/users.actions";
 
 export const ResetPasswordDialog = ({
@@ -21,6 +22,7 @@ export const ResetPasswordDialog = ({
   open: boolean;
   onClose: () => void;
 }) => {
+  const intl = useIntl();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,16 +45,21 @@ export const ResetPasswordDialog = ({
 
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Reset password</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Reset password" />
+      </DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
-          Set a new password for <strong>{user.name || user.email}</strong>.
+          <FormattedMessage
+            defaultMessage="Set a new password for {name}."
+            values={{ name: <strong>{user.name || user.email}</strong> }}
+          />
         </DialogContentText>
         <TextField
           autoFocus
           fullWidth
           type="text"
-          label="New password"
+          label={intl.formatMessage({ defaultMessage: "New password" })}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
@@ -61,7 +68,7 @@ export const ResetPasswordDialog = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>
-          Cancel
+          <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button
           onClick={handleSubmit}
@@ -69,7 +76,7 @@ export const ResetPasswordDialog = ({
           disabled={loading || password.length < 8}
           startIcon={loading ? <CircularProgress size={16} /> : undefined}
         >
-          Reset
+          <FormattedMessage defaultMessage="Reset" />
         </Button>
       </DialogActions>
     </Dialog>

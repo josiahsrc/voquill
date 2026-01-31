@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import type { UserWithAuth } from "@repo/types";
 import { useState } from "react";
+import { FormattedMessage } from "react-intl";
 import { deleteUser } from "../../actions/users.actions";
 
 export const DeleteUserDialog = ({
@@ -34,17 +35,20 @@ export const DeleteUserDialog = ({
 
   return (
     <Dialog open={open} onClose={loading ? undefined : onClose}>
-      <DialogTitle>Delete user</DialogTitle>
+      <DialogTitle>
+        <FormattedMessage defaultMessage="Delete user" />
+      </DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Permanently delete <strong>{user.name || user.email}</strong> and all
-          associated data (account, profile, terms, membership)? This cannot be
-          undone.
+          <FormattedMessage
+            defaultMessage="Permanently delete {name} and all associated data (account, profile, terms, membership)? This cannot be undone."
+            values={{ name: <strong>{user.name || user.email}</strong> }}
+          />
         </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>
-          Cancel
+          <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button
           onClick={handleDelete}
@@ -53,7 +57,7 @@ export const DeleteUserDialog = ({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={16} /> : undefined}
         >
-          Delete
+          <FormattedMessage defaultMessage="Delete" />
         </Button>
       </DialogActions>
     </Dialog>

@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import type { Term } from "@repo/types";
 import { useEffect, useMemo, useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import {
   deleteGlobalTerm,
   loadGlobalTerms,
@@ -36,10 +37,12 @@ const TermActionsMenu = ({
   term: Term;
   onEdit: (term: Term) => void;
 }) => {
+  const intl = useIntl();
+
   const items: MenuPopoverItem[] = [
     {
       kind: "listItem",
-      title: "Edit",
+      title: intl.formatMessage({ defaultMessage: "Edit" }),
       leading: <Edit fontSize="small" />,
       onClick: ({ close }) => {
         onEdit(term);
@@ -49,7 +52,7 @@ const TermActionsMenu = ({
     { kind: "divider" },
     {
       kind: "listItem",
-      title: "Delete",
+      title: intl.formatMessage({ defaultMessage: "Delete" }),
       leading: <Delete fontSize="small" />,
       onClick: ({ close }) => {
         deleteGlobalTerm(term.id);
@@ -70,6 +73,7 @@ const TermActionsMenu = ({
 };
 
 export default function TermsTab() {
+  const intl = useIntl();
   const termIds = useAppStore((state) => state.terms.termIds);
   const termById = useAppStore((state) => state.termById);
   const status = useAppStore((state) => state.terms.status);
@@ -98,30 +102,30 @@ export default function TermsTab() {
 
   const columns: ColumnDef<Term>[] = [
     {
-      header: "Source",
+      header: intl.formatMessage({ defaultMessage: "Source" }),
       cell: (row) => <Box sx={twoLineEllipsis}>{row.sourceValue}</Box>,
       getSortKey: (row) => row.sourceValue.toLowerCase(),
       weight: 2,
     },
     {
-      header: "Destination",
+      header: intl.formatMessage({ defaultMessage: "Destination" }),
       cell: (row) => <Box sx={twoLineEllipsis}>{row.isReplacement ? row.destinationValue : "—"}</Box>,
       weight: 2,
     },
     {
-      header: "Type",
-      cell: (row) => (row.isReplacement ? "Replacement" : "Glossary"),
+      header: intl.formatMessage({ defaultMessage: "Type" }),
+      cell: (row) => (row.isReplacement ? intl.formatMessage({ defaultMessage: "Replacement" }) : intl.formatMessage({ defaultMessage: "Glossary" })),
       getSortKey: (row) => (row.isReplacement ? 1 : 0),
       weight: 1,
     },
     {
-      header: "Created",
+      header: intl.formatMessage({ defaultMessage: "Created" }),
       cell: (row) => new Date(row.createdAt).toLocaleDateString(),
       getSortKey: (row) => row.createdAt,
       weight: 1,
     },
     {
-      header: "Actions",
+      header: intl.formatMessage({ defaultMessage: "Actions" }),
       cell: (row) => <TermActionsMenu term={row} onEdit={openEdit} />,
       width: 80,
       align: "right",
@@ -138,11 +142,13 @@ export default function TermsTab() {
 
   if (status === "error") {
     return (
-      <TabLayout title="Global Dictionary">
+      <TabLayout title={intl.formatMessage({ defaultMessage: "Global Dictionary" })}>
         <CenteredMessage>
-          <Typography color="error">Failed to load terms.</Typography>
+          <Typography color="error">
+            <FormattedMessage defaultMessage="Failed to load terms." />
+          </Typography>
           <Button variant="outlined" onClick={() => loadGlobalTerms()}>
-            Retry
+            <FormattedMessage defaultMessage="Retry" />
           </Button>
         </CenteredMessage>
       </TabLayout>
@@ -151,10 +157,10 @@ export default function TermsTab() {
 
   return (
     <TabLayout
-      title="Global Dictionary"
+      title={intl.formatMessage({ defaultMessage: "Global Dictionary" })}
       trailing={
         <Button startIcon={<Add />} variant="contained" size="small" onClick={openCreate}>
-          Add Term
+          <FormattedMessage defaultMessage="Add Term" />
         </Button>
       }
     >
@@ -164,7 +170,7 @@ export default function TermsTab() {
         defaultSortColumnIndex={0}
         fixedItemHeight={52}
         sx={{ height: "100%" }}
-        emptyMessage="No global dictionary terms"
+        emptyMessage={intl.formatMessage({ defaultMessage: "No global dictionary terms" })}
       />
 
       <TermDialog

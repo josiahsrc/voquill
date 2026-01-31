@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import type { Term } from "@repo/types";
 import { useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import { upsertGlobalTerm } from "../../actions/terms.actions";
 import { useAppStore } from "../../store";
 
@@ -54,6 +55,7 @@ export const TermDialog = ({
   onFormChange,
   onClose,
 }: TermDialogProps) => {
+  const intl = useIntl();
   const termById = useAppStore((state) => state.termById);
   const [saving, setSaving] = useState(false);
 
@@ -79,7 +81,13 @@ export const TermDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{isEdit ? "Edit Term" : "Add Term"}</DialogTitle>
+      <DialogTitle>
+        {isEdit ? (
+          <FormattedMessage defaultMessage="Edit Term" />
+        ) : (
+          <FormattedMessage defaultMessage="Add Term" />
+        )}
+      </DialogTitle>
       <DialogContent
         sx={{
           display: "flex",
@@ -89,7 +97,7 @@ export const TermDialog = ({
         }}
       >
         <TextField
-          label="Source Value"
+          label={intl.formatMessage({ defaultMessage: "Source Value" })}
           fullWidth
           size="small"
           multiline
@@ -108,11 +116,11 @@ export const TermDialog = ({
               }
             />
           }
-          label="Replacement rule"
+          label={<FormattedMessage defaultMessage="Replacement rule" />}
         />
         {form.isReplacement && (
           <TextField
-            label="Destination Value"
+            label={intl.formatMessage({ defaultMessage: "Destination Value" })}
             fullWidth
             size="small"
             multiline
@@ -125,7 +133,9 @@ export const TermDialog = ({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>
+          <FormattedMessage defaultMessage="Cancel" />
+        </Button>
         <Button
           variant="contained"
           onClick={handleSave}
@@ -135,7 +145,7 @@ export const TermDialog = ({
             (form.isReplacement && !form.destinationValue.trim())
           }
         >
-          {saving ? <CircularProgress size={20} /> : "Save"}
+          {saving ? <CircularProgress size={20} /> : <FormattedMessage defaultMessage="Save" />}
         </Button>
       </DialogActions>
     </Dialog>

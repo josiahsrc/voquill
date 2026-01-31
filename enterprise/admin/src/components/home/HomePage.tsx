@@ -17,32 +17,46 @@ import {
   Typography,
 } from "@mui/material";
 import { Suspense } from "react";
+import { useIntl } from "react-intl";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import AppLogo from "../../assets/app-logo.svg?react";
 import { getAppName } from "../../utils/env.utils";
 import HomeSideEffects from "./HomeSideEffects";
-
-const NAV_ITEMS = [
-  { label: "Users", path: "/users", icon: <GroupOutlined /> },
-  { label: "Global Dictionary", path: "/terms", icon: <ClassOutlined /> },
-  {
-    label: "Transcription Providers",
-    path: "/stt-providers",
-    icon: <MicOutlined />,
-  },
-  {
-    label: "AI Providers",
-    path: "/llm-providers",
-    icon: <AutoFixHighOutlined />,
-  },
-  { label: "Settings", path: "/settings", icon: <SettingsOutlined /> },
-];
 
 const SIDEBAR_WIDTH = 300;
 
 export default function HomePage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const intl = useIntl();
+
+  const navItems = [
+    {
+      label: intl.formatMessage({ defaultMessage: "Users" }),
+      path: "/users",
+      icon: <GroupOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "Global Dictionary" }),
+      path: "/terms",
+      icon: <ClassOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "Transcription Providers" }),
+      path: "/stt-providers",
+      icon: <MicOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "AI Providers" }),
+      path: "/llm-providers",
+      icon: <AutoFixHighOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "Settings" }),
+      path: "/settings",
+      icon: <SettingsOutlined />,
+    },
+  ];
 
   return (
     <Stack direction="row" sx={{ height: "100%" }}>
@@ -62,7 +76,7 @@ export default function HomePage() {
           </Typography>
         </Toolbar>
         <List sx={{ px: 1 }}>
-          {NAV_ITEMS.map(({ label, path, icon }) => (
+          {navItems.map(({ label, path, icon }) => (
             <ListItem key={path} disablePadding>
               <ListItemButton
                 selected={location.pathname.startsWith(path)}

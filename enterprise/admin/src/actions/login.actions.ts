@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { INITIAL_LOGIN_STATE, type LoginMode } from "../state/login.state";
 import { getAppState, produceAppState } from "../store";
 import { invoke } from "../utils/api.utils";
+import { getIntl } from "../i18n/intl";
 
 export function setAuthTokens(token: string, refreshToken: string) {
   const payload = jwtDecode<AuthContext>(token);
@@ -42,7 +43,7 @@ export async function submitSignIn() {
     produceAppState((draft) => {
       draft.login.status = "error";
       draft.login.errorMessage =
-        error instanceof Error ? error.message : "Sign in failed";
+        error instanceof Error ? error.message : getIntl().formatMessage({ defaultMessage: "Sign in failed" });
     });
   }
 }
@@ -53,7 +54,7 @@ export async function submitSignUp() {
   if (password !== confirmPassword) {
     produceAppState((draft) => {
       draft.login.status = "error";
-      draft.login.errorMessage = "Passwords do not match";
+      draft.login.errorMessage = getIntl().formatMessage({ defaultMessage: "Passwords do not match" });
     });
     return;
   }
@@ -106,7 +107,7 @@ export async function submitSignUp() {
     produceAppState((draft) => {
       draft.login.status = "error";
       draft.login.errorMessage =
-        error instanceof Error ? error.message : "Registration failed";
+        error instanceof Error ? error.message : getIntl().formatMessage({ defaultMessage: "Registration failed" });
     });
   }
 }

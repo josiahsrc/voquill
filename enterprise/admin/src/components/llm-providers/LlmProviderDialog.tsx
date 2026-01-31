@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import type { LlmProvider } from "@repo/types";
 import { useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import { upsertLlmProvider } from "../../actions/llm-providers.actions";
 import { useAppStore } from "../../store";
 import { getLlmProviderModels } from "../../utils/provider-models.utils";
@@ -75,6 +76,7 @@ export const LlmProviderDialog = ({
   onFormChange,
   onClose,
 }: LlmProviderDialogProps) => {
+  const intl = useIntl();
   const providerById = useAppStore((state) => state.llmProviderById);
   const [saving, setSaving] = useState(false);
   const models = getLlmProviderModels(form.provider);
@@ -110,7 +112,13 @@ export const LlmProviderDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{isEdit ? "Edit Provider" : "Add Provider"}</DialogTitle>
+      <DialogTitle>
+        {isEdit ? (
+          <FormattedMessage defaultMessage="Edit Provider" />
+        ) : (
+          <FormattedMessage defaultMessage="Add Provider" />
+        )}
+      </DialogTitle>
       <DialogContent
         sx={{
           display: "flex",
@@ -120,7 +128,7 @@ export const LlmProviderDialog = ({
         }}
       >
         <TextField
-          label="Provider"
+          label={intl.formatMessage({ defaultMessage: "Provider" })}
           fullWidth
           size="small"
           select
@@ -134,7 +142,7 @@ export const LlmProviderDialog = ({
           ))}
         </TextField>
         <TextField
-          label="Name"
+          label={intl.formatMessage({ defaultMessage: "Name" })}
           fullWidth
           size="small"
           value={form.name}
@@ -142,7 +150,7 @@ export const LlmProviderDialog = ({
         />
         {needsUrl && (
           <TextField
-            label="URL"
+            label={intl.formatMessage({ defaultMessage: "URL" })}
             fullWidth
             size="small"
             value={form.url}
@@ -150,16 +158,16 @@ export const LlmProviderDialog = ({
           />
         )}
         <TextField
-          label="API Key"
+          label={intl.formatMessage({ defaultMessage: "API Key" })}
           fullWidth
           size="small"
           type="password"
           value={form.apiKey}
           onChange={(e) => onFormChange({ ...form, apiKey: e.target.value })}
-          helperText={isEdit ? "Leave empty to keep the current key" : undefined}
+          helperText={isEdit ? intl.formatMessage({ defaultMessage: "Leave empty to keep the current key" }) : undefined}
         />
         <ModelAutocomplete
-          label="Model"
+          label={intl.formatMessage({ defaultMessage: "Model" })}
           value={form.model}
           onChange={(value) => onFormChange({ ...form, model: value })}
           options={models}
@@ -173,13 +181,15 @@ export const LlmProviderDialog = ({
               }
             />
           }
-          label="Enabled"
+          label={<FormattedMessage defaultMessage="Enabled" />}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>
+          <FormattedMessage defaultMessage="Cancel" />
+        </Button>
         <Button variant="contained" onClick={handleSave} disabled={!canSave}>
-          {saving ? <CircularProgress size={20} /> : "Save"}
+          {saving ? <CircularProgress size={20} /> : <FormattedMessage defaultMessage="Save" />}
         </Button>
       </DialogActions>
     </Dialog>

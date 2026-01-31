@@ -1,4 +1,4 @@
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, useIntl } from 'react-intl'
 import AppLogo from '../../assets/app-logo.svg?react'
 import { getAppName } from '../../utils/env.utils'
 import { useAppStore } from '../../store'
@@ -18,6 +18,7 @@ import {
 } from '@mui/material'
 
 export default function LoginPage() {
+  const intl = useIntl()
   const { name, email, password, confirmPassword, mode, status, errorMessage } =
     useAppStore((state) => state.login)
 
@@ -68,7 +69,7 @@ export default function LoginPage() {
           >
             {isCreateAccount && (
               <TextField
-                label="Full Name"
+                label={intl.formatMessage({ defaultMessage: "Full Name" })}
                 fullWidth
                 size="small"
                 value={name}
@@ -81,7 +82,7 @@ export default function LoginPage() {
               />
             )}
             <TextField
-              label="Email"
+              label={intl.formatMessage({ defaultMessage: "Email" })}
               type="email"
               fullWidth
               size="small"
@@ -94,7 +95,7 @@ export default function LoginPage() {
               }
             />
             <TextField
-              label="Password"
+              label={intl.formatMessage({ defaultMessage: "Password" })}
               type="password"
               fullWidth
               size="small"
@@ -108,7 +109,7 @@ export default function LoginPage() {
             />
             {isCreateAccount && (
               <TextField
-                label="Confirm Password"
+                label={intl.formatMessage({ defaultMessage: "Confirm Password" })}
                 type="password"
                 fullWidth
                 size="small"
@@ -132,9 +133,9 @@ export default function LoginPage() {
               {isLoading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : isCreateAccount ? (
-                'Create Account'
+                <FormattedMessage defaultMessage="Create Account" />
               ) : (
-                'Sign In'
+                <FormattedMessage defaultMessage="Sign In" />
               )}
             </Button>
           </Box>
@@ -142,16 +143,41 @@ export default function LoginPage() {
           <Divider sx={{ my: 3 }} />
 
           <Typography variant="body2" textAlign="center">
-            {isCreateAccount ? 'Already have an account? ' : "Don't have an account? "}
-            <Link
-              component="button"
-              variant="body2"
-              disabled={isLoading}
-              sx={{ verticalAlign: "baseline" }}
-              onClick={() => setLoginMode(isCreateAccount ? 'signIn' : 'signUp')}
-            >
-              {isCreateAccount ? 'Sign in' : 'Create one'}
-            </Link>
+            {isCreateAccount ? (
+              <FormattedMessage
+                defaultMessage="Already have an account? {link}"
+                values={{
+                  link: (
+                    <Link
+                      component="button"
+                      variant="body2"
+                      disabled={isLoading}
+                      sx={{ verticalAlign: "baseline" }}
+                      onClick={() => setLoginMode('signIn')}
+                    >
+                      <FormattedMessage defaultMessage="Sign in" />
+                    </Link>
+                  ),
+                }}
+              />
+            ) : (
+              <FormattedMessage
+                defaultMessage="Don't have an account? {link}"
+                values={{
+                  link: (
+                    <Link
+                      component="button"
+                      variant="body2"
+                      disabled={isLoading}
+                      sx={{ verticalAlign: "baseline" }}
+                      onClick={() => setLoginMode('signUp')}
+                    >
+                      <FormattedMessage defaultMessage="Create one" />
+                    </Link>
+                  ),
+                }}
+              />
+            )}
           </Typography>
         </CardContent>
       </Card>
