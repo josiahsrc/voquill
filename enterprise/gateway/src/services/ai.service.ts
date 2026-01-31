@@ -1,5 +1,6 @@
 import type { HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
+import { retry } from "@repo/utilities";
 import { listEnabledLlmProvidersWithKeys } from "../repo/llm-provider.repo";
 import { listEnabledSttProvidersWithKeys } from "../repo/stt-provider.repo";
 import { requireAuth } from "../utils/auth.utils";
@@ -59,11 +60,15 @@ export async function transcribeAudio(opts: {
   sttIndex++;
 
   const transcription = createTranscriptionApi(provider);
-  const result = await transcription.transcribe({
-    audioBuffer: blob,
-    mimeType: input.audioMimeType,
-    prompt: input.prompt,
-    language: input.language,
+  const result = await retry({
+    retries: 3,
+    fn: async () =>
+      transcription.transcribe({
+        audioBuffer: blob,
+        mimeType: input.audioMimeType,
+        prompt: input.prompt,
+        language: input.language,
+      }),
   });
 
   return { text: result.text };
@@ -89,11 +94,15 @@ export async function generateText(opts: {
   llmIndex++;
 
   const llmApi = createLlmApi(provider);
-  const result = await llmApi.generateText({
-    system: input.system ?? undefined,
-    prompt: input.prompt,
-    model: provider.model,
-    jsonResponse: input.jsonResponse ?? undefined,
+  const result = await retry({
+    retries: 3,
+    fn: async () =>
+      llmApi.generateText({
+        system: input.system ?? undefined,
+        prompt: input.prompt,
+        model: provider.model,
+        jsonResponse: input.jsonResponse ?? undefined,
+      }),
   });
 
   return { text: result.text };

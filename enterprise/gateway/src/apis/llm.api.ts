@@ -8,9 +8,20 @@ export type GenerateTextInput = {
   jsonResponse?: JsonResponse;
 };
 
+export type GenerateTextResponse = {
+  text: string;
+};
+
+export type PullModelResponse = {
+  done: boolean;
+  error?: string;
+};
+
 export abstract class BaseLlmApi {
-  abstract generateText(input: GenerateTextInput): Promise<{ text: string }>;
-  abstract pullModel(): Promise<{ done: boolean; error?: string }>;
+  abstract generateText(
+    input: GenerateTextInput,
+  ): Promise<GenerateTextResponse>;
+  abstract pullModel(): Promise<PullModelResponse>;
 }
 
 export class OllamaLlmApi extends BaseLlmApi {
@@ -20,15 +31,16 @@ export class OllamaLlmApi extends BaseLlmApi {
 
   constructor(opts: { url: string; apiKey: string; model: string }) {
     super();
+    const url = `${opts.url}/v1`;
     this.client = new OpenAI({
-      baseURL: `${opts.url}/v1`,
-      apiKey: opts.apiKey,
+      baseURL: url,
+      apiKey: opts.apiKey || "ollama",
     });
-    this.baseURL = opts.url;
+    this.baseURL = url;
     this.model = opts.model;
   }
 
-  async generateText(input: GenerateTextInput): Promise<{ text: string }> {
+  async generateText(input: GenerateTextInput): Promise<GenerateTextResponse> {
     const messages: OpenAI.ChatCompletionMessageParam[] = [];
     if (input.system) {
       messages.push({ role: "system", content: input.system });
@@ -55,7 +67,7 @@ export class OllamaLlmApi extends BaseLlmApi {
     return { text: result.choices[0]?.message?.content ?? "" };
   }
 
-  async pullModel(): Promise<{ done: boolean; error?: string }> {
+  async pullModel(): Promise<PullModelResponse> {
     try {
       const res = await fetch(`${this.baseURL}/api/pull`, {
         method: "POST",

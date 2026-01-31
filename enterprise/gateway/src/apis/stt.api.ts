@@ -21,12 +21,13 @@ export class SpeachesSttApi extends BaseSttApi {
 
   constructor(opts: { url: string; apiKey: string; model: string }) {
     super();
+    const url = `${opts.url}/v1`;
     this.client = new OpenAI({
-      baseURL: opts.url,
+      baseURL: url,
       apiKey: opts.apiKey,
     });
     this.model = opts.model;
-    this.baseURL = opts.url;
+    this.baseURL = url;
     this.apiKey = opts.apiKey;
   }
 

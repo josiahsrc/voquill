@@ -8,6 +8,7 @@ COPY package.json package-lock.json turbo.json ./
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/types ./packages/types
 COPY packages/functions ./packages/functions
+COPY packages/utilities ./packages/utilities
 COPY enterprise/gateway ./enterprise/gateway
 COPY enterprise/LICENCE ./enterprise/LICENCE
 
