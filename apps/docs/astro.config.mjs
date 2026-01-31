@@ -34,6 +34,10 @@ export default defineConfig({
 							collapsed: true,
 							items: [
 								{ label: 'Setup', slug: 'enterprise/self-hosted-cloud/setup' },
+								{ label: 'AWS', slug: 'enterprise/self-hosted-cloud/aws' },
+								{ label: 'GCP', slug: 'enterprise/self-hosted-cloud/gcp' },
+								{ label: 'Azure', slug: 'enterprise/self-hosted-cloud/azure' },
+								{ label: 'Updates & Renewal', slug: 'enterprise/self-hosted-cloud/renewal' },
 							],
 						},
 						{
