@@ -61,7 +61,7 @@ Create a task definition for the gateway service. Save this as `gateway-task.jso
   "containerDefinitions": [
     {
       "name": "gateway",
-      "image": "ghcr.io/voquill/gateway:latest",
+      "image": "ghcr.io/josiahsrc/voquill/enterprise-gateway:latest",
       "portMappings": [{ "containerPort": 4630 }],
       "environment": [
         { "name": "DATABASE_URL", "value": "postgres://postgres:your-db-password@your-rds-endpoint:5432/voquill" },
@@ -86,7 +86,7 @@ Create a similar task definition for the admin portal:
   "containerDefinitions": [
     {
       "name": "admin",
-      "image": "ghcr.io/voquill/admin:latest",
+      "image": "ghcr.io/josiahsrc/voquill/enterprise-admin:latest",
       "portMappings": [{ "containerPort": 5173 }]
     }
   ]

@@ -49,7 +49,7 @@ az postgres flexible-server firewall-rule create \
 az container create \
   --resource-group voquill \
   --name voquill-gateway \
-  --image ghcr.io/voquill/gateway:latest \
+  --image ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
   --ports 4630 \
   --ip-address Public \
   --environment-variables \
@@ -67,7 +67,7 @@ For production deployments, store secrets in Azure Key Vault and reference them 
 az container create \
   --resource-group voquill \
   --name voquill-admin \
-  --image ghcr.io/voquill/admin:latest \
+  --image ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
   --ports 5173 \
   --ip-address Public
 ```
@@ -84,7 +84,7 @@ az container delete --resource-group voquill --name voquill-gateway --yes
 az container create \
   --resource-group voquill \
   --name voquill-gateway \
-  --image ghcr.io/voquill/gateway:latest \
+  --image ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
   --ports 4630 \
   --ip-address Public \
   --environment-variables \

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - enterprise
     paths:
       - "enterprise/gateway/**"
       - "packages/**"
@@ -178,6 +179,7 @@ jobs:
           context: .
           file: enterprise/gateway/Dockerfile
           target: production
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |

@@ -17,14 +17,14 @@ Create a `docker-compose.yml` on your host machine. Make sure to set `JWT_SECRET
 ```yaml
 services:
   admin:
-    image: ghcr.io/voquill/admin:latest
+    image: ghcr.io/josiahsrc/voquill/enterprise-admin:latest
     ports:
       - "5100:5173"
     networks:
       - voquill
 
   gateway:
-    image: ghcr.io/voquill/gateway:latest
+    image: ghcr.io/josiahsrc/voquill/enterprise-gateway:latest
     ports:
       - "4630:4630"
     environment:

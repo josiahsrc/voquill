@@ -32,7 +32,7 @@ Note the instance connection name (shown in `gcloud sql instances describe voqui
 
 ```bash
 gcloud run deploy voquill-gateway \
-  --image=ghcr.io/voquill/gateway:latest \
+  --image=ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
   --port=4630 \
   --allow-unauthenticated \
   --add-cloudsql-instances=your-project:us-central1:voquill-db \
@@ -49,7 +49,7 @@ For production deployments, store secrets in Secret Manager and reference them w
 
 ```bash
 gcloud run deploy voquill-admin \
-  --image=ghcr.io/voquill/admin:latest \
+  --image=ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
   --port=5173 \
   --allow-unauthenticated \
   --region=us-central1
@@ -63,11 +63,11 @@ To deploy a new version, redeploy the service with the latest image:
 
 ```bash
 gcloud run deploy voquill-gateway \
-  --image=ghcr.io/voquill/gateway:latest \
+  --image=ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
   --region=us-central1
 
 gcloud run deploy voquill-admin \
-  --image=ghcr.io/voquill/admin:latest \
+  --image=ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
   --region=us-central1
 ```
 

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - enterprise
     paths:
       - "enterprise/admin/**"
       - ".github/workflows/release-enterprise-admin.yml"
@@ -177,6 +178,7 @@ jobs:
           context: .
           file: enterprise/admin/Dockerfile
           target: production
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
