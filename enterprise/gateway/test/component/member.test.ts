@@ -26,7 +26,7 @@ describe("member", () => {
     expect(data.member).toBeDefined();
     expect(data.member.id).toBeDefined();
     expect(data.member.type).toBe("user");
-    expect(data.member.plan).toBe("free");
+    expect(data.member.plan).toBe("pro");
     expect(data.member.wordsToday).toBe(0);
     expect(data.member.wordsThisMonth).toBe(0);
     expect(data.member.wordsTotal).toBe(0);
@@ -42,7 +42,7 @@ describe("member", () => {
     expect(data).toEqual({});
 
     const memberData = await invoke("member/getMyMember", {}, token);
-    expect(memberData.member.plan).toBe("free");
+    expect(memberData.member.plan).toBe("pro");
   });
 
   it("rejects without auth token", async () => {

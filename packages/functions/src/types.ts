@@ -77,6 +77,13 @@ type HandlerDefinitions = {
     };
     output: EmptyObject;
   };
+  "auth/resetPassword": {
+    input: {
+      userId: string;
+      password: string;
+    };
+    output: EmptyObject;
+  };
 
   // emulator
   "emulator/resetWordsToday": {
@@ -403,6 +410,13 @@ export const AuthLoginInputZod = z
     password: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"auth/login">>;
+
+export const AuthResetPasswordInputZod = z
+  .object({
+    userId: z.string().min(1),
+    password: z.string().min(8),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/resetPassword">>;
 
 export const AuthDeleteUserInputZod = z
   .object({

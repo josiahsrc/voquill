@@ -10,6 +10,7 @@ import {
   hasAnyAdmin,
   deleteAuthById,
   countAll,
+  updatePasswordHash,
 } from "../repo/auth.repo";
 import { requireAuth, signAuthToken, signRefreshToken, verifyRefreshToken } from "../utils/auth.utils";
 import {
@@ -108,6 +109,22 @@ export async function deleteUser(opts: {
     throw new ClientError("You cannot delete your own account");
   }
   await deleteAuthById(opts.input.userId);
+  return {};
+}
+
+export async function resetPassword(opts: {
+  auth: Nullable<AuthContext>;
+  input: HandlerInput<"auth/resetPassword">;
+}): Promise<HandlerOutput<"auth/resetPassword">> {
+  const auth = requireAuth(opts.auth);
+  if (!auth.isAdmin) {
+    throw new UnauthorizedError("Admin access required");
+  }
+  if (auth.userId === opts.input.userId) {
+    throw new ClientError("You cannot reset your own password");
+  }
+  const passwordHash = await bcrypt.hash(opts.input.password, SALT_ROUNDS);
+  await updatePasswordHash(opts.input.userId, passwordHash);
   return {};
 }
 

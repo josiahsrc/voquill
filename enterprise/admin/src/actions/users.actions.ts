@@ -27,6 +27,10 @@ export async function deleteUser(userId: string) {
   });
 }
 
+export async function resetPassword(userId: string, password: string) {
+  await invoke("auth/resetPassword", { userId, password });
+}
+
 export async function setUserAdmin(userId: string, isAdmin: boolean) {
   await invoke("auth/makeAdmin", { userId, isAdmin });
   produceAppState((draft) => {

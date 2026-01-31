@@ -6,6 +6,7 @@ import {
   AuthMakeAdminInputZod,
   AuthRefreshInputZod,
   AuthRegisterInputZod,
+  AuthResetPasswordInputZod,
   DeleteLlmProviderInputZod,
   DeleteSttProviderInputZod,
   DeleteTermInputZod,
@@ -31,6 +32,7 @@ import {
   makeAdmin,
   refresh,
   register,
+  resetPassword,
 } from "./services/auth.service";
 import { getFullConfig } from "./services/config.service";
 import {
@@ -108,6 +110,11 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await deleteUser({
         auth,
         input: validateData(AuthDeleteUserInputZod, input),
+      });
+    } else if (name === "auth/resetPassword") {
+      data = await resetPassword({
+        auth,
+        input: validateData(AuthResetPasswordInputZod, input),
       });
     } else if (name === "user/setMyUser") {
       data = await setMyUser({

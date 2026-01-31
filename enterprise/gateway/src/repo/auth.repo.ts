@@ -55,6 +55,20 @@ export async function setIsAdmin(
   }
 }
 
+export async function updatePasswordHash(
+  userId: string,
+  passwordHash: string,
+): Promise<void> {
+  const pool = getPool();
+  const result = await pool.query(
+    "UPDATE auth SET password_hash = $1 WHERE id = $2",
+    [passwordHash, userId],
+  );
+  if (result.rowCount === 0) {
+    throw new Error("User not found");
+  }
+}
+
 export async function hasAnyAdmin(): Promise<boolean> {
   const pool = getPool();
   const result = await pool.query("SELECT id FROM auth WHERE is_admin = TRUE LIMIT 1");

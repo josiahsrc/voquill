@@ -313,6 +313,63 @@ describe("auth", () => {
     });
   });
 
+  describe("resetPassword", () => {
+    afterAll(cleanupTestAuths);
+
+    const adminEmail = `reset-admin-${Date.now()}@example.com`;
+    const targetEmail = `reset-target-${Date.now()}@example.com`;
+    const password = "password123";
+    const newPassword = "newpassword456";
+    let adminToken: string;
+    let adminId: string;
+    let targetToken: string;
+    let targetId: string;
+
+    beforeAll(async () => {
+      await query("UPDATE auth SET is_admin = FALSE");
+
+      const adminData = await createTestAuth(adminEmail, password);
+      adminId = adminData.auth.id;
+
+      const targetData = await createTestAuth(targetEmail, password);
+      targetToken = targetData.token;
+      targetId = targetData.auth.id;
+
+      await invoke("auth/makeAdmin", { userId: adminId, isAdmin: true }, targetData.token);
+      const refreshed = await invoke("auth/login", { email: adminEmail, password });
+      adminToken = refreshed.token;
+    });
+
+    it("rejects resetPassword from a non-admin user", async () => {
+      await expect(
+        invoke("auth/resetPassword", { userId: targetId, password: newPassword }, targetToken)
+      ).rejects.toThrow("401");
+    });
+
+    it("rejects resetting own password", async () => {
+      await expect(
+        invoke("auth/resetPassword", { userId: adminId, password: newPassword }, adminToken)
+      ).rejects.toThrow("400");
+    });
+
+    it("rejects a short password", async () => {
+      await expect(
+        invoke("auth/resetPassword", { userId: targetId, password: "short" }, adminToken)
+      ).rejects.toThrow("400");
+    });
+
+    it("admin can reset another user's password", async () => {
+      await invoke("auth/resetPassword", { userId: targetId, password: newPassword }, adminToken);
+
+      await expect(
+        invoke("auth/login", { email: targetEmail, password })
+      ).rejects.toThrow("401");
+
+      const data = await invoke("auth/login", { email: targetEmail, password: newPassword });
+      expect(data.auth.id).toBe(targetId);
+    });
+  });
+
   describe("seat limit", () => {
     beforeAll(async () => {
       await query("DELETE FROM terms");

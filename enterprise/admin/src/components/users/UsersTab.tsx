@@ -2,8 +2,8 @@ import {
   AdminPanelSettings,
   DeleteOutline,
   InfoOutlined,
-  MoreVert,
-  RemoveOutlined,
+  LockResetOutlined,
+  MoreVert
 } from "@mui/icons-material";
 import {
   Box,
@@ -26,16 +26,18 @@ import {
 } from "../common/MenuPopover";
 import { TabLayout } from "../common/TabLayout";
 import { DeleteUserDialog } from "./DeleteUserDialog";
+import { ResetPasswordDialog } from "./ResetPasswordDialog";
 
 const UserActionsMenu = ({ user }: { user: UserWithAuth }) => {
   const currentUserId = useAppStore((state) => state.auth?.userId);
   const isSelf = user.id === currentUserId;
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
-  if (isSelf) return <RemoveOutlined fontSize="small" color="disabled" />;
+  const items: MenuPopoverItem[] = [];
 
-  const items: MenuPopoverItem[] = [
-    {
+  if (!isSelf) {
+    items.push({
       kind: "listItem",
       title: user.isAdmin ? "Remove admin" : "Make admin",
       leading: <AdminPanelSettings fontSize="small" />,
@@ -43,18 +45,28 @@ const UserActionsMenu = ({ user }: { user: UserWithAuth }) => {
         setUserAdmin(user.id, !user.isAdmin);
         close();
       },
+    });
+  }
+
+  items.push({
+    kind: "listItem",
+    title: "Reset password",
+    leading: <LockResetOutlined fontSize="small" />,
+    onClick: ({ close }) => {
+      close();
+      setResetPasswordOpen(true);
     },
-    { kind: "divider" },
-    {
-      kind: "listItem",
-      title: <Typography color="error">Delete user</Typography>,
-      leading: <DeleteOutline fontSize="small" color="error" />,
-      onClick: ({ close }) => {
-        close();
-        setDeleteOpen(true);
-      },
+  });
+
+  items.push({
+    kind: "listItem",
+    title: <Typography color="error">Delete user</Typography>,
+    leading: <DeleteOutline fontSize="small" color="error" />,
+    onClick: ({ close }) => {
+      close();
+      setDeleteOpen(true);
     },
-  ];
+  });
 
   return (
     <>
@@ -69,6 +81,11 @@ const UserActionsMenu = ({ user }: { user: UserWithAuth }) => {
         user={user}
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
+      />
+      <ResetPasswordDialog
+        user={user}
+        open={resetPasswordOpen}
+        onClose={() => setResetPasswordOpen(false)}
       />
     </>
   );
