@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - enterprise
     paths:
       - "enterprise/gateway/**"
       - "packages/**"
