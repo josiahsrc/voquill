@@ -59,6 +59,7 @@ export const AppSideEffects = () => {
   const [initReady, setInitReady] = useState(false);
   const [enterpriseReady, setEnterpriseReady] = useState(false);
   const authReadyRef = useRef(false);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
   const member = useAppStore((state) => {
@@ -84,13 +85,12 @@ export const AppSideEffects = () => {
   };
 
   useEffect(() => {
-    // Safety timeout: if Firebase Auth doesn't respond within the timeout,
-    // proceed with null auth state. This handles cases where IndexedDB
-    // initialization hangs on some Linux systems.
+    authReadyRef.current = false;
+
     const timeoutId = setTimeout(() => {
       if (!authReadyRef.current) {
         console.warn(
-          "[AppSideEffects] Firebase Auth timed out, proceeding without auth",
+          "[AppSideEffects] Auth timed out, proceeding without auth",
         );
         onAuthStateChanged(null);
       }
@@ -108,7 +108,7 @@ export const AppSideEffects = () => {
       clearTimeout(timeoutId);
       unsubscribe();
     };
-  }, []);
+  }, [isEnterprise]);
 
   useIntervalAsync(CONFIG_REFRESH_INTERVAL_MS, async () => {
     const config = await getConfigRepo()
