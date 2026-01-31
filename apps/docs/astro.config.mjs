@@ -7,6 +7,9 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Voquill Docs',
+			logo: {
+				src: './src/assets/icon.svg',
+			},
 			customCss: ['./src/styles/custom.css'],
 			sidebar: [
 				{ label: 'Getting Started', slug: 'getting-started' },
@@ -16,7 +19,19 @@ export default defineConfig({
 				},
 				{
 					label: 'Enterprise',
-					autogenerate: { directory: 'enterprise' },
+					items: [
+						{ label: 'Overview', slug: 'enterprise/overview' },
+						{
+							label: 'On-Premise',
+							collapsed: true,
+							items: [
+								{ label: 'On-Prem Setup', slug: 'enterprise/on-premise/setup' },
+								{ label: 'Local Transcription', slug: 'enterprise/on-premise/transcription' },
+								{ label: 'Local Post-Processing', slug: 'enterprise/on-premise/post-processing' },
+								{ label: 'Updates & Renewal', slug: 'enterprise/on-premise/renewal' },
+							],
+						},
+					],
 				},
 			],
 		}),

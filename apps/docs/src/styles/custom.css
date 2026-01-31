@@ -12,6 +12,10 @@
 	--sl-color-black: #141414;
 }
 
+[class*='site-title'] {
+	gap: 0.8rem;
+}
+
 :root[data-theme='light'] {
 	--sl-color-accent-low: #e6e6e6;
 	--sl-color-accent: #404040;
