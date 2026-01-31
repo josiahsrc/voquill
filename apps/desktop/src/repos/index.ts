@@ -2,6 +2,7 @@ import type { CloudModel } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
+import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import {
   GenerativePrefs,
@@ -12,14 +13,20 @@ import {
 } from "../utils/user.utils";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
-import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
-import { BaseConfigRepo, CloudConfigRepo } from "./config.repo";
+import { BaseAuthRepo, CloudAuthRepo, EnterpriseAuthRepo } from "./auth.repo";
+import {
+  BaseConfigRepo,
+  CloudConfigRepo,
+  EnterpriseConfigRepo,
+} from "./config.repo";
+import { EnterpriseRepo } from "./enterprise.repo";
 import {
   AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
   ClaudeGenerateTextRepo,
   CloudGenerateTextRepo,
   DeepseekGenerateTextRepo,
+  EnterpriseGenerateTextRepo,
   GeminiGenerateTextRepo,
   GroqGenerateTextRepo,
   OllamaGenerateTextRepo,
@@ -27,21 +34,30 @@ import {
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
-import { BaseMemberRepo, CloudMemberRepo } from "./member.repo";
-import { BaseOllamaRepo, OllamaRepo } from "./ollama.repo";
+import {
+  BaseMemberRepo,
+  CloudMemberRepo,
+  EnterpriseMemberRepo,
+} from "./member.repo";
 import {
   BaseUserPreferencesRepo,
   LocalUserPreferencesRepo,
 } from "./preferences.repo";
 import { BaseStorageRepo, LocalStorageRepo } from "./storage.repo";
 import { BaseStripeRepo, CloudStripeRepo } from "./stripe.repo";
-import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
+import {
+  BaseTermRepo,
+  CloudTermRepo,
+  EnterpriseTermRepo,
+  LocalTermRepo,
+} from "./term.repo";
 import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
 import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
   CloudTranscribeAudioRepo,
+  EnterpriseTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
@@ -52,37 +68,41 @@ import {
   BaseTranscriptionRepo,
   LocalTranscriptionRepo,
 } from "./transcription.repo";
-import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
-import { EnterpriseRepo } from "./enterprise.repo";
-import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
+import {
+  BaseUserRepo,
+  CloudUserRepo,
+  EnterpriseUserRepo,
+  LocalUserRepo,
+} from "./user.repo";
 
+const isEnterprise = () => getIsEnterpriseEnabled();
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
 export const getMemberRepo = (): BaseMemberRepo => {
-  return new CloudMemberRepo();
+  return isEnterprise() ? new EnterpriseMemberRepo() : new CloudMemberRepo();
 };
 
-export const getStripeRepo = (): BaseStripeRepo => {
-  return new CloudStripeRepo();
+export const getStripeRepo = (): Nullable<BaseStripeRepo> => {
+  return isEnterprise() ? null : new CloudStripeRepo();
 };
 
 export const getConfigRepo = (): BaseConfigRepo => {
-  return new CloudConfigRepo();
+  return isEnterprise() ? new EnterpriseConfigRepo() : new CloudConfigRepo();
 };
 
 export const getEnterpriseRepo = (): Nullable<EnterpriseRepo> => {
-  if (getIsEnterpriseEnabled()) {
-    return new EnterpriseRepo();
-  }
-
-  return null;
+  return isEnterprise() ? new EnterpriseRepo() : null;
 };
 
 export const getAuthRepo = (): BaseAuthRepo => {
-  return new CloudAuthRepo();
+  return isEnterprise() ? new EnterpriseAuthRepo() : new CloudAuthRepo();
 };
 
 export const getUserRepo = (): BaseUserRepo => {
+  if (isEnterprise()) {
+    return new EnterpriseUserRepo();
+  }
+
   return shouldUseCloud() ? new CloudUserRepo() : new LocalUserRepo();
 };
 
@@ -99,6 +119,9 @@ export const getAppTargetRepo = (): BaseAppTargetRepo => {
 };
 
 export const getTermRepo = (): BaseTermRepo => {
+  if (isEnterprise()) {
+    return new EnterpriseTermRepo();
+  }
   return shouldUseCloud() ? new CloudTermRepo() : new LocalTermRepo();
 };
 
@@ -118,14 +141,6 @@ export const getStorageRepo = (): BaseStorageRepo => {
   return new LocalStorageRepo();
 };
 
-export const getOllamaRepo = (
-  baseUrl?: string,
-  apiKey?: string,
-): BaseOllamaRepo => {
-  const url = baseUrl || OLLAMA_DEFAULT_URL;
-  return new OllamaRepo(url, apiKey);
-};
-
 export type GenerateTextRepoOutput = {
   repo: Nullable<BaseGenerateTextRepo>;
   apiKeyId: Nullable<string>;
@@ -140,7 +155,14 @@ const getGenTextRepoInternal = ({
   cloudModel: CloudModel;
 }): GenerateTextRepoOutput => {
   const state = getAppState();
-  if (prefs.mode === "cloud") {
+
+  if (prefs.mode === "enterprise") {
+    return {
+      repo: new EnterpriseGenerateTextRepo(cloudModel),
+      apiKeyId: null,
+      warnings: prefs.warnings,
+    };
+  } else if (prefs.mode === "cloud") {
     return {
       repo: new CloudGenerateTextRepo(cloudModel),
       apiKeyId: null,
@@ -239,7 +261,14 @@ export type TranscribeAudioRepoOutput = {
 
 export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
   const prefs = getTranscriptionPrefs(getAppState());
-  if (prefs.mode === "cloud") {
+
+  if (prefs.mode === "enterprise") {
+    return {
+      repo: new EnterpriseTranscribeAudioRepo(),
+      apiKeyId: null,
+      warnings: prefs.warnings,
+    };
+  } else if (prefs.mode === "cloud") {
     return {
       repo: new CloudTranscribeAudioRepo(),
       apiKeyId: null,

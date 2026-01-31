@@ -21,9 +21,8 @@ export const getIsLoggedIn = (state: AppState): boolean => {
 
 export const getHasEmailProvider = (state: AppState): boolean => {
   const auth = state.auth;
-  const providers = auth?.providerData ?? [];
-  const providerIds = providers.map((p) => p.providerId);
-  return providerIds.includes("password");
+  const providers = auth?.providers ?? [];
+  return providers.includes("password");
 };
 
 export const getIsOnboarded = (state: AppState): boolean => {
@@ -164,10 +163,15 @@ export type ApiTranscriptionPrefs = BaseTranscriptionPrefs & {
   transcriptionModel: string | null;
 };
 
+export type EnterpriseTranscriptionPrefs = BaseTranscriptionPrefs & {
+  mode: "enterprise";
+};
+
 export type TranscriptionPrefs =
   | CloudTranscriptionPrefs
   | LocalTranscriptionPrefs
-  | ApiTranscriptionPrefs;
+  | ApiTranscriptionPrefs
+  | EnterpriseTranscriptionPrefs;
 
 export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const config = state.settings.aiTranscription;
@@ -175,6 +179,10 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const cloudAvailable = getHasCloudAccess(state);
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const warnings: string[] = [];
+
+  if (config.mode === "enterprise") {
+    return { mode: "enterprise", warnings };
+  }
 
   if (config.mode === "cloud") {
     if (cloudAvailable) {
@@ -237,13 +245,18 @@ export type NoneGenerativePrefs = BaseGenerativePrefs & {
   mode: "none";
 };
 
+export type EnterpriseGenerativePrefs = BaseGenerativePrefs & {
+  mode: "enterprise";
+};
+
 export type GenerativePrefs =
   | CloudGenerativePrefs
   | ApiGenerativePrefs
-  | NoneGenerativePrefs;
+  | NoneGenerativePrefs
+  | EnterpriseGenerativePrefs;
 
 type GenerativeConfigInput = {
-  mode: "none" | "api" | "cloud";
+  mode: "none" | "api" | "cloud" | "enterprise";
   selectedApiKeyId: string | null;
 };
 
@@ -256,6 +269,10 @@ const getGenPrefsInternal = (
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
+
+  if (config.mode === "enterprise") {
+    return { mode: "enterprise", warnings };
+  }
 
   if (config.mode === "cloud") {
     if (cloudAvailable) {

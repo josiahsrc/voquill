@@ -20,9 +20,9 @@ export type JsonResponse = {
   schema: Record<string, unknown>;
 };
 
-export type TranscriptionMode = "local" | "api" | "cloud";
+export type TranscriptionMode = "local" | "api" | "cloud" | "enterprise";
 
-export type PostProcessingMode = "none" | "api" | "cloud";
+export type PostProcessingMode = "none" | "api" | "cloud" | "enterprise";
 
 export type AgentMode = "none" | "api" | "cloud";
 

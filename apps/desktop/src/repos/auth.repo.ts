@@ -63,7 +63,17 @@ export class CloudAuthRepo extends BaseAuthRepo {
   }
 
   getCurrentUser(): AuthUser | null {
-    return getEffectiveAuth().currentUser;
+    const user = getEffectiveAuth().currentUser;
+    if (!user) {
+      return null;
+    }
+
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      providers: user.providerData.map((provider) => provider.providerId),
+    };
   }
 
   async deleteMyAccount(): Promise<void> {
@@ -92,6 +102,7 @@ export class EnterpriseAuthRepo extends BaseAuthRepo {
       draft.auth = {
         uid: res.auth.id,
         email: res.auth.email,
+        providers: [],
         displayName: null,
       };
     });

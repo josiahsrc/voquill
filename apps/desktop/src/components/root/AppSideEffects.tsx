@@ -1,4 +1,10 @@
-import { Member, Nullable, User } from "@repo/types";
+import {
+  EnterpriseConfig,
+  EnterpriseLicense,
+  Member,
+  Nullable,
+  User,
+} from "@repo/types";
 import { listify } from "@repo/utilities";
 import dayjs from "dayjs";
 import mixpanel from "mixpanel-browser";
@@ -16,6 +22,7 @@ import { detectLocale } from "../../i18n";
 import {
   getAuthRepo,
   getConfigRepo,
+  getEnterpriseRepo,
   getMemberRepo,
   getUserRepo,
 } from "../../repos";
@@ -45,7 +52,7 @@ const CONFIG_REFRESH_INTERVAL_MS = 1000 * 60 * 10;
 const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 // 60 seconds
-const ENTERPRISE_CONFIG_REFRESH_INTERVAL_MS = 1000 * 60;
+const ENTERPRISE_REFRESH_INTERVAL_MS = 1000 * 60;
 
 export const AppSideEffects = () => {
   const [authReady, setAuthReady] = useState(false);
@@ -116,8 +123,24 @@ export const AppSideEffects = () => {
     }
   }, []);
 
-  useIntervalAsync(ENTERPRISE_CONFIG_REFRESH_INTERVAL_MS, async () => {
+  useIntervalAsync(ENTERPRISE_REFRESH_INTERVAL_MS, async () => {
     await loadEnterpriseConfig();
+
+    let config: Nullable<EnterpriseConfig> = null;
+    let license: Nullable<EnterpriseLicense> = null;
+    const repo = getEnterpriseRepo();
+    if (repo) {
+      [config, license] = await repo.getConfig().catch((e) => {
+        console.error("Failed to refresh enterprise config:", e);
+        return [null, null];
+      });
+    }
+
+    produceAppState((draft) => {
+      draft.enterpriseConfig = config;
+      draft.enterpriseLicense = license;
+    });
+
     setEnterpriseReady(true);
   }, []);
 
