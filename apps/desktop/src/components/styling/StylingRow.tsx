@@ -9,6 +9,7 @@ import {
 } from "../../actions/app-target.actions";
 import { useAppStore } from "../../store";
 import { isMacOS } from "../../utils/env.utils";
+import { getGenerativePrefs } from "../../utils/user.utils";
 import { ListTile } from "../common/ListTile";
 import {
   MenuPopoverBuilder,
@@ -25,11 +26,9 @@ export type StylingRowProps = {
 export const StylingRow = ({ id }: StylingRowProps) => {
   const intl = useIntl();
   const target = useAppStore((state) => getRec(state.appTargetById, id));
-  const postProcessingMode = useAppStore(
-    (state) => state.settings.aiPostProcessing.mode,
+  const isPostProcessingDisabled = useAppStore(
+    (state) => getGenerativePrefs(state).mode === "none",
   );
-
-  const isPostProcessingDisabled = postProcessingMode === "none";
 
   const handleToneChange = useCallback(
     (toneId: string | null) => {
