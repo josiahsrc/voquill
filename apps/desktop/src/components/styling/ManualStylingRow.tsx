@@ -106,8 +106,16 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
     handleDeselect,
   ]);
 
+  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+
   const trailing = (
-    <Stack direction="row" spacing={0.5} alignItems="center">
+    <Stack
+      direction="row"
+      spacing={0.5}
+      alignItems="center"
+      onClick={stopPropagation}
+      onMouseDown={stopPropagation}
+    >
       {isGlobal && (
         <Tooltip
           disableInteractive
@@ -124,7 +132,14 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
       )}
       <MenuPopoverBuilder items={menuItems}>
         {({ ref, open }) => (
-          <IconButton ref={ref} onClick={open} size="small">
+          <IconButton
+            ref={ref}
+            onClick={(e) => {
+              e.stopPropagation();
+              open();
+            }}
+            size="small"
+          >
             <MoreVert fontSize="small" />
           </IconButton>
         )}
@@ -136,7 +151,17 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
     <ListTile
       onClick={handleSelect}
       leading={
-        <Radio checked={isSelected} size="small" disableRipple sx={{ mr: 1 }} />
+        <Radio
+          checked={isSelected}
+          size="small"
+          disableRipple
+          sx={{ mr: 1 }}
+          onClick={(e) => {
+            stopPropagation(e);
+            handleSelect();
+          }}
+          onMouseDown={stopPropagation}
+        />
       }
       title={tone?.name}
       subtitle={

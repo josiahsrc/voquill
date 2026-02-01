@@ -534,6 +534,16 @@ export const setStylingMode = async (
   );
 };
 
+export const setActiveToneIds = async (toneIds: string[]): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.activeToneIds = toneIds;
+    },
+    "Unable to update active styles. User not found.",
+    "Failed to update active styles. Please try again.",
+  );
+};
+
 export const setSelectedToneId = async (toneId: string): Promise<void> => {
   await updateUser(
     (user) => {
@@ -541,6 +551,20 @@ export const setSelectedToneId = async (toneId: string): Promise<void> => {
     },
     "Unable to select style. User not found.",
     "Failed to select style. Please try again.",
+  );
+};
+
+export const activateAndSelectTone = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      const currentIds = user.activeToneIds ?? [];
+      if (!currentIds.includes(toneId)) {
+        user.activeToneIds = [toneId, ...currentIds];
+      }
+      user.selectedToneId = toneId;
+    },
+    "Unable to activate style. User not found.",
+    "Failed to activate style. Please try again.",
   );
 };
 

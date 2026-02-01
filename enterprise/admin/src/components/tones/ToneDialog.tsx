@@ -99,7 +99,7 @@ export const ToneDialog = ({
           onChange={(e) => onFormChange({ ...form, name: e.target.value })}
         />
         <TextField
-          label={intl.formatMessage({ defaultMessage: "Prompt Template" })}
+          label={intl.formatMessage({ defaultMessage: "Prompt" })}
           fullWidth
           size="small"
           multiline
@@ -108,9 +108,6 @@ export const ToneDialog = ({
           onChange={(e) =>
             onFormChange({ ...form, promptTemplate: e.target.value })
           }
-          helperText={intl.formatMessage({
-            defaultMessage: "Use {transcript} as a placeholder for the input text.",
-          })}
         />
       </DialogContent>
       <DialogActions>
@@ -120,13 +117,13 @@ export const ToneDialog = ({
         <Button
           variant="contained"
           onClick={handleSave}
-          disabled={
-            saving ||
-            !form.name.trim() ||
-            !form.promptTemplate.trim()
-          }
+          disabled={saving || !form.name.trim() || !form.promptTemplate.trim()}
         >
-          {saving ? <CircularProgress size={20} /> : <FormattedMessage defaultMessage="Save" />}
+          {saving ? (
+            <CircularProgress size={20} />
+          ) : (
+            <FormattedMessage defaultMessage="Save" />
+          )}
         </Button>
       </DialogActions>
     </Dialog>

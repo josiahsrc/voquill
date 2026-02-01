@@ -128,3 +128,20 @@ export const getManuallySelectedToneId = (state: AppState): string => {
 
   return activeIds.at(0) || "default";
 };
+
+const toneGroupOrder = (tone: Tone): number => {
+  if (tone.isSystem) return 2;
+  if (tone.isGlobal) return 1;
+  return 0;
+};
+
+export const getSortedToneIds = (state: AppState): string[] => {
+  const tones = Object.values(state.toneById);
+  return [...tones]
+    .sort(
+      (left, right) =>
+        toneGroupOrder(left) - toneGroupOrder(right) ||
+        right.createdAt - left.createdAt,
+    )
+    .map((t) => t.id);
+};

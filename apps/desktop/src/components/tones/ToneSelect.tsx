@@ -17,6 +17,7 @@ import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import { useAppStore } from "../../store";
+import { getSortedToneIds } from "../../utils/tone.utils";
 import { getMyUserPreferences } from "../../utils/user.utils";
 
 const ADD_TONE_MENU_VALUE = "__add_tone_option__";
@@ -25,7 +26,6 @@ type ToneSelectProps = {
   value: string | null | undefined;
   onToneChange: (toneId: string | null) => void;
   addToneTargetId?: string | null;
-  includeDefaultOption?: boolean;
   disabled?: boolean;
   formControlSx?: SxProps<Theme>;
   selectSize?: "small" | "medium";
@@ -33,14 +33,11 @@ type ToneSelectProps = {
   trueDefault?: boolean;
 };
 
-const sortTones = (tones: Tone[]) =>
-  [...tones].sort((left, right) => left.sortOrder - right.sortOrder);
 
 export const ToneSelect = ({
   value,
   onToneChange,
   addToneTargetId = null,
-  includeDefaultOption = true,
   disabled = false,
   formControlSx,
   selectSize = "small",
@@ -54,7 +51,11 @@ export const ToneSelect = ({
     return getRec(state.toneById, userPreferences?.activeToneId);
   });
 
-  const tones = useMemo(() => sortTones(Object.values(toneById)), [toneById]);
+  const sortedToneIds = useAppStore((state) => getSortedToneIds(state));
+  const tones = useMemo(
+    () => sortedToneIds.map((id) => toneById[id]).filter(Boolean) as Tone[],
+    [sortedToneIds, toneById],
+  );
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -113,18 +114,6 @@ export const ToneSelect = ({
             </div>
           </Stack>
         </MenuItem>
-        {includeDefaultOption && (
-          <MenuItem value="">
-            {defaultTone && !trueDefault ? (
-              <FormattedMessage
-                defaultMessage="Default ({toneName})"
-                values={{ toneName: defaultTone.name }}
-              />
-            ) : (
-              <FormattedMessage defaultMessage="Default" />
-            )}
-          </MenuItem>
-        )}
         {tones.map((tone) => (
           <MenuItem key={tone.id} value={tone.id}>
             <Stack
@@ -137,7 +126,8 @@ export const ToneSelect = ({
               {tone.isGlobal ? (
                 <Tooltip
                   title={intl.formatMessage({
-                    defaultMessage: "This is a global style and cannot be edited",
+                    defaultMessage:
+                      "This is a global style and cannot be edited",
                   })}
                 >
                   <Public fontSize="small" sx={{ color: "text.secondary" }} />

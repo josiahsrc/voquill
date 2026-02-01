@@ -5,6 +5,7 @@ import { ToneEditorMode } from "../state/tone-editor.state";
 import { getAppState, produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
+import { activateAndSelectTone } from "./user.actions";
 
 export const loadTones = async (): Promise<void> => {
   const tones = await getToneRepo().listTones();
@@ -27,6 +28,8 @@ export const upsertTone = async (tone: Tone): Promise<Tone> => {
       draft.tones.selectedToneId = saved.id;
       draft.tones.isCreating = false;
     });
+
+    await activateAndSelectTone(saved.id);
 
     showSnackbar("Tone saved successfully", { mode: "success" });
     return saved;
