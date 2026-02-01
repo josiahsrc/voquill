@@ -21,6 +21,7 @@ type LocalUser = {
   playInteractionChime?: boolean;
   hasFinishedTutorial?: boolean;
   cohort?: string | null;
+  stylingMode?: string | null;
 };
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -50,6 +51,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     playInteractionChime,
     hasFinishedTutorial: localUser.hasFinishedTutorial ?? false,
     cohort: localUser.cohort ?? null,
+    stylingMode: (localUser.stylingMode as User["stylingMode"]) ?? null,
   };
 };
 
@@ -68,6 +70,7 @@ const toLocalUser = (user: User): LocalUser => ({
   playInteractionChime: user.playInteractionChime,
   hasFinishedTutorial: user.hasFinishedTutorial,
   cohort: user.cohort ?? null,
+  stylingMode: user.stylingMode ?? null,
 });
 
 export abstract class BaseUserRepo extends BaseRepo {

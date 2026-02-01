@@ -1,6 +1,7 @@
 import {
   DictationPillVisibility,
   Nullable,
+  StylingMode,
   User,
   UserPreferences,
 } from "@repo/types";
@@ -519,6 +520,18 @@ export const setDictationPillVisibility = async (
   await updateUserPreferences((preferences) => {
     preferences.dictationPillVisibility = visibility;
   }, "Failed to save dictation pill visibility preference. Please try again.");
+};
+
+export const setStylingMode = async (
+  mode: Nullable<StylingMode>,
+): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.stylingMode = mode;
+    },
+    "Unable to set styling mode. User not found.",
+    "Failed to save styling mode preference. Please try again.",
+  );
 };
 
 export const markUpgradeDialogSeen = async (): Promise<void> => {

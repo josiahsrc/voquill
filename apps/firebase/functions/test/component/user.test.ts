@@ -31,4 +31,37 @@ describe("api", () => {
 		expect(myUser?.id).toBe(creds.id);
 		expect(myUser?.name).toBe(testUser.name);
 	});
+
+	it("sets and retrieves stylingMode", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ stylingMode: "manual" });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.stylingMode).toBe("manual");
+	});
+
+	it("can set stylingMode to null", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ stylingMode: "app" }),
+		});
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ stylingMode: null }),
+		});
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.stylingMode).toBeNull();
+	});
 });

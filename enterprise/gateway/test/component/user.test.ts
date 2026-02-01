@@ -78,6 +78,63 @@ describe("user", () => {
     expect(data.user.hasFinishedTutorial).toBe(true);
   });
 
+  it("defaults stylingMode to null", async () => {
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.stylingMode).toBeNull();
+  });
+
+  it("sets and retrieves stylingMode", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          stylingMode: "manual",
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.stylingMode).toBe("manual");
+  });
+
+  it("can set stylingMode back to null", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          stylingMode: null,
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.stylingMode).toBeNull();
+  });
+
   it("rejects without auth token", async () => {
     await expect(invoke("user/getMyUser", {})).rejects.toThrow("401");
   });
