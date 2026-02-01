@@ -11,6 +11,11 @@ import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
+import {
+  getAllowsChangeAgentMode,
+  getAllowsChangePostProcessing,
+  getAllowsChangeTranscription,
+} from "./enterprise.utils";
 import { getEffectivePlan, getMemberExceedsLimitByState } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -174,8 +179,9 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const cloudAvailable = getHasCloudAccess(state);
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const warnings: string[] = [];
+  const allowChange = getAllowsChangeTranscription(state);
 
-  if (config.mode === "cloud") {
+  if (config.mode === "cloud" || !allowChange) {
     if (cloudAvailable) {
       if (exceedsLimits) {
         warnings.push("Cloud transcription limit exceeded.");
@@ -246,17 +252,23 @@ type GenerativeConfigInput = {
   selectedApiKeyId: string | null;
 };
 
-const getGenPrefsInternal = (
-  state: AppState,
-  config: GenerativeConfigInput,
-  context: string,
-): GenerativePrefs => {
+const getGenPrefsInternal = ({
+  state,
+  config,
+  context,
+  allowChange,
+}: {
+  state: AppState;
+  config: GenerativeConfigInput;
+  context: string;
+  allowChange: boolean;
+}): GenerativePrefs => {
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
 
-  if (config.mode === "cloud") {
+  if (config.mode === "cloud" || !allowChange) {
     if (cloudAvailable) {
       if (exceedsLimits) {
         warnings.push(`Cloud ${context} limit exceeded.`);
@@ -290,15 +302,21 @@ const getGenPrefsInternal = (
 };
 
 export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
-  return getGenPrefsInternal(
+  return getGenPrefsInternal({
     state,
-    state.settings.aiPostProcessing,
-    "post-processing",
-  );
+    config: state.settings.aiPostProcessing,
+    context: "post-processing",
+    allowChange: getAllowsChangePostProcessing(state),
+  });
 };
 
 export const getAgentModePrefs = (state: AppState): GenerativePrefs => {
-  return getGenPrefsInternal(state, state.settings.agentMode, "agent mode");
+  return getGenPrefsInternal({
+    state,
+    config: state.settings.agentMode,
+    context: "agent mode",
+    allowChange: getAllowsChangeAgentMode(state),
+  });
 };
 
 export const getEffectivePillVisibility = (

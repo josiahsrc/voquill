@@ -1,6 +1,7 @@
 import type { HandlerInput, HandlerName, HandlerOutput } from "@repo/functions";
 import type { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
+import { AppState } from "../state/app.state";
 
 type EnterpriseTarget = {
   gatewayUrl: string;
@@ -67,3 +68,21 @@ export async function invokeEnterprise<N extends HandlerName>(
   }
   return body.data;
 }
+
+export const getAllowsChangePostProcessing = (
+  state: AppState,
+): boolean => {
+  return state.enterpriseConfig?.allowChangePostProcessing ?? true;
+};
+
+export const getAllowsChangeTranscription = (
+  state: AppState,
+): boolean => {
+  return state.enterpriseConfig?.allowChangeTranscriptionMethod ?? true;
+};
+
+export const getAllowsChangeAgentMode = (
+  state: AppState,
+): boolean => {
+  return state.enterpriseConfig?.allowChangeAgentMode ?? true;
+};

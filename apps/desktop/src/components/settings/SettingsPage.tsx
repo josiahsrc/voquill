@@ -49,6 +49,11 @@ import {
 } from "../../utils/language.utils";
 import { getIsPaying } from "../../utils/member.utils";
 import {
+  getAllowsChangeAgentMode,
+  getAllowsChangePostProcessing,
+  getAllowsChangeTranscription,
+} from "../../utils/enterprise.utils";
+import {
   getDetectedSystemLocale,
   getHasEmailProvider,
   getIsSignedIn,
@@ -62,6 +67,9 @@ export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
   const isPaying = useAppStore(getIsPaying);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
+  const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
+  const allowChangeAgentMode = useAppStore(getAllowsChangeAgentMode);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -346,26 +354,32 @@ export default function SettingsPage() {
           }
         />
       )}
-      <ListTile
-        title={<FormattedMessage defaultMessage="AI transcription" />}
-        leading={<GraphicEqOutlined />}
-        onClick={openTranscriptionDialog}
-      />
-      <ListTile
-        title={<FormattedMessage defaultMessage="AI post processing" />}
-        leading={<AutoFixHighOutlined />}
-        onClick={openPostProcessingDialog}
-      />
-      <ListTile
-        title={
-          <Stack direction="row" alignItems="center">
-            <FormattedMessage defaultMessage="Agent mode" />
-            <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
-          </Stack>
-        }
-        leading={<AutoAwesomeOutlined />}
-        onClick={openAgentModeDialog}
-      />
+      {allowChangeTranscription && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="AI transcription" />}
+          leading={<GraphicEqOutlined />}
+          onClick={openTranscriptionDialog}
+        />
+      )}
+      {allowChangePostProcessing && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="AI post processing" />}
+          leading={<AutoFixHighOutlined />}
+          onClick={openPostProcessingDialog}
+        />
+      )}
+      {allowChangeAgentMode && (
+        <ListTile
+          title={
+            <Stack direction="row" alignItems="center">
+              <FormattedMessage defaultMessage="Agent mode" />
+              <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
+            </Stack>
+          }
+          leading={<AutoAwesomeOutlined />}
+          onClick={openAgentModeDialog}
+        />
+      )}
     </Section>
   );
 

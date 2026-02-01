@@ -105,6 +105,19 @@ export default function SettingsTab() {
                     <FormattedMessage defaultMessage="Allow users to change transcription method" />
                   }
                 />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={enterpriseConfig.allowChangeAgentMode}
+                      onChange={(_, checked) =>
+                        handleToggle("allowChangeAgentMode", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Allow users to change agent mode" />
+                  }
+                />
               </Box>
             )}
           </CardContent>
