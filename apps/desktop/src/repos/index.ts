@@ -2,6 +2,7 @@ import type { CloudModel } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
+import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import {
   GenerativePrefs,
@@ -12,13 +13,20 @@ import {
 } from "../utils/user.utils";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
-import { BaseAuthRepo, CloudAuthRepo } from "./auth.repo";
+import { BaseAuthRepo, CloudAuthRepo, EnterpriseAuthRepo } from "./auth.repo";
+import {
+  BaseConfigRepo,
+  CloudConfigRepo,
+  EnterpriseConfigRepo,
+} from "./config.repo";
+import { EnterpriseRepo } from "./enterprise.repo";
 import {
   AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
   ClaudeGenerateTextRepo,
   CloudGenerateTextRepo,
   DeepseekGenerateTextRepo,
+  EnterpriseGenerateTextRepo,
   GeminiGenerateTextRepo,
   GroqGenerateTextRepo,
   OllamaGenerateTextRepo,
@@ -26,19 +34,30 @@ import {
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
-import { BaseOllamaRepo, OllamaRepo } from "./ollama.repo";
+import {
+  BaseMemberRepo,
+  CloudMemberRepo,
+  EnterpriseMemberRepo,
+} from "./member.repo";
 import {
   BaseUserPreferencesRepo,
   LocalUserPreferencesRepo,
 } from "./preferences.repo";
 import { BaseStorageRepo, LocalStorageRepo } from "./storage.repo";
-import { BaseTermRepo, CloudTermRepo, LocalTermRepo } from "./term.repo";
+import { BaseStripeRepo, CloudStripeRepo } from "./stripe.repo";
+import {
+  BaseTermRepo,
+  CloudTermRepo,
+  EnterpriseTermRepo,
+  LocalTermRepo,
+} from "./term.repo";
 import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
 import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
   CloudTranscribeAudioRepo,
+  EnterpriseTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
@@ -49,15 +68,41 @@ import {
   BaseTranscriptionRepo,
   LocalTranscriptionRepo,
 } from "./transcription.repo";
-import { BaseUserRepo, CloudUserRepo, LocalUserRepo } from "./user.repo";
+import {
+  BaseUserRepo,
+  CloudUserRepo,
+  EnterpriseUserRepo,
+  LocalUserRepo,
+} from "./user.repo";
 
+const isEnterprise = () => getIsEnterpriseEnabled();
 const shouldUseCloud = () => getHasCloudAccess(getAppState());
 
+export const getMemberRepo = (): BaseMemberRepo => {
+  return isEnterprise() ? new EnterpriseMemberRepo() : new CloudMemberRepo();
+};
+
+export const getStripeRepo = (): Nullable<BaseStripeRepo> => {
+  return isEnterprise() ? null : new CloudStripeRepo();
+};
+
+export const getConfigRepo = (): BaseConfigRepo => {
+  return isEnterprise() ? new EnterpriseConfigRepo() : new CloudConfigRepo();
+};
+
+export const getEnterpriseRepo = (): Nullable<EnterpriseRepo> => {
+  return isEnterprise() ? new EnterpriseRepo() : null;
+};
+
 export const getAuthRepo = (): BaseAuthRepo => {
-  return new CloudAuthRepo();
+  return isEnterprise() ? new EnterpriseAuthRepo() : new CloudAuthRepo();
 };
 
 export const getUserRepo = (): BaseUserRepo => {
+  if (isEnterprise()) {
+    return new EnterpriseUserRepo();
+  }
+
   return shouldUseCloud() ? new CloudUserRepo() : new LocalUserRepo();
 };
 
@@ -74,6 +119,9 @@ export const getAppTargetRepo = (): BaseAppTargetRepo => {
 };
 
 export const getTermRepo = (): BaseTermRepo => {
+  if (isEnterprise()) {
+    return new EnterpriseTermRepo();
+  }
   return shouldUseCloud() ? new CloudTermRepo() : new LocalTermRepo();
 };
 
@@ -93,14 +141,6 @@ export const getStorageRepo = (): BaseStorageRepo => {
   return new LocalStorageRepo();
 };
 
-export const getOllamaRepo = (
-  baseUrl?: string,
-  apiKey?: string,
-): BaseOllamaRepo => {
-  const url = baseUrl || OLLAMA_DEFAULT_URL;
-  return new OllamaRepo(url, apiKey);
-};
-
 export type GenerateTextRepoOutput = {
   repo: Nullable<BaseGenerateTextRepo>;
   apiKeyId: Nullable<string>;
@@ -115,9 +155,12 @@ const getGenTextRepoInternal = ({
   cloudModel: CloudModel;
 }): GenerateTextRepoOutput => {
   const state = getAppState();
+
   if (prefs.mode === "cloud") {
     return {
-      repo: new CloudGenerateTextRepo(cloudModel),
+      repo: getIsEnterpriseEnabled()
+        ? new EnterpriseGenerateTextRepo()
+        : new CloudGenerateTextRepo(cloudModel),
       apiKeyId: null,
       warnings: prefs.warnings,
     };
@@ -214,9 +257,12 @@ export type TranscribeAudioRepoOutput = {
 
 export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
   const prefs = getTranscriptionPrefs(getAppState());
+
   if (prefs.mode === "cloud") {
     return {
-      repo: new CloudTranscribeAudioRepo(),
+      repo: getIsEnterpriseEnabled()
+        ? new EnterpriseTranscribeAudioRepo()
+        : new CloudTranscribeAudioRepo(),
       apiKeyId: null,
       warnings: prefs.warnings,
     };
@@ -244,11 +290,15 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       const state = getAppState();
       const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
       const baseUrl = apiKeyRecord?.baseUrl || "http://localhost:8000";
-      const model = prefs.transcriptionModel || "Systran/faster-whisper-large-v3";
+      const model =
+        prefs.transcriptionModel || "Systran/faster-whisper-large-v3";
       if (!model) {
         prefs.warnings.push("No model configured for Speaches transcription.");
       }
-      repo = new SpeachesTranscribeAudioRepo(baseUrl, model || "Systran/faster-whisper-large-v3");
+      repo = new SpeachesTranscribeAudioRepo(
+        baseUrl,
+        model || "Systran/faster-whisper-large-v3",
+      );
     } else {
       repo = new GroqTranscribeAudioRepo(
         prefs.apiKeyValue,

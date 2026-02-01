@@ -31,7 +31,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -42,13 +41,18 @@ import {
   setPreferredLanguage,
   setSecondaryDictationLanguage,
 } from "../../actions/user.actions";
-import { getAuthRepo } from "../../repos";
+import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import {
   DICTATION_LANGUAGE_OPTIONS,
   WHISPER_LANGUAGES,
 } from "../../utils/language.utils";
 import { getIsPaying } from "../../utils/member.utils";
+import {
+  getAllowsChangeAgentMode,
+  getAllowsChangePostProcessing,
+  getAllowsChangeTranscription,
+} from "../../utils/enterprise.utils";
 import {
   getDetectedSystemLocale,
   getHasEmailProvider,
@@ -62,6 +66,10 @@ import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
   const isPaying = useAppStore(getIsPaying);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
+  const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
+  const allowChangeAgentMode = useAppStore(getAllowsChangeAgentMode);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -180,11 +188,12 @@ export default function SettingsPage() {
   const handleManageSubscription = async () => {
     setManageSubscriptionLoading(true);
     try {
-      const data = await invokeHandler(
-        "stripe/createCustomerPortalSession",
-        {},
-      );
-      openUrl(data.url);
+      const url = await getStripeRepo()?.createCustomerPortalSession();
+      if (url) {
+        openUrl(url);
+      } else {
+        showErrorSnackbar("Unable to open manage subscription page.");
+      }
     } catch (error) {
       showErrorSnackbar(error);
     } finally {
@@ -345,26 +354,32 @@ export default function SettingsPage() {
           }
         />
       )}
-      <ListTile
-        title={<FormattedMessage defaultMessage="AI transcription" />}
-        leading={<GraphicEqOutlined />}
-        onClick={openTranscriptionDialog}
-      />
-      <ListTile
-        title={<FormattedMessage defaultMessage="AI post processing" />}
-        leading={<AutoFixHighOutlined />}
-        onClick={openPostProcessingDialog}
-      />
-      <ListTile
-        title={
-          <Stack direction="row" alignItems="center">
-            <FormattedMessage defaultMessage="Agent mode" />
-            <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
-          </Stack>
-        }
-        leading={<AutoAwesomeOutlined />}
-        onClick={openAgentModeDialog}
-      />
+      {allowChangeTranscription && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="AI transcription" />}
+          leading={<GraphicEqOutlined />}
+          onClick={openTranscriptionDialog}
+        />
+      )}
+      {allowChangePostProcessing && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="AI post processing" />}
+          leading={<AutoFixHighOutlined />}
+          onClick={openPostProcessingDialog}
+        />
+      )}
+      {allowChangeAgentMode && (
+        <ListTile
+          title={
+            <Stack direction="row" alignItems="center">
+              <FormattedMessage defaultMessage="Agent mode" />
+              <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
+            </Stack>
+          }
+          leading={<AutoAwesomeOutlined />}
+          onClick={openAgentModeDialog}
+        />
+      )}
     </Section>
   );
 
@@ -382,7 +397,7 @@ export default function SettingsPage() {
           onClick={openChangePasswordDialog}
         />
       )}
-      {isPaying && (
+      {isPaying && !isEnterprise && (
         <ListTile
           title={<FormattedMessage defaultMessage="Manage subscription" />}
           leading={<PaymentOutlined />}
@@ -447,7 +462,7 @@ export default function SettingsPage() {
         {general}
         {processing}
         {advanced}
-        {dangerZone}
+        {!isEnterprise && dangerZone}
       </Stack>
     </DashboardEntryLayout>
   );

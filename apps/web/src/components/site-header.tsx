@@ -12,12 +12,8 @@ export function SiteHeader() {
 
   const navLinks = [
     {
-      href: "/#demo",
+      href: "/#what-is-voquill",
       label: intl.formatMessage({ defaultMessage: "Demo" }),
-    },
-    {
-      href: "/#speed",
-      label: intl.formatMessage({ defaultMessage: "Purpose" }),
     },
     {
       href: "/#privacy",
@@ -26,6 +22,16 @@ export function SiteHeader() {
     {
       href: "/#pricing",
       label: intl.formatMessage({ defaultMessage: "Pricing" }),
+    },
+    {
+      href: "https://docs.voquill.com",
+      label: intl.formatMessage({ defaultMessage: "Docs" }),
+      external: true,
+    },
+    {
+      href: "https://docs.voquill.com/enterprise/overview",
+      label: intl.formatMessage({ defaultMessage: "Enterprise" }),
+      external: true,
     },
   ];
 
@@ -42,11 +48,17 @@ export function SiteHeader() {
             defaultMessage: "Primary navigation",
           })}
         >
-          {navLinks.map(({ href, label }) => (
-            <Link key={href} to={href} className={styles.navLink}>
-              {label}
-            </Link>
-          ))}
+          {navLinks.map(({ href, label, external }) =>
+            external ? (
+              <a key={href} href={href} className={styles.navLink} target="_blank" rel="noopener noreferrer">
+                {label}
+              </a>
+            ) : (
+              <Link key={href} to={href} className={styles.navLink}>
+                {label}
+              </Link>
+            )
+          )}
         </nav>
         <div className={styles.headerActions}>
           <GitHubButton className={styles.headerCta} />
@@ -88,16 +100,29 @@ export function SiteHeader() {
       {isMobileMenuOpen && (
         <div className={styles.header} style={{ marginTop: "8px" }}>
           <nav className={styles.mobileNav}>
-            {navLinks.map(({ href, label }) => (
-              <Link
-                key={href}
-                to={href}
-                className={styles.mobileNavLink}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {label}
-              </Link>
-            ))}
+            {navLinks.map(({ href, label, external }) =>
+              external ? (
+                <a
+                  key={href}
+                  href={href}
+                  className={styles.mobileNavLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {label}
+                </a>
+              ) : (
+                <Link
+                  key={href}
+                  to={href}
+                  className={styles.mobileNavLink}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {label}
+                </Link>
+              )
+            )}
           </nav>
           <div className={styles.mobileMenuActions}>
             <GitHubButton />

@@ -236,8 +236,8 @@ jobs:
             • State improvements plainly without embellishment (e.g., "Improved performance" not "Enjoy blazing-fast performance").
             ${{ github.event.inputs.release_context && format('
 
-            Additional notes from the release author, PAY SPECIAL ATTENTION TO THESE NOTES. You should
-            form your release notes around what they specify here if it is provided:
+            Additional notes from the release author, PAY SPECIAL ATTENTION TO THESE NOTES. 
+            ONLY MENTION RELEASE NOTES THAT ARE DIRECTLY REFERENCED IN THE FOLLOWING CONTEXT:
             {0}', github.event.inputs.release_context) || 'None' }}
           from: ${{ steps.meta.outputs.release_notes_from }}
           to: ${{ steps.meta.outputs.release_notes_to }}

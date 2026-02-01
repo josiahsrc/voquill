@@ -54,11 +54,17 @@ export const AppHeader = () => {
   const nav = useNavigate();
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
-  const planName = useAppStore((state) =>
-    planToDisplayName(getEffectivePlan(state)),
-  );
   const isPaying = useAppStore(getIsPaying);
   const plan = useAppStore((state) => getEffectivePlan(state));
+  const planName = useAppStore((state) => {
+    const plan = getEffectivePlan(state);
+    if (plan !== "enterprise") {
+      return planToDisplayName(plan);
+    }
+
+    const orgName = state.enterpriseLicense?.org.trim();
+    return orgName || planToDisplayName(plan);
+  });
 
   const myName = useAppStore((state) => {
     const user = getMyUser(state);

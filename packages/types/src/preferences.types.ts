@@ -22,7 +22,6 @@ export type UserPreferences = {
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
   lastSeenFeature: Nullable<string>;
-  isEnterprise: boolean;
   languageSwitchEnabled: boolean;
   secondaryDictationLanguage: Nullable<string>;
   activeDictationLanguage: "primary" | "secondary";
@@ -31,4 +30,7 @@ export type UserPreferences = {
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
   dictationPillVisibility: DictationPillVisibility;
+
+  // deprecated
+  isEnterprise: boolean;
 };

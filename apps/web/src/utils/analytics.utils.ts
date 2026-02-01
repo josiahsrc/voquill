@@ -1,9 +1,19 @@
 import mixpanel from "mixpanel-browser";
 
+export function getMixpanel() {
+  const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;
+  if (!mixpanelToken) {
+    // Mixpanel token is not set, do not initialize Mixpanel
+    return null;
+  }
+
+  return mixpanel;
+}
+
 export function trackPageView(pageName: string) {
-  mixpanel.track("Page View", { page: pageName });
+  getMixpanel()?.track("Page View", { page: pageName });
 }
 
 export function trackButtonClick(name: string) {
-  mixpanel.track("Button Click", { name });
+  getMixpanel()?.track("Button Click", { name });
 }

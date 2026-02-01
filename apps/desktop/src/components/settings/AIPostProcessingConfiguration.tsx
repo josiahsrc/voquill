@@ -6,6 +6,8 @@ import {
   setPreferredPostProcessingMode,
 } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
+import { getAllowsChangePostProcessing } from "../../utils/enterprise.utils";
+import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
 import { type PostProcessingMode } from "../../types/ai.types";
 import {
   SegmentedControl,
@@ -28,6 +30,7 @@ export const AIPostProcessingConfiguration = ({
   const postProcessing = useAppStore(
     (state) => state.settings.aiPostProcessing,
   );
+  const allowChange = useAppStore(getAllowsChangePostProcessing);
 
   const handleModeChange = useCallback((mode: PostProcessingMode) => {
     void setPreferredPostProcessingMode(mode);
@@ -36,6 +39,10 @@ export const AIPostProcessingConfiguration = ({
   const handleApiKeyChange = useCallback((id: string | null) => {
     void setPreferredPostProcessingApiKeyId(id);
   }, []);
+
+  if (!allowChange) {
+    return <ManagedByOrgNotice />;
+  }
 
   return (
     <Stack spacing={3} alignItems="flex-start" sx={{ width: "100%" }}>

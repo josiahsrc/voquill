@@ -2,6 +2,8 @@ import { HandlerOutput } from "@repo/functions";
 import {
   ApiKey,
   AppTarget,
+  EnterpriseConfig,
+  EnterpriseLicense,
   FullConfig,
   Hotkey,
   Member,
@@ -13,6 +15,7 @@ import {
   UserPreferences,
 } from "@repo/types";
 import { AuthUser } from "../types/auth.types";
+import { Vector2 } from "../types/math.types";
 import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
 import { Toast } from "../types/toast.types";
@@ -36,7 +39,6 @@ import {
   TranscriptionsState,
 } from "./transcriptions.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
-import { Vector2 } from "../types/math.types";
 
 export type SnackbarMode = "info" | "success" | "error";
 
@@ -66,6 +68,9 @@ export type AppState = {
   toneById: Record<string, Tone>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
+  enterpriseConfig: Nullable<EnterpriseConfig>;
+  enterpriseLicense: Nullable<EnterpriseLicense>;
+  isEnterprise: boolean;
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
@@ -95,6 +100,9 @@ export const INITIAL_APP_STATE: AppState = {
   userPrefs: null,
   isRecordingHotkey: false,
   activeRecordingMode: null,
+  enterpriseConfig: null,
+  enterpriseLicense: null,
+  isEnterprise: false,
   memberById: {},
   userById: {},
   termById: {},

@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showConfetti, showErrorSnackbar } from "../../actions/app.actions";
 import {
@@ -63,6 +63,7 @@ export const TutorialForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isFieldFocused, setIsFieldFocused] = useState(false);
   const [hasStartedDictating, setHasStartedDictating] = useState(false);
+  const submittedRef = useRef(false);
 
   const hotkeyCombos = useAppStore((state) =>
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
@@ -90,10 +91,15 @@ export const TutorialForm = () => {
     let cancelled = false;
     const init = async () => {
       try {
-        await submitOnboarding();
+        if (!submittedRef.current) {
+          submittedRef.current = true;
+          await submitOnboarding();
+        }
+
         if (cancelled) {
           return;
         }
+
         produceAppState((draft) => {
           draft.onboarding.dictationOverrideEnabled = true;
         });
@@ -103,6 +109,7 @@ export const TutorialForm = () => {
         }
       }
     };
+
     init();
     return () => {
       cancelled = true;
