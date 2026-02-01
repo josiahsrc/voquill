@@ -67,6 +67,7 @@ import {
   daysToMilliseconds,
   minutesToMilliseconds,
 } from "../../utils/time.utils";
+import { getToneIdToUse } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
@@ -436,9 +437,11 @@ export const RootSideEffects = () => {
           tryRegisterCurrentAppTarget(),
           session.finalize(audio),
         ]);
-        const toneId = currentApp?.toneId ?? null;
         const rawTranscript = transcribeResult.rawTranscript;
         trackAppUsed(currentApp?.name ?? "Unknown");
+        const toneId = getToneIdToUse(getAppState(), {
+          currentAppToneId: currentApp?.toneId ?? null,
+        });
 
         let transcript: string | null = null;
         let sanitizedTranscript: string | null = null;

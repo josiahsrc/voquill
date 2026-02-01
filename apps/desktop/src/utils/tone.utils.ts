@@ -3,6 +3,7 @@ import { getRec } from "@repo/utilities";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
 import { getAppState } from "../store";
+import { getEffectiveStylingMode } from "./feature.utils";
 import { getMyPreferredLocale, getMyUser } from "./user.utils";
 
 export const getDefaultSystemTones = (): Tone[] => {
@@ -144,4 +145,18 @@ export const getSortedToneIds = (state: AppState): string[] => {
         right.createdAt - left.createdAt,
     )
     .map((t) => t.id);
+};
+
+export const getToneIdToUse = (
+  state: AppState,
+  args: {
+    currentAppToneId: Nullable<string>;
+  },
+): Nullable<string> => {
+  const mode = getEffectiveStylingMode(state);
+  if (mode === "manual") {
+    return getManuallySelectedToneId(state);
+  } else {
+    return args.currentAppToneId;
+  }
 };
