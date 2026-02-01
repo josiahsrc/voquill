@@ -40,16 +40,13 @@ const mergeSystemTones = (userTones: Tone[]): Tone[] => {
 };
 
 export abstract class BaseToneRepo extends BaseRepo {
-  abstract listTones(): Promise<Tone[]>;
-  abstract getTone(id: string): Promise<Tone | null>;
-  abstract upsertTone(tone: Tone): Promise<Tone>;
-  abstract deleteTone(id: string): Promise<void>;
-}
+  protected abstract listTonesInternal(): Promise<Tone[]>;
+  protected abstract getToneInternal(id: string): Promise<Tone | null>;
+  protected abstract upsertToneInternal(tone: Tone): Promise<Tone>;
+  protected abstract deleteToneInternal(id: string): Promise<void>;
 
-export class LocalToneRepo extends BaseToneRepo {
   async listTones(): Promise<Tone[]> {
-    const tones = await invoke<LocalTone[]>("tone_list");
-    const userTones = tones.map(fromLocalTone);
+    const userTones = await this.listTonesInternal();
     return mergeSystemTones(userTones);
   }
 
@@ -58,95 +55,85 @@ export class LocalToneRepo extends BaseToneRepo {
     if (systemTone) {
       return systemTone;
     }
-
-    const tone = await invoke<LocalTone | null>("tone_get", { id });
-    return tone ? fromLocalTone(tone) : null;
+    return this.getToneInternal(id);
   }
 
   async upsertTone(tone: Tone): Promise<Tone> {
     if (tone.isSystem) {
       throw new Error("System tones cannot be modified.");
     }
+    return this.upsertToneInternal(tone);
+  }
 
+  async deleteTone(id: string): Promise<void> {
+    if (getSystemToneById(id)) {
+      throw new Error("System tones cannot be deleted.");
+    }
+    return this.deleteToneInternal(id);
+  }
+}
+
+export class LocalToneRepo extends BaseToneRepo {
+  protected async listTonesInternal(): Promise<Tone[]> {
+    const tones = await invoke<LocalTone[]>("tone_list");
+    return tones.map(fromLocalTone);
+  }
+
+  protected async getToneInternal(id: string): Promise<Tone | null> {
+    const tone = await invoke<LocalTone | null>("tone_get", { id });
+    return tone ? fromLocalTone(tone) : null;
+  }
+
+  protected async upsertToneInternal(tone: Tone): Promise<Tone> {
     const upserted = await invoke<LocalTone>("tone_upsert", {
       tone: toLocalTone(tone),
     });
     return fromLocalTone(upserted);
   }
 
-  async deleteTone(id: string): Promise<void> {
-    if (getSystemToneById(id)) {
-      throw new Error("System tones cannot be deleted.");
-    }
-
+  protected async deleteToneInternal(id: string): Promise<void> {
     await invoke("tone_delete", { id });
   }
 }
 
 export class CloudToneRepo extends BaseToneRepo {
-  async listTones(): Promise<Tone[]> {
+  protected async listTonesInternal(): Promise<Tone[]> {
     const res = await invokeHandler("tone/listMyTones", {});
-    return mergeSystemTones(res.tones);
+    return res.tones;
   }
 
-  async getTone(id: string): Promise<Tone | null> {
-    const systemTone = getSystemToneById(id);
-    if (systemTone) {
-      return systemTone;
-    }
-
+  protected async getToneInternal(id: string): Promise<Tone | null> {
     const res = await invokeHandler("tone/listMyTones", {});
     return res.tones.find((t) => t.id === id) ?? null;
   }
 
-  async upsertTone(tone: Tone): Promise<Tone> {
-    if (tone.isSystem) {
-      throw new Error("System tones cannot be modified.");
-    }
-
+  protected async upsertToneInternal(tone: Tone): Promise<Tone> {
     await invokeHandler("tone/upsertMyTone", { tone });
     return tone;
   }
 
-  async deleteTone(id: string): Promise<void> {
-    if (getSystemToneById(id)) {
-      throw new Error("System tones cannot be deleted.");
-    }
-
+  protected async deleteToneInternal(id: string): Promise<void> {
     await invokeHandler("tone/deleteMyTone", { toneId: id });
   }
 }
 
 export class EnterpriseToneRepo extends BaseToneRepo {
-  async listTones(): Promise<Tone[]> {
+  protected async listTonesInternal(): Promise<Tone[]> {
     const res = await invokeEnterprise("tone/listMyTones", {});
-    return mergeSystemTones(res.tones);
+    return res.tones;
   }
 
-  async getTone(id: string): Promise<Tone | null> {
-    const systemTone = getSystemToneById(id);
-    if (systemTone) {
-      return systemTone;
-    }
-
+  protected async getToneInternal(id: string): Promise<Tone | null> {
     const res = await invokeEnterprise("tone/listMyTones", {});
     return res.tones.find((t) => t.id === id) ?? null;
   }
 
-  async upsertTone(tone: Tone): Promise<Tone> {
-    if (tone.isSystem) {
-      throw new Error("System tones cannot be modified.");
-    }
-
+  protected async upsertToneInternal(tone: Tone): Promise<Tone> {
     await invokeEnterprise("tone/upsertMyTone", { tone });
     return tone;
   }
 
-  async deleteTone(id: string): Promise<void> {
-    if (getSystemToneById(id)) {
-      throw new Error("System tones cannot be deleted.");
-    }
-
+  protected async deleteToneInternal(id: string): Promise<void> {
     await invokeEnterprise("tone/deleteMyTone", { toneId: id });
   }
 }

@@ -534,6 +534,27 @@ export const setStylingMode = async (
   );
 };
 
+export const setSelectedToneId = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.selectedToneId = toneId;
+    },
+    "Unable to select style. User not found.",
+    "Failed to select style. Please try again.",
+  );
+};
+
+export const deselectActiveTone = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      const current = user.activeToneIds ?? [];
+      user.activeToneIds = current.filter((id) => id !== toneId);
+    },
+    "Unable to deselect style. User not found.",
+    "Failed to deselect style. Please try again.",
+  );
+};
+
 export const markUpgradeDialogSeen = async (): Promise<void> => {
   await updateUser(
     (user) => {

@@ -25,6 +25,11 @@ import { getDefaultSystemTones } from "../../src/utils/tone.utils";
 const SYSTEM_PROMPT =
   "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same.";
 
+const getDefaultStyle = (): string => {
+  return getDefaultSystemTones().find((t) => t.id === "default")!
+    .promptTemplate;
+};
+
 describe("Post-processing prompts integration", () => {
   const callLLM = async (prompt: string): Promise<string> => {
     const apiKey = getGroqApiKey();
@@ -53,7 +58,7 @@ describe("Post-processing prompts integration", () => {
       const prompt = buildLocalizedPostProcessingPrompt({
         transcript: transcript,
         dictationLanguage: "en",
-        toneTemplate: null,
+        toneTemplate: getDefaultStyle(),
         textFieldContext: null,
       });
 
@@ -87,7 +92,7 @@ describe("Post-processing prompts integration", () => {
       const prompt = buildLocalizedPostProcessingPrompt({
         transcript: transcript,
         dictationLanguage: "en",
-        toneTemplate: null,
+        toneTemplate: getDefaultStyle(),
         textFieldContext: context,
       });
 
@@ -121,7 +126,7 @@ describe("Post-processing prompts integration", () => {
       const prompt = buildLocalizedPostProcessingPrompt({
         transcript: transcript,
         dictationLanguage: "en",
-        toneTemplate: null,
+        toneTemplate: getDefaultStyle(),
         textFieldContext: context,
       });
 
@@ -148,7 +153,7 @@ describe("Post-processing prompts integration", () => {
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
       dictationLanguage: "en",
-      toneTemplate: tone?.promptTemplate || null,
+      toneTemplate: tone?.promptTemplate || "",
       textFieldContext: null,
     });
 
@@ -176,7 +181,7 @@ describe("Post-processing prompts integration", () => {
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
       dictationLanguage: "en",
-      toneTemplate: tone?.promptTemplate || null,
+      toneTemplate: tone?.promptTemplate || "",
       textFieldContext: null,
     });
 
@@ -202,7 +207,7 @@ describe("Post-processing prompts integration", () => {
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
       dictationLanguage: "en",
-      toneTemplate: tone?.promptTemplate || null,
+      toneTemplate: tone?.promptTemplate || "",
       textFieldContext: null,
     });
 
@@ -225,7 +230,7 @@ describe("Post-processing prompts integration", () => {
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
       dictationLanguage: "es",
-      toneTemplate: null,
+      toneTemplate: getDefaultStyle(),
       textFieldContext: null,
     });
 
@@ -252,7 +257,7 @@ describe("Post-processing prompts integration", () => {
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
       dictationLanguage: "en",
-      toneTemplate: null,
+      toneTemplate: getDefaultStyle(),
       textFieldContext: null,
     });
 
@@ -279,7 +284,7 @@ describe("Post-processing prompts integration", () => {
     const prompt = buildLocalizedPostProcessingPrompt({
       transcript: transcript,
       dictationLanguage: "en",
-      toneTemplate: null,
+      toneTemplate: getDefaultStyle(),
       textFieldContext: null,
     });
 

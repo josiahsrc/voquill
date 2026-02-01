@@ -1,13 +1,25 @@
-import { Tone } from "@repo/types";
+import { Nullable, Tone } from "@repo/types";
+import { getRec } from "@repo/utilities";
 import { getIntl } from "../i18n/intl";
+import { AppState } from "../state/app.state";
 import { getAppState } from "../store";
-import { getMyPreferredLocale } from "./user.utils";
+import { getMyPreferredLocale, getMyUser } from "./user.utils";
 
 export const getDefaultSystemTones = (): Tone[] => {
   const locale = getMyPreferredLocale(getAppState());
   const intl = getIntl(locale);
 
   return [
+    {
+      id: "default",
+      name: intl.formatMessage({
+        defaultMessage: "Default",
+      }),
+      promptTemplate: `Do not modify the style or tone of the transcript. Focus solely on fixing grammar mistakes and punctuation errors without changing the speaker's original tone or intent.`,
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: -1,
+    },
     {
       id: "light",
       name: intl.formatMessage({
@@ -76,4 +88,43 @@ You must inject clever puns throughout the result.
       sortOrder: 4,
     },
   ];
+};
+
+export const getToneById = (
+  state: AppState,
+  id: Nullable<string>,
+): Nullable<Tone> => {
+  return getRec(state.toneById, id) ?? null;
+};
+
+export const getToneTemplateWithFallback = (
+  state: AppState,
+  id: Nullable<string>,
+): string => {
+  const tone = getToneById(state, id);
+  if (tone) {
+    return tone.promptTemplate;
+  }
+
+  return getToneById(state, "default")?.promptTemplate || "";
+};
+
+export const getActiveManualToneIds = (state: AppState): string[] => {
+  const user = getMyUser(state);
+  const toneIds = user?.activeToneIds ?? [];
+  const validToneIds = toneIds.filter((id) => Boolean(getToneById(state, id)));
+  return validToneIds.length > 0 ? validToneIds : ["default"];
+};
+
+export const getManuallySelectedToneId = (state: AppState): string => {
+  const user = getMyUser(state);
+  const toneId = user?.selectedToneId ?? null;
+  const tone = getToneById(state, toneId);
+
+  const activeIds = getActiveManualToneIds(state);
+  if (tone && activeIds.includes(tone.id)) {
+    return tone.id;
+  }
+
+  return activeIds.at(0) || "default";
 };

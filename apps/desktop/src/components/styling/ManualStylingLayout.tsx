@@ -5,6 +5,7 @@ import { FormattedMessage } from "react-intl";
 import { loadTones, openToneEditorDialog } from "../../actions/tone.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useAppStore } from "../../store";
+import { getActiveManualToneIds } from "../../utils/tone.utils";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { ManualStylingRow } from "./ManualStylingRow";
 
@@ -13,7 +14,7 @@ export function ManualStylingLayout() {
     await loadTones();
   }, []);
 
-  const toneIds = useAppStore((state) => state.tones.storedToneIds);
+  const toneIds = useAppStore((state) => getActiveManualToneIds(state));
 
   const handleCreateTone = useCallback(() => {
     openToneEditorDialog({ mode: "create" });
@@ -31,7 +32,7 @@ export function ManualStylingLayout() {
           startIcon={<Add />}
           onClick={handleCreateTone}
         >
-          <FormattedMessage defaultMessage="Create Style" />
+          <FormattedMessage defaultMessage="Add Style" />
         </Button>
       }
       items={toneIds}
