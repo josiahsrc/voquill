@@ -1,12 +1,12 @@
+import { listify } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import { getAuthRepo, getMemberRepo } from "../repos";
 import type { LoginMode } from "../state/login.state";
+import { getAppState, produceAppState } from "../store";
 import type { GoogleAuthPayload } from "../types/google-auth.types";
 import { GOOGLE_AUTH_COMMAND } from "../types/google-auth.types";
-import { getAppState, produceAppState } from "../store";
-import { getAuthRepo, getMemberRepo } from "../repos";
-import { validateEmail } from "../utils/login.utils";
 import { registerMembers } from "../utils/app.utils";
-import { listify } from "@repo/utilities";
+import { validateEmail } from "../utils/login.utils";
 
 const tryInit = async () => {
   const repo = getMemberRepo();
@@ -112,9 +112,10 @@ export const submitSignUp = async (): Promise<void> => {
     produceAppState((state) => {
       state.login.status = "success";
     });
-  } catch {
+  } catch (e) {
     produceAppState((state) => {
-      state.login.errorMessage = "An error occurred while signing up.";
+      state.login.errorMessage =
+        String(e) || "An error occurred while signing up.";
       state.login.status = "idle";
     });
   }
