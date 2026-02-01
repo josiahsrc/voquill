@@ -32,6 +32,7 @@ describe("enterprise config", () => {
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
+    expect(data.config.stylingMode).toBe("app");
   });
 
   it("returns license from license key", async () => {
@@ -52,6 +53,7 @@ describe("enterprise config", () => {
           allowChangePostProcessing: true,
           allowChangeTranscriptionMethod: true,
           allowChangeAgentMode: true,
+          stylingMode: "manual",
         },
       },
       adminToken,
@@ -61,6 +63,7 @@ describe("enterprise config", () => {
     expect(data.config.allowChangePostProcessing).toBe(true);
     expect(data.config.allowChangeTranscriptionMethod).toBe(true);
     expect(data.config.allowChangeAgentMode).toBe(true);
+    expect(data.config.stylingMode).toBe("manual");
   });
 
   it("upsert can set back to false", async () => {
@@ -71,6 +74,7 @@ describe("enterprise config", () => {
           allowChangePostProcessing: false,
           allowChangeTranscriptionMethod: false,
           allowChangeAgentMode: false,
+          stylingMode: "app",
         },
       },
       adminToken,
@@ -80,6 +84,7 @@ describe("enterprise config", () => {
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
+    expect(data.config.stylingMode).toBe("app");
   });
 
   it("upsert requires admin", async () => {
@@ -91,6 +96,7 @@ describe("enterprise config", () => {
             allowChangePostProcessing: true,
             allowChangeTranscriptionMethod: true,
             allowChangeAgentMode: true,
+            stylingMode: "manual",
           },
         },
         userToken,
