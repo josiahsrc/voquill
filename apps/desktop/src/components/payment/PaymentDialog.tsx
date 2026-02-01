@@ -19,7 +19,7 @@ export const PaymentDialog = () => {
   const stripe = useStripe();
 
   const fetchClientSecret = useCallback(async () => {
-    return getStripeRepo().createCheckoutSession(priceId ?? "");
+    return getStripeRepo()?.createCheckoutSession(priceId ?? "") ?? "";
   }, [priceId]);
 
   const handleClose = () => {
