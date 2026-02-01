@@ -31,6 +31,7 @@ describe("enterprise config", () => {
     const data = await invoke("enterprise/getConfig", {}, userToken);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
+    expect(data.config.allowChangeAgentMode).toBe(false);
   });
 
   it("returns license from license key", async () => {
@@ -50,6 +51,7 @@ describe("enterprise config", () => {
         config: {
           allowChangePostProcessing: true,
           allowChangeTranscriptionMethod: true,
+          allowChangeAgentMode: true,
         },
       },
       adminToken,
@@ -58,6 +60,7 @@ describe("enterprise config", () => {
     const data = await invoke("enterprise/getConfig", {}, userToken);
     expect(data.config.allowChangePostProcessing).toBe(true);
     expect(data.config.allowChangeTranscriptionMethod).toBe(true);
+    expect(data.config.allowChangeAgentMode).toBe(true);
   });
 
   it("upsert can set back to false", async () => {
@@ -67,6 +70,7 @@ describe("enterprise config", () => {
         config: {
           allowChangePostProcessing: false,
           allowChangeTranscriptionMethod: false,
+          allowChangeAgentMode: false,
         },
       },
       adminToken,
@@ -75,6 +79,7 @@ describe("enterprise config", () => {
     const data = await invoke("enterprise/getConfig", {}, userToken);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
+    expect(data.config.allowChangeAgentMode).toBe(false);
   });
 
   it("upsert requires admin", async () => {
