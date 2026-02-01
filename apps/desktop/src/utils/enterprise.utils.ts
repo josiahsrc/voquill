@@ -11,13 +11,17 @@ let _cachedTarget: Nullable<EnterpriseTarget> = null;
 
 export async function loadEnterpriseTarget(): Promise<void> {
   const raw = await invoke<string | null>("read_enterprise_target").catch(
-    () => null,
+    (e) => {
+      console.error("Failed to read enterprise target:", e);
+      return null;
+    }
   );
 
   if (raw) {
     try {
       _cachedTarget = JSON.parse(raw) as EnterpriseTarget;
-    } catch {
+    } catch (e) {
+      console.error("Enterprise json parsing failed:", e);
       _cachedTarget = null;
     }
   } else {
