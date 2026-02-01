@@ -5,6 +5,7 @@ import {
   DatabaseUser,
   Nullable,
   TermDoc,
+  ToneDoc,
   Transcription,
 } from "@repo/types";
 import { listify } from "@repo/utilities";
@@ -33,4 +34,8 @@ export const transcriptions = (
 
 export const termDocs = (userId: Nullable<string>): FiremixPath<TermDoc> => {
   return ["termDocs", ...listify(userId)];
+};
+
+export const toneDocs = (userId: Nullable<string>): FiremixPath<ToneDoc> => {
+  return ["toneDocs", ...listify(userId)];
 };

@@ -1,7 +1,9 @@
+import { invokeHandler } from "@repo/functions";
 import { Tone } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { BaseRepo } from "./base.repo";
+import { invokeEnterprise } from "../utils/enterprise.utils";
 import { getDefaultSystemTones } from "../utils/tone.utils";
+import { BaseRepo } from "./base.repo";
 
 type LocalTone = {
   id: string;
@@ -78,5 +80,73 @@ export class LocalToneRepo extends BaseToneRepo {
     }
 
     await invoke("tone_delete", { id });
+  }
+}
+
+export class CloudToneRepo extends BaseToneRepo {
+  async listTones(): Promise<Tone[]> {
+    const res = await invokeHandler("tone/listMyTones", {});
+    return mergeSystemTones(res.tones);
+  }
+
+  async getTone(id: string): Promise<Tone | null> {
+    const systemTone = getSystemToneById(id);
+    if (systemTone) {
+      return systemTone;
+    }
+
+    const res = await invokeHandler("tone/listMyTones", {});
+    return res.tones.find((t) => t.id === id) ?? null;
+  }
+
+  async upsertTone(tone: Tone): Promise<Tone> {
+    if (tone.isSystem) {
+      throw new Error("System tones cannot be modified.");
+    }
+
+    await invokeHandler("tone/upsertMyTone", { tone });
+    return tone;
+  }
+
+  async deleteTone(id: string): Promise<void> {
+    if (getSystemToneById(id)) {
+      throw new Error("System tones cannot be deleted.");
+    }
+
+    await invokeHandler("tone/deleteMyTone", { toneId: id });
+  }
+}
+
+export class EnterpriseToneRepo extends BaseToneRepo {
+  async listTones(): Promise<Tone[]> {
+    const res = await invokeEnterprise("tone/listMyTones", {});
+    return mergeSystemTones(res.tones);
+  }
+
+  async getTone(id: string): Promise<Tone | null> {
+    const systemTone = getSystemToneById(id);
+    if (systemTone) {
+      return systemTone;
+    }
+
+    const res = await invokeEnterprise("tone/listMyTones", {});
+    return res.tones.find((t) => t.id === id) ?? null;
+  }
+
+  async upsertTone(tone: Tone): Promise<Tone> {
+    if (tone.isSystem) {
+      throw new Error("System tones cannot be modified.");
+    }
+
+    await invokeEnterprise("tone/upsertMyTone", { tone });
+    return tone;
+  }
+
+  async deleteTone(id: string): Promise<void> {
+    if (getSystemToneById(id)) {
+      throw new Error("System tones cannot be deleted.");
+    }
+
+    await invokeEnterprise("tone/deleteMyTone", { toneId: id });
   }
 }

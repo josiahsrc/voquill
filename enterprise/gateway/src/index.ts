@@ -10,6 +10,7 @@ import {
   DeleteLlmProviderInputZod,
   DeleteSttProviderInputZod,
   DeleteTermInputZod,
+  DeleteToneInputZod,
   EmptyObjectZod,
   PullLlmProviderInputZod,
   PullSttProviderInputZod,
@@ -18,6 +19,7 @@ import {
   UpsertLlmProviderInputZod,
   UpsertSttProviderInputZod,
   UpsertTermInputZod,
+  UpsertToneInputZod,
   type HandlerName,
 } from "@repo/functions";
 import cors from "cors";
@@ -60,6 +62,14 @@ import {
   upsertGlobalTermHandler,
   upsertMyTerm,
 } from "./services/term.service";
+import {
+  deleteGlobalToneHandler,
+  deleteMyTone,
+  listGlobalTonesHandler,
+  listMyTones,
+  upsertGlobalToneHandler,
+  upsertMyTone,
+} from "./services/tone.service";
 import {
   getMyUser,
   listAllUsersHandler,
@@ -158,6 +168,32 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await deleteGlobalTermHandler({
         auth,
         input: validateData(DeleteTermInputZod, input),
+      });
+    } else if (name === "tone/listMyTones") {
+      validateData(EmptyObjectZod, input);
+      data = await listMyTones({ auth });
+    } else if (name === "tone/upsertMyTone") {
+      data = await upsertMyTone({
+        auth,
+        input: validateData(UpsertToneInputZod, input),
+      });
+    } else if (name === "tone/deleteMyTone") {
+      data = await deleteMyTone({
+        auth,
+        input: validateData(DeleteToneInputZod, input),
+      });
+    } else if (name === "tone/listGlobalTones") {
+      validateData(EmptyObjectZod, input);
+      data = await listGlobalTonesHandler({ auth });
+    } else if (name === "tone/upsertGlobalTone") {
+      data = await upsertGlobalToneHandler({
+        auth,
+        input: validateData(UpsertToneInputZod, input),
+      });
+    } else if (name === "tone/deleteGlobalTone") {
+      data = await deleteGlobalToneHandler({
+        auth,
+        input: validateData(DeleteToneInputZod, input),
       });
     } else if (name === "sttProvider/list") {
       validateData(EmptyObjectZod, input);

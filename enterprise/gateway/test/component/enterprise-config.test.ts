@@ -90,6 +90,7 @@ describe("enterprise config", () => {
           config: {
             allowChangePostProcessing: true,
             allowChangeTranscriptionMethod: true,
+            allowChangeAgentMode: true,
           },
         },
         userToken,

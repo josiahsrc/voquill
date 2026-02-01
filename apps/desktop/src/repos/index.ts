@@ -51,7 +51,12 @@ import {
   EnterpriseTermRepo,
   LocalTermRepo,
 } from "./term.repo";
-import { BaseToneRepo, LocalToneRepo } from "./tone.repo";
+import {
+  BaseToneRepo,
+  CloudToneRepo,
+  EnterpriseToneRepo,
+  LocalToneRepo,
+} from "./tone.repo";
 import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
@@ -134,7 +139,10 @@ export const getApiKeyRepo = (): BaseApiKeyRepo => {
 };
 
 export const getToneRepo = (): BaseToneRepo => {
-  return new LocalToneRepo();
+  if (isEnterprise()) {
+    return new EnterpriseToneRepo();
+  }
+  return shouldUseCloud() ? new CloudToneRepo() : new LocalToneRepo();
 };
 
 export const getStorageRepo = (): BaseStorageRepo => {

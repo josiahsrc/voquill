@@ -1,36 +1,21 @@
 import { Tone } from "@repo/types";
+import dayjs from "dayjs";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
 import { ToneEditorMode } from "../state/tone-editor.state";
 import { getAppState, produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 
-let loadTonesPromise: Promise<void> | null = null;
-
-const sortTones = (tones: Tone[]): Tone[] =>
-  [...tones].sort((a, b) => a.sortOrder - b.sortOrder);
-
 export const loadTones = async (): Promise<void> => {
-  if (loadTonesPromise) {
-    return loadTonesPromise;
-  }
+  const tones = await getToneRepo().listTones();
+  const activeTones = tones.sort(
+    (a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf(),
+  );
 
-  loadTonesPromise = getToneRepo()
-    .listTones()
-    .then((tones) => {
-      produceAppState((draft) => {
-        registerTones(draft, tones);
-      });
-    })
-    .catch((error) => {
-      console.error("Failed to load tones", error);
-      showErrorSnackbar("Failed to load tones. Please try again.");
-    })
-    .finally(() => {
-      loadTonesPromise = null;
-    });
-
-  return loadTonesPromise;
+  produceAppState((draft) => {
+    registerTones(draft, tones);
+    draft.tones.storedToneIds = activeTones.map((tone) => tone.id);
+  });
 };
 
 export const upsertTone = async (tone: Tone): Promise<Tone> => {
@@ -116,11 +101,6 @@ export const setActiveTone = async (toneId: string | null): Promise<void> => {
     );
     throw error;
   }
-};
-
-export const getSortedTones = (): Tone[] => {
-  const tones = Object.values(getAppState().toneById);
-  return sortTones(tones);
 };
 
 export const getActiveTone = (): Tone | null => {
