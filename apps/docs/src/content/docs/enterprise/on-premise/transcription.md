@@ -24,6 +24,26 @@ speaches:
     - voquill
 ```
 
+If your server has an NVIDIA GPU, use the CUDA image instead for faster inference:
+
+```yaml
+speaches:
+  image: ghcr.io/speaches-ai/speaches:latest-cuda
+  ports:
+    - "8000:8000"
+  volumes:
+    - speaches_data:/home/ubuntu/.cache
+  networks:
+    - voquill
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+```
+
 And add the volume to your existing `volumes` section:
 
 ```yaml
