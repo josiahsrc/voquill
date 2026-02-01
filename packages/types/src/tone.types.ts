@@ -9,6 +9,7 @@ export type DatabaseTone = {
   isSystem: boolean;
   createdAt: FiremixTimestamp;
   sortOrder: number;
+  isGlobal?: boolean;
 };
 
 export type Tone = Replace<DatabaseTone, FiremixTimestamp, number>;
@@ -27,5 +28,6 @@ export const ToneZod = z
     isSystem: z.boolean(),
     createdAt: z.number(),
     sortOrder: z.number(),
+    isGlobal: z.boolean().optional(),
   })
   .strict() satisfies z.ZodType<Tone>;

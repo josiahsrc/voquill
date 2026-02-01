@@ -10,6 +10,7 @@ function rowToTone(row: ToneRow): Tone {
     isSystem: row.is_system,
     createdAt: row.created_at.getTime(),
     sortOrder: row.sort_order,
+    isGlobal: row.is_global,
   };
 }
 

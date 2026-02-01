@@ -65,7 +65,6 @@ import {
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   daysToMilliseconds,
-  hoursToMilliseconds,
   minutesToMilliseconds,
 } from "../../utils/time.utils";
 import {
@@ -200,7 +199,7 @@ export const RootSideEffects = () => {
   }, [userId]);
 
   useIntervalAsync(
-    hoursToMilliseconds(1),
+    minutesToMilliseconds(15),
     async () => {
       await Promise.allSettled([refreshMember(), refreshCurrentUser()]);
     },
@@ -219,7 +218,7 @@ export const RootSideEffects = () => {
 
   // check for app updates every minute
   useIntervalAsync(
-    60 * 1000,
+    minutesToMilliseconds(1),
     async () => {
       // show update dialogs after one hour on first-boot
       if (!updateInitializedRef.current) {

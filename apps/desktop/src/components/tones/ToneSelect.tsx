@@ -1,4 +1,4 @@
-import { Add, Edit } from "@mui/icons-material";
+import { Add, Edit, Public } from "@mui/icons-material";
 import {
   FormControl,
   IconButton,
@@ -7,13 +7,14 @@ import {
   Select,
   SelectChangeEvent,
   Stack,
+  Tooltip,
   type SxProps,
   type Theme,
 } from "@mui/material";
 import type { Tone } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { useCallback, useMemo, useState } from "react";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import { useAppStore } from "../../store";
 import { getMyUserPreferences } from "../../utils/user.utils";
@@ -46,6 +47,7 @@ export const ToneSelect = ({
   label,
   trueDefault,
 }: ToneSelectProps) => {
+  const intl = useIntl();
   const toneById = useAppStore((state) => state.toneById);
   const defaultTone = useAppStore((state) => {
     const userPreferences = getMyUserPreferences(state);
@@ -132,7 +134,15 @@ export const ToneSelect = ({
               width="100%"
             >
               <div>{tone.name}</div>
-              {!tone.isSystem && (
+              {tone.isGlobal ? (
+                <Tooltip
+                  title={intl.formatMessage({
+                    defaultMessage: "This is a global style and cannot be edited",
+                  })}
+                >
+                  <Public fontSize="small" sx={{ color: "text.secondary" }} />
+                </Tooltip>
+              ) : !tone.isSystem ? (
                 <IconButton
                   size="small"
                   onClick={(event) => {
@@ -144,7 +154,7 @@ export const ToneSelect = ({
                 >
                   <Edit fontSize="small" />
                 </IconButton>
-              )}
+              ) : null}
             </Stack>
           </MenuItem>
         ))}
