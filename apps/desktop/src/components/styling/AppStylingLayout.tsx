@@ -8,7 +8,7 @@ import { getGenerativePrefs } from "../../utils/user.utils";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { ToneSelect } from "../tones/ToneSelect";
 import { PostProcessingDisabledTooltip } from "./PostProcessingDisabledTooltip";
-import { StylingRow } from "./StylingRow";
+import { AppStylingRow } from "./AppStylingRow";
 
 export function AppStylingLayout() {
   const intl = useIntl();
@@ -55,7 +55,7 @@ export function AppStylingLayout() {
       }
       items={sortedAppTargetIds}
       computeItemKey={(id) => id}
-      renderItem={(id) => <StylingRow key={id} id={id} />}
+      renderItem={(id) => <AppStylingRow key={id} id={id} />}
       emptyState={
         <Stack
           spacing={1}
@@ -64,16 +64,17 @@ export function AppStylingLayout() {
           alignSelf="center"
           mx="auto"
         >
-          <Typography variant="h6">How it works</Typography>
-          <Typography variant="body2">
-            1. Open up the app you want to style (like Slack or Chrome).
+          <Typography variant="h6">
+            <FormattedMessage defaultMessage="How it works" />
           </Typography>
           <Typography variant="body2">
-            2. Click on the Voquill icon in the menu bar, and click "Register
-            this app".
+            <FormattedMessage defaultMessage="1. Open up the app you want to style (like Slack or Chrome)." />
           </Typography>
           <Typography variant="body2">
-            3. Go back to Voquill, and select a writing style for that app.
+            <FormattedMessage defaultMessage='2. Click on the Voquill icon in the menu bar, and click "Register this app".' />
+          </Typography>
+          <Typography variant="body2">
+            <FormattedMessage defaultMessage="3. Go back to Voquill, and select a writing style for that app." />
           </Typography>
         </Stack>
       }

@@ -19,11 +19,11 @@ import { StorageImage } from "../common/StorageImage";
 import { ToneSelect } from "../tones/ToneSelect";
 import { PostProcessingDisabledTooltip } from "./PostProcessingDisabledTooltip";
 
-export type StylingRowProps = {
+export type AppStylingRowProps = {
   id: string;
 };
 
-export const StylingRow = ({ id }: StylingRowProps) => {
+export const AppStylingRow = ({ id }: AppStylingRowProps) => {
   const intl = useIntl();
   const target = useAppStore((state) => getRec(state.appTargetById, id));
   const isPostProcessingDisabled = useAppStore(
