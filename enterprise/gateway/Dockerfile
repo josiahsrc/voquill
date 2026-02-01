@@ -28,15 +28,16 @@ CMD ["npm", "run", "dev", "--workspace=@repo/enterprise-gateway"]
 
 FROM node:20-alpine AS production
 
+RUN apk add --no-cache python3 make g++
+
 ARG GATEWAY_VERSION=0.0.1
 ENV GATEWAY_VERSION=${GATEWAY_VERSION}
 
 WORKDIR /app
 
 COPY --from=builder /app/enterprise/gateway/dist ./dist
-COPY --from=builder /app/enterprise/gateway/src/db/migrations ./dist/db/migrations
-COPY --from=builder /app/enterprise/gateway/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
+
+RUN echo '{}' > package.json && npm install bcrypt@6
 
 COPY --from=builder /app/enterprise/LICENCE ./LICENCE
 
