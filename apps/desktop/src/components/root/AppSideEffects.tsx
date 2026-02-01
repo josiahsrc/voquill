@@ -58,6 +58,7 @@ export const AppSideEffects = () => {
   const [streamReady, setStreamReady] = useState(false);
   const [initReady, setInitReady] = useState(false);
   const [enterpriseReady, setEnterpriseReady] = useState(false);
+  const tokensRefreshedRef = useRef(false);
   const authReadyRef = useRef(false);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const userId = useAppStore((state) => state.auth?.uid ?? "");
@@ -143,6 +144,11 @@ export const AppSideEffects = () => {
       draft.enterpriseLicense = license;
       draft.isEnterprise = isEnterprise;
     });
+
+    if (!tokensRefreshedRef.current) {
+      tokensRefreshedRef.current = true;
+      await getAuthRepo().refreshTokens();
+    }
 
     setEnterpriseReady(true);
   }, []);
