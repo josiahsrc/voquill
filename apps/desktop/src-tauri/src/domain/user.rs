@@ -31,6 +31,8 @@ pub struct User {
     pub cohort: Option<String>,
     #[serde(default)]
     pub styling_mode: Option<String>,
+    #[serde(default)]
+    pub selected_tone_id: Option<String>,
 }
 
 const fn default_play_interaction_chime() -> bool {

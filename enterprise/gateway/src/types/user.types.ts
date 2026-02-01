@@ -22,4 +22,5 @@ export type UserRow = {
   cohort: Nullable<string>;
   should_show_upgrade_dialog: boolean;
   styling_mode: string | null;
+  selected_tone_id: string | null;
 };

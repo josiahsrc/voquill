@@ -22,6 +22,7 @@ type LocalUser = {
   hasFinishedTutorial?: boolean;
   cohort?: string | null;
   stylingMode?: string | null;
+  selectedToneId?: string | null;
 };
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -52,6 +53,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
     hasFinishedTutorial: localUser.hasFinishedTutorial ?? false,
     cohort: localUser.cohort ?? null,
     stylingMode: (localUser.stylingMode as User["stylingMode"]) ?? null,
+    selectedToneId: localUser.selectedToneId ?? null,
   };
 };
 
@@ -71,6 +73,7 @@ const toLocalUser = (user: User): LocalUser => ({
   hasFinishedTutorial: user.hasFinishedTutorial,
   cohort: user.cohort ?? null,
   stylingMode: user.stylingMode ?? null,
+  selectedToneId: user.selectedToneId ?? null,
 });
 
 export abstract class BaseUserRepo extends BaseRepo {

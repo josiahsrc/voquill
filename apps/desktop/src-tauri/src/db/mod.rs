@@ -89,6 +89,8 @@ pub const TRANSCRIPTION_SANITIZED_TRANSCRIPT_MIGRATION_SQL: &str =
     include_str!("migrations/047_transcription_sanitized_transcript.sql");
 pub const USER_STYLING_MODE_MIGRATION_SQL: &str =
     include_str!("migrations/048_user_styling_mode.sql");
+pub const USER_SELECTED_TONE_ID_MIGRATION_SQL: &str =
+    include_str!("migrations/049_user_selected_tone_id.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -378,6 +380,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 48,
             description: "add_user_styling_mode",
             sql: USER_STYLING_MODE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 49,
+            description: "add_user_selected_tone_id",
+            sql: USER_SELECTED_TONE_ID_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

@@ -109,6 +109,63 @@ describe("user", () => {
     expect(data.user.stylingMode).toBe("manual");
   });
 
+  it("defaults selectedToneId to null", async () => {
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.selectedToneId).toBeNull();
+  });
+
+  it("sets and retrieves selectedToneId", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          selectedToneId: "tone-123",
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.selectedToneId).toBe("tone-123");
+  });
+
+  it("can set selectedToneId back to null", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          selectedToneId: null,
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.selectedToneId).toBeNull();
+  });
+
   it("can set stylingMode back to null", async () => {
     await invoke(
       "user/setMyUser",

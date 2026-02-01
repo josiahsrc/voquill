@@ -20,9 +20,10 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              has_finished_tutorial,
              has_migrated_preferred_microphone,
              cohort,
-             styling_mode
+             styling_mode,
+             selected_tone_id
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
@@ -38,7 +39,8 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
             has_finished_tutorial = excluded.has_finished_tutorial,
             has_migrated_preferred_microphone = excluded.has_migrated_preferred_microphone,
             cohort = excluded.cohort,
-            styling_mode = excluded.styling_mode",
+            styling_mode = excluded.styling_mode,
+            selected_tone_id = excluded.selected_tone_id",
     )
     .bind(&user.id)
     .bind(&user.name)
@@ -56,6 +58,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(if user.has_migrated_preferred_microphone { 1 } else { 0 })
     .bind(&user.cohort)
     .bind(&user.styling_mode)
+    .bind(&user.selected_tone_id)
     .execute(&pool)
     .await?;
 
@@ -80,7 +83,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             has_finished_tutorial,
             has_migrated_preferred_microphone,
             cohort,
-            styling_mode
+            styling_mode,
+            selected_tone_id
          FROM user_profiles
          LIMIT 1",
     )
@@ -116,6 +120,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 has_migrated_preferred_microphone: migrated_microphone_raw != 0,
                 cohort: row.try_get::<Option<String>, _>("cohort").unwrap_or(None),
                 styling_mode: row.try_get::<Option<String>, _>("styling_mode").unwrap_or(None),
+                selected_tone_id: row.try_get::<Option<String>, _>("selected_tone_id").unwrap_or(None),
             })
         }
         None => None,

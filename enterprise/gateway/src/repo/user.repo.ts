@@ -25,6 +25,7 @@ function rowToUser(row: UserRow): User {
     cohort: row.cohort,
     shouldShowUpgradeDialog: row.should_show_upgrade_dialog,
     stylingMode: row.styling_mode as User["stylingMode"],
+    selectedToneId: row.selected_tone_id,
   };
 }
 
@@ -58,6 +59,7 @@ function defaultUser(id: string): User {
     cohort: null,
     shouldShowUpgradeDialog: false,
     stylingMode: null,
+    selectedToneId: null,
   };
 }
 
@@ -93,8 +95,8 @@ export async function upsertUser(
         timezone, preferred_language, preferred_microphone,
         play_interaction_chime, has_finished_tutorial,
         words_this_month, words_this_month_month, words_total,
-        has_migrated_preferred_microphone, cohort, should_show_upgrade_dialog, styling_mode
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+        has_migrated_preferred_microphone, cohort, should_show_upgrade_dialog, styling_mode, selected_tone_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
       [
         id,
         value.name ?? "",
@@ -115,6 +117,7 @@ export async function upsertUser(
         value.cohort ?? null,
         value.shouldShowUpgradeDialog ?? false,
         value.stylingMode ?? null,
+        value.selectedToneId ?? null,
       ],
     );
     return;
@@ -143,6 +146,7 @@ export async function upsertUser(
     cohort: "cohort",
     shouldShowUpgradeDialog: "should_show_upgrade_dialog",
     stylingMode: "styling_mode",
+    selectedToneId: "selected_tone_id",
   };
 
   for (const [key, column] of Object.entries(fieldMap)) {
