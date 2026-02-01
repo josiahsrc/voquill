@@ -5,6 +5,7 @@
   "admin": "관리자",
   "admin_version": "관리자: {version}",
   "ai_providers": "AI 제공업체",
+  "allow_users_to_change_agent_mode": "사용자가 에이전트 모드를 변경하도록 허용",
   "allow_users_to_change_post_processing_method": "사용자가 후처리 방식을 변경하도록 허용",
   "allow_users_to_change_transcription_method": "사용자가 전사 방식을 변경하도록 허용",
   "already_have_an_account_link": "이미 계정이 있나요? {link}",

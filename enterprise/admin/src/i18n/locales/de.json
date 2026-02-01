@@ -5,6 +5,7 @@
   "admin": "Admin",
   "admin_version": "Administrator: {version}",
   "ai_providers": "KI-Anbieter",
+  "allow_users_to_change_agent_mode": "Benutzern erlauben, den Agentenmodus zu ändern",
   "allow_users_to_change_post_processing_method": "Benutzern erlauben, die Nachbearbeitungsmethode zu ändern",
   "allow_users_to_change_transcription_method": "Benutzern erlauben, die Transkriptionsmethode zu ändern",
   "already_have_an_account_link": "Sie haben bereits ein Konto? {link}",

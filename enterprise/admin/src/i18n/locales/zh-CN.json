@@ -5,6 +5,7 @@
   "admin": "管理员",
   "admin_version": "管理员: {version}",
   "ai_providers": "AI 提供商",
+  "allow_users_to_change_agent_mode": "允许用户更改代理模式",
   "allow_users_to_change_post_processing_method": "允许用户更改后处理方法",
   "allow_users_to_change_transcription_method": "允许用户更改转录方式",
   "already_have_an_account_link": "已有账号？{link}",

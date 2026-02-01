@@ -5,6 +5,7 @@
   "admin": "Amministratore",
   "admin_version": "Amministratore: {version}",
   "ai_providers": "Fornitori di IA",
+  "allow_users_to_change_agent_mode": "Consenti agli utenti di modificare la modalità agente",
   "allow_users_to_change_post_processing_method": "Consenti agli utenti di modificare il metodo di post-elaborazione",
   "allow_users_to_change_transcription_method": "Consenti agli utenti di modificare il metodo di trascrizione",
   "already_have_an_account_link": "Hai già un account? {link}",
