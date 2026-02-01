@@ -219,7 +219,7 @@ export const ToneEditorDialog = () => {
               value={promptTemplate}
               onChange={(event) => setPromptTemplate(event.target.value)}
               multiline
-              rows={12}
+              rows={7}
               fullWidth
               placeholder="Make it sound like a professional but friendly email. Use jargon and fun words."
               inputProps={{ maxLength: MAX_PROMPT_LEN }}
