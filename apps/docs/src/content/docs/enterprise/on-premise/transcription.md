@@ -15,19 +15,6 @@ Add the following service to the `docker-compose.yml` you created during [initia
 
 ```yaml
 speaches:
-  image: ghcr.io/speaches-ai/speaches:latest-cpu
-  ports:
-    - "8000:8000"
-  volumes:
-    - speaches_data:/home/ubuntu/.cache
-  networks:
-    - voquill
-```
-
-If your server has an NVIDIA GPU, use the CUDA image instead for faster inference:
-
-```yaml
-speaches:
   image: ghcr.io/speaches-ai/speaches:latest-cuda
   ports:
     - "8000:8000"
@@ -42,6 +29,19 @@ speaches:
           - driver: nvidia
             count: all
             capabilities: [gpu]
+```
+
+If your server doesn't have a GPU, use the CPU image instead:
+
+```yaml
+speaches:
+  image: ghcr.io/speaches-ai/speaches:latest-cpu
+  ports:
+    - "8000:8000"
+  volumes:
+    - speaches_data:/home/ubuntu/.cache
+  networks:
+    - voquill
 ```
 
 And add the volume to your existing `volumes` section:
