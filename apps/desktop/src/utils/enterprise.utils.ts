@@ -69,20 +69,22 @@ export async function invokeEnterprise<N extends HandlerName>(
   return body.data;
 }
 
-export const getAllowsChangePostProcessing = (
-  state: AppState,
-): boolean => {
+export const getAllowsChangePostProcessing = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangePostProcessing ?? true;
 };
 
-export const getAllowsChangeTranscription = (
-  state: AppState,
-): boolean => {
+export const getAllowsChangeTranscription = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangeTranscriptionMethod ?? true;
 };
 
-export const getAllowsChangeAgentMode = (
-  state: AppState,
-): boolean => {
+export const getAllowsChangeAgentMode = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangeAgentMode ?? true;
+};
+
+export const getAllowChangeStylingMode = (state: AppState): boolean => {
+  if (!state.enterpriseConfig) {
+    return true;
+  }
+
+  return state.enterpriseConfig.stylingMode === "any";
 };
