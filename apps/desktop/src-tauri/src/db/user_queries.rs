@@ -21,9 +21,10 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              has_migrated_preferred_microphone,
              cohort,
              styling_mode,
-             selected_tone_id
+             selected_tone_id,
+             active_tone_ids
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
@@ -40,7 +41,8 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
             has_migrated_preferred_microphone = excluded.has_migrated_preferred_microphone,
             cohort = excluded.cohort,
             styling_mode = excluded.styling_mode,
-            selected_tone_id = excluded.selected_tone_id",
+            selected_tone_id = excluded.selected_tone_id,
+            active_tone_ids = excluded.active_tone_ids",
     )
     .bind(&user.id)
     .bind(&user.name)
@@ -59,6 +61,7 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(&user.cohort)
     .bind(&user.styling_mode)
     .bind(&user.selected_tone_id)
+    .bind(&user.active_tone_ids)
     .execute(&pool)
     .await?;
 
@@ -84,7 +87,8 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             has_migrated_preferred_microphone,
             cohort,
             styling_mode,
-            selected_tone_id
+            selected_tone_id,
+            active_tone_ids
          FROM user_profiles
          LIMIT 1",
     )
@@ -121,6 +125,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 cohort: row.try_get::<Option<String>, _>("cohort").unwrap_or(None),
                 styling_mode: row.try_get::<Option<String>, _>("styling_mode").unwrap_or(None),
                 selected_tone_id: row.try_get::<Option<String>, _>("selected_tone_id").unwrap_or(None),
+                active_tone_ids: row.try_get::<Option<String>, _>("active_tone_ids").unwrap_or(None),
             })
         }
         None => None,

@@ -140,6 +140,63 @@ describe("user", () => {
     expect(data.user.selectedToneId).toBe("tone-123");
   });
 
+  it("defaults activeToneIds to null", async () => {
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.activeToneIds).toBeNull();
+  });
+
+  it("sets and retrieves activeToneIds", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          activeToneIds: ["tone-a", "tone-b"],
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.activeToneIds).toEqual(["tone-a", "tone-b"]);
+  });
+
+  it("can set activeToneIds back to null", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          activeToneIds: null,
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.activeToneIds).toBeNull();
+  });
+
   it("can set selectedToneId back to null", async () => {
     await invoke(
       "user/setMyUser",

@@ -26,6 +26,7 @@ export type DatabaseUser = {
   shouldShowUpgradeDialog?: boolean;
   stylingMode?: Nullable<StylingMode>;
   selectedToneId?: Nullable<string>;
+  activeToneIds?: Nullable<string[]>;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
@@ -59,5 +60,6 @@ export const UserZod = z
     shouldShowUpgradeDialog: z.boolean().optional(),
     stylingMode: StylingModeZod.nullable().optional(),
     selectedToneId: z.string().nullable().optional(),
+    activeToneIds: z.array(z.string()).nullable().optional(),
   })
   .strict() satisfies z.ZodType<User>;

@@ -60,6 +60,39 @@ describe("api", () => {
 		expect(myUser?.selectedToneId).toBe("tone-abc");
 	});
 
+	it("sets and retrieves activeToneIds", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ activeToneIds: ["tone-x", "tone-y"] });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.activeToneIds).toEqual(["tone-x", "tone-y"]);
+	});
+
+	it("can set activeToneIds to null", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ activeToneIds: ["tone-x"] }),
+		});
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ activeToneIds: null }),
+		});
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.activeToneIds).toBeNull();
+	});
+
 	it("can set selectedToneId to null", async () => {
 		const creds = await createUserCreds();
 		await signInWithCreds(creds);
