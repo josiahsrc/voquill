@@ -1,11 +1,18 @@
 import { Tone } from "@repo/types";
 import dayjs from "dayjs";
+import { getIntl } from "../i18n/intl";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
 import { ToneEditorMode } from "../state/tone-editor.state";
 import { getAppState, produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";
+import {
+  getActiveManualToneIds,
+  getManuallySelectedToneId,
+  getToneById,
+} from "../utils/tone.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
-import { activateAndSelectTone } from "./user.actions";
+import { showToast } from "./toast.actions";
+import { activateAndSelectTone, setSelectedToneId } from "./user.actions";
 
 export const loadTones = async (): Promise<void> => {
   const tones = await getToneRepo().listTones();
@@ -128,6 +135,50 @@ export const openToneEditorDialog = (options: {
     draft.toneEditor.mode = options.mode;
     draft.toneEditor.toneId = options.toneId ?? null;
     draft.toneEditor.targetId = options.targetId ?? null;
+  });
+};
+
+export const switchWritingStyle = async (): Promise<void> => {
+  const state = getAppState();
+  const activeIds = getActiveManualToneIds(state);
+  const currentId = getManuallySelectedToneId(state);
+  const intl = getIntl();
+
+  if (activeIds.length <= 1) {
+    const toneName = getToneById(state, currentId)?.name ?? currentId;
+    await showToast({
+      title: intl.formatMessage({
+        defaultMessage: "Writing style not changed",
+      }),
+      message: intl.formatMessage(
+        {
+          defaultMessage:
+            '"{toneName}" is your only active style. Add more styles from the writing styles menu.',
+        },
+        { toneName },
+      ),
+      toastType: "info",
+    });
+    return;
+  }
+
+  const currentIndex = activeIds.indexOf(currentId);
+  const nextIndex = (currentIndex + 1) % activeIds.length;
+  const nextId = activeIds[nextIndex];
+  await setSelectedToneId(nextId);
+
+  const toneName = getToneById(getAppState(), nextId)?.name ?? nextId;
+  await showToast({
+    title: intl.formatMessage({
+      defaultMessage: "Writing style changed",
+    }),
+    message: intl.formatMessage(
+      {
+        defaultMessage: 'Now using "{toneName}"',
+      },
+      { toneName },
+    ),
+    toastType: "info",
   });
 };
 

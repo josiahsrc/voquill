@@ -16,7 +16,7 @@ import { refreshMember } from "../../actions/member.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
-import { loadTones } from "../../actions/tone.actions";
+import { loadTones, switchWritingStyle } from "../../actions/tone.actions";
 import { storeTranscription } from "../../actions/transcribe.actions";
 import {
   checkForAppUpdates,
@@ -61,12 +61,14 @@ import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
   LANGUAGE_SWITCH_HOTKEY,
+  SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   daysToMilliseconds,
   minutesToMilliseconds,
 } from "../../utils/time.utils";
+import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import { getToneIdToUse } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
@@ -564,6 +566,19 @@ export const RootSideEffects = () => {
     actionName: LANGUAGE_SWITCH_HOTKEY,
     isDisabled: !languageSwitchEnabled,
     onFire: handleLanguageSwitch,
+  });
+
+  const isManualStyling = useAppStore(
+    (state) => getEffectiveStylingMode(state) === "manual",
+  );
+  const handleSwitchWritingStyle = useCallback(() => {
+    void switchWritingStyle();
+  }, []);
+
+  useHotkeyFire({
+    actionName: SWITCH_WRITING_STYLE_HOTKEY,
+    isDisabled: !isManualStyling,
+    onFire: handleSwitchWritingStyle,
   });
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
