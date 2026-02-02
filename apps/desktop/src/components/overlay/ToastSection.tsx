@@ -80,6 +80,7 @@ export const ToastSection = () => {
 
   return (
     <Box
+      key={displayedToast.id}
       sx={{
         position: "absolute",
         top: 8,
