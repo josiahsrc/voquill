@@ -47,12 +47,7 @@ export const getMyCloudUserId = (state: AppState): Nullable<string> =>
   state.auth?.uid ?? null;
 
 export const getMyEffectiveUserId = (state: AppState): string => {
-  const isCloud = getHasCloudAccess(state);
-  if (isCloud) {
-    return getMyCloudUserId(state) ?? LOCAL_USER_ID;
-  }
-
-  return LOCAL_USER_ID;
+  return state.auth?.uid ?? LOCAL_USER_ID;
 };
 
 export const getMyUser = (state: AppState): Nullable<User> => {
