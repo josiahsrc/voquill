@@ -124,7 +124,9 @@ export const AppSideEffects = () => {
   }, []);
 
   useIntervalAsync(ENTERPRISE_REFRESH_INTERVAL_MS, async () => {
-    await loadEnterpriseTarget();
+    console.log("Loading enterprise target...");
+    const path = await loadEnterpriseTarget();
+    console.log("Enterprise target reloaded from", path);
 
     let config: Nullable<EnterpriseConfig> = null;
     let license: Nullable<EnterpriseLicense> = null;

@@ -9,24 +9,24 @@ type EnterpriseTarget = {
 
 let _cachedTarget: Nullable<EnterpriseTarget> = null;
 
-export async function loadEnterpriseTarget(): Promise<void> {
-  const raw = await invoke<string | null>("read_enterprise_target").catch(
-    (e) => {
-      console.error("Failed to read enterprise target:", e);
-      return null;
-    }
-  );
+export async function loadEnterpriseTarget(): Promise<Nullable<string>> {
+  const [path, raw] = await invoke<[string, string | null]>(
+    "read_enterprise_target",
+  ).catch(() => {
+    return [null, null] as [null, null];
+  });
 
   if (raw) {
     try {
       _cachedTarget = JSON.parse(raw) as EnterpriseTarget;
-    } catch (e) {
-      console.error("Enterprise json parsing failed:", e);
+    } catch {
       _cachedTarget = null;
     }
   } else {
     _cachedTarget = null;
   }
+
+  return path;
 }
 
 export function getEnterpriseTarget(): Nullable<EnterpriseTarget> {
@@ -73,20 +73,14 @@ export async function invokeEnterprise<N extends HandlerName>(
   return body.data;
 }
 
-export const getAllowsChangePostProcessing = (
-  state: AppState,
-): boolean => {
+export const getAllowsChangePostProcessing = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangePostProcessing ?? true;
 };
 
-export const getAllowsChangeTranscription = (
-  state: AppState,
-): boolean => {
+export const getAllowsChangeTranscription = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangeTranscriptionMethod ?? true;
 };
 
-export const getAllowsChangeAgentMode = (
-  state: AppState,
-): boolean => {
+export const getAllowsChangeAgentMode = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangeAgentMode ?? true;
 };
