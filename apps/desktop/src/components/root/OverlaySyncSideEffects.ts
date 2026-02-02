@@ -20,6 +20,8 @@ const buildFullSyncPayload = (state: AppState): OverlaySyncPayload => ({
   auth: state.auth,
   memberById: state.memberById,
   onboarding: state.onboarding,
+  toneById: state.toneById,
+  enterpriseConfig: state.enterpriseConfig,
 });
 
 const useOverlaySync = <T>(
@@ -92,6 +94,16 @@ export const OverlaySyncSideEffects = () => {
     OVERLAY_TARGETS,
     (s) => s.onboarding,
     (onboarding) => ({ onboarding }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.toneById,
+    (toneById) => ({ toneById }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.enterpriseConfig,
+    (enterpriseConfig) => ({ enterpriseConfig }),
   );
 
   return null;

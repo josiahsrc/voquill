@@ -132,7 +132,7 @@ export const openToneEditorDialog = (options: {
   });
 };
 
-export const switchWritingStyle = async (): Promise<void> => {
+const cycleWritingStyle = async (direction: 1 | -1): Promise<void> => {
   const state = getAppState();
   const activeIds = getActiveManualToneIds(state);
   const currentId = getManuallySelectedToneId(state);
@@ -157,7 +157,8 @@ export const switchWritingStyle = async (): Promise<void> => {
   }
 
   const currentIndex = activeIds.indexOf(currentId);
-  const nextIndex = (currentIndex + 1) % activeIds.length;
+  const nextIndex =
+    (currentIndex + direction + activeIds.length) % activeIds.length;
   const nextId = activeIds[nextIndex];
   await setSelectedToneId(nextId);
 
@@ -175,6 +176,9 @@ export const switchWritingStyle = async (): Promise<void> => {
     toastType: "info",
   });
 };
+
+export const switchWritingStyleForward = () => cycleWritingStyle(1);
+export const switchWritingStyleBackward = () => cycleWritingStyle(-1);
 
 export const closeToneEditorDialog = (): void => {
   produceAppState((draft) => {

@@ -16,7 +16,11 @@ import { refreshMember } from "../../actions/member.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
-import { loadTones, switchWritingStyle } from "../../actions/tone.actions";
+import {
+  loadTones,
+  switchWritingStyleForward,
+  switchWritingStyleBackward,
+} from "../../actions/tone.actions";
 import { storeTranscription } from "../../actions/transcribe.actions";
 import {
   checkForAppUpdates,
@@ -572,7 +576,7 @@ export const RootSideEffects = () => {
     (state) => getEffectiveStylingMode(state) === "manual",
   );
   const handleSwitchWritingStyle = useCallback(() => {
-    void switchWritingStyle();
+    void switchWritingStyleForward();
   }, []);
 
   useHotkeyFire({
@@ -647,6 +651,14 @@ export const RootSideEffects = () => {
 
   useTauriListen<void>("on-click-dictate", () => {
     debouncedToggle("dictation", dictationController);
+  });
+
+  useTauriListen<void>("tone-switch-forward", () => {
+    void switchWritingStyleForward();
+  });
+
+  useTauriListen<void>("tone-switch-backward", () => {
+    void switchWritingStyleBackward();
   });
 
   const trayLanguageCode = useAppStore((state) => {
