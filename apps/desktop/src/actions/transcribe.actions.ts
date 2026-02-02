@@ -21,7 +21,7 @@ import {
   extractTextFieldContext,
 } from "../utils/accessibility.utils";
 import { createId } from "../utils/id.utils";
-import { mapLocaleToWhisperLanguage } from "../utils/language.utils";
+import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
 import {
   buildLocalizedPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
@@ -105,7 +105,7 @@ export const transcribeAudio = async ({
   warnings.push(...transcribeWarnings);
 
   const dictationLanguage = getMyDictationLanguage(state);
-  const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
+  const whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
   const baseTranscriptionPrompt =
