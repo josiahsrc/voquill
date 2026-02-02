@@ -1,4 +1,5 @@
 import { Tone } from "@repo/types";
+import { emitTo } from "@tauri-apps/api/event";
 import { getIntl } from "../i18n/intl";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
 import { ToneEditorMode } from "../state/tone-editor.state";
@@ -162,19 +163,9 @@ const cycleWritingStyle = async (direction: 1 | -1): Promise<void> => {
   const nextId = activeIds[nextIndex];
   await setSelectedToneId(nextId);
 
-  const toneName = getToneById(getAppState(), nextId)?.name ?? nextId;
-  await showToast({
-    title: intl.formatMessage({
-      defaultMessage: "Writing style changed",
-    }),
-    message: intl.formatMessage(
-      {
-        defaultMessage: 'Now using "{toneName}"',
-      },
-      { toneName },
-    ),
-    toastType: "info",
-  });
+  emitTo("pill-overlay", "flash_pill_tooltip", { duration: 2000 }).catch(
+    console.error,
+  );
 };
 
 export const switchWritingStyleForward = () => cycleWritingStyle(1);

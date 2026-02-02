@@ -4,7 +4,7 @@ import { Box, LinearProgress, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -46,9 +46,15 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
+type FlashPillPayload = {
+  duration: number;
+};
+
 export const PillOverlayRoot = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isFlashingTooltip, setIsFlashingTooltip] = useState(false);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const theme = useTheme();
   const phase = useAppStore((state) => state.overlayPhase);
   const levels = useAppStore((state) => state.audioLevels);
@@ -79,6 +85,17 @@ export const PillOverlayRoot = () => {
   useTauriListen<PillExpandedPayload>("pill_expanded", (payload) => {
     setIsExpanded(payload.expanded);
     setIsHovered(payload.hovered);
+  });
+
+  useTauriListen<FlashPillPayload>("flash_pill_tooltip", (payload) => {
+    setIsFlashingTooltip(true);
+    if (flashTimerRef.current) {
+      clearTimeout(flashTimerRef.current);
+    }
+    flashTimerRef.current = setTimeout(() => {
+      setIsFlashingTooltip(false);
+      flashTimerRef.current = null;
+    }, payload.duration);
   });
 
   useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
@@ -149,11 +166,17 @@ export const PillOverlayRoot = () => {
       {/* Tooltip */}
       <Box
         sx={{
-          opacity: isHovered && isIdle ? 1 : 0,
-          transform: isHovered && isIdle ? "translateY(0)" : "translateY(4px)",
+          opacity: (isHovered && isIdle) || isFlashingTooltip ? 1 : 0,
+          transform:
+            (isHovered && isIdle) || isFlashingTooltip
+              ? "translateY(0)"
+              : "translateY(4px)",
           transition: "all 150ms ease-out",
           marginBottom: theme.spacing(1),
-          pointerEvents: isManualMode && isHovered && isIdle ? "auto" : "none",
+          pointerEvents:
+            isManualMode && ((isHovered && isIdle) || isFlashingTooltip)
+              ? "auto"
+              : "none",
         }}
       >
         <Box
@@ -189,16 +212,22 @@ export const PillOverlayRoot = () => {
                   sx={{
                     fontSize: "16px",
                     cursor: "pointer",
+                    opacity: isHovered ? 1 : 0,
+                    width: isHovered ? 16 : 0,
+                    transition: "opacity 200ms ease-out, width 150ms ease-out",
+                    overflow: "hidden",
+                    flexShrink: 0,
                   }}
                 />
                 <Box
                   component="span"
                   sx={{
-                    width: 82,
+                    width: isFlashingTooltip && !isHovered ? 140 : 82,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                     textAlign: "center",
+                    transition: "width 150ms ease-out",
                   }}
                 >
                   {activeToneName}
@@ -214,6 +243,11 @@ export const PillOverlayRoot = () => {
                   sx={{
                     fontSize: "16px",
                     cursor: "pointer",
+                    opacity: isHovered ? 1 : 0,
+                    width: isHovered ? 16 : 0,
+                    transition: "opacity 200ms ease-out, width 150ms ease-out",
+                    overflow: "hidden",
+                    flexShrink: 0,
                   }}
                 />
               </>
