@@ -9,7 +9,7 @@ type EnterpriseTarget = {
 
 let _cachedTarget: Nullable<EnterpriseTarget> = null;
 
-export async function loadEnterpriseTarget(): Promise<Nullable<string>> {
+export async function loadEnterpriseTarget(): Promise<unknown> {
   const [path, raw] = await invoke<[string, string | null]>(
     "read_enterprise_target",
   ).catch(() => {
@@ -26,7 +26,7 @@ export async function loadEnterpriseTarget(): Promise<Nullable<string>> {
     _cachedTarget = null;
   }
 
-  return path;
+  return { path, raw };
 }
 
 export function getEnterpriseTarget(): Nullable<EnterpriseTarget> {
