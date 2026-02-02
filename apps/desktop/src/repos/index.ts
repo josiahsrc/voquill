@@ -8,7 +8,6 @@ import {
   GenerativePrefs,
   getAgentModePrefs,
   getGenerativePrefs,
-  getHasCloudAccess,
   getTranscriptionPrefs,
 } from "../utils/user.utils";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
@@ -81,7 +80,7 @@ import {
 } from "./user.repo";
 
 const isEnterprise = () => getIsEnterpriseEnabled();
-const shouldUseCloud = () => getHasCloudAccess(getAppState());
+const isLoggedIn = () => !!getAppState().auth;
 
 export const getMemberRepo = (): BaseMemberRepo => {
   return isEnterprise() ? new EnterpriseMemberRepo() : new CloudMemberRepo();
@@ -108,7 +107,7 @@ export const getUserRepo = (): BaseUserRepo => {
     return new EnterpriseUserRepo();
   }
 
-  return shouldUseCloud() ? new CloudUserRepo() : new LocalUserRepo();
+  return isLoggedIn() ? new CloudUserRepo() : new LocalUserRepo();
 };
 
 export const getUserPreferencesRepo = (): BaseUserPreferencesRepo => {
@@ -127,7 +126,7 @@ export const getTermRepo = (): BaseTermRepo => {
   if (isEnterprise()) {
     return new EnterpriseTermRepo();
   }
-  return shouldUseCloud() ? new CloudTermRepo() : new LocalTermRepo();
+  return isLoggedIn() ? new CloudTermRepo() : new LocalTermRepo();
 };
 
 export const getHotkeyRepo = (): BaseHotkeyRepo => {

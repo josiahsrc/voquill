@@ -30,7 +30,10 @@ import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
-import { loadEnterpriseTarget } from "../../utils/enterprise.utils";
+import {
+  getEnterpriseTarget,
+  loadEnterpriseTarget,
+} from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
@@ -124,7 +127,14 @@ export const AppSideEffects = () => {
   }, []);
 
   useIntervalAsync(ENTERPRISE_REFRESH_INTERVAL_MS, async () => {
-    await loadEnterpriseTarget();
+    console.log("Loading enterprise target...");
+    const debugInfo = await loadEnterpriseTarget();
+
+    console.log(
+      "Enterprise target reloaded from",
+      debugInfo,
+      getEnterpriseTarget(),
+    );
 
     let config: Nullable<EnterpriseConfig> = null;
     let license: Nullable<EnterpriseLicense> = null;
@@ -192,7 +202,7 @@ export const AppSideEffects = () => {
         registerMembers(draft, listify(members));
       });
     },
-    dependencies: [userId, authReady],
+    dependencies: [userId, authReady, isEnterprise],
   });
 
   useAsyncEffect(async () => {
@@ -200,7 +210,7 @@ export const AppSideEffects = () => {
       await refreshCurrentUser();
       setInitReady(true);
     }
-  }, [authReady]);
+  }, [authReady, isEnterprise]);
 
   useEffect(() => {
     if (streamReady && initReady && !initialized && enterpriseReady) {
