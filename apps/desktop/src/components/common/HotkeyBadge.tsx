@@ -4,14 +4,16 @@ import { getPrettyKeyName } from "../../utils/keyboard.utils";
 
 type HotkeyBadgeProps = {
   keys: string[];
+  onClick?: () => void;
   sx?: SxProps<Theme>;
 };
 
-export const HotkeyBadge = ({ keys, sx }: HotkeyBadgeProps) => {
+export const HotkeyBadge = ({ keys, onClick, sx }: HotkeyBadgeProps) => {
   const label = keys.map(getPrettyKeyName).join(" + ");
 
   return (
     <Box
+      onClick={onClick}
       sx={{
         display: "inline-flex",
         alignItems: "center",
@@ -22,6 +24,12 @@ export const HotkeyBadge = ({ keys, sx }: HotkeyBadgeProps) => {
         py: 0.25,
         fontWeight: 600,
         bgcolor: (theme) => theme.vars?.palette.level1,
+        ...(onClick && {
+          cursor: "pointer",
+          "&:hover": {
+            bgcolor: "action.hover",
+          },
+        }),
         ...sx,
       }}
     >
