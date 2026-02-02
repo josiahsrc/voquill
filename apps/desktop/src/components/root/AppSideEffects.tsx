@@ -192,7 +192,7 @@ export const AppSideEffects = () => {
         registerMembers(draft, listify(members));
       });
     },
-    dependencies: [userId, authReady],
+    dependencies: [userId, authReady, isEnterprise],
   });
 
   useAsyncEffect(async () => {
@@ -200,7 +200,7 @@ export const AppSideEffects = () => {
       await refreshCurrentUser();
       setInitReady(true);
     }
-  }, [authReady]);
+  }, [authReady, isEnterprise]);
 
   useEffect(() => {
     if (streamReady && initReady && !initialized && enterpriseReady) {
