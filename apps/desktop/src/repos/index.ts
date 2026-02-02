@@ -141,7 +141,7 @@ export const getToneRepo = (): BaseToneRepo => {
   if (isEnterprise()) {
     return new EnterpriseToneRepo();
   }
-  return shouldUseCloud() ? new CloudToneRepo() : new LocalToneRepo();
+  return isLoggedIn() ? new CloudToneRepo() : new LocalToneRepo();
 };
 
 export const getStorageRepo = (): BaseStorageRepo => {

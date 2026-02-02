@@ -1,5 +1,4 @@
 import { Tone } from "@repo/types";
-import dayjs from "dayjs";
 import { getIntl } from "../i18n/intl";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
 import { ToneEditorMode } from "../state/tone-editor.state";
@@ -16,13 +15,8 @@ import { activateAndSelectTone, setSelectedToneId } from "./user.actions";
 
 export const loadTones = async (): Promise<void> => {
   const tones = await getToneRepo().listTones();
-  const activeTones = tones.sort(
-    (a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf(),
-  );
-
   produceAppState((draft) => {
     registerTones(draft, tones);
-    draft.tones.storedToneIds = activeTones.map((tone) => tone.id);
   });
 };
 
