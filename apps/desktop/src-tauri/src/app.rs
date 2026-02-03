@@ -231,6 +231,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_selected_text,
             crate::commands::initialize_local_transcriber,
             crate::commands::read_enterprise_target,
+            crate::commands::get_keyboard_language,
         ])
 }
 

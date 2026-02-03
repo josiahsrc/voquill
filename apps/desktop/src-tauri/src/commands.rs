@@ -1186,6 +1186,11 @@ pub async fn initialize_local_transcriber(
     Ok(true)
 }
 
+#[tauri::command]
+pub fn get_keyboard_language() -> Result<String, String> {
+    crate::platform::keyboard_language::get_keyboard_language()
+}
+
 /// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
 ///
 /// Platform paths:

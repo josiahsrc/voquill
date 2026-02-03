@@ -31,8 +31,8 @@ import {
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
 import {
-  getMyDictationLanguage,
   getMyEffectiveUserId,
+  loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { addWordsToCurrentUser } from "./user.actions";
@@ -103,7 +103,7 @@ export const transcribeAudio = async ({
   } = getTranscribeAudioRepo();
   warnings.push(...transcribeWarnings);
 
-  const dictationLanguage = getMyDictationLanguage(state);
+  const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
   const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
@@ -171,9 +171,8 @@ export const postProcessTranscript = async ({
   warnings.push(...genWarnings);
 
   let processedTranscript = rawTranscript;
-
   if (genRepo) {
-    const dictationLanguage = getMyDictationLanguage(state);
+    const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
     const myPrefs = state.userPrefs;
     const tone =
       getRec(state.toneById, toneId) ??
@@ -271,7 +270,10 @@ export const storeTranscription = async (
       return samples.length;
     }
 
-    if (samples && typeof (samples as { length?: number }).length === "number") {
+    if (
+      samples &&
+      typeof (samples as { length?: number }).length === "number"
+    ) {
       return (samples as { length: number }).length;
     }
 

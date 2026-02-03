@@ -45,6 +45,13 @@ pub use windows::position;
 #[cfg(target_os = "windows")]
 pub use windows::window;
 
+#[cfg(target_os = "linux")]
+pub use linux::keyboard_language;
+#[cfg(target_os = "macos")]
+pub use macos::keyboard_language;
+#[cfg(target_os = "windows")]
+pub use windows::keyboard_language;
+
 pub mod app_info;
 
 pub mod audio;

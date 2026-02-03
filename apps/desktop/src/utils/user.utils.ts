@@ -6,6 +6,7 @@ import {
   UserPreferences,
 } from "@repo/types";
 import { getRec } from "@repo/utilities";
+import { invoke } from "@tauri-apps/api/core";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 import type { AppState } from "../state/app.state";
@@ -16,6 +17,7 @@ import {
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
 } from "./enterprise.utils";
+import { KEYBOARD_LAYOUT_LANGUAGE } from "./language.utils";
 import { getEffectivePlan, getMemberExceedsLimitByState } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -75,7 +77,7 @@ export const getMyPrimaryDictationLanguage = (state: AppState): string => {
   return getDetectedSystemLocale();
 };
 
-export const getMyDictationLanguage = (state: AppState): string => {
+export const getMyRawDictationLanguage = (state: AppState): string => {
   const { enabled, secondaryLanguage, activeLanguage } =
     state.settings.languageSwitch;
 
@@ -86,8 +88,21 @@ export const getMyDictationLanguage = (state: AppState): string => {
   return getMyPrimaryDictationLanguage(state);
 };
 
-export const getMyDictationLanguageCode = (state: AppState): string => {
-  const language = getMyDictationLanguage(state);
+export const loadMyEffectiveDictationLanguage = async (
+  state: AppState,
+): Promise<string> => {
+  let lang = getMyRawDictationLanguage(state);
+  if (lang === KEYBOARD_LAYOUT_LANGUAGE) {
+    lang = await invoke<string>("get_keyboard_language").catch((e) => {
+      console.error("Failed to get keyboard language:", e);
+      return "en";
+    });
+  }
+
+  return lang;
+};
+
+export const formatDictationLanguageCode = (language: string): string => {
   const baseCode = language.split("-")[0];
   return baseCode.toUpperCase().slice(0, 2);
 };
