@@ -1,5 +1,6 @@
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import { secondsToMilliseconds } from "framer-motion";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
@@ -18,8 +19,8 @@ import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
 import {
   loadTones,
-  switchWritingStyleForward,
   switchWritingStyleBackward,
+  switchWritingStyleForward,
 } from "../../actions/tone.actions";
 import { storeTranscription } from "../../actions/transcribe.actions";
 import {
@@ -61,18 +62,19 @@ import {
   trackDictationStart,
 } from "../../utils/analytics.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
+import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
   LANGUAGE_SWITCH_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
+import { flashPillTooltip } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   daysToMilliseconds,
   minutesToMilliseconds,
 } from "../../utils/time.utils";
-import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import { getToneIdToUse } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
@@ -575,7 +577,16 @@ export const RootSideEffects = () => {
   const isManualStyling = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",
   );
+  const lastStyleSwitchRef = useRef(0);
   const handleSwitchWritingStyle = useCallback(() => {
+    const now = Date.now();
+    const elapsed = now - lastStyleSwitchRef.current;
+    lastStyleSwitchRef.current = now;
+    if (elapsed > secondsToMilliseconds(3)) {
+      flashPillTooltip();
+      return;
+    }
+
     void switchWritingStyleForward();
   }, []);
 
