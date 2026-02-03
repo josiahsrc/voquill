@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  unit-tests:
-    name: Desktop Unit Tests
+  ts-unit-tests:
+    name: Desktop TS Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
@@ -28,3 +28,30 @@ jobs:
 
       - name: Run desktop unit tests
         run: npm run test:unit --workspace=desktop
+
+  rust-unit-tests:
+    name: Desktop Rust Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          if apt-cache show libwebkit2gtk-4.1-dev >/dev/null 2>&1; then
+            WEBKIT_PKG=libwebkit2gtk-4.1-dev
+          else
+            WEBKIT_PKG=libwebkit2gtk-4.0-dev
+          fi
+          sudo apt-get install -y \
+            build-essential pkg-config cmake \
+            libgtk-3-dev "$WEBKIT_PKG" \
+            libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev
+
+      - name: Run Rust unit tests
+        working-directory: apps/desktop/src-tauri
+        run: cargo test --lib

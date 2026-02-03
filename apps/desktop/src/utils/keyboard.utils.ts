@@ -4,6 +4,7 @@ import { getPlatform } from "./platform.utils";
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
 export const LANGUAGE_SWITCH_HOTKEY = "language-switch";
+export const SWITCH_WRITING_STYLE_HOTKEY = "switch-writing-style";
 
 export const getPrettyKeyName = (key: string): string => {
   const lower = key.toLowerCase();

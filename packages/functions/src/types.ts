@@ -7,6 +7,8 @@ import {
   SttProviderInputZod,
   Term,
   TermZod,
+  Tone,
+  ToneZod,
   UserZod,
   type Auth,
   type EmptyObject,
@@ -137,6 +139,44 @@ type HandlerDefinitions = {
   "term/deleteGlobalTerm": {
     input: {
       termId: string;
+    };
+    output: EmptyObject;
+  };
+
+  // tone
+  "tone/listMyTones": {
+    input: EmptyObject;
+    output: {
+      tones: Tone[];
+    };
+  };
+  "tone/upsertMyTone": {
+    input: {
+      tone: Tone;
+    };
+    output: EmptyObject;
+  };
+  "tone/deleteMyTone": {
+    input: {
+      toneId: string;
+    };
+    output: EmptyObject;
+  };
+  "tone/listGlobalTones": {
+    input: EmptyObject;
+    output: {
+      tones: Tone[];
+    };
+  };
+  "tone/upsertGlobalTone": {
+    input: {
+      tone: Tone;
+    };
+    output: EmptyObject;
+  };
+  "tone/deleteGlobalTone": {
+    input: {
+      toneId: string;
     };
     output: EmptyObject;
   };
@@ -389,6 +429,18 @@ export const DeleteTermInputZod = z
     termId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"term/deleteMyTerm">>;
+
+export const UpsertToneInputZod = z
+  .object({
+    tone: ToneZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"tone/upsertMyTone">>;
+
+export const DeleteToneInputZod = z
+  .object({
+    toneId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"tone/deleteMyTone">>;
 
 export const AuthRegisterInputZod = z
   .object({

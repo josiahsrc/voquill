@@ -13,6 +13,7 @@ use crate::platform::{
     ChunkCallback, GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest,
 };
 use crate::system::crypto::{protect_api_key, reveal_api_key};
+use crate::utils::decode_to_utf8;
 use crate::system::models::WhisperModelSize;
 use crate::system::StorageRepo;
 use sqlx::Row;
@@ -1210,6 +1211,8 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
         return Ok((path_str, None));
     }
 
-    let content = std::fs::read_to_string(&path).map_err(|err| err.to_string())?;
+    let bytes = std::fs::read(&path).map_err(|err| err.to_string())?;
+    let content = decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
     Ok((path_str, Some(content)))
 }
+

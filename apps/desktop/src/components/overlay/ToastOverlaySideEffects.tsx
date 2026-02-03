@@ -14,7 +14,6 @@ const DEFAULT_TOAST_DURATION_MS = 3000;
 
 export const ToastOverlaySideEffects = () => {
   const currentToast = useAppStore((state) => state.currentToast);
-  const toastQueue = useAppStore((state) => state.toastQueue);
   const timerRef = useRef<number | null>(null);
 
   useTauriListen<OverlaySyncPayload>("overlay_sync", (payload) => {
@@ -35,7 +34,8 @@ export const ToastOverlaySideEffects = () => {
 
     listen<ToastPayload>("toast", (event) => {
       produceAppState((draft) => {
-        draft.toastQueue.push(event.payload.toast);
+        draft.currentToast = event.payload.toast;
+        draft.toastQueue = [];
       });
     }).then((fn) => {
       if (canceled) {
@@ -50,17 +50,6 @@ export const ToastOverlaySideEffects = () => {
       if (unlisten) unlisten();
     };
   }, []);
-
-  useEffect(() => {
-    if (currentToast === null && toastQueue.length > 0) {
-      produceAppState((draft) => {
-        const nextToast = draft.toastQueue.shift();
-        if (nextToast) {
-          draft.currentToast = nextToast;
-        }
-      });
-    }
-  }, [currentToast, toastQueue.length]);
 
   useEffect(() => {
     if (currentToast !== null) {
@@ -81,11 +70,10 @@ export const ToastOverlaySideEffects = () => {
   }, [currentToast?.id, currentToast?.duration]);
 
   useEffect(() => {
-    const hasToasts = currentToast !== null || toastQueue.length > 0;
     invoke("set_toast_overlay_click_through", {
-      clickThrough: !hasToasts,
+      clickThrough: !currentToast,
     }).catch(console.error);
-  }, [currentToast, toastQueue.length]);
+  }, [currentToast]);
 
   return null;
 };

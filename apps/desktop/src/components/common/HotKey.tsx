@@ -95,7 +95,10 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
 
   const [empty, label] = useMemo(() => {
     if (focused && !hasInteracted) {
-      return [true, intl.formatMessage({ defaultMessage: "Listening..." })];
+      return [
+        true,
+        intl.formatMessage({ defaultMessage: "Recording keys..." }),
+      ];
     }
     const v = value ?? [];
     return v.length > 0

@@ -6,6 +6,7 @@ import type {
   Nullable,
   SttProvider,
   Term,
+  Tone,
   UserWithAuth,
 } from "@repo/types";
 import {
@@ -22,6 +23,7 @@ import {
   type SttProvidersState,
 } from "./stt-providers.state";
 import { INITIAL_TERMS_STATE, type TermsState } from "./terms.state";
+import { INITIAL_TONES_STATE, type TonesState } from "./tones.state";
 import { INITIAL_USERS_STATE, type UsersState } from "./users.state";
 
 export type SnackbarMode = "info" | "success" | "error";
@@ -36,12 +38,14 @@ export type AppState = {
   enterpriseLicense: Nullable<EnterpriseLicense>;
 
   termById: Record<string, Term>;
+  toneById: Record<string, Tone>;
   userWithAuthById: Record<string, UserWithAuth>;
   sttProviderById: Record<string, SttProvider>;
   llmProviderById: Record<string, LlmProvider>;
 
   login: LoginState;
   terms: TermsState;
+  tones: TonesState;
   users: UsersState;
   settings: SettingsState;
   sttProviders: SttProvidersState;
@@ -64,6 +68,7 @@ export const INITIAL_APP_STATE: AppState = {
   enterpriseLicense: null,
 
   termById: {},
+  toneById: {},
   userWithAuthById: {},
   sttProviderById: {},
   llmProviderById: {},
@@ -71,6 +76,7 @@ export const INITIAL_APP_STATE: AppState = {
   login: INITIAL_LOGIN_STATE,
   settings: INITIAL_SETTINGS_STATE,
   terms: INITIAL_TERMS_STATE,
+  tones: INITIAL_TONES_STATE,
   users: INITIAL_USERS_STATE,
   sttProviders: INITIAL_STT_PROVIDERS_STATE,
   llmProviders: INITIAL_LLM_PROVIDERS_STATE,

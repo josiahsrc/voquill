@@ -3,7 +3,7 @@ import {
   Transcription,
   TranscriptionAudioSnapshot,
 } from "@repo/types";
-import { countWords, dedup, getRec } from "@repo/utilities";
+import { countWords, dedup } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import {
@@ -21,7 +21,7 @@ import {
   extractTextFieldContext,
 } from "../utils/accessibility.utils";
 import { createId } from "../utils/id.utils";
-import { mapLocaleToWhisperLanguage } from "../utils/language.utils";
+import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
 import {
   buildLocalizedPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
@@ -30,6 +30,7 @@ import {
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
+import { getToneTemplateWithFallback } from "../utils/tone.utils";
 import {
   getMyEffectiveUserId,
   loadMyEffectiveDictationLanguage,
@@ -104,7 +105,8 @@ export const transcribeAudio = async ({
   warnings.push(...transcribeWarnings);
 
   const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
-  const whisperLanguage = mapLocaleToWhisperLanguage(dictationLanguage);
+  const whisperLanguage =
+    mapDictationLanguageToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
   const baseTranscriptionPrompt =
@@ -173,17 +175,13 @@ export const postProcessTranscript = async ({
   let processedTranscript = rawTranscript;
   if (genRepo) {
     const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
-    const myPrefs = state.userPrefs;
-    const tone =
-      getRec(state.toneById, toneId) ??
-      getRec(state.toneById, myPrefs?.activeToneId) ??
-      null;
+    const toneTemplate = getToneTemplateWithFallback(state, toneId);
 
     const textFieldContext = extractTextFieldContext(a11yInfo);
     const ppPrompt = buildLocalizedPostProcessingPrompt({
       transcript: rawTranscript,
       dictationLanguage,
-      toneTemplate: tone?.promptTemplate ?? null,
+      toneTemplate,
       textFieldContext: textFieldContext ?? null,
     });
 

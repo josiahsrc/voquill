@@ -4,11 +4,15 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  FormControl,
   FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Select,
   Switch,
   Typography,
 } from "@mui/material";
-import type { EnterpriseConfig } from "@repo/types";
+import type { EnterpriseConfig, EnterpriseStylingMode } from "@repo/types";
 import { FormattedMessage, useIntl } from "react-intl";
 import { signOut } from "../../actions/login.actions";
 import { updateEnterpriseConfig } from "../../actions/settings.actions";
@@ -27,11 +31,19 @@ export default function SettingsTab() {
     updateEnterpriseConfig({ ...enterpriseConfig, [key]: value });
   }
 
+  function handleChange<K extends keyof EnterpriseConfig>(
+    key: K,
+    value: EnterpriseConfig[K],
+  ) {
+    if (!enterpriseConfig) return;
+    updateEnterpriseConfig({ ...enterpriseConfig, [key]: value });
+  }
+
   return (
     <TabLayout
       title={intl.formatMessage({ defaultMessage: "Settings" })}
     >
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: 600 }}>
         <Card variant="outlined">
           <CardContent>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -118,6 +130,28 @@ export default function SettingsTab() {
                     <FormattedMessage defaultMessage="Allow users to change agent mode" />
                   }
                 />
+                <FormControl size="small" sx={{ mt: 1, minWidth: 200 }}>
+                  <InputLabel>
+                    <FormattedMessage defaultMessage="Styling Mode" />
+                  </InputLabel>
+                  <Select
+                    value={enterpriseConfig.stylingMode}
+                    label={intl.formatMessage({ defaultMessage: "Styling Mode" })}
+                    onChange={(e) =>
+                      handleChange("stylingMode", e.target.value as EnterpriseStylingMode)
+                    }
+                  >
+                    <MenuItem value="app">
+                      <FormattedMessage defaultMessage="Based on app used" />
+                    </MenuItem>
+                    <MenuItem value="manual">
+                      <FormattedMessage defaultMessage="Manually switch using a hotkey" />
+                    </MenuItem>
+                    <MenuItem value="any">
+                      <FormattedMessage defaultMessage="Let user decide" />
+                    </MenuItem>
+                  </Select>
+                </FormControl>
               </Box>
             )}
           </CardContent>

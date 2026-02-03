@@ -1,6 +1,7 @@
 import {
   DictationPillVisibility,
   Nullable,
+  StylingMode,
   User,
   UserPreferences,
 } from "@repo/types";
@@ -515,6 +516,63 @@ export const setDictationPillVisibility = async (
   await updateUserPreferences((preferences) => {
     preferences.dictationPillVisibility = visibility;
   }, "Failed to save dictation pill visibility preference. Please try again.");
+};
+
+export const setStylingMode = async (
+  mode: Nullable<StylingMode>,
+): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.stylingMode = mode;
+    },
+    "Unable to set styling mode. User not found.",
+    "Failed to save styling mode preference. Please try again.",
+  );
+};
+
+export const setActiveToneIds = async (toneIds: string[]): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.activeToneIds = toneIds;
+    },
+    "Unable to update active styles. User not found.",
+    "Failed to update active styles. Please try again.",
+  );
+};
+
+export const setSelectedToneId = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.selectedToneId = toneId;
+    },
+    "Unable to select style. User not found.",
+    "Failed to select style. Please try again.",
+  );
+};
+
+export const activateAndSelectTone = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      const currentIds = user.activeToneIds ?? [];
+      if (!currentIds.includes(toneId)) {
+        user.activeToneIds = [toneId, ...currentIds];
+      }
+      user.selectedToneId = toneId;
+    },
+    "Unable to activate style. User not found.",
+    "Failed to activate style. Please try again.",
+  );
+};
+
+export const deselectActiveTone = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      const current = user.activeToneIds ?? [];
+      user.activeToneIds = current.filter((id) => id !== toneId);
+    },
+    "Unable to deselect style. User not found.",
+    "Failed to deselect style. Please try again.",
+  );
 };
 
 export const markUpgradeDialogSeen = async (): Promise<void> => {

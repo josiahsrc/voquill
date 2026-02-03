@@ -2,9 +2,11 @@ import { firemix } from "@firemix/mixed";
 import {
 	DatabaseMember,
 	DatabaseTerm,
+	DatabaseTone,
 	DatabaseUser,
 	Member,
 	Term,
+	Tone,
 	User,
 } from "@repo/types";
 
@@ -60,4 +62,14 @@ export const termToDatabase = (term: Term): DatabaseTerm => ({
 export const termFromDatabase = (dbTerm: DatabaseTerm): Term => ({
 	...dbTerm,
 	createdAt: dbTerm.createdAt.toDate().toISOString(),
+});
+
+export const toneToDatabase = (tone: Tone): DatabaseTone => ({
+	...tone,
+	createdAt: firemix().timestampFromDate(new Date(tone.createdAt)),
+});
+
+export const toneFromDatabase = (dbTone: DatabaseTone): Tone => ({
+	...dbTone,
+	createdAt: dbTone.createdAt.toDate().getTime(),
 });

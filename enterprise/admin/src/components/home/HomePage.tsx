@@ -4,6 +4,7 @@ import {
   GroupOutlined,
   MicOutlined,
   SettingsOutlined,
+  PaletteOutlined,
 } from "@mui/icons-material";
 import {
   Box,
@@ -40,6 +41,11 @@ export default function HomePage() {
       label: intl.formatMessage({ defaultMessage: "Global Dictionary" }),
       path: "/terms",
       icon: <ClassOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "Global Styles" }),
+      path: "/tones",
+      icon: <PaletteOutlined />,
     },
     {
       label: intl.formatMessage({ defaultMessage: "Transcription Providers" }),
