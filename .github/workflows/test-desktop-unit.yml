@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  unit-tests:
-    name: Desktop Unit Tests
+  ts-unit-tests:
+    name: Desktop TS Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
