@@ -136,9 +136,6 @@ export const addWordsToCurrentUser = async (
 };
 
 export const refreshCurrentUser = async (): Promise<void> => {
-  const state = getAppState();
-  const userId = getMyEffectiveUserId(state);
-
   try {
     const [user, preferences] = await Promise.all([
       getUserRepo().getMyUser(),
@@ -149,7 +146,6 @@ export const refreshCurrentUser = async (): Promise<void> => {
         setCurrentUser(draft, user);
       }
 
-      console.log("REFRESHING", userId, preferences);
       if (preferences) {
         setUserPreferences(draft, preferences);
       } else {
