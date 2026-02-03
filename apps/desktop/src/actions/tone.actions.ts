@@ -1,36 +1,24 @@
 import { Tone } from "@repo/types";
+import { getIntl } from "../i18n/intl";
 import { getToneRepo, getUserPreferencesRepo } from "../repos";
 import { ToneEditorMode } from "../state/tone-editor.state";
 import { getAppState, produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";
+import {
+  getActiveManualToneIds,
+  getManuallySelectedToneId,
+  getToneById,
+} from "../utils/tone.utils";
+import { flashPillTooltip } from "../utils/overlay.utils";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
-
-let loadTonesPromise: Promise<void> | null = null;
-
-const sortTones = (tones: Tone[]): Tone[] =>
-  [...tones].sort((a, b) => a.sortOrder - b.sortOrder);
+import { showToast } from "./toast.actions";
+import { activateAndSelectTone, setSelectedToneId } from "./user.actions";
 
 export const loadTones = async (): Promise<void> => {
-  if (loadTonesPromise) {
-    return loadTonesPromise;
-  }
-
-  loadTonesPromise = getToneRepo()
-    .listTones()
-    .then((tones) => {
-      produceAppState((draft) => {
-        registerTones(draft, tones);
-      });
-    })
-    .catch((error) => {
-      console.error("Failed to load tones", error);
-      showErrorSnackbar("Failed to load tones. Please try again.");
-    })
-    .finally(() => {
-      loadTonesPromise = null;
-    });
-
-  return loadTonesPromise;
+  const tones = await getToneRepo().listTones();
+  produceAppState((draft) => {
+    registerTones(draft, tones);
+  });
 };
 
 export const upsertTone = async (tone: Tone): Promise<Tone> => {
@@ -42,6 +30,8 @@ export const upsertTone = async (tone: Tone): Promise<Tone> => {
       draft.tones.selectedToneId = saved.id;
       draft.tones.isCreating = false;
     });
+
+    await activateAndSelectTone(saved.id);
 
     showSnackbar("Tone saved successfully", { mode: "success" });
     return saved;
@@ -118,11 +108,6 @@ export const setActiveTone = async (toneId: string | null): Promise<void> => {
   }
 };
 
-export const getSortedTones = (): Tone[] => {
-  const tones = Object.values(getAppState().toneById);
-  return sortTones(tones);
-};
-
 export const getActiveTone = (): Tone | null => {
   const state = getAppState();
   const prefs = state.userPrefs;
@@ -147,6 +132,42 @@ export const openToneEditorDialog = (options: {
     draft.toneEditor.targetId = options.targetId ?? null;
   });
 };
+
+const cycleWritingStyle = async (direction: 1 | -1): Promise<void> => {
+  const state = getAppState();
+  const activeIds = getActiveManualToneIds(state);
+  const currentId = getManuallySelectedToneId(state);
+  const intl = getIntl();
+
+  if (activeIds.length <= 1) {
+    const toneName = getToneById(state, currentId)?.name ?? currentId;
+    await showToast({
+      title: intl.formatMessage({
+        defaultMessage: "Writing style not changed",
+      }),
+      message: intl.formatMessage(
+        {
+          defaultMessage:
+            '"{toneName}" is your only active style. Add more styles from the writing styles menu.',
+        },
+        { toneName },
+      ),
+      toastType: "info",
+    });
+    return;
+  }
+
+  const currentIndex = activeIds.indexOf(currentId);
+  const nextIndex =
+    (currentIndex + direction + activeIds.length) % activeIds.length;
+  const nextId = activeIds[nextIndex];
+  await setSelectedToneId(nextId);
+
+  flashPillTooltip();
+};
+
+export const switchWritingStyleForward = () => cycleWritingStyle(1);
+export const switchWritingStyleBackward = () => cycleWritingStyle(-1);
 
 export const closeToneEditorDialog = (): void => {
   produceAppState((draft) => {

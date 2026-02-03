@@ -57,6 +57,7 @@ export default defineConfig({
 								{ label: 'Overview', slug: 'enterprise/admin-portal/overview' },
 								{ label: 'Users', slug: 'enterprise/admin-portal/users' },
 								{ label: 'Global Dictionary', slug: 'enterprise/admin-portal/global-dictionary' },
+							  { label: 'Global Styles', slug: 'enterprise/admin-portal/global-styles' },
 								{ label: 'Transcription & AI Providers', slug: 'enterprise/admin-portal/transcription-providers' },
 								{ label: 'Settings', slug: 'enterprise/admin-portal/settings' },
 							],

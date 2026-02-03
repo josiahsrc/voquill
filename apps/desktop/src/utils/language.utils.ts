@@ -262,7 +262,9 @@ export const resolveLocaleValue = (value?: string | null): Locale => {
   return matchSupportedLocale(value) ?? DEFAULT_LOCALE;
 };
 
-export const mapLocaleToWhisperLanguage = (language: string): string => {
+export const mapDictationLanguageToWhisperLanguage = (
+  language: string,
+): string => {
   const baseLanguage = language.split("-")[0];
   return baseLanguage;
 };

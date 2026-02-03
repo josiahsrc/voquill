@@ -13,6 +13,7 @@ async function cleanupTestData() {
     const ids = rows.map((r) => r.id);
     if (ids.length === 0) return;
 
+    await pool.query("DELETE FROM tones WHERE user_id = ANY($1)", [ids]);
     await pool.query("DELETE FROM terms WHERE user_id = ANY($1)", [ids]);
     await pool.query("DELETE FROM members WHERE id = ANY($1)", [ids]);
     await pool.query("DELETE FROM users WHERE id = ANY($1)", [ids]);

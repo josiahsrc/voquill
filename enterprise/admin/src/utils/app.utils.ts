@@ -1,4 +1,4 @@
-import type { LlmProvider, SttProvider, Term, UserWithAuth } from "@repo/types";
+import type { LlmProvider, SttProvider, Term, Tone, UserWithAuth } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -22,6 +22,12 @@ export const setSnackbar = (
 export const registerTerms = (draft: AppState, terms: Term[]): void => {
   for (const term of terms) {
     draft.termById[term.id] = term;
+  }
+};
+
+export const registerTones = (draft: AppState, tones: Tone[]): void => {
+  for (const tone of tones) {
+    draft.toneById[tone.id] = tone;
   }
 };
 

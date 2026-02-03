@@ -29,6 +29,12 @@ pub struct User {
     pub has_migrated_preferred_microphone: bool,
     #[serde(default)]
     pub cohort: Option<String>,
+    #[serde(default)]
+    pub styling_mode: Option<String>,
+    #[serde(default)]
+    pub selected_tone_id: Option<String>,
+    #[serde(default)]
+    pub active_tone_ids: Option<String>,
 }
 
 const fn default_play_interaction_chime() -> bool {

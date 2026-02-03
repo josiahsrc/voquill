@@ -21,4 +21,7 @@ export type UserRow = {
   has_migrated_preferred_microphone: boolean;
   cohort: Nullable<string>;
   should_show_upgrade_dialog: boolean;
+  styling_mode: string | null;
+  selected_tone_id: string | null;
+  active_tone_ids: string | null;
 };

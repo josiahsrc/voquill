@@ -84,3 +84,11 @@ export const getAllowsChangeTranscription = (state: AppState): boolean => {
 export const getAllowsChangeAgentMode = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangeAgentMode ?? true;
 };
+
+export const getAllowChangeStylingMode = (state: AppState): boolean => {
+  if (!state.enterpriseConfig) {
+    return true;
+  }
+
+  return state.enterpriseConfig.stylingMode === "any";
+};

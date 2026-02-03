@@ -1,4 +1,4 @@
-import type { User, UserWithAuth, Nullable } from "@repo/types";
+import type { Nullable, User, UserWithAuth } from "@repo/types";
 import type { UserRow } from "../types/user.types";
 import { getPool } from "../utils/db.utils";
 
@@ -24,6 +24,9 @@ function rowToUser(row: UserRow): User {
     hasMigratedPreferredMicrophone: row.has_migrated_preferred_microphone,
     cohort: row.cohort,
     shouldShowUpgradeDialog: row.should_show_upgrade_dialog,
+    stylingMode: row.styling_mode as User["stylingMode"],
+    selectedToneId: row.selected_tone_id,
+    activeToneIds: row.active_tone_ids ? JSON.parse(row.active_tone_ids) : null,
   };
 }
 
@@ -56,6 +59,9 @@ function defaultUser(id: string): User {
     hasMigratedPreferredMicrophone: false,
     cohort: null,
     shouldShowUpgradeDialog: false,
+    stylingMode: null,
+    selectedToneId: null,
+    activeToneIds: null,
   };
 }
 
@@ -91,8 +97,8 @@ export async function upsertUser(
         timezone, preferred_language, preferred_microphone,
         play_interaction_chime, has_finished_tutorial,
         words_this_month, words_this_month_month, words_total,
-        has_migrated_preferred_microphone, cohort, should_show_upgrade_dialog
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+        has_migrated_preferred_microphone, cohort, should_show_upgrade_dialog, styling_mode, selected_tone_id, active_tone_ids
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
       [
         id,
         value.name ?? "",
@@ -112,6 +118,9 @@ export async function upsertUser(
         value.hasMigratedPreferredMicrophone ?? false,
         value.cohort ?? null,
         value.shouldShowUpgradeDialog ?? false,
+        value.stylingMode ?? null,
+        value.selectedToneId ?? null,
+        value.activeToneIds ? JSON.stringify(value.activeToneIds) : null,
       ],
     );
     return;
@@ -139,12 +148,21 @@ export async function upsertUser(
     hasMigratedPreferredMicrophone: "has_migrated_preferred_microphone",
     cohort: "cohort",
     shouldShowUpgradeDialog: "should_show_upgrade_dialog",
+    stylingMode: "styling_mode",
+    selectedToneId: "selected_tone_id",
+    activeToneIds: "active_tone_ids",
   };
 
   for (const [key, column] of Object.entries(fieldMap)) {
     if (key in value) {
       fields.push(`${column} = $${paramIndex}`);
-      values.push((value as Record<string, unknown>)[key]);
+
+      let val = (value as Record<string, unknown>)[key];
+      if (key === "activeToneIds" && Array.isArray(val)) {
+        val = JSON.stringify(val);
+      }
+
+      values.push(val);
       paramIndex++;
     }
   }

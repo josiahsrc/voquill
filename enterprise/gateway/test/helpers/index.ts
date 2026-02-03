@@ -96,6 +96,7 @@ export async function createTestAuth(
 export async function cleanupTestAuths(): Promise<void> {
   const ids = pendingCleanupIds.splice(0);
   for (const id of ids) {
+    await query("DELETE FROM tones WHERE user_id = $1", [id]);
     await query("DELETE FROM terms WHERE user_id = $1", [id]);
     await query("DELETE FROM members WHERE id = $1", [id]);
     await query("DELETE FROM users WHERE id = $1", [id]);
