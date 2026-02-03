@@ -13,7 +13,7 @@ import {
   buildLocalizedTranscriptionPrompt,
   collectDictionaryEntries,
 } from "../utils/prompt.utils";
-import { getMyDictationLanguage } from "../utils/user.utils";
+import { loadMyEffectiveDictationLanguage } from "../utils/user.utils";
 
 export class AzureTranscriptionSession implements TranscriptionSession {
   private session: AzureStreamingSession | null = null;
@@ -32,7 +32,7 @@ export class AzureTranscriptionSession implements TranscriptionSession {
       console.log("[Azure] Starting streaming session...");
 
       const state = getAppState();
-      const language = getMyDictationLanguage(state);
+      const language = await loadMyEffectiveDictationLanguage(state);
       const dictionaryEntries = collectDictionaryEntries(state);
       const prompt = buildLocalizedTranscriptionPrompt(dictionaryEntries);
 

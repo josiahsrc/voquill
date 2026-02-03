@@ -1,5 +1,5 @@
 import { getRec } from "@repo/utilities";
-import { matchSupportedLocale } from "../i18n";
+import { getIntl, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 
 export const LANGUAGE_DISPLAY_NAMES: Record<Locale, string> = {
@@ -243,11 +243,20 @@ const ORDERED_DICTATION_LANGUAGES: DictationLanguageCode[] = [
   "yue",
 ];
 
-export const DICTATION_LANGUAGE_OPTIONS: [string, string][] =
-  ORDERED_DICTATION_LANGUAGES.map<[string, string]>((code) => [
+export const KEYBOARD_LAYOUT_LANGUAGE = "keyboard-layout";
+const getKeyboardLayoutTranslation = () =>
+  getIntl().formatMessage({
+    id: "keyboard_layout",
+    defaultMessage: "Keyboard layout",
+  });
+
+export const DICTATION_LANGUAGE_OPTIONS: [string, string][] = [
+  [KEYBOARD_LAYOUT_LANGUAGE, getKeyboardLayoutTranslation()],
+  ...ORDERED_DICTATION_LANGUAGES.map<[string, string]>((code) => [
     code,
     DICTATION_LANGUAGES[code],
-  ]);
+  ]),
+];
 
 export const getDisplayNameForLanguage = (code: string): string => {
   const baseCode = code.split("-")[0];

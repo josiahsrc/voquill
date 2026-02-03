@@ -44,17 +44,19 @@ import {
 import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import {
-  DICTATION_LANGUAGE_OPTIONS,
-  WHISPER_LANGUAGES,
-} from "../../utils/language.utils";
-import { getIsPaying } from "../../utils/member.utils";
-import {
   getAllowsChangeAgentMode,
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
 } from "../../utils/enterprise.utils";
 import {
+  DICTATION_LANGUAGE_OPTIONS,
+  KEYBOARD_LAYOUT_LANGUAGE,
+  WHISPER_LANGUAGES,
+} from "../../utils/language.utils";
+import { getIsPaying } from "../../utils/member.utils";
+import {
   getDetectedSystemLocale,
+  getGenerativePrefs,
   getHasEmailProvider,
   getIsSignedIn,
   getMyUser,
@@ -91,9 +93,12 @@ export default function SettingsPage() {
   }));
 
   const dictationLanguageWarning = useAppStore((state) => {
-    const hasPostProcessingEnabled =
-      state.settings.aiPostProcessing.mode !== "none";
+    const hasPostProcessingEnabled = getGenerativePrefs(state).mode !== "none";
     if (hasPostProcessingEnabled) {
+      return null;
+    }
+
+    if (dictationLanguage === KEYBOARD_LAYOUT_LANGUAGE) {
       return null;
     }
 

@@ -32,8 +32,8 @@ import {
 } from "../utils/prompt.utils";
 import { getToneTemplateWithFallback } from "../utils/tone.utils";
 import {
-  getMyDictationLanguage,
   getMyEffectiveUserId,
+  loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { addWordsToCurrentUser } from "./user.actions";
@@ -104,8 +104,9 @@ export const transcribeAudio = async ({
   } = getTranscribeAudioRepo();
   warnings.push(...transcribeWarnings);
 
-  const dictationLanguage = getMyDictationLanguage(state);
-  const whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage);
+  const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
+  const whisperLanguage =
+    mapDictationLanguageToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
   const baseTranscriptionPrompt =
@@ -172,9 +173,8 @@ export const postProcessTranscript = async ({
   warnings.push(...genWarnings);
 
   let processedTranscript = rawTranscript;
-
   if (genRepo) {
-    const dictationLanguage = getMyDictationLanguage(state);
+    const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
     const toneTemplate = getToneTemplateWithFallback(state, toneId);
 
     const textFieldContext = extractTextFieldContext(a11yInfo);

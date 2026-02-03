@@ -7,17 +7,11 @@ import {
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
-import { getMyEffectiveUserId } from "./user.utils";
 
 export const applyAiPreferences = (
   draft: AppState,
   preferences: UserPreferences,
 ): void => {
-  const myUserId = getMyEffectiveUserId(draft);
-  if (preferences.userId !== myUserId) {
-    return;
-  }
-
   const transcriptionMode =
     preferences.transcriptionMode ?? DEFAULT_TRANSCRIPTION_MODE;
   draft.settings.aiTranscription.mode = transcriptionMode;

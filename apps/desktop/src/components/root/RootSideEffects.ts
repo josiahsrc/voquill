@@ -69,6 +69,7 @@ import {
   LANGUAGE_SWITCH_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
+import { KEYBOARD_LAYOUT_LANGUAGE } from "../../utils/language.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
@@ -79,8 +80,8 @@ import { getToneIdToUse } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
-  getMyDictationLanguageCode,
   getMyPreferredMicrophone,
+  getMyRawDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import {
@@ -676,7 +677,13 @@ export const RootSideEffects = () => {
     if (!state.settings.languageSwitch.enabled) {
       return null;
     }
-    return getMyDictationLanguageCode(state);
+
+    const res = getMyRawDictationLanguage(state);
+    if (res === KEYBOARD_LAYOUT_LANGUAGE) {
+      return null;
+    }
+
+    return res;
   });
 
   useEffect(() => {
