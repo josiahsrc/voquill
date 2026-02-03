@@ -62,6 +62,13 @@ export default defineConfig({
 								{ label: 'Settings', slug: 'enterprise/admin-portal/settings' },
 							],
 						},
+						{
+							label: 'Deployment',
+							collapsed: true,
+							items: [
+								{ label: 'Microsoft Intune', slug: 'enterprise/deployment/intune' },
+							],
+						},
 					],
 				},
 			],
