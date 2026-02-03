@@ -210,7 +210,7 @@
   "leave_empty_to_use_the_default_url": "留空以使用默认网址",
   "lets_you_trigger_dictation_hotkeys_while_using_other_applica": "让您在使用其他应用程序时触发听写快捷键。",
   "light": "轻量",
-  "listening": "聆听中...",
+  "listening": "正在聆听...",
   "loading_api_keys": "正在加载 API 密钥...",
   "loading_models": "正在加载模型...",
   "local": "本地",

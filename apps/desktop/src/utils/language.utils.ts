@@ -245,7 +245,10 @@ const ORDERED_DICTATION_LANGUAGES: DictationLanguageCode[] = [
 
 export const KEYBOARD_LAYOUT_LANGUAGE = "keyboard-layout";
 const getKeyboardLayoutTranslation = () =>
-  getIntl().formatMessage({ defaultMessage: "Keyboard layout" });
+  getIntl().formatMessage({
+    id: "keyboard_layout",
+    defaultMessage: "Keyboard layout",
+  });
 
 export const DICTATION_LANGUAGE_OPTIONS: [string, string][] = [
   [KEYBOARD_LAYOUT_LANGUAGE, getKeyboardLayoutTranslation()],
