@@ -114,7 +114,26 @@ describe("default style", () => {
           acceptanceScore: 8,
         },
         {
-          criteria: "It should auto correct the time to 4pm without mentioning 10am",
+          criteria:
+            "It should auto correct the time to 4pm without mentioning 10am",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("basic transcription3", async () => {
+    await runPostProcessingEval({
+      transcription: `
+So, um, I was thinking that we could, you know, maybe try to implement that new feature we discussed last week. Basically, it would involve creating a new API endpoint that, uh, allows users to fetch their data more efficiently. I mean, it's just an idea, but I think it could really improve the user experience.`,
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria: "It should remove filler words and improve readability",
+          acceptanceScore: 8,
+        },
+        {
+          criteria: "It should preserve all meaningful content",
           acceptanceScore: 8,
         },
       ],

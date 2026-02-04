@@ -15,7 +15,18 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Clean",
       }),
       promptTemplate: `
-Sound like the speaker, but written. Fix grammar, remove filler and disfluencies, and lightly restructure for readability while keeping the speaker's vocabulary, sentence patterns, and tone intact. The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it.
+- Sound like the speaker, but written
+- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Keep the speaker's vocabulary, sentence patterns, and tone intact
+- The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it
+- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Preserve all meaningful content
+- Apply the formatting rules above to detect and format emails and lists
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove content that was later corrected by the speaker
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -27,7 +38,10 @@ Sound like the speaker, but written. Fix grammar, remove filler and disfluencies
         defaultMessage: "Verbatim",
       }),
       promptTemplate: `
-Produce a near-exact transcription. Add punctuation, capitalization, and paragraph breaks for readability, but do NOT remove filler words, do NOT fix grammar, and do NOT restructure sentences. Preserve exactly what was said, including hesitations and repeated words.
+- Produce a near-exact transcription
+- Add punctuation, capitalization, and paragraph breaks for readability
+- Do NOT remove filler words, do NOT fix grammar, and do NOT restructure sentences
+- Preserve exactly what was said, including hesitations and repeated words
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -39,7 +53,12 @@ Produce a near-exact transcription. Add punctuation, capitalization, and paragra
         defaultMessage: "Email",
       }),
       promptTemplate: `
-Format the transcript as an email. Infer an appropriate greeting and sign-off from context, or use sensible defaults. Organize the body into clear, logically ordered paragraphs — if the speaker jumped between topics, group related points together. Keep the tone professional but warm. The result should be ready to paste into an email client and send.
+- Format the transcript as an email
+- Infer an appropriate greeting and sign-off from context, or use sensible defaults
+- Organize the body into clear, logically ordered paragraphs
+- If the speaker jumped between topics, group related points together
+- Keep the tone professional but warm
+- The result should be ready to paste into an email client and send
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -51,7 +70,11 @@ Format the transcript as an email. Infer an appropriate greeting and sign-off fr
         defaultMessage: "Chat",
       }),
       promptTemplate: `
-Optimize for chat platforms like Slack, Discord, or iMessage. Compress to the essential point in 1-3 short sentences. Keep the language casual and conversational. Drop any preamble or unnecessary context. If the speaker dictated multiple points, break them into separate short lines rather than a paragraph.
+- Optimize for chat platforms like Slack, Discord, or iMessage
+- Compress to the essential point in 1-3 short sentences
+- Keep the language casual and conversational
+- Drop any preamble or unnecessary context
+- If the speaker dictated multiple points, break them into separate short lines rather than a paragraph
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -63,7 +86,11 @@ Optimize for chat platforms like Slack, Discord, or iMessage. Compress to the es
         defaultMessage: "Formal",
       }),
       promptTemplate: `
-Rewrite in a polished, professional register. Use complete sentences, precise vocabulary, and proper grammar. Avoid contractions, colloquialisms, and casual phrasing. The result should be suitable for official documents, proposals, or professional correspondence. It is expected that the speaker's casual voice will be replaced with a formal one.
+- Rewrite in a polished, professional register
+- Use complete sentences, precise vocabulary, and proper grammar
+- Avoid contractions, colloquialisms, and casual phrasing
+- The result should be suitable for official documents, proposals, or professional correspondence
+- It is expected that the speaker's casual voice will be replaced with a formal one
       `.trim(),
       isSystem: true,
       createdAt: 0,

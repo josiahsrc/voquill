@@ -107,32 +107,14 @@ export const buildLocalizedPostProcessingPrompt = ({
 }): string => {
   const languageName = getDisplayNameForLanguage(dictationLanguage);
 
-  let languageSpec = "";
-  if (dictationLanguage !== "en") {
-    languageSpec = `Your response MUST be in ${languageName}. Do NOT translate to English.`;
-  } else {
-    languageSpec = `Your response MUST be in ${languageName}.`;
-  }
-
   return `
 Your task is to clean up and format a transcription.
 
-CONTEXT:
+Context:
 - The user's name is ${userName}.
 - The user wants the result in ${languageName}
 
-CLEANING RULES:
-- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
-- Preserve all meaningful content
-- Apply the formatting rules above to detect and format emails and lists
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
-- Format bulletted lists when the user speaks items in a list format
-- Convert newlines and other intents into actual formatting where applicable
-- Put backticks around code terms like filenames, function names, and code snippets
-- It should remove content that was later corrected by the speaker
-
-STYLE INSTRUCTIONS:
-Apply the following writing style to your output:
+Instructions:
 \`\`\`
 ${toneTemplate}
 \`\`\`
@@ -142,7 +124,7 @@ Here is the transcript that you need to process:
 ${transcript}
 \`\`\`
 
-Format the transcription. ${languageSpec}
+Clean up and format the transcription according to the instructions.
 `;
 };
 
