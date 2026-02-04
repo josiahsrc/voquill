@@ -3,81 +3,17 @@ import { getAppState, useAppStore } from "../store";
 import type { ActivationController } from "../utils/activation.utils";
 import { getHotkeyCombosForAction } from "../utils/keyboard.utils";
 
-export const useHotkeyHold = (args: {
-  actionName: string;
-  controller: ActivationController;
-}) => {
-  const { controller } = args;
-  const keysHeld = useAppStore((s) => s.keysHeld);
-  const availableCombos = useAppStore((state) =>
-    getHotkeyCombosForAction(state, args.actionName),
+type HoldAction = { actionName: string; controller: ActivationController };
+
+export const useHotkeyHold = (args: HoldAction) => {
+  const actions = useMemo(
+    () => [{ actionName: args.actionName, controller: args.controller }],
+    [args.actionName, args.controller],
   );
-
-  const wasPressedRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      controller.dispose();
-    };
-  }, [controller]);
-
-  useEffect(() => {
-    if (
-      controller.isActive &&
-      !wasPressedRef.current &&
-      !controller.hasHadRelease
-    ) {
-      controller.forceReset();
-    }
-
-    if (availableCombos.length === 0) {
-      wasPressedRef.current = false;
-      controller.reset();
-      return;
-    }
-
-    const normalize = (key: string) => key.toLowerCase();
-
-    const matchesCombo = (held: string[], combo: string[]) => {
-      if (combo.length === 0) {
-        return false;
-      }
-
-      const uniqueHeld = Array.from(new Set(held.map((key) => normalize(key))));
-      const required = Array.from(new Set(combo.map((key) => normalize(key))));
-
-      if (uniqueHeld.length !== required.length) {
-        return false;
-      }
-
-      const heldSet = new Set(uniqueHeld);
-      return required.every((key) => heldSet.has(key));
-    };
-
-    const isPressed = availableCombos.some((combo) =>
-      matchesCombo(keysHeld, combo),
-    );
-    const wasPressed = wasPressedRef.current;
-
-    if (isPressed && !wasPressed) {
-      if (controller.shouldIgnoreActivation) {
-        wasPressedRef.current = isPressed;
-        return;
-      }
-
-      controller.handlePress();
-    } else if (!isPressed && wasPressed) {
-      controller.clearIgnore();
-      controller.handleRelease();
-    }
-
-    wasPressedRef.current = isPressed;
-  }, [keysHeld, availableCombos, controller]);
+  useHotkeyHoldMany({ actions });
 };
 
-export const useHotkeyHoldMany = (args: {
-  actions: { actionName: string; controller: ActivationController }[];
-}) => {
+export const useHotkeyHoldMany = (args: { actions: HoldAction[] }) => {
   const keysHeld = useAppStore((s) => s.keysHeld);
   const hotkeyById = useAppStore((state) => state.hotkeyById);
   const combosByAction = useMemo(() => {
