@@ -173,6 +173,7 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
+            whiteSpace: "pre-wrap",
           }}
         >
           {tone?.promptTemplate ?? "-"}

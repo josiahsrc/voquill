@@ -25,7 +25,7 @@ import {
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
-import { getToneTemplateWithFallback } from "../utils/tone.utils";
+import { getToneById, getToneTemplateWithFallback } from "../utils/tone.utils";
 import {
   getMyEffectiveUserId,
   getMyUserName,
@@ -166,8 +166,11 @@ export const postProcessTranscript = async ({
   } = getGenerateTextRepo();
   warnings.push(...genWarnings);
 
+  const tone = getToneById(state, toneId);
   let processedTranscript = rawTranscript;
-  if (genRepo) {
+  if (tone?.shouldDisablePostProcessing) {
+    metadata.postProcessMode = "none";
+  } else if (genRepo) {
     const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
     const toneTemplate = getToneTemplateWithFallback(state, toneId);
 

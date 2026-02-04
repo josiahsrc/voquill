@@ -96,6 +96,17 @@ export const getDefaultSystemTones = (): Tone[] => {
       createdAt: 0,
       sortOrder: 4,
     },
+    {
+      id: "disabled",
+      name: intl.formatMessage({
+        defaultMessage: "Disabled",
+      }),
+      promptTemplate: "Do not apply any post-processing to the transcription.",
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 5,
+      shouldDisablePostProcessing: true,
+    },
     ...getDeprecatedSystemTones(),
   ];
 };

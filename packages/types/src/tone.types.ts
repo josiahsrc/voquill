@@ -11,6 +11,7 @@ export type DatabaseTone = {
   sortOrder: number;
   isGlobal?: boolean;
   isDeprecated?: boolean;
+  shouldDisablePostProcessing?: boolean;
 };
 
 export type Tone = Replace<DatabaseTone, FiremixTimestamp, number>;
@@ -31,5 +32,6 @@ export const ToneZod = z
     sortOrder: z.number(),
     isGlobal: z.boolean().optional(),
     isDeprecated: z.boolean().optional(),
+    shouldDisablePostProcessing: z.boolean().optional(),
   })
   .strict() satisfies z.ZodType<Tone>;
