@@ -38,8 +38,8 @@ export async function runEval({
   finalText = finalText.trim();
 
   const repo = getGentextRepo();
-  console.log("Original Text:", originalText);
-  console.log("Final Text:", finalText);
+  console.log("Orig Text:", originalText);
+  console.log("Finl Text:", finalText);
 
   for (const e of evals) {
     const output = await repo.generateText({

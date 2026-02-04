@@ -128,6 +128,8 @@ CLEANING RULES:
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
 - Convert newlines and other intents into actual formatting where applicable
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove content that was later corrected by the speaker
 
 STYLE INSTRUCTIONS:
 Apply the following writing style to your output:
