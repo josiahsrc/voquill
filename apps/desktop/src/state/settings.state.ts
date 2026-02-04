@@ -15,8 +15,6 @@ import {
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
 
-import { Nullable } from "@repo/types";
-
 export type SettingsApiKeyProvider = ApiKeyProvider;
 
 export type SettingsApiKey = ApiKey;
@@ -32,12 +30,6 @@ export type SettingsTranscriptionState = {
 export type SettingsGenerativeState = {
   mode: PostProcessingMode;
   selectedApiKeyId: string | null;
-};
-
-export type LanguageSwitchState = {
-  enabled: boolean;
-  secondaryLanguage: Nullable<string>;
-  activeLanguage: "primary" | "secondary";
 };
 
 export type SettingsState = {
@@ -56,7 +48,6 @@ export type SettingsState = {
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
   agentMode: SettingsGenerativeState;
-  languageSwitch: LanguageSwitchState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
@@ -97,11 +88,6 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   agentMode: {
     mode: DEFAULT_AGENT_MODE,
     selectedApiKeyId: null,
-  },
-  languageSwitch: {
-    enabled: false,
-    secondaryLanguage: null,
-    activeLanguage: "primary",
   },
   apiKeys: [],
   apiKeysStatus: "idle",

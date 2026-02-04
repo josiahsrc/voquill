@@ -22,9 +22,6 @@ export type UserPreferences = {
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
   lastSeenFeature: Nullable<string>;
-  languageSwitchEnabled: boolean;
-  secondaryDictationLanguage: Nullable<string>;
-  activeDictationLanguage: "primary" | "secondary";
   preferredMicrophone: Nullable<string>;
   ignoreUpdateDialog: boolean;
   incognitoModeEnabled: boolean;

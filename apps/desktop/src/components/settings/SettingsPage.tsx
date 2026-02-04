@@ -16,7 +16,6 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
-  SwapHorizOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
 } from "@mui/icons-material";
@@ -40,10 +39,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
-import {
-  setPreferredLanguage,
-  setSecondaryDictationLanguage,
-} from "../../actions/user.actions";
+import { setPreferredLanguage } from "../../actions/user.actions";
 import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import {
@@ -91,11 +87,6 @@ export default function SettingsPage() {
     return user?.preferredLanguage ?? getDetectedSystemLocale();
   });
 
-  const { languageSwitchEnabled, secondaryLanguage } = useAppStore((state) => ({
-    languageSwitchEnabled: state.settings.languageSwitch.enabled,
-    secondaryLanguage: state.settings.languageSwitch.secondaryLanguage,
-  }));
-
   const dictationLanguageWarning = useAppStore((state) => {
     const hasPostProcessingEnabled = getGenerativePrefs(state).mode !== "none";
     if (hasPostProcessingEnabled) {
@@ -132,11 +123,6 @@ export default function SettingsPage() {
     void setPreferredLanguage(nextValue).then(() => {
       loadTones();
     });
-  };
-
-  const handleSecondaryLanguageChange = (event: SelectChangeEvent<string>) => {
-    const nextValue = event.target.value;
-    void setSecondaryDictationLanguage(nextValue);
   };
 
   const openChangePasswordDialog = () => {
@@ -367,46 +353,6 @@ export default function SettingsPage() {
       }
     >
       {dictationLanguageComp}
-      {languageSwitchEnabled && (
-        <ListTile
-          title={<FormattedMessage defaultMessage="Secondary language" />}
-          leading={<SwapHorizOutlined />}
-          disableRipple={true}
-          trailing={
-            <Box
-              onClick={(event) => event.stopPropagation()}
-              sx={{
-                minWidth: 200,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <Select
-                value={secondaryLanguage ?? "fr"}
-                onChange={handleSecondaryLanguageChange}
-                size="small"
-                variant="outlined"
-                fullWidth
-                inputProps={{ "aria-label": "Secondary dictation language" }}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                    },
-                  },
-                }}
-              >
-                {DICTATION_LANGUAGE_OPTIONS.map(([value, label]) => (
-                  <MenuItem key={value} value={value}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          }
-        />
-      )}
       {allowChangeTranscription && (
         <ListTile
           title={<FormattedMessage defaultMessage="AI transcription" />}

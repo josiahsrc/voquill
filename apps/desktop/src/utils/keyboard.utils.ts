@@ -3,7 +3,6 @@ import { getPlatform } from "./platform.utils";
 
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
-export const LANGUAGE_SWITCH_HOTKEY = "language-switch";
 export const SWITCH_WRITING_STYLE_HOTKEY = "switch-writing-style";
 export const ADDITIONAL_LANGUAGE_HOTKEY_PREFIX = "additional-language:";
 
@@ -61,11 +60,6 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
     macos: [["Function"]],
     windows: [["MetaLeft", "ControlLeft"]],
     linux: [["MetaLeft", "ControlLeft"]],
-  },
-  [LANGUAGE_SWITCH_HOTKEY]: {
-    macos: [["controlLeft", "ShiftLeft", "KeyL"]],
-    windows: [["ControlLeft", "ShiftLeft", "KeyL"]],
-    linux: [["ControlLeft", "ShiftLeft", "KeyL"]],
   },
 };
 

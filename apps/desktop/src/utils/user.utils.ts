@@ -77,30 +77,19 @@ export const getMyPrimaryDictationLanguage = (state: AppState): string => {
   return getDetectedSystemLocale();
 };
 
-export const getMyRawDictationLanguage = (state: AppState): string => {
-  const { enabled, secondaryLanguage, activeLanguage } =
-    state.settings.languageSwitch;
-
-  if (enabled && activeLanguage === "secondary" && secondaryLanguage) {
-    return secondaryLanguage;
-  }
-
-  return getMyPrimaryDictationLanguage(state);
-};
-
 export const getMyDictationLanguage = (state: AppState): string => {
   const override = state.dictationLanguageOverride;
   if (override) {
     return override;
   }
 
-  return getMyRawDictationLanguage(state);
+  return getMyPrimaryDictationLanguage(state);
 };
 
 export const loadMyEffectiveDictationLanguage = async (
   state: AppState,
 ): Promise<string> => {
-  let lang = getMyRawDictationLanguage(state);
+  let lang = getMyDictationLanguage(state);
   if (lang === KEYBOARD_LAYOUT_LANGUAGE) {
     lang = await invoke<string>("get_keyboard_language").catch((e) => {
       console.error("Failed to get keyboard language:", e);
