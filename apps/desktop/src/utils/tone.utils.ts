@@ -2,25 +2,81 @@ import { Nullable, Tone } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
-import { getAppState } from "../store";
 import { getEffectiveStylingMode } from "./feature.utils";
-import { getMyPreferredLocale, getMyUser } from "./user.utils";
+import { getMyUser, getMyUserPreferences } from "./user.utils";
 
 export const getDefaultSystemTones = (): Tone[] => {
-  const locale = getMyPreferredLocale(getAppState());
-  const intl = getIntl(locale);
+  const intl = getIntl();
 
   return [
     {
       id: "default",
       name: intl.formatMessage({
-        defaultMessage: "Default",
+        defaultMessage: "Clean",
       }),
-      promptTemplate: `Do not modify the style or tone of the transcript. Focus solely on fixing grammar mistakes and punctuation errors without changing the speaker's original tone or intent.`,
+      promptTemplate: `
+Sound like the speaker, but written. Fix grammar, remove filler and disfluencies, and lightly restructure for readability while keeping the speaker's vocabulary, sentence patterns, and tone intact. The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it.
+      `.trim(),
       isSystem: true,
       createdAt: 0,
-      sortOrder: -1,
+      sortOrder: 0,
     },
+    {
+      id: "verbatim",
+      name: intl.formatMessage({
+        defaultMessage: "Verbatim",
+      }),
+      promptTemplate: `
+Produce a near-exact transcription. Add punctuation, capitalization, and paragraph breaks for readability, but do NOT remove filler words, do NOT fix grammar, and do NOT restructure sentences. Preserve exactly what was said, including hesitations and repeated words.
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 1,
+    },
+    {
+      id: "email",
+      name: intl.formatMessage({
+        defaultMessage: "Email",
+      }),
+      promptTemplate: `
+Format the transcript as an email. Infer an appropriate greeting and sign-off from context, or use sensible defaults. Organize the body into clear, logically ordered paragraphs — if the speaker jumped between topics, group related points together. Keep the tone professional but warm. The result should be ready to paste into an email client and send.
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 2,
+    },
+    {
+      id: "chat",
+      name: intl.formatMessage({
+        defaultMessage: "Chat",
+      }),
+      promptTemplate: `
+Optimize for chat platforms like Slack, Discord, or iMessage. Compress to the essential point in 1-3 short sentences. Keep the language casual and conversational. Drop any preamble or unnecessary context. If the speaker dictated multiple points, break them into separate short lines rather than a paragraph.
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 3,
+    },
+    {
+      id: "formal",
+      name: intl.formatMessage({
+        defaultMessage: "Formal",
+      }),
+      promptTemplate: `
+Rewrite in a polished, professional register. Use complete sentences, precise vocabulary, and proper grammar. Avoid contractions, colloquialisms, and casual phrasing. The result should be suitable for official documents, proposals, or professional correspondence. It is expected that the speaker's casual voice will be replaced with a formal one.
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 4,
+    },
+    ...getDeprecatedSystemTones(),
+  ];
+};
+
+const getDeprecatedSystemTones = (): Tone[] => {
+  const intl = getIntl();
+
+  return [
     {
       id: "light",
       name: intl.formatMessage({
@@ -34,6 +90,7 @@ Only apply light edits necessary for clarity and correctness.
       isSystem: true,
       createdAt: 0,
       sortOrder: 0,
+      isDeprecated: true,
     },
     {
       id: "casual",
@@ -47,6 +104,7 @@ Make the language vocal, clean, and free of filler while preserving the speaker'
       isSystem: true,
       createdAt: 0,
       sortOrder: 1,
+      isDeprecated: true,
     },
     {
       id: "formal",
@@ -60,6 +118,7 @@ Make the language vocal, clean, and free of filler while preserving the speaker'
       isSystem: true,
       createdAt: 0,
       sortOrder: 2,
+      isDeprecated: true,
     },
     {
       id: "business",
@@ -73,6 +132,7 @@ Make the language vocal, clean, and free of filler while preserving the speaker'
       isSystem: true,
       createdAt: 0,
       sortOrder: 3,
+      isDeprecated: true,
     },
     {
       id: "punny",
@@ -87,6 +147,7 @@ You must inject clever puns throughout the result.
       isSystem: true,
       createdAt: 0,
       sortOrder: 4,
+      isDeprecated: true,
     },
   ];
 };
@@ -137,8 +198,18 @@ const toneGroupOrder = (tone: Tone): number => {
 };
 
 export const getSortedToneIds = (state: AppState): string[] => {
+  const usedToneIds = new Set([
+    getMyUser(state)?.selectedToneId,
+    getMyUserPreferences(state)?.activeToneId,
+    ...getActiveManualToneIds(state),
+    ...Object.values(state.appTargetById)
+      .map((t) => t.toneId)
+      .filter(Boolean),
+  ]);
+
   const tones = Object.values(state.toneById);
   return [...tones]
+    .filter((t) => !t.isDeprecated || usedToneIds.has(t.id))
     .sort(
       (left, right) =>
         toneGroupOrder(left) - toneGroupOrder(right) ||
