@@ -41,7 +41,8 @@ export async function runEval({
   console.log("Orig Text:", originalText);
   console.log("Finl Text:", finalText);
 
-  for (const e of evals) {
+  // for (const e of evals) {
+  const promises = evals.map(async (e) => {
     const output = await repo.generateText({
       system:
         "You are an evaluator. Score the final text based on the given criteria. Return a score between 0 and 10 and a reason for your score.",
@@ -64,5 +65,7 @@ export async function runEval({
       result.score,
       `Eval failed for "${e.criteria}": ${result.reason}`,
     ).toBeGreaterThanOrEqual(e.acceptanceScore);
-  }
+  });
+
+  await Promise.all(promises);
 }

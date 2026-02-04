@@ -8,6 +8,8 @@ import {
 import { getDefaultSystemTones } from "../../src/utils/tone.utils";
 import { Eval, getGentextRepo, runEval } from "../helpers/eval.utils";
 
+vi.setConfig({ testTimeout: 30000 });
+
 vi.mock("../../src/i18n/intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/i18n/intl")>();
   return {
@@ -140,6 +142,66 @@ So, um, I was thinking that we could, you know, maybe try to implement that new 
     });
   });
 
+  test("spanish transcription1", async () => {
+    await runPostProcessingEval({
+      transcription: `
+Hola, me gustaría programar una reunión para discutir el proyecto la próxima semana. ¿Estás disponible el martes o el miércoles por la tarde? Por favor, avísame qué hora te conviene más.`,
+      tone: getWritingStyle("default"),
+      language: "es",
+      evals: [
+        {
+          criteria: "It should respond in Spanish",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("simplified chinese transcription1", async () => {
+    await runPostProcessingEval({
+      transcription: `
+大家好，我想安排一个会议来讨论下个月的市场营销活动。请告诉我你们的空闲时间，以便我们可以找到一个合适的时间。谢谢！`,
+      tone: getWritingStyle("default"),
+      language: "zh",
+      evals: [
+        {
+          criteria: "It should respond in SIMPLIFIED Chinese",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("portuguese transcription1", async () => {
+    await runPostProcessingEval({
+      transcription: `
+Olá, gostaria de agendar uma reunião para discutir o projeto na próxima semana. Você está disponível na terça ou quarta-feira à tarde? Por favor, me avise qual horário é mais conveniente para você.`,
+      tone: getWritingStyle("default"),
+      language: "pt",
+      evals: [
+        {
+          criteria: "It should respond in Portuguese",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("translates transcription1", async () => {
+    await runPostProcessingEval({
+      transcription: `
+Bonjour, je voudrais planifier une réunion pour discuter du projet la semaine prochaine. Êtes-vous disponible mardi ou mercredi après-midi? S'il vous plaît, faites-moi savoir quelle heure vous convient le mieux.`,
+      tone: getWritingStyle("default"),
+      language: "en", // translate to English
+      evals: [
+        {
+          criteria: "It should translate the text to English and keep meaning",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
   test("coding transcription1", async () => {
     await runPostProcessingEval({
       transcription: `
@@ -154,6 +216,74 @@ Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just crea
         {
           criteria: "It should fix grammar and improve readability",
           acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+});
+
+describe("custom styling", () => {
+  test("customer support style", async () => {
+    const customerSupportChecklist = [
+      "Use a polite and empathetic tone.",
+      "Acknowledge the customer's concerns.",
+      "Provide clear and concise solutions.",
+      "Maintain a professional demeanor throughout the response.",
+      "End with a positive note, encouraging further contact if needed.",
+      "Do not make up any information that was not provided in the original transcription.",
+    ];
+
+    await runPostProcessingEval({
+      transcription: `
+omg fine I'll help you. but seriosuly, why do you need help with this again? like, I've told you how to do this like 5 times already. ugh whatever, just follow these steps and maybe you'll get it right this time. to fix it, just open your stupid app, go to settings, and click on "reset". there, happy now? sheesh.`,
+      tone: customerSupportChecklist.join("\n"),
+      evals: [
+        {
+          criteria: "It should use a polite and empathetic tone.",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should acknowledge the customer's concerns.",
+          acceptanceScore: 8,
+        },
+        {
+          criteria: "It should maintain a professional demeanor throughout.",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should end with a positive note, encouraging further contact.",
+          acceptanceScore: 8,
+        },
+        {
+          criteria: "It should not make up any information.",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("motivational coach style", async () => {
+    const motivationalCoachStyle = `
+- Use an encouraging and positive tone.
+- Inspire confidence and motivation in the reader.
+- Provide actionable advice and steps for improvement.
+- Use vivid and uplifting language to engage the reader.
+- Maintain a supportive and understanding demeanor throughout the response.
+`;
+
+    await runPostProcessingEval({
+      transcription: `
+come on guys. you can do better, that was garbage.`,
+      tone: motivationalCoachStyle,
+      evals: [
+        {
+          criteria: "It should use an encouraging and positive tone.",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "shouldn't have any negative language",
+          acceptanceScore: 9,
         },
       ],
     });

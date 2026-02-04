@@ -108,11 +108,11 @@ export const buildLocalizedPostProcessingPrompt = ({
   const languageName = getDisplayNameForLanguage(dictationLanguage);
 
   return `
-Your task is to clean up and format a transcription.
+Your task is to post-process a transcription.
 
 Context:
-- The user's name is ${userName}.
-- The user wants the result in ${languageName}
+- The speaker's name is ${userName}.
+- The speaker wants the processed transcription to be in the ${languageName} language.
 
 Instructions:
 \`\`\`
@@ -124,7 +124,7 @@ Here is the transcript that you need to process:
 ${transcript}
 \`\`\`
 
-Clean up and format the transcription according to the instructions.
+Post-process transcription according to the instructions.
 `;
 };
 
