@@ -15,8 +15,6 @@ import {
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
 
-import { Nullable } from "@repo/types";
-
 export type SettingsApiKeyProvider = ApiKeyProvider;
 
 export type SettingsApiKey = ApiKey;
@@ -34,12 +32,6 @@ export type SettingsGenerativeState = {
   selectedApiKeyId: string | null;
 };
 
-export type LanguageSwitchState = {
-  enabled: boolean;
-  secondaryLanguage: Nullable<string>;
-  activeLanguage: "primary" | "secondary";
-};
-
 export type SettingsState = {
   changePasswordDialogOpen: boolean;
   deleteAccountDialog: boolean;
@@ -52,10 +44,10 @@ export type SettingsState = {
   aiPostProcessingDialogOpen: boolean;
   agentModeDialogOpen: boolean;
   moreSettingsDialogOpen: boolean;
+  dictationLanguageDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
   agentMode: SettingsGenerativeState;
-  languageSwitch: LanguageSwitchState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
@@ -81,6 +73,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessingDialogOpen: false,
   agentModeDialogOpen: false,
   moreSettingsDialogOpen: false,
+  dictationLanguageDialogOpen: false,
   aiTranscription: {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,
@@ -95,11 +88,6 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   agentMode: {
     mode: DEFAULT_AGENT_MODE,
     selectedApiKeyId: null,
-  },
-  languageSwitch: {
-    enabled: false,
-    secondaryLanguage: null,
-    activeLanguage: "primary",
   },
   apiKeys: [],
   apiKeysStatus: "idle",

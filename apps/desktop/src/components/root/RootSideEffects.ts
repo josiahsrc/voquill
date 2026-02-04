@@ -30,11 +30,14 @@ import {
 import {
   migratePreferredMicrophoneToPreferences,
   refreshCurrentUser,
-  toggleActiveDictationLanguage,
 } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
-import { useHotkeyFire, useHotkeyHold } from "../../hooks/hotkey.hooks";
+import {
+  useHotkeyFire,
+  useHotkeyHold,
+  useHotkeyHoldMany,
+} from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import type { RecordingMode } from "../../state/app.state";
@@ -66,10 +69,9 @@ import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
-  LANGUAGE_SWITCH_HOTKEY,
+  getAdditionalLanguageEntries,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
-import { KEYBOARD_LAYOUT_LANGUAGE } from "../../utils/language.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
@@ -81,12 +83,11 @@ import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
   getMyPreferredMicrophone,
-  getMyRawDictationLanguage,
+  getMyPrimaryDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import {
   consumeSurfaceWindowFlag,
-  setTrayTitle,
   surfaceMainWindow,
 } from "../../utils/window.utils";
 
@@ -508,6 +509,9 @@ export const RootSideEffects = () => {
       }
     } finally {
       session?.cleanup();
+      produceAppState((draft) => {
+        draft.dictationLanguageOverride = null;
+      });
       refreshMember();
     }
   }, [clearRecordingTimers, resetRecordingState]);
@@ -521,6 +525,7 @@ export const RootSideEffects = () => {
     trackDictationStart();
     produceAppState((draft) => {
       draft.activeRecordingMode = "dictate";
+      draft.dictationLanguageOverride = getMyPrimaryDictationLanguage(state);
     });
     await startRecording();
   }, [startRecording]);
@@ -562,17 +567,30 @@ export const RootSideEffects = () => {
     controller: agentController,
   });
 
-  const languageSwitchEnabled = useAppStore(
-    (state) => state.settings.languageSwitch.enabled,
+  const additionalLanguageEntries = useAppStore(getAdditionalLanguageEntries);
+  const additionalLanguageControllers = useMemo(
+    () =>
+      additionalLanguageEntries.map((entry) => ({
+        actionName: entry.actionName,
+        controller: getOrCreateController(
+          entry.actionName,
+          () => {
+            produceAppState((draft) => {
+              draft.activeRecordingMode = "dictate";
+              draft.dictationLanguageOverride = entry.language;
+            });
+            void startRecording();
+          },
+          () => {
+            void stopRecording();
+          },
+        ),
+      })),
+    [additionalLanguageEntries, startRecording, stopRecording],
   );
-  const handleLanguageSwitch = useCallback(() => {
-    void toggleActiveDictationLanguage();
-  }, []);
 
-  useHotkeyFire({
-    actionName: LANGUAGE_SWITCH_HOTKEY,
-    isDisabled: !languageSwitchEnabled,
-    onFire: handleLanguageSwitch,
+  useHotkeyHoldMany({
+    actions: additionalLanguageControllers,
   });
 
   const isManualStyling = useAppStore(
@@ -672,23 +690,6 @@ export const RootSideEffects = () => {
   useTauriListen<void>("tone-switch-backward", () => {
     void switchWritingStyleBackward();
   });
-
-  const trayLanguageCode = useAppStore((state) => {
-    if (!state.settings.languageSwitch.enabled) {
-      return null;
-    }
-
-    const res = getMyRawDictationLanguage(state);
-    if (res === KEYBOARD_LAYOUT_LANGUAGE) {
-      return null;
-    }
-
-    return res;
-  });
-
-  useEffect(() => {
-    void setTrayTitle(trayLanguageCode);
-  }, [trayLanguageCode]);
 
   const pillHoverEnabled = useAppStore((state) => {
     if (!getIsDictationUnlocked(state)) {

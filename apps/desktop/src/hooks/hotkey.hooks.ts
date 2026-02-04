@@ -1,41 +1,44 @@
-import { useEffect, useRef } from "react";
-import { useAppStore } from "../store";
+import { useEffect, useMemo, useRef } from "react";
+import { getAppState, useAppStore } from "../store";
 import type { ActivationController } from "../utils/activation.utils";
 import { getHotkeyCombosForAction } from "../utils/keyboard.utils";
 
-export const useHotkeyHold = (args: {
-  actionName: string;
-  controller: ActivationController;
-}) => {
-  const { controller } = args;
-  const keysHeld = useAppStore((s) => s.keysHeld);
-  const availableCombos = useAppStore((state) =>
-    getHotkeyCombosForAction(state, args.actionName),
-  );
+type HoldAction = { actionName: string; controller: ActivationController };
 
-  const wasPressedRef = useRef(false);
+export const useHotkeyHold = (args: HoldAction) => {
+  const actions = useMemo(
+    () => [{ actionName: args.actionName, controller: args.controller }],
+    [args.actionName, args.controller],
+  );
+  useHotkeyHoldMany({ actions });
+};
+
+export const useHotkeyHoldMany = (args: { actions: HoldAction[] }) => {
+  const keysHeld = useAppStore((s) => s.keysHeld);
+  const hotkeyById = useAppStore((state) => state.hotkeyById);
+  const combosByAction = useMemo(() => {
+    const map: Record<string, string[][]> = {};
+    const state = getAppState();
+    for (const action of args.actions) {
+      map[action.actionName] = getHotkeyCombosForAction(
+        state,
+        action.actionName,
+      );
+    }
+    return map;
+  }, [hotkeyById, args.actions]);
+
+  const wasPressedRef = useRef<Map<string, boolean>>(new Map());
 
   useEffect(() => {
     return () => {
-      controller.dispose();
+      for (const action of args.actions) {
+        action.controller.dispose();
+      }
     };
-  }, [controller]);
+  }, [args.actions]);
 
   useEffect(() => {
-    if (
-      controller.isActive &&
-      !wasPressedRef.current &&
-      !controller.hasHadRelease
-    ) {
-      controller.forceReset();
-    }
-
-    if (availableCombos.length === 0) {
-      wasPressedRef.current = false;
-      controller.reset();
-      return;
-    }
-
     const normalize = (key: string) => key.toLowerCase();
 
     const matchesCombo = (held: string[], combo: string[]) => {
@@ -54,25 +57,43 @@ export const useHotkeyHold = (args: {
       return required.every((key) => heldSet.has(key));
     };
 
-    const isPressed = availableCombos.some((combo) =>
-      matchesCombo(keysHeld, combo),
-    );
-    const wasPressed = wasPressedRef.current;
+    for (const action of args.actions) {
+      const availableCombos = combosByAction[action.actionName] ?? [];
+      const wasPressed = wasPressedRef.current.get(action.actionName) ?? false;
 
-    if (isPressed && !wasPressed) {
-      if (controller.shouldIgnoreActivation) {
-        wasPressedRef.current = isPressed;
-        return;
+      if (
+        action.controller.isActive &&
+        !wasPressed &&
+        !action.controller.hasHadRelease
+      ) {
+        action.controller.forceReset();
       }
 
-      controller.handlePress();
-    } else if (!isPressed && wasPressed) {
-      controller.clearIgnore();
-      controller.handleRelease();
-    }
+      if (availableCombos.length === 0) {
+        wasPressedRef.current.set(action.actionName, false);
+        action.controller.reset();
+        continue;
+      }
 
-    wasPressedRef.current = isPressed;
-  }, [keysHeld, availableCombos, controller]);
+      const isPressed = availableCombos.some((combo) =>
+        matchesCombo(keysHeld, combo),
+      );
+
+      if (isPressed && !wasPressed) {
+        if (action.controller.shouldIgnoreActivation) {
+          wasPressedRef.current.set(action.actionName, isPressed);
+          continue;
+        }
+
+        action.controller.handlePress();
+      } else if (!isPressed && wasPressed) {
+        action.controller.clearIgnore();
+        action.controller.handleRelease();
+      }
+
+      wasPressedRef.current.set(action.actionName, isPressed);
+    }
+  }, [keysHeld, combosByAction, args.actions]);
 };
 
 export const useHotkeyFire = (args: {

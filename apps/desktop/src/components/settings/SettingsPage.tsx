@@ -4,6 +4,7 @@ import {
   AutoFixHighOutlined,
   DeleteForeverOutlined,
   DescriptionOutlined,
+  Edit,
   GraphicEqOutlined,
   KeyboardAltOutlined,
   LanguageOutlined,
@@ -15,13 +16,14 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
-  SwapHorizOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
 } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Chip,
+  IconButton,
   Link,
   MenuItem,
   Select,
@@ -37,10 +39,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
-import {
-  setPreferredLanguage,
-  setSecondaryDictationLanguage,
-} from "../../actions/user.actions";
+import { setPreferredLanguage } from "../../actions/user.actions";
 import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import {
@@ -48,6 +47,7 @@ import {
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
 } from "../../utils/enterprise.utils";
+import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
 import {
   DICTATION_LANGUAGE_OPTIONS,
   KEYBOARD_LAYOUT_LANGUAGE,
@@ -87,11 +87,6 @@ export default function SettingsPage() {
     return user?.preferredLanguage ?? getDetectedSystemLocale();
   });
 
-  const { languageSwitchEnabled, secondaryLanguage } = useAppStore((state) => ({
-    languageSwitchEnabled: state.settings.languageSwitch.enabled,
-    secondaryLanguage: state.settings.languageSwitch.secondaryLanguage,
-  }));
-
   const dictationLanguageWarning = useAppStore((state) => {
     const hasPostProcessingEnabled = getGenerativePrefs(state).mode !== "none";
     if (hasPostProcessingEnabled) {
@@ -113,16 +108,21 @@ export default function SettingsPage() {
     return null;
   });
 
+  const hasAdditionalLanguages = useAppStore(
+    (state) => getAdditionalLanguageEntries(state).length > 0,
+  );
+
+  const openDictationLanguageDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.dictationLanguageDialogOpen = true;
+    });
+  };
+
   const handleDictationLanguageChange = (event: SelectChangeEvent<string>) => {
     const nextValue = event.target.value;
     void setPreferredLanguage(nextValue).then(() => {
       loadTones();
     });
-  };
-
-  const handleSecondaryLanguageChange = (event: SelectChangeEvent<string>) => {
-    const nextValue = event.target.value;
-    void setSecondaryDictationLanguage(nextValue);
   };
 
   const openChangePasswordDialog = () => {
@@ -248,81 +248,29 @@ export default function SettingsPage() {
     </Section>
   );
 
-  const processing = (
-    <Section
-      title={<FormattedMessage defaultMessage="Processing" />}
-      description={
-        <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
-      }
-    >
-      <ListTile
-        title={<FormattedMessage defaultMessage="Dictation language" />}
-        leading={<LanguageOutlined />}
-        disableRipple={true}
-        trailing={
-          <Box
-            onClick={(event) => event.stopPropagation()}
-            sx={{
-              minWidth: 200,
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            {dictationLanguageWarning && (
-              <Tooltip
-                title={
-                  <Box>
-                    {dictationLanguageWarning}{" "}
-                    <Link
-                      component="button"
-                      color="inherit"
-                      sx={{ verticalAlign: "baseline" }}
-                      onClick={openPostProcessingDialog}
-                    >
-                      <FormattedMessage defaultMessage="Fix issue" />
-                    </Link>
-                  </Box>
-                }
-                slotProps={{
-                  popper: {
-                    modifiers: [
-                      { name: "offset", options: { offset: [0, -8] } },
-                    ],
-                  },
-                }}
-              >
-                <WarningAmberOutlined color="warning" fontSize="small" />
-              </Tooltip>
-            )}
-            <Select
-              value={dictationLanguage}
-              onChange={handleDictationLanguageChange}
-              size="small"
-              variant="outlined"
-              fullWidth
-              inputProps={{ "aria-label": "Dictation language" }}
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: 300,
-                  },
-                },
-              }}
-            >
-              {DICTATION_LANGUAGE_OPTIONS.map(([value, label]) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
-        }
-      />
-      {languageSwitchEnabled && (
+  const dictationLanguageComp = (
+    <>
+      {hasAdditionalLanguages ? (
         <ListTile
-          title={<FormattedMessage defaultMessage="Secondary language" />}
-          leading={<SwapHorizOutlined />}
+          title={<FormattedMessage defaultMessage="Dictation language" />}
+          leading={<LanguageOutlined />}
+          onClick={openDictationLanguageDialog}
+          trailing={
+            <Button
+              variant="outlined"
+              size="small"
+              endIcon={<Edit sx={{ fontSize: 16 }} />}
+              onClick={openDictationLanguageDialog}
+              sx={{ textTransform: "none", py: 0.5, px: 1.5, fontWeight: 400 }}
+            >
+              <FormattedMessage defaultMessage="Multiple languages" />
+            </Button>
+          }
+        />
+      ) : (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Dictation language" />}
+          leading={<LanguageOutlined />}
           disableRipple={true}
           trailing={
             <Box
@@ -334,13 +282,48 @@ export default function SettingsPage() {
                 gap: 1,
               }}
             >
+              {dictationLanguageWarning && (
+                <Tooltip
+                  title={
+                    <Box>
+                      {dictationLanguageWarning}{" "}
+                      <Link
+                        component="button"
+                        color="inherit"
+                        sx={{ verticalAlign: "baseline" }}
+                        onClick={openPostProcessingDialog}
+                      >
+                        <FormattedMessage defaultMessage="Fix issue" />
+                      </Link>
+                    </Box>
+                  }
+                  slotProps={{
+                    popper: {
+                      modifiers: [
+                        { name: "offset", options: { offset: [0, -8] } },
+                      ],
+                    },
+                  }}
+                >
+                  <WarningAmberOutlined color="warning" fontSize="small" />
+                </Tooltip>
+              )}
+              <Tooltip
+                title={
+                  <FormattedMessage defaultMessage="Set up multiple languages with different hotkeys" />
+                }
+              >
+                <IconButton size="small" onClick={openDictationLanguageDialog}>
+                  <MoreVertOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
               <Select
-                value={secondaryLanguage ?? "fr"}
-                onChange={handleSecondaryLanguageChange}
+                value={dictationLanguage}
+                onChange={handleDictationLanguageChange}
                 size="small"
                 variant="outlined"
                 fullWidth
-                inputProps={{ "aria-label": "Secondary dictation language" }}
+                inputProps={{ "aria-label": "Dictation language" }}
                 MenuProps={{
                   PaperProps: {
                     style: {
@@ -359,6 +342,17 @@ export default function SettingsPage() {
           }
         />
       )}
+    </>
+  );
+
+  const processing = (
+    <Section
+      title={<FormattedMessage defaultMessage="Processing" />}
+      description={
+        <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
+      }
+    >
+      {dictationLanguageComp}
       {allowChangeTranscription && (
         <ListTile
           title={<FormattedMessage defaultMessage="AI transcription" />}

@@ -43,6 +43,8 @@ pub struct UserPreferences {
     #[serde(default)]
     pub active_dictation_language: Option<String>,
     #[serde(default)]
+    pub additional_dictation_languages: Option<Vec<String>>,
+    #[serde(default)]
     pub preferred_microphone: Option<String>,
     #[serde(default)]
     pub ignore_update_dialog: bool,

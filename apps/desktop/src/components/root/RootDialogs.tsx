@@ -5,6 +5,7 @@ import { AITranscriptionDialog } from "../settings/AITranscriptionDialog";
 import { AudioDialog } from "../settings/AudioDialog";
 import { ClearLocalDataDialog } from "../settings/ClearLocalDataDialog";
 import { MicrophoneDialog } from "../settings/MicrophoneDialog";
+import { DictationLanguageDialog } from "../settings/DictationLanguageDialog";
 import { MoreSettingsDialog } from "../settings/MoreSettingsDialog";
 import { ProfileDialog } from "../settings/ProfileDialog";
 import { ShortcutsDialog } from "../settings/ShortcutsDialog";
@@ -30,6 +31,7 @@ export const RootDialogs = () => {
       <PaymentDialog />
       <DeleteAccountDialog />
       <MoreSettingsDialog />
+      <DictationLanguageDialog />
     </>
   );
 };

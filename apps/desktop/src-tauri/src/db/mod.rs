@@ -93,6 +93,8 @@ pub const USER_SELECTED_TONE_ID_MIGRATION_SQL: &str =
     include_str!("migrations/049_user_selected_tone_id.sql");
 pub const USER_ACTIVE_TONE_IDS_MIGRATION_SQL: &str =
     include_str!("migrations/050_user_active_tone_ids.sql");
+pub const ADDITIONAL_DICTATION_LANGUAGES_MIGRATION_SQL: &str =
+    include_str!("migrations/051_additional_dictation_languages.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -394,6 +396,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 50,
             description: "add_user_active_tone_ids",
             sql: USER_ACTIVE_TONE_IDS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 51,
+            description: "add_additional_dictation_languages",
+            sql: ADDITIONAL_DICTATION_LANGUAGES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]
