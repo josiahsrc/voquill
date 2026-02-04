@@ -4,6 +4,7 @@ import {
   AutoFixHighOutlined,
   DeleteForeverOutlined,
   DescriptionOutlined,
+  Edit,
   GraphicEqOutlined,
   KeyboardAltOutlined,
   LanguageOutlined,
@@ -21,6 +22,7 @@ import {
 } from "@mui/icons-material";
 import {
   Box,
+  Button,
   Chip,
   IconButton,
   Link,
@@ -49,6 +51,7 @@ import {
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
 } from "../../utils/enterprise.utils";
+import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
 import {
   DICTATION_LANGUAGE_OPTIONS,
   KEYBOARD_LAYOUT_LANGUAGE,
@@ -113,6 +116,16 @@ export default function SettingsPage() {
 
     return null;
   });
+
+  const hasAdditionalLanguages = useAppStore(
+    (state) => getAdditionalLanguageEntries(state).length > 0,
+  );
+
+  const openDictationLanguageDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.dictationLanguageDialogOpen = true;
+    });
+  };
 
   const handleDictationLanguageChange = (event: SelectChangeEvent<string>) => {
     const nextValue = event.target.value;
@@ -249,6 +262,103 @@ export default function SettingsPage() {
     </Section>
   );
 
+  const dictationLanguageComp = (
+    <>
+      {hasAdditionalLanguages ? (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Dictation language" />}
+          leading={<LanguageOutlined />}
+          onClick={openDictationLanguageDialog}
+          trailing={
+            <Button
+              variant="outlined"
+              size="small"
+              endIcon={<Edit sx={{ fontSize: 16 }} />}
+              onClick={openDictationLanguageDialog}
+              sx={{ textTransform: "none", py: 0.5, px: 1.5, fontWeight: 400 }}
+            >
+              <FormattedMessage defaultMessage="Multiple languages" />
+            </Button>
+          }
+        />
+      ) : (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Dictation language" />}
+          leading={<LanguageOutlined />}
+          disableRipple={true}
+          trailing={
+            <Box
+              onClick={(event) => event.stopPropagation()}
+              sx={{
+                minWidth: 200,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              {dictationLanguageWarning && (
+                <Tooltip
+                  title={
+                    <Box>
+                      {dictationLanguageWarning}{" "}
+                      <Link
+                        component="button"
+                        color="inherit"
+                        sx={{ verticalAlign: "baseline" }}
+                        onClick={openPostProcessingDialog}
+                      >
+                        <FormattedMessage defaultMessage="Fix issue" />
+                      </Link>
+                    </Box>
+                  }
+                  slotProps={{
+                    popper: {
+                      modifiers: [
+                        { name: "offset", options: { offset: [0, -8] } },
+                      ],
+                    },
+                  }}
+                >
+                  <WarningAmberOutlined color="warning" fontSize="small" />
+                </Tooltip>
+              )}
+              <Tooltip
+                title={
+                  <FormattedMessage defaultMessage="Set up multiple languages with different hotkeys" />
+                }
+              >
+                <IconButton size="small" onClick={openDictationLanguageDialog}>
+                  <MoreVertOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Select
+                value={dictationLanguage}
+                onChange={handleDictationLanguageChange}
+                size="small"
+                variant="outlined"
+                fullWidth
+                inputProps={{ "aria-label": "Dictation language" }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300,
+                    },
+                  },
+                }}
+              >
+                {DICTATION_LANGUAGE_OPTIONS.map(([value, label]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+          }
+        />
+      )}
+    </>
+  );
+
   const processing = (
     <Section
       title={<FormattedMessage defaultMessage="Processing" />}
@@ -256,80 +366,7 @@ export default function SettingsPage() {
         <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
       }
     >
-      <ListTile
-        title={<FormattedMessage defaultMessage="Dictation language" />}
-        leading={<LanguageOutlined />}
-        disableRipple={true}
-        trailing={
-          <Box
-            onClick={(event) => event.stopPropagation()}
-            sx={{
-              minWidth: 200,
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            {dictationLanguageWarning && (
-              <Tooltip
-                title={
-                  <Box>
-                    {dictationLanguageWarning}{" "}
-                    <Link
-                      component="button"
-                      color="inherit"
-                      sx={{ verticalAlign: "baseline" }}
-                      onClick={openPostProcessingDialog}
-                    >
-                      <FormattedMessage defaultMessage="Fix issue" />
-                    </Link>
-                  </Box>
-                }
-                slotProps={{
-                  popper: {
-                    modifiers: [
-                      { name: "offset", options: { offset: [0, -8] } },
-                    ],
-                  },
-                }}
-              >
-                <WarningAmberOutlined color="warning" fontSize="small" />
-              </Tooltip>
-            )}
-            <Select
-              value={dictationLanguage}
-              onChange={handleDictationLanguageChange}
-              size="small"
-              variant="outlined"
-              fullWidth
-              inputProps={{ "aria-label": "Dictation language" }}
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: 300,
-                  },
-                },
-              }}
-            >
-              {DICTATION_LANGUAGE_OPTIONS.map(([value, label]) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </Select>
-            <IconButton
-              size="small"
-              onClick={() => {
-                produceAppState((draft) => {
-                  draft.settings.dictationLanguageDialogOpen = true;
-                });
-              }}
-            >
-              <MoreVertOutlined fontSize="small" />
-            </IconButton>
-          </Box>
-        }
-      />
+      {dictationLanguageComp}
       {languageSwitchEnabled && (
         <ListTile
           title={<FormattedMessage defaultMessage="Secondary language" />}
