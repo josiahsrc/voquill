@@ -22,6 +22,7 @@ import {
 import {
   Box,
   Chip,
+  IconButton,
   Link,
   MenuItem,
   Select,
@@ -316,6 +317,16 @@ export default function SettingsPage() {
                 </MenuItem>
               ))}
             </Select>
+            <IconButton
+              size="small"
+              onClick={() => {
+                produceAppState((draft) => {
+                  draft.settings.dictationLanguageDialogOpen = true;
+                });
+              }}
+            >
+              <MoreVertOutlined fontSize="small" />
+            </IconButton>
           </Box>
         }
       />
