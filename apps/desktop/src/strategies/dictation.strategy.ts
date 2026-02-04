@@ -58,7 +58,6 @@ export class DictationStrategy extends BaseStrategy {
   async handleTranscript({
     rawTranscript,
     toneId,
-    a11yInfo,
     currentApp,
     loadingToken,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
@@ -95,7 +94,6 @@ export class DictationStrategy extends BaseStrategy {
       const result = await postProcessTranscript({
         rawTranscript: sanitizedTranscript,
         toneId,
-        a11yInfo,
       });
 
       transcript = result.transcript;

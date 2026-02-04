@@ -12,14 +12,9 @@ import {
   getTranscriptionRepo,
 } from "../repos";
 import { getAppState, produceAppState } from "../store";
-import { TextFieldInfo } from "../types/accessibility.types";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
-import {
-  applySpacingInContext,
-  extractTextFieldContext,
-} from "../utils/accessibility.utils";
 import { createId } from "../utils/id.utils";
 import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
 import {
@@ -33,6 +28,7 @@ import {
 import { getToneTemplateWithFallback } from "../utils/tone.utils";
 import {
   getMyEffectiveUserId,
+  getMyUserName,
   loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
@@ -61,7 +57,6 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
-  a11yInfo: Nullable<TextFieldInfo>;
 };
 
 export type PostProcessMetadata = {
@@ -158,7 +153,6 @@ export const transcribeAudio = async ({
 export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
-  a11yInfo,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -177,15 +171,13 @@ export const postProcessTranscript = async ({
     const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
     const toneTemplate = getToneTemplateWithFallback(state, toneId);
 
-    const textFieldContext = extractTextFieldContext(a11yInfo);
+    const ppSystem = buildSystemPostProcessingTonePrompt();
     const ppPrompt = buildLocalizedPostProcessingPrompt({
       transcript: rawTranscript,
+      userName: getMyUserName(state),
       dictationLanguage,
       toneTemplate,
-      textFieldContext: textFieldContext ?? null,
     });
-
-    const ppSystem = buildSystemPostProcessingTonePrompt();
 
     const postprocessStart = performance.now();
     const genOutput = await genRepo.generateText({
@@ -226,14 +218,8 @@ export const postProcessTranscript = async ({
     metadata.postProcessMode = "none";
   }
 
-  if (a11yInfo) {
-    processedTranscript = applySpacingInContext({
-      textToInsert: processedTranscript,
-      info: a11yInfo,
-    });
-  } else {
-    processedTranscript = processedTranscript.trim();
-  }
+  // Add a space to the end so you can continue dictating seamlessly.
+  processedTranscript = processedTranscript.trim() + " ";
 
   return {
     transcript: processedTranscript,

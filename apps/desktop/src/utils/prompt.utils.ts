@@ -3,7 +3,6 @@ import zodToJsonSchema from "zod-to-json-schema";
 import { Locale } from "../i18n/config";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
-import type { TextFieldContext } from "./accessibility.utils";
 import {
   getDisplayNameForLanguage,
   LANGUAGE_DISPLAY_NAMES,
@@ -95,127 +94,54 @@ export const buildSystemPostProcessingTonePrompt = (): string => {
   return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same.";
 };
 
-const ifNotEnglish = (languageCode: string, prompt: string): string => {
-  if (languageCode === "en") {
-    return "";
-  }
-  return ` ${prompt}`;
-};
-
-const buildStyleSection = (toneTemplate: string): string => {
-  return `
-STYLE INSTRUCTIONS:
-Apply the following writing style to your output:
-\`\`\`
-${toneTemplate}
-\`\`\`
-`;
-};
-
-const FORMATTING_RULES = `
-FORMATTING RULES (MUST APPLY):
-
-EMAIL FORMAT:
-When the transcript contains ends with a sign-off followed by a proper noun (thanks/thank you/best/cheers/sincerely/regards + name), format as an email. Place the greeting on its own line followed by a comma, separate body content into paragraphs with blank lines between them, and place the sign-off on its own line followed by a comma with the sender name on the next line.
-
-LIST FORMAT:
-Format as a list when the transcript contains three or more distinct items of the same category or type. Detect lists by identifying parallel structures where items are separated by conjunctions, pauses, or transitions. Use numbered format (1. 2. 3.) when the speaker used ordinal or cardinal enumeration words, or when the items represent sequential steps or a ranked order. Use bulleted format (- item) for all other lists where items are parallel but order is not significant. Place each item on its own line. Remove enumeration words and connective words between items.
-
-DEFAULT FORMAT:
-When no email or list patterns are detected, output as flowing prose. Insert paragraph breaks at natural topic transitions.
-`;
-
 export const buildLocalizedPostProcessingPrompt = ({
   transcript,
   dictationLanguage,
+  userName,
   toneTemplate,
-  textFieldContext,
 }: {
   transcript: string;
+  userName: string;
   dictationLanguage: string;
   toneTemplate: string;
-  textFieldContext?: TextFieldContext | null;
 }): string => {
   const languageName = getDisplayNameForLanguage(dictationLanguage);
-  const hasContext = textFieldContext != null;
-  const hasSelection =
-    textFieldContext?.selectedText &&
-    textFieldContext.selectedText.trim().length > 0;
 
-  const styleSection = buildStyleSection(toneTemplate);
-  let base: string;
-
-  if (hasSelection) {
-    // When replacing selected text, use the transcript content, fitted to boundaries
-    base = `You are a dictation assistant. Output ONLY the text that should replace the user's selected text.
-
-INPUTS:
-- Text before (immediately preceding selection): "${textFieldContext.precedingText ?? ""}"
-- Text after (immediately following selection): "${textFieldContext.followingText ?? ""}"
-- Selected text (being replaced): "${textFieldContext.selectedText}"
-- User dictation: "${transcript}"
-
-TASK: Rewrite the user dictation so it fits seamlessly between "Text before" and "Text after".
-${styleSection}
-${FORMATTING_RULES}
-RULES (must follow):
-1. Use only the user's dictation words. Do not add new words or reintroduce words from the selected text unless they also appear in the dictation.
-2. Remove only speech disfluencies (e.g., "um", "uh", stutters, false starts). Keep all meaningful words.
-3. Boundary deduplication:
-   - If the last 1-6 words of your output would duplicate the first 1-6 words of "Text after", remove those duplicated words from your output.
-   - If the first 1-6 words of your output would duplicate the last 1-6 words of "Text before", remove those duplicated words from your output.
-4. Casing:
-   - If "Text before" ends with a sentence boundary (. ? !) or is empty, start with a capital letter.
-   - Otherwise, start with lowercase (unless the first word is a proper noun or "I").
-5. Punctuation:
-   - Do not end with punctuation that makes the combined text ungrammatical.
-   - Use a comma if "Text after" continues the same sentence; use a period/question mark only if appropriate.
-6. Output must be plain text with no quotes, labels, or extra commentary.
-7. Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
-
-Your response MUST be in ${languageName}.${ifNotEnglish(dictationLanguage, "DO NOT translate to English or any other language.")} Return only the replacement text.`;
-  } else if (hasContext) {
-    // Inserting at cursor without selection
-    base = `You are cleaning dictated text that will be inserted into an existing document.
-
-SURROUNDING CONTEXT (for capitalization reference only):
-${textFieldContext.precedingText ? `Text before cursor: "${textFieldContext.precedingText}"` : "Start of document"}
-${textFieldContext.followingText ? `Text after cursor: "${textFieldContext.followingText}"` : "End of document"}
-
-TRANSCRIPT TO CLEAN:
-${transcript}
-${styleSection}
-${FORMATTING_RULES}
-INSTRUCTIONS:
-1. Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
-2. Preserve all meaningful content from the transcript
-3. Adjust capitalization based on whether text before cursor ends with sentence-ending punctuation
-4. Apply the formatting rules above to detect and format emails and lists
-5. Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
-
-CRITICAL: Your output must contain ONLY the cleaned transcript. Never include the "text before cursor" or "text after cursor" in your output. Those are provided solely for capitalization context.
-
-Return ONLY the cleaned transcript in ${languageName}.${ifNotEnglish(dictationLanguage, "Do not translate to English.")}`;
+  let languageSpec = "";
+  if (dictationLanguage !== "en") {
+    languageSpec = `Your response MUST be in ${languageName}. Do NOT translate to English.`;
   } else {
-    // No context - just clean the transcript
-    base = `Clean and format the ${languageName} transcript below.
-${styleSection}
-${FORMATTING_RULES}
+    languageSpec = `Your response MUST be in ${languageName}.`;
+  }
+
+  return `
+Your task is to clean up and format a transcription.
+
+CONTEXT:
+- The user's name is ${userName}.
+- The user wants the result in ${languageName}
+
 CLEANING RULES:
 - Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
 - Preserve all meaningful content
 - Apply the formatting rules above to detect and format emails and lists
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable
 
-Here is the transcript:
--------
+STYLE INSTRUCTIONS:
+Apply the following writing style to your output:
+\`\`\`
+${toneTemplate}
+\`\`\`
+
+Here is the transcript that you need to process:
+\`\`\`
 ${transcript}
--------
+\`\`\`
 
-Your response MUST be in ${languageName}.${ifNotEnglish(dictationLanguage, "Do not translate to English.")}`;
-  }
-
-  return base;
+Format the transcription. ${languageSpec}
+`;
 };
 
 export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
