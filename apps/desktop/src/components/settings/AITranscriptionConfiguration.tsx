@@ -55,7 +55,17 @@ const MODEL_OPTIONS: ModelOption[] = [
   {
     value: "medium",
     label: "Medium (1.53 GB)",
-    helper: "Highest accuracy, slower on CPU",
+    helper: "High accuracy, slower on CPU",
+  },
+  {
+    value: "large-turbo",
+    label: "Large Turbo (1.6 GB)",
+    helper: "Fast large model, great accuracy",
+  },
+  {
+    value: "large",
+    label: "Large (3.1 GB)",
+    helper: "Highest accuracy, requires GPU",
   },
 ];
 
