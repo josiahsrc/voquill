@@ -38,10 +38,13 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Verbatim",
       }),
       promptTemplate: `
-- Produce a near-exact transcription
+- Produce a near-exact transcription that preserves the speaker's voice
 - Add punctuation, capitalization, and paragraph breaks for readability
-- Do NOT remove filler words, do NOT fix grammar, and do NOT restructure sentences
-- Preserve exactly what was said, including hesitations and repeated words
+- Remove filler words (um, uh, like, you know), false starts, repeated words, and content the speaker later corrected
+- Do NOT fix grammar, do NOT restructure sentences, and do NOT change the speaker's word choices or phrasing
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]"
+- Put backticks around code terms like filenames, function names, and code snippets
+- Convert newlines and other intents into actual formatting where applicable
       `.trim(),
       isSystem: true,
       createdAt: 0,

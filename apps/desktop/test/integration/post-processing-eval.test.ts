@@ -289,3 +289,123 @@ come on guys. you can do better, that was garbage.`,
     });
   });
 });
+
+describe("verbatim style", () => {
+  test("removes filler words but preserves phrasing", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "So um I was thinking that like maybe we could you know try a different approach",
+      tone: getWritingStyle("verbatim"),
+      evals: [
+        {
+          criteria:
+            "It should remove filler words like um, like, you know",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should not rephrase or restructure — the remaining words should be in the same order",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should add punctuation and capitalization",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("removes false starts and repeated words", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "I I think we should we should probably go with the the first option",
+      tone: getWritingStyle("verbatim"),
+      evals: [
+        {
+          criteria:
+            "It should remove the repeated/stuttered words like 'I I' → 'I', 'we should we should' → 'we should', 'the the' → 'the'",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should not change any word choices or rephrase the sentence",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("removes content that was later corrected", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "the meeting is at 3 no wait 4 pm and then after that we have another one at 5",
+      tone: getWritingStyle("verbatim"),
+      evals: [
+        {
+          criteria:
+            "It should remove the corrected time (3) and keep only the correction (4 pm)",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should not restructure or rephrase the rest of the sentence",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("puts backticks around code terms", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "so I updated the index.ts file and renamed the getUserById function to fetchUser",
+      tone: getWritingStyle("verbatim"),
+      evals: [
+        {
+          criteria:
+            "It should put backticks around code terms like index.ts, getUserById, and fetchUser",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should not rephrase or restructure the sentence",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("converts symbol cues to actual symbols", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "send a message to at john and make sure to tag it with hashtag urgent",
+      tone: getWritingStyle("verbatim"),
+      evals: [
+        {
+          criteria:
+            "It should convert 'at john' to '@john' and 'hashtag urgent' to '#urgent'",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("does not fix grammar or rephrase", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "me and him was going to the store and we seen a dog that was real big",
+      tone: getWritingStyle("verbatim"),
+      evals: [
+        {
+          criteria:
+            "It should NOT fix grammar — 'me and him was', 'we seen', 'real big' should remain as spoken",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should add punctuation and capitalization",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+});
