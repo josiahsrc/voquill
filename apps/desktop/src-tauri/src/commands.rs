@@ -13,6 +13,7 @@ use crate::platform::{
     ChunkCallback, GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest,
 };
 use crate::system::crypto::{protect_api_key, reveal_api_key};
+use crate::utils::decode_to_utf8;
 use crate::system::models::WhisperModelSize;
 use crate::system::StorageRepo;
 use sqlx::Row;
@@ -1185,3 +1186,33 @@ pub async fn initialize_local_transcriber(
 
     Ok(true)
 }
+
+#[tauri::command]
+pub fn get_keyboard_language() -> Result<String, String> {
+    crate::platform::keyboard_language::get_keyboard_language()
+}
+
+/// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
+///
+/// Platform paths:
+///   - macOS:  ~/Library/Application Support/com.voquill.desktop/enterprise.json
+///   - Linux:  ~/.config/com.voquill.desktop/enterprise.json
+///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json
+#[tauri::command]
+pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>), String> {
+    let mut path = app
+        .path()
+        .app_config_dir()
+        .map_err(|err| err.to_string())?;
+    path.push("enterprise.json");
+    let path_str = path.to_string_lossy().to_string();
+    eprintln!("[ENTERPRISE] Reading enterprise target from {:?}", path);
+    if !path.exists() {
+        return Ok((path_str, None));
+    }
+
+    let bytes = std::fs::read(&path).map_err(|err| err.to_string())?;
+    let content = decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
+    Ok((path_str, Some(content)))
+}
+

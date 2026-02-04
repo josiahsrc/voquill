@@ -2,12 +2,14 @@ import {
 	AiGenerateTextInputZod,
 	AiTranscribeAudioInputZod,
 	DeleteTermInputZod,
+	DeleteToneInputZod,
 	EmptyObjectZod,
 	HandlerName,
 	SetMyUserInputZod,
 	StripeCreateCheckoutSessionInputZod,
 	StripeGetPricesInputZod,
 	UpsertTermInputZod,
+	UpsertToneInputZod,
 } from "@repo/functions";
 import * as admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
@@ -33,6 +35,11 @@ import {
 	listMyTerms,
 	upsertMyTerm,
 } from "./services/term.service";
+import {
+	deleteMyTone,
+	listMyTones,
+	upsertMyTone,
+} from "./services/tone.service";
 import { getMyUser, setMyUser } from "./services/user.service";
 import {
 	getDatabaseUrl,
@@ -178,6 +185,21 @@ export const handler = onCall(
 			} else if (name === "term/listMyTerms") {
 				validateData(EmptyObjectZod, args ?? {});
 				data = await listMyTerms({
+					auth,
+				});
+			} else if (name === "tone/deleteMyTone") {
+				data = await deleteMyTone({
+					auth,
+					input: validateData(DeleteToneInputZod, args),
+				});
+			} else if (name === "tone/upsertMyTone") {
+				data = await upsertMyTone({
+					auth,
+					input: validateData(UpsertToneInputZod, args),
+				});
+			} else if (name === "tone/listMyTones") {
+				validateData(EmptyObjectZod, args ?? {});
+				data = await listMyTones({
 					auth,
 				});
 			} else {

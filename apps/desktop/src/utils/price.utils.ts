@@ -1,16 +1,12 @@
-import { HandlerOutput, invokeHandler } from "@repo/functions";
+import type { HandlerOutput } from "@repo/functions";
 import { PRICE_KEYS, Prices, type PriceKey } from "@repo/pricing";
 import { MemberPlan } from "@repo/types";
 import { getRec } from "@repo/utilities";
+import { getStripeRepo } from "../repos";
 import type { AppState } from "../state/app.state";
 import { isDev, isEmulators, isProd } from "./env.utils";
 
-export const PRICING_PLANS = [
-  "community",
-  "free",
-  "enterprise",
-  ...PRICE_KEYS,
-] as const;
+export const PRICING_PLANS = ["community", "free", ...PRICE_KEYS] as const;
 export type PricingPlan = (typeof PRICING_PLANS)[number];
 
 export const convertPricingPlanToMemberPlan = (
@@ -69,9 +65,8 @@ export const getPricesWithRuntimeCaching = async () => {
     getPriceIdFromKey("pro_yearly"),
   ];
 
-  pendingPromise = invokeHandler("stripe/getPrices", {
-    priceIds: pricesIds,
-  });
+  pendingPromise =
+    getStripeRepo()?.getPrices(pricesIds) ?? Promise.resolve({ prices: {} });
 
   try {
     cachedPrices = await pendingPromise;

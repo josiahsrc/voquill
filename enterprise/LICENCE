@@ -1,0 +1,173 @@
+# Voquill Enterprise License
+
+**Version 1.0**
+
+Copyright © 2025-present Handaptive LLC. All rights reserved.
+
+This software and associated documentation files (the "Software") are the
+proprietary intellectual property of Handaptive LLC ("Licensor").
+
+## 1. Definitions
+
+**"Commercial Use"** means any use of the Software that is primarily intended
+for or directed toward commercial advantage or monetary compensation. This
+includes, without limitation: (a) use by or on behalf of a for-profit entity;
+(b) use by any entity with more than one individual user; (c) use in
+connection with any revenue-generating product, service, or activity; or
+(d) use in a production environment of any organization.
+
+**"Evaluation Use"** means use of the Software solely to assess its
+functionality and suitability, in a non-production environment, for a period
+not exceeding thirty (30) days from first use.
+
+**"Personal Use"** means use by a single natural person, solely for that
+individual's own private, non-commercial purposes.
+
+**"Educational Use"** means use by students, educators, or academic
+institutions solely for learning, teaching, or non-commercial academic
+research purposes.
+
+## 2. Grant of Limited License
+
+Subject to the terms and conditions of this License, Licensor hereby grants
+you a limited, non-exclusive, non-transferable, revocable license to use,
+copy, and modify the Software solely for Personal Use, Educational Use, or
+Evaluation Use.
+
+## 3. Commercial Use Restriction
+
+Any Commercial Use of the Software requires a separate written commercial
+license agreement with Licensor. Use of the Software without such agreement
+constitutes a material breach of this License and infringement of Licensor's
+intellectual property rights.
+
+For commercial licensing inquiries, contact: **enterprise@voquill.com**
+
+## 4. Enterprise Configuration Key
+
+Use of the encrypted enterprise configuration ("Embedded Config") requires a
+valid, signed configuration key obtained directly from Handaptive LLC under an
+active commercial license agreement. Each configuration key is issued to a
+specific organization and may only be used by that organization.
+
+You may only decrypt, load, or otherwise use the Embedded Config while you
+maintain a valid contract with Licensor and are current on all associated
+payments. If your contract expires, is terminated, or you are otherwise not in
+good standing, the Embedded Config must not be used and any cached or decrypted
+configuration data must be discarded immediately.
+
+The configuration key and this License become invalid upon expiration of or
+termination of your commercial agreement with Licensor. You may obtain a new
+configuration key by renewing or entering into a new commercial agreement with
+Licensor.
+
+Unauthorized use of the Embedded Config constitutes a material breach of this
+License.
+
+## 5. Prohibited Activities
+
+You may NOT, without prior written consent from Licensor:
+
+(a) Use the Software for any Commercial Use without a separate commercial
+    license agreement;
+
+(b) Redistribute, publish, or distribute the Software, in whole or in part,
+    in source code or binary form;
+
+(c) Sublicense, rent, lease, or lend the Software, or grant any rights in
+    the Software to any third party;
+
+(d) Remove, alter, or obscure any copyright, trademark, or other proprietary
+    notices contained in the Software;
+
+(e) Use the Software to create a competing product or service;
+
+(f) Reverse engineer, decompile, or disassemble the Software, except to the
+    extent expressly permitted by applicable law notwithstanding this
+    limitation.
+
+## 6. Intellectual Property
+
+The Software and all copies thereof are proprietary to Licensor and title
+thereto remains exclusively with Licensor. All rights in the Software not
+specifically granted in this License are reserved to Licensor. Nothing in
+this License shall be construed as granting any rights to trademarks, service
+marks, or trade names of Licensor.
+
+## 7. Term and Termination
+
+This License is effective until terminated. This License will terminate
+automatically and immediately, without notice, if you fail to comply with any
+term or condition of this License. Upon termination, you must immediately
+cease all use of the Software and destroy all copies of the Software in your
+possession or control.
+
+Licensor may also terminate this License at any time for any reason upon
+thirty (30) days written notice to you.
+
+Sections 6, 8, 9, 10, and 11 shall survive any termination of this License.
+
+## 8. Disclaimer of Warranties
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT.
+LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL BE ERROR-FREE, UNINTERRUPTED,
+OR FREE OF HARMFUL COMPONENTS, OR THAT IT WILL MEET YOUR REQUIREMENTS.
+
+## 9. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR
+BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE
+DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR USE, ARISING OUT OF OR
+RELATED TO THIS LICENSE OR THE SOFTWARE, WHETHER IN AN ACTION IN CONTRACT,
+TORT (INCLUDING NEGLIGENCE), OR OTHERWISE, EVEN IF LICENSOR HAS BEEN ADVISED
+OF THE POSSIBILITY OF SUCH DAMAGES.
+
+IN NO EVENT SHALL LICENSOR'S TOTAL CUMULATIVE LIABILITY UNDER THIS LICENSE
+EXCEED THE GREATER OF (A) THE AMOUNTS PAID BY YOU TO LICENSOR FOR THE SOFTWARE
+DURING THE TWELVE (12) MONTHS PRECEDING THE CLAIM, OR (B) ONE HUNDRED DOLLARS
+($100 USD).
+
+## 10. Governing Law and Jurisdiction
+
+This License shall be governed by and construed in accordance with the laws of
+the State of Delaware, United States, without regard to its conflict of law
+principles. Any legal action or proceeding arising under this License shall be
+brought exclusively in the federal or state courts located in Delaware, and
+the parties hereby consent to personal jurisdiction and venue therein.
+
+## 11. General Provisions
+
+**Entire Agreement.** This License constitutes the entire agreement between
+you and Licensor with respect to the Software and supersedes all prior or
+contemporaneous understandings regarding such subject matter.
+
+**Amendments.** Licensor reserves the right to modify this License at any
+time. Continued use of the Software after any such modification constitutes
+acceptance of the modified License.
+
+**Severability.** If any provision of this License is held to be
+unenforceable, such provision shall be reformed only to the extent necessary
+to make it enforceable, and the remaining provisions of this License shall
+remain in full force and effect.
+
+**Waiver.** The failure of Licensor to enforce any right or provision of this
+License shall not constitute a waiver of such right or provision.
+
+**Assignment.** You may not assign or transfer this License or your rights
+under it without Licensor's prior written consent. Licensor may assign this
+License without restriction.
+
+**Notices.** All notices required or permitted under this License shall be in
+writing and shall be delivered by email to the addresses specified by each
+party.
+
+---
+
+By using the Software, you acknowledge that you have read, understood, and
+agree to be bound by the terms and conditions of this License.
+
+For questions about this License, contact: **legal@voquill.com**
+
+For commercial licensing inquiries, contact: **enterprise@voquill.com**

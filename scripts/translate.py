@@ -34,6 +34,11 @@ APP_CONFIGS = {
         "locales_dir": SCRIPT_DIR.parent / "apps" / "web" / "src" / "i18n" / "locales",
         "i18n_command": ["npm", "run", "i18n:extract", "&&", "npm", "run", "i18n:sync"],
     },
+    "admin": {
+        "app_dir": SCRIPT_DIR.parent / "enterprise" / "admin",
+        "locales_dir": SCRIPT_DIR.parent / "enterprise" / "admin" / "src" / "i18n" / "locales",
+        "i18n_command": ["npm", "run", "i18n"],
+    },
 }
 
 LANGUAGE_NAMES = {
@@ -138,7 +143,7 @@ Text to translate:
 
 def main():
     parser = argparse.ArgumentParser(description="Translate locale files for Voquill apps")
-    parser.add_argument("app", choices=["desktop", "web"], help="The app to translate (desktop or web)")
+    parser.add_argument("app", choices=["desktop", "web", "admin"], help="The app to translate (desktop, web, or admin)")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be translated without making changes")
     args = parser.parse_args()
 

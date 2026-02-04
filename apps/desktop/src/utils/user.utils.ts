@@ -6,11 +6,18 @@ import {
   UserPreferences,
 } from "@repo/types";
 import { getRec } from "@repo/utilities";
+import { invoke } from "@tauri-apps/api/core";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
+import {
+  getAllowsChangeAgentMode,
+  getAllowsChangePostProcessing,
+  getAllowsChangeTranscription,
+} from "./enterprise.utils";
+import { KEYBOARD_LAYOUT_LANGUAGE } from "./language.utils";
 import { getEffectivePlan, getMemberExceedsLimitByState } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -21,9 +28,8 @@ export const getIsLoggedIn = (state: AppState): boolean => {
 
 export const getHasEmailProvider = (state: AppState): boolean => {
   const auth = state.auth;
-  const providers = auth?.providerData ?? [];
-  const providerIds = providers.map((p) => p.providerId);
-  return providerIds.includes("password");
+  const providers = auth?.providers ?? [];
+  return providers.includes("password");
 };
 
 export const getIsOnboarded = (state: AppState): boolean => {
@@ -36,19 +42,14 @@ export const getIsDictationUnlocked = (state: AppState): boolean => {
 
 export const getHasCloudAccess = (state: AppState): boolean => {
   const effectivePlan = getEffectivePlan(state);
-  return effectivePlan === "pro" || effectivePlan === "free";
+  return effectivePlan !== "community";
 };
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> =>
   state.auth?.uid ?? null;
 
 export const getMyEffectiveUserId = (state: AppState): string => {
-  const isCloud = getHasCloudAccess(state);
-  if (isCloud) {
-    return getMyCloudUserId(state) ?? LOCAL_USER_ID;
-  }
-
-  return LOCAL_USER_ID;
+  return state.auth?.uid ?? LOCAL_USER_ID;
 };
 
 export const getMyUser = (state: AppState): Nullable<User> => {
@@ -76,12 +77,7 @@ export const getMyPrimaryDictationLanguage = (state: AppState): string => {
   return getDetectedSystemLocale();
 };
 
-export const getMyDictationLanguage = (state: AppState): string => {
-  const override = state.dictationLanguageOverride;
-  if (override) {
-    return override;
-  }
-
+export const getMyRawDictationLanguage = (state: AppState): string => {
   const { enabled, secondaryLanguage, activeLanguage } =
     state.settings.languageSwitch;
 
@@ -92,8 +88,30 @@ export const getMyDictationLanguage = (state: AppState): string => {
   return getMyPrimaryDictationLanguage(state);
 };
 
-export const getMyDictationLanguageCode = (state: AppState): string => {
-  const language = getMyDictationLanguage(state);
+export const getMyDictationLanguage = (state: AppState): string => {
+  const override = state.dictationLanguageOverride;
+  if (override) {
+    return override;
+  }
+
+  return getMyRawDictationLanguage(state);
+};
+
+export const loadMyEffectiveDictationLanguage = async (
+  state: AppState,
+): Promise<string> => {
+  let lang = getMyRawDictationLanguage(state);
+  if (lang === KEYBOARD_LAYOUT_LANGUAGE) {
+    lang = await invoke<string>("get_keyboard_language").catch((e) => {
+      console.error("Failed to get keyboard language:", e);
+      return "en";
+    });
+  }
+
+  return lang;
+};
+
+export const formatDictationLanguageCode = (language: string): string => {
   const baseCode = language.split("-")[0];
   return baseCode.toUpperCase().slice(0, 2);
 };
@@ -180,8 +198,9 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const cloudAvailable = getHasCloudAccess(state);
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const warnings: string[] = [];
+  const allowChange = getAllowsChangeTranscription(state);
 
-  if (config.mode === "cloud") {
+  if (config.mode === "cloud" || !allowChange) {
     if (cloudAvailable) {
       if (exceedsLimits) {
         warnings.push("Cloud transcription limit exceeded.");
@@ -252,17 +271,23 @@ type GenerativeConfigInput = {
   selectedApiKeyId: string | null;
 };
 
-const getGenPrefsInternal = (
-  state: AppState,
-  config: GenerativeConfigInput,
-  context: string,
-): GenerativePrefs => {
+const getGenPrefsInternal = ({
+  state,
+  config,
+  context,
+  allowChange,
+}: {
+  state: AppState;
+  config: GenerativeConfigInput;
+  context: string;
+  allowChange: boolean;
+}): GenerativePrefs => {
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
 
-  if (config.mode === "cloud") {
+  if (config.mode === "cloud" || !allowChange) {
     if (cloudAvailable) {
       if (exceedsLimits) {
         warnings.push(`Cloud ${context} limit exceeded.`);
@@ -296,15 +321,21 @@ const getGenPrefsInternal = (
 };
 
 export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
-  return getGenPrefsInternal(
+  return getGenPrefsInternal({
     state,
-    state.settings.aiPostProcessing,
-    "post-processing",
-  );
+    config: state.settings.aiPostProcessing,
+    context: "post-processing",
+    allowChange: getAllowsChangePostProcessing(state),
+  });
 };
 
 export const getAgentModePrefs = (state: AppState): GenerativePrefs => {
-  return getGenPrefsInternal(state, state.settings.agentMode, "agent mode");
+  return getGenPrefsInternal({
+    state,
+    config: state.settings.agentMode,
+    context: "agent mode",
+    allowChange: getAllowsChangeAgentMode(state),
+  });
 };
 
 export const getEffectivePillVisibility = (

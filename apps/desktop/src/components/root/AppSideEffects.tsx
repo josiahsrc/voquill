@@ -1,5 +1,10 @@
-import { invokeHandler } from "@repo/functions";
-import { Member, Nullable, User } from "@repo/types";
+import {
+  EnterpriseConfig,
+  EnterpriseLicense,
+  Member,
+  Nullable,
+  User,
+} from "@repo/types";
 import { listify } from "@repo/utilities";
 import dayjs from "dayjs";
 import mixpanel from "mixpanel-browser";
@@ -14,11 +19,21 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { detectLocale } from "../../i18n";
+import {
+  getAuthRepo,
+  getConfigRepo,
+  getEnterpriseRepo,
+  getMemberRepo,
+  getUserRepo,
+} from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
-import { getEffectiveAuth } from "../../utils/auth.utils";
+import {
+  getEnterpriseTarget,
+  loadEnterpriseTarget,
+} from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
@@ -35,11 +50,20 @@ const AUTH_READY_TIMEOUT_MS = 4_000;
 // 10 minutes
 const CONFIG_REFRESH_INTERVAL_MS = 1000 * 60 * 10;
 
+// 5 minutes
+const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
+// 60 seconds
+const ENTERPRISE_REFRESH_INTERVAL_MS = 1000 * 60;
+
 export const AppSideEffects = () => {
   const [authReady, setAuthReady] = useState(false);
   const [streamReady, setStreamReady] = useState(false);
   const [initReady, setInitReady] = useState(false);
+  const [enterpriseReady, setEnterpriseReady] = useState(false);
+  const tokensRefreshedRef = useRef(false);
   const authReadyRef = useRef(false);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
   const member = useAppStore((state) => {
@@ -65,19 +89,18 @@ export const AppSideEffects = () => {
   };
 
   useEffect(() => {
-    // Safety timeout: if Firebase Auth doesn't respond within the timeout,
-    // proceed with null auth state. This handles cases where IndexedDB
-    // initialization hangs on some Linux systems.
+    authReadyRef.current = false;
+
     const timeoutId = setTimeout(() => {
       if (!authReadyRef.current) {
         console.warn(
-          "[AppSideEffects] Firebase Auth timed out, proceeding without auth",
+          "[AppSideEffects] Auth timed out, proceeding without auth",
         );
         onAuthStateChanged(null);
       }
     }, AUTH_READY_TIMEOUT_MS);
 
-    const unsubscribe = getEffectiveAuth().onAuthStateChanged(
+    const unsubscribe = getAuthRepo().onAuthStateChanged(
       onAuthStateChanged,
       (error) => {
         showErrorSnackbar(error);
@@ -89,11 +112,11 @@ export const AppSideEffects = () => {
       clearTimeout(timeoutId);
       unsubscribe();
     };
-  }, []);
+  }, [isEnterprise]);
 
   useIntervalAsync(CONFIG_REFRESH_INTERVAL_MS, async () => {
-    const config = await invokeHandler("config/getFullConfig", {})
-      .then((res) => res.config)
+    const config = await getConfigRepo()
+      .getFullConfig()
       .catch(() => null);
 
     if (config) {
@@ -101,6 +124,47 @@ export const AppSideEffects = () => {
         draft.config = config;
       });
     }
+  }, []);
+
+  useIntervalAsync(ENTERPRISE_REFRESH_INTERVAL_MS, async () => {
+    console.log("Loading enterprise target...");
+    const debugInfo = await loadEnterpriseTarget();
+
+    console.log(
+      "Enterprise target reloaded from",
+      debugInfo,
+      getEnterpriseTarget(),
+    );
+
+    let config: Nullable<EnterpriseConfig> = null;
+    let license: Nullable<EnterpriseLicense> = null;
+    let isEnterprise = false;
+
+    const repo = getEnterpriseRepo();
+    if (repo) {
+      isEnterprise = true;
+      [config, license] = await repo.getConfig().catch((e) => {
+        console.error("Failed to refresh enterprise config:", e);
+        return [null, null];
+      });
+    }
+
+    produceAppState((draft) => {
+      draft.enterpriseConfig = config;
+      draft.enterpriseLicense = license;
+      draft.isEnterprise = isEnterprise;
+    });
+
+    if (!tokensRefreshedRef.current) {
+      tokensRefreshedRef.current = true;
+      await getAuthRepo().refreshTokens();
+    }
+
+    setEnterpriseReady(true);
+  }, []);
+
+  useIntervalAsync(TOKEN_REFRESH_INTERVAL_MS, async () => {
+    await getAuthRepo().refreshTokens();
   }, []);
 
   useStreamWithSideEffects({
@@ -115,13 +179,13 @@ export const AppSideEffects = () => {
 
       return combineLatest([
         from(
-          invokeHandler("member/getMyMember", {})
-            .then((res) => res.member)
+          getMemberRepo()
+            .getMyMember()
             .catch(() => null),
         ),
         from(
-          invokeHandler("user/getMyUser", {})
-            .then((res) => res.user)
+          getUserRepo()
+            .getMyUser()
             .catch(() => null),
         ),
       ]);
@@ -138,7 +202,7 @@ export const AppSideEffects = () => {
         registerMembers(draft, listify(members));
       });
     },
-    dependencies: [userId, authReady],
+    dependencies: [userId, authReady, isEnterprise],
   });
 
   useAsyncEffect(async () => {
@@ -146,15 +210,15 @@ export const AppSideEffects = () => {
       await refreshCurrentUser();
       setInitReady(true);
     }
-  }, [authReady]);
+  }, [authReady, isEnterprise]);
 
   useEffect(() => {
-    if (streamReady && initReady && !initialized) {
+    if (streamReady && initReady && !initialized && enterpriseReady) {
       produceAppState((draft) => {
         draft.initialized = true;
       });
     }
-  }, [streamReady, initReady, initialized]);
+  }, [streamReady, initReady, initialized, enterpriseReady]);
 
   const isMigratingLocalUserRef = useRef(false);
   const memberPlan = member?.plan;

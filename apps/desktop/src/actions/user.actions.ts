@@ -1,6 +1,7 @@
 import {
   DictationPillVisibility,
   Nullable,
+  StylingMode,
   User,
   UserPreferences,
 } from "@repo/types";
@@ -44,7 +45,7 @@ const updateUser = async (
   updateCallback(payload);
 
   try {
-    const saved = await repo.setUser(payload);
+    const saved = await repo.setMyUser(payload);
     produceAppState((draft) => {
       setCurrentUser(draft, saved);
     });
@@ -136,12 +137,9 @@ export const addWordsToCurrentUser = async (
 };
 
 export const refreshCurrentUser = async (): Promise<void> => {
-  const state = getAppState();
-  const userId = getMyEffectiveUserId(state);
-
   try {
     const [user, preferences] = await Promise.all([
-      getUserRepo().getUser(userId),
+      getUserRepo().getMyUser(),
       getUserPreferencesRepo().getUserPreferences(),
     ]);
     produceAppState((draft) => {
@@ -149,7 +147,6 @@ export const refreshCurrentUser = async (): Promise<void> => {
         setCurrentUser(draft, user);
       }
 
-      console.log("REFRESHING", userId, preferences);
       if (preferences) {
         setUserPreferences(draft, preferences);
       } else {
@@ -459,7 +456,7 @@ export const migrateLocalUserToCloud = async (): Promise<void> => {
   };
 
   try {
-    const saved = await repo.setUser(payload);
+    const saved = await repo.setMyUser(payload);
     produceAppState((draft) => {
       setCurrentUser(draft, saved);
     });
@@ -519,6 +516,63 @@ export const setDictationPillVisibility = async (
   await updateUserPreferences((preferences) => {
     preferences.dictationPillVisibility = visibility;
   }, "Failed to save dictation pill visibility preference. Please try again.");
+};
+
+export const setStylingMode = async (
+  mode: Nullable<StylingMode>,
+): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.stylingMode = mode;
+    },
+    "Unable to set styling mode. User not found.",
+    "Failed to save styling mode preference. Please try again.",
+  );
+};
+
+export const setActiveToneIds = async (toneIds: string[]): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.activeToneIds = toneIds;
+    },
+    "Unable to update active styles. User not found.",
+    "Failed to update active styles. Please try again.",
+  );
+};
+
+export const setSelectedToneId = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      user.selectedToneId = toneId;
+    },
+    "Unable to select style. User not found.",
+    "Failed to select style. Please try again.",
+  );
+};
+
+export const activateAndSelectTone = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      const currentIds = user.activeToneIds ?? [];
+      if (!currentIds.includes(toneId)) {
+        user.activeToneIds = [toneId, ...currentIds];
+      }
+      user.selectedToneId = toneId;
+    },
+    "Unable to activate style. User not found.",
+    "Failed to activate style. Please try again.",
+  );
+};
+
+export const deselectActiveTone = async (toneId: string): Promise<void> => {
+  await updateUser(
+    (user) => {
+      const current = user.activeToneIds ?? [];
+      user.activeToneIds = current.filter((id) => id !== toneId);
+    },
+    "Unable to deselect style. User not found.",
+    "Failed to deselect style. Please try again.",
+  );
 };
 
 export const markUpgradeDialogSeen = async (): Promise<void> => {

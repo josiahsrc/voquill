@@ -7,6 +7,7 @@ pub mod overlay;
 pub mod platform;
 pub mod state;
 pub mod system;
+pub mod utils;
 
 pub fn run() {
     app::build()

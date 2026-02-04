@@ -12,5 +12,7 @@ export type OverlaySyncPayload = Partial<
     | "auth"
     | "memberById"
     | "onboarding"
+    | "toneById"
+    | "enterpriseConfig"
   >
 >;

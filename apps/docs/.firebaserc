@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "voquill-prod"
+  },
+  "targets": {
+    "voquill-prod": {
+      "hosting": {
+        "voquill-docs": [
+          "voquill-docs"
+        ]
+      }
+    }
+  }
+}

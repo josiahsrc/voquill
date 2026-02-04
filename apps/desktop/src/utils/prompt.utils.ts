@@ -102,14 +102,7 @@ const ifNotEnglish = (languageCode: string, prompt: string): string => {
   return ` ${prompt}`;
 };
 
-const buildStyleSection = (toneTemplate: string | null | undefined): string => {
-  if (!toneTemplate) {
-    return `
-STYLE INSTRUCTIONS:
-Do not modify the style or tone of the transcript. Focus solely on fixing grammar mistakes and punctuation errors without changing the speaker's original tone or intent.
-    `;
-  }
-
+const buildStyleSection = (toneTemplate: string): string => {
   return `
 STYLE INSTRUCTIONS:
 Apply the following writing style to your output:
@@ -140,7 +133,7 @@ export const buildLocalizedPostProcessingPrompt = ({
 }: {
   transcript: string;
   dictationLanguage: string;
-  toneTemplate?: string | null;
+  toneTemplate: string;
   textFieldContext?: TextFieldContext | null;
 }): string => {
   const languageName = getDisplayNameForLanguage(dictationLanguage);

@@ -1,9 +1,10 @@
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
-import { IconButton, Stack, TextField } from "@mui/material";
+import { PublicOutlined } from "@mui/icons-material";
+import { IconButton, Stack, TextField, Tooltip } from "@mui/material";
 import { getRec } from "@repo/utilities";
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
-import { useIntl } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { getTermRepo } from "../../repos";
 import { getAppState, produceAppState, useAppStore } from "../../store";
@@ -20,6 +21,7 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
     term?.destinationValue ?? "",
   );
   const isReplacement = term?.isReplacement ?? true;
+  const isGlobal = term?.isGlobal ?? false;
 
   useEffect(() => {
     setSourceValue(term?.sourceValue ?? "");
@@ -116,8 +118,9 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
         value={sourceValue}
         onChange={handleFieldChange("source")}
         onBlur={handleCommit}
+        disabled={isGlobal}
         sx={{ flex: 1 }}
-        error={sourceValue.trim() === ""}
+        error={!isGlobal && sourceValue.trim() === ""}
       />
       {isReplacement ? (
         <>
@@ -129,23 +132,39 @@ export const DictionaryRow = ({ id }: DictionaryRowProps) => {
             value={destinationValue}
             onChange={handleFieldChange("destination")}
             onBlur={handleCommit}
+            disabled={isGlobal}
             multiline
             minRows={1}
             sx={{ flex: 1 }}
-            error={destinationValue.trim() === ""}
+            error={!isGlobal && destinationValue.trim() === ""}
           />
         </>
       ) : null}
-      <IconButton
-        aria-label={intl.formatMessage(
-          { defaultMessage: "Delete dictionary item {term}" },
-          { term: term.sourceValue },
-        )}
-        onClick={handleDelete}
-        size="small"
-      >
-        <DeleteOutlineRoundedIcon fontSize="small" />
-      </IconButton>
+      {isGlobal ? (
+        <Tooltip
+          disableInteractive
+          title={
+            <FormattedMessage defaultMessage="This term is managed by your organization." />
+          }
+        >
+          <span>
+            <IconButton size="small" disabled>
+              <PublicOutlined fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : (
+        <IconButton
+          aria-label={intl.formatMessage(
+            { defaultMessage: "Delete dictionary item {term}" },
+            { term: term.sourceValue },
+          )}
+          onClick={handleDelete}
+          size="small"
+        >
+          <DeleteOutlineRoundedIcon fontSize="small" />
+        </IconButton>
+      )}
     </Stack>
   );
 };

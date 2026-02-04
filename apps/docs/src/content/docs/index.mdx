@@ -1,0 +1,43 @@
+---
+title: Voquill Docs
+description: Documentation for Voquill, the cross-platform voice-to-text desktop app.
+template: splash
+hero:
+  tagline: Cross-platform Voice OS, powered by AI.
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Getting Started
+      link: /getting-started/
+      icon: right-arrow
+    - text: Visit voquill.com
+      link: https://voquill.com
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## Next steps
+
+<CardGrid stagger>
+  <Card title="Getting Started" icon="rocket">
+    New to Voquill? Learn how to install the app and make your first
+    transcription.
+  </Card>
+  <Card title="Transcription Modes" icon="setting">
+    Choose between local, API, or cloud transcription depending on your needs.
+  </Card>
+  <Card title="Enterprise" icon="star">
+    Deploy Voquill across your organization with centralized management and
+    admin controls.
+  </Card>
+  <Card title="Tones & Dictionary" icon="pencil">
+    Customize how your transcriptions are cleaned up with tones and
+    domain-specific vocabulary.
+  </Card>
+  <Card title="Open Source" icon="github">
+    Voquill is open source. Browse the code, report issues, and contribute on
+    [GitHub](https://github.com/josiahsrc/voquill).
+  </Card>
+</CardGrid>

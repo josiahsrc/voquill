@@ -1,5 +1,5 @@
-import { invokeHandler } from "@repo/functions";
 import { listify } from "@repo/utilities";
+import { getMemberRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { registerMembers } from "../utils/app.utils";
 
@@ -11,8 +11,7 @@ export async function refreshMember(): Promise<void> {
   }
 
   try {
-    const res = await invokeHandler("member/getMyMember", {});
-    const member = res.member;
+    const member = await getMemberRepo().getMyMember();
     produceAppState((draft) => {
       registerMembers(draft, listify(member));
     });

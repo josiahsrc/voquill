@@ -1,6 +1,7 @@
 import { FiremixTimestamp } from "@firemix/core";
 import z from "zod";
-import type { Nullable, Replace } from "./common.types";
+import { StylingModeZod } from "./common.types";
+import type { Nullable, Replace, StylingMode } from "./common.types";
 
 export type DatabaseUser = {
   id: string;
@@ -23,9 +24,17 @@ export type DatabaseUser = {
   hasMigratedPreferredMicrophone?: boolean;
   cohort?: Nullable<string>;
   shouldShowUpgradeDialog?: boolean;
+  stylingMode?: Nullable<StylingMode>;
+  selectedToneId?: Nullable<string>;
+  activeToneIds?: Nullable<string[]>;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
+
+export type UserWithAuth = User & {
+  email: string;
+  isAdmin: boolean;
+};
 
 export const UserZod = z
   .object({
@@ -49,5 +58,8 @@ export const UserZod = z
     hasMigratedPreferredMicrophone: z.boolean().optional(),
     cohort: z.string().nullable().optional(),
     shouldShowUpgradeDialog: z.boolean().optional(),
+    stylingMode: StylingModeZod.nullable().optional(),
+    selectedToneId: z.string().nullable().optional(),
+    activeToneIds: z.array(z.string()).nullable().optional(),
   })
   .strict() satisfies z.ZodType<User>;

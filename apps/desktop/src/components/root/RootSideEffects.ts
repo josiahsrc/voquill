@@ -1,5 +1,6 @@
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import { secondsToMilliseconds } from "framer-motion";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useIntl } from "react-intl";
@@ -16,7 +17,11 @@ import { refreshMember } from "../../actions/member.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { showToast } from "../../actions/toast.actions";
-import { loadTones } from "../../actions/tone.actions";
+import {
+  loadTones,
+  switchWritingStyleBackward,
+  switchWritingStyleForward,
+} from "../../actions/tone.actions";
 import { storeTranscription } from "../../actions/transcribe.actions";
 import {
   checkForAppUpdates,
@@ -61,25 +66,29 @@ import {
   trackDictationStart,
 } from "../../utils/analytics.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
+import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   DICTATE_HOTKEY,
   LANGUAGE_SWITCH_HOTKEY,
   getAdditionalLanguageEntries,
+  SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
+import { KEYBOARD_LAYOUT_LANGUAGE } from "../../utils/language.utils";
+import { flashPillTooltip } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
   daysToMilliseconds,
-  hoursToMilliseconds,
   minutesToMilliseconds,
 } from "../../utils/time.utils";
+import { getToneIdToUse } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
   getMyDictationLanguage,
-  getMyDictationLanguageCode,
   getMyPreferredMicrophone,
   getMyPrimaryDictationLanguage,
+  getMyRawDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 import {
@@ -207,7 +216,7 @@ export const RootSideEffects = () => {
   }, [userId]);
 
   useIntervalAsync(
-    hoursToMilliseconds(1),
+    minutesToMilliseconds(15),
     async () => {
       await Promise.allSettled([refreshMember(), refreshCurrentUser()]);
     },
@@ -226,7 +235,7 @@ export const RootSideEffects = () => {
 
   // check for app updates every minute
   useIntervalAsync(
-    60 * 1000,
+    minutesToMilliseconds(1),
     async () => {
       // show update dialogs after one hour on first-boot
       if (!updateInitializedRef.current) {
@@ -444,9 +453,11 @@ export const RootSideEffects = () => {
           tryRegisterCurrentAppTarget(),
           session.finalize(audio),
         ]);
-        const toneId = currentApp?.toneId ?? null;
         const rawTranscript = transcribeResult.rawTranscript;
         trackAppUsed(currentApp?.name ?? "Unknown");
+        const toneId = getToneIdToUse(getAppState(), {
+          currentAppToneId: currentApp?.toneId ?? null,
+        });
 
         let transcript: string | null = null;
         let sanitizedTranscript: string | null = null;
@@ -608,6 +619,28 @@ export const RootSideEffects = () => {
     actions: additionalLanguageControllers,
   });
 
+  const isManualStyling = useAppStore(
+    (state) => getEffectiveStylingMode(state) === "manual",
+  );
+  const lastStyleSwitchRef = useRef(0);
+  const handleSwitchWritingStyle = useCallback(() => {
+    const now = Date.now();
+    const elapsed = now - lastStyleSwitchRef.current;
+    lastStyleSwitchRef.current = now;
+    if (elapsed > secondsToMilliseconds(3)) {
+      flashPillTooltip();
+      return;
+    }
+
+    void switchWritingStyleForward();
+  }, []);
+
+  useHotkeyFire({
+    actionName: SWITCH_WRITING_STYLE_HOTKEY,
+    isDisabled: !isManualStyling,
+    onFire: handleSwitchWritingStyle,
+  });
+
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
     await tryRegisterCurrentAppTarget();
   });
@@ -676,11 +709,25 @@ export const RootSideEffects = () => {
     debouncedToggle("dictation", dictationController);
   });
 
+  useTauriListen<void>("tone-switch-forward", () => {
+    void switchWritingStyleForward();
+  });
+
+  useTauriListen<void>("tone-switch-backward", () => {
+    void switchWritingStyleBackward();
+  });
+
   const trayLanguageCode = useAppStore((state) => {
     if (!state.settings.languageSwitch.enabled) {
       return null;
     }
-    return getMyDictationLanguageCode(state);
+
+    const res = getMyRawDictationLanguage(state);
+    if (res === KEYBOARD_LAYOUT_LANGUAGE) {
+      return null;
+    }
+
+    return res;
   });
 
   useEffect(() => {

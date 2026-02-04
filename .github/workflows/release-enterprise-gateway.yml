@@ -1,0 +1,196 @@
+name: Release Enterprise Gateway
+
+on:
+  push:
+    branches:
+      - main
+      - enterprise
+    paths:
+      - "enterprise/gateway/**"
+      - "packages/**"
+      - ".github/workflows/release-enterprise-gateway.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Release environment (prod promotes the most recent dev tag)"
+        type: choice
+        required: true
+        default: prod
+        options:
+          - prod
+          - dev
+      version:
+        description: "Semver version to release (prod only, defaults to latest dev tag)"
+        required: false
+        type: string
+
+env:
+  IMAGE_NAME: ghcr.io/josiahsrc/voquill/enterprise-gateway
+
+jobs:
+  metadata:
+    name: Determine release metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      commit_sha: ${{ steps.meta.outputs.commit_sha }}
+      release_env: ${{ steps.meta.outputs.release_env }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute release metadata
+        id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ENVIRONMENT: ${{ github.event.inputs.environment || '' }}
+          INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          if [[ "${EVENT_NAME}" == "push" ]]; then
+            RELEASE_ENV="dev"
+          else
+            RELEASE_ENV="${INPUT_ENVIRONMENT:-prod}"
+          fi
+
+          SEMVER_REGEX='^[0-9]+\.[0-9]+\.[0-9]+$'
+          TAG_PREFIX="enterprise-gateway"
+
+          mapfile -t DEV_TAGS < <(git tag --list "${TAG_PREFIX}-dev-v*" --sort=-v:refname)
+          LAST_DEV_TAG="${DEV_TAGS[0]:-}"
+
+          if [[ "${RELEASE_ENV}" == "dev" ]]; then
+            if [[ -z "${LAST_DEV_TAG}" ]]; then
+              VERSION_BASE="0.0.0"
+            else
+              VERSION_BASE="${LAST_DEV_TAG#${TAG_PREFIX}-dev-v}"
+            fi
+
+            if [[ ! "${VERSION_BASE}" =~ ${SEMVER_REGEX} ]]; then
+              echo "Last dev tag (${LAST_DEV_TAG:-none}) is not in x.y.z format." >&2
+              exit 1
+            fi
+
+            IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION_BASE}"
+            PATCH=$((PATCH + 1))
+            VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            TAG_NAME="${TAG_PREFIX}-dev-v${VERSION}"
+            COMMIT_SHA="${GITHUB_SHA}"
+          else
+            if [[ -n "${INPUT_VERSION}" ]]; then
+              TARGET_VERSION="${INPUT_VERSION}"
+              if [[ ! "${TARGET_VERSION}" =~ ${SEMVER_REGEX} ]]; then
+                echo "Provided version '${TARGET_VERSION}' is not in x.y.z format." >&2
+                exit 1
+              fi
+              TARGET_DEV_TAG="${TAG_PREFIX}-dev-v${TARGET_VERSION}"
+              if ! git rev-parse -q --verify "refs/tags/${TARGET_DEV_TAG}" >/dev/null; then
+                echo "Dev tag ${TARGET_DEV_TAG} not found for promotion." >&2
+                exit 1
+              fi
+            else
+              if [[ -z "${LAST_DEV_TAG}" ]]; then
+                echo "No dev tag found to promote to prod." >&2
+                exit 1
+              fi
+              TARGET_DEV_TAG="${LAST_DEV_TAG}"
+              TARGET_VERSION="${TARGET_DEV_TAG#${TAG_PREFIX}-dev-v}"
+            fi
+
+            VERSION="${TARGET_VERSION}"
+            TAG_NAME="${TAG_PREFIX}-v${VERSION}"
+            COMMIT_SHA="$(git rev-parse "${TARGET_DEV_TAG}^{commit}")"
+          fi
+
+          if git rev-parse -q --verify "refs/tags/${TAG_NAME}" >/dev/null; then
+            echo "Tag ${TAG_NAME} already exists. Aborting." >&2
+            exit 1
+          fi
+
+          {
+            echo "release_env=${RELEASE_ENV}"
+            echo "version=${VERSION}"
+            echo "tag_name=${TAG_NAME}"
+            echo "commit_sha=${COMMIT_SHA}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release tag
+        uses: actions/github-script@v7
+        env:
+          TAG_NAME: ${{ steps.meta.outputs.tag_name }}
+          TARGET_SHA: ${{ steps.meta.outputs.commit_sha }}
+        with:
+          script: |
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${process.env.TAG_NAME}`,
+              sha: process.env.TARGET_SHA,
+            });
+
+  build:
+    name: Build & Push
+    needs: metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.metadata.outputs.commit_sha }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute Docker tags
+        id: tags
+        env:
+          VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+        run: |
+          set -euo pipefail
+          tags="${IMAGE_NAME}:${VERSION}"
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            tags="${tags},${IMAGE_NAME}:prod,${IMAGE_NAME}:latest"
+          else
+            tags="${tags},${IMAGE_NAME}:dev"
+          fi
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: enterprise/gateway/Dockerfile
+          target: production
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            GATEWAY_VERSION=${{ needs.metadata.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Log published images
+        run: |
+          echo "Published enterprise-gateway images:"
+          IFS=',' read -ra TAGS <<< "${{ steps.tags.outputs.tags }}"
+          for tag in "${TAGS[@]}"; do
+            echo "  → ${tag}"
+          done

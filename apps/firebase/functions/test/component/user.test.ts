@@ -31,4 +31,103 @@ describe("api", () => {
 		expect(myUser?.id).toBe(creds.id);
 		expect(myUser?.name).toBe(testUser.name);
 	});
+
+	it("sets and retrieves stylingMode", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ stylingMode: "manual" });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.stylingMode).toBe("manual");
+	});
+
+	it("sets and retrieves selectedToneId", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ selectedToneId: "tone-abc" });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.selectedToneId).toBe("tone-abc");
+	});
+
+	it("sets and retrieves activeToneIds", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ activeToneIds: ["tone-x", "tone-y"] });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.activeToneIds).toEqual(["tone-x", "tone-y"]);
+	});
+
+	it("can set activeToneIds to null", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ activeToneIds: ["tone-x"] }),
+		});
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ activeToneIds: null }),
+		});
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.activeToneIds).toBeNull();
+	});
+
+	it("can set selectedToneId to null", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ selectedToneId: "tone-abc" }),
+		});
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ selectedToneId: null }),
+		});
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.selectedToneId).toBeNull();
+	});
+
+	it("can set stylingMode to null", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ stylingMode: "app" }),
+		});
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ stylingMode: null }),
+		});
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.stylingMode).toBeNull();
+	});
 });

@@ -21,6 +21,8 @@ import {
 } from "../../actions/user.actions";
 import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
 import { useAppStore } from "../../store";
+import { getAllowsChangeTranscription } from "../../utils/enterprise.utils";
+import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
 import { buildDeviceLabel, type GpuInfo } from "../../types/gpu.types";
 import { isGPUBuild } from "../../utils/env.utils";
@@ -65,6 +67,7 @@ export const AITranscriptionConfiguration = ({
   hideCloudOption,
 }: AITranscriptionConfigurationProps) => {
   const transcription = useAppStore((state) => state.settings.aiTranscription);
+  const allowChange = useAppStore(getAllowsChangeTranscription);
   const [gpuEnumerationError, setGpuEnumerationError] = useState<string | null>(
     null,
   );
@@ -74,8 +77,6 @@ export const AITranscriptionConfiguration = ({
   const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(
     transcription.gpuEnumerationEnabled,
   );
-
-  console.log("t", transcription);
 
   // Single click handler - does everything in one place
   const handleEnableHardwareAcceleration = useCallback(async () => {
@@ -135,6 +136,10 @@ export const AITranscriptionConfiguration = ({
   const handleApiKeyChange = useCallback((id: string | null) => {
     void setPreferredTranscriptionApiKeyId(id);
   }, []);
+
+  if (!allowChange) {
+    return <ManagedByOrgNotice />;
+  }
 
   return (
     <Stack spacing={3} alignItems="flex-start" sx={{ width: "100%" }}>

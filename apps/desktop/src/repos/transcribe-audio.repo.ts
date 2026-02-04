@@ -11,7 +11,6 @@ import {
   OpenAITranscriptionModel,
   TranscriptionModel,
 } from "@repo/voice-ai";
-import { speachesTranscribeAudio } from "../utils/speaches.utils";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
 import {
@@ -26,7 +25,9 @@ import {
   ensureFloat32Array,
   normalizeSamples,
 } from "../utils/audio.utils";
+import { invokeEnterprise } from "../utils/enterprise.utils";
 import { loadDiscreteGpus } from "../utils/gpu.utils";
+import { speachesTranscribeAudio } from "../utils/speaches.utils";
 import {
   mergeTranscriptions,
   splitAudioTranscription,
@@ -112,7 +113,9 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
     }
 
     const segmentDurationSec = this.getSegmentDurationSec();
-    const segmentSampleCount = Math.floor(input.sampleRate * segmentDurationSec);
+    const segmentSampleCount = Math.floor(
+      input.sampleRate * segmentDurationSec,
+    );
 
     // If audio fits in a single segment, transcribe directly
     if (floatSamples.length <= segmentSampleCount) {
@@ -575,6 +578,47 @@ export class SpeachesTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         inferenceDevice: "API • Speaches",
         modelSize: this.model,
         transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class EnterpriseTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  protected getSegmentDurationSec(): number {
+    return 60;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 5;
+  }
+
+  protected getBatchChunkCount(): number {
+    return 3;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wavBuffer = buildWaveFile(input.samples, input.sampleRate);
+
+    const bytes = new Uint8Array(wavBuffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]!);
+    }
+
+    const audioBase64 = btoa(binary);
+    const response = await invokeEnterprise("ai/transcribeAudio", {
+      prompt: input.prompt,
+      audioBase64,
+      audioMimeType: "audio/wav",
+      language: input.language,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        transcriptionMode: "cloud",
       },
     };
   }

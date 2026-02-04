@@ -1,3 +1,5 @@
+import z from "zod";
+
 export type Nullable<T> = T | null;
 
 export type EmptyObject = Record<string, never>;
@@ -24,6 +26,12 @@ export type TranscriptionMode = "local" | "api" | "cloud";
 
 export type PostProcessingMode = "none" | "api" | "cloud";
 
-export type AgentMode = "none" | "api" | "cloud";
+export type AgentMode = PostProcessingMode;
 
 export type DictationPillVisibility = "hidden" | "while_active" | "persistent";
+
+export type PullStatus = "in_progress" | "error" | "complete";
+
+export const STYLING_MODES = ["app", "manual"] as const;
+export type StylingMode = (typeof STYLING_MODES)[number];
+export const StylingModeZod = z.enum(STYLING_MODES);

@@ -3,6 +3,7 @@ Copyright (c) 2025-present Handaptive Software, LLC.
 Portions of this software are licensed as follows:
 
 - All third party components are licensed under the original license provided by the owner of the applicable component
+- All code residing within the enterprise directory are goverened by Voquill's enterprise license
 - All other content not mentioned above is available under the AGPLv3 license as defined below
 
                     GNU AFFERO GENERAL PUBLIC LICENSE

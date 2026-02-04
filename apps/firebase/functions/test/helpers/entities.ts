@@ -1,4 +1,4 @@
-import { Member, Term, User } from "@repo/types";
+import { Member, Term, Tone, User } from "@repo/types";
 
 export const buildMember = (overrides?: Partial<Member>): Member => ({
 	id: "defaultMemberId",
@@ -41,5 +41,15 @@ export const buildTerm = (overrides?: Partial<Term>): Term => ({
 	sourceValue: "default source",
 	destinationValue: "default destination",
 	isReplacement: true,
+	...overrides,
+});
+
+export const buildTone = (overrides?: Partial<Tone>): Tone => ({
+	id: "defaultToneId",
+	name: "Default Tone",
+	promptTemplate: "Fix the following transcript: {transcript}",
+	isSystem: false,
+	createdAt: Date.now(),
+	sortOrder: 0,
 	...overrides,
 });

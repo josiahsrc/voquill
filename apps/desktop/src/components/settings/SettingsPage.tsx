@@ -2,10 +2,11 @@ import {
   ArrowOutwardRounded,
   AutoAwesomeOutlined,
   AutoFixHighOutlined,
-  Close,
   DeleteForeverOutlined,
   DescriptionOutlined,
   GraphicEqOutlined,
+  KeyboardAltOutlined,
+  LanguageOutlined,
   LockOutlined,
   LogoutOutlined,
   MicOutlined,
@@ -14,14 +15,13 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
+  SwapHorizOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
 } from "@mui/icons-material";
 import {
   Box,
-  Button,
   Chip,
-  IconButton,
   Link,
   MenuItem,
   Select,
@@ -31,7 +31,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { invokeHandler } from "@repo/functions";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -40,52 +39,39 @@ import { setAutoLaunchEnabled } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
 import {
   setPreferredLanguage,
-  setLanguageSwitchEnabled,
   setSecondaryDictationLanguage,
 } from "../../actions/user.actions";
-import { getAuthRepo } from "../../repos";
+import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
-import { registerHotkeys } from "../../utils/app.utils";
-import { createId } from "../../utils/id.utils";
+import {
+  getAllowsChangeAgentMode,
+  getAllowsChangePostProcessing,
+  getAllowsChangeTranscription,
+} from "../../utils/enterprise.utils";
 import {
   DICTATION_LANGUAGE_OPTIONS,
+  KEYBOARD_LAYOUT_LANGUAGE,
   WHISPER_LANGUAGES,
 } from "../../utils/language.utils";
 import { getIsPaying } from "../../utils/member.utils";
 import {
   getDetectedSystemLocale,
+  getGenerativePrefs,
   getHasEmailProvider,
   getIsSignedIn,
   getMyUser,
 } from "../../utils/user.utils";
-import { HotKey } from "../common/HotKey";
 import { ListTile } from "../common/ListTile";
 import { Section } from "../common/Section";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
-import { getHotkeyRepo } from "../../repos";
-import type { Hotkey } from "@repo/types";
-import {
-  ADDITIONAL_LANGUAGE_HOTKEY_PREFIX,
-  getAdditionalLanguageActionName,
-  getAdditionalLanguageCode,
-  getDefaultHotkeyCombosForAction,
-} from "../../utils/keyboard.utils";
-import { HotkeySetting } from "./HotkeySetting";
-import {
-  AGENT_DICTATE_HOTKEY,
-  DICTATE_HOTKEY,
-  LANGUAGE_SWITCH_HOTKEY,
-} from "../../utils/keyboard.utils";
-
-type DraftLanguageEntry = {
-  id: string;
-  language: string | null;
-  keys: string[];
-};
 
 export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
   const isPaying = useAppStore(getIsPaying);
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
+  const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
+  const allowChangeAgentMode = useAppStore(getAllowsChangeAgentMode);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -106,102 +92,13 @@ export default function SettingsPage() {
     secondaryLanguage: state.settings.languageSwitch.secondaryLanguage,
   }));
 
-  const [draftLanguages, setDraftLanguages] = useState<DraftLanguageEntry[]>([]);
-
-  const [hotkeyIds, hotkeyById] = useAppStore((state) => [
-    state.settings.hotkeyIds,
-    state.hotkeyById,
-  ]);
-  const additionalLanguageHotkeys = Array.from(
-    new Set(
-      Object.values(hotkeyById)
-        .filter(
-          (hotkey): hotkey is Hotkey =>
-            Boolean(hotkey) &&
-            hotkey.actionName.startsWith(ADDITIONAL_LANGUAGE_HOTKEY_PREFIX),
-        )
-        .map((hotkey) => hotkey.actionName),
-    ),
-  );
-
-  const usedLanguages = (() => {
-    const used = new Set<string>();
-    used.add(dictationLanguage);
-    for (const actionName of additionalLanguageHotkeys) {
-      const code = getAdditionalLanguageCode(actionName);
-      if (code) {
-        used.add(code);
-      }
-    }
-    for (const entry of draftLanguages) {
-      if (entry.language) {
-        used.add(entry.language);
-      }
-    }
-    return used;
-  })();
-
-  const getAvailableLanguageOptions = (current: string | null) =>
-    DICTATION_LANGUAGE_OPTIONS.filter(([value]) => {
-      if (current && value === current) {
-        return true;
-      }
-      return !usedLanguages.has(value);
-    });
-
-  const getHotkeysForAction = (actionName: string) =>
-    hotkeyIds
-      .map((id) => hotkeyById[id])
-      .filter(
-        (hotkey): hotkey is Hotkey =>
-          Boolean(hotkey) && hotkey.actionName === actionName,
-      );
-
-  const saveHotkey = async (
-    actionName: string,
-    keys: string[],
-    id?: string,
-  ) => {
-    const newValue: Hotkey = {
-      id: id ?? createId(),
-      actionName,
-      keys,
-    };
-
-    try {
-      produceAppState((draft) => {
-        registerHotkeys(draft, [newValue]);
-        if (!draft.settings.hotkeyIds.includes(newValue.id)) {
-          draft.settings.hotkeyIds.push(newValue.id);
-        }
-        draft.settings.hotkeysStatus = "success";
-      });
-      await getHotkeyRepo().saveHotkey(newValue);
-    } catch (error) {
-      console.error("Failed to save hotkey", error);
-      showErrorSnackbar("Failed to save hotkey. Please try again.");
-    }
-  };
-
-  const deleteHotkey = async (id: string) => {
-    try {
-      produceAppState((draft) => {
-        delete draft.hotkeyById[id];
-        draft.settings.hotkeyIds = draft.settings.hotkeyIds.filter(
-          (hid) => hid !== id,
-        );
-      });
-      await getHotkeyRepo().deleteHotkey(id);
-    } catch (error) {
-      console.error("Failed to delete hotkey", error);
-      showErrorSnackbar("Failed to delete hotkey. Please try again.");
-    }
-  };
-
   const dictationLanguageWarning = useAppStore((state) => {
-    const hasPostProcessingEnabled =
-      state.settings.aiPostProcessing.mode !== "none";
+    const hasPostProcessingEnabled = getGenerativePrefs(state).mode !== "none";
     if (hasPostProcessingEnabled) {
+      return null;
+    }
+
+    if (dictationLanguage === KEYBOARD_LAYOUT_LANGUAGE) {
       return null;
     }
 
@@ -227,73 +124,6 @@ export default function SettingsPage() {
     const nextValue = event.target.value;
     void setSecondaryDictationLanguage(nextValue);
   };
-
-  const primaryHotkeys = getHotkeysForAction(DICTATE_HOTKEY);
-  const primaryHotkey = primaryHotkeys[0];
-  const primaryDefaultCombo =
-    getDefaultHotkeyCombosForAction(DICTATE_HOTKEY)[0] ?? [];
-  const primaryKeys = primaryHotkey?.keys ?? primaryDefaultCombo;
-
-  const addDraftLanguage = () => {
-    setDraftLanguages((prev) => [
-      ...prev,
-      { id: createId(), language: null, keys: [] },
-    ]);
-  };
-
-  const updateDraftLanguage = (id: string, nextLanguage: string | null) => {
-    setDraftLanguages((prev) =>
-      prev.map((entry) =>
-        entry.id === id ? { ...entry, language: nextLanguage } : entry,
-      ),
-    );
-  };
-
-  const updateDraftKeys = (id: string, nextKeys: string[]) => {
-    setDraftLanguages((prev) =>
-      prev.map((entry) =>
-        entry.id === id ? { ...entry, keys: nextKeys } : entry,
-      ),
-    );
-  };
-
-  const removeDraftLanguage = (id: string) => {
-    setDraftLanguages((prev) => prev.filter((entry) => entry.id !== id));
-  };
-
-  const tryPersistDraft = async (entry: DraftLanguageEntry) => {
-    if (!entry.language || entry.keys.length === 0) {
-      return;
-    }
-    const actionName = getAdditionalLanguageActionName(entry.language);
-    await saveHotkey(actionName, entry.keys);
-    removeDraftLanguage(entry.id);
-  };
-
-  const handleAdditionalLanguageChange = async (
-    actionName: string,
-    nextLanguage: string,
-  ) => {
-    if (actionName === getAdditionalLanguageActionName(nextLanguage)) {
-      return;
-    }
-    const existingHotkeys = getHotkeysForAction(actionName);
-    await Promise.all(
-      existingHotkeys.map((hotkey) =>
-        deleteHotkey(hotkey.id),
-      ),
-    );
-    if (existingHotkeys.length === 0) {
-      return;
-    }
-    await Promise.all(
-      existingHotkeys.map((hotkey) =>
-        saveHotkey(getAdditionalLanguageActionName(nextLanguage), hotkey.keys),
-      ),
-    );
-  };
-
-  const additionalLanguagesDisabled = languageSwitchEnabled;
 
   const openChangePasswordDialog = () => {
     produceAppState((state) => {
@@ -331,6 +161,11 @@ export default function SettingsPage() {
     });
   };
 
+  const openShortcutsDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.shortcutsDialogOpen = true;
+    });
+  };
 
   const openMoreSettingsDialog = () => {
     produceAppState((draft) => {
@@ -358,11 +193,12 @@ export default function SettingsPage() {
   const handleManageSubscription = async () => {
     setManageSubscriptionLoading(true);
     try {
-      const data = await invokeHandler(
-        "stripe/createCustomerPortalSession",
-        {},
-      );
-      openUrl(data.url);
+      const url = await getStripeRepo()?.createCustomerPortalSession();
+      if (url) {
+        openUrl(url);
+      } else {
+        showErrorSnackbar("Unable to open manage subscription page.");
+      }
     } catch (error) {
       showErrorSnackbar(error);
     } finally {
@@ -400,6 +236,11 @@ export default function SettingsPage() {
         onClick={openAudioDialog}
       />
       <ListTile
+        title={<FormattedMessage defaultMessage="Hotkey shortcuts" />}
+        leading={<KeyboardAltOutlined />}
+        onClick={openShortcutsDialog}
+      />
+      <ListTile
         title={<FormattedMessage defaultMessage="More settings" />}
         leading={<MoreVertOutlined />}
         onClick={openMoreSettingsDialog}
@@ -407,86 +248,83 @@ export default function SettingsPage() {
     </Section>
   );
 
-  const hotkeysAndLanguages = (
-    <Section title={<FormattedMessage defaultMessage="Hotkeys and Languages" />}>
-      <Stack spacing={3}>
-        <Stack spacing={1}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            <FormattedMessage defaultMessage="Dictation language" />
-          </Typography>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Box
-              onClick={(event) => event.stopPropagation()}
-              sx={{
-                minWidth: 200,
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              {dictationLanguageWarning && (
-                <Tooltip
-                  title={
-                    <Box>
-                      {dictationLanguageWarning}{" "}
-                      <Link
-                        component="button"
-                        color="inherit"
-                        sx={{ verticalAlign: "baseline" }}
-                        onClick={openPostProcessingDialog}
-                      >
-                        <FormattedMessage defaultMessage="Fix issue" />
-                      </Link>
-                    </Box>
-                  }
-                  slotProps={{
-                    popper: {
-                      modifiers: [
-                        { name: "offset", options: { offset: [0, -8] } },
-                      ],
-                    },
-                  }}
-                >
-                  <WarningAmberOutlined color="warning" fontSize="small" />
-                </Tooltip>
-              )}
-              <Select
-                value={dictationLanguage}
-                onChange={handleDictationLanguageChange}
-                size="small"
-                variant="outlined"
-                fullWidth
-                inputProps={{ "aria-label": "Dictation language" }}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                    },
+  const processing = (
+    <Section
+      title={<FormattedMessage defaultMessage="Processing" />}
+      description={
+        <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
+      }
+    >
+      <ListTile
+        title={<FormattedMessage defaultMessage="Dictation language" />}
+        leading={<LanguageOutlined />}
+        disableRipple={true}
+        trailing={
+          <Box
+            onClick={(event) => event.stopPropagation()}
+            sx={{
+              minWidth: 200,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            {dictationLanguageWarning && (
+              <Tooltip
+                title={
+                  <Box>
+                    {dictationLanguageWarning}{" "}
+                    <Link
+                      component="button"
+                      color="inherit"
+                      sx={{ verticalAlign: "baseline" }}
+                      onClick={openPostProcessingDialog}
+                    >
+                      <FormattedMessage defaultMessage="Fix issue" />
+                    </Link>
+                  </Box>
+                }
+                slotProps={{
+                  popper: {
+                    modifiers: [
+                      { name: "offset", options: { offset: [0, -8] } },
+                    ],
                   },
                 }}
               >
-                {DICTATION_LANGUAGE_OPTIONS.map(([value, label]) => (
-                  <MenuItem key={value} value={value}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-            <HotKey
-              value={primaryKeys}
-              onChange={(keys) => saveHotkey(DICTATE_HOTKEY, keys, primaryHotkey?.id)}
-            />
-          </Stack>
-          <Typography variant="body2" color="textSecondary">
-            <FormattedMessage defaultMessage="Pressing this hotkey starts dictation in the selected language." />
-          </Typography>
-        </Stack>
-        {languageSwitchEnabled && (
-          <Stack spacing={1}>
-            <Typography variant="subtitle2" fontWeight={600}>
-              <FormattedMessage defaultMessage="Secondary language" />
-            </Typography>
+                <WarningAmberOutlined color="warning" fontSize="small" />
+              </Tooltip>
+            )}
+            <Select
+              value={dictationLanguage}
+              onChange={handleDictationLanguageChange}
+              size="small"
+              variant="outlined"
+              fullWidth
+              inputProps={{ "aria-label": "Dictation language" }}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 300,
+                  },
+                },
+              }}
+            >
+              {DICTATION_LANGUAGE_OPTIONS.map(([value, label]) => (
+                <MenuItem key={value} value={value}>
+                  {label}
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+        }
+      />
+      {languageSwitchEnabled && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Secondary language" />}
+          leading={<SwapHorizOutlined />}
+          disableRipple={true}
+          trailing={
             <Box
               onClick={(event) => event.stopPropagation()}
               sx={{
@@ -518,174 +356,35 @@ export default function SettingsPage() {
                 ))}
               </Select>
             </Box>
-          </Stack>
-        )}
-        <Stack
-          spacing={2}
-          sx={{
-            opacity: additionalLanguagesDisabled ? 0.5 : 1,
-            pointerEvents: additionalLanguagesDisabled ? "none" : "auto",
-          }}
-        >
-          {additionalLanguageHotkeys.map((actionName) => {
-            const language = getAdditionalLanguageCode(actionName);
-            if (!language) {
-              return null;
-            }
-            const hotkeys = getHotkeysForAction(actionName);
-            const hotkey = hotkeys[0];
-            const currentKeys = hotkey?.keys ?? [];
-            return (
-              <Stack key={actionName} direction="row" spacing={2} alignItems="center">
-                <Select
-                  value={language}
-                  onChange={(event) =>
-                    void handleAdditionalLanguageChange(
-                      actionName,
-                      event.target.value,
-                    )
-                  }
-                  size="small"
-                  variant="outlined"
-                  sx={{ minWidth: 200 }}
-                  inputProps={{ "aria-label": "Additional dictation language" }}
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 300,
-                      },
-                    },
-                  }}
-                >
-                  {getAvailableLanguageOptions(language).map(([value, label]) => (
-                    <MenuItem key={value} value={value}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <HotKey
-                  value={currentKeys}
-                  onChange={(keys) => saveHotkey(actionName, keys, hotkey?.id)}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    void Promise.all(
-                      hotkeys.map((entry) => deleteHotkey(entry.id)),
-                    )
-                  }
-                  aria-label="Remove additional language"
-                >
-                  <Close fontSize="small" />
-                </IconButton>
-              </Stack>
-            );
-          })}
-          {draftLanguages.map((entry) => (
-            <Stack key={entry.id} direction="row" spacing={2} alignItems="center">
-              <Select
-                value={entry.language ?? ""}
-                onChange={(event) => {
-                  const nextLanguage = event.target.value;
-                  updateDraftLanguage(entry.id, nextLanguage);
-                  const updated = { ...entry, language: nextLanguage };
-                  void tryPersistDraft(updated);
-                }}
-                size="small"
-                variant="outlined"
-                sx={{ minWidth: 200 }}
-                inputProps={{ "aria-label": "Additional dictation language" }}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                    },
-                  },
-                }}
-              >
-                {getAvailableLanguageOptions(entry.language).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </Select>
-              <HotKey
-                value={entry.keys}
-                onChange={(keys) => {
-                  updateDraftKeys(entry.id, keys);
-                  void tryPersistDraft({ ...entry, keys });
-                }}
-              />
-              <IconButton
-                size="small"
-                onClick={() => removeDraftLanguage(entry.id)}
-                aria-label="Remove additional language"
-              >
-                <Close fontSize="small" />
-              </IconButton>
+          }
+        />
+      )}
+      {allowChangeTranscription && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="AI transcription" />}
+          leading={<GraphicEqOutlined />}
+          onClick={openTranscriptionDialog}
+        />
+      )}
+      {allowChangePostProcessing && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="AI post processing" />}
+          leading={<AutoFixHighOutlined />}
+          onClick={openPostProcessingDialog}
+        />
+      )}
+      {allowChangeAgentMode && (
+        <ListTile
+          title={
+            <Stack direction="row" alignItems="center">
+              <FormattedMessage defaultMessage="Agent mode" />
+              <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
             </Stack>
-          ))}
-          <Box>
-            <Button
-              variant="text"
-              onClick={addDraftLanguage}
-              disabled={additionalLanguagesDisabled}
-            >
-              <FormattedMessage defaultMessage="Add Additional Language" />
-            </Button>
-          </Box>
-        </Stack>
-        <Stack spacing={2}>
-          <HotkeySetting
-            title={<FormattedMessage defaultMessage="Agent mode" />}
-            description={
-              <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
-            }
-            actionName={AGENT_DICTATE_HOTKEY}
-          />
-          <HotkeySetting
-            title={<FormattedMessage defaultMessage="Switch dictation language" />}
-            description={
-              <FormattedMessage defaultMessage="Quickly switch between your primary and secondary dictation languages." />
-            }
-            actionName={LANGUAGE_SWITCH_HOTKEY}
-            enabled={languageSwitchEnabled}
-            onEnabledChange={(enabled) => {
-              void setLanguageSwitchEnabled(enabled);
-            }}
-          />
-        </Stack>
-      </Stack>
-    </Section>
-  );
-
-  const processing = (
-    <Section
-      title={<FormattedMessage defaultMessage="Processing" />}
-      description={
-        <FormattedMessage defaultMessage="How Voquill should manage your transcriptions." />
-      }
-    >
-      <ListTile
-        title={<FormattedMessage defaultMessage="AI transcription" />}
-        leading={<GraphicEqOutlined />}
-        onClick={openTranscriptionDialog}
-      />
-      <ListTile
-        title={<FormattedMessage defaultMessage="AI post processing" />}
-        leading={<AutoFixHighOutlined />}
-        onClick={openPostProcessingDialog}
-      />
-      <ListTile
-        title={
-          <Stack direction="row" alignItems="center">
-            <FormattedMessage defaultMessage="Agent mode" />
-            <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
-          </Stack>
-        }
-        leading={<AutoAwesomeOutlined />}
-        onClick={openAgentModeDialog}
-      />
+          }
+          leading={<AutoAwesomeOutlined />}
+          onClick={openAgentModeDialog}
+        />
+      )}
     </Section>
   );
 
@@ -703,7 +402,7 @@ export default function SettingsPage() {
           onClick={openChangePasswordDialog}
         />
       )}
-      {isPaying && (
+      {isPaying && !isEnterprise && (
         <ListTile
           title={<FormattedMessage defaultMessage="Manage subscription" />}
           leading={<PaymentOutlined />}
@@ -766,10 +465,9 @@ export default function SettingsPage() {
           <FormattedMessage defaultMessage="Settings" />
         </Typography>
         {general}
-        {hotkeysAndLanguages}
         {processing}
         {advanced}
-        {dangerZone}
+        {!isEnterprise && dangerZone}
       </Stack>
     </DashboardEntryLayout>
   );

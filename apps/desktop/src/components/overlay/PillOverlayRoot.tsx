@@ -1,8 +1,10 @@
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { Box, LinearProgress, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -10,10 +12,12 @@ import type {
   OverlayPhase,
   OverlaySyncPayload,
 } from "../../types/overlay.types";
+import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import { getManuallySelectedToneId, getToneById } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
@@ -42,16 +46,30 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
+type FlashPillPayload = {
+  duration: number;
+};
+
 export const PillOverlayRoot = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isFlashingTooltip, setIsFlashingTooltip] = useState(false);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const theme = useTheme();
+  const phase = useAppStore((state) => state.overlayPhase);
+  const levels = useAppStore((state) => state.audioLevels);
+  const isManualMode = useAppStore(
+    (state) => getEffectiveStylingMode(state) === "manual",
+  );
   const combos = useAppStore((state) =>
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
   );
   const hotkeyKeys = combos.length > 0 ? combos[0] : ["?"];
-  const phase = useAppStore((state) => state.overlayPhase);
-  const levels = useAppStore((state) => state.audioLevels);
+
+  const activeToneName = useAppStore((state) => {
+    const toneId = getManuallySelectedToneId(state);
+    return getToneById(state, toneId)?.name ?? "-";
+  });
 
   const isIdle = phase === "idle";
   const isListening = phase === "recording";
@@ -67,6 +85,17 @@ export const PillOverlayRoot = () => {
   useTauriListen<PillExpandedPayload>("pill_expanded", (payload) => {
     setIsExpanded(payload.expanded);
     setIsHovered(payload.hovered);
+  });
+
+  useTauriListen<FlashPillPayload>("flash_pill_tooltip", (payload) => {
+    setIsFlashingTooltip(true);
+    if (flashTimerRef.current) {
+      clearTimeout(flashTimerRef.current);
+    }
+    flashTimerRef.current = setTimeout(() => {
+      setIsFlashingTooltip(false);
+      flashTimerRef.current = null;
+    }, payload.duration);
   });
 
   useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
@@ -137,11 +166,17 @@ export const PillOverlayRoot = () => {
       {/* Tooltip */}
       <Box
         sx={{
-          opacity: isHovered && isIdle ? 1 : 0,
-          transform: isHovered && isIdle ? "translateY(0)" : "translateY(4px)",
+          opacity: (isHovered && isIdle) || isFlashingTooltip ? 1 : 0,
+          transform:
+            (isHovered && isIdle) || isFlashingTooltip
+              ? "translateY(0)"
+              : "translateY(4px)",
           transition: "all 150ms ease-out",
           marginBottom: theme.spacing(1),
-          pointerEvents: "none",
+          pointerEvents:
+            isManualMode && ((isHovered && isIdle) || isFlashingTooltip)
+              ? "auto"
+              : "none",
         }}
       >
         <Box
@@ -160,28 +195,82 @@ export const PillOverlayRoot = () => {
               fontWeight: 500,
               display: "flex",
               alignItems: "center",
-              gap: 0.5,
+              gap: isManualMode ? 1 : 0.5,
             }}
             component="span"
           >
-            <FormattedMessage
-              defaultMessage="You can also hold {hotkey} to dictate"
-              values={{
-                hotkey: (
-                  <HotkeyBadge
-                    keys={hotkeyKeys}
-                    sx={{
-                      bgcolor: alpha(theme.palette.common.white, 0.15),
-                      borderColor: alpha(theme.palette.common.white, 0.3),
-                      color: theme.palette.common.white,
-                      fontSize: "inherit",
-                      py: 0,
-                      px: 0.75,
-                    }}
-                  />
-                ),
-              }}
-            />
+            {isManualMode ? (
+              <>
+                <ChevronLeftIcon
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    invoke("restore_overlay_focus").catch(() => {});
+                    emitTo("main", "tone-switch-backward", {}).catch(
+                      console.error,
+                    );
+                  }}
+                  sx={{
+                    fontSize: "16px",
+                    cursor: "pointer",
+                    opacity: isHovered ? 1 : 0,
+                    width: isHovered ? 16 : 0,
+                    transition: "opacity 200ms ease-out, width 150ms ease-out",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                />
+                <Box
+                  component="span"
+                  sx={{
+                    width: isFlashingTooltip && !isHovered ? 140 : 82,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textAlign: "center",
+                    transition: "width 150ms ease-out",
+                  }}
+                >
+                  {activeToneName}
+                </Box>
+                <ChevronRightIcon
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    invoke("restore_overlay_focus").catch(() => {});
+                    emitTo("main", "tone-switch-forward", {}).catch(
+                      console.error,
+                    );
+                  }}
+                  sx={{
+                    fontSize: "16px",
+                    cursor: "pointer",
+                    opacity: isHovered ? 1 : 0,
+                    width: isHovered ? 16 : 0,
+                    transition: "opacity 200ms ease-out, width 150ms ease-out",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                  }}
+                />
+              </>
+            ) : (
+              <FormattedMessage
+                defaultMessage="You can also tap {hotkey}"
+                values={{
+                  hotkey: (
+                    <HotkeyBadge
+                      keys={hotkeyKeys}
+                      sx={{
+                        bgcolor: alpha(theme.palette.common.white, 0.15),
+                        borderColor: alpha(theme.palette.common.white, 0.3),
+                        color: theme.palette.common.white,
+                        fontSize: "inherit",
+                        py: 0,
+                        px: 0.75,
+                      }}
+                    />
+                  ),
+                }}
+              />
+            )}
           </Typography>
         </Box>
       </Box>
@@ -230,7 +319,6 @@ export const PillOverlayRoot = () => {
               transition: "opacity 150ms ease-out",
             }}
           >
-            {/* Click to dictate text */}
             {isHovered && (
               <Typography
                 sx={{

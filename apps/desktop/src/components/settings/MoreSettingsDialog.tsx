@@ -10,7 +10,7 @@ import {
   Stack,
   Switch,
 } from "@mui/material";
-import type { DictationPillVisibility } from "@repo/types";
+import type { DictationPillVisibility, StylingMode } from "@repo/types";
 import { ChangeEvent } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
@@ -18,8 +18,11 @@ import {
   setIgnoreUpdateDialog,
   setIncognitoModeEnabled,
   setIncognitoModeIncludeInStats,
+  setStylingMode,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
+import { getAllowChangeStylingMode } from "../../utils/enterprise.utils";
+import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   getEffectivePillVisibility,
   getMyUserPreferences,
@@ -34,6 +37,8 @@ export const MoreSettingsDialog = () => {
     incognitoModeEnabled,
     incognitoIncludeInStats,
     dictationPillVisibility,
+    stylingMode,
+    canChangeStylingMode,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
     return [
@@ -42,6 +47,8 @@ export const MoreSettingsDialog = () => {
       prefs?.incognitoModeEnabled ?? false,
       prefs?.incognitoModeIncludeInStats ?? false,
       getEffectivePillVisibility(prefs?.dictationPillVisibility),
+      getEffectiveStylingMode(state),
+      getAllowChangeStylingMode(state),
     ] as const;
   });
 
@@ -73,6 +80,11 @@ export const MoreSettingsDialog = () => {
   ) => {
     const visibility = event.target.value as DictationPillVisibility;
     void setDictationPillVisibility(visibility);
+  };
+
+  const handleStylingModeChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    void setStylingMode(value === "" ? null : (value as StylingMode));
   };
 
   return (
@@ -142,7 +154,7 @@ export const MoreSettingsDialog = () => {
                 size="small"
                 value={dictationPillVisibility}
                 onChange={handleDictationPillVisibilityChange}
-                sx={{ minWidth: 140 }}
+                sx={{ minWidth: 152 }}
               >
                 <MenuItem value="persistent">
                   {intl.formatMessage({ defaultMessage: "Persistent" })}
@@ -156,6 +168,30 @@ export const MoreSettingsDialog = () => {
               </Select>
             }
           />
+
+          {canChangeStylingMode && (
+            <SettingSection
+              title={<FormattedMessage defaultMessage="Styling mode" />}
+              description={
+                <FormattedMessage defaultMessage="Choose how to switch between writing styles." />
+              }
+              action={
+                <Select<string>
+                  size="small"
+                  value={stylingMode}
+                  onChange={handleStylingModeChange}
+                  sx={{ minWidth: 152 }}
+                >
+                  <MenuItem value="app">
+                    {intl.formatMessage({ defaultMessage: "Based on app" })}
+                  </MenuItem>
+                  <MenuItem value="manual">
+                    {intl.formatMessage({ defaultMessage: "Manual" })}
+                  </MenuItem>
+                </Select>
+              }
+            />
+          )}
         </Stack>
       </DialogContent>
       <DialogActions>
