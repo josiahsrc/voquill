@@ -704,3 +704,116 @@ describe("chat style", { retry: 2 }, () => {
     });
   });
 });
+
+describe("formal style", { retry: 2 }, () => {
+  test("rewrites casual speech into formal register", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "hey so basically we gotta get this done by Friday or we're totally screwed",
+      tone: getWritingStyle("formal"),
+      evals: [
+        {
+          criteria:
+            "It should use formal language — no contractions like 'we're', no slang like 'gotta', 'totally screwed'",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "The core message (deadline is Friday, consequences if missed) should be preserved",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should read like professional correspondence",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("removes filler and disfluencies", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "so um I was thinking that like we could you know maybe revisit the budget for Q3 because uh the numbers don't really add up",
+      tone: getWritingStyle("formal"),
+      evals: [
+        {
+          criteria:
+            "It should remove all filler words like um, like, you know, uh",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should use complete, well-structured sentences",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "The meaning (revisit Q3 budget because numbers don't add up) should be preserved",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("avoids contractions", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "we can't ship this until we've fixed the auth bug and I won't approve it until it's been tested",
+      tone: getWritingStyle("formal"),
+      evals: [
+        {
+          criteria:
+            "It should expand contractions — can't → cannot, we've → we have, won't → will not, it's → it has",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "All three points (cannot ship, fix auth bug, requires testing) should be present",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("handles self-corrections", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "the deadline is next Tuesday no wait Thursday we need the extra time",
+      tone: getWritingStyle("formal"),
+      evals: [
+        {
+          criteria:
+            "It should use Thursday as the deadline, dropping the corrected Tuesday mention",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should be written in a formal, professional tone",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("suitable for official documents", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "alright so after looking at everything I think we should go with vendor B they've got better pricing and their support team is way more responsive than vendor A's",
+      tone: getWritingStyle("formal"),
+      evals: [
+        {
+          criteria:
+            "It should read like it belongs in a proposal or official recommendation — polished and professional",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "Both reasons for choosing vendor B (better pricing, more responsive support) should be present",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should not use casual words like 'alright', 'way more'",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+});

@@ -101,10 +101,14 @@ export const getDefaultSystemTones = (): Tone[] => {
       }),
       promptTemplate: `
 - Rewrite in a polished, professional register
+- Fix grammar, remove filler and disfluencies, and restructure for readability
+- Keep the speaker's vocabulary, sentence patterns, while enforcing a formal tone
 - Use complete sentences, precise vocabulary, and proper grammar
 - Avoid contractions, colloquialisms, and casual phrasing
+- It should remove content that was later corrected by the speaker
 - The result should be suitable for official documents, proposals, or professional correspondence
-- It is expected that the speaker's casual voice will be replaced with a formal one
+- It is expected that the speaker's casual voice will be replaced with a formal tone that is confident
+- Preserve all meaningful content and intent from the original transcript
       `.trim(),
       isSystem: true,
       createdAt: 0,
