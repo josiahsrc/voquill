@@ -1,6 +1,6 @@
 import { describe, test, vi } from "vitest";
 import {
-  buildLocalizedPostProcessingPrompt,
+  buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
@@ -43,7 +43,7 @@ const postProcess = async ({
   userName?: string;
 }): Promise<string> => {
   const ppSystem = buildSystemPostProcessingTonePrompt();
-  const ppPrompt = buildLocalizedPostProcessingPrompt({
+  const ppPrompt = buildPostProcessingPrompt({
     transcript: transcription,
     dictationLanguage: language,
     toneTemplate: tone,

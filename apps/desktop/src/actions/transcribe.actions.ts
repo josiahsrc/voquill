@@ -18,7 +18,7 @@ import { StopRecordingResponse } from "../types/transcription-session.types";
 import { createId } from "../utils/id.utils";
 import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
 import {
-  buildLocalizedPostProcessingPrompt,
+  buildPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
@@ -175,7 +175,7 @@ export const postProcessTranscript = async ({
     const toneTemplate = getToneTemplateWithFallback(state, toneId);
 
     const ppSystem = buildSystemPostProcessingTonePrompt();
-    const ppPrompt = buildLocalizedPostProcessingPrompt({
+    const ppPrompt = buildPostProcessingPrompt({
       transcript: rawTranscript,
       userName: getMyUserName(state),
       dictationLanguage,

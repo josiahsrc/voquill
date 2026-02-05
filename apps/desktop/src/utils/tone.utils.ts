@@ -64,7 +64,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Convert newlines and other intents into actual formatting where applicable
 - Put backticks around code terms like filenames, function names, and code snippets
 - It should remove and fix content that was later corrected by the speaker
-- Format the transcription as an professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
+- Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
 - DO NOT introduce new phrasing
 - DO NOT remove phrasing that would change the speaker's intent except for fixing errors
       `.trim(),
