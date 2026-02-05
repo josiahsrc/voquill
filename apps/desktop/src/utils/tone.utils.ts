@@ -78,11 +78,17 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Chat",
       }),
       promptTemplate: `
-- Optimize for chat platforms like Slack, Discord, or iMessage
-- Compress to the essential point in 1-3 short sentences
-- Keep the language casual and conversational
-- Drop any preamble or unnecessary context
-- If the speaker dictated multiple points, break them into separate short lines rather than a paragraph
+- Keep the language casual and conversational like a text message, but make sure to capitalize the first letter of each sentence
+- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Remove filler words that detract from the casual tone of the message
+- Remove speech disfluencies (stutters, false starts, repeated words)
+- Keep the speaker's vocabulary, sentence patterns, and tone intact
+- Question marks and exclamation points are fine, but don't end the last sentence with a period
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove content that was later corrected by the speaker
       `.trim(),
       isSystem: true,
       createdAt: 0,

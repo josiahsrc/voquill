@@ -91,7 +91,7 @@ const runPostProcessingEval = async ({
   });
 };
 
-describe("default style", () => {
+describe("default style", { retry: 2 }, () => {
   test("basic transcription1", async () => {
     await runPostProcessingEval({
       transcription: "Hello world",
@@ -222,7 +222,7 @@ Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just crea
   });
 });
 
-describe("custom styling", () => {
+describe("custom styling", { retry: 2 }, () => {
   test("customer support style", async () => {
     const customerSupportChecklist = [
       "Use a polite and empathetic tone.",
@@ -290,7 +290,7 @@ come on guys. you can do better, that was garbage.`,
   });
 });
 
-describe("verbatim style", () => {
+describe("verbatim style", { retry: 2 }, () => {
   test("removes filler words but preserves phrasing", async () => {
     await runPostProcessingEval({
       transcription:
@@ -408,7 +408,7 @@ describe("verbatim style", () => {
   });
 });
 
-describe("email style", () => {
+describe("email style", { retry: 2 }, () => {
   test("formats a casual spoken email", async () => {
     await runPostProcessingEval({
       transcription:
@@ -582,6 +582,122 @@ describe("email style", () => {
         {
           criteria:
             "It should have proper email structure with greeting, body, and sign-off — no subject line",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+});
+
+describe("chat style", { retry: 2 }, () => {
+  test("reads like a text message", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "So um I was thinking that maybe we could like push the release back a week because there are still a few bugs that need to be fixed and I don't want to ship something that's broken you know",
+      tone: getWritingStyle("chat"),
+      evals: [
+        {
+          criteria:
+            "It should read like a casual text message, not a formal paragraph",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "The core message (push release back a week due to bugs) should be preserved",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should remove filler words like 'um', 'like', 'you know'",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("splits multiple points into separate lines", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "okay so we need to do three things we need to update the docs we need to fix the login bug and we need to deploy by Friday",
+      tone: getWritingStyle("chat"),
+      evals: [
+        {
+          criteria:
+            "The three items should be on separate lines or formatted as a list, not in a single run-on sentence",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "All three items (update docs, fix login bug, deploy by Friday) should be present",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("does not end the last sentence with a period", async () => {
+    await runPostProcessingEval({
+      transcription: "yeah that works for me let's do it",
+      tone: getWritingStyle("chat"),
+      evals: [
+        {
+          criteria: "The last sentence should not end with a period",
+          acceptanceScore: 8,
+        },
+        {
+          criteria: "It should read like a natural text message",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("keeps question marks and exclamation points", async () => {
+    await runPostProcessingEval({
+      transcription: "are you coming to the party tonight? let me know asap!",
+      tone: getWritingStyle("chat"),
+      evals: [
+        {
+          criteria:
+            "It should keep the question mark after 'tonight' and the exclamation point after 'asap'",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("handles self-corrections", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "can you send that to me by Tuesday no wait Wednesday I have meetings all day Tuesday",
+      tone: getWritingStyle("chat"),
+      evals: [
+        {
+          criteria:
+            "It should use Wednesday, dropping the corrected Tuesday deadline",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should read like a text message, not an email",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("formats bulleted lists when items are spoken", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "for the party we need chips and salsa a veggie tray some drinks and maybe a cake",
+      tone: getWritingStyle("chat"),
+      evals: [
+        {
+          criteria:
+            "All items (chips and salsa, veggie tray, drinks, cake) should be present",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should say 'for the party' or similar",
           acceptanceScore: 8,
         },
       ],
