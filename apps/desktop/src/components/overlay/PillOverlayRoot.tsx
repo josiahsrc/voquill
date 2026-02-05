@@ -74,6 +74,10 @@ export const PillOverlayRoot = () => {
   const isIdle = phase === "idle";
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
+  const overlayShown =
+    (isHovered && isIdle) || isFlashingTooltip || (isManualMode && isListening);
+  const showStyleSwitchers = isHovered || (isManualMode && isListening);
+  const flashingInfo = isFlashingTooltip && !showStyleSwitchers;
 
   useEffect(() => {
     document.body.style.margin = "0";
@@ -166,17 +170,11 @@ export const PillOverlayRoot = () => {
       {/* Tooltip */}
       <Box
         sx={{
-          opacity: (isHovered && isIdle) || isFlashingTooltip ? 1 : 0,
-          transform:
-            (isHovered && isIdle) || isFlashingTooltip
-              ? "translateY(0)"
-              : "translateY(4px)",
+          opacity: overlayShown ? 1 : 0,
+          transform: overlayShown ? "translateY(0)" : "translateY(4px)",
           transition: "all 150ms ease-out",
           marginBottom: theme.spacing(1),
-          pointerEvents:
-            isManualMode && ((isHovered && isIdle) || isFlashingTooltip)
-              ? "auto"
-              : "none",
+          pointerEvents: isManualMode && overlayShown ? "auto" : "none",
         }}
       >
         <Box
@@ -212,8 +210,11 @@ export const PillOverlayRoot = () => {
                   sx={{
                     fontSize: "16px",
                     cursor: "pointer",
-                    opacity: isHovered ? 1 : 0,
-                    width: isHovered ? 16 : 0,
+                    padding: "8px",
+                    margin: "-8px",
+                    boxSizing: "content-box",
+                    opacity: showStyleSwitchers ? 1 : 0,
+                    width: showStyleSwitchers ? 16 : 0,
                     transition: "opacity 200ms ease-out, width 150ms ease-out",
                     overflow: "hidden",
                     flexShrink: 0,
@@ -222,7 +223,7 @@ export const PillOverlayRoot = () => {
                 <Box
                   component="span"
                   sx={{
-                    width: isFlashingTooltip && !isHovered ? 140 : 82,
+                    width: flashingInfo ? 140 : 82,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -243,8 +244,11 @@ export const PillOverlayRoot = () => {
                   sx={{
                     fontSize: "16px",
                     cursor: "pointer",
-                    opacity: isHovered ? 1 : 0,
-                    width: isHovered ? 16 : 0,
+                    padding: "8px",
+                    margin: "-8px",
+                    boxSizing: "content-box",
+                    opacity: showStyleSwitchers ? 1 : 0,
+                    width: showStyleSwitchers ? 16 : 0,
                     transition: "opacity 200ms ease-out, width 150ms ease-out",
                     overflow: "hidden",
                     flexShrink: 0,
