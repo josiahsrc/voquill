@@ -9,7 +9,6 @@ import { getGroqApiKey } from "./env.utils";
 
 export type Eval = {
   criteria: string;
-  acceptanceScore: number;
 };
 
 const EVAL_RESULT_SCHEMA = z.object({
@@ -64,7 +63,7 @@ export async function runEval({
     expect(
       result.score,
       `Eval failed for "${e.criteria}": ${result.reason}`,
-    ).toBeGreaterThanOrEqual(e.acceptanceScore);
+    ).toBeGreaterThanOrEqual(5);
   });
 
   await Promise.all(promises);

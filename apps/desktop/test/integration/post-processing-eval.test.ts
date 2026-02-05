@@ -99,7 +99,6 @@ describe("default style", { retry: 4 }, () => {
       evals: [
         {
           criteria: "It shouldn't really change anything",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -114,7 +113,6 @@ describe("default style", { retry: 4 }, () => {
         {
           criteria:
             "It should convert 'newline' into an actual line break while keeping the content intact",
-          acceptanceScore: 7,
         },
       ],
     });
@@ -128,12 +126,10 @@ describe("default style", { retry: 4 }, () => {
       evals: [
         {
           criteria: "should keep the word dang in there",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "should keep something like 'that is alright' and say we'll get them next time",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -147,12 +143,10 @@ describe("default style", { retry: 4 }, () => {
       evals: [
         {
           criteria: "It should remove fill words and false starts",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should auto correct the time to 4pm without mentioning 10am",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -166,11 +160,9 @@ So, um, I was thinking that we could, you know, maybe try to implement that new 
       evals: [
         {
           criteria: "It should remove filler words and improve readability",
-          acceptanceScore: 8,
         },
         {
           criteria: "It should preserve all meaningful content",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -183,7 +175,6 @@ So, um, I was thinking that we could, you know, maybe try to implement that new 
       evals: [
         {
           criteria: "that was dictated should be in parentheses",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -198,7 +189,6 @@ Hola, me gustaría programar una reunión para discutir el proyecto la próxima 
       evals: [
         {
           criteria: "It should respond in Spanish",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -213,7 +203,6 @@ Hola, me gustaría programar una reunión para discutir el proyecto la próxima 
       evals: [
         {
           criteria: "It should respond in SIMPLIFIED Chinese",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -228,7 +217,6 @@ Olá, gostaria de agendar uma reunião para discutir o projeto na próxima seman
       evals: [
         {
           criteria: "It should respond in Portuguese",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -243,7 +231,6 @@ Bonjour, je voudrais planifier une réunion pour discuter du projet la semaine p
       evals: [
         {
           criteria: "It should translate the text to English and keep meaning",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -258,11 +245,9 @@ Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just crea
         {
           criteria:
             "It should put backticks around coding terms like eval.utils.ts and getGentextRepo",
-          acceptanceScore: 8,
         },
         {
           criteria: "It should fix grammar and improve readability",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -287,24 +272,19 @@ omg fine I'll help you. but seriosuly, why do you need help with this again? lik
       evals: [
         {
           criteria: "It should use a polite and empathetic tone.",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should acknowledge the customer's concerns.",
-          acceptanceScore: 8,
         },
         {
           criteria: "It should maintain a professional demeanor throughout.",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It should end with a positive note, encouraging further contact.",
-          acceptanceScore: 8,
         },
         {
           criteria: "It should not make up any information.",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -326,11 +306,9 @@ come on guys. you can do better, that was garbage.`,
       evals: [
         {
           criteria: "It should use an encouraging and positive tone.",
-          acceptanceScore: 9,
         },
         {
           criteria: "shouldn't have any negative language",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -346,16 +324,13 @@ describe("verbatim style", { retry: 4 }, () => {
       evals: [
         {
           criteria: "It should remove filler words like um, like, you know",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It should not rephrase or restructure — the remaining words should be in the same order",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should add punctuation and capitalization",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -370,12 +345,10 @@ describe("verbatim style", { retry: 4 }, () => {
         {
           criteria:
             "It should remove the repeated/stuttered words like 'I I' → 'I', 'we should we should' → 'we should', 'the the' → 'the'",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It preserves the important phrasing and structure of the sentence",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -390,12 +363,10 @@ describe("verbatim style", { retry: 4 }, () => {
         {
           criteria:
             "It should remove the corrected time (3) and keep only the correction (4 pm)",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It should not restructure or rephrase the rest of the sentence",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -410,11 +381,9 @@ describe("verbatim style", { retry: 4 }, () => {
         {
           criteria:
             "It should put backticks around code terms like index.ts, getUserById, and fetchUser",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should not rephrase or restructure the sentence",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -429,7 +398,6 @@ describe("verbatim style", { retry: 4 }, () => {
         {
           criteria:
             "It should convert 'at john' to '@john' and 'hashtag urgent' to '#urgent'",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -444,11 +412,9 @@ describe("verbatim style", { retry: 4 }, () => {
         {
           criteria:
             "It should NOT fix grammar — 'me and him was', 'we seen', 'real big' should remain as spoken",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should add punctuation and capitalization",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -466,21 +432,17 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should have email structure: greeting with Sarah's name, body, and sign-off with Thomas — no subject line",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should preserve the casual tone — not overly formal or stiff — but still be formatted like an email",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should not add any information the speaker didn't mention (except the user's name, which is Thomas Gundan)",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should remove filler words like 'um'",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -496,11 +458,9 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should preserve the spoken greeting 'hi team' and sign-off 'best regards Thomas'",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should format the content into proper email structure",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -516,7 +476,6 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should format the email with greeting, body, and sign-off — no subject line. Must have proper newlines and punctuation.",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -532,17 +491,14 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should have email structure with greeting, body, and sign-off — no subject line",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should preserve the formal tone since the speaker spoke formally",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It should not add any information or details beyond what was spoken (greeting and sign-off are expected email formatting, not added content)",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -558,21 +514,17 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should format the three items as a bulleted or numbered list, not as separate paragraphs",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should have email structure with greeting using Mike's name, body, and sign-off — no subject line with proper capitalization and punctuation",
-          acceptanceScore: 8,
         },
         {
           criteria: "It should keep the 'a couple things' bit in there",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "All three items (deployment Friday 3pm, update API docs, staging ready by Thursday) should be present",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -588,17 +540,14 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should have email formatting with greeting, body, and sign-off — no subject line",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should state that the user does not want to be bothered while they are out",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should mention that items can be left on the user's desk for review before they leave",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -614,11 +563,9 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should format the email with greeting, body, and sign-off — no subject line",
-          acceptanceScore: 8,
         },
         {
           criteria: "It should remove the 'so yeah' bit since it's filler",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -634,17 +581,14 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should not add specific dates, reasons for absence, or other details not mentioned by the speaker (except the user's name, which is Thomas Gundan)",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It should have email formatting with greeting, body, and sign-off — no subject line",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "It should mention Jessica as the point of contact, as the speaker said",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -660,12 +604,10 @@ describe("email style", { retry: 4 }, () => {
         {
           criteria:
             "It should use Wednesday as the deadline, dropping the corrected Monday mention",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It should have proper email structure with greeting, body, and sign-off — no subject line",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -682,17 +624,14 @@ describe("chat style", { retry: 4 }, () => {
         {
           criteria:
             "It should read like a casual text message, not a formal paragraph",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "The core message (push release back a week due to bugs) should be preserved",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "It should remove filler words like 'um', 'like', 'you know'",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -707,12 +646,10 @@ describe("chat style", { retry: 4 }, () => {
         {
           criteria:
             "The three items should be on separate lines or formatted as a list, not in a single run-on sentence",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "All three items (update docs, fix login bug, deploy by Friday) should be present",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -725,11 +662,9 @@ describe("chat style", { retry: 4 }, () => {
       evals: [
         {
           criteria: "The last sentence should not end with a period",
-          acceptanceScore: 8,
         },
         {
           criteria: "It should read like a natural text message",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -743,7 +678,6 @@ describe("chat style", { retry: 4 }, () => {
         {
           criteria:
             "It should keep the question mark after 'tonight' and the exclamation point after 'asap'",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -758,11 +692,9 @@ describe("chat style", { retry: 4 }, () => {
         {
           criteria:
             "It should use Wednesday, dropping the corrected Tuesday deadline",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should read like a text message, not an email",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -777,11 +709,9 @@ describe("chat style", { retry: 4 }, () => {
         {
           criteria:
             "All items (chips and salsa, veggie tray, drinks, cake) should be present",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should say 'for the party' or similar",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -798,16 +728,13 @@ describe("formal style", { retry: 4 }, () => {
         {
           criteria:
             "It should use formal language — no contractions like 'we're', no slang like 'gotta', 'totally screwed'",
-          acceptanceScore: 9,
         },
         {
           criteria:
             "The core message (deadline is Friday, consequences if missed) should be preserved",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should read like professional correspondence",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -822,16 +749,13 @@ describe("formal style", { retry: 4 }, () => {
         {
           criteria:
             "It should remove all filler words like um, like, you know, uh",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should use complete, well-structured sentences",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "The meaning (revisit Q3 budget because numbers don't add up) should be preserved",
-          acceptanceScore: 9,
         },
       ],
     });
@@ -846,11 +770,9 @@ describe("formal style", { retry: 4 }, () => {
         {
           criteria:
             "It should use Thursday as the deadline, dropping the corrected Tuesday mention",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should be written in a formal, professional tone",
-          acceptanceScore: 8,
         },
       ],
     });
@@ -865,16 +787,13 @@ describe("formal style", { retry: 4 }, () => {
         {
           criteria:
             "It should read like it belongs in a proposal or official recommendation — polished and professional",
-          acceptanceScore: 8,
         },
         {
           criteria:
             "Both reasons for choosing vendor B (better pricing, more responsive support) should be present",
-          acceptanceScore: 9,
         },
         {
           criteria: "It should not use casual words like 'alright', 'way more'",
-          acceptanceScore: 8,
         },
       ],
     });
