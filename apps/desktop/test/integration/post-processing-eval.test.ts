@@ -104,6 +104,19 @@ describe("default style", { retry: 4 }, () => {
     });
   });
 
+  test("keeps colloquial tone", async () => {
+    await runPostProcessingEval({
+      transcription: "We need to develop phrasing that's like pretty good",
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria:
+            "It should keep the 'pretty good' phrasing, even though it's grammatically incorrect but should remove the word 'like' since it's filler and doesn't add meaning",
+        },
+      ],
+    });
+  });
+
   test("newline handling", async () => {
     await runPostProcessingEval({
       transcription:

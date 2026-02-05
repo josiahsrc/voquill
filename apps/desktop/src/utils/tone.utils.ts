@@ -22,11 +22,10 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Clean",
       }),
       promptTemplate: `
-- Sound like the speaker, but written
-- Fix grammar and structure for readability, but keep the core of what the user said the same
+- Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally talks
 - Keep the speaker's vocabulary, sentence patterns, and tone intact
 - The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it
-- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Remove filler words and speech disfluencies that carry no meaning — words that could be deleted without changing what the speaker is saying or how they're saying it
 - Keep words that contribute to the speaker's tone and style
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
@@ -87,7 +86,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       }),
       promptTemplate: `
 - Keep the language casual and conversational like a text message, but make sure to capitalize the first letter of each sentence
-- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally talks
 - Remove filler words that detract from the casual tone of the message
 - Remove speech disfluencies (stutters, false starts, repeated words)
 - Keep the speaker's vocabulary, sentence patterns, and tone intact
