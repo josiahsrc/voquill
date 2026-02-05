@@ -327,7 +327,7 @@ describe("verbatim style", () => {
         },
         {
           criteria:
-            "It should not change any word choices or rephrase the sentence",
+            "It preserves the important phrasing and structure of the sentence",
           acceptanceScore: 9,
         },
       ],
