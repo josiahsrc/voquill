@@ -16,16 +16,16 @@ export const getDefaultSystemTones = (): Tone[] => {
       }),
       promptTemplate: `
 - Sound like the speaker, but written
-- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Fix grammar and structure for readability, but keep the core of what the user said the same
 - Keep the speaker's vocabulary, sentence patterns, and tone intact
 - The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it
 - Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
-- Preserve all meaningful content
+- Keep words that contribute to the speaker's tone and style
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
-- Convert newlines and other intents into actual formatting where applicable
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
 - Put backticks around code terms like filenames, function names, and code snippets
-- It should remove content that was later corrected by the speaker
+- Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -43,7 +43,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Do NOT fix grammar, do NOT restructure sentences, and do NOT change the speaker's word choices or phrasing
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]"
 - Put backticks around code terms like filenames, function names, and code snippets
-- Convert newlines and other intents into actual formatting where applicable
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -61,7 +61,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
-- Convert newlines and other intents into actual formatting where applicable
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
 - Put backticks around code terms like filenames, function names, and code snippets
 - It should remove and fix content that was later corrected by the speaker
 - Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
@@ -86,7 +86,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Question marks and exclamation points are fine, but don't end the last sentence with a period
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
-- Convert newlines and other intents into actual formatting where applicable
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
 - Put backticks around code terms like filenames, function names, and code snippets
 - It should remove content that was later corrected by the speaker
       `.trim(),

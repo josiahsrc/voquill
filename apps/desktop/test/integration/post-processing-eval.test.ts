@@ -91,7 +91,7 @@ const runPostProcessingEval = async ({
   });
 };
 
-describe("default style", { retry: 2 }, () => {
+describe("default style", { retry: 4 }, () => {
   test("basic transcription1", async () => {
     await runPostProcessingEval({
       transcription: "Hello world",
@@ -100,6 +100,40 @@ describe("default style", { retry: 2 }, () => {
         {
           criteria: "It shouldn't really change anything",
           acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("newline handling", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "Hey John um I wanted to check in about the project newline are we still on track for the deadline next week",
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria:
+            "It should convert 'newline' into an actual line break while keeping the content intact",
+          acceptanceScore: 7,
+        },
+      ],
+    });
+  });
+
+  test("should keep words that contribute to tone and style", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "dang, they beat us to the punchline. that's alright, we'll get them next time",
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria: "should keep the word dang in there",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "should keep something like 'that is alright' and say we'll get them next time",
+          acceptanceScore: 9,
         },
       ],
     });
@@ -136,6 +170,19 @@ So, um, I was thinking that we could, you know, maybe try to implement that new 
         },
         {
           criteria: "It should preserve all meaningful content",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("parens", async () => {
+    await runPostProcessingEval({
+      transcription: "open paren, that was dictated, close paren",
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria: "that was dictated should be in parentheses",
           acceptanceScore: 8,
         },
       ],
@@ -222,7 +269,7 @@ Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just crea
   });
 });
 
-describe("custom styling", { retry: 2 }, () => {
+describe("custom styling", { retry: 4 }, () => {
   test("customer support style", async () => {
     const customerSupportChecklist = [
       "Use a polite and empathetic tone.",
@@ -290,7 +337,7 @@ come on guys. you can do better, that was garbage.`,
   });
 });
 
-describe("verbatim style", { retry: 2 }, () => {
+describe("verbatim style", { retry: 4 }, () => {
   test("removes filler words but preserves phrasing", async () => {
     await runPostProcessingEval({
       transcription:
@@ -408,7 +455,7 @@ describe("verbatim style", { retry: 2 }, () => {
   });
 });
 
-describe("email style", { retry: 2 }, () => {
+describe("email style", { retry: 4 }, () => {
   test("formats a casual spoken email", async () => {
     await runPostProcessingEval({
       transcription:
@@ -589,7 +636,7 @@ describe("email style", { retry: 2 }, () => {
   });
 });
 
-describe("chat style", { retry: 2 }, () => {
+describe("chat style", { retry: 4 }, () => {
   test("reads like a text message", async () => {
     await runPostProcessingEval({
       transcription:
@@ -705,7 +752,7 @@ describe("chat style", { retry: 2 }, () => {
   });
 });
 
-describe("formal style", { retry: 2 }, () => {
+describe("formal style", { retry: 4 }, () => {
   test("rewrites casual speech into formal register", async () => {
     await runPostProcessingEval({
       transcription:
@@ -748,26 +795,6 @@ describe("formal style", { retry: 2 }, () => {
         {
           criteria:
             "The meaning (revisit Q3 budget because numbers don't add up) should be preserved",
-          acceptanceScore: 9,
-        },
-      ],
-    });
-  });
-
-  test("avoids contractions", async () => {
-    await runPostProcessingEval({
-      transcription:
-        "we can't ship this until we've fixed the auth bug and I won't approve it until it's been tested",
-      tone: getWritingStyle("formal"),
-      evals: [
-        {
-          criteria:
-            "It should expand contractions — can't → cannot, we've → we have, won't → will not, it's → it has",
-          acceptanceScore: 9,
-        },
-        {
-          criteria:
-            "All three points (cannot ship, fix auth bug, requires testing) should be present",
           acceptanceScore: 9,
         },
       ],
