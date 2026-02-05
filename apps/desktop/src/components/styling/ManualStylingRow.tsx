@@ -25,6 +25,18 @@ import {
   type MenuPopoverItem,
 } from "../common/MenuPopover";
 
+// Replace - and other symbols with a period. No newlines.
+const formatPromptForPreview = (prompt: string) => {
+  return prompt
+    .split("\n")
+    .join(". ")
+    .replace(/[\n\r]+/g, " ")
+    .replace(/[-–—]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^[.\s]+/, "");
+};
+
 export type ManualStylingRowProps = {
   id: string;
 };
@@ -173,10 +185,9 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
-            whiteSpace: "pre-wrap",
           }}
         >
-          {tone?.promptTemplate ?? "-"}
+          {formatPromptForPreview(tone?.promptTemplate ?? "-")}
         </Typography>
       }
       trailing={trailing}
