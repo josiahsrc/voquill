@@ -18,7 +18,10 @@ FROM node:20-alpine AS dev
 WORKDIR /app
 
 COPY --from=builder /app ./
+COPY enterprise/admin/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
+ENTRYPOINT ["/docker-entrypoint.sh", "/app/enterprise/admin/public/env.js"]
 CMD ["npm", "run", "dev", "--workspace=enterprise/admin", "--", "--host"]
 
 FROM node:20-alpine AS production
@@ -34,5 +37,8 @@ COPY --from=builder /app ./
 RUN npm run build --workspace=enterprise/admin
 
 COPY --from=builder /app/enterprise/LICENCE ./LICENCE
+COPY enterprise/admin/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
+ENTRYPOINT ["/docker-entrypoint.sh", "/app/enterprise/admin/dist/env.js"]
 CMD ["serve", "-s", "enterprise/admin/dist", "-l", "5173"]
