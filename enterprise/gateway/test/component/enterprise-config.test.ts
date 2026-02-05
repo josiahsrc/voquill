@@ -32,7 +32,7 @@ describe("enterprise config", () => {
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
-    expect(data.config.stylingMode).toBe("app");
+    expect(data.config.stylingMode).toBe("manual");
   });
 
   it("returns license from license key", async () => {
