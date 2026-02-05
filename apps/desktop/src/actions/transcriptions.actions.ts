@@ -44,7 +44,6 @@ export const retranscribeTranscription = async ({
   const postProcessResult = await postProcessTranscript({
     rawTranscript: transcribeResult.rawTranscript,
     toneId: toneId ?? null,
-    a11yInfo: null,
   });
 
   const finalTranscript = postProcessResult.transcript;
