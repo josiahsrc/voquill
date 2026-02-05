@@ -83,7 +83,8 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Remove filler words that detract from the casual tone of the message
 - Remove speech disfluencies (stutters, false starts, repeated words)
 - Keep the speaker's vocabulary, sentence patterns, and tone intact
-- Question marks and exclamation points are fine, but don't end the last sentence with a period
+- Keep question marks and exclamation points to preserve the speaker's intent
+- Never end the last sentence with a period
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
 - Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
