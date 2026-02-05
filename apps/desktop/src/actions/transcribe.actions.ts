@@ -3,6 +3,7 @@ import {
   Transcription,
   TranscriptionAudioSnapshot,
 } from "@repo/types";
+import { unwrapNestedLlmResponse } from "../utils/ai.utils";
 import { countWords, dedup } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
@@ -12,27 +13,23 @@ import {
   getTranscriptionRepo,
 } from "../repos";
 import { getAppState, produceAppState } from "../store";
-import { TextFieldInfo } from "../types/accessibility.types";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
-import {
-  applySpacingInContext,
-  extractTextFieldContext,
-} from "../utils/accessibility.utils";
 import { createId } from "../utils/id.utils";
 import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
 import {
-  buildLocalizedPostProcessingPrompt,
+  buildPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
-import { getToneTemplateWithFallback } from "../utils/tone.utils";
+import { getToneById, getToneTemplateWithFallback } from "../utils/tone.utils";
 import {
   getMyEffectiveUserId,
+  getMyUserName,
   loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
@@ -61,7 +58,6 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
-  a11yInfo: Nullable<TextFieldInfo>;
 };
 
 export type PostProcessMetadata = {
@@ -158,7 +154,6 @@ export const transcribeAudio = async ({
 export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
-  a11yInfo,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -172,20 +167,21 @@ export const postProcessTranscript = async ({
   } = getGenerateTextRepo();
   warnings.push(...genWarnings);
 
+  const tone = getToneById(state, toneId);
   let processedTranscript = rawTranscript;
-  if (genRepo) {
+  if (tone?.shouldDisablePostProcessing) {
+    metadata.postProcessMode = "none";
+  } else if (genRepo) {
     const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
     const toneTemplate = getToneTemplateWithFallback(state, toneId);
 
-    const textFieldContext = extractTextFieldContext(a11yInfo);
-    const ppPrompt = buildLocalizedPostProcessingPrompt({
+    const ppSystem = buildSystemPostProcessingTonePrompt();
+    const ppPrompt = buildPostProcessingPrompt({
       transcript: rawTranscript,
+      userName: getMyUserName(state),
       dictationLanguage,
       toneTemplate,
-      textFieldContext: textFieldContext ?? null,
     });
-
-    const ppSystem = buildSystemPostProcessingTonePrompt();
 
     const postprocessStart = performance.now();
     const genOutput = await genRepo.generateText({
@@ -201,12 +197,16 @@ export const postProcessTranscript = async ({
     metadata.postprocessDurationMs = Math.round(postprocessDuration);
 
     try {
-      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(
+      const parsed = unwrapNestedLlmResponse(
         JSON.parse(genOutput.text),
+        "processedTranscription",
       );
+
+      const validationResult =
+        PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(parsed);
       if (!validationResult.success) {
         warnings.push(
-          `Post-processing response validation failed: ${validationResult.error.message}`,
+          `Post-processing response validation failed: ${validationResult.error.message}\n\nResponse was: ${genOutput.text}`,
         );
       } else {
         processedTranscript =
@@ -214,7 +214,7 @@ export const postProcessTranscript = async ({
       }
     } catch (e) {
       warnings.push(
-        `Failed to parse post-processing response: ${(e as Error).message}`,
+        `Failed to parse post-processing response: ${(e as Error).message}\n\nResponse was: ${genOutput.text}`,
       );
     }
 
@@ -226,14 +226,8 @@ export const postProcessTranscript = async ({
     metadata.postProcessMode = "none";
   }
 
-  if (a11yInfo) {
-    processedTranscript = applySpacingInContext({
-      textToInsert: processedTranscript,
-      info: a11yInfo,
-    });
-  } else {
-    processedTranscript = processedTranscript.trim();
-  }
+  // Add a space to the end so you can continue dictating seamlessly.
+  processedTranscript = processedTranscript.trim() + " ";
 
   return {
     transcript: processedTranscript,

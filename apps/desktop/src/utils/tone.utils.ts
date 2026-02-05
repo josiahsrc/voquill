@@ -2,25 +2,146 @@ import { Nullable, Tone } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
-import { getAppState } from "../store";
 import { getEffectiveStylingMode } from "./feature.utils";
-import { getMyPreferredLocale, getMyUser } from "./user.utils";
+import { getMyUser, getMyUserPreferences } from "./user.utils";
+
+export const CLEAN_TONE_ID = "default";
+export const VERBATIM_TONE_ID = "verbatim";
+export const EMAIL_TONE_ID = "email";
+export const CHAT_TONE_ID = "chat";
+export const FORMAL_TONE_ID = "formal";
+export const DISABLED_TONE_ID = "disabled";
 
 export const getDefaultSystemTones = (): Tone[] => {
-  const locale = getMyPreferredLocale(getAppState());
-  const intl = getIntl(locale);
+  const intl = getIntl();
 
   return [
     {
-      id: "default",
+      id: CLEAN_TONE_ID,
       name: intl.formatMessage({
-        defaultMessage: "Default",
+        defaultMessage: "Clean",
       }),
-      promptTemplate: `Do not modify the style or tone of the transcript. Focus solely on fixing grammar mistakes and punctuation errors without changing the speaker's original tone or intent.`,
+      promptTemplate: `
+- Sound like the speaker, but written
+- Fix grammar and structure for readability, but keep the core of what the user said the same
+- Keep the speaker's vocabulary, sentence patterns, and tone intact
+- The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it
+- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Keep words that contribute to the speaker's tone and style
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
+- Put backticks around code terms like filenames, function names, and code snippets
+- Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
+      `.trim(),
       isSystem: true,
       createdAt: 0,
-      sortOrder: -1,
+      sortOrder: 0,
     },
+    {
+      id: VERBATIM_TONE_ID,
+      name: intl.formatMessage({
+        defaultMessage: "Verbatim",
+      }),
+      promptTemplate: `
+- Produce a near-exact transcription that preserves the speaker's voice
+- Add punctuation, capitalization, and paragraph breaks for readability
+- Remove filler words (um, uh, like, you know), false starts, repeated words, and content the speaker later corrected
+- Do NOT fix grammar, do NOT restructure sentences, and do NOT change the speaker's word choices or phrasing
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]"
+- Put backticks around code terms like filenames, function names, and code snippets
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 1,
+    },
+    {
+      id: EMAIL_TONE_ID,
+      name: intl.formatMessage({
+        defaultMessage: "Email",
+      }),
+      promptTemplate: `
+- Sound like the speaker, but written
+- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Fit the speaker's words into an email format but do NOT add new phrasing, ideas, or words that would otherwise change the intent.
+- Preserve the speaker's greeting and sign-off if present
+- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove and fix content that was later corrected by the speaker
+- Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
+- DO NOT introduce new phrasing
+- DO NOT remove phrasing that would change the speaker's intent except for fixing errors
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 2,
+    },
+    {
+      id: CHAT_TONE_ID,
+      name: intl.formatMessage({
+        defaultMessage: "Chat",
+      }),
+      promptTemplate: `
+- Keep the language casual and conversational like a text message, but make sure to capitalize the first letter of each sentence
+- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Remove filler words that detract from the casual tone of the message
+- Remove speech disfluencies (stutters, false starts, repeated words)
+- Keep the speaker's vocabulary, sentence patterns, and tone intact
+- Keep question marks and exclamation points to preserve the speaker's intent
+- Never end the last sentence with a period
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove content that was later corrected by the speaker
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 3,
+    },
+    {
+      id: FORMAL_TONE_ID,
+      name: intl.formatMessage({
+        defaultMessage: "Formal",
+      }),
+      promptTemplate: `
+- Rewrite in a polished, professional register
+- Fix grammar, remove filler and disfluencies, and restructure for readability
+- Keep the speaker's vocabulary, sentence patterns, while enforcing a formal tone
+- Use complete sentences, precise vocabulary, and proper grammar
+- Avoid contractions, colloquialisms, and casual phrasing
+- It should remove content that was later corrected by the speaker
+- The result should be suitable for official documents, proposals, or professional correspondence
+- It is expected that the speaker's casual voice will be replaced with a formal tone that is confident
+- Preserve all meaningful content and intent from the original transcript
+      `.trim(),
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 4,
+    },
+    {
+      id: DISABLED_TONE_ID,
+      name: intl.formatMessage({
+        defaultMessage: "Disabled",
+      }),
+      promptTemplate: "Do not apply any post-processing to the transcription.",
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 5,
+      shouldDisablePostProcessing: true,
+    },
+    ...getDeprecatedSystemTones(),
+  ];
+};
+
+const getDeprecatedSystemTones = (): Tone[] => {
+  const intl = getIntl();
+
+  return [
     {
       id: "light",
       name: intl.formatMessage({
@@ -34,6 +155,7 @@ Only apply light edits necessary for clarity and correctness.
       isSystem: true,
       createdAt: 0,
       sortOrder: 0,
+      isDeprecated: true,
     },
     {
       id: "casual",
@@ -47,6 +169,7 @@ Make the language vocal, clean, and free of filler while preserving the speaker'
       isSystem: true,
       createdAt: 0,
       sortOrder: 1,
+      isDeprecated: true,
     },
     {
       id: "formal",
@@ -60,6 +183,7 @@ Make the language vocal, clean, and free of filler while preserving the speaker'
       isSystem: true,
       createdAt: 0,
       sortOrder: 2,
+      isDeprecated: true,
     },
     {
       id: "business",
@@ -73,6 +197,7 @@ Make the language vocal, clean, and free of filler while preserving the speaker'
       isSystem: true,
       createdAt: 0,
       sortOrder: 3,
+      isDeprecated: true,
     },
     {
       id: "punny",
@@ -87,6 +212,7 @@ You must inject clever puns throughout the result.
       isSystem: true,
       createdAt: 0,
       sortOrder: 4,
+      isDeprecated: true,
     },
   ];
 };
@@ -137,8 +263,18 @@ const toneGroupOrder = (tone: Tone): number => {
 };
 
 export const getSortedToneIds = (state: AppState): string[] => {
+  const usedToneIds = new Set([
+    getMyUser(state)?.selectedToneId,
+    getMyUserPreferences(state)?.activeToneId,
+    ...getActiveManualToneIds(state),
+    ...Object.values(state.appTargetById)
+      .map((t) => t.toneId)
+      .filter(Boolean),
+  ]);
+
   const tones = Object.values(state.toneById);
   return [...tones]
+    .filter((t) => !t.isDeprecated || usedToneIds.has(t.id))
     .sort(
       (left, right) =>
         toneGroupOrder(left) - toneGroupOrder(right) ||

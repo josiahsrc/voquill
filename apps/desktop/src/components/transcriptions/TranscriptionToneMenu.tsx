@@ -2,6 +2,7 @@ import type { Tone } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { useCallback, useMemo } from "react";
 import { useAppStore } from "../../store";
+import { getSortedToneIds } from "../../utils/tone.utils";
 import { getMyUserPreferences } from "../../utils/user.utils";
 import type {
   MenuPopoverBuilderArgs,
@@ -14,19 +15,20 @@ type TranscriptionToneMenuProps = {
   onToneSelect: (toneId: string | null) => void;
 };
 
-const sortTones = (tones: Tone[]): Tone[] =>
-  [...tones].sort((left, right) => left.sortOrder - right.sortOrder);
-
 export const TranscriptionToneMenu = ({
   children,
   onToneSelect,
 }: TranscriptionToneMenuProps) => {
-  const toneById = useAppStore((state) => state.toneById);
   const defaultTone = useAppStore((state) =>
     getRec(state.toneById, getMyUserPreferences(state)?.activeToneId),
   );
 
-  const tones = useMemo(() => sortTones(Object.values(toneById)), [toneById]);
+  const tones = useAppStore((state) => {
+    const toneIds = getSortedToneIds(state);
+    return toneIds
+      .map((toneId) => getRec(state.toneById, toneId))
+      .filter((tone): tone is Tone => tone !== null);
+  });
 
   const handleToneSelect = useCallback(
     (toneId: string | null) => {

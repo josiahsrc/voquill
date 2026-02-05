@@ -8,6 +8,23 @@ import {
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
 
+export const unwrapNestedLlmResponse = <T extends Record<string, unknown>>(
+  parsed: T,
+  key: string & keyof T,
+): T => {
+  const value = parsed[key];
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    key in value &&
+    typeof (value as Record<string, unknown>)[key] === "string"
+  ) {
+    return { ...parsed, [key]: (value as Record<string, unknown>)[key] } as T;
+  }
+  return parsed;
+};
+
 export const applyAiPreferences = (
   draft: AppState,
   preferences: UserPreferences,
