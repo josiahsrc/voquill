@@ -22,7 +22,7 @@ services:
     ports:
       - "5100:5173"
     environment:
-      - VITE_GATEWAY_URL=http://localhost:4630
+      - VOQUILL_GATEWAY_URL=http://localhost:4630
     networks:
       - voquill
 
