@@ -486,6 +486,42 @@ describe("email style", { retry: 4 }, () => {
     });
   });
 
+  test("preserves the greeting and sign-off if spoken", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "hi team I just wanted to say thanks for all your hard work on the project let's keep up the great momentum best regards Thomas",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should preserve the spoken greeting 'hi team' and sign-off 'best regards Thomas'",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should format the content into proper email structure",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
+  test("works for weird email", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "Hey Bob, great meeting you yesterday. Looking forward to next steps, best emulator user.",
+      tone: getWritingStyle("email"),
+      userName: "Emulator User",
+      evals: [
+        {
+          criteria:
+            "It should format the email with greeting, body, and sign-off — no subject line. Must have proper newlines and punctuation.",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+
   test("formats a formal spoken email", async () => {
     await runPostProcessingEval({
       transcription:

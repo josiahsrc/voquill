@@ -247,7 +247,7 @@ const getGenTextRepoInternal = ({
 export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getGenerativePrefs(state);
-  return getGenTextRepoInternal({ prefs, cloudModel: "medium" });
+  return getGenTextRepoInternal({ prefs, cloudModel: "large" });
 };
 
 export const getAgentRepo = (): GenerateTextRepoOutput => {

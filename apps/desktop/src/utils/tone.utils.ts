@@ -5,12 +5,19 @@ import { AppState } from "../state/app.state";
 import { getEffectiveStylingMode } from "./feature.utils";
 import { getMyUser, getMyUserPreferences } from "./user.utils";
 
+export const CLEAN_TONE_ID = "default";
+export const VERBATIM_TONE_ID = "verbatim";
+export const EMAIL_TONE_ID = "email";
+export const CHAT_TONE_ID = "chat";
+export const FORMAL_TONE_ID = "formal";
+export const DISABLED_TONE_ID = "disabled";
+
 export const getDefaultSystemTones = (): Tone[] => {
   const intl = getIntl();
 
   return [
     {
-      id: "default",
+      id: CLEAN_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Clean",
       }),
@@ -32,7 +39,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       sortOrder: 0,
     },
     {
-      id: "verbatim",
+      id: VERBATIM_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Verbatim",
       }),
@@ -50,7 +57,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       sortOrder: 1,
     },
     {
-      id: "email",
+      id: EMAIL_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Email",
       }),
@@ -58,6 +65,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Sound like the speaker, but written
 - Fix grammar, remove filler and disfluencies, and lightly restructure for readability
 - Fit the speaker's words into an email format but do NOT add new phrasing, ideas, or words that would otherwise change the intent.
+- Preserve the speaker's greeting and sign-off if present
 - Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
@@ -73,7 +81,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       sortOrder: 2,
     },
     {
-      id: "chat",
+      id: CHAT_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Chat",
       }),
@@ -96,7 +104,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       sortOrder: 3,
     },
     {
-      id: "formal",
+      id: FORMAL_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Formal",
       }),
@@ -116,7 +124,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       sortOrder: 4,
     },
     {
-      id: "disabled",
+      id: DISABLED_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Disabled",
       }),
