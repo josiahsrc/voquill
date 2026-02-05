@@ -21,7 +21,6 @@ export const getDefaultSystemTones = (): Tone[] => {
 - The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it
 - Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
 - Preserve all meaningful content
-- Apply the formatting rules above to detect and format emails and lists
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
 - Convert newlines and other intents into actual formatting where applicable
@@ -56,12 +55,18 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Email",
       }),
       promptTemplate: `
-- Format the transcript as an email
-- Infer an appropriate greeting and sign-off from context, or use sensible defaults
-- Organize the body into clear, logically ordered paragraphs
-- If the speaker jumped between topics, group related points together
-- Keep the tone professional but warm
-- The result should be ready to paste into an email client and send
+- Sound like the speaker, but written
+- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Fit the speaker's words into an email format but do NOT add new phrasing, ideas, or words that would otherwise change the intent.
+- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove and fix content that was later corrected by the speaker
+- Format the transcription as an professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
+- DO NOT introduce new phrasing
+- DO NOT remove phrasing that would change the speaker's intent except for fixing errors
       `.trim(),
       isSystem: true,
       createdAt: 0,

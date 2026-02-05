@@ -298,8 +298,7 @@ describe("verbatim style", () => {
       tone: getWritingStyle("verbatim"),
       evals: [
         {
-          criteria:
-            "It should remove filler words like um, like, you know",
+          criteria: "It should remove filler words like um, like, you know",
           acceptanceScore: 9,
         },
         {
@@ -367,8 +366,7 @@ describe("verbatim style", () => {
           acceptanceScore: 9,
         },
         {
-          criteria:
-            "It should not rephrase or restructure the sentence",
+          criteria: "It should not rephrase or restructure the sentence",
           acceptanceScore: 9,
         },
       ],
@@ -403,6 +401,187 @@ describe("verbatim style", () => {
         },
         {
           criteria: "It should add punctuation and capitalization",
+          acceptanceScore: 8,
+        },
+      ],
+    });
+  });
+});
+
+describe("email style", () => {
+  test("formats a casual spoken email", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "hey sarah um I wanted to follow up on the design review from yesterday I think the header looks great but we should probably tweak the colors a bit let me know what you think thanks",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should have email structure: greeting with Sarah's name, body, and sign-off with Thomas — no subject line",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "It should preserve the casual tone — not overly formal or stiff — but still be formatted like an email",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "It should not add any information the speaker didn't mention (except the user's name, which is Thomas Gundan)",
+          acceptanceScore: 9,
+        },
+        {
+          criteria: "It should remove filler words like 'um'",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("formats a formal spoken email", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "Dear Mr. Johnson I am writing to inform you that the quarterly report has been completed and is ready for your review. Please let me know if you require any additional information or clarification regarding the findings. I look forward to your feedback.",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should have email structure with greeting, body, and sign-off — no subject line",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "It should preserve the formal tone since the speaker spoke formally",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should not add any information or details beyond what was spoken (greeting and sign-off are expected email formatting, not added content)",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("handles email with multiple topics", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "hey Mike so a couple things to note... first the deployment is scheduled for Friday at 3pm second we need to update the API docs before that and third can you make sure the staging environment is ready by Thursday",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should format the three items as a bulleted or numbered list, not as separate paragraphs",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "It should have email structure with greeting using Mike's name, body, and sign-off — no subject line with proper capitalization and punctuation",
+          acceptanceScore: 8,
+        },
+        {
+          criteria: "It should keep the 'a couple things' bit in there",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "All three items (deployment Friday 3pm, update API docs, staging ready by Thursday) should be present",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("handles a basic email", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "Hey team, just a quick reminder that I'm going to be out next Tuesday. Actually no, monday. Let me know if there's anything I can clear up before then, because I don't want to be bothered. And, yeah, if there's anything you guys want to run by me before I leave, just put it on my desk and I'll take a look at it. Thanks.",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should have email formatting with greeting, body, and sign-off — no subject line",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "It should state that the user does not want to be bothered while they are out",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "It should mention that items can be left on the user's desk for review before they leave",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("format an otherwise lazy email", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "Hey, just wanted to say that the thing we talked about is important. So yeah, let's make sure we do that soon. Thanks.",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should format the email with greeting, body, and sign-off — no subject line",
+          acceptanceScore: 8,
+        },
+        {
+          criteria: "It should remove the 'so yeah' bit since it's filler",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("preserves content without fabrication", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "uh hi I just wanted to let you know that I'll be out of office next week so if anything urgent comes up please reach out to Jessica",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should not add specific dates, reasons for absence, or other details not mentioned by the speaker (except the user's name, which is Thomas Gundan)",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should have email formatting with greeting, body, and sign-off — no subject line",
+          acceptanceScore: 8,
+        },
+        {
+          criteria:
+            "It should mention Jessica as the point of contact, as the speaker said",
+          acceptanceScore: 9,
+        },
+      ],
+    });
+  });
+
+  test("handles self-corrections in email context", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "hey can you send the report to the client by Monday no actually by Wednesday we need more time to review it",
+      tone: getWritingStyle("email"),
+      userName: "Thomas Gundan",
+      evals: [
+        {
+          criteria:
+            "It should use Wednesday as the deadline, dropping the corrected Monday mention",
+          acceptanceScore: 9,
+        },
+        {
+          criteria:
+            "It should have proper email structure with greeting, body, and sign-off — no subject line",
           acceptanceScore: 8,
         },
       ],
