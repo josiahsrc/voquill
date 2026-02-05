@@ -1,7 +1,17 @@
 use gtk::gdk::ffi::GDK_CURRENT_TIME;
+use gtk::gdk::WindowTypeHint;
+use gtk::glib::IsA;
 use gtk::prelude::*;
 use std::sync::mpsc;
 use tauri::WebviewWindow;
+
+fn configure_overlay_window_manager_hints(gtk_window: &impl IsA<gtk::Window>) {
+    let gtk_window: &gtk::Window = gtk_window.as_ref();
+
+    gtk_window.set_skip_taskbar_hint(true);
+    gtk_window.set_skip_pager_hint(true);
+    gtk_window.set_type_hint(WindowTypeHint::Utility);
+}
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
@@ -55,6 +65,7 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
                     .gtk_window()
                     .map_err(|err| err.to_string())?;
 
+                configure_overlay_window_manager_hints(&gtk_window);
                 gtk_window.set_accept_focus(false);
                 gtk_window.set_focus_on_map(false);
                 gtk_window.set_keep_above(true);
@@ -85,6 +96,7 @@ pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), St
                     .gtk_window()
                     .map_err(|err| err.to_string())?;
 
+                configure_overlay_window_manager_hints(&gtk_window);
                 gtk_window.set_accept_focus(false);
                 gtk_window.set_focus_on_map(false);
 
@@ -99,7 +111,10 @@ pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), St
         .map_err(|_| "failed to configure overlay as non-activating on main thread".to_string())?
 }
 
-pub fn set_overlay_click_through(window: &WebviewWindow, click_through: bool) -> Result<(), String> {
+pub fn set_overlay_click_through(
+    window: &WebviewWindow,
+    click_through: bool,
+) -> Result<(), String> {
     window
         .set_ignore_cursor_events(click_through)
         .map_err(|err| err.to_string())
