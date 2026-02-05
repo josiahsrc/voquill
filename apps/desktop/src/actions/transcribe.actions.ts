@@ -3,6 +3,7 @@ import {
   Transcription,
   TranscriptionAudioSnapshot,
 } from "@repo/types";
+import { unwrapNestedLlmResponse } from "../utils/ai.utils";
 import { countWords, dedup } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
@@ -196,12 +197,16 @@ export const postProcessTranscript = async ({
     metadata.postprocessDurationMs = Math.round(postprocessDuration);
 
     try {
-      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(
+      const parsed = unwrapNestedLlmResponse(
         JSON.parse(genOutput.text),
+        "processedTranscription",
       );
+
+      const validationResult =
+        PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(parsed);
       if (!validationResult.success) {
         warnings.push(
-          `Post-processing response validation failed: ${validationResult.error.message}`,
+          `Post-processing response validation failed: ${validationResult.error.message}\n\nResponse was: ${genOutput.text}`,
         );
       } else {
         processedTranscript =
@@ -209,7 +214,7 @@ export const postProcessTranscript = async ({
       }
     } catch (e) {
       warnings.push(
-        `Failed to parse post-processing response: ${(e as Error).message}`,
+        `Failed to parse post-processing response: ${(e as Error).message}\n\nResponse was: ${genOutput.text}`,
       );
     }
 
