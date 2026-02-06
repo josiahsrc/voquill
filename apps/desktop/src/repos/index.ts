@@ -3,6 +3,7 @@ import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
+import { getLogger } from "../utils/log.utils";
 import { getIsNewBackendEnabled } from "../utils/new-server.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import {
@@ -31,6 +32,7 @@ import {
   GroqGenerateTextRepo,
   NewServerGenerateTextRepo,
   OllamaGenerateTextRepo,
+  OpenAICompatibleGenerateTextRepo,
   OpenAIGenerateTextRepo,
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
@@ -167,6 +169,7 @@ const getGenTextRepoInternal = ({
   const state = getAppState();
 
   if (prefs.mode === "cloud") {
+    getLogger().verbose("Using cloud generate text repo with model");
     let repo: BaseGenerateTextRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseGenerateTextRepo();
@@ -189,22 +192,48 @@ const getGenTextRepoInternal = ({
       const baseUrl = apiKeyRecord?.baseUrl || OLLAMA_DEFAULT_URL;
       const model = prefs.postProcessingModel;
       const ollamaApiKey = apiKeyRecord?.keyFull || undefined;
+      getLogger().verbose(
+        `Configuring Ollama repo with baseUrl=${baseUrl} and model=${model}`,
+      );
       if (model) {
         repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model, ollamaApiKey);
       } else {
         prefs.warnings.push("No model configured for Ollama post-processing.");
+      }
+    } else if (prefs.provider === "openai-compatible") {
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl || "http://127.0.0.1:8080";
+      const model = prefs.postProcessingModel;
+      const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      getLogger().verbose(
+        `Configuring OpenAI Compatible repo with baseUrl=${baseUrl} and model=${model}`,
+      );
+      if (model) {
+        repo = new OpenAICompatibleGenerateTextRepo(
+          `${baseUrl}/v1`,
+          model,
+          providerApiKey,
+        );
+      } else {
+        prefs.warnings.push(
+          "No model configured for OpenAI Compatible post-processing.",
+        );
       }
     } else if (prefs.provider === "openrouter") {
       // Get OpenRouter-specific config from the API key
       const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
       const config = apiKey?.openRouterConfig;
       const providerRouting = config?.providerRouting ?? undefined;
+      getLogger().verbose(
+        `Configuring OpenRouter repo with providerRouting=${providerRouting}`,
+      );
       repo = new OpenRouterGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
         providerRouting,
       );
     } else if (prefs.provider === "openai") {
+      getLogger().verbose("Configuring OpenAI repo for generate text");
       repo = new OpenAIGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
@@ -216,27 +245,34 @@ const getGenTextRepoInternal = ({
       if (!endpoint) {
         prefs.warnings.push("No endpoint configured for Azure OpenAI.");
       }
+      getLogger().verbose(
+        `Configuring Azure OpenAI repo with endpoint=${endpoint} and deployment=${deploymentName}`,
+      );
       repo = new AzureOpenAIGenerateTextRepo(
         prefs.apiKeyValue,
         endpoint,
         deploymentName,
       );
     } else if (prefs.provider === "deepseek") {
+      getLogger().verbose("Configuring Deepseek repo for generate text");
       repo = new DeepseekGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
     } else if (prefs.provider === "gemini") {
+      getLogger().verbose("Configuring Gemini repo for generate text");
       repo = new GeminiGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
     } else if (prefs.provider === "claude") {
+      getLogger().verbose("Configuring Claude repo for generate text");
       repo = new ClaudeGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
     } else {
+      getLogger().verbose("Configuring Groq repo for generate text");
       repo = new GroqGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,

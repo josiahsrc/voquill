@@ -22,6 +22,7 @@ import {
   setCurrentUser,
   setUserPreferences,
 } from "../utils/user.utils";
+import { getLogger } from "../utils/log.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 const updateUser = async (
@@ -32,6 +33,7 @@ const updateUser = async (
   const state = getAppState();
   const existing = getMyUser(state);
   if (!existing) {
+    getLogger().warning(`updateUser: user not found (${errorMessage})`);
     showErrorSnackbar(errorMessage);
     return;
   }
@@ -45,12 +47,14 @@ const updateUser = async (
   updateCallback(payload);
 
   try {
+    getLogger().verbose(`Saving user (id=${payload.id})`);
     const saved = await repo.setMyUser(payload);
     produceAppState((draft) => {
       setCurrentUser(draft, saved);
     });
+    getLogger().verbose("User saved successfully");
   } catch (error) {
-    console.error("Failed to update user", error);
+    getLogger().error(`Failed to update user: ${error}`);
     showErrorSnackbar(saveErrorMessage);
     throw error;
   }
@@ -93,12 +97,14 @@ const updateUserPreferences = async (
   updateCallback(payload);
 
   try {
+    getLogger().verbose(`Saving user preferences (userId=${myUserId})`);
     const saved = await getUserPreferencesRepo().setUserPreferences(payload);
     produceAppState((draft) => {
       setUserPreferences(draft, saved);
     });
+    getLogger().verbose("User preferences saved successfully");
   } catch (error) {
-    console.error("Failed to update user preferences", error);
+    getLogger().error(`Failed to update user preferences: ${error}`);
     showErrorSnackbar(saveErrorMessage);
     throw error;
   }
@@ -136,6 +142,7 @@ export const addWordsToCurrentUser = async (
 
 export const refreshCurrentUser = async (): Promise<void> => {
   try {
+    getLogger().verbose("Refreshing current user and preferences");
     const [user, preferences] = await Promise.all([
       getUserRepo().getMyUser(),
       getUserPreferencesRepo().getUserPreferences(),
@@ -151,8 +158,9 @@ export const refreshCurrentUser = async (): Promise<void> => {
         draft.userPrefs = null;
       }
     });
+    getLogger().verbose(`User refreshed (hasUser=${!!user}, hasPrefs=${!!preferences})`);
   } catch (error) {
-    console.error("Failed to refresh user", error);
+    getLogger().error(`Failed to refresh user: ${error}`);
   }
 };
 
@@ -230,6 +238,7 @@ export const setUserName = async (name: string): Promise<void> => {
 };
 
 export const persistAiPreferences = async (): Promise<void> => {
+  getLogger().verbose("Persisting AI preferences");
   const state = getAppState();
   await updateUserPreferences((preferences) => {
     preferences.postProcessingMode = state.settings.aiPostProcessing.mode;

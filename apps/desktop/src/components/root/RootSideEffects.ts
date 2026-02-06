@@ -86,6 +86,7 @@ import {
   getMyPrimaryDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
+import { getLogger } from "../../utils/log.utils";
 import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
@@ -175,29 +176,35 @@ export const RootSideEffects = () => {
   }, []);
 
   const resetRecordingState = useCallback(async () => {
+    getLogger().warning("Resetting recording state");
     isRecordingRef.current = false;
     strategyRef.current = null;
     clearRecordingTimers();
     try {
       await invoke("stop_recording");
     } catch (e) {
-      console.warn("Failed to stop recording during reset", e);
+      getLogger().error(`Failed to stop recording during reset: ${e}`);
     }
     sessionRef.current?.cleanup();
     sessionRef.current = null;
+    getLogger().info("Recording state reset complete");
   }, [clearRecordingTimers]);
 
   useAsyncEffect(async () => {
     if (keyPermAuthorized) {
+      getLogger().info("Accessibility permission authorized, starting key listener");
       await invoke("start_key_listener");
     } else {
+      getLogger().info("Accessibility permission not authorized, stopping key listener");
       await invoke("stop_key_listener");
     }
   }, [keyPermAuthorized]);
 
   useAsyncEffect(async () => {
+    getLogger().info(`Loading user data (userId=${userId ?? "none"})`);
     await Promise.allSettled([refreshMember(), refreshCurrentUser()]);
 
+    getLogger().verbose("Loading hotkeys, API keys, dictionary, tones, app targets");
     const loaders: Promise<unknown>[] = [
       loadHotkeys(),
       loadApiKeys(),
@@ -207,6 +214,7 @@ export const RootSideEffects = () => {
       migratePreferredMicrophoneToPreferences(),
     ];
     await Promise.allSettled(loaders);
+    getLogger().info("Initial data load complete");
   }, [userId]);
 
   useIntervalAsync(
@@ -245,10 +253,12 @@ export const RootSideEffects = () => {
   const startRecording = useCallback(async () => {
     const state = getAppState();
     if (state.isRecordingHotkey) {
+      getLogger().verbose("startRecording skipped: recording hotkey active");
       return;
     }
 
     if (isRecordingRef.current) {
+      getLogger().verbose("startRecording skipped: already recording");
       return;
     }
 
@@ -257,6 +267,7 @@ export const RootSideEffects = () => {
     let strategy = strategyRef.current;
     if (!strategy) {
       const mode: RecordingMode = currentMode ?? "dictate";
+      getLogger().info(`Creating ${mode} strategy`);
       strategy =
         mode === "agent"
           ? new AgentStrategy(strategyContext)
@@ -266,6 +277,7 @@ export const RootSideEffects = () => {
 
     const validationError = strategy.validateAvailability();
     if (validationError) {
+      getLogger().warning(`Recording blocked: ${validationError.title}`);
       playAlertSound();
       showToast({
         title: validationError.title,
@@ -279,6 +291,7 @@ export const RootSideEffects = () => {
 
     isRecordingRef.current = true;
     if (startPendingRef.current) {
+      getLogger().verbose("startRecording waiting on pending start");
       await startPendingRef.current;
       return;
     }
@@ -289,6 +302,8 @@ export const RootSideEffects = () => {
         overlayLoadingTokenRef.current = null;
 
         const prefs = getTranscriptionPrefs(getAppState());
+        getLogger().verbose(`Transcription prefs: mode=${prefs.mode}`);
+
         // Don't fetch current app info here - it's slow (icon capture + encoding).
         // We'll get the toneId when recording stops via tryRegisterCurrentAppTarget().
         sessionRef.current = createTranscriptionSession(prefs);
@@ -298,10 +313,7 @@ export const RootSideEffects = () => {
 
         await strategy.onBeforeStart();
 
-        console.log(
-          "[startRecording] starting recording with mic:",
-          preferredMicrophone,
-        );
+        getLogger().info(`Starting recording (mic=${preferredMicrophone ?? "default"})`);
         const [, startRecordingResult] = await Promise.all([
           strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
@@ -315,12 +327,14 @@ export const RootSideEffects = () => {
             ? startRecordingResult.sampleRate
             : 16000;
 
+        getLogger().verbose(`Recording started (sampleRate=${sampleRate})`);
         await sessionRef.current.onRecordingStart(sampleRate);
 
         clearRecordingTimers();
         const currentSession = sessionRef.current;
         recordingWarningTimerRef.current = setTimeout(() => {
           if (sessionRef.current !== currentSession) return;
+          getLogger().warning("Recording duration warning (4 min)");
           showToast({
             title: intl.formatMessage({
               defaultMessage: "Recording ending soon",
@@ -336,6 +350,7 @@ export const RootSideEffects = () => {
 
         recordingAutoStopTimerRef.current = setTimeout(() => {
           if (sessionRef.current !== currentSession) return;
+          getLogger().warning("Recording auto-stopped (5 min limit)");
           showToast({
             title: intl.formatMessage({
               defaultMessage: "Recording stopped",
@@ -353,7 +368,7 @@ export const RootSideEffects = () => {
           void stopRecordingRef.current?.();
         }, RECORDING_AUTO_STOP_DURATION_MS);
       } catch (error) {
-        console.error("Failed to start recording via hotkey", error);
+        getLogger().error(`Failed to start recording: ${error}`);
 
         isRecordingRef.current = false;
         strategyRef.current = null;
@@ -397,19 +412,22 @@ export const RootSideEffects = () => {
 
   const stopRecording = useCallback(async () => {
     if (!isRecordingRef.current) {
+      getLogger().verbose("stopRecording skipped: not recording");
       return;
     }
 
     if (stopPendingRef.current) {
+      getLogger().verbose("stopRecording waiting on pending stop");
       await stopPendingRef.current;
       return;
     }
 
+    getLogger().info("Stopping recording");
     clearRecordingTimers();
 
     const strategy = strategyRef.current;
     if (!strategy) {
-      console.warn("No recording strategy found, attempting recovery");
+      getLogger().warning("No recording strategy found, attempting recovery");
       await resetRecordingState();
       return;
     }
@@ -421,7 +439,7 @@ export const RootSideEffects = () => {
         try {
           await startPendingRef.current;
         } catch (error) {
-          console.warn("Start recording rejected while stopping", error);
+          getLogger().warning(`Start recording rejected while stopping: ${error}`);
         }
       }
 
@@ -431,22 +449,23 @@ export const RootSideEffects = () => {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
 
-        // Fire chime immediately (fire-and-forget) for instant feedback
         tryPlayAudioChime("stop_recording_clip");
 
+        getLogger().verbose("Invoking stop_recording and fetching a11y info");
         const [, outAudio, outA11yInfo] = await Promise.all([
           strategy.setPhase("loading"),
           invoke<StopRecordingResponse>("stop_recording"),
           invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
-            console.warn("[a11y] Failed to get text field info:", error);
+            getLogger().verbose(`Failed to get text field info: ${error}`);
             return null;
           }),
         ]);
 
         audio = outAudio;
         a11yInfo = outA11yInfo;
+        getLogger().verbose(`Recording stopped (hasSamples=${!!audio?.samples})`);
       } catch (error) {
-        console.error("Failed to stop recording via hotkey", error);
+        getLogger().error(`Failed to stop recording: ${error}`);
         showErrorSnackbar("Unable to stop recording. Please try again.");
         suppressUntilRef.current = Date.now() + 700;
       } finally {
@@ -466,6 +485,7 @@ export const RootSideEffects = () => {
 
     try {
       if (session && audio) {
+        getLogger().info("Finalizing transcription session");
         const currentApp = await tryRegisterCurrentAppTarget();
         trackAppUsed(currentApp?.name ?? "Unknown");
         const toneId = getToneIdToUse(getAppState(), {
@@ -478,6 +498,7 @@ export const RootSideEffects = () => {
         });
         const rawTranscript = transcribeResult.rawTranscript;
         const processedTranscript = transcribeResult.processedTranscript;
+        getLogger().verbose(`Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${currentApp?.name ?? "unknown"}`);
 
         let transcript: string | null = null;
         let sanitizedTranscript: string | null = null;
@@ -485,6 +506,7 @@ export const RootSideEffects = () => {
         let postProcessWarnings: string[] = [];
 
         if (rawTranscript) {
+          getLogger().info("Post-processing transcript");
           const result = await strategy.handleTranscript({
             rawTranscript,
             processedTranscript,
@@ -502,8 +524,10 @@ export const RootSideEffects = () => {
           sanitizedTranscript = result.sanitizedTranscript;
           postProcessMetadata = result.postProcessMetadata;
           postProcessWarnings = result.postProcessWarnings;
+          getLogger().verbose(`Post-processing complete: transcript=${transcript ? `${transcript.length} chars` : "empty"}, warnings=${postProcessWarnings.length}`);
 
           if (!result.shouldContinue) {
+            getLogger().verbose("Strategy complete, cleaning up");
             await strategy.cleanup();
             strategyRef.current = null;
             produceAppState((draft) => {
@@ -511,6 +535,7 @@ export const RootSideEffects = () => {
             });
           }
         } else {
+          getLogger().warning("Empty transcript, resetting to idle");
           if (loadingToken && overlayLoadingTokenRef.current === loadingToken) {
             overlayLoadingTokenRef.current = null;
             await invoke<void>("set_phase", { phase: "idle" });
@@ -524,6 +549,7 @@ export const RootSideEffects = () => {
         }
 
         if (strategy.shouldStoreTranscript()) {
+          getLogger().verbose("Storing transcription");
           storeTranscription({
             audio,
             rawTranscript: rawTranscript ?? null,
@@ -534,6 +560,8 @@ export const RootSideEffects = () => {
             warnings: [...transcribeResult.warnings, ...postProcessWarnings],
           });
         }
+      } else {
+        getLogger().warning(`No session or audio to process (session=${!!session}, audio=${!!audio})`);
       }
     } finally {
       session?.cleanup();
@@ -541,15 +569,18 @@ export const RootSideEffects = () => {
         draft.dictationLanguageOverride = null;
       });
       refreshMember();
+      getLogger().info("Dictation flow complete");
     }
   }, [clearRecordingTimers, resetRecordingState]);
 
   const startDictationRecording = useCallback(async () => {
     const state = getAppState();
     if (!getIsDictationUnlocked(state)) {
+      getLogger().verbose("Dictation not unlocked, ignoring start");
       return;
     }
 
+    getLogger().info("Starting dictation recording");
     trackDictationStart();
     produceAppState((draft) => {
       draft.activeRecordingMode = "dictate";
@@ -559,15 +590,18 @@ export const RootSideEffects = () => {
   }, [startRecording]);
 
   const stopDictationRecording = useCallback(async () => {
+    getLogger().info("Stopping dictation recording");
     await stopRecording();
   }, [stopRecording]);
 
   const startAgentRecording = useCallback(async () => {
     const state = getAppState();
     if (!getIsDictationUnlocked(state)) {
+      getLogger().verbose("Dictation not unlocked, ignoring agent start");
       return;
     }
 
+    getLogger().info("Starting agent recording");
     trackAgentStart();
     produceAppState((draft) => {
       draft.activeRecordingMode = "agent";
@@ -576,6 +610,7 @@ export const RootSideEffects = () => {
   }, [intl, startRecording]);
 
   const stopAgentRecording = useCallback(async () => {
+    getLogger().info("Stopping agent recording");
     await stopRecording();
   }, [stopRecording]);
 

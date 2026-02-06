@@ -14,6 +14,7 @@ import type {
   HandleTranscriptResult,
   StrategyValidationError,
 } from "../types/strategy.types";
+import { getLogger } from "../utils/log.utils";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
 import {
   applyReplacements,
@@ -87,6 +88,7 @@ export class DictationStrategy extends BaseStrategy {
           destinationValue: term.destinationValue,
         }));
 
+      getLogger().verbose(`Applying ${replacementRules.length} replacement rules`);
       const afterReplacements = applyReplacements(
         rawTranscript,
         replacementRules,
@@ -117,14 +119,16 @@ export class DictationStrategy extends BaseStrategy {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
           const keybind = currentApp?.pasteKeybind ?? null;
+          getLogger().verbose(`Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`);
           await invoke<void>("paste", { text: transcript, keybind });
+          getLogger().info("Transcript pasted successfully");
         } catch (error) {
-          console.error("Failed to paste transcription", error);
+          getLogger().error(`Failed to paste transcription: ${error}`);
           showErrorSnackbar("Unable to paste transcription.");
         }
       }
     } catch (error) {
-      console.error("Failed to process transcription", error);
+      getLogger().error(`Failed to process transcription: ${error}`);
 
       const errorMessage =
         error instanceof Error ? error.message : "An error occurred.";

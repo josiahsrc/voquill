@@ -162,6 +162,39 @@ export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
   }
 }
 
+export class OpenAICompatibleGenerateTextRepo extends BaseGenerateTextRepo {
+  private baseUrl: string;
+  private model: string;
+  private apiKey: string;
+
+  constructor(url: string, model: string, apiKey?: string) {
+    super();
+    this.baseUrl = url;
+    this.model = model;
+    this.apiKey = apiKey || "";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await openaiGenerateTextResponse({
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+      customFetch: tauriFetch,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • OpenAI Compatible",
+      },
+    };
+  }
+}
+
 export class OpenRouterGenerateTextRepo extends BaseGenerateTextRepo {
   private apiKey: string;
   private model: string;

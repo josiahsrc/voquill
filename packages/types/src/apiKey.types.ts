@@ -10,6 +10,7 @@ export const API_KEY_PROVIDERS = [
   "deepgram",
   "openrouter",
   "ollama",
+  "openai-compatible",
   "azure",
   "deepseek",
   "gemini",

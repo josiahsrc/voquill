@@ -10,7 +10,10 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { OllamaRepo } from "../../repos/ollama.repo";
+import {
+  OllamaRepo,
+  OpenAICompatibleRepo,
+} from "../../repos/ollama.repo";
 import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
 
 type OllamaModelPickerProps = {
@@ -19,6 +22,7 @@ type OllamaModelPickerProps = {
   selectedModel: string | null;
   onModelSelect: (model: string | null) => void;
   disabled?: boolean;
+  provider?: "ollama" | "openai-compatible";
 };
 
 export const OllamaModelPicker = ({
@@ -27,6 +31,7 @@ export const OllamaModelPicker = ({
   selectedModel,
   onModelSelect,
   disabled = false,
+  provider = "ollama",
 }: OllamaModelPickerProps) => {
   const [models, setModels] = useState<string[]>([]);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -37,7 +42,10 @@ export const OllamaModelPicker = ({
   const fetchModels = useCallback(async () => {
     setIsLoading(true);
     try {
-      const repo = new OllamaRepo(effectiveUrl, apiKey || undefined);
+      const repo =
+        provider === "openai-compatible"
+          ? new OpenAICompatibleRepo(effectiveUrl, apiKey || undefined)
+          : new OllamaRepo(effectiveUrl, apiKey || undefined);
       const available = await repo.checkAvailability();
       setIsAvailable(available);
 
@@ -54,7 +62,7 @@ export const OllamaModelPicker = ({
     } finally {
       setIsLoading(false);
     }
-  }, [effectiveUrl, apiKey]);
+  }, [effectiveUrl, apiKey, provider]);
 
   useEffect(() => {
     void fetchModels();
