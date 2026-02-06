@@ -13,7 +13,6 @@ import {
   Typography,
 } from "@mui/material";
 import { getRec } from "@repo/utilities";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
@@ -62,6 +61,114 @@ const WAVEFORM_BAR_MIN_WIDTH = 2;
 const WAVEFORM_BAR_MAX_WIDTH = 4;
 const WAVEFORM_BAR_GAP = 2;
 
+type PlaybackStopReason = "ended" | "stopped" | "replaced";
+
+type ActiveWebAudioPlayback = {
+  transcriptionId: string;
+  context: AudioContext;
+  source: AudioBufferSourceNode;
+  rafId: number | null;
+  startTime: number;
+  durationSeconds: number;
+  onStop: (reason: PlaybackStopReason) => void;
+};
+
+let activePlayback: ActiveWebAudioPlayback | null = null;
+
+const stopActivePlayback = (reason: PlaybackStopReason): void => {
+  const current = activePlayback;
+  if (!current) {
+    return;
+  }
+
+  activePlayback = null;
+
+  if (current.rafId !== null) {
+    window.cancelAnimationFrame(current.rafId);
+  }
+
+  try {
+    current.source.onended = null;
+  } catch {
+    // no-op
+  }
+
+  try {
+    current.source.stop();
+  } catch {
+    // no-op
+  }
+
+  current.context.close().catch(() => undefined);
+  current.onStop(reason);
+};
+
+const playWebAudio = async (
+  transcriptionId: string,
+  data: { samples: number[]; sampleRate: number },
+  onProgress: (progress: number) => void,
+  onStop: (reason: PlaybackStopReason) => void,
+): Promise<void> => {
+  stopActivePlayback("replaced");
+
+  const context = new AudioContext({ sampleRate: data.sampleRate });
+  if (context.state === "suspended") {
+    await context.resume();
+  }
+
+  const channelCount = 1;
+  const floatSamples = Float32Array.from(data.samples ?? []);
+  const buffer = context.createBuffer(
+    channelCount,
+    floatSamples.length,
+    data.sampleRate,
+  );
+  buffer.getChannelData(0).set(floatSamples);
+
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(context.destination);
+
+  const playback: ActiveWebAudioPlayback = {
+    transcriptionId,
+    context,
+    source,
+    rafId: null,
+    startTime: context.currentTime,
+    durationSeconds: buffer.duration,
+    onStop,
+  };
+  activePlayback = playback;
+
+  const tick = () => {
+    if (activePlayback !== playback) {
+      return;
+    }
+
+    const elapsed = playback.context.currentTime - playback.startTime;
+    const ratio =
+      playback.durationSeconds > 0
+        ? Math.min(Math.max(elapsed / playback.durationSeconds, 0), 1)
+        : 0;
+    onProgress(ratio);
+
+    if (ratio >= 1) {
+      return;
+    }
+
+    playback.rafId = window.requestAnimationFrame(tick);
+  };
+
+  source.onended = () => {
+    stopActivePlayback("ended");
+  };
+
+  onProgress(0);
+  playback.startTime = context.currentTime;
+  source.start();
+  playback.rafId = window.requestAnimationFrame(tick);
+};
+
 const buildWaveformOutline = (
   seedKey: string,
   durationMs?: number | null,
@@ -104,26 +211,23 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   }, [transcription?.inferenceDevice, transcription?.modelSize]);
 
   const audioSnapshot = transcription?.audio;
-  const audioSrc = useMemo(() => {
-    if (!audioSnapshot) {
-      return null;
-    }
-
-    try {
-      return convertFileSrc(audioSnapshot.filePath);
-    } catch (error) {
-      console.error("Failed to resolve audio file path", error);
-      return null;
-    }
-  }, [audioSnapshot?.filePath]);
-
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRetranscribing, setIsRetranscribing] = useState(false);
   const [durationLabel, setDurationLabel] = useState<string | null>(null);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [waveformWidth, setWaveformWidth] = useState(0);
   const waveformContainerRef = useRef<HTMLDivElement | null>(null);
+  const playbackNonceRef = useRef(0);
+  const isPlayingRef = useRef(false);
+  const transcriptionIdRef = useRef(id);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    transcriptionIdRef.current = id;
+  }, [id]);
   const handleDetailsOpen = useCallback(() => {
     openTranscriptionDetailsDialog(id);
   }, [id]);
@@ -194,25 +298,12 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
 
   useEffect(() => {
     return () => {
-      const element = audioRef.current;
-      if (element) {
-        element.pause();
-        element.currentTime = 0;
+      if (activePlayback?.transcriptionId === transcriptionIdRef.current) {
+        stopActivePlayback("stopped");
       }
       setPlaybackProgress(0);
     };
   }, []);
-
-  useEffect(() => {
-    const element = audioRef.current;
-    if (element) {
-      element.pause();
-      element.currentTime = 0;
-      element.load();
-      setIsPlaying(false);
-    }
-    setPlaybackProgress(0);
-  }, [audioSrc]);
 
   useEffect(() => {
     const element = waveformContainerRef.current;
@@ -243,7 +334,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [audioSrc]);
+  }, [audioSnapshot?.filePath]);
 
   const handleCopyTranscript = useCallback(
     async (content: string) => {
@@ -283,27 +374,53 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   );
 
   const handlePlaybackToggle = useCallback(async () => {
-    const element = audioRef.current;
-    if (!element) {
+    if (!audioSnapshot) {
       return;
     }
 
+    const currentNonce = playbackNonceRef.current + 1;
+    playbackNonceRef.current = currentNonce;
+
     try {
-      if (element.paused) {
-        setPlaybackProgress(0);
-        await element.play();
-      } else {
-        element.pause();
-        element.currentTime = 0;
-        setPlaybackProgress(0);
+      if (isPlayingRef.current) {
+        stopActivePlayback("stopped");
+        return;
       }
+
+      const audioData = await getTranscriptionRepo().loadTranscriptionAudio(id);
+
+      if (playbackNonceRef.current !== currentNonce) {
+        return;
+      }
+
+      setIsPlaying(true);
+      await playWebAudio(
+        id,
+        audioData,
+        (progress) => {
+          if (transcriptionIdRef.current === id) {
+            setPlaybackProgress(progress);
+          }
+        },
+        (reason) => {
+          if (transcriptionIdRef.current !== id) {
+            return;
+          }
+          setIsPlaying(false);
+          if (reason === "ended") {
+            setPlaybackProgress(0);
+          }
+        },
+      );
     } catch (error) {
       console.error("Failed to toggle audio playback", error);
+      setIsPlaying(false);
+      setPlaybackProgress(0);
       showErrorSnackbar(
         intl.formatMessage({ defaultMessage: "Unable to play audio snippet." }),
       );
     }
-  }, [intl]);
+  }, [audioSnapshot, id, intl]);
 
   const handleRetranscribe = useCallback(
     async (toneId: string | null) => {
@@ -318,10 +435,9 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       }
 
       try {
-        const element = audioRef.current;
-        if (element) {
-          element.pause();
-          element.currentTime = 0;
+        if (activePlayback?.transcriptionId === id) {
+          stopActivePlayback("stopped");
+          setIsPlaying(false);
         }
         setPlaybackProgress(0);
 
@@ -413,7 +529,7 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       >
         {transcription?.transcript}
       </TypographyWithMore>
-      {audioSnapshot && audioSrc && (
+      {audioSnapshot && (
         <>
           <Box
             sx={{
@@ -529,57 +645,6 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               )}
             </TranscriptionToneMenu>
           </Box>
-          <audio
-            ref={audioRef}
-            hidden
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => {
-              setIsPlaying(false);
-              const element = audioRef.current;
-              if (element && (element.paused || element.ended)) {
-                const { duration } = element;
-                if (Number.isFinite(duration) && duration > 0) {
-                  setPlaybackProgress(element.currentTime / duration);
-                }
-              }
-            }}
-            onEnded={() => {
-              setIsPlaying(false);
-              const element = audioRef.current;
-              if (element) {
-                element.currentTime = 0;
-              }
-              setPlaybackProgress(0);
-            }}
-            onLoadedMetadata={() => {
-              const element = audioRef.current;
-              if (!element) {
-                return;
-              }
-              if (Number.isFinite(element.duration) && element.duration > 0) {
-                setDurationLabel(
-                  formatDuration(Math.round(element.duration * 1000)),
-                );
-              }
-              setPlaybackProgress(0);
-            }}
-            onTimeUpdate={() => {
-              const element = audioRef.current;
-              if (!element) {
-                return;
-              }
-              const { currentTime, duration } = element;
-              if (!Number.isFinite(duration) || duration <= 0) {
-                setPlaybackProgress(0);
-                return;
-              }
-              setPlaybackProgress(
-                Math.min(Math.max(currentTime / duration, 0), 1),
-              );
-            }}
-          >
-            <source src={audioSrc} type="audio/wav" />
-          </audio>
         </>
       )}
       <Divider sx={{ mt: 2 }} />
