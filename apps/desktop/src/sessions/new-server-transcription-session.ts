@@ -66,7 +66,7 @@ const startNewServerStreaming = async (
     let isReady = false;
     let receivedChunkCount = 0;
     let sentChunkCount = 0;
-    const bufferedChunks: number[][] = [];
+    const bufferedChunks: Float32Array[] = [];
 
     const cleanup = () => {
       if (unlisten) {
@@ -153,10 +153,9 @@ const startNewServerStreaming = async (
             receivedChunkCount++;
             if (isFinalized) return;
 
-            const samples = Array.from(event.payload.samples);
+            const samples = new Float32Array(event.payload.samples);
 
             if (!isReady) {
-              // Buffer chunks until ready
               bufferedChunks.push(samples);
               if (
                 bufferedChunks.length <= 3 ||
@@ -169,10 +168,9 @@ const startNewServerStreaming = async (
               return;
             }
 
-            // Send directly once ready
             if (ws && ws.readyState === WebSocket.OPEN) {
               try {
-                ws.send(JSON.stringify({ type: "audio", samples }));
+                ws.send(samples.buffer);
                 sentChunkCount++;
                 if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
                   console.log(
@@ -244,11 +242,10 @@ const startNewServerStreaming = async (
           );
           isReady = true;
 
-          // Flush buffered chunks
           for (const samples of bufferedChunks) {
             if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
               try {
-                ws.send(JSON.stringify({ type: "audio", samples }));
+                ws.send(samples.buffer);
                 sentChunkCount++;
               } catch (error) {
                 console.error(

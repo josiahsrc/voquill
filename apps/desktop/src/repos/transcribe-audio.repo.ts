@@ -707,8 +707,7 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
           }
 
           if (msg.type === "ready") {
-            const samples = Array.from(input.samples);
-            ws.send(JSON.stringify({ type: "audio", samples }));
+            ws.send(input.samples.buffer);
             ws.send(JSON.stringify({ type: "finalize" }));
             return;
           }
