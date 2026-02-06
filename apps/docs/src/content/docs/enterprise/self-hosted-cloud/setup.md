@@ -25,7 +25,7 @@ Each guide walks you through provisioning the necessary resources and deploying 
 
 ### Invite Gateway URL
 
-The admin portal container requires the `VITE_GATEWAY_URL` environment variable to be set to the public URL of your gateway service. Without this, the admin portal won't be able to communicate with the gateway and core features like user invites won't work. Each cloud provider guide covers how to set this, but be sure to use the actual URL of your deployed gateway — not `localhost`.
+The admin portal container requires the `VOQUILL_GATEWAY_URL` environment variable to be set to the public URL of your gateway service. Without this, the admin portal won't be able to communicate with the gateway and core features like user invites won't work. Each cloud provider guide covers how to set this, but be sure to use the actual URL of your deployed gateway — not `localhost`.
 
 ## 3. Configure the Desktop App
 

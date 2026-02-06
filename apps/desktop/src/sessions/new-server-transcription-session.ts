@@ -1,24 +1,22 @@
-import { Nullable } from "@repo/types";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { getAppState } from "../store";
-import { TextFieldInfo } from "../types/accessibility.types";
 import {
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionFinalizeOptions,
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
-import { extractTextFieldContext } from "../utils/accessibility.utils";
 import { getEffectiveAuth } from "../utils/auth.utils";
 import { NEW_SERVER_URL } from "../utils/new-server.utils";
 import {
-  buildLocalizedPostProcessingPrompt,
+  buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
 } from "../utils/prompt.utils";
 import { getToneTemplateWithFallback } from "../utils/tone.utils";
 import {
   getMyUser,
+  getMyUserName,
   loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
 
@@ -351,16 +349,14 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
         state,
         options?.toneId ?? null,
       );
-      const textFieldContext = extractTextFieldContext(
-        options?.a11yInfo as Nullable<TextFieldInfo>,
-      );
+      const userName = getMyUserName(state);
 
       const systemPrompt = buildSystemPostProcessingTonePrompt();
-      const userPrompt = buildLocalizedPostProcessingPrompt({
+      const userPrompt = buildPostProcessingPrompt({
         transcript: "{{transcript}}",
         dictationLanguage,
         toneTemplate,
-        textFieldContext: textFieldContext ?? null,
+        userName,
       });
 
       const prompt: ProcessMessage[] = [

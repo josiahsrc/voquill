@@ -13,6 +13,8 @@ pub enum WhisperModelSize {
     Base,
     Small,
     Medium,
+    LargeTurbo,
+    Large,
 }
 
 impl WhisperModelSize {
@@ -22,6 +24,8 @@ impl WhisperModelSize {
             Self::Base => "base",
             Self::Small => "small",
             Self::Medium => "medium",
+            Self::LargeTurbo => "large-turbo",
+            Self::Large => "large",
         }
     }
 
@@ -31,6 +35,8 @@ impl WhisperModelSize {
             Self::Base => "ggml-base.bin",
             Self::Small => "ggml-small.bin",
             Self::Medium => "ggml-medium.bin",
+            Self::LargeTurbo => "ggml-large-v3-turbo.bin",
+            Self::Large => "ggml-large-v3.bin",
         }
     }
 
@@ -48,11 +54,21 @@ impl WhisperModelSize {
             Self::Medium => {
                 Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin")
             }
+            Self::LargeTurbo => {
+                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin")
+            }
+            Self::Large => {
+                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin")
+            }
         }
     }
 
     fn env_var_name(self) -> String {
-        format!("{}_{}", MODEL_URL_ENV, self.as_str().to_ascii_uppercase())
+        format!(
+            "{}_{}",
+            MODEL_URL_ENV,
+            self.as_str().to_ascii_uppercase().replace('-', "_")
+        )
     }
 }
 
@@ -72,6 +88,8 @@ impl FromStr for WhisperModelSize {
             "base" => Ok(Self::Base),
             "small" => Ok(Self::Small),
             "medium" => Ok(Self::Medium),
+            "large-turbo" => Ok(Self::LargeTurbo),
+            "large" => Ok(Self::Large),
             _ => Err(()),
         }
     }

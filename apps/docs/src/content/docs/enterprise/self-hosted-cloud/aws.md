@@ -74,7 +74,7 @@ Create a task definition for the gateway service. Save this as `gateway-task.jso
 }
 ```
 
-Create a similar task definition for the admin portal. The `VITE_GATEWAY_URL` environment variable must be set to the public URL of your gateway service so the admin portal can communicate with it.
+Create a similar task definition for the admin portal. The `VOQUILL_GATEWAY_URL` environment variable must be set to the public URL of your gateway service so the admin portal can communicate with it.
 
 ```json
 {
@@ -89,7 +89,7 @@ Create a similar task definition for the admin portal. The `VITE_GATEWAY_URL` en
       "image": "ghcr.io/josiahsrc/voquill/enterprise-admin:latest",
       "portMappings": [{ "containerPort": 5173 }],
       "environment": [
-        { "name": "VITE_GATEWAY_URL", "value": "https://your-gateway-url" }
+        { "name": "VOQUILL_GATEWAY_URL", "value": "https://your-gateway-url" }
       ]
     }
   ]

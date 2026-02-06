@@ -12,6 +12,11 @@ import { CURRENT_COHORT } from "../utils/analytics.utils";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { CURRENT_FEATURE } from "../utils/feature.utils";
 import {
+  CHAT_TONE_ID,
+  CLEAN_TONE_ID,
+  EMAIL_TONE_ID,
+} from "../utils/tone.utils";
+import {
   GenerativePrefs,
   getAgentModePrefs,
   getGenerativePrefs,
@@ -134,6 +139,9 @@ export const submitOnboarding = async () => {
       hasFinishedTutorial: false,
       hasMigratedPreferredMicrophone: true,
       cohort: CURRENT_COHORT,
+      stylingMode: "manual",
+      activeToneIds: [CLEAN_TONE_ID, EMAIL_TONE_ID, CHAT_TONE_ID],
+      selectedToneId: CHAT_TONE_ID,
     };
 
     const preferences: UserPreferences = {

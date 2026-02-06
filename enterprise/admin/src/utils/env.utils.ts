@@ -1,5 +1,16 @@
+interface VoquillEnv {
+  VOQUILL_GATEWAY_URL?: string;
+  VOQUILL_APP_NAME?: string;
+}
+
+declare global {
+  interface Window {
+    __VOQUILL__?: VoquillEnv;
+  }
+}
+
 export function getGatewayUrl(): string {
-  return import.meta.env.VITE_GATEWAY_URL || "http://localhost:4630";
+  return window.__VOQUILL__?.VOQUILL_GATEWAY_URL || "http://localhost:4630";
 }
 
 export function isDev(): boolean {
@@ -7,7 +18,7 @@ export function isDev(): boolean {
 }
 
 export function getAppName(): string {
-  return import.meta.env.VITE_APP_NAME || "Voquill Enterprise";
+  return window.__VOQUILL__?.VOQUILL_APP_NAME || "Voquill Enterprise";
 }
 
 export function getAppVersion(): string {

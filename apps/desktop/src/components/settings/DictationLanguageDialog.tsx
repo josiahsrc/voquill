@@ -1,5 +1,6 @@
 import { Add, Close } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
   Dialog,
@@ -14,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { Hotkey } from "@repo/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadTones } from "../../actions/tone.actions";
@@ -160,7 +161,9 @@ export const DictationLanguageDialog = () => {
       ([value]) =>
         value !== KEYBOARD_LAYOUT_LANGUAGE && !usedLanguages.has(value),
     );
-    const language = available ? available[0] : DICTATION_LANGUAGE_OPTIONS[1][0];
+    const language = available
+      ? available[0]
+      : DICTATION_LANGUAGE_OPTIONS[1][0];
     setRows((prev) => [
       ...prev,
       { rowId: createId(), language, hotkeyKeys: [] },
@@ -229,6 +232,22 @@ export const DictationLanguageDialog = () => {
     handleClose();
   };
 
+  const hasHotkeyConflict = useMemo(() => {
+    const filled = rows.filter((r) => r.hotkeyKeys.length > 0);
+    for (let i = 0; i < filled.length; i++) {
+      for (let j = i + 1; j < filled.length; j++) {
+        const a = new Set(filled[i].hotkeyKeys);
+        const b = new Set(filled[j].hotkeyKeys);
+        const aSubsetOfB = [...a].every((k) => b.has(k));
+        const bSubsetOfA = [...b].every((k) => a.has(k));
+        if (aSubsetOfB || bSubsetOfA) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [rows]);
+
   const canDelete = rows.length > 1;
 
   return (
@@ -239,8 +258,13 @@ export const DictationLanguageDialog = () => {
           <FormattedMessage defaultMessage="Configure multiple dictation languages with hotkeys." />
         </Typography>
       </DialogTitle>
-      <DialogContent dividers sx={{ minWidth: 480 }}>
+      <DialogContent dividers sx={{ width: 480 }}>
         <Stack spacing={1}>
+          {hasHotkeyConflict && (
+            <Alert severity="warning" variant="outlined">
+              <FormattedMessage defaultMessage="Some hotkeys share overlapping keys, which may cause conflicts." />
+            </Alert>
+          )}
           {rows.map((row) => (
             <DictationLanguageRow
               key={row.rowId}

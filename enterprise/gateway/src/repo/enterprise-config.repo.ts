@@ -28,7 +28,7 @@ export async function getEnterpriseConfig(): Promise<EnterpriseConfig> {
       allowChangePostProcessing: false,
       allowChangeTranscriptionMethod: false,
       allowChangeAgentMode: false,
-      stylingMode: "app",
+      stylingMode: "manual",
     };
   }
   return rowToEnterpriseConfig(result.rows[0]);

@@ -15,6 +15,7 @@ import {
   finishOnboarding,
   submitOnboarding,
 } from "../../actions/onboarding.actions";
+import { setSelectedToneId } from "../../actions/user.actions";
 import discordIcon from "../../assets/discord.svg";
 import { produceAppState, useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
@@ -22,6 +23,8 @@ import {
   DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
+import { flashPillTooltip } from "../../utils/overlay.utils";
+import { CHAT_TONE_ID, EMAIL_TONE_ID } from "../../utils/tone.utils";
 import { DictationInstruction } from "../common/DictationInstruction";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 import { BouncyTooltip } from "./BouncyTooltip";
@@ -30,6 +33,7 @@ import {
   DualPaneLayout,
   OnboardingFormLayout,
 } from "./OnboardingCommon";
+import { getMyUser } from "../../utils/user.utils";
 
 const pulseDiscord = keyframes`
   0%, 100% {
@@ -63,7 +67,9 @@ export const TutorialForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isFieldFocused, setIsFieldFocused] = useState(false);
   const [hasStartedDictating, setHasStartedDictating] = useState(false);
+  const userExists = useAppStore((state) => Boolean(getMyUser(state)));
   const submittedRef = useRef(false);
+  const submissionCompleteRef = useRef(false);
 
   const hotkeyCombos = useAppStore((state) =>
     getHotkeyCombosForAction(state, DICTATE_HOTKEY),
@@ -87,6 +93,15 @@ export const TutorialForm = () => {
     }
   }, [keysHeld, primaryHotkey]);
 
+  const setChatTone = (toneId: string, force = false) => {
+    if (!userExists && !force) {
+      return;
+    }
+
+    setSelectedToneId(toneId);
+    flashPillTooltip();
+  };
+
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -94,6 +109,7 @@ export const TutorialForm = () => {
         if (!submittedRef.current) {
           submittedRef.current = true;
           await submitOnboarding();
+          submissionCompleteRef.current = true;
         }
 
         if (cancelled) {
@@ -113,6 +129,7 @@ export const TutorialForm = () => {
     init();
     return () => {
       cancelled = true;
+      setChatTone(CHAT_TONE_ID, submissionCompleteRef.current);
       produceAppState((draft) => {
         draft.onboarding.dictationOverrideEnabled = false;
       });
@@ -165,6 +182,20 @@ Great meeting you yesterday! Looking forward to next steps.
 
 Best,
 ${userName}`;
+
+  useEffect(() => {
+    if (!userExists) {
+      return;
+    }
+
+    if (stepIndex === 0) {
+      // Discord step
+      setChatTone(CHAT_TONE_ID);
+    } else if (stepIndex === 1) {
+      // Email step
+      setChatTone(EMAIL_TONE_ID);
+    }
+  }, [stepIndex, userExists]);
 
   const form = (
     <OnboardingFormLayout

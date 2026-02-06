@@ -33,7 +33,6 @@ type ToneSelectProps = {
   trueDefault?: boolean;
 };
 
-
 export const ToneSelect = ({
   value,
   onToneChange,
@@ -76,7 +75,7 @@ export const ToneSelect = ({
   const handleSelectOpen = useCallback(() => setMenuOpen(true), []);
   const handleSelectClose = useCallback(() => setMenuOpen(false), []);
 
-  const resolvedValue = getRec(toneById, value)?.id ?? "";
+  const resolvedValue = getRec(toneById, value)?.id ?? "default";
 
   return (
     <FormControl size={selectSize} sx={formControlSx}>

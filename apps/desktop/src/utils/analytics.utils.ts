@@ -1,7 +1,7 @@
 import mixpanel from "mixpanel-browser";
 import { getIsEnterpriseEnabled } from "./enterprise.utils";
 
-export const CURRENT_COHORT = "2025-01-b";
+export const CURRENT_COHORT = "2025-02-a";
 
 export function getMixpanel() {
   if (getIsEnterpriseEnabled()) {

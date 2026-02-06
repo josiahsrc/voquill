@@ -47,14 +47,14 @@ For production deployments, store secrets in Secret Manager and reference them w
 
 ## 3. Deploy the Admin Portal
 
-Set `VITE_GATEWAY_URL` to the public URL of the gateway service you deployed in the previous step. The admin portal needs this to communicate with the gateway.
+Set `VOQUILL_GATEWAY_URL` to the public URL of the gateway service you deployed in the previous step. The admin portal needs this to communicate with the gateway.
 
 ```bash
 gcloud run deploy voquill-admin \
   --image=ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
   --port=5173 \
   --allow-unauthenticated \
-  --set-env-vars="VITE_GATEWAY_URL=https://voquill-gateway-xxxxx-uc.a.run.app" \
+  --set-env-vars="VOQUILL_GATEWAY_URL=https://voquill-gateway-xxxxx-uc.a.run.app" \
   --region=us-central1
 ```
 
