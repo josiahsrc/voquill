@@ -318,7 +318,9 @@ export const RootSideEffects = () => {
         await sessionRef.current.onRecordingStart(sampleRate);
 
         clearRecordingTimers();
+        const currentSession = sessionRef.current;
         recordingWarningTimerRef.current = setTimeout(() => {
+          if (sessionRef.current !== currentSession) return;
           showToast({
             title: intl.formatMessage({
               defaultMessage: "Recording ending soon",
@@ -333,6 +335,7 @@ export const RootSideEffects = () => {
         }, RECORDING_WARNING_DURATION_MS);
 
         recordingAutoStopTimerRef.current = setTimeout(() => {
+          if (sessionRef.current !== currentSession) return;
           showToast({
             title: intl.formatMessage({
               defaultMessage: "Recording stopped",
@@ -352,17 +355,37 @@ export const RootSideEffects = () => {
       } catch (error) {
         console.error("Failed to start recording via hotkey", error);
 
+        isRecordingRef.current = false;
+        strategyRef.current = null;
         clearRecordingTimers();
         dictationController.reset();
         agentController.reset();
 
+        try {
+          await invoke("stop_recording");
+        } catch {
+          // Recording may not have started yet
+        }
+
         await strategy.setPhase("idle");
-        showErrorSnackbar("Unable to start recording. Please try again.");
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Unable to start recording. Please try again.";
+        showToast({
+          title: intl.formatMessage({
+            defaultMessage: "Recording failed",
+          }),
+          message: errorMessage,
+          toastType: "error",
+          duration: 8_000,
+        });
         suppressUntilRef.current = Date.now() + 1_000;
-        isRecordingRef.current = false;
-        strategyRef.current = null;
         sessionRef.current?.cleanup();
         sessionRef.current = null;
+        produceAppState((draft) => {
+          draft.activeRecordingMode = null;
+        });
       } finally {
         startPendingRef.current = null;
       }

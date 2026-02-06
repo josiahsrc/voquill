@@ -69,6 +69,10 @@ const startNewServerStreaming = async (
     const bufferedChunks: Float32Array[] = [];
 
     const cleanup = () => {
+      if (finalizeTimeout) {
+        clearTimeout(finalizeTimeout);
+        finalizeTimeout = null;
+      }
       if (unlisten) {
         unlisten();
         unlisten = null;
@@ -310,7 +314,11 @@ const startNewServerStreaming = async (
         code: event.code,
         reason: event.reason,
       });
-      if (!isReady) {
+      if (finalizeRejecter) {
+        finalizeRejecter(new Error("Connection closed unexpectedly"));
+        finalizeRejecter = null;
+        finalizeResolver = null;
+      } else if (!isReady) {
         reject(new Error("Connection closed before ready"));
       }
     };
@@ -341,6 +349,9 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
       console.error("[NewServer] Failed to start streaming:", error);
       this.startError =
         error instanceof Error ? error : new Error(String(error));
+      throw new Error(
+        "Unable to connect to the server. Please check your internet connection or try signing in again.",
+      );
     }
   }
 

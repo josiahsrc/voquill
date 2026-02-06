@@ -17,17 +17,14 @@ export async function getNewServerAuthHeaders(): Promise<
     "Content-Type": "application/json",
   };
 
-  try {
-    const auth = getEffectiveAuth();
-    const user = auth.currentUser;
-    if (user) {
-      const idToken = await user.getIdToken();
-      if (idToken) {
-        headers["Authorization"] = `Bearer ${idToken}`;
-      }
-    }
-  } catch {
-    // Continue without auth
+  const auth = getEffectiveAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+  const idToken = await user.getIdToken();
+  if (idToken) {
+    headers["Authorization"] = `Bearer ${idToken}`;
   }
 
   return headers;
