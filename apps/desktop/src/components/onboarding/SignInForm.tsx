@@ -1,4 +1,4 @@
-import { ArrowForward, Email, Google } from "@mui/icons-material";
+import { ArrowForward, Email } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { signOut, submitSignInWithGoogle } from "../../actions/login.actions";
+import { signOut } from "../../actions/login.actions";
 import {
   goToOnboardingPage,
   setAwaitingSignInNavigation,
@@ -20,6 +20,7 @@ import { useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { LoginForm } from "../login/LoginForm";
+import { OidcProviders } from "../login/OidcProviders";
 import { TermsNotice } from "../login/TermsNotice";
 import {
   BackButton,
@@ -63,12 +64,6 @@ export const SignInForm = () => {
   const handleCancelLocalSetup = () => {
     trackButtonClick("onboarding_cancel_local_setup");
     setConfirmLocalSetupOpen(false);
-  };
-
-  const handleContinueWithGoogle = () => {
-    trackButtonClick("onboarding_continue_with_google");
-    setAwaitingSignInNavigation(true);
-    submitSignInWithGoogle();
   };
 
   const handleOpenEmailDialog = () => {
@@ -159,17 +154,13 @@ export const SignInForm = () => {
           <FormattedMessage defaultMessage="Create your account" />
         </Typography>
 
-        {!isEnterprise && (
-          <Button
-            fullWidth
-            variant="contained"
-            startIcon={<Google />}
-            onClick={handleContinueWithGoogle}
-            disabled={loginStatus === "loading"}
-          >
-            <FormattedMessage defaultMessage="Continue with Google" />
-          </Button>
-        )}
+        <OidcProviders
+          variant="contained"
+          onBeforeSignIn={() => {
+            trackButtonClick("onboarding_continue_with_provider");
+            setAwaitingSignInNavigation(true);
+          }}
+        />
 
         <Button
           fullWidth
@@ -191,7 +182,7 @@ export const SignInForm = () => {
         fullWidth
       >
         <DialogContent>
-          <LoginForm hideGoogleButton hideModeSwitch defaultMode="signUp" />
+          <LoginForm hideModeSwitch defaultMode="signUp" />
         </DialogContent>
       </Dialog>
 

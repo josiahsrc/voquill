@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
-import { SignInWithGoogleButton } from "./ProviderButtons";
+import { OidcProviders } from "./OidcProviders";
 import { setMode, submitSignUp } from "../../actions/login.actions";
 import {
   getCanSubmitSignUp,
@@ -20,14 +20,10 @@ import {
 } from "../../utils/login.utils";
 
 type SignUpFormProps = {
-  hideGoogleButton?: boolean;
   hideModeSwitch?: boolean;
 };
 
-export const SignUpForm = ({
-  hideGoogleButton = false,
-  hideModeSwitch = false,
-}: SignUpFormProps) => {
+export const SignUpForm = ({ hideModeSwitch = false }: SignUpFormProps) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
@@ -76,14 +72,10 @@ export const SignUpForm = ({
 
   return (
     <Stack spacing={2}>
-      {!hideGoogleButton && (
-        <>
-          <SignInWithGoogleButton />
-          <Divider>
-            <FormattedMessage defaultMessage="or" />
-          </Divider>
-        </>
-      )}
+      <OidcProviders />
+      <Divider>
+        <FormattedMessage defaultMessage="or" />
+      </Divider>
 
       <TextField
         label={<FormattedMessage defaultMessage="Email" />}
