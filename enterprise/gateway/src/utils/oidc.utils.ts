@@ -10,6 +10,19 @@ type OidcDiscovery = {
 const discoveryCache = new Map<string, { data: OidcDiscovery; expiresAt: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
+function rewriteUrlForInternal(url: string): string {
+  const rewrites = process.env.OIDC_URL_REWRITES;
+  if (!rewrites) return url;
+
+  for (const rule of rewrites.split(",")) {
+    const [from, to] = rule.split("->");
+    if (from && to && url.includes(from)) {
+      return url.replace(from, to);
+    }
+  }
+  return url;
+}
+
 export async function discoverOidcEndpoints(
   issuerUrl: string,
 ): Promise<OidcDiscovery> {
@@ -19,7 +32,8 @@ export async function discoverOidcEndpoints(
     return cached.data;
   }
 
-  const url = issuerUrl.replace(/\/+$/, "") + "/.well-known/openid-configuration";
+  const internalIssuerUrl = rewriteUrlForInternal(issuerUrl);
+  const url = internalIssuerUrl.replace(/\/+$/, "") + "/.well-known/openid-configuration";
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(
@@ -27,7 +41,13 @@ export async function discoverOidcEndpoints(
     );
   }
 
-  const data = (await res.json()) as OidcDiscovery;
+  const rawData = (await res.json()) as OidcDiscovery;
+  const data: OidcDiscovery = {
+    authorization_endpoint: rawData.authorization_endpoint,
+    token_endpoint: rewriteUrlForInternal(rawData.token_endpoint),
+    jwks_uri: rewriteUrlForInternal(rawData.jwks_uri),
+    issuer: rawData.issuer,
+  };
   discoveryCache.set(issuerUrl, { data, expiresAt: now + CACHE_TTL_MS });
   return data;
 }
