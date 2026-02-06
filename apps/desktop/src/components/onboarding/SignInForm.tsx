@@ -18,6 +18,7 @@ import {
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
+import { getShouldShowEmailForm } from "../../utils/login.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { LoginForm } from "../login/LoginForm";
 import { OidcProviders } from "../login/OidcProviders";
@@ -39,6 +40,7 @@ export const SignInForm = () => {
     (state) => state.onboarding.awaitingSignInNavigation,
   );
   const isSignedIn = Boolean(auth);
+  const showEmailButton = useAppStore((state) => getShouldShowEmailForm(state));
 
   useEffect(() => {
     if (isSignedIn && awaitingSignInNavigation) {
@@ -162,15 +164,17 @@ export const SignInForm = () => {
           }}
         />
 
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<Email />}
-          onClick={handleOpenEmailDialog}
-          disabled={loginStatus === "loading"}
-        >
-          <FormattedMessage defaultMessage="Sign up with email" />
-        </Button>
+        {showEmailButton && (
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<Email />}
+            onClick={handleOpenEmailDialog}
+            disabled={loginStatus === "loading"}
+          >
+            <FormattedMessage defaultMessage="Sign up with email" />
+          </Button>
+        )}
 
         <TermsNotice align="left" />
       </Stack>

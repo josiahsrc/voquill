@@ -6,6 +6,7 @@ interface EnterpriseConfigRow {
   allow_change_post_processing: boolean;
   allow_change_transcription_method: boolean;
   allow_change_agent_mode: boolean;
+  allow_email_sign_in: boolean;
   styling_mode: string;
 }
 
@@ -14,6 +15,7 @@ function rowToEnterpriseConfig(row: EnterpriseConfigRow): EnterpriseConfig {
     allowChangePostProcessing: row.allow_change_post_processing,
     allowChangeTranscriptionMethod: row.allow_change_transcription_method,
     allowChangeAgentMode: row.allow_change_agent_mode,
+    allowEmailSignIn: row.allow_email_sign_in,
     stylingMode: row.styling_mode as EnterpriseConfig["stylingMode"],
   };
 }
@@ -28,6 +30,7 @@ export async function getEnterpriseConfig(): Promise<EnterpriseConfig> {
       allowChangePostProcessing: false,
       allowChangeTranscriptionMethod: false,
       allowChangeAgentMode: false,
+      allowEmailSignIn: true,
       stylingMode: "manual",
     };
   }
@@ -39,13 +42,14 @@ export async function upsertEnterpriseConfig(
 ): Promise<void> {
   const pool = getPool();
   await pool.query(
-    `INSERT INTO enterprise_config (id, allow_change_post_processing, allow_change_transcription_method, allow_change_agent_mode, styling_mode)
-     VALUES ('default', $1, $2, $3, $4)
+    `INSERT INTO enterprise_config (id, allow_change_post_processing, allow_change_transcription_method, allow_change_agent_mode, allow_email_sign_in, styling_mode)
+     VALUES ('default', $1, $2, $3, $4, $5)
      ON CONFLICT (id) DO UPDATE SET
        allow_change_post_processing = $1,
        allow_change_transcription_method = $2,
        allow_change_agent_mode = $3,
-       styling_mode = $4`,
-    [config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.allowChangeAgentMode, config.stylingMode],
+       allow_email_sign_in = $4,
+       styling_mode = $5`,
+    [config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.allowChangeAgentMode, config.allowEmailSignIn, config.stylingMode],
   );
 }

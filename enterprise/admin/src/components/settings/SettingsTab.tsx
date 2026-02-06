@@ -130,6 +130,19 @@ export default function SettingsTab() {
                     <FormattedMessage defaultMessage="Allow users to change agent mode" />
                   }
                 />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={enterpriseConfig.allowEmailSignIn}
+                      onChange={(_, checked) =>
+                        handleToggle("allowEmailSignIn", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Allow email/password sign in" />
+                  }
+                />
                 <FormControl size="small" sx={{ mt: 1, minWidth: 200 }}>
                   <InputLabel>
                     <FormattedMessage defaultMessage="Styling Mode" />
