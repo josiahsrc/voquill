@@ -22,9 +22,13 @@ import {
 
 type SignUpFormProps = {
   hideModeSwitch?: boolean;
+  hideOidcProviders?: boolean;
 };
 
-export const SignUpForm = ({ hideModeSwitch = false }: SignUpFormProps) => {
+export const SignUpForm = ({
+  hideModeSwitch = false,
+  hideOidcProviders = false,
+}: SignUpFormProps) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
@@ -74,13 +78,15 @@ export const SignUpForm = ({ hideModeSwitch = false }: SignUpFormProps) => {
 
   return (
     <Stack spacing={2}>
-      <OidcProviders />
+      {!hideOidcProviders && <OidcProviders />}
 
       {showEmailForm && (
         <>
-          <Divider>
-            <FormattedMessage defaultMessage="or" />
-          </Divider>
+          {!hideOidcProviders && (
+            <Divider>
+              <FormattedMessage defaultMessage="or" />
+            </Divider>
+          )}
 
           <TextField
             label={<FormattedMessage defaultMessage="Email" />}

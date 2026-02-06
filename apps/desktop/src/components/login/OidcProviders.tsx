@@ -49,7 +49,7 @@ export const OidcProviders = ({
   }
 
   return (
-    <Stack spacing={1}>
+    <Stack spacing={2}>
       {oidcProviders.map((provider) => (
         <Button
           key={provider.id}

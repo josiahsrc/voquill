@@ -14,7 +14,11 @@ import { getCanSubmitLogin, getShouldShowEmailForm } from "../../utils/login.uti
 import { useState } from "react";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
-export const SignInForm = () => {
+type SignInFormProps = {
+  hideOidcProviders?: boolean;
+};
+
+export const SignInForm = ({ hideOidcProviders = false }: SignInFormProps) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const email = useAppStore((state) => state.login.email);
@@ -48,13 +52,15 @@ export const SignInForm = () => {
 
   return (
     <Stack spacing={2}>
-      <OidcProviders />
+      {!hideOidcProviders && <OidcProviders />}
 
       {showEmailForm && (
         <>
-          <Divider>
-            <FormattedMessage defaultMessage="or" />
-          </Divider>
+          {!hideOidcProviders && (
+            <Divider>
+              <FormattedMessage defaultMessage="or" />
+            </Divider>
+          )}
 
           <TextField
             label={<FormattedMessage defaultMessage="Email" />}

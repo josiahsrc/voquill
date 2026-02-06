@@ -186,7 +186,7 @@ export const SignInForm = () => {
         fullWidth
       >
         <DialogContent>
-          <LoginForm hideModeSwitch defaultMode="signUp" />
+          <LoginForm hideModeSwitch hideOidcProviders defaultMode="signUp" />
         </DialogContent>
       </Dialog>
 
