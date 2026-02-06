@@ -27,11 +27,12 @@ describe("enterprise config", () => {
     );
   });
 
-  it("returns defaults (both false)", async () => {
+  it("returns defaults", async () => {
     const data = await invoke("enterprise/getConfig", {}, userToken);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
+    expect(data.config.allowEmailSignIn).toBe(true);
     expect(data.config.stylingMode).toBe("manual");
   });
 
@@ -53,6 +54,7 @@ describe("enterprise config", () => {
           allowChangePostProcessing: true,
           allowChangeTranscriptionMethod: true,
           allowChangeAgentMode: true,
+          allowEmailSignIn: false,
           stylingMode: "manual",
         },
       },
@@ -63,6 +65,7 @@ describe("enterprise config", () => {
     expect(data.config.allowChangePostProcessing).toBe(true);
     expect(data.config.allowChangeTranscriptionMethod).toBe(true);
     expect(data.config.allowChangeAgentMode).toBe(true);
+    expect(data.config.allowEmailSignIn).toBe(false);
     expect(data.config.stylingMode).toBe("manual");
   });
 
@@ -74,6 +77,7 @@ describe("enterprise config", () => {
           allowChangePostProcessing: false,
           allowChangeTranscriptionMethod: false,
           allowChangeAgentMode: false,
+          allowEmailSignIn: true,
           stylingMode: "app",
         },
       },
@@ -84,6 +88,7 @@ describe("enterprise config", () => {
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
+    expect(data.config.allowEmailSignIn).toBe(true);
     expect(data.config.stylingMode).toBe("app");
   });
 
@@ -96,6 +101,7 @@ describe("enterprise config", () => {
             allowChangePostProcessing: true,
             allowChangeTranscriptionMethod: true,
             allowChangeAgentMode: true,
+            allowEmailSignIn: true,
             stylingMode: "manual",
           },
         },
