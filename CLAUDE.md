@@ -33,13 +33,6 @@ npm run dev:linux:gpu    # Linux with Vulkan GPU acceleration
 
 ```bash
 npm run build            # Build frontend (TypeScript → Vite)
-npm run lint             # ESLint
-npm run check-types      # TypeScript type checking
-npm run test:webdriver   # E2E smoke tests
-
-# Internationalization
-npm run i18n:extract     # Extract messages to en.json
-npm run i18n:sync        # Sync message IDs to other locales
 ```
 
 **Environment variables:**
