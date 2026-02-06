@@ -15,6 +15,7 @@ import {
 } from "../utils/prompt.utils";
 import { getToneTemplateWithFallback } from "../utils/tone.utils";
 import {
+  getGenerativePrefs,
   getMyUser,
   getMyUserName,
   loadMyEffectiveDictationLanguage,
@@ -344,26 +345,38 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
       console.log("[NewServer] Finalizing streaming session...");
 
       const state = getAppState();
-      const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
-      const toneTemplate = getToneTemplateWithFallback(
-        state,
-        options?.toneId ?? null,
-      );
-      const userName = getMyUserName(state);
+      const postProcessingMode = getGenerativePrefs(state).mode;
+      const useCloudPostProcessing = postProcessingMode === "cloud";
 
-      const systemPrompt = buildSystemPostProcessingTonePrompt();
-      const userPrompt = buildPostProcessingPrompt({
-        transcript: "{{transcript}}",
-        dictationLanguage,
-        toneTemplate,
-        userName,
-      });
+      let prompt: ProcessMessage[] | undefined;
+      let userPrompt: string | undefined;
 
-      const prompt: ProcessMessage[] = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ];
-      console.log("[NewServer] Including post-processing prompt");
+      if (useCloudPostProcessing) {
+        const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
+        const toneTemplate = getToneTemplateWithFallback(
+          state,
+          options?.toneId ?? null,
+        );
+        const userName = getMyUserName(state);
+
+        const systemPrompt = buildSystemPostProcessingTonePrompt();
+        userPrompt = buildPostProcessingPrompt({
+          transcript: "{{transcript}}",
+          dictationLanguage,
+          toneTemplate,
+          userName,
+        });
+
+        prompt = [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ];
+        console.log("[NewServer] Including cloud post-processing prompt");
+      } else {
+        console.log(
+          `[NewServer] Post-processing mode is "${postProcessingMode}", skipping server-side processing`,
+        );
+      }
 
       const result = await this.session.finalize(prompt);
 
@@ -387,14 +400,15 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
           transcriptionMode: "cloud",
           transcriptionDurationMs: result.durationMs ?? null,
         },
-        postProcessMetadata: result.processed
-          ? {
-              postProcessPrompt: userPrompt,
-              postProcessMode: "cloud",
-              postProcessDevice: "Cloud • New Server",
-              postprocessDurationMs: result.processed.durationMs ?? null,
-            }
-          : undefined,
+        postProcessMetadata:
+          result.processed && userPrompt
+            ? {
+                postProcessPrompt: userPrompt,
+                postProcessMode: "cloud",
+                postProcessDevice: "Cloud • New Server",
+                postprocessDurationMs: result.processed.durationMs ?? null,
+              }
+            : undefined,
         warnings: [],
       };
     } catch (error) {

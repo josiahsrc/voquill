@@ -365,8 +365,9 @@ export class NewServerGenerateTextRepo extends BaseGenerateTextRepo {
 
     const body = await res.json();
 
+    // Wrap in expected JSON format for postProcessTranscript parsing
     return {
-      text: body.text,
+      text: JSON.stringify({ processedTranscription: body.text }),
       metadata: {
         postProcessingMode: "cloud",
       },
