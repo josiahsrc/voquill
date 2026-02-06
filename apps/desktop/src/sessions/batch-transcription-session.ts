@@ -1,10 +1,11 @@
+import { showErrorSnackbar } from "../actions/app.actions";
 import { transcribeAudio } from "../actions/transcribe.actions";
 import {
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
-import { showErrorSnackbar } from "../actions/app.actions";
+import { getLogger } from "../utils/log.utils";
 
 /**
  * Batch transcription session - records audio first, then transcribes all at once.
@@ -24,6 +25,7 @@ export class BatchTranscriptionSession implements TranscriptionSession {
     const rate = audio.sampleRate;
 
     if (rate == null || rate <= 0 || payloadSamples.length === 0) {
+      getLogger().warning(`Batch session: skipping transcription (rate=${rate}, samples=${payloadSamples.length})`);
       return {
         rawTranscript: null,
         metadata: {},
@@ -34,18 +36,20 @@ export class BatchTranscriptionSession implements TranscriptionSession {
     const warnings: string[] = [];
 
     try {
+      getLogger().info(`Batch transcription: ${payloadSamples.length} samples at ${rate}Hz`);
       const result = await transcribeAudio({
         samples: payloadSamples,
         sampleRate: rate,
       });
 
+      getLogger().info(`Batch transcription result: ${result.rawTranscript.length} chars`);
       return {
         rawTranscript: result.rawTranscript,
         metadata: result.metadata,
         warnings: [...warnings, ...result.warnings],
       };
     } catch (error) {
-      console.error("Failed to transcribe audio", error);
+      getLogger().error(`Failed to transcribe audio: ${error}`);
       const message =
         error instanceof Error
           ? error.message

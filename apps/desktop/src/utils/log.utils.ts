@@ -18,9 +18,23 @@ export class Logger {
     this.count = 0;
   }
 
-  private write(tag: string, message: string): void {
+  private stringify(args: unknown[]): string {
+    return args
+      .map((arg) => {
+        if (typeof arg === "string") return arg;
+        if (arg instanceof Error) return arg.stack ?? arg.message;
+        try {
+          return JSON.stringify(arg);
+        } catch {
+          return String(arg);
+        }
+      })
+      .join(" ");
+  }
+
+  private write(tag: string, args: unknown[]): void {
     const timestamp = new Date().toISOString();
-    const entry = `[${timestamp}] [${tag}] ${message}`;
+    const entry = `[${timestamp}] [${tag}] ${this.stringify(args)}`;
     this.buffer[this.head] = entry;
     this.head = (this.head + 1) % this.buffer.length;
     if (this.count < this.buffer.length) {
@@ -28,21 +42,21 @@ export class Logger {
     }
   }
 
-  info(message: string): void {
-    this.write("INFO", message);
+  info(...args: unknown[]): void {
+    this.write("INFO", args);
   }
 
-  warning(message: string): void {
-    this.write("WARN", message);
+  warning(...args: unknown[]): void {
+    this.write("WARN", args);
   }
 
-  error(message: string): void {
-    this.write("ERROR", message);
+  error(...args: unknown[]): void {
+    this.write("ERROR", args);
   }
 
-  verbose(message: string): void {
+  verbose(...args: unknown[]): void {
     if (this.level !== "verbose") return;
-    this.write("VERBOSE", message);
+    this.write("VERBOSE", args);
   }
 
   getLogLevel(): LogLevel {

@@ -35,6 +35,7 @@ import {
   loadEnterpriseTarget,
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
+import { getLogger } from "../../utils/log.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
   getEffectivePillVisibility,
@@ -80,6 +81,7 @@ export const AppSideEffects = () => {
   const prefs = useAppStore((state) => getMyUserPreferences(state));
 
   const onAuthStateChanged = (user: AuthUser | null) => {
+    getLogger().info(`Auth state changed (uid=${user?.uid ?? "none"})`);
     authReadyRef.current = true;
     setAuthReady(true);
     produceAppState((draft) => {
@@ -93,9 +95,7 @@ export const AppSideEffects = () => {
 
     const timeoutId = setTimeout(() => {
       if (!authReadyRef.current) {
-        console.warn(
-          "[AppSideEffects] Auth timed out, proceeding without auth",
-        );
+        getLogger().warning("Auth timed out, proceeding without auth");
         onAuthStateChanged(null);
       }
     }, AUTH_READY_TIMEOUT_MS);
@@ -127,10 +127,10 @@ export const AppSideEffects = () => {
   }, []);
 
   useIntervalAsync(ENTERPRISE_REFRESH_INTERVAL_MS, async () => {
-    console.log("Loading enterprise target...");
+    getLogger().verbose("Loading enterprise target");
     const debugInfo = await loadEnterpriseTarget();
 
-    console.log(
+    getLogger().verbose(
       "Enterprise target reloaded from",
       debugInfo,
       getEnterpriseTarget(),
@@ -144,7 +144,7 @@ export const AppSideEffects = () => {
     if (repo) {
       isEnterprise = true;
       [config, license] = await repo.getConfig().catch((e) => {
-        console.error("Failed to refresh enterprise config:", e);
+        getLogger().error(`Failed to refresh enterprise config: ${e}`);
         return [null, null];
       });
     }
@@ -214,6 +214,7 @@ export const AppSideEffects = () => {
 
   useEffect(() => {
     if (streamReady && initReady && !initialized && enterpriseReady) {
+      getLogger().info("App fully initialized");
       produceAppState((draft) => {
         draft.initialized = true;
       });
@@ -236,10 +237,13 @@ export const AppSideEffects = () => {
     }
 
     isMigratingLocalUserRef.current = true;
+    getLogger().info("Migrating local user to cloud");
     (async () => {
       try {
         await migrateLocalUserToCloud();
+        getLogger().info("Local user migrated to cloud successfully");
       } catch (error) {
+        getLogger().error(`Failed to migrate local user to cloud: ${error}`);
         showErrorSnackbar(error);
       } finally {
         isMigratingLocalUserRef.current = false;
