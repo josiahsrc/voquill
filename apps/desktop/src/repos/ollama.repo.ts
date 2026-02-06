@@ -51,3 +51,48 @@ export class OllamaRepo extends BaseOllamaRepo {
       .filter((name): name is string => Boolean(name));
   }
 }
+
+export class OpenAICompatibleRepo extends BaseOllamaRepo {
+  private baseUrl: string;
+  private apiKey?: string;
+
+  constructor(baseUrl: string, apiKey?: string) {
+    super();
+    this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+  }
+
+  override async checkAvailability(): Promise<boolean> {
+    try {
+      const health = await fetch(new URL("/v1/models", this.baseUrl).href, {
+        headers: getOllamaHeaders(this.apiKey),
+      });
+      return health.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async getAvailableModels(): Promise<string[]> {
+    const response = await fetch(new URL("/v1/models", this.baseUrl).href, {
+      headers: getOllamaHeaders(this.apiKey),
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Unable to fetch models (status ${response.status})`,
+      );
+    }
+
+    const payload = (await response.json()) as {
+      data?: Array<{ id?: string }>;
+    };
+
+    if (!payload.data) {
+      return [];
+    }
+
+    return payload.data
+      .map((model) => (model.id ?? "").trim())
+      .filter((name): name is string => Boolean(name));
+  }
+}

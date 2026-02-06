@@ -99,12 +99,14 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [saving, setSaving] = useState(false);
 
   const isOllama = provider === "ollama";
+  const isOpenAICompatible = provider === "openai-compatible";
+  const isOllamaLike = isOllama || isOpenAICompatible;
   const isAzure = provider === "azure";
   const isAzureOpenAI = isAzure && context === "post-processing";
   const isAzureSTT = isAzure && context === "transcription";
   const isSpeaches = provider === "speaches";
 
-  const canSave = isOllama
+  const canSave = isOllamaLike
     ? !!name
     : isSpeaches
       ? !!name
@@ -122,7 +124,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
     setSaving(true);
     try {
       const keyToSave = key || "";
-      const baseUrl = isOllama
+      const baseUrl = isOllamaLike
         ? ollamaUrl || OLLAMA_DEFAULT_URL
         : isSpeaches
           ? speachesUrl || "http://localhost:8000"
@@ -146,7 +148,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
     }
   }, [
     canSave,
-    isOllama,
+    isOllamaLike,
     isSpeaches,
     isAzureOpenAI,
     isAzureSTT,
@@ -201,6 +203,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         )}
         {context === "post-processing" && (
           <MenuItem value="ollama">Ollama</MenuItem>
+        )}
+        {context === "post-processing" && (
+          <MenuItem value="openai-compatible">OpenAI Compatible</MenuItem>
         )}
         {context === "post-processing" && (
           <MenuItem value="deepseek">DeepSeek</MenuItem>
@@ -285,10 +290,10 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
             />
           </>
         )
-      ) : isOllama ? (
+      ) : isOllamaLike ? (
         <>
           <TextField
-            label={<FormattedMessage defaultMessage="Ollama URL" />}
+            label={<FormattedMessage defaultMessage="Base URL" />}
             value={ollamaUrl}
             onChange={(event) => setOllamaUrl(event.target.value)}
             placeholder={OLLAMA_DEFAULT_URL}
@@ -309,7 +314,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
             type="password"
             disabled={saving}
             helperText={
-              <FormattedMessage defaultMessage="Only needed if your Ollama instance requires authentication" />
+              <FormattedMessage defaultMessage="Only needed if your instance requires authentication" />
             }
           />
         </>
@@ -382,7 +387,7 @@ const testApiKey = async (
   apiKey: SettingsApiKey,
   context: ApiKeyListContext,
 ): Promise<boolean> => {
-  if (apiKey.provider === "ollama") {
+  if (apiKey.provider === "ollama" || apiKey.provider === "openai-compatible") {
     return ollamaTestIntegration({
       baseUrl: apiKey.baseUrl || OLLAMA_DEFAULT_URL,
       apiKey: apiKey.keyFull || undefined,
@@ -463,6 +468,8 @@ const getModelsForProvider = (
     case "openrouter":
       return context === "transcription" ? [] : OPENROUTER_FAVORITE_MODELS;
     case "ollama":
+      return [];
+    case "openai-compatible":
       return [];
     case "deepseek":
       return context === "transcription" ? [] : DEEPSEEK_MODELS;
@@ -610,7 +617,9 @@ const ApiKeyCard = ({
             disabled={testing || deleting}
           />
         </Box>
-      ) : apiKey.provider === "ollama" && context === "post-processing" ? (
+      ) : (apiKey.provider === "ollama" ||
+          apiKey.provider === "openai-compatible") &&
+        context === "post-processing" ? (
         <Box onClick={(e) => e.stopPropagation()}>
           <OllamaModelPicker
             baseUrl={apiKey.baseUrl ?? null}
@@ -618,6 +627,7 @@ const ApiKeyCard = ({
             selectedModel={currentModel}
             onModelSelect={onModelChange}
             disabled={testing || deleting}
+            provider={apiKey.provider}
           />
         </Box>
       ) : apiKey.provider === "speaches" ? (
@@ -679,6 +689,7 @@ export const ApiKeyList = ({
       context === "transcription" &&
       (key.provider === "openrouter" ||
         key.provider === "ollama" ||
+        key.provider === "openai-compatible" ||
         key.provider === "deepseek" ||
         key.provider === "claude")
     ) {
