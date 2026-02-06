@@ -443,15 +443,18 @@ export const RootSideEffects = () => {
 
     try {
       if (session && audio) {
-        const [currentApp, transcribeResult] = await Promise.all([
-          tryRegisterCurrentAppTarget(),
-          session.finalize(audio),
-        ]);
-        const rawTranscript = transcribeResult.rawTranscript;
+        const currentApp = await tryRegisterCurrentAppTarget();
         trackAppUsed(currentApp?.name ?? "Unknown");
         const toneId = getToneIdToUse(getAppState(), {
           currentAppToneId: currentApp?.toneId ?? null,
         });
+
+        const transcribeResult = await session.finalize(audio, {
+          toneId,
+          a11yInfo,
+        });
+        const rawTranscript = transcribeResult.rawTranscript;
+        const processedTranscript = transcribeResult.processedTranscript;
 
         let transcript: string | null = null;
         let sanitizedTranscript: string | null = null;
@@ -461,6 +464,8 @@ export const RootSideEffects = () => {
         if (rawTranscript) {
           const result = await strategy.handleTranscript({
             rawTranscript,
+            processedTranscript,
+            sessionPostProcessMetadata: transcribeResult.postProcessMetadata,
             toneId,
             a11yInfo,
             currentApp,

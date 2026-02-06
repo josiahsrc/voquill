@@ -3,6 +3,7 @@ import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
+import { getIsNewBackendEnabled } from "../utils/new-server.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import {
   GenerativePrefs,
@@ -28,6 +29,7 @@ import {
   EnterpriseGenerateTextRepo,
   GeminiGenerateTextRepo,
   GroqGenerateTextRepo,
+  NewServerGenerateTextRepo,
   OllamaGenerateTextRepo,
   OpenAIGenerateTextRepo,
   OpenRouterGenerateTextRepo,
@@ -65,6 +67,7 @@ import {
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
+  NewServerTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
   SpeachesTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
@@ -164,10 +167,16 @@ const getGenTextRepoInternal = ({
   const state = getAppState();
 
   if (prefs.mode === "cloud") {
+    let repo: BaseGenerateTextRepo;
+    if (getIsEnterpriseEnabled()) {
+      repo = new EnterpriseGenerateTextRepo();
+    } else if (getIsNewBackendEnabled()) {
+      repo = new NewServerGenerateTextRepo();
+    } else {
+      repo = new CloudGenerateTextRepo(cloudModel);
+    }
     return {
-      repo: getIsEnterpriseEnabled()
-        ? new EnterpriseGenerateTextRepo()
-        : new CloudGenerateTextRepo(cloudModel),
+      repo,
       apiKeyId: null,
       warnings: prefs.warnings,
     };
@@ -266,10 +275,16 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
   const prefs = getTranscriptionPrefs(getAppState());
 
   if (prefs.mode === "cloud") {
+    let repo: BaseTranscribeAudioRepo;
+    if (getIsEnterpriseEnabled()) {
+      repo = new EnterpriseTranscribeAudioRepo();
+    } else if (getIsNewBackendEnabled()) {
+      repo = new NewServerTranscribeAudioRepo();
+    } else {
+      repo = new CloudTranscribeAudioRepo();
+    }
     return {
-      repo: getIsEnterpriseEnabled()
-        ? new EnterpriseTranscribeAudioRepo()
-        : new CloudTranscribeAudioRepo(),
+      repo,
       apiKeyId: null,
       warnings: prefs.warnings,
     };

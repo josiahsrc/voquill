@@ -78,6 +78,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   incognitoModeEnabled: false,
   incognitoModeIncludeInStats: false,
   dictationPillVisibility: "while_active",
+  useNewBackend: true,
 });
 
 const updateUserPreferences = async (
@@ -505,4 +506,10 @@ export const markUpgradeDialogSeen = async (): Promise<void> => {
     "Unable to mark upgrade dialog as seen. User not found.",
     "Failed to mark upgrade dialog as seen. Please try again.",
   );
+};
+
+export const setUseNewBackend = async (enabled: boolean): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.useNewBackend = enabled;
+  }, "Failed to save backend preference. Please try again.");
 };

@@ -18,6 +18,10 @@ import {
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
 import { invokeEnterprise } from "../utils/enterprise.utils";
+import {
+  getNewServerAuthHeaders,
+  NEW_SERVER_URL,
+} from "../utils/new-server.utils";
 import { BaseRepo } from "./base.repo";
 
 export type GenerateTextInput = {
@@ -331,6 +335,38 @@ export class EnterpriseGenerateTextRepo extends BaseGenerateTextRepo {
 
     return {
       text: response.text,
+      metadata: {
+        postProcessingMode: "cloud",
+      },
+    };
+  }
+}
+
+export class NewServerGenerateTextRepo extends BaseGenerateTextRepo {
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const headers = await getNewServerAuthHeaders();
+
+    const messages: { role: "system" | "user"; content: string }[] = [];
+    if (input.system) {
+      messages.push({ role: "system", content: input.system });
+    }
+    messages.push({ role: "user", content: input.prompt });
+
+    const res = await fetch(`${NEW_SERVER_URL}/v1/process`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ messages }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Request failed with status ${res.status}`);
+    }
+
+    const body = await res.json();
+
+    return {
+      text: body.text,
       metadata: {
         postProcessingMode: "cloud",
       },

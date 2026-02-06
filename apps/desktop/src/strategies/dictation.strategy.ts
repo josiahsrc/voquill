@@ -57,6 +57,8 @@ export class DictationStrategy extends BaseStrategy {
 
   async handleTranscript({
     rawTranscript,
+    processedTranscript,
+    sessionPostProcessMetadata,
     toneId,
     a11yInfo,
     currentApp,
@@ -92,15 +94,20 @@ export class DictationStrategy extends BaseStrategy {
       );
       sanitizedTranscript = applySymbolConversions(afterReplacements);
 
-      const result = await postProcessTranscript({
-        rawTranscript: sanitizedTranscript,
-        toneId,
-        a11yInfo,
-      });
+      if (processedTranscript && sessionPostProcessMetadata) {
+        transcript = processedTranscript;
+        postProcessMetadata = sessionPostProcessMetadata;
+      } else {
+        const result = await postProcessTranscript({
+          rawTranscript: sanitizedTranscript,
+          toneId,
+          a11yInfo,
+        });
 
-      transcript = result.transcript;
-      postProcessMetadata = result.metadata;
-      postProcessWarnings = result.warnings;
+        transcript = result.transcript;
+        postProcessMetadata = result.metadata;
+        postProcessWarnings = result.warnings;
+      }
 
       await resetPhase();
 
