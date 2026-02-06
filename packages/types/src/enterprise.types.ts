@@ -29,3 +29,32 @@ export const EnterpriseConfigZod = z
     stylingMode: EnterpriseStylingModeZod,
   })
   .strict() satisfies z.ZodType<EnterpriseConfig>;
+
+export type OidcProvider = {
+  id: string;
+  name: string;
+  issuerUrl: string;
+  clientId: string;
+  isEnabled: boolean;
+  createdAt: string;
+};
+
+export type OidcProviderInput = {
+  id?: string;
+  name: string;
+  issuerUrl: string;
+  clientId: string;
+  clientSecret?: string;
+  isEnabled: boolean;
+};
+
+export const OidcProviderInputZod = z
+  .object({
+    id: z.string().optional(),
+    name: z.string().min(1),
+    issuerUrl: z.string().url(),
+    clientId: z.string().min(1),
+    clientSecret: z.string().optional(),
+    isEnabled: z.boolean(),
+  })
+  .strict() satisfies z.ZodType<OidcProviderInput>;

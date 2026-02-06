@@ -1,4 +1,5 @@
 import { Collapse, Stack, Typography } from "@mui/material";
+import type { OidcProvider } from "@repo/types";
 import { useEffect } from "react";
 import { FormattedMessage } from "react-intl";
 import { useSearchParams } from "react-router-dom";
@@ -30,12 +31,14 @@ type LoginFormProps = {
   hideGoogleButton?: boolean;
   hideModeSwitch?: boolean;
   defaultMode?: LoginMode;
+  oidcProviders?: OidcProvider[];
 };
 
 export const LoginForm = ({
   hideGoogleButton = false,
   hideModeSwitch = false,
   defaultMode,
+  oidcProviders = [],
 }: LoginFormProps) => {
   const mode = useMode();
   const errorMessage = useAppStore((state) => state.login.errorMessage);
@@ -79,12 +82,18 @@ export const LoginForm = ({
       <TransitionGroup>
         {mode === "signIn" && (
           <Collapse key="signIn" timeout={400} unmountOnExit>
-            <SignInForm hideGoogleButton={hideGoogleButton} />
+            <SignInForm
+              hideGoogleButton={hideGoogleButton}
+              oidcProviders={oidcProviders}
+            />
           </Collapse>
         )}
         {mode === "signUp" && (
           <Collapse key="signUp" timeout={400} unmountOnExit>
-            <SignUpForm hideGoogleButton={hideGoogleButton} hideModeSwitch={hideModeSwitch} />
+            <SignUpForm
+              hideGoogleButton={hideGoogleButton}
+              hideModeSwitch={hideModeSwitch}
+            />
           </Collapse>
         )}
         {mode === "resetPassword" && (

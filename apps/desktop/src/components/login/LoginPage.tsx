@@ -7,6 +7,7 @@ import { useAppStore } from "../../store";
 
 export default function LoginPage() {
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const oidcProviders = useAppStore((state) => state.oidcProviders);
 
   return (
     <Stack sx={{ p: 2, minHeight: "100%", pb: { xs: 4, md: 8 } }}>
@@ -27,7 +28,10 @@ export default function LoginPage() {
             overflow: "hidden",
           }}
         >
-          <LoginForm hideGoogleButton={isEnterprise} />
+          <LoginForm
+            hideGoogleButton={isEnterprise}
+            oidcProviders={oidcProviders}
+          />
         </Card>
         <Button component={Link} to="/" startIcon={<ArrowBack />}>
           <FormattedMessage defaultMessage="Go back" />

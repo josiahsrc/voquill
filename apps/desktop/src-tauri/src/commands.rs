@@ -230,6 +230,30 @@ pub async fn start_google_sign_in(
 }
 
 #[tauri::command]
+pub async fn start_enterprise_oidc_sign_in(
+    app_handle: AppHandle,
+    gateway_url: String,
+    provider_id: String,
+) -> Result<(), String> {
+    let result = crate::system::enterprise_oidc::start_enterprise_oidc_flow(
+        &app_handle,
+        &gateway_url,
+        &provider_id,
+    )
+    .await?;
+
+    app_handle
+        .emit_to(
+            EventTarget::any(),
+            crate::system::enterprise_oidc::ENTERPRISE_OIDC_EVENT,
+            result,
+        )
+        .map_err(|err| err.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn list_microphones() -> Vec<crate::platform::audio::InputDeviceDescriptor> {
     crate::platform::audio::list_input_devices()
 }

@@ -6,8 +6,10 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
+import type { OidcProvider } from "@repo/types";
 import { FormattedMessage } from "react-intl";
 import { SignInWithGoogleButton } from "./ProviderButtons";
+import { SsoButton } from "./SsoButton";
 import { setMode, submitSignIn } from "../../actions/login.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { getCanSubmitLogin } from "../../utils/login.utils";
@@ -16,9 +18,13 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 type SignInFormProps = {
   hideGoogleButton?: boolean;
+  oidcProviders?: OidcProvider[];
 };
 
-export const SignInForm = ({ hideGoogleButton = false }: SignInFormProps) => {
+export const SignInForm = ({
+  hideGoogleButton = false,
+  oidcProviders = [],
+}: SignInFormProps) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const email = useAppStore((state) => state.login.email);
@@ -49,11 +55,26 @@ export const SignInForm = ({ hideGoogleButton = false }: SignInFormProps) => {
     await submitSignIn();
   };
 
+  const hasSsoProviders = oidcProviders.length > 0;
+
   return (
     <Stack spacing={2}>
       {!hideGoogleButton && (
         <>
           <SignInWithGoogleButton />
+          {!hasSsoProviders && (
+            <Divider>
+              <FormattedMessage defaultMessage="or" />
+            </Divider>
+          )}
+        </>
+      )}
+
+      {hasSsoProviders && (
+        <>
+          {oidcProviders.map((provider) => (
+            <SsoButton key={provider.id} provider={provider} />
+          ))}
           <Divider>
             <FormattedMessage defaultMessage="or" />
           </Divider>
