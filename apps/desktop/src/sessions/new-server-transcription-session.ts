@@ -37,8 +37,18 @@ type TranscriptResult = {
   };
 };
 
+type ReplacementRule = {
+  source: string;
+  destination: string;
+};
+
+type FinalizeOptions = {
+  prompt?: ProcessMessage[];
+  replacements?: ReplacementRule[];
+};
+
 type NewServerStreamingSession = {
-  finalize: (prompt?: ProcessMessage[]) => Promise<TranscriptResult>;
+  finalize: (options?: FinalizeOptions) => Promise<TranscriptResult>;
   cleanup: () => void;
 };
 
@@ -73,7 +83,9 @@ const startNewServerStreaming = async (
     let finalizeRejecter: ((error: Error) => void) | null = null;
     let finalizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const finalize = (prompt?: ProcessMessage[]): Promise<TranscriptResult> => {
+    const finalize = (
+      options?: FinalizeOptions,
+    ): Promise<TranscriptResult> => {
       return new Promise((resolveFinalize, rejectFinalize) => {
         console.log(
           "[NewServer WebSocket] Finalize called, isFinalized:",
@@ -81,7 +93,7 @@ const startNewServerStreaming = async (
           "ws state:",
           ws?.readyState,
           "with prompt:",
-          !!prompt,
+          !!options?.prompt,
         );
 
         if (isFinalized) {
@@ -95,19 +107,25 @@ const startNewServerStreaming = async (
 
         if (ws && ws.readyState === WebSocket.OPEN) {
           console.log("[NewServer WebSocket] Sending finalize message...");
-          const message: { type: string; prompt?: ProcessMessage[] } = {
+          const message: Record<string, unknown> = {
             type: "finalize",
           };
-          if (prompt && prompt.length > 0) {
-            message.prompt = prompt;
+          if (options?.prompt && options.prompt.length > 0) {
+            message.prompt = options.prompt;
+          }
+          if (options?.replacements && options.replacements.length > 0) {
+            message.replacements = options.replacements;
           }
           ws.send(JSON.stringify(message));
 
           finalizeTimeout = setTimeout(() => {
             console.log("[NewServer WebSocket] Timeout reached");
             cleanup();
-            if (finalizeResolver) {
-              finalizeResolver({ text: "" });
+            if (finalizeRejecter) {
+              finalizeRejecter(
+                new Error("Server did not respond within 15 seconds"),
+              );
+              finalizeRejecter = null;
               finalizeResolver = null;
             }
           }, 15000);
@@ -304,6 +322,7 @@ const startNewServerStreaming = async (
 
 export class NewServerTranscriptionSession implements TranscriptionSession {
   private session: NewServerStreamingSession | null = null;
+  private startError: Error | null = null;
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
@@ -323,6 +342,8 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
       console.log("[NewServer] Streaming session started successfully");
     } catch (error) {
       console.error("[NewServer] Failed to start streaming:", error);
+      this.startError =
+        error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -331,13 +352,16 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
     options?: TranscriptionSessionFinalizeOptions,
   ): Promise<TranscriptionSessionResult> {
     if (!this.session) {
+      const reason = this.startError
+        ? `New server connection failed: ${this.startError.message}`
+        : "New server streaming session was not established";
       return {
         rawTranscript: null,
         metadata: {
           inferenceDevice: "Cloud • New Server (Streaming)",
           transcriptionMode: "cloud",
         },
-        warnings: ["New server streaming session was not established"],
+        warnings: [reason],
       };
     }
 
@@ -378,7 +402,12 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
         );
       }
 
-      const result = await this.session.finalize(prompt);
+      const entries = collectDictionaryEntries(state);
+
+      const result = await this.session.finalize({
+        prompt,
+        replacements: entries.replacements,
+      });
 
       console.log("[NewServer] Transcript timing:", {
         transcriptionMs: result.durationMs,

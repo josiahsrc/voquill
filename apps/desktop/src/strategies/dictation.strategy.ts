@@ -94,7 +94,11 @@ export class DictationStrategy extends BaseStrategy {
       sanitizedTranscript = applySymbolConversions(afterReplacements);
 
       if (processedTranscript && sessionPostProcessMetadata) {
-        transcript = processedTranscript;
+        const afterProcessedReplacements = applyReplacements(
+          processedTranscript,
+          replacementRules,
+        );
+        transcript = applySymbolConversions(afterProcessedReplacements);
         postProcessMetadata = sessionPostProcessMetadata;
       } else {
         const result = await postProcessTranscript({

@@ -646,11 +646,19 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
 
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(wsUrl);
-      let authenticated = false;
-      let configured = false;
+      let resolved = false;
 
       const cleanup = () => {
         ws.close();
+      };
+
+      const settle = (
+        fn: typeof resolve | typeof reject,
+        value: TranscribeAudioOutput | Error,
+      ) => {
+        if (resolved) return;
+        resolved = true;
+        (fn as (v: unknown) => void)(value);
       };
 
       ws.onopen = async () => {
@@ -658,14 +666,14 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
           const auth = getEffectiveAuth();
           const user = auth.currentUser;
           if (!user) {
-            reject(new Error("Not authenticated"));
+            settle(reject, new Error("Not authenticated"));
             cleanup();
             return;
           }
           const idToken = await user.getIdToken();
           ws.send(JSON.stringify({ type: "auth", idToken }));
         } catch (err) {
-          reject(err);
+          settle(reject, err instanceof Error ? err : new Error(String(err)));
           cleanup();
         }
       };
@@ -675,14 +683,18 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
           const msg = JSON.parse(event.data);
 
           if (msg.type === "error") {
-            reject(new Error(`${msg.code}: ${msg.message}`));
+            settle(reject, new Error(`${msg.code}: ${msg.message}`));
             cleanup();
             return;
           }
 
           if (msg.type === "authenticated") {
-            authenticated = true;
-            const glossary = input.prompt?.split(",").map((s) => s.trim()) ?? [];
+            const firstLine = input.prompt?.split("\n")[0] ?? "";
+            const glossary = firstLine
+              .replace(/^Glossary:\s*/i, "")
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
             ws.send(
               JSON.stringify({
                 type: "config",
@@ -695,7 +707,6 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
           }
 
           if (msg.type === "ready") {
-            configured = true;
             const samples = Array.from(input.samples);
             ws.send(JSON.stringify({ type: "audio", samples }));
             ws.send(JSON.stringify({ type: "finalize" }));
@@ -703,7 +714,7 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
           }
 
           if (msg.type === "transcript") {
-            resolve({
+            settle(resolve, {
               text: msg.text,
               metadata: {
                 transcriptionMode: "cloud",
@@ -713,20 +724,18 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
             return;
           }
         } catch (err) {
-          reject(err);
+          settle(reject, err instanceof Error ? err : new Error(String(err)));
           cleanup();
         }
       };
 
-      ws.onerror = (err) => {
-        reject(new Error("WebSocket error"));
+      ws.onerror = () => {
+        settle(reject, new Error("WebSocket error"));
         cleanup();
       };
 
-      ws.onclose = (event) => {
-        if (!authenticated || !configured) {
-          reject(new Error("Connection closed unexpectedly"));
-        }
+      ws.onclose = () => {
+        settle(reject, new Error("Connection closed unexpectedly"));
       };
     });
   }
