@@ -30,6 +30,7 @@ import {
   GeminiGenerateTextRepo,
   GroqGenerateTextRepo,
   OllamaGenerateTextRepo,
+  OpenAICompatibleGenerateTextRepo,
   OpenAIGenerateTextRepo,
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
@@ -189,6 +190,25 @@ const getGenTextRepoInternal = ({
         repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model, ollamaApiKey);
       } else {
         prefs.warnings.push("No model configured for Ollama post-processing.");
+      }
+    } else if (prefs.provider === "openai-compatible") {
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl || "http://127.0.0.1:8080";
+      const model = prefs.postProcessingModel;
+      const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      getLogger().verbose(
+        `Configuring OpenAI Compatible repo with baseUrl=${baseUrl} and model=${model}`,
+      );
+      if (model) {
+        repo = new OpenAICompatibleGenerateTextRepo(
+          `${baseUrl}/v1`,
+          model,
+          providerApiKey,
+        );
+      } else {
+        prefs.warnings.push(
+          "No model configured for OpenAI Compatible post-processing.",
+        );
       }
     } else if (prefs.provider === "openrouter") {
       // Get OpenRouter-specific config from the API key

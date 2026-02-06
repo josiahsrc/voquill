@@ -207,7 +207,10 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   if (config.mode === "api") {
     const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
     const provider = selectedApiKey?.provider;
-    const noKeyRequired = provider === "speaches" || provider === "ollama";
+    const noKeyRequired =
+      provider === "speaches" ||
+      provider === "ollama" ||
+      provider === "openai-compatible";
     if (apiKey || noKeyRequired) {
       return {
         mode: "api",
@@ -292,13 +295,16 @@ const getGenPrefsInternal = ({
   }
 
   if (config.mode === "api") {
-    if (apiKey) {
-      const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
+    const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
+    const provider = selectedApiKey?.provider;
+    const noKeyRequired =
+      provider === "ollama" || provider === "openai-compatible";
+    if (apiKey || noKeyRequired) {
       return {
         mode: "api",
-        provider: selectedApiKey?.provider ?? "groq",
+        provider: provider ?? "groq",
         apiKeyId: config.selectedApiKeyId!,
-        apiKeyValue: apiKey,
+        apiKeyValue: apiKey ?? "",
         postProcessingModel: selectedApiKey?.postProcessingModel ?? null,
         warnings,
       };
