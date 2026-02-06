@@ -3,7 +3,6 @@ import {
   Transcription,
   TranscriptionAudioSnapshot,
 } from "@repo/types";
-import { unwrapNestedLlmResponse } from "../utils/ai.utils";
 import { countWords, dedup } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
@@ -16,11 +15,12 @@ import { getAppState, produceAppState } from "../store";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
+import { unwrapNestedLlmResponse } from "../utils/ai.utils";
 import { createId } from "../utils/id.utils";
 import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
 import {
-  buildPostProcessingPrompt,
   buildLocalizedTranscriptionPrompt,
+  buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
@@ -105,8 +105,11 @@ export const transcribeAudio = async ({
     mapDictationLanguageToWhisperLanguage(dictationLanguage);
 
   const dictionaryEntries = collectDictionaryEntries(state);
-  const baseTranscriptionPrompt =
-    buildLocalizedTranscriptionPrompt(dictionaryEntries);
+  const baseTranscriptionPrompt = buildLocalizedTranscriptionPrompt({
+    entries: dictionaryEntries,
+    state,
+  });
+
   const transcriptionPrompt = (() => {
     // Adding a patch to generate text precisely when dealing with different
     //   variants of Chinese.
@@ -202,8 +205,7 @@ export const postProcessTranscript = async ({
         "processedTranscription",
       );
 
-      const validationResult =
-        PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(parsed);
+      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(parsed);
       if (!validationResult.success) {
         warnings.push(
           `Post-processing response validation failed: ${validationResult.error.message}\n\nResponse was: ${genOutput.text}`,

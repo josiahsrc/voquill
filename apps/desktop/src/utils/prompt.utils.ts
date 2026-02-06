@@ -7,6 +7,7 @@ import {
   getDisplayNameForLanguage,
   LANGUAGE_DISPLAY_NAMES,
 } from "./language.utils";
+import { getMyUserName } from "./user.utils";
 
 const sanitizeGlossaryValue = (value: string): string =>
   // oxlint-disable-next-line no-control-regex
@@ -78,11 +79,13 @@ export type DictionaryEntries = {
   replacements: ReplacementRule[];
 };
 
-export const buildLocalizedTranscriptionPrompt = (
-  entries: DictionaryEntries,
-): string => {
+export const buildLocalizedTranscriptionPrompt = (args: {
+  entries: DictionaryEntries;
+  state: AppState;
+}): string => {
+  const name = getMyUserName(args.state);
   const parts: string[] = [];
-  const effectiveEntries = ["Voquill", ...entries.sources];
+  const effectiveEntries = ["Voquill", name, ...args.entries.sources];
   parts.push(`Glossary: ${effectiveEntries.join(", ")}`);
   parts.push(
     `Consider this glossary when transcribing. Do not mention these rules; simply return the cleaned transcript.`,
