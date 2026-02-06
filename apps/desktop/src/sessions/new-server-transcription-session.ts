@@ -57,6 +57,7 @@ const startNewServerStreaming = async (
     let isReady = false;
     let receivedChunkCount = 0;
     let sentChunkCount = 0;
+    const bufferedChunks: number[][] = [];
 
     const cleanup = () => {
       if (unlisten) {
@@ -123,9 +124,54 @@ const startNewServerStreaming = async (
     ws = new WebSocket(wsUrl);
 
     ws.onopen = async () => {
-      console.log("[NewServer WebSocket] Connected, authenticating...");
+      console.log(
+        "[NewServer WebSocket] Connected, setting up audio listener and authenticating...",
+      );
 
       try {
+        // Set up audio listener immediately to buffer chunks while we authenticate
+        unlisten = await listen<{ samples: number[] }>(
+          "audio_chunk",
+          (event) => {
+            receivedChunkCount++;
+            if (isFinalized) return;
+
+            const samples = Array.from(event.payload.samples);
+
+            if (!isReady) {
+              // Buffer chunks until ready
+              bufferedChunks.push(samples);
+              if (
+                bufferedChunks.length <= 3 ||
+                bufferedChunks.length % 10 === 0
+              ) {
+                console.log(
+                  `[NewServer WebSocket] Buffered chunk #${bufferedChunks.length} (${samples.length} samples)`,
+                );
+              }
+              return;
+            }
+
+            // Send directly once ready
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              try {
+                ws.send(JSON.stringify({ type: "audio", samples }));
+                sentChunkCount++;
+                if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
+                  console.log(
+                    `[NewServer WebSocket] Sent chunk #${sentChunkCount} (${samples.length} samples)`,
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  "[NewServer WebSocket] Error sending audio chunk:",
+                  error,
+                );
+              }
+            }
+          },
+        );
+
         const auth = getEffectiveAuth();
         const user = auth.currentUser;
         if (!user) {
@@ -176,39 +222,30 @@ const startNewServerStreaming = async (
         }
 
         if (msg.type === "ready") {
-          console.log("[NewServer WebSocket] Ready, setting up audio listener");
+          console.log(
+            `[NewServer WebSocket] Ready, flushing ${bufferedChunks.length} buffered chunks`,
+          );
           isReady = true;
 
-          unlisten = await listen<{ samples: number[] }>(
-            "audio_chunk",
-            (event) => {
-              receivedChunkCount++;
-              if (
-                ws &&
-                ws.readyState === WebSocket.OPEN &&
-                !isFinalized &&
-                isReady
-              ) {
-                try {
-                  const samples = Array.from(event.payload.samples);
-                  ws.send(JSON.stringify({ type: "audio", samples }));
-                  sentChunkCount++;
-                  if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
-                    console.log(
-                      `[NewServer WebSocket] Sent chunk #${sentChunkCount} (${samples.length} samples)`,
-                    );
-                  }
-                } catch (error) {
-                  console.error(
-                    "[NewServer WebSocket] Error sending audio chunk:",
-                    error,
-                  );
-                }
+          // Flush buffered chunks
+          for (const samples of bufferedChunks) {
+            if (ws && ws.readyState === WebSocket.OPEN && !isFinalized) {
+              try {
+                ws.send(JSON.stringify({ type: "audio", samples }));
+                sentChunkCount++;
+              } catch (error) {
+                console.error(
+                  "[NewServer WebSocket] Error sending buffered chunk:",
+                  error,
+                );
               }
-            },
+            }
+          }
+          bufferedChunks.length = 0;
+          console.log(
+            `[NewServer WebSocket] Flushed ${sentChunkCount} chunks, session ready`,
           );
 
-          console.log("[NewServer WebSocket] Session ready");
           resolve({ finalize, cleanup });
           return;
         }
