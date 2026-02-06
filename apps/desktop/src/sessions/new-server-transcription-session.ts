@@ -1,4 +1,4 @@
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { listen } from "@tauri-apps/api/event";
 import { getAppState } from "../store";
 import {
   StopRecordingResponse,
@@ -59,24 +59,60 @@ const startNewServerStreaming = async (
 ): Promise<NewServerStreamingSession> => {
   console.log("[NewServer WebSocket] Starting with sample rate:", sampleRate);
 
-  return new Promise((resolve, reject) => {
-    let ws: WebSocket | null = null;
-    let unlisten: UnlistenFn | null = null;
-    let isFinalized = false;
-    let isReady = false;
-    let receivedChunkCount = 0;
-    let sentChunkCount = 0;
-    const bufferedChunks: Float32Array[] = [];
+  let ws: WebSocket | null = null;
+  let isFinalized = false;
+  let isReady = false;
+  let receivedChunkCount = 0;
+  let sentChunkCount = 0;
+  const bufferedChunks: Float32Array[] = [];
 
+  const unlisten = await listen<{ samples: number[] }>(
+    "audio_chunk",
+    (event) => {
+      receivedChunkCount++;
+      if (isFinalized) return;
+
+      const samples = new Float32Array(event.payload.samples);
+
+      if (!isReady) {
+        bufferedChunks.push(samples);
+        if (
+          bufferedChunks.length <= 3 ||
+          bufferedChunks.length % 10 === 0
+        ) {
+          console.log(
+            `[NewServer WebSocket] Buffered chunk #${bufferedChunks.length} (${samples.length} samples)`,
+          );
+        }
+        return;
+      }
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(samples.buffer);
+          sentChunkCount++;
+          if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
+            console.log(
+              `[NewServer WebSocket] Sent chunk #${sentChunkCount} (${samples.length} samples)`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            "[NewServer WebSocket] Error sending audio chunk:",
+            error,
+          );
+        }
+      }
+    },
+  );
+
+  return new Promise((resolve, reject) => {
     const cleanup = () => {
       if (finalizeTimeout) {
         clearTimeout(finalizeTimeout);
         finalizeTimeout = null;
       }
-      if (unlisten) {
-        unlisten();
-        unlisten = null;
-      }
+      unlisten();
       if (ws && ws.readyState !== WebSocket.CLOSED) {
         ws.close();
         ws = null;
@@ -146,51 +182,10 @@ const startNewServerStreaming = async (
 
     ws.onopen = async () => {
       console.log(
-        "[NewServer WebSocket] Connected, setting up audio listener and authenticating...",
+        "[NewServer WebSocket] Connected, authenticating...",
       );
 
       try {
-        // Set up audio listener immediately to buffer chunks while we authenticate
-        unlisten = await listen<{ samples: number[] }>(
-          "audio_chunk",
-          (event) => {
-            receivedChunkCount++;
-            if (isFinalized) return;
-
-            const samples = new Float32Array(event.payload.samples);
-
-            if (!isReady) {
-              bufferedChunks.push(samples);
-              if (
-                bufferedChunks.length <= 3 ||
-                bufferedChunks.length % 10 === 0
-              ) {
-                console.log(
-                  `[NewServer WebSocket] Buffered chunk #${bufferedChunks.length} (${samples.length} samples)`,
-                );
-              }
-              return;
-            }
-
-            if (ws && ws.readyState === WebSocket.OPEN) {
-              try {
-                ws.send(samples.buffer);
-                sentChunkCount++;
-                if (sentChunkCount <= 3 || sentChunkCount % 10 === 0) {
-                  console.log(
-                    `[NewServer WebSocket] Sent chunk #${sentChunkCount} (${samples.length} samples)`,
-                  );
-                }
-              } catch (error) {
-                console.error(
-                  "[NewServer WebSocket] Error sending audio chunk:",
-                  error,
-                );
-              }
-            }
-          },
-        );
-
         const auth = getEffectiveAuth();
         const user = auth.currentUser;
         if (!user) {
