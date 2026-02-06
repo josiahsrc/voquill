@@ -1,3 +1,4 @@
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import type { SelectChangeEvent } from "@mui/material";
 import {
   Button,
@@ -11,7 +12,7 @@ import {
   Switch,
 } from "@mui/material";
 import type { DictationPillVisibility, StylingMode } from "@repo/types";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useCallback, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   setDictationPillVisibility,
@@ -21,8 +22,10 @@ import {
   setStylingMode,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
+import type { LogLevel } from "../../types/log.types";
 import { getAllowChangeStylingMode } from "../../utils/enterprise.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
+import { getLogLevel, getLogger, setLogLevel } from "../../utils/log.utils";
 import {
   getEffectivePillVisibility,
   getMyUserPreferences,
@@ -86,6 +89,26 @@ export const MoreSettingsDialog = () => {
     const value = event.target.value;
     void setStylingMode(value === "" ? null : (value as StylingMode));
   };
+
+  const [logLevel, setLogLevelState] = useState<LogLevel>(getLogLevel);
+
+  const handleLogLevelChange = (event: SelectChangeEvent<LogLevel>) => {
+    const level = event.target.value as LogLevel;
+    setLogLevel(level);
+    setLogLevelState(level);
+  };
+
+  const handleDownloadLogs = useCallback(() => {
+    const logger = getLogger();
+    const logs = logger.getLogs();
+    const blob = new Blob([logs.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `voquill-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   return (
     <Dialog open={open} onClose={handleClose}>
@@ -192,6 +215,44 @@ export const MoreSettingsDialog = () => {
               }
             />
           )}
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Log level" />}
+            description={
+              <FormattedMessage defaultMessage="Controls how much detail is captured in diagnostic logs." />
+            }
+            action={
+              <Select<LogLevel>
+                size="small"
+                value={logLevel}
+                onChange={handleLogLevelChange}
+                sx={{ minWidth: 152 }}
+              >
+                <MenuItem value="info">
+                  {intl.formatMessage({ defaultMessage: "Info" })}
+                </MenuItem>
+                <MenuItem value="verbose">
+                  {intl.formatMessage({ defaultMessage: "Verbose" })}
+                </MenuItem>
+              </Select>
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Download logs" />}
+            description={
+              <FormattedMessage defaultMessage="Export diagnostic logs as a text file for troubleshooting." />
+            }
+            action={
+              <Button
+                size="small"
+                startIcon={<DownloadRoundedIcon />}
+                onClick={handleDownloadLogs}
+              >
+                <FormattedMessage defaultMessage="Download" />
+              </Button>
+            }
+          />
         </Stack>
       </DialogContent>
       <DialogActions>
