@@ -19,7 +19,7 @@ export const getDefaultSystemTones = (): Tone[] => {
     {
       id: CLEAN_TONE_ID,
       name: intl.formatMessage({
-        defaultMessage: "Clean",
+        defaultMessage: "Polished",
       }),
       promptTemplate: `
 - Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally talks
@@ -29,6 +29,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Keep words that contribute to the speaker's tone and style
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
+- The resulting transcription should make sense
 - Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
 - Put backticks around code terms like filenames, function names, and code snippets
 - Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
@@ -69,6 +70,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
 - Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
+- The resulting transcription should make sense
 - Put backticks around code terms like filenames, function names, and code snippets
 - It should remove and fix content that was later corrected by the speaker
 - Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
