@@ -29,7 +29,7 @@ export class OllamaRepo extends BaseOllamaRepo {
   }
 
   async getAvailableModels(): Promise<string[]> {
-    const response = await fetch(new URL("/api/tags", this.ollamaUrl).href, {
+    const response = await fetch(new URL("/v1/models", this.ollamaUrl).href, {
       headers: getOllamaHeaders(this.apiKey),
     });
     if (!response.ok) {
@@ -39,15 +39,15 @@ export class OllamaRepo extends BaseOllamaRepo {
     }
 
     const payload = (await response.json()) as {
-      models?: Array<{ name?: string }>;
+      data?: Array<{ id?: string }>;
     };
 
-    if (!payload.models) {
+    if (!payload.data) {
       return [];
     }
 
-    return payload.models
-      .map((model) => (model.name ?? "").trim())
+    return payload.data
+      .map((model) => (model.id ?? "").trim())
       .filter((name): name is string => Boolean(name));
   }
 }

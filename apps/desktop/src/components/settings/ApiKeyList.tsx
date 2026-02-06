@@ -200,7 +200,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
           <MenuItem value="openrouter">OpenRouter</MenuItem>
         )}
         {context === "post-processing" && (
-          <MenuItem value="ollama">Ollama</MenuItem>
+          <MenuItem value="ollama">Ollama/OpenAI Compatible</MenuItem>
         )}
         {context === "post-processing" && (
           <MenuItem value="deepseek">DeepSeek</MenuItem>
