@@ -27,7 +27,7 @@ import {
 } from "@repo/types";
 import { z } from "zod";
 
-export const CLOUD_MODELS = ["medium", "large"] as const;
+export const CLOUD_MODELS = ["low", "medium", "large"] as const;
 export type CloudModel = (typeof CLOUD_MODELS)[number];
 export const CloudModelZod = z.enum(CLOUD_MODELS);
 

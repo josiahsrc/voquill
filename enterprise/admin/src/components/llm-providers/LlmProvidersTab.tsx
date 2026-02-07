@@ -141,16 +141,38 @@ export default function LlmProvidersTab() {
       weight: 1,
     },
     {
-      header: intl.formatMessage({ defaultMessage: "Enabled" }),
-      cell: (row) => (
-        <Chip
-          label={row.isEnabled ? intl.formatMessage({ defaultMessage: "Yes" }) : intl.formatMessage({ defaultMessage: "No" })}
-          size="small"
-          color={row.isEnabled ? "success" : "default"}
-          variant="outlined"
-        />
-      ),
-      width: 90,
+      header: intl.formatMessage({ defaultMessage: "Level" }),
+      cell: (row) => {
+        if (row.tier === 3) {
+          return (
+            <Chip
+              label={intl.formatMessage({ defaultMessage: "High" })}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
+          );
+        }
+        if (row.tier === 2) {
+          return (
+            <Chip
+              label={intl.formatMessage({ defaultMessage: "Medium" })}
+              size="small"
+              color="success"
+              variant="outlined"
+            />
+          );
+        }
+        return (
+          <Chip
+            label={intl.formatMessage({ defaultMessage: "Disabled" })}
+            size="small"
+            color="default"
+            variant="outlined"
+          />
+        );
+      },
+      width: 120,
     },
     {
       header: intl.formatMessage({ defaultMessage: "Status" }),

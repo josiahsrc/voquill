@@ -42,7 +42,7 @@ describe("llm provider", () => {
           url: "http://ollama:11434/v1",
           apiKey: "sk-test-key-1234567890abcdef",
           model: "llama3",
-          isEnabled: true,
+          tier: 2,
         },
       },
       adminToken,
@@ -54,7 +54,7 @@ describe("llm provider", () => {
     expect(data.providers[0].name).toBe("Production Ollama");
     expect(data.providers[0].url).toBe("http://ollama:11434/v1");
     expect(data.providers[0].model).toBe("llama3");
-    expect(data.providers[0].isEnabled).toBe(true);
+    expect(data.providers[0].tier).toBe(2);
     expect(data.providers[0].apiKeySuffix).toBe("cdef");
     createdId = data.providers[0].id;
   });
@@ -78,7 +78,7 @@ describe("llm provider", () => {
           url: "http://ollama:11434/v2",
           apiKey: "sk-new-key-abcdefghijklmnop",
           model: "gpt-4-turbo",
-          isEnabled: false,
+          tier: 0,
         },
       },
       adminToken,
@@ -89,7 +89,7 @@ describe("llm provider", () => {
     expect(data.providers[0].name).toBe("Updated Ollama");
     expect(data.providers[0].url).toBe("http://ollama:11434/v2");
     expect(data.providers[0].model).toBe("gpt-4-turbo");
-    expect(data.providers[0].isEnabled).toBe(false);
+    expect(data.providers[0].tier).toBe(0);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
@@ -103,7 +103,7 @@ describe("llm provider", () => {
           name: "No Key Change",
           url: "http://ollama:11434/v3",
           model: "gpt-4o",
-          isEnabled: true,
+          tier: 2,
         },
       },
       adminToken,
@@ -114,7 +114,7 @@ describe("llm provider", () => {
     expect(data.providers[0].name).toBe("No Key Change");
     expect(data.providers[0].url).toBe("http://ollama:11434/v3");
     expect(data.providers[0].model).toBe("gpt-4o");
-    expect(data.providers[0].isEnabled).toBe(true);
+    expect(data.providers[0].tier).toBe(2);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
@@ -129,7 +129,7 @@ describe("llm provider", () => {
           url: "http://ollama:11434/v4",
           apiKey: "",
           model: "gpt-4o-mini",
-          isEnabled: false,
+          tier: 0,
         },
       },
       adminToken,
@@ -151,7 +151,7 @@ describe("llm provider", () => {
           name: "No Key Provider",
           url: "http://ollama:11434/v5",
           model: "llama3-nokey",
-          isEnabled: true,
+          tier: 2,
         },
       },
       adminToken,
@@ -196,7 +196,7 @@ describe("llm provider", () => {
             url: "https://example.com",
             apiKey: "sk-test",
             model: "gpt-4",
-            isEnabled: true,
+            tier: 2,
           },
         },
         userToken,

@@ -8,10 +8,12 @@ export const EnterpriseStylingModeZod = z.enum(
 ) as z.ZodType<EnterpriseStylingMode>;
 
 export type EnterpriseConfig = {
+  allowPostProcessing: boolean;
   allowChangePostProcessing: boolean;
   allowChangeTranscriptionMethod: boolean;
   allowChangeAgentMode: boolean;
   allowEmailSignIn: boolean;
+  allowDevTools: boolean;
   stylingMode: EnterpriseStylingMode;
 };
 
@@ -24,10 +26,12 @@ export type EnterpriseLicense = {
 
 export const EnterpriseConfigZod = z
   .object({
+    allowPostProcessing: z.boolean(),
     allowChangePostProcessing: z.boolean(),
     allowChangeTranscriptionMethod: z.boolean(),
     allowChangeAgentMode: z.boolean(),
     allowEmailSignIn: z.boolean(),
+    allowDevTools: z.boolean(),
     stylingMode: EnterpriseStylingModeZod,
   })
   .strict() satisfies z.ZodType<EnterpriseConfig>;

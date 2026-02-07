@@ -14,6 +14,7 @@ import {
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
+import { getLogger } from "../utils/log.utils";
 import {
   getMyEffectiveUserId,
   getMyUser,
@@ -22,7 +23,6 @@ import {
   setCurrentUser,
   setUserPreferences,
 } from "../utils/user.utils";
-import { getLogger } from "../utils/log.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 const updateUser = async (
@@ -45,16 +45,19 @@ const updateUser = async (
   };
 
   updateCallback(payload);
+  produceAppState((draft) => {
+    setCurrentUser(draft, payload);
+  });
 
   try {
     getLogger().verbose(`Saving user (id=${payload.id})`);
-    const saved = await repo.setMyUser(payload);
-    produceAppState((draft) => {
-      setCurrentUser(draft, saved);
-    });
+    await repo.setMyUser(payload);
     getLogger().verbose("User saved successfully");
   } catch (error) {
     getLogger().error(`Failed to update user: ${error}`);
+    produceAppState((draft) => {
+      setCurrentUser(draft, existing);
+    });
     showErrorSnackbar(saveErrorMessage);
     throw error;
   }
@@ -157,7 +160,9 @@ export const refreshCurrentUser = async (): Promise<void> => {
         draft.userPrefs = null;
       }
     });
-    getLogger().verbose(`User refreshed (hasUser=${!!user}, hasPrefs=${!!preferences})`);
+    getLogger().verbose(
+      `User refreshed (hasUser=${!!user}, hasPrefs=${!!preferences})`,
+    );
   } catch (error) {
     getLogger().error(`Failed to refresh user: ${error}`);
   }

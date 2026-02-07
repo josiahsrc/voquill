@@ -94,6 +94,19 @@ export default function SettingsTab() {
                 <FormControlLabel
                   control={
                     <Switch
+                      checked={enterpriseConfig.allowPostProcessing}
+                      onChange={(_, checked) =>
+                        handleToggle("allowPostProcessing", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Allow dictation post-processing" />
+                  }
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
                       checked={enterpriseConfig.allowChangePostProcessing}
                       onChange={(_, checked) =>
                         handleToggle("allowChangePostProcessing", checked)
@@ -141,6 +154,19 @@ export default function SettingsTab() {
                   }
                   label={
                     <FormattedMessage defaultMessage="Allow email/password sign in" />
+                  }
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={enterpriseConfig.allowDevTools}
+                      onChange={(_, checked) =>
+                        handleToggle("allowDevTools", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Allow browser developer tools" />
                   }
                 />
                 <FormControl size="small" sx={{ mt: 1, minWidth: 200 }}>

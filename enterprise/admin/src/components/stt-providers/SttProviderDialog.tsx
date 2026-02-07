@@ -5,9 +5,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   MenuItem,
-  Switch,
   TextField,
 } from "@mui/material";
 import type { SttProvider } from "@repo/types";
@@ -32,7 +30,7 @@ export type SttProviderFormState = {
   url: string;
   apiKey: string;
   model: string;
-  isEnabled: boolean;
+  tier: number;
 };
 
 const EMPTY_FORM: SttProviderFormState = {
@@ -42,7 +40,7 @@ const EMPTY_FORM: SttProviderFormState = {
   url: "",
   apiKey: "",
   model: "",
-  isEnabled: true,
+  tier: 1,
 };
 
 export function emptyForm(): SttProviderFormState {
@@ -57,7 +55,7 @@ export function formFromProvider(p: SttProvider): SttProviderFormState {
     url: p.url,
     apiKey: "",
     model: p.model,
-    isEnabled: p.isEnabled,
+    tier: p.tier,
   };
 }
 
@@ -91,7 +89,7 @@ export const SttProviderDialog = ({
         url: form.url,
         apiKey: form.apiKey,
         model: form.model,
-        isEnabled: form.isEnabled,
+        tier: form.tier,
       });
       onClose();
     } finally {
@@ -166,17 +164,23 @@ export const SttProviderDialog = ({
           onChange={(value) => onFormChange({ ...form, model: value })}
           options={models}
         />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={form.isEnabled}
-              onChange={(e) =>
-                onFormChange({ ...form, isEnabled: e.target.checked })
-              }
-            />
+        <TextField
+          label={intl.formatMessage({ defaultMessage: "Enabled" })}
+          fullWidth
+          size="small"
+          select
+          value={form.tier}
+          onChange={(e) =>
+            onFormChange({ ...form, tier: Number(e.target.value) })
           }
-          label={<FormattedMessage defaultMessage="Enabled" />}
-        />
+        >
+          <MenuItem value={0}>
+            {intl.formatMessage({ defaultMessage: "Disabled" })}
+          </MenuItem>
+          <MenuItem value={1}>
+            {intl.formatMessage({ defaultMessage: "Enabled" })}
+          </MenuItem>
+        </TextField>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>
