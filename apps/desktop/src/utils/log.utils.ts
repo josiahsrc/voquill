@@ -1,8 +1,14 @@
 import type { LogLevel } from "../types/log.types";
 
 const LOG_LEVEL_KEY = "voquill_log_level";
-const INFO_BUFFER_SIZE = 100;
-const VERBOSE_BUFFER_SIZE = 1000;
+const INFO_BUFFER_SIZE = 200;
+const VERBOSE_BUFFER_SIZE = 2000;
+
+let onBufferWrapCallback: (() => void) | null = null;
+
+export const setOnBufferWrap = (cb: (() => void) | null): void => {
+  onBufferWrapCallback = cb;
+};
 
 export class Logger {
   private buffer: string[];
@@ -39,6 +45,8 @@ export class Logger {
     this.head = (this.head + 1) % this.buffer.length;
     if (this.count < this.buffer.length) {
       this.count += 1;
+    } else if (this.head === 0 && onBufferWrapCallback) {
+      setTimeout(onBufferWrapCallback, 0);
     }
   }
 
@@ -93,4 +101,15 @@ export const getLogger = (): Logger => {
   }
   logger = new Logger(getLogLevel());
   return logger;
+};
+
+export const downloadLogs = (): void => {
+  const logs = getLogger().getLogs();
+  const blob = new Blob([logs.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `voquill-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
 };
