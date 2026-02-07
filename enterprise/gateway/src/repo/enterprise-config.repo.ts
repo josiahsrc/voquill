@@ -8,6 +8,7 @@ interface EnterpriseConfigRow {
   allow_change_transcription_method: boolean;
   allow_change_agent_mode: boolean;
   allow_email_sign_in: boolean;
+  allow_dev_tools: boolean;
   styling_mode: string;
 }
 
@@ -18,6 +19,7 @@ function rowToEnterpriseConfig(row: EnterpriseConfigRow): EnterpriseConfig {
     allowChangeTranscriptionMethod: row.allow_change_transcription_method,
     allowChangeAgentMode: row.allow_change_agent_mode,
     allowEmailSignIn: row.allow_email_sign_in,
+    allowDevTools: row.allow_dev_tools,
     stylingMode: row.styling_mode as EnterpriseConfig["stylingMode"],
   };
 }
@@ -34,6 +36,7 @@ export async function getEnterpriseConfig(): Promise<EnterpriseConfig> {
       allowChangeTranscriptionMethod: false,
       allowChangeAgentMode: false,
       allowEmailSignIn: true,
+      allowDevTools: false,
       stylingMode: "manual",
     };
   }
@@ -45,15 +48,16 @@ export async function upsertEnterpriseConfig(
 ): Promise<void> {
   const pool = getPool();
   await pool.query(
-    `INSERT INTO enterprise_config (id, allow_post_processing, allow_change_post_processing, allow_change_transcription_method, allow_change_agent_mode, allow_email_sign_in, styling_mode)
-     VALUES ('default', $1, $2, $3, $4, $5, $6)
+    `INSERT INTO enterprise_config (id, allow_post_processing, allow_change_post_processing, allow_change_transcription_method, allow_change_agent_mode, allow_email_sign_in, allow_dev_tools, styling_mode)
+     VALUES ('default', $1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (id) DO UPDATE SET
        allow_post_processing = $1,
        allow_change_post_processing = $2,
        allow_change_transcription_method = $3,
        allow_change_agent_mode = $4,
        allow_email_sign_in = $5,
-       styling_mode = $6`,
-    [config.allowPostProcessing, config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.allowChangeAgentMode, config.allowEmailSignIn, config.stylingMode],
+       allow_dev_tools = $6,
+       styling_mode = $7`,
+    [config.allowPostProcessing, config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.allowChangeAgentMode, config.allowEmailSignIn, config.allowDevTools, config.stylingMode],
   );
 }

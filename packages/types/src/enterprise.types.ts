@@ -13,6 +13,7 @@ export type EnterpriseConfig = {
   allowChangeTranscriptionMethod: boolean;
   allowChangeAgentMode: boolean;
   allowEmailSignIn: boolean;
+  allowDevTools: boolean;
   stylingMode: EnterpriseStylingMode;
 };
 
@@ -30,6 +31,7 @@ export const EnterpriseConfigZod = z
     allowChangeTranscriptionMethod: z.boolean(),
     allowChangeAgentMode: z.boolean(),
     allowEmailSignIn: z.boolean(),
+    allowDevTools: z.boolean(),
     stylingMode: EnterpriseStylingModeZod,
   })
   .strict() satisfies z.ZodType<EnterpriseConfig>;

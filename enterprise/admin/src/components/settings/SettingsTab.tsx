@@ -156,6 +156,19 @@ export default function SettingsTab() {
                     <FormattedMessage defaultMessage="Allow email/password sign in" />
                   }
                 />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={enterpriseConfig.allowDevTools}
+                      onChange={(_, checked) =>
+                        handleToggle("allowDevTools", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Allow browser developer tools" />
+                  }
+                />
                 <FormControl size="small" sx={{ mt: 1, minWidth: 200 }}>
                   <InputLabel>
                     <FormattedMessage defaultMessage="Styling Mode" />

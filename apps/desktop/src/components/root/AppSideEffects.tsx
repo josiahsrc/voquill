@@ -66,6 +66,9 @@ export const AppSideEffects = () => {
   const tokensRefreshedRef = useRef(false);
   const authReadyRef = useRef(false);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const allowDevTools = useAppStore(
+    (state) => state.enterpriseConfig?.allowDevTools ?? true,
+  );
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
   const member = useAppStore((state) => {
@@ -90,6 +93,16 @@ export const AppSideEffects = () => {
       draft.initialized = false;
     });
   };
+
+  useEffect(() => {
+    if (allowDevTools) {
+      return;
+    }
+
+    const handler = (e: MouseEvent) => e.preventDefault();
+    document.addEventListener("contextmenu", handler);
+    return () => document.removeEventListener("contextmenu", handler);
+  }, [isEnterprise, allowDevTools]);
 
   useEffect(() => {
     authReadyRef.current = false;
