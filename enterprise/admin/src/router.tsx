@@ -21,6 +21,9 @@ const SttProvidersTab = lazyLoad(
 const LlmProvidersTab = lazyLoad(
   () => import("./components/llm-providers/LlmProvidersTab"),
 );
+const OidcProvidersTab = lazyLoad(
+  () => import("./components/oidc-providers/OidcProvidersTab"),
+);
 const TonesTab = lazyLoad(() => import("./components/tones/TonesTab"));
 const SettingsTab = lazyLoad(() => import("./components/settings/SettingsTab"));
 
@@ -39,6 +42,7 @@ const router = createBrowserRouter([
       { path: "tones", element: <TonesTab /> },
       { path: "stt-providers", element: <SttProvidersTab /> },
       { path: "llm-providers", element: <LlmProvidersTab /> },
+      { path: "oidc-providers", element: <OidcProvidersTab /> },
       { path: "settings", element: <SettingsTab /> },
     ],
   },

@@ -10,23 +10,24 @@ import {
 import { useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
-import { SignInWithGoogleButton } from "./ProviderButtons";
+import { OidcProviders } from "./OidcProviders";
 import { setMode, submitSignUp } from "../../actions/login.actions";
 import {
   getCanSubmitSignUp,
+  getShouldShowEmailForm,
   getSignUpConfirmPasswordValidation,
   getSignUpEmailValidation,
   getSignUpPasswordValidation,
 } from "../../utils/login.utils";
 
 type SignUpFormProps = {
-  hideGoogleButton?: boolean;
   hideModeSwitch?: boolean;
+  hideOidcProviders?: boolean;
 };
 
 export const SignUpForm = ({
-  hideGoogleButton = false,
   hideModeSwitch = false,
+  hideOidcProviders = false,
 }: SignUpFormProps) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
@@ -35,6 +36,7 @@ export const SignUpForm = ({
   const password = useAppStore((state) => state.login.password);
   const confirmPassword = useAppStore((state) => state.login.confirmPassword);
   const canSubmit = useAppStore((state) => getCanSubmitSignUp(state));
+  const showEmailForm = useAppStore((state) => getShouldShowEmailForm(state));
 
   const emailValidation = useAppStore((state) =>
     getSignUpEmailValidation(state),
@@ -76,76 +78,79 @@ export const SignUpForm = ({
 
   return (
     <Stack spacing={2}>
-      {!hideGoogleButton && (
+      {!hideOidcProviders && <OidcProviders />}
+
+      {showEmailForm && (
         <>
-          <SignInWithGoogleButton />
-          <Divider>
-            <FormattedMessage defaultMessage="or" />
-          </Divider>
+          {!hideOidcProviders && (
+            <Divider>
+              <FormattedMessage defaultMessage="or" />
+            </Divider>
+          )}
+
+          <TextField
+            label={<FormattedMessage defaultMessage="Email" />}
+            type="email"
+            fullWidth
+            value={email}
+            onChange={handleChangeEmail}
+            error={!!emailValidation}
+            helperText={emailValidation}
+            size="small"
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="Password" />}
+            type={passwordVisible ? "text" : "password"}
+            fullWidth
+            value={password}
+            onChange={handleChangePassword}
+            error={!!passwordValidation}
+            helperText={passwordValidation}
+            size="small"
+            InputProps={{
+              endAdornment: (
+                <IconButton
+                  onClick={() => setPasswordVisible((v) => !v)}
+                  tabIndex={-1}
+                  size="small"
+                >
+                  {!passwordVisible ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              ),
+            }}
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="Confirm password" />}
+            type={confirmPasswordVisible ? "text" : "password"}
+            fullWidth
+            value={confirmPassword}
+            onChange={handleChangeConfirmPassword}
+            error={!!confirmPasswordValidation}
+            helperText={confirmPasswordValidation}
+            size="small"
+            InputProps={{
+              endAdornment: (
+                <IconButton
+                  onClick={() => setConfirmPasswordVisible((v) => !v)}
+                  tabIndex={-1}
+                  size="small"
+                >
+                  {!confirmPasswordVisible ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              ),
+            }}
+          />
+
+          <Button
+            variant="contained"
+            fullWidth
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+          >
+            <FormattedMessage defaultMessage="Create account" />
+          </Button>
         </>
       )}
-
-      <TextField
-        label={<FormattedMessage defaultMessage="Email" />}
-        type="email"
-        fullWidth
-        value={email}
-        onChange={handleChangeEmail}
-        error={!!emailValidation}
-        helperText={emailValidation}
-        size="small"
-      />
-      <TextField
-        label={<FormattedMessage defaultMessage="Password" />}
-        type={passwordVisible ? "text" : "password"}
-        fullWidth
-        value={password}
-        onChange={handleChangePassword}
-        error={!!passwordValidation}
-        helperText={passwordValidation}
-        size="small"
-        InputProps={{
-          endAdornment: (
-            <IconButton
-              onClick={() => setPasswordVisible((v) => !v)}
-              tabIndex={-1}
-              size="small"
-            >
-              {!passwordVisible ? <VisibilityOff /> : <Visibility />}
-            </IconButton>
-          ),
-        }}
-      />
-      <TextField
-        label={<FormattedMessage defaultMessage="Confirm password" />}
-        type={confirmPasswordVisible ? "text" : "password"}
-        fullWidth
-        value={confirmPassword}
-        onChange={handleChangeConfirmPassword}
-        error={!!confirmPasswordValidation}
-        helperText={confirmPasswordValidation}
-        size="small"
-        InputProps={{
-          endAdornment: (
-            <IconButton
-              onClick={() => setConfirmPasswordVisible((v) => !v)}
-              tabIndex={-1}
-              size="small"
-            >
-              {!confirmPasswordVisible ? <VisibilityOff /> : <Visibility />}
-            </IconButton>
-          ),
-        }}
-      />
-
-      <Button
-        variant="contained"
-        fullWidth
-        disabled={!canSubmit}
-        onClick={handleSubmit}
-      >
-        <FormattedMessage defaultMessage="Create account" />
-      </Button>
 
       {!hideModeSwitch && (
         <Link

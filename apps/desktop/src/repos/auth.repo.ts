@@ -24,6 +24,12 @@ export abstract class BaseAuthRepo extends BaseRepo {
     idToken: string,
     accessToken: string,
   ): Promise<void>;
+  abstract signInWithSsoTokens(payload: {
+    token: string;
+    refreshToken: string;
+    authId: string;
+    email: string;
+  }): Promise<void>;
   abstract getCurrentUser(): AuthUser | null;
   abstract deleteMyAccount(): Promise<void>;
   abstract refreshTokens(): Promise<void>;
@@ -65,6 +71,10 @@ export class CloudAuthRepo extends BaseAuthRepo {
   ): Promise<void> {
     const credential = GoogleAuthProvider.credential(idToken, accessToken);
     await signInWithCredential(getEffectiveAuth(), credential);
+  }
+
+  async signInWithSsoTokens(): Promise<void> {
+    throw new Error("SSO sign-in is not supported in cloud mode.");
   }
 
   private toAuthUser(firebaseUser: FirebaseUser | null): AuthUser | null {
@@ -158,6 +168,19 @@ export class EnterpriseAuthRepo extends BaseAuthRepo {
 
   async signInWithGoogleTokens(): Promise<void> {
     throw new Error("Method not implemented.");
+  }
+
+  async signInWithSsoTokens(payload: {
+    token: string;
+    refreshToken: string;
+    authId: string;
+    email: string;
+  }): Promise<void> {
+    this.setAuthState({
+      token: payload.token,
+      refreshToken: payload.refreshToken,
+      auth: { id: payload.authId, email: payload.email },
+    });
   }
 
   getCurrentUser(): AuthUser | null {

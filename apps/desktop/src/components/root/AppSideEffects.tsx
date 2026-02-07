@@ -32,6 +32,7 @@ import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import {
   getEnterpriseTarget,
+  invokeEnterprise,
   loadEnterpriseTarget,
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
@@ -149,10 +150,17 @@ export const AppSideEffects = () => {
       });
     }
 
+    const oidcProviders = isEnterprise
+      ? await invokeEnterprise("oidcProvider/listEnabled", {})
+          .then((res) => res.providers)
+          .catch(() => [])
+      : [];
+
     produceAppState((draft) => {
       draft.enterpriseConfig = config;
       draft.enterpriseLicense = license;
       draft.isEnterprise = isEnterprise;
+      draft.oidcProviders = oidcProviders;
     });
 
     if (!tokensRefreshedRef.current) {

@@ -2,6 +2,7 @@ import {
   EnterpriseConfigZod,
   FullConfig,
   Member,
+  OidcProviderInputZod,
   type EnterpriseLicense,
   LlmProviderInputZod,
   SttProviderInputZod,
@@ -17,6 +18,8 @@ import {
   type LlmProvider,
   type LlmProviderInput,
   type Nullable,
+  type OidcProvider,
+  type OidcProviderInput,
   type SttProvider,
   type SttProviderInput,
   type User,
@@ -351,6 +354,32 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
 
+  // oidc providers
+  "oidcProvider/list": {
+    input: EmptyObject;
+    output: {
+      providers: OidcProvider[];
+    };
+  };
+  "oidcProvider/upsert": {
+    input: {
+      provider: OidcProviderInput;
+    };
+    output: EmptyObject;
+  };
+  "oidcProvider/delete": {
+    input: {
+      providerId: string;
+    };
+    output: EmptyObject;
+  };
+  "oidcProvider/listEnabled": {
+    input: EmptyObject;
+    output: {
+      providers: OidcProvider[];
+    };
+  };
+
   // config
   "config/getFullConfig": {
     input: EmptyObject;
@@ -523,3 +552,15 @@ export const UpsertEnterpriseConfigInputZod = z
     config: EnterpriseConfigZod,
   })
   .strict() satisfies z.ZodType<HandlerInput<"enterprise/upsertConfig">>;
+
+export const UpsertOidcProviderInputZod = z
+  .object({
+    provider: OidcProviderInputZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/upsert">>;
+
+export const DeleteOidcProviderInputZod = z
+  .object({
+    providerId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/delete">>;

@@ -3,8 +3,9 @@ import {
   ClassOutlined,
   GroupOutlined,
   MicOutlined,
-  SettingsOutlined,
   PaletteOutlined,
+  SettingsOutlined,
+  VpnKeyOutlined,
 } from "@mui/icons-material";
 import {
   Box,
@@ -56,6 +57,11 @@ export default function HomePage() {
       label: intl.formatMessage({ defaultMessage: "AI Providers" }),
       path: "/llm-providers",
       icon: <AutoFixHighOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "Identity Providers" }),
+      path: "/oidc-providers",
+      icon: <VpnKeyOutlined />,
     },
     {
       label: intl.formatMessage({ defaultMessage: "Settings" }),

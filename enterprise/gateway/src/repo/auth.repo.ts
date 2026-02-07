@@ -29,16 +29,46 @@ export async function findAuthByEmail(
 
 export async function createAuth(
   email: string,
-  passwordHash: string
+  passwordHash: string | null,
+  oidcOpts?: { oidcSub: string; oidcProviderId: string; authProvider: string },
 ): Promise<Auth> {
   const pool = getPool();
   const result = await pool.query(
-    `INSERT INTO auth (email, password_hash)
-     VALUES ($1, $2)
+    `INSERT INTO auth (email, password_hash, oidc_sub, oidc_provider_id, auth_provider)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [email, passwordHash]
+    [
+      email,
+      passwordHash,
+      oidcOpts?.oidcSub ?? null,
+      oidcOpts?.oidcProviderId ?? null,
+      oidcOpts?.authProvider ?? "password",
+    ],
   );
   return rowToAuth(result.rows[0]);
+}
+
+export async function findAuthByOidcSub(
+  oidcSub: string,
+): Promise<AuthRow | null> {
+  const pool = getPool();
+  const result = await pool.query(
+    "SELECT * FROM auth WHERE oidc_sub = $1",
+    [oidcSub],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function linkOidcSub(
+  authId: string,
+  oidcSub: string,
+  oidcProviderId: string,
+): Promise<void> {
+  const pool = getPool();
+  await pool.query(
+    "UPDATE auth SET oidc_sub = $1, oidc_provider_id = $2 WHERE id = $3",
+    [oidcSub, oidcProviderId, authId],
+  );
 }
 
 export async function setIsAdmin(
