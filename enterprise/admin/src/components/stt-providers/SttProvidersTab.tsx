@@ -144,9 +144,13 @@ export default function SttProvidersTab() {
       header: intl.formatMessage({ defaultMessage: "Enabled" }),
       cell: (row) => (
         <Chip
-          label={row.isEnabled ? intl.formatMessage({ defaultMessage: "Yes" }) : intl.formatMessage({ defaultMessage: "No" })}
+          label={
+            row.tier > 0
+              ? intl.formatMessage({ defaultMessage: "Yes" })
+              : intl.formatMessage({ defaultMessage: "No" })
+          }
           size="small"
-          color={row.isEnabled ? "success" : "default"}
+          color={row.tier > 0 ? "success" : "default"}
           variant="outlined"
         />
       ),

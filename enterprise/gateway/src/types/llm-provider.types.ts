@@ -6,7 +6,7 @@ export type LlmProviderRow = {
   api_key_encrypted: string;
   api_key_suffix: string;
   model: string;
-  is_enabled: boolean;
+  tier: number;
   pull_status: string;
   pull_error: string | null;
   created_at: Date;
