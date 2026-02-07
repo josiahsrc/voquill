@@ -3,6 +3,7 @@ import { getPool } from "../utils/db.utils";
 
 interface EnterpriseConfigRow {
   id: string;
+  allow_post_processing: boolean;
   allow_change_post_processing: boolean;
   allow_change_transcription_method: boolean;
   allow_change_agent_mode: boolean;
@@ -12,6 +13,7 @@ interface EnterpriseConfigRow {
 
 function rowToEnterpriseConfig(row: EnterpriseConfigRow): EnterpriseConfig {
   return {
+    allowPostProcessing: row.allow_post_processing,
     allowChangePostProcessing: row.allow_change_post_processing,
     allowChangeTranscriptionMethod: row.allow_change_transcription_method,
     allowChangeAgentMode: row.allow_change_agent_mode,
@@ -27,6 +29,7 @@ export async function getEnterpriseConfig(): Promise<EnterpriseConfig> {
   );
   if (result.rows.length === 0) {
     return {
+      allowPostProcessing: true,
       allowChangePostProcessing: false,
       allowChangeTranscriptionMethod: false,
       allowChangeAgentMode: false,
@@ -42,14 +45,15 @@ export async function upsertEnterpriseConfig(
 ): Promise<void> {
   const pool = getPool();
   await pool.query(
-    `INSERT INTO enterprise_config (id, allow_change_post_processing, allow_change_transcription_method, allow_change_agent_mode, allow_email_sign_in, styling_mode)
-     VALUES ('default', $1, $2, $3, $4, $5)
+    `INSERT INTO enterprise_config (id, allow_post_processing, allow_change_post_processing, allow_change_transcription_method, allow_change_agent_mode, allow_email_sign_in, styling_mode)
+     VALUES ('default', $1, $2, $3, $4, $5, $6)
      ON CONFLICT (id) DO UPDATE SET
-       allow_change_post_processing = $1,
-       allow_change_transcription_method = $2,
-       allow_change_agent_mode = $3,
-       allow_email_sign_in = $4,
-       styling_mode = $5`,
-    [config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.allowChangeAgentMode, config.allowEmailSignIn, config.stylingMode],
+       allow_post_processing = $1,
+       allow_change_post_processing = $2,
+       allow_change_transcription_method = $3,
+       allow_change_agent_mode = $4,
+       allow_email_sign_in = $5,
+       styling_mode = $6`,
+    [config.allowPostProcessing, config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.allowChangeAgentMode, config.allowEmailSignIn, config.stylingMode],
   );
 }

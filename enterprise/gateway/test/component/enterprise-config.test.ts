@@ -29,6 +29,7 @@ describe("enterprise config", () => {
 
   it("returns defaults", async () => {
     const data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowPostProcessing).toBe(true);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
@@ -51,6 +52,7 @@ describe("enterprise config", () => {
       "enterprise/upsertConfig",
       {
         config: {
+          allowPostProcessing: true,
           allowChangePostProcessing: true,
           allowChangeTranscriptionMethod: true,
           allowChangeAgentMode: true,
@@ -62,6 +64,7 @@ describe("enterprise config", () => {
     );
 
     const data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowPostProcessing).toBe(true);
     expect(data.config.allowChangePostProcessing).toBe(true);
     expect(data.config.allowChangeTranscriptionMethod).toBe(true);
     expect(data.config.allowChangeAgentMode).toBe(true);
@@ -74,6 +77,7 @@ describe("enterprise config", () => {
       "enterprise/upsertConfig",
       {
         config: {
+          allowPostProcessing: false,
           allowChangePostProcessing: false,
           allowChangeTranscriptionMethod: false,
           allowChangeAgentMode: false,
@@ -85,6 +89,7 @@ describe("enterprise config", () => {
     );
 
     const data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowPostProcessing).toBe(false);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
@@ -98,6 +103,7 @@ describe("enterprise config", () => {
         "enterprise/upsertConfig",
         {
           config: {
+            allowPostProcessing: true,
             allowChangePostProcessing: true,
             allowChangeTranscriptionMethod: true,
             allowChangeAgentMode: true,

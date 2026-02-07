@@ -94,6 +94,19 @@ export default function SettingsTab() {
                 <FormControlLabel
                   control={
                     <Switch
+                      checked={enterpriseConfig.allowPostProcessing}
+                      onChange={(_, checked) =>
+                        handleToggle("allowPostProcessing", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Allow dictation post-processing" />
+                  }
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
                       checked={enterpriseConfig.allowChangePostProcessing}
                       onChange={(_, checked) =>
                         handleToggle("allowChangePostProcessing", checked)
