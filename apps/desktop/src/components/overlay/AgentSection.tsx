@@ -396,6 +396,8 @@ export const AgentSection = () => {
           width: `${AGENT_OVERLAY_WIDTH}px`,
           maxHeight: `${MAX_PAPER_HEIGHT}px`,
           borderRadius: 1,
+          border: "1px solid black",
+          borderColor: "level2",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",

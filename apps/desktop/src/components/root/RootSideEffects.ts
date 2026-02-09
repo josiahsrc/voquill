@@ -45,7 +45,7 @@ import { useTauriListen } from "../../hooks/tauri.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import type { RecordingMode } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
-import { AgentStrategy } from "../../strategies/agent.strategy";
+import { OpenClawAgentStrategy } from "../../strategies/openclaw-agent.strategy";
 import { BaseStrategy } from "../../strategies/base.strategy";
 import { DictationStrategy } from "../../strategies/dictation.strategy";
 import type { TextFieldInfo } from "../../types/accessibility.types";
@@ -275,7 +275,7 @@ export const RootSideEffects = () => {
       getLogger().info(`Creating ${mode} strategy`);
       strategy =
         mode === "agent"
-          ? new AgentStrategy(strategyContext)
+          ? new OpenClawAgentStrategy(strategyContext)
           : new DictationStrategy(strategyContext);
       strategyRef.current = strategy;
     }
