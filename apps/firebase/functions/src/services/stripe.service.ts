@@ -145,6 +145,8 @@ export const handleSubscriptionCreated = async (
 	console.log("subscribing member", member.id, "to price", priceId);
 	await firemix().update(mixpath.members(member.id), {
 		plan: "pro",
+		isOnTrial: false,
+		trialEndsAt: null,
 		updatedAt: firemix().now(),
 		priceId,
 		stripeCustomerId: event.data.object.customer as string,

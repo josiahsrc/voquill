@@ -16,7 +16,7 @@ import {
   showUpgradePlanList,
 } from "../../actions/pricing.actions";
 import { useAppStore } from "../../store";
-import { getEffectivePlan } from "../../utils/member.utils";
+import { getEffectivePlan, getIsPaidSubscriber } from "../../utils/member.utils";
 import { PricingPlan } from "../../utils/price.utils";
 import { LoginForm } from "../login/LoginForm";
 import { FormContainer } from "../onboarding/OnboardingShared";
@@ -28,6 +28,7 @@ export const UpgradePlanDialog = () => {
   const open = useAppStore((state) => state.pricing.upgradePlanDialog);
   const view = useAppStore((state) => state.pricing.upgradePlanDialogView);
   const currPlan = useAppStore(getEffectivePlan);
+  const isPaidSubscriber = useAppStore(getIsPaidSubscriber);
   const currLoggedIn = useAppStore((state) => Boolean(state.auth));
   const targPlan = useAppStore((state) => state.pricing.upgradePlanPendingPlan);
 
@@ -37,13 +38,13 @@ export const UpgradePlanDialog = () => {
 
     if (targPlan === "free" && currPlan === "free") {
       closeUpgradePlanDialog();
-    } else if (isTargPlanPro && currPlan === "pro") {
+    } else if (isTargPlanPro && isPaidSubscriber) {
       closeUpgradePlanDialog();
-    } else if (isTargPlanPro && currPlan !== "pro" && currLoggedIn) {
+    } else if (isTargPlanPro && !isPaidSubscriber && currLoggedIn) {
       closeUpgradePlanDialog();
       tryOpenPaymentDialogForPricingPlan(targPlan);
     }
-  }, [currLoggedIn, currPlan, targPlan]);
+  }, [currLoggedIn, currPlan, isPaidSubscriber, targPlan]);
 
   const handleClose = () => {
     trackButtonClick("close_upgrade_plan_dialog");
