@@ -94,7 +94,7 @@ export const buildLocalizedTranscriptionPrompt = (args: {
 };
 
 export const buildSystemPostProcessingTonePrompt = (): string => {
-  return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same.";
+  return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a single field 'processedTranscription' that contains the rewritten transcript.";
 };
 
 export const buildPostProcessingPrompt = ({
@@ -127,9 +127,9 @@ Here is the transcript that you need to process:
 ${transcript}
 \`\`\`
 
-Your response MUST be in JSON format.
-
 Post-process transcription according to the instructions.
+
+**CRITICAL** Your response MUST be in JSON format.
 `;
 };
 

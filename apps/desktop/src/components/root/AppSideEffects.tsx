@@ -331,6 +331,8 @@ export const AppSideEffects = () => {
       activeSystemCohort: CURRENT_COHORT,
       daysSinceOnboarded,
       pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
+      company: cloudUser?.company ?? undefined,
+      title: cloudUser?.title ?? undefined,
     });
 
     mixpanel.register({

@@ -5,6 +5,13 @@ import {
   BaseGenerateTextRepo,
   GroqGenerateTextRepo,
 } from "../../src/repos/generate-text.repo";
+import {
+  buildPostProcessingPrompt,
+  buildSystemPostProcessingTonePrompt,
+  PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
+  PROCESSED_TRANSCRIPTION_SCHEMA,
+} from "../../src/utils/prompt.utils";
+import { getDefaultSystemTones } from "../../src/utils/tone.utils";
 import { getGroqApiKey } from "./env.utils";
 
 export type Eval = {
@@ -68,3 +75,46 @@ export async function runEval({
 
   await Promise.all(promises);
 }
+
+export const postProcess = async ({
+  tone,
+  transcription,
+  language = "en",
+  userName = "Thomas Gundan",
+}: {
+  tone: string;
+  transcription: string;
+  language?: string;
+  userName?: string;
+}): Promise<string> => {
+  const ppSystem = buildSystemPostProcessingTonePrompt();
+  const ppPrompt = buildPostProcessingPrompt({
+    transcript: transcription,
+    dictationLanguage: language,
+    toneTemplate: tone,
+    userName,
+  });
+
+  const output = await getGentextRepo().generateText({
+    system: ppSystem,
+    prompt: ppPrompt,
+    jsonResponse: {
+      name: "transcription_cleaning",
+      description: "JSON response with the processed transcription",
+      schema: PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
+    },
+  });
+
+  const parsed = PROCESSED_TRANSCRIPTION_SCHEMA.parse(JSON.parse(output.text));
+  return parsed.processedTranscription;
+};
+
+export const getWritingStyle = (style: string) => {
+  const tones = getDefaultSystemTones();
+  const tone = tones.find((t) => t.id === style);
+  if (!tone) {
+    throw new Error(`Writing style '${style}' not found`);
+  }
+
+  return tone.promptTemplate;
+};

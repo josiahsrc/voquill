@@ -53,7 +53,7 @@ import {
   KEYBOARD_LAYOUT_LANGUAGE,
   WHISPER_LANGUAGES,
 } from "../../utils/language.utils";
-import { getIsPaying } from "../../utils/member.utils";
+import { getIsPaidSubscriber } from "../../utils/member.utils";
 import {
   getDetectedSystemLocale,
   getGenerativePrefs,
@@ -67,7 +67,7 @@ import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 
 export default function SettingsPage() {
   const hasEmailProvider = useAppStore(getHasEmailProvider);
-  const isPaying = useAppStore(getIsPaying);
+  const isSubscribed = useAppStore(getIsPaidSubscriber);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
   const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
@@ -396,7 +396,7 @@ export default function SettingsPage() {
           onClick={openChangePasswordDialog}
         />
       )}
-      {isPaying && !isEnterprise && (
+      {isSubscribed && !isEnterprise && (
         <ListTile
           title={<FormattedMessage defaultMessage="Manage subscription" />}
           leading={<PaymentOutlined />}

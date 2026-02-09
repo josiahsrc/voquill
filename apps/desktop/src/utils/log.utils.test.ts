@@ -61,26 +61,26 @@ describe("LoggyTails", () => {
     expect(logs[0]).toContain("[VERBOSE] detail");
   });
 
-  it("should use circular buffer for info level (100 entries)", () => {
+  it("should use circular buffer for info level (200 entries)", () => {
     const logger = new Logger("info");
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 220; i++) {
       logger.info(`msg-${i}`);
     }
     const logs = logger.getLogs();
-    expect(logs).toHaveLength(100);
+    expect(logs).toHaveLength(200);
     expect(logs[0]).toContain("msg-20");
-    expect(logs[99]).toContain("msg-119");
+    expect(logs[199]).toContain("msg-219");
   });
 
-  it("should use circular buffer for verbose level (1000 entries)", () => {
+  it("should use circular buffer for verbose level (2000 entries)", () => {
     const logger = new Logger("verbose");
-    for (let i = 0; i < 1020; i++) {
+    for (let i = 0; i < 2020; i++) {
       logger.info(`msg-${i}`);
     }
     const logs = logger.getLogs();
-    expect(logs).toHaveLength(1000);
+    expect(logs).toHaveLength(2000);
     expect(logs[0]).toContain("msg-20");
-    expect(logs[999]).toContain("msg-1019");
+    expect(logs[1999]).toContain("msg-2019");
   });
 
   it("should return logs in chronological order after wrapping", () => {

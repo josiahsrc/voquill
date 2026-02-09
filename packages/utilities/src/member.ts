@@ -1,5 +1,7 @@
 import { FullConfig, Member, MemberPlan } from "@repo/types";
 
+export const TRIAL_DURATION_DAYS = 7;
+
 export const getMemberExceedsWordLimit = (
   member: Member,
   config: FullConfig,

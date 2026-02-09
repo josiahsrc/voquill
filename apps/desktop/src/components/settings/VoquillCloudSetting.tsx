@@ -3,10 +3,10 @@ import { Button, Stack, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { useAppStore } from "../../store";
-import { getIsPaying } from "../../utils/member.utils";
+import { getIsPro } from "../../utils/member.utils";
 
 export const VoquillCloudSetting = () => {
-  const isPro = useAppStore(getIsPaying);
+  const isPro = useAppStore(getIsPro);
 
   return (
     <Stack spacing={1} alignItems="flex-start">

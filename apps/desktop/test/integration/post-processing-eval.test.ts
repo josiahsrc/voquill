@@ -5,8 +5,12 @@ import {
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../../src/utils/prompt.utils";
-import { getDefaultSystemTones } from "../../src/utils/tone.utils";
-import { Eval, getGentextRepo, runEval } from "../helpers/eval.utils";
+import {
+  Eval,
+  getGentextRepo,
+  getWritingStyle,
+  runEval,
+} from "../helpers/eval.utils";
 
 vi.setConfig({ testTimeout: 30000 });
 
@@ -20,16 +24,6 @@ vi.mock("../../src/i18n/intl", async (importOriginal) => {
     }),
   };
 });
-
-const getWritingStyle = (style: string) => {
-  const tones = getDefaultSystemTones();
-  const tone = tones.find((t) => t.id === style);
-  if (!tone) {
-    throw new Error(`Writing style '${style}' not found`);
-  }
-
-  return tone.promptTemplate;
-};
 
 const postProcess = async ({
   tone,
