@@ -1,4 +1,5 @@
 import {
+  type AgentMode,
   DictationPillVisibility,
   Nullable,
   StylingMode,
@@ -78,6 +79,8 @@ export const createDefaultPreferences = (): UserPreferences => ({
   gpuEnumerationEnabled: false,
   agentMode: null,
   agentModeApiKeyId: null,
+  openclawGatewayUrl: null,
+  openclawToken: null,
   lastSeenFeature: null,
   isEnterprise: false,
   preferredMicrophone: null,
@@ -251,6 +254,9 @@ export const persistAiPreferences = async (): Promise<void> => {
     preferences.agentMode = state.settings.agentMode.mode;
     preferences.agentModeApiKeyId =
       state.settings.agentMode.selectedApiKeyId ?? null;
+    preferences.openclawGatewayUrl =
+      state.settings.agentMode.openclawGatewayUrl ?? null;
+    preferences.openclawToken = state.settings.agentMode.openclawToken ?? null;
     preferences.transcriptionMode = state.settings.aiTranscription.mode;
     preferences.transcriptionApiKeyId =
       state.settings.aiTranscription.selectedApiKeyId ?? null;
@@ -343,11 +349,29 @@ export const setPreferredPostProcessingApiKeyId = async (
   await persistAiPreferences();
 };
 
-export const setPreferredAgentMode = async (
-  mode: PostProcessingMode,
-): Promise<void> => {
+export const setPreferredAgentMode = async (mode: AgentMode): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.agentMode.mode = mode;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setOpenclawGatewayUrl = async (
+  url: Nullable<string>,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.agentMode.openclawGatewayUrl = url;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setOpenclawToken = async (
+  token: Nullable<string>,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.agentMode.openclawToken = token;
   });
 
   await persistAiPreferences();

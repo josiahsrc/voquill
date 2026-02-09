@@ -5,6 +5,7 @@ import {
   OpenRouterProvider,
 } from "@repo/types";
 import {
+  type AgentMode,
   CPU_DEVICE_VALUE,
   DEFAULT_AGENT_MODE,
   DEFAULT_MODEL_SIZE,
@@ -32,6 +33,12 @@ export type SettingsGenerativeState = {
   selectedApiKeyId: string | null;
 };
 
+export type SettingsAgentModeState = Omit<SettingsGenerativeState, "mode"> & {
+  mode: AgentMode;
+  openclawGatewayUrl: string | null;
+  openclawToken: string | null;
+};
+
 export type SettingsState = {
   changePasswordDialogOpen: boolean;
   deleteAccountDialog: boolean;
@@ -47,7 +54,7 @@ export type SettingsState = {
   dictationLanguageDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
-  agentMode: SettingsGenerativeState;
+  agentMode: SettingsAgentModeState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
@@ -89,6 +96,8 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   agentMode: {
     mode: DEFAULT_AGENT_MODE,
     selectedApiKeyId: null,
+    openclawGatewayUrl: null,
+    openclawToken: null,
   },
   apiKeys: [],
   apiKeysStatus: "idle",

@@ -289,6 +289,10 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
 export const getAgentRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getAgentModePrefs(state);
+  if (prefs.mode === "openclaw") {
+    throw new Error("OpenClaw provides its own LLM processor");
+  }
+
   return getGenTextRepoInternal({ prefs, cloudModel: "large" });
 };
 

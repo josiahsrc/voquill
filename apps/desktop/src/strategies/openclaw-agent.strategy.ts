@@ -7,18 +7,28 @@ import type { OverlayPhase } from "../types/overlay.types";
 import type {
   HandleTranscriptParams,
   HandleTranscriptResult,
+  StrategyContext,
   StrategyValidationError,
 } from "../types/strategy.types";
 import { getLogger } from "../utils/log.utils";
 import { BaseStrategy } from "./base.strategy";
 
-const OPENCLAW_GATEWAY_URL = "ws://localhost:18789";
-const OPENCLAW_TOKEN = "todo";
-
 export class OpenClawAgentStrategy extends BaseStrategy {
   private uiMessages: AgentWindowMessage[] = [];
   private isFirstTurn = true;
   private client: OpenClawClient | null = null;
+  private gatewayUrl: string;
+  private token: string;
+
+  constructor(
+    context: StrategyContext,
+    gatewayUrl: string,
+    token: string,
+  ) {
+    super(context);
+    this.gatewayUrl = gatewayUrl;
+    this.token = token;
+  }
 
   shouldStoreTranscript(): boolean {
     return false;
@@ -47,7 +57,7 @@ export class OpenClawAgentStrategy extends BaseStrategy {
       this.isFirstTurn = false;
 
       getLogger().info("Connecting to OpenClaw gateway...");
-      this.client = new OpenClawClient(OPENCLAW_GATEWAY_URL, OPENCLAW_TOKEN);
+      this.client = new OpenClawClient(this.gatewayUrl, this.token);
       try {
         await this.client.connect();
         getLogger().info("Connected to OpenClaw gateway");
@@ -80,7 +90,7 @@ export class OpenClawAgentStrategy extends BaseStrategy {
 
     if (!this.client?.isConnected()) {
       getLogger().warning("OpenClaw not connected, attempting reconnect...");
-      this.client = new OpenClawClient(OPENCLAW_GATEWAY_URL, OPENCLAW_TOKEN);
+      this.client = new OpenClawClient(this.gatewayUrl, this.token);
       try {
         await this.client.connect();
       } catch (error) {

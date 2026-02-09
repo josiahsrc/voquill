@@ -106,7 +106,7 @@ export const submitOnboarding = async () => {
   };
 
   const postProcessingPreference: GenerativePrefs = getGenerativePrefs(state);
-  const agentModePreference: GenerativePrefs = getAgentModePrefs(state);
+  const agentModePreference = getAgentModePrefs(state);
 
   produceAppState((draft) => {
     draft.onboarding.submitting = true;
@@ -176,6 +176,14 @@ export const submitOnboarding = async () => {
       agentModeApiKeyId:
         agentModePreference.mode === "api"
           ? agentModePreference.apiKeyId
+          : null,
+      openclawGatewayUrl:
+        agentModePreference.mode === "openclaw"
+          ? agentModePreference.gatewayUrl
+          : null,
+      openclawToken:
+        agentModePreference.mode === "openclaw"
+          ? agentModePreference.token
           : null,
       lastSeenFeature: CURRENT_FEATURE,
       isEnterprise: getIsEnterpriseEnabled(),

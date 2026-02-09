@@ -25,6 +25,8 @@ type LocalUserPreferences = {
   gpuEnumerationEnabled: boolean;
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
+  openclawGatewayUrl: Nullable<string>;
+  openclawToken: Nullable<string>;
   lastSeenFeature: Nullable<string>;
   isEnterprise: boolean;
   languageSwitchEnabled: boolean;
@@ -69,6 +71,8 @@ const fromLocalPreferences = (
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
   agentMode: preferences.agentMode,
   agentModeApiKeyId: preferences.agentModeApiKeyId,
+  openclawGatewayUrl: preferences.openclawGatewayUrl ?? null,
+  openclawToken: preferences.openclawToken ?? null,
   lastSeenFeature: preferences.lastSeenFeature,
   isEnterprise: preferences.isEnterprise,
   preferredMicrophone: preferences.preferredMicrophone ?? null,
@@ -97,6 +101,8 @@ const toLocalPreferences = (
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
   agentMode: preferences.agentMode ?? null,
   agentModeApiKeyId: preferences.agentModeApiKeyId ?? null,
+  openclawGatewayUrl: preferences.openclawGatewayUrl ?? null,
+  openclawToken: preferences.openclawToken ?? null,
   lastSeenFeature: preferences.lastSeenFeature ?? null,
   isEnterprise: preferences.isEnterprise,
   languageSwitchEnabled: false,

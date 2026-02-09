@@ -51,4 +51,8 @@ export const applyAiPreferences = (
   draft.settings.agentMode.mode = agentMode as any;
   draft.settings.agentMode.selectedApiKeyId =
     preferences.agentModeApiKeyId ?? null;
+  draft.settings.agentMode.openclawGatewayUrl =
+    preferences.openclawGatewayUrl ?? null;
+  draft.settings.agentMode.openclawToken =
+    preferences.openclawToken ?? null;
 };

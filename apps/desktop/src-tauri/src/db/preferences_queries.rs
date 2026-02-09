@@ -40,6 +40,8 @@ pub async fn upsert_user_preferences(
              post_processing_ollama_model,
              agent_mode,
              agent_mode_api_key_id,
+             openclaw_gateway_url,
+             openclaw_token,
              active_tone_id,
              got_started_at,
              gpu_enumeration_enabled,
@@ -56,7 +58,7 @@ pub async fn upsert_user_preferences(
              incognito_mode_include_in_stats,
              dictation_pill_visibility
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -68,6 +70,8 @@ pub async fn upsert_user_preferences(
             post_processing_ollama_model = excluded.post_processing_ollama_model,
             agent_mode = excluded.agent_mode,
             agent_mode_api_key_id = excluded.agent_mode_api_key_id,
+            openclaw_gateway_url = excluded.openclaw_gateway_url,
+            openclaw_token = excluded.openclaw_token,
             active_tone_id = excluded.active_tone_id,
             got_started_at = excluded.got_started_at,
             gpu_enumeration_enabled = excluded.gpu_enumeration_enabled,
@@ -95,6 +99,8 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.post_processing_ollama_model)
     .bind(&preferences.agent_mode)
     .bind(&preferences.agent_mode_api_key_id)
+    .bind(&preferences.openclaw_gateway_url)
+    .bind(&preferences.openclaw_token)
     .bind(&preferences.active_tone_id)
     .bind(&preferences.got_started_at)
     .bind(preferences.gpu_enumeration_enabled)
@@ -133,6 +139,8 @@ pub async fn fetch_user_preferences(
             post_processing_ollama_model,
             agent_mode,
             agent_mode_api_key_id,
+            openclaw_gateway_url,
+            openclaw_token,
             active_tone_id,
             got_started_at,
             gpu_enumeration_enabled,
@@ -187,6 +195,12 @@ pub async fn fetch_user_preferences(
             .unwrap_or(None),
         agent_mode_api_key_id: row
             .try_get::<Option<String>, _>("agent_mode_api_key_id")
+            .unwrap_or(None),
+        openclaw_gateway_url: row
+            .try_get::<Option<String>, _>("openclaw_gateway_url")
+            .unwrap_or(None),
+        openclaw_token: row
+            .try_get::<Option<String>, _>("openclaw_token")
             .unwrap_or(None),
         active_tone_id: row
             .try_get::<Option<String>, _>("active_tone_id")
