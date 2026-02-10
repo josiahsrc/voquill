@@ -95,10 +95,10 @@ pub const USER_ACTIVE_TONE_IDS_MIGRATION_SQL: &str =
     include_str!("migrations/050_user_active_tone_ids.sql");
 pub const ADDITIONAL_DICTATION_LANGUAGES_MIGRATION_SQL: &str =
     include_str!("migrations/051_additional_dictation_languages.sql");
-pub const OPENCLAW_PREFERENCES_MIGRATION_SQL: &str =
-    include_str!("migrations/052_openclaw_preferences.sql");
 pub const USE_NEW_BACKEND_MIGRATION_SQL: &str =
-    include_str!("migrations/053_use_new_backend.sql");
+    include_str!("migrations/052_use_new_backend.sql");
+pub const OPENCLAW_PREFERENCES_MIGRATION_SQL: &str =
+    include_str!("migrations/053_openclaw_preferences.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -410,14 +410,14 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
         },
         tauri_plugin_sql::Migration {
             version: 52,
-            description: "add_openclaw_preferences",
-            sql: OPENCLAW_PREFERENCES_MIGRATION_SQL,
+            description: "add_use_new_backend",
+            sql: USE_NEW_BACKEND_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
         tauri_plugin_sql::Migration {
             version: 53,
-            description: "add_use_new_backend",
-            sql: USE_NEW_BACKEND_MIGRATION_SQL,
+            description: "add_openclaw_preferences",
+            sql: OPENCLAW_PREFERENCES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]
