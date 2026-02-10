@@ -6,7 +6,6 @@ export type ActionStatus = "loading" | "success" | "error" | "idle";
 export type LoginMode = "signIn" | "signUp";
 
 export type LoginState = {
-  name: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -17,7 +16,6 @@ export type LoginState = {
 };
 
 export const INITIAL_LOGIN_STATE: LoginState = {
-  name: "",
   email: "",
   password: "",
   confirmPassword: "",
@@ -28,7 +26,6 @@ export const INITIAL_LOGIN_STATE: LoginState = {
 };
 
 if (isDev()) {
-  INITIAL_LOGIN_STATE.name = "Admin User";
   INITIAL_LOGIN_STATE.email = "admin@voquill.com";
   INITIAL_LOGIN_STATE.password = "password123";
   INITIAL_LOGIN_STATE.confirmPassword = "password123";

@@ -8,7 +8,7 @@ import {
   loadSttProviders,
   pullSttProvider,
 } from "../../actions/stt-providers.actions";
-import { loadUsers } from "../../actions/users.actions";
+import { loadMyUser, loadUsers } from "../../actions/users.actions";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { getAppState } from "../../store";
 
@@ -43,7 +43,7 @@ export default function HomeSideEffects() {
   }, []);
 
   useIntervalAsync(TEN_SECONDS, async () => {
-    await Promise.allSettled([loadSettings(), loadUsers()]);
+    await Promise.allSettled([loadSettings(), loadUsers(), loadMyUser()]);
   }, []);
 
   return null;

@@ -21,7 +21,7 @@ import {
 
 export default function LoginPage() {
   const intl = useIntl()
-  const { name, email, password, confirmPassword, mode, status, errorMessage, oidcProviders } =
+  const { email, password, confirmPassword, mode, status, errorMessage, oidcProviders } =
     useAppStore((state) => state.login)
 
   useEffect(() => {
@@ -73,20 +73,6 @@ export default function LoginPage() {
             onSubmit={handleSubmit}
             sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
           >
-            {isCreateAccount && (
-              <TextField
-                label={intl.formatMessage({ defaultMessage: "Full Name" })}
-                fullWidth
-                size="small"
-                value={name}
-                disabled={isLoading}
-                onChange={(e) =>
-                  produceAppState((draft) => {
-                    draft.login.name = e.target.value
-                  })
-                }
-              />
-            )}
             <TextField
               label={intl.formatMessage({ defaultMessage: "Email" })}
               type="email"
