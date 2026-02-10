@@ -1,3 +1,4 @@
+import type { OidcProvider } from "@repo/types";
 import { isDev } from "../utils/env.utils";
 
 export type ActionStatus = "loading" | "success" | "error" | "idle";
@@ -12,6 +13,7 @@ export type LoginState = {
   status: ActionStatus;
   mode: LoginMode;
   errorMessage: string;
+  oidcProviders: OidcProvider[];
 };
 
 export const INITIAL_LOGIN_STATE: LoginState = {
@@ -22,6 +24,7 @@ export const INITIAL_LOGIN_STATE: LoginState = {
   status: "idle",
   mode: "signUp",
   errorMessage: "",
+  oidcProviders: [],
 };
 
 if (isDev()) {

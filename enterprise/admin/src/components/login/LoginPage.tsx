@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import { FormattedMessage, useIntl } from 'react-intl'
+import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import AppLogo from '../../assets/app-logo.svg?react'
 import { getAppName } from '../../utils/env.utils'
 import { useAppStore } from '../../store'
 import { produceAppState } from '../../store'
-import { setLoginMode, submitSignIn, submitSignUp } from '../../actions/login.actions'
+import { loadLoginOidcProviders, setLoginMode, submitSignIn, submitSignUp, submitSignInWithSso } from '../../actions/login.actions'
 import {
   Alert,
   Box,
@@ -19,8 +21,12 @@ import {
 
 export default function LoginPage() {
   const intl = useIntl()
-  const { name, email, password, confirmPassword, mode, status, errorMessage } =
+  const { name, email, password, confirmPassword, mode, status, errorMessage, oidcProviders } =
     useAppStore((state) => state.login)
+
+  useEffect(() => {
+    loadLoginOidcProviders()
+  }, [])
 
   const isCreateAccount = mode === 'signUp'
   const isLoading = status === 'loading'
@@ -139,6 +145,31 @@ export default function LoginPage() {
               )}
             </Button>
           </Box>
+
+          {oidcProviders.length > 0 && (
+            <>
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <FormattedMessage defaultMessage="or" />
+                </Typography>
+              </Divider>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {oidcProviders.map((provider) => (
+                  <Button
+                    key={provider.id}
+                    variant="outlined"
+                    fullWidth
+                    startIcon={<VpnKeyIcon />}
+                    disabled={isLoading}
+                    onClick={() => submitSignInWithSso(provider.id)}
+                  >
+                    {provider.name}
+                  </Button>
+                ))}
+              </Box>
+            </>
+          )}
 
           <Divider sx={{ my: 3 }} />
 

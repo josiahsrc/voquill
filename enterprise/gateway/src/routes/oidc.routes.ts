@@ -16,11 +16,13 @@ const router = Router();
 router.get("/auth/oidc/authorize", async (req: Request, res: Response) => {
   try {
     const providerId = req.query.provider_id as string;
-    const localPort = parseInt(req.query.local_port as string, 10);
+    const localPortRaw = req.query.local_port as string | undefined;
+    const redirectUrl = req.query.redirect_url as string | undefined;
     const clientState = (req.query.state as string) || "";
 
-    if (!providerId || !localPort) {
-      res.status(400).send("Missing provider_id or local_port");
+    const localPort = localPortRaw ? parseInt(localPortRaw, 10) : undefined;
+    if (!providerId || (!localPort && !redirectUrl)) {
+      res.status(400).send("Missing provider_id or local_port/redirect_url");
       return;
     }
 
@@ -31,7 +33,11 @@ router.get("/auth/oidc/authorize", async (req: Request, res: Response) => {
     }
 
     const discovery = await discoverOidcEndpoints(providerRow.issuer_url);
-    const serverState = createOidcState(localPort, providerId, clientState);
+    const serverState = createOidcState(
+      { localPort, redirectUrl },
+      providerId,
+      clientState,
+    );
 
     const gatewayOrigin = `${req.protocol}://${req.get("host")}`;
     const redirectUri = `${gatewayOrigin}/auth/oidc/callback`;
@@ -67,7 +73,7 @@ router.get("/auth/oidc/callback", async (req: Request, res: Response) => {
       return;
     }
 
-    const { localPort, providerId, clientState } = stateData;
+    const { localPort, redirectUrl, providerId, clientState } = stateData;
 
     const providerRow = await getOidcProviderRowById(providerId);
     if (!providerRow) {
@@ -118,9 +124,13 @@ router.get("/auth/oidc/callback", async (req: Request, res: Response) => {
       email: auth.email,
     });
 
-    res.redirect(
-      `http://127.0.0.1:${localPort}/callback?${callbackParams.toString()}`,
-    );
+    if (redirectUrl) {
+      res.redirect(`${redirectUrl}?${callbackParams.toString()}`);
+    } else {
+      res.redirect(
+        `http://127.0.0.1:${localPort}/callback?${callbackParams.toString()}`,
+      );
+    }
   } catch (error) {
     console.error("OIDC callback error:", error);
     res.status(500).send("OIDC authentication failed");

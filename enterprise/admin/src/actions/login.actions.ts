@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { INITIAL_LOGIN_STATE, type LoginMode } from "../state/login.state";
 import { getAppState, produceAppState } from "../store";
 import { invoke } from "../utils/api.utils";
+import { getGatewayUrl } from "../utils/env.utils";
 import { getIntl } from "../i18n/intl";
 
 export function setAuthTokens(token: string, refreshToken: string) {
@@ -121,4 +122,48 @@ export function signOut() {
     draft.refreshToken = null;
     draft.login = INITIAL_LOGIN_STATE;
   });
+}
+
+export async function loadLoginOidcProviders() {
+  try {
+    const data = await invoke("oidcProvider/listEnabled", {});
+    produceAppState((draft) => {
+      draft.login.oidcProviders = data.providers;
+    });
+  } catch (e) {
+    console.error("[login] failed to load OIDC providers:", e);
+  }
+}
+
+export function submitSignInWithSso(providerId: string) {
+  const state = crypto.randomUUID();
+  sessionStorage.setItem("oidc_state", state);
+  const redirectUrl = `${window.location.origin}/login/oidc-callback`;
+  const params = new URLSearchParams({
+    provider_id: providerId,
+    redirect_url: redirectUrl,
+    state,
+  });
+  window.location.href = `${getGatewayUrl()}/auth/oidc/authorize?${params.toString()}`;
+}
+
+export function handleOidcCallback(): { error?: string } {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  const refreshToken = params.get("refreshToken");
+  const state = params.get("state");
+
+  const savedState = sessionStorage.getItem("oidc_state");
+  sessionStorage.removeItem("oidc_state");
+
+  if (!state || state !== savedState) {
+    return { error: "Invalid OIDC state. Please try signing in again." };
+  }
+
+  if (!token || !refreshToken) {
+    return { error: "Missing authentication tokens. Please try signing in again." };
+  }
+
+  setAuthTokens(token, refreshToken);
+  return {};
 }

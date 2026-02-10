@@ -10,6 +10,9 @@ import { lazyLoad } from "./utils/lazy.utils";
 
 const HomePage = lazyLoad(() => import("./components/home/HomePage"));
 const LoginPage = lazyLoad(() => import("./components/login/LoginPage"));
+const OidcCallbackPage = lazyLoad(
+  () => import("./components/login/OidcCallbackPage"),
+);
 const PermissionDeniedPage = lazyLoad(
   () => import("./components/permission-denied/PermissionDeniedPage"),
 );
@@ -53,6 +56,10 @@ const router = createBrowserRouter([
         <LoginPage />
       </Guard>
     ),
+  },
+  {
+    path: "/login/oidc-callback",
+    element: <OidcCallbackPage />,
   },
   {
     path: "/permission-denied",
