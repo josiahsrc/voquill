@@ -37,6 +37,7 @@ type LocalUserPreferences = {
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
   dictationPillVisibility: DictationPillVisibility;
+  useNewBackend: boolean;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -82,6 +83,7 @@ const fromLocalPreferences = (
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),
+  useNewBackend: preferences.useNewBackend ?? false,
 });
 
 const toLocalPreferences = (
@@ -115,6 +117,7 @@ const toLocalPreferences = (
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),
+  useNewBackend: preferences.useNewBackend ?? false,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

@@ -25,7 +25,9 @@ import {
   ensureFloat32Array,
   normalizeSamples,
 } from "../utils/audio.utils";
+import { getEffectiveAuth } from "../utils/auth.utils";
 import { invokeEnterprise } from "../utils/enterprise.utils";
+import { NEW_SERVER_URL } from "../utils/new-server.utils";
 import { loadDiscreteGpus } from "../utils/gpu.utils";
 import { speachesTranscribeAudio } from "../utils/speaches.utils";
 import {
@@ -621,5 +623,119 @@ export class EnterpriseTranscribeAudioRepo extends BaseTranscribeAudioRepo {
         transcriptionMode: "cloud",
       },
     };
+  }
+}
+
+export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  protected getSegmentDurationSec(): number {
+    return 300;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 0;
+  }
+
+  protected getBatchChunkCount(): number {
+    return 1;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wsUrl = NEW_SERVER_URL.replace(/^http/, "ws") + "/v1/transcribe";
+
+    return new Promise((resolve, reject) => {
+      const ws = new WebSocket(wsUrl);
+      let resolved = false;
+
+      const cleanup = () => {
+        ws.close();
+      };
+
+      const settle = (
+        fn: typeof resolve | typeof reject,
+        value: TranscribeAudioOutput | Error,
+      ) => {
+        if (resolved) return;
+        resolved = true;
+        (fn as (v: unknown) => void)(value);
+      };
+
+      ws.onopen = async () => {
+        try {
+          const auth = getEffectiveAuth();
+          const user = auth.currentUser;
+          if (!user) {
+            settle(reject, new Error("Not authenticated"));
+            cleanup();
+            return;
+          }
+          const idToken = await user.getIdToken();
+          ws.send(JSON.stringify({ type: "auth", idToken }));
+        } catch (err) {
+          settle(reject, err instanceof Error ? err : new Error(String(err)));
+          cleanup();
+        }
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+
+          if (msg.type === "error") {
+            settle(reject, new Error(`${msg.code}: ${msg.message}`));
+            cleanup();
+            return;
+          }
+
+          if (msg.type === "authenticated") {
+            const firstLine = input.prompt?.split("\n")[0] ?? "";
+            const glossary = firstLine
+              .replace(/^Glossary:\s*/i, "")
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            ws.send(
+              JSON.stringify({
+                type: "config",
+                sampleRate: input.sampleRate,
+                glossary,
+                language: input.language,
+              }),
+            );
+            return;
+          }
+
+          if (msg.type === "ready") {
+            ws.send(input.samples.buffer);
+            ws.send(JSON.stringify({ type: "finalize" }));
+            return;
+          }
+
+          if (msg.type === "transcript") {
+            settle(resolve, {
+              text: msg.text,
+              metadata: {
+                transcriptionMode: "cloud",
+              },
+            });
+            cleanup();
+            return;
+          }
+        } catch (err) {
+          settle(reject, err instanceof Error ? err : new Error(String(err)));
+          cleanup();
+        }
+      };
+
+      ws.onerror = () => {
+        settle(reject, new Error("WebSocket error"));
+        cleanup();
+      };
+
+      ws.onclose = () => {
+        settle(reject, new Error("Connection closed unexpectedly"));
+      };
+    });
   }
 }

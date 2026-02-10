@@ -357,7 +357,9 @@ export const RootSideEffects = () => {
         await sessionRef.current.onRecordingStart(sampleRate);
 
         clearRecordingTimers();
+        const currentSession = sessionRef.current;
         recordingWarningTimerRef.current = setTimeout(() => {
+          if (sessionRef.current !== currentSession) return;
           getLogger().warning("Recording duration warning (4 min)");
           showToast({
             title: intl.formatMessage({
@@ -373,6 +375,7 @@ export const RootSideEffects = () => {
         }, RECORDING_WARNING_DURATION_MS);
 
         recordingAutoStopTimerRef.current = setTimeout(() => {
+          if (sessionRef.current !== currentSession) return;
           getLogger().warning("Recording auto-stopped (5 min limit)");
           showToast({
             title: intl.formatMessage({
@@ -393,17 +396,37 @@ export const RootSideEffects = () => {
       } catch (error) {
         getLogger().error(`Failed to start recording: ${error}`);
 
+        isRecordingRef.current = false;
+        strategyRef.current = null;
         clearRecordingTimers();
         dictationController.reset();
         agentController.reset();
 
+        try {
+          await invoke("stop_recording");
+        } catch {
+          // Recording may not have started yet
+        }
+
         await strategy.setPhase("idle");
-        showErrorSnackbar("Unable to start recording. Please try again.");
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Unable to start recording. Please try again.";
+        showToast({
+          title: intl.formatMessage({
+            defaultMessage: "Recording failed",
+          }),
+          message: errorMessage,
+          toastType: "error",
+          duration: 8_000,
+        });
         suppressUntilRef.current = Date.now() + 1_000;
-        isRecordingRef.current = false;
-        strategyRef.current = null;
         sessionRef.current?.cleanup();
         sessionRef.current = null;
+        produceAppState((draft) => {
+          draft.activeRecordingMode = null;
+        });
       } finally {
         startPendingRef.current = null;
       }
@@ -493,16 +516,18 @@ export const RootSideEffects = () => {
     try {
       if (session && audio) {
         getLogger().info("Finalizing transcription session");
-        const [currentApp, transcribeResult] = await Promise.all([
-          tryRegisterCurrentAppTarget(),
-          session.finalize(audio),
-        ]);
-        const rawTranscript = transcribeResult.rawTranscript;
+        const currentApp = await tryRegisterCurrentAppTarget();
         trackAppUsed(currentApp?.name ?? "Unknown");
         const toneId = getToneIdToUse(getAppState(), {
           currentAppToneId: currentApp?.toneId ?? null,
         });
 
+        const transcribeResult = await session.finalize(audio, {
+          toneId,
+          a11yInfo,
+        });
+        const rawTranscript = transcribeResult.rawTranscript;
+        const processedTranscript = transcribeResult.processedTranscript;
         getLogger().verbose(
           `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${currentApp?.name ?? "unknown"}`,
         );
@@ -516,6 +541,8 @@ export const RootSideEffects = () => {
           getLogger().info("Post-processing transcript");
           const result = await strategy.handleTranscript({
             rawTranscript,
+            processedTranscript,
+            sessionPostProcessMetadata: transcribeResult.postProcessMetadata,
             toneId,
             a11yInfo,
             currentApp,

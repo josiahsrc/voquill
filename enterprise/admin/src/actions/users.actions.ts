@@ -1,4 +1,4 @@
-import { produceAppState } from "../store";
+import { getAppState, produceAppState } from "../store";
 import { registerUsers } from "../utils/app.utils";
 import { invoke } from "../utils/api.utils";
 import { showErrorSnackbar } from "./app.actions";
@@ -39,4 +39,45 @@ export async function setUserAdmin(userId: string, isAdmin: boolean) {
       user.isAdmin = isAdmin;
     }
   });
+}
+
+export async function loadMyUser() {
+  try {
+    const data = await invoke("user/getMyUser", {});
+    produceAppState((draft) => {
+      draft.myUser = data.user;
+      draft.myUserLoaded = true;
+    });
+  } catch (e) {
+    console.error("[users] failed to load my user:", e);
+  }
+}
+
+export async function updateMyUserName(name: string) {
+  const myUser = getAppState().myUser;
+  const authId = getAppState().auth?.userId;
+  if (!authId) {
+    showErrorSnackbar("No authenticated user");
+    return;
+  }
+
+  await invoke("user/setMyUser", {
+    value: {
+      id: authId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      onboarded: false,
+      onboardedAt: null,
+      playInteractionChime: false,
+      hasFinishedTutorial: false,
+      wordsThisMonth: 0,
+      wordsThisMonthMonth: null,
+      wordsTotal: 0,
+      ...myUser,
+      name,
+    },
+  });
+
+  await loadMyUser();
+  await loadUsers();
 }
