@@ -2,6 +2,7 @@ import 'package:app/routing/guard_redirect.dart';
 import 'package:app/widgets/dashboard/dashboard_page.dart';
 import 'package:app/widgets/error/error_page.dart';
 import 'package:app/widgets/error/not_found_page.dart';
+import 'package:app/widgets/login/login_page.dart';
 import 'package:app/widgets/onboarding/onboarding_page.dart';
 import 'package:app/widgets/splash/splash_page.dart';
 import 'package:app/widgets/welcome/welcome_page.dart';
@@ -33,6 +34,11 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
         path: '/welcome',
         builder: (context, state) => const WelcomePage(),
         name: 'welcome',
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginPage(),
+        name: 'login',
       ),
       GoRoute(
         path: '/onboarding',

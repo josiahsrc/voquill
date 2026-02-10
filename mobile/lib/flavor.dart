@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:collection/collection.dart';
 import 'package:flutter/services.dart';
 
@@ -36,6 +38,8 @@ enum Flavor {
         return 'emu';
     }
   }
+
+  String get emulatorHost => Platform.isAndroid ? '10.0.2.2' : 'localhost';
 
   String get termsUrl => 'https://voquill.com/terms';
   String get privacyUrl => 'https://voquill.com/privacy';

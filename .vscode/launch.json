@@ -2,24 +2,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "mobile",
-      "cwd": "mobile",
-      "request": "launch",
-      "type": "dart"
-    },
-    {
-      "name": "mobile (profile mode)",
+      "name": "mobile (emulator)",
       "cwd": "mobile",
       "request": "launch",
       "type": "dart",
-      "flutterMode": "profile"
+      "args": ["--dart-define=FLAVOR=emulator"]
     },
     {
-      "name": "mobile (release mode)",
+      "name": "mobile (prod)",
       "cwd": "mobile",
       "request": "launch",
       "type": "dart",
-      "flutterMode": "release"
+      "args": ["--dart-define=FLAVOR=prod"]
     }
   ]
 }

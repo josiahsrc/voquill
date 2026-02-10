@@ -32,6 +32,23 @@ final _graph = NavigationGraph([
     targetRoute: '/onboarding',
   ),
 
+  // Login page guards (same as welcome)
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/login'),
+      IsOnboardedCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/login'),
+      IsLoggedInCondition(),
+      NotCondition(IsOnboardedCondition()),
+    ]),
+    targetRoute: '/onboarding',
+  ),
+
   // Onboarding page guards
   // If onboarded -> dashboard
   NavigationRule(

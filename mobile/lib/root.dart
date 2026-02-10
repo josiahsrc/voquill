@@ -1,5 +1,7 @@
+import 'dart:async';
+
+import 'package:app/actions/app_actions.dart';
 import 'package:app/flavor.dart';
-import 'package:app/model/common_model.dart';
 import 'package:app/routing/build_router.dart';
 import 'package:app/routing/route_refresher.dart';
 import 'package:app/state/snackbar_state.dart';
@@ -34,17 +36,19 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   late final GoRouter goRouter;
+  late final StreamSubscription _authSubscription;
 
   @override
   void initState() {
     super.initState();
     goRouter = buildRouter(refreshListenable: context.read<RouteRefresher>());
+    _authSubscription = listenToAuthChanges();
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      produceAppState((draft) {
-        draft.status = ActionStatus.success;
-      });
-    });
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
   }
 
   @override
@@ -71,7 +75,6 @@ class _AppState extends State<App> {
     }
 
     return StoreListener([
-      // refresh routes with state changes
       useAppStore().listen((context, state) {
         context.read<RouteRefresher>().refresh();
       },
@@ -79,8 +82,6 @@ class _AppState extends State<App> {
               a.status != b.status ||
               a.auth != b.auth ||
               a.isOnboarded != b.isOnboarded),
-
-      // show snackbar messages
       useAppStore().listen((context, state) {
         if (state.snackbar.counter > 0) {
           final snackContext = scaffoldMessengerKey.currentContext;

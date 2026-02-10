@@ -1,6 +1,7 @@
 import 'package:app/model/auth_user_model.dart';
 import 'package:app/model/common_model.dart';
 import 'package:app/model/user_model.dart';
+import 'package:app/state/onboarding_state.dart';
 import 'package:app/state/snackbar_state.dart';
 import 'package:draft/draft.dart';
 import 'package:equatable/equatable.dart';
@@ -16,6 +17,7 @@ class AppState with EquatableMixin {
   final User? user;
 
   final SnackbarState snackbar;
+  final OnboardingState onboarding;
 
   const AppState({
     this.status = ActionStatus.loading,
@@ -23,11 +25,12 @@ class AppState with EquatableMixin {
     this.auth,
     this.user,
     this.snackbar = const SnackbarState(),
+    this.onboarding = const OnboardingState(),
   });
 
   bool get isLoggedIn => auth != null;
   bool get isOnboarded => user?.onboarded ?? false;
 
   @override
-  List<Object?> get props => [status, error, auth, user, snackbar];
+  List<Object?> get props => [status, error, auth, user, snackbar, onboarding];
 }
