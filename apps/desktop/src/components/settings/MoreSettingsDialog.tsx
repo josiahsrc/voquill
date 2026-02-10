@@ -59,6 +59,7 @@ export const MoreSettingsDialog = () => {
     canChangeStylingMode,
     useNewBackend,
     autoDownloadLogs,
+    isEnterprise,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
     return [
@@ -71,6 +72,7 @@ export const MoreSettingsDialog = () => {
       getAllowChangeStylingMode(state),
       prefs?.useNewBackend ?? false,
       state.settings.autoDownloadLogs,
+      state.isEnterprise,
     ] as const;
   });
 
@@ -273,19 +275,21 @@ export const MoreSettingsDialog = () => {
             />
           )}
 
-          <SettingSection
-            title={<FormattedMessage defaultMessage="Use new backend" />}
-            description={
-              <FormattedMessage defaultMessage="Use the new cloud backend for transcription and text generation. Requires cloud mode to be enabled." />
-            }
-            action={
-              <Switch
-                edge="end"
-                checked={useNewBackend}
-                onChange={handleToggleUseNewBackend}
-              />
-            }
-          />
+          {!isEnterprise && (
+            <SettingSection
+              title={<FormattedMessage defaultMessage="Use new backend" />}
+              description={
+                <FormattedMessage defaultMessage="Use the new cloud backend for transcription and text generation. Requires cloud mode to be enabled." />
+              }
+              action={
+                <Switch
+                  edge="end"
+                  checked={useNewBackend}
+                  onChange={handleToggleUseNewBackend}
+                />
+              }
+            />
+          )}
 
           <SettingSection
             title={<FormattedMessage defaultMessage="Log level" />}
