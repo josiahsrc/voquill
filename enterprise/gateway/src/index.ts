@@ -95,6 +95,7 @@ import {
 import { validateData, validateLicense } from "./utils/validation.utils";
 
 const app = express();
+app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(oidcRoutes);
