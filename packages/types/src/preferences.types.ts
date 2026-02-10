@@ -21,6 +21,8 @@ export type UserPreferences = {
   gpuEnumerationEnabled: boolean;
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
+  openclawGatewayUrl: Nullable<string>;
+  openclawToken: Nullable<string>;
   lastSeenFeature: Nullable<string>;
   preferredMicrophone: Nullable<string>;
   ignoreUpdateDialog: boolean;

@@ -25,6 +25,10 @@ pub struct UserPreferences {
     #[serde(default)]
     pub agent_mode_api_key_id: Option<String>,
     #[serde(default)]
+    pub openclaw_gateway_url: Option<String>,
+    #[serde(default)]
+    pub openclaw_token: Option<String>,
+    #[serde(default)]
     pub active_tone_id: Option<String>,
     #[serde(default)]
     pub got_started_at: Option<i64>,

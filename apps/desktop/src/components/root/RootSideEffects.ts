@@ -48,6 +48,7 @@ import { getAppState, produceAppState, useAppStore } from "../../store";
 import { AgentStrategy } from "../../strategies/agent.strategy";
 import { BaseStrategy } from "../../strategies/base.strategy";
 import { DictationStrategy } from "../../strategies/dictation.strategy";
+import { OpenClawAgentStrategy } from "../../strategies/openclaw-agent.strategy";
 import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { EnterpriseOidcPayload } from "../../types/enterprise-oidc.types";
@@ -77,6 +78,7 @@ import {
   getAdditionalLanguageEntries,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
+import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import {
@@ -85,13 +87,13 @@ import {
 } from "../../utils/time.utils";
 import { getToneIdToUse } from "../../utils/tone.utils";
 import {
+  getAgentModePrefs,
   getEffectivePillVisibility,
   getIsDictationUnlocked,
   getMyPreferredMicrophone,
   getMyPrimaryDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
-import { getLogger } from "../../utils/log.utils";
 import {
   consumeSurfaceWindowFlag,
   surfaceMainWindow,
@@ -197,10 +199,14 @@ export const RootSideEffects = () => {
 
   useAsyncEffect(async () => {
     if (keyPermAuthorized) {
-      getLogger().info("Accessibility permission authorized, starting key listener");
+      getLogger().info(
+        "Accessibility permission authorized, starting key listener",
+      );
       await invoke("start_key_listener");
     } else {
-      getLogger().info("Accessibility permission not authorized, stopping key listener");
+      getLogger().info(
+        "Accessibility permission not authorized, stopping key listener",
+      );
       await invoke("stop_key_listener");
     }
   }, [keyPermAuthorized]);
@@ -209,7 +215,9 @@ export const RootSideEffects = () => {
     getLogger().info(`Loading user data (userId=${userId ?? "none"})`);
     await Promise.allSettled([refreshMember(), refreshCurrentUser()]);
 
-    getLogger().verbose("Loading hotkeys, API keys, dictionary, tones, app targets");
+    getLogger().verbose(
+      "Loading hotkeys, API keys, dictionary, tones, app targets",
+    );
     const loaders: Promise<unknown>[] = [
       loadHotkeys(),
       loadApiKeys(),
@@ -273,10 +281,21 @@ export const RootSideEffects = () => {
     if (!strategy) {
       const mode: RecordingMode = currentMode ?? "dictate";
       getLogger().info(`Creating ${mode} strategy`);
-      strategy =
-        mode === "agent"
-          ? new AgentStrategy(strategyContext)
-          : new DictationStrategy(strategyContext);
+      if (mode === "agent") {
+        const prefs = getAgentModePrefs(getAppState());
+        getLogger().verbose(`Agent mode prefs: mode=${prefs.mode}`);
+        if (prefs.mode === "openclaw") {
+          strategy = new OpenClawAgentStrategy(
+            strategyContext,
+            prefs.gatewayUrl,
+            prefs.token,
+          );
+        } else {
+          strategy = new AgentStrategy(strategyContext);
+        }
+      } else {
+        strategy = new DictationStrategy(strategyContext);
+      }
       strategyRef.current = strategy;
     }
 
@@ -318,7 +337,9 @@ export const RootSideEffects = () => {
 
         await strategy.onBeforeStart();
 
-        getLogger().info(`Starting recording (mic=${preferredMicrophone ?? "default"})`);
+        getLogger().info(
+          `Starting recording (mic=${preferredMicrophone ?? "default"})`,
+        );
         const [, startRecordingResult] = await Promise.all([
           strategy.setPhase("recording"),
           invoke<StartRecordingResponse>("start_recording", {
@@ -444,7 +465,9 @@ export const RootSideEffects = () => {
         try {
           await startPendingRef.current;
         } catch (error) {
-          getLogger().warning(`Start recording rejected while stopping: ${error}`);
+          getLogger().warning(
+            `Start recording rejected while stopping: ${error}`,
+          );
         }
       }
 
@@ -468,7 +491,9 @@ export const RootSideEffects = () => {
 
         audio = outAudio;
         a11yInfo = outA11yInfo;
-        getLogger().verbose(`Recording stopped (hasSamples=${!!audio?.samples})`);
+        getLogger().verbose(
+          `Recording stopped (hasSamples=${!!audio?.samples})`,
+        );
       } catch (error) {
         getLogger().error(`Failed to stop recording: ${error}`);
         showErrorSnackbar("Unable to stop recording. Please try again.");
@@ -503,7 +528,9 @@ export const RootSideEffects = () => {
         });
         const rawTranscript = transcribeResult.rawTranscript;
         const processedTranscript = transcribeResult.processedTranscript;
-        getLogger().verbose(`Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${currentApp?.name ?? "unknown"}`);
+        getLogger().verbose(
+          `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${currentApp?.name ?? "unknown"}`,
+        );
 
         let transcript: string | null = null;
         let sanitizedTranscript: string | null = null;
@@ -529,7 +556,9 @@ export const RootSideEffects = () => {
           sanitizedTranscript = result.sanitizedTranscript;
           postProcessMetadata = result.postProcessMetadata;
           postProcessWarnings = result.postProcessWarnings;
-          getLogger().verbose(`Post-processing complete: transcript=${transcript ? `${transcript.length} chars` : "empty"}, warnings=${postProcessWarnings.length}`);
+          getLogger().verbose(
+            `Post-processing complete: transcript=${transcript ? `${transcript.length} chars` : "empty"}, warnings=${postProcessWarnings.length}`,
+          );
 
           if (!result.shouldContinue) {
             getLogger().verbose("Strategy complete, cleaning up");
@@ -566,7 +595,9 @@ export const RootSideEffects = () => {
           });
         }
       } else {
-        getLogger().warning(`No session or audio to process (session=${!!session}, audio=${!!audio})`);
+        getLogger().warning(
+          `No session or audio to process (session=${!!session}, audio=${!!audio})`,
+        );
       }
     } finally {
       session?.cleanup();

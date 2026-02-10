@@ -26,7 +26,7 @@ export type TranscriptionMode = "local" | "api" | "cloud";
 
 export type PostProcessingMode = "none" | "api" | "cloud";
 
-export type AgentMode = PostProcessingMode;
+export type AgentMode = PostProcessingMode | "openclaw";
 
 export type DictationPillVisibility = "hidden" | "while_active" | "persistent";
 
