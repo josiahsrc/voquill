@@ -62,19 +62,21 @@ const UserActionsMenu = ({ user }: { user: UserWithAuth }) => {
     },
   });
 
-  items.push({
-    kind: "listItem",
-    title: (
-      <Typography color="error">
-        <FormattedMessage defaultMessage="Delete user" />
-      </Typography>
-    ),
-    leading: <DeleteOutline fontSize="small" color="error" />,
-    onClick: ({ close }) => {
-      close();
-      setDeleteOpen(true);
-    },
-  });
+  if (!isSelf) {
+    items.push({
+      kind: "listItem",
+      title: (
+        <Typography color="error">
+          <FormattedMessage defaultMessage="Delete user" />
+        </Typography>
+      ),
+      leading: <DeleteOutline fontSize="small" color="error" />,
+      onClick: ({ close }) => {
+        close();
+        setDeleteOpen(true);
+      },
+    });
+  }
 
   return (
     <>

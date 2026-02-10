@@ -8,6 +8,7 @@ import type {
   SttProvider,
   Term,
   Tone,
+  User,
   UserWithAuth,
 } from "@repo/types";
 import {
@@ -38,6 +39,8 @@ export type AppState = {
   auth: Nullable<AuthContext>;
   token: Nullable<string>;
   refreshToken: Nullable<string>;
+  myUser: Nullable<User>;
+  myUserLoaded: boolean;
 
   enterpriseConfig: Nullable<EnterpriseConfig>;
   enterpriseLicense: Nullable<EnterpriseLicense>;
@@ -70,6 +73,8 @@ export const INITIAL_APP_STATE: AppState = {
   auth: null,
   token: null,
   refreshToken: null,
+  myUser: null,
+  myUserLoaded: false,
 
   enterpriseConfig: null,
   enterpriseLicense: null,

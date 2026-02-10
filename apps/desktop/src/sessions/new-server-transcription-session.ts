@@ -62,24 +62,21 @@ const startNewServerStreaming = async (
   let ws: WebSocket | null = null;
   let isFinalized = false;
   let isReady = false;
-  let receivedChunkCount = 0;
   let sentChunkCount = 0;
   const bufferedChunks: Float32Array[] = [];
 
   const unlisten = await listen<{ samples: number[] }>(
     "audio_chunk",
     (event) => {
-      receivedChunkCount++;
-      if (isFinalized) return;
+      if (isFinalized) {
+        return;
+      }
 
       const samples = new Float32Array(event.payload.samples);
 
       if (!isReady) {
         bufferedChunks.push(samples);
-        if (
-          bufferedChunks.length <= 3 ||
-          bufferedChunks.length % 10 === 0
-        ) {
+        if (bufferedChunks.length <= 3 || bufferedChunks.length % 10 === 0) {
           console.log(
             `[NewServer WebSocket] Buffered chunk #${bufferedChunks.length} (${samples.length} samples)`,
           );
@@ -123,9 +120,7 @@ const startNewServerStreaming = async (
     let finalizeRejecter: ((error: Error) => void) | null = null;
     let finalizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const finalize = (
-      options?: FinalizeOptions,
-    ): Promise<TranscriptResult> => {
+    const finalize = (options?: FinalizeOptions): Promise<TranscriptResult> => {
       return new Promise((resolveFinalize, rejectFinalize) => {
         console.log(
           "[NewServer WebSocket] Finalize called, isFinalized:",
@@ -181,9 +176,7 @@ const startNewServerStreaming = async (
     ws = new WebSocket(wsUrl);
 
     ws.onopen = async () => {
-      console.log(
-        "[NewServer WebSocket] Connected, authenticating...",
-      );
+      console.log("[NewServer WebSocket] Connected, authenticating...");
 
       try {
         const auth = getEffectiveAuth();

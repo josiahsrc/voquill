@@ -1,6 +1,7 @@
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { TranscriptionSession } from "../types/transcription-session.types";
+import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { getIsNewBackendEnabled } from "../utils/new-server.utils";
 import { TranscriptionPrefs } from "../utils/user.utils";
 import { AssemblyAITranscriptionSession } from "./assemblyai-transcription-session";
@@ -37,7 +38,11 @@ export const createTranscriptionSession = (
     }
   }
 
-  if (prefs.mode === "cloud" && getIsNewBackendEnabled()) {
+  if (
+    prefs.mode === "cloud" &&
+    getIsNewBackendEnabled() &&
+    !getIsEnterpriseEnabled()
+  ) {
     return new NewServerTranscriptionSession();
   }
 

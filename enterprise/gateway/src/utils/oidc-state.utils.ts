@@ -1,7 +1,8 @@
 import crypto from "crypto";
 
 type PendingOidcState = {
-  localPort: number;
+  localPort?: number;
+  redirectUrl?: string;
   providerId: string;
   clientState: string;
   expiresAt: number;
@@ -20,14 +21,15 @@ function cleanup(): void {
 }
 
 export function createOidcState(
-  localPort: number,
+  opts: { localPort?: number; redirectUrl?: string },
   providerId: string,
   clientState: string,
 ): string {
   cleanup();
   const serverState = crypto.randomBytes(32).toString("hex");
   pendingStates.set(serverState, {
-    localPort,
+    localPort: opts.localPort,
+    redirectUrl: opts.redirectUrl,
     providerId,
     clientState,
     expiresAt: Date.now() + TTL_MS,
@@ -37,7 +39,12 @@ export function createOidcState(
 
 export function consumeOidcState(
   serverState: string,
-): { localPort: number; providerId: string; clientState: string } | null {
+): {
+  localPort?: number;
+  redirectUrl?: string;
+  providerId: string;
+  clientState: string;
+} | null {
   cleanup();
   const entry = pendingStates.get(serverState);
   if (!entry) {
@@ -46,6 +53,7 @@ export function consumeOidcState(
   pendingStates.delete(serverState);
   return {
     localPort: entry.localPort,
+    redirectUrl: entry.redirectUrl,
     providerId: entry.providerId,
     clientState: entry.clientState,
   };

@@ -24,6 +24,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import AppLogo from "../../assets/app-logo.svg?react";
 import { getAppName } from "../../utils/env.utils";
 import HomeSideEffects from "./HomeSideEffects";
+import UserInfoDialog from "./UserInfoDialog";
 
 const SIDEBAR_WIDTH = 300;
 
@@ -73,6 +74,7 @@ export default function HomePage() {
   return (
     <Stack direction="row" sx={{ height: "100%" }}>
       <HomeSideEffects />
+      <UserInfoDialog />
       <Stack
         sx={{
           width: SIDEBAR_WIDTH,
