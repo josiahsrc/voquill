@@ -1,3 +1,4 @@
+import 'package:app/widgets/history/history_page.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -5,9 +6,17 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home Page')),
-      body: Center(child: Text('Home Page')),
+    return Center(
+      child: ListTile(
+        leading: const Icon(Icons.history),
+        title: const Text('History'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const HistoryPage()),
+          );
+        },
+      ),
     );
   }
 }
