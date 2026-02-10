@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "777461284594",
     "firebase_url": "https://voquill-prod-default-rtdb.firebaseio.com",
-    "project_id": "voquill-prod",
+    "project_id": "voquill-dev",
     "storage_bucket": "voquill-prod.firebasestorage.app"
   },
   "client": [
@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:777461284594:android:9e32e369256288995e5a6b",
         "android_client_info": {
-          "package_name": "com.voquill.app"
+          "package_name": "com.voquill.app.emulators"
         }
       },
       "oauth_client": [

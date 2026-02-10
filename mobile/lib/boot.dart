@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:app/firebase_options.dart';
 import 'package:app/root.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/version.dart';
@@ -12,8 +11,8 @@ import 'package:logger/logger.dart';
 
 import 'flavor.dart';
 
-Future<void> main() async {
-  Flavor.load();
+Future<void> boot(Flavor flavor, FirebaseOptions firebaseOptions) async {
+  Flavor.set(flavor);
   Version.load();
 
   if (Flavor.current.isProd) {
@@ -29,10 +28,10 @@ Future<void> main() async {
       WidgetsFlutterBinding.ensureInitialized();
 
       await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
+        options: firebaseOptions,
       );
 
-      if (Flavor.current.isEmulator) {
+      if (Flavor.current.isEmulators) {
         final host = Flavor.current.emulatorHost;
         await FirebaseAuth.instance.useAuthEmulator(host, 9099);
         FirebaseFunctions.instance.useFunctionsEmulator(host, 5001);

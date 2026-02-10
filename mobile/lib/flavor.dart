@@ -1,29 +1,34 @@
 import 'dart:io' show Platform;
 
-import 'package:collection/collection.dart';
 import 'package:flutter/services.dart';
 
 enum Flavor {
   prod,
-  emulator;
+  dev,
+  emulators;
 
   static late Flavor current;
 
   bool get isProd => this == Flavor.prod;
-  bool get isEmulator => this == Flavor.emulator;
+  bool get isDev => this == Flavor.dev;
+  bool get isEmulators => this == Flavor.emulators;
 
   String get title {
     switch (this) {
       case Flavor.prod:
         return 'Voquill';
-      case Flavor.emulator:
+      case Flavor.dev:
+        return 'Voquill Dev';
+      case Flavor.emulators:
         return 'Voquill Emulator';
     }
   }
 
   Color? get color {
     switch (this) {
-      case Flavor.emulator:
+      case Flavor.dev:
+        return const Color.fromARGB(255, 66, 133, 244);
+      case Flavor.emulators:
         return const Color.fromARGB(255, 177, 90, 183);
       default:
         return null;
@@ -34,7 +39,9 @@ enum Flavor {
     switch (this) {
       case Flavor.prod:
         return 'prod';
-      case Flavor.emulator:
+      case Flavor.dev:
+        return 'dev';
+      case Flavor.emulators:
         return 'emu';
     }
   }
@@ -44,16 +51,7 @@ enum Flavor {
   String get termsUrl => 'https://voquill.com/terms';
   String get privacyUrl => 'https://voquill.com/privacy';
 
-  static void load() {
-    final flavorOpt = Flavor.values.firstWhereOrNull(
-      (element) => element.name == appFlavor,
-    );
-
-    const flavorEnvRaw = String.fromEnvironment('FLAVOR');
-    final flavorEnv = Flavor.values.firstWhereOrNull(
-      (element) => element.name == flavorEnvRaw,
-    );
-
-    current = flavorOpt ?? flavorEnv ?? Flavor.prod;
+  static void set(Flavor value) {
+    current = value;
   }
 }
