@@ -9,10 +9,7 @@ import {
 } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { type AgentMode } from "../../types/ai.types";
-import {
-  getAllowsChangeAgentMode,
-  getIsEnterpriseEnabled,
-} from "../../utils/enterprise.utils";
+import { getAllowsChangeAgentMode } from "../../utils/enterprise.utils";
 import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
 import {
   SegmentedControl,
@@ -31,7 +28,7 @@ export const AIAgentModeConfiguration = ({
 }: AIAgentModeConfigurationProps) => {
   const agentMode = useAppStore((state) => state.settings.agentMode);
   const allowChange = useAppStore(getAllowsChangeAgentMode);
-  const isEnterprise = getIsEnterpriseEnabled();
+  const isEnterprise = useAppStore((state) => state.isEnterprise);
   const intl = useIntl();
 
   const handleModeChange = useCallback((mode: AgentMode) => {
