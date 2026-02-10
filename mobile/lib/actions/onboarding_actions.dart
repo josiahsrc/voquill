@@ -1,6 +1,7 @@
 import 'package:app/actions/app_actions.dart';
 import 'package:app/api/user_api.dart';
 import 'package:app/model/firebase_model.dart';
+import 'package:app/model/user_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/log_utils.dart';
 
@@ -26,7 +27,11 @@ void setOnboardingCompany(String value) {
 
 Future<void> finishOnboarding() async {
   final state = getAppState();
-  if (state.auth == null) return;
+
+  final auth = state.auth;
+  if (auth == null) {
+    return;
+  }
 
   produceAppState((draft) {
     draft.onboarding.submitting = true;
@@ -38,18 +43,28 @@ Future<void> finishOnboarding() async {
     final now = DateTime.now().toUtc().toIso8601String();
     final name = state.onboarding.name.isEmpty ? 'User' : state.onboarding.name;
 
-    await SetMyUserApi().call(SetMyUserInput(
-      value: {
-        'name': name,
-        if (state.onboarding.title.isNotEmpty) 'title': state.onboarding.title,
-        if (state.onboarding.company.isNotEmpty)
-          'company': state.onboarding.company,
-        'onboarded': true,
-        'onboardedAt': now,
-        'hasFinishedTutorial': true,
-        'playInteractionChime': true,
-      },
-    ));
+    await SetMyUserApi().call(
+      SetMyUserInput(
+        value: User(
+          id: auth.uid,
+          createdAt: now,
+          updatedAt: now,
+          name: name,
+          title: state.onboarding.title.isNotEmpty
+              ? state.onboarding.title
+              : null,
+          company: state.onboarding.company.isNotEmpty
+              ? state.onboarding.company
+              : null,
+          onboarded: true,
+          onboardedAt: now,
+          hasFinishedTutorial: true,
+          playInteractionChime: true,
+          wordsThisMonth: 0,
+          wordsTotal: 0,
+        ),
+      ),
+    );
 
     final output = await GetMyUserApi().call(null);
     produceAppState((draft) {

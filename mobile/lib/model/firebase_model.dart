@@ -139,7 +139,7 @@ class GenerateTextOutput {
 
 @JsonSerializable()
 class SetMyUserInput {
-  final Map<String, dynamic> value;
+  final User value;
 
   const SetMyUserInput({required this.value});
 
