@@ -8,6 +8,7 @@ import {
   Hotkey,
   Member,
   Nullable,
+  OidcProvider,
   Term,
   Tone,
   Transcription,
@@ -72,6 +73,7 @@ export type AppState = {
   enterpriseConfig: Nullable<EnterpriseConfig>;
   enterpriseLicense: Nullable<EnterpriseLicense>;
   isEnterprise: boolean;
+  oidcProviders: OidcProvider[];
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
@@ -105,6 +107,7 @@ export const INITIAL_APP_STATE: AppState = {
   enterpriseConfig: null,
   enterpriseLicense: null,
   isEnterprise: false,
+  oidcProviders: [],
   memberById: {},
   userById: {},
   termById: {},

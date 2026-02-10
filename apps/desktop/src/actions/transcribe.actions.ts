@@ -105,7 +105,9 @@ export const transcribeAudio = async ({
   const whisperLanguage =
     mapDictationLanguageToWhisperLanguage(dictationLanguage);
 
-  getLogger().verbose(`Transcribing audio: language=${dictationLanguage}, whisper=${whisperLanguage}, sampleRate=${sampleRate}`);
+  getLogger().verbose(
+    `Transcribing audio: language=${dictationLanguage}, whisper=${whisperLanguage}, sampleRate=${sampleRate}`,
+  );
 
   const dictionaryEntries = collectDictionaryEntries(state);
   const baseTranscriptionPrompt = buildLocalizedTranscriptionPrompt({
@@ -128,7 +130,9 @@ export const transcribeAudio = async ({
     return baseTranscriptionPrompt;
   })();
 
-  getLogger().verbose(`Transcription prompt: ${transcriptionPrompt.length} chars, apiKeyId=${transcriptionApiKeyId ?? "none"}`);
+  getLogger().verbose(
+    `Transcription prompt: ${transcriptionPrompt.length} chars, apiKeyId=${transcriptionApiKeyId ?? "none"}`,
+  );
 
   const transcribeStart = performance.now();
   const transcribeOutput = await transcribeRepo.transcribeAudio({
@@ -140,7 +144,9 @@ export const transcribeAudio = async ({
   const transcribeDuration = performance.now() - transcribeStart;
   const rawTranscript = transcribeOutput.text.trim();
 
-  getLogger().info(`Transcription complete in ${Math.round(transcribeDuration)}ms (${rawTranscript.length} chars, mode=${transcribeOutput.metadata?.transcriptionMode ?? "unknown"})`);
+  getLogger().info(
+    `Transcription complete in ${Math.round(transcribeDuration)}ms (${rawTranscript.length} chars, mode=${transcribeOutput.metadata?.transcriptionMode ?? "unknown"})`,
+  );
 
   metadata.modelSize = state.settings.aiTranscription.modelSize || null;
   metadata.inferenceDevice = transcribeOutput.metadata?.inferenceDevice || null;
@@ -182,15 +188,26 @@ export const postProcessTranscript = async ({
   warnings.push(...genWarnings);
 
   const tone = getToneById(state, toneId);
+  const toneProcessingDisabled = tone?.shouldDisablePostProcessing ?? false;
+  const enterpriseProcessingDisabled =
+    state.enterpriseConfig?.allowPostProcessing === false;
+
   let processedTranscript = rawTranscript;
-  if (tone?.shouldDisablePostProcessing) {
+  if (toneProcessingDisabled || enterpriseProcessingDisabled) {
     getLogger().info(`Post-processing disabled for tone=${toneId}`);
     metadata.postProcessMode = "none";
   } else if (genRepo) {
-    getLogger().verbose(`Post-processing with tone=${toneId ?? "default"}, apiKeyId=${genApiKeyId ?? "none"}`);
+    getLogger().verbose(
+      `Post-processing with tone=${toneId ?? "default"}, apiKeyId=${genApiKeyId ?? "none"}`,
+    );
     const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
     const toneTemplate = getToneTemplateWithFallback(state, toneId);
-    getLogger().verbose("Post-process language:", dictationLanguage, "toneName:", tone?.name ?? "unknown");
+    getLogger().verbose(
+      "Post-process language:",
+      dictationLanguage,
+      "toneName:",
+      tone?.name ?? "unknown",
+    );
 
     const ppSystem = buildSystemPostProcessingTonePrompt();
     const ppPrompt = buildPostProcessingPrompt({
@@ -199,7 +216,12 @@ export const postProcessTranscript = async ({
       dictationLanguage,
       toneTemplate,
     });
-    getLogger().verbose("Post-process prompt length:", ppPrompt.length, "system length:", ppSystem.length);
+    getLogger().verbose(
+      "Post-process prompt length:",
+      ppPrompt.length,
+      "system length:",
+      ppSystem.length,
+    );
 
     const postprocessStart = performance.now();
     getLogger().verbose("Calling LLM for post-processing");
@@ -215,7 +237,9 @@ export const postProcessTranscript = async ({
     const postprocessDuration = performance.now() - postprocessStart;
     metadata.postprocessDurationMs = Math.round(postprocessDuration);
 
-    getLogger().info(`Post-processing complete in ${Math.round(postprocessDuration)}ms`);
+    getLogger().info(
+      `Post-processing complete in ${Math.round(postprocessDuration)}ms`,
+    );
     getLogger().verbose("LLM raw output:", genOutput.text);
 
     try {
@@ -226,7 +250,10 @@ export const postProcessTranscript = async ({
 
       const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(parsed);
       if (!validationResult.success) {
-        getLogger().warning("Post-processing validation failed:", validationResult.error.message);
+        getLogger().warning(
+          "Post-processing validation failed:",
+          validationResult.error.message,
+        );
         warnings.push(
           `Post-processing response validation failed: ${validationResult.error.message}\n\nResponse was: ${genOutput.text}`,
         );
@@ -246,7 +273,12 @@ export const postProcessTranscript = async ({
     metadata.postProcessApiKeyId = genApiKeyId;
     metadata.postProcessMode = genOutput.metadata?.postProcessingMode || null;
     metadata.postProcessDevice = genOutput.metadata?.inferenceDevice || null;
-    getLogger().verbose("Post-process mode:", metadata.postProcessMode, "device:", metadata.postProcessDevice);
+    getLogger().verbose(
+      "Post-process mode:",
+      metadata.postProcessMode,
+      "device:",
+      metadata.postProcessDevice,
+    );
   } else {
     getLogger().info("No post-processing repo configured, skipping");
     metadata.postProcessMode = "none";
@@ -306,7 +338,9 @@ export const storeTranscription = async (
   }
 
   if (rate <= 0 || sampleCount === 0) {
-    getLogger().warning(`Skipping store: rate=${rate}, sampleCount=${sampleCount}`);
+    getLogger().warning(
+      `Skipping store: rate=${rate}, sampleCount=${sampleCount}`,
+    );
     return { transcription: null, wordCount: 0 };
   }
 
@@ -316,7 +350,9 @@ export const storeTranscription = async (
   const wordsAdded = input.transcript ? countWords(input.transcript) : 0;
 
   if (incognitoEnabled) {
-    getLogger().verbose(`Incognito mode: skipping storage (includeInStats=${includeInStats}, words=${wordsAdded})`);
+    getLogger().verbose(
+      `Incognito mode: skipping storage (includeInStats=${includeInStats}, words=${wordsAdded})`,
+    );
     if (wordsAdded > 0 && includeInStats) {
       try {
         await addWordsToCurrentUser(wordsAdded);

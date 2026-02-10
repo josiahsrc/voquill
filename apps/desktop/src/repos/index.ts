@@ -172,7 +172,7 @@ const getGenTextRepoInternal = ({
     getLogger().verbose("Using cloud generate text repo with model");
     let repo: BaseGenerateTextRepo;
     if (getIsEnterpriseEnabled()) {
-      repo = new EnterpriseGenerateTextRepo();
+      repo = new EnterpriseGenerateTextRepo(cloudModel);
     } else if (getIsNewBackendEnabled()) {
       repo = new NewServerGenerateTextRepo();
     } else {
@@ -292,7 +292,7 @@ const getGenTextRepoInternal = ({
 export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getGenerativePrefs(state);
-  return getGenTextRepoInternal({ prefs, cloudModel: "large" });
+  return getGenTextRepoInternal({ prefs, cloudModel: "medium" });
 };
 
 export const getAgentRepo = (): GenerateTextRepoOutput => {

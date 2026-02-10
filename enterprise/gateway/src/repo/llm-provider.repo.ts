@@ -10,7 +10,7 @@ function rowToLlmProvider(row: LlmProviderRow): LlmProvider {
     url: row.url,
     apiKeySuffix: row.api_key_suffix,
     model: row.model,
-    isEnabled: row.is_enabled,
+    tier: row.tier,
     pullStatus: row.pull_status as LlmProvider["pullStatus"],
     pullError: row.pull_error,
     createdAt: row.created_at.toISOString(),
@@ -33,7 +33,7 @@ export async function upsertLlmProvider(opts: {
   apiKeyEncrypted?: string;
   apiKeySuffix?: string;
   model: string;
-  isEnabled: boolean;
+  tier: number;
 }): Promise<void> {
   const pool = getPool();
   const existing = await pool.query(
@@ -43,7 +43,7 @@ export async function upsertLlmProvider(opts: {
 
   if (existing.rows.length === 0) {
     await pool.query(
-      `INSERT INTO llm_providers (id, provider, name, url, api_key_encrypted, api_key_suffix, model, is_enabled)
+      `INSERT INTO llm_providers (id, provider, name, url, api_key_encrypted, api_key_suffix, model, tier)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         opts.id,
@@ -53,12 +53,12 @@ export async function upsertLlmProvider(opts: {
         opts.apiKeyEncrypted ?? "",
         opts.apiKeySuffix ?? "",
         opts.model,
-        opts.isEnabled,
+        opts.tier,
       ],
     );
   } else if (opts.apiKeyEncrypted) {
     await pool.query(
-      `UPDATE llm_providers SET provider = $1, name = $2, url = $3, api_key_encrypted = $4, api_key_suffix = $5, model = $6, is_enabled = $7
+      `UPDATE llm_providers SET provider = $1, name = $2, url = $3, api_key_encrypted = $4, api_key_suffix = $5, model = $6, tier = $7
        WHERE id = $8`,
       [
         opts.provider,
@@ -67,23 +67,23 @@ export async function upsertLlmProvider(opts: {
         opts.apiKeyEncrypted,
         opts.apiKeySuffix,
         opts.model,
-        opts.isEnabled,
+        opts.tier,
         opts.id,
       ],
     );
   } else {
     await pool.query(
-      `UPDATE llm_providers SET provider = $1, name = $2, url = $3, model = $4, is_enabled = $5
+      `UPDATE llm_providers SET provider = $1, name = $2, url = $3, model = $4, tier = $5
        WHERE id = $6`,
-      [opts.provider, opts.name, opts.url, opts.model, opts.isEnabled, opts.id],
+      [opts.provider, opts.name, opts.url, opts.model, opts.tier, opts.id],
     );
   }
 }
 
-export async function listEnabledLlmProvidersWithKeys(): Promise<LlmProviderRow[]> {
+export async function listActiveLlmProvidersWithKeys(): Promise<LlmProviderRow[]> {
   const pool = getPool();
   const result = await pool.query(
-    "SELECT * FROM llm_providers WHERE is_enabled = true ORDER BY created_at",
+    "SELECT * FROM llm_providers WHERE tier > 0 ORDER BY tier, created_at",
   );
   return result.rows;
 }

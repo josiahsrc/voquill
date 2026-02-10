@@ -63,6 +63,15 @@ export default defineConfig({
 							],
 						},
 						{
+							label: 'SSO',
+							collapsed: true,
+							items: [
+								{ label: 'Overview', slug: 'enterprise/sso/overview' },
+								{ label: 'Azure Entra ID', slug: 'enterprise/sso/azure-entra-id' },
+								{ label: 'Keycloak', slug: 'enterprise/sso/keycloak' },
+							],
+						},
+						{
 							label: 'Deployment',
 							collapsed: true,
 							items: [

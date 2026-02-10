@@ -2,6 +2,7 @@ import {
   loadLlmProviders,
   pullLlmProvider,
 } from "../../actions/llm-providers.actions";
+import { loadOidcProviders } from "../../actions/oidc-providers.actions";
 import { loadSettings } from "../../actions/settings.actions";
 import {
   loadSttProviders,
@@ -16,7 +17,11 @@ const FIVE_MINUTES = 1000 * 60 * 5;
 
 export default function HomeSideEffects() {
   useIntervalAsync(FIVE_MINUTES, async () => {
-    await Promise.allSettled([loadSttProviders(), loadLlmProviders()]);
+    await Promise.allSettled([
+      loadSttProviders(),
+      loadLlmProviders(),
+      loadOidcProviders(),
+    ]);
   }, []);
 
   useIntervalAsync(TEN_SECONDS, async () => {

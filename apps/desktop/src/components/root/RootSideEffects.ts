@@ -12,7 +12,10 @@ import {
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
 import { loadHotkeys } from "../../actions/hotkey.actions";
-import { handleGoogleAuthPayload } from "../../actions/login.actions";
+import {
+  handleEnterpriseOidcPayload,
+  handleGoogleAuthPayload,
+} from "../../actions/login.actions";
 import { refreshMember } from "../../actions/member.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
@@ -47,6 +50,8 @@ import { BaseStrategy } from "../../strategies/base.strategy";
 import { DictationStrategy } from "../../strategies/dictation.strategy";
 import type { TextFieldInfo } from "../../types/accessibility.types";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
+import type { EnterpriseOidcPayload } from "../../types/enterprise-oidc.types";
+import { ENTERPRISE_OIDC_EVENT } from "../../types/enterprise-oidc.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
 import type { OverlayPhase } from "../../types/overlay.types";
@@ -715,6 +720,10 @@ export const RootSideEffects = () => {
 
   useTauriListen<GoogleAuthPayload>(GOOGLE_AUTH_EVENT, (payload) =>
     handleGoogleAuthPayload(payload),
+  );
+
+  useTauriListen<EnterpriseOidcPayload>(ENTERPRISE_OIDC_EVENT, (payload) =>
+    handleEnterpriseOidcPayload(payload),
   );
 
   useTauriListen<{ action: string }>("toast-action", async (payload) => {

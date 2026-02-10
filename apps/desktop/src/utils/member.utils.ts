@@ -1,5 +1,9 @@
 import { Member, Nullable } from "@repo/types";
-import { getMemberExceedsLimits, getRec } from "@repo/utilities";
+import {
+  getMemberExceedsLimits,
+  getRec,
+  TRIAL_DURATION_DAYS,
+} from "@repo/utilities";
 import { getIntl } from "../i18n";
 import type { AppState } from "../state/app.state";
 import { EffectivePlan } from "../types/member.types";
@@ -27,13 +31,48 @@ export const planToDisplayName = (plan: EffectivePlan): string => {
   }
 };
 
-export const getIsPaying = (state: AppState): boolean => {
+export const getIsOnTrial = (state: AppState): boolean => {
+  const member = getMyMember(state);
+  return member?.isOnTrial === true;
+};
+
+const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000;
+
+export const getTrialDaysRemaining = (state: AppState): number | null => {
+  const member = getMyMember(state);
+  if (!member?.isOnTrial || !member.trialEndsAt) {
+    return null;
+  }
+
+  const now = Date.now();
+  const endsAt = new Date(member.trialEndsAt).getTime();
+  const msRemaining = endsAt - now;
+  return Math.max(0, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+};
+
+export const getTrialProgress = (state: AppState): number | null => {
+  const member = getMyMember(state);
+  if (!member?.isOnTrial || !member.trialEndsAt) {
+    return null;
+  }
+
+  const now = Date.now();
+  const endsAt = new Date(member.trialEndsAt).getTime();
+  const msRemaining = endsAt - now;
+  return Math.max(0, Math.min(1, msRemaining / TRIAL_DURATION_MS));
+};
+
+export const getIsPro = (state: AppState): boolean => {
   const member = getMyMember(state);
   if (!member) {
     return false;
   }
 
   return member.plan !== "free";
+};
+
+export const getIsPaidSubscriber = (state: AppState): boolean => {
+  return getIsPro(state) && !getIsOnTrial(state);
 };
 
 export const getMemberExceedsLimitByState = (state: AppState): boolean => {

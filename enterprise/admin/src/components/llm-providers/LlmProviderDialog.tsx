@@ -5,9 +5,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   MenuItem,
-  Switch,
   TextField,
 } from "@mui/material";
 import type { LlmProvider } from "@repo/types";
@@ -34,7 +32,7 @@ export type LlmProviderFormState = {
   url: string;
   apiKey: string;
   model: string;
-  isEnabled: boolean;
+  tier: number;
 };
 
 const EMPTY_FORM: LlmProviderFormState = {
@@ -44,7 +42,7 @@ const EMPTY_FORM: LlmProviderFormState = {
   url: "",
   apiKey: "",
   model: "",
-  isEnabled: true,
+  tier: 2,
 };
 
 export function emptyForm(): LlmProviderFormState {
@@ -59,7 +57,7 @@ export function formFromProvider(p: LlmProvider): LlmProviderFormState {
     url: p.url,
     apiKey: "",
     model: p.model,
-    isEnabled: p.isEnabled,
+    tier: p.tier,
   };
 }
 
@@ -93,7 +91,7 @@ export const LlmProviderDialog = ({
         url: form.url,
         apiKey: form.apiKey,
         model: form.model,
-        isEnabled: form.isEnabled,
+        tier: form.tier,
       });
       onClose();
     } finally {
@@ -172,17 +170,26 @@ export const LlmProviderDialog = ({
           onChange={(value) => onFormChange({ ...form, model: value })}
           options={models}
         />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={form.isEnabled}
-              onChange={(e) =>
-                onFormChange({ ...form, isEnabled: e.target.checked })
-              }
-            />
+        <TextField
+          label={intl.formatMessage({ defaultMessage: "Level" })}
+          fullWidth
+          size="small"
+          select
+          value={form.tier}
+          onChange={(e) =>
+            onFormChange({ ...form, tier: Number(e.target.value) })
           }
-          label={<FormattedMessage defaultMessage="Enabled" />}
-        />
+        >
+          <MenuItem value={0}>
+            {intl.formatMessage({ defaultMessage: "Disabled" })}
+          </MenuItem>
+          <MenuItem value={2}>
+            {intl.formatMessage({ defaultMessage: "Medium (Dictation)" })}
+          </MenuItem>
+          <MenuItem value={3}>
+            {intl.formatMessage({ defaultMessage: "High (Agent Mode)" })}
+          </MenuItem>
+        </TextField>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>

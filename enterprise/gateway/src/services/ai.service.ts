@@ -1,8 +1,9 @@
-import type { HandlerInput, HandlerOutput } from "@repo/functions";
+import type { CloudModel, HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
 import { retry } from "@repo/utilities";
-import { listEnabledLlmProvidersWithKeys } from "../repo/llm-provider.repo";
-import { listEnabledSttProvidersWithKeys } from "../repo/stt-provider.repo";
+import { listActiveLlmProvidersWithKeys } from "../repo/llm-provider.repo";
+import { listActiveSttProvidersWithKeys } from "../repo/stt-provider.repo";
+import type { LlmProviderRow } from "../types/llm-provider.types";
 import { requireAuth } from "../utils/auth.utils";
 import { ClientError } from "../utils/error.utils";
 import { createLlmApi } from "../utils/llm-provider.utils";
@@ -24,6 +25,31 @@ const MIME_TO_EXT: Record<string, string> = {
 
 let llmIndex = 0;
 let sttIndex = 0;
+
+const CLOUD_MODEL_MIN_TIER: Record<CloudModel, number> = {
+  low: 1,
+  medium: 2,
+  large: 3,
+};
+
+export function selectLlmProvider(
+  providers: LlmProviderRow[],
+  model: CloudModel,
+  index: number,
+): LlmProviderRow {
+  const minTier = CLOUD_MODEL_MIN_TIER[model];
+  const eligible = providers.filter((p) => p.tier >= minTier);
+
+  if (eligible.length === 0) {
+    throw new Error(
+      `No LLM providers configured for tier >= ${minTier} (model: ${model})`,
+    );
+  }
+
+  const lowestTier = eligible[0].tier;
+  const group = eligible.filter((p) => p.tier === lowestTier);
+  return group[index % group.length];
+}
 
 export async function transcribeAudio(opts: {
   auth: Nullable<AuthContext>;
@@ -51,9 +77,9 @@ export async function transcribeAudio(opts: {
     return { text: "Simulated response" };
   }
 
-  const providers = await listEnabledSttProvidersWithKeys();
+  const providers = await listActiveSttProvidersWithKeys();
   if (providers.length === 0) {
-    throw new Error("No enabled STT providers configured");
+    throw new Error("No active STT providers configured");
   }
 
   const provider = providers[sttIndex % providers.length];
@@ -85,12 +111,9 @@ export async function generateText(opts: {
     return { text: "Simulated generated text." };
   }
 
-  const providers = await listEnabledLlmProvidersWithKeys();
-  if (providers.length === 0) {
-    throw new Error("No enabled LLM providers configured");
-  }
-
-  const provider = providers[llmIndex % providers.length];
+  const allProviders = await listActiveLlmProvidersWithKeys();
+  const model: CloudModel = input.model ?? "medium";
+  const provider = selectLlmProvider(allProviders, model, llmIndex);
   llmIndex++;
 
   const llmApi = createLlmApi(provider);

@@ -32,6 +32,7 @@ import { CURRENT_COHORT } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import {
   getEnterpriseTarget,
+  invokeEnterprise,
   loadEnterpriseTarget,
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
@@ -65,6 +66,9 @@ export const AppSideEffects = () => {
   const tokensRefreshedRef = useRef(false);
   const authReadyRef = useRef(false);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const allowDevTools = useAppStore(
+    (state) => state.enterpriseConfig?.allowDevTools ?? true,
+  );
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
   const member = useAppStore((state) => {
@@ -89,6 +93,16 @@ export const AppSideEffects = () => {
       draft.initialized = false;
     });
   };
+
+  useEffect(() => {
+    if (allowDevTools) {
+      return;
+    }
+
+    const handler = (e: MouseEvent) => e.preventDefault();
+    document.addEventListener("contextmenu", handler);
+    return () => document.removeEventListener("contextmenu", handler);
+  }, [isEnterprise, allowDevTools]);
 
   useEffect(() => {
     authReadyRef.current = false;
@@ -149,10 +163,17 @@ export const AppSideEffects = () => {
       });
     }
 
+    const oidcProviders = isEnterprise
+      ? await invokeEnterprise("oidcProvider/listEnabled", {})
+          .then((res) => res.providers)
+          .catch(() => [])
+      : [];
+
     produceAppState((draft) => {
       draft.enterpriseConfig = config;
       draft.enterpriseLicense = license;
       draft.isEnterprise = isEnterprise;
+      draft.oidcProviders = oidcProviders;
     });
 
     if (!tokensRefreshedRef.current) {
@@ -310,6 +331,8 @@ export const AppSideEffects = () => {
       activeSystemCohort: CURRENT_COHORT,
       daysSinceOnboarded,
       pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
+      company: cloudUser?.company ?? undefined,
+      title: cloudUser?.title ?? undefined,
     });
 
     mixpanel.register({

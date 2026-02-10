@@ -4,6 +4,7 @@ import type {
   EnterpriseLicense,
   LlmProvider,
   Nullable,
+  OidcProvider,
   SttProvider,
   Term,
   Tone,
@@ -18,6 +19,10 @@ import {
   INITIAL_SETTINGS_STATE,
   type SettingsState,
 } from "./settings.state";
+import {
+  INITIAL_OIDC_PROVIDERS_STATE,
+  type OidcProvidersState,
+} from "./oidc-providers.state";
 import {
   INITIAL_STT_PROVIDERS_STATE,
   type SttProvidersState,
@@ -42,6 +47,7 @@ export type AppState = {
   userWithAuthById: Record<string, UserWithAuth>;
   sttProviderById: Record<string, SttProvider>;
   llmProviderById: Record<string, LlmProvider>;
+  oidcProviderById: Record<string, OidcProvider>;
 
   login: LoginState;
   terms: TermsState;
@@ -50,6 +56,7 @@ export type AppState = {
   settings: SettingsState;
   sttProviders: SttProvidersState;
   llmProviders: LlmProvidersState;
+  oidcProviders: OidcProvidersState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -72,6 +79,7 @@ export const INITIAL_APP_STATE: AppState = {
   userWithAuthById: {},
   sttProviderById: {},
   llmProviderById: {},
+  oidcProviderById: {},
 
   login: INITIAL_LOGIN_STATE,
   settings: INITIAL_SETTINGS_STATE,
@@ -80,6 +88,7 @@ export const INITIAL_APP_STATE: AppState = {
   users: INITIAL_USERS_STATE,
   sttProviders: INITIAL_STT_PROVIDERS_STATE,
   llmProviders: INITIAL_LLM_PROVIDERS_STATE,
+  oidcProviders: INITIAL_OIDC_PROVIDERS_STATE,
 
   snackbarCounter: 0,
   snackbarMode: "info",

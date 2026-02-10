@@ -1,4 +1,4 @@
-import type { LlmProvider, SttProvider, Term, Tone, UserWithAuth } from "@repo/types";
+import type { LlmProvider, OidcProvider, SttProvider, Term, Tone, UserWithAuth } from "@repo/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {
@@ -52,5 +52,14 @@ export const registerLlmProviders = (
 ): void => {
   for (const provider of providers) {
     draft.llmProviderById[provider.id] = provider;
+  }
+};
+
+export const registerOidcProviders = (
+  draft: AppState,
+  providers: OidcProvider[],
+): void => {
+  for (const provider of providers) {
+    draft.oidcProviderById[provider.id] = provider;
   }
 };

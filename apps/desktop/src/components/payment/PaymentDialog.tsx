@@ -43,9 +43,8 @@ export const PaymentDialog = () => {
           throw new Error("member not found after payment");
         }
 
-        const plan = member.plan;
-        if (plan === "free") {
-          throw new Error("member plan not updated yet");
+        if (member.plan === "free" || member.isOnTrial) {
+          throw new Error("member not updated yet");
         }
 
         produceAppState((draft) => {

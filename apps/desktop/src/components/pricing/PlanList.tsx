@@ -14,7 +14,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { loadPrices } from "../../actions/pricing.actions";
 import { useOnEnter } from "../../hooks/helper.hooks";
 import { useAppStore } from "../../store";
-import { getEffectivePlan } from "../../utils/member.utils";
+import { getEffectivePlan, getIsOnTrial } from "../../utils/member.utils";
 import { getDollarPriceFromKey, PricingPlan } from "../../utils/price.utils";
 
 type CheckmarkRowProps = {
@@ -186,6 +186,7 @@ export const PlanList = ({
 }: PlanListProps) => {
   const intl = useIntl();
   const effectivePlan = useAppStore(getEffectivePlan);
+  const isOnTrial = useAppStore(getIsOnTrial);
   const [isYearly, setIsYearly] = useState(true);
 
   const proMonthlyPrice = useAppStore((state) =>
@@ -209,7 +210,8 @@ export const PlanList = ({
   });
 
   const getText = (plan: MemberPlan) => {
-    if (effectivePlan === plan && !ignoreCurrentPlan) {
+    const currentPlan = isOnTrial ? "free" : effectivePlan;
+    if (currentPlan === plan && !ignoreCurrentPlan) {
       return {
         text: intl.formatMessage({ defaultMessage: "Current plan" }),
         disabled: true,

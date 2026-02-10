@@ -52,6 +52,10 @@ export async function login(
     throw new UnauthorizedError("Invalid email or password");
   }
 
+  if (!row.password_hash) {
+    throw new ClientError("This account uses SSO. Please sign in with your identity provider.");
+  }
+
   const isValid = await bcrypt.compare(input.password, row.password_hash);
   if (!isValid) {
     throw new UnauthorizedError("Invalid email or password");
