@@ -68,7 +68,7 @@ class SettingsPage extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: Theming.padding.onlyHorizontal().withTop(16),
+            padding: Theming.padding.onlyHorizontal().withTop(32),
             child: ListTileSection(
               title: const Text('General'),
               children: [
@@ -84,7 +84,7 @@ class SettingsPage extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: Theming.padding.onlyHorizontal().withTop(16),
+            padding: Theming.padding.onlyHorizontal().withTop(32),
             child: ListTileSection(
               title: const Text('Processing'),
               children: [
@@ -112,7 +112,7 @@ class SettingsPage extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: Theming.padding.onlyHorizontal().withTop(16),
+            padding: Theming.padding.onlyHorizontal().withTop(32),
             child: ListTileSection(
               title: const Text('Advanced'),
               children: [
@@ -147,7 +147,7 @@ class SettingsPage extends StatelessWidget {
           child: Padding(
             padding: Theming.padding
                 .onlyHorizontal()
-                .withTop(16)
+                .withTop(32)
                 .withBottom(32),
             child: ListTileSection(
               children: [
