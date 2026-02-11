@@ -1,8 +1,10 @@
 import 'package:app/actions/snackbar_actions.dart';
 import 'package:app/api/tone_api.dart';
+import 'package:app/api/user_api.dart';
 import 'package:app/model/common_model.dart';
 import 'package:app/model/firebase_model.dart';
 import 'package:app/model/tone_model.dart';
+import 'package:app/model/user_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/app_utils.dart';
 import 'package:app/utils/log_utils.dart';
@@ -10,6 +12,14 @@ import 'package:app/utils/tone_utils.dart';
 import 'package:uuid/uuid.dart';
 
 final _logger = createNamedLogger('styles_actions');
+
+Future<void> _saveUser(User user) async {
+  await SetMyUserApi().call(SetMyUserInput(value: user));
+}
+
+User _currentUser() => getAppState().user!;
+
+String _now() => DateTime.now().toUtc().toIso8601String();
 
 Future<void> loadStyles() async {
   produceAppState((draft) {
@@ -24,7 +34,6 @@ Future<void> loadStyles() async {
     produceAppState((draft) {
       registerTones(draft, allTones);
       draft.styles.toneIds = sorted.map((t) => t.id).toList();
-      draft.styles.selectedToneId ??= defaultToneId;
       draft.styles.status = ActionStatus.success;
     });
   } catch (e) {
@@ -36,10 +45,48 @@ Future<void> loadStyles() async {
   }
 }
 
-void selectTone(String toneId) {
+Future<void> selectTone(String toneId) async {
+  final previous = _currentUser();
+  final updated = (previous.draft()
+        ..updatedAt = _now()
+        ..selectedToneId = toneId)
+      .save();
+
   produceAppState((draft) {
-    draft.styles.selectedToneId = toneId;
+    draft.user = updated;
   });
+
+  try {
+    await _saveUser(updated);
+  } catch (e) {
+    _logger.e('Failed to select tone', e);
+    produceAppState((draft) {
+      draft.user = previous;
+    });
+    showErrorSnackbar(e);
+  }
+}
+
+Future<void> setActiveToneIds(List<String> toneIds) async {
+  final previous = _currentUser();
+  final updated = (previous.draft()
+        ..updatedAt = _now()
+        ..activeToneIds = toneIds)
+      .save();
+
+  produceAppState((draft) {
+    draft.user = updated;
+  });
+
+  try {
+    await _saveUser(updated);
+  } catch (e) {
+    _logger.e('Failed to update active tone IDs', e);
+    produceAppState((draft) {
+      draft.user = previous;
+    });
+    showErrorSnackbar(e);
+  }
 }
 
 Future<void> createTone({
@@ -55,28 +102,37 @@ Future<void> createTone({
     sortOrder: 0,
   );
 
+  final previous = _currentUser();
+  final currentActive = previous.activeToneIds ?? [];
+  final updated = (previous.draft()
+        ..updatedAt = _now()
+        ..selectedToneId = tone.id
+        ..activeToneIds = [tone.id, ...currentActive])
+      .save();
+
   produceAppState((draft) {
     draft.toneById[tone.id] = tone.draft();
     draft.styles.toneIds = [tone.id, ...draft.styles.toneIds];
-    draft.styles.selectedToneId = tone.id;
+    draft.user = updated;
   });
 
   try {
     await UpsertMyToneApi().call(UpsertMyToneInput(tone: tone));
+    await _saveUser(updated);
   } catch (e) {
     _logger.e('Failed to create tone', e);
     produceAppState((draft) {
       draft.toneById.remove(tone.id);
       draft.styles.toneIds =
           draft.styles.toneIds.where((id) => id != tone.id).toList();
-      draft.styles.selectedToneId = defaultToneId;
+      draft.user = previous;
     });
     showErrorSnackbar(e);
   }
 }
 
 Future<void> updateTone(Tone tone) async {
-  final previous = getAppState().toneById[tone.id];
+  final previousTone = getAppState().toneById[tone.id];
 
   produceAppState((draft) {
     draft.toneById[tone.id] = tone.draft();
@@ -86,9 +142,9 @@ Future<void> updateTone(Tone tone) async {
     await UpsertMyToneApi().call(UpsertMyToneInput(tone: tone));
   } catch (e) {
     _logger.e('Failed to update tone', e);
-    if (previous != null) {
+    if (previousTone != null) {
       produceAppState((draft) {
-        draft.toneById[tone.id] = previous.draft();
+        draft.toneById[tone.id] = previousTone.draft();
       });
     }
     showErrorSnackbar(e);
@@ -96,31 +152,36 @@ Future<void> updateTone(Tone tone) async {
 }
 
 Future<void> deleteTone(String toneId) async {
-  final previous = getAppState().toneById[toneId];
-  final previousIds = List<String>.from(getAppState().styles.toneIds);
-  final wasSelected = getAppState().styles.selectedToneId == toneId;
+  final previousTone = getAppState().toneById[toneId];
+  final previousToneIds = List<String>.from(getAppState().styles.toneIds);
+  final previous = _currentUser();
+  final currentActive = previous.activeToneIds ?? [];
+  final wasSelected = previous.selectedToneId == toneId;
+
+  final updated = (previous.draft()
+        ..updatedAt = _now()
+        ..selectedToneId = wasSelected ? defaultToneId : previous.selectedToneId
+        ..activeToneIds = currentActive.where((id) => id != toneId).toList())
+      .save();
 
   produceAppState((draft) {
     draft.toneById.remove(toneId);
     draft.styles.toneIds =
         draft.styles.toneIds.where((id) => id != toneId).toList();
-    if (wasSelected) {
-      draft.styles.selectedToneId = defaultToneId;
-    }
+    draft.user = updated;
   });
 
   try {
     await DeleteMyToneApi().call(DeleteMyToneInput(toneId: toneId));
+    await _saveUser(updated);
   } catch (e) {
     _logger.e('Failed to delete tone', e);
     produceAppState((draft) {
-      if (previous != null) {
-        draft.toneById[toneId] = previous.draft();
+      if (previousTone != null) {
+        draft.toneById[toneId] = previousTone.draft();
       }
-      draft.styles.toneIds = previousIds;
-      if (wasSelected) {
-        draft.styles.selectedToneId = toneId;
-      }
+      draft.styles.toneIds = previousToneIds;
+      draft.user = previous;
     });
     showErrorSnackbar(e);
   }

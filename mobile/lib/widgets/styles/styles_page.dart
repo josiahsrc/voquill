@@ -27,7 +27,10 @@ class _StylesPageState extends State<StylesPage> {
     final store = useAppStore();
     final styles = store.select(context, (s) => s.styles);
     final toneById = store.select(context, (s) => s.toneById);
-    final toneIds = styles.toneIds;
+    final user = store.select(context, (s) => s.user);
+
+    final activeToneIds = user?.activeToneIds ?? [defaultToneId];
+    final selectedToneId = user?.selectedToneId ?? defaultToneId;
 
     return Scaffold(
       body: CustomScrollView(
@@ -38,21 +41,21 @@ class _StylesPageState extends State<StylesPage> {
               'Choose how your transcriptions are styled and formatted.',
             ),
           ).buildSlivers(context),
-          if (toneIds.isEmpty && styles.status.isLoading)
+          if (activeToneIds.isEmpty && styles.status.isLoading)
             const SliverFillRemaining(
               hasScrollBody: false,
               child: Center(child: CircularProgressIndicator()),
             )
           else
             SliverList.builder(
-              itemCount: toneIds.length,
+              itemCount: activeToneIds.length,
               itemBuilder: (context, index) {
-                final tone = toneById[toneIds[index]];
+                final tone = toneById[activeToneIds[index]];
                 if (tone == null) return const SizedBox.shrink();
                 return StyleTile(
                   name: tone.name,
                   promptPreview: formatPromptForPreview(tone.promptTemplate),
-                  isSelected: styles.selectedToneId == tone.id,
+                  isSelected: selectedToneId == tone.id,
                   isSystem: tone.isSystem,
                   onSelect: () => actions.selectTone(tone.id),
                   onEdit: tone.isSystem

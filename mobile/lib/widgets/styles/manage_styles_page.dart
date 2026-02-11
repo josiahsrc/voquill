@@ -15,27 +15,38 @@ class ManageStylesPage extends StatelessWidget {
     final store = useAppStore();
     final toneIds = store.select(context, (s) => s.styles.toneIds);
     final toneById = store.select(context, (s) => s.toneById);
+    final user = store.select(context, (s) => s.user);
+
+    final activeToneIds = user?.activeToneIds ?? [defaultToneId];
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           ...const AppSliverAppBar(
             title: Text('Manage Styles'),
-            subtitle: Text('Create and edit custom writing styles.'),
+            subtitle: Text('Choose which styles appear in your style list.'),
           ).buildSlivers(context),
           SliverList.builder(
             itemCount: toneIds.length,
             itemBuilder: (context, index) {
               final tone = toneById[toneIds[index]];
               if (tone == null) return const SizedBox.shrink();
-              return ListTile(
+              final isActive = activeToneIds.contains(tone.id);
+              return CheckboxListTile(
+                value: isActive,
+                onChanged: (checked) {
+                  final updated = checked == true
+                      ? [...activeToneIds, tone.id]
+                      : activeToneIds.where((id) => id != tone.id).toList();
+                  actions.setActiveToneIds(updated);
+                },
                 title: Text(tone.name),
                 subtitle: Text(
                   formatPromptForPreview(tone.promptTemplate),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                trailing: tone.isSystem
+                secondary: tone.isSystem
                     ? null
                     : IconButton(
                         icon: const Icon(Icons.edit),
