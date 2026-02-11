@@ -4,6 +4,10 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - "apps/desktop/**"
+      - "packages/**"
+      - ".github/workflows/test-desktop-unit.yml"
 
 jobs:
   ts-unit-tests:
