@@ -6,14 +6,12 @@ part 'styles_state.draft.dart';
 
 @draft
 class StylesState with EquatableMixin {
-  final List<String> toneIds;
   final ActionStatus status;
 
   const StylesState({
-    this.toneIds = const [],
     this.status = ActionStatus.idle,
   });
 
   @override
-  List<Object?> get props => [toneIds, status];
+  List<Object?> get props => [status];
 }

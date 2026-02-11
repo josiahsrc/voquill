@@ -1,4 +1,5 @@
 import 'package:app/widgets/common/app_list_tile.dart';
+import 'package:app/widgets/common/app_radio.dart';
 import 'package:flutter/material.dart';
 
 class StyleTile extends StatelessWidget {
@@ -21,13 +22,8 @@ class StyleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AppListTile(
-      leading: Icon(
-        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-        color: isSelected ? theme.colorScheme.primary : null,
-      ),
+      leading: AppRadio(isSelected),
       title: Text(name),
       subtitle: Text(
         promptPreview,
@@ -36,10 +32,7 @@ class StyleTile extends StatelessWidget {
       ),
       trailing: isSystem
           ? null
-          : IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: onEdit,
-            ),
+          : IconButton(icon: const Icon(Icons.edit), onPressed: onEdit),
       onTap: onSelect,
     );
   }

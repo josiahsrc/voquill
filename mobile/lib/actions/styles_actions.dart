@@ -29,11 +29,9 @@ Future<void> loadStyles() async {
   try {
     final output = await ListMyTonesApi().call(null);
     final allTones = mergeSystemTones(output.tones);
-    final sorted = sortTones(allTones);
 
     produceAppState((draft) {
       registerTones(draft, allTones);
-      draft.styles.toneIds = sorted.map((t) => t.id).toList();
       draft.styles.status = ActionStatus.success;
     });
   } catch (e) {
@@ -100,6 +98,9 @@ Future<void> createTone({
     isSystem: false,
     createdAt: DateTime.now().millisecondsSinceEpoch,
     sortOrder: 0,
+    isGlobal: false,
+    isDeprecated: false,
+    shouldDisablePostProcessing: false,
   );
 
   final previous = _currentUser();
@@ -112,7 +113,6 @@ Future<void> createTone({
 
   produceAppState((draft) {
     draft.toneById[tone.id] = tone.draft();
-    draft.styles.toneIds = [tone.id, ...draft.styles.toneIds];
     draft.user = updated;
   });
 
@@ -123,8 +123,6 @@ Future<void> createTone({
     _logger.e('Failed to create tone', e);
     produceAppState((draft) {
       draft.toneById.remove(tone.id);
-      draft.styles.toneIds =
-          draft.styles.toneIds.where((id) => id != tone.id).toList();
       draft.user = previous;
     });
     showErrorSnackbar(e);
@@ -153,7 +151,6 @@ Future<void> updateTone(Tone tone) async {
 
 Future<void> deleteTone(String toneId) async {
   final previousTone = getAppState().toneById[toneId];
-  final previousToneIds = List<String>.from(getAppState().styles.toneIds);
   final previous = _currentUser();
   final currentActive = previous.activeToneIds ?? [];
   final wasSelected = previous.selectedToneId == toneId;
@@ -166,8 +163,6 @@ Future<void> deleteTone(String toneId) async {
 
   produceAppState((draft) {
     draft.toneById.remove(toneId);
-    draft.styles.toneIds =
-        draft.styles.toneIds.where((id) => id != toneId).toList();
     draft.user = updated;
   });
 
@@ -180,7 +175,6 @@ Future<void> deleteTone(String toneId) async {
       if (previousTone != null) {
         draft.toneById[toneId] = previousTone.draft();
       }
-      draft.styles.toneIds = previousToneIds;
       draft.user = previous;
     });
     showErrorSnackbar(e);

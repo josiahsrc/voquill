@@ -27,10 +27,8 @@ class _StylesPageState extends State<StylesPage> {
     final store = useAppStore();
     final styles = store.select(context, (s) => s.styles);
     final toneById = store.select(context, (s) => s.toneById);
-    final user = store.select(context, (s) => s.user);
-
-    final activeToneIds = user?.activeToneIds ?? [defaultToneId];
-    final selectedToneId = user?.selectedToneId ?? defaultToneId;
+    final activeToneIds = store.select(context, getActiveSortedToneIds);
+    final selectedToneId = store.select(context, getManuallySelectedToneId);
 
     return Scaffold(
       body: CustomScrollView(
@@ -95,14 +93,12 @@ class _StylesPageState extends State<StylesPage> {
     }
 
     if (result is ({String name, String prompt})) {
-      actions.updateTone(Tone(
-        id: tone.id,
-        name: result.name,
-        promptTemplate: result.prompt,
-        isSystem: false,
-        createdAt: tone.createdAt,
-        sortOrder: tone.sortOrder,
-      ));
+      actions.updateTone(
+        (tone.draft()
+              ..name = result.name
+              ..promptTemplate = result.prompt)
+            .save(),
+      );
     }
   }
 }

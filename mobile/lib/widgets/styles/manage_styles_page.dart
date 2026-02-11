@@ -3,6 +3,8 @@ import 'package:app/model/tone_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/utils/tone_utils.dart';
+import 'package:app/widgets/common/app_button.dart';
+import 'package:app/widgets/common/app_checkbox_list_tile.dart';
 import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/styles/edit_style_dialog.dart';
 import 'package:flutter/material.dart';
@@ -13,11 +15,9 @@ class ManageStylesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = useAppStore();
-    final toneIds = store.select(context, (s) => s.styles.toneIds);
     final toneById = store.select(context, (s) => s.toneById);
-    final user = store.select(context, (s) => s.user);
-
-    final activeToneIds = user?.activeToneIds ?? [defaultToneId];
+    final toneIds = store.select(context, getSortedToneIds);
+    final activeToneIds = store.select(context, getActiveManualToneIds);
 
     return Scaffold(
       body: CustomScrollView(
@@ -32,7 +32,7 @@ class ManageStylesPage extends StatelessWidget {
               final tone = toneById[toneIds[index]];
               if (tone == null) return const SizedBox.shrink();
               final isActive = activeToneIds.contains(tone.id);
-              return CheckboxListTile(
+              return AppCheckboxListTile(
                 value: isActive,
                 onChanged: (checked) {
                   final updated = checked == true
@@ -60,10 +60,10 @@ class ManageStylesPage extends StatelessWidget {
               padding: Theming.padding,
               child: SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: AppButton.text(
                   onPressed: () => _showNewStyleDialog(context),
                   icon: const Icon(Icons.add),
-                  label: const Text('New Style'),
+                  child: const Text('New Style'),
                 ),
               ),
             ),
@@ -93,14 +93,12 @@ class ManageStylesPage extends StatelessWidget {
     }
 
     if (result is ({String name, String prompt})) {
-      actions.updateTone(Tone(
-        id: tone.id,
-        name: result.name,
-        promptTemplate: result.prompt,
-        isSystem: false,
-        createdAt: tone.createdAt,
-        sortOrder: tone.sortOrder,
-      ));
+      actions.updateTone(
+        (tone.draft()
+              ..name = result.name
+              ..promptTemplate = result.prompt)
+            .save(),
+      );
     }
   }
 
@@ -113,9 +111,6 @@ class ManageStylesPage extends StatelessWidget {
     if (result == null) return;
     if (result is! ({String name, String prompt})) return;
 
-    actions.createTone(
-      name: result.name,
-      promptTemplate: result.prompt,
-    );
+    actions.createTone(name: result.name, promptTemplate: result.prompt);
   }
 }

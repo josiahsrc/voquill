@@ -1,4 +1,5 @@
 import 'package:app/model/tone_model.dart';
+import 'package:app/state/app_state.dart';
 
 const defaultToneId = 'default';
 const verbatimToneId = 'verbatim';
@@ -128,14 +129,54 @@ List<Tone> mergeSystemTones(List<Tone> userTones) {
   return [...systemTones, ...userTones];
 }
 
-List<Tone> sortTones(List<Tone> tones) {
-  return List<Tone>.from(tones)..sort((a, b) {
-    final aGroup = a.isSystem ? 1 : 0;
-    final bGroup = b.isSystem ? 1 : 0;
-    if (aGroup != bGroup) return aGroup - bGroup;
-    if (a.isSystem && b.isSystem) {
-      return (a.sortOrder as int) - (b.sortOrder as int);
-    }
-    return (b.createdAt as int) - (a.createdAt as int);
-  });
+List<String> getActiveManualToneIds(AppState state) {
+  final toneIds = state.user?.activeToneIds ?? [];
+  final validToneIds =
+      toneIds.where((id) => state.toneById.containsKey(id)).toList();
+  return validToneIds.isNotEmpty ? validToneIds : [defaultToneId];
+}
+
+String getManuallySelectedToneId(AppState state) {
+  final toneId = state.user?.selectedToneId;
+  final tone = toneId != null ? state.toneById[toneId] : null;
+
+  final activeIds = getActiveManualToneIds(state);
+  if (tone != null && activeIds.contains(tone.id)) {
+    return tone.id;
+  }
+
+  return activeIds.firstOrNull ?? defaultToneId;
+}
+
+List<String> getSortedToneIds(AppState state) {
+  final usedToneIds = <String>{
+    if (state.user?.selectedToneId != null) state.user!.selectedToneId!,
+    ...getActiveManualToneIds(state),
+  };
+
+  final tones = state.toneById.values
+      .where((t) => t.isDeprecated != true || usedToneIds.contains(t.id))
+      .toList()
+    ..sort(_compareTones);
+
+  return tones.map((t) => t.id).toList();
+}
+
+List<String> getActiveSortedToneIds(AppState state) {
+  final activeSet = getActiveManualToneIds(state).toSet();
+  return getSortedToneIds(state)
+      .where((id) => activeSet.contains(id))
+      .toList();
+}
+
+int _compareTones(Tone a, Tone b) {
+  final groupCmp = _toneGroupOrder(a) - _toneGroupOrder(b);
+  if (groupCmp != 0) return groupCmp;
+  return (b.createdAt - a.createdAt).toInt();
+}
+
+int _toneGroupOrder(Tone tone) {
+  if (tone.isSystem) return 2;
+  if (tone.isGlobal == true) return 1;
+  return 0;
 }
