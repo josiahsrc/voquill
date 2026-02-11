@@ -3,6 +3,7 @@ import 'package:app/store/store.dart';
 import 'package:app/widgets/common/app_button.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/common/terms_notice.dart';
+import 'package:app/widgets/common/app_dialog.dart';
 import 'package:app/widgets/login/login_form.dart';
 import 'package:app/widgets/login/login_providers.dart';
 import 'package:app/widgets/onboarding/about_you_form.dart';
@@ -21,15 +22,13 @@ class CreateAccountForm extends StatelessWidget {
   void _handleEmailSignUp(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dialogContext) => Dialog(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: LoginForm(
-            hideModeSwitch: true,
-            hideProviders: true,
-            defaultMode: LoginMode.signUp,
-            onSuccess: () => Navigator.of(dialogContext).pop(),
-          ),
+      builder: (dialogContext) => AppDialog(
+        title: const Text('Sign Up'),
+        content: LoginForm(
+          hideModeSwitch: true,
+          hideProviders: true,
+          defaultMode: LoginMode.signUp,
+          onSuccess: () => Navigator.of(dialogContext).pop(),
         ),
       ),
     );
