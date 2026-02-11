@@ -1,119 +1,48 @@
+import 'package:app/actions/styles_actions.dart' as actions;
+import 'package:app/model/tone_model.dart';
+import 'package:app/store/store.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/utils/tone_utils.dart';
 import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/styles/edit_style_dialog.dart';
 import 'package:flutter/material.dart';
 
-class _ToneItem {
-  const _ToneItem({
-    required this.id,
-    required this.name,
-    required this.prompt,
-    this.isSystem = false,
-  });
-
-  final String id;
-  final String name;
-  final String prompt;
-  final bool isSystem;
-}
-
-const _allTones = [
-  _ToneItem(
-    id: 'default',
-    name: 'Polished',
-    prompt: 'Corrects grammar and removes fillers while preserving your voice.',
-    isSystem: true,
-  ),
-  _ToneItem(
-    id: 'verbatim',
-    name: 'Verbatim',
-    prompt: 'Near-exact transcription. Removes only filler words and false starts.',
-    isSystem: true,
-  ),
-  _ToneItem(
-    id: 'email',
-    name: 'Email',
-    prompt: 'Professional email format with greeting and sign-off.',
-    isSystem: true,
-  ),
-  _ToneItem(
-    id: 'chat',
-    name: 'Chat',
-    prompt: 'Casual, conversational tone. No period at the end.',
-    isSystem: true,
-  ),
-  _ToneItem(
-    id: 'formal',
-    name: 'Formal',
-    prompt: 'Professional register. Avoids contractions and colloquialisms.',
-    isSystem: true,
-  ),
-  _ToneItem(
-    id: 'disabled',
-    name: 'Disabled',
-    prompt: 'No post-processing. Raw transcription only.',
-    isSystem: true,
-  ),
-];
-
-class ManageStylesPage extends StatefulWidget {
+class ManageStylesPage extends StatelessWidget {
   const ManageStylesPage({super.key});
 
   @override
-  State<ManageStylesPage> createState() => _ManageStylesPageState();
-}
-
-class _ManageStylesPageState extends State<ManageStylesPage> {
-  final Set<String> _activeIds = {
-    'default',
-    'verbatim',
-    'email',
-    'chat',
-  };
-
-  @override
   Widget build(BuildContext context) {
+    final store = useAppStore();
+    final toneIds = store.select(context, (s) => s.styles.toneIds);
+    final toneById = store.select(context, (s) => s.toneById);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           ...const AppSliverAppBar(
             title: Text('Manage Styles'),
-            subtitle: Text(
-              'Choose which styles appear on your styles page.',
-            ),
+            subtitle: Text('Create and edit custom writing styles.'),
           ).buildSlivers(context),
-          SliverList.list(
-            children: _allTones.map((tone) {
-              final isActive = _activeIds.contains(tone.id);
-              return CheckboxListTile(
+          SliverList.builder(
+            itemCount: toneIds.length,
+            itemBuilder: (context, index) {
+              final tone = toneById[toneIds[index]];
+              if (tone == null) return const SizedBox.shrink();
+              return ListTile(
                 title: Text(tone.name),
                 subtitle: Text(
-                  tone.prompt,
+                  formatPromptForPreview(tone.promptTemplate),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                value: isActive,
-                controlAffinity: ListTileControlAffinity.leading,
-                secondary: tone.isSystem
+                trailing: tone.isSystem
                     ? null
                     : IconButton(
                         icon: const Icon(Icons.edit),
                         onPressed: () => _showEditDialog(context, tone),
                       ),
-                onChanged: (value) {
-                  if (value == false && _activeIds.length <= 1) {
-                    return;
-                  }
-                  setState(() {
-                    if (value == true) {
-                      _activeIds.add(tone.id);
-                    } else {
-                      _activeIds.remove(tone.id);
-                    }
-                  });
-                },
               );
-            }).toList(),
+            },
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -134,22 +63,48 @@ class _ManageStylesPageState extends State<ManageStylesPage> {
     );
   }
 
-  void _showEditDialog(BuildContext context, _ToneItem tone) {
-    showDialog(
+  Future<void> _showEditDialog(BuildContext context, Tone tone) async {
+    final result = await showDialog(
       context: context,
       builder: (_) => EditStyleDialog(
         isEditing: true,
         isSystem: tone.isSystem,
         initialName: tone.name,
-        initialPrompt: tone.prompt,
+        initialPrompt: tone.promptTemplate,
       ),
     );
+
+    if (result == null) return;
+
+    if (result == EditStyleResult.delete) {
+      actions.deleteTone(tone.id);
+      return;
+    }
+
+    if (result is ({String name, String prompt})) {
+      actions.updateTone(Tone(
+        id: tone.id,
+        name: result.name,
+        promptTemplate: result.prompt,
+        isSystem: false,
+        createdAt: tone.createdAt,
+        sortOrder: tone.sortOrder,
+      ));
+    }
   }
 
-  void _showNewStyleDialog(BuildContext context) {
-    showDialog(
+  Future<void> _showNewStyleDialog(BuildContext context) async {
+    final result = await showDialog(
       context: context,
       builder: (_) => const EditStyleDialog(),
+    );
+
+    if (result == null) return;
+    if (result is! ({String name, String prompt})) return;
+
+    actions.createTone(
+      name: result.name,
+      promptTemplate: result.prompt,
     );
   }
 }

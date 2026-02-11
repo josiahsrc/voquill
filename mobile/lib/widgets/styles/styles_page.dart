@@ -1,49 +1,12 @@
+import 'package:app/actions/styles_actions.dart' as actions;
+import 'package:app/model/tone_model.dart';
+import 'package:app/store/store.dart';
+import 'package:app/utils/tone_utils.dart';
 import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/styles/edit_style_dialog.dart';
 import 'package:app/widgets/styles/style_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-class _ToneData {
-  const _ToneData({
-    required this.id,
-    required this.name,
-    required this.prompt,
-    this.isSystem = false,
-  });
-
-  final String id;
-  final String name;
-  final String prompt;
-  final bool isSystem;
-}
-
-const _activeTones = [
-  _ToneData(
-    id: 'default',
-    name: 'Polished',
-    prompt: 'Corrects grammar and removes fillers while preserving your voice.',
-    isSystem: true,
-  ),
-  _ToneData(
-    id: 'verbatim',
-    name: 'Verbatim',
-    prompt: 'Near-exact transcription. Removes only filler words and false starts.',
-    isSystem: true,
-  ),
-  _ToneData(
-    id: 'email',
-    name: 'Email',
-    prompt: 'Professional email format with greeting and sign-off.',
-    isSystem: true,
-  ),
-  _ToneData(
-    id: 'chat',
-    name: 'Chat',
-    prompt: 'Casual, conversational tone. No period at the end.',
-    isSystem: true,
-  ),
-];
 
 class StylesPage extends StatefulWidget {
   const StylesPage({super.key});
@@ -53,10 +16,19 @@ class StylesPage extends StatefulWidget {
 }
 
 class _StylesPageState extends State<StylesPage> {
-  String _selectedId = 'default';
+  @override
+  void initState() {
+    super.initState();
+    actions.loadStyles();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final store = useAppStore();
+    final styles = store.select(context, (s) => s.styles);
+    final toneById = store.select(context, (s) => s.toneById);
+    final toneIds = styles.toneIds;
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -66,45 +38,68 @@ class _StylesPageState extends State<StylesPage> {
               'Choose how your transcriptions are styled and formatted.',
             ),
           ).buildSlivers(context),
-          SliverList.list(
-            children: _activeTones.map((tone) {
-              return StyleTile(
-                name: tone.name,
-                promptPreview: tone.prompt,
-                isSelected: _selectedId == tone.id,
-                isSystem: tone.isSystem,
-                onSelect: () => setState(() => _selectedId = tone.id),
-                onEdit: tone.isSystem
-                    ? null
-                    : () => _showEditDialog(context, tone),
-              );
-            }).toList(),
-          ),
+          if (toneIds.isEmpty && styles.status.isLoading)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            SliverList.builder(
+              itemCount: toneIds.length,
+              itemBuilder: (context, index) {
+                final tone = toneById[toneIds[index]];
+                if (tone == null) return const SizedBox.shrink();
+                return StyleTile(
+                  name: tone.name,
+                  promptPreview: formatPromptForPreview(tone.promptTemplate),
+                  isSelected: styles.selectedToneId == tone.id,
+                  isSystem: tone.isSystem,
+                  onSelect: () => actions.selectTone(tone.id),
+                  onEdit: tone.isSystem
+                      ? null
+                      : () => _showEditDialog(context, tone),
+                );
+              },
+            ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'styles_fab',
-        onPressed: () => _showManagePage(context),
+        onPressed: () => context.push('/dashboard/manage-styles'),
         icon: const Icon(Icons.tune),
         label: const Text('Manage'),
       ),
     );
   }
 
-  void _showManagePage(BuildContext context) {
-    context.push('/dashboard/manage-styles');
-  }
-
-  void _showEditDialog(BuildContext context, _ToneData tone) {
-    showDialog(
+  Future<void> _showEditDialog(BuildContext context, Tone tone) async {
+    final result = await showDialog(
       context: context,
       builder: (_) => EditStyleDialog(
         isEditing: true,
         isSystem: tone.isSystem,
         initialName: tone.name,
-        initialPrompt: tone.prompt,
+        initialPrompt: tone.promptTemplate,
       ),
     );
+
+    if (result == null) return;
+
+    if (result == EditStyleResult.delete) {
+      actions.deleteTone(tone.id);
+      return;
+    }
+
+    if (result is ({String name, String prompt})) {
+      actions.updateTone(Tone(
+        id: tone.id,
+        name: result.name,
+        promptTemplate: result.prompt,
+        isSystem: false,
+        createdAt: tone.createdAt,
+        sortOrder: tone.sortOrder,
+      ));
+    }
   }
 }

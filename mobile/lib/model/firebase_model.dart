@@ -1,6 +1,7 @@
 import 'package:app/model/config_model.dart';
 import 'package:app/model/member_model.dart';
 import 'package:app/model/term_model.dart';
+import 'package:app/model/tone_model.dart';
 import 'package:app/model/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -43,6 +44,34 @@ class DeleteMyTermInput {
   const DeleteMyTermInput({required this.termId});
 
   Map<String, dynamic> toJson() => _$DeleteMyTermInputToJson(this);
+}
+
+@JsonSerializable()
+class ListMyTonesOutput {
+  final List<Tone> tones;
+
+  const ListMyTonesOutput({required this.tones});
+
+  factory ListMyTonesOutput.fromJson(Map<String, dynamic> json) =>
+      _$ListMyTonesOutputFromJson(json);
+}
+
+@JsonSerializable()
+class UpsertMyToneInput {
+  final Tone tone;
+
+  const UpsertMyToneInput({required this.tone});
+
+  Map<String, dynamic> toJson() => _$UpsertMyToneInputToJson(this);
+}
+
+@JsonSerializable()
+class DeleteMyToneInput {
+  final String toneId;
+
+  const DeleteMyToneInput({required this.toneId});
+
+  Map<String, dynamic> toJson() => _$DeleteMyToneInputToJson(this);
 }
 
 @JsonSerializable()
