@@ -793,6 +793,19 @@ jobs:
           Write-Host "Uploading $destName to release $env:RELEASE_TAG"
           gh release upload $env:RELEASE_TAG $destName --clobber
 
+  retry-failed-builds:
+    name: Retry failed builds
+    needs: [metadata, build]
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-run failed jobs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run rerun ${{ github.run_id }} --failed
+
   update-channel:
     name: Update channel release (${{ matrix.variant }})
     needs: [metadata, build]
