@@ -15,8 +15,13 @@ import {
   type EmptyObject,
   type EnterpriseConfig,
   type JsonResponse,
+  METRICS_RANGES,
   type LlmProvider,
   type LlmProviderInput,
+  type MetricsDaily,
+  type MetricsPerUser,
+  type MetricsRange,
+  type MetricsSummary,
   type Nullable,
   type OidcProvider,
   type OidcProviderInput,
@@ -387,6 +392,16 @@ type HandlerDefinitions = {
       config: FullConfig;
     };
   };
+
+  // metrics
+  "metrics/getSummary": {
+    input: { range: MetricsRange };
+    output: {
+      summary: MetricsSummary;
+      daily: MetricsDaily[];
+      perUser: MetricsPerUser[];
+    };
+  };
 };
 
 export type HandlerName = keyof HandlerDefinitions;
@@ -564,3 +579,11 @@ export const DeleteOidcProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/delete">>;
+
+export const MetricsRangeZod = z.enum(METRICS_RANGES);
+
+export const GetMetricsSummaryInputZod = z
+  .object({
+    range: MetricsRangeZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"metrics/getSummary">>;

@@ -330,6 +330,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: () => ({
           textTransform: "none",
+          minWidth: 72,
         }),
       },
     },

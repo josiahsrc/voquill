@@ -15,3 +15,4 @@ export * from "./openrouter.types";
 export * from "./stt-provider.types";
 export * from "./llm-provider.types";
 export * from "./enterprise.types";
+export * from "./metrics.types";

@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { describe, it, expect, beforeAll } from "vitest";
-import { invoke, createTestSttProvider, createTestLlmProvider } from "../helpers";
+import { invoke, query, createTestSttProvider, createTestLlmProvider } from "../helpers";
 
 const MUFFIN_MAN_WAV = resolve(
   __dirname,
@@ -10,6 +10,8 @@ const MUFFIN_MAN_WAV = resolve(
 
 describe("ai/transcribeAudio integration", () => {
   let token: string;
+  let adminToken: string;
+  let userId: string;
   let audioBase64: string;
 
   beforeAll(async () => {
@@ -19,8 +21,13 @@ describe("ai/transcribeAudio integration", () => {
       password: "password123",
     });
     token = data.token;
+    userId = data.auth.id;
     await createTestSttProvider(token);
     audioBase64 = readFileSync(MUFFIN_MAN_WAV).toString("base64");
+
+    await query("UPDATE auth SET is_admin = TRUE WHERE id = $1", [userId]);
+    const refreshed = await invoke("auth/login", { email, password: "password123" });
+    adminToken = refreshed.token;
   });
 
   it("transcribes audio", { timeout: 60_000 }, async () => {
@@ -54,10 +61,26 @@ describe("ai/transcribeAudio integration", () => {
     expect(typeof data.text).toBe("string");
     expect(data.text.length).toBeGreaterThan(0);
   });
+
+  it("records metrics for transcription requests", { timeout: 60_000 }, async () => {
+    await new Promise((r) => setTimeout(r, 500));
+
+    const data = await invoke("metrics/getSummary", { range: "all" }, adminToken);
+    const userMetric = data.perUser.find(
+      (u: { userId: string }) => u.userId === userId,
+    );
+
+    expect(userMetric).toBeDefined();
+    expect(userMetric.requests).toBeGreaterThanOrEqual(2);
+    expect(userMetric.words).toBeGreaterThan(0);
+    expect(userMetric.avgLatencyMs).toBeGreaterThan(0);
+  });
 });
 
 describe("ai/generateText integration", () => {
   let token: string;
+  let adminToken: string;
+  let userId: string;
 
   beforeAll(async () => {
     const email = `ai-gen-integration-${Date.now()}@example.com`;
@@ -66,7 +89,12 @@ describe("ai/generateText integration", () => {
       password: "password123",
     });
     token = data.token;
+    userId = data.auth.id;
     await createTestLlmProvider(token);
+
+    await query("UPDATE auth SET is_admin = TRUE WHERE id = $1", [userId]);
+    const refreshed = await invoke("auth/login", { email, password: "password123" });
+    adminToken = refreshed.token;
   });
 
   it("generates text with a simple prompt", { timeout: 60_000 }, async () => {
@@ -96,5 +124,19 @@ describe("ai/generateText integration", () => {
     expect(data).toHaveProperty("text");
     expect(typeof data.text).toBe("string");
     expect(data.text.length).toBeGreaterThan(0);
+  });
+
+  it("records metrics for generation requests", { timeout: 60_000 }, async () => {
+    await new Promise((r) => setTimeout(r, 500));
+
+    const data = await invoke("metrics/getSummary", { range: "all" }, adminToken);
+    const userMetric = data.perUser.find(
+      (u: { userId: string }) => u.userId === userId,
+    );
+
+    expect(userMetric).toBeDefined();
+    expect(userMetric.requests).toBeGreaterThanOrEqual(2);
+    expect(userMetric.words).toBeGreaterThan(0);
+    expect(userMetric.avgLatencyMs).toBeGreaterThan(0);
   });
 });

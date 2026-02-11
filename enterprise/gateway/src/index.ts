@@ -13,6 +13,7 @@ import {
   DeleteTermInputZod,
   DeleteToneInputZod,
   EmptyObjectZod,
+  GetMetricsSummaryInputZod,
   PullLlmProviderInputZod,
   PullSttProviderInputZod,
   SetMyUserInputZod,
@@ -29,6 +30,7 @@ import type { Request, Response } from "express";
 import express from "express";
 import { runMigrations } from "./db/migrate";
 import { generateText, transcribeAudio } from "./services/ai.service";
+import { getMetricsSummaryHandler } from "./services/metrics.service";
 import {
   deleteUser,
   login,
@@ -279,6 +281,11 @@ app.post("/handler", async (req: Request, res: Response) => {
     } else if (name === "oidcProvider/listEnabled") {
       validateData(EmptyObjectZod, input);
       data = await listEnabledOidcProvidersHandler();
+    } else if (name === "metrics/getSummary") {
+      data = await getMetricsSummaryHandler({
+        auth,
+        input: validateData(GetMetricsSummaryInputZod, input),
+      });
     } else if (name === "config/getFullConfig") {
       validateData(EmptyObjectZod, input);
       data = await getFullConfig();
