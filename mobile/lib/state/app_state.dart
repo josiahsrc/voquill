@@ -1,6 +1,8 @@
 import 'package:app/model/auth_user_model.dart';
 import 'package:app/model/common_model.dart';
+import 'package:app/model/term_model.dart';
 import 'package:app/model/user_model.dart';
+import 'package:app/state/dictionary_state.dart';
 import 'package:app/state/onboarding_state.dart';
 import 'package:app/state/snackbar_state.dart';
 import 'package:draft/draft.dart';
@@ -16,21 +18,27 @@ class AppState with EquatableMixin {
   final AuthUser? auth;
   final User? user;
 
+  final Map<String, Term> termById;
+
   final SnackbarState snackbar;
   final OnboardingState onboarding;
+  final DictionaryState dictionary;
 
   const AppState({
     this.status = ActionStatus.loading,
     this.error,
     this.auth,
     this.user,
+    this.termById = const {},
     this.snackbar = const SnackbarState(),
     this.onboarding = const OnboardingState(),
+    this.dictionary = const DictionaryState(),
   });
 
   bool get isLoggedIn => auth != null;
   bool get isOnboarded => user?.onboarded ?? false;
 
   @override
-  List<Object?> get props => [status, error, auth, user, snackbar, onboarding];
+  List<Object?> get props =>
+      [status, error, auth, user, termById, snackbar, onboarding, dictionary];
 }
