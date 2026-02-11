@@ -91,7 +91,6 @@ const CTRL_SHIFT_V_WM_CLASSES: &[&str] = &[
     "tilda",
     "yakuake",
     "rio",
-    "warp",
     "cool-retro-term",
     "lxterminal",
     "mate-terminal",
