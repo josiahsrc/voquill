@@ -76,6 +76,21 @@ type HandlerDefinitions = {
     };
     output: EmptyObject;
   };
+  "auth/createApiToken": {
+    input: EmptyObject;
+    output: {
+      apiToken: string;
+      apiRefreshToken: string;
+    };
+  };
+  "auth/refreshApiToken": {
+    input: {
+      apiRefreshToken: string;
+    };
+    output: {
+      apiToken: string;
+    };
+  };
   "auth/deleteUser": {
     input: {
       userId: string;
@@ -564,3 +579,9 @@ export const DeleteOidcProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/delete">>;
+
+export const RefreshApiTokenInputZod = z
+  .object({
+    apiRefreshToken: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;

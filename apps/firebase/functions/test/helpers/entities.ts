@@ -1,4 +1,4 @@
-import { Member, Term, Tone, User } from "@repo/types";
+import { ApiRefreshToken, Member, Term, Tone, User } from "@repo/types";
 
 export const buildMember = (overrides?: Partial<Member>): Member => ({
 	id: "defaultMemberId",
@@ -51,5 +51,13 @@ export const buildTone = (overrides?: Partial<Tone>): Tone => ({
 	isSystem: false,
 	createdAt: Date.now(),
 	sortOrder: 0,
+	...overrides,
+});
+
+export const buildApiRefreshToken = (
+	overrides?: Partial<ApiRefreshToken>,
+): ApiRefreshToken => ({
+	uid: "defaultUserId",
+	createdAt: "2023-01-01T00:00:00Z",
 	...overrides,
 });

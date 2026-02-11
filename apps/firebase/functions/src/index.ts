@@ -5,6 +5,7 @@ import {
 	DeleteToneInputZod,
 	EmptyObjectZod,
 	HandlerName,
+	RefreshApiTokenInputZod,
 	SetMyUserInputZod,
 	StripeCreateCheckoutSessionInputZod,
 	StripeGetPricesInputZod,
@@ -16,6 +17,10 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
 import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
+import {
+	createApiToken,
+	refreshApiToken,
+} from "./services/apiToken.service";
 import { getFullConfigResp } from "./services/config.service";
 import {
 	getMyMember,
@@ -201,6 +206,15 @@ export const handler = onCall(
 				validateData(EmptyObjectZod, args ?? {});
 				data = await listMyTones({
 					auth,
+				});
+			} else if (name === "auth/createApiToken") {
+				validateData(EmptyObjectZod, args ?? {});
+				data = await createApiToken({
+					auth,
+				});
+			} else if (name === "auth/refreshApiToken") {
+				data = await refreshApiToken({
+					input: validateData(RefreshApiTokenInputZod, args),
 				});
 			} else {
 				throw new NotFoundError(`unknown handler: ${name}`);
