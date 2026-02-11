@@ -1,9 +1,9 @@
 import 'package:app/store/store.dart';
 import 'package:app/utils/theme_utils.dart';
-import 'package:app/widgets/history/history_page.dart';
 import 'package:app/widgets/history/transcription_tile.dart';
 import 'package:app/widgets/home/stat_value.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -76,11 +76,7 @@ class HomePage extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: TextButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const HistoryPage()),
-                  );
-                },
+                onPressed: () => context.push('/dashboard/history'),
                 icon: const Icon(Icons.history),
                 label: const Text('View All'),
               ),

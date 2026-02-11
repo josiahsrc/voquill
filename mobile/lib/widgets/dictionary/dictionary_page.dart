@@ -57,6 +57,7 @@ class DictionaryPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'dictionary_fab',
         onPressed: () => _showCreateDialog(context),
         child: const Icon(Icons.add),
       ),
