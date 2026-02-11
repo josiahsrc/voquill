@@ -59,7 +59,13 @@ pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error
 
 pub async fn update_api_key(pool: SqlitePool, request: &ApiKeyUpdateRequest) -> Result<(), sqlx::Error> {
     sqlx::query(
-        "UPDATE api_keys SET transcription_model = ?2, post_processing_model = ?3, openrouter_config = ?4, base_url = ?5, azure_region = ?6 WHERE id = ?1",
+        "UPDATE api_keys SET 
+            transcription_model = CASE WHEN ?2 IS NOT NULL THEN ?2 ELSE transcription_model END,
+            post_processing_model = CASE WHEN ?3 IS NOT NULL THEN ?3 ELSE post_processing_model END,
+            openrouter_config = CASE WHEN ?4 IS NOT NULL THEN ?4 ELSE openrouter_config END,
+            base_url = CASE WHEN ?5 IS NOT NULL THEN ?5 ELSE base_url END,
+            azure_region = CASE WHEN ?6 IS NOT NULL THEN ?6 ELSE azure_region END
+         WHERE id = ?1",
     )
     .bind(&request.id)
     .bind(&request.transcription_model)
