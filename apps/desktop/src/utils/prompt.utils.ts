@@ -115,7 +115,6 @@ Your task is to post-process a transcription.
 
 Context:
 - The speaker's name is ${userName}.
-- The speaker wants the processed transcription to be in the ${languageName} language.
 
 Instructions:
 \`\`\`
@@ -129,10 +128,10 @@ ${transcript}
 
 Post-process transcription according to the instructions.
 
+**CRITICAL** Your response MUST be written in the ${languageName} language.
 **CRITICAL** Your response MUST be in JSON format.
 `;
 };
-
 
 export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
   processedTranscription: z
