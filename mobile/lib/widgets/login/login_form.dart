@@ -1,4 +1,5 @@
 import 'package:app/actions/auth_actions.dart';
+import 'package:app/flavor.dart';
 import 'package:app/widgets/common/app_button.dart';
 import 'package:app/widgets/common/declarative_text_field.dart';
 import 'package:app/widgets/common/app_divider.dart';
@@ -67,6 +68,17 @@ class _LoginFormState extends State<LoginForm> {
 
   bool get _canSubmitReset => _emailRegex.hasMatch(_email);
 
+  @override
+  void initState() {
+    if (Flavor.current.isEmulators) {
+      _email = 'emulator@voquill.com';
+      _password = 'password';
+      _confirmPassword = 'password';
+    }
+
+    super.initState();
+  }
+
   void _setMode(LoginMode mode) {
     setState(() {
       _mode = mode;
@@ -92,7 +104,8 @@ class _LoginFormState extends State<LoginForm> {
     } catch (e) {
       if (mounted) {
         setState(
-            () => _errorMessage = 'An error occurred while creating account.');
+          () => _errorMessage = 'An error occurred while creating account.',
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -141,15 +154,12 @@ class _LoginFormState extends State<LoginForm> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          switch (_mode) {
-            LoginMode.signIn => 'Sign in',
-            LoginMode.signUp => 'Sign up',
-            LoginMode.resetPassword => 'Reset password',
-            LoginMode.passwordResetSent => 'Email sent',
-          },
-          style: theme.textTheme.headlineSmall,
-        ),
+        Text(switch (_mode) {
+          LoginMode.signIn => 'Sign in',
+          LoginMode.signUp => 'Sign up',
+          LoginMode.resetPassword => 'Reset password',
+          LoginMode.passwordResetSent => 'Email sent',
+        }, style: theme.textTheme.headlineSmall),
         const SizedBox(height: 16),
         if (!widget.hideProviders &&
             (_mode == LoginMode.signIn || _mode == LoginMode.signUp)) ...[
@@ -211,8 +221,7 @@ class _LoginFormState extends State<LoginForm> {
               icon: Icon(
                 _showPassword ? Icons.visibility_off : Icons.visibility,
               ),
-              onPressed: () =>
-                  setState(() => _showPassword = !_showPassword),
+              onPressed: () => setState(() => _showPassword = !_showPassword),
             ),
           ),
         ),
@@ -226,12 +235,10 @@ class _LoginFormState extends State<LoginForm> {
             errorText: _confirmPasswordError,
             suffixIcon: IconButton(
               icon: Icon(
-                _showConfirmPassword
-                    ? Icons.visibility_off
-                    : Icons.visibility,
+                _showConfirmPassword ? Icons.visibility_off : Icons.visibility,
               ),
-              onPressed: () => setState(
-                  () => _showConfirmPassword = !_showConfirmPassword),
+              onPressed: () =>
+                  setState(() => _showConfirmPassword = !_showConfirmPassword),
             ),
           ),
         ),
@@ -277,8 +284,7 @@ class _LoginFormState extends State<LoginForm> {
               icon: Icon(
                 _showPassword ? Icons.visibility_off : Icons.visibility,
               ),
-              onPressed: () =>
-                  setState(() => _showPassword = !_showPassword),
+              onPressed: () => setState(() => _showPassword = !_showPassword),
             ),
           ),
         ),

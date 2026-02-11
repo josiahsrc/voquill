@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 class AppDialog extends StatelessWidget {
   const AppDialog({
     super.key,
-    required this.title,
+    this.title,
     required this.content,
     this.actions = const [],
   });
 
-  final Widget title;
+  final Widget? title;
   final Widget content;
   final List<Widget> actions;
 

@@ -1,5 +1,6 @@
 import 'package:app/actions/auth_actions.dart';
 import 'package:app/store/store.dart';
+import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/common/app_button.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/common/terms_notice.dart';
@@ -23,12 +24,14 @@ class CreateAccountForm extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AppDialog(
-        title: const Text('Sign Up'),
-        content: LoginForm(
-          hideModeSwitch: true,
-          hideProviders: true,
-          defaultMode: LoginMode.signUp,
-          onSuccess: () => Navigator.of(dialogContext).pop(),
+        content: Padding(
+          padding: Theming.padding.onlyHorizontal(),
+          child: LoginForm(
+            hideModeSwitch: true,
+            hideProviders: true,
+            defaultMode: LoginMode.signUp,
+            onSuccess: () => Navigator.of(dialogContext).pop(),
+          ),
         ),
       ),
     );

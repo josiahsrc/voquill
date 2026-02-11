@@ -174,7 +174,7 @@ class MultiPageBackButton extends StatelessWidget {
         final presenter = context.presenter();
         if (presenter.canPop) {
           presenter.pop();
-        } else {
+        } else if (context.canPop()) {
           context.pop();
         }
       },

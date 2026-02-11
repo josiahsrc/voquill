@@ -1,3 +1,4 @@
+import 'package:app/actions/auth_actions.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/pretty_colors.dart';
 import 'package:app/utils/theme_utils.dart';
@@ -28,9 +29,9 @@ class SettingsPage extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: PrettyColors.ordered[
-                    (user?.name ?? '?').codeUnits.first % PrettyColors.ordered.length
-                  ],
+                  backgroundColor:
+                      PrettyColors.ordered[(user?.name ?? '?').codeUnits.first %
+                          PrettyColors.ordered.length],
                   child: Text(
                     (user?.name ?? '?').characters.first.toUpperCase(),
                     style: theme.textTheme.headlineSmall?.copyWith(
@@ -136,7 +137,7 @@ class SettingsPage extends StatelessWidget {
                 AppListTile(
                   leading: const Icon(Icons.logout_outlined),
                   title: const Text('Sign out'),
-                  onTap: () {},
+                  onTap: () => signOut(),
                 ),
               ],
             ),
@@ -144,7 +145,10 @@ class SettingsPage extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: Theming.padding.onlyHorizontal().withTop(16).withBottom(32),
+            padding: Theming.padding
+                .onlyHorizontal()
+                .withTop(16)
+                .withBottom(32),
             child: ListTileSection(
               children: [
                 AppListTile(
