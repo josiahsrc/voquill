@@ -62,6 +62,8 @@ Future<void> finishOnboarding() async {
           playInteractionChime: true,
           wordsThisMonth: 0,
           wordsTotal: 0,
+          hasMigratedPreferredMicrophone: false,
+          shouldShowUpgradeDialog: false,
         ),
       ),
     );

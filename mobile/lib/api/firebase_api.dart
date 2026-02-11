@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:app/api/base_api.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -30,10 +32,10 @@ abstract class FirebaseApi<I, O> extends BaseApi<I, O> {
   @override
   Future<O> call(I input) async {
     final callable = FirebaseFunctions.instance.httpsCallable('handler');
-    final result = await callable.call({
-      'name': handlerName,
-      'args': serializeInput(input),
-    });
+    final params = jsonDecode(
+      jsonEncode({'name': handlerName, 'args': serializeInput(input)}),
+    );
+    final result = await callable.call(params);
     return parseOutput(_deepCast(result.data as Map));
   }
 }
