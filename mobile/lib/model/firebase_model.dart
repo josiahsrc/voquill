@@ -255,6 +255,20 @@ class CreateCustomerPortalSessionOutput {
 }
 
 @JsonSerializable()
+class CreateApiTokenOutput {
+  final String apiToken;
+  final String apiRefreshToken;
+
+  const CreateApiTokenOutput({
+    required this.apiToken,
+    required this.apiRefreshToken,
+  });
+
+  factory CreateApiTokenOutput.fromJson(Map<String, dynamic> json) =>
+      _$CreateApiTokenOutputFromJson(json);
+}
+
+@JsonSerializable()
 class GetFullConfigOutput {
   final FullConfig config;
 
