@@ -102,6 +102,13 @@ function getManifestKeyDetails(
         defaultMessage: "Installer for all macOS architectures",
       }),
     },
+    "windows-x86_64-portable": {
+      platform: "windows",
+      label: intl.formatMessage({ defaultMessage: "Windows (x64)" }),
+      description: intl.formatMessage({
+        defaultMessage: "Portable installer",
+      }),
+    },
     "windows-x86_64": {
       platform: "windows",
       label: intl.formatMessage({ defaultMessage: "Windows (x64)" }),
@@ -201,6 +208,10 @@ const ASSET_KEY_MAPPINGS: Array<{
       "darwin-aarch64-app",
       "darwin-x86_64-app",
     ],
+  },
+  {
+    match: (name) => /^Voquill[._]Portable[._]Installer\.exe$/i.test(name),
+    keys: ["windows-x86_64-portable"],
   },
   {
     match: (name) => /^Voquill[._](?!GPU).*\.msi$/i.test(name),
@@ -510,7 +521,7 @@ async function buildPlatformPreference(platform: Platform) {
       return ["darwin-universal", "darwin-aarch64", "darwin-x86_64"];
     }
     case "windows":
-      return ["windows-x86_64", "windows-x86_64-msi", "windows-x86_64-nsis"];
+      return ["windows-x86_64-portable", "windows-x86_64", "windows-x86_64-msi"];
     case "linux":
       return [
         "linux-x86_64",
