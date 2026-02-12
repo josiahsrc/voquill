@@ -42,6 +42,7 @@ class VoquillIME : InputMethodService() {
 
     private var currentPhase = Phase.IDLE
 
+    private lateinit var keyboardBackground: FrameLayout
     private lateinit var waveformContainer: FrameLayout
     private lateinit var pillButton: LinearLayout
     private lateinit var pillIcon: ImageView
@@ -74,6 +75,7 @@ class VoquillIME : InputMethodService() {
     override fun onCreateInputView(): View {
         val view = layoutInflater.inflate(R.layout.keyboard_view, null)
 
+        keyboardBackground = view.findViewById(R.id.keyboard_background)
         waveformContainer = view.findViewById(R.id.waveform_container)
         pillButton = view.findViewById(R.id.pill_button)
         pillIcon = view.findViewById(R.id.pill_icon)
@@ -102,6 +104,9 @@ class VoquillIME : InputMethodService() {
             imm.switchToNextInputMethod(window.window!!.attributes.token, false)
         }
 
+        window.window?.decorView?.setBackgroundColor(Color.TRANSPARENT)
+        window.window?.navigationBarColor = Color.TRANSPARENT
+
         waveformView?.startAnimating()
         applyPhase(Phase.IDLE)
 
@@ -127,6 +132,12 @@ class VoquillIME : InputMethodService() {
         val idleColor = if (dark) Color.argb(64, 255, 255, 255) else Color.argb(51, 0, 0, 0)
         val pillBg = pillButton.background as? GradientDrawable
             ?: (pillButton.background?.mutate() as? GradientDrawable)
+
+        keyboardBackground.setBackgroundResource(
+            if (dark) R.drawable.keyboard_background_dark else R.drawable.keyboard_background_light
+        )
+        val globeTint = if (dark) Color.argb(180, 255, 255, 255) else Color.argb(140, 0, 0, 0)
+        globeButton.setColorFilter(globeTint)
 
         when (phase) {
             Phase.IDLE -> {

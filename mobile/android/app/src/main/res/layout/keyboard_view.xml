@@ -1,56 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="250dp">
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
     <FrameLayout
-        android:id="@+id/waveform_container"
+        android:id="@+id/keyboard_background"
         android:layout_width="match_parent"
-        android:layout_height="110dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="20dp" />
+        android:layout_height="match_parent"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/keyboard_background_light"
+        android:elevation="8dp" />
 
-    <LinearLayout
-        android:id="@+id/pill_button"
-        android:layout_width="wrap_content"
-        android:layout_height="48dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="146dp"
-        android:background="@drawable/pill_background"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:elevation="9dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="16dp">
 
-        <ImageView
-            android:id="@+id/pill_icon"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_mic" />
+        <FrameLayout
+            android:id="@+id/waveform_container"
+            android:layout_width="match_parent"
+            android:layout_height="110dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp" />
 
-        <TextView
-            android:id="@+id/pill_label"
+        <LinearLayout
+            android:id="@+id/pill_button"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Tap to dictate"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            android:layout_height="48dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="126dp"
+            android:background="@drawable/pill_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
 
-    <ImageButton
-        android:id="@+id/globe_button"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_gravity="bottom|start"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="8dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Switch keyboard"
-        android:scaleType="centerInside"
-        android:src="@drawable/ic_globe" />
+            <ImageView
+                android:id="@+id/pill_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_mic" />
+
+            <TextView
+                android:id="@+id/pill_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Tap to dictate"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/globe_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="186dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Switch keyboard"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_globe" />
+    </FrameLayout>
 </FrameLayout>
