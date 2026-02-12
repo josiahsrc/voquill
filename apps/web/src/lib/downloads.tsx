@@ -521,7 +521,7 @@ async function buildPlatformPreference(platform: Platform) {
       return ["darwin-universal", "darwin-aarch64", "darwin-x86_64"];
     }
     case "windows":
-      return ["windows-x86_64-portable", "windows-x86_64", "windows-x86_64-msi"];
+      return ["windows-x86_64-portable", "windows-x86_64", "windows-x86_64-msi", "windows-x86_64-nsis"];
     case "linux":
       return [
         "linux-x86_64",
