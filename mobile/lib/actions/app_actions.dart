@@ -49,7 +49,7 @@ StreamSubscription<User?> listenToAuthChanges() {
 }
 
 Future<void> _syncKeyboardAuth() async {
-  if (!Platform.isIOS) return;
+  if (!Platform.isIOS && !Platform.isAndroid) return;
 
   try {
     final output = await CreateApiTokenApi().call(null);
@@ -80,7 +80,7 @@ Future<void> _syncKeyboardAuth() async {
 }
 
 void _clearKeyboardAuth() {
-  if (!Platform.isIOS) return;
+  if (!Platform.isIOS && !Platform.isAndroid) return;
   _sharedChannel.invokeMethod('clearKeyboardAuth').catchError((e) {
     _logger.w('Failed to clear keyboard auth', e);
   });
