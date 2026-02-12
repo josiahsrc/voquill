@@ -56,6 +56,10 @@ class HomePage extends StatelessWidget {
           ),
         ),
         SliverPadding(
+          padding: Theming.padding.withoutTop(),
+          sliver: SliverToBoxAdapter(child: TextField()),
+        ),
+        SliverPadding(
           padding: Theming.padding.onlyHorizontal().withTop(28),
           sliver: SliverToBoxAdapter(
             child: Text(

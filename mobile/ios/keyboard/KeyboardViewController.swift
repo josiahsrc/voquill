@@ -455,6 +455,8 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
+    private static let appGroupId = "group.com.voquill.app"
+
     @objc private func onPillTap() {
         switch currentPhase {
         case .idle:
@@ -463,47 +465,269 @@ class KeyboardViewController: UIInputViewController {
         case .recording:
             stopAudioCapture()
             applyPhase(.loading, animated: true)
-            fetchWeather { [weak self] result in
-                DispatchQueue.main.async {
-                    self?.textDocumentProxy.insertText(result)
-                    self?.applyPhase(.idle, animated: true)
-                }
-            }
+            handleTranscription()
         case .loading:
             break
         }
     }
 
-    // MARK: - Weather API
+    // MARK: - Transcription
 
-    private func fetchWeather(completion: @escaping (String) -> Void) {
-        // Salt Lake City, Utah coordinates
-        let urlString = "https://api.open-meteo.com/v1/forecast?latitude=40.76&longitude=-111.89&current_weather=true&temperature_unit=fahrenheit"
-        guard let url = URL(string: urlString) else {
-            completion("Could not fetch weather")
+    private var lastDebugLog: String = ""
+
+    private func dbg(_ msg: String) {
+        NSLog("[VoquillKB] %@", msg)
+        lastDebugLog = msg
+    }
+
+    private func handleTranscription() {
+        guard hasFullAccess else {
+            DispatchQueue.main.async {
+                self.textDocumentProxy.insertText("[Enable Full Access in Settings > Voquill Keyboard]")
+                self.applyPhase(.idle, animated: true)
+            }
             return
         }
 
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
-            guard let data = data, error == nil else {
-                completion("Could not fetch weather")
+        fetchIdToken { [weak self] idToken in
+            guard let self = self else { return }
+
+            guard let idToken = idToken else {
+                DispatchQueue.main.async {
+                    self.textDocumentProxy.insertText("[Auth failed: \(self.lastDebugLog)]")
+                    self.applyPhase(.idle, animated: true)
+                }
                 return
             }
 
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let currentWeather = json["current_weather"] as? [String: Any],
-                   let temperature = currentWeather["temperature"] as? Double {
-                    let tempInt = Int(round(temperature))
-                    completion("It's currently \(tempInt)°F in Utah")
-                } else {
-                    completion("Could not parse weather data")
+            let audioUrl = FileManager.default.temporaryDirectory.appendingPathComponent("voquill_kb.m4a")
+            self.transcribeAudio(at: audioUrl, idToken: idToken) { [weak self] text in
+                DispatchQueue.main.async {
+                    if let text = text, !text.isEmpty {
+                        self?.textDocumentProxy.insertText(text)
+                    } else {
+                        self?.textDocumentProxy.insertText("[Transcribe failed: \(self?.lastDebugLog ?? "unknown")]")
+                    }
+                    self?.applyPhase(.idle, animated: true)
                 }
-            } catch {
-                completion("Could not parse weather data")
             }
         }
-        task.resume()
+    }
+
+    private var cachedIdToken: String?
+    private var cachedIdTokenExpiry: Date?
+
+    private func fetchIdToken(completion: @escaping (String?) -> Void) {
+        if let token = cachedIdToken, let expiry = cachedIdTokenExpiry, Date() < expiry {
+            dbg("Using cached ID token, expires \(expiry)")
+            completion(token)
+            return
+        }
+
+        guard let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId) else {
+            dbg("UserDefaults not accessible for group \(KeyboardViewController.appGroupId)")
+            completion(nil)
+            return
+        }
+
+        let apiRefreshToken = defaults.string(forKey: "voquill_api_refresh_token")
+        let functionUrl = defaults.string(forKey: "voquill_function_url")
+        let apiKey = defaults.string(forKey: "voquill_api_key")
+        let authUrl = defaults.string(forKey: "voquill_auth_url")
+
+        let missing = [
+            apiRefreshToken == nil ? "apiRefreshToken" : nil,
+            functionUrl == nil ? "functionUrl" : nil,
+            apiKey == nil ? "apiKey" : nil,
+            authUrl == nil ? "authUrl" : nil,
+        ].compactMap { $0 }
+
+        guard missing.isEmpty,
+              let apiRefreshToken = apiRefreshToken,
+              let functionUrl = functionUrl,
+              let apiKey = apiKey,
+              let authUrl = authUrl else {
+            dbg("Missing keys in UserDefaults: \(missing.joined(separator: ", "))")
+            completion(nil)
+            return
+        }
+
+        dbg("Step 1: refreshApiToken → \(functionUrl)")
+        refreshApiToken(functionUrl: functionUrl, apiRefreshToken: apiRefreshToken) { [weak self] customToken in
+            guard let self = self else { return }
+            guard let customToken = customToken else {
+                completion(nil)
+                return
+            }
+            self.dbg("Step 2: exchangeCustomToken → \(authUrl)")
+            self.exchangeCustomToken(authUrl: authUrl, apiKey: apiKey, customToken: customToken) { [weak self] idToken, expiresIn in
+                guard let self = self, let idToken = idToken, let expiresIn = expiresIn else {
+                    completion(nil)
+                    return
+                }
+                self.cachedIdToken = idToken
+                self.cachedIdTokenExpiry = Date().addingTimeInterval(expiresIn - 300)
+                self.dbg("ID token acquired, expiresIn=\(expiresIn)s")
+                completion(idToken)
+            }
+        }
+    }
+
+    private func refreshApiToken(functionUrl: String, apiRefreshToken: String, completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: functionUrl) else {
+            dbg("refreshApiToken: invalid URL: \(functionUrl)")
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let payload: [String: Any] = [
+            "data": [
+                "name": "auth/refreshApiToken",
+                "args": ["apiRefreshToken": apiRefreshToken]
+            ]
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            let statusCode = (response as? HTTPURLResponse)?.statusCode
+            if let error = error {
+                self?.dbg("refreshApiToken: network error: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            guard let data = data else {
+                self?.dbg("refreshApiToken: no data, status=\(statusCode ?? -1)")
+                completion(nil)
+                return
+            }
+            let bodyStr = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                self?.dbg("refreshApiToken: not JSON, status=\(statusCode ?? -1), body=\(bodyStr.prefix(300))")
+                completion(nil)
+                return
+            }
+            guard let result = json["result"] as? [String: Any],
+                  let apiToken = result["apiToken"] as? String else {
+                self?.dbg("refreshApiToken: unexpected response, status=\(statusCode ?? -1), json=\(json)")
+                completion(nil)
+                return
+            }
+            self?.dbg("refreshApiToken: success, status=\(statusCode ?? -1)")
+            completion(apiToken)
+        }.resume()
+    }
+
+    private func exchangeCustomToken(authUrl: String, apiKey: String, customToken: String, completion: @escaping (String?, TimeInterval?) -> Void) {
+        let urlString = "\(authUrl)/v1/accounts:signInWithCustomToken?key=\(apiKey)"
+        guard let url = URL(string: urlString) else {
+            dbg("exchangeCustomToken: invalid URL: \(urlString)")
+            completion(nil, nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = [
+            "token": customToken,
+            "returnSecureToken": true
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            let statusCode = (response as? HTTPURLResponse)?.statusCode
+            if let error = error {
+                self?.dbg("exchangeCustomToken: network error: \(error.localizedDescription)")
+                completion(nil, nil)
+                return
+            }
+            guard let data = data else {
+                self?.dbg("exchangeCustomToken: no data, status=\(statusCode ?? -1)")
+                completion(nil, nil)
+                return
+            }
+            let bodyStr = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                self?.dbg("exchangeCustomToken: not JSON, status=\(statusCode ?? -1), body=\(bodyStr.prefix(300))")
+                completion(nil, nil)
+                return
+            }
+            guard let idToken = json["idToken"] as? String,
+                  let expiresInStr = json["expiresIn"] as? String,
+                  let expiresIn = TimeInterval(expiresInStr) else {
+                self?.dbg("exchangeCustomToken: unexpected response, status=\(statusCode ?? -1), json=\(json)")
+                completion(nil, nil)
+                return
+            }
+            self?.dbg("exchangeCustomToken: success, status=\(statusCode ?? -1)")
+            completion(idToken, expiresIn)
+        }.resume()
+    }
+
+    private func transcribeAudio(at fileUrl: URL, idToken: String, completion: @escaping (String?) -> Void) {
+        guard let audioData = try? Data(contentsOf: fileUrl), !audioData.isEmpty else {
+            dbg("transcribeAudio: no audio data at \(fileUrl.path)")
+            completion(nil)
+            return
+        }
+
+        guard let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId),
+              let functionUrl = defaults.string(forKey: "voquill_function_url"),
+              let url = URL(string: functionUrl) else {
+            dbg("transcribeAudio: missing functionUrl in UserDefaults")
+            completion(nil)
+            return
+        }
+
+        let audioBase64 = audioData.base64EncodedString()
+        dbg("transcribeAudio: \(audioData.count) bytes → \(functionUrl)")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let payload: [String: Any] = [
+            "data": [
+                "name": "ai/transcribeAudio",
+                "args": [
+                    "audioBase64": audioBase64,
+                    "audioMimeType": "audio/mp4"
+                ]
+            ]
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            let statusCode = (response as? HTTPURLResponse)?.statusCode
+            if let error = error {
+                self?.dbg("transcribeAudio: network error: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            guard let data = data else {
+                self?.dbg("transcribeAudio: no data, status=\(statusCode ?? -1)")
+                completion(nil)
+                return
+            }
+            let bodyStr = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                self?.dbg("transcribeAudio: not JSON, status=\(statusCode ?? -1), body=\(bodyStr.prefix(300))")
+                completion(nil)
+                return
+            }
+            guard let result = json["result"] as? [String: Any],
+                  let text = result["text"] as? String else {
+                self?.dbg("transcribeAudio: unexpected response, status=\(statusCode ?? -1), json=\(json)")
+                completion(nil)
+                return
+            }
+            self?.dbg("transcribeAudio: success")
+            completion(text)
+        }.resume()
     }
 
     // MARK: - Audio
