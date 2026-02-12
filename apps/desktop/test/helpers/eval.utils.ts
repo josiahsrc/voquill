@@ -8,10 +8,15 @@ import {
 import {
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
+  PostProcessingPromptInput,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../../src/utils/prompt.utils";
-import { getDefaultSystemTones } from "../../src/utils/tone.utils";
+import {
+  getDefaultSystemTones,
+  StyleToneConfig,
+  ToneConfig,
+} from "../../src/utils/tone.utils";
 import { getGroqApiKey } from "./env.utils";
 
 export type Eval = {
@@ -82,18 +87,19 @@ export const postProcess = async ({
   language = "en",
   userName = "Thomas Gundan",
 }: {
-  tone: string;
+  tone: ToneConfig;
   transcription: string;
   language?: string;
   userName?: string;
 }): Promise<string> => {
-  const ppSystem = buildSystemPostProcessingTonePrompt();
-  const ppPrompt = buildPostProcessingPrompt({
+  const promptInput: PostProcessingPromptInput = {
     transcript: transcription,
     dictationLanguage: language,
-    toneTemplate: tone,
+    tone,
     userName,
-  });
+  };
+  const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
+  const ppPrompt = buildPostProcessingPrompt(promptInput);
 
   const output = await getGentextRepo().generateText({
     system: ppSystem,
@@ -109,12 +115,17 @@ export const postProcess = async ({
   return parsed.processedTranscription;
 };
 
-export const getWritingStyle = (style: string) => {
+export const toneFromPrompt = (promptTemplate: string): StyleToneConfig => ({
+  kind: "style",
+  stylePrompt: promptTemplate,
+});
+
+export const getWritingStyle = (style: string): StyleToneConfig => {
   const tones = getDefaultSystemTones();
   const tone = tones.find((t) => t.id === style);
   if (!tone) {
     throw new Error(`Writing style '${style}' not found`);
   }
 
-  return tone.promptTemplate;
+  return { kind: "style", stylePrompt: tone.promptTemplate };
 };

@@ -18,21 +18,22 @@ import { StopRecordingResponse } from "../types/transcription-session.types";
 import { unwrapNestedLlmResponse } from "../utils/ai.utils";
 import { createId } from "../utils/id.utils";
 import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
+import { getLogger } from "../utils/log.utils";
 import {
   buildLocalizedTranscriptionPrompt,
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
+  PostProcessingPromptInput,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
-import { getToneById, getToneTemplateWithFallback } from "../utils/tone.utils";
+import { getToneById, getToneConfig } from "../utils/tone.utils";
 import {
   getMyEffectiveUserId,
   getMyUserName,
   loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
-import { getLogger } from "../utils/log.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { addWordsToCurrentUser } from "./user.actions";
 
@@ -201,7 +202,7 @@ export const postProcessTranscript = async ({
       `Post-processing with tone=${toneId ?? "default"}, apiKeyId=${genApiKeyId ?? "none"}`,
     );
     const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
-    const toneTemplate = getToneTemplateWithFallback(state, toneId);
+    const toneConfig = getToneConfig(state, toneId);
     getLogger().verbose(
       "Post-process language:",
       dictationLanguage,
@@ -209,13 +210,14 @@ export const postProcessTranscript = async ({
       tone?.name ?? "unknown",
     );
 
-    const ppSystem = buildSystemPostProcessingTonePrompt();
-    const ppPrompt = buildPostProcessingPrompt({
+    const promptInput: PostProcessingPromptInput = {
       transcript: rawTranscript,
       userName: getMyUserName(state),
       dictationLanguage,
-      toneTemplate,
-    });
+      tone: toneConfig,
+    };
+    const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
+    const ppPrompt = buildPostProcessingPrompt(promptInput);
     getLogger().verbose(
       "Post-process prompt length:",
       ppPrompt.length,
