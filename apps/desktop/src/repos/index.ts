@@ -162,9 +162,11 @@ export type GenerateTextRepoOutput = {
 const getGenTextRepoInternal = ({
   prefs,
   cloudModel,
+  useNewBackend = true,
 }: {
   prefs: GenerativePrefs;
   cloudModel: CloudModel;
+  useNewBackend?: boolean;
 }): GenerateTextRepoOutput => {
   const state = getAppState();
 
@@ -173,7 +175,7 @@ const getGenTextRepoInternal = ({
     let repo: BaseGenerateTextRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseGenerateTextRepo(cloudModel);
-    } else if (getIsNewBackendEnabled()) {
+    } else if (useNewBackend && getIsNewBackendEnabled()) {
       repo = new NewServerGenerateTextRepo();
     } else {
       repo = new CloudGenerateTextRepo(cloudModel);
@@ -302,7 +304,7 @@ export const getAgentRepo = (): GenerateTextRepoOutput => {
     throw new Error("OpenClaw provides its own LLM processor");
   }
 
-  return getGenTextRepoInternal({ prefs, cloudModel: "large" });
+  return getGenTextRepoInternal({ prefs, cloudModel: "large", useNewBackend: false });
 };
 
 export type TranscribeAudioRepoOutput = {
