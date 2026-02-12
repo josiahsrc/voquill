@@ -232,5 +232,107 @@ describe("tone", () => {
     it("rejects without auth token", async () => {
       await expect(invoke("tone/listGlobalTones", {})).rejects.toThrow("401");
     });
+
+    describe("template tone fields", () => {
+      let templateToneId: string;
+
+      beforeAll(() => {
+        templateToneId = uuid();
+      });
+
+      it("creates a global tone with template fields", async () => {
+        await invoke(
+          "tone/upsertGlobalTone",
+          {
+            tone: {
+              id: templateToneId,
+              name: "Template Tone",
+              promptTemplate: "Process: <transcript/> for <username/> in <language/>",
+              isSystem: false,
+              createdAt: Date.now(),
+              sortOrder: 10,
+              isTemplateTone: true,
+              systemPromptTemplate: "You are a custom assistant for <username/>.",
+            },
+          },
+          adminToken,
+        );
+
+        const data = await invoke("tone/listGlobalTones", {}, adminToken);
+        const tone = data.tones.find(
+          (t: { id: string }) => t.id === templateToneId,
+        );
+        expect(tone).toBeDefined();
+        expect(tone.name).toBe("Template Tone");
+        expect(tone.isTemplateTone).toBe(true);
+        expect(tone.systemPromptTemplate).toBe(
+          "You are a custom assistant for <username/>.",
+        );
+      });
+
+      it("updates a template tone and preserves fields", async () => {
+        await invoke(
+          "tone/upsertGlobalTone",
+          {
+            tone: {
+              id: templateToneId,
+              name: "Template Tone Updated",
+              promptTemplate: "Updated: <transcript/>",
+              isSystem: false,
+              createdAt: Date.now(),
+              sortOrder: 10,
+              isTemplateTone: true,
+              systemPromptTemplate: "Updated system prompt for <username/>.",
+            },
+          },
+          adminToken,
+        );
+
+        const data = await invoke("tone/listGlobalTones", {}, adminToken);
+        const tone = data.tones.find(
+          (t: { id: string }) => t.id === templateToneId,
+        );
+        expect(tone).toBeDefined();
+        expect(tone.name).toBe("Template Tone Updated");
+        expect(tone.isTemplateTone).toBe(true);
+        expect(tone.systemPromptTemplate).toBe(
+          "Updated system prompt for <username/>.",
+        );
+      });
+
+      it("creates a tone without template fields and verifies defaults", async () => {
+        const plainToneId = uuid();
+        await invoke(
+          "tone/upsertGlobalTone",
+          {
+            tone: {
+              id: plainToneId,
+              name: "Plain Tone",
+              promptTemplate: "Simple prompt",
+              isSystem: false,
+              createdAt: Date.now(),
+              sortOrder: 11,
+            },
+          },
+          adminToken,
+        );
+
+        const data = await invoke("tone/listGlobalTones", {}, adminToken);
+        const tone = data.tones.find(
+          (t: { id: string }) => t.id === plainToneId,
+        );
+        expect(tone).toBeDefined();
+        expect(tone.isTemplateTone).toBeUndefined();
+        expect(tone.systemPromptTemplate).toBeUndefined();
+      });
+
+      afterAll(async () => {
+        await invoke(
+          "tone/deleteGlobalTone",
+          { toneId: templateToneId },
+          adminToken,
+        );
+      });
+    });
   });
 });

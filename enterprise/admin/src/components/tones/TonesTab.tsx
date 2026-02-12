@@ -108,7 +108,27 @@ export default function TonesTab() {
       weight: 1,
     },
     {
-      header: intl.formatMessage({ defaultMessage: "Prompt Template" }),
+      header: intl.formatMessage({ defaultMessage: "Mode" }),
+      cell: (row) => (
+        <Box sx={twoLineEllipsis}>
+          {row.isTemplateTone
+            ? intl.formatMessage({ defaultMessage: "Template" })
+            : intl.formatMessage({ defaultMessage: "Style" })}
+        </Box>
+      ),
+      width: 100,
+    },
+    {
+      header: intl.formatMessage({ defaultMessage: "System Prompt" }),
+      cell: (row) => (
+        <Box sx={twoLineEllipsis}>
+          {row.isTemplateTone ? (row.systemPromptTemplate || "—") : "—"}
+        </Box>
+      ),
+      weight: 2,
+    },
+    {
+      header: intl.formatMessage({ defaultMessage: "Prompt" }),
       cell: (row) => <Box sx={twoLineEllipsis}>{row.promptTemplate}</Box>,
       weight: 3,
     },

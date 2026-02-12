@@ -5,6 +5,8 @@ export type MetricsSummary = {
   totalRequests: number;
   totalWords: number;
   avgLatencyMs: number;
+  avgTranscribeMs: number;
+  avgPostProcessMs: number;
   errorRate: number;
   activeUsers: number;
 };
@@ -12,6 +14,14 @@ export type MetricsSummary = {
 export type MetricsDaily = {
   date: string;
   requests: number;
+  words: number;
+};
+
+export type MetricsPerProvider = {
+  providerName: string;
+  requests: number;
+  avgLatencyMs: number;
+  errorCount: number;
   words: number;
 };
 

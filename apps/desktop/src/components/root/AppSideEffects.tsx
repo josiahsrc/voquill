@@ -7,7 +7,6 @@ import {
 } from "@repo/types";
 import { listify } from "@repo/utilities";
 import dayjs from "dayjs";
-import mixpanel from "mixpanel-browser";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
@@ -28,7 +27,7 @@ import {
 } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
-import { CURRENT_COHORT } from "../../utils/analytics.utils";
+import { CURRENT_COHORT, getMixpanel } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import {
   getEnterpriseTarget,
@@ -279,10 +278,15 @@ export const AppSideEffects = () => {
       return;
     }
 
+    const mp = getMixpanel();
+    if (!mp) {
+      return;
+    }
+
     const currentUserId = auth?.uid ?? null;
     const prevUserId = prevUserIdRef.current;
     if (prevUserId && !currentUserId) {
-      mixpanel.reset();
+      mp.reset();
     }
 
     const isPro = member?.plan === "pro";
@@ -300,24 +304,23 @@ export const AppSideEffects = () => {
     const planStatus = member?.plan ?? "community";
 
     if (currentUserId && currentUserId !== prevUserId) {
-      mixpanel.identify(currentUserId);
+      mp.identify(currentUserId);
 
-      // Set creation time to ISO 8601 (2024-01-01T12:00:00.000Z) for Mixpanel
-      mixpanel.people.set_once({
+      mp.people.set_once({
         $created: new Date().toISOString(),
         initialPlatform: platform,
         initialLocale: locale,
         initialCohort: CURRENT_COHORT,
       });
 
-      mixpanel.register_once({
+      mp.register_once({
         initialPlatform: platform,
         initialLocale: locale,
         initialCohort: CURRENT_COHORT,
       });
     }
 
-    mixpanel.people.set({
+    mp.people.set({
       $email: auth?.email ?? undefined,
       $name: auth?.displayName ?? undefined,
       planStatus,
@@ -335,7 +338,7 @@ export const AppSideEffects = () => {
       title: cloudUser?.title ?? undefined,
     });
 
-    mixpanel.register({
+    mp.register({
       userId: currentUserId,
       planStatus,
       isPro,

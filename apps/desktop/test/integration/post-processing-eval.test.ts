@@ -2,14 +2,17 @@ import { describe, test, vi } from "vitest";
 import {
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
+  PostProcessingPromptInput,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../../src/utils/prompt.utils";
+import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
   getGentextRepo,
   getWritingStyle,
   runEval,
+  toneFromPrompt,
 } from "../helpers/eval.utils";
 
 vi.setConfig({ testTimeout: 30000 });
@@ -31,18 +34,19 @@ const postProcess = async ({
   language = "en",
   userName = "Thomas Gundan",
 }: {
-  tone: string;
+  tone: ToneConfig;
   transcription: string;
   language?: string;
   userName?: string;
 }): Promise<string> => {
-  const ppSystem = buildSystemPostProcessingTonePrompt();
-  const ppPrompt = buildPostProcessingPrompt({
+  const promptInput: PostProcessingPromptInput = {
     transcript: transcription,
     dictationLanguage: language,
-    toneTemplate: tone,
+    tone,
     userName,
-  });
+  };
+  const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
+  const ppPrompt = buildPostProcessingPrompt(promptInput);
 
   const output = await getGentextRepo().generateText({
     system: ppSystem,
@@ -68,7 +72,7 @@ const runPostProcessingEval = async ({
   transcription: string;
   language?: string;
   userName?: string;
-  tone: string;
+  tone: ToneConfig;
   evals: Eval[];
 }): Promise<void> => {
   const finalText = await postProcess({
@@ -289,7 +293,7 @@ describe("custom styling", { retry: 8 }, () => {
     await runPostProcessingEval({
       transcription: `
 omg fine I'll help you. but seriosuly, why do you need help with this again? like, I've told you how to do this like 5 times already. ugh whatever, just follow these steps and maybe you'll get it right this time. to fix it, just open your stupid app, go to settings, and click on "reset". there, happy now? sheesh.`,
-      tone: customerSupportChecklist.join("\n"),
+      tone: toneFromPrompt(customerSupportChecklist.join("\n")),
       evals: [
         {
           criteria: "It should use a polite and empathetic tone.",
@@ -323,7 +327,7 @@ omg fine I'll help you. but seriosuly, why do you need help with this again? lik
     await runPostProcessingEval({
       transcription: `
 come on guys. you can do better, that was garbage.`,
-      tone: motivationalCoachStyle,
+      tone: toneFromPrompt(motivationalCoachStyle),
       evals: [
         {
           criteria: "It should use an encouraging and positive tone.",

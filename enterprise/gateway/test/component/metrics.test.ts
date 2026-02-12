@@ -86,6 +86,29 @@ describe("metrics", () => {
       expect(typeof adminMetrics.email).toBe("string");
     });
 
+    it("returns operation-level latency breakdown", async () => {
+      const data = await invoke("metrics/getSummary", { range: "all" }, adminToken);
+
+      expect(typeof data.summary.avgTranscribeMs).toBe("number");
+      expect(typeof data.summary.avgPostProcessMs).toBe("number");
+      expect(data.summary.avgTranscribeMs).toBeGreaterThan(0);
+      expect(data.summary.avgPostProcessMs).toBeGreaterThan(0);
+    });
+
+    it("returns per-provider breakdown", async () => {
+      const data = await invoke("metrics/getSummary", { range: "all" }, adminToken);
+
+      expect(Array.isArray(data.perProvider)).toBe(true);
+      const testProvider = data.perProvider.find(
+        (p: { providerName: string }) => p.providerName === "test-provider",
+      );
+      expect(testProvider).toBeDefined();
+      expect(testProvider.requests).toBeGreaterThanOrEqual(3);
+      expect(typeof testProvider.avgLatencyMs).toBe("number");
+      expect(typeof testProvider.errorCount).toBe("number");
+      expect(typeof testProvider.words).toBe("number");
+    });
+
     it("rejects non-admin users", async () => {
       await expect(
         invoke("metrics/getSummary", { range: "7d" }, userToken),

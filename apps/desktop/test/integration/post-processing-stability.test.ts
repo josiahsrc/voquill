@@ -1,6 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { getDefaultSystemTones } from "../../src/utils/tone.utils";
-import { postProcess } from "../helpers/eval.utils";
+import { getWritingStyle, postProcess } from "../helpers/eval.utils";
 
 vi.setConfig({ testTimeout: 30000 });
 
@@ -14,16 +13,6 @@ vi.mock("../../src/i18n/intl", async (importOriginal) => {
     }),
   };
 });
-
-const getWritingStyle = (style: string) => {
-  const tones = getDefaultSystemTones();
-  const tone = tones.find((t) => t.id === style);
-  if (!tone) {
-    throw new Error(`Writing style '${style}' not found`);
-  }
-
-  return tone.promptTemplate;
-};
 
 test(
   "stability1",

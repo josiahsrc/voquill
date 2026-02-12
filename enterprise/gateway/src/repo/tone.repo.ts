@@ -11,6 +11,10 @@ function rowToTone(row: ToneRow): Tone {
     createdAt: row.created_at.getTime(),
     sortOrder: row.sort_order,
     isGlobal: row.is_global,
+    ...(row.system_prompt_template != null && {
+      systemPromptTemplate: row.system_prompt_template,
+    }),
+    ...(row.is_template_tone && { isTemplateTone: true }),
   };
 }
 
@@ -32,8 +36,8 @@ export async function upsertTone(userId: string, tone: Tone): Promise<void> {
 
   if (existing.rows.length === 0) {
     await pool.query(
-      `INSERT INTO tones (id, user_id, name, prompt_template, is_system, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+      `INSERT INTO tones (id, user_id, name, prompt_template, is_system, sort_order, system_prompt_template, is_template_tone)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         tone.id,
         userId,
@@ -41,17 +45,21 @@ export async function upsertTone(userId: string, tone: Tone): Promise<void> {
         tone.promptTemplate,
         tone.isSystem,
         tone.sortOrder,
+        tone.systemPromptTemplate ?? null,
+        tone.isTemplateTone ?? false,
       ],
     );
   } else {
     await pool.query(
-      `UPDATE tones SET name = $1, prompt_template = $2, is_system = $3, sort_order = $4
-       WHERE id = $5 AND user_id = $6`,
+      `UPDATE tones SET name = $1, prompt_template = $2, is_system = $3, sort_order = $4, system_prompt_template = $5, is_template_tone = $6
+       WHERE id = $7 AND user_id = $8`,
       [
         tone.name,
         tone.promptTemplate,
         tone.isSystem,
         tone.sortOrder,
+        tone.systemPromptTemplate ?? null,
+        tone.isTemplateTone ?? false,
         tone.id,
         userId,
       ],
@@ -90,8 +98,8 @@ export async function upsertGlobalTone(
 
   if (existing.rows.length === 0) {
     await pool.query(
-      `INSERT INTO tones (id, user_id, name, prompt_template, is_system, sort_order, is_global)
-       VALUES ($1, $2, $3, $4, $5, $6, TRUE)`,
+      `INSERT INTO tones (id, user_id, name, prompt_template, is_system, sort_order, is_global, system_prompt_template, is_template_tone)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7, $8)`,
       [
         tone.id,
         userId,
@@ -99,13 +107,23 @@ export async function upsertGlobalTone(
         tone.promptTemplate,
         tone.isSystem,
         tone.sortOrder,
+        tone.systemPromptTemplate ?? null,
+        tone.isTemplateTone ?? false,
       ],
     );
   } else {
     await pool.query(
-      `UPDATE tones SET name = $1, prompt_template = $2, is_system = $3, sort_order = $4
-       WHERE id = $5 AND is_global = TRUE`,
-      [tone.name, tone.promptTemplate, tone.isSystem, tone.sortOrder, tone.id],
+      `UPDATE tones SET name = $1, prompt_template = $2, is_system = $3, sort_order = $4, system_prompt_template = $5, is_template_tone = $6
+       WHERE id = $7 AND is_global = TRUE`,
+      [
+        tone.name,
+        tone.promptTemplate,
+        tone.isSystem,
+        tone.sortOrder,
+        tone.systemPromptTemplate ?? null,
+        tone.isTemplateTone ?? false,
+        tone.id,
+      ],
     );
   }
 }

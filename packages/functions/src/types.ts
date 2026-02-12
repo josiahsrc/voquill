@@ -19,6 +19,7 @@ import {
   type LlmProvider,
   type LlmProviderInput,
   type MetricsDaily,
+  type MetricsPerProvider,
   type MetricsPerUser,
   type MetricsRange,
   type MetricsSummary,
@@ -400,6 +401,7 @@ type HandlerDefinitions = {
       summary: MetricsSummary;
       daily: MetricsDaily[];
       perUser: MetricsPerUser[];
+      perProvider: MetricsPerProvider[];
     };
   };
 };
