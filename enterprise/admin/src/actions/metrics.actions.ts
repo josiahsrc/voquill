@@ -19,6 +19,7 @@ export async function loadMetrics(range?: MetricsRange) {
       draft.metrics.summary = data.summary;
       draft.metrics.daily = data.daily;
       draft.metrics.perUser = data.perUser;
+      draft.metrics.perProvider = data.perProvider;
       draft.metrics.status = "success";
     });
   } catch (err) {

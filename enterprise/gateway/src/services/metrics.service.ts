@@ -49,5 +49,6 @@ export async function getMetricsSummaryHandler(opts: {
     summary: metrics.summary,
     daily: metrics.daily,
     perUser,
+    perProvider: metrics.perProvider,
   };
 }

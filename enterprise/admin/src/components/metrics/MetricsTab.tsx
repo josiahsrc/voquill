@@ -9,13 +9,16 @@ import {
   Typography,
 } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
+import type {
+  MetricsPerProvider,
+  MetricsPerUser,
+  MetricsRange,
+} from "@repo/types";
 import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { loadMetrics } from "../../actions/metrics.actions";
 import { useIntervalAsync, useOnEnter } from "../../hooks/helper.hooks";
-import { getAppState } from "../../store";
-import type { MetricsPerUser, MetricsRange } from "@repo/types";
-import { useAppStore } from "../../store";
+import { getAppState, useAppStore } from "../../store";
 import { AppTable, type ColumnDef } from "../common/AppTable";
 import { CenteredMessage } from "../common/CenteredMessage";
 import { TabLayout } from "../common/TabLayout";
@@ -26,18 +29,23 @@ export default function MetricsTab() {
   const summary = useAppStore((state) => state.metrics.summary);
   const daily = useAppStore((state) => state.metrics.daily);
   const perUser = useAppStore((state) => state.metrics.perUser);
+  const perProvider = useAppStore((state) => state.metrics.perProvider);
   const range = useAppStore((state) => state.metrics.range);
 
   useOnEnter(() => {
     loadMetrics(range);
   });
 
-  useIntervalAsync(5 * 60 * 1000, async () => {
-    const state = getAppState();
-    if (state.metrics.status === "success") {
-      await loadMetrics(state.metrics.range);
-    }
-  }, []);
+  useIntervalAsync(
+    5 * 60 * 1000,
+    async () => {
+      const state = getAppState();
+      if (state.metrics.status === "success") {
+        await loadMetrics(state.metrics.range);
+      }
+    },
+    [],
+  );
 
   const handleRangeChange = (_: unknown, value: MetricsRange | null) => {
     if (value) {
@@ -83,6 +91,39 @@ export default function MetricsTab() {
           ? new Date(row.lastActiveAt).toLocaleDateString()
           : "—",
       getSortKey: (row) => row.lastActiveAt ?? "",
+      weight: 1,
+    },
+  ];
+
+  const providerColumns: ColumnDef<MetricsPerProvider>[] = [
+    {
+      header: intl.formatMessage({ defaultMessage: "Provider" }),
+      cell: (row) => row.providerName,
+      getSortKey: (row) => row.providerName.toLowerCase(),
+      weight: 2,
+    },
+    {
+      header: intl.formatMessage({ defaultMessage: "Requests" }),
+      cell: (row) => row.requests.toLocaleString(),
+      getSortKey: (row) => row.requests,
+      weight: 1,
+    },
+    {
+      header: intl.formatMessage({ defaultMessage: "Avg Latency" }),
+      cell: (row) => `${row.avgLatencyMs} ms`,
+      getSortKey: (row) => row.avgLatencyMs,
+      weight: 1,
+    },
+    {
+      header: intl.formatMessage({ defaultMessage: "Errors" }),
+      cell: (row) => row.errorCount.toLocaleString(),
+      getSortKey: (row) => row.errorCount,
+      weight: 1,
+    },
+    {
+      header: intl.formatMessage({ defaultMessage: "Words" }),
+      cell: (row) => row.words.toLocaleString(),
+      getSortKey: (row) => row.words,
       weight: 1,
     },
   ];
@@ -153,16 +194,16 @@ export default function MetricsTab() {
           value={summary?.totalWords.toLocaleString() ?? "0"}
         />
         <SummaryCard
-          label={intl.formatMessage({ defaultMessage: "Avg Latency" })}
-          value={`${summary?.avgLatencyMs ?? 0} ms`}
+          label={intl.formatMessage({ defaultMessage: "Avg Transcribe" })}
+          value={`${summary?.avgTranscribeMs ?? 0} ms`}
+        />
+        <SummaryCard
+          label={intl.formatMessage({ defaultMessage: "Avg Post-Process" })}
+          value={`${summary?.avgPostProcessMs ?? 0} ms`}
         />
         <SummaryCard
           label={intl.formatMessage({ defaultMessage: "Error Rate" })}
           value={`${((summary?.errorRate ?? 0) * 100).toFixed(1)}%`}
-        />
-        <SummaryCard
-          label={intl.formatMessage({ defaultMessage: "Active Users" })}
-          value={summary?.activeUsers.toLocaleString() ?? "0"}
         />
       </Box>
 
@@ -175,6 +216,25 @@ export default function MetricsTab() {
             xAxis={[{ scaleType: "band", data: chartData.dates }]}
             series={[{ data: chartData.requests }]}
             height={300}
+          />
+        </Box>
+      )}
+
+      {perProvider.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            <FormattedMessage defaultMessage="Per Provider" />
+          </Typography>
+          <AppTable
+            rows={perProvider}
+            columns={providerColumns}
+            defaultSortColumnIndex={1}
+            defaultSortDirection="desc"
+            fixedItemHeight={52}
+            sx={{ height: 300 }}
+            emptyMessage={intl.formatMessage({
+              defaultMessage: "No provider data",
+            })}
           />
         </Box>
       )}
