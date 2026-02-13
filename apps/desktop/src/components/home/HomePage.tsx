@@ -1,16 +1,16 @@
 import { LocalFireDepartmentRounded } from "@mui/icons-material";
-import {
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { useNavigate } from "react-router-dom";
 import { useAppStore } from "../../store";
-import { getEffectiveStreak, getMyUser, getMyUserName } from "../../utils/user.utils";
+import {
+  getEffectiveStreak,
+  getMyUser,
+  getMyUserName,
+} from "../../utils/user.utils";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
+import { TranscriptionRow } from "../transcriptions/TranscriptRow";
 import { GettingStartedList } from "./GettingStartedList";
 import { HomeSideEffects } from "./HomeSideEffects";
 
@@ -40,48 +40,6 @@ function StatCard({
   );
 }
 
-function TranscriptionPreview({
-  text,
-  time,
-  app,
-}: {
-  text: string;
-  time: string;
-  app: string;
-}) {
-  return (
-    <Card>
-      <CardContent sx={{ py: 1.5, px: 2, "&:last-child": { pb: 1.5 } }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 0.5 }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            {app}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {time}
-          </Typography>
-        </Stack>
-        <Typography
-          variant="body2"
-          sx={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
-          {text}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function HomePage() {
   const user = useAppStore(getMyUser);
   const userName = useAppStore(getMyUserName);
@@ -90,6 +48,12 @@ export default function HomePage() {
 
   const wordsThisMonth = user?.wordsThisMonth ?? 0;
   const wordsTotal = user?.wordsTotal ?? 0;
+  const navigate = useNavigate();
+
+  const recentIds = useAppStore(
+    (state) => state.transcriptions.transcriptionIds,
+  );
+  const topIds = useMemo(() => recentIds.slice(0, 2), [recentIds]);
 
   return (
     <DashboardEntryLayout>
@@ -130,34 +94,29 @@ export default function HomePage() {
         <GettingStartedList />
 
         <Box>
-          <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5 }}>
+          <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5 }}>
             <FormattedMessage defaultMessage="Recent transcriptions" />
           </Typography>
-          <Stack spacing={1}>
-            <TranscriptionPreview
-              text="Hey, I wanted to follow up on the project timeline we discussed yesterday. Can we move the deadline to next Friday?"
-              time="2 min ago"
-              app="Slack"
-            />
-            <TranscriptionPreview
-              text="The quarterly report shows a 15% increase in user engagement across all platforms, which is above our target."
-              time="1 hour ago"
-              app="Google Docs"
-            />
-            <TranscriptionPreview
-              text="Please schedule a meeting with the design team for Thursday at 3pm to review the new mockups."
-              time="Yesterday"
-              app="Gmail"
-            />
-          </Stack>
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5 }}>
-            <Chip
-              label={<FormattedMessage defaultMessage="View all" />}
-              variant="outlined"
-              clickable
-              sx={{ border: "none" }}
-            />
-          </Box>
+          {topIds.length > 0 ? (
+            <>
+              {topIds.map((id) => (
+                <TranscriptionRow key={id} id={id} />
+              ))}
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 1.5 }}>
+                <Chip
+                  label={<FormattedMessage defaultMessage="View all" />}
+                  variant="outlined"
+                  clickable
+                  onClick={() => navigate("/dashboard/transcriptions")}
+                  sx={{ border: "none" }}
+                />
+              </Box>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <FormattedMessage defaultMessage="No transcriptions yet." />
+            </Typography>
+          )}
         </Box>
       </Stack>
     </DashboardEntryLayout>
