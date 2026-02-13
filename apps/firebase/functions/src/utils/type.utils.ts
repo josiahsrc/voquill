@@ -1,7 +1,5 @@
 import { firemix } from "@firemix/mixed";
 import {
-	ApiRefreshToken,
-	DatabaseApiRefreshToken,
 	DatabaseMember,
 	DatabaseTerm,
 	DatabaseTone,
@@ -76,16 +74,3 @@ export const toneFromDatabase = (dbTone: DatabaseTone): Tone => ({
 	createdAt: dbTone.createdAt.toDate().getTime(),
 });
 
-export const apiRefreshTokenToDatabase = (
-	token: ApiRefreshToken,
-): DatabaseApiRefreshToken => ({
-	...token,
-	createdAt: firemix().timestampFromDate(new Date(token.createdAt)),
-});
-
-export const apiRefreshTokenFromDatabase = (
-	dbToken: DatabaseApiRefreshToken,
-): ApiRefreshToken => ({
-	...dbToken,
-	createdAt: dbToken.createdAt.toDate().toISOString(),
-});

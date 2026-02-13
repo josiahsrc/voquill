@@ -1,7 +1,6 @@
 import { FiremixPath } from "@firemix/core";
 import {
   Contact,
-  DatabaseApiRefreshToken,
   DatabaseMember,
   DatabaseUser,
   Nullable,
@@ -41,8 +40,3 @@ export const toneDocs = (userId: Nullable<string>): FiremixPath<ToneDoc> => {
   return ["toneDocs", ...listify(userId)];
 };
 
-export const apiRefreshTokens = (
-  tokenHash?: Nullable<string>,
-): FiremixPath<DatabaseApiRefreshToken> => {
-  return ["apiRefreshTokens", ...listify(tokenHash)];
-};

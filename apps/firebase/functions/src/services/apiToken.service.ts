@@ -1,6 +1,4 @@
 import crypto from "crypto";
-import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
 import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import * as admin from "firebase-admin";
@@ -21,10 +19,10 @@ export const createApiToken = async (args: {
 	const rawToken = crypto.randomBytes(32).toString("hex");
 	const tokenHash = hashToken(rawToken);
 
-	await firemix().set(mixpath.apiRefreshTokens(tokenHash), {
-		uid,
-		createdAt: firemix().timestampFromDate(new Date()),
-	});
+	await admin
+		.database()
+		.ref(`apiRefreshTokens/${tokenHash}`)
+		.set({ uid, createdAt: Date.now() });
 
 	const apiToken = await admin.auth().createCustomToken(uid);
 
@@ -35,12 +33,16 @@ export const refreshApiToken = async (args: {
 	input: HandlerInput<"auth/refreshApiToken">;
 }): Promise<HandlerOutput<"auth/refreshApiToken">> => {
 	const tokenHash = hashToken(args.input.apiRefreshToken);
-	const doc = await firemix().get(mixpath.apiRefreshTokens(tokenHash));
+	const snapshot = await admin
+		.database()
+		.ref(`apiRefreshTokens/${tokenHash}`)
+		.get();
 
-	if (!doc) {
+	const data = snapshot.val();
+	if (!data) {
 		throw new NotFoundError("invalid refresh token");
 	}
 
-	const apiToken = await admin.auth().createCustomToken(doc.data.uid);
+	const apiToken = await admin.auth().createCustomToken(data.uid);
 	return { apiToken };
 };
