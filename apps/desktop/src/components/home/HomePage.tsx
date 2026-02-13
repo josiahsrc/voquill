@@ -9,6 +9,7 @@ import {
   getMyUser,
   getMyUserName,
 } from "../../utils/user.utils";
+import { DictationInstruction } from "../common/DictationInstruction";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 import { TranscriptionRow } from "../transcriptions/TranscriptRow";
 import { GettingStartedList } from "./GettingStartedList";
@@ -66,9 +67,7 @@ export default function HomePage() {
               values={{ name: userName }}
             />
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            <FormattedMessage defaultMessage="Here's how your voice is doing." />
-          </Typography>
+          <DictationInstruction />
         </Box>
 
         <Stack direction="row" spacing={1.5}>
