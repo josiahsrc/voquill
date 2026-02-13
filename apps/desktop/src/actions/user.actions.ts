@@ -25,8 +25,8 @@ import {
   setCurrentUser,
   setUserPreferences,
 } from "../utils/user.utils";
-import { setLocalStorageValue } from "../hooks/local-storage.hooks";
 import { showErrorSnackbar } from "./app.actions";
+import { setLocalStorageValue } from "./local-storage.actions";
 
 const updateUser = async (
   updateCallback: (user: User) => void,

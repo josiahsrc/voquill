@@ -7,7 +7,7 @@ import { useCallback } from "react";
 import { FormattedMessage } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
 import { loadDictionary } from "../../actions/dictionary.actions";
-import { setLocalStorageValue } from "../../hooks/local-storage.hooks";
+import { setLocalStorageValue } from "../../actions/local-storage.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { getTermRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";

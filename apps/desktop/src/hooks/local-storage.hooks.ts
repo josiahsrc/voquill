@@ -1,27 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
+import { setLocalStorageValue } from "../actions/local-storage.actions";
 import { produceAppState, useAppStore } from "../store";
-
-const getStorage = (): Storage | null => {
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-};
-
-export const setLocalStorageValue = <T>(key: string, value: T): void => {
-  const storage = getStorage();
-  if (storage) {
-    try {
-      storage.setItem(key, JSON.stringify(value));
-    } catch {
-      // ignore
-    }
-  }
-  produceAppState((draft) => {
-    draft.localStorageCache[key] = value;
-  });
-};
+import { getLocalStorage } from "../utils/local-storage.utils";
 
 export function useLocalStorage<T>(
   key: string,
@@ -31,7 +11,7 @@ export function useLocalStorage<T>(
 
   const value = useMemo(() => {
     if (cached !== undefined) return cached as T;
-    const storage = getStorage();
+    const storage = getLocalStorage();
     if (!storage) return defaultValue;
     try {
       const raw = storage.getItem(key);

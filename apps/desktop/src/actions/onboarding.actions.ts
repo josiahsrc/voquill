@@ -28,6 +28,7 @@ import {
   TranscriptionPrefs,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
+import { clearLocalStorageValue } from "./local-storage.actions";
 import { refreshMember } from "./member.actions";
 import { setAutoLaunchEnabled } from "./settings.actions";
 
@@ -223,6 +224,10 @@ export const finishOnboarding = async () => {
   if (!existingUser) {
     throw new Error("Cannot finish onboarding: user not found");
   }
+
+  clearLocalStorageValue("voquill:checklist-writing-style");
+  clearLocalStorageValue("voquill:checklist-dictionary");
+  clearLocalStorageValue("voquill:checklist-dismissed");
 
   try {
     const repo = getUserRepo();
