@@ -128,7 +128,7 @@ export const TrialCountdown = () => {
           borderRadius: 2,
         }}
       >
-        <FormattedMessage defaultMessage="Subscribe" />
+        <FormattedMessage defaultMessage="Upgrade" />
       </Button>
     </Stack>
   );
