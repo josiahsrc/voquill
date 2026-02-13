@@ -53,7 +53,7 @@ export async function createTestSttProvider(token: string): Promise<void> {
         id: "00000000-0000-0000-0000-000000000001",
         provider: "speaches",
         name: "Test Speaches",
-        url: "http://speaches:8000/v1",
+        url: "http://speaches:8000",
         model: "Systran/faster-whisper-base",
         apiKey: "sk-test-stt-provider-key",
         tier: 1,

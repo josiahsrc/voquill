@@ -28,6 +28,10 @@ import {
   INITIAL_STT_PROVIDERS_STATE,
   type SttProvidersState,
 } from "./stt-providers.state";
+import {
+  INITIAL_METRICS_STATE,
+  type MetricsState,
+} from "./metrics.state";
 import { INITIAL_TERMS_STATE, type TermsState } from "./terms.state";
 import { INITIAL_TONES_STATE, type TonesState } from "./tones.state";
 import { INITIAL_USERS_STATE, type UsersState } from "./users.state";
@@ -53,6 +57,7 @@ export type AppState = {
   oidcProviderById: Record<string, OidcProvider>;
 
   login: LoginState;
+  metrics: MetricsState;
   terms: TermsState;
   tones: TonesState;
   users: UsersState;
@@ -87,6 +92,7 @@ export const INITIAL_APP_STATE: AppState = {
   oidcProviderById: {},
 
   login: INITIAL_LOGIN_STATE,
+  metrics: INITIAL_METRICS_STATE,
   settings: INITIAL_SETTINGS_STATE,
   terms: INITIAL_TERMS_STATE,
   tones: INITIAL_TONES_STATE,

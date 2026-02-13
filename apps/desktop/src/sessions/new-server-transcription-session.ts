@@ -12,8 +12,9 @@ import {
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
+  PostProcessingPromptInput,
 } from "../utils/prompt.utils";
-import { getToneTemplateWithFallback } from "../utils/tone.utils";
+import { getToneConfig } from "../utils/tone.utils";
 import {
   getGenerativePrefs,
   getMyUser,
@@ -373,19 +374,18 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
 
       if (useCloudPostProcessing) {
         const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
-        const toneTemplate = getToneTemplateWithFallback(
-          state,
-          options?.toneId ?? null,
-        );
+        const toneId = options?.toneId ?? null;
+        const toneConfig = getToneConfig(state, toneId);
         const userName = getMyUserName(state);
 
-        const systemPrompt = buildSystemPostProcessingTonePrompt();
-        userPrompt = buildPostProcessingPrompt({
+        const promptInput: PostProcessingPromptInput = {
           transcript: "{{transcript}}",
           dictationLanguage,
-          toneTemplate,
           userName,
-        });
+          tone: toneConfig,
+        };
+        const systemPrompt = buildSystemPostProcessingTonePrompt(promptInput);
+        userPrompt = buildPostProcessingPrompt(promptInput);
 
         prompt = [
           { role: "system", content: systemPrompt },

@@ -1,5 +1,6 @@
 import {
   AutoFixHighOutlined,
+  BarChartOutlined,
   ClassOutlined,
   GroupOutlined,
   MicOutlined,
@@ -63,6 +64,11 @@ export default function HomePage() {
       label: intl.formatMessage({ defaultMessage: "Identity Providers" }),
       path: "/oidc-providers",
       icon: <VpnKeyOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "Usage Metrics" }),
+      path: "/metrics",
+      icon: <BarChartOutlined />,
     },
     {
       label: intl.formatMessage({ defaultMessage: "Settings" }),

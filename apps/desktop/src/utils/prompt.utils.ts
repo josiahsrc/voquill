@@ -7,6 +7,7 @@ import {
   getDisplayNameForLanguage,
   LANGUAGE_DISPLAY_NAMES,
 } from "./language.utils";
+import { ToneConfig } from "./tone.utils";
 import { getMyUserName } from "./user.utils";
 
 const sanitizeGlossaryValue = (value: string): string =>
@@ -93,29 +94,67 @@ export const buildLocalizedTranscriptionPrompt = (args: {
   return parts.join("\n");
 };
 
-export const buildSystemPostProcessingTonePrompt = (): string => {
-  return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a single field 'processedTranscription' that contains the rewritten transcript.";
-};
+function applyTemplateVars(
+  template: string,
+  vars: [name: string, value: string][],
+): string {
+  let result = template;
+  for (const [name, value] of vars) {
+    result = result.replace(new RegExp(`<${name}\\/>`, "g"), value);
+  }
+  return result;
+}
 
-export const buildPostProcessingPrompt = ({
-  transcript,
-  dictationLanguage,
-  userName,
-  toneTemplate,
-}: {
+export type PostProcessingPromptInput = {
   transcript: string;
   userName: string;
   dictationLanguage: string;
-  toneTemplate: string;
-}): string => {
-  const languageName = getDisplayNameForLanguage(dictationLanguage);
+  tone: ToneConfig;
+};
+
+const buildTemplateVars = (
+  input: PostProcessingPromptInput,
+): [name: string, value: string][] => {
+  const languageName = getDisplayNameForLanguage(input.dictationLanguage);
+  return [
+    ["username", input.userName],
+    ["transcript", input.transcript],
+    ["language", languageName],
+  ];
+};
+
+export const buildSystemPostProcessingTonePrompt = (
+  input: PostProcessingPromptInput,
+): string => {
+  if (
+    input.tone.kind === "template" &&
+    input.tone.systemPromptTemplate
+  ) {
+    return applyTemplateVars(
+      input.tone.systemPromptTemplate,
+      buildTemplateVars(input),
+    );
+  }
+  return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a single field 'processedTranscription' that contains the rewritten transcript.";
+};
+
+export const buildPostProcessingPrompt = (
+  input: PostProcessingPromptInput,
+): string => {
+  const { transcript, userName, tone } = input;
+  const languageName = getDisplayNameForLanguage(input.dictationLanguage);
+
+  if (tone.kind === "template") {
+    return applyTemplateVars(tone.promptTemplate, buildTemplateVars(input));
+  }
+
+  const toneTemplate = tone.stylePrompt;
 
   return `
 Your task is to post-process a transcription.
 
 Context:
 - The speaker's name is ${userName}.
-- The speaker wants the processed transcription to be in the ${languageName} language.
 
 Instructions:
 \`\`\`
@@ -129,10 +168,10 @@ ${transcript}
 
 Post-process transcription according to the instructions.
 
+**CRITICAL** Your response MUST be written in the ${languageName} language.
 **CRITICAL** Your response MUST be in JSON format.
 `;
 };
-
 
 export const PROCESSED_TRANSCRIPTION_SCHEMA = z.object({
   processedTranscription: z

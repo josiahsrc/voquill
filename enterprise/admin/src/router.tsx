@@ -28,6 +28,7 @@ const OidcProvidersTab = lazyLoad(
   () => import("./components/oidc-providers/OidcProvidersTab"),
 );
 const TonesTab = lazyLoad(() => import("./components/tones/TonesTab"));
+const MetricsTab = lazyLoad(() => import("./components/metrics/MetricsTab"));
 const SettingsTab = lazyLoad(() => import("./components/settings/SettingsTab"));
 
 const router = createBrowserRouter([
@@ -46,6 +47,7 @@ const router = createBrowserRouter([
       { path: "stt-providers", element: <SttProvidersTab /> },
       { path: "llm-providers", element: <LlmProvidersTab /> },
       { path: "oidc-providers", element: <OidcProvidersTab /> },
+      { path: "metrics", element: <MetricsTab /> },
       { path: "settings", element: <SettingsTab /> },
     ],
   },

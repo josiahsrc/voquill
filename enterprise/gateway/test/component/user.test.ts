@@ -249,6 +249,32 @@ describe("user", () => {
     expect(data.user.stylingMode).toBeNull();
   });
 
+  it("sets and retrieves preferredLanguage with long values like keyboard-layout", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          preferredLanguage: "keyboard-layout",
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.preferredLanguage).toBe("keyboard-layout");
+  });
+
   it("rejects without auth token", async () => {
     await expect(invoke("user/getMyUser", {})).rejects.toThrow("401");
   });

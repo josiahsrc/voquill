@@ -225,16 +225,43 @@ export const getToneById = (
   return getRec(state.toneById, id) ?? null;
 };
 
-export const getToneTemplateWithFallback = (
-  state: AppState,
-  id: Nullable<string>,
-): string => {
-  const tone = getToneById(state, id);
-  if (tone) {
-    return tone.promptTemplate;
+export type TemplateToneConfig = {
+  kind: "template";
+  promptTemplate: string;
+  systemPromptTemplate?: string;
+};
+
+export type StyleToneConfig = {
+  kind: "style";
+  stylePrompt: string;
+};
+
+export type ToneConfig = TemplateToneConfig | StyleToneConfig;
+
+const toneToConfig = (tone: Tone): ToneConfig => {
+  if (tone.isTemplateTone) {
+    return {
+      kind: "template",
+      promptTemplate: tone.promptTemplate,
+      systemPromptTemplate: tone.systemPromptTemplate,
+    };
   }
 
-  return getToneById(state, "default")?.promptTemplate || "";
+  return {
+    kind: "style",
+    stylePrompt: tone.promptTemplate,
+  };
+};
+
+export const getToneConfig = (
+  state: AppState,
+  id: Nullable<string>,
+): ToneConfig => {
+  const tone = getToneById(state, id) ?? getToneById(state, "default");
+  if (!tone) {
+    throw new Error("Default tone not found in state");
+  }
+  return toneToConfig(tone);
 };
 
 export const getActiveManualToneIds = (state: AppState): string[] => {

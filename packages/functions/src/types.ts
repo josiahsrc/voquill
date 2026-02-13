@@ -1,10 +1,10 @@
 import {
   EnterpriseConfigZod,
   FullConfig,
-  Member,
-  OidcProviderInputZod,
-  type EnterpriseLicense,
   LlmProviderInputZod,
+  Member,
+  METRICS_RANGES,
+  OidcProviderInputZod,
   SttProviderInputZod,
   Term,
   TermZod,
@@ -14,9 +14,15 @@ import {
   type Auth,
   type EmptyObject,
   type EnterpriseConfig,
+  type EnterpriseLicense,
   type JsonResponse,
   type LlmProvider,
   type LlmProviderInput,
+  type MetricsDaily,
+  type MetricsPerProvider,
+  type MetricsPerUser,
+  type MetricsRange,
+  type MetricsSummary,
   type Nullable,
   type OidcProvider,
   type OidcProviderInput,
@@ -402,6 +408,17 @@ type HandlerDefinitions = {
       config: FullConfig;
     };
   };
+
+  // metrics
+  "metrics/getSummary": {
+    input: { range: MetricsRange };
+    output: {
+      summary: MetricsSummary;
+      daily: MetricsDaily[];
+      perUser: MetricsPerUser[];
+      perProvider: MetricsPerProvider[];
+    };
+  };
 };
 
 export type HandlerName = keyof HandlerDefinitions;
@@ -585,3 +602,11 @@ export const RefreshApiTokenInputZod = z
     apiRefreshToken: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;
+
+export const MetricsRangeZod = z.enum(METRICS_RANGES);
+
+export const GetMetricsSummaryInputZod = z
+  .object({
+    range: MetricsRangeZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"metrics/getSummary">>;
