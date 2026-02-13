@@ -27,6 +27,8 @@ export type DatabaseUser = {
   stylingMode?: Nullable<StylingMode>;
   selectedToneId?: Nullable<string>;
   activeToneIds?: Nullable<string[]>;
+  streak?: number;
+  streakRecordedAt?: Nullable<string>;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
@@ -61,5 +63,7 @@ export const UserZod = z
     stylingMode: StylingModeZod.nullable().optional(),
     selectedToneId: z.string().nullable().optional(),
     activeToneIds: z.array(z.string()).nullable().optional(),
+    streak: z.number().optional(),
+    streakRecordedAt: z.string().nullable().optional(),
   })
   .strict() satisfies z.ZodType<User>;

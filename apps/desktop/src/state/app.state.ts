@@ -59,6 +59,7 @@ export type AppState = {
   permissions: PermissionMap;
   confettiCounter: number;
   userPrefs: Nullable<UserPreferences>;
+  localStorageCache: Record<string, unknown>;
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -107,6 +108,7 @@ export const INITIAL_APP_STATE: AppState = {
   enterpriseConfig: null,
   enterpriseLicense: null,
   isEnterprise: false,
+  localStorageCache: {},
   oidcProviders: [],
   memberById: {},
   userById: {},

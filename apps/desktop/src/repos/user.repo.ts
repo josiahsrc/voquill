@@ -24,6 +24,8 @@ type LocalUser = {
   stylingMode?: string | null;
   selectedToneId?: string | null;
   activeToneIds?: string | null;
+  streak?: number | null;
+  streakRecordedAt?: string | null;
 };
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -58,6 +60,8 @@ const fromLocalUser = (localUser: LocalUser): User => {
     activeToneIds: localUser.activeToneIds
       ? JSON.parse(localUser.activeToneIds)
       : null,
+    streak: localUser.streak ?? undefined,
+    streakRecordedAt: localUser.streakRecordedAt ?? undefined,
   };
 };
 
@@ -79,6 +83,8 @@ const toLocalUser = (user: User): LocalUser => ({
   stylingMode: user.stylingMode ?? null,
   selectedToneId: user.selectedToneId ?? null,
   activeToneIds: user.activeToneIds ? JSON.stringify(user.activeToneIds) : null,
+  streak: user.streak ?? null,
+  streakRecordedAt: user.streakRecordedAt ?? null,
 });
 
 export abstract class BaseUserRepo extends BaseRepo {

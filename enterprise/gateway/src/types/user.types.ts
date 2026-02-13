@@ -24,4 +24,6 @@ export type UserRow = {
   styling_mode: string | null;
   selected_tone_id: string | null;
   active_tone_ids: string | null;
+  streak: number | null;
+  streak_recorded_at: string | null;
 };
