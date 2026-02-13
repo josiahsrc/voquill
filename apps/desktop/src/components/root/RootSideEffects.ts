@@ -785,6 +785,23 @@ export const RootSideEffects = () => {
     });
   });
 
+  useTauriListen<void>("cancel-dictation", async () => {
+    getLogger().info("Cancelling dictation");
+    dictationController.reset();
+    agentController.reset();
+    const strategy = strategyRef.current;
+    if (strategy) {
+      await strategy.cleanup();
+    }
+    if (isRecordingRef.current || strategyRef.current) {
+      await resetRecordingState();
+    }
+    await invoke<void>("set_phase", { phase: "idle" });
+    produceAppState((draft) => {
+      draft.activeRecordingMode = null;
+    });
+  });
+
   useTauriListen<void>("on-click-dictate", () => {
     debouncedToggle("dictation", dictationController);
   });

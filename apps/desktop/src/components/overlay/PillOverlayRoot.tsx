@@ -1,6 +1,7 @@
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { Box, LinearProgress, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { Box, IconButton, LinearProgress, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
@@ -150,6 +151,13 @@ export const PillOverlayRoot = () => {
     emitTo("main", "on-click-dictate", {}).catch(console.error);
   };
 
+  const handleCancelDictation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    invoke("restore_overlay_focus").catch(() => {});
+    emitTo("main", "cancel-dictation", {}).catch(console.error);
+  };
+
   return (
     <Box
       sx={{
@@ -289,11 +297,16 @@ export const PillOverlayRoot = () => {
         }}
       >
         <Box
-          onMouseDown={handleMouseDownDictate}
           sx={{
             position: "relative",
-            width: isExpanded ? EXPANDED_PILL_WIDTH : MIN_PILL_WIDTH,
-            height: isExpanded ? EXPANDED_PILL_HEIGHT : MIN_PILL_HEIGHT,
+          }}
+        >
+          <Box
+            onMouseDown={handleMouseDownDictate}
+            sx={{
+              position: "relative",
+              width: isExpanded ? EXPANDED_PILL_WIDTH : MIN_PILL_WIDTH,
+              height: isExpanded ? EXPANDED_PILL_HEIGHT : MIN_PILL_HEIGHT,
             borderRadius: isExpanded ? theme.spacing(2) : theme.spacing(0.75),
             backgroundColor: alpha(
               theme.palette.common.black,
@@ -393,7 +406,34 @@ export const PillOverlayRoot = () => {
                 )} 100%)`,
               }}
             />
+
           </Box>
+        </Box>
+
+          {/* Cancel button */}
+          <IconButton
+            onMouseDown={handleCancelDictation}
+            size="small"
+            sx={{
+              position: "absolute",
+              top: -6,
+              right: -6,
+              width: 18,
+              height: 18,
+              backgroundColor: "#dc3545",
+              opacity: isIdle ? 0 : 1,
+              transform: isIdle ? "scale(0)" : "scale(1)",
+              pointerEvents: isIdle ? "none" : "auto",
+              transition: "opacity 200ms ease-out, transform 200ms ease-out",
+              color: theme.palette.common.white,
+              zIndex: 1,
+              "&:hover": {
+                backgroundColor: "#c82333",
+              },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 12 }} />
+          </IconButton>
         </Box>
       </Box>
     </Box>

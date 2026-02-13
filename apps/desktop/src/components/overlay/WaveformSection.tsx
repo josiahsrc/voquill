@@ -1,4 +1,5 @@
-import { Box, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { Box, IconButton, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
@@ -64,6 +65,13 @@ export const WaveformSection = () => {
     e.preventDefault();
     invoke("restore_overlay_focus").catch(() => {});
     emitTo("main", "on-click-dictate", {}).catch(console.error);
+  };
+
+  const handleCancelDictation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    invoke("restore_overlay_focus").catch(() => {});
+    emitTo("main", "cancel-dictation", {}).catch(console.error);
   };
 
   const isOverlayActive = overlayPhase !== "idle";
@@ -147,39 +155,70 @@ export const WaveformSection = () => {
       </Box>
 
       <Box
-        data-overlay-interactive
-        onMouseDown={handleMouseDownDictate}
         sx={{
-          width: isExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH,
-          height: isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
-          borderRadius: isExpanded ? theme.spacing(2) : theme.spacing(0.75),
-          backgroundColor: alpha(
-            theme.palette.common.black,
-            isExpanded ? 0.92 : 0.6,
-          ),
-          border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
-          backdropFilter: "blur(14px)",
-          boxShadow: isExpanded
-            ? `0 10px 35px ${alpha(theme.palette.common.black, 0.36)}`
-            : `0 2px 8px ${alpha(theme.palette.common.black, 0.2)}`,
-          transition: "all 200ms ease-out",
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          pointerEvents: "auto",
-          cursor: "pointer",
+          position: "relative",
         }}
       >
         <Box
+          data-overlay-interactive
+          onMouseDown={handleMouseDownDictate}
           sx={{
-            opacity: isExpanded ? 1 : 0,
-            transition: "opacity 150ms ease-out",
-            pointerEvents: "none",
+            width: isExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH,
+            height: isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+            borderRadius: isExpanded ? theme.spacing(2) : theme.spacing(0.75),
+            backgroundColor: alpha(
+              theme.palette.common.black,
+              isExpanded ? 0.92 : 0.6,
+            ),
+            border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
+            backdropFilter: "blur(14px)",
+            boxShadow: isExpanded
+              ? `0 10px 35px ${alpha(theme.palette.common.black, 0.36)}`
+              : `0 2px 8px ${alpha(theme.palette.common.black, 0.2)}`,
+            transition: "all 200ms ease-out",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "auto",
+            cursor: "pointer",
           }}
         >
-          {isExpanded && <RecordingStatusWidget />}
+          <Box
+            sx={{
+              opacity: isExpanded ? 1 : 0,
+              transition: "opacity 150ms ease-out",
+              pointerEvents: "none",
+            }}
+          >
+            {isExpanded && <RecordingStatusWidget />}
+          </Box>
         </Box>
+
+        {/* Cancel button */}
+        <IconButton
+          onMouseDown={handleCancelDictation}
+          size="small"
+          sx={{
+            position: "absolute",
+            top: -6,
+            right: -6,
+            width: 18,
+            height: 18,
+            backgroundColor: "#dc3545",
+            opacity: isOverlayActive ? 1 : 0,
+            transform: isOverlayActive ? "scale(1)" : "scale(0)",
+            pointerEvents: isOverlayActive ? "auto" : "none",
+            transition: "opacity 200ms ease-out, transform 200ms ease-out",
+            color: theme.palette.common.white,
+            zIndex: 1,
+            "&:hover": {
+              backgroundColor: "#c82333",
+            },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 12 }} />
+        </IconButton>
       </Box>
     </Box>
   );
