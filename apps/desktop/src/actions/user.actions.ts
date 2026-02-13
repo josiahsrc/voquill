@@ -25,6 +25,7 @@ import {
   setCurrentUser,
   setUserPreferences,
 } from "../utils/user.utils";
+import { setLocalStorageValue } from "../hooks/local-storage.hooks";
 import { showErrorSnackbar } from "./app.actions";
 
 const updateUser = async (
@@ -540,6 +541,7 @@ export const setSelectedToneId = async (toneId: string): Promise<void> => {
     "Unable to select style. User not found.",
     "Failed to select style. Please try again.",
   );
+  setLocalStorageValue("voquill:checklist-writing-style", true);
 };
 
 export const activateAndSelectTone = async (toneId: string): Promise<void> => {

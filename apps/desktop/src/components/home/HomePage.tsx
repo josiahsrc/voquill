@@ -1,14 +1,9 @@
-import {
-  CheckCircleRounded,
-  LocalFireDepartmentRounded,
-  RadioButtonUncheckedRounded,
-} from "@mui/icons-material";
+import { LocalFireDepartmentRounded } from "@mui/icons-material";
 import {
   Box,
   Card,
   CardContent,
   Chip,
-  LinearProgress,
   Stack,
   Typography,
 } from "@mui/material";
@@ -16,12 +11,8 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
 import { getEffectiveStreak, getMyUser, getMyUserName } from "../../utils/user.utils";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
+import { GettingStartedList } from "./GettingStartedList";
 import { HomeSideEffects } from "./HomeSideEffects";
-
-type ChecklistItem = {
-  label: string;
-  done: boolean;
-};
 
 function StatCard({
   value,
@@ -46,42 +37,6 @@ function StatCard({
         </Typography>
       </CardContent>
     </Card>
-  );
-}
-
-function ChecklistRow({ item }: { item: ChecklistItem }) {
-  return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={1.5}
-      sx={{
-        py: 1.25,
-        px: 0.5,
-        borderRadius: 1,
-        "&:hover": { bgcolor: "var(--app-palette-level1)" },
-        transition: "background-color 0.15s",
-      }}
-    >
-      {item.done ? (
-        <CheckCircleRounded
-          sx={{ color: "var(--app-palette-blue)", fontSize: 22 }}
-        />
-      ) : (
-        <RadioButtonUncheckedRounded
-          sx={{ color: "text.disabled", fontSize: 22 }}
-        />
-      )}
-      <Typography
-        variant="body1"
-        sx={{
-          textDecoration: item.done ? "line-through" : "none",
-          color: item.done ? "text.secondary" : "text.primary",
-        }}
-      >
-        {item.label}
-      </Typography>
-    </Stack>
   );
 }
 
@@ -136,40 +91,10 @@ export default function HomePage() {
   const wordsThisMonth = user?.wordsThisMonth ?? 0;
   const wordsTotal = user?.wordsTotal ?? 0;
 
-  const checklist: ChecklistItem[] = [
-    {
-      label: intl.formatMessage({
-        defaultMessage: "Record your first transcription",
-      }),
-      done: true,
-    },
-    {
-      label: intl.formatMessage({
-        defaultMessage: "Use Voquill in 3 different apps (1 of 3)",
-      }),
-      done: false,
-    },
-    {
-      label: intl.formatMessage({
-        defaultMessage: "Customize a writing style",
-      }),
-      done: false,
-    },
-    {
-      label: intl.formatMessage({
-        defaultMessage: "Add a word to your dictionary",
-      }),
-      done: true,
-    },
-  ];
-
-  const completedCount = checklist.filter((i) => i.done).length;
-  const progress = (completedCount / checklist.length) * 100;
-
   return (
     <DashboardEntryLayout>
       <HomeSideEffects />
-      <Stack direction="column" spacing={3}>
+      <Stack direction="column" spacing={4}>
         <Box>
           <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
             <FormattedMessage
@@ -202,43 +127,7 @@ export default function HomePage() {
           />
         </Stack>
 
-        <Box>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mb: 1 }}
-          >
-            <Typography variant="h6" fontWeight={600}>
-              <FormattedMessage defaultMessage="Getting started" />
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              <FormattedMessage
-                defaultMessage="{completed} of {total}"
-                values={{ completed: completedCount, total: checklist.length }}
-              />
-            </Typography>
-          </Stack>
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{
-              height: 6,
-              borderRadius: 3,
-              bgcolor: "var(--app-palette-level2)",
-              mb: 1,
-              "& .MuiLinearProgress-bar": {
-                bgcolor: "var(--app-palette-blue)",
-                borderRadius: 3,
-              },
-            }}
-          />
-          <Stack spacing={0}>
-            {checklist.map((item) => (
-              <ChecklistRow key={item.label} item={item} />
-            ))}
-          </Stack>
-        </Box>
+        <GettingStartedList />
 
         <Box>
           <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5 }}>
