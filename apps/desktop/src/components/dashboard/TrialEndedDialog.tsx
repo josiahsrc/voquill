@@ -9,7 +9,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { delayed } from "@repo/utilities";
 import { useEffect, useRef } from "react";
 import { FormattedMessage } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
@@ -18,7 +17,6 @@ import { useAppStore } from "../../store";
 import { trackButtonClick, trackPageView } from "../../utils/analytics.utils";
 import { getMyMember } from "../../utils/member.utils";
 import { getMyUser } from "../../utils/user.utils";
-import { surfaceMainWindow } from "../../utils/window.utils";
 import { TrialEndedBackground } from "./TrialEndedBackground";
 
 const MIN_WORDS_THRESHOLD = 100;
@@ -55,7 +53,6 @@ export const TrialEndedDialog = () => {
   useEffect(() => {
     if (shouldShow && !hasFocusedRef.current) {
       hasFocusedRef.current = true;
-      delayed(1000 * 4).then(() => surfaceMainWindow());
     }
 
     if (!shouldShow) {
