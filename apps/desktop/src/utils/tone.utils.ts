@@ -50,7 +50,6 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Do NOT fix grammar, do NOT restructure sentences, and do NOT change the speaker's word choices or phrasing
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]"
 - Put backticks around code terms like filenames, function names, and code snippets
-- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
       `.trim(),
       isSystem: true,
       createdAt: 0,
