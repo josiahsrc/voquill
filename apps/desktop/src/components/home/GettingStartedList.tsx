@@ -3,17 +3,13 @@ import {
   InfoOutlined,
   RadioButtonUncheckedRounded,
 } from "@mui/icons-material";
-import {
-  Box,
-  LinearProgress,
-  Stack,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, LinearProgress, Stack, Tooltip, Typography } from "@mui/material";
+import dayjs from "dayjs";
 import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useLocalStorage } from "../../hooks/local-storage.hooks";
 import { useAppStore } from "../../store";
+import { getMyUser } from "../../utils/user.utils";
 import { StorageImage } from "../common/StorageImage";
 
 type ChecklistItem = {
@@ -67,7 +63,11 @@ function ChecklistRow({ item }: { item: ChecklistItem }) {
 }
 
 function AppIconBoxes({ iconPaths }: { iconPaths: (string | null)[] }) {
-  const slots = [iconPaths[0] ?? null, iconPaths[1] ?? null, iconPaths[2] ?? null];
+  const slots = [
+    iconPaths[0] ?? null,
+    iconPaths[1] ?? null,
+    iconPaths[2] ?? null,
+  ];
 
   return (
     <Stack direction="row" spacing={0.75}>
@@ -97,9 +97,19 @@ function AppIconBoxes({ iconPaths }: { iconPaths: (string | null)[] }) {
 
 export function GettingStartedList() {
   const intl = useIntl();
-  const [isDismissed, setDismissed] = useLocalStorage("voquill:checklist-dismissed", false);
-  const [hasAddedDictionaryWord] = useLocalStorage("voquill:checklist-dictionary", false);
-  const [hasSelectedWritingStyle] = useLocalStorage("voquill:checklist-writing-style", false);
+  const onboardedAt = useAppStore((state) => getMyUser(state)?.onboardedAt);
+  const [isDismissed, setDismissed] = useLocalStorage(
+    "voquill:checklist-dismissed",
+    false,
+  );
+  const [hasAddedDictionaryWord] = useLocalStorage(
+    "voquill:checklist-dictionary",
+    false,
+  );
+  const [hasSelectedWritingStyle] = useLocalStorage(
+    "voquill:checklist-writing-style",
+    false,
+  );
   const appTargetById = useAppStore((state) => state.appTargetById);
 
   const appTargetEntries = useMemo(
@@ -152,7 +162,12 @@ export function GettingStartedList() {
   const progress = (completedCount / checklist.length) * 100;
   const allDone = completedCount === checklist.length;
 
-  if (isDismissed || allDone) {
+  const onboardedBeforeCutoff = useMemo(
+    () => onboardedAt && dayjs(onboardedAt).isBefore("2026-02-12"),
+    [onboardedAt],
+  );
+
+  if (isDismissed || allDone || onboardedBeforeCutoff) {
     return null;
   }
 
@@ -171,7 +186,10 @@ export function GettingStartedList() {
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
+            sx={{
+              cursor: "pointer",
+              "&:hover": { textDecoration: "underline" },
+            }}
             onClick={() => setDismissed(true)}
           >
             <FormattedMessage defaultMessage="Skip" />
