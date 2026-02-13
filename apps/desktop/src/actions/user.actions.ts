@@ -6,6 +6,7 @@ import {
   User,
   UserPreferences,
 } from "@repo/types";
+import dayjs from "dayjs";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
@@ -121,6 +122,36 @@ const getCurrentUsageMonth = (): string => {
   const year = now.getFullYear();
   const month = `${now.getMonth() + 1}`.padStart(2, "0");
   return `${year}-${month}`;
+};
+
+const getCurrentDateString = (): string => dayjs().format("YYYY-MM-DD");
+
+const getYesterdayDateString = (): string =>
+  dayjs().subtract(1, "day").format("YYYY-MM-DD");
+
+export const recordStreak = async (): Promise<void> => {
+  const state = getAppState();
+  const user = getMyUser(state);
+  if (!user) {
+    return;
+  }
+
+  const today = getCurrentDateString();
+  if (user.streakRecordedAt === today) {
+    return;
+  }
+
+  const yesterday = getYesterdayDateString();
+  const isConsecutive = user.streakRecordedAt === yesterday;
+
+  await updateUser(
+    (u) => {
+      u.streak = isConsecutive ? (u.streak ?? 0) + 1 : 1;
+      u.streakRecordedAt = today;
+    },
+    "Unable to update streak. User not found.",
+    "Failed to update streak. Please try again.",
+  );
 };
 
 export const addWordsToCurrentUser = async (

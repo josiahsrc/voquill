@@ -291,10 +291,10 @@ describe("limit reset handlers", () => {
 				expect(member?.data.tokensThisMonth).toBe(0);
 				const resetAt = member?.data.thisMonthResetAt.toMillis();
 				expect(resetAt).toBeGreaterThanOrEqual(
-					dayjs().add(1, "month").subtract(1, "minute").toDate().getTime(),
+					dayjs().add(1, "month").subtract(2, "hour").toDate().getTime(),
 				);
 				expect(resetAt).toBeLessThanOrEqual(
-					dayjs().add(1, "month").add(1, "minute").toDate().getTime(),
+					dayjs().add(1, "month").add(2, "hour").toDate().getTime(),
 				);
 			},
 		});

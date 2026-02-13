@@ -7,6 +7,7 @@ import {
 } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import dayjs from "dayjs";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 import type { AppState } from "../state/app.state";
@@ -360,6 +361,27 @@ export const getAgentModePrefs = (state: AppState): AgentModePrefs => {
     context: "agent mode",
     allowChange: getAllowsChangeAgentMode(state),
   });
+};
+
+export const getEffectiveStreak = (state: AppState): number => {
+  const user = getMyUser(state);
+  const streak = user?.streak;
+  const recordedAt = user?.streakRecordedAt;
+  if (!streak || !recordedAt) {
+    return 0;
+  }
+
+  const today = dayjs().format("YYYY-MM-DD");
+  if (recordedAt === today) {
+    return streak;
+  }
+
+  const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  if (recordedAt === yesterday) {
+    return streak;
+  }
+
+  return 0;
 };
 
 export const getEffectivePillVisibility = (

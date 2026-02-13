@@ -32,6 +32,7 @@ import {
 } from "../../actions/updater.actions";
 import {
   migratePreferredMicrophoneToPreferences,
+  recordStreak,
   refreshCurrentUser,
 } from "../../actions/user.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
@@ -616,6 +617,7 @@ export const RootSideEffects = () => {
       return;
     }
 
+    recordStreak();
     getLogger().info("Starting dictation recording");
     trackDictationStart();
     produceAppState((draft) => {
@@ -637,6 +639,7 @@ export const RootSideEffects = () => {
       return;
     }
 
+    recordStreak();
     getLogger().info("Starting agent recording");
     trackAgentStart();
     produceAppState((draft) => {

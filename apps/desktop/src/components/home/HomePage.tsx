@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
-import { getMyUser, getMyUserName } from "../../utils/user.utils";
+import { getEffectiveStreak, getMyUser, getMyUserName } from "../../utils/user.utils";
 import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 import { HomeSideEffects } from "./HomeSideEffects";
 
@@ -130,6 +130,7 @@ function TranscriptionPreview({
 export default function HomePage() {
   const user = useAppStore(getMyUser);
   const userName = useAppStore(getMyUserName);
+  const streak = useAppStore(getEffectiveStreak);
   const intl = useIntl();
 
   const wordsThisMonth = user?.wordsThisMonth ?? 0;
@@ -183,7 +184,7 @@ export default function HomePage() {
 
         <Stack direction="row" spacing={1.5}>
           <StatCard
-            value="4"
+            value={streak.toString()}
             label={intl.formatMessage({ defaultMessage: "Day streak" })}
             icon={
               <LocalFireDepartmentRounded

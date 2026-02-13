@@ -249,6 +249,34 @@ describe("user", () => {
     expect(data.user.stylingMode).toBeNull();
   });
 
+  it("sets and retrieves streak fields", async () => {
+    await invoke(
+      "user/setMyUser",
+      {
+        value: {
+          id: "ignored",
+          createdAt: "ignored",
+          updatedAt: "ignored",
+          name: "Updated Name",
+          onboarded: true,
+          onboardedAt: null,
+          playInteractionChime: true,
+          hasFinishedTutorial: true,
+          wordsThisMonth: 0,
+          wordsThisMonthMonth: null,
+          wordsTotal: 0,
+          streak: 5,
+          streakRecordedAt: "2026-02-12",
+        },
+      },
+      token,
+    );
+
+    const data = await invoke("user/getMyUser", {}, token);
+    expect(data.user.streak).toBe(5);
+    expect(data.user.streakRecordedAt).toBe("2026-02-12");
+  });
+
   it("sets and retrieves preferredLanguage with long values like keyboard-layout", async () => {
     await invoke(
       "user/setMyUser",
