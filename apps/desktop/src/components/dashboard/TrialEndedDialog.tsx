@@ -9,7 +9,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { delayed } from "@repo/utilities";
 import { useEffect, useRef } from "react";
 import { FormattedMessage } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
@@ -18,7 +17,7 @@ import { useAppStore } from "../../store";
 import { trackButtonClick, trackPageView } from "../../utils/analytics.utils";
 import { getMyMember } from "../../utils/member.utils";
 import { getMyUser } from "../../utils/user.utils";
-import { surfaceMainWindow } from "../../utils/window.utils";
+import { TrialEndedBackground } from "./TrialEndedBackground";
 
 const MIN_WORDS_THRESHOLD = 100;
 
@@ -54,7 +53,6 @@ export const TrialEndedDialog = () => {
   useEffect(() => {
     if (shouldShow && !hasFocusedRef.current) {
       hasFocusedRef.current = true;
-      delayed(1000 * 4).then(() => surfaceMainWindow());
     }
 
     if (!shouldShow) {
@@ -88,6 +86,8 @@ export const TrialEndedDialog = () => {
         },
       }}
     >
+      {shouldShow && <TrialEndedBackground />}
+
       <Box
         sx={{
           position: "absolute",
@@ -103,6 +103,8 @@ export const TrialEndedDialog = () => {
 
       <Box
         sx={{
+          position: "relative",
+          zIndex: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -116,10 +118,13 @@ export const TrialEndedDialog = () => {
         <Stack spacing={4} alignItems="center" maxWidth={480}>
           <Stack spacing={2} alignItems="center" textAlign="center">
             <Typography variant="h4" fontWeight={700}>
-              <FormattedMessage defaultMessage="Don't lose unlimited dictation" />
+              <FormattedMessage defaultMessage="Thanks for trying Voquill" />
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              <FormattedMessage defaultMessage="You've been dictating without limits all week. Keep unlimited words, faster processing, and priority features." />
+              <FormattedMessage
+                defaultMessage="Your pro trial has ended. You're on the free plan now with {total} words per day. Upgrade whenever you're ready."
+                values={{ total: freeWordsPerDay.toLocaleString() }}
+              />
             </Typography>
             {totalTimeSaved > 4 && (
               <Stack direction="row" spacing={1}>
@@ -206,22 +211,15 @@ export const TrialEndedDialog = () => {
                 onClick={handleUpgrade}
                 endIcon={<ArrowForward />}
               >
-                <FormattedMessage defaultMessage="Keep Pro plan" />
+                <FormattedMessage defaultMessage="Reclaim my super powers" />
               </Button>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                textAlign="center"
-              >
-                <FormattedMessage defaultMessage="Cancel anytime, no questions asked" />
-              </Typography>
             </Stack>
             <Button
               onClick={handleDismiss}
               fullWidth
               sx={{ color: "text.secondary" }}
             >
-              <FormattedMessage defaultMessage="Downgrade to free plan" />
+              <FormattedMessage defaultMessage="Continue with free" />
             </Button>
           </Stack>
         </Stack>

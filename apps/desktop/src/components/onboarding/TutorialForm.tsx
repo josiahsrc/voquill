@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showConfetti, showErrorSnackbar } from "../../actions/app.actions";
+import { clearLocalStorageValue } from "../../actions/local-storage.actions";
 import {
   finishOnboarding,
   submitOnboarding,
@@ -25,6 +26,7 @@ import {
 } from "../../utils/keyboard.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { CHAT_TONE_ID, EMAIL_TONE_ID } from "../../utils/tone.utils";
+import { getMyUser } from "../../utils/user.utils";
 import { DictationInstruction } from "../common/DictationInstruction";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 import { BouncyTooltip } from "./BouncyTooltip";
@@ -33,7 +35,6 @@ import {
   DualPaneLayout,
   OnboardingFormLayout,
 } from "./OnboardingCommon";
-import { getMyUser } from "../../utils/user.utils";
 
 const pulseDiscord = keyframes`
   0%, 100% {
@@ -93,12 +94,12 @@ export const TutorialForm = () => {
     }
   }, [keysHeld, primaryHotkey]);
 
-  const setChatTone = (toneId: string, force = false) => {
+  const setChatTone = async (toneId: string, force = false): Promise<void> => {
     if (!userExists && !force) {
       return;
     }
 
-    setSelectedToneId(toneId);
+    await setSelectedToneId(toneId);
     flashPillTooltip();
   };
 
@@ -129,7 +130,9 @@ export const TutorialForm = () => {
     init();
     return () => {
       cancelled = true;
-      setChatTone(CHAT_TONE_ID, submissionCompleteRef.current);
+      setChatTone(CHAT_TONE_ID, submissionCompleteRef.current).then(() => {
+        clearLocalStorageValue("voquill:checklist-writing-style");
+      });
       produceAppState((draft) => {
         draft.onboarding.dictationOverrideEnabled = false;
       });

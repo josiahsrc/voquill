@@ -35,6 +35,10 @@ pub struct User {
     pub selected_tone_id: Option<String>,
     #[serde(default)]
     pub active_tone_ids: Option<String>,
+    #[serde(default)]
+    pub streak: Option<i64>,
+    #[serde(default)]
+    pub streak_recorded_at: Option<String>,
 }
 
 const fn default_play_interaction_chime() -> bool {

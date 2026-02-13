@@ -112,6 +112,21 @@ describe("api", () => {
 		expect(myUser?.selectedToneId).toBeNull();
 	});
 
+	it("sets and retrieves streak fields", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ streak: 5, streakRecordedAt: "2026-02-12" });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.streak).toBe(5);
+		expect(myUser?.streakRecordedAt).toBe("2026-02-12");
+	});
+
 	it("can set stylingMode to null", async () => {
 		const creds = await createUserCreds();
 		await signInWithCreds(creds);

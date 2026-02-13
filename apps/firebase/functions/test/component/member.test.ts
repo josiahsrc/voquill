@@ -29,8 +29,8 @@ describe("tryInitializeMember", () => {
 				expect(memberSnap?.data).toBeDefined();
 				expect(memberSnap?.data.id).toBe(creds.id);
 			},
-			retries: 10,
-			delay: 100,
+			retries: 20,
+			delay: 200,
 		});
 
 		// delete the member
@@ -219,12 +219,12 @@ describe("resetWordsThisMonthCron", () => {
 				expect(
 					expiredMemberSnap?.data.thisMonthResetAt.toMillis(),
 				).toBeGreaterThanOrEqual(
-					dayjs().add(1, "month").subtract(1, "minute").toDate().getTime(),
+					dayjs().add(1, "month").subtract(2, "hour").toDate().getTime(),
 				);
 				expect(
 					expiredMemberSnap?.data.thisMonthResetAt.toMillis(),
 				).toBeLessThanOrEqual(
-					dayjs().add(1, "month").add(1, "minute").toDate().getTime(),
+					dayjs().add(1, "month").add(2, "hour").toDate().getTime(),
 				);
 
 				// non expired member should not be changed

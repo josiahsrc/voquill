@@ -126,10 +126,7 @@ const buildTemplateVars = (
 export const buildSystemPostProcessingTonePrompt = (
   input: PostProcessingPromptInput,
 ): string => {
-  if (
-    input.tone.kind === "template" &&
-    input.tone.systemPromptTemplate
-  ) {
+  if (input.tone.kind === "template" && input.tone.systemPromptTemplate) {
     return applyTemplateVars(
       input.tone.systemPromptTemplate,
       buildTemplateVars(input),
@@ -155,6 +152,7 @@ Your task is to post-process a transcription.
 
 Context:
 - The speaker's name is ${userName}.
+- The speaker wants the processed transcription to be in the ${languageName} language.
 
 Instructions:
 \`\`\`
@@ -168,7 +166,6 @@ ${transcript}
 
 Post-process transcription according to the instructions.
 
-**CRITICAL** Your response MUST be written in the ${languageName} language.
 **CRITICAL** Your response MUST be in JSON format.
 `;
 };

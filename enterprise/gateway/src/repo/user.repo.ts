@@ -27,6 +27,8 @@ function rowToUser(row: UserRow): User {
     stylingMode: row.styling_mode as User["stylingMode"],
     selectedToneId: row.selected_tone_id,
     activeToneIds: row.active_tone_ids ? JSON.parse(row.active_tone_ids) : null,
+    streak: row.streak ?? undefined,
+    streakRecordedAt: row.streak_recorded_at ?? undefined,
   };
 }
 
@@ -97,8 +99,9 @@ export async function upsertUser(
         timezone, preferred_language, preferred_microphone,
         play_interaction_chime, has_finished_tutorial,
         words_this_month, words_this_month_month, words_total,
-        has_migrated_preferred_microphone, cohort, should_show_upgrade_dialog, styling_mode, selected_tone_id, active_tone_ids
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+        has_migrated_preferred_microphone, cohort, should_show_upgrade_dialog, styling_mode, selected_tone_id, active_tone_ids,
+        streak, streak_recorded_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
       [
         id,
         value.name ?? "",
@@ -121,6 +124,8 @@ export async function upsertUser(
         value.stylingMode ?? null,
         value.selectedToneId ?? null,
         value.activeToneIds ? JSON.stringify(value.activeToneIds) : null,
+        value.streak ?? null,
+        value.streakRecordedAt ?? null,
       ],
     );
     return;
@@ -151,6 +156,8 @@ export async function upsertUser(
     stylingMode: "styling_mode",
     selectedToneId: "selected_tone_id",
     activeToneIds: "active_tone_ids",
+    streak: "streak",
+    streakRecordedAt: "streak_recorded_at",
   };
 
   for (const [key, column] of Object.entries(fieldMap)) {

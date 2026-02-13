@@ -27,24 +27,22 @@ describe("metrics", () => {
     userToken = userData.token;
     userId = userData.auth.id;
 
-    const now = new Date();
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+    await query("DELETE FROM ai_usage_metrics WHERE provider_name = 'test-provider'");
 
     await query(
       `INSERT INTO ai_usage_metrics (user_id, operation, provider_name, status, latency_ms, word_count, created_at)
-       VALUES ($1, 'transcribe', 'test-provider', 'success', 200, 50, $2)`,
-      [adminId, now],
+       VALUES ($1, 'transcribe', 'test-provider', 'success', 200, 50, NOW())`,
+      [adminId],
     );
     await query(
       `INSERT INTO ai_usage_metrics (user_id, operation, provider_name, status, latency_ms, word_count, created_at)
-       VALUES ($1, 'generate', 'test-provider', 'success', 300, 100, $2)`,
-      [adminId, yesterday],
+       VALUES ($1, 'generate', 'test-provider', 'success', 300, 100, NOW() - INTERVAL '1 day')`,
+      [adminId],
     );
     await query(
       `INSERT INTO ai_usage_metrics (user_id, operation, provider_name, status, latency_ms, word_count, created_at)
-       VALUES ($1, 'transcribe', 'test-provider', 'error', 500, 0, $2)`,
-      [adminId, tenDaysAgo],
+       VALUES ($1, 'transcribe', 'test-provider', 'error', 500, 0, NOW() - INTERVAL '10 days')`,
+      [adminId],
     );
   });
 

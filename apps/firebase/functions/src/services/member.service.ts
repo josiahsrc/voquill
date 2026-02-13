@@ -69,9 +69,9 @@ export const tryUpdateMemberLoopsContact = async (args: {
 	before: Nullable<Member>;
 	after: Nullable<Member>;
 }) => {
-	const prevPlan = args.before?.plan;
-	const newPlan = args.after?.plan;
-	if (prevPlan === newPlan) {
+	const planChanged = args.before?.plan !== args.after?.plan;
+	const trialChanged = args.before?.isOnTrial !== args.after?.isOnTrial;
+	if (!planChanged && !trialChanged) {
 		return;
 	}
 
