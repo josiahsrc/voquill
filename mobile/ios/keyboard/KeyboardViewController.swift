@@ -500,15 +500,52 @@ class KeyboardViewController: UIInputViewController {
                 return
             }
 
-            let audioUrl = FileManager.default.temporaryDirectory.appendingPathComponent("voquill_kb.m4a")
-            self.transcribeAudio(at: audioUrl, idToken: idToken) { [weak self] text in
+            guard let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId),
+                  let functionUrl = defaults.string(forKey: "voquill_function_url") else {
                 DispatchQueue.main.async {
-                    if let text = text, !text.isEmpty {
-                        self?.textDocumentProxy.insertText(text)
-                    } else {
-                        self?.textDocumentProxy.insertText("[Transcribe failed: \(self?.lastDebugLog ?? "unknown")]")
+                    self.textDocumentProxy.insertText("[Missing function URL]")
+                    self.applyPhase(.idle, animated: true)
+                }
+                return
+            }
+
+            let audioUrl = FileManager.default.temporaryDirectory.appendingPathComponent("voquill_kb.m4a")
+
+            Task { [weak self] in
+                guard let self = self else { return }
+                do {
+                    let transcribeRepo = CloudTranscribeAudioRepo(functionUrl: functionUrl, idToken: idToken)
+                    let rawTranscript = try await transcribeRepo.transcribe(audioFileURL: audioUrl)
+
+                    guard !rawTranscript.isEmpty else {
+                        await MainActor.run {
+                            self.textDocumentProxy.insertText("[No speech detected]")
+                            self.applyPhase(.idle, animated: true)
+                        }
+                        return
                     }
-                    self?.applyPhase(.idle, animated: true)
+
+                    let generateRepo = CloudGenerateTextRepo(functionUrl: functionUrl, idToken: idToken)
+                    var finalText = rawTranscript
+                    do {
+                        finalText = try await generateRepo.generate(
+                            system: "Replace every other word with the word 'bacon'",
+                            prompt: rawTranscript
+                        )
+                    } catch {
+                        self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
+                    }
+
+                    await MainActor.run {
+                        self.textDocumentProxy.insertText(finalText)
+                        self.applyPhase(.idle, animated: true)
+                    }
+                } catch {
+                    self.dbg("Transcription failed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        self.textDocumentProxy.insertText("[Transcription failed: \(error.localizedDescription)]")
+                        self.applyPhase(.idle, animated: true)
+                    }
                 }
             }
         }
@@ -664,69 +701,6 @@ class KeyboardViewController: UIInputViewController {
             }
             self?.dbg("exchangeCustomToken: success, status=\(statusCode ?? -1)")
             completion(idToken, expiresIn)
-        }.resume()
-    }
-
-    private func transcribeAudio(at fileUrl: URL, idToken: String, completion: @escaping (String?) -> Void) {
-        guard let audioData = try? Data(contentsOf: fileUrl), !audioData.isEmpty else {
-            dbg("transcribeAudio: no audio data at \(fileUrl.path)")
-            completion(nil)
-            return
-        }
-
-        guard let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId),
-              let functionUrl = defaults.string(forKey: "voquill_function_url"),
-              let url = URL(string: functionUrl) else {
-            dbg("transcribeAudio: missing functionUrl in UserDefaults")
-            completion(nil)
-            return
-        }
-
-        let audioBase64 = audioData.base64EncodedString()
-        dbg("transcribeAudio: \(audioData.count) bytes → \(functionUrl)")
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let payload: [String: Any] = [
-            "data": [
-                "name": "ai/transcribeAudio",
-                "args": [
-                    "audioBase64": audioBase64,
-                    "audioMimeType": "audio/mp4"
-                ]
-            ]
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            let statusCode = (response as? HTTPURLResponse)?.statusCode
-            if let error = error {
-                self?.dbg("transcribeAudio: network error: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-            guard let data = data else {
-                self?.dbg("transcribeAudio: no data, status=\(statusCode ?? -1)")
-                completion(nil)
-                return
-            }
-            let bodyStr = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                self?.dbg("transcribeAudio: not JSON, status=\(statusCode ?? -1), body=\(bodyStr.prefix(300))")
-                completion(nil)
-                return
-            }
-            guard let result = json["result"] as? [String: Any],
-                  let text = result["text"] as? String else {
-                self?.dbg("transcribeAudio: unexpected response, status=\(statusCode ?? -1), json=\(json)")
-                completion(nil)
-                return
-            }
-            self?.dbg("transcribeAudio: success")
-            completion(text)
         }.resume()
     }
 
