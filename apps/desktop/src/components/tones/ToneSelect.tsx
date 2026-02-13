@@ -15,6 +15,7 @@ import type { Tone } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { setLocalStorageValue } from "../../actions/local-storage.actions";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import { useAppStore } from "../../store";
 import { getSortedToneIds } from "../../utils/tone.utils";
@@ -67,6 +68,7 @@ export const ToneSelect = ({
       }
 
       const toneId = event.target.value === "" ? null : event.target.value;
+      setLocalStorageValue("voquill:checklist-writing-style", true);
       onToneChange(toneId);
     },
     [addToneTargetId, onToneChange],
