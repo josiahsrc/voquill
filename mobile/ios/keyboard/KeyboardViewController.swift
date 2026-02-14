@@ -317,7 +317,7 @@ class KeyboardViewController: UIInputViewController {
         languageChip.setTitle("EN", for: .normal)
         languageChip.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
         languageChip.setTitleColor(.label, for: .normal)
-        languageChip.backgroundColor = UIColor.systemGray5
+        languageChip.backgroundColor = UIColor.systemGray4
         languageChip.layer.cornerRadius = 8
         languageChip.clipsToBounds = true
         languageChip.isUserInteractionEnabled = true
@@ -336,7 +336,7 @@ class KeyboardViewController: UIInputViewController {
             let btn = UIButton(type: .system)
             btn.setImage(UIImage(systemName: iconName, withConfiguration: btnConfig), for: .normal)
             btn.tintColor = .label
-            btn.backgroundColor = UIColor.systemGray5
+            btn.backgroundColor = UIColor.systemGray4
             btn.layer.cornerRadius = 8
             btn.clipsToBounds = true
             btn.tag = index
@@ -629,7 +629,7 @@ class KeyboardViewController: UIInputViewController {
     private func applyChipStyle(_ chip: UIButton, selected: Bool) {
         if selected {
             chip.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.2)
-            chip.setTitleColor(UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0), for: .normal)
+            chip.setTitleColor(.systemBlue, for: .normal)
         } else {
             chip.backgroundColor = UIColor.systemGray4
             chip.setTitleColor(.label, for: .normal)
