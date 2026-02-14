@@ -1,8 +1,8 @@
 import 'package:app/actions/auth_actions.dart';
 import 'package:app/flavor.dart';
 import 'package:app/widgets/common/app_button.dart';
-import 'package:app/widgets/common/declarative_text_field.dart';
 import 'package:app/widgets/common/app_divider.dart';
+import 'package:app/widgets/common/declarative_text_field.dart';
 import 'package:app/widgets/common/terms_notice.dart';
 import 'package:app/widgets/login/login_providers.dart';
 import 'package:flutter/material.dart';
@@ -150,49 +150,51 @@ class _LoginFormState extends State<LoginForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(switch (_mode) {
-          LoginMode.signIn => 'Sign in',
-          LoginMode.signUp => 'Sign up',
-          LoginMode.resetPassword => 'Reset password',
-          LoginMode.passwordResetSent => 'Email sent',
-        }, style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 16),
-        if (!widget.hideProviders &&
-            (_mode == LoginMode.signIn || _mode == LoginMode.signUp)) ...[
-          LoginProviders(onSuccess: widget.onSuccess),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(switch (_mode) {
+            LoginMode.signIn => 'Sign in',
+            LoginMode.signUp => 'Sign up',
+            LoginMode.resetPassword => 'Reset password',
+            LoginMode.passwordResetSent => 'Email sent',
+          }, style: theme.textTheme.headlineSmall),
           const SizedBox(height: 16),
-          const AppDivider(child: Text('or')),
-          const SizedBox(height: 16),
-        ],
-        AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: switch (_mode) {
-            LoginMode.signUp => _buildSignUpFields(),
-            LoginMode.signIn => _buildSignInFields(),
-            LoginMode.resetPassword => _buildResetFields(),
-            LoginMode.passwordResetSent => _buildResetSentMessage(theme),
-          },
-        ),
-        if (_errorMessage != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            _errorMessage!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.error,
-            ),
+          if (!widget.hideProviders &&
+              (_mode == LoginMode.signIn || _mode == LoginMode.signUp)) ...[
+            LoginProviders(onSuccess: widget.onSuccess),
+            const SizedBox(height: 16),
+            const AppDivider(child: Text('or')),
+            const SizedBox(height: 16),
+          ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: switch (_mode) {
+              LoginMode.signUp => _buildSignUpFields(),
+              LoginMode.signIn => _buildSignInFields(),
+              LoginMode.resetPassword => _buildResetFields(),
+              LoginMode.passwordResetSent => _buildResetSentMessage(theme),
+            },
           ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _errorMessage!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
+          if (_mode == LoginMode.signIn || _mode == LoginMode.signUp) ...[
+            const SizedBox(height: 16),
+            const TermsNotice(),
+          ],
         ],
-        if (_mode == LoginMode.signIn || _mode == LoginMode.signUp) ...[
-          const SizedBox(height: 16),
-          const TermsNotice(),
-        ],
-      ],
+      ),
     );
   }
 
