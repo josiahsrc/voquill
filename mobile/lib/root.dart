@@ -1,20 +1,18 @@
 import 'dart:async';
 
 import 'package:app/actions/app_actions.dart';
+import 'package:app/actions/keyboard_actions.dart';
 import 'package:app/actions/transcription_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
-import 'package:app/model/tone_model.dart';
 import 'package:app/routing/build_router.dart';
 import 'package:app/routing/route_refresher.dart';
 import 'package:app/state/snackbar_state.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
-import 'package:app/utils/channel_utils.dart';
-import 'package:app/utils/tone_utils.dart';
-import 'package:app/utils/user_utils.dart';
 import 'package:app/widgets/common/unfocus_detector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -110,37 +108,18 @@ class _AppState extends State<App> {
             a.isOnboarded != b.isOnboarded,
       ),
       useAppStore().listen(
-        (context, state) {
-          final selectedToneId = getManuallySelectedToneId(state);
-          final activeToneIds = getActiveSortedToneIds(state);
-          final toneById = <String, SharedTone>{};
-          for (final entry in state.toneById.entries) {
-            toneById[entry.key] = SharedTone(
-              name: entry.value.name,
-              promptTemplate: entry.value.promptTemplate,
-            );
-          }
-          syncKeyboardTones(
-            selectedToneId: selectedToneId,
-            activeToneIds: activeToneIds,
-            toneById: toneById,
-          );
-        },
+        (context, state) => syncKeyboardOnInit(),
+        condition: (a, b) => !a.status.isSuccess && b.status.isSuccess,
+      ),
+      useAppStore().listen(
+        (context, state) => syncTonesToKeyboard(),
         condition: (a, b) =>
             a.user?.selectedToneId != b.user?.selectedToneId ||
             a.user?.activeToneIds != b.user?.activeToneIds ||
-            a.toneById != b.toneById,
+            !mapEquals(a.toneById, b.toneById),
       ),
       useAppStore().listen(
-        (context, state) {
-          final user = state.user;
-          if (user != null) {
-            syncKeyboardUser(
-              userName: user.name,
-              dictationLanguage: getMyPrimaryDictationLanguage(state),
-            );
-          }
-        },
+        (context, state) => syncUserToKeyboard(),
         condition: (a, b) =>
             a.user?.name != b.user?.name ||
             a.user?.preferredLanguage != b.user?.preferredLanguage,
