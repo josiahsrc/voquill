@@ -1,4 +1,5 @@
 import { invokeHandler } from "@repo/functions";
+import { PROMPT_LIMIT } from "@repo/types";
 import { buildTone } from "../helpers/entities";
 import {
 	createUserCreds,
@@ -40,5 +41,33 @@ describe("api", () => {
 
 		const fourthList = await invokeHandler("tone/listMyTones", {});
 		expect(fourthList.tones.length).toBe(0);
+	});
+
+	it("rejects promptTemplate longer than prompt limit", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await expect(
+			invokeHandler("tone/upsertMyTone", {
+				tone: buildTone({
+					promptTemplate: "a".repeat(PROMPT_LIMIT + 1),
+				}),
+			}),
+		).rejects.toThrow(/String must contain at most 24000 character\(s\)/);
+	});
+
+	it("rejects systemPromptTemplate longer than prompt limit", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await expect(
+			invokeHandler("tone/upsertMyTone", {
+				tone: buildTone({
+					systemPromptTemplate: "a".repeat(PROMPT_LIMIT + 1),
+				}),
+			}),
+		).rejects.toThrow(/String must contain at most 24000 character\(s\)/);
 	});
 });

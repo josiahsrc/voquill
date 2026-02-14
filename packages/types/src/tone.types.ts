@@ -2,6 +2,8 @@ import { FiremixTimestamp } from "@firemix/core";
 import z from "zod";
 import { Replace } from "./common.types";
 
+export const PROMPT_LIMIT = 24000;
+
 export type DatabaseTone = {
   id: string;
   name: string;
@@ -28,14 +30,14 @@ export const ToneZod = z
   .object({
     id: z.string(),
     name: z.string(),
-    promptTemplate: z.string(),
+    promptTemplate: z.string().max(PROMPT_LIMIT),
     isSystem: z.boolean(),
     createdAt: z.number(),
     sortOrder: z.number(),
     isGlobal: z.boolean().optional(),
     isDeprecated: z.boolean().optional(),
     shouldDisablePostProcessing: z.boolean().optional(),
-    systemPromptTemplate: z.string().optional(),
+    systemPromptTemplate: z.string().max(PROMPT_LIMIT).optional(),
     isTemplateTone: z.boolean().optional(),
   })
   .strict() satisfies z.ZodType<Tone>;
