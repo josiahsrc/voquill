@@ -302,23 +302,25 @@ class KeyboardViewController: UIInputViewController {
         hc.isActive = true
 
         // === UTILITY BUTTONS (top right) ===
-        let btnConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+        let btnConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
         let utilStack = UIStackView()
         utilStack.translatesAutoresizingMaskIntoConstraints = false
         utilStack.axis = .horizontal
-        utilStack.spacing = 4
+        utilStack.spacing = 8
         view.addSubview(utilStack)
 
-        for iconName in ["at", "space", "delete.left"] {
+        for (index, iconName) in ["at", "space", "return.left", "delete.left"].enumerated() {
             let btn = UIButton(type: .system)
             btn.setImage(UIImage(systemName: iconName, withConfiguration: btnConfig), for: .normal)
             btn.tintColor = .label
             btn.backgroundColor = UIColor.systemGray5
             btn.layer.cornerRadius = 8
             btn.clipsToBounds = true
+            btn.tag = index
+            btn.addTarget(self, action: #selector(onUtilButtonTap(_:)), for: .touchUpInside)
             NSLayoutConstraint.activate([
-                btn.widthAnchor.constraint(equalToConstant: 36),
-                btn.heightAnchor.constraint(equalToConstant: 36)
+                btn.widthAnchor.constraint(equalToConstant: 40),
+                btn.heightAnchor.constraint(equalToConstant: 40)
             ])
             utilStack.addArrangedSubview(btn)
         }
@@ -564,11 +566,11 @@ class KeyboardViewController: UIInputViewController {
 
     private func applyChipStyle(_ chip: UIButton, selected: Bool) {
         if selected {
-            chip.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.15)
+            chip.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.2)
             chip.setTitleColor(UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0), for: .normal)
         } else {
-            chip.backgroundColor = UIColor.systemGray5
-            chip.setTitleColor(.secondaryLabel, for: .normal)
+            chip.backgroundColor = UIColor.systemGray4
+            chip.setTitleColor(.label, for: .normal)
         }
     }
 
@@ -584,6 +586,16 @@ class KeyboardViewController: UIInputViewController {
         for view in toneContainer.subviews {
             guard let chip = view as? UIButton else { continue }
             applyChipStyle(chip, selected: chip.tag == index)
+        }
+    }
+
+    @objc private func onUtilButtonTap(_ sender: UIButton) {
+        switch sender.tag {
+        case 0: textDocumentProxy.insertText("@")
+        case 1: textDocumentProxy.insertText(" ")
+        case 2: textDocumentProxy.insertText("\n")
+        case 3: textDocumentProxy.deleteBackward()
+        default: break
         }
     }
 
@@ -693,8 +705,9 @@ class KeyboardViewController: UIInputViewController {
                     let tz = TimeZone.current.identifier
                     UserRepo(config: config).incrementWordCount(text: finalText, timezone: tz)
 
+                    let trimmed = finalText.trimmingCharacters(in: .whitespacesAndNewlines) + " "
                     await MainActor.run {
-                        self.textDocumentProxy.insertText(finalText)
+                        self.textDocumentProxy.insertText(trimmed)
                         self.applyPhase(.idle, animated: true)
                     }
                 } catch {
