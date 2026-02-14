@@ -1,5 +1,6 @@
 import 'package:app/store/store.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/utils/user_utils.dart';
 import 'package:app/widgets/history/transcription_detail_dialog.dart';
 import 'package:app/widgets/history/transcription_tile.dart';
 import 'package:app/widgets/home/stat_value.dart';
@@ -32,23 +33,30 @@ class HomePage extends StatelessWidget {
               children: [
                 Expanded(
                   child: StatValue(
-                    label: 'Words Total',
+                    label: 'Words total',
                     value: user?.wordsTotal ?? 0,
                   ),
                 ),
                 Expanded(
                   child: StatValue(
-                    label: 'This Month',
+                    label: 'This month',
                     value: user?.wordsThisMonth ?? 0,
+                  ),
+                ),
+                Expanded(
+                  child: StatValue(
+                    label: 'Day streak',
+                    value: getEffectiveStreak(user),
+                    icon: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Color(0xFFFF6B35),
+                      size: 32,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        SliverPadding(
-          padding: Theming.padding.withoutTop(),
-          sliver: SliverToBoxAdapter(child: TextField(maxLines: null)),
         ),
         SliverPadding(
           padding: Theming.padding.onlyHorizontal().withTop(28),

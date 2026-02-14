@@ -28,6 +28,8 @@ class User with EquatableMixin {
   final bool? hasMigratedPreferredMicrophone;
   final String? cohort;
   final bool? shouldShowUpgradeDialog;
+  final int? streak;
+  final String? streakRecordedAt;
   final String? selectedToneId;
   final List<String>? activeToneIds;
 
@@ -52,6 +54,8 @@ class User with EquatableMixin {
     this.hasMigratedPreferredMicrophone,
     this.cohort,
     this.shouldShowUpgradeDialog,
+    this.streak,
+    this.streakRecordedAt,
     this.selectedToneId,
     this.activeToneIds,
   });
@@ -81,6 +85,8 @@ class User with EquatableMixin {
     hasMigratedPreferredMicrophone,
     cohort,
     shouldShowUpgradeDialog,
+    streak,
+    streakRecordedAt,
     selectedToneId,
     activeToneIds,
   ];
