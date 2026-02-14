@@ -2,6 +2,7 @@ import 'package:app/model/auth_user_model.dart';
 import 'package:app/model/common_model.dart';
 import 'package:app/model/term_model.dart';
 import 'package:app/model/tone_model.dart';
+import 'package:app/model/transcription_model.dart';
 import 'package:app/model/user_model.dart';
 import 'package:app/state/dictionary_state.dart';
 import 'package:app/state/onboarding_state.dart';
@@ -16,12 +17,14 @@ part 'app_state.draft.dart';
 class AppState with EquatableMixin {
   final ActionStatus status;
   final String? error;
+  final List<String> sortedTranscriptionIds;
 
   final AuthUser? auth;
   final User? user;
 
   final Map<String, Term> termById;
   final Map<String, Tone> toneById;
+  final Map<String, Transcription> transcriptionById;
 
   final SnackbarState snackbar;
   final OnboardingState onboarding;
@@ -35,6 +38,8 @@ class AppState with EquatableMixin {
     this.user,
     this.termById = const {},
     this.toneById = const {},
+    this.transcriptionById = const {},
+    this.sortedTranscriptionIds = const [],
     this.snackbar = const SnackbarState(),
     this.onboarding = const OnboardingState(),
     this.dictionary = const DictionaryState(),
@@ -52,6 +57,8 @@ class AppState with EquatableMixin {
     user,
     termById,
     toneById,
+    transcriptionById,
+    sortedTranscriptionIds,
     snackbar,
     onboarding,
     dictionary,

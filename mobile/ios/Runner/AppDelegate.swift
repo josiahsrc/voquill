@@ -70,6 +70,11 @@ import UIKit
         }
         result(nil)
 
+      case "getTranscriptions":
+        let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
+        let transcriptions = defaults?.array(forKey: "voquill_transcriptions") as? [[String: Any]] ?? []
+        result(transcriptions)
+
       default:
         result(FlutterMethodNotImplemented)
       }

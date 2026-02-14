@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/actions/app_actions.dart';
+import 'package:app/actions/transcription_actions.dart';
 import 'package:app/flavor.dart';
 import 'package:app/model/tone_model.dart';
 import 'package:app/routing/build_router.dart';
@@ -38,7 +39,7 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> {
+class _AppState extends State<App> with WidgetsBindingObserver {
   final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   late final GoRouter goRouter;
   late final StreamSubscription _authSubscription;
@@ -46,14 +47,23 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     goRouter = buildRouter(refreshListenable: context.read<RouteRefresher>());
     _authSubscription = listenToAuthChanges();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authSubscription.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      loadTranscriptions();
+    }
   }
 
   @override
@@ -90,6 +100,14 @@ class _AppState extends State<App> {
             a.status != b.status ||
             a.auth != b.auth ||
             a.isOnboarded != b.isOnboarded,
+      ),
+      useAppStore().listen(
+        (context, state) {
+          if (state.auth != null) {
+            loadTranscriptions();
+          }
+        },
+        condition: (a, b) => a.auth != b.auth,
       ),
       useAppStore().listen(
         (context, state) {

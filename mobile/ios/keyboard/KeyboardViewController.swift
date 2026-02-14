@@ -687,6 +687,15 @@ class KeyboardViewController: UIInputViewController {
                         self.textDocumentProxy.insertText(trimmed)
                         self.applyPhase(.idle, animated: true)
                     }
+
+                    let tone = self.selectedToneId.flatMap { self.toneById[$0] }
+                    TranscriptionRepo().save(
+                        text: finalText,
+                        rawTranscript: rawTranscript,
+                        toneId: self.selectedToneId,
+                        toneName: tone?.name,
+                        audioSourceUrl: audioUrl
+                    )
                 } catch {
                     self.dbg("Transcription failed: \(error.localizedDescription)")
                     await MainActor.run {
