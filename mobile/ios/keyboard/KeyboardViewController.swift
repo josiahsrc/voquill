@@ -462,6 +462,12 @@ class KeyboardViewController: UIInputViewController {
         case .idle:
             applyPhase(.recording, animated: true)
             startAudioCapture()
+            fetchIdToken { [weak self] idToken in
+                guard let self = self, let idToken = idToken,
+                      let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId),
+                      let functionUrl = defaults.string(forKey: "voquill_function_url") else { return }
+                UserRepo(config: RepoConfig(functionUrl: functionUrl, idToken: idToken)).trackStreak()
+            }
         case .recording:
             stopAudioCapture()
             applyPhase(.loading, animated: true)
@@ -513,9 +519,9 @@ class KeyboardViewController: UIInputViewController {
 
             Task { [weak self] in
                 guard let self = self else { return }
+                let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
                 do {
-                    let transcribeRepo = CloudTranscribeAudioRepo(functionUrl: functionUrl, idToken: idToken)
-                    let rawTranscript = try await transcribeRepo.transcribe(audioFileURL: audioUrl)
+                    let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(audioFileURL: audioUrl)
 
                     guard !rawTranscript.isEmpty else {
                         await MainActor.run {
@@ -525,16 +531,17 @@ class KeyboardViewController: UIInputViewController {
                         return
                     }
 
-                    let generateRepo = CloudGenerateTextRepo(functionUrl: functionUrl, idToken: idToken)
                     var finalText = rawTranscript
                     do {
-                        finalText = try await generateRepo.generate(
+                        finalText = try await CloudGenerateTextRepo(config: config).generate(
                             system: "Replace every other word with the word 'bacon'",
                             prompt: rawTranscript
                         )
                     } catch {
                         self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
                     }
+
+                    UserRepo(config: config).incrementWordCount(text: finalText)
 
                     await MainActor.run {
                         self.textDocumentProxy.insertText(finalText)

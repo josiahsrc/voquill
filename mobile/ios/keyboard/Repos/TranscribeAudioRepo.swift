@@ -143,50 +143,24 @@ class BaseTranscribeAudioRepo {
 // MARK: - Cloud Implementation
 
 class CloudTranscribeAudioRepo: BaseTranscribeAudioRepo {
-    private let functionUrl: String
-    private let idToken: String
+    private let config: RepoConfig
 
-    init(functionUrl: String, idToken: String) {
-        self.functionUrl = functionUrl
-        self.idToken = idToken
+    init(config: RepoConfig) {
+        self.config = config
     }
 
     override func transcribeSegment(audioData: Data) async throws -> String {
-        guard let url = URL(string: functionUrl) else {
-            throw TranscribeError.invalidURL
+        let result = try await invokeHandler(
+            config: config,
+            name: "ai/transcribeAudio",
+            args: [
+                "audioBase64": audioData.base64EncodedString(),
+                "audioMimeType": "audio/mp4",
+            ]
+        )
+        guard let text = result["text"] as? String else {
+            throw ApiError.parseError
         }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let payload: [String: Any] = [
-            "data": [
-                "name": "ai/transcribeAudio",
-                "args": [
-                    "audioBase64": audioData.base64EncodedString(),
-                    "audioMimeType": "audio/mp4",
-                ],
-            ],
-        ]
-        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
-            let body = String(data: data, encoding: .utf8) ?? ""
-            throw TranscribeError.httpError(statusCode, body)
-        }
-
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let result = json["result"] as? [String: Any],
-              let text = result["text"] as? String else {
-            throw TranscribeError.parseError
-        }
-
         return text
     }
 }
@@ -195,20 +169,12 @@ class CloudTranscribeAudioRepo: BaseTranscribeAudioRepo {
 
 enum TranscribeError: Error, LocalizedError {
     case noAudioData
-    case invalidURL
-    case httpError(Int, String)
-    case parseError
     case exportFailed(String)
-    case authFailed
 
     var errorDescription: String? {
         switch self {
         case .noAudioData: return "No audio data found"
-        case .invalidURL: return "Invalid function URL"
-        case .httpError(let code, let body): return "HTTP \(code): \(String(body.prefix(200)))"
-        case .parseError: return "Could not parse response"
         case .exportFailed(let msg): return "Audio export failed: \(msg)"
-        case .authFailed: return "Authentication failed"
         }
     }
 }
