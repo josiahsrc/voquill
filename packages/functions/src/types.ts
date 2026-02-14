@@ -256,12 +256,21 @@ type HandlerDefinitions = {
       user: Nullable<User>;
     };
   };
-
   "user/listAllUsers": {
     input: EmptyObject;
     output: {
       users: UserWithAuth[];
     };
+  };
+  "user/incrementWordCount": {
+    input: {
+      wordCount: number;
+    };
+    output: EmptyObject;
+  };
+  "user/trackStreak": {
+    input: EmptyObject;
+    output: EmptyObject;
   };
 
   // stripe
@@ -478,6 +487,12 @@ export const SetMyUserInputZod = z
     value: UserZod,
   })
   .strict() satisfies z.ZodType<HandlerInput<"user/setMyUser">>;
+
+export const IncrementWordCountInputZod = z
+  .object({
+    wordCount: z.number().int(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/incrementWordCount">>;
 
 export const UpsertTermInputZod = z
   .object({

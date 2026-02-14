@@ -5,7 +5,8 @@ import { mixpath } from "@repo/firemix";
 import { AuthData } from "firebase-functions/tasks";
 import { checkAccess } from "../utils/check.utils";
 import { userFromDatabase, userToDatabase } from "../utils/type.utils";
-import { HandlerOutput } from "@repo/functions";
+import { HandlerInput, HandlerOutput } from "@repo/functions";
+import dayjs from "dayjs";
 
 export const tryUpdateUserLoopsContact = async (args: {
 	userId: string;
@@ -64,6 +65,65 @@ export const setMyUser = async (args: {
 		...userToDatabase(data),
 		id: userId,
 		updatedAt: firemix().now(),
+	});
+	return {};
+};
+
+const getCurrentUsageMonth = (): string => dayjs().format("YYYY-MM");
+
+const getCurrentDateString = (): string => dayjs().format("YYYY-MM-DD");
+const getYesterdayDateString = (): string =>
+	dayjs().subtract(1, "day").format("YYYY-MM-DD");
+
+export const incrementWordCount = async (args: {
+	auth: Nullable<AuthData>;
+	input: HandlerInput<"user/incrementWordCount">;
+}): Promise<HandlerOutput<"user/incrementWordCount">> => {
+	const access = await checkAccess(args.auth);
+	const userId = access.auth.uid;
+	const { wordCount } = args.input;
+	if (wordCount <= 0) return {};
+
+	await firemix().transaction(async (tx) => {
+		const doc = await tx.get(mixpath.users(userId));
+		if (!doc) return;
+		const user = doc.data;
+		const currentMonth = getCurrentUsageMonth();
+		const wordsThisMonth =
+			user.wordsThisMonthMonth !== currentMonth
+				? wordCount
+				: (user.wordsThisMonth ?? 0) + wordCount;
+		tx.update(mixpath.users(userId), {
+			wordsThisMonth,
+			wordsThisMonthMonth: currentMonth,
+			wordsTotal: (user.wordsTotal ?? 0) + wordCount,
+			updatedAt: firemix().now(),
+		});
+	});
+	return {};
+};
+
+export const trackStreak = async (args: {
+	auth: Nullable<AuthData>;
+}): Promise<HandlerOutput<"user/trackStreak">> => {
+	const access = await checkAccess(args.auth);
+	const userId = access.auth.uid;
+
+	await firemix().transaction(async (tx) => {
+		const doc = await tx.get(mixpath.users(userId));
+		if (!doc) return;
+		const user = doc.data;
+		const today = getCurrentDateString();
+		if (user.streakRecordedAt === today) return;
+
+		const yesterday = getYesterdayDateString();
+		const streak =
+			user.streakRecordedAt === yesterday ? (user.streak ?? 0) + 1 : 1;
+		tx.update(mixpath.users(userId), {
+			streak,
+			streakRecordedAt: today,
+			updatedAt: firemix().now(),
+		});
 	});
 	return {};
 };

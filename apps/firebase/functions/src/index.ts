@@ -5,6 +5,7 @@ import {
 	DeleteToneInputZod,
 	EmptyObjectZod,
 	HandlerName,
+	IncrementWordCountInputZod,
 	RefreshApiTokenInputZod,
 	SetMyUserInputZod,
 	StripeCreateCheckoutSessionInputZod,
@@ -45,7 +46,12 @@ import {
 	listMyTones,
 	upsertMyTone,
 } from "./services/tone.service";
-import { getMyUser, setMyUser } from "./services/user.service";
+import {
+	getMyUser,
+	incrementWordCount,
+	setMyUser,
+	trackStreak,
+} from "./services/user.service";
 import {
 	getDatabaseUrl,
 	getFlavor,
@@ -172,6 +178,16 @@ export const handler = onCall(
 			} else if (name === "user/getMyUser") {
 				validateData(EmptyObjectZod, args ?? {});
 				data = await getMyUser({
+					auth,
+				});
+			} else if (name === "user/incrementWordCount") {
+				data = await incrementWordCount({
+					auth,
+					input: validateData(IncrementWordCountInputZod, args),
+				});
+			} else if (name === "user/trackStreak") {
+				validateData(EmptyObjectZod, args ?? {});
+				data = await trackStreak({
 					auth,
 				});
 			} else if (name === "config/getFullConfig") {
