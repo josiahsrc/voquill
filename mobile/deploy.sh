@@ -21,7 +21,7 @@ sed -i '' "s/^version: .*/version: ${new_version}/" pubspec.yaml
 echo "Bumped version from $current_version to $new_version"
 
 fvm flutter pub get
-fvm flutter build ipa
+fvm flutter build ipa -t lib/main_prod.dart --flavor prod --release
 cd ./build/ios/archive/
 
 xcodebuild -exportArchive \
