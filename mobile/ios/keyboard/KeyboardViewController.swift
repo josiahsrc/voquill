@@ -263,14 +263,16 @@ class KeyboardViewController: UIInputViewController {
 
     private var currentPhase: Phase = .idle
 
+    private var pillButton: UIView!
+    private var pillLabel: UILabel!
     private var waveformView: AudioWaveformView!
     private var progressView: IndeterminateProgressView!
-    private var pillButton: UIView!
-    private var pillIcon: UIImageView!
-    private var pillLabel: UILabel!
     private var nextKeyboardButton: UIButton?
-    private var labelToIconConstraint: NSLayoutConstraint!
-    private var labelCenteredConstraint: NSLayoutConstraint!
+
+    private var toneContainer: UIScrollView!
+    private var selectedToneId: String?
+    private var activeToneIds: [String] = []
+    private var toneById: [String: SharedTone] = [:]
 
     private var audioRecorder: AVAudioRecorder?
     private var levelTimer: Timer?
@@ -288,19 +290,8 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func updateColorsForAppearance() {
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        let activeColor: UIColor = isDark ? .white : .black
-        let idleColor: UIColor = isDark ? UIColor.white.withAlphaComponent(0.25) : UIColor.black.withAlphaComponent(0.2)
-        progressView.barColor = activeColor
-
-        switch currentPhase {
-        case .idle:
-            waveformView.waveColor = idleColor
-        case .recording:
-            waveformView.waveColor = activeColor
-        case .loading:
-            progressView.barColor = activeColor
-        }
+        waveformView.waveColor = .white
+        progressView.barColor = .white
     }
 
     private func buildUI() {
@@ -310,67 +301,73 @@ class KeyboardViewController: UIInputViewController {
         hc.priority = .defaultHigh
         hc.isActive = true
 
-        // === WAVEFORM ===
-        waveformView = AudioWaveformView()
-        waveformView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(waveformView)
+        // === UTILITY BUTTONS (top right) ===
+        let btnConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+        let utilStack = UIStackView()
+        utilStack.translatesAutoresizingMaskIntoConstraints = false
+        utilStack.axis = .horizontal
+        utilStack.spacing = 4
+        view.addSubview(utilStack)
 
-        // === PROGRESS ===
-        progressView = IndeterminateProgressView()
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.alpha = 0
-        view.addSubview(progressView)
+        for iconName in ["at", "space", "delete.left"] {
+            let btn = UIButton(type: .system)
+            btn.setImage(UIImage(systemName: iconName, withConfiguration: btnConfig), for: .normal)
+            btn.tintColor = .label
+            btn.backgroundColor = UIColor.systemGray5
+            btn.layer.cornerRadius = 8
+            btn.clipsToBounds = true
+            NSLayoutConstraint.activate([
+                btn.widthAnchor.constraint(equalToConstant: 36),
+                btn.heightAnchor.constraint(equalToConstant: 36)
+            ])
+            utilStack.addArrangedSubview(btn)
+        }
 
-        NSLayoutConstraint.activate([
-            waveformView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            waveformView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            waveformView.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            waveformView.heightAnchor.constraint(equalToConstant: 110),
-
-            progressView.leadingAnchor.constraint(equalTo: waveformView.leadingAnchor),
-            progressView.trailingAnchor.constraint(equalTo: waveformView.trailingAnchor),
-            progressView.topAnchor.constraint(equalTo: waveformView.topAnchor),
-            progressView.heightAnchor.constraint(equalTo: waveformView.heightAnchor)
-        ])
-
-        // === PILL BUTTON ===
+        // === PILL BUTTON (contains waveform + progress + label) ===
         pillButton = UIView()
         pillButton.translatesAutoresizingMaskIntoConstraints = false
         pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-        pillButton.layer.cornerRadius = 24
+        pillButton.layer.cornerRadius = 28
+        pillButton.clipsToBounds = true
         pillButton.isUserInteractionEnabled = true
         view.addSubview(pillButton)
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(onPillTap))
         pillButton.addGestureRecognizer(tap)
 
-        pillIcon = UIImageView()
-        pillIcon.translatesAutoresizingMaskIntoConstraints = false
-        pillIcon.tintColor = .white
-        pillIcon.contentMode = .scaleAspectFit
-        pillButton.addSubview(pillIcon)
+        waveformView = AudioWaveformView()
+        waveformView.translatesAutoresizingMaskIntoConstraints = false
+        waveformView.alpha = 0
+        pillButton.addSubview(waveformView)
+
+        progressView = IndeterminateProgressView()
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        progressView.alpha = 0
+        pillButton.addSubview(progressView)
 
         pillLabel = UILabel()
         pillLabel.translatesAutoresizingMaskIntoConstraints = false
         pillLabel.textColor = .white
         pillLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        pillLabel.textAlignment = .center
         pillButton.addSubview(pillLabel)
 
         NSLayoutConstraint.activate([
-            pillButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            pillButton.topAnchor.constraint(equalTo: waveformView.bottomAnchor, constant: 16),
-            pillButton.heightAnchor.constraint(equalToConstant: 48),
+            waveformView.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor),
+            waveformView.trailingAnchor.constraint(equalTo: pillButton.trailingAnchor),
+            waveformView.topAnchor.constraint(equalTo: pillButton.topAnchor),
+            waveformView.bottomAnchor.constraint(equalTo: pillButton.bottomAnchor),
 
-            pillIcon.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 20),
-            pillIcon.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
-            pillIcon.widthAnchor.constraint(equalToConstant: 20),
-            pillIcon.heightAnchor.constraint(equalToConstant: 20),
+            progressView.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 16),
+            progressView.trailingAnchor.constraint(equalTo: pillButton.trailingAnchor, constant: -16),
+            progressView.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
+            progressView.heightAnchor.constraint(equalToConstant: 20),
 
-            pillLabel.trailingAnchor.constraint(equalTo: pillButton.trailingAnchor, constant: -20),
-            pillLabel.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor)
+            pillLabel.centerXAnchor.constraint(equalTo: pillButton.centerXAnchor),
+            pillLabel.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
         ])
 
-        // === NEXT KEYBOARD ===
+        // === NEXT KEYBOARD (bottom left) ===
         let nkb = UIButton(type: .system)
         nkb.setImage(UIImage(systemName: "globe", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18)), for: .normal)
         nkb.tintColor = .label
@@ -379,16 +376,81 @@ class KeyboardViewController: UIInputViewController {
         view.addSubview(nkb)
         nextKeyboardButton = nkb
 
+        // === TONE SELECTOR (bottom) ===
+        toneContainer = UIScrollView()
+        toneContainer.translatesAutoresizingMaskIntoConstraints = false
+        toneContainer.showsHorizontalScrollIndicator = false
+        view.addSubview(toneContainer)
+
+        // Spacers for equal vertical distribution
+        let topSpacer = UIView()
+        topSpacer.translatesAutoresizingMaskIntoConstraints = false
+        topSpacer.isHidden = true
+        view.addSubview(topSpacer)
+
+        let bottomSpacer = UIView()
+        bottomSpacer.translatesAutoresizingMaskIntoConstraints = false
+        bottomSpacer.isHidden = true
+        view.addSubview(bottomSpacer)
+
+        // Layout: chain top-to-bottom
         NSLayoutConstraint.activate([
+            // Util buttons: top right
+            utilStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            utilStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+
+            // Spacers: equal height above and below pill
+            topSpacer.topAnchor.constraint(equalTo: utilStack.bottomAnchor),
+            topSpacer.bottomAnchor.constraint(equalTo: pillButton.topAnchor),
+            topSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            topSpacer.widthAnchor.constraint(equalToConstant: 0),
+
+            bottomSpacer.topAnchor.constraint(equalTo: pillButton.bottomAnchor),
+            bottomSpacer.bottomAnchor.constraint(equalTo: toneContainer.topAnchor),
+            bottomSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomSpacer.widthAnchor.constraint(equalToConstant: 0),
+
+            topSpacer.heightAnchor.constraint(equalTo: bottomSpacer.heightAnchor),
+
+            // Pill: centered horizontally
+            pillButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            pillButton.widthAnchor.constraint(equalToConstant: 220),
+            pillButton.heightAnchor.constraint(equalToConstant: 56),
+
+            // Tone chips: pinned to bottom
+            toneContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            toneContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            toneContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
+            toneContainer.heightAnchor.constraint(equalToConstant: 32),
+
+            // Globe: bottom left, same row as tone chips
             nkb.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
-            nkb.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
+            nkb.centerYAnchor.constraint(equalTo: toneContainer.centerYAnchor),
             nkb.widthAnchor.constraint(equalToConstant: 36),
-            nkb.heightAnchor.constraint(equalToConstant: 36)
+            nkb.heightAnchor.constraint(equalToConstant: 36),
         ])
 
-        labelToIconConstraint = pillLabel.leadingAnchor.constraint(equalTo: pillIcon.trailingAnchor, constant: 8)
-        labelCenteredConstraint = pillLabel.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 20)
-        labelToIconConstraint.isActive = true
+        loadTones()
+
+        // Build chips
+        toneContainer.subviews.forEach { $0.removeFromSuperview() }
+        var xOffset: CGFloat = 0
+        let names = ["Polished", "Verbatim", "Email", "Chat", "Formal"]
+        for name in names {
+            let chip = UIButton(type: .system)
+            chip.setTitle(name, for: .normal)
+            chip.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+            chip.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
+            chip.layer.cornerRadius = 16
+            chip.clipsToBounds = true
+            chip.backgroundColor = name == "Polished" ? UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.15) : .systemGray5
+            chip.setTitleColor(name == "Polished" ? UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0) : .secondaryLabel, for: .normal)
+            chip.sizeToFit()
+            chip.frame = CGRect(x: xOffset, y: 0, width: chip.frame.width, height: 32)
+            toneContainer.addSubview(chip)
+            xOffset += chip.frame.width + 8
+        }
+        toneContainer.contentSize = CGSize(width: xOffset, height: 32)
 
         waveformView.startAnimating()
         updateColorsForAppearance()
@@ -396,24 +458,17 @@ class KeyboardViewController: UIInputViewController {
 
     private func applyPhase(_ phase: Phase, animated: Bool) {
         currentPhase = phase
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        let activeColor: UIColor = isDark ? .white : .black
-        let idleColor: UIColor = isDark ? UIColor.white.withAlphaComponent(0.25) : UIColor.black.withAlphaComponent(0.2)
 
         let changes: () -> Void
         switch phase {
         case .idle:
             changes = {
-                self.waveformView.alpha = 1
-                self.progressView.alpha = 0
+                self.waveformView.alpha = 0
                 self.waveformView.isActive = false
-                self.waveformView.waveColor = idleColor
+                self.progressView.alpha = 0
                 self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-                self.pillIcon.image = UIImage(systemName: "mic.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))
-                self.pillIcon.isHidden = false
-                self.labelCenteredConstraint.isActive = false
-                self.labelToIconConstraint.isActive = true
                 self.pillLabel.text = "Tap to dictate"
+                self.pillLabel.alpha = 1
                 self.pillButton.isUserInteractionEnabled = true
             }
             progressView.stopAnimating()
@@ -421,28 +476,21 @@ class KeyboardViewController: UIInputViewController {
         case .recording:
             changes = {
                 self.waveformView.alpha = 1
-                self.progressView.alpha = 0
                 self.waveformView.isActive = true
-                self.waveformView.waveColor = activeColor
-                self.pillButton.backgroundColor = .systemRed
-                self.pillIcon.image = UIImage(systemName: "stop.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold))
-                self.pillIcon.isHidden = false
-                self.labelCenteredConstraint.isActive = false
-                self.labelToIconConstraint.isActive = true
-                self.pillLabel.text = "Stop dictating"
+                self.progressView.alpha = 0
+                self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+                self.pillLabel.alpha = 0
                 self.pillButton.isUserInteractionEnabled = true
             }
 
         case .loading:
             changes = {
                 self.waveformView.alpha = 0
+                self.waveformView.isActive = false
                 self.progressView.alpha = 1
                 self.pillButton.backgroundColor = UIColor.systemGray3
-                self.pillIcon.image = nil
-                self.pillIcon.isHidden = true
-                self.labelToIconConstraint.isActive = false
-                self.labelCenteredConstraint.isActive = true
-                self.pillLabel.text = "Loading..."
+                self.pillLabel.text = "Processing..."
+                self.pillLabel.alpha = 0
                 self.pillButton.isUserInteractionEnabled = false
             }
             progressView.startAnimating()
@@ -455,6 +503,89 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
+
+    // MARK: - Tone Selector
+
+    private func loadTones() {
+        let defaults = UserDefaults(suiteName: appGroupId)
+        let toneData = defaults.flatMap { SharedTone.loadFromDefaults($0) }
+        activeToneIds = toneData?.activeToneIds ?? []
+        toneById = toneData?.toneById ?? [:]
+        selectedToneId = defaults?.string(forKey: "voquill_selected_tone_id") ?? activeToneIds.first
+
+        if activeToneIds.isEmpty {
+            activeToneIds = ["polished", "verbatim", "email", "chat", "formal"]
+            toneById = [
+                "polished": SharedTone(name: "Polished", promptTemplate: ""),
+                "verbatim": SharedTone(name: "Verbatim", promptTemplate: ""),
+                "email": SharedTone(name: "Email", promptTemplate: ""),
+                "chat": SharedTone(name: "Chat", promptTemplate: ""),
+                "formal": SharedTone(name: "Formal", promptTemplate: ""),
+            ]
+            selectedToneId = "polished"
+        }
+        renderToneChips()
+    }
+
+    private func addDebugChip(_ text: String) {
+        toneContainer.subviews.forEach { $0.removeFromSuperview() }
+        let label = UILabel()
+        label.text = text
+        label.font = .systemFont(ofSize: 11)
+        label.textColor = .systemRed
+        label.sizeToFit()
+        label.frame.origin = .zero
+        toneContainer.addSubview(label)
+    }
+
+    private func renderToneChips() {
+        toneContainer.subviews.forEach { $0.removeFromSuperview() }
+
+        var xOffset: CGFloat = 0
+        for (index, toneId) in activeToneIds.enumerated() {
+            guard let tone = toneById[toneId] else { continue }
+            let chip = UIButton(type: .custom)
+            chip.setTitle(tone.name, for: .normal)
+            chip.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+            chip.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
+            chip.layer.cornerRadius = 16
+            chip.clipsToBounds = true
+            chip.tag = index
+            chip.addTarget(self, action: #selector(onToneChipTap(_:)), for: .touchUpInside)
+            applyChipStyle(chip, selected: toneId == selectedToneId)
+
+            let size = chip.intrinsicContentSize
+            chip.frame = CGRect(x: xOffset, y: 0, width: size.width, height: 32)
+            toneContainer.addSubview(chip)
+            xOffset += size.width + 8
+        }
+        toneContainer.contentSize = CGSize(width: xOffset, height: 32)
+    }
+
+    private func applyChipStyle(_ chip: UIButton, selected: Bool) {
+        if selected {
+            chip.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.15)
+            chip.setTitleColor(UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0), for: .normal)
+        } else {
+            chip.backgroundColor = UIColor.systemGray5
+            chip.setTitleColor(.secondaryLabel, for: .normal)
+        }
+    }
+
+    @objc private func onToneChipTap(_ sender: UIButton) {
+        let index = sender.tag
+        guard index < activeToneIds.count else { return }
+        selectedToneId = activeToneIds[index]
+
+        if let defaults = UserDefaults(suiteName: appGroupId) {
+            defaults.set(selectedToneId, forKey: "voquill_selected_tone_id")
+        }
+
+        for view in toneContainer.subviews {
+            guard let chip = view as? UIButton else { continue }
+            applyChipStyle(chip, selected: chip.tag == index)
+        }
+    }
 
     @objc private func onPillTap() {
         switch currentPhase {
