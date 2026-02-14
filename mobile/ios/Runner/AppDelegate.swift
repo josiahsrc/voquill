@@ -75,10 +75,16 @@ import UIKit
         let transcriptions = defaults?.array(forKey: "voquill_transcriptions") as? [[String: Any]] ?? []
         result(transcriptions)
 
-      case "getUpdateCounter":
+      case "getAppCounter":
         let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
-        let counter = defaults?.integer(forKey: "voquill_update_counter") ?? 0
+        let counter = defaults?.integer(forKey: "voquill_app_update_counter") ?? 0
         result(counter)
+
+      case "incrementKeyboardCounter":
+        let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
+        let counter = defaults?.integer(forKey: "voquill_keyboard_update_counter") ?? 0
+        defaults?.set(counter + 1, forKey: "voquill_keyboard_update_counter")
+        result(nil)
 
       default:
         result(FlutterMethodNotImplemented)

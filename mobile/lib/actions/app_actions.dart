@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/actions/styles_actions.dart';
 import 'package:app/api/member_api.dart';
 import 'package:app/api/user_api.dart';
 import 'package:app/model/auth_user_model.dart';
@@ -22,6 +23,7 @@ StreamSubscription<User?> listenToAuthChanges() {
           draft.auth = AuthUser(uid: firebaseUser.uid, email: firebaseUser.email);
         });
         await loadCurrentUser();
+        await loadStyles();
       }
       syncKeyboardAuth();
     } else {

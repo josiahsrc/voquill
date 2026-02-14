@@ -278,10 +278,14 @@ class KeyboardViewController: UIInputViewController {
     private var levelTimer: Timer?
     private var smoothedLevel: Float = 0
 
+    private var appCounterPoller: Timer?
+    private var lastAppCounter: Int = -1
+
     override func viewDidLoad() {
         super.viewDidLoad()
         buildUI()
         applyPhase(.idle, animated: false)
+        startKeyboardCounterPoller()
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -485,6 +489,22 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
+
+    // MARK: - Keyboard Counter Polling
+
+    private func startKeyboardCounterPoller() {
+        appCounterPoller = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.checkKeyboardCounter()
+        }
+    }
+
+    private func checkKeyboardCounter() {
+        let counter = CounterRepo().getKeyboard()
+        if counter != lastAppCounter {
+            lastAppCounter = counter
+            loadTones()
+        }
+    }
 
     // MARK: - Tone Selector
 
@@ -934,6 +954,8 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        appCounterPoller?.invalidate()
+        appCounterPoller = nil
         if currentPhase == .recording {
             stopAudioCapture()
         }

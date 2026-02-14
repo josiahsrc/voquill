@@ -1,10 +1,22 @@
+import 'package:app/api/counter_api.dart';
 import 'package:app/model/tone_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/channel_utils.dart';
+import 'package:app/utils/log_utils.dart';
 import 'package:app/utils/tone_utils.dart';
 import 'package:app/utils/user_utils.dart';
 
-void syncTonesToKeyboard() {
+final _logger = createNamedLogger('keyboard_actions');
+
+Future<void> _incrementAppCounter() async {
+  try {
+    await IncrementKeyboardCounterApi().call(null);
+  } catch (e) {
+    _logger.w('Failed to increment app counter', e);
+  }
+}
+
+Future<void> syncTonesToKeyboard() async {
   final state = getAppState();
   final selectedToneId = getManuallySelectedToneId(state);
   final activeToneIds = getActiveSortedToneIds(state);
@@ -15,25 +27,27 @@ void syncTonesToKeyboard() {
       promptTemplate: entry.value.promptTemplate,
     );
   }
-  syncKeyboardTones(
+  await syncKeyboardTones(
     selectedToneId: selectedToneId,
     activeToneIds: activeToneIds,
     toneById: toneById,
   );
+  await _incrementAppCounter();
 }
 
-void syncUserToKeyboard() {
+Future<void> syncUserToKeyboard() async {
   final state = getAppState();
   final user = state.user;
   if (user != null) {
-    syncKeyboardUser(
+    await syncKeyboardUser(
       userName: user.name,
       dictationLanguage: getMyPrimaryDictationLanguage(state),
     );
+    await _incrementAppCounter();
   }
 }
 
-void syncKeyboardOnInit() {
-  syncTonesToKeyboard();
-  syncUserToKeyboard();
+Future<void> syncKeyboardOnInit() async {
+  await syncTonesToKeyboard();
+  await syncUserToKeyboard();
 }

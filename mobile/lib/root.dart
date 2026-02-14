@@ -64,7 +64,7 @@ class _AppState extends State<App> {
   }
 
   Future<void> _checkForUpdates() async {
-    final counter = await GetUpdateCounterApi().call(null);
+    final counter = await GetAppCounterApi().call(null);
     if (counter != _lastUpdateCounter) {
       _lastUpdateCounter = counter;
       loadTranscriptions();
