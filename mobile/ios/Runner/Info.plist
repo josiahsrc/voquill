@@ -54,6 +54,8 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Voquill needs access to your microphone to transcribe your voice.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
