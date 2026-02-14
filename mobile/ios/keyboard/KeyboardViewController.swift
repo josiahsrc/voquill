@@ -9,9 +9,9 @@ class AudioWaveformView: UIView {
     private var currentLevel: CGFloat = 0.0
     private var targetLevel: CGFloat = 0.0
 
-    private let basePhaseStep: CGFloat = 0.14
-    private let attackSmoothing: CGFloat = 0.25
-    private let decaySmoothing: CGFloat = 0.25
+    private let basePhaseStep: CGFloat = 0.18
+    private let attackSmoothing: CGFloat = 0.5
+    private let decaySmoothing: CGFloat = 0.35
 
     private struct WaveConfig {
         let frequency: CGFloat
@@ -905,8 +905,8 @@ class KeyboardViewController: UIInputViewController {
         let normalized = (clampedPower + 50) / 50
         let curved = pow(normalized, 0.7)
 
-        let attack: Float = 0.4
-        let decay: Float = 0.4
+        let attack: Float = 0.6
+        let decay: Float = 0.5
         let s = curved > smoothedLevel ? attack : decay
         smoothedLevel += (curved - smoothedLevel) * s
 
