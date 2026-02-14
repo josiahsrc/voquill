@@ -21,7 +21,7 @@ StreamSubscription<User?> listenToAuthChanges() {
         produceAppState((draft) {
           draft.auth = AuthUser(uid: firebaseUser.uid, email: firebaseUser.email);
         });
-        await _loadCurrentUser();
+        await loadCurrentUser();
       }
       syncKeyboardAuth();
     } else {
@@ -42,7 +42,7 @@ StreamSubscription<User?> listenToAuthChanges() {
   });
 }
 
-Future<void> _loadCurrentUser() async {
+Future<void> loadCurrentUser() async {
   try {
     final output = await GetMyUserApi().call(null);
     produceAppState((draft) {

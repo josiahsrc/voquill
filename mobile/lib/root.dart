@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/transcription_actions.dart';
+import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
 import 'package:app/model/tone_model.dart';
 import 'package:app/routing/build_router.dart';
@@ -39,30 +40,37 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> with WidgetsBindingObserver {
+class _AppState extends State<App> {
   final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   late final GoRouter goRouter;
   late final StreamSubscription _authSubscription;
+  late final Timer _updatePoller;
+  int _lastUpdateCounter = -1;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     goRouter = buildRouter(refreshListenable: context.read<RouteRefresher>());
     _authSubscription = listenToAuthChanges();
+    _updatePoller = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _checkForUpdates(),
+    );
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    _updatePoller.cancel();
     _authSubscription.cancel();
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+  Future<void> _checkForUpdates() async {
+    final counter = await GetUpdateCounterApi().call(null);
+    if (counter != _lastUpdateCounter) {
+      _lastUpdateCounter = counter;
       loadTranscriptions();
+      loadCurrentUser();
     }
   }
 
@@ -100,14 +108,6 @@ class _AppState extends State<App> with WidgetsBindingObserver {
             a.status != b.status ||
             a.auth != b.auth ||
             a.isOnboarded != b.isOnboarded,
-      ),
-      useAppStore().listen(
-        (context, state) {
-          if (state.auth != null) {
-            loadTranscriptions();
-          }
-        },
-        condition: (a, b) => a.auth != b.auth,
       ),
       useAppStore().listen(
         (context, state) {

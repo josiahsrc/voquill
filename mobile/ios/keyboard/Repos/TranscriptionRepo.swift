@@ -60,6 +60,8 @@ class TranscriptionRepo {
         }
 
         defaults.set(existing, forKey: TranscriptionRepo.storageKey)
+
+        CounterRepo().increment()
     }
 
     func loadAll() -> [[String: Any]] {
