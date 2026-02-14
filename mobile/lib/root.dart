@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
-import 'package:app/actions/language_actions.dart';
-import 'package:app/actions/transcription_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
 import 'package:app/routing/build_router.dart';
@@ -68,9 +66,7 @@ class _AppState extends State<App> {
     final counter = await GetAppCounterApi().call(null);
     if (counter != _lastUpdateCounter) {
       _lastUpdateCounter = counter;
-      loadTranscriptions();
-      loadCurrentUser();
-      loadDictationLanguages();
+      await refreshMainData();
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:app/actions/app_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/model/tone_model.dart';
 import 'package:app/store/store.dart';
@@ -73,6 +74,7 @@ Future<void> syncDictionaryToKeyboard() async {
 }
 
 Future<void> syncKeyboardOnInit() async {
+  await refreshMainData();
   await syncLanguagesToKeyboard();
   await syncTonesToKeyboard();
   await syncUserToKeyboard();

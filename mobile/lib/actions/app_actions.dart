@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:app/actions/language_actions.dart';
 import 'package:app/actions/styles_actions.dart';
+import 'package:app/actions/transcription_actions.dart';
 import 'package:app/api/member_api.dart';
 import 'package:app/api/user_api.dart';
 import 'package:app/model/auth_user_model.dart';
@@ -12,6 +14,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 final _logger = createNamedLogger('app_actions');
 
+Future<void> refreshMainData() async {
+  await Future.wait([
+    loadTranscriptions(),
+    loadCurrentUser(),
+    loadStyles(),
+    loadDictationLanguages(),
+  ]);
+}
+
 StreamSubscription<User?> listenToAuthChanges() {
   return FirebaseAuth.instance.authStateChanges().listen((firebaseUser) async {
     final currentAuth = getAppState().auth;
@@ -20,10 +31,12 @@ StreamSubscription<User?> listenToAuthChanges() {
     if (firebaseUser != null) {
       if (currentAuth?.uid != firebaseUser.uid) {
         produceAppState((draft) {
-          draft.auth = AuthUser(uid: firebaseUser.uid, email: firebaseUser.email);
+          draft.auth = AuthUser(
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+          );
         });
-        await loadCurrentUser();
-        await loadStyles();
+        await refreshMainData();
       }
       syncKeyboardAuth();
     } else {
