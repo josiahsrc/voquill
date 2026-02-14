@@ -2,20 +2,34 @@ import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/keyboard_access_form.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class MicrophoneAccessForm extends StatelessWidget {
   const MicrophoneAccessForm({super.key});
 
+  Future<void> _requestMicrophoneAccess(BuildContext context) async {
+    final presenter = context.presenter();
+    final status = await Permission.microphone.request();
+    if (!context.mounted) {
+      return;
+    }
+
+    if (status.isGranted) {
+      presenter.pushPage<KeyboardAccessForm>();
+    } else if (status.isPermanentlyDenied) {
+      openAppSettings();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final presenter = context.presenter();
     final theme = Theme.of(context);
 
     return OnboardingFormLayout(
       backButton: const MultiPageBackButton(),
       actions: [
         FilledButton(
-          onPressed: () => presenter.pushPage<KeyboardAccessForm>(),
+          onPressed: () => _requestMicrophoneAccess(context),
           child: const Text('Enable Microphone'),
         ),
       ],
