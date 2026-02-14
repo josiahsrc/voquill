@@ -12,6 +12,7 @@ import 'package:app/theme/build_theme.dart';
 import 'package:app/utils/channel_utils.dart';
 import 'package:app/utils/tone_utils.dart';
 import 'package:app/utils/user_utils.dart';
+import 'package:app/widgets/common/unfocus_detector.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -57,12 +58,14 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    Widget app = MaterialApp.router(
-      theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
-      themeMode: ThemeMode.system,
-      routerConfig: goRouter,
-      scaffoldMessengerKey: scaffoldMessengerKey,
+    Widget app = UnfocusDetector(
+      child: MaterialApp.router(
+        theme: buildLightTheme(),
+        darkTheme: buildDarkTheme(),
+        themeMode: ThemeMode.system,
+        routerConfig: goRouter,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+      ),
     );
 
     final color = Flavor.current.color;

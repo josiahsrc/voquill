@@ -1,5 +1,21 @@
 import Foundation
 
+let postProcessingJsonResponse: [String: Any] = [
+    "name": "transcription_cleaning",
+    "description": "JSON response with the processed transcription",
+    "schema": [
+        "type": "object",
+        "properties": [
+            "processedTranscription": [
+                "type": "string",
+                "description": "The processed version of the transcript. Empty if no transcript."
+            ]
+        ],
+        "required": ["processedTranscription"],
+        "additionalProperties": false
+    ] as [String: Any]
+]
+
 func buildSystemPostProcessingPrompt() -> String {
     return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a single field 'processedTranscription' that contains the rewritten transcript."
 }

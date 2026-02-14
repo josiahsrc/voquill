@@ -538,13 +538,22 @@ class KeyboardViewController: UIInputViewController {
                         let tone = selectedId.flatMap { toneData.toneById?[$0] }
 
                         if let tone = tone {
-                            finalText = try await CloudGenerateTextRepo(config: config).generate(
+                            let raw = try await CloudGenerateTextRepo(config: config).generate(
                                 system: buildSystemPostProcessingPrompt(),
                                 prompt: buildPostProcessingPrompt(
                                     transcript: rawTranscript,
                                     tonePromptTemplate: tone.promptTemplate
-                                )
+                                ),
+                                jsonResponse: postProcessingJsonResponse
                             )
+                            if let data = raw.data(using: .utf8),
+                               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                               let processed = json["processedTranscription"] as? String {
+                                finalText = processed.trimmingCharacters(in: .whitespacesAndNewlines)
+                            } else {
+                                self.dbg("Could not parse processedTranscription from JSON, using raw")
+                                finalText = raw
+                            }
                         }
                     } catch {
                         self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")

@@ -57,7 +57,7 @@ class HomePage extends StatelessWidget {
         ),
         SliverPadding(
           padding: Theming.padding.withoutTop(),
-          sliver: SliverToBoxAdapter(child: TextField()),
+          sliver: SliverToBoxAdapter(child: TextField(maxLines: null)),
         ),
         SliverPadding(
           padding: Theming.padding.onlyHorizontal().withTop(28),
