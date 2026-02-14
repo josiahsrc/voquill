@@ -126,6 +126,12 @@ class _AppState extends State<App> {
             a.user?.preferredLanguage != b.user?.preferredLanguage,
       ),
       useAppStore().listen(
+        (context, state) => syncDictionaryToKeyboard(),
+        condition: (a, b) =>
+            !mapEquals(a.termById, b.termById) ||
+            a.dictionary.termIds != b.dictionary.termIds,
+      ),
+      useAppStore().listen(
         (context, state) => syncLanguagesToKeyboard(),
         condition: (a, b) =>
             a.dictationLanguages != b.dictationLanguages ||

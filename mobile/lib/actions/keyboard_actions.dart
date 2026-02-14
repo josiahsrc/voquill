@@ -56,8 +56,25 @@ Future<void> syncLanguagesToKeyboard() async {
   await _incrementAppCounter();
 }
 
+Future<void> syncDictionaryToKeyboard() async {
+  final state = getAppState();
+  final termById = <String, SharedTerm>{};
+  for (final entry in state.termById.entries) {
+    termById[entry.key] = SharedTerm(
+      sourceValue: entry.value.sourceValue,
+      isReplacement: entry.value.isReplacement,
+    );
+  }
+  await syncKeyboardDictionary(
+    termIds: state.dictionary.termIds,
+    termById: termById,
+  );
+  await _incrementAppCounter();
+}
+
 Future<void> syncKeyboardOnInit() async {
   await syncLanguagesToKeyboard();
   await syncTonesToKeyboard();
   await syncUserToKeyboard();
+  await syncDictionaryToKeyboard();
 }

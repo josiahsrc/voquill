@@ -98,6 +98,29 @@ Future<void> syncKeyboardUser({
   }
 }
 
+Future<void> syncKeyboardDictionary({
+  required List<String> termIds,
+  required Map<String, SharedTerm> termById,
+}) async {
+  if (!_canSync) {
+    return;
+  }
+
+  try {
+    final termMap = <String, Map<String, dynamic>>{};
+    for (final entry in termById.entries) {
+      termMap[entry.key] = entry.value.toMap();
+    }
+
+    await _sharedChannel.invokeMethod('setKeyboardDictionary', {
+      'termIds': termIds,
+      'termById': termMap,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync keyboard dictionary', e);
+  }
+}
+
 Future<void> syncKeyboardDictationLanguages({
   required List<String> languages,
   required String activeLanguage,

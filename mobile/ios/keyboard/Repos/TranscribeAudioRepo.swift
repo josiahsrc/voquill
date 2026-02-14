@@ -6,11 +6,11 @@ class BaseTranscribeAudioRepo {
     func overlapDurationSec() -> TimeInterval { 5 }
     func batchChunkCount() -> Int { 3 }
 
-    func transcribeSegment(audioData: Data) async throws -> String {
+    func transcribeSegment(audioData: Data, prompt: String?, language: String?) async throws -> String {
         fatalError("Subclasses must override transcribeSegment")
     }
 
-    func transcribe(audioFileURL: URL) async throws -> String {
+    func transcribe(audioFileURL: URL, prompt: String? = nil, language: String? = nil) async throws -> String {
         guard let audioData = try? Data(contentsOf: audioFileURL), !audioData.isEmpty else {
             throw TranscribeError.noAudioData
         }
@@ -20,7 +20,7 @@ class BaseTranscribeAudioRepo {
 
         if totalSeconds <= segmentDurationSec() {
             return try await withRetry {
-                try await self.transcribeSegment(audioData: audioData)
+                try await self.transcribeSegment(audioData: audioData, prompt: prompt, language: language)
             }
         }
 
@@ -36,7 +36,7 @@ class BaseTranscribeAudioRepo {
                 for (i, segmentData) in batch.enumerated() {
                     group.addTask {
                         let text = try await withRetry {
-                            try await self.transcribeSegment(audioData: segmentData)
+                            try await self.transcribeSegment(audioData: segmentData, prompt: prompt, language: language)
                         }
                         return (i, text)
                     }
@@ -149,14 +149,18 @@ class CloudTranscribeAudioRepo: BaseTranscribeAudioRepo {
         self.config = config
     }
 
-    override func transcribeSegment(audioData: Data) async throws -> String {
+    override func transcribeSegment(audioData: Data, prompt: String?, language: String?) async throws -> String {
+        var args: [String: Any] = [
+            "audioBase64": audioData.base64EncodedString(),
+            "audioMimeType": "audio/mp4",
+        ]
+        if let prompt = prompt { args["prompt"] = prompt }
+        if let language = language { args["language"] = language }
+
         let result = try await invokeHandler(
             config: config,
             name: "ai/transcribeAudio",
-            args: [
-                "audioBase64": audioData.base64EncodedString(),
-                "audioMimeType": "audio/mp4",
-            ]
+            args: args
         )
         guard let text = result["text"] as? String else {
             throw ApiError.parseError

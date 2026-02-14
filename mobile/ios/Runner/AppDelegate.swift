@@ -70,6 +70,20 @@ import UIKit
         }
         result(nil)
 
+      case "setKeyboardDictionary":
+        guard let args = call.arguments as? [String: Any],
+              let termIds = args["termIds"] as? [String],
+              let termById = args["termById"] as? [String: [String: Any]],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(termIds, forKey: "voquill_term_ids")
+        if let data = try? JSONSerialization.data(withJSONObject: termById) {
+          defaults.set(data, forKey: "voquill_term_by_id")
+        }
+        result(nil)
+
       case "getDictationLanguages":
         let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
         let languages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? []

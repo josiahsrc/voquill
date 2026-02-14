@@ -275,6 +275,9 @@ class KeyboardViewController: UIInputViewController {
     private var activeToneIds: [String] = []
     private var toneById: [String: SharedTone] = [:]
 
+    private var termIds: [String] = []
+    private var termById: [String: SharedTerm] = [:]
+
     private var dictationLanguages: [String] = ["en"]
 
     private var audioRecorder: AVAudioRecorder?
@@ -460,6 +463,7 @@ class KeyboardViewController: UIInputViewController {
 
         loadTones()
         loadLanguage()
+        loadDictionary()
 
         waveformView.startAnimating()
         updateColorsForAppearance()
@@ -527,7 +531,17 @@ class KeyboardViewController: UIInputViewController {
             lastAppCounter = counter
             loadTones()
             loadLanguage()
+            loadDictionary()
         }
+    }
+
+    // MARK: - Dictionary
+
+    private func loadDictionary() {
+        guard let defaults = UserDefaults(suiteName: appGroupId) else { return }
+        let loaded = SharedTerm.loadFromDefaults(defaults)
+        termIds = loaded.termIds
+        termById = loaded.termById
     }
 
     // MARK: - Language Chip
@@ -708,11 +722,25 @@ class KeyboardViewController: UIInputViewController {
 
             let audioUrl = FileManager.default.temporaryDirectory.appendingPathComponent("voquill_kb.m4a")
 
+            let dictationLanguage = defaults.string(forKey: "voquill_dictation_language") ?? "en"
+            let userName = defaults.string(forKey: "voquill_user_name") ?? "User"
+            let prompt = buildLocalizedTranscriptionPrompt(
+                termIds: self.termIds,
+                termById: self.termById,
+                userName: userName,
+                language: dictationLanguage
+            )
+            let whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
+
             Task { [weak self] in
                 guard let self = self else { return }
                 let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
                 do {
-                    let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(audioFileURL: audioUrl)
+                    let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(
+                        audioFileURL: audioUrl,
+                        prompt: prompt,
+                        language: whisperLanguage
+                    )
 
                     guard !rawTranscript.isEmpty else {
                         await MainActor.run {

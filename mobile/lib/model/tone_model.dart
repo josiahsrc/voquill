@@ -17,6 +17,18 @@ class SharedTone {
   };
 }
 
+class SharedTerm {
+  final String sourceValue;
+  final bool isReplacement;
+
+  const SharedTerm({required this.sourceValue, required this.isReplacement});
+
+  Map<String, dynamic> toMap() => {
+    'sourceValue': sourceValue,
+    'isReplacement': isReplacement,
+  };
+}
+
 @JsonSerializable()
 @draft
 class Tone with EquatableMixin {

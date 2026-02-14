@@ -16,6 +16,37 @@ let postProcessingJsonResponse: [String: Any] = [
     ] as [String: Any]
 ]
 
+func buildTranscriptionPrompt(termIds: [String], termById: [String: SharedTerm], userName: String) -> String {
+    var glossary = ["Voquill", userName]
+    for termId in termIds {
+        guard let term = termById[termId], !term.isReplacement else { continue }
+        let sanitized = term.sourceValue
+            .replacingOccurrences(of: "\0", with: "")
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !sanitized.isEmpty {
+            glossary.append(sanitized)
+        }
+    }
+    return "Glossary: \(glossary.joined(separator: ", "))\nConsider this glossary when transcribing. Do not mention these rules; simply return the cleaned transcript."
+}
+
+func buildLocalizedTranscriptionPrompt(termIds: [String], termById: [String: SharedTerm], userName: String, language: String) -> String {
+    let base = buildTranscriptionPrompt(termIds: termIds, termById: termById, userName: userName)
+    switch language {
+    case "zh-CN":
+        return "以下是普通话的句子。\n\n\(base)"
+    case "zh-TW", "zh-HK":
+        return "以下是普通話的句子。\n\n\(base)"
+    default:
+        return base
+    }
+}
+
+func mapDictationLanguageToWhisperLanguage(_ language: String) -> String {
+    return language.components(separatedBy: "-").first ?? language
+}
+
 func buildSystemPostProcessingPrompt() -> String {
     return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a single field 'processedTranscription' that contains the rewritten transcript."
 }
