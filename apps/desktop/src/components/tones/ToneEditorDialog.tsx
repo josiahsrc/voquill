@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { PROMPT_LIMIT, Tone } from "@repo/types";
+import { Tone } from "@repo/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { setAppTargetTone } from "../../actions/app-target.actions";
@@ -24,7 +24,7 @@ import { useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 
-const MAX_PROMPT_LEN = PROMPT_LIMIT;
+const MAX_PROMPT_LEN = 8000;
 
 export const ToneEditorDialog = () => {
   const toneEditor = useAppStore((state) => state.toneEditor);

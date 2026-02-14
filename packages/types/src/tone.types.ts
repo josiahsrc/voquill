@@ -2,7 +2,7 @@ import { FiremixTimestamp } from "@firemix/core";
 import z from "zod";
 import { Replace } from "./common.types";
 
-export const PROMPT_LIMIT = 8000;
+export const PROMPT_LIMIT = 24000;
 
 export type DatabaseTone = {
   id: string;

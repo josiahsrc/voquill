@@ -54,7 +54,7 @@ describe("api", () => {
 					promptTemplate: "a".repeat(PROMPT_LIMIT + 1),
 				}),
 			}),
-		).rejects.toThrow(/String must contain at most 8000 character\(s\)/);
+		).rejects.toThrow(/String must contain at most 24000 character\(s\)/);
 	});
 
 	it("rejects systemPromptTemplate longer than prompt limit", async () => {
@@ -68,6 +68,6 @@ describe("api", () => {
 					systemPromptTemplate: "a".repeat(PROMPT_LIMIT + 1),
 				}),
 			}),
-		).rejects.toThrow(/String must contain at most 8000 character\(s\)/);
+		).rejects.toThrow(/String must contain at most 24000 character\(s\)/);
 	});
 });
