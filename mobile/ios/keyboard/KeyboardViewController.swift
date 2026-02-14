@@ -466,7 +466,8 @@ class KeyboardViewController: UIInputViewController {
                 guard let self = self, let idToken = idToken,
                       let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId),
                       let functionUrl = defaults.string(forKey: "voquill_function_url") else { return }
-                UserRepo(config: RepoConfig(functionUrl: functionUrl, idToken: idToken)).trackStreak()
+                let tz = TimeZone.current.identifier
+                UserRepo(config: RepoConfig(functionUrl: functionUrl, idToken: idToken)).trackStreak(timezone: tz)
             }
         case .recording:
             stopAudioCapture()
@@ -541,7 +542,8 @@ class KeyboardViewController: UIInputViewController {
                         self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
                     }
 
-                    UserRepo(config: config).incrementWordCount(text: finalText)
+                    let tz = TimeZone.current.identifier
+                    UserRepo(config: config).incrementWordCount(text: finalText, timezone: tz)
 
                     await MainActor.run {
                         self.textDocumentProxy.insertText(finalText)

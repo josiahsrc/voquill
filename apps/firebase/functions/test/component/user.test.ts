@@ -224,6 +224,28 @@ describe("api", () => {
 			expect(user?.wordsTotal).toBe(10);
 			expect(user?.wordsThisMonth).toBe(5);
 		});
+
+		it("accepts a timezone parameter", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({ wordsTotal: 0, wordsThisMonth: 0 }),
+			});
+
+			await invokeHandler("user/incrementWordCount", {
+				wordCount: 5,
+				timezone: "America/New_York",
+			});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.wordsTotal).toBe(5);
+			expect(user?.wordsThisMonth).toBe(5);
+			expect(user?.wordsThisMonthMonth).toBeDefined();
+		});
 	});
 
 	describe("trackStreak", () => {
@@ -304,6 +326,26 @@ describe("api", () => {
 				(res) => res.user,
 			);
 			expect(user?.streak).toBe(1);
+		});
+
+		it("accepts a timezone parameter", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser(),
+			});
+
+			await invokeHandler("user/trackStreak", {
+				timezone: "America/New_York",
+			});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.streak).toBe(1);
+			expect(user?.streakRecordedAt).toBeDefined();
 		});
 	});
 });

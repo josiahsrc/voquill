@@ -10,6 +10,7 @@ import {
 	SetMyUserInputZod,
 	StripeCreateCheckoutSessionInputZod,
 	StripeGetPricesInputZod,
+	TrackStreakInputZod,
 	UpsertTermInputZod,
 	UpsertToneInputZod,
 } from "@repo/functions";
@@ -186,9 +187,9 @@ export const handler = onCall(
 					input: validateData(IncrementWordCountInputZod, args),
 				});
 			} else if (name === "user/trackStreak") {
-				validateData(EmptyObjectZod, args ?? {});
 				data = await trackStreak({
 					auth,
+					input: validateData(TrackStreakInputZod, args ?? {}),
 				});
 			} else if (name === "config/getFullConfig") {
 				validateData(EmptyObjectZod, args ?? {});

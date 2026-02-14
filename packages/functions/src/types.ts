@@ -265,11 +265,14 @@ type HandlerDefinitions = {
   "user/incrementWordCount": {
     input: {
       wordCount: number;
+      timezone?: Nullable<string>;
     };
     output: EmptyObject;
   };
   "user/trackStreak": {
-    input: EmptyObject;
+    input: {
+      timezone?: Nullable<string>;
+    };
     output: EmptyObject;
   };
 
@@ -491,8 +494,15 @@ export const SetMyUserInputZod = z
 export const IncrementWordCountInputZod = z
   .object({
     wordCount: z.number().int(),
+    timezone: z.string().min(1).nullable().optional(),
   })
   .strict() satisfies z.ZodType<HandlerInput<"user/incrementWordCount">>;
+
+export const TrackStreakInputZod = z
+  .object({
+    timezone: z.string().min(1).nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/trackStreak">>;
 
 export const UpsertTermInputZod = z
   .object({
