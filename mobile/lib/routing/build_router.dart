@@ -1,7 +1,12 @@
 import 'package:app/routing/guard_redirect.dart';
 import 'package:app/widgets/dashboard/dashboard_page.dart';
 import 'package:app/widgets/error/error_page.dart';
+import 'package:app/widgets/history/history_page.dart';
+import 'package:app/widgets/settings/danger_zone_page.dart';
+import 'package:app/widgets/settings/dictation_language_page.dart';
+import 'package:app/widgets/styles/manage_styles_page.dart';
 import 'package:app/widgets/error/not_found_page.dart';
+import 'package:app/widgets/login/login_page.dart';
 import 'package:app/widgets/onboarding/onboarding_page.dart';
 import 'package:app/widgets/splash/splash_page.dart';
 import 'package:app/widgets/welcome/welcome_page.dart';
@@ -35,6 +40,11 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
         name: 'welcome',
       ),
       GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginPage(),
+        name: 'login',
+      ),
+      GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
         name: 'onboarding',
@@ -43,6 +53,28 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
         path: '/dashboard',
         builder: (context, state) => const DashboardPage(),
         name: 'dashboard',
+        routes: [
+          GoRoute(
+            path: 'history',
+            builder: (context, state) => const HistoryPage(),
+            name: 'history',
+          ),
+          GoRoute(
+            path: 'manage-styles',
+            builder: (context, state) => const ManageStylesPage(),
+            name: 'manage-styles',
+          ),
+          GoRoute(
+            path: 'dictation-language',
+            builder: (context, state) => const DictationLanguagePage(),
+            name: 'dictation-language',
+          ),
+          GoRoute(
+            path: 'danger-zone',
+            builder: (context, state) => const DangerZonePage(),
+            name: 'danger-zone',
+          ),
+        ],
       ),
     ],
   );

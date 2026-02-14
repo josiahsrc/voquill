@@ -32,6 +32,23 @@ final _graph = NavigationGraph([
     targetRoute: '/onboarding',
   ),
 
+  // Login page guards (same as welcome)
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/login'),
+      IsOnboardedCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/login'),
+      IsLoggedInCondition(),
+      NotCondition(IsOnboardedCondition()),
+    ]),
+    targetRoute: '/onboarding',
+  ),
+
   // Onboarding page guards
   // If onboarded -> dashboard
   NavigationRule(
@@ -53,10 +70,18 @@ final _graph = NavigationGraph([
   ),
 ]);
 
+String _resolvedLocation = '/';
+
 String? guardRedirect(BuildContext context, GoRouterState state) {
   final result = _graph.computeFinalDestination(context, state);
   if (kDebugMode) {
     print('Guard redirect: ${state.matchedLocation} -> $result');
+  }
+  if (result != null) {
+    if (result == _resolvedLocation) return null;
+    _resolvedLocation = result;
+  } else {
+    _resolvedLocation = state.matchedLocation;
   }
   return result;
 }

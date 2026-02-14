@@ -1,92 +1,110 @@
-import 'package:app/flavor.dart';
-import 'package:app/utils/url_utils.dart';
+import 'package:app/actions/auth_actions.dart';
+import 'package:app/store/store.dart';
+import 'package:app/utils/theme_utils.dart';
+import 'package:app/widgets/common/app_button.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
+import 'package:app/widgets/common/terms_notice.dart';
+import 'package:app/widgets/common/app_dialog.dart';
+import 'package:app/widgets/login/login_form.dart';
+import 'package:app/widgets/login/login_providers.dart';
 import 'package:app/widgets/onboarding/about_you_form.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 class CreateAccountForm extends StatelessWidget {
   const CreateAccountForm({super.key});
 
+  void _advance(BuildContext context) {
+    if (getAppState().isOnboarded) return;
+    context.presenter().pushPage<AboutYouForm>();
+  }
+
+  void _handleEmailSignUp(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AppDialog(
+        content: Padding(
+          padding: Theming.padding.onlyHorizontal(),
+          child: LoginForm(
+            hideModeSwitch: true,
+            hideProviders: true,
+            defaultMode: LoginMode.signUp,
+            onSuccess: () => Navigator.of(dialogContext).pop(),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final presenter = context.presenter();
     final theme = Theme.of(context);
+    final auth = useAppStore().select(context, (s) => s.auth);
+    final isLoggedIn = auth != null;
+    final canPop = context.canPop();
 
-    return OnboardingFormLayout(
-      backButton: const MultiPageBackButton(),
-      actions: const [],
+    final layout = OnboardingFormLayout(
+      backButton: canPop ? const MultiPageBackButton() : null,
+      actions: [
+        if (isLoggedIn)
+          AppButton.filled(
+            onPressed: () => _advance(context),
+            child: const Text('Continue'),
+          ),
+      ],
       child: OnboardingBody(
         title: const Text('Create your account'),
         description: const Text(
           'Sign up to sync your data across devices and unlock all features.',
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            FilledButton.icon(
-              onPressed: () => presenter.pushPage<AboutYouForm>(),
-              icon: const FaIcon(FontAwesomeIcons.google, size: 18),
-              label: const Text('Continue with Google'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => presenter.pushPage<AboutYouForm>(),
-              icon: const Icon(Icons.email_outlined),
-              label: const Text('Sign up with email'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => presenter.pushPage<AboutYouForm>(),
-              icon: const FaIcon(FontAwesomeIcons.apple, size: 20),
-              label: const Text('Sign up with Apple'),
-            ),
-            const Spacer(),
-            Text.rich(
-              TextSpan(
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+        child: isLoggedIn
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const TextSpan(text: 'By continuing, you agree to our '),
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.baseline,
-                    baseline: TextBaseline.alphabetic,
+                  Text(
+                    'You are signed in as ${auth.email ?? ''}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
                     child: GestureDetector(
-                      onTap: () => openUrl(Flavor.current.termsUrl),
+                      onTap: signOut,
                       child: Text(
-                        'Terms of Service',
+                        'Sign out',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          decoration: TextDecoration.underline,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
                   ),
-                  const TextSpan(text: ' and '),
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.baseline,
-                    baseline: TextBaseline.alphabetic,
-                    child: GestureDetector(
-                      onTap: () => openUrl(Flavor.current.privacyUrl),
-                      child: Text(
-                        'Privacy Policy',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
+                  const Spacer(),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  LoginProviders(onSuccess: () => _advance(context)),
+                  const SizedBox(height: 12),
+                  AppButton.outlined(
+                    onPressed: () => _handleEmailSignUp(context),
+                    icon: const Icon(Icons.email_outlined),
+                    child: const Text('Sign up with email'),
                   ),
-                  const TextSpan(text: '.'),
+                  const Spacer(),
+                  const TermsNotice(),
                 ],
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
+
+    return StoreListener([
+      useAppStore().listen((context, state) {
+        if (state.isLoggedIn) _advance(context);
+      }, condition: (a, b) => !a.isLoggedIn && b.isLoggedIn),
+    ], child: layout);
   }
 }

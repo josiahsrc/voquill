@@ -1,10 +1,10 @@
 import {
   EnterpriseConfigZod,
   FullConfig,
-  Member,
-  OidcProviderInputZod,
-  type EnterpriseLicense,
   LlmProviderInputZod,
+  Member,
+  METRICS_RANGES,
+  OidcProviderInputZod,
   SttProviderInputZod,
   Term,
   TermZod,
@@ -14,8 +14,8 @@ import {
   type Auth,
   type EmptyObject,
   type EnterpriseConfig,
+  type EnterpriseLicense,
   type JsonResponse,
-  METRICS_RANGES,
   type LlmProvider,
   type LlmProviderInput,
   type MetricsDaily,
@@ -81,6 +81,21 @@ type HandlerDefinitions = {
       isAdmin: boolean;
     };
     output: EmptyObject;
+  };
+  "auth/createApiToken": {
+    input: EmptyObject;
+    output: {
+      apiToken: string;
+      apiRefreshToken: string;
+    };
+  };
+  "auth/refreshApiToken": {
+    input: {
+      apiRefreshToken: string;
+    };
+    output: {
+      apiToken: string;
+    };
   };
   "auth/deleteUser": {
     input: {
@@ -241,12 +256,24 @@ type HandlerDefinitions = {
       user: Nullable<User>;
     };
   };
-
   "user/listAllUsers": {
     input: EmptyObject;
     output: {
       users: UserWithAuth[];
     };
+  };
+  "user/incrementWordCount": {
+    input: {
+      wordCount: number;
+      timezone?: Nullable<string>;
+    };
+    output: EmptyObject;
+  };
+  "user/trackStreak": {
+    input: {
+      timezone?: Nullable<string>;
+    };
+    output: EmptyObject;
   };
 
   // stripe
@@ -464,6 +491,19 @@ export const SetMyUserInputZod = z
   })
   .strict() satisfies z.ZodType<HandlerInput<"user/setMyUser">>;
 
+export const IncrementWordCountInputZod = z
+  .object({
+    wordCount: z.number().int(),
+    timezone: z.string().min(1).nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/incrementWordCount">>;
+
+export const TrackStreakInputZod = z
+  .object({
+    timezone: z.string().min(1).nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/trackStreak">>;
+
 export const UpsertTermInputZod = z
   .object({
     term: TermZod,
@@ -581,6 +621,12 @@ export const DeleteOidcProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/delete">>;
+
+export const RefreshApiTokenInputZod = z
+  .object({
+    apiRefreshToken: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;
 
 export const MetricsRangeZod = z.enum(METRICS_RANGES);
 
