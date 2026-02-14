@@ -31,6 +31,9 @@ class AppState with EquatableMixin {
   final DictionaryState dictionary;
   final StylesState styles;
 
+  final List<String> dictationLanguages;
+  final String? activeDictationLanguage;
+
   const AppState({
     this.status = ActionStatus.loading,
     this.error,
@@ -44,6 +47,8 @@ class AppState with EquatableMixin {
     this.onboarding = const OnboardingState(),
     this.dictionary = const DictionaryState(),
     this.styles = const StylesState(),
+    this.dictationLanguages = const ['en'],
+    this.activeDictationLanguage,
   });
 
   bool get isLoggedIn => auth != null;
@@ -63,5 +68,7 @@ class AppState with EquatableMixin {
     onboarding,
     dictionary,
     styles,
+    dictationLanguages,
+    activeDictationLanguage,
   ];
 }

@@ -97,3 +97,23 @@ Future<void> syncKeyboardUser({
     _logger.w('Failed to sync keyboard user', e);
   }
 }
+
+Future<void> syncKeyboardDictationLanguages({
+  required List<String> languages,
+  required String activeLanguage,
+}) async {
+  if (!_canSync) {
+    return;
+  }
+
+  try {
+    await _sharedChannel.invokeMethod('setDictationLanguages', {
+      'languages': languages,
+    });
+    await _sharedChannel.invokeMethod('setActiveDictationLanguage', {
+      'language': activeLanguage,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync keyboard dictation languages', e);
+  }
+}

@@ -275,6 +275,8 @@ class KeyboardViewController: UIInputViewController {
     private var activeToneIds: [String] = []
     private var toneById: [String: SharedTone] = [:]
 
+    private var dictationLanguages: [String] = ["en"]
+
     private var audioRecorder: AVAudioRecorder?
     private var levelTimer: Timer?
     private var smoothedLevel: Float = 0
@@ -315,7 +317,8 @@ class KeyboardViewController: UIInputViewController {
         languageChip.backgroundColor = UIColor.systemGray5
         languageChip.layer.cornerRadius = 8
         languageChip.clipsToBounds = true
-        languageChip.isUserInteractionEnabled = false
+        languageChip.isUserInteractionEnabled = true
+        languageChip.addTarget(self, action: #selector(onLanguageChipTap), for: .touchUpInside)
         view.addSubview(languageChip)
 
         // === UTILITY BUTTONS (top right) ===
@@ -532,8 +535,24 @@ class KeyboardViewController: UIInputViewController {
     private func loadLanguage() {
         let defaults = UserDefaults(suiteName: appGroupId)
         let language = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
+        dictationLanguages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? ["en"]
         let code = language.components(separatedBy: "-").first ?? language
         languageChip.setTitle(code.uppercased(), for: .normal)
+    }
+
+    @objc private func onLanguageChipTap() {
+        guard !dictationLanguages.isEmpty else { return }
+        let defaults = UserDefaults(suiteName: appGroupId)
+        let current = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
+        let currentIndex = dictationLanguages.firstIndex(of: current) ?? 0
+        let nextIndex = (currentIndex + 1) % dictationLanguages.count
+        let next = dictationLanguages[nextIndex]
+
+        defaults?.set(next, forKey: "voquill_dictation_language")
+        let code = next.components(separatedBy: "-").first ?? next
+        languageChip.setTitle(code.uppercased(), for: .normal)
+
+        CounterRepo().incrementApp()
     }
 
     // MARK: - Tone Selector

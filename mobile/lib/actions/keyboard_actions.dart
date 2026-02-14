@@ -41,13 +41,23 @@ Future<void> syncUserToKeyboard() async {
   if (user != null) {
     await syncKeyboardUser(
       userName: user.name,
-      dictationLanguage: getMyPrimaryDictationLanguage(state),
+      dictationLanguage: getMyActiveDictationLanguage(state),
     );
     await _incrementAppCounter();
   }
 }
 
+Future<void> syncLanguagesToKeyboard() async {
+  final state = getAppState();
+  await syncKeyboardDictationLanguages(
+    languages: state.dictationLanguages,
+    activeLanguage: getMyActiveDictationLanguage(state),
+  );
+  await _incrementAppCounter();
+}
+
 Future<void> syncKeyboardOnInit() async {
+  await syncLanguagesToKeyboard();
   await syncTonesToKeyboard();
   await syncUserToKeyboard();
 }

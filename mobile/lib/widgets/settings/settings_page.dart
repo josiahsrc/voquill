@@ -1,6 +1,7 @@
 import 'package:app/actions/auth_actions.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/pretty_colors.dart';
+import 'package:app/utils/language_utils.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/utils/url_utils.dart';
 import 'package:app/widgets/common/app_list_tile.dart';
@@ -17,6 +18,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = useAppStore().select(context, (s) => s.user);
     final auth = useAppStore().select(context, (s) => s.auth);
+    final dictationLanguages = useAppStore().select(context, (s) => s.dictationLanguages);
     final theme = Theme.of(context);
 
     return CustomScrollView(
@@ -90,9 +92,10 @@ class SettingsPage extends StatelessWidget {
               children: [
                 AppListTile(
                   leading: const Icon(Icons.language),
-                  title: const Text('Dictation language'),
+                  title: const Text('Dictation languages'),
+                  subtitle: Text(dictationLanguages.map(getDisplayNameForLanguage).join(', ')),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () => context.push('/dashboard/dictation-language'),
                 ),
                 AppListTile(
                   leading: const Icon(Icons.graphic_eq_outlined),

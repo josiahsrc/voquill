@@ -6,10 +6,6 @@ String getDetectedSystemLocale() {
   return Platform.localeName.split('.').first.replaceAll('_', '-');
 }
 
-String getMyPrimaryDictationLanguage(AppState state) {
-  final user = state.user;
-  if (user?.preferredLanguage != null) {
-    return user!.preferredLanguage!;
-  }
-  return getDetectedSystemLocale();
+String getMyActiveDictationLanguage(AppState state) {
+  return state.activeDictationLanguage ?? getDetectedSystemLocale();
 }

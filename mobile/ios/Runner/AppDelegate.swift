@@ -70,6 +70,36 @@ import UIKit
         }
         result(nil)
 
+      case "getDictationLanguages":
+        let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
+        let languages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? []
+        result(languages)
+
+      case "getActiveDictationLanguage":
+        let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
+        let language = defaults?.string(forKey: "voquill_dictation_language")
+        result(language)
+
+      case "setDictationLanguages":
+        guard let args = call.arguments as? [String: Any],
+              let languages = args["languages"] as? [String],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(languages, forKey: "voquill_dictation_languages")
+        result(nil)
+
+      case "setActiveDictationLanguage":
+        guard let args = call.arguments as? [String: String],
+              let language = args["language"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(language, forKey: "voquill_dictation_language")
+        result(nil)
+
       case "getTranscriptions":
         let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
         let transcriptions = defaults?.array(forKey: "voquill_transcriptions") as? [[String: Any]] ?? []

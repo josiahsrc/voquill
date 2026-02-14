@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
+import 'package:app/actions/language_actions.dart';
 import 'package:app/actions/transcription_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
@@ -69,6 +70,7 @@ class _AppState extends State<App> {
       _lastUpdateCounter = counter;
       loadTranscriptions();
       loadCurrentUser();
+      loadDictationLanguages();
     }
   }
 
@@ -107,10 +109,9 @@ class _AppState extends State<App> {
             a.auth != b.auth ||
             a.isOnboarded != b.isOnboarded,
       ),
-      useAppStore().listen(
-        (context, state) => syncKeyboardOnInit(),
-        condition: (a, b) => !a.status.isSuccess && b.status.isSuccess,
-      ),
+      useAppStore().listen((context, state) async {
+        await syncKeyboardOnInit();
+      }, condition: (a, b) => !a.status.isSuccess && b.status.isSuccess),
       useAppStore().listen(
         (context, state) => syncTonesToKeyboard(),
         condition: (a, b) =>
@@ -123,6 +124,12 @@ class _AppState extends State<App> {
         condition: (a, b) =>
             a.user?.name != b.user?.name ||
             a.user?.preferredLanguage != b.user?.preferredLanguage,
+      ),
+      useAppStore().listen(
+        (context, state) => syncLanguagesToKeyboard(),
+        condition: (a, b) =>
+            a.dictationLanguages != b.dictationLanguages ||
+            a.activeDictationLanguage != b.activeDictationLanguage,
       ),
       useAppStore().listen((context, state) {
         if (state.snackbar.counter > 0) {
