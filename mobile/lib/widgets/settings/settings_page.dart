@@ -21,7 +21,10 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = useAppStore().select(context, (s) => s.user);
     final auth = useAppStore().select(context, (s) => s.auth);
-    final dictationLanguages = useAppStore().select(context, (s) => s.dictationLanguages);
+    final dictationLanguages = useAppStore().select(
+      context,
+      (s) => s.dictationLanguages,
+    );
     final theme = Theme.of(context);
 
     return CustomScrollView(
@@ -64,7 +67,7 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined),
+                  icon: const Icon(Icons.edit),
                   onPressed: () => _showEditProfileDialog(context),
                 ),
               ],
@@ -80,7 +83,11 @@ class SettingsPage extends StatelessWidget {
                 AppListTile(
                   leading: const Icon(Icons.language),
                   title: const Text('Dictation languages'),
-                  subtitle: Text(dictationLanguages.map(getDisplayNameForLanguage).join(', ')),
+                  subtitle: Text(
+                    dictationLanguages
+                        .map(getDisplayNameForLanguage)
+                        .join(', '),
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/dashboard/dictation-language'),
                 ),
