@@ -24,7 +24,7 @@ class ProdFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCNZj1p4_dizcd_eO_yPtp6FEIW81mf_0I',
-    appId: '1:777461284594:android:9e32e369256288995e5a6b',
+    appId: '1:777461284594:android:4f5b996194cdc0515e5a6b',
     messagingSenderId: '777461284594',
     projectId: 'voquill-prod',
     databaseURL: 'https://voquill-prod-default-rtdb.firebaseio.com',
@@ -33,13 +33,13 @@ class ProdFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCXQ22eWG1TEezraliFu0U4jE864LCtXTg',
-    appId: '1:777461284594:ios:1ba63f1bf2d9e1465e5a6b',
+    appId: '1:777461284594:ios:9b264ec0d9bf8dab5e5a6b',
     messagingSenderId: '777461284594',
     projectId: 'voquill-prod',
     databaseURL: 'https://voquill-prod-default-rtdb.firebaseio.com',
     storageBucket: 'voquill-prod.firebasestorage.app',
     iosClientId:
-        '777461284594-dc0e2uabqh68opiheciabv5ivqq43ui0.apps.googleusercontent.com',
-    iosBundleId: 'com.voquill.app',
+        '777461284594-lppo4qhd6tpsfug678cegv7h6nj4svnc.apps.googleusercontent.com',
+    iosBundleId: 'com.voquill.mobile',
   );
 }

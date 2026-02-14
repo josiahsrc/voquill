@@ -1,3 +1,3 @@
 import Foundation
 
-let appGroupId = "group.com.voquill.app"
+let appGroupId = "group.com.voquill.mobile"

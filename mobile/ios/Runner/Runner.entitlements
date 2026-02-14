@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.voquill.app</string>
+		<string>group.com.voquill.mobile</string>
 	</array>
 </dict>
 </plist>

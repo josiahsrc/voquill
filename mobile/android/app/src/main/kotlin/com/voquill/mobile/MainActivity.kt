@@ -1,4 +1,4 @@
-package com.voquill.app
+package com.voquill.mobile
 
 import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
@@ -10,7 +10,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.voquill.app/shared")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.voquill.mobile/shared")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "setKeyboardAuth" -> {

@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.voquill.app"
+    namespace = "com.voquill.mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,7 +23,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.voquill.app"
+        applicationId = "com.voquill.mobile"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -35,15 +35,15 @@ android {
     productFlavors {
         create("prod") {
             dimension = "environment"
-            applicationId = "com.voquill.app"
+            applicationId = "com.voquill.mobile"
         }
         create("dev") {
             dimension = "environment"
-            applicationId = "com.voquill.app.dev"
+            applicationId = "com.voquill.mobile.dev"
         }
         create("emulators") {
             dimension = "environment"
-            applicationId = "com.voquill.app.emulators"
+            applicationId = "com.voquill.mobile.emulators"
         }
     }
 

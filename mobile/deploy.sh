@@ -3,29 +3,30 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# Bump the build number in pubspec.yaml
-current_version=$(grep '^version:' pubspec.yaml | sed 's/version: //')
-base_version=$(echo "$current_version" | cut -d'+' -f1)
-build_number=$(echo "$current_version" | cut -d'+' -f2)
+PLATFORM="${1:-}"
+FLAVOR="${2:-prod}"
 
-# Parse major.minor.patch
-major=$(echo "$base_version" | cut -d'.' -f1)
-minor=$(echo "$base_version" | cut -d'.' -f2)
-patch=$(echo "$base_version" | cut -d'.' -f3)
+if [[ -z "$PLATFORM" ]]; then
+  echo "Usage: $0 <ios|android> [flavor]"
+  exit 1
+fi
 
-# Increment patch and build number
-new_patch=$((patch + 1))
-new_build_number=$((build_number + 1))
-new_version="${major}.${minor}.${new_patch}+${new_build_number}"
-sed -i '' "s/^version: .*/version: ${new_version}/" pubspec.yaml
-echo "Bumped version from $current_version to $new_version"
+VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+echo "Deploying $PLATFORM $FLAVOR — version $VERSION"
 
 fvm flutter pub get
-fvm flutter build ipa -t lib/main_prod.dart --flavor prod --release
-cd ./build/ios/archive/
 
-xcodebuild -exportArchive \
-  -archivePath Runner.xcarchive \
-  -exportOptionsPlist ../../../ios/ExportOptions.plist \
-  -exportPath ./export \
-  -allowProvisioningUpdates
+case "$PLATFORM" in
+  ios)
+    fvm flutter build ipa -t "lib/main_${FLAVOR}.dart" --flavor "${FLAVOR}" --release
+    echo "IPA ready at build/ios/ipa/"
+    ;;
+  android)
+    fvm flutter build appbundle -t "lib/main_${FLAVOR}.dart" --flavor "${FLAVOR}" --release
+    echo "AAB ready at build/app/outputs/bundle/${FLAVOR}Release/"
+    ;;
+  *)
+    echo "Unknown platform: $PLATFORM (expected ios or android)"
+    exit 1
+    ;;
+esac

@@ -22,26 +22,22 @@ class DevFirebaseOptions {
     }
   }
 
-  // Uses prod credentials for now (dev mobile apps not yet registered on voquill-dev).
-  // Only projectId differs so Cloud Functions URLs resolve correctly.
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCNZj1p4_dizcd_eO_yPtp6FEIW81mf_0I',
-    appId: '1:777461284594:android:9e32e369256288995e5a6b',
-    messagingSenderId: '777461284594',
+    apiKey: 'AIzaSyBRM0jt733_QsHwMC2E_uI4BUEJOlDPqsk',
+    appId: '1:778214168359:android:44302d780bb11229d77b02',
+    messagingSenderId: '778214168359',
     projectId: 'voquill-dev',
-    databaseURL: 'https://voquill-prod-default-rtdb.firebaseio.com',
-    storageBucket: 'voquill-prod.firebasestorage.app',
+    storageBucket: 'voquill-dev.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCXQ22eWG1TEezraliFu0U4jE864LCtXTg',
-    appId: '1:777461284594:ios:1ba63f1bf2d9e1465e5a6b',
-    messagingSenderId: '777461284594',
+    apiKey: 'AIzaSyCTC7reOttaVjmJIZjt_vYuaaW06KYpWws',
+    appId: '1:778214168359:ios:d4a46b4feabd19dfd77b02',
+    messagingSenderId: '778214168359',
     projectId: 'voquill-dev',
-    databaseURL: 'https://voquill-prod-default-rtdb.firebaseio.com',
-    storageBucket: 'voquill-prod.firebasestorage.app',
+    storageBucket: 'voquill-dev.firebasestorage.app',
     iosClientId:
-        '777461284594-dc0e2uabqh68opiheciabv5ivqq43ui0.apps.googleusercontent.com',
-    iosBundleId: 'com.voquill.app',
+        '778214168359-062ds2e4o27utk6q7htloo6re9857lfb.apps.googleusercontent.com',
+    iosBundleId: 'com.voquill.mobile.dev',
   );
 }

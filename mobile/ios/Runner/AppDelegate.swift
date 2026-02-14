@@ -3,7 +3,7 @@ import UIKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
-  private static let appGroupId = "group.com.voquill.app"
+  private static let appGroupId = "group.com.voquill.mobile"
 
   override func application(
     _ application: UIApplication,
@@ -11,7 +11,7 @@ import UIKit
   ) -> Bool {
     let controller = window?.rootViewController as! FlutterViewController
     let channel = FlutterMethodChannel(
-      name: "com.voquill.app/shared",
+      name: "com.voquill.mobile/shared",
       binaryMessenger: controller.binaryMessenger
     )
 

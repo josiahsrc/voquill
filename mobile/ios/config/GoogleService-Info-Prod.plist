@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>777461284594-dc0e2uabqh68opiheciabv5ivqq43ui0.apps.googleusercontent.com</string>
+	<string>777461284594-lppo4qhd6tpsfug678cegv7h6nj4svnc.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.777461284594-dc0e2uabqh68opiheciabv5ivqq43ui0</string>
+	<string>com.googleusercontent.apps.777461284594-lppo4qhd6tpsfug678cegv7h6nj4svnc</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCXQ22eWG1TEezraliFu0U4jE864LCtXTg</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.voquill.app</string>
+	<string>com.voquill.mobile</string>
 	<key>PROJECT_ID</key>
 	<string>voquill-prod</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,7 +29,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:777461284594:ios:1ba63f1bf2d9e1465e5a6b</string>
+	<string>1:777461284594:ios:9b264ec0d9bf8dab5e5a6b</string>
 	<key>DATABASE_URL</key>
 	<string>https://voquill-prod-default-rtdb.firebaseio.com</string>
 </dict>
