@@ -534,10 +534,19 @@ class KeyboardViewController: UIInputViewController {
 
                     var finalText = rawTranscript
                     do {
-                        finalText = try await CloudGenerateTextRepo(config: config).generate(
-                            system: "Replace every other word with the word 'bacon'",
-                            prompt: rawTranscript
-                        )
+                        let toneData = SharedTone.loadFromDefaults(defaults)
+                        let selectedId = toneData.selectedToneId
+                        let tone = selectedId.flatMap { toneData.toneById?[$0] }
+
+                        if let tone = tone {
+                            finalText = try await CloudGenerateTextRepo(config: config).generate(
+                                system: buildSystemPostProcessingPrompt(),
+                                prompt: buildPostProcessingPrompt(
+                                    transcript: rawTranscript,
+                                    tonePromptTemplate: tone.promptTemplate
+                                )
+                            )
+                        }
                     } catch {
                         self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
                     }

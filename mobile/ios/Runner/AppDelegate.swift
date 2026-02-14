@@ -42,6 +42,22 @@ import UIKit
         }
         result(nil)
 
+      case "setKeyboardTones":
+        guard let args = call.arguments as? [String: Any],
+              let selectedToneId = args["selectedToneId"] as? String,
+              let activeToneIds = args["activeToneIds"] as? [String],
+              let toneById = args["toneById"] as? [String: [String: String]],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(selectedToneId, forKey: "voquill_selected_tone_id")
+        defaults.set(activeToneIds, forKey: "voquill_active_tone_ids")
+        if let data = try? JSONSerialization.data(withJSONObject: toneById) {
+          defaults.set(data, forKey: "voquill_tone_by_id")
+        }
+        result(nil)
+
       default:
         result(FlutterMethodNotImplemented)
       }

@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:app/api/api_token_api.dart';
 import 'package:app/flavor.dart';
+import 'package:app/model/tone_model.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
@@ -10,8 +11,12 @@ final _logger = createNamedLogger('channel_utils');
 
 const _sharedChannel = MethodChannel('com.voquill.app/shared');
 
+bool get _canSync => Platform.isIOS || Platform.isAndroid;
+
 Future<void> syncKeyboardAuth() async {
-  if (!Platform.isIOS && !Platform.isAndroid) return;
+  if (!_canSync) {
+    return;
+  }
 
   try {
     final output = await CreateApiTokenApi().call(null);
@@ -25,8 +30,7 @@ Future<void> syncKeyboardAuth() async {
       functionUrl = 'http://$host:5001/$projectId/us-central1/handler';
       authUrl = 'http://$host:9099/identitytoolkit.googleapis.com';
     } else {
-      functionUrl =
-          'https://us-central1-$projectId.cloudfunctions.net/handler';
+      functionUrl = 'https://us-central1-$projectId.cloudfunctions.net/handler';
       authUrl = 'https://identitytoolkit.googleapis.com';
     }
 
@@ -42,8 +46,36 @@ Future<void> syncKeyboardAuth() async {
 }
 
 void clearKeyboardAuth() {
-  if (!Platform.isIOS && !Platform.isAndroid) return;
+  if (!_canSync) {
+    return;
+  }
+
   _sharedChannel.invokeMethod('clearKeyboardAuth').catchError((e) {
     _logger.w('Failed to clear keyboard auth', e);
   });
+}
+
+Future<void> syncKeyboardTones({
+  required String selectedToneId,
+  required List<String> activeToneIds,
+  required Map<String, SharedTone> toneById,
+}) async {
+  if (!_canSync) {
+    return;
+  }
+
+  try {
+    final toneMap = <String, Map<String, String>>{};
+    for (final entry in toneById.entries) {
+      toneMap[entry.key] = entry.value.toMap();
+    }
+
+    await _sharedChannel.invokeMethod('setKeyboardTones', {
+      'selectedToneId': selectedToneId,
+      'activeToneIds': activeToneIds,
+      'toneById': toneMap,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync keyboard tones', e);
+  }
 }

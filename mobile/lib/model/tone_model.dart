@@ -5,6 +5,18 @@ import 'package:json_annotation/json_annotation.dart';
 part 'tone_model.g.dart';
 part 'tone_model.draft.dart';
 
+class SharedTone {
+  final String name;
+  final String promptTemplate;
+
+  const SharedTone({required this.name, required this.promptTemplate});
+
+  Map<String, String> toMap() => {
+    'name': name,
+    'promptTemplate': promptTemplate,
+  };
+}
+
 @JsonSerializable()
 @draft
 class Tone with EquatableMixin {
