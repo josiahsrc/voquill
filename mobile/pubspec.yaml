@@ -35,6 +35,7 @@ dependencies:
   google_sign_in: ^6.2.2
   flutter_svg: ^2.0.17
   url_launcher: ^6.3.1
+  shared_preferences: ^2.5.4
 
 dev_dependencies:
   flutter_test:

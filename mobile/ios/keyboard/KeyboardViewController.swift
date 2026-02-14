@@ -268,6 +268,7 @@ class KeyboardViewController: UIInputViewController {
     private var waveformView: AudioWaveformView!
     private var progressView: IndeterminateProgressView!
     private var nextKeyboardButton: UIButton?
+    private var languageChip: UIButton!
 
     private var toneContainer: UIScrollView!
     private var selectedToneId: String?
@@ -304,6 +305,18 @@ class KeyboardViewController: UIInputViewController {
         let hc = view.heightAnchor.constraint(equalToConstant: 250)
         hc.priority = .defaultHigh
         hc.isActive = true
+
+        // === LANGUAGE CHIP (top left) ===
+        languageChip = UIButton(type: .system)
+        languageChip.translatesAutoresizingMaskIntoConstraints = false
+        languageChip.setTitle("EN", for: .normal)
+        languageChip.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        languageChip.setTitleColor(.label, for: .normal)
+        languageChip.backgroundColor = UIColor.systemGray5
+        languageChip.layer.cornerRadius = 8
+        languageChip.clipsToBounds = true
+        languageChip.isUserInteractionEnabled = false
+        view.addSubview(languageChip)
 
         // === UTILITY BUTTONS (top right) ===
         let btnConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
@@ -401,6 +414,12 @@ class KeyboardViewController: UIInputViewController {
 
         // Layout: chain top-to-bottom
         NSLayoutConstraint.activate([
+            // Language chip: top left
+            languageChip.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            languageChip.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            languageChip.heightAnchor.constraint(equalToConstant: 40),
+            languageChip.widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
+
             // Util buttons: top right
             utilStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
             utilStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
@@ -437,6 +456,7 @@ class KeyboardViewController: UIInputViewController {
         ])
 
         loadTones()
+        loadLanguage()
 
         waveformView.startAnimating()
         updateColorsForAppearance()
@@ -503,7 +523,17 @@ class KeyboardViewController: UIInputViewController {
         if counter != lastAppCounter {
             lastAppCounter = counter
             loadTones()
+            loadLanguage()
         }
+    }
+
+    // MARK: - Language Chip
+
+    private func loadLanguage() {
+        let defaults = UserDefaults(suiteName: appGroupId)
+        let language = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
+        let code = language.components(separatedBy: "-").first ?? language
+        languageChip.setTitle(code.uppercased(), for: .normal)
     }
 
     // MARK: - Tone Selector
