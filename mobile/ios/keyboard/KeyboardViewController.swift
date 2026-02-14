@@ -455,7 +455,6 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
-    private static let appGroupId = "group.com.voquill.app"
 
     @objc private func onPillTap() {
         switch currentPhase {
@@ -464,7 +463,7 @@ class KeyboardViewController: UIInputViewController {
             startAudioCapture()
             fetchIdToken { [weak self] idToken in
                 guard let self = self, let idToken = idToken,
-                      let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId),
+                      let defaults = UserDefaults(suiteName: appGroupId),
                       let functionUrl = defaults.string(forKey: "voquill_function_url") else { return }
                 let tz = TimeZone.current.identifier
                 UserRepo(config: RepoConfig(functionUrl: functionUrl, idToken: idToken)).trackStreak(timezone: tz)
@@ -507,7 +506,7 @@ class KeyboardViewController: UIInputViewController {
                 return
             }
 
-            guard let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId),
+            guard let defaults = UserDefaults(suiteName: appGroupId),
                   let functionUrl = defaults.string(forKey: "voquill_function_url") else {
                 DispatchQueue.main.async {
                     self.textDocumentProxy.insertText("[Missing function URL]")
@@ -579,8 +578,8 @@ class KeyboardViewController: UIInputViewController {
             return
         }
 
-        guard let defaults = UserDefaults(suiteName: KeyboardViewController.appGroupId) else {
-            dbg("UserDefaults not accessible for group \(KeyboardViewController.appGroupId)")
+        guard let defaults = UserDefaults(suiteName: appGroupId) else {
+            dbg("UserDefaults not accessible for group \(appGroupId)")
             completion(nil)
             return
         }

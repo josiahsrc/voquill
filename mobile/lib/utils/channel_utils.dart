@@ -79,3 +79,21 @@ Future<void> syncKeyboardTones({
     _logger.w('Failed to sync keyboard tones', e);
   }
 }
+
+Future<void> syncKeyboardUser({
+  required String userName,
+  required String dictationLanguage,
+}) async {
+  if (!_canSync) {
+    return;
+  }
+
+  try {
+    await _sharedChannel.invokeMethod('setKeyboardUser', {
+      'userName': userName,
+      'dictationLanguage': dictationLanguage,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync keyboard user', e);
+  }
+}

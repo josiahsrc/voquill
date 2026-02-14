@@ -5,15 +5,16 @@ func buildSystemPostProcessingPrompt() -> String {
 }
 
 func buildPostProcessingPrompt(transcript: String, tonePromptTemplate: String) -> String {
-    let userName = "temporary"
-    let languageName = "English"
+    let defaults = UserDefaults(suiteName: appGroupId)
+    let userName = defaults?.string(forKey: "voquill_user_name") ?? "User"
+    let dictationLanguage = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
 
     return """
     Your task is to post-process a transcription.
 
     Context:
     - The speaker's name is \(userName).
-    - The speaker wants the processed transcription to be in the \(languageName) language.
+    - The speaker wants the processed transcription to be in the \(dictationLanguage) language.
 
     Instructions:
     ```

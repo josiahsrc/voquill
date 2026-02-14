@@ -11,6 +11,7 @@ import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
 import 'package:app/utils/channel_utils.dart';
 import 'package:app/utils/tone_utils.dart';
+import 'package:app/utils/user_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -108,6 +109,20 @@ class _AppState extends State<App> {
             a.user?.selectedToneId != b.user?.selectedToneId ||
             a.user?.activeToneIds != b.user?.activeToneIds ||
             a.toneById != b.toneById,
+      ),
+      useAppStore().listen(
+        (context, state) {
+          final user = state.user;
+          if (user != null) {
+            syncKeyboardUser(
+              userName: user.name,
+              dictationLanguage: getMyPrimaryDictationLanguage(state),
+            );
+          }
+        },
+        condition: (a, b) =>
+            a.user?.name != b.user?.name ||
+            a.user?.preferredLanguage != b.user?.preferredLanguage,
       ),
       useAppStore().listen((context, state) {
         if (state.snackbar.counter > 0) {

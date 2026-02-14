@@ -42,6 +42,18 @@ import UIKit
         }
         result(nil)
 
+      case "setKeyboardUser":
+        guard let args = call.arguments as? [String: String],
+              let userName = args["userName"],
+              let dictationLanguage = args["dictationLanguage"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(userName, forKey: "voquill_user_name")
+        defaults.set(dictationLanguage, forKey: "voquill_dictation_language")
+        result(nil)
+
       case "setKeyboardTones":
         guard let args = call.arguments as? [String: Any],
               let selectedToneId = args["selectedToneId"] as? String,
