@@ -434,26 +434,6 @@ class KeyboardViewController: UIInputViewController {
 
         loadTones()
 
-        // Build chips
-        toneContainer.subviews.forEach { $0.removeFromSuperview() }
-        var xOffset: CGFloat = 0
-        let names = ["Polished", "Verbatim", "Email", "Chat", "Formal"]
-        for name in names {
-            let chip = UIButton(type: .system)
-            chip.setTitle(name, for: .normal)
-            chip.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
-            chip.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
-            chip.layer.cornerRadius = 16
-            chip.clipsToBounds = true
-            chip.backgroundColor = name == "Polished" ? UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.15) : .systemGray5
-            chip.setTitleColor(name == "Polished" ? UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0) : .secondaryLabel, for: .normal)
-            chip.sizeToFit()
-            chip.frame = CGRect(x: xOffset, y: 0, width: chip.frame.width, height: 32)
-            toneContainer.addSubview(chip)
-            xOffset += chip.frame.width + 8
-        }
-        toneContainer.contentSize = CGSize(width: xOffset, height: 32)
-
         waveformView.startAnimating()
         updateColorsForAppearance()
     }
@@ -514,39 +494,28 @@ class KeyboardViewController: UIInputViewController {
         activeToneIds = toneData?.activeToneIds ?? []
         toneById = toneData?.toneById ?? [:]
         selectedToneId = defaults?.string(forKey: "voquill_selected_tone_id") ?? activeToneIds.first
-
-        if activeToneIds.isEmpty {
-            activeToneIds = ["polished", "verbatim", "email", "chat", "formal"]
-            toneById = [
-                "polished": SharedTone(name: "Polished", promptTemplate: ""),
-                "verbatim": SharedTone(name: "Verbatim", promptTemplate: ""),
-                "email": SharedTone(name: "Email", promptTemplate: ""),
-                "chat": SharedTone(name: "Chat", promptTemplate: ""),
-                "formal": SharedTone(name: "Formal", promptTemplate: ""),
-            ]
-            selectedToneId = "polished"
-        }
         renderToneChips()
-    }
-
-    private func addDebugChip(_ text: String) {
-        toneContainer.subviews.forEach { $0.removeFromSuperview() }
-        let label = UILabel()
-        label.text = text
-        label.font = .systemFont(ofSize: 11)
-        label.textColor = .systemRed
-        label.sizeToFit()
-        label.frame.origin = .zero
-        toneContainer.addSubview(label)
     }
 
     private func renderToneChips() {
         toneContainer.subviews.forEach { $0.removeFromSuperview() }
 
+        if activeToneIds.isEmpty || toneById.isEmpty {
+            let label = UILabel()
+            label.text = "No tones available"
+            label.font = .systemFont(ofSize: 13, weight: .medium)
+            label.textColor = .secondaryLabel
+            label.sizeToFit()
+            label.frame.origin = .zero
+            toneContainer.addSubview(label)
+            toneContainer.contentSize = label.frame.size
+            return
+        }
+
         var xOffset: CGFloat = 0
         for (index, toneId) in activeToneIds.enumerated() {
             guard let tone = toneById[toneId] else { continue }
-            let chip = UIButton(type: .custom)
+            let chip = UIButton(type: .system)
             chip.setTitle(tone.name, for: .normal)
             chip.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
             chip.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
@@ -555,13 +524,23 @@ class KeyboardViewController: UIInputViewController {
             chip.tag = index
             chip.addTarget(self, action: #selector(onToneChipTap(_:)), for: .touchUpInside)
             applyChipStyle(chip, selected: toneId == selectedToneId)
-
-            let size = chip.intrinsicContentSize
-            chip.frame = CGRect(x: xOffset, y: 0, width: size.width, height: 32)
+            chip.sizeToFit()
+            chip.frame = CGRect(x: xOffset, y: 0, width: chip.frame.width, height: 32)
             toneContainer.addSubview(chip)
-            xOffset += size.width + 8
+            xOffset += chip.frame.width + 8
         }
-        toneContainer.contentSize = CGSize(width: xOffset, height: 32)
+        toneContainer.contentSize = CGSize(width: max(0, xOffset - 8), height: 32)
+    }
+
+    private func centerToneContent() {
+        let containerWidth = toneContainer.bounds.width
+        let contentWidth = toneContainer.contentSize.width
+        if contentWidth < containerWidth {
+            let inset = (containerWidth - contentWidth) / 2
+            toneContainer.contentInset = UIEdgeInsets(top: 0, left: inset, bottom: 0, right: inset)
+        } else {
+            toneContainer.contentInset = .zero
+        }
     }
 
     private func applyChipStyle(_ chip: UIButton, selected: Bool) {
@@ -676,9 +655,7 @@ class KeyboardViewController: UIInputViewController {
 
                     var finalText = rawTranscript
                     do {
-                        let toneData = SharedTone.loadFromDefaults(defaults)
-                        let selectedId = toneData.selectedToneId
-                        let tone = selectedId.flatMap { toneData.toneById?[$0] }
+                        let tone = self.selectedToneId.flatMap { self.toneById[$0] }
 
                         if let tone = tone {
                             let raw = try await CloudGenerateTextRepo(config: config).generate(
@@ -939,6 +916,11 @@ class KeyboardViewController: UIInputViewController {
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         nextKeyboardButton?.isHidden = !needsInputModeSwitchKey
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        centerToneContent()
     }
 
     override func viewWillDisappear(_ animated: Bool) {

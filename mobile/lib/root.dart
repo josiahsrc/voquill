@@ -94,7 +94,7 @@ class _AppState extends State<App> {
       useAppStore().listen(
         (context, state) {
           final selectedToneId = getManuallySelectedToneId(state);
-          final activeToneIds = getActiveManualToneIds(state);
+          final activeToneIds = getActiveSortedToneIds(state);
           final toneById = <String, SharedTone>{};
           for (final entry in state.toneById.entries) {
             toneById[entry.key] = SharedTone(
