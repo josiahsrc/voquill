@@ -1,4 +1,7 @@
 import 'package:app/actions/auth_actions.dart';
+import 'package:app/api/user_api.dart';
+import 'package:app/model/firebase_model.dart';
+import 'package:app/model/user_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/pretty_colors.dart';
 import 'package:app/utils/language_utils.dart';
@@ -72,22 +75,6 @@ class SettingsPage extends StatelessWidget {
           child: Padding(
             padding: Theming.padding.onlyHorizontal().withTop(32),
             child: ListTileSection(
-              title: const Text('General'),
-              children: [
-                AppListTile(
-                  leading: const Icon(Icons.mic_outlined),
-                  title: const Text('Microphone'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: Theming.padding.onlyHorizontal().withTop(32),
-            child: ListTileSection(
               title: const Text('Processing'),
               children: [
                 AppListTile(
@@ -96,18 +83,6 @@ class SettingsPage extends StatelessWidget {
                   subtitle: Text(dictationLanguages.map(getDisplayNameForLanguage).join(', ')),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/dashboard/dictation-language'),
-                ),
-                AppListTile(
-                  leading: const Icon(Icons.graphic_eq_outlined),
-                  title: const Text('AI transcription'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                AppListTile(
-                  leading: const Icon(Icons.auto_fix_high_outlined),
-                  title: const Text('AI post processing'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
                 ),
               ],
             ),
@@ -168,11 +143,25 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  void _showEditProfileDialog(BuildContext context) {
+  Future<void> _showEditProfileDialog(BuildContext context) async {
     final user = getAppState().user;
-    showDialog(
+    if (user == null) return;
+
+    final newName = await showDialog<String>(
       context: context,
-      builder: (_) => EditProfileDialog(initialName: user?.name),
+      builder: (_) => EditProfileDialog(initialName: user.name),
     );
+    if (newName == null || newName == user.name) return;
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    final updated = user.draft()
+      ..name = newName
+      ..updatedAt = now;
+    final saved = updated.save();
+
+    produceAppState((draft) {
+      draft.user = saved;
+    });
+    await SetMyUserApi().call(SetMyUserInput(value: saved));
   }
 }
