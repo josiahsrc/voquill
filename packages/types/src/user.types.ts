@@ -27,7 +27,7 @@ export type DatabaseUser = {
   stylingMode?: Nullable<StylingMode>;
   selectedToneId?: Nullable<string>;
   activeToneIds?: Nullable<string[]>;
-  streak?: number;
+  streak?: Nullable<number>;
   streakRecordedAt?: Nullable<string>;
 };
 
@@ -63,7 +63,7 @@ export const UserZod = z
     stylingMode: StylingModeZod.nullable().optional(),
     selectedToneId: z.string().nullable().optional(),
     activeToneIds: z.array(z.string()).nullable().optional(),
-    streak: z.number().optional(),
+    streak: z.number().nullable().optional(),
     streakRecordedAt: z.string().nullable().optional(),
   })
   .strict() satisfies z.ZodType<User>;
