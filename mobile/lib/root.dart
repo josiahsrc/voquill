@@ -75,7 +75,7 @@ class _AppState extends State<App> {
 
   Future<void> _checkForUpdates() async {
     final counter = await GetAppCounterApi().call(null);
-    if (counter != _lastUpdateCounter) {
+    if (counter != _lastUpdateCounter && getAppState().isLoggedIn) {
       _lastUpdateCounter = counter;
       await refreshMainData();
     }
