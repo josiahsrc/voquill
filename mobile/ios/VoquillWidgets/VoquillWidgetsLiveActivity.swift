@@ -37,9 +37,15 @@ struct DictationLiveActivity: Widget {
                     .frame(width: 16, height: 16)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
             } compactTrailing: {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(.white)
+                if context.state.phase == "recording" {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                } else {
+                    Image(systemName: "mic.slash.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
             } minimal: {
                 Image("VoquillLogo")
                     .resizable()
