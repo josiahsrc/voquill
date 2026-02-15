@@ -8,9 +8,9 @@ class TranscriptionRepo {
     private let containerUrl: URL?
 
     init() {
-        self.defaults = UserDefaults(suiteName: appGroupId)
+        self.defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
         self.containerUrl = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupId
+            forSecurityApplicationGroupIdentifier: DictationConstants.appGroupId
         )
     }
 

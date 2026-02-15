@@ -1,7 +1,9 @@
-//
-//  DictationAttributes.swift
-//  Runner
-//
-//  Created by Josiah on 2/15/26.
-//
+import ActivityKit
+import Foundation
 
+struct DictationAttributes: ActivityAttributes {
+    public struct ContentState: Codable, Hashable {
+        var phase: String
+        var elapsedSeconds: Int
+    }
+}

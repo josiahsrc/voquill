@@ -1,18 +1,9 @@
-//
-//  VoquillWidgetsBundle.swift
-//  VoquillWidgets
-//
-//  Created by Josiah on 2/15/26.
-//
-
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
 @main
 struct VoquillWidgetsBundle: WidgetBundle {
     var body: some Widget {
-        VoquillWidgets()
-        VoquillWidgetsControl()
-        VoquillWidgetsLiveActivity()
+        DictationLiveActivity()
     }
 }

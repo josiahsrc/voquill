@@ -2,6 +2,7 @@ import 'package:app/routing/guard_redirect.dart';
 import 'package:app/widgets/dashboard/dashboard_page.dart';
 import 'package:app/widgets/error/error_page.dart';
 import 'package:app/widgets/history/history_page.dart';
+import 'package:app/widgets/dictate/dictate_page.dart';
 import 'package:app/widgets/settings/danger_zone_page.dart';
 import 'package:app/widgets/settings/dictation_language_page.dart';
 import 'package:app/widgets/styles/manage_styles_page.dart';
@@ -48,6 +49,11 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
         name: 'onboarding',
+      ),
+      GoRoute(
+        path: '/dictate',
+        builder: (context, state) => const DictatePage(),
+        name: 'dictate',
       ),
       GoRoute(
         path: '/dashboard',

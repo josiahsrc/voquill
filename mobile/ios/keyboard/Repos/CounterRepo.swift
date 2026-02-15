@@ -7,7 +7,7 @@ class CounterRepo {
     private let defaults: UserDefaults?
 
     init() {
-        self.defaults = UserDefaults(suiteName: appGroupId)
+        self.defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
     }
 
     func incrementApp() {

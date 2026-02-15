@@ -59,6 +59,15 @@ final _graph = NavigationGraph([
     targetRoute: '/dashboard',
   ),
 
+  // Dictate page: only allow if logged in, otherwise -> welcome
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/dictate'),
+      NotCondition(IsLoggedInCondition()),
+    ]),
+    targetRoute: '/welcome',
+  ),
+
   // Dashboard page guards
   // If not onboarded -> welcome
   NavigationRule(

@@ -52,7 +52,7 @@ func buildSystemPostProcessingPrompt() -> String {
 }
 
 func buildPostProcessingPrompt(transcript: String, tonePromptTemplate: String) -> String {
-    let defaults = UserDefaults(suiteName: appGroupId)
+    let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
     let userName = defaults?.string(forKey: "voquill_user_name") ?? "User"
     let dictationLanguage = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
 

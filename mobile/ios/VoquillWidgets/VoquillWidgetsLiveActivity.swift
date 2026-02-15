@@ -1,80 +1,74 @@
-//
-//  VoquillWidgetsLiveActivity.swift
-//  VoquillWidgets
-//
-//  Created by Josiah on 2/15/26.
-//
-
 import ActivityKit
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
-struct VoquillWidgetsAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var emoji: String
-    }
-
-    // Fixed non-changing properties about your activity go here!
-    var name: String
-}
-
-struct VoquillWidgetsLiveActivity: Widget {
+struct DictationLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: VoquillWidgetsAttributes.self) { context in
-            // Lock screen/banner UI goes here
-            VStack {
-                Text("Hello \(context.state.emoji)")
-            }
-            .activityBackgroundTint(Color.cyan)
-            .activitySystemActionForegroundColor(Color.black)
-
+        ActivityConfiguration(for: DictationAttributes.self) { context in
+            LockScreenView(state: context.state)
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded UI goes here.  Compose the expanded UI through
-                // various regions, like leading/trailing/center/bottom
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("Leading")
+                    Image(systemName: "mic.fill")
+                        .foregroundColor(.red)
+                        .font(.title2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    Text(formatElapsed(context.state.elapsedSeconds))
+                        .font(.system(.title3, design: .monospaced))
+                        .foregroundColor(.secondary)
                 }
-                DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom \(context.state.emoji)")
-                    // more content
+                DynamicIslandExpandedRegion(.center) {
+                    Text("Recording...")
+                        .font(.headline)
                 }
             } compactLeading: {
-                Text("L")
+                Image(systemName: "mic.fill")
+                    .foregroundColor(.red)
             } compactTrailing: {
-                Text("T \(context.state.emoji)")
+                Text("REC")
+                    .font(.caption2)
+                    .bold()
+                    .foregroundColor(.red)
             } minimal: {
-                Text(context.state.emoji)
+                Image(systemName: "mic.fill")
+                    .foregroundColor(.red)
             }
-            .widgetURL(URL(string: "http://www.apple.com"))
-            .keylineTint(Color.red)
         }
     }
-}
 
-extension VoquillWidgetsAttributes {
-    fileprivate static var preview: VoquillWidgetsAttributes {
-        VoquillWidgetsAttributes(name: "World")
+    private func formatElapsed(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%d:%02d", m, s)
     }
 }
 
-extension VoquillWidgetsAttributes.ContentState {
-    fileprivate static var smiley: VoquillWidgetsAttributes.ContentState {
-        VoquillWidgetsAttributes.ContentState(emoji: "😀")
-     }
-     
-     fileprivate static var starEyes: VoquillWidgetsAttributes.ContentState {
-         VoquillWidgetsAttributes.ContentState(emoji: "🤩")
-     }
-}
+private struct LockScreenView: View {
+    let state: DictationAttributes.ContentState
 
-#Preview("Notification", as: .content, using: VoquillWidgetsAttributes.preview) {
-   VoquillWidgetsLiveActivity()
-} contentStates: {
-    VoquillWidgetsAttributes.ContentState.smiley
-    VoquillWidgetsAttributes.ContentState.starEyes
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "mic.fill")
+                .font(.title2)
+                .foregroundColor(.red)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Recording...")
+                    .font(.headline)
+                Text(formatElapsed(state.elapsedSeconds))
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding()
+    }
+
+    private func formatElapsed(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%d:%02d", m, s)
+    }
 }
