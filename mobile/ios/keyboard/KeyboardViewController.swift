@@ -10,8 +10,8 @@ class AudioWaveformView: UIView {
     private var targetLevel: CGFloat = 0.0
 
     private let basePhaseStep: CGFloat = 0.18
-    private let attackSmoothing: CGFloat = 0.5
-    private let decaySmoothing: CGFloat = 0.35
+    private let attackSmoothing: CGFloat = 0.3
+    private let decaySmoothing: CGFloat = 0.12
 
     private struct WaveConfig {
         let frequency: CGFloat
@@ -278,6 +278,7 @@ class KeyboardViewController: UIInputViewController {
     private var dictationLanguages: [String] = ["en"]
 
     private var audioLevelTimer: Timer?
+    private var smoothedAudioLevel: CGFloat = 0
     private var appCounterPoller: Timer?
     private var lastAppCounter: Int = -1
 
@@ -964,11 +965,13 @@ class KeyboardViewController: UIInputViewController {
 
     private func startAudioLevelPolling() {
         stopAudioLevelPolling()
+        smoothedAudioLevel = 0
         audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
-            let level = CGFloat(defaults?.float(forKey: DictationConstants.audioLevelKey) ?? 0)
-            self.waveformView?.updateLevel(level)
+            let raw = CGFloat(defaults?.float(forKey: DictationConstants.audioLevelKey) ?? 0)
+            self.smoothedAudioLevel += (raw - self.smoothedAudioLevel) * 0.3
+            self.waveformView?.updateLevel(self.smoothedAudioLevel)
         }
     }
 
