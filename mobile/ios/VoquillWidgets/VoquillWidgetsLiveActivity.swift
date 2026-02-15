@@ -9,38 +9,45 @@ struct DictationLiveActivity: Widget {
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: "mic.fill")
-                        .foregroundColor(.red)
-                        .font(.title2)
+                    HStack(spacing: 8) {
+                        Image("VoquillLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 24, height: 24)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                        Text("Voquill is active")
+                            .font(.headline)
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(formatElapsed(context.state.elapsedSeconds))
-                        .font(.system(.title3, design: .monospaced))
-                        .foregroundColor(.secondary)
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    Text("Recording...")
-                        .font(.headline)
+                    Link(destination: URL(string: "voquill://stop")!) {
+                        Image(systemName: "power")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 30, height: 30)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                 }
             } compactLeading: {
-                Image(systemName: "mic.fill")
-                    .foregroundColor(.red)
+                Image("VoquillLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
             } compactTrailing: {
-                Text("REC")
-                    .font(.caption2)
-                    .bold()
-                    .foregroundColor(.red)
-            } minimal: {
                 Image(systemName: "mic.fill")
-                    .foregroundColor(.red)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white)
+            } minimal: {
+                Image("VoquillLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
         }
-    }
-
-    private func formatElapsed(_ seconds: Int) -> String {
-        let m = seconds / 60
-        let s = seconds % 60
-        return String(format: "%d:%02d", m, s)
     }
 }
 
@@ -49,26 +56,26 @@ private struct LockScreenView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "mic.fill")
-                .font(.title2)
-                .foregroundColor(.red)
+            Image("VoquillLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 36, height: 36)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Recording...")
-                    .font(.headline)
-                Text(formatElapsed(state.elapsedSeconds))
-                    .font(.system(.subheadline, design: .monospaced))
-                    .foregroundColor(.secondary)
-            }
+            Text("Voquill is active")
+                .font(.headline)
 
             Spacer()
+
+            Link(destination: URL(string: "voquill://stop")!) {
+                Image(systemName: "power")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Circle())
+            }
         }
         .padding()
-    }
-
-    private func formatElapsed(_ seconds: Int) -> String {
-        let m = seconds / 60
-        let s = seconds % 60
-        return String(format: "%d:%02d", m, s)
     }
 }

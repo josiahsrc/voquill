@@ -187,12 +187,21 @@ import UIKit
 
   @discardableResult
   private func handleDictationURL(_ url: URL) -> Bool {
-    guard url.scheme == "voquill", url.host == "dictate" else { return false }
-    let wasActive = UIApplication.shared.applicationState == .active
-    DictationService.shared.startDictation()
-    if !wasActive {
-      channel?.invokeMethod("showDictationDialog", arguments: nil)
+    guard url.scheme == "voquill" else { return false }
+
+    switch url.host {
+    case "dictate":
+      let wasActive = UIApplication.shared.applicationState == .active
+      DictationService.shared.startDictation()
+      if !wasActive {
+        channel?.invokeMethod("showDictationDialog", arguments: nil)
+      }
+      return true
+    case "stop":
+      DictationService.shared.stopDictation()
+      return true
+    default:
+      return false
     }
-    return true
   }
 }
