@@ -130,12 +130,41 @@ import UIKit
         defaults?.set(counter + 1, forKey: "voquill_keyboard_update_counter")
         result(nil)
 
+      case "stopDictation":
+        DictationService.shared.stopDictation()
+        result(nil)
+
+      case "getDictationPhase":
+        result(DictationService.shared.currentPhase.rawValue)
+
       default:
         result(FlutterMethodNotImplemented)
       }
     }
 
     GeneratedPluginRegistrant.register(with: self)
+
+    if let url = launchOptions?[.url] as? URL {
+      handleDictationURL(url)
+    }
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    if handleDictationURL(url) {
+      return true
+    }
+    return super.application(app, open: url, options: options)
+  }
+
+  @discardableResult
+  private func handleDictationURL(_ url: URL) -> Bool {
+    guard url.scheme == "voquill", url.host == "dictate" else { return false }
+    let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    let toneId = components?.queryItems?.first(where: { $0.name == "tone" })?.value
+    let language = components?.queryItems?.first(where: { $0.name == "lang" })?.value
+    DictationService.shared.startDictation(toneId: toneId, language: language)
+    return true
   }
 }

@@ -14,7 +14,7 @@ func withRetry<T>(
             return try await operation()
         } catch {
             lastError = error
-            NSLog("[VoquillKB] Retry %d/%d failed: %@", attempt, maxAttempts, error.localizedDescription)
+            NSLog("[VoquillApp] Retry %d/%d failed: %@", attempt, maxAttempts, error.localizedDescription)
             if attempt < maxAttempts {
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 delay *= backoffMultiplier

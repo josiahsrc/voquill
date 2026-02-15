@@ -55,8 +55,6 @@ class BaseTranscribeAudioRepo {
         return mergeTranscriptions(allResults)
     }
 
-    // MARK: - Audio Splitting
-
     private func splitIntoSegments(asset: AVURLAsset, totalDuration: TimeInterval) async throws -> [Data] {
         let step = segmentDurationSec() - overlapDurationSec()
         var segments: [Data] = []
@@ -106,8 +104,6 @@ class BaseTranscribeAudioRepo {
         return data
     }
 
-    // MARK: - Merge
-
     private func mergeTranscriptions(_ transcriptions: [String]) -> String {
         guard !transcriptions.isEmpty else { return "" }
         guard transcriptions.count > 1 else { return transcriptions[0] }
@@ -140,8 +136,6 @@ class BaseTranscribeAudioRepo {
     }
 }
 
-// MARK: - Cloud Implementation
-
 class CloudTranscribeAudioRepo: BaseTranscribeAudioRepo {
     private let config: RepoConfig
 
@@ -168,8 +162,6 @@ class CloudTranscribeAudioRepo: BaseTranscribeAudioRepo {
         return text
     }
 }
-
-// MARK: - Errors
 
 enum TranscribeError: Error, LocalizedError {
     case noAudioData

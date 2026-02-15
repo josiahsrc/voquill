@@ -12,8 +12,6 @@ class BaseGenerateTextRepo {
     }
 }
 
-// MARK: - Cloud Implementation
-
 class CloudGenerateTextRepo: BaseGenerateTextRepo {
     private let config: RepoConfig
 

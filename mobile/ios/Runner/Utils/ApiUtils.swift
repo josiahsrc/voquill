@@ -56,7 +56,7 @@ func invokeHandlerFireAndForget(
         do {
             _ = try await invokeHandler(config: config, name: name, args: args)
         } catch {
-            NSLog("[VoquillKB] %@ failed: %@", name, error.localizedDescription)
+            NSLog("[VoquillApp] %@ failed: %@", name, error.localizedDescription)
         }
     }
 }

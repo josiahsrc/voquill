@@ -1,5 +1,4 @@
 import UIKit
-import AVFoundation
 
 // MARK: - Audio Waveform
 
@@ -102,7 +101,6 @@ class AudioWaveformView: UIView {
         let w = rect.width, h = rect.height, mid = h / 2
 
         if !isActive && currentLevel < 0.01 {
-            // Draw flat line when idle
             let path = UIBezierPath()
             path.move(to: CGPoint(x: 0, y: mid))
             path.addLine(to: CGPoint(x: w, y: mid))
@@ -212,7 +210,6 @@ class IndeterminateProgressView: UIView {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         let w = rect.width, h = rect.height, mid = h / 2
 
-        // Track line
         let trackPath = UIBezierPath()
         trackPath.move(to: CGPoint(x: 0, y: mid))
         trackPath.addLine(to: CGPoint(x: w, y: mid))
@@ -225,11 +222,9 @@ class IndeterminateProgressView: UIView {
 
         let t = time / cycleDuration
 
-        // Head moves with easeInOut across the full range
         let headT = easeInOut(min(t * 1.2, 1.0))
         let head = -0.1 + headT * 1.2
 
-        // Tail starts later and catches up
         let tailRaw = max((t - 0.2) / 0.8, 0)
         let tailT = easeInOut(min(tailRaw, 1.0))
         let tail = -0.1 + tailT * 1.2
@@ -280,10 +275,7 @@ class KeyboardViewController: UIInputViewController {
 
     private var dictationLanguages: [String] = ["en"]
 
-    private var audioRecorder: AVAudioRecorder?
-    private var levelTimer: Timer?
-    private var smoothedLevel: Float = 0
-
+    private var simulatedWaveformTimer: Timer?
     private var appCounterPoller: Timer?
     private var lastAppCounter: Int = -1
 
@@ -292,6 +284,11 @@ class KeyboardViewController: UIInputViewController {
         buildUI()
         applyPhase(.idle, animated: false)
         startKeyboardCounterPoller()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        resumeDictationStateIfNeeded()
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -311,7 +308,6 @@ class KeyboardViewController: UIInputViewController {
         hc.priority = .defaultHigh
         hc.isActive = true
 
-        // === LANGUAGE CHIP (top left) ===
         languageChip = UIButton(type: .system)
         languageChip.translatesAutoresizingMaskIntoConstraints = false
         languageChip.setTitle("EN", for: .normal)
@@ -324,7 +320,6 @@ class KeyboardViewController: UIInputViewController {
         languageChip.addTarget(self, action: #selector(onLanguageChipTap), for: .touchUpInside)
         view.addSubview(languageChip)
 
-        // === UTILITY BUTTONS (top right) ===
         let btnConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
         let utilStack = UIStackView()
         utilStack.translatesAutoresizingMaskIntoConstraints = false
@@ -348,7 +343,6 @@ class KeyboardViewController: UIInputViewController {
             utilStack.addArrangedSubview(btn)
         }
 
-        // === PILL BUTTON (contains waveform + progress + label) ===
         pillButton = UIView()
         pillButton.translatesAutoresizingMaskIntoConstraints = false
         pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
@@ -392,7 +386,6 @@ class KeyboardViewController: UIInputViewController {
             pillLabel.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
         ])
 
-        // === NEXT KEYBOARD (bottom left) ===
         let nkb = UIButton(type: .system)
         nkb.setImage(UIImage(systemName: "globe", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18)), for: .normal)
         nkb.tintColor = .label
@@ -401,13 +394,11 @@ class KeyboardViewController: UIInputViewController {
         view.addSubview(nkb)
         nextKeyboardButton = nkb
 
-        // === TONE SELECTOR (bottom) ===
         toneContainer = UIScrollView()
         toneContainer.translatesAutoresizingMaskIntoConstraints = false
         toneContainer.showsHorizontalScrollIndicator = false
         view.addSubview(toneContainer)
 
-        // Spacers for equal vertical distribution
         let topSpacer = UIView()
         topSpacer.translatesAutoresizingMaskIntoConstraints = false
         topSpacer.isHidden = true
@@ -418,19 +409,15 @@ class KeyboardViewController: UIInputViewController {
         bottomSpacer.isHidden = true
         view.addSubview(bottomSpacer)
 
-        // Layout: chain top-to-bottom
         NSLayoutConstraint.activate([
-            // Language chip: top left
             languageChip.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
             languageChip.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
             languageChip.heightAnchor.constraint(equalToConstant: 40),
             languageChip.widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
 
-            // Util buttons: top right
             utilStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
             utilStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
 
-            // Spacers: equal height above and below pill
             topSpacer.topAnchor.constraint(equalTo: utilStack.bottomAnchor),
             topSpacer.bottomAnchor.constraint(equalTo: pillButton.topAnchor),
             topSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -443,18 +430,15 @@ class KeyboardViewController: UIInputViewController {
 
             topSpacer.heightAnchor.constraint(equalTo: bottomSpacer.heightAnchor),
 
-            // Pill: centered horizontally
             pillButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             pillButton.widthAnchor.constraint(equalToConstant: 220),
             pillButton.heightAnchor.constraint(equalToConstant: 56),
 
-            // Tone chips: pinned to bottom
             toneContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             toneContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             toneContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
             toneContainer.heightAnchor.constraint(equalToConstant: 32),
 
-            // Globe: bottom left, same row as tone chips
             nkb.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
             nkb.centerYAnchor.constraint(equalTo: toneContainer.centerYAnchor),
             nkb.widthAnchor.constraint(equalToConstant: 36),
@@ -515,7 +499,6 @@ class KeyboardViewController: UIInputViewController {
             changes()
         }
     }
-
 
     // MARK: - Keyboard Counter Polling
 
@@ -661,360 +644,171 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
+    // MARK: - Dictation (IPC-based)
+
     @objc private func onPillTap() {
         switch currentPhase {
         case .idle:
             applyPhase(.recording, animated: true)
-            startAudioCapture()
-            fetchIdToken { [weak self] idToken in
-                guard let self = self, let idToken = idToken,
-                      let defaults = UserDefaults(suiteName: appGroupId),
-                      let functionUrl = defaults.string(forKey: "voquill_function_url") else { return }
-                let tz = TimeZone.current.identifier
-                UserRepo(config: RepoConfig(functionUrl: functionUrl, idToken: idToken)).trackStreak(timezone: tz)
-            }
+            startSimulatedWaveform()
+            startDarwinObservers()
+
+            let defaults = UserDefaults(suiteName: appGroupId)
+            let language = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
+            let toneParam = selectedToneId ?? ""
+            openURL("voquill://dictate?tone=\(toneParam)&lang=\(language)")
+
         case .recording:
-            stopAudioCapture()
+            DarwinNotificationManager.shared.post(DictationConstants.stopDictation)
+            stopSimulatedWaveform()
             applyPhase(.loading, animated: true)
-            handleTranscription()
+
         case .loading:
             break
         }
     }
 
-    // MARK: - Transcription
-
-    private var lastDebugLog: String = ""
-
-    private func dbg(_ msg: String) {
-        NSLog("[VoquillKB] %@", msg)
-        lastDebugLog = msg
-    }
-
-    private func handleTranscription() {
-        guard hasFullAccess else {
-            DispatchQueue.main.async {
-                self.textDocumentProxy.insertText("[Enable Full Access in Settings > Voquill Keyboard]")
-                self.applyPhase(.idle, animated: true)
+    private func openURL(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        var responder: UIResponder? = self
+        while let r = responder {
+            if let application = r as? UIApplication {
+                application.open(url, options: [:], completionHandler: nil)
+                return
             }
-            return
+            responder = r.next
         }
 
-        fetchIdToken { [weak self] idToken in
-            guard let self = self else { return }
-
-            guard let idToken = idToken else {
-                DispatchQueue.main.async {
-                    self.textDocumentProxy.insertText("[Auth failed: \(self.lastDebugLog)]")
-                    self.applyPhase(.idle, animated: true)
-                }
+        let selector = NSSelectorFromString("openURL:")
+        responder = self
+        while let r = responder {
+            if r.responds(to: selector) {
+                r.perform(selector, with: url)
                 return
             }
-
-            guard let defaults = UserDefaults(suiteName: appGroupId),
-                  let functionUrl = defaults.string(forKey: "voquill_function_url") else {
-                DispatchQueue.main.async {
-                    self.textDocumentProxy.insertText("[Missing function URL]")
-                    self.applyPhase(.idle, animated: true)
-                }
-                return
-            }
-
-            let audioUrl = FileManager.default.temporaryDirectory.appendingPathComponent("voquill_kb.m4a")
-
-            let dictationLanguage = defaults.string(forKey: "voquill_dictation_language") ?? "en"
-            let userName = defaults.string(forKey: "voquill_user_name") ?? "User"
-            let prompt = buildLocalizedTranscriptionPrompt(
-                termIds: self.termIds,
-                termById: self.termById,
-                userName: userName,
-                language: dictationLanguage
-            )
-            let whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
-
-            Task { [weak self] in
-                guard let self = self else { return }
-                let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
-                do {
-                    let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(
-                        audioFileURL: audioUrl,
-                        prompt: prompt,
-                        language: whisperLanguage
-                    )
-
-                    guard !rawTranscript.isEmpty else {
-                        await MainActor.run {
-                            self.textDocumentProxy.insertText("[No speech detected]")
-                            self.applyPhase(.idle, animated: true)
-                        }
-                        return
-                    }
-
-                    var finalText = rawTranscript
-                    do {
-                        let tone = self.selectedToneId.flatMap { self.toneById[$0] }
-
-                        if let tone = tone {
-                            let raw = try await CloudGenerateTextRepo(config: config).generate(
-                                system: buildSystemPostProcessingPrompt(),
-                                prompt: buildPostProcessingPrompt(
-                                    transcript: rawTranscript,
-                                    tonePromptTemplate: tone.promptTemplate
-                                ),
-                                jsonResponse: postProcessingJsonResponse
-                            )
-                            if let data = raw.data(using: .utf8),
-                               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                               let processed = json["processedTranscription"] as? String {
-                                finalText = processed.trimmingCharacters(in: .whitespacesAndNewlines)
-                            } else {
-                                self.dbg("Could not parse processedTranscription from JSON, using raw")
-                                finalText = raw
-                            }
-                        }
-                    } catch {
-                        self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
-                    }
-
-                    let tz = TimeZone.current.identifier
-                    UserRepo(config: config).incrementWordCount(text: finalText, timezone: tz)
-
-                    let trimmed = finalText.trimmingCharacters(in: .whitespacesAndNewlines) + " "
-                    await MainActor.run {
-                        self.textDocumentProxy.insertText(trimmed)
-                        self.applyPhase(.idle, animated: true)
-                    }
-
-                    let tone = self.selectedToneId.flatMap { self.toneById[$0] }
-                    TranscriptionRepo().save(
-                        text: finalText,
-                        rawTranscript: rawTranscript,
-                        toneId: self.selectedToneId,
-                        toneName: tone?.name,
-                        audioSourceUrl: audioUrl
-                    )
-                } catch {
-                    self.dbg("Transcription failed: \(error.localizedDescription)")
-                    await MainActor.run {
-                        self.textDocumentProxy.insertText("[Transcription failed: \(error.localizedDescription)]")
-                        self.applyPhase(.idle, animated: true)
-                    }
-                }
-            }
+            responder = r.next
         }
     }
 
-    private var cachedIdToken: String?
-    private var cachedIdTokenExpiry: Date?
+    // MARK: - Simulated Waveform
 
-    private func fetchIdToken(completion: @escaping (String?) -> Void) {
-        if let token = cachedIdToken, let expiry = cachedIdTokenExpiry, Date() < expiry {
-            dbg("Using cached ID token, expires \(expiry)")
-            completion(token)
-            return
+    private func startSimulatedWaveform() {
+        stopSimulatedWaveform()
+        simulatedWaveformTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            self?.waveformView?.updateLevel(CGFloat.random(in: 0.3...0.7))
+        }
+    }
+
+    private func stopSimulatedWaveform() {
+        simulatedWaveformTimer?.invalidate()
+        simulatedWaveformTimer = nil
+    }
+
+    // MARK: - Darwin Notification Observers
+
+    private func startDarwinObservers() {
+        DarwinNotificationManager.shared.observe(DictationConstants.transcriptionReady) { [weak self] in
+            self?.handleTranscriptionReady()
         }
 
+        DarwinNotificationManager.shared.observe(DictationConstants.dictationPhaseChanged) { [weak self] in
+            self?.handlePhaseChange()
+        }
+    }
+
+    private func handleTranscriptionReady() {
         guard let defaults = UserDefaults(suiteName: appGroupId) else {
-            dbg("UserDefaults not accessible for group \(appGroupId)")
-            completion(nil)
+            cleanupDictation()
+            applyPhase(.idle, animated: true)
             return
         }
 
-        let apiRefreshToken = defaults.string(forKey: "voquill_api_refresh_token")
-        let functionUrl = defaults.string(forKey: "voquill_function_url")
-        let apiKey = defaults.string(forKey: "voquill_api_key")
-        let authUrl = defaults.string(forKey: "voquill_auth_url")
+        let phaseStr = defaults.string(forKey: DictationConstants.phaseKey) ?? "idle"
 
-        let missing = [
-            apiRefreshToken == nil ? "apiRefreshToken" : nil,
-            functionUrl == nil ? "functionUrl" : nil,
-            apiKey == nil ? "apiKey" : nil,
-            authUrl == nil ? "authUrl" : nil,
-        ].compactMap { $0 }
-
-        guard missing.isEmpty,
-              let apiRefreshToken = apiRefreshToken,
-              let functionUrl = functionUrl,
-              let apiKey = apiKey,
-              let authUrl = authUrl else {
-            dbg("Missing keys in UserDefaults: \(missing.joined(separator: ", "))")
-            completion(nil)
+        if phaseStr == DictationPhase.error.rawValue {
+            let error = defaults.string(forKey: DictationConstants.errorKey) ?? "Unknown error"
+            textDocumentProxy.insertText("[\(error)]")
+            cleanupDictation()
+            applyPhase(.idle, animated: true)
             return
         }
 
-        dbg("Step 1: refreshApiToken → \(functionUrl)")
-        refreshApiToken(functionUrl: functionUrl, apiRefreshToken: apiRefreshToken) { [weak self] customToken in
-            guard let self = self else { return }
-            guard let customToken = customToken else {
-                completion(nil)
-                return
+        if let result = defaults.string(forKey: DictationConstants.resultKey), !result.isEmpty {
+            let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines) + " "
+            textDocumentProxy.insertText(trimmed)
+        }
+
+        cleanupDictation()
+        applyPhase(.idle, animated: true)
+    }
+
+    private func handlePhaseChange() {
+        guard let defaults = UserDefaults(suiteName: appGroupId) else { return }
+        let phaseStr = defaults.string(forKey: DictationConstants.phaseKey) ?? "idle"
+
+        switch phaseStr {
+        case DictationPhase.processing.rawValue:
+            if currentPhase == .recording {
+                stopSimulatedWaveform()
+                applyPhase(.loading, animated: true)
             }
-            self.dbg("Step 2: exchangeCustomToken → \(authUrl)")
-            self.exchangeCustomToken(authUrl: authUrl, apiKey: apiKey, customToken: customToken) { [weak self] idToken, expiresIn in
-                guard let self = self, let idToken = idToken, let expiresIn = expiresIn else {
-                    completion(nil)
-                    return
-                }
-                self.cachedIdToken = idToken
-                self.cachedIdTokenExpiry = Date().addingTimeInterval(expiresIn - 300)
-                self.dbg("ID token acquired, expiresIn=\(expiresIn)s")
-                completion(idToken)
+        case DictationPhase.idle.rawValue:
+            if currentPhase != .idle {
+                stopSimulatedWaveform()
+                cleanupDictation()
+                applyPhase(.idle, animated: true)
             }
+        default:
+            break
         }
     }
 
-    private func refreshApiToken(functionUrl: String, apiRefreshToken: String, completion: @escaping (String?) -> Void) {
-        guard let url = URL(string: functionUrl) else {
-            dbg("refreshApiToken: invalid URL: \(functionUrl)")
-            completion(nil)
-            return
-        }
+    private func cleanupDictation() {
+        DarwinNotificationManager.shared.removeObserver(DictationConstants.transcriptionReady)
+        DarwinNotificationManager.shared.removeObserver(DictationConstants.dictationPhaseChanged)
+        stopSimulatedWaveform()
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let payload: [String: Any] = [
-            "data": [
-                "name": "auth/refreshApiToken",
-                "args": ["apiRefreshToken": apiRefreshToken]
-            ]
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            let statusCode = (response as? HTTPURLResponse)?.statusCode
-            if let error = error {
-                self?.dbg("refreshApiToken: network error: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-            guard let data = data else {
-                self?.dbg("refreshApiToken: no data, status=\(statusCode ?? -1)")
-                completion(nil)
-                return
-            }
-            let bodyStr = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                self?.dbg("refreshApiToken: not JSON, status=\(statusCode ?? -1), body=\(bodyStr.prefix(300))")
-                completion(nil)
-                return
-            }
-            guard let result = json["result"] as? [String: Any],
-                  let apiToken = result["apiToken"] as? String else {
-                self?.dbg("refreshApiToken: unexpected response, status=\(statusCode ?? -1), json=\(json)")
-                completion(nil)
-                return
-            }
-            self?.dbg("refreshApiToken: success, status=\(statusCode ?? -1)")
-            completion(apiToken)
-        }.resume()
-    }
-
-    private func exchangeCustomToken(authUrl: String, apiKey: String, customToken: String, completion: @escaping (String?, TimeInterval?) -> Void) {
-        let urlString = "\(authUrl)/v1/accounts:signInWithCustomToken?key=\(apiKey)"
-        guard let url = URL(string: urlString) else {
-            dbg("exchangeCustomToken: invalid URL: \(urlString)")
-            completion(nil, nil)
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
-            "token": customToken,
-            "returnSecureToken": true
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            let statusCode = (response as? HTTPURLResponse)?.statusCode
-            if let error = error {
-                self?.dbg("exchangeCustomToken: network error: \(error.localizedDescription)")
-                completion(nil, nil)
-                return
-            }
-            guard let data = data else {
-                self?.dbg("exchangeCustomToken: no data, status=\(statusCode ?? -1)")
-                completion(nil, nil)
-                return
-            }
-            let bodyStr = String(data: data, encoding: .utf8) ?? "<non-utf8>"
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                self?.dbg("exchangeCustomToken: not JSON, status=\(statusCode ?? -1), body=\(bodyStr.prefix(300))")
-                completion(nil, nil)
-                return
-            }
-            guard let idToken = json["idToken"] as? String,
-                  let expiresInStr = json["expiresIn"] as? String,
-                  let expiresIn = TimeInterval(expiresInStr) else {
-                self?.dbg("exchangeCustomToken: unexpected response, status=\(statusCode ?? -1), json=\(json)")
-                completion(nil, nil)
-                return
-            }
-            self?.dbg("exchangeCustomToken: success, status=\(statusCode ?? -1)")
-            completion(idToken, expiresIn)
-        }.resume()
-    }
-
-    // MARK: - Audio
-
-    private func startAudioCapture() {
-        smoothedLevel = 0
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .default)
-            try session.setActive(true)
-
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("voquill_kb.m4a")
-            try? FileManager.default.removeItem(at: url)
-
-            let settings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 44100.0,
-                AVNumberOfChannelsKey: 1,
-                AVEncoderAudioQualityKey: AVAudioQuality.low.rawValue
-            ]
-
-            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
-            audioRecorder?.isMeteringEnabled = true
-            audioRecorder?.prepareToRecord()
-            audioRecorder?.record()
-
-            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] _ in
-                self?.updateLevels()
-            }
-        } catch {
-            // Fallback simulated
-            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-                self?.waveformView?.updateLevel(CGFloat.random(in: 0.3...0.7))
-            }
+        if let defaults = UserDefaults(suiteName: appGroupId) {
+            defaults.removeObject(forKey: DictationConstants.phaseKey)
+            defaults.removeObject(forKey: DictationConstants.resultKey)
+            defaults.removeObject(forKey: DictationConstants.errorKey)
+            defaults.removeObject(forKey: DictationConstants.rawTranscriptKey)
+            defaults.removeObject(forKey: DictationConstants.startedAtKey)
+            defaults.removeObject(forKey: DictationConstants.toneIdKey)
         }
     }
 
-    private func updateLevels() {
-        guard let recorder = audioRecorder, recorder.isRecording else { return }
-        recorder.updateMeters()
+    // MARK: - Resume Dictation State
 
-        let avgPower = recorder.averagePower(forChannel: 0)
-        let clampedPower = max(avgPower, -50)
-        let normalized = (clampedPower + 50) / 50
-        let curved = pow(normalized, 0.7)
+    private func resumeDictationStateIfNeeded() {
+        guard let defaults = UserDefaults(suiteName: appGroupId) else { return }
+        let phaseStr = defaults.string(forKey: DictationConstants.phaseKey) ?? "idle"
+        guard phaseStr != DictationPhase.idle.rawValue else { return }
 
-        let attack: Float = 0.6
-        let decay: Float = 0.5
-        let s = curved > smoothedLevel ? attack : decay
-        smoothedLevel += (curved - smoothedLevel) * s
+        let startedAt = defaults.double(forKey: DictationConstants.startedAtKey)
+        if startedAt > 0 {
+            let elapsed = Date().timeIntervalSince1970 - startedAt
+            if elapsed > 300 {
+                NSLog("[VoquillKB] Stale dictation detected (%.0fs), resetting", elapsed)
+                cleanupDictation()
+                applyPhase(.idle, animated: false)
+                return
+            }
+        }
 
-        waveformView.updateLevel(CGFloat(max(smoothedLevel, 0.08)))
-    }
+        startDarwinObservers()
 
-    private func stopAudioCapture() {
-        levelTimer?.invalidate()
-        levelTimer = nil
-        audioRecorder?.stop()
-        audioRecorder = nil
-        try? AVAudioSession.sharedInstance().setActive(false)
+        switch phaseStr {
+        case DictationPhase.recording.rawValue:
+            applyPhase(.recording, animated: false)
+            startSimulatedWaveform()
+        case DictationPhase.processing.rawValue:
+            applyPhase(.loading, animated: false)
+        case DictationPhase.ready.rawValue, DictationPhase.error.rawValue:
+            handleTranscriptionReady()
+        default:
+            break
+        }
     }
 
     // MARK: - System
@@ -1033,9 +827,7 @@ class KeyboardViewController: UIInputViewController {
         super.viewWillDisappear(animated)
         appCounterPoller?.invalidate()
         appCounterPoller = nil
-        if currentPhase == .recording {
-            stopAudioCapture()
-        }
+        stopSimulatedWaveform()
         waveformView.stopAnimating()
         progressView.stopAnimating()
     }
