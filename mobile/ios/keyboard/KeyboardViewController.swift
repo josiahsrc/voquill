@@ -254,10 +254,11 @@ class IndeterminateProgressView: UIView {
 class KeyboardViewController: UIInputViewController {
 
     private enum PillVisual {
-        case idle, recording
+        case idle, recording, loading
     }
 
     private var dictationPhase: DictationPhase = .idle
+    private var isProcessing = false
 
     private var pillButton: UIView!
     private var pillLabel: UILabel!
@@ -279,6 +280,10 @@ class KeyboardViewController: UIInputViewController {
     private var audioLevelTimer: Timer?
     private var appCounterPoller: Timer?
     private var lastAppCounter: Int = -1
+
+    private var cachedIdToken: String?
+    private var cachedIdTokenExpiry: Date?
+    private var lastDebugLog: String = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -314,11 +319,20 @@ class KeyboardViewController: UIInputViewController {
         let oldPhase = dictationPhase
         dictationPhase = newPhase
 
+        if isProcessing { return }
+
         switch newPhase {
         case .recording:
             applyPillVisual(.recording, animated: oldPhase != newPhase)
             startAudioLevelPolling()
-        case .active, .idle:
+        case .active:
+            stopAudioLevelPolling()
+            if oldPhase == .recording {
+                handleTranscription()
+            } else {
+                applyPillVisual(.idle, animated: oldPhase != newPhase)
+            }
+        case .idle:
             stopAudioLevelPolling()
             applyPillVisual(.idle, animated: oldPhase != newPhase)
         }
@@ -483,18 +497,36 @@ class KeyboardViewController: UIInputViewController {
             changes = {
                 self.waveformView.alpha = 0
                 self.waveformView.isActive = false
+                self.progressView.alpha = 0
                 self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
                 self.pillLabel.text = self.dictationPhase == .idle ? "Activate Dictation" : "Tap to dictate"
                 self.pillLabel.alpha = 1
+                self.pillButton.isUserInteractionEnabled = true
             }
+            progressView.stopAnimating()
 
         case .recording:
             changes = {
                 self.waveformView.alpha = 1
                 self.waveformView.isActive = true
+                self.progressView.alpha = 0
                 self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
                 self.pillLabel.alpha = 0
+                self.pillButton.isUserInteractionEnabled = true
             }
+            progressView.stopAnimating()
+
+        case .loading:
+            changes = {
+                self.waveformView.alpha = 0
+                self.waveformView.isActive = false
+                self.progressView.alpha = 1
+                self.pillButton.backgroundColor = UIColor.systemGray3
+                self.pillLabel.text = "Processing..."
+                self.pillLabel.alpha = 0
+                self.pillButton.isUserInteractionEnabled = false
+            }
+            progressView.startAnimating()
         }
 
         if animated {
@@ -683,7 +715,252 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
-    // MARK: - Simulated Waveform
+    // MARK: - Transcription
+
+    private func dbg(_ msg: String) {
+        NSLog("[VoquillKB] %@", msg)
+        lastDebugLog = msg
+    }
+
+    private func handleTranscription() {
+        guard hasFullAccess else {
+            DispatchQueue.main.async {
+                self.textDocumentProxy.insertText("[Enable Full Access in Settings > Voquill Keyboard]")
+            }
+            return
+        }
+
+        isProcessing = true
+        applyPillVisual(.loading, animated: true)
+
+        fetchIdToken { [weak self] idToken in
+            guard let self = self else { return }
+
+            guard let idToken = idToken else {
+                DispatchQueue.main.async {
+                    self.textDocumentProxy.insertText("[Auth failed: \(self.lastDebugLog)]")
+                    self.isProcessing = false
+                    self.applyPillVisual(.idle, animated: true)
+                }
+                return
+            }
+
+            guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId),
+                  let functionUrl = defaults.string(forKey: "voquill_function_url") else {
+                DispatchQueue.main.async {
+                    self.textDocumentProxy.insertText("[Missing function URL]")
+                    self.isProcessing = false
+                    self.applyPillVisual(.idle, animated: true)
+                }
+                return
+            }
+
+            guard let audioUrl = DictationConstants.audioFileURL else {
+                DispatchQueue.main.async {
+                    self.textDocumentProxy.insertText("[Missing audio file]")
+                    self.isProcessing = false
+                    self.applyPillVisual(.idle, animated: true)
+                }
+                return
+            }
+
+            let dictationLanguage = defaults.string(forKey: "voquill_dictation_language") ?? "en"
+            let userName = defaults.string(forKey: "voquill_user_name") ?? "User"
+            let prompt = buildLocalizedTranscriptionPrompt(
+                termIds: self.termIds,
+                termById: self.termById,
+                userName: userName,
+                language: dictationLanguage
+            )
+            let whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
+
+            Task { [weak self] in
+                guard let self = self else { return }
+                let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
+                do {
+                    let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(
+                        audioFileURL: audioUrl,
+                        prompt: prompt,
+                        language: whisperLanguage
+                    )
+
+                    guard !rawTranscript.isEmpty else {
+                        await MainActor.run {
+                            self.isProcessing = false
+                            self.applyPillVisual(.idle, animated: true)
+                        }
+                        return
+                    }
+
+                    var finalText = rawTranscript
+                    do {
+                        if let tone = self.selectedToneId.flatMap({ self.toneById[$0] }) {
+                            let raw = try await CloudGenerateTextRepo(config: config).generate(
+                                system: buildSystemPostProcessingPrompt(),
+                                prompt: buildPostProcessingPrompt(
+                                    transcript: rawTranscript,
+                                    tonePromptTemplate: tone.promptTemplate
+                                ),
+                                jsonResponse: postProcessingJsonResponse
+                            )
+                            if let data = raw.data(using: .utf8),
+                               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                               let processed = json["processedTranscription"] as? String {
+                                finalText = processed.trimmingCharacters(in: .whitespacesAndNewlines)
+                            } else {
+                                self.dbg("Could not parse processedTranscription from JSON, using raw")
+                                finalText = raw
+                            }
+                        }
+                    } catch {
+                        self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
+                    }
+
+                    let tz = TimeZone.current.identifier
+                    UserRepo(config: config).incrementWordCount(text: finalText, timezone: tz)
+
+                    let trimmed = finalText.trimmingCharacters(in: .whitespacesAndNewlines) + " "
+                    await MainActor.run {
+                        self.textDocumentProxy.insertText(trimmed)
+                        self.isProcessing = false
+                        self.applyPillVisual(.idle, animated: true)
+                    }
+
+                    let tone = self.selectedToneId.flatMap { self.toneById[$0] }
+                    TranscriptionRepo().save(
+                        text: finalText,
+                        rawTranscript: rawTranscript,
+                        toneId: self.selectedToneId,
+                        toneName: tone?.name,
+                        audioSourceUrl: audioUrl
+                    )
+                } catch {
+                    self.dbg("Transcription failed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        self.textDocumentProxy.insertText("[Transcription failed: \(error.localizedDescription)]")
+                        self.isProcessing = false
+                        self.applyPillVisual(.idle, animated: true)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Authentication
+
+    private func fetchIdToken(completion: @escaping (String?) -> Void) {
+        if let token = cachedIdToken, let expiry = cachedIdTokenExpiry, Date() < expiry {
+            completion(token)
+            return
+        }
+
+        guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId) else {
+            dbg("UserDefaults not accessible")
+            completion(nil)
+            return
+        }
+
+        let apiRefreshToken = defaults.string(forKey: "voquill_api_refresh_token")
+        let functionUrl = defaults.string(forKey: "voquill_function_url")
+        let apiKey = defaults.string(forKey: "voquill_api_key")
+        let authUrl = defaults.string(forKey: "voquill_auth_url")
+
+        guard let apiRefreshToken = apiRefreshToken,
+              let functionUrl = functionUrl,
+              let apiKey = apiKey,
+              let authUrl = authUrl else {
+            dbg("Missing auth keys in UserDefaults")
+            completion(nil)
+            return
+        }
+
+        refreshApiToken(functionUrl: functionUrl, apiRefreshToken: apiRefreshToken) { [weak self] customToken in
+            guard let self = self, let customToken = customToken else {
+                completion(nil)
+                return
+            }
+            self.exchangeCustomToken(authUrl: authUrl, apiKey: apiKey, customToken: customToken) { [weak self] idToken, expiresIn in
+                guard let self = self, let idToken = idToken, let expiresIn = expiresIn else {
+                    completion(nil)
+                    return
+                }
+                self.cachedIdToken = idToken
+                self.cachedIdTokenExpiry = Date().addingTimeInterval(expiresIn - 300)
+                completion(idToken)
+            }
+        }
+    }
+
+    private func refreshApiToken(functionUrl: String, apiRefreshToken: String, completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: functionUrl) else {
+            dbg("refreshApiToken: invalid URL")
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let payload: [String: Any] = [
+            "data": [
+                "name": "auth/refreshApiToken",
+                "args": ["apiRefreshToken": apiRefreshToken]
+            ]
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                self?.dbg("refreshApiToken: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let result = json["result"] as? [String: Any],
+                  let apiToken = result["apiToken"] as? String else {
+                self?.dbg("refreshApiToken: unexpected response")
+                completion(nil)
+                return
+            }
+            completion(apiToken)
+        }.resume()
+    }
+
+    private func exchangeCustomToken(authUrl: String, apiKey: String, customToken: String, completion: @escaping (String?, TimeInterval?) -> Void) {
+        let urlString = "\(authUrl)/v1/accounts:signInWithCustomToken?key=\(apiKey)"
+        guard let url = URL(string: urlString) else {
+            dbg("exchangeCustomToken: invalid URL")
+            completion(nil, nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = ["token": customToken, "returnSecureToken": true]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                self?.dbg("exchangeCustomToken: \(error.localizedDescription)")
+                completion(nil, nil)
+                return
+            }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let idToken = json["idToken"] as? String,
+                  let expiresInStr = json["expiresIn"] as? String,
+                  let expiresIn = TimeInterval(expiresInStr) else {
+                self?.dbg("exchangeCustomToken: unexpected response")
+                completion(nil, nil)
+                return
+            }
+            completion(idToken, expiresIn)
+        }.resume()
+    }
+
+    // MARK: - Audio Level Polling
 
     private func startAudioLevelPolling() {
         stopAudioLevelPolling()

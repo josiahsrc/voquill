@@ -17,4 +17,9 @@ struct DictationConstants {
     static let audioLevelKey = "voquill_audio_level"
 
     static let appGroupId = "group.com.voquill.mobile"
+
+    static var audioFileURL: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId)?
+            .appendingPathComponent("dictation_recording.m4a")
+    }
 }

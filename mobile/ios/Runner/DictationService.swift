@@ -7,6 +7,8 @@ class DictationService {
 
     private var audioEngine: AVAudioEngine?
     private var audioFile: AVAudioFile?
+    private var audioFormat: AVAudioFormat?
+    private var isRecording = false
     private var activityRef: Any?
     private var elapsedTimer: Timer?
     private var startTime: Date?
@@ -49,6 +51,9 @@ class DictationService {
             return
         }
 
+        createNewAudioFile()
+        isRecording = true
+
         startLiveActivity()
         startElapsedTimer()
         setPhase(.recording)
@@ -67,6 +72,9 @@ class DictationService {
     func pauseRecording() {
         guard currentPhase == .recording else { return }
         NSLog("[VoquillApp] pauseRecording")
+        isRecording = false
+        audioFile = nil
+        defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
         setPhase(.active)
         if let start = startTime {
             let elapsed = Int(Date().timeIntervalSince(start))
@@ -77,6 +85,8 @@ class DictationService {
     func resumeRecording() {
         guard currentPhase == .active else { return }
         NSLog("[VoquillApp] resumeRecording")
+        createNewAudioFile()
+        isRecording = true
         setPhase(.recording)
     }
 
@@ -86,6 +96,7 @@ class DictationService {
         DarwinNotificationManager.shared.removeObserver(DictationConstants.startRecording)
         DarwinNotificationManager.shared.removeObserver(DictationConstants.stopDictation)
 
+        isRecording = false
         stopElapsedTimer()
         stopAudioEngine()
         setPhase(.idle)
@@ -104,12 +115,24 @@ class DictationService {
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
+        self.audioFormat = format
 
-        let containerUrl = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: DictationConstants.appGroupId
-        )
-        let audioUrl = containerUrl?.appendingPathComponent("dictation_recording.m4a")
-            ?? FileManager.default.temporaryDirectory.appendingPathComponent("dictation_recording.m4a")
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+            guard let self = self else { return }
+            if self.isRecording {
+                try? self.audioFile?.write(from: buffer)
+                self.updateAudioLevel(buffer: buffer)
+            }
+        }
+
+        engine.prepare()
+        try engine.start()
+        self.audioEngine = engine
+    }
+
+    private func createNewAudioFile() {
+        guard let format = audioFormat,
+              let audioUrl = DictationConstants.audioFileURL else { return }
         try? FileManager.default.removeItem(at: audioUrl)
 
         let settings: [String: Any] = [
@@ -118,17 +141,7 @@ class DictationService {
             AVNumberOfChannelsKey: 1,
             AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue
         ]
-        let file = try AVAudioFile(forWriting: audioUrl, settings: settings)
-        self.audioFile = file
-
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
-            try? file.write(from: buffer)
-            self?.updateAudioLevel(buffer: buffer)
-        }
-
-        engine.prepare()
-        try engine.start()
-        self.audioEngine = engine
+        audioFile = try? AVAudioFile(forWriting: audioUrl, settings: settings)
     }
 
     private func updateAudioLevel(buffer: AVAudioPCMBuffer) {
@@ -152,6 +165,7 @@ class DictationService {
         audioEngine?.stop()
         audioEngine = nil
         audioFile = nil
+        audioFormat = nil
         defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
