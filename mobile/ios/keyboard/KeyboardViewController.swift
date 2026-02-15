@@ -282,6 +282,10 @@ class KeyboardViewController: UIInputViewController {
     private var appCounterPoller: Timer?
     private var lastAppCounter: Int = -1
 
+    private var deleteRepeatTimer: Timer?
+    private var deleteWordTimer: Timer?
+    private var deleteIsWordMode = false
+
     private var cachedIdToken: String?
     private var cachedIdTokenExpiry: Date?
     private var lastDebugLog: String = ""
@@ -376,7 +380,12 @@ class KeyboardViewController: UIInputViewController {
             btn.layer.cornerRadius = 8
             btn.clipsToBounds = true
             btn.tag = index
-            btn.addTarget(self, action: #selector(onUtilButtonTap(_:)), for: .touchUpInside)
+            if index == 3 {
+                btn.addTarget(self, action: #selector(onDeleteDown), for: .touchDown)
+                btn.addTarget(self, action: #selector(onDeleteUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+            } else {
+                btn.addTarget(self, action: #selector(onUtilButtonTap(_:)), for: .touchDown)
+            }
             addButtonFeedback(btn)
             NSLayoutConstraint.activate([
                 btn.widthAnchor.constraint(equalToConstant: 40),
@@ -503,7 +512,7 @@ class KeyboardViewController: UIInputViewController {
                 self.waveformView.isActive = false
                 self.progressView.alpha = 0
                 self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-                self.pillLabel.text = self.dictationPhase == .idle ? "Activate Dictation" : "Tap to dictate"
+                self.pillLabel.text = self.dictationPhase == .idle ? "Activate Voquill" : "Tap to dictate"
                 self.pillLabel.alpha = 1
                 self.pillButton.isUserInteractionEnabled = true
             }
@@ -577,13 +586,13 @@ class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func onButtonDown(_ sender: UIButton) {
-        UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.curveEaseInOut, .allowUserInteraction, .beginFromCurrentState]) {
             sender.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
         }
     }
 
     @objc private func onButtonUp(_ sender: UIButton) {
-        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0, options: []) {
+        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0, options: [.allowUserInteraction, .beginFromCurrentState]) {
             sender.transform = .identity
         }
     }
@@ -751,8 +760,56 @@ class KeyboardViewController: UIInputViewController {
         case 0: textDocumentProxy.insertText("@")
         case 1: textDocumentProxy.insertText(" ")
         case 2: textDocumentProxy.insertText("\n")
-        case 3: textDocumentProxy.deleteBackward()
         default: break
+        }
+    }
+
+    @objc private func onDeleteDown() {
+        textDocumentProxy.deleteBackward()
+        deleteIsWordMode = false
+        deleteRepeatTimer?.invalidate()
+        deleteWordTimer?.invalidate()
+
+        deleteRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            self.deleteRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in
+                guard let self = self else { return }
+                if self.deleteIsWordMode {
+                    self.deleteWord()
+                } else {
+                    self.textDocumentProxy.deleteBackward()
+                }
+            }
+        }
+
+        deleteWordTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            self?.deleteIsWordMode = true
+        }
+    }
+
+    @objc private func onDeleteUp() {
+        deleteRepeatTimer?.invalidate()
+        deleteRepeatTimer = nil
+        deleteWordTimer?.invalidate()
+        deleteWordTimer = nil
+        deleteIsWordMode = false
+    }
+
+    private func deleteWord() {
+        guard let text = textDocumentProxy.documentContextBeforeInput, !text.isEmpty else {
+            textDocumentProxy.deleteBackward()
+            return
+        }
+        let trimmed = text.hasSuffix(" ") ? String(text.dropLast()) : text
+        if let lastSpace = trimmed.lastIndex(of: " ") {
+            let count = text.distance(from: lastSpace, to: text.endIndex)
+            for _ in 0..<count {
+                textDocumentProxy.deleteBackward()
+            }
+        } else {
+            for _ in 0..<text.count {
+                textDocumentProxy.deleteBackward()
+            }
         }
     }
 
@@ -1048,6 +1105,7 @@ class KeyboardViewController: UIInputViewController {
         super.viewWillDisappear(animated)
         appCounterPoller?.invalidate()
         appCounterPoller = nil
+        onDeleteUp()
         DarwinNotificationManager.shared.removeObserver(DictationConstants.dictationPhaseChanged)
         stopAudioLevelPolling()
         waveformView.stopAnimating()
