@@ -62,6 +62,7 @@ import {
   OLLAMA_DEFAULT_URL,
   ollamaTestIntegration,
 } from "../../utils/ollama.utils";
+import { GroqModelPicker } from "./GroqModelPicker";
 import { OllamaModelPicker } from "./OllamaModelPicker";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { OpenRouterProviderRouting } from "./OpenRouterProviderRouting";
@@ -674,6 +675,15 @@ const ApiKeyCard = ({
             <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
           }
         />
+      ) : apiKey.provider === "groq" ? (
+        <Box onClick={(e) => e.stopPropagation()}>
+          <GroqModelPicker
+            apiKey={apiKey.keyFull ?? null}
+            selectedModel={currentModel}
+            onModelSelect={onModelChange}
+            disabled={testing || deleting}
+          />
+        </Box>
       ) : models.length > 0 ? (
         <FormControl fullWidth size="small">
           <InputLabel id={`model-select-label-${apiKey.id}`}>
