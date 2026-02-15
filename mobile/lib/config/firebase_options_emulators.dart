@@ -42,6 +42,6 @@ class EmulatorFirebaseOptions {
     storageBucket: 'voquill-prod.firebasestorage.app',
     iosClientId:
         '777461284594-dc0e2uabqh68opiheciabv5ivqq43ui0.apps.googleusercontent.com',
-    iosBundleId: 'com.voquill.app',
+    iosBundleId: 'com.voquill.mobile',
   );
 }

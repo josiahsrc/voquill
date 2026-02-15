@@ -1,4 +1,4 @@
-package com.voquill.app
+package com.voquill.mobile
 
 import android.Manifest
 import android.content.Context

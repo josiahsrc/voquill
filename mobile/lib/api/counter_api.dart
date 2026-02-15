@@ -1,7 +1,7 @@
 import 'package:app/api/base_api.dart';
 import 'package:flutter/services.dart';
 
-const _sharedChannel = MethodChannel('com.voquill.app/shared');
+const _sharedChannel = MethodChannel('com.voquill.mobile/shared');
 
 class GetAppCounterApi extends BaseApi<void, int> {
   @override

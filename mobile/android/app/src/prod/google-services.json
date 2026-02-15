@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:777461284594:android:9e32e369256288995e5a6b",
+        "mobilesdk_app_id": "1:777461284594:android:4f5b996194cdc0515e5a6b",
         "android_client_info": {
-          "package_name": "com.voquill.app"
+          "package_name": "com.voquill.mobile"
         }
       },
       "oauth_client": [
@@ -30,6 +30,13 @@
             {
               "client_id": "777461284594-qbm266ok82572jbapa8nqlu090eakeoc.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "777461284594-dc0e2uabqh68opiheciabv5ivqq43ui0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.voquill.app"
+              }
             }
           ]
         }

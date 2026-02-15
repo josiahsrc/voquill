@@ -11,8 +11,10 @@ import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
 import 'package:app/widgets/common/unfocus_detector.dart';
+import 'package:app/widgets/dictate/dictation_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -44,6 +46,8 @@ class _AppState extends State<App> {
   late final Timer _updatePoller;
   int _lastUpdateCounter = -1;
 
+  static const _channel = MethodChannel('com.voquill.mobile/shared');
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +57,7 @@ class _AppState extends State<App> {
       const Duration(seconds: 1),
       (_) => _checkForUpdates(),
     );
+    _channel.setMethodCallHandler(_handleNativeCall);
   }
 
   @override
@@ -62,9 +67,15 @@ class _AppState extends State<App> {
     super.dispose();
   }
 
+  Future<dynamic> _handleNativeCall(MethodCall call) async {
+    if (call.method == 'showDictationDialog') {
+      showDictationDialog();
+    }
+  }
+
   Future<void> _checkForUpdates() async {
     final counter = await GetAppCounterApi().call(null);
-    if (counter != _lastUpdateCounter) {
+    if (counter != _lastUpdateCounter && getAppState().isLoggedIn) {
       _lastUpdateCounter = counter;
       await refreshMainData();
     }

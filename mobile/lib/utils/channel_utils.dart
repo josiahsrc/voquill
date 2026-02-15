@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 
 final _logger = createNamedLogger('channel_utils');
 
-const _sharedChannel = MethodChannel('com.voquill.app/shared');
+const _sharedChannel = MethodChannel('com.voquill.mobile/shared');
 
 bool get _canSync => Platform.isIOS || Platform.isAndroid;
 

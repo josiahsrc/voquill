@@ -3,17 +3,21 @@ import UIKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
-  private static let appGroupId = "group.com.voquill.app"
+  private static let appGroupId = "group.com.voquill.mobile"
+  private var channel: FlutterMethodChannel?
 
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    DictationService.shared.cleanupOnLaunch()
+
     let controller = window?.rootViewController as! FlutterViewController
     let channel = FlutterMethodChannel(
-      name: "com.voquill.app/shared",
+      name: "com.voquill.mobile/shared",
       binaryMessenger: controller.binaryMessenger
     )
+    self.channel = channel
 
     channel.setMethodCallHandler { (call, result) in
       switch call.method {
@@ -130,12 +134,51 @@ import UIKit
         defaults?.set(counter + 1, forKey: "voquill_keyboard_update_counter")
         result(nil)
 
+      case "startDictation":
+        DictationService.shared.startDictation()
+        result(nil)
+
+      case "stopDictation":
+        DictationService.shared.stopDictation()
+        result(nil)
+
+      case "getDictationPhase":
+        result(DictationService.shared.currentPhase.rawValue)
+
       default:
         result(FlutterMethodNotImplemented)
       }
     }
 
     GeneratedPluginRegistrant.register(with: self)
+
+    if let url = launchOptions?[.url] as? URL {
+      handleDictationURL(url)
+    }
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+    if handleDictationURL(url) {
+      return true
+    }
+    return super.application(app, open: url, options: options)
+  }
+
+  override func applicationWillTerminate(_ application: UIApplication) {
+    DictationService.shared.stopDictation()
+    super.applicationWillTerminate(application)
+  }
+
+  @discardableResult
+  private func handleDictationURL(_ url: URL) -> Bool {
+    guard url.scheme == "voquill", url.host == "dictate" else { return false }
+    let wasActive = UIApplication.shared.applicationState == .active
+    DictationService.shared.startDictation()
+    if !wasActive {
+      channel?.invokeMethod("showDictationDialog", arguments: nil)
+    }
+    return true
   }
 }

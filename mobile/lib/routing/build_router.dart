@@ -13,11 +13,11 @@ import 'package:app/widgets/welcome/welcome_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-final _rootKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GoRouter buildRouter({required Listenable? refreshListenable}) {
   return GoRouter(
-    navigatorKey: _rootKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: false,
     redirect: (context, state) => guardRedirect(context, state),
