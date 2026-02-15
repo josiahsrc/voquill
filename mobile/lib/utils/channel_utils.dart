@@ -140,6 +140,26 @@ Future<void> syncKeyboardDictionary({
   }
 }
 
+Future<bool> isKeyboardEnabled() async {
+  if (!_canSync) return false;
+  try {
+    final result = await _sharedChannel.invokeMethod<bool>('isKeyboardEnabled');
+    return result ?? false;
+  } catch (e) {
+    _logger.w('Failed to check keyboard enabled', e);
+    return false;
+  }
+}
+
+Future<void> openKeyboardSettings() async {
+  if (!_canSync) return;
+  try {
+    await _sharedChannel.invokeMethod('openKeyboardSettings');
+  } catch (e) {
+    _logger.w('Failed to open keyboard settings', e);
+  }
+}
+
 Future<void> syncKeyboardDictationLanguages({
   required List<String> languages,
   required String activeLanguage,

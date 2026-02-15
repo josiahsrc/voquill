@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -135,14 +135,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		8A7603BA2F29AF05000B5379 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		8A7603BA2F29AF05000B5379 /* Exceptions for "keyboard" folder in "keyboard" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
 			target = 8A7603AD2F29AF05000B5379 /* keyboard */;
 		};
-		8A85E65C2F41FA7800A6698B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		8A85E65C2F41FA7800A6698B /* Exceptions for "VoquillWidgets" folder in "VoquillWidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -152,8 +152,30 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		8A7603AF2F29AF05000B5379 /* keyboard */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8A7603BA2F29AF05000B5379 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = keyboard; sourceTree = "<group>"; };
-		8A85E6442F41FA7700A6698B /* VoquillWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (8A85E65C2F41FA7800A6698B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = VoquillWidgets; sourceTree = "<group>"; };
+		8A7603AF2F29AF05000B5379 /* keyboard */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8A7603BA2F29AF05000B5379 /* Exceptions for "keyboard" folder in "keyboard" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = keyboard;
+			sourceTree = "<group>";
+		};
+		8A85E6442F41FA7700A6698B /* VoquillWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8A85E65C2F41FA7800A6698B /* Exceptions for "VoquillWidgets" folder in "VoquillWidgetsExtension" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = VoquillWidgets;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -480,13 +502,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -595,13 +613,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
