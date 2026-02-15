@@ -358,6 +358,7 @@ class KeyboardViewController: UIInputViewController {
         languageChip.clipsToBounds = true
         languageChip.isUserInteractionEnabled = true
         languageChip.addTarget(self, action: #selector(onLanguageChipTap), for: .touchUpInside)
+        addButtonFeedback(languageChip)
         view.addSubview(languageChip)
 
         let btnConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
@@ -376,6 +377,7 @@ class KeyboardViewController: UIInputViewController {
             btn.clipsToBounds = true
             btn.tag = index
             btn.addTarget(self, action: #selector(onUtilButtonTap(_:)), for: .touchUpInside)
+            addButtonFeedback(btn)
             NSLayoutConstraint.activate([
                 btn.widthAnchor.constraint(equalToConstant: 40),
                 btn.heightAnchor.constraint(equalToConstant: 40)
@@ -391,8 +393,9 @@ class KeyboardViewController: UIInputViewController {
         pillButton.isUserInteractionEnabled = true
         view.addSubview(pillButton)
 
-        let tap = UITapGestureRecognizer(target: self, action: #selector(onPillTap))
-        pillButton.addGestureRecognizer(tap)
+        let press = UILongPressGestureRecognizer(target: self, action: #selector(onPillPress(_:)))
+        press.minimumPressDuration = 0
+        pillButton.addGestureRecognizer(press)
 
         waveformView = AudioWaveformView()
         waveformView.translatesAutoresizingMaskIntoConstraints = false
@@ -539,16 +542,52 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Actions
 
-    @objc private func onPillTap() {
-        switch dictationPhase {
-        case .idle:
-            openURL("voquill://dictate")
-        case .active:
-            DarwinNotificationManager.shared.post(DictationConstants.startRecording)
-        case .recording:
-            DarwinNotificationManager.shared.post(DictationConstants.stopRecording)
+    @objc private func onPillPress(_ gesture: UILongPressGestureRecognizer) {
+        switch gesture.state {
+        case .began:
+            UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
+                self.pillButton.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+            }
+        case .ended:
+            UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0, options: []) {
+                self.pillButton.transform = .identity
+            }
+            let location = gesture.location(in: pillButton)
+            if pillButton.bounds.contains(location) {
+                switch dictationPhase {
+                case .idle:
+                    openURL("voquill://dictate")
+                case .active:
+                    DarwinNotificationManager.shared.post(DictationConstants.startRecording)
+                case .recording:
+                    DarwinNotificationManager.shared.post(DictationConstants.stopRecording)
+                }
+            }
+        case .cancelled, .failed:
+            UIView.animate(withDuration: 0.15, delay: 0, options: .curveEaseInOut) {
+                self.pillButton.transform = .identity
+            }
+        default: break
         }
     }
+
+    private func addButtonFeedback(_ button: UIButton) {
+        button.addTarget(self, action: #selector(onButtonDown(_:)), for: .touchDown)
+        button.addTarget(self, action: #selector(onButtonUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+    }
+
+    @objc private func onButtonDown(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
+            sender.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        }
+    }
+
+    @objc private func onButtonUp(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0, options: []) {
+            sender.transform = .identity
+        }
+    }
+
 
     private func openURL(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
@@ -661,6 +700,7 @@ class KeyboardViewController: UIInputViewController {
             chip.clipsToBounds = true
             chip.tag = index
             chip.addTarget(self, action: #selector(onToneChipTap(_:)), for: .touchUpInside)
+            addButtonFeedback(chip)
             applyChipStyle(chip, selected: toneId == selectedToneId)
             chip.sizeToFit()
             chip.frame = CGRect(x: xOffset, y: 0, width: chip.frame.width, height: 32)
