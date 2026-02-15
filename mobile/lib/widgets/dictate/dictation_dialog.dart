@@ -1,24 +1,35 @@
+import 'package:app/routing/build_router.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 
-const _channel = MethodChannel('com.voquill.mobile/shared');
+void showDictationDialog() {
+  final ctx = rootNavigatorKey.currentContext;
+  if (ctx == null) {
+    return;
+  }
 
-class DictatePage extends StatefulWidget {
-  const DictatePage({super.key});
-
-  @override
-  State<DictatePage> createState() => _DictatePageState();
+  showGeneralDialog(
+    context: ctx,
+    barrierDismissible: false,
+    barrierColor: Colors.black,
+    pageBuilder: (context, animation, secondaryAnimation) {
+      return const _DictationDialog();
+    },
+  );
 }
 
-class _DictatePageState extends State<DictatePage> with WidgetsBindingObserver {
-  bool _hasGoneToBackground = false;
+class _DictationDialog extends StatefulWidget {
+  const _DictationDialog();
 
+  @override
+  State<_DictationDialog> createState() => _DictationDialogState();
+}
+
+class _DictationDialogState extends State<_DictationDialog>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _startDictation();
   }
 
   @override
@@ -27,25 +38,15 @@ class _DictatePageState extends State<DictatePage> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  Future<void> _startDictation() async {
-    try {
-      await _channel.invokeMethod('startDictation');
-    } catch (e) {
-      debugPrint('Failed to start dictation: $e');
-    }
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _hasGoneToBackground = true;
-    }
-
-    if (state == AppLifecycleState.resumed && _hasGoneToBackground) {
-      if (mounted) {
-        context.go('/dashboard');
-      }
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      });
     }
   }
 
@@ -73,11 +74,10 @@ class _DictatePageState extends State<DictatePage> with WidgetsBindingObserver {
                 'Switch back to your other app to start dictating.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.6),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ],
           ),

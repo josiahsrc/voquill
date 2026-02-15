@@ -171,10 +171,10 @@ import UIKit
   @discardableResult
   private func handleDictationURL(_ url: URL) -> Bool {
     guard url.scheme == "voquill", url.host == "dictate" else { return false }
-    if UIApplication.shared.applicationState == .active {
-      DictationService.shared.startDictation()
-    } else {
-      channel?.invokeMethod("navigateToDictate", arguments: nil)
+    let wasActive = UIApplication.shared.applicationState == .active
+    DictationService.shared.startDictation()
+    if !wasActive {
+      channel?.invokeMethod("showDictationDialog", arguments: nil)
     }
     return true
   }

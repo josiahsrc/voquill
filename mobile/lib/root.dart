@@ -11,6 +11,7 @@ import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
 import 'package:app/widgets/common/unfocus_detector.dart';
+import 'package:app/widgets/dictate/dictation_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,8 +68,8 @@ class _AppState extends State<App> {
   }
 
   Future<dynamic> _handleNativeCall(MethodCall call) async {
-    if (call.method == 'navigateToDictate') {
-      goRouter.go('/dictate');
+    if (call.method == 'showDictationDialog') {
+      showDictationDialog();
     }
   }
 
