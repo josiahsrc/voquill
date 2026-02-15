@@ -70,6 +70,7 @@ import {
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
   NewServerTranscribeAudioRepo,
+  OpenAICompatibleTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
   SpeachesTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
@@ -349,6 +350,17 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       repo = new GeminiTranscribeAudioRepo(
         prefs.apiKeyValue,
         prefs.transcriptionModel,
+      );
+    } else if (prefs.provider === "openai-compatible") {
+      const state = getAppState();
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl || "http://127.0.0.1:8080";
+      const model = prefs.transcriptionModel || "whisper-1";
+      const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      repo = new OpenAICompatibleTranscribeAudioRepo(
+        baseUrl,
+        model,
+        providerApiKey,
       );
     } else if (prefs.provider === "speaches") {
       const state = getAppState();

@@ -29,6 +29,7 @@ import { getEffectiveAuth } from "../utils/auth.utils";
 import { invokeEnterprise } from "../utils/enterprise.utils";
 import { NEW_SERVER_URL } from "../utils/new-server.utils";
 import { loadDiscreteGpus } from "../utils/gpu.utils";
+import { openaiCompatibleTranscribeAudio } from "../utils/openai-compatible-transcribe.utils";
 import { speachesTranscribeAudio } from "../utils/speaches.utils";
 import {
   mergeTranscriptions,
@@ -578,6 +579,56 @@ export class SpeachesTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       text: transcript,
       metadata: {
         inferenceDevice: "API • Speaches",
+        modelSize: this.model,
+        transcriptionMode: "api",
+      },
+    };
+  }
+}
+
+export class OpenAICompatibleTranscribeAudioRepo extends BaseTranscribeAudioRepo {
+  private baseUrl: string;
+  private model: string;
+  private apiKey?: string;
+
+  constructor(baseUrl: string, model: string, apiKey?: string) {
+    super();
+    this.baseUrl = baseUrl;
+    this.model = model;
+    this.apiKey = apiKey;
+  }
+
+  protected getSegmentDurationSec(): number {
+    return 60;
+  }
+
+  protected getOverlapDurationSec(): number {
+    return 5;
+  }
+
+  protected getBatchChunkCount(): number {
+    return 3;
+  }
+
+  protected async transcribeSegment(
+    input: TranscribeSegmentInput,
+  ): Promise<TranscribeAudioOutput> {
+    const wavBuffer = buildWaveFile(input.samples, input.sampleRate);
+
+    const { text: transcript } = await openaiCompatibleTranscribeAudio({
+      baseUrl: this.baseUrl,
+      model: this.model,
+      apiKey: this.apiKey,
+      blob: wavBuffer,
+      ext: "wav",
+      prompt: input.prompt ?? undefined,
+      language: input.language,
+    });
+
+    return {
+      text: transcript,
+      metadata: {
+        inferenceDevice: "API • OpenAI Compatible",
         modelSize: this.model,
         transcriptionMode: "api",
       },

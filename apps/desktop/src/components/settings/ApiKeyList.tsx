@@ -132,7 +132,10 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
             ? azureOpenAIEndpoint
             : undefined;
       const azureRegionValue = isAzureSTT ? azureRegion : undefined;
-      const transcriptionModelValue = isSpeaches ? speachesModel || undefined : undefined;
+      const transcriptionModelValue =
+        isSpeaches || (isOpenAICompatible && context === "transcription")
+          ? speachesModel || undefined
+          : undefined;
       await onSave(name, provider, keyToSave, baseUrl, azureRegionValue, transcriptionModelValue);
       setName("");
       setKey("");
@@ -204,9 +207,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         {context === "post-processing" && (
           <MenuItem value="ollama">Ollama</MenuItem>
         )}
-        {context === "post-processing" && (
-          <MenuItem value="openai-compatible">OpenAI Compatible</MenuItem>
-        )}
+        <MenuItem value="openai-compatible">OpenAI Compatible</MenuItem>
         {context === "post-processing" && (
           <MenuItem value="deepseek">DeepSeek</MenuItem>
         )}
@@ -317,6 +318,20 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
               <FormattedMessage defaultMessage="Only needed if your instance requires authentication" />
             }
           />
+          {isOpenAICompatible && context === "transcription" && (
+            <TextField
+              label={<FormattedMessage defaultMessage="Model" />}
+              value={speachesModel}
+              onChange={(event) => setSpeachesModel(event.target.value)}
+              placeholder="whisper-1"
+              size="small"
+              fullWidth
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
+              }
+            />
+          )}
         </>
       ) : isSpeaches ? (
         <>
@@ -630,6 +645,21 @@ const ApiKeyCard = ({
             provider={apiKey.provider}
           />
         </Box>
+      ) : apiKey.provider === "openai-compatible" &&
+        context === "transcription" ? (
+        <TextField
+          label={<FormattedMessage defaultMessage="Model" />}
+          value={currentModel ?? ""}
+          onChange={(event) => onModelChange(event.target.value || null)}
+          onClick={(e) => e.stopPropagation()}
+          placeholder="whisper-1"
+          size="small"
+          fullWidth
+          disabled={testing || deleting}
+          helperText={
+            <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
+          }
+        />
       ) : apiKey.provider === "speaches" ? (
         <TextField
           label={<FormattedMessage defaultMessage="Model" />}
@@ -689,7 +719,6 @@ export const ApiKeyList = ({
       context === "transcription" &&
       (key.provider === "openrouter" ||
         key.provider === "ollama" ||
-        key.provider === "openai-compatible" ||
         key.provider === "deepseek" ||
         key.provider === "claude")
     ) {
