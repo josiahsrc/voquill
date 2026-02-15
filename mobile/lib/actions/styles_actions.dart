@@ -7,6 +7,7 @@ import 'package:app/model/tone_model.dart';
 import 'package:app/model/user_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/app_utils.dart';
+import 'package:app/utils/channel_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/utils/tone_utils.dart';
 import 'package:uuid/uuid.dart';
@@ -44,6 +45,7 @@ Future<void> loadStyles() async {
 }
 
 Future<void> selectTone(String toneId) async {
+  await setSelectedToneId(toneId);
   final previous = _currentUser();
   final updated = (previous.draft()
         ..updatedAt = _now()
@@ -103,6 +105,7 @@ Future<void> createTone({
     shouldDisablePostProcessing: false,
   );
 
+  await setSelectedToneId(tone.id);
   final previous = _currentUser();
   final currentActive = previous.activeToneIds ?? [];
   final updated = (previous.draft()
@@ -155,9 +158,15 @@ Future<void> deleteTone(String toneId) async {
   final currentActive = previous.activeToneIds ?? [];
   final wasSelected = previous.selectedToneId == toneId;
 
+  final newSelectedToneId =
+      wasSelected ? defaultToneId : previous.selectedToneId;
+  if (wasSelected) {
+    await setSelectedToneId(defaultToneId);
+  }
+
   final updated = (previous.draft()
         ..updatedAt = _now()
-        ..selectedToneId = wasSelected ? defaultToneId : previous.selectedToneId
+        ..selectedToneId = newSelectedToneId
         ..activeToneIds = currentActive.where((id) => id != toneId).toList())
       .save();
 

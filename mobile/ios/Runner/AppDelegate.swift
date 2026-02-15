@@ -123,6 +123,20 @@ import UIKit
         let transcriptions = defaults?.array(forKey: "voquill_transcriptions") as? [[String: Any]] ?? []
         result(transcriptions)
 
+      case "getSelectedToneId":
+        let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
+        result(defaults?.string(forKey: "voquill_selected_tone_id"))
+
+      case "setSelectedToneId":
+        guard let args = call.arguments as? [String: String],
+              let toneId = args["toneId"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(toneId, forKey: "voquill_selected_tone_id")
+        result(nil)
+
       case "getAppCounter":
         let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
         let counter = defaults?.integer(forKey: "voquill_app_update_counter") ?? 0

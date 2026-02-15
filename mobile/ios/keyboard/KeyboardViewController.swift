@@ -828,6 +828,9 @@ class KeyboardViewController: UIInputViewController {
             return
         }
 
+        let capturedToneId = selectedToneId
+        let capturedToneById = toneById
+
         isProcessing = true
         applyPillVisual(.loading, animated: true)
 
@@ -872,8 +875,7 @@ class KeyboardViewController: UIInputViewController {
             )
             let whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
 
-            Task { [weak self] in
-                guard let self = self else { return }
+            Task {
                 let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
                 do {
                     let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(
@@ -892,7 +894,7 @@ class KeyboardViewController: UIInputViewController {
 
                     var finalText = rawTranscript
                     do {
-                        if let tone = self.selectedToneId.flatMap({ self.toneById[$0] }) {
+                        if let tone = capturedToneId.flatMap({ capturedToneById[$0] }) {
                             let raw = try await CloudGenerateTextRepo(config: config).generate(
                                 system: buildSystemPostProcessingPrompt(),
                                 prompt: buildPostProcessingPrompt(
@@ -924,11 +926,11 @@ class KeyboardViewController: UIInputViewController {
                         self.applyPillVisual(.idle, animated: true)
                     }
 
-                    let tone = self.selectedToneId.flatMap { self.toneById[$0] }
+                    let tone = capturedToneId.flatMap { capturedToneById[$0] }
                     TranscriptionRepo().save(
                         text: finalText,
                         rawTranscript: rawTranscript,
-                        toneId: self.selectedToneId,
+                        toneId: capturedToneId,
                         toneName: tone?.name,
                         audioSourceUrl: audioUrl
                     )

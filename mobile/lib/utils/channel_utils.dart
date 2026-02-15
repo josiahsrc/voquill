@@ -80,6 +80,25 @@ Future<void> syncKeyboardTones({
   }
 }
 
+Future<String?> getSelectedToneId() async {
+  if (!_canSync) return null;
+  try {
+    return await _sharedChannel.invokeMethod<String?>('getSelectedToneId');
+  } catch (e) {
+    _logger.w('Failed to get selected tone id', e);
+    return null;
+  }
+}
+
+Future<void> setSelectedToneId(String toneId) async {
+  if (!_canSync) return;
+  try {
+    await _sharedChannel.invokeMethod('setSelectedToneId', {'toneId': toneId});
+  } catch (e) {
+    _logger.w('Failed to set selected tone id', e);
+  }
+}
+
 Future<void> syncKeyboardUser({
   required String userName,
   required String dictationLanguage,

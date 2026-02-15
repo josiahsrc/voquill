@@ -19,7 +19,6 @@ Future<void> _incrementAppCounter() async {
 
 Future<void> syncTonesToKeyboard() async {
   final state = getAppState();
-  final selectedToneId = getManuallySelectedToneId(state);
   final activeToneIds = getActiveSortedToneIds(state);
   final toneById = <String, SharedTone>{};
   for (final entry in state.toneById.entries) {
@@ -28,6 +27,13 @@ Future<void> syncTonesToKeyboard() async {
       promptTemplate: entry.value.promptTemplate,
     );
   }
+
+  final sharedToneId = await getSelectedToneId();
+  final selectedToneId =
+      (sharedToneId != null && activeToneIds.contains(sharedToneId))
+          ? sharedToneId
+          : getManuallySelectedToneId(state);
+
   await syncKeyboardTones(
     selectedToneId: selectedToneId,
     activeToneIds: activeToneIds,
