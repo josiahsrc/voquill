@@ -276,7 +276,7 @@ class KeyboardViewController: UIInputViewController {
 
     private var dictationLanguages: [String] = ["en"]
 
-    private var simulatedWaveformTimer: Timer?
+    private var audioLevelTimer: Timer?
     private var appCounterPoller: Timer?
     private var lastAppCounter: Int = -1
 
@@ -317,9 +317,9 @@ class KeyboardViewController: UIInputViewController {
         switch newPhase {
         case .recording:
             applyPillVisual(.recording, animated: oldPhase != newPhase)
-            startSimulatedWaveform()
+            startAudioLevelPolling()
         case .active, .idle:
-            stopSimulatedWaveform()
+            stopAudioLevelPolling()
             applyPillVisual(.idle, animated: oldPhase != newPhase)
         }
     }
@@ -382,11 +382,13 @@ class KeyboardViewController: UIInputViewController {
         waveformView = AudioWaveformView()
         waveformView.translatesAutoresizingMaskIntoConstraints = false
         waveformView.alpha = 0
+        waveformView.isUserInteractionEnabled = false
         pillButton.addSubview(waveformView)
 
         progressView = IndeterminateProgressView()
         progressView.translatesAutoresizingMaskIntoConstraints = false
         progressView.alpha = 0
+        progressView.isUserInteractionEnabled = false
         pillButton.addSubview(progressView)
 
         pillLabel = UILabel()
@@ -683,16 +685,19 @@ class KeyboardViewController: UIInputViewController {
 
     // MARK: - Simulated Waveform
 
-    private func startSimulatedWaveform() {
-        stopSimulatedWaveform()
-        simulatedWaveformTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-            self?.waveformView?.updateLevel(CGFloat.random(in: 0.3...0.7))
+    private func startAudioLevelPolling() {
+        stopAudioLevelPolling()
+        audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+            let level = CGFloat(defaults?.float(forKey: DictationConstants.audioLevelKey) ?? 0)
+            self.waveformView?.updateLevel(level)
         }
     }
 
-    private func stopSimulatedWaveform() {
-        simulatedWaveformTimer?.invalidate()
-        simulatedWaveformTimer = nil
+    private func stopAudioLevelPolling() {
+        audioLevelTimer?.invalidate()
+        audioLevelTimer = nil
     }
 
     // MARK: - Darwin Notification Observers
@@ -724,7 +729,7 @@ class KeyboardViewController: UIInputViewController {
         appCounterPoller?.invalidate()
         appCounterPoller = nil
         DarwinNotificationManager.shared.removeObserver(DictationConstants.dictationPhaseChanged)
-        stopSimulatedWaveform()
+        stopAudioLevelPolling()
         waveformView.stopAnimating()
         progressView.stopAnimating()
     }

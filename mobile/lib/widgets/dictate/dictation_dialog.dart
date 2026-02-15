@@ -42,11 +42,9 @@ class _DictationDialogState extends State<_DictationDialog>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      });
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 

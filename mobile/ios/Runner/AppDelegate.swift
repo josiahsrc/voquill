@@ -10,9 +10,7 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    if let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) {
-      defaults.set(DictationPhase.idle.rawValue, forKey: DictationConstants.phaseKey)
-    }
+    DictationService.shared.cleanupOnLaunch()
 
     let controller = window?.rootViewController as! FlutterViewController
     let channel = FlutterMethodChannel(
@@ -166,6 +164,11 @@ import UIKit
       return true
     }
     return super.application(app, open: url, options: options)
+  }
+
+  override func applicationWillTerminate(_ application: UIApplication) {
+    DictationService.shared.stopDictation()
+    super.applicationWillTerminate(application)
   }
 
   @discardableResult

@@ -14,6 +14,7 @@ struct DictationConstants {
 
     static let phaseKey = "voquill_dictation_phase"
     static let startedAtKey = "voquill_dictation_started_at"
+    static let audioLevelKey = "voquill_audio_level"
 
     static let appGroupId = "group.com.voquill.mobile"
 }

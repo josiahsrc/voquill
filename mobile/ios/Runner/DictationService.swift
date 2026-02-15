@@ -90,9 +90,8 @@ class DictationService {
         stopAudioEngine()
         setPhase(.idle)
 
-        DispatchQueue.main.async {
-            self.endLiveActivity()
-        }
+        endLiveActivity()
+        endAllLiveActivities()
     }
 
     private func configureAudioSession() throws {
@@ -122,8 +121,9 @@ class DictationService {
         let file = try AVAudioFile(forWriting: audioUrl, settings: settings)
         self.audioFile = file
 
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
             try? file.write(from: buffer)
+            self?.updateAudioLevel(buffer: buffer)
         }
 
         engine.prepare()
@@ -131,11 +131,28 @@ class DictationService {
         self.audioEngine = engine
     }
 
+    private func updateAudioLevel(buffer: AVAudioPCMBuffer) {
+        guard let data = buffer.floatChannelData?[0] else { return }
+        let count = Int(buffer.frameLength)
+        guard count > 0 else { return }
+
+        var sum: Float = 0
+        for i in 0..<count {
+            sum += data[i] * data[i]
+        }
+        let rms = sqrt(sum / Float(count))
+        let db = 20 * log10(max(rms, 1e-6))
+        let normalized = max(0, min(1, (db + 50) / 50))
+
+        defaults?.set(normalized, forKey: DictationConstants.audioLevelKey)
+    }
+
     private func stopAudioEngine() {
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine?.stop()
         audioEngine = nil
         audioFile = nil
+        defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
@@ -178,6 +195,21 @@ class DictationService {
             await activity?.end(.init(state: state, staleDate: nil), dismissalPolicy: .immediate)
             activity = nil
         }
+    }
+
+    private func endAllLiveActivities() {
+        guard #available(iOS 16.2, *) else { return }
+        let state = DictationAttributes.ContentState(phase: "idle", elapsedSeconds: 0)
+        Task {
+            for activity in Activity<DictationAttributes>.activities {
+                await activity.end(.init(state: state, staleDate: nil), dismissalPolicy: .immediate)
+            }
+        }
+    }
+
+    func cleanupOnLaunch() {
+        setPhase(.idle)
+        endAllLiveActivities()
     }
 
     // MARK: - Elapsed Timer
