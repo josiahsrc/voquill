@@ -8,6 +8,7 @@ import 'package:app/widgets/styles/manage_styles_page.dart';
 import 'package:app/widgets/error/not_found_page.dart';
 import 'package:app/widgets/login/login_page.dart';
 import 'package:app/widgets/onboarding/onboarding_page.dart';
+import 'package:app/widgets/setup/setup_page.dart';
 import 'package:app/widgets/splash/splash_page.dart';
 import 'package:app/widgets/welcome/welcome_page.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,11 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
         name: 'onboarding',
+      ),
+      GoRoute(
+        path: '/setup',
+        builder: (context, state) => const SetupPage(),
+        name: 'setup',
       ),
       GoRoute(
         path: '/dashboard',

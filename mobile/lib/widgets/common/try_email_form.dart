@@ -1,44 +1,24 @@
-import 'package:app/actions/onboarding_actions.dart';
-import 'package:app/actions/snackbar_actions.dart';
-import 'package:app/store/store.dart';
-import 'package:app/widgets/common/app_button.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
 import 'package:flutter/material.dart';
 
-class TryEmailForm extends StatefulWidget {
-  const TryEmailForm({super.key});
+class TryEmailForm extends StatelessWidget {
+  const TryEmailForm({
+    super.key,
+    required this.action,
+    this.backButton,
+  });
 
-  @override
-  State<TryEmailForm> createState() => _TryEmailFormState();
-}
-
-class _TryEmailFormState extends State<TryEmailForm> {
-  Future<void> _handleFinish() async {
-    try {
-      await finishOnboarding();
-    } catch (e) {
-      if (mounted) {
-        showErrorSnackbar('Failed to complete setup. Please try again.');
-      }
-    }
-  }
+  final Widget action;
+  final Widget? backButton;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final submitting =
-        useAppStore().select(context, (s) => s.onboarding.submitting);
 
     return OnboardingFormLayout(
-      backButton: const MultiPageBackButton(),
-      actions: [
-        AppButton.filled(
-          onPressed: _handleFinish,
-          loading: submitting,
-          child: const Text('Finish'),
-        ),
-      ],
+      backButton: backButton ?? const MultiPageBackButton(),
+      actions: [action],
       child: OnboardingBody(
         title: const Text('Now try an email'),
         description: const Text(

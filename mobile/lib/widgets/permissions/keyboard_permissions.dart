@@ -1,3 +1,4 @@
+import 'package:app/store/store.dart';
 import 'package:app/utils/channel_utils.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
 import 'package:flutter/material.dart';
@@ -18,8 +19,6 @@ class KeyboardPermissions extends StatefulWidget {
 
 class _KeyboardPermissionsState extends State<KeyboardPermissions>
     with WidgetsBindingObserver {
-  bool _isEnabled = false;
-
   @override
   void initState() {
     super.initState();
@@ -43,15 +42,21 @@ class _KeyboardPermissionsState extends State<KeyboardPermissions>
   Future<void> _checkEnabled() async {
     final enabled = await isKeyboardEnabled();
     if (mounted) {
-      setState(() => _isEnabled = enabled);
+      produceAppState((draft) {
+        draft.hasKeyboardPermission = enabled;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isEnabled = useAppStore().select(
+      context,
+      (s) => s.hasKeyboardPermission,
+    );
 
-    final button = _isEnabled
+    final button = isEnabled
         ? widget.nextButton
         : FilledButton(
             key: const ValueKey('open-keyboard-settings'),

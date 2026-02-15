@@ -1,29 +1,34 @@
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
-import 'package:app/widgets/onboarding/try_email_form.dart';
 import 'package:flutter/material.dart';
 
 class TryDiscordForm extends StatelessWidget {
-  const TryDiscordForm({super.key});
+  const TryDiscordForm({
+    super.key,
+    required this.action,
+    this.backButton,
+    this.title,
+    this.description,
+  });
+
+  final Widget action;
+  final Widget? backButton;
+  final Widget? title;
+  final Widget? description;
 
   @override
   Widget build(BuildContext context) {
-    final presenter = context.presenter();
     final theme = Theme.of(context);
 
     return OnboardingFormLayout(
-      backButton: const MultiPageBackButton(),
-      actions: [
-        FilledButton(
-          onPressed: () => presenter.pushPage<TryEmailForm>(),
-          child: const Text('Continue'),
-        ),
-      ],
+      backButton: backButton ?? const MultiPageBackButton(),
+      actions: [action],
       child: OnboardingBody(
-        title: const Text('Try out dictation'),
-        description: const Text(
-          'Tap the text field and use the microphone button to dictate.',
-        ),
+        title: title ?? const Text('Try out dictation'),
+        description: description ??
+            const Text(
+              'Tap the text field and use the microphone button to dictate.',
+            ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

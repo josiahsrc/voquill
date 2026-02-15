@@ -3,7 +3,7 @@ import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/common/app_logo.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
-import 'package:app/widgets/onboarding/try_discord_form.dart';
+import 'package:app/widgets/onboarding/onboarding_try_discord_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -19,7 +19,7 @@ class ProUnlockedForm extends StatelessWidget {
       backButton: const MultiPageBackButton(),
       actions: [
         FilledButton(
-              onPressed: () => presenter.pushPage<TryDiscordForm>(),
+              onPressed: () => presenter.pushPage<OnboardingTryDiscordForm>(),
               child: const Text('Continue'),
             )
             .animate()

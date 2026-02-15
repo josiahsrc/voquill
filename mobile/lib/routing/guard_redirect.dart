@@ -68,6 +68,33 @@ final _graph = NavigationGraph([
     ]),
     targetRoute: '/welcome',
   ),
+  // If onboarded but missing permissions -> setup
+  NavigationRule(
+    condition: AndCondition([
+      MatchesLocationRegex(RegExp(r'^/dashboard')),
+      IsOnboardedCondition(),
+      NotCondition(HasPermissionsCondition()),
+    ]),
+    targetRoute: '/setup',
+  ),
+
+  // Setup page guards
+  // If has permissions -> dashboard
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/setup'),
+      HasPermissionsCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
+  // If not onboarded -> welcome
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/setup'),
+      NotCondition(IsOnboardedCondition()),
+    ]),
+    targetRoute: '/welcome',
+  ),
 ]);
 
 String _resolvedLocation = '/';

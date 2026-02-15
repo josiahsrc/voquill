@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/actions/language_actions.dart';
+import 'package:app/actions/permission_actions.dart';
 import 'package:app/actions/styles_actions.dart';
 import 'package:app/actions/transcription_actions.dart';
 import 'package:app/api/member_api.dart';
@@ -50,6 +51,7 @@ StreamSubscription<User?> listenToAuthChanges() {
     }
 
     if (isInitial) {
+      await checkPermissions();
       produceAppState((draft) {
         draft.status = ActionStatus.success;
       });
