@@ -455,7 +455,7 @@ export const JsonResponseZod = z
 
 export const AiTranscribeAudioInputZod = z
   .object({
-    prompt: z.string().max(20_000).nullable().optional(),
+    prompt: z.string().nullable().optional(),
     audioBase64: z.string().min(1),
     audioMimeType: z.string().min(1),
     simulate: z.boolean().nullable().optional(),
@@ -465,8 +465,8 @@ export const AiTranscribeAudioInputZod = z
 
 export const AiGenerateTextInputZod = z
   .object({
-    system: z.string().max(3_000).nullable().optional(),
-    prompt: z.string().max(25_000),
+    system: z.string().nullable().optional(),
+    prompt: z.string(),
     simulate: z.boolean().nullable().optional(),
     jsonResponse: JsonResponseZod.nullable().optional(),
     model: CloudModelZod.nullable().optional(),
