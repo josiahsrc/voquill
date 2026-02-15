@@ -90,6 +90,9 @@ class _AppState extends State<App> {
         themeMode: ThemeMode.system,
         routerConfig: goRouter,
         scaffoldMessengerKey: scaffoldMessengerKey,
+        builder: (context, child) {
+          return DictationOverlay(child: child ?? const SizedBox.shrink());
+        },
       ),
     );
 
