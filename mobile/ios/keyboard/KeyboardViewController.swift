@@ -265,6 +265,7 @@ class KeyboardViewController: UIInputViewController {
     private var waveformView: AudioWaveformView!
     private var progressView: IndeterminateProgressView!
     private var nextKeyboardButton: UIButton?
+    private var logoButton: UIButton!
     private var languageChip: UIButton!
 
     private var toneContainer: UIScrollView!
@@ -351,6 +352,28 @@ class KeyboardViewController: UIInputViewController {
         let hc = view.heightAnchor.constraint(equalToConstant: 250)
         hc.priority = .defaultHigh
         hc.isActive = true
+
+        logoButton = UIButton(type: .custom)
+        logoButton.translatesAutoresizingMaskIntoConstraints = false
+        logoButton.backgroundColor = UIColor.systemGray4
+        logoButton.layer.cornerRadius = 8
+        logoButton.clipsToBounds = true
+        logoButton.addTarget(self, action: #selector(onLogoButtonTap), for: .touchUpInside)
+        addButtonFeedback(logoButton)
+        view.addSubview(logoButton)
+
+        let logoImageView = UIImageView(image: UIImage(named: "VoquillLogo")?.withRenderingMode(.alwaysTemplate))
+        logoImageView.translatesAutoresizingMaskIntoConstraints = false
+        logoImageView.contentMode = .scaleAspectFit
+        logoImageView.tintColor = .label
+        logoImageView.isUserInteractionEnabled = false
+        logoButton.addSubview(logoImageView)
+        NSLayoutConstraint.activate([
+            logoImageView.centerXAnchor.constraint(equalTo: logoButton.centerXAnchor),
+            logoImageView.centerYAnchor.constraint(equalTo: logoButton.centerYAnchor),
+            logoImageView.widthAnchor.constraint(equalToConstant: 28),
+            logoImageView.heightAnchor.constraint(equalToConstant: 28),
+        ])
 
         languageChip = UIButton(type: .system)
         languageChip.translatesAutoresizingMaskIntoConstraints = false
@@ -464,8 +487,13 @@ class KeyboardViewController: UIInputViewController {
         view.addSubview(bottomSpacer)
 
         NSLayoutConstraint.activate([
+            logoButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            logoButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            logoButton.heightAnchor.constraint(equalToConstant: 40),
+            logoButton.widthAnchor.constraint(equalToConstant: 40),
+
             languageChip.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
-            languageChip.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            languageChip.leadingAnchor.constraint(equalTo: logoButton.trailingAnchor, constant: 8),
             languageChip.heightAnchor.constraint(equalToConstant: 40),
             languageChip.widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
 
@@ -655,6 +683,10 @@ class KeyboardViewController: UIInputViewController {
         dictationLanguages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? ["en"]
         let code = language.components(separatedBy: "-").first ?? language
         languageChip.setTitle(code.uppercased(), for: .normal)
+    }
+
+    @objc private func onLogoButtonTap() {
+        openURL("voquill://open")
     }
 
     @objc private func onLanguageChipTap() {

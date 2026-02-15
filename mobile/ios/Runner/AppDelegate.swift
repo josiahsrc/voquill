@@ -200,6 +200,8 @@ import UIKit
     case "stop":
       DictationService.shared.stopDictation()
       return true
+    case "open":
+      return true
     default:
       return false
     }
