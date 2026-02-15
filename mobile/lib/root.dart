@@ -119,9 +119,13 @@ class _AppState extends State<App> {
             a.auth != b.auth ||
             a.isOnboarded != b.isOnboarded,
       ),
-      useAppStore().listen((context, state) async {
-        await syncKeyboardOnInit();
-      }, condition: (a, b) => !a.status.isSuccess && b.status.isSuccess),
+      useAppStore().listen(
+        (context, state) async {
+          await syncKeyboardOnInit();
+        },
+        condition: (a, b) =>
+            !a.status.isSuccess && b.status.isSuccess && b.isLoggedIn,
+      ),
       useAppStore().listen(
         (context, state) => syncTonesToKeyboard(),
         condition: (a, b) =>

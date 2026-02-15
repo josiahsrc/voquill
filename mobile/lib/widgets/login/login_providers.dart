@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:app/actions/auth_actions.dart';
 import 'package:app/actions/snackbar_actions.dart';
 import 'package:app/widgets/common/app_button.dart';
@@ -14,11 +16,11 @@ class LoginProviders extends StatefulWidget {
 }
 
 class _LoginProvidersState extends State<LoginProviders> {
-  bool _loading = false;
+  String? _loadingProvider;
 
-  Future<void> _handleSignIn(Future<bool> Function() signIn) async {
-    if (_loading) return;
-    setState(() => _loading = true);
+  Future<void> _handleSignIn(String provider, Future<bool> Function() signIn) async {
+    if (_loadingProvider != null) return;
+    setState(() => _loadingProvider = provider);
 
     try {
       final success = await signIn();
@@ -29,7 +31,7 @@ class _LoginProvidersState extends State<LoginProviders> {
         showErrorSnackbar('Sign in failed. Please try again.');
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _loadingProvider = null);
     }
   }
 
@@ -37,20 +39,21 @@ class _LoginProvidersState extends State<LoginProviders> {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
       children: [
         AppButton.filled(
-          onPressed: () => _handleSignIn(signInWithGoogle),
-          loading: _loading,
+          onPressed: () => _handleSignIn('google', signInWithGoogle),
+          loading: _loadingProvider == 'google',
           icon: const FaIcon(FontAwesomeIcons.google, size: 18),
           child: const Text('Continue with Google'),
         ),
-        const SizedBox(height: 12),
-        AppButton.outlined(
-          onPressed: () => _handleSignIn(signInWithApple),
-          loading: _loading,
-          icon: const FaIcon(FontAwesomeIcons.apple, size: 20),
-          child: const Text('Continue with Apple'),
-        ),
+        if (Platform.isIOS)
+          AppButton.outlined(
+            onPressed: () => _handleSignIn('apple', signInWithApple),
+            loading: _loadingProvider == 'apple',
+            icon: const FaIcon(FontAwesomeIcons.apple, size: 20),
+            child: const Text('Continue with Apple'),
+          ),
       ],
     );
   }

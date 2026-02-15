@@ -31,8 +31,8 @@ Future<void> syncTonesToKeyboard() async {
   final sharedToneId = await getSelectedToneId();
   final selectedToneId =
       (sharedToneId != null && activeToneIds.contains(sharedToneId))
-          ? sharedToneId
-          : getManuallySelectedToneId(state);
+      ? sharedToneId
+      : getManuallySelectedToneId(state);
 
   await syncKeyboardTones(
     selectedToneId: selectedToneId,
