@@ -75,6 +75,7 @@ class _KeyboardPermissionsState extends State<KeyboardPermissions>
         child: Center(
           child: AssetVideoPlayer.phone(
             asset: 'assets/voquill-keyboard-perms-ios.mp4',
+            aspectRatio: 290 / 596,
             pip: true,
           ),
         ),

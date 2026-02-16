@@ -37,13 +37,13 @@ class SetupIntroForm extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Welcome back! 👋',
+                  'Welcome! 👋',
                   style: theme.textTheme.headlineLarge,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Voquill needs microphone and keyboard\naccess to do its thing.',
+                  'Voquil is a voice keyboard. It lets you type with your voice in any app.',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -52,17 +52,9 @@ class SetupIntroForm extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.all(Theming.radius),
-                ),
-                child: AssetVideoPlayer.phone(
-                  asset: 'assets/voquill-demo-ios.mp4',
-                ),
-              ),
+            AssetVideoPlayer.phone(
+              asset: 'assets/voquill-demo-ios.mp4',
+              aspectRatio: 292 / 540,
             ),
             const Spacer(flex: 2),
             SizedBox(

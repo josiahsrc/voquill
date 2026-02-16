@@ -27,20 +27,23 @@ class DemoForm extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'See it in action',
+              'How it works',
               style: theme.textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Here\'s a quick look at how Voquill works.',
+              "To enable voice typing, select Voquill as your keyboard then tap the dictate button.",
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
             Spacer(),
-            AssetVideoPlayer.phone(asset: 'assets/voquill-demo-ios.mp4'),
+            AssetVideoPlayer.phone(
+              asset: 'assets/voquill-demo-ios.mp4',
+              aspectRatio: 292 / 540,
+            ),
             Spacer(),
           ],
         ),
