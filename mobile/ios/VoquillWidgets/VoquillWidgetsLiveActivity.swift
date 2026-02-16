@@ -11,9 +11,11 @@ struct DictationLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 8) {
                         Image("VoquillLogo")
+                            .renderingMode(.template)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 24, height: 24)
+                            .foregroundColor(.primary)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
 
                         Text("Voquill is active")
@@ -24,23 +26,25 @@ struct DictationLiveActivity: Widget {
                     Link(destination: URL(string: "voquill://stop")!) {
                         Image(systemName: "power")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                             .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.2))
+                            .background(Color(.label).opacity(0.2))
                             .clipShape(Circle())
                     }
                 }
             } compactLeading: {
                 Image("VoquillLogo")
+                    .renderingMode(.template)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 16, height: 16)
+                    .foregroundColor(.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
             } compactTrailing: {
                 if context.state.phase == "recording" {
                     Image(systemName: "mic.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                 } else {
                     Image(systemName: "mic.slash.fill")
                         .font(.system(size: 12))
@@ -48,9 +52,11 @@ struct DictationLiveActivity: Widget {
                 }
             } minimal: {
                 Image("VoquillLogo")
+                    .renderingMode(.template)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 16, height: 16)
+                    .foregroundColor(.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
             }
         }
@@ -63,9 +69,11 @@ private struct LockScreenView: View {
     var body: some View {
         HStack(spacing: 12) {
             Image("VoquillLogo")
+                .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 36, height: 36)
+                .foregroundColor(.primary)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             Text("Voquill is active")
@@ -76,9 +84,9 @@ private struct LockScreenView: View {
             Link(destination: URL(string: "voquill://stop")!) {
                 Image(systemName: "power")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                     .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.15))
+                    .background(Color(.label).opacity(0.15))
                     .clipShape(Circle())
             }
         }

@@ -10,8 +10,6 @@ class DictationService {
     private var audioFormat: AVAudioFormat?
     private var isRecording = false
     private var activityRef: Any?
-    private var elapsedTimer: Timer?
-    private var startTime: Date?
 
     @available(iOS 16.2, *)
     private var activity: Activity<DictationAttributes>? {
@@ -55,7 +53,6 @@ class DictationService {
         isRecording = true
 
         startLiveActivity()
-        startElapsedTimer()
         setPhase(.recording)
 
         DarwinNotificationManager.shared.observe(DictationConstants.stopRecording) { [weak self] in
@@ -76,10 +73,7 @@ class DictationService {
         audioFile = nil
         defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
         setPhase(.active)
-        if let start = startTime {
-            let elapsed = Int(Date().timeIntervalSince(start))
-            updateLiveActivity(phase: "active", elapsed: elapsed)
-        }
+        updateLiveActivity(phase: "active")
     }
 
     func resumeRecording() {
@@ -88,6 +82,7 @@ class DictationService {
         createNewAudioFile()
         isRecording = true
         setPhase(.recording)
+        updateLiveActivity(phase: "recording")
     }
 
     func stopDictation() {
@@ -97,7 +92,6 @@ class DictationService {
         DarwinNotificationManager.shared.removeObserver(DictationConstants.stopDictation)
 
         isRecording = false
-        stopElapsedTimer()
         stopAudioEngine()
         setPhase(.idle)
 
@@ -194,9 +188,9 @@ class DictationService {
         }
     }
 
-    private func updateLiveActivity(phase: String, elapsed: Int) {
+    private func updateLiveActivity(phase: String) {
         guard #available(iOS 16.2, *) else { return }
-        let state = DictationAttributes.ContentState(phase: phase, elapsedSeconds: elapsed)
+        let state = DictationAttributes.ContentState(phase: phase, elapsedSeconds: 0)
         Task {
             await activity?.update(.init(state: state, staleDate: nil))
         }
@@ -224,24 +218,6 @@ class DictationService {
     func cleanupOnLaunch() {
         setPhase(.idle)
         endAllLiveActivities()
-    }
-
-    // MARK: - Elapsed Timer
-
-    private func startElapsedTimer() {
-        startTime = Date()
-        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, let start = self.startTime else { return }
-            let elapsed = Int(Date().timeIntervalSince(start))
-            let phase = self.currentPhase.rawValue
-            self.updateLiveActivity(phase: phase, elapsed: elapsed)
-        }
-    }
-
-    private func stopElapsedTimer() {
-        elapsedTimer?.invalidate()
-        elapsedTimer = nil
-        startTime = nil
     }
 
     // MARK: - Phase Management
