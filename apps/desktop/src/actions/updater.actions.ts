@@ -4,11 +4,14 @@ import {
   type DownloadEvent,
   type Update,
 } from "@tauri-apps/plugin-updater";
+import { getIntl } from "../i18n/intl";
 import { getAppState, produceAppState } from "../store";
+import { isMacOS } from "../utils/env.utils";
 import { daysToMilliseconds } from "../utils/time.utils";
 import { getMyUserPreferences } from "../utils/user.utils";
 import { markSurfaceWindowForNextLaunch } from "../utils/window.utils";
 import { showErrorSnackbar } from "./app.actions";
+import { showToast } from "./toast.actions";
 
 let availableUpdate: Update | null = null;
 let checkingPromise: Promise<boolean> | null = null;
@@ -105,6 +108,28 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
         draft.updater.dialogOpen = true;
       }
     });
+
+    // It's hard to see the update menu icon on Linux and Windows, so show a
+    // toast notification when an update is available. On macOS, the menu icon
+    // is more visible and users are more accustomed to checking there for
+    // updates, so we can skip the toast.
+    if (shouldAutoShowDialog && !isMacOS()) {
+      const intl = getIntl();
+      await showToast({
+        title: intl.formatMessage({
+          defaultMessage: "New update available",
+        }),
+        message: intl.formatMessage(
+          {
+            defaultMessage: "Version {version} is ready to install.",
+          },
+          { version: update.version },
+        ),
+        toastType: "info",
+        action: "surface_window",
+        duration: 8_000,
+      });
+    }
 
     return true;
   };
