@@ -1,6 +1,19 @@
+#[cfg(target_os = "macos")]
 const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/icons/tray/menu-item-36.png"
+    "/icons/tray/menu-item-macos-36.png"
+));
+
+#[cfg(target_os = "windows")]
+const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/icons/tray/menu-item-windows-36.png"
+));
+
+#[cfg(target_os = "linux")]
+const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/icons/tray/menu-item-linux-36.png"
 ));
 
 use crate::domain::EVT_REGISTER_CURRENT_APP;
