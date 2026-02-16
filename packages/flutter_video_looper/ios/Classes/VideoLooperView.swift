@@ -10,6 +10,7 @@ class VideoLooperView: NSObject, FlutterPlatformView {
     private var pipController: AVPictureInPictureController?
     private let channel: FlutterMethodChannel
     private let isPipEnabled: Bool
+    private var statusObservation: NSKeyValueObservation?
 
     init(
         frame: CGRect,
@@ -43,13 +44,13 @@ class VideoLooperView: NSObject, FlutterPlatformView {
         player = queuePlayer
 
         if isPipEnabled {
-            configurePip()
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(didEnterBackground),
-                name: UIApplication.didEnterBackgroundNotification,
-                object: nil
-            )
+            configureAudioSession()
+            statusObservation = queuePlayer.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
+                if player.timeControlStatus == .playing {
+                    self?.statusObservation = nil
+                    DispatchQueue.main.async { self?.configurePip() }
+                }
+            }
         }
 
         queuePlayer.play()
@@ -57,18 +58,32 @@ class VideoLooperView: NSObject, FlutterPlatformView {
 
     func view() -> UIView { playerView }
 
-    private func configurePip() {
+    private func configureAudioSession() {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {}
-
-        guard AVPictureInPictureController.isPictureInPictureSupported() else { return }
-        pipController = AVPictureInPictureController(playerLayer: playerView.playerLayer)
     }
 
-    @objc private func didEnterBackground() {
-        pipController?.startPictureInPicture()
+    private func configurePip() {
+        guard AVPictureInPictureController.isPictureInPictureSupported() else { return }
+        pipController = AVPictureInPictureController(playerLayer: playerView.playerLayer)
+        if #available(iOS 14.2, *) {
+            pipController?.canStartPictureInPictureAutomaticallyFromInline = true
+        }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(willResignActive),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+    }
+
+    @objc private func willResignActive() {
+        if pipController?.isPictureInPictureActive == false {
+            pipController?.startPictureInPicture()
+        }
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -87,6 +102,7 @@ class VideoLooperView: NSObject, FlutterPlatformView {
     private func cleanup() {
         player?.pause()
         playerLooper?.disableLooping()
+        statusObservation = nil
         pipController = nil
         NotificationCenter.default.removeObserver(self)
     }

@@ -40,7 +40,7 @@ class DemoForm extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             Spacer(),
-            PipAssetVideoPlayer.phone(asset: 'assets/voquill-demo-ios.mp4'),
+            AssetVideoPlayer.phone(asset: 'assets/voquill-demo-ios.mp4'),
             Spacer(),
           ],
         ),

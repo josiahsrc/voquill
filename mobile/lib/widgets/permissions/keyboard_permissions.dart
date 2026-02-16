@@ -73,8 +73,9 @@ class _KeyboardPermissionsState extends State<KeyboardPermissions>
           'Add Voquill as a keyboard to use voice input in any app.',
         ),
         child: Center(
-          child: PipAssetVideoPlayer.phone(
+          child: AssetVideoPlayer.phone(
             asset: 'assets/voquill-keyboard-perms-ios.mp4',
+            pip: true,
           ),
         ),
       ),

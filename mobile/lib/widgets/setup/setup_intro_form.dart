@@ -59,7 +59,7 @@ class SetupIntroForm extends StatelessWidget {
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.all(Theming.radius),
                 ),
-                child: PipAssetVideoPlayer.phone(
+                child: AssetVideoPlayer.phone(
                   asset: 'assets/voquill-demo-ios.mp4',
                 ),
               ),
