@@ -31,12 +31,11 @@ pub enum MenuIconVariant {
 
 use crate::domain::EVT_REGISTER_CURRENT_APP;
 use std::sync::OnceLock;
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::MenuItem;
 
 pub const EVT_INSTALL_UPDATE: &str = "tray-install-update";
 
 static UPDATE_MENU_ITEM: OnceLock<MenuItem<tauri::Wry>> = OnceLock::new();
-static TRAY_MENU: OnceLock<Menu<tauri::Wry>> = OnceLock::new();
 
 #[cfg(desktop)]
 pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
@@ -46,8 +45,8 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     use tauri::{Emitter, Manager};
 
     let open_item = MenuItem::with_id(app, "open-dashboard", "Open Dashboard", true, None::<&str>)?;
-    let update_item = MenuItem::with_id(app, "install-update", "Install Update", true, None::<&str>)?;
-    let _ = UPDATE_MENU_ITEM.set(update_item);
+    let update_item = MenuItem::with_id(app, "install-update", "Install Update", false, None::<&str>)?;
+    let _ = UPDATE_MENU_ITEM.set(update_item.clone());
     let register_current_app_item =
         MenuItem::with_id(app, "register-current-app", "Register this app", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit-voquill", "Quit Voquill", true, None::<&str>)?;
@@ -55,10 +54,10 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     let menu = MenuBuilder::new(app)
         .item(&open_item)
         .item(&register_current_app_item)
+        .item(&update_item)
         .separator()
         .item(&quit_item)
         .build()?;
-    let _ = TRAY_MENU.set(menu.clone());
 
     let tray_icon_image = Image::from_bytes(TRAY_ICON_DEFAULT)?;
 
@@ -115,12 +114,8 @@ pub fn set_menu_icon(app: &tauri::AppHandle, variant: MenuIconVariant) -> Result
     let image = Image::from_bytes(bytes).map_err(|err| err.to_string())?;
     tray.set_icon(Some(image)).map_err(|err| err.to_string())?;
 
-    if let (Some(menu), Some(update_item)) = (TRAY_MENU.get(), UPDATE_MENU_ITEM.get()) {
-        if is_update {
-            let _ = menu.append(update_item);
-        } else {
-            let _ = menu.remove(update_item);
-        }
+    if let Some(update_item) = UPDATE_MENU_ITEM.get() {
+        let _ = update_item.set_enabled(is_update);
     }
 
     #[cfg(target_os = "macos")]
