@@ -94,7 +94,7 @@ Future<void> clearOnboardingProgress() async {
   ]);
 }
 
-Future<void> finishOnboarding() async {
+Future<void> submitOnboarding() async {
   final state = getAppState();
 
   final auth = state.auth;
@@ -125,15 +125,61 @@ Future<void> finishOnboarding() async {
           company: state.onboarding.company.isNotEmpty
               ? state.onboarding.company
               : null,
-          onboarded: true,
-          onboardedAt: now,
-          hasFinishedTutorial: true,
+          onboarded: false,
+          onboardedAt: null,
+          hasFinishedTutorial: false,
           playInteractionChime: true,
           wordsThisMonth: 0,
           wordsTotal: 0,
           hasMigratedPreferredMicrophone: false,
           shouldShowUpgradeDialog: false,
         ),
+      ),
+    );
+
+    final output = await GetMyUserApi().call(null);
+    produceAppState((draft) {
+      draft.user = output.user;
+      draft.onboarding.submitting = false;
+    });
+  } catch (e) {
+    _logger.e('Failed to submit onboarding', e);
+    produceAppState((draft) {
+      draft.onboarding.submitting = false;
+    });
+    rethrow;
+  }
+}
+
+Future<void> finishOnboarding() async {
+  final state = getAppState();
+
+  final auth = state.auth;
+  if (auth == null) {
+    return;
+  }
+
+  final existingUser = state.user;
+  if (existingUser == null) {
+    throw Exception('Cannot finish onboarding: user not found');
+  }
+
+  produceAppState((draft) {
+    draft.onboarding.submitting = true;
+  });
+
+  try {
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    await SetMyUserApi().call(
+      SetMyUserInput(
+        value:
+            (existingUser.draft()
+                  ..updatedAt = now
+                  ..onboarded = true
+                  ..onboardedAt = now
+                  ..hasFinishedTutorial = true)
+                .save(),
       ),
     );
 

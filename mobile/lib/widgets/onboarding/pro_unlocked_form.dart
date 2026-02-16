@@ -1,32 +1,62 @@
+import 'package:app/actions/onboarding_actions.dart';
+import 'package:app/actions/snackbar_actions.dart';
+import 'package:app/actions/styles_actions.dart';
+import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/utils/tone_utils.dart';
+import 'package:app/widgets/common/app_button.dart';
 import 'package:app/widgets/common/app_logo.dart';
+import 'package:app/widgets/common/intrinsic_scroller.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
 import 'package:app/widgets/onboarding/onboarding_try_discord_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-class ProUnlockedForm extends StatelessWidget {
+class ProUnlockedForm extends StatefulWidget {
   const ProUnlockedForm({super.key});
 
   @override
+  State<ProUnlockedForm> createState() => _ProUnlockedFormState();
+}
+
+class _ProUnlockedFormState extends State<ProUnlockedForm> {
+  Future<void> _handleContinue() async {
+    try {
+      await submitOnboarding();
+      await setActiveToneIds([defaultToneId, emailToneId, chatToneId]);
+      if (mounted) {
+        context.presenter().pushPage<OnboardingTryDiscordForm>();
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorSnackbar('Failed to complete setup. Please try again.');
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final presenter = context.presenter();
     final theme = Theme.of(context);
+    final submitting = useAppStore().select(
+      context,
+      (s) => s.onboarding.submitting,
+    );
 
     return OnboardingFormLayout(
       backButton: const MultiPageBackButton(),
       actions: [
-        FilledButton(
-              onPressed: () => presenter.pushPage<OnboardingTryDiscordForm>(),
+        AppButton.filled(
+              onPressed: _handleContinue,
+              loading: submitting,
               child: const Text('Continue'),
             )
             .animate()
             .fadeIn(delay: 800.ms, duration: 400.ms)
             .slideY(begin: 0.2, end: 0),
       ],
-      child: Padding(
+      child: IntrinsicScroller(
         padding: Theming.padding.onlyHorizontal(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
