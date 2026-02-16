@@ -1,5 +1,6 @@
 import 'package:app/actions/auth_actions.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/widgets/common/asset_video_player.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/setup/setup_microphone_form.dart';
 import 'package:flutter/material.dart';
@@ -58,7 +59,9 @@ class SetupIntroForm extends StatelessWidget {
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.all(Theming.radius),
                 ),
-                child: const Placeholder(),
+                child: PipAssetVideoPlayer.phone(
+                  asset: 'assets/voquill-demo-ios.mp4',
+                ),
               ),
             ),
             const Spacer(flex: 2),

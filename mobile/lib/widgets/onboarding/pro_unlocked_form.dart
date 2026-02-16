@@ -10,7 +10,7 @@ import 'package:app/widgets/common/app_logo.dart';
 import 'package:app/widgets/common/intrinsic_scroller.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
-import 'package:app/widgets/onboarding/onboarding_try_discord_form.dart';
+import 'package:app/widgets/onboarding/demo_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -27,7 +27,7 @@ class _ProUnlockedFormState extends State<ProUnlockedForm> {
       await submitOnboarding();
       await setActiveToneIds([defaultToneId, emailToneId, chatToneId]);
       if (mounted) {
-        context.presenter().pushPage<OnboardingTryDiscordForm>();
+        context.presenter().pushPage<DemoForm>();
       }
     } catch (e) {
       if (mounted) {

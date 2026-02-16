@@ -4,6 +4,7 @@ import 'package:app/widgets/onboarding/about_you_form.dart';
 import 'package:app/widgets/onboarding/create_account_form.dart';
 import 'package:app/widgets/onboarding/keyboard_access_form.dart';
 import 'package:app/widgets/onboarding/microphone_access_form.dart';
+import 'package:app/widgets/onboarding/demo_form.dart';
 import 'package:app/widgets/onboarding/onboarding_try_discord_form.dart';
 import 'package:app/widgets/onboarding/onboarding_try_email_form.dart';
 import 'package:app/widgets/onboarding/pro_unlocked_form.dart';
@@ -72,6 +73,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           MultiPageItem.fromPage(const MicrophoneAccessForm()),
           MultiPageItem.fromPage(const KeyboardAccessForm()),
           MultiPageItem.fromPage(const ProUnlockedForm()),
+          MultiPageItem.fromPage(const DemoForm()),
           MultiPageItem.fromPage(const OnboardingTryDiscordForm()),
           MultiPageItem.fromPage(const OnboardingTryEmailForm()),
         ],
