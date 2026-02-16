@@ -83,10 +83,7 @@ import {
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
-import {
-  daysToMilliseconds,
-  minutesToMilliseconds,
-} from "../../utils/time.utils";
+import { minutesToMilliseconds } from "../../utils/time.utils";
 import { getToneIdToUse } from "../../utils/tone.utils";
 import {
   getAgentModePrefs,
@@ -260,7 +257,7 @@ export const RootSideEffects = () => {
     async () => {
       // show update dialogs after one hour on first-boot
       if (!updateInitializedRef.current) {
-        dismissUpdateDialog(daysToMilliseconds(1));
+        dismissUpdateDialog();
         updateInitializedRef.current = true;
       }
 
