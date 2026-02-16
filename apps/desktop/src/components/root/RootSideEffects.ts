@@ -255,13 +255,15 @@ export const RootSideEffects = () => {
   useIntervalAsync(
     minutesToMilliseconds(1),
     async () => {
-      // show update dialogs after one hour on first-boot
       if (!updateInitializedRef.current) {
         dismissUpdateDialog();
         updateInitializedRef.current = true;
       }
 
-      await checkForAppUpdates();
+      const available = await checkForAppUpdates();
+      invoke("set_menu_icon", {
+        variant: available ? "update" : "default",
+      }).catch(console.error);
     },
     [],
   );

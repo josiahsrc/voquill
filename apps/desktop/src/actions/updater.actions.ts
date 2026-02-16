@@ -13,7 +13,7 @@ import { showErrorSnackbar } from "./app.actions";
 import { showToast } from "./toast.actions";
 
 let availableUpdate: Update | null = null;
-let checkingPromise: Promise<void> | null = null;
+let checkingPromise: Promise<boolean> | null = null;
 let installingPromise: Promise<void> | null = null;
 
 const isBusy = () => {
@@ -21,12 +21,12 @@ const isBusy = () => {
   return status === "downloading" || status === "installing";
 };
 
-export const checkForAppUpdates = async (): Promise<void> => {
+export const checkForAppUpdates = async (): Promise<boolean> => {
   if (checkingPromise || isBusy()) {
-    return checkingPromise ?? Promise.resolve();
+    return checkingPromise ?? Promise.resolve(false);
   }
 
-  const run = async () => {
+  const run = async (): Promise<boolean> => {
     produceAppState((draft) => {
       draft.updater.status = "checking";
       draft.updater.errorMessage = null;
@@ -46,7 +46,7 @@ export const checkForAppUpdates = async (): Promise<void> => {
         draft.updater.status = "error";
         draft.updater.errorMessage = message;
       });
-      return;
+      return false;
     }
 
     if (!update) {
@@ -71,7 +71,7 @@ export const checkForAppUpdates = async (): Promise<void> => {
         draft.updater.downloadedBytes = null;
         draft.updater.totalBytes = null;
       });
-      return;
+      return false;
     }
 
     if (availableUpdate) {
@@ -125,12 +125,14 @@ export const checkForAppUpdates = async (): Promise<void> => {
         duration: 8_000,
       });
     }
+
+    return true;
   };
 
   checkingPromise = run();
 
   try {
-    await checkingPromise;
+    return await checkingPromise;
   } finally {
     checkingPromise = null;
   }

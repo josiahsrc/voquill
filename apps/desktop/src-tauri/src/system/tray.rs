@@ -1,20 +1,33 @@
 #[cfg(target_os = "macos")]
-const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
+const TRAY_ICON_DEFAULT: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/icons/tray/menu-item-macos-36.png"
 ));
 
-#[cfg(target_os = "windows")]
-const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
+#[cfg(not(target_os = "macos"))]
+const TRAY_ICON_DEFAULT: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/icons/tray/menu-item-windows-36.png"
+    "/icons/tray/menu-item-win-linux-36.png"
 ));
 
-#[cfg(target_os = "linux")]
-const TRAY_ICON_BYTES: &[u8] = include_bytes!(concat!(
+#[cfg(target_os = "macos")]
+const TRAY_ICON_UPDATE: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/icons/tray/menu-item-linux-36.png"
+    "/icons/tray/update-macos-36.png"
 ));
+
+#[cfg(not(target_os = "macos"))]
+const TRAY_ICON_UPDATE: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/icons/tray/update-win-linux-36.png"
+));
+
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MenuIconVariant {
+    Default,
+    Update,
+}
 
 use crate::domain::EVT_REGISTER_CURRENT_APP;
 
@@ -37,7 +50,7 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
         .item(&quit_item)
         .build()?;
 
-    let tray_icon_image = Image::from_bytes(TRAY_ICON_BYTES)?;
+    let tray_icon_image = Image::from_bytes(TRAY_ICON_DEFAULT)?;
 
     #[allow(unused_mut)]
     let mut tray_builder = TrayIconBuilder::with_id("main")
@@ -65,6 +78,32 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     }
 
     let _tray_icon = tray_builder.build(app)?;
+
+    Ok(())
+}
+
+pub fn set_menu_icon(app: &tauri::AppHandle, variant: MenuIconVariant) -> Result<(), String> {
+    use tauri::image::Image;
+    use tauri::tray::TrayIconId;
+
+    let bytes = match variant {
+        MenuIconVariant::Default => TRAY_ICON_DEFAULT,
+        MenuIconVariant::Update => TRAY_ICON_UPDATE,
+    };
+
+    let tray = app
+        .tray_by_id(&TrayIconId::new("main"))
+        .ok_or("Tray icon not found")?;
+
+    let image = Image::from_bytes(bytes).map_err(|err| err.to_string())?;
+    tray.set_icon(Some(image)).map_err(|err| err.to_string())?;
+
+    #[cfg(target_os = "macos")]
+    {
+        let is_template = matches!(variant, MenuIconVariant::Default);
+        tray.set_icon_as_template(is_template)
+            .map_err(|err| err.to_string())?;
+    }
 
     Ok(())
 }
