@@ -112,7 +112,7 @@ class _DictationContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text('Dictation Active', style: theme.textTheme.headlineSmall),
+                Text('Voquill activated!', style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 12),
                 Text(
                   'Switch back to your other app to start dictating',
