@@ -294,13 +294,20 @@ pub fn request_accessibility_permission() -> Result<crate::domain::PermissionSta
 }
 
 #[tauri::command]
-pub fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
-    crate::platform::app_info::get_current_app_info()
-        .map(|info| CurrentAppInfoResponse {
-            app_name: info.app_name,
-            icon_base64: info.icon_base64,
-        })
-        .map_err(|err| err.to_string())
+pub async fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        tauri::async_runtime::spawn_blocking(|| {
+            crate::platform::app_info::get_current_app_info().map(|info| CurrentAppInfoResponse {
+                app_name: info.app_name,
+                icon_base64: info.icon_base64,
+            })
+        }),
+    )
+    .await
+    .map_err(|_| "get_current_app_info timed out".to_string())?
+    .map_err(|err| err.to_string())?
+    .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -1159,9 +1166,15 @@ pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), Strin
 
 #[tauri::command]
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
-    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_text_field_info)
-        .await
-        .map_err(|err| err.to_string())
+    Ok(tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        tauri::async_runtime::spawn_blocking(
+            crate::platform::accessibility::get_text_field_info,
+        ),
+    )
+    .await
+    .map_err(|_| "get_text_field_info timed out".to_string())?
+    .map_err(|err| err.to_string())?)
 }
 
 #[tauri::command]

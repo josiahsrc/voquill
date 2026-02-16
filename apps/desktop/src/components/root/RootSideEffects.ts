@@ -1,3 +1,4 @@
+import { AppTarget } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { secondsToMilliseconds } from "framer-motion";
@@ -120,7 +121,11 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
-type StopRecordingResult = [StopRecordingResponse | null, TextFieldInfo | null];
+type StopRecordingResult = [
+  StopRecordingResponse | null,
+  TextFieldInfo | null,
+  AppTarget | null,
+];
 
 export const RootSideEffects = () => {
   const startPendingRef = useRef<Promise<void> | null>(null);
@@ -474,6 +479,7 @@ export const RootSideEffects = () => {
 
       let audio: StopRecordingResponse | null = null;
       let a11yInfo: TextFieldInfo | null = null;
+      let appTarget: AppTarget | null = null;
       try {
         loadingToken = Symbol("overlay-loading");
         overlayLoadingTokenRef.current = loadingToken;
@@ -481,17 +487,22 @@ export const RootSideEffects = () => {
         tryPlayAudioChime("stop_recording_clip");
 
         getLogger().verbose("Invoking stop_recording and fetching a11y info");
-        const [, outAudio, outA11yInfo] = await Promise.all([
+        const [, outAudio, outA11yInfo, outAppTarget] = await Promise.all([
           strategy.setPhase("loading"),
           invoke<StopRecordingResponse>("stop_recording"),
           invoke<TextFieldInfo>("get_text_field_info").catch((error) => {
             getLogger().verbose(`Failed to get text field info: ${error}`);
             return null;
           }),
+          tryRegisterCurrentAppTarget().catch((error) => {
+            getLogger().verbose(`Failed to get current app target: ${error}`);
+            return null;
+          }),
         ]);
 
         audio = outAudio;
         a11yInfo = outA11yInfo;
+        appTarget = outAppTarget;
         getLogger().verbose(
           `Recording stopped (hasSamples=${!!audio?.samples})`,
         );
@@ -503,11 +514,15 @@ export const RootSideEffects = () => {
         stopPendingRef.current = null;
       }
 
-      return [audio, a11yInfo];
+      return [audio, a11yInfo, appTarget];
     })();
 
     stopPendingRef.current = promise;
-    const [audio, a11yInfo] = await promise;
+    const contextStartTime = Date.now();
+    const [audio, a11yInfo, appTarget] = await promise;
+    getLogger().verbose(
+      `stopRecording complete (duration=${Date.now() - contextStartTime}ms)`,
+    );
 
     isRecordingRef.current = false;
 
@@ -517,10 +532,9 @@ export const RootSideEffects = () => {
     try {
       if (session && audio) {
         getLogger().info("Finalizing transcription session");
-        const currentApp = await tryRegisterCurrentAppTarget();
-        trackAppUsed(currentApp?.name ?? "Unknown");
+        trackAppUsed(appTarget?.name ?? "Unknown");
         const toneId = getToneIdToUse(getAppState(), {
-          currentAppToneId: currentApp?.toneId ?? null,
+          currentAppToneId: appTarget?.toneId ?? null,
         });
 
         const transcribeResult = await session.finalize(audio, {
@@ -530,7 +544,7 @@ export const RootSideEffects = () => {
         const rawTranscript = transcribeResult.rawTranscript;
         const processedTranscript = transcribeResult.processedTranscript;
         getLogger().verbose(
-          `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${currentApp?.name ?? "unknown"}`,
+          `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${appTarget?.name ?? "unknown"}`,
         );
 
         let transcript: string | null = null;
@@ -546,7 +560,7 @@ export const RootSideEffects = () => {
             sessionPostProcessMetadata: transcribeResult.postProcessMetadata,
             toneId,
             a11yInfo,
-            currentApp,
+            currentApp: appTarget,
             loadingToken,
             audio,
             transcriptionMetadata: transcribeResult.metadata,

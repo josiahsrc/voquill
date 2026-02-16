@@ -48,6 +48,8 @@ export class Logger {
     } else if (this.head === 0 && onBufferWrapCallback) {
       setTimeout(onBufferWrapCallback, 0);
     }
+
+    console.log(entry);
   }
 
   info(...args: unknown[]): void {
