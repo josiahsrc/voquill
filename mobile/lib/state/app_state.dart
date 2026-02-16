@@ -34,6 +34,9 @@ class AppState with EquatableMixin {
   final List<String> dictationLanguages;
   final String? activeDictationLanguage;
 
+  final bool hasMicrophonePermission;
+  final bool hasKeyboardPermission;
+
   const AppState({
     this.status = ActionStatus.loading,
     this.error,
@@ -49,10 +52,13 @@ class AppState with EquatableMixin {
     this.styles = const StylesState(),
     this.dictationLanguages = const ['en'],
     this.activeDictationLanguage,
+    this.hasMicrophonePermission = false,
+    this.hasKeyboardPermission = false,
   });
 
   bool get isLoggedIn => auth != null;
   bool get isOnboarded => user?.onboarded ?? false;
+  bool get hasPermissions => hasMicrophonePermission && hasKeyboardPermission;
 
   @override
   List<Object?> get props => [
@@ -70,5 +76,7 @@ class AppState with EquatableMixin {
     styles,
     dictationLanguages,
     activeDictationLanguage,
+    hasMicrophonePermission,
+    hasKeyboardPermission,
   ];
 }

@@ -6,6 +6,7 @@ import { AppTargetUpsertParams } from "../repos/app-target.repo";
 import { getAppState, produceAppState } from "../store";
 import { registerAppTargets } from "../utils/app.utils";
 import { normalizeAppTargetId } from "../utils/apptarget.utils";
+import { getLogger } from "../utils/log.utils";
 import { buildAppIconPath, decodeBase64Icon } from "../utils/storage.utils";
 import { showErrorSnackbar } from "./app.actions";
 
@@ -93,7 +94,10 @@ type CurrentAppInfoResponse = {
 export const tryRegisterCurrentAppTarget = async (): Promise<
   Nullable<AppTarget>
 > => {
-  const appInfo = await invoke<CurrentAppInfoResponse>("get_current_app_info");
+  const appInfo = await getLogger().stopwatch("get_current_app_info", () =>
+    invoke<CurrentAppInfoResponse>("get_current_app_info"),
+  );
+
   const appName = appInfo.appName?.trim() ?? "";
   const appTargetId = normalizeAppTargetId(appName);
   const existingApp = getRec(getAppState().appTargetById, appTargetId);
@@ -104,9 +108,11 @@ export const tryRegisterCurrentAppTarget = async (): Promise<
     if (appInfo.iconBase64) {
       const targetPath = buildAppIconPath(getAppState(), appTargetId);
       try {
-        await getStorageRepo().uploadData({
-          path: targetPath,
-          data: decodeBase64Icon(appInfo.iconBase64),
+        await getLogger().stopwatch("upload_app_icon", async () => {
+          await getStorageRepo().uploadData({
+            path: targetPath,
+            data: decodeBase64Icon(appInfo.iconBase64),
+          });
         });
         iconPath = targetPath;
       } catch (uploadError) {
@@ -115,14 +121,15 @@ export const tryRegisterCurrentAppTarget = async (): Promise<
     }
 
     try {
-      const params = {
-        id: appTargetId,
-        name: appName,
-        toneId: existingApp?.toneId ?? null,
-        iconPath: iconPath ?? existingApp?.iconPath ?? null,
-        pasteKeybind: existingApp?.pasteKeybind ?? null,
-      };
-      await upsertAppTarget(params);
+      await getLogger().stopwatch("upsert_app_target", async () => {
+        await upsertAppTarget({
+          id: appTargetId,
+          name: appName,
+          toneId: existingApp?.toneId ?? null,
+          iconPath: iconPath ?? existingApp?.iconPath ?? null,
+          pasteKeybind: existingApp?.pasteKeybind ?? null,
+        });
+      });
     } catch (error) {
       console.error("Failed to upsert app target", error);
     }

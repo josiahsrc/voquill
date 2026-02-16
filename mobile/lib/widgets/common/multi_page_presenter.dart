@@ -6,6 +6,15 @@ import 'package:provider/provider.dart';
 class MultiPageController extends ChangeNotifier {
   MultiPageController({String? target}) : _initialTarget = target;
 
+  MultiPageController.restore({
+    required String target,
+    required List<String> history,
+  }) : _initialTarget = null,
+       _target = target,
+       _didPush = history.isNotEmpty {
+    _history.addAll(history);
+  }
+
   final String? _initialTarget;
   String? _target;
   late List<String> _targets;
@@ -15,6 +24,8 @@ class MultiPageController extends ChangeNotifier {
   static MultiPageController fromPage<T extends Widget>() {
     return MultiPageController(target: targetFromPage<T>());
   }
+
+  List<String> get history => List.unmodifiable(_history);
 
   bool get canPop => _history.isNotEmpty;
   String get target => _target ?? _initialTarget ?? _targets.first;

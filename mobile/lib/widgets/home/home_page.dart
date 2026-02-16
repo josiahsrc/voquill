@@ -18,7 +18,6 @@ class HomePage extends StatelessWidget {
       (s) => s.sortedTranscriptionIds,
     );
     final theme = Theme.of(context);
-
     final recentIds = sortedIds.take(3).toList();
 
     return CustomScrollView(

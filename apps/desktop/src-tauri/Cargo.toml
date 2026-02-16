@@ -54,6 +54,7 @@ url = "2"
 jsonwebtoken = "9"
 dotenvy = "0.15"
 chrono = "0.4"
+tokio = { version = "1", features = ["time"] }
 hostname = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]

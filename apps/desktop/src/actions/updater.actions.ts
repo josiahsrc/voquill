@@ -7,7 +7,10 @@ import {
 import { getAppState, produceAppState } from "../store";
 import { daysToMilliseconds } from "../utils/time.utils";
 import { getMyUserPreferences } from "../utils/user.utils";
-import { markSurfaceWindowForNextLaunch } from "../utils/window.utils";
+import {
+  markSurfaceWindowForNextLaunch,
+  surfaceMainWindow,
+} from "../utils/window.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 let availableUpdate: Update | null = null;
@@ -105,6 +108,10 @@ export const checkForAppUpdates = async (): Promise<void> => {
         draft.updater.dialogOpen = true;
       }
     });
+
+    if (shouldAutoShowDialog) {
+      await surfaceMainWindow();
+    }
   };
 
   checkingPromise = run();

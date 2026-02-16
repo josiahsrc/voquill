@@ -27,9 +27,12 @@ Future<void> boot(Flavor flavor, FirebaseOptions firebaseOptions) async {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
-      await Firebase.initializeApp(
-        options: firebaseOptions,
-      );
+      // TODO: Figure out why emualtors throw 'duplicate-app' error and remove this workaround
+      try {
+        await Firebase.initializeApp(options: firebaseOptions);
+      } on FirebaseException catch (e) {
+        if (e.code != 'duplicate-app') rethrow;
+      }
 
       if (Flavor.current.isEmulators) {
         final host = Flavor.current.emulatorHost;

@@ -45,6 +45,7 @@ dependencies = [
  "tauri-plugin-sql",
  "tauri-plugin-updater",
  "thiserror 1.0.69",
+ "tokio",
  "url",
  "wgpu",
  "whisper-rs",

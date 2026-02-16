@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
+import 'package:app/actions/permission_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
 import 'package:app/routing/build_router.dart';
@@ -11,7 +12,7 @@ import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
 import 'package:app/widgets/common/unfocus_detector.dart';
-import 'package:app/widgets/dictate/dictation_dialog.dart';
+import 'package:app/widgets/dictate/dictation_overlay.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,7 +40,7 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> {
+class _AppState extends State<App> with WidgetsBindingObserver {
   final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   late final GoRouter goRouter;
   late final StreamSubscription _authSubscription;
@@ -51,6 +52,7 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     goRouter = buildRouter(refreshListenable: context.read<RouteRefresher>());
     _authSubscription = listenToAuthChanges();
     _updatePoller = Timer.periodic(
@@ -62,9 +64,17 @@ class _AppState extends State<App> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _updatePoller.cancel();
     _authSubscription.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      checkPermissions();
+    }
   }
 
   Future<dynamic> _handleNativeCall(MethodCall call) async {
@@ -117,7 +127,8 @@ class _AppState extends State<App> {
         condition: (a, b) =>
             a.status != b.status ||
             a.auth != b.auth ||
-            a.isOnboarded != b.isOnboarded,
+            a.isOnboarded != b.isOnboarded ||
+            a.hasPermissions != b.hasPermissions,
       ),
       useAppStore().listen(
         (context, state) async {

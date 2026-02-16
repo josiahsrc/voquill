@@ -148,6 +148,18 @@ import UIKit
         defaults?.set(counter + 1, forKey: "voquill_keyboard_update_counter")
         result(nil)
 
+      case "isKeyboardEnabled":
+        let bundleId = Bundle.main.bundleIdentifier ?? ""
+        let keyboardBundleId = bundleId + ".keyboard"
+        let keyboards = UserDefaults.standard.object(forKey: "AppleKeyboards") as? [String] ?? []
+        result(keyboards.contains(where: { $0.hasPrefix(keyboardBundleId) }))
+
+      case "openKeyboardSettings":
+        if let url = URL(string: "App-Prefs:root=General&path=Keyboard/KEYBOARDS") {
+          UIApplication.shared.open(url)
+        }
+        result(nil)
+
       case "startDictation":
         DictationService.shared.startDictation()
         result(nil)

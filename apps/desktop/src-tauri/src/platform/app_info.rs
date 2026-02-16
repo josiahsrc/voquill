@@ -1,7 +1,7 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-
 #[cfg(target_os = "macos")]
-use cocoa::base::{id, nil};
+use cocoa::base::{id, nil, YES, NO};
+#[cfg(target_os = "macos")]
+use cocoa::foundation::{NSPoint, NSRect, NSSize, NSString};
 #[cfg(target_os = "macos")]
 use objc::{class, msg_send, sel, sel_impl};
 #[cfg(target_os = "macos")]
@@ -9,7 +9,11 @@ use std::ffi::CStr;
 #[cfg(target_os = "macos")]
 use std::os::raw::c_char;
 
+#[cfg(not(target_os = "macos"))]
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use base64::{engine::general_purpose, Engine as _};
+#[cfg(not(target_os = "macos"))]
 use ferrous_focus::{FocusTracker, FocusTrackerConfig, FocusedWindow};
 use image::{
     codecs::png::PngEncoder, imageops::FilterType, ExtendedColorType, ImageBuffer, ImageEncoder,
@@ -40,6 +44,124 @@ pub enum AppInfoError {
     Encode(String),
 }
 
+// ── macOS: native Cocoa implementation ──────────────────────────────
+
+#[cfg(target_os = "macos")]
+pub fn get_current_app_info() -> Result<CurrentAppInfo, AppInfoError> {
+    unsafe {
+        let pool: id = msg_send![class!(NSAutoreleasePool), new];
+        let result = macos_get_app_info();
+        let _: () = msg_send![pool, drain];
+        result
+    }
+}
+
+#[cfg(target_os = "macos")]
+unsafe fn macos_get_app_info() -> Result<CurrentAppInfo, AppInfoError> {
+    let workspace: id = msg_send![class!(NSWorkspace), sharedWorkspace];
+    let app: id = msg_send![workspace, frontmostApplication];
+    if app == nil {
+        return Err(AppInfoError::NotAvailable);
+    }
+
+    let name_ns: id = msg_send![app, localizedName];
+    let app_name = nsstring_to_string(name_ns)
+        .unwrap_or_else(|| "Unknown application".to_string());
+
+    let icon: id = msg_send![app, icon];
+    let icon_base64 = if icon != nil {
+        macos_render_icon_png(icon, DEFAULT_ICON_SIZE).unwrap_or_else(|_| fallback_icon_base64())
+    } else {
+        fallback_icon_base64()
+    };
+
+    Ok(CurrentAppInfo {
+        app_name,
+        icon_base64,
+    })
+}
+
+#[cfg(target_os = "macos")]
+unsafe fn macos_render_icon_png(icon: id, size: u32) -> Result<String, AppInfoError> {
+    let size_f = size as f64;
+    let ns_size = NSSize::new(size_f, size_f);
+    let _: () = msg_send![icon, setSize: ns_size];
+
+    let alloc: id = msg_send![class!(NSBitmapImageRep), alloc];
+    let cs = NSString::alloc(nil).init_str("NSDeviceRGBColorSpace");
+    let rep: id = msg_send![alloc,
+        initWithBitmapDataPlanes: std::ptr::null_mut::<*mut u8>()
+        pixelsWide: size as i64
+        pixelsHigh: size as i64
+        bitsPerSample: 8i64
+        samplesPerPixel: 4i64
+        hasAlpha: YES
+        isPlanar: NO
+        colorSpaceName: cs
+        bytesPerRow: (size * 4) as i64
+        bitsPerPixel: 32i64
+    ];
+    if rep == nil {
+        return Err(AppInfoError::Encode("Failed to create bitmap rep".into()));
+    }
+
+    let _: () = msg_send![class!(NSGraphicsContext), saveGraphicsState];
+    let ctx: id =
+        msg_send![class!(NSGraphicsContext), graphicsContextWithBitmapImageRep: rep];
+    if ctx == nil {
+        let _: () = msg_send![rep, release];
+        let _: () = msg_send![class!(NSGraphicsContext), restoreGraphicsState];
+        return Err(AppInfoError::Encode(
+            "Failed to create graphics context".into(),
+        ));
+    }
+    let _: () = msg_send![class!(NSGraphicsContext), setCurrentContext: ctx];
+
+    let rect = NSRect::new(NSPoint::new(0.0, 0.0), ns_size);
+    let zero = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(0.0, 0.0));
+    let _: () = msg_send![icon,
+        drawInRect: rect
+        fromRect: zero
+        operation: 2u64
+        fraction: 1.0f64
+    ];
+
+    let _: () = msg_send![class!(NSGraphicsContext), restoreGraphicsState];
+
+    let props: id = msg_send![class!(NSDictionary), dictionary];
+    let png_data: id = msg_send![rep, representationUsingType: 4u64 properties: props];
+    let _: () = msg_send![rep, release];
+
+    if png_data == nil {
+        return Err(AppInfoError::Encode("Failed to encode PNG".into()));
+    }
+
+    let length: usize = msg_send![png_data, length];
+    let bytes: *const u8 = msg_send![png_data, bytes];
+    if bytes.is_null() || length == 0 {
+        return Err(AppInfoError::Encode("PNG data is empty".into()));
+    }
+
+    Ok(general_purpose::STANDARD.encode(std::slice::from_raw_parts(bytes, length)))
+}
+
+#[cfg(target_os = "macos")]
+unsafe fn nsstring_to_string(string: id) -> Option<String> {
+    if string == nil {
+        return None;
+    }
+
+    let utf8: *const c_char = msg_send![string, UTF8String];
+    if utf8.is_null() {
+        return None;
+    }
+
+    Some(CStr::from_ptr(utf8).to_string_lossy().into_owned())
+}
+
+// ── Non-macOS: ferrous-focus implementation ─────────────────────────
+
+#[cfg(not(target_os = "macos"))]
 pub fn get_current_app_info() -> Result<CurrentAppInfo, AppInfoError> {
     let config = FocusTrackerConfig::new().with_icon_size(DEFAULT_ICON_SIZE);
     let icon_size = config.icon.get_size_or_default();
@@ -62,6 +184,7 @@ pub fn get_current_app_info() -> Result<CurrentAppInfo, AppInfoError> {
     build_app_info(window, icon_size)
 }
 
+#[cfg(not(target_os = "macos"))]
 fn map_focus_error(err: ferrous_focus::FerrousFocusError) -> AppInfoError {
     use ferrous_focus::FerrousFocusError::*;
     match err {
@@ -77,6 +200,7 @@ fn map_focus_error(err: ferrous_focus::FerrousFocusError) -> AppInfoError {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 fn build_app_info(window: FocusedWindow, icon_size: u32) -> Result<CurrentAppInfo, AppInfoError> {
     let mut window = window;
     let app_name = resolve_app_name(&window);
@@ -91,6 +215,44 @@ fn build_app_info(window: FocusedWindow, icon_size: u32) -> Result<CurrentAppInf
         app_name,
         icon_base64: general_purpose::STANDARD.encode(encoded_icon),
     })
+}
+
+#[cfg(not(target_os = "macos"))]
+fn resolve_app_name(window: &FocusedWindow) -> String {
+    extract_app_name_from_title(window)
+        .or_else(|| window.process_name.clone())
+        .map(|name| name.trim().to_string())
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "Unknown application".to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn extract_app_name_from_title(window: &FocusedWindow) -> Option<String> {
+    let title = window.window_title.as_deref()?.trim();
+    if title.is_empty() {
+        return None;
+    }
+
+    for separator in [" — ", " – ", " - "] {
+        if let Some((_, candidate)) = title.rsplit_once(separator) {
+            let candidate = candidate.trim();
+            if !candidate.is_empty() {
+                return Some(candidate.to_string());
+            }
+        }
+    }
+
+    None
+}
+
+// ── Shared utilities ────────────────────────────────────────────────
+
+fn fallback_icon_base64() -> String {
+    let fallback = fallback_icon(DEFAULT_ICON_SIZE);
+    match encode_icon_as_png(&fallback) {
+        Ok(png) => general_purpose::STANDARD.encode(png),
+        Err(_) => String::new(),
+    }
 }
 
 fn fallback_icon(size: u32) -> RgbaImage {
@@ -151,65 +313,4 @@ fn resize_icon_if_needed(icon: &RgbaImage) -> RgbaImage {
         DEFAULT_ICON_SIZE,
         FilterType::Lanczos3,
     )
-}
-
-fn resolve_app_name(window: &FocusedWindow) -> String {
-    platform_app_name(window)
-        .or_else(|| extract_app_name_from_title(window))
-        .or_else(|| window.process_name.clone())
-        .map(|name| name.trim().to_string())
-        .filter(|name| !name.is_empty())
-        .unwrap_or_else(|| "Unknown application".to_string())
-}
-
-#[cfg(target_os = "macos")]
-fn platform_app_name(window: &FocusedWindow) -> Option<String> {
-    let pid = window.process_id?;
-
-    unsafe {
-        let app: id = msg_send![class!(NSRunningApplication), runningApplicationWithProcessIdentifier: pid as i32];
-        if app == nil {
-            return None;
-        }
-
-        let name: id = msg_send![app, localizedName];
-        nsstring_to_string(name)
-    }
-}
-
-#[cfg(not(target_os = "macos"))]
-fn platform_app_name(_window: &FocusedWindow) -> Option<String> {
-    None
-}
-
-fn extract_app_name_from_title(window: &FocusedWindow) -> Option<String> {
-    let title = window.window_title.as_deref()?.trim();
-    if title.is_empty() {
-        return None;
-    }
-
-    for separator in [" — ", " – ", " - "] {
-        if let Some((_, candidate)) = title.rsplit_once(separator) {
-            let candidate = candidate.trim();
-            if !candidate.is_empty() {
-                return Some(candidate.to_string());
-            }
-        }
-    }
-
-    None
-}
-
-#[cfg(target_os = "macos")]
-unsafe fn nsstring_to_string(string: id) -> Option<String> {
-    if string == nil {
-        return None;
-    }
-
-    let utf8: *const c_char = msg_send![string, UTF8String];
-    if utf8.is_null() {
-        return None;
-    }
-
-    Some(CStr::from_ptr(utf8).to_string_lossy().into_owned())
 }
