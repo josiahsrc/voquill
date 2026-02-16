@@ -30,6 +30,7 @@ import { storeTranscription } from "../../actions/transcribe.actions";
 import {
   checkForAppUpdates,
   dismissUpdateDialog,
+  installAvailableUpdate,
 } from "../../actions/updater.actions";
 import {
   migratePreferredMicrophoneToPreferences,
@@ -731,6 +732,11 @@ export const RootSideEffects = () => {
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
     await tryRegisterCurrentAppTarget();
+  });
+
+  useTauriListen<void>("tray-install-update", () => {
+    surfaceMainWindow();
+    installAvailableUpdate();
   });
 
   useTauriListen<KeysHeldPayload>("keys_held", (payload) => {

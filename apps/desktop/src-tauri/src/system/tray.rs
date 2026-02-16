@@ -30,15 +30,24 @@ pub enum MenuIconVariant {
 }
 
 use crate::domain::EVT_REGISTER_CURRENT_APP;
+use std::sync::OnceLock;
+use tauri::menu::{Menu, MenuItem};
+
+pub const EVT_INSTALL_UPDATE: &str = "tray-install-update";
+
+static UPDATE_MENU_ITEM: OnceLock<MenuItem<tauri::Wry>> = OnceLock::new();
+static TRAY_MENU: OnceLock<Menu<tauri::Wry>> = OnceLock::new();
 
 #[cfg(desktop)]
 pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     use tauri::image::Image;
-    use tauri::menu::{MenuBuilder, MenuItem};
+    use tauri::menu::MenuBuilder;
     use tauri::tray::TrayIconBuilder;
     use tauri::{Emitter, Manager};
 
     let open_item = MenuItem::with_id(app, "open-dashboard", "Open Dashboard", true, None::<&str>)?;
+    let update_item = MenuItem::with_id(app, "install-update", "Install Update", true, None::<&str>)?;
+    let _ = UPDATE_MENU_ITEM.set(update_item);
     let register_current_app_item =
         MenuItem::with_id(app, "register-current-app", "Register this app", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit-voquill", "Quit Voquill", true, None::<&str>)?;
@@ -49,6 +58,7 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
         .separator()
         .item(&quit_item)
         .build()?;
+    let _ = TRAY_MENU.set(menu.clone());
 
     let tray_icon_image = Image::from_bytes(TRAY_ICON_DEFAULT)?;
 
@@ -61,6 +71,11 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
             "open-dashboard" => {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = crate::platform::window::surface_main_window(&window);
+                }
+            }
+            "install-update" => {
+                if let Err(err) = app.emit(EVT_INSTALL_UPDATE, ()) {
+                    eprintln!("Failed to emit install-update event: {err}");
                 }
             }
             "register-current-app" => {
@@ -86,6 +101,8 @@ pub fn set_menu_icon(app: &tauri::AppHandle, variant: MenuIconVariant) -> Result
     use tauri::image::Image;
     use tauri::tray::TrayIconId;
 
+    let is_update = matches!(variant, MenuIconVariant::Update);
+
     let bytes = match variant {
         MenuIconVariant::Default => TRAY_ICON_DEFAULT,
         MenuIconVariant::Update => TRAY_ICON_UPDATE,
@@ -98,9 +115,17 @@ pub fn set_menu_icon(app: &tauri::AppHandle, variant: MenuIconVariant) -> Result
     let image = Image::from_bytes(bytes).map_err(|err| err.to_string())?;
     tray.set_icon(Some(image)).map_err(|err| err.to_string())?;
 
+    if let (Some(menu), Some(update_item)) = (TRAY_MENU.get(), UPDATE_MENU_ITEM.get()) {
+        if is_update {
+            let _ = menu.append(update_item);
+        } else {
+            let _ = menu.remove(update_item);
+        }
+    }
+
     #[cfg(target_os = "macos")]
     {
-        let is_template = matches!(variant, MenuIconVariant::Default);
+        let is_template = !is_update;
         tray.set_icon_as_template(is_template)
             .map_err(|err| err.to_string())?;
     }
