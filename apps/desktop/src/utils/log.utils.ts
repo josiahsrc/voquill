@@ -82,6 +82,21 @@ export class Logger {
       ...this.buffer.slice(0, this.head),
     ];
   }
+
+  stopwatch<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    const start = Date.now();
+    return fn()
+      .then((result) => {
+        const duration = Date.now() - start;
+        this.info(`${label} completed in ${duration}ms`);
+        return result;
+      })
+      .catch((error) => {
+        const duration = Date.now() - start;
+        this.error(`${label} failed in ${duration}ms`, error);
+        throw error;
+      });
+  }
 }
 
 let logger: Logger | null = null;

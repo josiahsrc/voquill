@@ -518,10 +518,9 @@ export const RootSideEffects = () => {
     })();
 
     stopPendingRef.current = promise;
-    const contextStartTime = Date.now();
-    const [audio, a11yInfo, appTarget] = await promise;
-    getLogger().verbose(
-      `stopRecording complete (duration=${Date.now() - contextStartTime}ms)`,
+    const [audio, a11yInfo, appTarget] = await getLogger().stopwatch(
+      "stopRecording",
+      async () => await promise,
     );
 
     isRecordingRef.current = false;
