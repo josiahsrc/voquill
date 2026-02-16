@@ -88,7 +88,9 @@ export class DictationStrategy extends BaseStrategy {
           destinationValue: term.destinationValue,
         }));
 
-      getLogger().verbose(`Applying ${replacementRules.length} replacement rules`);
+      getLogger().verbose(
+        `Applying ${replacementRules.length} replacement rules`,
+      );
       const afterReplacements = applyReplacements(
         rawTranscript,
         replacementRules,
@@ -119,8 +121,14 @@ export class DictationStrategy extends BaseStrategy {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
           const keybind = currentApp?.pasteKeybind ?? null;
-          getLogger().verbose(`Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`);
-          await invoke<void>("paste", { text: transcript, keybind });
+          getLogger().verbose(
+            `Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`,
+          );
+
+          // Add a space to the end so you don't have to press space before your next dictation
+          const textToPaste = transcript.trim() + " ";
+          await invoke<void>("paste", { text: textToPaste, keybind });
+
           getLogger().info("Transcript pasted successfully");
         } catch (error) {
           getLogger().error(`Failed to paste transcription: ${error}`);

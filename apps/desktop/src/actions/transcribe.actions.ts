@@ -286,9 +286,6 @@ export const postProcessTranscript = async ({
     metadata.postProcessMode = "none";
   }
 
-  // Add a space to the end so you can continue dictating seamlessly.
-  processedTranscript = processedTranscript.trim() + " ";
-
   return {
     transcript: processedTranscript,
     warnings: dedup(warnings),
