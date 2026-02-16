@@ -102,38 +102,38 @@ export default function HomePage() {
           </Stack>
 
           {dictationSpeed != null && (
-          <Tooltip
-            title={intl.formatMessage(
-              {
-                defaultMessage:
-                  "Average words per minute across your last {count, plural, one {# dictation} other {# dictations}}. Compared against a median typing speed of 40 WPM.",
-              },
-              { count: dictationSpeed.sampleCount },
-            )}
-            arrow
-            placement="bottom"
-          >
-            <Card sx={{ cursor: "default" }}>
-              <CardContent sx={{ py: 2, px: 2.5, "&:last-child": { pb: 2 } }}>
-                <Stack direction="row" alignItems="baseline" spacing={1.5}>
-                  <Typography variant="h5" fontWeight={700}>
-                    <FormattedMessage
-                      defaultMessage="{wpm} WPM"
-                      values={{ wpm: dictationSpeed.wpm }}
-                    />
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    <FormattedMessage
-                      defaultMessage="{multiplier}x faster than typing"
-                      values={{
-                        multiplier: (dictationSpeed.wpm / 40).toFixed(1),
-                      }}
-                    />
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Tooltip>
+            <Tooltip
+              title={intl.formatMessage(
+                {
+                  defaultMessage:
+                    "Average words per minute across your last {count, plural, one {# dictation} other {# dictations}}. Compared against a median typing speed of 40 WPM.",
+                },
+                { count: dictationSpeed.sampleCount },
+              )}
+              arrow
+              placement="bottom"
+            >
+              <Card sx={{ cursor: "default" }}>
+                <CardContent sx={{ py: 2, px: 2.5, "&:last-child": { pb: 2 } }}>
+                  <Stack direction="row" alignItems="baseline" spacing={1.5}>
+                    <Typography variant="h5" fontWeight={700}>
+                      <FormattedMessage
+                        defaultMessage="{wpm} WPM"
+                        values={{ wpm: dictationSpeed.wpm }}
+                      />
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <FormattedMessage
+                        defaultMessage="{multiplier}x faster than typing"
+                        values={{
+                          multiplier: (dictationSpeed.wpm / 40).toFixed(1),
+                        }}
+                      />
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Tooltip>
           )}
         </Stack>
 

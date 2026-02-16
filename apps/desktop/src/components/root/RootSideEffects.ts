@@ -779,6 +779,8 @@ export const RootSideEffects = () => {
       produceAppState((draft) => {
         draft.settings.agentModeDialogOpen = true;
       });
+    } else if (payload.action === "surface_window") {
+      surfaceMainWindow();
     }
   });
 
