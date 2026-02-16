@@ -4,13 +4,11 @@ import {
   type DownloadEvent,
   type Update,
 } from "@tauri-apps/plugin-updater";
-import { getIntl } from "../i18n/intl";
 import { getAppState, produceAppState } from "../store";
 import { daysToMilliseconds } from "../utils/time.utils";
 import { getMyUserPreferences } from "../utils/user.utils";
 import { markSurfaceWindowForNextLaunch } from "../utils/window.utils";
 import { showErrorSnackbar } from "./app.actions";
-import { showToast } from "./toast.actions";
 
 let availableUpdate: Update | null = null;
 let checkingPromise: Promise<boolean> | null = null;
@@ -107,24 +105,6 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
         draft.updater.dialogOpen = true;
       }
     });
-
-    if (shouldAutoShowDialog) {
-      const intl = getIntl();
-      await showToast({
-        title: intl.formatMessage({
-          defaultMessage: "New update available",
-        }),
-        message: intl.formatMessage(
-          {
-            defaultMessage: "Version {version} is ready to install.",
-          },
-          { version: update.version },
-        ),
-        toastType: "info",
-        action: "surface_window",
-        duration: 8_000,
-      });
-    }
 
     return true;
   };
