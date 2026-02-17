@@ -1,5 +1,6 @@
 import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
+import 'package:app/utils/member_utils.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/utils/user_utils.dart';
 import 'package:app/widgets/history/transcription_detail_dialog.dart';
@@ -15,12 +16,23 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = useAppStore().select(context, (s) => s.user);
+    final (plan, isOnTrial) = useAppStore().select(
+      context,
+      (s) => (getEffectivePlan(s), getIsOnTrial(s)),
+    );
     final sortedIds = useAppStore().select(
       context,
       (s) => s.sortedTranscriptionIds,
     );
     final theme = Theme.of(context);
+    final colors = context.colors;
     final recentIds = sortedIds.take(3).toList();
+
+    final (chipLabel, chipBg, chipFg) = switch ((plan, isOnTrial)) {
+      (_, true) => ('Pro trial', colors.level2, colors.onLevel2),
+      (EffectivePlan.pro, _) => ('Pro', colors.blue, colors.onBlue),
+      (EffectivePlan.free, _) => ('Free', colors.level2, colors.onLevel2),
+    };
 
     return CustomScrollView(
       slivers: [
@@ -43,15 +55,12 @@ class HomePage extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: context.colors.blue,
+                    color: chipBg,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    'Pro',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: context.colors.onBlue,
-                    ),
+                    chipLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(color: chipFg),
                   ),
                 ),
               ),
@@ -90,10 +99,11 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
-        SliverPadding(
-          padding: Theming.padding.onlyHorizontal().withTop(16),
-          sliver: const SliverToBoxAdapter(child: TrialCountdown()),
-        ),
+        if (isOnTrial)
+          SliverPadding(
+            padding: Theming.padding.onlyHorizontal().withTop(16),
+            sliver: const SliverToBoxAdapter(child: TrialCountdown()),
+          ),
         SliverPadding(
           padding: Theming.padding.onlyHorizontal().withTop(28),
           sliver: SliverToBoxAdapter(

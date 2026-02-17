@@ -1,4 +1,6 @@
+import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
+import 'package:app/utils/member_utils.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -7,12 +9,31 @@ class TrialCountdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isOnTrial = useAppStore().select(
+      context,
+      (s) => getIsOnTrial(s),
+    );
+    final daysRemaining = useAppStore().select(
+      context,
+      (s) => getTrialDaysRemaining(s),
+    );
+    final progress = useAppStore().select(
+      context,
+      (s) => getTrialProgress(s),
+    );
+
+    if (!isOnTrial || daysRemaining == null || progress == null) {
+      return const SizedBox.shrink();
+    }
+
     final theme = Theme.of(context);
     final colors = context.colors;
 
-    const daysRemaining = 5;
-    const totalDays = 7;
-    const progress = daysRemaining / totalDays;
+    final label = daysRemaining == 0
+        ? 'Last day'
+        : daysRemaining == 1
+            ? '1 day left'
+            : '$daysRemaining days left';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -35,7 +56,7 @@ class TrialCountdown extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '$daysRemaining days left',
+                      label,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

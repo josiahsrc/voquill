@@ -19,6 +19,7 @@ Future<void> refreshMainData() async {
   await Future.wait([
     loadTranscriptions(),
     loadCurrentUser(),
+    loadCurrentMember(),
     loadStyles(),
     loadDictationLanguages(),
   ]);
@@ -45,6 +46,7 @@ StreamSubscription<User?> listenToAuthChanges() {
         produceAppState((draft) {
           draft.auth = null;
           draft.user = null;
+          draft.member = null;
         });
       }
       clearKeyboardAuth();
@@ -67,6 +69,17 @@ Future<void> loadCurrentUser() async {
     });
   } catch (e) {
     _logger.w('Failed to load user (may not exist yet)', e);
+  }
+}
+
+Future<void> loadCurrentMember() async {
+  try {
+    final output = await GetMyMemberApi().call(null);
+    produceAppState((draft) {
+      draft.member = output.member;
+    });
+  } catch (e) {
+    _logger.w('Failed to load member', e);
   }
 }
 
