@@ -44,6 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Environment
+.env
+
 # Generated
 /**/*.draft.dart
 /**/*.g.dart

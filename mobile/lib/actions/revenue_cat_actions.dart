@@ -1,15 +1,14 @@
 import 'package:app/actions/app_actions.dart';
 import 'package:app/flavor.dart';
+import 'package:app/utils/env_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 final _logger = createNamedLogger('revenue_cat');
 
-const _appleApiKey = 'todo';
-
 Future<void> initializeRevenueCat() async {
-  final config = PurchasesConfiguration(_appleApiKey);
+  final config = PurchasesConfiguration(revenueCatAppleApiKey);
   if (!Flavor.current.isProd) {
     await Purchases.setLogLevel(LogLevel.debug);
   }

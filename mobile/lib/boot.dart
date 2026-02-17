@@ -8,6 +8,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logger/logger.dart';
 
 import 'flavor.dart';
@@ -27,6 +28,7 @@ Future<void> boot(Flavor flavor, FirebaseOptions firebaseOptions) async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      await dotenv.load();
 
       // TODO: Figure out why emualtors throw 'duplicate-app' error and remove this workaround
       try {
