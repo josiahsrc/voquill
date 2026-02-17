@@ -1,10 +1,10 @@
 import * as env from "env-var";
 
 export const getFirestoreEmulatorHost = () =>
-	env.get("FIRESTORE_EMULATOR_HOST").default("localhost:8760").asString();
+	env.get("FIRESTORE_EMULATOR_HOST").default("127.0.0.1:8760").asString();
 
 export const getFirebaseAuthEmulatorHost = () =>
-	env.get("FIREBASE_AUTH_EMULATOR_HOST").default("localhost:9099").asString();
+	env.get("FIREBASE_AUTH_EMULATOR_HOST").default("127.0.0.1:9099").asString();
 
 export const getClientFirebaseAuthEmulatorUrl = () =>
 	env
@@ -13,12 +13,12 @@ export const getClientFirebaseAuthEmulatorUrl = () =>
 		.asString();
 
 export const getClientFirestoreHost = () =>
-	env.get("CLIENT_FIRESTORE_HOST").default("localhost:8760").asString();
+	env.get("CLIENT_FIRESTORE_HOST").default("127.0.0.1:8760").asString();
 
 export const getRealtimeDatabaseEmulatorHost = () =>
 	env
 		.get("REALTIME_DATABASE_EMULATOR_HOST")
-		.default("localhost:9000")
+		.default("127.0.0.1:9000")
 		.asString();
 
 export const getClientFunctionsHost = () =>
@@ -36,7 +36,7 @@ export const getShowWarnings = () =>
 export const getFirebaseFunctionsEndpoint = () =>
 	env
 		.get("FIREBASE_FUNCTIONS_ENDPOINT")
-		.default(`http://localhost:5001/${getGcloudProject()}/us-central1`)
+		.default(`http://127.0.0.1:5001/${getGcloudProject()}/us-central1`)
 		.asString();
 
 export const getEmulatorDatabaseUrl = () =>
