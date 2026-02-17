@@ -25,7 +25,38 @@ class HomePage extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         SliverAppBar.large(
-          title: Text('Welcome${user?.name != null ? ', ${user!.name}' : ''}'),
+          title: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Flexible(
+                child: Text(
+                  'Welcome${user?.name != null ? ', ${user!.name}' : ''}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.colors.blue,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Pro',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: context.colors.onBlue,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         SliverPadding(
           padding: Theming.padding,
