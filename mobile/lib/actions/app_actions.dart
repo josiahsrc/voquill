@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/actions/language_actions.dart';
 import 'package:app/actions/permission_actions.dart';
+import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/actions/styles_actions.dart';
 import 'package:app/actions/transcription_actions.dart';
 import 'package:app/api/member_api.dart';
@@ -38,11 +39,13 @@ StreamSubscription<User?> listenToAuthChanges() {
             email: firebaseUser.email,
           );
         });
+        await loginRevenueCat(firebaseUser.uid);
         await refreshMainData();
       }
       syncKeyboardAuth();
     } else {
       if (currentAuth != null) {
+        await logoutRevenueCat();
         produceAppState((draft) {
           draft.auth = null;
           draft.user = null;

@@ -1,3 +1,4 @@
+import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/member_utils.dart';
@@ -78,7 +79,7 @@ class TrialCountdown extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           ActionChip(
-            onPressed: () {},
+            onPressed: () => presentPaywall(),
             backgroundColor: colors.blue,
             labelStyle: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,

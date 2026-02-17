@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/root.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/version.dart';
@@ -40,6 +41,8 @@ Future<void> boot(Flavor flavor, FirebaseOptions firebaseOptions) async {
         FirebaseFunctions.instance.useFunctionsEmulator(host, 5001);
         logger.i('Using Firebase emulators at $host');
       }
+
+      await initializeRevenueCat();
 
       FlutterError.onError = (FlutterErrorDetails details) {
         logger.e('FlutterError', details.exception, details.stack);
