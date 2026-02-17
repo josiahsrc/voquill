@@ -1,5 +1,6 @@
 import 'package:app/model/auth_user_model.dart';
 import 'package:app/model/common_model.dart';
+import 'package:app/model/member_model.dart';
 import 'package:app/model/term_model.dart';
 import 'package:app/model/tone_model.dart';
 import 'package:app/model/transcription_model.dart';
@@ -21,6 +22,7 @@ class AppState with EquatableMixin {
 
   final AuthUser? auth;
   final User? user;
+  final Member? member;
 
   final Map<String, Term> termById;
   final Map<String, Tone> toneById;
@@ -42,6 +44,7 @@ class AppState with EquatableMixin {
     this.error,
     this.auth,
     this.user,
+    this.member,
     this.termById = const {},
     this.toneById = const {},
     this.transcriptionById = const {},
@@ -66,6 +69,7 @@ class AppState with EquatableMixin {
     error,
     auth,
     user,
+    member,
     termById,
     toneById,
     transcriptionById,

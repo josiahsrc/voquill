@@ -22,6 +22,9 @@ class AppColors extends ThemeExtension<AppColors> with EquatableMixin {
   final Color level1;
   final Color onLevel1;
 
+  final Color blue;
+  final Color onBlue;
+
   final Color level2;
   final Color onLevel2;
 
@@ -32,6 +35,8 @@ class AppColors extends ThemeExtension<AppColors> with EquatableMixin {
     required this.onError,
     required this.success,
     required this.onSuccess,
+    required this.blue,
+    required this.onBlue,
     required this.level0,
     required this.onLevel0,
     required this.level1,
@@ -48,6 +53,8 @@ class AppColors extends ThemeExtension<AppColors> with EquatableMixin {
     Color? onError,
     Color? success,
     Color? onSuccess,
+    Color? blue,
+    Color? onBlue,
     Color? level0,
     Color? onLevel0,
     Color? level1,
@@ -62,6 +69,8 @@ class AppColors extends ThemeExtension<AppColors> with EquatableMixin {
       onError: onError ?? this.onError,
       success: success ?? this.success,
       onSuccess: onSuccess ?? this.onSuccess,
+      blue: blue ?? this.blue,
+      onBlue: onBlue ?? this.onBlue,
       level0: level0 ?? this.level0,
       onLevel0: onLevel0 ?? this.onLevel0,
       level1: level1 ?? this.level1,
@@ -84,6 +93,8 @@ class AppColors extends ThemeExtension<AppColors> with EquatableMixin {
       onError: Color.lerp(onError, other.onError, t)!,
       success: Color.lerp(success, other.success, t)!,
       onSuccess: Color.lerp(onSuccess, other.onSuccess, t)!,
+      blue: Color.lerp(blue, other.blue, t)!,
+      onBlue: Color.lerp(onBlue, other.onBlue, t)!,
       level0: Color.lerp(level0, other.level0, t)!,
       onLevel0: Color.lerp(onLevel0, other.onLevel0, t)!,
       level1: Color.lerp(level1, other.level1, t)!,
@@ -101,6 +112,8 @@ class AppColors extends ThemeExtension<AppColors> with EquatableMixin {
     onError,
     success,
     onSuccess,
+    blue,
+    onBlue,
     level0,
     onLevel0,
     level1,

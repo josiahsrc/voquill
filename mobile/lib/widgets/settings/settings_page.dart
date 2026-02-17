@@ -1,4 +1,5 @@
 import 'package:app/actions/auth_actions.dart';
+import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/api/user_api.dart';
 import 'package:app/model/firebase_model.dart';
 import 'package:app/model/user_model.dart';
@@ -104,8 +105,8 @@ class SettingsPage extends StatelessWidget {
                 AppListTile(
                   leading: const Icon(Icons.payment_outlined),
                   title: const Text('Manage subscription'),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () {},
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => presentCustomerCenter(),
                 ),
                 AppListTile(
                   leading: const Icon(Icons.description_outlined),
