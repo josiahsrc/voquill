@@ -321,7 +321,14 @@ class KeyboardViewController: UIInputViewController {
     private func refreshDictationState() {
         let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
         let phaseStr = defaults?.string(forKey: DictationConstants.phaseKey) ?? "idle"
-        let newPhase = DictationPhase(rawValue: phaseStr) ?? .idle
+        var newPhase = DictationPhase(rawValue: phaseStr) ?? .idle
+
+        if newPhase != .idle && isHeartbeatStale(defaults) {
+            NSLog("[VoquillKB] Heartbeat stale, resetting phase to idle")
+            defaults?.set("idle", forKey: DictationConstants.phaseKey)
+            newPhase = .idle
+        }
+
         let oldPhase = dictationPhase
         dictationPhase = newPhase
 
@@ -342,6 +349,13 @@ class KeyboardViewController: UIInputViewController {
             stopAudioLevelPolling()
             applyPillVisual(.idle, animated: oldPhase != newPhase)
         }
+    }
+
+    private func isHeartbeatStale(_ defaults: UserDefaults?) -> Bool {
+        let heartbeat = defaults?.double(forKey: DictationConstants.heartbeatKey)
+        guard let heartbeat = heartbeat, heartbeat > 0 else { return true }
+        let elapsed = Date().timeIntervalSince1970 - heartbeat
+        return elapsed > DictationConstants.heartbeatStaleThreshold
     }
 
     // MARK: - Build UI
@@ -663,6 +677,10 @@ class KeyboardViewController: UIInputViewController {
             loadTones()
             loadLanguage()
             loadDictionary()
+        }
+
+        if dictationPhase != .idle {
+            refreshDictationState()
         }
     }
 
