@@ -1,9 +1,11 @@
 import 'package:app/store/store.dart';
+import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/utils/user_utils.dart';
 import 'package:app/widgets/history/transcription_detail_dialog.dart';
 import 'package:app/widgets/history/transcription_tile.dart';
 import 'package:app/widgets/home/stat_value.dart';
+import 'package:app/widgets/home/trial_countdown.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -58,6 +60,10 @@ class HomePage extends StatelessWidget {
           ),
         ),
         SliverPadding(
+          padding: Theming.padding.onlyHorizontal().withTop(16),
+          sliver: const SliverToBoxAdapter(child: TrialCountdown()),
+        ),
+        SliverPadding(
           padding: Theming.padding.onlyHorizontal().withTop(28),
           sliver: SliverToBoxAdapter(
             child: Text(
@@ -74,7 +80,7 @@ class HomePage extends StatelessWidget {
               child: Text(
                 'Your transcriptions from the keyboard will appear here.',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: context.colors.level1,
                 ),
               ),
             ),
