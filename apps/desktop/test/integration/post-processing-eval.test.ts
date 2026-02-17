@@ -89,7 +89,7 @@ const runPostProcessingEval = async ({
   });
 };
 
-describe("default style", { retry: 8 }, () => {
+describe("default style", { retry: 1 }, () => {
   test("basic transcription1", async () => {
     await runPostProcessingEval({
       transcription: "Hello world",
@@ -115,6 +115,35 @@ describe("default style", { retry: 8 }, () => {
       ],
     });
   });
+
+  test("should remove gunna", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "Also, are you gonna get to hire a backfill for John? Are you working with Adam on that?",
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria:
+            "It should not keep the word 'gonna' in the final transcription",
+        },
+      ],
+    });
+  });
+
+    test("should remove duplication", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "I think it would be really nice if we didn't have to worry. Worrying about this just isn't nice. We should just fix the Dinglehopper.",
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria:
+            "It should only mention worrying (or worry) once",
+        },
+      ],
+    });
+  });
+
 
   test("keeps colloquial tone", async () => {
     await runPostProcessingEval({
@@ -279,7 +308,7 @@ Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just crea
   });
 });
 
-describe("custom styling", { retry: 8 }, () => {
+describe("custom styling", { retry: 1 }, () => {
   test("customer support style", async () => {
     const customerSupportChecklist = [
       "Use a polite and empathetic tone.",
@@ -340,7 +369,7 @@ come on guys. you can do better, that was garbage.`,
   });
 });
 
-describe("verbatim style", { retry: 8 }, () => {
+describe("verbatim style", { retry: 1 }, () => {
   test("removes filler words but preserves phrasing", async () => {
     await runPostProcessingEval({
       transcription:
@@ -436,17 +465,17 @@ describe("verbatim style", { retry: 8 }, () => {
       evals: [
         {
           criteria:
-            "It should NOT fix grammar — 'me and him was', 'we seen', 'real big' should remain as spoken",
+            "'me and him was', 'we seen', 'real big' should remain as spoken. Punctuation and capitalization should be fixed",
         },
         {
-          criteria: "It should add punctuation and capitalization",
+          criteria: "It should add punctuation and capitalization (don't evaluate grammar correctness)",
         },
       ],
     });
   });
 });
 
-describe("email style", { retry: 8 }, () => {
+describe("email style", { retry: 1 }, () => {
   test("formats a casual spoken email", async () => {
     await runPostProcessingEval({
       transcription:
@@ -568,7 +597,7 @@ describe("email style", { retry: 8 }, () => {
         },
         {
           criteria:
-            "It should state that the user does not want to be bothered while they are out",
+            "It mentions the user does not want to be bothered (DON'T evaluate professionalism)",
         },
         {
           criteria:
@@ -639,7 +668,7 @@ describe("email style", { retry: 8 }, () => {
   });
 });
 
-describe("chat style", { retry: 8 }, () => {
+describe("chat style", { retry: 1 }, () => {
   test("reads like a text message", async () => {
     await runPostProcessingEval({
       transcription:
@@ -743,7 +772,7 @@ describe("chat style", { retry: 8 }, () => {
   });
 });
 
-describe("formal style", { retry: 8 }, () => {
+describe("formal style", { retry: 1 }, () => {
   test("rewrites casual speech into formal register", async () => {
     await runPostProcessingEval({
       transcription:

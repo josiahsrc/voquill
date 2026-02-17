@@ -33,7 +33,7 @@ const EVAL_RESULT_JSON_SCHEMA =
 
 export function getGentextRepo(): BaseGenerateTextRepo {
   const apiKey = getGroqApiKey();
-  return new GroqGenerateTextRepo(apiKey, "openai/gpt-oss-120b");
+  return new GroqGenerateTextRepo(apiKey, "meta-llama/llama-4-maverick-17b-128e-instruct");
 }
 
 export async function runEval({

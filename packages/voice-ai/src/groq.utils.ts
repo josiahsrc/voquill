@@ -136,7 +136,7 @@ export const groqGenerateTextResponse = async ({
       const response = await client.chat.completions.create({
         messages,
         model,
-        temperature: 1,
+        temperature: 0,
         max_completion_tokens: 8192,
         top_p: 1,
         response_format: jsonResponse
