@@ -25,7 +25,7 @@ export const planToDisplayName = (plan: EffectivePlan): string => {
   } else if (plan === "community") {
     return getIntl().formatMessage({ defaultMessage: "Community" });
   } else if (plan === "free") {
-    return getIntl().formatMessage({ defaultMessage: "Trial" });
+    return getIntl().formatMessage({ defaultMessage: "Free" });
   } else {
     return getIntl().formatMessage({ defaultMessage: "Pro" });
   }
