@@ -2,6 +2,8 @@ import 'package:app/actions/app_actions.dart';
 import 'package:app/flavor.dart';
 import 'package:app/utils/env_utils.dart';
 import 'package:app/utils/log_utils.dart';
+import 'package:app/widgets/paywall/paywall_page.dart';
+import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
@@ -34,8 +36,8 @@ Future<void> logoutRevenueCat() async {
   }
 }
 
-Future<void> presentPaywall() async {
-  await RevenueCatUI.presentPaywallIfNeeded('Voquill Pro');
+Future<void> presentPaywall(BuildContext context) async {
+  await PaywallPage.show(context);
   await loadCurrentMember();
 }
 
