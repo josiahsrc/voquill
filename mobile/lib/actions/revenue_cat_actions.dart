@@ -1,5 +1,6 @@
 import 'package:app/actions/app_actions.dart';
 import 'package:app/flavor.dart';
+import 'package:app/store/store.dart';
 import 'package:app/utils/env_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/widgets/paywall/paywall_page.dart';
@@ -36,9 +37,29 @@ Future<void> logoutRevenueCat() async {
   }
 }
 
+// RC takes time since it's a web hook
+Future<void> _refreshUntilChange() async {
+  await loadCurrentMember();
+  final startingPlan = getAppState().member?.plan;
+
+  for (var i = 0; i < 5; i++) {
+    final delay = Duration(seconds: i * 2);
+    await Future.delayed(delay);
+
+    await loadCurrentMember();
+    final currentPlan = getAppState().member?.plan;
+    if (currentPlan != startingPlan) {
+      _logger.i(
+        'Member plan changed from $startingPlan to $currentPlan after ${delay.inSeconds} seconds',
+      );
+      return;
+    }
+  }
+}
+
 Future<void> presentPaywall(BuildContext context) async {
   await PaywallPage.show(context);
-  await loadCurrentMember();
+  await _refreshUntilChange();
 }
 
 Future<void> presentCustomerCenter() async {
@@ -48,7 +69,7 @@ Future<void> presentCustomerCenter() async {
 Future<void> restorePurchases() async {
   try {
     await Purchases.restorePurchases();
-    await loadCurrentMember();
+    await _refreshUntilChange();
   } catch (e) {
     _logger.w('Restore purchases failed', e);
   }
