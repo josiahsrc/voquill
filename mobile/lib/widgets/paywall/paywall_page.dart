@@ -2,13 +2,13 @@ import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/flavor.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/color_utils.dart';
+import 'package:app/utils/log_utils.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/common/plan_card.dart';
 import 'package:app/widgets/paywall/hero_graphic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
-import 'package:app/utils/log_utils.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -100,8 +100,9 @@ class _PaywallPageState extends State<PaywallPage> {
   }
 
   Future<void> _onContinue() async {
-    final package =
-        _selected == _PlanOption.yearly ? _yearlyPackage : _monthlyPackage;
+    final package = _selected == _PlanOption.yearly
+        ? _yearlyPackage
+        : _monthlyPackage;
     if (package == null) return;
 
     setState(() => _loading = true);
@@ -174,8 +175,7 @@ class _PaywallPageState extends State<PaywallPage> {
                                 ),
                                 child: Text(
                                   'PRO',
-                                  style:
-                                      theme.textTheme.labelSmall?.copyWith(
+                                  style: theme.textTheme.labelSmall?.copyWith(
                                     color: colors.blue,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1.2,
@@ -193,8 +193,7 @@ class _PaywallPageState extends State<PaywallPage> {
                           const Gap(14),
                           Text(
                                 'Unlimited voice typing, everywhere.',
-                                style: theme.textTheme.headlineMedium
-                                    ?.copyWith(
+                                style: theme.textTheme.headlineMedium?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   height: 1.15,
                                 ),
@@ -220,16 +219,16 @@ class _PaywallPageState extends State<PaywallPage> {
                                   Expanded(
                                     child: PlanCard(
                                       label: 'Yearly',
-                                      price: _yearlyPackage?.storeProduct
+                                      price:
+                                          _yearlyPackage
+                                              ?.storeProduct
                                               .priceString ??
                                           '—',
                                       subtitle: _yearlyPerMonth ?? '',
                                       badgeText: _savingsBadge,
-                                      selected:
-                                          _selected == _PlanOption.yearly,
+                                      selected: _selected == _PlanOption.yearly,
                                       onTap: () => setState(
-                                        () =>
-                                            _selected = _PlanOption.yearly,
+                                        () => _selected = _PlanOption.yearly,
                                       ),
                                     ),
                                   ),
@@ -237,7 +236,9 @@ class _PaywallPageState extends State<PaywallPage> {
                                   Expanded(
                                     child: PlanCard(
                                       label: 'Monthly',
-                                      price: _monthlyPackage?.storeProduct
+                                      price:
+                                          _monthlyPackage
+                                              ?.storeProduct
                                               .priceString ??
                                           '—',
                                       subtitle: _monthlyPackage != null
@@ -246,8 +247,7 @@ class _PaywallPageState extends State<PaywallPage> {
                                       selected:
                                           _selected == _PlanOption.monthly,
                                       onTap: () => setState(
-                                        () => _selected =
-                                            _PlanOption.monthly,
+                                        () => _selected = _PlanOption.monthly,
                                       ),
                                     ),
                                   ),
@@ -302,28 +302,24 @@ class _PaywallPageState extends State<PaywallPage> {
                         ),
                     const Gap(8),
                     Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _FooterLink(
-                              label: 'Restore Purchases',
-                              onTap: () => restorePurchases(),
-                            ),
-                            _FooterLink(
-                              label: 'Terms',
-                              onTap: () => launchUrl(
-                                Uri.parse(Flavor.current.termsUrl),
-                              ),
-                            ),
-                            _FooterLink(
-                              label: 'Privacy',
-                              onTap: () => launchUrl(
-                                Uri.parse(Flavor.current.privacyUrl),
-                              ),
-                            ),
-                          ],
-                        )
-                        .animate()
-                        .fadeIn(delay: 850.ms, duration: 500.ms),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _FooterLink(
+                          label: 'Restore purchases',
+                          onTap: () => restorePurchases(),
+                        ),
+                        _FooterLink(
+                          label: 'Terms',
+                          onTap: () =>
+                              launchUrl(Uri.parse(Flavor.current.termsUrl)),
+                        ),
+                        _FooterLink(
+                          label: 'Privacy',
+                          onTap: () =>
+                              launchUrl(Uri.parse(Flavor.current.privacyUrl)),
+                        ),
+                      ],
+                    ).animate().fadeIn(delay: 850.ms, duration: 500.ms),
                   ],
                 ),
               ),
@@ -383,4 +379,3 @@ class _FeatureItem extends StatelessWidget {
     );
   }
 }
-
