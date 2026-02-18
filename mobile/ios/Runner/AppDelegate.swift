@@ -214,6 +214,9 @@ import UIKit
       return true
     case "open":
       return true
+    case "upgrade":
+      channel?.invokeMethod("showPaywall", arguments: nil)
+      return true
     default:
       return false
     }

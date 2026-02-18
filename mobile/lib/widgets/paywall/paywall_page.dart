@@ -32,7 +32,7 @@ class PaywallPage extends StatefulWidget {
   State<PaywallPage> createState() => _PaywallPageState();
 }
 
-class _PaywallPageState extends State<PaywallPage> {
+class _PaywallPageState extends State<PaywallPage> with WidgetsBindingObserver {
   _PlanOption _selected = _PlanOption.yearly;
   bool _loading = false;
   bool _loaded = false;
@@ -42,7 +42,21 @@ class _PaywallPageState extends State<PaywallPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadOfferings();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _loadOfferings() async {

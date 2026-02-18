@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
 import 'package:app/actions/permission_actions.dart';
+import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
 import 'package:app/routing/build_router.dart';
@@ -86,6 +87,11 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   Future<dynamic> _handleNativeCall(MethodCall call) async {
     if (call.method == 'showDictationDialog') {
       showDictationDialog();
+    } else if (call.method == 'showPaywall') {
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx != null) {
+        presentPaywall(ctx);
+      }
     }
   }
 
