@@ -7,6 +7,7 @@ import 'package:app/widgets/history/transcription_detail_dialog.dart';
 import 'package:app/widgets/history/transcription_tile.dart';
 import 'package:app/widgets/home/stat_value.dart';
 import 'package:app/widgets/home/trial_countdown.dart';
+import 'package:app/widgets/home/words_remaining.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -103,6 +104,11 @@ class HomePage extends StatelessWidget {
           SliverPadding(
             padding: Theming.padding.onlyHorizontal().withTop(16),
             sliver: const SliverToBoxAdapter(child: TrialCountdown()),
+          ),
+        if (!isOnTrial && plan == EffectivePlan.free)
+          SliverPadding(
+            padding: Theming.padding.onlyHorizontal().withTop(16),
+            sliver: const SliverToBoxAdapter(child: WordsRemaining()),
           ),
         SliverPadding(
           padding: Theming.padding.onlyHorizontal().withTop(28),
