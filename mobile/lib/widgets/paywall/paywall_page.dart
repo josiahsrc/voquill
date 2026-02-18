@@ -7,7 +7,11 @@ import 'package:app/widgets/common/plan_card.dart';
 import 'package:app/widgets/paywall/hero_graphic.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:app/utils/log_utils.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+final _logger = createNamedLogger('paywall');
 
 enum _PlanOption { yearly, monthly }
 
@@ -30,11 +34,59 @@ class PaywallPage extends StatefulWidget {
 class _PaywallPageState extends State<PaywallPage> {
   _PlanOption _selected = _PlanOption.yearly;
   bool _loading = false;
+  Package? _yearlyPackage;
+  Package? _monthlyPackage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOfferings();
+  }
+
+  Future<void> _loadOfferings() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final current = offerings.current;
+      if (current == null || !mounted) return;
+      setState(() {
+        _yearlyPackage = current.annual;
+        _monthlyPackage = current.monthly;
+      });
+    } catch (e) {
+      _logger.w('Failed to load offerings', e);
+    }
+  }
+
+  String? get _savingsBadge {
+    final monthly = _monthlyPackage?.storeProduct.price;
+    final yearly = _yearlyPackage?.storeProduct.price;
+    if (monthly == null || yearly == null || monthly == 0) return null;
+    final pct = ((monthly * 12 - yearly) / (monthly * 12) * 100).round();
+    if (pct <= 0) return null;
+    return 'SAVE $pct%';
+  }
+
+  String? get _yearlyPerMonth {
+    final yearly = _yearlyPackage?.storeProduct.price;
+    final symbol = _yearlyPackage?.storeProduct.currencyCode;
+    if (yearly == null || symbol == null) return null;
+    final perMonth = (yearly / 12).toStringAsFixed(2);
+    return '$symbol $perMonth/mo';
+  }
 
   Future<void> _onContinue() async {
+    final package =
+        _selected == _PlanOption.yearly ? _yearlyPackage : _monthlyPackage;
+    if (package == null) return;
+
     setState(() => _loading = true);
     try {
-      // TODO: purchase the selected package via RevenueCat
+      await Purchases.purchasePackage(package);
+      if (mounted) Navigator.of(context).pop();
+    } on PurchasesErrorCode {
+      // User cancelled or store error
+    } catch (e) {
+      _logger.w('Purchase failed', e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -123,9 +175,11 @@ class _PaywallPageState extends State<PaywallPage> {
                             Expanded(
                               child: PlanCard(
                                 label: 'Yearly',
-                                price: '\$89.99/yr',
-                                subtitle: 'Only \$7.50/mo',
-                                badgeText: 'SAVE 19%',
+                                price: _yearlyPackage?.storeProduct
+                                        .priceString ??
+                                    '—',
+                                subtitle: _yearlyPerMonth ?? '',
+                                badgeText: _savingsBadge,
                                 selected: _selected == _PlanOption.yearly,
                                 onTap: () => setState(
                                   () => _selected = _PlanOption.yearly,
@@ -136,8 +190,12 @@ class _PaywallPageState extends State<PaywallPage> {
                             Expanded(
                               child: PlanCard(
                                 label: 'Monthly',
-                                price: '\$12.99/mo',
-                                subtitle: 'Billed at \$12.99/mo.',
+                                price: _monthlyPackage?.storeProduct
+                                        .priceString ??
+                                    '—',
+                                subtitle: _monthlyPackage != null
+                                    ? 'Billed monthly'
+                                    : '',
                                 selected: _selected == _PlanOption.monthly,
                                 onTap: () => setState(
                                   () => _selected = _PlanOption.monthly,
