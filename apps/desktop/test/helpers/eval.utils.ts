@@ -56,7 +56,7 @@ export async function runEval({
   const promises = evals.map(async (e) => {
     const output = await repo.generateText({
       system:
-        "You are an evaluator. Score the final text based on the given criteria. Return a score between 0 and 10 and a reason for your score.",
+        "You are an evaluator. Score the final text based on the given criteria. Return a score between 0 and 10 and a reason for your score. Evaluate only the specified criteria",
       prompt: [
         `Original text: ${originalText}`,
         `Final text: ${finalText}`,

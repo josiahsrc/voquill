@@ -597,7 +597,7 @@ describe("email style", { retry: 1 }, () => {
         },
         {
           criteria:
-            "It mentions the user does not want to be bothered (DON'T evaluate professionalism)",
+            "The word bothered should be preserved in the email",
         },
         {
           criteria:
