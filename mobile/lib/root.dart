@@ -45,6 +45,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   late final GoRouter goRouter;
   late final StreamSubscription _authSubscription;
   late final Timer _updatePoller;
+  late final Timer _refreshPoller;
   int _lastUpdateCounter = -1;
 
   static const _channel = MethodChannel('com.voquill.mobile/shared');
@@ -59,6 +60,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       const Duration(seconds: 1),
       (_) => _checkForUpdates(),
     );
+    _refreshPoller = Timer.periodic(
+      const Duration(minutes: 10),
+      (_) => _refreshData(),
+    );
     _channel.setMethodCallHandler(_handleNativeCall);
   }
 
@@ -66,6 +71,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _updatePoller.cancel();
+    _refreshPoller.cancel();
     _authSubscription.cancel();
     super.dispose();
   }
@@ -87,6 +93,12 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     final counter = await GetAppCounterApi().call(null);
     if (counter != _lastUpdateCounter && getAppState().isLoggedIn) {
       _lastUpdateCounter = counter;
+      await refreshMainData();
+    }
+  }
+
+  Future<void> _refreshData() async {
+    if (getAppState().isLoggedIn) {
       await refreshMainData();
     }
   }
