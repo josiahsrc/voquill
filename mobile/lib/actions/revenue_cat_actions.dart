@@ -38,7 +38,7 @@ Future<void> logoutRevenueCat() async {
 }
 
 // RC takes time since it's a web hook
-Future<void> _refreshUntilChange() async {
+Future<void> refreshMemberUntilChange() async {
   await loadCurrentMember();
   final startingPlan = getAppState().member?.plan;
 
@@ -59,17 +59,17 @@ Future<void> _refreshUntilChange() async {
 
 Future<void> presentPaywall(BuildContext context) async {
   await PaywallPage.show(context);
-  await _refreshUntilChange();
 }
 
 Future<void> presentCustomerCenter() async {
   await RevenueCatUI.presentCustomerCenter();
+  await refreshMemberUntilChange();
 }
 
 Future<void> restorePurchases() async {
   try {
     await Purchases.restorePurchases();
-    await _refreshUntilChange();
+    await refreshMemberUntilChange();
   } catch (e) {
     _logger.w('Restore purchases failed', e);
   }

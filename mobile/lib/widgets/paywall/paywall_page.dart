@@ -54,7 +54,7 @@ class _PaywallPageState extends State<PaywallPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive && mounted) {
+    if (state == AppLifecycleState.inactive && mounted && !_loading) {
       Navigator.of(context).pop();
     }
   }
@@ -122,6 +122,7 @@ class _PaywallPageState extends State<PaywallPage> with WidgetsBindingObserver {
     setState(() => _loading = true);
     try {
       await Purchases.purchasePackage(package);
+      await refreshMemberUntilChange();
       if (mounted) Navigator.of(context).pop();
     } on PurchasesErrorCode {
       // User cancelled or store error
