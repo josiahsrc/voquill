@@ -298,6 +298,7 @@ class KeyboardViewController: UIInputViewController {
     private var statusIcon: UIImageView!
     private var statusLabel: UILabel!
     private var upgradeButton: UIButton!
+    private var fullAccessBanner: UIView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -307,6 +308,7 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        syncFullAccessStatus()
         loadTones()
         loadLanguage()
         loadDictionary()
@@ -314,6 +316,21 @@ class KeyboardViewController: UIInputViewController {
         startDarwinObservers()
         refreshMemberData()
         startMemberRefreshTimer()
+    }
+
+    private func syncFullAccessStatus() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        defaults?.set(hasFullAccess, forKey: "voquill_keyboard_has_full_access")
+        updateFullAccessState()
+    }
+
+    private func updateFullAccessState() {
+        pillButton.isHidden = !hasFullAccess
+        fullAccessBanner.isHidden = hasFullAccess
+    }
+
+    @objc private func onOpenSettingsTap() {
+        openURL(UIApplication.openSettingsURLString)
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -516,7 +533,46 @@ class KeyboardViewController: UIInputViewController {
             upgradeButton.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
         ])
 
-        let pillStack = UIStackView(arrangedSubviews: [pillButton, statusBanner])
+        let lockIcon = UIImageView(image: UIImage(systemName: "lock.fill"))
+        lockIcon.translatesAutoresizingMaskIntoConstraints = false
+        lockIcon.tintColor = .secondaryLabel
+        lockIcon.contentMode = .scaleAspectFit
+
+        let accessLabel = UILabel()
+        accessLabel.translatesAutoresizingMaskIntoConstraints = false
+        accessLabel.text = "Full Access required"
+        accessLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        accessLabel.textColor = .label
+
+        let labelRow = UIStackView(arrangedSubviews: [lockIcon, accessLabel])
+        labelRow.axis = .horizontal
+        labelRow.spacing = 6
+        labelRow.alignment = .center
+
+        NSLayoutConstraint.activate([
+            lockIcon.widthAnchor.constraint(equalToConstant: 18),
+            lockIcon.heightAnchor.constraint(equalToConstant: 18),
+        ])
+
+        let settingsButton = UIButton(type: .system)
+        settingsButton.setTitle("Open Settings", for: .normal)
+        settingsButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        settingsButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+        settingsButton.setTitleColor(.white, for: .normal)
+        settingsButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        settingsButton.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        settingsButton.layer.cornerRadius = 16
+        settingsButton.addTarget(self, action: #selector(onOpenSettingsTap), for: .touchUpInside)
+        addButtonFeedback(settingsButton)
+
+        fullAccessBanner = UIStackView(arrangedSubviews: [labelRow, settingsButton])
+        (fullAccessBanner as! UIStackView).axis = .vertical
+        (fullAccessBanner as! UIStackView).spacing = 8
+        (fullAccessBanner as! UIStackView).alignment = .center
+        fullAccessBanner.translatesAutoresizingMaskIntoConstraints = false
+        fullAccessBanner.isHidden = true
+
+        let pillStack = UIStackView(arrangedSubviews: [pillButton, fullAccessBanner, statusBanner])
         pillStack.translatesAutoresizingMaskIntoConstraints = false
         pillStack.axis = .vertical
         pillStack.alignment = .center
