@@ -762,6 +762,7 @@ class KeyboardViewController: UIInputViewController {
         dictationLanguages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? ["en"]
         let code = language.components(separatedBy: "-").first ?? language
         languageChip.setTitle(code.uppercased(), for: .normal)
+        languageChip.isHidden = dictationLanguages.count <= 1
     }
 
     @objc private func onLogoButtonTap() {
