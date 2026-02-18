@@ -3,6 +3,7 @@ import 'package:app/flavor.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/color_utils.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/widgets/common/plan_card.dart';
 import 'package:app/widgets/paywall/hero_graphic.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -84,32 +85,35 @@ class _PaywallPageState extends State<PaywallPage> {
                     child: Column(
                       children: [
                         const Gap(16),
-                        Text(
-                          'Unlock everything with',
-                          style: theme.textTheme.headlineSmall,
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          'Voquill Pro',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const Gap(12),
-                        Chip(
-                          label: Text(
-                            'Pro',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: colors.onBlue,
-                              fontWeight: FontWeight.w600,
+                          decoration: BoxDecoration(
+                            color: colors.blue.withAlpha(26),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'PRO',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colors.blue,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                          backgroundColor: colors.blue,
-                          side: BorderSide.none,
+                        ),
+                        const Gap(14),
+                        Text(
+                          'Unlimited voice typing, everywhere.',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            height: 1.15,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                         const Gap(24),
-                        _FeatureItem(label: 'Unlimited voice transcriptions'),
+                        _FeatureItem(label: 'Unlimited words'),
                         _FeatureItem(label: 'Advanced AI post-processing'),
                         _FeatureItem(label: 'Custom tones and styles'),
                         _FeatureItem(label: 'Priority support'),
@@ -117,7 +121,7 @@ class _PaywallPageState extends State<PaywallPage> {
                         Row(
                           children: [
                             Expanded(
-                              child: _PlanCard(
+                              child: PlanCard(
                                 label: 'Yearly',
                                 price: '\$89.99/yr',
                                 subtitle: 'Only \$7.50/mo',
@@ -130,7 +134,7 @@ class _PaywallPageState extends State<PaywallPage> {
                             ),
                             const Gap(12),
                             Expanded(
-                              child: _PlanCard(
+                              child: PlanCard(
                                 label: 'Monthly',
                                 price: '\$12.99/mo',
                                 subtitle: 'Billed at \$12.99/mo.',
@@ -249,100 +253,3 @@ class _FeatureItem extends StatelessWidget {
   }
 }
 
-class _PlanCard extends StatelessWidget {
-  final String label;
-  final String price;
-  final String subtitle;
-  final String? badgeText;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _PlanCard({
-    required this.label,
-    required this.price,
-    required this.subtitle,
-    this.badgeText,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.colors;
-    final borderColor = selected ? colors.blue : colors.level2;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: borderColor, width: 2),
-              borderRadius: BorderRadius.circular(Theming.radiusValue),
-              color: colors.level0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      label,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Icon(
-                      selected
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      color: selected ? colors.blue : colors.level2,
-                      size: 22,
-                    ),
-                  ],
-                ),
-                const Gap(4),
-                Text(
-                  price,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const Gap(2),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onLevel0.secondary(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (badgeText != null)
-            Positioned(
-              top: -10,
-              left: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colors.blue,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badgeText!,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colors.onBlue,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
