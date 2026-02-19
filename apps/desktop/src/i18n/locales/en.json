@@ -423,6 +423,7 @@
   "this_is_a_global_style_and_cannot_be_edited": "This is a global style and cannot be edited",
   "this_setting_is_managed_by_org": "This setting is managed by {org}.",
   "this_setting_is_not_available": "This setting is not available.",
+  "this_shortcut_overlaps_with_another_one_may_trigger_both_act": "This shortcut overlaps with another. One may trigger both actions.",
   "this_style_is_managed_by_your_organization": "This style is managed by your organization.",
   "this_term_is_managed_by_your_organization": "This term is managed by your organization.",
   "this_will_delete_all_preferences_dictionary_entries_and_save": "This will delete all preferences, dictionary entries, and saved transcriptions from this device. The action cannot be undone.",

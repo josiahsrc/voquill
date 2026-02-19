@@ -423,6 +423,7 @@
   "this_is_a_global_style_and_cannot_be_edited": "Este es un estilo global y no se puede editar",
   "this_setting_is_managed_by_org": "Esta configuración está gestionada por {org}.",
   "this_setting_is_not_available": "Esta configuración no está disponible.",
+  "this_shortcut_overlaps_with_another_one_may_trigger_both_act": "Este atajo se superpone con otro. Uno puede activar ambas acciones.",
   "this_style_is_managed_by_your_organization": "Este estilo está gestionado por su organización.",
   "this_term_is_managed_by_your_organization": "Este término está gestionado por su organización.",
   "this_will_delete_all_preferences_dictionary_entries_and_save": "Esto eliminará todas las preferencias, entradas del diccionario y transcripciones guardadas de este dispositivo. La acción no se puede deshacer.",

@@ -423,6 +423,7 @@
   "this_is_a_global_style_and_cannot_be_edited": "Questo è uno stile globale e non può essere modificato",
   "this_setting_is_managed_by_org": "Questa impostazione è gestita da {org}.",
   "this_setting_is_not_available": "Questa impostazione non è disponibile.",
+  "this_shortcut_overlaps_with_another_one_may_trigger_both_act": "Questa scorciatoia si sovrappone a un'altra. Potrebbe attivare entrambe le azioni.",
   "this_style_is_managed_by_your_organization": "Questo stile è gestito dalla tua organizzazione.",
   "this_term_is_managed_by_your_organization": "Questo termine è gestito dalla tua organizzazione.",
   "this_will_delete_all_preferences_dictionary_entries_and_save": "Questo eliminerà tutte le preferenze, le voci del dizionario e le trascrizioni salvate da questo dispositivo. L'azione non può essere annullata.",

@@ -423,6 +423,7 @@
   "this_is_a_global_style_and_cannot_be_edited": "這是一個全域樣式，無法編輯",
   "this_setting_is_managed_by_org": "此設定由 {org} 管理。",
   "this_setting_is_not_available": "此設定不可用。",
+  "this_shortcut_overlaps_with_another_one_may_trigger_both_act": "此快捷鍵與另一個重疊。可能會同時觸發兩個動作。",
   "this_style_is_managed_by_your_organization": "此樣式由您的組織管理。",
   "this_term_is_managed_by_your_organization": "此條款由您的組織管理。",
   "this_will_delete_all_preferences_dictionary_entries_and_save": "這將刪除此裝置上的所有偏好設定、字典項目和已儲存的轉錄。此操作無法復原。",
