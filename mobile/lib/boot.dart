@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/root.dart';
+import 'package:app/utils/analytics_utils.dart';
+import 'package:app/utils/channel_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/version.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -45,6 +47,8 @@ Future<void> boot(Flavor flavor, FirebaseOptions firebaseOptions) async {
       }
 
       await initializeRevenueCat();
+      await initializeMixpanel();
+      syncMixpanelToken();
 
       FlutterError.onError = (FlutterErrorDetails details) {
         logger.e('FlutterError', details.exception, details.stack);

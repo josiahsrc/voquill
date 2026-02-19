@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import Mixpanel
 
 // MARK: - Audio Waveform
 
@@ -302,8 +303,16 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        initMixpanel()
         buildUI()
         startKeyboardCounterPoller()
+    }
+
+    private func initMixpanel() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let token = defaults?.string(forKey: "voquill_mixpanel_token"),
+              !token.isEmpty else { return }
+        Mixpanel.initialize(token: token, trackAutomaticEvents: false)
     }
 
     override func viewDidAppear(_ animated: Bool) {

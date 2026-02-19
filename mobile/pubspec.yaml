@@ -43,6 +43,7 @@ dependencies:
   purchases_flutter: ^8.10.0
   purchases_ui_flutter: ^8.0.0
   flutter_dotenv: ^6.0.0
+  mixpanel_flutter: ^2.5.0
 
 dev_dependencies:
   flutter_test:

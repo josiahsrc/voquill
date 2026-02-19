@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:app/api/api_token_api.dart';
 import 'package:app/flavor.dart';
 import 'package:app/model/tone_model.dart';
+import 'package:app/utils/env_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
@@ -158,6 +159,23 @@ Future<void> openKeyboardSettings() async {
   } catch (e) {
     _logger.w('Failed to open keyboard settings', e);
   }
+}
+
+void syncMixpanelToken() {
+  if (!_canSync) {
+    return;
+  }
+
+  final token = mixpanelToken;
+  if (token.isEmpty) {
+    return;
+  }
+
+  _sharedChannel.invokeMethod('setMixpanelToken', {'token': token}).catchError((
+    e,
+  ) {
+    _logger.w('Failed to sync Mixpanel token', e);
+  });
 }
 
 Future<void> syncKeyboardDictationLanguages({
