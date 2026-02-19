@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/utils/analytics_utils.dart';
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
 import 'package:app/actions/permission_actions.dart';
@@ -12,7 +13,9 @@ import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
 import 'package:app/widgets/common/unfocus_detector.dart';
-import 'package:app/widgets/dictate/dictation_overlay.dart';
+import 'package:app/widgets/common/app_overlay.dart';
+import 'package:app/widgets/dictate/dictation_content.dart';
+import 'package:app/widgets/paywall/paywall_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -45,6 +48,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   late final GoRouter goRouter;
   late final StreamSubscription _authSubscription;
   late final Timer _updatePoller;
+  late final Timer _refreshPoller;
   int _lastUpdateCounter = -1;
 
   static const _channel = MethodChannel('com.voquill.mobile/shared');
@@ -54,20 +58,32 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     goRouter = buildRouter(refreshListenable: context.read<RouteRefresher>());
+    goRouter.routeInformationProvider.addListener(_onRouteChanged);
     _authSubscription = listenToAuthChanges();
     _updatePoller = Timer.periodic(
       const Duration(seconds: 1),
       (_) => _checkForUpdates(),
+    );
+    _refreshPoller = Timer.periodic(
+      const Duration(minutes: 10),
+      (_) => _refreshData(),
     );
     _channel.setMethodCallHandler(_handleNativeCall);
   }
 
   @override
   void dispose() {
+    goRouter.routeInformationProvider.removeListener(_onRouteChanged);
     WidgetsBinding.instance.removeObserver(this);
     _updatePoller.cancel();
+    _refreshPoller.cancel();
     _authSubscription.cancel();
     super.dispose();
+  }
+
+  void _onRouteChanged() {
+    final location = goRouter.routeInformationProvider.value.uri.path;
+    trackPageView(location);
   }
 
   @override
@@ -79,7 +95,9 @@ class _AppState extends State<App> with WidgetsBindingObserver {
 
   Future<dynamic> _handleNativeCall(MethodCall call) async {
     if (call.method == 'showDictationDialog') {
-      showDictationDialog();
+      showAppOverlay(AppOverlayType.dictation);
+    } else if (call.method == 'showPaywall') {
+      showAppOverlay(AppOverlayType.paywall);
     }
   }
 
@@ -87,6 +105,12 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     final counter = await GetAppCounterApi().call(null);
     if (counter != _lastUpdateCounter && getAppState().isLoggedIn) {
       _lastUpdateCounter = counter;
+      await refreshMainData();
+    }
+  }
+
+  Future<void> _refreshData() async {
+    if (getAppState().isLoggedIn) {
       await refreshMainData();
     }
   }
@@ -101,7 +125,13 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         routerConfig: goRouter,
         scaffoldMessengerKey: scaffoldMessengerKey,
         builder: (context, child) {
-          return DictationOverlay(child: child ?? const SizedBox.shrink());
+          return AppOverlay(
+            builder: (type) => switch (type) {
+              AppOverlayType.dictation => const DictationContent(),
+              AppOverlayType.paywall => const PaywallContent(),
+            },
+            child: child ?? const SizedBox.shrink(),
+          );
         },
       ),
     );
@@ -136,6 +166,15 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         },
         condition: (a, b) =>
             !a.status.isSuccess && b.status.isSuccess && b.isLoggedIn,
+      ),
+      useAppStore().listen(
+        (context, state) => syncMixpanelIdentity(state),
+        condition: (a, b) =>
+            a.auth?.uid != b.auth?.uid ||
+            a.member?.plan != b.member?.plan ||
+            a.member?.isOnTrial != b.member?.isOnTrial ||
+            a.user?.onboarded != b.user?.onboarded ||
+            a.user?.name != b.user?.name,
       ),
       useAppStore().listen(
         (context, state) => syncTonesToKeyboard(),

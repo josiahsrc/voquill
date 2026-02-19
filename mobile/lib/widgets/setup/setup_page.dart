@@ -1,3 +1,4 @@
+import 'package:app/utils/analytics_utils.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/setup/setup_intro_form.dart';
 import 'package:app/widgets/setup/setup_keyboard_form.dart';
@@ -13,6 +14,16 @@ class SetupPage extends StatefulWidget {
 
 class _SetupPageState extends State<SetupPage> {
   final _controller = MultiPageController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onPageChanged);
+  }
+
+  void _onPageChanged() {
+    trackSetupStep(_controller.target);
+  }
 
   @override
   void dispose() {

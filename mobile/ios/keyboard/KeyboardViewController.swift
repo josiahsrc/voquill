@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import Mixpanel
 
 // MARK: - Audio Waveform
 
@@ -291,19 +292,62 @@ class KeyboardViewController: UIInputViewController {
     private var cachedIdTokenExpiry: Date?
     private var lastDebugLog: String = ""
 
+    private var memberInfo: MemberInfo?
+    private var configInfo: ConfigInfo?
+    private var memberRefreshTimer: Timer?
+    private var statusBanner: UIView!
+    private var statusIcon: UIImageView!
+    private var statusLabel: UILabel!
+    private var upgradeButton: UIButton!
+    private var fullAccessBanner: UIView!
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        initMixpanel()
         buildUI()
         startKeyboardCounterPoller()
     }
 
+    private func initMixpanel() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let token = defaults?.string(forKey: "voquill_mixpanel_token"),
+              !token.isEmpty else { return }
+        Mixpanel.initialize(token: token, trackAutomaticEvents: false)
+        syncMixpanelUser()
+    }
+
+    private func syncMixpanelUser() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let uid = defaults?.string(forKey: "voquill_mixpanel_uid"),
+              !uid.isEmpty else { return }
+        Mixpanel.mainInstance().identify(distinctId: uid)
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        syncFullAccessStatus()
         loadTones()
         loadLanguage()
         loadDictionary()
         refreshDictationState()
         startDarwinObservers()
+        refreshMemberData()
+        startMemberRefreshTimer()
+    }
+
+    private func syncFullAccessStatus() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        defaults?.set(hasFullAccess, forKey: "voquill_keyboard_has_full_access")
+        updateFullAccessState()
+    }
+
+    private func updateFullAccessState() {
+        pillButton.isHidden = !hasFullAccess
+        fullAccessBanner.isHidden = hasFullAccess
+    }
+
+    @objc private func onOpenSettingsTap() {
+        openURL(UIApplication.openSettingsURLString)
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -321,7 +365,14 @@ class KeyboardViewController: UIInputViewController {
     private func refreshDictationState() {
         let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
         let phaseStr = defaults?.string(forKey: DictationConstants.phaseKey) ?? "idle"
-        let newPhase = DictationPhase(rawValue: phaseStr) ?? .idle
+        var newPhase = DictationPhase(rawValue: phaseStr) ?? .idle
+
+        if newPhase != .idle && isHeartbeatStale(defaults) {
+            NSLog("[VoquillKB] Heartbeat stale, resetting phase to idle")
+            defaults?.set("idle", forKey: DictationConstants.phaseKey)
+            newPhase = .idle
+        }
+
         let oldPhase = dictationPhase
         dictationPhase = newPhase
 
@@ -342,6 +393,13 @@ class KeyboardViewController: UIInputViewController {
             stopAudioLevelPolling()
             applyPillVisual(.idle, animated: oldPhase != newPhase)
         }
+    }
+
+    private func isHeartbeatStale(_ defaults: UserDefaults?) -> Bool {
+        let heartbeat = defaults?.double(forKey: DictationConstants.heartbeatKey)
+        guard let heartbeat = heartbeat, heartbeat > 0 else { return true }
+        let elapsed = Date().timeIntervalSince1970 - heartbeat
+        return elapsed > DictationConstants.heartbeatStaleThreshold
     }
 
     // MARK: - Build UI
@@ -423,7 +481,6 @@ class KeyboardViewController: UIInputViewController {
         pillButton.layer.cornerRadius = 28
         pillButton.clipsToBounds = true
         pillButton.isUserInteractionEnabled = true
-        view.addSubview(pillButton)
 
         let press = UILongPressGestureRecognizer(target: self, action: #selector(onPillPress(_:)))
         press.minimumPressDuration = 0
@@ -447,6 +504,97 @@ class KeyboardViewController: UIInputViewController {
         pillLabel.font = .systemFont(ofSize: 15, weight: .semibold)
         pillLabel.textAlignment = .center
         pillButton.addSubview(pillLabel)
+
+        statusBanner = UIView()
+        statusBanner.translatesAutoresizingMaskIntoConstraints = false
+        statusBanner.isHidden = true
+
+        statusIcon = UIImageView()
+        statusIcon.translatesAutoresizingMaskIntoConstraints = false
+        statusIcon.tintColor = .secondaryLabel
+        statusIcon.contentMode = .scaleAspectFit
+        statusBanner.addSubview(statusIcon)
+
+        statusLabel = UILabel()
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        statusLabel.textColor = .secondaryLabel
+        statusBanner.addSubview(statusLabel)
+
+        let dot = UILabel()
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        dot.text = "·"
+        dot.font = .systemFont(ofSize: 12, weight: .bold)
+        dot.textColor = .tertiaryLabel
+        statusBanner.addSubview(dot)
+
+        upgradeButton = UIButton(type: .system)
+        upgradeButton.translatesAutoresizingMaskIntoConstraints = false
+        upgradeButton.setTitle("Upgrade", for: .normal)
+        upgradeButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
+        upgradeButton.addTarget(self, action: #selector(onUpgradeTap), for: .touchUpInside)
+        statusBanner.addSubview(upgradeButton)
+
+        NSLayoutConstraint.activate([
+            statusBanner.heightAnchor.constraint(equalToConstant: 20),
+            statusIcon.leadingAnchor.constraint(equalTo: statusBanner.leadingAnchor),
+            statusIcon.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
+            statusIcon.widthAnchor.constraint(equalToConstant: 14),
+            statusIcon.heightAnchor.constraint(equalToConstant: 14),
+            statusLabel.leadingAnchor.constraint(equalTo: statusIcon.trailingAnchor, constant: 4),
+            statusLabel.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
+            dot.leadingAnchor.constraint(equalTo: statusLabel.trailingAnchor, constant: 4),
+            dot.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
+            upgradeButton.leadingAnchor.constraint(equalTo: dot.trailingAnchor, constant: 4),
+            upgradeButton.trailingAnchor.constraint(equalTo: statusBanner.trailingAnchor),
+            upgradeButton.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
+        ])
+
+        let lockIcon = UIImageView(image: UIImage(systemName: "lock.fill"))
+        lockIcon.translatesAutoresizingMaskIntoConstraints = false
+        lockIcon.tintColor = .secondaryLabel
+        lockIcon.contentMode = .scaleAspectFit
+
+        let accessLabel = UILabel()
+        accessLabel.translatesAutoresizingMaskIntoConstraints = false
+        accessLabel.text = "Full Access required"
+        accessLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        accessLabel.textColor = .label
+
+        let labelRow = UIStackView(arrangedSubviews: [lockIcon, accessLabel])
+        labelRow.axis = .horizontal
+        labelRow.spacing = 6
+        labelRow.alignment = .center
+
+        NSLayoutConstraint.activate([
+            lockIcon.widthAnchor.constraint(equalToConstant: 18),
+            lockIcon.heightAnchor.constraint(equalToConstant: 18),
+        ])
+
+        let settingsButton = UIButton(type: .system)
+        settingsButton.setTitle("Open Settings", for: .normal)
+        settingsButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        settingsButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+        settingsButton.setTitleColor(.white, for: .normal)
+        settingsButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        settingsButton.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        settingsButton.layer.cornerRadius = 16
+        settingsButton.addTarget(self, action: #selector(onOpenSettingsTap), for: .touchUpInside)
+        addButtonFeedback(settingsButton)
+
+        fullAccessBanner = UIStackView(arrangedSubviews: [labelRow, settingsButton])
+        (fullAccessBanner as! UIStackView).axis = .vertical
+        (fullAccessBanner as! UIStackView).spacing = 8
+        (fullAccessBanner as! UIStackView).alignment = .center
+        fullAccessBanner.translatesAutoresizingMaskIntoConstraints = false
+        fullAccessBanner.isHidden = true
+
+        let pillStack = UIStackView(arrangedSubviews: [pillButton, fullAccessBanner, statusBanner])
+        pillStack.translatesAutoresizingMaskIntoConstraints = false
+        pillStack.axis = .vertical
+        pillStack.alignment = .center
+        pillStack.spacing = 6
+        view.addSubview(pillStack)
 
         NSLayoutConstraint.activate([
             waveformView.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor),
@@ -501,18 +649,18 @@ class KeyboardViewController: UIInputViewController {
             utilStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
 
             topSpacer.topAnchor.constraint(equalTo: utilStack.bottomAnchor),
-            topSpacer.bottomAnchor.constraint(equalTo: pillButton.topAnchor),
+            topSpacer.bottomAnchor.constraint(equalTo: pillStack.topAnchor),
             topSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topSpacer.widthAnchor.constraint(equalToConstant: 0),
 
-            bottomSpacer.topAnchor.constraint(equalTo: pillButton.bottomAnchor),
+            bottomSpacer.topAnchor.constraint(equalTo: pillStack.bottomAnchor),
             bottomSpacer.bottomAnchor.constraint(equalTo: toneContainer.topAnchor),
             bottomSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomSpacer.widthAnchor.constraint(equalToConstant: 0),
 
             topSpacer.heightAnchor.constraint(equalTo: bottomSpacer.heightAnchor),
 
-            pillButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            pillStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             pillButton.widthAnchor.constraint(equalToConstant: 220),
             pillButton.heightAnchor.constraint(equalToConstant: 56),
 
@@ -593,6 +741,7 @@ class KeyboardViewController: UIInputViewController {
             if pillButton.bounds.contains(location) {
                 switch dictationPhase {
                 case .idle:
+                    Mixpanel.mainInstance().track(event: "Activate Dictation Mode")
                     openURL("voquill://dictate")
                 case .active:
                     DarwinNotificationManager.shared.post(DictationConstants.startRecording)
@@ -663,6 +812,11 @@ class KeyboardViewController: UIInputViewController {
             loadTones()
             loadLanguage()
             loadDictionary()
+            syncMixpanelUser()
+        }
+
+        if dictationPhase != .idle {
+            refreshDictationState()
         }
     }
 
@@ -683,6 +837,7 @@ class KeyboardViewController: UIInputViewController {
         dictationLanguages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? ["en"]
         let code = language.components(separatedBy: "-").first ?? language
         languageChip.setTitle(code.uppercased(), for: .normal)
+        languageChip.isHidden = dictationLanguages.count <= 1
     }
 
     @objc private func onLogoButtonTap() {
@@ -785,6 +940,109 @@ class KeyboardViewController: UIInputViewController {
             guard let chip = view as? UIButton else { continue }
             applyChipStyle(chip, selected: chip.tag == index)
         }
+    }
+
+    // MARK: - Member Status
+
+    private func startMemberRefreshTimer() {
+        memberRefreshTimer?.invalidate()
+        memberRefreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            self?.refreshMemberData()
+        }
+    }
+
+    private func refreshMemberData() {
+        fetchIdToken { [weak self] idToken in
+            guard let self = self, let idToken = idToken else { return }
+            guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId),
+                  let functionUrl = defaults.string(forKey: "voquill_function_url") else { return }
+
+            let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
+            let repo = MemberRepo(config: config)
+
+            Task {
+                do {
+                    async let memberResult = repo.getMyMember()
+                    async let configResult = repo.getFullConfig()
+                    let (member, cfg) = try await (memberResult, configResult)
+
+                    await MainActor.run {
+                        self.memberInfo = member
+                        if let cfg = cfg { self.configInfo = cfg }
+                        self.updateStatusBanner()
+                    }
+                } catch {
+                    NSLog("[VoquillKB] Failed to refresh member: %@", error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func updateStatusBanner() {
+        guard let member = memberInfo else {
+            setStatusBannerVisible(false)
+            return
+        }
+
+        if member.isOnTrial {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let trialEndsAt = member.trialEndsAt,
+                let endDate = formatter.date(from: trialEndsAt) {
+                let secondsRemaining = endDate.timeIntervalSince(Date())
+                let daysLeft = max(0, Int(ceil(secondsRemaining / 86400)))
+                let text = daysLeft == 0 ? "Last day of trial" :
+                           daysLeft == 1 ? "1 day left in trial" :
+                           "\(daysLeft) days left in trial"
+                statusIcon.image = UIImage(systemName: "hourglass.bottomhalf.filled")
+                statusLabel.text = text
+                setStatusBannerVisible(true)
+            } else {
+                statusIcon.image = UIImage(systemName: "hourglass.bottomhalf.filled")
+                statusLabel.text = "Your trial ends soon"
+                setStatusBannerVisible(true)
+            }
+        } else if member.plan == "free" {
+            if let config = configInfo {
+                let remaining = max(0, config.freeWordsPerDay - member.wordsToday)
+                let formatter = NumberFormatter()
+                formatter.numberStyle = .decimal
+                let formatted = formatter.string(from: NSNumber(value: remaining)) ?? "\(remaining)"
+                statusIcon.image = UIImage(systemName: "pencil.line")
+                statusLabel.text = "\(formatted) words left today"
+                setStatusBannerVisible(true)
+            } else {
+                statusIcon.image = UIImage(systemName: "pencil.line")
+                statusLabel.text = "Free plan"
+                setStatusBannerVisible(true)
+            }
+        } else {
+            setStatusBannerVisible(false)
+        }
+    }
+
+    private func setStatusBannerVisible(_ visible: Bool) {
+        let alreadyVisible = !statusBanner.isHidden
+        guard visible != alreadyVisible else { return }
+
+        if visible {
+            statusBanner.alpha = 0
+            statusBanner.isHidden = false
+        }
+
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseInOut) {
+            self.statusBanner.alpha = visible ? 1 : 0
+            self.view.layoutIfNeeded()
+        } completion: { _ in
+            if !visible {
+                self.statusBanner.isHidden = true
+            }
+        }
+    }
+
+    @objc private func onUpgradeTap() {
+        Mixpanel.mainInstance().track(event: "Button Click", properties: ["name": "upgrade keyboard"])
+        openURL("voquill://upgrade")
     }
 
     @objc private func onUtilButtonTap(_ sender: UIButton) {
@@ -956,6 +1214,7 @@ class KeyboardViewController: UIInputViewController {
                         self.textDocumentProxy.insertText(trimmed)
                         self.isProcessing = false
                         self.applyPillVisual(.idle, animated: true)
+                        self.refreshMemberData()
                     }
 
                     let tone = capturedToneId.flatMap { capturedToneById[$0] }
@@ -1139,6 +1398,8 @@ class KeyboardViewController: UIInputViewController {
         super.viewWillDisappear(animated)
         appCounterPoller?.invalidate()
         appCounterPoller = nil
+        memberRefreshTimer?.invalidate()
+        memberRefreshTimer = nil
         onDeleteUp()
         DarwinNotificationManager.shared.removeObserver(DictationConstants.dictationPhaseChanged)
         stopAudioLevelPolling()

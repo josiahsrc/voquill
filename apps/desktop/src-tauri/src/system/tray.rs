@@ -120,8 +120,7 @@ pub fn set_menu_icon(app: &tauri::AppHandle, variant: MenuIconVariant) -> Result
 
     #[cfg(target_os = "macos")]
     {
-        let is_template = !is_update;
-        tray.set_icon_as_template(is_template)
+        tray.set_icon_as_template(true)
             .map_err(|err| err.to_string())?;
     }
 

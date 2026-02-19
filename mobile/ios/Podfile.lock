@@ -103,13 +103,33 @@ PODS:
   - GTMSessionFetcher/Core (3.5.0)
   - GTMSessionFetcher/Full (3.5.0):
     - GTMSessionFetcher/Core
+  - Mixpanel-swift (5.1.3):
+    - Mixpanel-swift/Complete (= 5.1.3)
+  - Mixpanel-swift/Complete (5.1.3)
+  - mixpanel_flutter (2.5.0):
+    - Flutter
+    - Mixpanel-swift (= 5.1.3)
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
   - PromisesObjC (2.4.0)
+  - purchases_flutter (8.11.0):
+    - Flutter
+    - PurchasesHybridCommon (= 14.3.0)
+  - purchases_ui_flutter (8.11.0):
+    - Flutter
+    - PurchasesHybridCommonUI (= 14.3.0)
+  - PurchasesHybridCommon (14.3.0):
+    - RevenueCat (= 5.32.0)
+  - PurchasesHybridCommonUI (14.3.0):
+    - PurchasesHybridCommon (= 14.3.0)
+    - RevenueCatUI (= 5.32.0)
   - RecaptchaInterop (101.0.0)
+  - RevenueCat (5.32.0)
+  - RevenueCatUI (5.32.0):
+    - RevenueCat (= 5.32.0)
   - rive_native (0.0.1):
     - Flutter
   - shared_preferences_foundation (0.0.1):
@@ -125,8 +145,12 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_video_looper (from `.symlinks/plugins/flutter_video_looper/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
+  - Mixpanel-swift
+  - mixpanel_flutter (from `.symlinks/plugins/mixpanel_flutter/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
+  - purchases_ui_flutter (from `.symlinks/plugins/purchases_ui_flutter/ios`)
   - rive_native (from `.symlinks/plugins/rive_native/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
@@ -149,8 +173,13 @@ SPEC REPOS:
     - GoogleUtilities
     - GTMAppAuth
     - GTMSessionFetcher
+    - Mixpanel-swift
     - PromisesObjC
+    - PurchasesHybridCommon
+    - PurchasesHybridCommonUI
     - RecaptchaInterop
+    - RevenueCat
+    - RevenueCatUI
 
 EXTERNAL SOURCES:
   cloud_functions:
@@ -165,10 +194,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_video_looper/ios"
   google_sign_in_ios:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
+  mixpanel_flutter:
+    :path: ".symlinks/plugins/mixpanel_flutter/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  purchases_flutter:
+    :path: ".symlinks/plugins/purchases_flutter/ios"
+  purchases_ui_flutter:
+    :path: ".symlinks/plugins/purchases_ui_flutter/ios"
   rive_native:
     :path: ".symlinks/plugins/rive_native/ios"
   shared_preferences_foundation:
@@ -199,14 +234,22 @@ SPEC CHECKSUMS:
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  Mixpanel-swift: 630484a1b61cb90820aa34492798d542d9f1d0f1
+  mixpanel_flutter: b0c5273729fb9e02920a3100b35055c53f4d7229
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  purchases_flutter: 3570127ba41583a75e553d68a763367007830eff
+  purchases_ui_flutter: 4f73ee267b1f50f72f71ece0d918fc5d0cb7f97f
+  PurchasesHybridCommon: 7f0944cc5411bdcd1ea5d69affa6a6f9aaf87b13
+  PurchasesHybridCommonUI: 8149f983d0d5fcc6d2536900c934d3dfb7cbed45
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
+  RevenueCat: 7e1d0768fb287c9983173c9b28e39ccbeeb828a9
+  RevenueCatUI: 61ddba6f94803f9b79c470ffe1e8b81d807c11ce
   rive_native: b422cf8b48d5dea1d536b88b354f11615a638188
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
-PODFILE CHECKSUM: 38147174b94d941d755f428b4b533301e128101b
+PODFILE CHECKSUM: 371ba93db7b85411f422d46a68401f24f672b2cf
 
 COCOAPODS: 1.16.2

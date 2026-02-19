@@ -4,6 +4,7 @@ import { getPlatform } from "./platform.utils";
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
 export const SWITCH_WRITING_STYLE_HOTKEY = "switch-writing-style";
+export const CANCEL_TRANSCRIPTION_HOTKEY = "cancel-transcription";
 export const ADDITIONAL_LANGUAGE_HOTKEY_PREFIX = "additional-language:";
 
 export const getAdditionalLanguageActionName = (language: string): string =>
@@ -60,6 +61,11 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
     macos: [["Function"]],
     windows: [["MetaLeft", "ControlLeft"]],
     linux: [["MetaLeft", "ControlLeft"]],
+  },
+  [CANCEL_TRANSCRIPTION_HOTKEY]: {
+    macos: [["Escape"]],
+    windows: [["Escape"]],
+    linux: [["Escape"]],
   },
 };
 

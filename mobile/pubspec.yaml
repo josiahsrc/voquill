@@ -1,7 +1,7 @@
 name: app
 description: "A new Flutter project."
 publish_to: "none"
-version: 1.2.1+17
+version: 1.3.1+19
 
 environment:
   sdk: ^3.10.3
@@ -40,6 +40,10 @@ dependencies:
   flutter_video_looper:
     path: ../packages/flutter_video_looper
   rive: ^0.14.2
+  purchases_flutter: ^8.10.0
+  purchases_ui_flutter: ^8.0.0
+  flutter_dotenv: ^6.0.0
+  mixpanel_flutter: ^2.5.0
 
 dev_dependencies:
   flutter_test:
@@ -53,4 +57,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - .env
     - assets/

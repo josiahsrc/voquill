@@ -88,6 +88,26 @@ import UIKit
         }
         result(nil)
 
+      case "setMixpanelUser":
+        guard let args = call.arguments as? [String: String],
+              let uid = args["uid"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(uid, forKey: "voquill_mixpanel_uid")
+        result(nil)
+
+      case "setMixpanelToken":
+        guard let args = call.arguments as? [String: String],
+              let token = args["token"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(token, forKey: "voquill_mixpanel_token")
+        result(nil)
+
       case "getDictationLanguages":
         let defaults = UserDefaults(suiteName: AppDelegate.appGroupId)
         let languages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? []
@@ -155,7 +175,7 @@ import UIKit
         result(keyboards.contains(where: { $0.hasPrefix(keyboardBundleId) }))
 
       case "openKeyboardSettings":
-        if let url = URL(string: "App-Prefs:root=General&path=Keyboard/KEYBOARDS") {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
           UIApplication.shared.open(url)
         }
         result(nil)
@@ -213,6 +233,9 @@ import UIKit
       DictationService.shared.stopDictation()
       return true
     case "open":
+      return true
+    case "upgrade":
+      channel?.invokeMethod("showPaywall", arguments: nil)
       return true
     default:
       return false
