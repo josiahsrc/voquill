@@ -1,5 +1,6 @@
 import 'package:app/model/member_model.dart';
 import 'package:app/state/app_state.dart';
+import 'package:intl/intl.dart';
 
 enum EffectivePlan { free, pro }
 
@@ -48,3 +49,25 @@ double? getTrialProgress(AppState state) {
   final progress = msRemaining / _trialDurationMs;
   return progress.clamp(0.0, 1.0);
 }
+
+final _numberFormat = NumberFormat('#,###');
+
+int? getFreeWordsRemaining(AppState state) {
+  final config = state.config;
+  final member = state.member;
+  if (config == null || member == null) return null;
+  final remaining = config.freeWordsPerDay - member.wordsToday;
+  return remaining < 0 ? 0 : remaining;
+}
+
+double? getFreeWordsProgress(AppState state) {
+  final config = state.config;
+  final member = state.member;
+  if (config == null || member == null || config.freeWordsPerDay == 0) {
+    return null;
+  }
+  final used = member.wordsToday / config.freeWordsPerDay;
+  return used.clamp(0.0, 1.0);
+}
+
+String formatWordCount(int count) => _numberFormat.format(count);

@@ -5,36 +5,28 @@ import 'package:app/utils/member_utils.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
 
-class TrialCountdown extends StatelessWidget {
-  const TrialCountdown({super.key});
+class WordsRemaining extends StatelessWidget {
+  const WordsRemaining({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isOnTrial = useAppStore().select(
+    final wordsRemaining = useAppStore().select(
       context,
-      (s) => getIsOnTrial(s),
-    );
-    final daysRemaining = useAppStore().select(
-      context,
-      (s) => getTrialDaysRemaining(s),
+      (s) => getFreeWordsRemaining(s),
     );
     final progress = useAppStore().select(
       context,
-      (s) => getTrialProgress(s),
+      (s) => getFreeWordsProgress(s),
     );
 
-    if (!isOnTrial || daysRemaining == null || progress == null) {
+    if (wordsRemaining == null || progress == null) {
       return const SizedBox.shrink();
     }
 
     final theme = Theme.of(context);
     final colors = context.colors;
 
-    final label = daysRemaining == 0
-        ? 'Last day'
-        : daysRemaining == 1
-            ? '1 day left'
-            : '$daysRemaining days left';
+    final label = '${formatWordCount(wordsRemaining)} words left';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -51,7 +43,7 @@ class TrialCountdown extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      Icons.hourglass_bottom_rounded,
+                      Icons.edit_note_rounded,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
@@ -67,7 +59,7 @@ class TrialCountdown extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: progress,
+                    value: 1.0 - progress,
                     minHeight: 8,
                     backgroundColor: colors.onLevel1.withAlpha(26),
                     valueColor: AlwaysStoppedAnimation(colors.blue),

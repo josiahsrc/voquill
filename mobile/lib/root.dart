@@ -12,7 +12,9 @@ import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
 import 'package:app/widgets/common/unfocus_detector.dart';
-import 'package:app/widgets/dictate/dictation_overlay.dart';
+import 'package:app/widgets/common/app_overlay.dart';
+import 'package:app/widgets/dictate/dictation_content.dart';
+import 'package:app/widgets/paywall/paywall_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -45,6 +47,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   late final GoRouter goRouter;
   late final StreamSubscription _authSubscription;
   late final Timer _updatePoller;
+  late final Timer _refreshPoller;
   int _lastUpdateCounter = -1;
 
   static const _channel = MethodChannel('com.voquill.mobile/shared');
@@ -59,6 +62,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       const Duration(seconds: 1),
       (_) => _checkForUpdates(),
     );
+    _refreshPoller = Timer.periodic(
+      const Duration(minutes: 10),
+      (_) => _refreshData(),
+    );
     _channel.setMethodCallHandler(_handleNativeCall);
   }
 
@@ -66,6 +73,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _updatePoller.cancel();
+    _refreshPoller.cancel();
     _authSubscription.cancel();
     super.dispose();
   }
@@ -79,7 +87,9 @@ class _AppState extends State<App> with WidgetsBindingObserver {
 
   Future<dynamic> _handleNativeCall(MethodCall call) async {
     if (call.method == 'showDictationDialog') {
-      showDictationDialog();
+      showAppOverlay(AppOverlayType.dictation);
+    } else if (call.method == 'showPaywall') {
+      showAppOverlay(AppOverlayType.paywall);
     }
   }
 
@@ -87,6 +97,12 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     final counter = await GetAppCounterApi().call(null);
     if (counter != _lastUpdateCounter && getAppState().isLoggedIn) {
       _lastUpdateCounter = counter;
+      await refreshMainData();
+    }
+  }
+
+  Future<void> _refreshData() async {
+    if (getAppState().isLoggedIn) {
       await refreshMainData();
     }
   }
@@ -101,7 +117,13 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         routerConfig: goRouter,
         scaffoldMessengerKey: scaffoldMessengerKey,
         builder: (context, child) {
-          return DictationOverlay(child: child ?? const SizedBox.shrink());
+          return AppOverlay(
+            builder: (type) => switch (type) {
+              AppOverlayType.dictation => const DictationContent(),
+              AppOverlayType.paywall => const PaywallContent(),
+            },
+            child: child ?? const SizedBox.shrink(),
+          );
         },
       ),
     );

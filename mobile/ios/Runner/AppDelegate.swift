@@ -155,7 +155,7 @@ import UIKit
         result(keyboards.contains(where: { $0.hasPrefix(keyboardBundleId) }))
 
       case "openKeyboardSettings":
-        if let url = URL(string: "App-Prefs:root=General&path=Keyboard/KEYBOARDS") {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
           UIApplication.shared.open(url)
         }
         result(nil)
@@ -213,6 +213,9 @@ import UIKit
       DictationService.shared.stopDictation()
       return true
     case "open":
+      return true
+    case "upgrade":
+      channel?.invokeMethod("showPaywall", arguments: nil)
       return true
     default:
       return false
