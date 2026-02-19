@@ -13,6 +13,7 @@ import { produceAppState, useAppStore } from "../../store";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
+  CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
@@ -60,6 +61,13 @@ export const ShortcutsDialog = () => {
             <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
           }
           actionName={AGENT_DICTATE_HOTKEY}
+        />
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Cancel transcription" />}
+          description={
+            <FormattedMessage defaultMessage="Cancel the current dictation or agent session." />
+          }
+          actionName={CANCEL_TRANSCRIPTION_HOTKEY}
         />
         {isManualStyling && (
           <HotkeySetting

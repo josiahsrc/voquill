@@ -77,6 +77,7 @@ import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
+  CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
   getAdditionalLanguageEntries,
   SWITCH_WRITING_STYLE_HOTKEY,
@@ -672,6 +673,35 @@ export const RootSideEffects = () => {
   stopAgentRef.current = stopAgentRecording;
   stopRecordingRef.current = stopRecording;
 
+  const cancelDictation = useCallback(async () => {
+    getLogger().info("Cancelling dictation");
+    showToast({
+      title: intl.formatMessage({
+        defaultMessage: "Transcription cancelled",
+      }),
+      message: intl.formatMessage({
+        defaultMessage:
+          "The current transcription session has been cancelled. You can change the hotkey for this in settings.",
+      }),
+      toastType: "info",
+      duration: 3_000,
+    });
+
+    dictationController.reset();
+    agentController.reset();
+    const strategy = strategyRef.current;
+    if (strategy) {
+      await strategy.cleanup();
+    }
+    if (isRecordingRef.current || strategyRef.current) {
+      await resetRecordingState();
+    }
+    await invoke<void>("set_phase", { phase: "idle" });
+    produceAppState((draft) => {
+      draft.activeRecordingMode = null;
+    });
+  }, [dictationController, agentController, resetRecordingState]);
+
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
     controller: dictationController,
@@ -728,6 +758,15 @@ export const RootSideEffects = () => {
     actionName: SWITCH_WRITING_STYLE_HOTKEY,
     isDisabled: !isManualStyling,
     onFire: handleSwitchWritingStyle,
+  });
+
+  const isActiveSession = useAppStore(
+    (state) => state.activeRecordingMode !== null,
+  );
+  useHotkeyFire({
+    actionName: CANCEL_TRANSCRIPTION_HOTKEY,
+    isDisabled: !isActiveSession,
+    onFire: () => void cancelDictation(),
   });
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
@@ -805,21 +844,8 @@ export const RootSideEffects = () => {
     });
   });
 
-  useTauriListen<void>("cancel-dictation", async () => {
-    getLogger().info("Cancelling dictation");
-    dictationController.reset();
-    agentController.reset();
-    const strategy = strategyRef.current;
-    if (strategy) {
-      await strategy.cleanup();
-    }
-    if (isRecordingRef.current || strategyRef.current) {
-      await resetRecordingState();
-    }
-    await invoke<void>("set_phase", { phase: "idle" });
-    produceAppState((draft) => {
-      draft.activeRecordingMode = null;
-    });
+  useTauriListen<void>("cancel-dictation", () => {
+    void cancelDictation();
   });
 
   useTauriListen<void>("on-click-dictate", () => {
