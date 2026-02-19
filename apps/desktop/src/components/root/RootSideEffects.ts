@@ -277,6 +277,11 @@ export const RootSideEffects = () => {
       return;
     }
 
+    if (Date.now() < suppressUntilRef.current) {
+      getLogger().verbose("startRecording skipped: suppressed after error");
+      return;
+    }
+
     if (isRecordingRef.current) {
       getLogger().verbose("startRecording skipped: already recording");
       return;
@@ -396,8 +401,8 @@ export const RootSideEffects = () => {
             duration: 5_000,
           });
 
-          dictationController.reset();
-          agentController.reset();
+          dictationController.forceReset();
+          agentController.forceReset();
           void stopRecordingRef.current?.();
         }, RECORDING_AUTO_STOP_DURATION_MS);
       } catch (error) {
@@ -687,13 +692,14 @@ export const RootSideEffects = () => {
       duration: 3_000,
     });
 
-    dictationController.reset();
-    agentController.reset();
+    dictationController.forceReset();
+    agentController.forceReset();
     const strategy = strategyRef.current;
     if (strategy) {
       await strategy.cleanup();
     }
-    if (isRecordingRef.current || strategyRef.current) {
+    strategyRef.current = null;
+    if (isRecordingRef.current) {
       await resetRecordingState();
     }
     await invoke<void>("set_phase", { phase: "idle" });
@@ -832,13 +838,17 @@ export const RootSideEffects = () => {
   });
 
   useTauriListen<void>("agent-overlay-close", async () => {
+    dictationController.forceReset();
+    agentController.forceReset();
     const strategy = strategyRef.current;
     if (strategy) {
       await strategy.cleanup();
     }
-    if (isRecordingRef.current || strategyRef.current) {
+    strategyRef.current = null;
+    if (isRecordingRef.current) {
       await resetRecordingState();
     }
+    await invoke<void>("set_phase", { phase: "idle" });
     produceAppState((draft) => {
       draft.activeRecordingMode = null;
     });
