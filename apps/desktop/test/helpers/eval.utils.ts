@@ -36,6 +36,11 @@ export function getGentextRepo(): BaseGenerateTextRepo {
   return new GroqGenerateTextRepo(apiKey, "meta-llama/llama-4-maverick-17b-128e-instruct");
 }
 
+export function getEvalRepo(): BaseGenerateTextRepo {
+  const apiKey = getGroqApiKey();
+  return new GroqGenerateTextRepo(apiKey, "openai/gpt-oss-120b");
+}
+
 export async function runEval({
   originalText,
   finalText,
@@ -48,7 +53,7 @@ export async function runEval({
   originalText = originalText.trim();
   finalText = finalText.trim();
 
-  const repo = getGentextRepo();
+  const repo = getEvalRepo();
   console.log("Orig Text:", originalText);
   console.log("Finl Text:", finalText);
 
