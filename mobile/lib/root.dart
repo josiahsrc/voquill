@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/utils/analytics_utils.dart';
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
 import 'package:app/actions/permission_actions.dart';
@@ -57,6 +58,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     goRouter = buildRouter(refreshListenable: context.read<RouteRefresher>());
+    goRouter.routeInformationProvider.addListener(_onRouteChanged);
     _authSubscription = listenToAuthChanges();
     _updatePoller = Timer.periodic(
       const Duration(seconds: 1),
@@ -71,11 +73,17 @@ class _AppState extends State<App> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    goRouter.routeInformationProvider.removeListener(_onRouteChanged);
     WidgetsBinding.instance.removeObserver(this);
     _updatePoller.cancel();
     _refreshPoller.cancel();
     _authSubscription.cancel();
     super.dispose();
+  }
+
+  void _onRouteChanged() {
+    final location = goRouter.routeInformationProvider.value.uri.path;
+    trackPageView(location);
   }
 
   @override

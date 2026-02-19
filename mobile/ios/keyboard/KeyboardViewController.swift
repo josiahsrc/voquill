@@ -733,6 +733,7 @@ class KeyboardViewController: UIInputViewController {
             if pillButton.bounds.contains(location) {
                 switch dictationPhase {
                 case .idle:
+                    Mixpanel.mainInstance().track(event: "Activate Dictation Mode")
                     openURL("voquill://dictate")
                 case .active:
                     DarwinNotificationManager.shared.post(DictationConstants.startRecording)
@@ -1031,6 +1032,7 @@ class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func onUpgradeTap() {
+        Mixpanel.mainInstance().track(event: "Button Click", properties: ["name": "upgrade keyboard"])
         openURL("voquill://upgrade")
     }
 

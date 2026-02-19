@@ -1,3 +1,4 @@
+import 'package:app/utils/analytics_utils.dart';
 import 'package:app/actions/onboarding_actions.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/about_you_form.dart';
@@ -45,6 +46,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _onPageChanged(MultiPageController controller) {
+    trackOnboardingStep(controller.target);
     persistOnboardingNavigation(
       target: controller.target,
       history: controller.history,

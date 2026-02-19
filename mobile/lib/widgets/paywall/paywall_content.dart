@@ -1,3 +1,4 @@
+import 'package:app/utils/analytics_utils.dart';
 import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/flavor.dart';
 import 'package:app/theme/app_colors.dart';
@@ -115,6 +116,7 @@ class _PaywallContentState extends State<PaywallContent>
     setState(() => _loading = true);
     try {
       await Purchases.purchasePackage(package);
+      trackPaymentComplete();
       await refreshMemberUntilChange();
       if (mounted) dismissAppOverlay();
     } on PurchasesErrorCode {

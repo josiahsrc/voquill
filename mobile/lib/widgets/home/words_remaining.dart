@@ -1,3 +1,4 @@
+import 'package:app/utils/analytics_utils.dart';
 import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
@@ -70,7 +71,10 @@ class WordsRemaining extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           ActionChip(
-            onPressed: () => presentPaywall(),
+            onPressed: () {
+              trackButtonClick('upgrade words remaining');
+              presentPaywall();
+            },
             backgroundColor: colors.blue,
             labelStyle: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
