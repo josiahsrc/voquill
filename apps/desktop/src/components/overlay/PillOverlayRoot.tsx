@@ -415,11 +415,11 @@ export const PillOverlayRoot = () => {
             size="small"
             sx={{
               position: "absolute",
-              top: -6,
+              top: -4,
               right: -6,
               width: 18,
               height: 18,
-              backgroundColor: "#dc3545",
+              backgroundColor: theme.palette.grey[600],
               opacity: !isIdle && isHovered ? 1 : 0,
               transform: !isIdle && isHovered ? "scale(1)" : "scale(0)",
               pointerEvents: !isIdle && isHovered ? "auto" : "none",
@@ -427,7 +427,7 @@ export const PillOverlayRoot = () => {
               color: theme.palette.common.white,
               zIndex: 1,
               "&:hover": {
-                backgroundColor: "#c82333",
+                backgroundColor: theme.palette.grey[500],
               },
             }}
           >
