@@ -663,6 +663,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mixpanel_flutter:
+    dependency: "direct main"
+    description:
+      name: mixpanel_flutter
+      sha256: f216ee85db6f3fc580ca2efe5fcec9968cc077f9ea05ffbd452a76bbe9303e9b
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
   nested:
     dependency: transitive
     description:

@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import Mixpanel
 
 // MARK: - Audio Waveform
 
@@ -302,8 +303,24 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        initMixpanel()
         buildUI()
         startKeyboardCounterPoller()
+    }
+
+    private func initMixpanel() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let token = defaults?.string(forKey: "voquill_mixpanel_token"),
+              !token.isEmpty else { return }
+        Mixpanel.initialize(token: token, trackAutomaticEvents: false)
+        syncMixpanelUser()
+    }
+
+    private func syncMixpanelUser() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let uid = defaults?.string(forKey: "voquill_mixpanel_uid"),
+              !uid.isEmpty else { return }
+        Mixpanel.mainInstance().identify(distinctId: uid)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -724,6 +741,7 @@ class KeyboardViewController: UIInputViewController {
             if pillButton.bounds.contains(location) {
                 switch dictationPhase {
                 case .idle:
+                    Mixpanel.mainInstance().track(event: "Activate Dictation Mode")
                     openURL("voquill://dictate")
                 case .active:
                     DarwinNotificationManager.shared.post(DictationConstants.startRecording)
@@ -794,6 +812,7 @@ class KeyboardViewController: UIInputViewController {
             loadTones()
             loadLanguage()
             loadDictionary()
+            syncMixpanelUser()
         }
 
         if dictationPhase != .idle {
@@ -1022,6 +1041,7 @@ class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func onUpgradeTap() {
+        Mixpanel.mainInstance().track(event: "Button Click", properties: ["name": "upgrade keyboard"])
         openURL("voquill://upgrade")
     }
 
