@@ -4,6 +4,7 @@ import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/color_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/widgets/common/app_overlay.dart';
 import 'package:app/widgets/common/plan_card.dart';
 import 'package:app/widgets/paywall/hero_graphic.dart';
 import 'package:flutter/material.dart';
@@ -16,23 +17,15 @@ final _logger = createNamedLogger('paywall');
 
 enum _PlanOption { yearly, monthly }
 
-class PaywallPage extends StatefulWidget {
-  const PaywallPage({super.key});
-
-  static Future<void> show(BuildContext context) {
-    return Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => const PaywallPage(),
-      ),
-    );
-  }
+class PaywallContent extends StatefulWidget {
+  const PaywallContent({super.key});
 
   @override
-  State<PaywallPage> createState() => _PaywallPageState();
+  State<PaywallContent> createState() => _PaywallContentState();
 }
 
-class _PaywallPageState extends State<PaywallPage> with WidgetsBindingObserver {
+class _PaywallContentState extends State<PaywallContent>
+    with WidgetsBindingObserver {
   _PlanOption _selected = _PlanOption.yearly;
   bool _loading = false;
   bool _loaded = false;
@@ -55,7 +48,7 @@ class _PaywallPageState extends State<PaywallPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive && mounted && !_loading) {
-      Navigator.of(context).pop();
+      dismissAppOverlay();
     }
   }
 
@@ -123,7 +116,7 @@ class _PaywallPageState extends State<PaywallPage> with WidgetsBindingObserver {
     try {
       await Purchases.purchasePackage(package);
       await refreshMemberUntilChange();
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) dismissAppOverlay();
     } on PurchasesErrorCode {
       // User cancelled or store error
     } catch (e) {
@@ -163,7 +156,7 @@ class _PaywallPageState extends State<PaywallPage> with WidgetsBindingObserver {
                   ),
                   actions: [
                     IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => dismissAppOverlay(),
                       style: IconButton.styleFrom(
                         backgroundColor: colors.level0.withApproxOpacity(0.6),
                       ),

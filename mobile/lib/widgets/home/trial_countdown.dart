@@ -78,7 +78,7 @@ class TrialCountdown extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           ActionChip(
-            onPressed: () => presentPaywall(context),
+            onPressed: () => presentPaywall(),
             backgroundColor: colors.blue,
             labelStyle: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,

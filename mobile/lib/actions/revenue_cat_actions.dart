@@ -3,8 +3,7 @@ import 'package:app/flavor.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/env_utils.dart';
 import 'package:app/utils/log_utils.dart';
-import 'package:app/widgets/paywall/paywall_page.dart';
-import 'package:flutter/material.dart';
+import 'package:app/widgets/common/app_overlay.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
@@ -57,8 +56,8 @@ Future<void> refreshMemberUntilChange() async {
   }
 }
 
-Future<void> presentPaywall(BuildContext context) async {
-  await PaywallPage.show(context);
+void presentPaywall() {
+  showAppOverlay(AppOverlayType.paywall);
 }
 
 Future<void> presentCustomerCenter() async {

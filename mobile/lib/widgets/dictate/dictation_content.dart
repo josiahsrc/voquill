@@ -1,87 +1,37 @@
 import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/theme_utils.dart';
+import 'package:app/widgets/common/app_overlay.dart';
 import 'package:app/widgets/common/app_rive.dart';
 import 'package:flutter/material.dart';
 
-final _visible = ValueNotifier<bool>(false);
-
-void showDictationDialog() {
-  _visible.value = true;
-}
-
-/// Sits on-top of the entire app so we can show this from anywhere
-/// without getting interrupted by navigation.
-class DictationOverlay extends StatefulWidget {
-  const DictationOverlay({super.key, required this.child});
-  final Widget child;
+class DictationContent extends StatefulWidget {
+  const DictationContent({super.key});
 
   @override
-  State<DictationOverlay> createState() => _DictationOverlayState();
+  State<DictationContent> createState() => _DictationContentState();
 }
 
-class _DictationOverlayState extends State<DictationOverlay>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
-  bool _showOverlay = false;
-
+class _DictationContentState extends State<DictationContent>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-      reverseCurve: Curves.easeIn,
-    );
-    _visible.addListener(_onVisibilityChanged);
   }
 
   @override
   void dispose() {
-    _visible.removeListener(_onVisibilityChanged);
-    _controller.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
-  }
-
-  void _onVisibilityChanged() {
-    if (_visible.value) {
-      setState(() => _showOverlay = true);
-      _controller.forward();
-    } else {
-      _controller.reverse().then((_) {
-        if (mounted) setState(() => _showOverlay = false);
-      });
-    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _visible.value = false;
+      dismissAppOverlay();
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
-        if (_showOverlay)
-          FadeTransition(opacity: _animation, child: const _DictationContent()),
-      ],
-    );
-  }
-}
-
-class _DictationContent extends StatelessWidget {
-  const _DictationContent();
 
   @override
   Widget build(BuildContext context) {

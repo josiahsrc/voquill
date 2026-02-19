@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
 import 'package:app/actions/permission_actions.dart';
-import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/api/counter_api.dart';
 import 'package:app/flavor.dart';
 import 'package:app/routing/build_router.dart';
@@ -13,7 +12,9 @@ import 'package:app/store/store.dart';
 import 'package:app/theme/app_colors.dart';
 import 'package:app/theme/build_theme.dart';
 import 'package:app/widgets/common/unfocus_detector.dart';
-import 'package:app/widgets/dictate/dictation_overlay.dart';
+import 'package:app/widgets/common/app_overlay.dart';
+import 'package:app/widgets/dictate/dictation_content.dart';
+import 'package:app/widgets/paywall/paywall_content.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -86,12 +87,9 @@ class _AppState extends State<App> with WidgetsBindingObserver {
 
   Future<dynamic> _handleNativeCall(MethodCall call) async {
     if (call.method == 'showDictationDialog') {
-      showDictationDialog();
+      showAppOverlay(AppOverlayType.dictation);
     } else if (call.method == 'showPaywall') {
-      final ctx = rootNavigatorKey.currentContext;
-      if (ctx != null) {
-        presentPaywall(ctx);
-      }
+      showAppOverlay(AppOverlayType.paywall);
     }
   }
 
@@ -119,7 +117,13 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         routerConfig: goRouter,
         scaffoldMessengerKey: scaffoldMessengerKey,
         builder: (context, child) {
-          return DictationOverlay(child: child ?? const SizedBox.shrink());
+          return AppOverlay(
+            builder: (type) => switch (type) {
+              AppOverlayType.dictation => const DictationContent(),
+              AppOverlayType.paywall => const PaywallContent(),
+            },
+            child: child ?? const SizedBox.shrink(),
+          );
         },
       ),
     );
