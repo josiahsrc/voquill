@@ -88,6 +88,16 @@ import UIKit
         }
         result(nil)
 
+      case "setMixpanelUser":
+        guard let args = call.arguments as? [String: String],
+              let uid = args["uid"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(uid, forKey: "voquill_mixpanel_uid")
+        result(nil)
+
       case "setMixpanelToken":
         guard let args = call.arguments as? [String: String],
               let token = args["token"],

@@ -168,6 +168,15 @@ class _AppState extends State<App> with WidgetsBindingObserver {
             !a.status.isSuccess && b.status.isSuccess && b.isLoggedIn,
       ),
       useAppStore().listen(
+        (context, state) => syncMixpanelIdentity(state),
+        condition: (a, b) =>
+            a.auth?.uid != b.auth?.uid ||
+            a.member?.plan != b.member?.plan ||
+            a.member?.isOnTrial != b.member?.isOnTrial ||
+            a.user?.onboarded != b.user?.onboarded ||
+            a.user?.name != b.user?.name,
+      ),
+      useAppStore().listen(
         (context, state) => syncTonesToKeyboard(),
         condition: (a, b) =>
             a.user?.selectedToneId != b.user?.selectedToneId ||

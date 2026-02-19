@@ -313,6 +313,14 @@ class KeyboardViewController: UIInputViewController {
         guard let token = defaults?.string(forKey: "voquill_mixpanel_token"),
               !token.isEmpty else { return }
         Mixpanel.initialize(token: token, trackAutomaticEvents: false)
+        syncMixpanelUser()
+    }
+
+    private func syncMixpanelUser() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let uid = defaults?.string(forKey: "voquill_mixpanel_uid"),
+              !uid.isEmpty else { return }
+        Mixpanel.mainInstance().identify(distinctId: uid)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -804,6 +812,7 @@ class KeyboardViewController: UIInputViewController {
             loadTones()
             loadLanguage()
             loadDictionary()
+            syncMixpanelUser()
         }
 
         if dictationPhase != .idle {
