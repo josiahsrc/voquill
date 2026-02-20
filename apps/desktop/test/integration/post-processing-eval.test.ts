@@ -227,7 +227,7 @@ So, um, I was thinking that we could, you know, maybe try to implement that new 
       tone: getWritingStyle("default"),
       evals: [
         {
-          criteria: "It should remove filler words and improve readability",
+          criteria: "It should remove some filler words and improve readability",
         },
         {
           criteria: "It should preserve all meaningful content",
