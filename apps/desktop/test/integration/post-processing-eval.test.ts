@@ -161,7 +161,7 @@ describe("default style", { retry: 1 }, () => {
   test("newline handling", async () => {
     await runPostProcessingEval({
       transcription:
-        "Hey John um I wanted to check in about the project newline are we still on track for the deadline next week",
+        "Hey John um I wanted to check in about the project freefall newline are we still on track for the deadline next week",
       tone: getWritingStyle("default"),
       evals: [
         {
@@ -493,7 +493,7 @@ describe("email style", { retry: 1 }, () => {
         },
         {
           criteria:
-            "It should not add any information the speaker didn't mention (except the user's name, which is Thomas Gundan)",
+            "It should not add any information the speaker didn't mention (except the user's name, which is Thomas (Gundan))",
         },
         {
           criteria: "It should remove filler words like 'um'",

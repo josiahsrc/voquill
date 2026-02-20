@@ -148,7 +148,7 @@ export const buildPostProcessingPrompt = (
   const toneTemplate = tone.stylePrompt;
 
   return `
-Your task is to post-process a transcription.
+Your task is to post-process an audio transcription, transforming raw audio output into what the speaker would have reasonably written. Be as faithful as possible to the intent and phrasing of the speaker while adhering to the instructions below.  Don't mention the speakers name unless the speaker said their own name or the instruction indicate you should.
 
 Context:
 - The speaker's name is ${userName}.

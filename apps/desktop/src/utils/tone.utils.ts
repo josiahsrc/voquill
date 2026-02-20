@@ -37,6 +37,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
 - Combine adjacent sentences that repeat the same idea into a single, natural sentence when doing so improves flow without changing tone or intent.
 - Don't remove words that contribute to the speaker's tone and style
+- Respect newline directives by inserting \n in place of the word when it is a hint and not part of the sentence.
       `.trim(),
       isSystem: true,
       createdAt: 0,
