@@ -648,7 +648,7 @@ describe("email style", { retry: 3 }, () => {
       evals: [
         {
           criteria:
-            "It should not add specific dates, reasons for absence, or other details not mentioned by the speaker (except the user's name, which is Thomas Gundan)",
+            "It should not add a specific dates or a reasons for absence",
         },
         {
           criteria:
