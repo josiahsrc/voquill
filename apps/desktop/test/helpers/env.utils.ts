@@ -9,3 +9,7 @@ function getEnvOrThrow(key: string): string {
 export function getGroqApiKey(): string {
   return getEnvOrThrow("GROQ_API_KEY");
 }
+
+export function getOpenAIApiKey(): string {
+  return getEnvOrThrow("OPENAI_API_KEY");
+}

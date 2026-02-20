@@ -33,6 +33,11 @@ const EVAL_RESULT_JSON_SCHEMA =
 
 export function getGentextRepo(): BaseGenerateTextRepo {
   const apiKey = getGroqApiKey();
+  return new GroqGenerateTextRepo(apiKey, "meta-llama/llama-4-maverick-17b-128e-instruct");
+}
+
+export function getEvalRepo(): BaseGenerateTextRepo {
+  const apiKey = getGroqApiKey();
   return new GroqGenerateTextRepo(apiKey, "openai/gpt-oss-120b");
 }
 
@@ -48,7 +53,7 @@ export async function runEval({
   originalText = originalText.trim();
   finalText = finalText.trim();
 
-  const repo = getGentextRepo();
+  const repo = getEvalRepo();
   console.log("Orig Text:", originalText);
   console.log("Finl Text:", finalText);
 
@@ -56,7 +61,7 @@ export async function runEval({
   const promises = evals.map(async (e) => {
     const output = await repo.generateText({
       system:
-        "You are an evaluator. Score the final text based on the given criteria. Return a score between 0 and 10 and a reason for your score.",
+        "You are an evaluator. Score the final text based on the given criteria. Return a score between 0 and 10 and a reason for your score. Evaluate only if the statement in criteria is true in the final text. Don't judge quality generally.",
       prompt: [
         `Original text: ${originalText}`,
         `Final text: ${finalText}`,
@@ -74,7 +79,12 @@ export async function runEval({
     console.log(`Eval Result for criteria "${e.criteria}":`, result);
     expect(
       result.score,
-      `Eval failed for "${e.criteria}": ${result.reason}`,
+      [
+        `Eval failed for "${e.criteria}"`,
+        `Reason: ${result.reason}`,
+        `Original: ${originalText}`,
+        `Final: ${finalText}`,
+      ].join("\n"),
     ).toBeGreaterThanOrEqual(5);
   });
 

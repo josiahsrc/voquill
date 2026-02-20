@@ -22,7 +22,8 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Polished",
       }),
       promptTemplate: `
-- Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally talks
+- Correct grammar that would confuse the reader or look like an unintentional mistake in writing — do not correct informal phrasing that reflects how the speaker naturally talks
+- Fix errors in correctness of speech
 - Keep the speaker's vocabulary, sentence patterns, and tone intact
 - The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it
 - Remove filler words and speech disfluencies that carry no meaning — words that could be deleted without changing what the speaker is saying or how they're saying it
@@ -30,9 +31,13 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Format bulletted lists when the user speaks items in a list format
 - The resulting transcription should make sense
+- keep interjections that express genuine emotion or reaction (e.g. "dang", "wow", "oh")
 - Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
 - Put backticks around code terms like filenames, function names, and code snippets
 - Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
+- Combine adjacent sentences that repeat the same idea into a single, natural sentence when doing so improves flow without changing tone or intent.
+- Don't remove words that contribute to the speaker's tone and style
+- Respect newline directives by inserting \n in place of the word when it is a hint and not part of the sentence.
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -63,7 +68,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       promptTemplate: `
 - Sound like the speaker, but written
 - Fix grammar, remove filler and disfluencies, and lightly restructure for readability
-- Fit the speaker's words into an email format but do NOT add new phrasing, ideas, or words that would otherwise change the intent.
+- Fit the speaker's words into an email format but do NOT add or remove phrasing, ideas, or words that would otherwise change the intent, even if it's blunt or informal.
 - Preserve the speaker's greeting and sign-off if present
 - Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
@@ -75,6 +80,8 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
 - DO NOT introduce new phrasing
 - DO NOT remove phrasing that would change the speaker's intent except for fixing errors
+- Do NOT remove ideas the speaker is presenting, even if they are impolite
+- When in doubt be faithful to what the user said, even when blunt
       `.trim(),
       isSystem: true,
       createdAt: 0,
