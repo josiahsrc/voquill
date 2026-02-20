@@ -79,7 +79,12 @@ export async function runEval({
     console.log(`Eval Result for criteria "${e.criteria}":`, result);
     expect(
       result.score,
-      `Eval failed for "${e.criteria}": ${result.reason}`,
+      [
+        `Eval failed for "${e.criteria}"`,
+        `Reason: ${result.reason}`,
+        `Original: ${originalText}`,
+        `Final: ${finalText}`,
+      ].join("\n"),
     ).toBeGreaterThanOrEqual(5);
   });
 
