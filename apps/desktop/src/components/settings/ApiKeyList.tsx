@@ -38,6 +38,7 @@ import {
   groqTestIntegration,
   OPENAI_GENERATE_TEXT_MODELS,
   OPENAI_TRANSCRIPTION_MODELS,
+  openaiCompatibleTestIntegration,
   openaiTestIntegration,
   OPENROUTER_FAVORITE_MODELS,
   openrouterTestIntegration,
@@ -403,9 +404,16 @@ const testApiKey = async (
   apiKey: SettingsApiKey,
   context: ApiKeyListContext,
 ): Promise<boolean> => {
-  if (apiKey.provider === "ollama" || apiKey.provider === "openai-compatible") {
+  if (apiKey.provider === "ollama") {
     return ollamaTestIntegration({
       baseUrl: apiKey.baseUrl || OLLAMA_DEFAULT_URL,
+      apiKey: apiKey.keyFull || undefined,
+    });
+  }
+
+  if (apiKey.provider === "openai-compatible") {
+    return openaiCompatibleTestIntegration({
+      baseUrl: apiKey.baseUrl || "http://127.0.0.1:8080",
       apiKey: apiKey.keyFull || undefined,
     });
   }
