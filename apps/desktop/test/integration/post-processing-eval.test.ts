@@ -92,7 +92,7 @@ const runPostProcessingEval = async ({
 describe("default style", { retry: 1 }, () => {
   test("basic transcription1", async () => {
     await runPostProcessingEval({
-      transcription: "Hello world",
+      transcription: "Hey Michael",
       tone: getWritingStyle("default"),
       evals: [
         {
@@ -111,6 +111,20 @@ describe("default style", { retry: 1 }, () => {
         {
           criteria:
             "It should clarify the meaning and intent of the speaker, even if the original transcription is confusing or contradictory",
+        },
+      ],
+    });
+  });
+
+    test("should polish", async () => {
+    await runPostProcessingEval({
+      transcription:
+        "So without looking at my code, build like a you don't build anything. Just I'm building a Tauri app. Without looking at my code, what I want you to do is I want you to tell me how I should do hot keys because the way I I I need a way to, like, natively bind the hot keys that work in any application. So I need something that that works natively It used to work on Windows, Mac OS, and Linux. And so the idea is that I need to be able to bind a hockey to my app. Again, do not read my code on my app because I don't want you to know what I'm doing right now. How how would you wire that up? So, for example, I don't wanna press, like, function shift that could be a hotkey, or function z, that would be a hotkey. And if I press that, even though I press the z key, it type the character z into the computer. So, like, we want the hotkey itself to activate and not and and basically, like, register itself with the computer without actually, like, yeah.",
+      tone: getWritingStyle("default"),
+      evals: [
+        {
+          criteria:
+            "Should make it make more sense",
         },
       ],
     });
