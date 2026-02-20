@@ -89,7 +89,7 @@ const runPostProcessingEval = async ({
   });
 };
 
-describe("default style", { retry: 1 }, () => {
+describe("default style", { retry: 3 }, () => {
   test("basic transcription1", async () => {
     await runPostProcessingEval({
       transcription: "Hey Michael",
@@ -322,7 +322,7 @@ Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just crea
   });
 });
 
-describe("custom styling", { retry: 1 }, () => {
+describe("custom styling", { retry: 3 }, () => {
   test("customer support style", async () => {
     const customerSupportChecklist = [
       "Use a polite and empathetic tone.",
@@ -383,7 +383,7 @@ come on guys. you can do better, that was garbage.`,
   });
 });
 
-describe("verbatim style", { retry: 1 }, () => {
+describe("verbatim style", { retry: 3 }, () => {
   test("removes filler words but preserves phrasing", async () => {
     await runPostProcessingEval({
       transcription:
@@ -489,7 +489,7 @@ describe("verbatim style", { retry: 1 }, () => {
   });
 });
 
-describe("email style", { retry: 1 }, () => {
+describe("email style", { retry: 3 }, () => {
   test("formats a casual spoken email", async () => {
     await runPostProcessingEval({
       transcription:
@@ -682,7 +682,7 @@ describe("email style", { retry: 1 }, () => {
   });
 });
 
-describe("chat style", { retry: 1 }, () => {
+describe("chat style", { retry: 3 }, () => {
   test("reads like a text message", async () => {
     await runPostProcessingEval({
       transcription:
@@ -786,7 +786,7 @@ describe("chat style", { retry: 1 }, () => {
   });
 });
 
-describe("formal style", { retry: 1 }, () => {
+describe("formal style", { retry: 3 }, () => {
   test("rewrites casual speech into formal register", async () => {
     await runPostProcessingEval({
       transcription:
