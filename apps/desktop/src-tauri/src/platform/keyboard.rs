@@ -1,5 +1,6 @@
 use crate::domain::{KeysHeldPayload, EVT_KEYS_HELD};
 use rdev::{Event, EventType, Key as RdevKey};
+#[cfg(not(target_os = "linux"))]
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::env;
@@ -529,109 +530,112 @@ pub fn run_listener_process() -> Result<(), String> {
         }
     });
 
-    struct GrabState {
-        pressed_keys: HashSet<String>,
-        suppressed_keys: HashSet<String>,
-        combo_active: bool,
+    #[cfg(not(target_os = "linux"))]
+    {
+        struct GrabState {
+            pressed_keys: HashSet<String>,
+            suppressed_keys: HashSet<String>,
+            combo_active: bool,
+        }
+
+        let grab_result = rdev::grab({
+            let writer = writer.clone();
+            let combos = combos.clone();
+            let state = RefCell::new(GrabState {
+                pressed_keys: HashSet::new(),
+                suppressed_keys: HashSet::new(),
+                combo_active: false,
+            });
+            move |event| -> Option<Event> {
+                let (key, is_press) = match event.event_type {
+                    EventType::KeyPress(key) => (key, true),
+                    EventType::KeyRelease(key) => (key, false),
+                    _ => return Some(event),
+                };
+
+                let label = key_to_label(key);
+                let payload = KeyboardEventPayload {
+                    kind: if is_press {
+                        WireEventKind::Press
+                    } else {
+                        WireEventKind::Release
+                    },
+                    key_label: label.clone(),
+                    raw_code: key_raw_code(key),
+                    scan_code: event.position_code,
+                };
+                send_event_to_tcp(&writer, &payload);
+
+                let mut s = state.borrow_mut();
+
+                if is_press {
+                    s.pressed_keys.insert(label.clone());
+
+                    let current_combos = combos
+                        .lock()
+                        .map(|g| g.clone())
+                        .unwrap_or_default();
+
+                    if matches_any_combo(&s.pressed_keys, &current_combos) {
+                        s.combo_active = true;
+                    }
+
+                    if s.combo_active {
+                        s.suppressed_keys.insert(label);
+                        return None;
+                    }
+
+                    Some(event)
+                } else {
+                    s.pressed_keys.remove(&label);
+
+                    if s.pressed_keys.is_empty() {
+                        s.combo_active = false;
+                    }
+
+                    if s.suppressed_keys.remove(&label) {
+                        return None;
+                    }
+
+                    Some(event)
+                }
+            }
+        });
+
+        match grab_result {
+            Ok(()) => return Ok(()),
+            Err(grab_err) => {
+                eprintln!(
+                    "rdev::grab() failed ({grab_err:?}), falling back to rdev::listen()"
+                );
+            }
+        }
     }
 
-    let grab_result = rdev::grab({
+    let result = rdev::listen({
         let writer = writer.clone();
-        let combos = combos.clone();
-        let state = RefCell::new(GrabState {
-            pressed_keys: HashSet::new(),
-            suppressed_keys: HashSet::new(),
-            combo_active: false,
-        });
-        move |event| -> Option<Event> {
-            let (key, is_press) = match event.event_type {
-                EventType::KeyPress(key) => (key, true),
-                EventType::KeyRelease(key) => (key, false),
-                _ => return Some(event),
+        move |event| {
+            let payload = match event.event_type {
+                EventType::KeyPress(key) => Some(KeyboardEventPayload {
+                    kind: WireEventKind::Press,
+                    key_label: key_to_label(key),
+                    raw_code: key_raw_code(key),
+                    scan_code: event.position_code,
+                }),
+                EventType::KeyRelease(key) => Some(KeyboardEventPayload {
+                    kind: WireEventKind::Release,
+                    key_label: key_to_label(key),
+                    raw_code: key_raw_code(key),
+                    scan_code: event.position_code,
+                }),
+                _ => None,
             };
 
-            let label = key_to_label(key);
-            let payload = KeyboardEventPayload {
-                kind: if is_press {
-                    WireEventKind::Press
-                } else {
-                    WireEventKind::Release
-                },
-                key_label: label.clone(),
-                raw_code: key_raw_code(key),
-                scan_code: event.position_code,
-            };
-            send_event_to_tcp(&writer, &payload);
-
-            let mut s = state.borrow_mut();
-
-            if is_press {
-                s.pressed_keys.insert(label.clone());
-
-                let current_combos = combos
-                    .lock()
-                    .map(|g| g.clone())
-                    .unwrap_or_default();
-
-                if matches_any_combo(&s.pressed_keys, &current_combos) {
-                    s.combo_active = true;
-                }
-
-                if s.combo_active {
-                    s.suppressed_keys.insert(label);
-                    return None;
-                }
-
-                Some(event)
-            } else {
-                s.pressed_keys.remove(&label);
-
-                if s.pressed_keys.is_empty() {
-                    s.combo_active = false;
-                }
-
-                if s.suppressed_keys.remove(&label) {
-                    return None;
-                }
-
-                Some(event)
+            if let Some(payload) = payload {
+                send_event_to_tcp(&writer, &payload);
             }
         }
     });
 
-    match grab_result {
-        Ok(()) => Ok(()),
-        Err(grab_err) => {
-            eprintln!(
-                "rdev::grab() failed ({grab_err:?}), falling back to rdev::listen()"
-            );
-
-            let result = rdev::listen({
-                let writer = writer.clone();
-                move |event| {
-                    let payload = match event.event_type {
-                        EventType::KeyPress(key) => Some(KeyboardEventPayload {
-                            kind: WireEventKind::Press,
-                            key_label: key_to_label(key),
-                            raw_code: key_raw_code(key),
-                            scan_code: event.position_code,
-                        }),
-                        EventType::KeyRelease(key) => Some(KeyboardEventPayload {
-                            kind: WireEventKind::Release,
-                            key_label: key_to_label(key),
-                            raw_code: key_raw_code(key),
-                            scan_code: event.position_code,
-                        }),
-                        _ => None,
-                    };
-
-                    if let Some(payload) = payload {
-                        send_event_to_tcp(&writer, &payload);
-                    }
-                }
-            });
-
-            result.map_err(|err| format!("keyboard listener error: {err:?}"))
-        }
-    }
+    result.map_err(|err| format!("keyboard listener error: {err:?}"))
 }
