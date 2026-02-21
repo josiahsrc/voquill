@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { AppState } from "../state/app.state";
 import { useAppStore } from "../store";
+import { getEffectiveStylingMode } from "./feature.utils";
 import { getPlatform } from "./platform.utils";
 
 export const DICTATE_HOTKEY = "dictate";
@@ -135,6 +136,19 @@ export const getAdditionalLanguageEntries = (
     .filter((entry): entry is AdditionalLanguageEntry => Boolean(entry));
 };
 
+/**
+ * We do not want to grab events in certain situtations. Ie.e The escape key unless a transcription is active.
+ */
+const isActionGrabbable = (state: AppState, actionName: string): boolean => {
+  if (actionName === CANCEL_TRANSCRIPTION_HOTKEY) {
+    return state.activeRecordingMode !== null;
+  }
+  if (actionName === SWITCH_WRITING_STYLE_HOTKEY) {
+    return getEffectiveStylingMode(state) === "manual";
+  }
+  return true;
+};
+
 export const syncHotkeyCombosToNative = async (): Promise<void> => {
   const state = useAppStore.getState();
   const actionNames = new Set<string>();
@@ -151,6 +165,9 @@ export const syncHotkeyCombosToNative = async (): Promise<void> => {
 
   const combos: string[][] = [];
   for (const actionName of actionNames) {
+    if (!isActionGrabbable(state, actionName)) {
+      continue;
+    }
     for (const combo of getHotkeyCombosForAction(state, actionName)) {
       if (combo.length > 0) {
         combos.push(combo);

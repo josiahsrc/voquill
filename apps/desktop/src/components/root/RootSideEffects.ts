@@ -81,6 +81,7 @@ import {
   DICTATE_HOTKEY,
   getAdditionalLanguageEntries,
   SWITCH_WRITING_STYLE_HOTKEY,
+  syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
@@ -784,6 +785,10 @@ export const RootSideEffects = () => {
     isDisabled: !isActiveSession,
     onFire: () => void cancelDictation(),
   });
+
+  useEffect(() => {
+    syncHotkeyCombosToNative();
+  }, [isActiveSession, isManualStyling]);
 
   useTauriListen<void>(REGISTER_CURRENT_APP_EVENT, async () => {
     await tryRegisterCurrentAppTarget();
