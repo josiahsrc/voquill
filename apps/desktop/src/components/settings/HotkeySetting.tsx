@@ -11,6 +11,7 @@ import { createId } from "../../utils/id.utils";
 import {
   getDefaultHotkeyCombosForAction,
   getHotkeyCombosForAction,
+  syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import { HotKey } from "../common/HotKey";
 
@@ -94,6 +95,7 @@ export const HotkeySetting = ({
         draft.settings.hotkeysStatus = "success";
       });
       await getHotkeyRepo().saveHotkey(newValue);
+      await syncHotkeyCombosToNative();
     } catch (error) {
       console.error("Failed to save hotkey", error);
       showErrorSnackbar("Failed to save hotkey. Please try again.");
@@ -109,6 +111,7 @@ export const HotkeySetting = ({
         );
       });
       await getHotkeyRepo().deleteHotkey(id);
+      await syncHotkeyCombosToNative();
     } catch (error) {
       console.error("Failed to delete hotkey", error);
       showErrorSnackbar("Failed to delete hotkey. Please try again.");

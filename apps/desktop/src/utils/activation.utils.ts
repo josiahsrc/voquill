@@ -137,7 +137,6 @@ export class ActivationController {
     this._isLocked = false;
     this.ignoreNextActivation = false;
     this.pressTimestamp = null;
-    this.lastReleaseTimestamp = null;
     this.clearPendingDeactivation();
   }
 
