@@ -1,6 +1,7 @@
 import { getHotkeyRepo } from "../repos";
 import { produceAppState } from "../store";
 import { registerHotkeys } from "../utils/app.utils";
+import { syncHotkeyCombosToNative } from "../utils/keyboard.utils";
 import { showErrorSnackbar } from "./app.actions";
 
 export const loadHotkeys = async (): Promise<void> => {
@@ -15,6 +16,7 @@ export const loadHotkeys = async (): Promise<void> => {
       draft.settings.hotkeyIds = hotkeys.map((hotkey) => hotkey.id);
       draft.settings.hotkeysStatus = "success";
     });
+    await syncHotkeyCombosToNative();
   } catch (error) {
     console.error("Failed to load hotkeys", error);
     produceAppState((draft) => {

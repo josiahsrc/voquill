@@ -1,4 +1,6 @@
+import { invoke } from "@tauri-apps/api/core";
 import { AppState } from "../state/app.state";
+import { useAppStore } from "../store";
 import { getPlatform } from "./platform.utils";
 
 export const DICTATE_HOTKEY = "dictate";
@@ -131,4 +133,34 @@ export const getAdditionalLanguageEntries = (
       };
     })
     .filter((entry): entry is AdditionalLanguageEntry => Boolean(entry));
+};
+
+export const syncHotkeyCombosToNative = async (): Promise<void> => {
+  const state = useAppStore.getState();
+  const actionNames = new Set<string>();
+
+  for (const hotkey of Object.values(state.hotkeyById)) {
+    if (hotkey.keys.length > 0) {
+      actionNames.add(hotkey.actionName);
+    }
+  }
+
+  for (const name of Object.keys(DEFAULT_HOTKEY_COMBOS)) {
+    actionNames.add(name);
+  }
+
+  const combos: string[][] = [];
+  for (const actionName of actionNames) {
+    for (const combo of getHotkeyCombosForAction(state, actionName)) {
+      if (combo.length > 0) {
+        combos.push(combo);
+      }
+    }
+  }
+
+  try {
+    await invoke("sync_hotkey_combos", { combos });
+  } catch (err) {
+    console.error("Failed to sync hotkey combos to native", err);
+  }
 };

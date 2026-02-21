@@ -227,6 +227,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::set_pill_hover_enabled,
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
+            crate::commands::sync_hotkey_combos,
             crate::commands::play_audio,
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,

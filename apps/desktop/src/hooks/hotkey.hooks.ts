@@ -66,7 +66,7 @@ export const useHotkeyHoldMany = (args: { actions: HoldAction[] }) => {
         !wasPressed &&
         !action.controller.hasHadRelease
       ) {
-        action.controller.reset();
+        action.controller.forceReset();
       }
 
       if (availableCombos.length === 0) {

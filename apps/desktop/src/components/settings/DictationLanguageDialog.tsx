@@ -30,6 +30,7 @@ import {
   getAdditionalLanguageActionName,
   getAdditionalLanguageEntries,
   getHotkeyCombosForAction,
+  syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import {
   DICTATION_LANGUAGE_OPTIONS,
@@ -225,6 +226,7 @@ export const DictationLanguageDialog = () => {
       for (const hotkey of newAdditionalHotkeys) {
         await repo.saveHotkey(hotkey);
       }
+      await syncHotkeyCombosToNative();
     } catch (error) {
       showErrorSnackbar(error);
     }

@@ -1151,6 +1151,11 @@ pub fn stop_key_listener() -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn sync_hotkey_combos(combos: Vec<Vec<String>>) {
+    crate::platform::keyboard::sync_combos(combos);
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {

@@ -12,6 +12,7 @@ import { createId } from "../../utils/id.utils";
 import {
   DICTATE_HOTKEY,
   getDefaultHotkeyCombosForAction,
+  syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 import { KeyPressSimulator } from "../common/KeyPressSimulator";
@@ -100,6 +101,7 @@ export const KeybindingsForm = () => {
         draft.settings.hotkeysStatus = "success";
       });
       await getHotkeyRepo().saveHotkey(newValue);
+      await syncHotkeyCombosToNative();
     } catch (error) {
       console.error("Failed to save hotkey", error);
       showErrorSnackbar("Failed to save hotkey. Please try again.");
