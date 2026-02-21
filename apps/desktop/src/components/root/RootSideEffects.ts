@@ -131,6 +131,7 @@ export const RootSideEffects = () => {
   const stopPendingRef = useRef<Promise<StopRecordingResult> | null>(null);
   const updateInitializedRef = useRef(false);
   const isRecordingRef = useRef(false);
+  const recordingGenerationRef = useRef(0);
   const suppressUntilRef = useRef(0);
   const overlayLoadingTokenRef = useRef<symbol | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
@@ -277,6 +278,15 @@ export const RootSideEffects = () => {
       return;
     }
 
+    if (stopPendingRef.current) {
+      getLogger().verbose("startRecording waiting for pending stop");
+      try {
+        await stopPendingRef.current;
+      } catch {
+        // Ignore errors from the stop — we just need it to finish
+      }
+    }
+
     if (isRecordingRef.current) {
       getLogger().verbose("startRecording skipped: already recording");
       return;
@@ -321,6 +331,7 @@ export const RootSideEffects = () => {
     }
 
     isRecordingRef.current = true;
+    recordingGenerationRef.current++;
     if (startPendingRef.current) {
       getLogger().verbose("startRecording waiting on pending start");
       await startPendingRef.current;
@@ -511,8 +522,6 @@ export const RootSideEffects = () => {
         getLogger().error(`Failed to stop recording: ${error}`);
         showErrorSnackbar("Unable to stop recording. Please try again.");
         suppressUntilRef.current = Date.now() + 700;
-      } finally {
-        stopPendingRef.current = null;
       }
 
       return [audio, a11yInfo, appTarget];
@@ -525,9 +534,12 @@ export const RootSideEffects = () => {
     );
 
     isRecordingRef.current = false;
-
+    strategyRef.current = null;
     const session = sessionRef.current;
     sessionRef.current = null;
+    stopPendingRef.current = null;
+
+    const gen = recordingGenerationRef.current;
 
     try {
       if (session && audio) {
@@ -576,12 +588,13 @@ export const RootSideEffects = () => {
           );
 
           if (!result.shouldContinue) {
-            getLogger().verbose("Strategy complete, cleaning up");
-            await strategy.cleanup();
-            strategyRef.current = null;
-            produceAppState((draft) => {
-              draft.activeRecordingMode = null;
-            });
+            if (recordingGenerationRef.current === gen) {
+              getLogger().verbose("Strategy complete, cleaning up");
+              await strategy.cleanup();
+              produceAppState((draft) => {
+                draft.activeRecordingMode = null;
+              });
+            }
           }
         } else {
           getLogger().warning("Empty transcript, resetting to idle");
@@ -590,11 +603,12 @@ export const RootSideEffects = () => {
             await invoke<void>("set_phase", { phase: "idle" });
           }
 
-          await strategy.cleanup();
-          strategyRef.current = null;
-          produceAppState((draft) => {
-            draft.activeRecordingMode = null;
-          });
+          if (recordingGenerationRef.current === gen) {
+            await strategy.cleanup();
+            produceAppState((draft) => {
+              draft.activeRecordingMode = null;
+            });
+          }
         }
 
         if (strategy.shouldStoreTranscript()) {
@@ -616,9 +630,11 @@ export const RootSideEffects = () => {
       }
     } finally {
       session?.cleanup();
-      produceAppState((draft) => {
-        draft.dictationLanguageOverride = null;
-      });
+      if (recordingGenerationRef.current === gen) {
+        produceAppState((draft) => {
+          draft.dictationLanguageOverride = null;
+        });
+      }
       refreshMember();
       getLogger().info("Dictation flow complete");
     }

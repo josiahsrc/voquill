@@ -232,7 +232,9 @@ fn run_listener_thread(
 
         match listener.accept() {
             Ok((stream, _addr)) => {
-                if let Err(err) = pump_stream(stream, emitter.clone()) {
+                let result = pump_stream(stream, emitter.clone());
+                emitter.reset();
+                if let Err(err) = result {
                     eprintln!("Keyboard listener stream error: {err}");
                 }
             }
