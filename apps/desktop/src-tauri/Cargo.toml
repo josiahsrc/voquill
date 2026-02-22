@@ -56,6 +56,8 @@ dotenvy = "0.15"
 chrono = "0.4"
 tokio = { version = "1", features = ["time"] }
 hostname = "0.4"
+rfd = "0.15"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"

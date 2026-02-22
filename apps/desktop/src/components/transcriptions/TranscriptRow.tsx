@@ -1,5 +1,6 @@
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
@@ -13,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { getRec } from "@repo/utilities";
+import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
@@ -459,6 +461,20 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     [audioSnapshot, id, intl],
   );
 
+  const handleExport = useCallback(async () => {
+    try {
+      const saved = await invoke<boolean>("export_transcription", { id });
+      if (saved) {
+        showSnackbar(
+          intl.formatMessage({ defaultMessage: "Export saved successfully" }),
+          { mode: "success" },
+        );
+      }
+    } catch (error) {
+      showErrorSnackbar(error);
+    }
+  }, [id, intl]);
+
   return (
     <>
       <Stack
@@ -644,6 +660,23 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
                 </Tooltip>
               )}
             </TranscriptionToneMenu>
+            <Tooltip
+              title={intl.formatMessage({
+                defaultMessage: "Export transcription",
+              })}
+              placement="top"
+            >
+              <IconButton
+                aria-label={intl.formatMessage({
+                  defaultMessage: "Export transcription",
+                })}
+                size="small"
+                onClick={handleExport}
+                sx={{ p: 0.5 }}
+              >
+                <FileDownloadOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
         </>
       )}

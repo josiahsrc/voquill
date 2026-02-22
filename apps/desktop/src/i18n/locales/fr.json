@@ -188,6 +188,8 @@
   "enterprise": "Entreprise",
   "everything_the_trial_has": "Tout ce que l'essai offre",
   "export_diagnostic_logs_as_a_text_file_for_troubleshooting": "Exporter les journaux de diagnostic en tant que fichier texte pour le dépannage.",
+  "export_saved_successfully": "Exportation enregistrée avec succès",
+  "export_transcription": "Exporter la transcription",
   "failed_to_load_api_keys": "Échec du chargement des clés API",
   "failed_to_load_models": "Échec du chargement des modèles",
   "faq": "FAQ",

@@ -188,6 +188,8 @@
   "enterprise": "Enterprise",
   "everything_the_trial_has": "Alles, was die Testversion hat",
   "export_diagnostic_logs_as_a_text_file_for_troubleshooting": "Diagnoseprotokolle als Textdatei zum Troubleshooting exportieren.",
+  "export_saved_successfully": "Export erfolgreich gespeichert",
+  "export_transcription": "Transkription exportieren",
   "failed_to_load_api_keys": "Fehler beim Laden der API-Schlüssel",
   "failed_to_load_models": "Fehler beim Laden der Modelle",
   "faq": "FAQ",

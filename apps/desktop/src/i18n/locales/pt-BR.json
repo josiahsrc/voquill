@@ -188,6 +188,8 @@
   "enterprise": "Empresarial",
   "everything_the_trial_has": "Tudo o que o período de teste oferece",
   "export_diagnostic_logs_as_a_text_file_for_troubleshooting": "Exportar logs de diagnóstico como um arquivo de texto para solução de problemas.",
+  "export_saved_successfully": "Exportação salva com sucesso",
+  "export_transcription": "Exportar transcrição",
   "failed_to_load_api_keys": "Falha ao carregar chaves API",
   "failed_to_load_models": "Falha ao carregar modelos",
   "faq": "FAQ",

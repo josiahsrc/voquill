@@ -188,6 +188,8 @@
   "enterprise": "企業版",
   "everything_the_trial_has": "試用版的所有功能",
   "export_diagnostic_logs_as_a_text_file_for_troubleshooting": "匯出診斷日誌為文字檔以進行故障排除。",
+  "export_saved_successfully": "匯出已成功儲存",
+  "export_transcription": "匯出文字稿",
   "failed_to_load_api_keys": "無法載入 API 金鑰",
   "failed_to_load_models": "無法載入模型",
   "faq": "常見問題",

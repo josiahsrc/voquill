@@ -188,6 +188,8 @@
   "enterprise": "엔터프라이즈",
   "everything_the_trial_has": "체험판의 모든 기능",
   "export_diagnostic_logs_as_a_text_file_for_troubleshooting": "문제 해결을 위해 진단 로그를 텍스트 파일로 내보내기",
+  "export_saved_successfully": "내보내기가 성공적으로 저장되었습니다",
+  "export_transcription": "전사 내보내기",
   "failed_to_load_api_keys": "API 키를 로드하지 못했습니다",
   "failed_to_load_models": "모델을 로드하지 못했습니다",
   "faq": "자주 묻는 질문",

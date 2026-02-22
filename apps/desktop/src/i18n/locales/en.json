@@ -188,6 +188,8 @@
   "enterprise": "Enterprise",
   "everything_the_trial_has": "Everything the trial has",
   "export_diagnostic_logs_as_a_text_file_for_troubleshooting": "Export diagnostic logs as a text file for troubleshooting.",
+  "export_saved_successfully": "Export saved successfully",
+  "export_transcription": "Export transcription",
   "failed_to_load_api_keys": "Failed to load API keys",
   "failed_to_load_models": "Failed to load models",
   "faq": "FAQ",

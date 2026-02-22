@@ -439,6 +439,87 @@ pub async fn transcription_audio_load(
 }
 
 #[tauri::command]
+pub async fn export_transcription(
+    app: AppHandle,
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<bool, String> {
+    let pool = database.pool();
+
+    let row = sqlx::query(
+        "SELECT transcript, raw_transcript, audio_path
+         FROM transcriptions
+         WHERE id = ?1",
+    )
+    .bind(&id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|err| err.to_string())?
+    .ok_or_else(|| "Transcription not found".to_string())?;
+
+    let transcript: String = row.get("transcript");
+    let raw_transcript: Option<String> = row.get("raw_transcript");
+    let audio_path: Option<String> = row.get("audio_path");
+
+    let short_id = if id.len() > 8 { &id[..8] } else { &id };
+    let dialog = rfd::AsyncFileDialog::new()
+        .set_file_name(format!("voquill-{short_id}.zip"))
+        .add_filter("ZIP Archive", &["zip"])
+        .save_file()
+        .await;
+
+    let save_path = match dialog {
+        Some(handle) => handle.path().to_path_buf(),
+        None => return Ok(false),
+    };
+
+    let audio_dir =
+        crate::system::audio_store::audio_dir(&app).map_err(|err| err.to_string())?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+
+        let file = std::fs::File::create(&save_path)
+            .map_err(|err| format!("Failed to create file: {err}"))?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options = SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+
+        zip.start_file("processed.txt", options)
+            .map_err(|err| err.to_string())?;
+        zip.write_all(transcript.as_bytes())
+            .map_err(|err| err.to_string())?;
+
+        if let Some(ref raw) = raw_transcript {
+            if !raw.is_empty() {
+                zip.start_file("raw.txt", options)
+                    .map_err(|err| err.to_string())?;
+                zip.write_all(raw.as_bytes())
+                    .map_err(|err| err.to_string())?;
+            }
+        }
+
+        if let Some(ref audio_path_str) = audio_path {
+            let audio_path_buf = PathBuf::from(audio_path_str);
+            if audio_path_buf.starts_with(&audio_dir) && audio_path_buf.exists() {
+                let audio_data = std::fs::read(&audio_path_buf)
+                    .map_err(|err| format!("Failed to read audio: {err}"))?;
+                zip.start_file("audio.wav", options)
+                    .map_err(|err| err.to_string())?;
+                zip.write_all(&audio_data)
+                    .map_err(|err| err.to_string())?;
+            }
+        }
+
+        zip.finish().map_err(|err| err.to_string())?;
+        Ok::<bool, String>(true)
+    })
+    .await
+    .map_err(|err| err.to_string())?
+}
+
+#[tauri::command]
 pub async fn term_create(
     term: crate::domain::Term,
     database: State<'_, crate::state::OptionKeyDatabase>,
