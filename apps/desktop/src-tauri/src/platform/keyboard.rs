@@ -1,7 +1,5 @@
 use crate::domain::{KeysHeldPayload, EVT_KEYS_HELD};
 use rdev::{Event, EventType, Key as RdevKey};
-#[cfg(not(target_os = "linux"))]
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::env;
 use std::io::{BufRead, BufReader, BufWriter, ErrorKind, Write};
@@ -15,6 +13,13 @@ use tauri::{AppHandle, Emitter, EventTarget};
 
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
+
+#[cfg(target_os = "macos")]
+pub use super::macos::keyboard::run_listener_process;
+#[cfg(target_os = "windows")]
+pub use super::windows::keyboard::run_listener_process;
+#[cfg(target_os = "linux")]
+pub use super::linux::keyboard::run_listener_process;
 
 type PressedKeys = Arc<Mutex<HashSet<String>>>;
 
@@ -169,21 +174,21 @@ pub fn stop_key_listener() -> Result<(), String> {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-enum WireEventKind {
+pub(crate) enum WireEventKind {
     Press,
     Release,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct KeyboardEventPayload {
-    kind: WireEventKind,
-    key_label: String,
-    raw_code: Option<u32>,
+pub(crate) struct KeyboardEventPayload {
+    pub kind: WireEventKind,
+    pub key_label: String,
+    pub raw_code: Option<u32>,
     #[serde(default)]
-    scan_code: u32,
+    pub scan_code: u32,
 }
 
-fn debug_keys_enabled() -> bool {
+pub(crate) fn debug_keys_enabled() -> bool {
     static DEBUG: OnceLock<bool> = OnceLock::new();
     *DEBUG.get_or_init(|| matches!(env::var("VOQUILL_DEBUG_KEYS"), Ok(value) if value == "1"))
 }
@@ -250,6 +255,7 @@ fn run_listener_thread(
 
     stop_listener_child();
 }
+
 fn spawn_listener_child(port: u16) -> Result<Child, String> {
     let exe = std::env::current_exe()
         .map_err(|err| format!("failed to resolve current executable: {err}"))?;
@@ -447,21 +453,24 @@ fn parse_unknown_label(label: &str) -> Option<u32> {
     trimmed.parse().ok()
 }
 
-fn key_to_label(key: RdevKey) -> String {
+pub(crate) fn key_to_label(key: RdevKey) -> String {
     match key {
         RdevKey::Unknown(code) => format!("Unknown({code})"),
         _ => format!("{key:?}"),
     }
 }
 
-fn key_raw_code(key: RdevKey) -> Option<u32> {
+pub(crate) fn key_raw_code(key: RdevKey) -> Option<u32> {
     match key {
         RdevKey::Unknown(code) => Some(code),
         _ => None,
     }
 }
 
-fn send_event_to_tcp(writer: &Mutex<BufWriter<TcpStream>>, payload: &KeyboardEventPayload) {
+pub(crate) fn send_event_to_tcp(
+    writer: &Mutex<BufWriter<TcpStream>>,
+    payload: &KeyboardEventPayload,
+) {
     if let Ok(json) = serde_json::to_string(payload) {
         if let Ok(mut guard) = writer.lock() {
             if let Err(err) = writeln!(guard, "{json}") {
@@ -476,7 +485,7 @@ fn send_event_to_tcp(writer: &Mutex<BufWriter<TcpStream>>, payload: &KeyboardEve
     }
 }
 
-fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
+pub(crate) fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
     for combo in combos {
         if combo.is_empty() {
             continue;
@@ -491,7 +500,12 @@ fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool 
     false
 }
 
-pub fn run_listener_process() -> Result<(), String> {
+pub(crate) struct ListenerContext {
+    pub writer: Arc<Mutex<BufWriter<TcpStream>>>,
+    pub combos: Arc<Mutex<Vec<Vec<String>>>>,
+}
+
+pub(crate) fn setup_listener_process() -> Result<ListenerContext, String> {
     let port = env::var("VOQUILL_KEYBOARD_PORT")
         .map_err(|_| "VOQUILL_KEYBOARD_PORT env var missing".to_string())?
         .parse::<u16>()
@@ -504,7 +518,6 @@ pub fn run_listener_process() -> Result<(), String> {
         .map_err(|err| format!("failed to configure listener socket: {err}"))?;
 
     let writer = Arc::new(Mutex::new(BufWriter::new(stream)));
-
     let combos: Arc<Mutex<Vec<Vec<String>>>> = Arc::new(Mutex::new(Vec::new()));
 
     let combos_for_stdin = combos.clone();
@@ -532,112 +545,33 @@ pub fn run_listener_process() -> Result<(), String> {
         }
     });
 
-    #[cfg(not(target_os = "linux"))]
-    {
-        struct GrabState {
-            pressed_keys: HashSet<String>,
-            suppressed_keys: HashSet<String>,
-            combo_active: bool,
+    Ok(ListenerContext { writer, combos })
+}
+
+pub(crate) fn run_listen_loop(
+    writer: Arc<Mutex<BufWriter<TcpStream>>>,
+    scan_code_fn: fn(&Event) -> u32,
+) -> Result<(), String> {
+    rdev::listen(move |event| {
+        let payload = match event.event_type {
+            EventType::KeyPress(key) => Some(KeyboardEventPayload {
+                kind: WireEventKind::Press,
+                key_label: key_to_label(key),
+                raw_code: key_raw_code(key),
+                scan_code: scan_code_fn(&event),
+            }),
+            EventType::KeyRelease(key) => Some(KeyboardEventPayload {
+                kind: WireEventKind::Release,
+                key_label: key_to_label(key),
+                raw_code: key_raw_code(key),
+                scan_code: scan_code_fn(&event),
+            }),
+            _ => None,
+        };
+
+        if let Some(payload) = payload {
+            send_event_to_tcp(&writer, &payload);
         }
-
-        let grab_result = rdev::grab({
-            let writer = writer.clone();
-            let combos = combos.clone();
-            let state = RefCell::new(GrabState {
-                pressed_keys: HashSet::new(),
-                suppressed_keys: HashSet::new(),
-                combo_active: false,
-            });
-            move |event| -> Option<Event> {
-                let (key, is_press) = match event.event_type {
-                    EventType::KeyPress(key) => (key, true),
-                    EventType::KeyRelease(key) => (key, false),
-                    _ => return Some(event),
-                };
-
-                let label = key_to_label(key);
-                let payload = KeyboardEventPayload {
-                    kind: if is_press {
-                        WireEventKind::Press
-                    } else {
-                        WireEventKind::Release
-                    },
-                    key_label: label.clone(),
-                    raw_code: key_raw_code(key),
-                    scan_code: event.position_code,
-                };
-                send_event_to_tcp(&writer, &payload);
-
-                let mut s = state.borrow_mut();
-
-                if is_press {
-                    s.pressed_keys.insert(label.clone());
-
-                    let current_combos = combos
-                        .lock()
-                        .map(|g| g.clone())
-                        .unwrap_or_default();
-
-                    if matches_any_combo(&s.pressed_keys, &current_combos) {
-                        s.combo_active = true;
-                    }
-
-                    if s.combo_active {
-                        s.suppressed_keys.insert(label);
-                        return None;
-                    }
-
-                    Some(event)
-                } else {
-                    s.pressed_keys.remove(&label);
-
-                    if s.pressed_keys.is_empty() {
-                        s.combo_active = false;
-                    }
-
-                    if s.suppressed_keys.remove(&label) {
-                        return None;
-                    }
-
-                    Some(event)
-                }
-            }
-        });
-
-        match grab_result {
-            Ok(()) => return Ok(()),
-            Err(grab_err) => {
-                eprintln!(
-                    "rdev::grab() failed ({grab_err:?}), falling back to rdev::listen()"
-                );
-            }
-        }
-    }
-
-    let result = rdev::listen({
-        let writer = writer.clone();
-        move |event| {
-            let payload = match event.event_type {
-                EventType::KeyPress(key) => Some(KeyboardEventPayload {
-                    kind: WireEventKind::Press,
-                    key_label: key_to_label(key),
-                    raw_code: key_raw_code(key),
-                    scan_code: event.position_code,
-                }),
-                EventType::KeyRelease(key) => Some(KeyboardEventPayload {
-                    kind: WireEventKind::Release,
-                    key_label: key_to_label(key),
-                    raw_code: key_raw_code(key),
-                    scan_code: event.position_code,
-                }),
-                _ => None,
-            };
-
-            if let Some(payload) = payload {
-                send_event_to_tcp(&writer, &payload);
-            }
-        }
-    });
-
-    result.map_err(|err| format!("keyboard listener error: {err:?}"))
+    })
+    .map_err(|err| format!("keyboard listener error: {err:?}"))
 }
