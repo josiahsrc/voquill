@@ -36,6 +36,7 @@ export class AzureTranscriptionSession implements TranscriptionSession {
       const dictionaryEntries = collectDictionaryEntries(state);
       const prompt = buildLocalizedTranscriptionPrompt({
         entries: dictionaryEntries,
+        dictationLanguage: language,
         state,
       });
 

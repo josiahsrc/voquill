@@ -801,10 +801,6 @@ come on guys. you can do better, that was garbage.`,
           },
           {
             criteria:
-              "Should not flatten the tone into something dry or corporate",
-          },
-          {
-            criteria:
               "Should have greeting, body, and sign-off with Thomas's name",
           },
         ],
