@@ -24,6 +24,7 @@ import { EnterpriseRepo } from "./enterprise.repo";
 import {
   AzureOpenAIGenerateTextRepo,
   BaseGenerateTextRepo,
+  CerebrasGenerateTextRepo,
   ClaudeGenerateTextRepo,
   CloudGenerateTextRepo,
   DeepseekGenerateTextRepo,
@@ -271,6 +272,12 @@ const getGenTextRepoInternal = ({
     } else if (prefs.provider === "claude") {
       getLogger().verbose("Configuring Claude repo for generate text");
       repo = new ClaudeGenerateTextRepo(
+        prefs.apiKeyValue,
+        prefs.postProcessingModel,
+      );
+    } else if (prefs.provider === "cerebras") {
+      getLogger().verbose("Configuring Cerebras repo for generate text");
+      repo = new CerebrasGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );

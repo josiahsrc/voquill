@@ -25,6 +25,8 @@ import {
   AZURE_OPENAI_MODELS,
   azureOpenAITestIntegration,
   azureTestIntegration,
+  CEREBRAS_MODELS,
+  cerebrasTestIntegration,
   CLAUDE_MODELS,
   claudeTestIntegration,
   deepgramTestIntegration,
@@ -215,6 +217,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         )}
         {context === "post-processing" && (
           <MenuItem value="claude">Claude</MenuItem>
+        )}
+        {context === "post-processing" && (
+          <MenuItem value="cerebras">Cerebras</MenuItem>
         )}
         {context === "post-processing" && (
           <MenuItem value="azure">Azure OpenAI</MenuItem>
@@ -445,6 +450,8 @@ const testApiKey = async (
       return elevenlabsTestIntegration({ apiKey: apiKey.keyFull });
     case "deepseek":
       return deepseekTestIntegration({ apiKey: apiKey.keyFull });
+    case "cerebras":
+      return cerebrasTestIntegration({ apiKey: apiKey.keyFull });
     case "gemini":
       return geminiTestIntegration({ apiKey: apiKey.keyFull });
     case "claude":
@@ -497,6 +504,8 @@ const getModelsForProvider = (
       return [];
     case "deepseek":
       return context === "transcription" ? [] : DEEPSEEK_MODELS;
+    case "cerebras":
+      return context === "transcription" ? [] : CEREBRAS_MODELS;
     case "claude":
       return context === "transcription" ? [] : CLAUDE_MODELS;
     case "azure":
@@ -738,7 +747,8 @@ export const ApiKeyList = ({
       (key.provider === "openrouter" ||
         key.provider === "ollama" ||
         key.provider === "deepseek" ||
-        key.provider === "claude")
+        key.provider === "claude" ||
+        key.provider === "cerebras")
     ) {
       return false;
     }

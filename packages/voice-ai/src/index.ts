@@ -11,3 +11,4 @@ export * from "./azure-openai.utils";
 export * from "./deepseek.utils";
 export * from "./gemini.utils";
 export * from "./speaches.utils";
+export * from "./cerebras.utils";

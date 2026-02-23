@@ -2,6 +2,8 @@ import { invokeHandler, type CloudModel } from "@repo/functions";
 import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
 import {
   azureOpenAIGenerateText,
+  cerebrasGenerateTextResponse,
+  CerebrasModel,
   claudeGenerateTextResponse,
   ClaudeModel,
   deepseekGenerateTextResponse,
@@ -287,6 +289,35 @@ export class DeepseekGenerateTextRepo extends BaseGenerateTextRepo {
       metadata: {
         postProcessingMode: "api",
         inferenceDevice: "API • DeepSeek",
+      },
+    };
+  }
+}
+
+export class CerebrasGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private model: CerebrasModel;
+
+  constructor(apiKey: string, model: string | null) {
+    super();
+    this.apiKey = apiKey;
+    this.model = (model as CerebrasModel) ?? "llama3.1-8b";
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const response = await cerebrasGenerateTextResponse({
+      apiKey: this.apiKey,
+      model: this.model,
+      prompt: input.prompt,
+      system: input.system ?? undefined,
+      jsonResponse: input.jsonResponse,
+    });
+
+    return {
+      text: response.text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • Cerebras",
       },
     };
   }
