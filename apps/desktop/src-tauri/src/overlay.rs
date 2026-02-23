@@ -1,6 +1,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager, WebviewWindowBuilder};
 
+use crate::platform::monitor::get_screen_visible_area;
+
 pub const PILL_OVERLAY_LABEL: &str = "pill-overlay";
 pub const PILL_OVERLAY_WIDTH: f64 = 256.0;
 pub const PILL_OVERLAY_HEIGHT: f64 = 96.0;
@@ -38,6 +40,14 @@ fn get_primary_screen_size(app: &tauri::AppHandle) -> (f64, f64) {
     }
 }
 
+/// Get the available screen height accounting for taskbar/dock insets
+fn get_available_screen_height(app: &tauri::AppHandle) -> f64 {
+    let (_, screen_height) = get_primary_screen_size(app);
+    let visible_area = get_screen_visible_area();
+    // Use the visible height (screen height minus taskbar insets)
+    screen_height - visible_area.top_inset - visible_area.bottom_inset
+}
+
 fn build_overlay_webview_url(
     app: &tauri::AppHandle,
     query_param: &str,
@@ -65,11 +75,14 @@ fn create_overlay_window(
     width: f64,
     height: f64,
     url: tauri::WebviewUrl,
+    bottom_margin: f64,
 ) -> tauri::Result<()> {
     let (screen_width, screen_height) = get_primary_screen_size(app);
+    let available_height = get_available_screen_height(app);
 
     let x = (screen_width - width) / 2.0;
-    let y = screen_height * 0.75;
+    // Position at 75% of available screen height, but ensure it stays within visible area
+    let y = (available_height * 0.75).min(available_height - height - bottom_margin);
 
     let builder = {
         let builder = WebviewWindowBuilder::new(app, label, url)
@@ -114,6 +127,7 @@ pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         PILL_OVERLAY_WIDTH,
         PILL_OVERLAY_HEIGHT,
         url,
+        crate::platform::monitor::get_bottom_pill_offset(),
     )?;
 
     Ok(())
