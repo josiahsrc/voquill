@@ -29,6 +29,7 @@ export type DatabaseUser = {
   activeToneIds?: Nullable<string[]>;
   streak?: Nullable<number>;
   streakRecordedAt?: Nullable<string>;
+  referralSource?: Nullable<string>;
 };
 
 export type User = Replace<DatabaseUser, FiremixTimestamp, string>;
@@ -65,5 +66,6 @@ export const UserZod = z
     activeToneIds: z.array(z.string()).nullable().optional(),
     streak: z.number().nullable().optional(),
     streakRecordedAt: z.string().nullable().optional(),
+    referralSource: z.string().nullable().optional(),
   })
   .strict() satisfies z.ZodType<User>;

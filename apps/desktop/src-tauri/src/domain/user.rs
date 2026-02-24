@@ -39,6 +39,8 @@ pub struct User {
     pub streak: Option<i64>,
     #[serde(default)]
     pub streak_recorded_at: Option<String>,
+    #[serde(default)]
+    pub referral_source: Option<String>,
 }
 
 const fn default_play_interaction_chime() -> bool {

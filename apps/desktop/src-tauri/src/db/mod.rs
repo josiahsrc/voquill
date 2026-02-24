@@ -100,6 +100,8 @@ pub const USE_NEW_BACKEND_MIGRATION_SQL: &str =
 pub const OPENCLAW_PREFERENCES_MIGRATION_SQL: &str =
     include_str!("migrations/053_openclaw_preferences.sql");
 pub const USER_STREAK_MIGRATION_SQL: &str = include_str!("migrations/054_user_streak.sql");
+pub const USER_REFERRAL_SOURCE_MIGRATION_SQL: &str =
+    include_str!("migrations/055_user_referral_source.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -425,6 +427,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 54,
             description: "add_user_streak",
             sql: USER_STREAK_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 55,
+            description: "add_user_referral_source",
+            sql: USER_REFERRAL_SOURCE_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

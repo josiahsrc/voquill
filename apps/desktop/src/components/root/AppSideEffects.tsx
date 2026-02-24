@@ -338,6 +338,7 @@ export const AppSideEffects = () => {
       pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
       company: cloudUser?.company ?? undefined,
       title: cloudUser?.title ?? undefined,
+      referralSource: cloudUser?.referralSource ?? undefined,
     });
 
     mp.register({

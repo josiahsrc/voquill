@@ -7,6 +7,7 @@ export type OnboardingPageKey =
   | "chooseTranscription"
   | "chooseLlm"
   | "userDetails"
+  | "referralSource"
   | "micPerms"
   | "a11yPerms"
   | "keybindings"
@@ -28,6 +29,7 @@ export type OnboardingState = {
   company: string;
   isMac: boolean;
   didSignUpWithAccount: boolean;
+  referralSource: string;
   dictationOverrideEnabled: boolean;
   awaitingSignInNavigation: boolean;
 };
@@ -46,6 +48,7 @@ export const INITIAL_ONBOARDING_STATE: OnboardingState = {
   company: "",
   isMac: false,
   didSignUpWithAccount: false,
+  referralSource: "",
   dictationOverrideEnabled: false,
   awaitingSignInNavigation: false,
 };

@@ -143,6 +143,7 @@ export const submitOnboarding = async () => {
       stylingMode: "manual",
       activeToneIds: [CLEAN_TONE_ID, EMAIL_TONE_ID, CHAT_TONE_ID],
       selectedToneId: CHAT_TONE_ID,
+      referralSource: state.onboarding.referralSource || null,
     };
 
     const preferences: UserPreferences = {

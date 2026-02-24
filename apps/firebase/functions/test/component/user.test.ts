@@ -127,6 +127,39 @@ describe("api", () => {
 		expect(myUser?.streakRecordedAt).toBe("2026-02-12");
 	});
 
+	it("sets and retrieves referralSource", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ referralSource: "google_search" });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.referralSource).toBe("google_search");
+	});
+
+	it("can set referralSource to null", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ referralSource: "social_media" }),
+		});
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ referralSource: null }),
+		});
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.referralSource).toBeNull();
+	});
+
 	it("can set stylingMode to null", async () => {
 		const creds = await createUserCreds();
 		await signInWithCreds(creds);
