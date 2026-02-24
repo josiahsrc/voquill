@@ -3,6 +3,7 @@ import { AppState } from "../state/app.state";
 import { useAppStore } from "../store";
 import { getEffectiveStylingMode } from "./feature.utils";
 import { getPlatform } from "./platform.utils";
+import { getIsDictationUnlocked } from "./user.utils";
 
 export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
@@ -145,6 +146,9 @@ const isActionGrabbable = (state: AppState, actionName: string): boolean => {
   }
   if (actionName === SWITCH_WRITING_STYLE_HOTKEY) {
     return getEffectiveStylingMode(state) === "manual";
+  }
+  if (actionName === DICTATE_HOTKEY || actionName === AGENT_DICTATE_HOTKEY) {
+    return getIsDictationUnlocked(state); 
   }
   return true;
 };
