@@ -20,13 +20,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import {
+  openRetranscribeDialog,
   openTranscriptionDetailsDialog,
-  retranscribeTranscription,
 } from "../../actions/transcriptions.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { TypographyWithMore } from "../common/TypographyWithMore";
-import { TranscriptionToneMenu } from "./TranscriptionToneMenu";
 
 export type TranscriptionRowProps = {
   id: string;
@@ -212,9 +211,12 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     return Boolean(model || device);
   }, [transcription?.inferenceDevice, transcription?.modelSize]);
 
+  const isRetranscribing = useAppStore((state) =>
+    state.transcriptions.retranscribingIds.includes(id),
+  );
+
   const audioSnapshot = transcription?.audio;
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isRetranscribing, setIsRetranscribing] = useState(false);
   const [durationLabel, setDurationLabel] = useState<string | null>(null);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [waveformWidth, setWaveformWidth] = useState(0);
@@ -424,43 +426,6 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     }
   }, [audioSnapshot, id, intl]);
 
-  const handleRetranscribe = useCallback(
-    async (toneId: string | null) => {
-      if (!audioSnapshot) {
-        showErrorSnackbar(
-          intl.formatMessage({
-            defaultMessage:
-              "Audio snapshot unavailable for this transcription.",
-          }),
-        );
-        return;
-      }
-
-      try {
-        if (activePlayback?.transcriptionId === id) {
-          stopActivePlayback("stopped");
-          setIsPlaying(false);
-        }
-        setPlaybackProgress(0);
-
-        setIsRetranscribing(true);
-
-        await retranscribeTranscription({ transcriptionId: id, toneId });
-      } catch (error) {
-        console.error("Failed to retranscribe audio", error);
-        const fallbackMessage = intl.formatMessage({
-          defaultMessage: "Unable to retranscribe audio snippet.",
-        });
-        const message =
-          error instanceof Error ? error.message : fallbackMessage;
-        showErrorSnackbar(message || fallbackMessage);
-      } finally {
-        setIsRetranscribing(false);
-      }
-    },
-    [audioSnapshot, id, intl],
-  );
-
   const handleExport = useCallback(async () => {
     try {
       const saved = await invoke<boolean>("export_transcription", { id });
@@ -636,30 +601,24 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
                 />
               ))}
             </Box>
-            <TranscriptionToneMenu onToneSelect={handleRetranscribe}>
-              {({ ref, open }) => (
-                <Tooltip
-                  title={intl.formatMessage({
-                    defaultMessage: "Retranscribe audio clip",
-                  })}
-                  placement="top"
-                >
-                  <span ref={ref} style={{ display: "inline-flex" }}>
-                    <IconButton
-                      aria-label={intl.formatMessage({
-                        defaultMessage: "Retranscribe audio",
-                      })}
-                      size="small"
-                      onClick={open}
-                      disabled={isRetranscribing}
-                      sx={{ p: 0.5 }}
-                    >
-                      <ReplayRoundedIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              )}
-            </TranscriptionToneMenu>
+            <Tooltip
+              title={intl.formatMessage({
+                defaultMessage: "Retranscribe audio clip",
+              })}
+              placement="top"
+            >
+              <IconButton
+                aria-label={intl.formatMessage({
+                  defaultMessage: "Retranscribe audio",
+                })}
+                size="small"
+                onClick={() => openRetranscribeDialog(id)}
+                disabled={isRetranscribing}
+                sx={{ p: 0.5 }}
+              >
+                <ReplayRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip
               title={intl.formatMessage({
                 defaultMessage: "Export transcription",

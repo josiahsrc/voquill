@@ -17,7 +17,10 @@ import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
 import { unwrapNestedLlmResponse } from "../utils/ai.utils";
 import { createId } from "../utils/id.utils";
-import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
+import {
+  coerceToDictationLanguage,
+  mapDictationLanguageToWhisperLanguage,
+} from "../utils/language.utils";
 import { getLogger } from "../utils/log.utils";
 import {
   buildLocalizedTranscriptionPrompt,
@@ -40,6 +43,7 @@ import { addWordsToCurrentUser } from "./user.actions";
 export type TranscribeAudioInput = {
   samples: AudioSamples;
   sampleRate: number;
+  dictationLanguage?: string;
 };
 
 export type TranscribeAudioMetadata = {
@@ -60,6 +64,7 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
+  dictationLanguage?: string;
 };
 
 export type PostProcessMetadata = {
@@ -89,6 +94,7 @@ export type TranscriptionMetadata = TranscribeAudioMetadata &
 export const transcribeAudio = async ({
   samples,
   sampleRate,
+  dictationLanguage: dictationLanguageOverride,
 }: TranscribeAudioInput): Promise<TranscribeAudioResult> => {
   const state = getAppState();
 
@@ -102,7 +108,9 @@ export const transcribeAudio = async ({
   } = getTranscribeAudioRepo();
   warnings.push(...transcribeWarnings);
 
-  const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
+  const dictationLanguage = dictationLanguageOverride
+    ? coerceToDictationLanguage(dictationLanguageOverride)
+    : await loadMyEffectiveDictationLanguage(state);
   const whisperLanguage =
     mapDictationLanguageToWhisperLanguage(dictationLanguage);
 
@@ -161,6 +169,7 @@ export const transcribeAudio = async ({
 export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
+  dictationLanguage: dictationLanguageOverride,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -187,7 +196,9 @@ export const postProcessTranscript = async ({
     getLogger().verbose(
       `Post-processing with tone=${toneId ?? "default"}, apiKeyId=${genApiKeyId ?? "none"}`,
     );
-    const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
+    const dictationLanguage = dictationLanguageOverride
+      ? coerceToDictationLanguage(dictationLanguageOverride)
+      : await loadMyEffectiveDictationLanguage(state);
     const toneConfig = getToneConfig(state, toneId);
     getLogger().verbose(
       "Post-process language:",
