@@ -25,6 +25,23 @@ export const unwrapNestedLlmResponse = <T extends Record<string, unknown>>(
   return parsed;
 };
 
+export const extractJsonFromMarkdown = (text: string): string => {
+  // Try to extract JSON from markdown code blocks
+  const jsonBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (jsonBlockMatch) {
+    return jsonBlockMatch[1].trim();
+  }
+
+  // Try to extract JSON from inline code blocks
+  const inlineJsonMatch = text.match(/`([^`]+)`/);
+  if (inlineJsonMatch) {
+    return inlineJsonMatch[1].trim();
+  }
+
+  // Return original text if no markdown formatting found
+  return text.trim();
+};
+
 export const applyAiPreferences = (
   draft: AppState,
   preferences: UserPreferences,
@@ -53,6 +70,5 @@ export const applyAiPreferences = (
     preferences.agentModeApiKeyId ?? null;
   draft.settings.agentMode.openclawGatewayUrl =
     preferences.openclawGatewayUrl ?? null;
-  draft.settings.agentMode.openclawToken =
-    preferences.openclawToken ?? null;
+  draft.settings.agentMode.openclawToken = preferences.openclawToken ?? null;
 };

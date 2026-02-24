@@ -15,7 +15,10 @@ import { getAppState, produceAppState } from "../store";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
-import { unwrapNestedLlmResponse } from "../utils/ai.utils";
+import {
+  extractJsonFromMarkdown,
+  unwrapNestedLlmResponse,
+} from "../utils/ai.utils";
 import { createId } from "../utils/id.utils";
 import {
   coerceToDictationLanguage,
@@ -242,8 +245,9 @@ export const postProcessTranscript = async ({
     getLogger().verbose("LLM raw output:", genOutput.text);
 
     try {
+      const extractedJson = extractJsonFromMarkdown(genOutput.text);
       const parsed = unwrapNestedLlmResponse(
-        JSON.parse(genOutput.text),
+        JSON.parse(extractedJson),
         "processedTranscription",
       );
 

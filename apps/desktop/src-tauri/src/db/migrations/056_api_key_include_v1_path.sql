@@ -1,0 +1,1 @@
+ALTER TABLE api_keys ADD COLUMN include_v1_path INTEGER DEFAULT 1;

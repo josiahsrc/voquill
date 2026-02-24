@@ -610,6 +610,7 @@ pub async fn api_key_create(
         key,
         base_url,
         azure_region,
+        include_v1_path,
     } = api_key;
 
     let protected = protect_api_key(&key);
@@ -629,6 +630,7 @@ pub async fn api_key_create(
         openrouter_config: None,
         base_url,
         azure_region,
+        include_v1_path,
     };
 
     crate::db::api_key_queries::insert_api_key(database.pool(), &stored)
