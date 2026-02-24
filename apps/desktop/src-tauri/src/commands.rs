@@ -1347,3 +1347,14 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
     Ok((path_str, Some(content)))
 }
 
+#[tauri::command]
+pub fn mark_surface_after_update(app: AppHandle) -> Result<(), String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|err| err.to_string())?;
+    let flag_file = config_dir.join(crate::app::SURFACE_AFTER_UPDATE_FLAG);
+    std::fs::write(&flag_file, "1").map_err(|err| err.to_string())?;
+    Ok(())
+}
+
