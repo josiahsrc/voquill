@@ -55,6 +55,11 @@ fn is_console_window() -> bool {
 }
 
 fn release_modifier_keys() {
+    let win_held = is_key_pressed(VK_LWIN) || is_key_pressed(VK_RWIN);
+    if win_held {
+        cancel_pending_start_menu();
+    }
+
     let modifiers = [
         VK_SHIFT,
         VK_CONTROL,
@@ -73,6 +78,36 @@ fn release_modifier_keys() {
         if is_key_pressed(vk) {
             send_key_up(vk);
         }
+    }
+}
+
+fn cancel_pending_start_menu() {
+    let down = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(0xFF),
+                wScan: 0,
+                dwFlags: Default::default(),
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    let up = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(0xFF),
+                wScan: 0,
+                dwFlags: KEYEVENTF_KEYUP,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    unsafe {
+        SendInput(&[down, up], mem::size_of::<INPUT>() as i32);
     }
 }
 

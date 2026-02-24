@@ -5,7 +5,6 @@ use crate::platform::keyboard::{
 use rdev::{Event, EventType};
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::sync::Arc;
 
 fn scan_code(event: &Event) -> u32 {
     event.position_code
@@ -55,8 +54,13 @@ pub fn run_listener_process() -> Result<(), String> {
 
                 let current_combos = combos.lock().map(|g| g.clone()).unwrap_or_default();
 
-                if matches_any_combo(&s.pressed_keys, &current_combos) {
+                if !s.combo_active
+                    && matches_any_combo(&s.pressed_keys, &current_combos)
+                {
                     s.combo_active = true;
+                    let to_suppress = s.pressed_keys.clone();
+                    s.suppressed_keys.extend(to_suppress);
+                    return None;
                 }
 
                 if s.combo_active {
