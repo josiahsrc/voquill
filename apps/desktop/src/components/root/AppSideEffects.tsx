@@ -6,6 +6,7 @@ import {
   User,
 } from "@repo/types";
 import { listify } from "@repo/utilities";
+import { getVersion } from "@tauri-apps/api/app";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
@@ -14,7 +15,7 @@ import {
   migrateLocalUserToCloud,
   refreshCurrentUser,
 } from "../../actions/user.actions";
-import { useAsyncEffect } from "../../hooks/async.hooks";
+import { useAsyncData, useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { detectLocale } from "../../i18n";
@@ -65,6 +66,7 @@ export const AppSideEffects = () => {
   const tokensRefreshedRef = useRef(false);
   const authReadyRef = useRef(false);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const versionData = useAsyncData(getVersion, []);
   const allowDevTools = useAppStore(
     (state) => state.enterpriseConfig?.allowDevTools ?? true,
   );
@@ -352,8 +354,14 @@ export const AppSideEffects = () => {
       pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
     });
 
+    if (versionData.state === "success") {
+      mp.register({
+        appVersion: versionData.data,
+      });
+    }
+
     prevUserIdRef.current = currentUserId;
-  }, [initialized, auth, member, cloudUser, localUser, prefs]);
+  }, [initialized, auth, member, cloudUser, localUser, prefs, versionData]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({
