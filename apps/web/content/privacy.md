@@ -147,5 +147,5 @@ We may update this Privacy Policy from time to time. When we make material chang
 
 For questions about this Privacy Policy or Voquill's privacy practices, you can:
 
-- Open an issue on our [GitHub repository](https://github.com/HandaptiveTouch/voquill)
+- Open an issue on our [GitHub repository](https://github.com/josiahsrc/voquill)
 - Contact us at [privacy@voquill.com](mailto:privacy@voquill.com)
