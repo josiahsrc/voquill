@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/actions/revenue_cat_actions.dart';
+import 'package:app/db/database.dart';
 import 'package:app/root.dart';
 import 'package:app/utils/analytics_utils.dart';
 import 'package:app/utils/channel_utils.dart';
@@ -46,6 +47,7 @@ Future<void> boot(Flavor flavor, FirebaseOptions firebaseOptions) async {
         logger.i('Using Firebase emulators at $host');
       }
 
+      await AppDatabase.instance.initialize();
       await initializeRevenueCat();
       await initializeMixpanel();
       syncMixpanelToken();

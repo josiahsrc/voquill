@@ -9,6 +9,7 @@ import 'package:app/model/user_model.dart';
 import 'package:app/state/dictionary_state.dart';
 import 'package:app/state/onboarding_state.dart';
 import 'package:app/state/snackbar_state.dart';
+import 'package:app/state/api_key_state.dart';
 import 'package:app/state/styles_state.dart';
 import 'package:draft/draft.dart';
 import 'package:equatable/equatable.dart';
@@ -34,6 +35,7 @@ class AppState with EquatableMixin {
   final OnboardingState onboarding;
   final DictionaryState dictionary;
   final StylesState styles;
+  final ApiKeyState apiKeys;
 
   final List<String> dictationLanguages;
   final String? activeDictationLanguage;
@@ -56,6 +58,7 @@ class AppState with EquatableMixin {
     this.onboarding = const OnboardingState(),
     this.dictionary = const DictionaryState(),
     this.styles = const StylesState(),
+    this.apiKeys = const ApiKeyState(),
     this.dictationLanguages = const ['en'],
     this.activeDictationLanguage,
     this.hasMicrophonePermission = false,
@@ -82,6 +85,7 @@ class AppState with EquatableMixin {
     onboarding,
     dictionary,
     styles,
+    apiKeys,
     dictationLanguages,
     activeDictationLanguage,
     hasMicrophonePermission,

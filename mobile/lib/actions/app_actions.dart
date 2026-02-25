@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/actions/api_key_actions.dart';
 import 'package:app/actions/language_actions.dart';
 import 'package:app/actions/permission_actions.dart';
 import 'package:app/actions/revenue_cat_actions.dart';
@@ -25,6 +26,9 @@ Future<void> refreshMainData() async {
     loadConfig(),
     loadStyles(),
     loadDictationLanguages(),
+    loadApiKeyPreferences(),
+    loadTranscriptionApiKeys(),
+    loadPostProcessingApiKeys(),
   ]);
 }
 

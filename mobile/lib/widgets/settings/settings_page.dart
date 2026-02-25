@@ -3,6 +3,7 @@ import 'package:app/actions/revenue_cat_actions.dart';
 import 'package:app/api/user_api.dart';
 import 'package:app/model/firebase_model.dart';
 import 'package:app/model/user_model.dart';
+import 'package:app/state/api_key_state.dart';
 import 'package:app/store/store.dart';
 import 'package:app/theme/pretty_colors.dart';
 import 'package:app/utils/language_utils.dart';
@@ -26,6 +27,7 @@ class SettingsPage extends StatelessWidget {
       context,
       (s) => s.dictationLanguages,
     );
+    final apiKeys = useAppStore().select(context, (s) => s.apiKeys);
     final theme = Theme.of(context);
 
     return CustomScrollView(
@@ -92,6 +94,26 @@ class SettingsPage extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/dashboard/dictation-language'),
                 ),
+                AppListTile(
+                  leading: const Icon(Icons.mic_outlined),
+                  title: const Text('AI transcription'),
+                  subtitle: Text(
+                    _transcriptionModeLabel(apiKeys.transcriptionMode),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      context.push('/dashboard/transcription-settings'),
+                ),
+                AppListTile(
+                  leading: const Icon(Icons.auto_fix_high_outlined),
+                  title: const Text('AI post-processing'),
+                  subtitle: Text(
+                    _postProcessingModeLabel(apiKeys.postProcessingMode),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      context.push('/dashboard/post-processing-settings'),
+                ),
               ],
             ),
           ),
@@ -149,6 +171,21 @@ class SettingsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _transcriptionModeLabel(TranscriptionMode mode) {
+    return switch (mode) {
+      TranscriptionMode.cloud => 'Voquill',
+      TranscriptionMode.api => 'API',
+    };
+  }
+
+  String _postProcessingModeLabel(PostProcessingMode mode) {
+    return switch (mode) {
+      PostProcessingMode.cloud => 'Voquill',
+      PostProcessingMode.api => 'API',
+      PostProcessingMode.off => 'Off',
+    };
   }
 
   Future<void> _showEditProfileDialog(BuildContext context) async {

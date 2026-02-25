@@ -4,6 +4,8 @@ import 'package:app/widgets/error/error_page.dart';
 import 'package:app/widgets/history/history_page.dart';
 import 'package:app/widgets/settings/danger_zone_page.dart';
 import 'package:app/widgets/settings/dictation_language_page.dart';
+import 'package:app/widgets/settings/post_processing_settings_page.dart';
+import 'package:app/widgets/settings/transcription_settings_page.dart';
 import 'package:app/widgets/styles/manage_styles_page.dart';
 import 'package:app/widgets/error/not_found_page.dart';
 import 'package:app/widgets/login/login_page.dart';
@@ -79,6 +81,16 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
             path: 'danger-zone',
             builder: (context, state) => const DangerZonePage(),
             name: 'danger-zone',
+          ),
+          GoRoute(
+            path: 'transcription-settings',
+            builder: (context, state) => const TranscriptionSettingsPage(),
+            name: 'transcription-settings',
+          ),
+          GoRoute(
+            path: 'post-processing-settings',
+            builder: (context, state) => const PostProcessingSettingsPage(),
+            name: 'post-processing-settings',
           ),
         ],
       ),
