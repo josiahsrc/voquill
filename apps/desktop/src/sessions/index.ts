@@ -10,6 +10,8 @@ import { BatchTranscriptionSession } from "./batch-transcription-session";
 import { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 import { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
 import { NewServerTranscriptionSession } from "./new-server-transcription-session";
+import { OpenAIRealtimeTranscriptionSession } from "./openai-realtime-transcription-session";
+import { OpenAIStreamingTranscriptionSession } from "./openai-streaming-transcription-session";
 
 export { AssemblyAITranscriptionSession } from "./assemblyai-transcription-session";
 export { AzureTranscriptionSession } from "./azure-transcription-session";
@@ -17,6 +19,8 @@ export { BatchTranscriptionSession } from "./batch-transcription-session";
 export { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 export { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
 export { NewServerTranscriptionSession } from "./new-server-transcription-session";
+export { OpenAIRealtimeTranscriptionSession } from "./openai-realtime-transcription-session";
+export { OpenAIStreamingTranscriptionSession } from "./openai-streaming-transcription-session";
 
 export const createTranscriptionSession = (
   prefs: TranscriptionPrefs,
@@ -29,6 +33,22 @@ export const createTranscriptionSession = (
         return new DeepgramTranscriptionSession(prefs.apiKeyValue);
       case "elevenlabs":
         return new ElevenLabsTranscriptionSession(prefs.apiKeyValue);
+      case "openai": {
+        const model = prefs.transcriptionModel;
+        if (model === "gpt-4o-realtime-preview") {
+          return new OpenAIRealtimeTranscriptionSession(prefs.apiKeyValue);
+        }
+        if (
+          model === "gpt-4o-transcribe" ||
+          model === "gpt-4o-mini-transcribe"
+        ) {
+          return new OpenAIStreamingTranscriptionSession(
+            prefs.apiKeyValue,
+            model,
+          );
+        }
+        break;
+      }
       case "azure": {
         const state = getAppState();
         const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);

@@ -4,6 +4,7 @@ import { batchAsync } from "@repo/utilities";
 import {
   aldeaTranscribeAudio,
   azureTranscribeAudio,
+  convertFloat32ToBase64PCM16,
   geminiTranscribeAudio,
   GeminiTranscriptionModel,
   groqTranscribeAudio,
@@ -11,6 +12,11 @@ import {
   OpenAITranscriptionModel,
   TranscriptionModel,
 } from "@repo/voice-ai";
+import {
+  OPENAI_REALTIME_SAMPLE_RATE,
+  POLISHED_INSTRUCTIONS,
+  resampleLinear,
+} from "../sessions/openai-realtime-transcription-session";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
 import {
@@ -372,6 +378,137 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
   // OpenAI can handle parallel requests
   protected getBatchChunkCount(): number {
     return 3;
+  }
+
+  async transcribeAudio(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
+    if (this.model === ("gpt-4o-realtime-preview" as OpenAITranscriptionModel)) {
+      return this.transcribeViaRealtime(input);
+    }
+    return super.transcribeAudio(input);
+  }
+
+  private transcribeViaRealtime(
+    input: TranscribeAudioInput,
+  ): Promise<TranscribeAudioOutput> {
+    const apiKey = this.openaiApiKey;
+    const normalizedSamples = normalizeSamples(input.samples);
+    const floatSamples = ensureFloat32Array(normalizedSamples);
+
+    return new Promise((resolve, reject) => {
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview`;
+      const ws = new WebSocket(wsUrl, [
+        "realtime",
+        `openai-insecure-api-key.${apiKey}`,
+        "openai-beta.realtime-v1",
+      ]);
+
+      let responseText = "";
+      let resolved = false;
+
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          ws.close();
+          resolve({
+            text: responseText,
+            metadata: {
+              inferenceDevice: "API • OpenAI (Realtime)",
+              modelSize: "gpt-4o-realtime-preview",
+              transcriptionMode: "api",
+            },
+          });
+        }
+      }, 15000);
+
+      const done = (text: string) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeout);
+        ws.close();
+        resolve({
+          text,
+          metadata: {
+            inferenceDevice: "API • OpenAI (Realtime)",
+            modelSize: "gpt-4o-realtime-preview",
+            transcriptionMode: "api",
+          },
+        });
+      };
+
+      ws.onerror = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          reject(new Error("OpenAI Realtime WebSocket connection failed"));
+        }
+      };
+
+      ws.onopen = () => {
+        ws.send(
+          JSON.stringify({
+            type: "session.update",
+            session: {
+              modalities: ["text"],
+              instructions: POLISHED_INSTRUCTIONS,
+              input_audio_format: "pcm16",
+              turn_detection: null,
+            },
+          }),
+        );
+
+        const resampled =
+          input.sampleRate !== OPENAI_REALTIME_SAMPLE_RATE
+            ? resampleLinear(
+                floatSamples,
+                input.sampleRate,
+                OPENAI_REALTIME_SAMPLE_RATE,
+              )
+            : floatSamples;
+
+        const chunkSize = OPENAI_REALTIME_SAMPLE_RATE; // 1 second chunks
+        for (let i = 0; i < resampled.length; i += chunkSize) {
+          const chunk = resampled.subarray(i, i + chunkSize);
+          const base64Audio = convertFloat32ToBase64PCM16(chunk);
+          ws.send(
+            JSON.stringify({
+              type: "input_audio_buffer.append",
+              audio: base64Audio,
+            }),
+          );
+        }
+
+        ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+        ws.send(
+          JSON.stringify({
+            type: "response.create",
+            response: { modalities: ["text"] },
+          }),
+        );
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "response.text.delta") {
+            responseText += data.delta || "";
+          } else if (data.type === "response.text.done") {
+            responseText = data.text || responseText;
+          } else if (data.type === "response.done") {
+            done(responseText);
+          } else if (data.type === "error") {
+            console.error("[OpenAI Realtime batch] Error:", data);
+          }
+        } catch (error) {
+          console.error("[OpenAI Realtime batch] Parse error:", error);
+        }
+      };
+
+      ws.onclose = () => {
+        done(responseText);
+      };
+    });
   }
 
   protected async transcribeSegment(

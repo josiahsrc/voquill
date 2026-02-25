@@ -107,6 +107,8 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const isAzureOpenAI = isAzure && context === "post-processing";
   const isAzureSTT = isAzure && context === "transcription";
   const isSpeaches = provider === "speaches";
+  const isOpenAI = provider === "openai";
+  const showOpenAITranscriptionModel = isOpenAI && context === "transcription";
 
   const canSave = isOllamaLike
     ? !!name
@@ -137,7 +139,9 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       const transcriptionModelValue =
         isSpeaches || (isOpenAICompatible && context === "transcription")
           ? speachesModel || undefined
-          : undefined;
+          : showOpenAITranscriptionModel
+            ? speachesModel || OPENAI_TRANSCRIPTION_MODELS[0] || undefined
+            : undefined;
       await onSave(name, provider, keyToSave, baseUrl, azureRegionValue, transcriptionModelValue);
       setName("");
       setKey("");
@@ -363,16 +367,37 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
           />
         </>
       ) : (
-        <TextField
-          label={<FormattedMessage defaultMessage="API key" />}
-          value={key}
-          onChange={(event) => setKey(event.target.value)}
-          placeholder="Paste your API key"
-          size="small"
-          fullWidth
-          type="password"
-          disabled={saving}
-        />
+        <>
+          <TextField
+            label={<FormattedMessage defaultMessage="API key" />}
+            value={key}
+            onChange={(event) => setKey(event.target.value)}
+            placeholder="Paste your API key"
+            size="small"
+            fullWidth
+            type="password"
+            disabled={saving}
+          />
+          {showOpenAITranscriptionModel && (
+            <FormControl fullWidth size="small">
+              <InputLabel>
+                <FormattedMessage defaultMessage="Model" />
+              </InputLabel>
+              <Select
+                value={speachesModel || OPENAI_TRANSCRIPTION_MODELS[0]}
+                label={<FormattedMessage defaultMessage="Model" />}
+                onChange={(event) => setSpeachesModel(event.target.value)}
+                disabled={saving}
+              >
+                {OPENAI_TRANSCRIPTION_MODELS.map((model) => (
+                  <MenuItem key={model} value={model}>
+                    {model}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </>
       )}
       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
         <Button

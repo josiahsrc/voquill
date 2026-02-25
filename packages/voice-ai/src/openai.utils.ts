@@ -16,7 +16,12 @@ export const OPENAI_GENERATE_TEXT_MODELS = [
 export type OpenAIGenerateTextModel =
   (typeof OPENAI_GENERATE_TEXT_MODELS)[number];
 
-export const OPENAI_TRANSCRIPTION_MODELS = ["whisper-1"] as const;
+export const OPENAI_TRANSCRIPTION_MODELS = [
+  "gpt-4o-transcribe",
+  "gpt-4o-mini-transcribe",
+  "gpt-4o-realtime-preview",
+  "whisper-1",
+] as const;
 export type OpenAITranscriptionModel =
   (typeof OPENAI_TRANSCRIPTION_MODELS)[number];
 
