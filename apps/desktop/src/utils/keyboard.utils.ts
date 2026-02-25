@@ -174,10 +174,6 @@ const isActionGrabbable = (state: AppState, actionName: string): boolean => {
     return getEffectiveStylingMode(state) === "manual";
   }
 
-  if (!isHoldActionHotkey(actionName)) {
-    return false;
-  }
-
   if (actionName === DICTATE_HOTKEY || actionName === AGENT_DICTATE_HOTKEY) {
     return getIsDictationUnlocked(state);
   }
