@@ -1,3 +1,4 @@
+use super::wayland;
 use enigo::{Enigo, Key, KeyboardControllable};
 use std::{env, ffi::CStr, ptr, thread, time::Duration};
 use x11::xlib;
@@ -14,16 +15,37 @@ pub(crate) fn paste_text_into_focused_field(text: &str, keybind: Option<&str>) -
         target.chars().count()
     );
 
+    if wayland::is_wayland() {
+        eprintln!("[voquill] Wayland session detected");
+        return wayland::wayland_paste_via_clipboard(target, keybind)
+            .or_else(|err| {
+                eprintln!("[voquill] Wayland paste failed ({err}), trying X11 fallback");
+                paste_via_clipboard(target, keybind)
+            })
+            .or_else(|err| {
+                eprintln!("[voquill] X11 paste failed ({err}), trying wtype text fallback");
+                wayland::wtype_text(target)
+            })
+            .or_else(|err| {
+                eprintln!("[voquill] wtype text failed ({err}), trying enigo typing fallback");
+                enigo_type_text(target)
+            });
+    }
+
     paste_via_clipboard(target, keybind).or_else(|err| {
         eprintln!("Clipboard paste failed ({err}). Falling back to simulated typing.");
-        let mut enigo = Enigo::new();
-        enigo.key_up(Key::Shift);
-        enigo.key_up(Key::Control);
-        enigo.key_up(Key::Alt);
-        thread::sleep(Duration::from_millis(30));
-        enigo.key_sequence(target);
-        Ok(())
+        enigo_type_text(target)
     })
+}
+
+fn enigo_type_text(text: &str) -> Result<(), String> {
+    let mut enigo = Enigo::new();
+    enigo.key_up(Key::Shift);
+    enigo.key_up(Key::Control);
+    enigo.key_up(Key::Alt);
+    thread::sleep(Duration::from_millis(30));
+    enigo.key_sequence(text);
+    Ok(())
 }
 
 fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
