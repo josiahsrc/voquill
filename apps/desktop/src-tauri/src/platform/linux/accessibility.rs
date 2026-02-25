@@ -1,3 +1,4 @@
+use super::wayland;
 use crate::commands::{ScreenContextInfo, TextFieldInfo};
 use arboard::Clipboard;
 use enigo::{Enigo, Key, KeyboardControllable};
@@ -20,6 +21,10 @@ pub fn get_screen_context() -> ScreenContextInfo {
 }
 
 pub fn get_selected_text() -> Option<String> {
+    if wayland::is_wayland() {
+        return wayland::wayland_get_selected_text();
+    }
+
     let mut clipboard = Clipboard::new().ok()?;
     let previous = clipboard.get_text().ok();
 
