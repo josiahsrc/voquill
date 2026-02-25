@@ -1,130 +1,119 @@
 # Terms of Service
 
-_Last updated: October 20, 2025_
+_Last updated: February 24, 2026_
 
-Welcome to **Voquill**. These Terms of Service ("Terms") govern your use of the Voquill open source software application ("Software"). By downloading, installing, or using the Software, you agree to be bound by these Terms.
+These Terms of Service ("Terms") are a legal agreement between you and **Handaptive LLC** ("we," "us," or "our"), governing your use of the Voquill application, website, and related services (collectively, the "Service"). **By using Voquill, you agree to these Terms.** If you do not agree, do not use the Service.
 
-## 1. Open Source License
+## 1. Description of the Service
 
-Voquill is open source software. The Software's source code is available under the terms of its open source license (as specified in the repository). These Terms supplement, but do not replace, the applicable open source license.
+Voquill is a voice typing application that lets you dictate text using your voice, with optional AI-powered post-processing. Voquill is available as a desktop application (macOS, Windows, Linux), a mobile application (iOS), and an enterprise deployment.
 
-## 2. No Account Required
+## 2. Service Modes
 
-Voquill does not require account registration. You can download and use the Software freely without providing any personal information.
+Voquill offers multiple operating modes, each with different data handling characteristics:
 
-## 3. Local Installation & Use
+- **Local mode:** Voice processing happens entirely on your device using an embedded speech-to-text model. No audio or text data leaves your device.
+- **Cloud mode:** Audio is sent to our cloud infrastructure for transcription and optional post-processing, then the resulting text is returned to your device. Audio is processed transiently and is not stored on our servers.
+- **API key mode (BYOK):** You provide your own API keys for third-party AI providers. Audio and text are sent directly from your device to the provider you configure. We do not intermediate or store this data.
+- **Enterprise mode:** Your organization hosts its own Voquill server. Data handling is governed by your organization's policies and your agreement with them.
 
-The Software runs locally on your device. You are responsible for:
+## 3. Eligibility
 
-- Ensuring your device meets the Software's system requirements
-- Maintaining the security of your local installation
-- Managing any data you create or store using the Software
-- Backing up your local data as needed
+You must be at least 13 years old to use Voquill. If you are under 18, you represent that your parent or legal guardian has reviewed and agreed to these Terms on your behalf.
 
-## 4. Third-Party Services
+## 4. Account Registration
 
-### 4.1 Optional Groq API
+Some features of the Service require an account. When you create an account, you agree to provide accurate information and keep it up to date. You are responsible for maintaining the security of your account credentials.
 
-If you choose to use the Groq API integration:
+An account is not required to use Voquill in local or API key mode.
 
-- You are responsible for obtaining your own Groq API credentials
-- Your use of Groq services is subject to Groq's terms of service and privacy policy
-- We are not responsible for Groq's service availability, performance, or practices
-- API keys and credentials are stored locally on your device
+## 5. Subscriptions and Payments
 
-### 4.2 Your Responsibility
+Voquill offers free and paid subscription plans. Paid plans are billed through Stripe (desktop/web) or the Apple App Store via RevenueCat (mobile). By subscribing to a paid plan, you agree to the applicable pricing and billing terms presented at the time of purchase.
 
-You are solely responsible for your use of any third-party services integrated with the Software.
+- Subscriptions renew automatically unless cancelled before the end of the current billing period.
+- You may manage or cancel your subscription through your account settings or the applicable app store.
+- Refunds are handled in accordance with the policies of the payment processor or app store through which you subscribed.
 
-## 5. Acceptable Use
+## 6. Usage Limits
 
-You agree to use the Software:
+Cloud-based features are subject to usage limits that vary by plan. Current limits are displayed in the application. We reserve the right to modify these limits with reasonable notice.
 
-- In compliance with all applicable laws and regulations
-- In a manner that respects the rights of others
-- Without attempting to misuse, exploit, or reverse engineer the Software for malicious purposes
+## 7. Your Content
 
-## 6. Intellectual Property
+You retain ownership of all text, audio, and other content you create using Voquill ("Your Content"). We do not claim any ownership rights over Your Content.
 
-### 6.1 Open Source Software
+- **Transcriptions** are stored locally on your device. We do not store your transcription text or history on our servers.
+- **Voice data** is never retained by us. In cloud mode, audio is processed transiently to produce a transcription and is not saved.
 
-The Software is provided under an open source license. You have the rights granted by that license, including the right to use, modify, and distribute the Software as permitted.
+## 8. Acceptable Use
 
-### 6.2 Trademarks
+You agree not to:
 
-The "Voquill" name and associated trademarks remain the property of their respective owners. Use of the Software does not grant you rights to use these trademarks except as permitted by the open source license.
+- Use the Service for any unlawful purpose or in violation of any applicable laws.
+- Attempt to reverse engineer, decompile, or disassemble any proprietary components of the Service (the open-source components are governed by their respective licenses).
+- Interfere with or disrupt the integrity or performance of the Service.
+- Attempt to gain unauthorized access to the Service or related systems.
+- Use the Service to transmit malware or other harmful code.
+- Resell or redistribute access to the cloud Service without our permission.
 
-### 6.3 Your Content
+## 9. Open Source
 
-You retain all rights to any audio, transcriptions, or other content you create using the Software. The Software does not claim any ownership of your content.
+Voquill's source code is available under the GNU Affero General Public License v3 (AGPLv3). Your use of the source code is governed by that license. These Terms govern your use of the hosted Service, pre-built applications, and any features or infrastructure we provide beyond the open-source code.
 
-## 7. Contributions
+## 10. Third-Party Services
 
-If you contribute code, documentation, or other materials to the Voquill project, you agree that your contributions will be licensed under the same open source license as the Software.
+Voquill integrates with third-party services depending on your configuration, including but not limited to Groq, OpenAI, Anthropic, Google, Deepseek, OpenRouter, Azure, and others. When you use these integrations (whether through our cloud or your own API keys), your use is subject to the respective provider's terms and policies. We are not responsible for the practices of third-party providers.
 
-## 8. Disclaimers
+## 11. Privacy
 
-THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+Your privacy matters to us. Please review our [Privacy Policy](/privacy) for details on how we collect, use, and protect your information.
+
+## 12. Disclaimers
+
+THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
 
 We do not guarantee that:
 
-- The Software will be error-free or uninterrupted
-- Defects will be corrected
-- The Software is free from viruses or other harmful components
-- Results obtained from using the Software will be accurate or reliable
+- The Service will be uninterrupted, error-free, or secure.
+- Transcriptions or AI-generated text will be accurate or complete.
+- The Service will meet your specific requirements.
 
-## 9. Limitation of Liability
+Voice-to-text transcription and AI post-processing are inherently imperfect. You are responsible for reviewing and verifying any output produced by the Service.
 
-TO THE FULLEST EXTENT PERMITTED BY LAW, THE VOQUILL DEVELOPERS AND CONTRIBUTORS SHALL NOT BE LIABLE FOR ANY:
+## 13. Limitation of Liability
 
-- Direct, indirect, incidental, special, consequential, or punitive damages
-- Loss of profits, data, use, or other intangible losses
-- Damages resulting from your use or inability to use the Software
-- Damages resulting from unauthorized access to your data
-- Damages resulting from third-party services (including Groq API)
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, HANDAPTIVE LLC SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, USE, OR GOODWILL, ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE, REGARDLESS OF THE THEORY OF LIABILITY.
 
-## 10. Indemnification
+OUR TOTAL AGGREGATE LIABILITY FOR ANY CLAIMS ARISING FROM OR RELATED TO THESE TERMS OR THE SERVICE SHALL NOT EXCEED THE AMOUNT YOU HAVE PAID US IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM, OR ONE HUNDRED DOLLARS ($100), WHICHEVER IS GREATER.
 
-You agree to indemnify and hold harmless the Voquill developers and contributors from any claims, damages, losses, liabilities, and expenses arising from:
+## 14. Indemnification
 
-- Your use of the Software
-- Your violation of these Terms
-- Your violation of any rights of another party
-- Your use of third-party services
+You agree to indemnify and hold harmless Handaptive LLC and its officers, employees, and agents from any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from your use of the Service or violation of these Terms.
 
-## 11. No Service Level Agreement
+## 15. Termination
 
-Since the Software runs locally and we do not operate centralized services, there is no service level agreement, uptime guarantee, or technical support obligation.
+We may suspend or terminate your access to the Service at any time for violation of these Terms or for any other reason, with or without notice. You may stop using the Service and delete your account at any time. Upon termination, your right to use the cloud Service ceases, but your locally stored data remains on your device.
 
-## 12. Community Support
+## 16. Changes to These Terms
 
-Support for the Software is provided on a voluntary, community basis through:
+We may update these Terms from time to time. When we make material changes, we will update the "Last updated" date and may notify you through the application or by other means. Your continued use of the Service after changes are posted constitutes acceptance of the revised Terms.
 
-- GitHub issues and discussions
-- Community forums and channels
-- Documentation and guides
+## 17. Governing Law
 
-There is no guarantee of response time or resolution.
+These Terms are governed by and construed in accordance with the laws of the State of Utah, United States, without regard to its conflict of law provisions. Any disputes arising under these Terms shall be resolved in the state or federal courts located in Utah.
 
-## 13. Modifications to Terms
+## 18. Severability
 
-We may update these Terms from time to time. Changes will be posted on this page with a new "Last updated" date. Continued use of the Software after changes constitutes acceptance of the revised Terms.
+If any provision of these Terms is found to be unenforceable, the remaining provisions will remain in full force and effect.
 
-## 14. Governing Law
+## 19. Entire Agreement
 
-These Terms are governed by the laws of the State of California, without regard to conflicts of law principles.
+These Terms, together with the Privacy Policy, constitute the entire agreement between you and Handaptive LLC regarding the Service and supersede any prior agreements.
 
-## 15. Severability
-
-If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in full force and effect.
-
-## 16. Entire Agreement
-
-These Terms, together with the applicable open source license, constitute the entire agreement between you and Voquill regarding the Software.
-
-## 17. Contact
+## 20. Contact
 
 For questions about these Terms, you can:
 
-- Open an issue on our GitHub repository
+- Open an issue on our [GitHub repository](https://github.com/HandaptiveTouch/voquill)
 - Contact us at [legal@voquill.com](mailto:legal@voquill.com)
