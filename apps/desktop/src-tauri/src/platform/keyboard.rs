@@ -486,14 +486,26 @@ pub(crate) fn send_event_to_tcp(
 }
 
 pub(crate) fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
+    let pressed_normalized: HashSet<String> = pressed
+        .iter()
+        .map(|key| key.to_ascii_lowercase())
+        .collect();
+
     for combo in combos {
         if combo.is_empty() {
             continue;
         }
-        let all_match = combo
+
+        let combo_normalized: HashSet<String> = combo
             .iter()
-            .all(|k| pressed.iter().any(|p| p.eq_ignore_ascii_case(k)));
-        if all_match {
+            .map(|key| key.to_ascii_lowercase())
+            .collect();
+
+        if combo_normalized.is_empty() {
+            continue;
+        }
+
+        if pressed_normalized == combo_normalized {
             return true;
         }
     }
@@ -574,4 +586,35 @@ pub(crate) fn run_listen_loop(
         }
     })
     .map_err(|err| format!("keyboard listener error: {err:?}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::matches_any_combo;
+    use std::collections::HashSet;
+
+    fn set(keys: &[&str]) -> HashSet<String> {
+        keys.iter().map(|key| key.to_string()).collect()
+    }
+
+    #[test]
+    fn matches_with_exact_key_set() {
+        let pressed = set(&["MetaLeft"]);
+        let combos = vec![vec!["MetaLeft".to_string()]];
+        assert!(matches_any_combo(&pressed, &combos));
+    }
+
+    #[test]
+    fn does_not_match_when_extra_keys_are_pressed() {
+        let pressed = set(&["MetaLeft", "KeyZ"]);
+        let combos = vec![vec!["MetaLeft".to_string()]];
+        assert!(!matches_any_combo(&pressed, &combos));
+    }
+
+    #[test]
+    fn matches_case_insensitively() {
+        let pressed = set(&["metaleft", "keyz"]);
+        let combos = vec![vec!["MetaLeft".to_string(), "KeyZ".to_string()]];
+        assert!(matches_any_combo(&pressed, &combos));
+    }
 }
