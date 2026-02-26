@@ -6,6 +6,7 @@ import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { getLogger } from "../utils/log.utils";
 import { getIsNewBackendEnabled } from "../utils/new-server.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
+import { buildOpenAICompatibleUrl } from "../utils/openai-compatible.utils";
 import {
   GenerativePrefs,
   getAgentModePrefs,
@@ -205,15 +206,17 @@ const getGenTextRepoInternal = ({
       }
     } else if (prefs.provider === "openai-compatible") {
       const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
-      const baseUrl = apiKeyRecord?.baseUrl || "http://127.0.0.1:8080";
+      const baseUrl = apiKeyRecord?.baseUrl;
       const model = prefs.postProcessingModel;
       const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      const includeV1Path = apiKeyRecord?.includeV1Path;
+      const fullUrl = buildOpenAICompatibleUrl(baseUrl, includeV1Path);
       getLogger().verbose(
-        `Configuring OpenAI Compatible repo with baseUrl=${baseUrl} and model=${model}`,
+        `Configuring OpenAI Compatible repo with baseUrl=${fullUrl} and model=${model}`,
       );
       if (model) {
         repo = new OpenAICompatibleGenerateTextRepo(
-          `${baseUrl}/v1`,
+          fullUrl,
           model,
           providerApiKey,
         );
@@ -305,7 +308,11 @@ export const getAgentRepo = (): GenerateTextRepoOutput => {
     throw new Error("OpenClaw provides its own LLM processor");
   }
 
-  return getGenTextRepoInternal({ prefs, cloudModel: "large", useNewBackend: false });
+  return getGenTextRepoInternal({
+    prefs,
+    cloudModel: "large",
+    useNewBackend: false,
+  });
 };
 
 export type TranscribeAudioRepoOutput = {
@@ -354,11 +361,13 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
     } else if (prefs.provider === "openai-compatible") {
       const state = getAppState();
       const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
-      const baseUrl = apiKeyRecord?.baseUrl || "http://127.0.0.1:8080";
+      const baseUrl = apiKeyRecord?.baseUrl;
       const model = prefs.transcriptionModel || "whisper-1";
       const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      const includeV1Path = apiKeyRecord?.includeV1Path;
+      const fullUrl = buildOpenAICompatibleUrl(baseUrl, includeV1Path);
       repo = new OpenAICompatibleTranscribeAudioRepo(
-        baseUrl,
+        fullUrl,
         model,
         providerApiKey,
       );

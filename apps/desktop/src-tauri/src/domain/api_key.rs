@@ -22,6 +22,8 @@ pub struct ApiKey {
     pub base_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub azure_region: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_v1_path: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -35,6 +37,8 @@ pub struct ApiKeyCreateRequest {
     pub base_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub azure_region: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_v1_path: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -51,6 +55,8 @@ pub struct ApiKeyUpdateRequest {
     pub base_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub azure_region: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_v1_path: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -74,6 +80,8 @@ pub struct ApiKeyView {
     pub base_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub azure_region: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_v1_path: Option<bool>,
 }
 
 impl From<ApiKey> for ApiKeyView {
@@ -90,6 +98,7 @@ impl From<ApiKey> for ApiKeyView {
             openrouter_config: api_key.openrouter_config,
             base_url: api_key.base_url,
             azure_region: api_key.azure_region,
+            include_v1_path: api_key.include_v1_path,
         }
     }
 }

@@ -31,4 +31,5 @@ export type ApiKey = {
   openRouterConfig?: Nullable<OpenRouterConfig>;
   baseUrl?: string | null;
   azureRegion?: string | null;
+  includeV1Path?: boolean | null;
 };
