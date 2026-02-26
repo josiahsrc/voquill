@@ -1,3 +1,4 @@
+import { isOpenAIRealtimeModel } from "@repo/voice-ai";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { TranscriptionSession } from "../types/transcription-session.types";
@@ -35,8 +36,8 @@ export const createTranscriptionSession = (
         return new ElevenLabsTranscriptionSession(prefs.apiKeyValue);
       case "openai": {
         const model = prefs.transcriptionModel;
-        if (model === "gpt-4o-realtime-preview") {
-          return new OpenAIRealtimeTranscriptionSession(prefs.apiKeyValue);
+        if (model && isOpenAIRealtimeModel(model)) {
+          return new OpenAIRealtimeTranscriptionSession(prefs.apiKeyValue, model);
         }
         if (
           model === "gpt-4o-transcribe" ||

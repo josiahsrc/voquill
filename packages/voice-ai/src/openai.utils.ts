@@ -20,10 +20,21 @@ export const OPENAI_TRANSCRIPTION_MODELS = [
   "gpt-4o-transcribe",
   "gpt-4o-mini-transcribe",
   "gpt-4o-realtime-preview",
+  "gpt-realtime-1.5",
   "whisper-1",
 ] as const;
 export type OpenAITranscriptionModel =
   (typeof OPENAI_TRANSCRIPTION_MODELS)[number];
+
+export const OPENAI_REALTIME_MODELS: readonly OpenAITranscriptionModel[] = [
+  "gpt-4o-realtime-preview",
+  "gpt-realtime-1.5",
+];
+
+export const isOpenAIRealtimeModel = (
+  model: string,
+): model is OpenAITranscriptionModel =>
+  OPENAI_REALTIME_MODELS.includes(model as OpenAITranscriptionModel);
 
 const contentToString = (
   content: string | ChatCompletionContentPart[] | null | undefined,

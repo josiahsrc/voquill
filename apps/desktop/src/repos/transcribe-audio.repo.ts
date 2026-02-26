@@ -8,6 +8,7 @@ import {
   geminiTranscribeAudio,
   GeminiTranscriptionModel,
   groqTranscribeAudio,
+  isOpenAIRealtimeModel,
   openaiTranscribeAudio,
   OpenAITranscriptionModel,
   TranscriptionModel,
@@ -16,6 +17,7 @@ import {
   OPENAI_REALTIME_SAMPLE_RATE,
   POLISHED_INSTRUCTIONS,
   resampleLinear,
+  unwrapJsonText,
 } from "../sessions/openai-realtime-transcription-session";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
@@ -383,7 +385,7 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
   async transcribeAudio(
     input: TranscribeAudioInput,
   ): Promise<TranscribeAudioOutput> {
-    if (this.model === ("gpt-4o-realtime-preview" as OpenAITranscriptionModel)) {
+    if (isOpenAIRealtimeModel(this.model)) {
       return this.transcribeViaRealtime(input);
     }
     return super.transcribeAudio(input);
@@ -393,11 +395,12 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
     input: TranscribeAudioInput,
   ): Promise<TranscribeAudioOutput> {
     const apiKey = this.openaiApiKey;
+    const model = this.model;
     const normalizedSamples = normalizeSamples(input.samples);
     const floatSamples = ensureFloat32Array(normalizedSamples);
 
     return new Promise((resolve, reject) => {
-      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview`;
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
       const ws = new WebSocket(wsUrl, [
         "realtime",
         `openai-insecure-api-key.${apiKey}`,
@@ -412,10 +415,10 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
           resolved = true;
           ws.close();
           resolve({
-            text: responseText,
+            text: unwrapJsonText(responseText),
             metadata: {
               inferenceDevice: "API • OpenAI (Realtime)",
-              modelSize: "gpt-4o-realtime-preview",
+              modelSize: model,
               transcriptionMode: "api",
             },
           });
@@ -428,10 +431,10 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
         clearTimeout(timeout);
         ws.close();
         resolve({
-          text,
+          text: unwrapJsonText(text),
           metadata: {
             inferenceDevice: "API • OpenAI (Realtime)",
-            modelSize: "gpt-4o-realtime-preview",
+            modelSize: model,
             transcriptionMode: "api",
           },
         });
