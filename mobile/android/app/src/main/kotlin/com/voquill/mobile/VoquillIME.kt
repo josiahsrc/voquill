@@ -21,6 +21,7 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.util.Base64
 import android.util.Log
 import android.view.Choreographer
@@ -29,6 +30,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
+import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
@@ -198,7 +200,7 @@ class VoquillIME : InputMethodService() {
         languageChip.setOnClickListener { onLanguageChipTap() }
         utilAtButton.setOnClickListener { currentInputConnection?.commitText("@", 1) }
         utilSpaceButton.setOnClickListener { currentInputConnection?.commitText(" ", 1) }
-        utilReturnButton.setOnClickListener { currentInputConnection?.commitText("\n", 1) }
+        utilReturnButton.setOnClickListener { onReturnTap() }
         utilDeleteButton.setOnClickListener { sendDeleteKey() }
 
         window.window?.decorView?.setBackgroundColor(Color.TRANSPARENT)
@@ -406,6 +408,30 @@ class VoquillIME : InputMethodService() {
         val connection = currentInputConnection ?: return
         connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
         connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+    }
+
+    private fun onReturnTap() {
+        val connection = currentInputConnection ?: return
+        val editorInfo = currentInputEditorInfo
+        val action = (editorInfo?.imeOptions ?: 0) and EditorInfo.IME_MASK_ACTION
+
+        if (action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
+            if (connection.performEditorAction(action)) {
+                return
+            }
+        }
+
+        val inputType = editorInfo?.inputType ?: 0
+        val isMultiLine = (inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0 ||
+            (inputType and InputType.TYPE_TEXT_FLAG_IME_MULTI_LINE) != 0
+
+        if (isMultiLine) {
+            connection.commitText("\n", 1)
+            return
+        }
+
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
     }
 
     private fun startKeyboardCounterPolling() {
