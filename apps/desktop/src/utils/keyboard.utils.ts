@@ -25,6 +25,30 @@ export const getAdditionalLanguageCode = (
   return raw.length > 0 ? raw : null;
 };
 
+export const isHoldActionHotkey = (actionName: string): boolean => {
+  return (
+    actionName === DICTATE_HOTKEY ||
+    actionName === AGENT_DICTATE_HOTKEY ||
+    actionName.startsWith(ADDITIONAL_LANGUAGE_HOTKEY_PREFIX)
+  );
+};
+
+const isModifierLikeKey = (key: string): boolean => {
+  const lower = key.toLowerCase();
+  return (
+    lower.startsWith("meta") ||
+    lower.startsWith("control") ||
+    lower.startsWith("shift") ||
+    lower.startsWith("alt") ||
+    lower.startsWith("option") ||
+    lower.startsWith("function")
+  );
+};
+
+const isModifierOnlyCombo = (combo: string[]): boolean => {
+  return combo.length > 0 && combo.every((key) => isModifierLikeKey(key));
+};
+
 export const getPrettyKeyName = (key: string): string => {
   const lower = key.toLowerCase();
   if (lower.startsWith("key")) {
@@ -138,18 +162,22 @@ export const getAdditionalLanguageEntries = (
 };
 
 /**
- * We do not want to grab events in certain situtations. Ie.e The escape key unless a transcription is active.
+ * Fire-style shortcuts (cancel/switch style) are handled on key release in TS and should not
+ * be natively grabbed, so shared shortcuts like Cmd+Z keep working.
  */
 const isActionGrabbable = (state: AppState, actionName: string): boolean => {
   if (actionName === CANCEL_TRANSCRIPTION_HOTKEY) {
     return state.activeRecordingMode !== null;
   }
+
   if (actionName === SWITCH_WRITING_STYLE_HOTKEY) {
     return getEffectiveStylingMode(state) === "manual";
   }
+
   if (actionName === DICTATE_HOTKEY || actionName === AGENT_DICTATE_HOTKEY) {
-    return getIsDictationUnlocked(state); 
+    return getIsDictationUnlocked(state);
   }
+
   return true;
 };
 
@@ -174,6 +202,12 @@ export const syncHotkeyCombosToNative = async (): Promise<void> => {
     }
     for (const combo of getHotkeyCombosForAction(state, actionName)) {
       if (combo.length > 0) {
+        // Modifier-only fire hotkeys (e.g. Cmd) must not be natively grabbed:
+        // they need key-up handling so supersets like Cmd+Z still pass through.
+        if (!isHoldActionHotkey(actionName) && isModifierOnlyCombo(combo)) {
+          continue;
+        }
+
         combos.push(combo);
       }
     }

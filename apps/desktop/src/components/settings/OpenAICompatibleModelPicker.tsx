@@ -6,66 +6,67 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  TextField,
   Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { OllamaRepo, OpenAICompatibleRepo } from "../../repos/ollama.repo";
-import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
+import { OpenAICompatibleRepo } from "../../repos/ollama.repo";
+import { normalizeOpenAICompatibleBaseUrl } from "../../utils/openai-compatible.utils";
 
-type OllamaModelPickerProps = {
+type OpenAICompatibleModelPickerProps = {
   baseUrl: string | null;
   apiKey?: string | null;
   selectedModel: string | null;
   onModelSelect: (model: string | null) => void;
   disabled?: boolean;
-  provider?: "ollama" | "openai-compatible";
 };
 
-export const OllamaModelPicker = ({
+export const OpenAICompatibleModelPicker = ({
   baseUrl,
   apiKey,
   selectedModel,
   onModelSelect,
   disabled = false,
-  provider = "ollama",
-}: OllamaModelPickerProps) => {
+}: OpenAICompatibleModelPickerProps) => {
   const [models, setModels] = useState<string[]>([]);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [useManualInput, setUseManualInput] = useState(false);
 
-  const effectiveUrl = baseUrl || OLLAMA_DEFAULT_URL;
+  const effectiveUrl = useMemo(() => {
+    return normalizeOpenAICompatibleBaseUrl(baseUrl);
+  }, [baseUrl]);
 
   const fetchModels = useCallback(async () => {
     setIsLoading(true);
     try {
-      const repo =
-        provider === "openai-compatible"
-          ? new OpenAICompatibleRepo(effectiveUrl, apiKey || undefined)
-          : new OllamaRepo(effectiveUrl, apiKey || undefined);
+      const repo = new OpenAICompatibleRepo(effectiveUrl, apiKey || undefined);
       const available = await repo.checkAvailability();
       setIsAvailable(available);
 
       if (available) {
         const fetchedModels = await repo.getAvailableModels();
         setModels(fetchedModels);
+        setUseManualInput(false);
       } else {
         setModels([]);
+        setUseManualInput(true);
       }
     } catch (error) {
-      console.error("Failed to fetch Ollama models", error);
+      console.error("Failed to fetch OpenAI-compatible models", error);
       setIsAvailable(false);
       setModels([]);
+      setUseManualInput(true);
     } finally {
       setIsLoading(false);
     }
-  }, [effectiveUrl, apiKey, provider]);
+  }, [effectiveUrl, apiKey]);
 
   useEffect(() => {
     void fetchModels();
   }, [fetchModels]);
 
-  // Poll for availability every 3 seconds while we're showing this picker
   useEffect(() => {
     const interval = setInterval(() => {
       void fetchModels();
@@ -79,30 +80,53 @@ export const OllamaModelPicker = ({
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 1 }}>
         <CircularProgress size={16} />
         <Typography variant="body2" color="text.secondary">
-          <FormattedMessage defaultMessage="Checking Ollama connection..." />
+          <FormattedMessage defaultMessage="Checking OpenAI-compatible connection..." />
         </Typography>
       </Box>
     );
   }
 
-  if (isAvailable === false) {
+  if (isAvailable === false && !useManualInput) {
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 1 }}>
         <ErrorOutlineIcon color="error" fontSize="small" />
         <Typography variant="body2" color="error">
-          <FormattedMessage defaultMessage="Unable to connect to Ollama at the specified URL." />
+          <FormattedMessage defaultMessage="Unable to connect to the OpenAI-compatible server at the specified URL." />
         </Typography>
+      </Box>
+    );
+  }
+
+  if (useManualInput) {
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, py: 1 }}>
+        <Typography variant="body2" color="text.secondary">
+          <FormattedMessage defaultMessage="The server doesn't support model listing. Please enter the model name manually." />
+        </Typography>
+        <TextField
+          label={<FormattedMessage defaultMessage="Model name" />}
+          value={selectedModel ?? ""}
+          onChange={(event) =>
+            onModelSelect(
+              event.target.value ? String(event.target.value) : null,
+            )
+          }
+          placeholder="e.g., gpt-4o-mini"
+          size="small"
+          fullWidth
+          disabled={disabled}
+        />
       </Box>
     );
   }
 
   return (
     <FormControl fullWidth size="small">
-      <InputLabel id="ollama-model-label" shrink>
+      <InputLabel id="openai-compatible-model-label" shrink>
         <FormattedMessage defaultMessage="Model" />
       </InputLabel>
       <Select
-        labelId="ollama-model-label"
+        labelId="openai-compatible-model-label"
         label={<FormattedMessage defaultMessage="Model" />}
         value={selectedModel ?? ""}
         onChange={(event) =>

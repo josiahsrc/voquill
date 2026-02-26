@@ -24,7 +24,7 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
         <div className={styles.pageLinks}>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
-          <a href="mailto:hello@voquill.com">Contact</a>
+          <Link to="/contact">Contact</Link>
         </div>
       </div>
     </div>

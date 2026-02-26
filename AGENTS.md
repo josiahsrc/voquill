@@ -1,35 +1,52 @@
-# Instructions
+** Rules **
 
-This is an AI speech-to-text application.
+- Do not propose band-aid fixes to problems. Identify the root cause, be it architectural or logical, and address it directly. Don't be afraid to remove broken code. If something is broken, fix it at the root, even if that means refactoring and overhauling systems (if necessary).
+- Enforce DRY code principles. If you find yourself copying and pasting code, stop and refactor it into a reusable function or module.
+- Avoid over-engineering. Implement solutions that are as simple as possible while still meeting requirements.
+- Your changes should have minimal impact. Do not break existing functionality.
+- Write clear, maintainable code that is self documenting. Do not comments on new code except where it's necessary to explain non-obvious things.
+- When the user corrects you, track any meaningful lessons learned inside of a markdown file in the `docs/lessons` directory.
+- Prefer to follow existing patterns such as dialogs, state management, and API interactions, etc.
 
-## apps/desktop
+** Repository structure **
 
-The desktop application built using Tauri.
+- This is a Turborepo monorepo. Root-level: `npm run build`, `npm run lint`, `npm run check-types`, `npm run test`.
+- Shared packages live in `packages/` (types, functions, ui, etc.). After modifying `packages/types` or `packages/functions`, rebuild them before downstream consumers can see changes.
+- Use `<FormattedMessage defaultMessage="..." />` or `useIntl()` for i18n — never pass an `id` prop.
 
-- State is managed with Zustand. A single global app state powers the whole application (`app.state.ts`).
-- Shared domain types are stored as maps at the root level of the state (e.g., `userById`). Keys are lookup entities, and values are the referenced entities.
-- State is organized by page. For example, the `TranscriptionsPage` has a `transcriptionsPage` slice in `app.state.ts`, defined in `transcriptions.state.ts`.
-- The `utils` directory contains generic utilities that read or modify state. State is always passed into these functions.
-- The `actions` directory composes utilities. It reads and mutates state and may call APIs.
-- The `components` directory stores React components. Pages have their own folders, and `common` holds reusable, stateless components.
-- The `hooks` directory contains reusable hooks created for clarity or convenience.
-- The `types` directory contains application-specific domain types reused across the app.
-- The `repos` directory defines backend strategies that use a consistent interface for local or remote backends.
-- The TypeScript portion drives application state and logic. Rust acts as an API layer called from TypeScript.
+** `apps/desktop` — Tauri desktop app (Rust + TypeScript/React) **
 
-## apps/web
+- "Rust is the API, TypeScript is the Brain" — all business logic lives in TypeScript, never duplicated in Rust. Rust provides pure API capabilities without decision-making.
+- Single source of truth for state is Zustand (with Immer) in TypeScript.
+- Data flow: User/Native Event → Actions (`src/actions/`) → Repos (`src/repos/`) → Tauri Commands (`src-tauri/src/commands.rs`) → SQLite/Whisper/APIs.
+- Repos abstract local vs remote: `BaseXxxRepo` defines interface, `LocalXxxRepo` / `CloudXxxRepo` implement. Use `toLocalXxx()` / `fromLocalXxx()` at the Tauri boundary.
+- Database migrations go in `src-tauri/src/db/migrations/` as `NNN_description.sql`, registered in `db/mod.rs`.
+- New Tauri commands: define in `commands.rs`, register in `app.rs` invoke_handler, create a repo, use in actions.
 
-The product website for Voquill. Built with Astro.
+** `apps/firebase/functions` — Firebase Cloud Functions **
 
-## packages/\*\*
+- Single `handler()` dispatches by `name` field, with Zod validation and `HandlerInput<"handler/name">` typing.
+- Scripts: `npm run build`, `npm run test`.
 
-Shared packages used by both the desktop, server, and web applications. We place entities here as well as shared utilities.
+** `enterprise/gateway` — Enterprise API gateway **
 
-## General practices
+- Handler pattern: if-else chain in `src/index.ts`.
+- Scripts: `npm run build`, `npm run check-types`, `npm run test`
 
-- See the `docs` directory for more on architecture, patterns, tutorials, and conventions.
-- Do not run long-hanging commands like `turbo dev`; use `turbo build` instead.
-- Use disabled button states for loading instead of changing button text.
-- Reuse code where appropriate without overgeneralizing.
-- Use the shared types from the packages where possible, e.g. `Nullable<T>`.
-- When adding translations to the desktop or web app, first use <FormattedMessage>, `getIntl`, or `useIntl` in the relevant component or util (do NOT pass in an ID, only pass in a `defaultMessage`).
+** `enterprise/admin` — Enterprise admin dashboard (React) **
+
+- Follows STT provider pattern for new provider types (state, actions, tab, dialog, side effects).
+- Scripts: `npm run build`, `npm run lint`.
+
+** `mobile/` — Flutter mobile app **
+
+- Flutter project at repository root (`mobile/`), not inside `apps/`.
+- Uses `flutter run`, `flutter build`, standard Flutter tooling.
+- Uses `flutter_zustand` and `draft` for state management, following similar patterns as the desktop app.
+- Use `./mobile/generate.sh` to re-generate code.
+
+** `apps/web` — Marketing website (Astro) **
+
+- Scripts: `npm run build`.
+
+** Important scripts **
