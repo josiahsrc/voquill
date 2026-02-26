@@ -508,6 +508,40 @@ pub(crate) fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>
     false
 }
 
+fn is_modifier_like_key_label(key_label: &str) -> bool {
+    let normalized = key_label.to_ascii_lowercase();
+    normalized.starts_with("meta")
+        || normalized.starts_with("control")
+        || normalized.starts_with("shift")
+        || normalized.starts_with("alt")
+        || normalized.starts_with("option")
+        || normalized.starts_with("function")
+}
+
+fn matches_modifier_only_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
+    let pressed_normalized: HashSet<String> =
+        pressed.iter().map(|key| key.to_ascii_lowercase()).collect();
+
+    for combo in combos {
+        if combo.is_empty() || !combo.iter().all(|key| is_modifier_like_key_label(key)) {
+            continue;
+        }
+
+        let combo_normalized: HashSet<String> =
+            combo.iter().map(|key| key.to_ascii_lowercase()).collect();
+
+        if combo_normalized.is_empty() {
+            continue;
+        }
+
+        if pressed_normalized == combo_normalized {
+            return true;
+        }
+    }
+
+    false
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct GrabHotkeyState {
     pub pressed_keys: HashSet<String>,
@@ -532,11 +566,17 @@ pub(crate) fn update_grab_hotkey_state(
 
         if !state.combo_active && matches_any_combo(&state.pressed_keys, combos) {
             state.combo_active = true;
+            if matches_modifier_only_combo(&state.pressed_keys, combos) {
+                return GrabDecision::PassThrough;
+            }
             state.suppressed_keys.insert(key_label.to_string());
             return GrabDecision::Suppress;
         }
 
         if state.combo_active {
+            if state.suppressed_keys.is_empty() {
+                return GrabDecision::PassThrough;
+            }
             state.suppressed_keys.insert(key_label.to_string());
             return GrabDecision::Suppress;
         }
@@ -673,11 +713,11 @@ mod tests {
         );
         assert_eq!(
             update_grab_hotkey_state(&mut state, "MetaLeft", true, &combos),
-            GrabDecision::Suppress
+            GrabDecision::PassThrough
         );
         assert_eq!(
             update_grab_hotkey_state(&mut state, "MetaLeft", false, &combos),
-            GrabDecision::Suppress
+            GrabDecision::PassThrough
         );
         assert_eq!(
             update_grab_hotkey_state(&mut state, "ControlLeft", false, &combos),
@@ -697,6 +737,47 @@ mod tests {
         assert_eq!(
             update_grab_hotkey_state(&mut state, "Escape", false, &combos),
             GrabDecision::Suppress
+        );
+    }
+
+    #[test]
+    fn modifier_only_combo_is_not_suppressed_regardless_of_key_order() {
+        let combos = vec![vec!["ControlLeft".to_string(), "MetaLeft".to_string()]];
+
+        let mut control_then_meta = GrabHotkeyState::default();
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "ControlLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "MetaLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "MetaLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "ControlLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+
+        let mut meta_then_control = GrabHotkeyState::default();
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "MetaLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "ControlLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "ControlLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "MetaLeft", false, &combos),
+            GrabDecision::PassThrough
         );
     }
 }
