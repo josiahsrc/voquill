@@ -5,7 +5,7 @@ marked.setOptions({
   breaks: true,
 });
 
-export type LegalSlug = "terms" | "privacy" | "contact";
+export type LegalSlug = "terms" | "privacy" | "contact" | "delete-account";
 
 const markdownCache = new Map<LegalSlug, string>();
 const rawMarkdownFiles = import.meta.glob<string>("../../content/*.md", {
@@ -14,7 +14,7 @@ const rawMarkdownFiles = import.meta.glob<string>("../../content/*.md", {
   eager: true,
 });
 
-const legalSlugs: LegalSlug[] = ["terms", "privacy", "contact"];
+const legalSlugs: LegalSlug[] = ["terms", "privacy", "contact", "delete-account"];
 
 const isLegalSlug = (value: string): value is LegalSlug => {
   return legalSlugs.includes(value as LegalSlug);

@@ -8,6 +8,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import ContactPage from "./pages/ContactPage";
+import DeleteAccountPage from "./pages/DeleteAccountPage";
 
 function App() {
   const location = useLocation();
@@ -25,6 +26,7 @@ function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/delete-account" element={<DeleteAccountPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Fragment>
