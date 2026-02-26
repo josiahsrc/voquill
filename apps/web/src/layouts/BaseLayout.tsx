@@ -3,13 +3,30 @@ import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
 
+type ArticleMeta = {
+  publishedTime: string;
+  modifiedTime: string;
+  author: string;
+  tags: string[];
+};
+
 type BaseLayoutProps = {
   children: ReactNode;
   title?: string;
   description?: string;
+  ogType?: "website" | "article";
+  articleMeta?: ArticleMeta;
+  noIndex?: boolean;
 };
 
-export function BaseLayout({ children, title, description }: BaseLayoutProps) {
+export function BaseLayout({
+  children,
+  title,
+  description,
+  ogType = "website",
+  articleMeta,
+  noIndex = false,
+}: BaseLayoutProps) {
   const intl = useIntl();
   const location = useLocation();
 
@@ -25,13 +42,8 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
   const finalDescription = description ?? DEFAULT_DESCRIPTION;
 
   const canonicalUrl = useMemo(() => {
-    // Always use the fallback origin to ensure consistent canonical URLs
     const baseUrl = new URL(FALLBACK_CANONICAL_ORIGIN);
-
-    // Use React Router location for the path (client-side routing)
     baseUrl.pathname = location.pathname;
-
-    // Don't include search params in canonical URL to avoid duplicate content
     return baseUrl.toString();
   }, [location.pathname]);
 
@@ -40,11 +52,15 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
       return;
     }
 
+    document.documentElement.lang = intl.locale;
+
     document.title = finalTitle;
     updateMetaTag("name", "description", finalDescription);
-    updateMetaTag("name", "robots", "index,follow");
+    updateMetaTag("name", "robots", noIndex ? "noindex,nofollow" : "index,follow");
 
-    updateMetaTag("property", "og:type", "website");
+    updateMetaTag("property", "og:type", ogType);
+    updateMetaTag("property", "og:site_name", "Voquill");
+    updateMetaTag("property", "og:locale", intl.locale.replace("-", "_"));
     updateMetaTag("property", "og:title", finalTitle);
     updateMetaTag("property", "og:description", finalDescription);
     updateMetaTag("property", "og:url", canonicalUrl);
@@ -53,8 +69,17 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
     updateMetaTag("name", "twitter:title", finalTitle);
     updateMetaTag("name", "twitter:description", finalDescription);
 
-    updateCanonicalLink(canonicalUrl);
-  }, [finalTitle, finalDescription, canonicalUrl]);
+    if (articleMeta) {
+      updateMetaTag("property", "article:published_time", articleMeta.publishedTime);
+      updateMetaTag("property", "article:modified_time", articleMeta.modifiedTime);
+      updateMetaTag("property", "article:author", articleMeta.author);
+      articleMeta.tags.forEach((tag) => {
+        updateMetaTag("property", "article:tag", tag);
+      });
+    }
+
+    updateCanonicalLink(noIndex ? "" : canonicalUrl);
+  }, [finalTitle, finalDescription, canonicalUrl, ogType, articleMeta, noIndex, intl.locale]);
 
   return <>{children}</>;
 }
