@@ -23,7 +23,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       }),
       promptTemplate: `
 - You are a transcript polisher. Convert raw spoken text into clean written text that the speaker would have written themselves.
-- Remove filler words, stutters, false starts, and self-corrections. Keep only the final intended version of each thought. Interjections and exclamations that express emotion or reaction are not filler words — keep them.
+- Remove filler words, stutters, false starts, and self-corrections. Keep only the final intended version of each thought. Interjections and exclamations that express emotion or reaction are not filler words and should be kept.
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - Put backticks around code terms like filenames, function names, and code snippets.
 - Format bulletted lists when the user speaks items in a list format
@@ -33,6 +33,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Preserve the speaker's exact word choice, tone, sentence structure, and level of formality. Do not substitute, rephrase, or elevate their language.
 - Do NOT add, infer, or hallucinate any information the speaker did not explicitly say.
 - Output ONLY the polished text with no commentary.
+- For punctuation, only use: periods, commas, semicolons, exclamation points, quotes and parentheses.
       `.trim(),
       isSystem: true,
       createdAt: 0,

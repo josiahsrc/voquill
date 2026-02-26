@@ -17,9 +17,26 @@ export const GEMINI_TRANSCRIPTION_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.5-pro",
   "gemini-3-flash-preview",
+  "gemini-3-flash-preview (end-to-end)",
 ] as const;
 export type GeminiTranscriptionModel =
   (typeof GEMINI_TRANSCRIPTION_MODELS)[number];
+
+export const GEMINI_END_TO_END_MODELS: readonly GeminiTranscriptionModel[] = [
+  "gemini-3-flash-preview (end-to-end)",
+];
+
+export const isGeminiEndToEndModel = (
+  model: string,
+): model is GeminiTranscriptionModel =>
+  GEMINI_END_TO_END_MODELS.includes(model as GeminiTranscriptionModel);
+
+export const getGeminiModelId = (model: string): string => {
+  if (model === "gemini-3-flash-preview (end-to-end)") {
+    return "gemini-3-flash-preview";
+  }
+  return model;
+};
 
 const createClient = (apiKey: string) => {
   return new GoogleGenAI({ apiKey: apiKey.trim() });
@@ -128,6 +145,63 @@ export const geminiTranscribeAudio = async ({
       }
 
       return { text, wordsUsed: countWords(text) };
+    },
+  });
+};
+
+export type GeminiProcessAudioArgs = {
+  apiKey: string;
+  model: string;
+  blob: ArrayBuffer | Buffer;
+  mimeType?: string;
+  instructions: string;
+};
+
+export const geminiProcessAudio = async ({
+  apiKey,
+  model,
+  blob,
+  mimeType = "audio/wav",
+  instructions,
+}: GeminiProcessAudioArgs): Promise<{ text: string }> => {
+  return retry({
+    retries: 3,
+    fn: async () => {
+      const client = createClient(apiKey);
+
+      const bytes = new Uint8Array(blob);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+      }
+      const base64Audio = btoa(binary);
+
+      const response = await client.models.generateContent({
+        model,
+        contents: [
+          {
+            inlineData: {
+              mimeType,
+              data: base64Audio,
+            },
+          },
+          { text: instructions },
+        ],
+        config: {
+          temperature: 0,
+          maxOutputTokens: 2048,
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
+        },
+      });
+
+      const text = response.text ?? "";
+      if (!text) {
+        throw new Error("Gemini audio processing failed - empty response");
+      }
+
+      return { text };
     },
   });
 };

@@ -1,4 +1,4 @@
-import { isOpenAIRealtimeModel } from "@repo/voice-ai";
+import { isGeminiEndToEndModel, isOpenAIRealtimeModel } from "@repo/voice-ai";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { TranscriptionSession } from "../types/transcription-session.types";
@@ -9,6 +9,7 @@ import { AssemblyAITranscriptionSession } from "./assemblyai-transcription-sessi
 import { AzureTranscriptionSession } from "./azure-transcription-session";
 import { BatchTranscriptionSession } from "./batch-transcription-session";
 import { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
+import { GeminiNativeAudioTranscriptionSession } from "./gemini-native-audio-transcription-session";
 import { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
 import { NewServerTranscriptionSession } from "./new-server-transcription-session";
 import { OpenAIRealtimeTranscriptionSession } from "./openai-realtime-transcription-session";
@@ -47,6 +48,13 @@ export const createTranscriptionSession = (
             prefs.apiKeyValue,
             model,
           );
+        }
+        break;
+      }
+      case "gemini": {
+        const model = prefs.transcriptionModel;
+        if (model && isGeminiEndToEndModel(model)) {
+          return new GeminiNativeAudioTranscriptionSession(prefs.apiKeyValue, model);
         }
         break;
       }

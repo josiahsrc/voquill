@@ -1,6 +1,7 @@
 import type { CloudModel } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
+import { isOpenAIRealtimeModel } from "@repo/voice-ai";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { getLogger } from "../utils/log.utils";
@@ -35,6 +36,7 @@ import {
   OllamaGenerateTextRepo,
   OpenAICompatibleGenerateTextRepo,
   OpenAIGenerateTextRepo,
+  OpenAIRealtimeGenerateTextRepo,
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
 import { BaseHotkeyRepo, LocalHotkeyRepo } from "./hotkey.repo";
@@ -239,11 +241,24 @@ const getGenTextRepoInternal = ({
         providerRouting,
       );
     } else if (prefs.provider === "openai") {
-      getLogger().verbose("Configuring OpenAI repo for generate text");
-      repo = new OpenAIGenerateTextRepo(
-        prefs.apiKeyValue,
-        prefs.postProcessingModel,
-      );
+      if (
+        prefs.postProcessingModel &&
+        isOpenAIRealtimeModel(prefs.postProcessingModel)
+      ) {
+        getLogger().verbose(
+          "Configuring OpenAI Realtime repo for generate text",
+        );
+        repo = new OpenAIRealtimeGenerateTextRepo(
+          prefs.apiKeyValue,
+          prefs.postProcessingModel,
+        );
+      } else {
+        getLogger().verbose("Configuring OpenAI repo for generate text");
+        repo = new OpenAIGenerateTextRepo(
+          prefs.apiKeyValue,
+          prefs.postProcessingModel,
+        );
+      }
     } else if (prefs.provider === "azure") {
       const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
       const endpoint = apiKeyRecord?.baseUrl || "";

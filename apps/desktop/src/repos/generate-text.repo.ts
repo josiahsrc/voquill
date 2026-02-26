@@ -129,6 +129,135 @@ export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
   }
 }
 
+export class OpenAIRealtimeGenerateTextRepo extends BaseGenerateTextRepo {
+  private apiKey: string;
+  private model: string;
+
+  constructor(apiKey: string, model: string) {
+    super();
+    this.apiKey = apiKey;
+    this.model = model;
+  }
+
+  async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
+    const text = await this.generateViaRealtime(input);
+    return {
+      text,
+      metadata: {
+        postProcessingMode: "api",
+        inferenceDevice: "API • OpenAI (Realtime)",
+      },
+    };
+  }
+
+  private generateViaRealtime(
+    input: GenerateTextInput,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(this.model)}`;
+      const ws = new WebSocket(wsUrl, [
+        "realtime",
+        `openai-insecure-api-key.${this.apiKey}`,
+        "openai-beta.realtime-v1",
+      ]);
+
+      let responseText = "";
+      let resolved = false;
+
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          ws.close();
+          resolve(responseText);
+        }
+      }, 15000);
+
+      const done = (text: string) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeout);
+        ws.close();
+        resolve(text);
+      };
+
+      ws.onerror = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeout);
+          reject(new Error("OpenAI Realtime WebSocket connection failed"));
+        }
+      };
+
+      const instructions = input.system
+        ? `${input.system}\n\nYou MUST respond with valid JSON only. No markdown, no code fences, no extra text.`
+        : "You MUST respond with valid JSON only. No markdown, no code fences, no extra text.";
+
+      ws.onopen = () => {
+        ws.send(
+          JSON.stringify({
+            type: "session.update",
+            session: {
+              modalities: ["text"],
+              instructions,
+              turn_detection: null,
+              max_response_output_tokens: 4096,
+            },
+          }),
+        );
+      };
+
+      const sendText = () => {
+        ws.send(
+          JSON.stringify({
+            type: "conversation.item.create",
+            item: {
+              type: "message",
+              role: "user",
+              content: [{ type: "input_text", text: input.prompt }],
+            },
+          }),
+        );
+        ws.send(
+          JSON.stringify({
+            type: "response.create",
+            response: { modalities: ["text"] },
+          }),
+        );
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "session.updated") {
+            sendText();
+          } else if (data.type === "response.text.delta") {
+            responseText += data.delta || "";
+          } else if (data.type === "response.text.done") {
+            responseText = data.text || responseText;
+          } else if (data.type === "response.done") {
+            done(responseText);
+          } else if (data.type === "error") {
+            console.error("[OpenAI Realtime text] Error:", data);
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              reject(
+                new Error(data.error?.message || "OpenAI Realtime error"),
+              );
+            }
+          }
+        } catch (error) {
+          console.error("[OpenAI Realtime text] Parse error:", error);
+        }
+      };
+
+      ws.onclose = () => {
+        done(responseText);
+      };
+    });
+  }
+}
+
 export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
   private ollamaUrl: string;
   private model: string;

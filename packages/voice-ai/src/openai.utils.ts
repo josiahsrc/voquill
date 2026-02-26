@@ -12,6 +12,9 @@ export const OPENAI_GENERATE_TEXT_MODELS = [
   "gpt-4o-mini",
   "gpt-4-turbo",
   "gpt-3.5-turbo",
+  "gpt-4o-realtime-preview",
+  "gpt-realtime-1.5",
+  "gpt-realtime-mini",
 ] as const;
 export type OpenAIGenerateTextModel =
   (typeof OPENAI_GENERATE_TEXT_MODELS)[number];
