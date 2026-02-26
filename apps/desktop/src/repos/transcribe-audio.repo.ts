@@ -460,7 +460,9 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
             },
           }),
         );
+      };
 
+      const sendAudio = () => {
         const resampled =
           input.sampleRate !== OPENAI_REALTIME_SAMPLE_RATE
             ? resampleLinear(
@@ -494,7 +496,9 @@ export class OpenAITranscribeAudioRepo extends BaseTranscribeAudioRepo {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "response.text.delta") {
+          if (data.type === "session.updated") {
+            sendAudio();
+          } else if (data.type === "response.text.delta") {
             responseText += data.delta || "";
           } else if (data.type === "response.text.done") {
             responseText = data.text || responseText;

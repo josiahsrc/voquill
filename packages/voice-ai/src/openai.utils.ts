@@ -21,6 +21,7 @@ export const OPENAI_TRANSCRIPTION_MODELS = [
   "gpt-4o-mini-transcribe",
   "gpt-4o-realtime-preview",
   "gpt-realtime-1.5",
+  "gpt-realtime-mini",
   "whisper-1",
 ] as const;
 export type OpenAITranscriptionModel =
@@ -29,6 +30,7 @@ export type OpenAITranscriptionModel =
 export const OPENAI_REALTIME_MODELS: readonly OpenAITranscriptionModel[] = [
   "gpt-4o-realtime-preview",
   "gpt-realtime-1.5",
+  "gpt-realtime-mini",
 ];
 
 export const isOpenAIRealtimeModel = (
