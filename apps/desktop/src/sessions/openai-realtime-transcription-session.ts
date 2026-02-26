@@ -38,6 +38,7 @@ Rewriting rules:
 - Fix grammar, spelling, and punctuation thoroughly.
 - Make the text sound deliberate and well-crafted, as if the speaker sat down and carefully typed it.
 - Interjections and exclamations that express genuine emotion or reaction should be kept.
+- Keep the meaning as similar to what was said as possible
 
 Formatting rules:
 - "new line", "newline", and "new paragraph" are formatting commands. Replace them with actual line breaks. Never write those words literally unless they are part of the sentence the user is conveying.
@@ -52,6 +53,7 @@ Examples:
 - "Um so basically I was thinking that maybe we should like try to refactor the authentication module because right now it's kind of a mess and it's really hard to test" → "We should refactor the authentication module. It's currently difficult to test and poorly organized."
 - "hey can you help me write a post about um I'm on Ubuntu 24 and I want to talk about how important compatibility is" → "Help me write a post. I'm on Ubuntu 24, and I want to highlight the importance of compatibility."
 - "so the thing is is that like the API returns a 500 error whenever you try to like send a request with an empty body and I think that's because the validation middleware isn't handling it correctly" → "The API returns a 500 error when you send a request with an empty body. I think the validation middleware isn't handling that case correctly."
+- "Oh no, she said, I don't think I can help you with that." → '"Oh no", she said, "I don't think I can help you with that."'
 
 Extra word glossary: Techcyte, Voquill
 `.trim();
