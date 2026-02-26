@@ -14,12 +14,12 @@ use tauri::{AppHandle, Emitter, EventTarget};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
+#[cfg(target_os = "linux")]
+pub use super::linux::keyboard::run_listener_process;
 #[cfg(target_os = "macos")]
 pub use super::macos::keyboard::run_listener_process;
 #[cfg(target_os = "windows")]
 pub use super::windows::keyboard::run_listener_process;
-#[cfg(target_os = "linux")]
-pub use super::linux::keyboard::run_listener_process;
 
 type PressedKeys = Arc<Mutex<HashSet<String>>>;
 
@@ -486,20 +486,16 @@ pub(crate) fn send_event_to_tcp(
 }
 
 pub(crate) fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
-    let pressed_normalized: HashSet<String> = pressed
-        .iter()
-        .map(|key| key.to_ascii_lowercase())
-        .collect();
+    let pressed_normalized: HashSet<String> =
+        pressed.iter().map(|key| key.to_ascii_lowercase()).collect();
 
     for combo in combos {
         if combo.is_empty() {
             continue;
         }
 
-        let combo_normalized: HashSet<String> = combo
-            .iter()
-            .map(|key| key.to_ascii_lowercase())
-            .collect();
+        let combo_normalized: HashSet<String> =
+            combo.iter().map(|key| key.to_ascii_lowercase()).collect();
 
         if combo_normalized.is_empty() {
             continue;
@@ -510,6 +506,100 @@ pub(crate) fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>
         }
     }
     false
+}
+
+fn is_modifier_like_key_label(key_label: &str) -> bool {
+    let normalized = key_label.to_ascii_lowercase();
+    normalized.starts_with("meta")
+        || normalized.starts_with("control")
+        || normalized.starts_with("shift")
+        || normalized.starts_with("alt")
+        || normalized.starts_with("option")
+        || normalized.starts_with("function")
+}
+
+fn matches_modifier_only_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
+    let pressed_normalized: HashSet<String> =
+        pressed.iter().map(|key| key.to_ascii_lowercase()).collect();
+
+    for combo in combos {
+        if combo.is_empty() || !combo.iter().all(|key| is_modifier_like_key_label(key)) {
+            continue;
+        }
+
+        let combo_normalized: HashSet<String> =
+            combo.iter().map(|key| key.to_ascii_lowercase()).collect();
+
+        if combo_normalized.is_empty() {
+            continue;
+        }
+
+        if pressed_normalized == combo_normalized {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct GrabHotkeyState {
+    pub pressed_keys: HashSet<String>,
+    pub suppressed_keys: HashSet<String>,
+    pub combo_active: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GrabDecision {
+    PassThrough,
+    Suppress,
+}
+
+pub(crate) fn update_grab_hotkey_state(
+    state: &mut GrabHotkeyState,
+    key_label: &str,
+    is_press: bool,
+    combos: &[Vec<String>],
+) -> GrabDecision {
+    if is_press {
+        state.pressed_keys.insert(key_label.to_string());
+        let has_match = matches_any_combo(&state.pressed_keys, combos);
+        let has_modifier_only_match = matches_modifier_only_combo(&state.pressed_keys, combos);
+
+        if !state.combo_active && has_match {
+            state.combo_active = true;
+            if has_modifier_only_match {
+                return GrabDecision::PassThrough;
+            }
+            state.suppressed_keys.insert(key_label.to_string());
+            return GrabDecision::Suppress;
+        }
+
+        if state.combo_active {
+            if state.suppressed_keys.is_empty() {
+                if has_match && !has_modifier_only_match {
+                    state.suppressed_keys.insert(key_label.to_string());
+                    return GrabDecision::Suppress;
+                }
+                return GrabDecision::PassThrough;
+            }
+            state.suppressed_keys.insert(key_label.to_string());
+            return GrabDecision::Suppress;
+        }
+
+        return GrabDecision::PassThrough;
+    }
+
+    state.pressed_keys.remove(key_label);
+    if state.pressed_keys.is_empty() {
+        state.combo_active = false;
+    }
+
+    if state.suppressed_keys.remove(key_label) {
+        GrabDecision::Suppress
+    } else {
+        GrabDecision::PassThrough
+    }
 }
 
 pub(crate) struct ListenerContext {
@@ -590,7 +680,7 @@ pub(crate) fn run_listen_loop(
 
 #[cfg(test)]
 mod tests {
-    use super::matches_any_combo;
+    use super::{matches_any_combo, update_grab_hotkey_state, GrabDecision, GrabHotkeyState};
     use std::collections::HashSet;
 
     fn set(keys: &[&str]) -> HashSet<String> {
@@ -616,5 +706,110 @@ mod tests {
         let pressed = set(&["metaleft", "keyz"]);
         let combos = vec![vec!["MetaLeft".to_string(), "KeyZ".to_string()]];
         assert!(matches_any_combo(&pressed, &combos));
+    }
+
+    #[test]
+    fn only_suppresses_release_for_keys_suppressed_on_press() {
+        let combos = vec![vec!["ControlLeft".to_string(), "MetaLeft".to_string()]];
+        let mut state = GrabHotkeyState::default();
+
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "ControlLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "MetaLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "MetaLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "ControlLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+    }
+
+    #[test]
+    fn suppresses_press_and_release_for_single_key_combo() {
+        let combos = vec![vec!["Escape".to_string()]];
+        let mut state = GrabHotkeyState::default();
+
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "Escape", true, &combos),
+            GrabDecision::Suppress
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "Escape", false, &combos),
+            GrabDecision::Suppress
+        );
+    }
+
+    #[test]
+    fn modifier_only_combo_is_not_suppressed_regardless_of_key_order() {
+        let combos = vec![vec!["ControlLeft".to_string(), "MetaLeft".to_string()]];
+
+        let mut control_then_meta = GrabHotkeyState::default();
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "ControlLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "MetaLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "MetaLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut control_then_meta, "ControlLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+
+        let mut meta_then_control = GrabHotkeyState::default();
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "MetaLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "ControlLeft", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "ControlLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut meta_then_control, "MetaLeft", false, &combos),
+            GrabDecision::PassThrough
+        );
+    }
+
+    #[test]
+    fn escalates_from_modifier_only_combo_to_non_modifier_combo() {
+        let combos = vec![
+            vec!["Function".to_string()],
+            vec!["Function".to_string(), "KeyZ".to_string()],
+        ];
+        let mut state = GrabHotkeyState::default();
+
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "Function", true, &combos),
+            GrabDecision::PassThrough
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "KeyZ", true, &combos),
+            GrabDecision::Suppress
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "KeyZ", false, &combos),
+            GrabDecision::Suppress
+        );
+        assert_eq!(
+            update_grab_hotkey_state(&mut state, "Function", false, &combos),
+            GrabDecision::PassThrough
+        );
     }
 }
