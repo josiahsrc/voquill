@@ -18,6 +18,7 @@ import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
@@ -28,7 +29,6 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
-import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
@@ -90,7 +90,6 @@ class VoquillIME : InputMethodService() {
     private lateinit var utilDeleteButton: ImageButton
     private lateinit var toneScroll: HorizontalScrollView
     private lateinit var toneChipRow: LinearLayout
-    private lateinit var globeButton: ImageButton
 
     private var waveformView: AudioWaveformView? = null
     private var progressView: IndeterminateProgressView? = null
@@ -114,6 +113,8 @@ class VoquillIME : InputMethodService() {
     private var memberRefreshRunnable: Runnable? = null
     private var statusAnimator: ValueAnimator? = null
     private var statusBannerVisible = false
+    private var baseKeyboardHeightPx = 0
+    private var baseKeyboardPaddingBottomPx = 0
     private var lastKeyboardCounter = -1
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -131,6 +132,7 @@ class VoquillIME : InputMethodService() {
     override fun onCreateInputView(): View {
         val view = layoutInflater.inflate(R.layout.keyboard_view, null)
 
+        val keyboardContent: FrameLayout = view.findViewById(R.id.keyboard_content)
         keyboardBackground = view.findViewById(R.id.keyboard_background)
         waveformContainer = view.findViewById(R.id.waveform_container)
         pillButton = view.findViewById(R.id.pill_button)
@@ -145,7 +147,12 @@ class VoquillIME : InputMethodService() {
         utilDeleteButton = view.findViewById(R.id.util_delete_button)
         toneScroll = view.findViewById(R.id.tone_scroll)
         toneChipRow = view.findViewById(R.id.tone_chip_row)
-        globeButton = view.findViewById(R.id.globe_button)
+        toneScroll.isHorizontalFadingEdgeEnabled = true
+        toneScroll.isVerticalFadingEdgeEnabled = false
+        toneScroll.setFadingEdgeLength((18 * resources.displayMetrics.density).toInt())
+
+        baseKeyboardHeightPx = keyboardContent.layoutParams.height
+        baseKeyboardPaddingBottomPx = keyboardContent.paddingBottom
 
         waveformView = AudioWaveformView(this).also {
             waveformContainer.addView(it, FrameLayout.LayoutParams(
@@ -194,14 +201,9 @@ class VoquillIME : InputMethodService() {
         utilReturnButton.setOnClickListener { currentInputConnection?.commitText("\n", 1) }
         utilDeleteButton.setOnClickListener { sendDeleteKey() }
 
-        globeButton.setOnClickListener {
-            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            @Suppress("DEPRECATION")
-            imm.switchToNextInputMethod(window.window!!.attributes.token, false)
-        }
-
         window.window?.decorView?.setBackgroundColor(Color.TRANSPARENT)
         window.window?.navigationBarColor = Color.TRANSPARENT
+        applySafeAreaInsets(view, keyboardContent)
 
         waveformView?.startAnimating()
         reloadKeyboardConfig()
@@ -239,7 +241,6 @@ class VoquillIME : InputMethodService() {
         val labelColor = if (dark) Color.WHITE else Color.BLACK
         val secondaryLabelColor = if (dark) Color.argb(191, 235, 235, 245) else Color.argb(153, 60, 60, 67)
         val utilityBackground = if (dark) COLOR_UTILITY_DARK else COLOR_UTILITY_LIGHT
-        val globeTint = if (dark) Color.argb(180, 255, 255, 255) else Color.argb(140, 0, 0, 0)
         logoButton.setColorFilter(labelColor)
         languageChip.setTextColor(labelColor)
         utilAtButton.setColorFilter(labelColor)
@@ -253,7 +254,6 @@ class VoquillIME : InputMethodService() {
         setRoundedFill(utilSpaceButton, utilityBackground, 8f)
         setRoundedFill(utilReturnButton, utilityBackground, 8f)
         setRoundedFill(utilDeleteButton, utilityBackground, 8f)
-        globeButton.setColorFilter(globeTint)
         renderToneChips()
         updateStatusBanner()
 
@@ -341,6 +341,55 @@ class VoquillIME : InputMethodService() {
         drawable.cornerRadius = radiusPx
         drawable.setColor(color)
         view.background = drawable
+    }
+
+    private fun applySafeAreaInsets(rootView: View, keyboardContent: FrameLayout) {
+        val applyInset: (Int) -> Unit = { bottomInset ->
+            val safeInset = max(0, bottomInset)
+
+            keyboardContent.layoutParams = keyboardContent.layoutParams.apply {
+                height = baseKeyboardHeightPx + safeInset
+            }
+            keyboardContent.setPadding(
+                keyboardContent.paddingLeft,
+                keyboardContent.paddingTop,
+                keyboardContent.paddingRight,
+                baseKeyboardPaddingBottomPx + safeInset,
+            )
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            rootView.setOnApplyWindowInsetsListener { _, windowInsets ->
+                val barInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemBars())
+                val gestureInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemGestures())
+                applyInset(max(barInsets.bottom, gestureInsets.bottom))
+                windowInsets
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            rootView.setOnApplyWindowInsetsListener { _, windowInsets ->
+                @Suppress("DEPRECATION")
+                applyInset(windowInsets.systemWindowInsetBottom)
+                windowInsets
+            }
+        }
+
+        rootView.post {
+            val windowInsets = rootView.rootWindowInsets
+            if (windowInsets != null) {
+                val insetBottom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val barInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemBars())
+                    val gestureInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemGestures())
+                    max(barInsets.bottom, gestureInsets.bottom)
+                } else {
+                    @Suppress("DEPRECATION")
+                    windowInsets.systemWindowInsetBottom
+                }
+                applyInset(insetBottom)
+            }
+        }
+
+        rootView.requestApplyInsets()
     }
 
     private fun openMainApp() {

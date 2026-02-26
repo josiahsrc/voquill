@@ -14,11 +14,12 @@
         android:elevation="8dp" />
 
     <FrameLayout
+        android:id="@+id/keyboard_content"
         android:layout_width="match_parent"
         android:layout_height="320dp"
         android:elevation="9dp"
         android:paddingTop="24dp"
-        android:paddingBottom="16dp">
+        android:paddingBottom="8dp">
 
         <LinearLayout
             android:id="@+id/top_left_row"
@@ -161,7 +162,9 @@
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="10dp"
             android:fillViewport="true"
+            android:fadingEdgeLength="18dp"
             android:overScrollMode="never"
+            android:requiresFadingEdge="horizontal"
             android:scrollbars="none">
 
             <LinearLayout
@@ -172,16 +175,5 @@
                 android:orientation="horizontal" />
         </HorizontalScrollView>
 
-        <ImageButton
-            android:id="@+id/globe_button"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="bottom|start"
-            android:layout_marginStart="8dp"
-            android:layout_marginBottom="8dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Switch keyboard"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_globe" />
     </FrameLayout>
 </FrameLayout>
