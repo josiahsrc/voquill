@@ -10,3 +10,4 @@
 
 ## Guardrail
 - Keep tests for both key orders on modifier-only combos and assert full pass-through behavior.
+- Keep tests for overlap cases where a modifier-only combo and a modifier+key combo share a prefix (example: `Function` and `Function+KeyZ`) and assert suppression escalates when the non-modifier key is pressed.
