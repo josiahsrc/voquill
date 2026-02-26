@@ -1,10 +1,9 @@
 use crate::platform::keyboard::{
-    key_raw_code, key_to_label, matches_any_combo, run_listen_loop, send_event_to_tcp,
-    setup_listener_process, KeyboardEventPayload, WireEventKind,
+    key_raw_code, key_to_label, run_listen_loop, send_event_to_tcp, setup_listener_process,
+    update_grab_hotkey_state, GrabDecision, GrabHotkeyState, KeyboardEventPayload, WireEventKind,
 };
 use rdev::{Event, EventType};
 use std::cell::RefCell;
-use std::collections::HashSet;
 
 fn scan_code(event: &Event) -> u32 {
     event.position_code
@@ -13,20 +12,10 @@ fn scan_code(event: &Event) -> u32 {
 pub fn run_listener_process() -> Result<(), String> {
     let ctx = setup_listener_process()?;
 
-    struct GrabState {
-        pressed_keys: HashSet<String>,
-        suppressed_keys: HashSet<String>,
-        combo_active: bool,
-    }
-
     let grab_result = rdev::grab({
         let writer = ctx.writer.clone();
         let combos = ctx.combos.clone();
-        let state = RefCell::new(GrabState {
-            pressed_keys: HashSet::new(),
-            suppressed_keys: HashSet::new(),
-            combo_active: false,
-        });
+        let state = RefCell::new(GrabHotkeyState::default());
         move |event| -> Option<Event> {
             let (key, is_press) = match event.event_type {
                 EventType::KeyPress(key) => (key, true),
@@ -48,38 +37,13 @@ pub fn run_listener_process() -> Result<(), String> {
             send_event_to_tcp(&writer, &payload);
 
             let mut s = state.borrow_mut();
+            let current_combos = combos.lock().map(|g| g.clone()).unwrap_or_default();
 
-            if is_press {
-                s.pressed_keys.insert(label.clone());
-
-                let current_combos = combos.lock().map(|g| g.clone()).unwrap_or_default();
-
-                if !s.combo_active
-                    && matches_any_combo(&s.pressed_keys, &current_combos)
-                {
-                    s.combo_active = true;
-                    let to_suppress = s.pressed_keys.clone();
-                    s.suppressed_keys.extend(to_suppress);
-                    return None;
-                }
-
-                if s.combo_active {
-                    s.suppressed_keys.insert(label);
-                    return None;
-                }
-
-                Some(event)
+            if update_grab_hotkey_state(&mut s, &label, is_press, &current_combos)
+                == GrabDecision::Suppress
+            {
+                None
             } else {
-                s.pressed_keys.remove(&label);
-
-                if s.pressed_keys.is_empty() {
-                    s.combo_active = false;
-                }
-
-                if s.suppressed_keys.remove(&label) {
-                    return None;
-                }
-
                 Some(event)
             }
         }

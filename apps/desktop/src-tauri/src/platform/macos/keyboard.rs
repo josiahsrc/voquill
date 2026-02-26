@@ -1,10 +1,11 @@
 use crate::platform::keyboard::{
-    debug_keys_enabled, key_raw_code, key_to_label, matches_any_combo, run_listen_loop,
-    send_event_to_tcp, setup_listener_process, KeyboardEventPayload, WireEventKind,
+    debug_keys_enabled, key_raw_code, key_to_label, run_listen_loop, send_event_to_tcp,
+    setup_listener_process, update_grab_hotkey_state, GrabDecision, GrabHotkeyState,
+    KeyboardEventPayload, WireEventKind,
 };
 use rdev::{Event, EventType};
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 extern "C" {
     fn CGEventSourceKeyState(state_id: i32, key: u16) -> bool;
@@ -22,9 +23,7 @@ pub fn run_listener_process() -> Result<(), String> {
     let ctx = setup_listener_process()?;
 
     struct GrabState {
-        pressed_keys: HashSet<String>,
-        suppressed_keys: HashSet<String>,
-        combo_active: bool,
+        hotkeys: GrabHotkeyState,
         pressed_platform_codes: HashMap<String, u32>,
     }
 
@@ -32,9 +31,7 @@ pub fn run_listener_process() -> Result<(), String> {
         let writer = ctx.writer.clone();
         let combos = ctx.combos.clone();
         let state = RefCell::new(GrabState {
-            pressed_keys: HashSet::new(),
-            suppressed_keys: HashSet::new(),
-            combo_active: false,
+            hotkeys: GrabHotkeyState::default(),
             pressed_platform_codes: HashMap::new(),
         });
         move |event| -> Option<Event> {
@@ -54,9 +51,9 @@ pub fn run_listener_process() -> Result<(), String> {
                     .collect();
 
                 for (stale_label, _) in &stale {
-                    s.pressed_keys.remove(stale_label);
+                    s.hotkeys.pressed_keys.remove(stale_label);
                     s.pressed_platform_codes.remove(stale_label);
-                    s.suppressed_keys.remove(stale_label);
+                    s.hotkeys.suppressed_keys.remove(stale_label);
 
                     if debug_keys_enabled() {
                         eprintln!("[keys] Sweeping stale key: {stale_label}");
@@ -71,8 +68,8 @@ pub fn run_listener_process() -> Result<(), String> {
                     send_event_to_tcp(&writer, &release_payload);
                 }
 
-                if !stale.is_empty() && s.pressed_keys.is_empty() {
-                    s.combo_active = false;
+                if !stale.is_empty() && s.hotkeys.pressed_keys.is_empty() {
+                    s.hotkeys.combo_active = false;
                 }
             }
 
@@ -90,41 +87,19 @@ pub fn run_listener_process() -> Result<(), String> {
             send_event_to_tcp(&writer, &payload);
 
             let mut s = state.borrow_mut();
-
             if is_press {
-                s.pressed_keys.insert(label.clone());
                 s.pressed_platform_codes
                     .insert(label.clone(), event.platform_code);
-
-                let current_combos = combos.lock().map(|g| g.clone()).unwrap_or_default();
-
-                if !s.combo_active
-                    && matches_any_combo(&s.pressed_keys, &current_combos)
-                {
-                    s.combo_active = true;
-                    let to_suppress = s.pressed_keys.clone();
-                    s.suppressed_keys.extend(to_suppress);
-                    return None;
-                }
-
-                if s.combo_active {
-                    s.suppressed_keys.insert(label);
-                    return None;
-                }
-
-                Some(event)
             } else {
-                s.pressed_keys.remove(&label);
                 s.pressed_platform_codes.remove(&label);
+            }
 
-                if s.pressed_keys.is_empty() {
-                    s.combo_active = false;
-                }
-
-                if s.suppressed_keys.remove(&label) {
-                    return None;
-                }
-
+            let current_combos = combos.lock().map(|g| g.clone()).unwrap_or_default();
+            if update_grab_hotkey_state(&mut s.hotkeys, &label, is_press, &current_combos)
+                == GrabDecision::Suppress
+            {
+                None
+            } else {
                 Some(event)
             }
         }
