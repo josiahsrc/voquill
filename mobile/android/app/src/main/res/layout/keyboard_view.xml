@@ -15,45 +15,169 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="250dp"
+        android:layout_height="320dp"
         android:elevation="9dp"
         android:paddingTop="24dp"
         android:paddingBottom="16dp">
 
-        <FrameLayout
-            android:id="@+id/pill_button"
-            android:layout_width="220dp"
-            android:layout_height="56dp"
-            android:layout_gravity="center"
-            android:background="@drawable/pill_background"
-            android:clickable="true"
-            android:clipToOutline="true"
-            android:focusable="true"
-            android:foreground="?android:attr/selectableItemBackgroundBorderless">
+        <LinearLayout
+            android:id="@+id/top_left_row"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <FrameLayout
-                android:id="@+id/waveform_container"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+            <ImageButton
+                android:id="@+id/logo_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Open Voquill app"
+                android:padding="6dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_voquill_logo" />
 
             <TextView
-                android:id="@+id/pill_label"
+                android:id="@+id/language_chip"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:gravity="center"
+                android:text="EN"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/util_button_row"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/util_at_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Insert at symbol"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_at" />
+
+            <ImageButton
+                android:id="@+id/util_space_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Insert space"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_space" />
+
+            <ImageButton
+                android:id="@+id/util_return_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Insert return"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_return" />
+
+            <ImageButton
+                android:id="@+id/util_delete_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Delete"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_delete" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/pill_stack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:id="@+id/pill_button"
+                android:layout_width="220dp"
+                android:layout_height="56dp"
+                android:background="@drawable/pill_background"
+                android:clickable="true"
+                android:clipToOutline="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackgroundBorderless">
+
+                <FrameLayout
+                    android:id="@+id/waveform_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <TextView
+                    android:id="@+id/pill_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="tap to dictate"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="normal" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/status_label"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="tap to dictate"
-                android:textColor="#FFFFFF"
+                android:layout_height="20dp"
+                android:layout_marginTop="6dp"
                 android:fontFamily="sans-serif-medium"
-                android:textSize="15sp"
-                android:textStyle="normal" />
-        </FrameLayout>
+                android:gravity="center"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/tone_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="10dp"
+            android:fillViewport="true"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/tone_chip_row"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <ImageButton
             android:id="@+id/globe_button"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:layout_gravity="bottom|start"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="8dp"
             android:layout_marginBottom="8dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Switch keyboard"

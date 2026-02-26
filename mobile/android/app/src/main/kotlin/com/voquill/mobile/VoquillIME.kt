@@ -1,7 +1,11 @@
 package com.voquill.mobile
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Canvas
@@ -20,11 +24,15 @@ import android.util.Base64
 import android.util.Log
 import android.view.Choreographer
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import org.json.JSONArray
 import org.json.JSONObject
@@ -56,12 +64,32 @@ class VoquillIME : InputMethodService() {
         val isReplacement: Boolean,
     )
 
+    private data class MemberInfo(
+        val plan: String,
+        val isOnTrial: Boolean,
+        val trialEndsAt: String?,
+        val wordsToday: Int,
+    )
+
+    private data class ConfigInfo(
+        val freeWordsPerDay: Int,
+    )
+
     private var currentPhase = Phase.IDLE
 
     private lateinit var keyboardBackground: FrameLayout
     private lateinit var waveformContainer: FrameLayout
     private lateinit var pillButton: FrameLayout
     private lateinit var pillLabel: TextView
+    private lateinit var statusLabel: TextView
+    private lateinit var logoButton: ImageButton
+    private lateinit var languageChip: TextView
+    private lateinit var utilAtButton: ImageButton
+    private lateinit var utilSpaceButton: ImageButton
+    private lateinit var utilReturnButton: ImageButton
+    private lateinit var utilDeleteButton: ImageButton
+    private lateinit var toneScroll: HorizontalScrollView
+    private lateinit var toneChipRow: LinearLayout
     private lateinit var globeButton: ImageButton
 
     private var waveformView: AudioWaveformView? = null
@@ -74,6 +102,19 @@ class VoquillIME : InputMethodService() {
 
     private var cachedIdToken: String? = null
     private var cachedIdTokenExpiry = 0L
+
+    private var selectedToneId: String? = null
+    private var activeToneIds: List<String> = emptyList()
+    private var toneById: Map<String, SharedTone> = emptyMap()
+    private var dictationLanguages: List<String> = listOf("en")
+    private var memberInfo: MemberInfo? = null
+    private var configInfo: ConfigInfo? = null
+
+    private var keyboardCounterRunnable: Runnable? = null
+    private var memberRefreshRunnable: Runnable? = null
+    private var statusAnimator: ValueAnimator? = null
+    private var statusBannerVisible = false
+    private var lastKeyboardCounter = -1
 
     private val executor = Executors.newSingleThreadExecutor()
 
@@ -94,6 +135,16 @@ class VoquillIME : InputMethodService() {
         waveformContainer = view.findViewById(R.id.waveform_container)
         pillButton = view.findViewById(R.id.pill_button)
         pillLabel = view.findViewById(R.id.pill_label)
+        statusLabel = view.findViewById(R.id.status_label)
+        statusLabel.alpha = 0f
+        logoButton = view.findViewById(R.id.logo_button)
+        languageChip = view.findViewById(R.id.language_chip)
+        utilAtButton = view.findViewById(R.id.util_at_button)
+        utilSpaceButton = view.findViewById(R.id.util_space_button)
+        utilReturnButton = view.findViewById(R.id.util_return_button)
+        utilDeleteButton = view.findViewById(R.id.util_delete_button)
+        toneScroll = view.findViewById(R.id.tone_scroll)
+        toneChipRow = view.findViewById(R.id.tone_chip_row)
         globeButton = view.findViewById(R.id.globe_button)
 
         waveformView = AudioWaveformView(this).also {
@@ -129,6 +180,20 @@ class VoquillIME : InputMethodService() {
             false
         }
         pillButton.setOnClickListener { onPillTap() }
+        addButtonFeedback(logoButton)
+        addButtonFeedback(languageChip)
+        addButtonFeedback(utilAtButton)
+        addButtonFeedback(utilSpaceButton)
+        addButtonFeedback(utilReturnButton)
+        addButtonFeedback(utilDeleteButton)
+
+        logoButton.setOnClickListener { openMainApp() }
+        languageChip.setOnClickListener { onLanguageChipTap() }
+        utilAtButton.setOnClickListener { currentInputConnection?.commitText("@", 1) }
+        utilSpaceButton.setOnClickListener { currentInputConnection?.commitText(" ", 1) }
+        utilReturnButton.setOnClickListener { currentInputConnection?.commitText("\n", 1) }
+        utilDeleteButton.setOnClickListener { sendDeleteKey() }
+
         globeButton.setOnClickListener {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             @Suppress("DEPRECATION")
@@ -139,6 +204,10 @@ class VoquillIME : InputMethodService() {
         window.window?.navigationBarColor = Color.TRANSPARENT
 
         waveformView?.startAnimating()
+        reloadKeyboardConfig()
+        startKeyboardCounterPolling()
+        startMemberRefreshPolling()
+        refreshMemberData()
         applyPhase(Phase.IDLE)
 
         return view
@@ -167,8 +236,26 @@ class VoquillIME : InputMethodService() {
         keyboardBackground.setBackgroundResource(
             if (dark) R.drawable.keyboard_background_dark else R.drawable.keyboard_background_light
         )
+        val labelColor = if (dark) Color.WHITE else Color.BLACK
+        val secondaryLabelColor = if (dark) Color.argb(191, 235, 235, 245) else Color.argb(153, 60, 60, 67)
+        val utilityBackground = if (dark) COLOR_UTILITY_DARK else COLOR_UTILITY_LIGHT
         val globeTint = if (dark) Color.argb(180, 255, 255, 255) else Color.argb(140, 0, 0, 0)
+        logoButton.setColorFilter(labelColor)
+        languageChip.setTextColor(labelColor)
+        utilAtButton.setColorFilter(labelColor)
+        utilSpaceButton.setColorFilter(labelColor)
+        utilReturnButton.setColorFilter(labelColor)
+        utilDeleteButton.setColorFilter(labelColor)
+        statusLabel.setTextColor(secondaryLabelColor)
+        setRoundedFill(logoButton, utilityBackground, 8f)
+        setRoundedFill(languageChip, utilityBackground, 8f)
+        setRoundedFill(utilAtButton, utilityBackground, 8f)
+        setRoundedFill(utilSpaceButton, utilityBackground, 8f)
+        setRoundedFill(utilReturnButton, utilityBackground, 8f)
+        setRoundedFill(utilDeleteButton, utilityBackground, 8f)
         globeButton.setColorFilter(globeTint)
+        renderToneChips()
+        updateStatusBanner()
 
         when (phase) {
             Phase.IDLE -> {
@@ -230,6 +317,387 @@ class VoquillIME : InputMethodService() {
             }
             Phase.LOADING -> {}
         }
+    }
+
+    private fun addButtonFeedback(button: View) {
+        button.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    view.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).start()
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    view.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
+                }
+            }
+            false
+        }
+    }
+
+    private fun setRoundedFill(view: View, color: Int, radiusDp: Float) {
+        val radiusPx = radiusDp * resources.displayMetrics.density
+        val drawable = (view.background as? GradientDrawable)?.mutate() as? GradientDrawable
+            ?: GradientDrawable()
+        drawable.shape = GradientDrawable.RECTANGLE
+        drawable.cornerRadius = radiusPx
+        drawable.setColor(color)
+        view.background = drawable
+    }
+
+    private fun openMainApp() {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        try {
+            startActivity(launchIntent)
+        } catch (e: Exception) {
+            dbg("openMainApp failed: ${e.message}")
+        }
+    }
+
+    private fun sendDeleteKey() {
+        val connection = currentInputConnection ?: return
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+    }
+
+    private fun startKeyboardCounterPolling() {
+        stopKeyboardCounterPolling()
+        val runnable = object : Runnable {
+            override fun run() {
+                checkKeyboardCounter()
+                handler.postDelayed(this, 1000)
+            }
+        }
+        keyboardCounterRunnable = runnable
+        handler.post(runnable)
+    }
+
+    private fun stopKeyboardCounterPolling() {
+        keyboardCounterRunnable?.let { handler.removeCallbacks(it) }
+        keyboardCounterRunnable = null
+    }
+
+    private fun checkKeyboardCounter() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val counter = prefs.getInt(KEY_KEYBOARD_UPDATE_COUNTER, 0)
+        if (counter != lastKeyboardCounter) {
+            lastKeyboardCounter = counter
+            reloadKeyboardConfig()
+        }
+    }
+
+    private fun reloadKeyboardConfig() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        loadLanguageConfig(prefs)
+        loadToneConfig(prefs)
+        renderToneChips()
+    }
+
+    private fun loadLanguageConfig(prefs: android.content.SharedPreferences) {
+        dictationLanguages = loadStringList(prefs, KEY_DICTATION_LANGUAGES).ifEmpty { listOf("en") }
+        val currentLanguage = prefs.getString(KEY_DICTATION_LANGUAGE, dictationLanguages.first()) ?: dictationLanguages.first()
+        val languageCode = currentLanguage.substringBefore("-").uppercase(Locale.US)
+        languageChip.text = languageCode
+        languageChip.visibility = if (dictationLanguages.size > 1) View.VISIBLE else View.GONE
+    }
+
+    private fun onLanguageChipTap() {
+        if (dictationLanguages.size <= 1) {
+            return
+        }
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val currentLanguage = prefs.getString(KEY_DICTATION_LANGUAGE, dictationLanguages.first()) ?: dictationLanguages.first()
+        val currentIndex = dictationLanguages.indexOf(currentLanguage).let { if (it >= 0) it else 0 }
+        val nextLanguage = dictationLanguages[(currentIndex + 1) % dictationLanguages.size]
+        prefs.edit()
+            .putString(KEY_DICTATION_LANGUAGE, nextLanguage)
+            .putInt(KEY_APP_UPDATE_COUNTER, prefs.getInt(KEY_APP_UPDATE_COUNTER, 0) + 1)
+            .apply()
+        loadLanguageConfig(prefs)
+    }
+
+    private fun loadToneConfig(prefs: android.content.SharedPreferences) {
+        activeToneIds = loadStringList(prefs, KEY_ACTIVE_TONE_IDS)
+        toneById = loadToneById(prefs)
+        selectedToneId = prefs.getString(KEY_SELECTED_TONE_ID, null) ?: activeToneIds.firstOrNull()
+    }
+
+    private fun renderToneChips() {
+        if (!::toneChipRow.isInitialized) {
+            return
+        }
+        toneChipRow.removeAllViews()
+        toneChipRow.setPadding(0, 0, 0, 0)
+
+        if (activeToneIds.isEmpty() || toneById.isEmpty()) {
+            toneScroll.visibility = View.GONE
+            return
+        }
+        toneScroll.visibility = View.VISIBLE
+
+        val density = resources.displayMetrics.density
+        activeToneIds.forEachIndexed { index, toneId ->
+            val tone = toneById[toneId] ?: return@forEachIndexed
+            val chip = TextView(this).apply {
+                text = tone.name
+                textSize = 13f
+                setPadding((14 * density).toInt(), (6 * density).toInt(), (14 * density).toInt(), (6 * density).toInt())
+                gravity = Gravity.CENTER
+                isClickable = true
+                isFocusable = true
+                tag = toneId
+                setOnClickListener { onToneChipTap(toneId) }
+            }
+            addButtonFeedback(chip)
+            applyToneChipStyle(chip, toneId == selectedToneId)
+
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                (32 * density).toInt(),
+            )
+            if (index < activeToneIds.size - 1) {
+                params.marginEnd = (8 * density).toInt()
+            }
+            toneChipRow.addView(chip, params)
+        }
+        centerToneContent()
+    }
+
+    private fun onToneChipTap(toneId: String) {
+        selectedToneId = toneId
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(KEY_SELECTED_TONE_ID, toneId)
+            .putInt(KEY_APP_UPDATE_COUNTER, prefs.getInt(KEY_APP_UPDATE_COUNTER, 0) + 1)
+            .apply()
+        renderToneChips()
+    }
+
+    private fun centerToneContent() {
+        toneScroll.post {
+            val viewportWidth = toneScroll.width
+            val contentWidth = toneChipRow.width
+            val inset = max(0, (viewportWidth - contentWidth) / 2)
+            toneChipRow.setPadding(inset, toneChipRow.paddingTop, inset, toneChipRow.paddingBottom)
+            toneScroll.scrollTo(0, 0)
+        }
+    }
+
+    private fun applyToneChipStyle(chip: TextView, selected: Boolean) {
+        val dark = isDarkMode
+        val chipBg = if (selected) {
+            Color.argb(51, 51, 128, 255)
+        } else if (dark) {
+            COLOR_UTILITY_DARK
+        } else {
+            COLOR_UTILITY_LIGHT
+        }
+        val textColor = if (selected) COLOR_BLUE else if (dark) Color.WHITE else Color.BLACK
+        chip.setTextColor(textColor)
+        setRoundedFill(chip, chipBg, 16f)
+    }
+
+    private fun startMemberRefreshPolling() {
+        stopMemberRefreshPolling()
+        val runnable = object : Runnable {
+            override fun run() {
+                refreshMemberData()
+                handler.postDelayed(this, MEMBER_REFRESH_INTERVAL_MS)
+            }
+        }
+        memberRefreshRunnable = runnable
+        handler.postDelayed(runnable, MEMBER_REFRESH_INTERVAL_MS)
+    }
+
+    private fun stopMemberRefreshPolling() {
+        memberRefreshRunnable?.let { handler.removeCallbacks(it) }
+        memberRefreshRunnable = null
+    }
+
+    private fun refreshMemberData() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val functionUrl = prefs.getString(KEY_FUNCTION_URL, null)
+        if (functionUrl.isNullOrBlank()) {
+            handler.post {
+                memberInfo = null
+                configInfo = null
+                setStatusBannerVisible(false)
+            }
+            return
+        }
+
+        executor.execute {
+            val idToken = fetchIdTokenSync()
+            if (idToken.isNullOrBlank()) {
+                handler.post {
+                    memberInfo = null
+                    configInfo = null
+                    setStatusBannerVisible(false)
+                }
+                return@execute
+            }
+
+            val member = getMyMemberSync(idToken, functionUrl)
+            val config = getFullConfigSync(idToken, functionUrl)
+            handler.post {
+                memberInfo = member
+                if (config != null) {
+                    configInfo = config
+                }
+                updateStatusBanner()
+            }
+        }
+    }
+
+    private fun getMyMemberSync(idToken: String, functionUrl: String): MemberInfo? {
+        return try {
+            val result = invokeHandlerSync(
+                functionUrl = functionUrl,
+                idToken = idToken,
+                name = "member/getMyMember",
+                args = JSONObject(),
+            ) ?: return null
+            val memberJson = result.optJSONObject("member") ?: return null
+            val trialEndsAt = memberJson.optString("trialEndsAt", "").takeIf { it.isNotBlank() }
+            MemberInfo(
+                plan = memberJson.optString("plan", "free"),
+                isOnTrial = memberJson.optBoolean("isOnTrial", false),
+                trialEndsAt = trialEndsAt,
+                wordsToday = memberJson.optInt("wordsToday", 0),
+            )
+        } catch (e: Exception) {
+            dbg("getMyMember failed: ${e.message}")
+            null
+        }
+    }
+
+    private fun getFullConfigSync(idToken: String, functionUrl: String): ConfigInfo? {
+        return try {
+            val result = invokeHandlerSync(
+                functionUrl = functionUrl,
+                idToken = idToken,
+                name = "config/getFullConfig",
+                args = JSONObject(),
+            ) ?: return null
+            val configJson = result.optJSONObject("config") ?: return null
+            ConfigInfo(
+                freeWordsPerDay = configJson.optInt("freeWordsPerDay", 0),
+            )
+        } catch (e: Exception) {
+            dbg("getFullConfig failed: ${e.message}")
+            null
+        }
+    }
+
+    private fun updateStatusBanner() {
+        val member = memberInfo ?: run {
+            setStatusBannerVisible(false)
+            return
+        }
+
+        if (member.isOnTrial) {
+            val trialEndDate = member.trialEndsAt?.let { parseIsoDate(it) }
+            val message = if (trialEndDate != null) {
+                val secondsRemaining = trialEndDate.time - System.currentTimeMillis()
+                val daysLeft = max(0, Math.ceil(secondsRemaining / 86400000.0).toInt())
+                when (daysLeft) {
+                    0 -> "Last day of trial"
+                    1 -> "1 day left in trial"
+                    else -> "$daysLeft days left in trial"
+                }
+            } else {
+                "Your trial ends soon"
+            }
+            statusLabel.text = message
+            setStatusBannerVisible(true)
+            return
+        }
+
+        if (member.plan == "free") {
+            val config = configInfo
+            statusLabel.text = if (config != null) {
+                val remaining = max(0, config.freeWordsPerDay - member.wordsToday)
+                val formatted = java.text.NumberFormat.getIntegerInstance().format(remaining)
+                "$formatted words left today"
+            } else {
+                "Free plan"
+            }
+            setStatusBannerVisible(true)
+            return
+        }
+
+        setStatusBannerVisible(false)
+    }
+
+    private fun setStatusBannerVisible(visible: Boolean) {
+        if (visible == statusBannerVisible) {
+            return
+        }
+        statusBannerVisible = visible
+        statusAnimator?.cancel()
+
+        val density = resources.displayMetrics.density
+        val expandedHeight = (20 * density).toInt()
+        val lp = statusLabel.layoutParams as LinearLayout.LayoutParams
+
+        if (visible) {
+            statusLabel.visibility = View.VISIBLE
+            statusLabel.alpha = 0f
+            lp.height = 0
+            statusLabel.layoutParams = lp
+
+            statusAnimator = ValueAnimator.ofInt(0, expandedHeight).apply {
+                duration = 220
+                interpolator = DecelerateInterpolator()
+                addUpdateListener { animator ->
+                    val height = animator.animatedValue as Int
+                    lp.height = height
+                    statusLabel.layoutParams = lp
+                    statusLabel.alpha = animator.animatedFraction
+                }
+                start()
+            }
+            return
+        }
+
+        val startHeight = if (statusLabel.height > 0) statusLabel.height else expandedHeight
+        statusAnimator = ValueAnimator.ofInt(startHeight, 0).apply {
+            duration = 180
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { animator ->
+                val height = animator.animatedValue as Int
+                lp.height = height
+                statusLabel.layoutParams = lp
+                statusLabel.alpha = 1f - animator.animatedFraction
+            }
+            start()
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (!statusBannerVisible) {
+                        lp.height = expandedHeight
+                        statusLabel.layoutParams = lp
+                        statusLabel.visibility = View.GONE
+                        statusLabel.alpha = 0f
+                    }
+                }
+            })
+        }
+    }
+
+    private fun parseIsoDate(value: String): Date? {
+        val patterns = arrayOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+            "yyyy-MM-dd'T'HH:mm:ssXXX",
+        )
+        for (pattern in patterns) {
+            try {
+                val format = SimpleDateFormat(pattern, Locale.US)
+                format.timeZone = TimeZone.getTimeZone("UTC")
+                return format.parse(value)
+            } catch (_: Exception) {
+                continue
+            }
+        }
+        return null
     }
 
     private fun handleTranscription() {
@@ -320,6 +788,7 @@ class VoquillIME : InputMethodService() {
             handler.post {
                 currentInputConnection?.commitText(committedText, 1)
                 applyPhase(Phase.IDLE)
+                refreshMemberData()
             }
         }
     }
@@ -866,11 +1335,12 @@ class VoquillIME : InputMethodService() {
             val clampedDb = max(db, -50.0)
             val normalized = ((clampedDb + 50) / 50).toFloat()
             val curved = normalized.pow(0.7f)
+            val tunedLevel = curved * 0.55f
 
             val s = if (curved > smoothedLevel) 0.4f else 0.4f
-            smoothedLevel += (curved - smoothedLevel) * s
+            smoothedLevel += (tunedLevel - smoothedLevel) * s
 
-            waveformView?.updateLevel(max(smoothedLevel, 0.08f))
+            waveformView?.updateLevel(max(smoothedLevel, 0.04f))
         } catch (_: Exception) {}
     }
 
@@ -894,6 +1364,8 @@ class VoquillIME : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopKeyboardCounterPolling()
+        stopMemberRefreshPolling()
         stopAudioCapture()
         waveformView?.stopAnimating()
         progressView?.stopAnimating()
@@ -923,6 +1395,9 @@ class VoquillIME : InputMethodService() {
         const val COLOR_BLUE = 0xFF3380FF.toInt()
         const val COLOR_GRAY_LIGHT = 0xFFC7C7CC.toInt()
         const val COLOR_GRAY_DARK = 0xFF48484A.toInt()
+        const val COLOR_UTILITY_LIGHT = 0xFFD1D1D6.toInt()
+        const val COLOR_UTILITY_DARK = 0xFF3A3A3C.toInt()
+        const val MEMBER_REFRESH_INTERVAL_MS = 300_000L
         const val MAX_TRANSCRIPTION_ENTRIES = 50
     }
 
@@ -1016,7 +1491,7 @@ class VoquillIME : InputMethodService() {
                 canvas.drawLine(0f, mid, w, mid, paint)
             } else {
                 for (cfg in waveConfigs) {
-                    val amp = h * 0.45f * currentLevel * cfg.multiplier
+                    val amp = h * 0.22f * currentLevel * cfg.multiplier
                     val segments = 60
                     paint.color = waveColor
                     paint.alpha = (cfg.opacity * 255).toInt()
