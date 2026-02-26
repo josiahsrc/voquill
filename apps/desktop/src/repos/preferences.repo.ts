@@ -83,7 +83,6 @@ const fromLocalPreferences = (
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),
-  useNewBackend: preferences.useNewBackend ?? false,
 });
 
 const toLocalPreferences = (
@@ -117,7 +116,7 @@ const toLocalPreferences = (
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),
-  useNewBackend: preferences.useNewBackend ?? false,
+  useNewBackend: true,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

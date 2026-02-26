@@ -4,7 +4,6 @@ import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { getLogger } from "../utils/log.utils";
-import { getIsNewBackendEnabled } from "../utils/new-server.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import { buildOpenAICompatibleUrl } from "../utils/openai-compatible.utils";
 import {
@@ -65,7 +64,6 @@ import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
-  CloudTranscribeAudioRepo,
   EnterpriseTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
@@ -177,7 +175,7 @@ const getGenTextRepoInternal = ({
     let repo: BaseGenerateTextRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseGenerateTextRepo(cloudModel);
-    } else if (useNewBackend && getIsNewBackendEnabled()) {
+    } else if (useNewBackend) {
       repo = new NewServerGenerateTextRepo();
     } else {
       repo = new CloudGenerateTextRepo(cloudModel);
@@ -328,10 +326,8 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
     let repo: BaseTranscribeAudioRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseTranscribeAudioRepo();
-    } else if (getIsNewBackendEnabled()) {
-      repo = new NewServerTranscribeAudioRepo();
     } else {
-      repo = new CloudTranscribeAudioRepo();
+      repo = new NewServerTranscribeAudioRepo();
     }
     return {
       repo,

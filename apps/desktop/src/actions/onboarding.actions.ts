@@ -194,7 +194,6 @@ export const submitOnboarding = async () => {
       incognitoModeEnabled: false,
       incognitoModeIncludeInStats: false,
       dictationPillVisibility: "persistent",
-      useNewBackend: false,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
