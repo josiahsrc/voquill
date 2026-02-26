@@ -142,15 +142,40 @@
                     android:textStyle="normal" />
             </FrameLayout>
 
-            <TextView
-                android:id="@+id/status_label"
+            <LinearLayout
+                android:id="@+id/status_row"
                 android:layout_width="wrap_content"
                 android:layout_height="20dp"
                 android:layout_marginTop="6dp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"
-                android:textSize="12sp"
-                android:visibility="gone" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/status_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/status_dot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="·"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/upgrade_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Upgrade"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <HorizontalScrollView

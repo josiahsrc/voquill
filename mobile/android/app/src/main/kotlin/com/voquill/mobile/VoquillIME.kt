@@ -82,8 +82,11 @@ class VoquillIME : InputMethodService() {
     private lateinit var keyboardBackground: FrameLayout
     private lateinit var waveformContainer: FrameLayout
     private lateinit var pillButton: FrameLayout
+    private lateinit var statusRow: LinearLayout
     private lateinit var pillLabel: TextView
     private lateinit var statusLabel: TextView
+    private lateinit var statusDot: TextView
+    private lateinit var upgradeButton: TextView
     private lateinit var logoButton: ImageButton
     private lateinit var languageChip: TextView
     private lateinit var utilAtButton: ImageButton
@@ -138,9 +141,12 @@ class VoquillIME : InputMethodService() {
         keyboardBackground = view.findViewById(R.id.keyboard_background)
         waveformContainer = view.findViewById(R.id.waveform_container)
         pillButton = view.findViewById(R.id.pill_button)
+        statusRow = view.findViewById(R.id.status_row)
         pillLabel = view.findViewById(R.id.pill_label)
         statusLabel = view.findViewById(R.id.status_label)
-        statusLabel.alpha = 0f
+        statusDot = view.findViewById(R.id.status_dot)
+        upgradeButton = view.findViewById(R.id.upgrade_button)
+        statusRow.alpha = 0f
         logoButton = view.findViewById(R.id.logo_button)
         languageChip = view.findViewById(R.id.language_chip)
         utilAtButton = view.findViewById(R.id.util_at_button)
@@ -195,6 +201,7 @@ class VoquillIME : InputMethodService() {
         addButtonFeedback(utilSpaceButton)
         addButtonFeedback(utilReturnButton)
         addButtonFeedback(utilDeleteButton)
+        addButtonFeedback(upgradeButton)
 
         logoButton.setOnClickListener { openMainApp() }
         languageChip.setOnClickListener { onLanguageChipTap() }
@@ -202,6 +209,7 @@ class VoquillIME : InputMethodService() {
         utilSpaceButton.setOnClickListener { currentInputConnection?.commitText(" ", 1) }
         utilReturnButton.setOnClickListener { onReturnTap() }
         utilDeleteButton.setOnClickListener { sendDeleteKey() }
+        upgradeButton.setOnClickListener { openUpgrade() }
 
         window.window?.decorView?.setBackgroundColor(Color.TRANSPARENT)
         window.window?.navigationBarColor = Color.TRANSPARENT
@@ -242,6 +250,7 @@ class VoquillIME : InputMethodService() {
         )
         val labelColor = if (dark) Color.WHITE else Color.BLACK
         val secondaryLabelColor = if (dark) Color.argb(191, 235, 235, 245) else Color.argb(153, 60, 60, 67)
+        val tertiaryLabelColor = if (dark) Color.argb(128, 235, 235, 245) else Color.argb(77, 60, 60, 67)
         val utilityBackground = if (dark) COLOR_UTILITY_DARK else COLOR_UTILITY_LIGHT
         logoButton.setColorFilter(labelColor)
         languageChip.setTextColor(labelColor)
@@ -250,6 +259,8 @@ class VoquillIME : InputMethodService() {
         utilReturnButton.setColorFilter(labelColor)
         utilDeleteButton.setColorFilter(labelColor)
         statusLabel.setTextColor(secondaryLabelColor)
+        statusDot.setTextColor(tertiaryLabelColor)
+        upgradeButton.setTextColor(COLOR_BLUE)
         setRoundedFill(logoButton, utilityBackground, 8f)
         setRoundedFill(languageChip, utilityBackground, 8f)
         setRoundedFill(utilAtButton, utilityBackground, 8f)
@@ -394,14 +405,21 @@ class VoquillIME : InputMethodService() {
         rootView.requestApplyInsets()
     }
 
-    private fun openMainApp() {
+    private fun openMainApp(showPaywall: Boolean = false) {
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        if (showPaywall) {
+            launchIntent.putExtra(EXTRA_SHOW_PAYWALL, true)
+        }
         try {
             startActivity(launchIntent)
         } catch (e: Exception) {
             dbg("openMainApp failed: ${e.message}")
         }
+    }
+
+    private fun openUpgrade() {
+        openMainApp(showPaywall = true)
     }
 
     private fun sendDeleteKey() {
@@ -712,13 +730,13 @@ class VoquillIME : InputMethodService() {
 
         val density = resources.displayMetrics.density
         val expandedHeight = (20 * density).toInt()
-        val lp = statusLabel.layoutParams as LinearLayout.LayoutParams
+        val lp = statusRow.layoutParams as LinearLayout.LayoutParams
 
         if (visible) {
-            statusLabel.visibility = View.VISIBLE
-            statusLabel.alpha = 0f
+            statusRow.visibility = View.VISIBLE
+            statusRow.alpha = 0f
             lp.height = 0
-            statusLabel.layoutParams = lp
+            statusRow.layoutParams = lp
 
             statusAnimator = ValueAnimator.ofInt(0, expandedHeight).apply {
                 duration = 220
@@ -726,32 +744,32 @@ class VoquillIME : InputMethodService() {
                 addUpdateListener { animator ->
                     val height = animator.animatedValue as Int
                     lp.height = height
-                    statusLabel.layoutParams = lp
-                    statusLabel.alpha = animator.animatedFraction
+                    statusRow.layoutParams = lp
+                    statusRow.alpha = animator.animatedFraction
                 }
                 start()
             }
             return
         }
 
-        val startHeight = if (statusLabel.height > 0) statusLabel.height else expandedHeight
+        val startHeight = if (statusRow.height > 0) statusRow.height else expandedHeight
         statusAnimator = ValueAnimator.ofInt(startHeight, 0).apply {
             duration = 180
             interpolator = DecelerateInterpolator()
             addUpdateListener { animator ->
                 val height = animator.animatedValue as Int
                 lp.height = height
-                statusLabel.layoutParams = lp
-                statusLabel.alpha = 1f - animator.animatedFraction
+                statusRow.layoutParams = lp
+                statusRow.alpha = 1f - animator.animatedFraction
             }
             start()
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     if (!statusBannerVisible) {
                         lp.height = expandedHeight
-                        statusLabel.layoutParams = lp
-                        statusLabel.visibility = View.GONE
-                        statusLabel.alpha = 0f
+                        statusRow.layoutParams = lp
+                        statusRow.visibility = View.GONE
+                        statusRow.alpha = 0f
                     }
                 }
             })
@@ -1466,6 +1484,7 @@ class VoquillIME : InputMethodService() {
         const val KEY_MIXPANEL_TOKEN = "voquill_mixpanel_token"
         const val KEY_APP_UPDATE_COUNTER = "voquill_app_update_counter"
         const val KEY_KEYBOARD_UPDATE_COUNTER = "voquill_keyboard_update_counter"
+        const val EXTRA_SHOW_PAYWALL = "voquill_show_paywall"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()
         const val COLOR_GRAY_LIGHT = 0xFFC7C7CC.toInt()

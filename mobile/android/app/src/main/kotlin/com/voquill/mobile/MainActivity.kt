@@ -11,12 +11,13 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class MainActivity : FlutterFragmentActivity() {
+    private var sharedChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.voquill.mobile/shared")
-            .setMethodCallHandler { call, result ->
+        sharedChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.voquill.mobile/shared")
+        sharedChannel?.setMethodCallHandler { call, result ->
                 when (call.method) {
                     "setKeyboardAuth" -> handleSetKeyboardAuth(call.arguments, result)
                     "clearKeyboardAuth" -> handleClearKeyboardAuth(result)
@@ -57,6 +58,19 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        maybeShowPaywallFromIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        maybeShowPaywallFromIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        maybeShowPaywallFromIntent(intent)
     }
 
     private val keyboardPrefs
@@ -306,5 +320,13 @@ class MainActivity : FlutterFragmentActivity() {
             is JSONArray -> jsonArrayToList(value)
             else -> value
         }
+    }
+
+    private fun maybeShowPaywallFromIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(VoquillIME.EXTRA_SHOW_PAYWALL, false) != true) {
+            return
+        }
+        intent.removeExtra(VoquillIME.EXTRA_SHOW_PAYWALL)
+        sharedChannel?.invokeMethod("showPaywall", null)
     }
 }
