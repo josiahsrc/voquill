@@ -19,12 +19,12 @@ import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.view.Choreographer
+import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import org.json.JSONArray
 import org.json.JSONObject
@@ -60,8 +60,7 @@ class VoquillIME : InputMethodService() {
 
     private lateinit var keyboardBackground: FrameLayout
     private lateinit var waveformContainer: FrameLayout
-    private lateinit var pillButton: LinearLayout
-    private lateinit var pillIcon: ImageView
+    private lateinit var pillButton: FrameLayout
     private lateinit var pillLabel: TextView
     private lateinit var globeButton: ImageButton
 
@@ -94,7 +93,6 @@ class VoquillIME : InputMethodService() {
         keyboardBackground = view.findViewById(R.id.keyboard_background)
         waveformContainer = view.findViewById(R.id.waveform_container)
         pillButton = view.findViewById(R.id.pill_button)
-        pillIcon = view.findViewById(R.id.pill_icon)
         pillLabel = view.findViewById(R.id.pill_label)
         globeButton = view.findViewById(R.id.globe_button)
 
@@ -107,12 +105,29 @@ class VoquillIME : InputMethodService() {
 
         progressView = IndeterminateProgressView(this).also {
             it.alpha = 0f
-            waveformContainer.addView(it, FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            ))
+            val horizontalInset = (16 * resources.displayMetrics.density).toInt()
+            waveformContainer.addView(
+                it,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    (20 * resources.displayMetrics.density).toInt(),
+                    Gravity.CENTER_VERTICAL,
+                ).apply {
+                    marginStart = horizontalInset
+                    marginEnd = horizontalInset
+                },
+            )
         }
 
+        pillButton.setOnTouchListener { v, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> v.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100).start()
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
+                }
+            }
+            false
+        }
         pillButton.setOnClickListener { onPillTap() }
         globeButton.setOnClickListener {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
@@ -144,8 +159,8 @@ class VoquillIME : InputMethodService() {
     private fun applyPhase(phase: Phase) {
         currentPhase = phase
         val dark = isDarkMode
-        val activeColor = if (dark) Color.WHITE else Color.BLACK
-        val idleColor = if (dark) Color.argb(64, 255, 255, 255) else Color.argb(51, 0, 0, 0)
+        val activeColor = Color.WHITE
+        val loadingColor = if (dark) COLOR_GRAY_DARK else COLOR_GRAY_LIGHT
         val pillBg = pillButton.background as? GradientDrawable
             ?: (pillButton.background?.mutate() as? GradientDrawable)
 
@@ -157,16 +172,16 @@ class VoquillIME : InputMethodService() {
 
         when (phase) {
             Phase.IDLE -> {
-                waveformView?.alpha = 1f
+                waveformView?.alpha = 0f
                 progressView?.alpha = 0f
                 progressView?.stopAnimating()
                 waveformView?.isActive = false
-                waveformView?.waveColor = idleColor
+                waveformView?.waveColor = activeColor
                 pillBg?.setColor(COLOR_BLUE)
-                pillIcon.setImageResource(R.drawable.ic_mic)
-                pillIcon.visibility = View.VISIBLE
-                pillLabel.text = "Tap to dictate"
+                pillLabel.text = "tap to dictate"
+                pillLabel.alpha = 1f
                 pillButton.isClickable = true
+                pillButton.isEnabled = true
             }
             Phase.RECORDING -> {
                 waveformView?.alpha = 1f
@@ -175,20 +190,21 @@ class VoquillIME : InputMethodService() {
                 waveformView?.isActive = true
                 waveformView?.waveColor = activeColor
                 pillBg?.setColor(COLOR_BLUE)
-                pillIcon.setImageResource(R.drawable.ic_stop)
-                pillIcon.visibility = View.VISIBLE
-                pillLabel.text = "Stop dictating"
+                pillLabel.alpha = 0f
                 pillButton.isClickable = true
+                pillButton.isEnabled = true
             }
             Phase.LOADING -> {
                 waveformView?.alpha = 0f
+                waveformView?.isActive = false
                 progressView?.alpha = 1f
                 progressView?.barColor = activeColor
                 progressView?.startAnimating()
-                pillBg?.setColor(COLOR_GRAY)
-                pillIcon.visibility = View.GONE
+                pillBg?.setColor(loadingColor)
                 pillLabel.text = "Processing..."
+                pillLabel.alpha = 0f
                 pillButton.isClickable = false
+                pillButton.isEnabled = false
             }
         }
     }
@@ -905,7 +921,8 @@ class VoquillIME : InputMethodService() {
         const val KEY_KEYBOARD_UPDATE_COUNTER = "voquill_keyboard_update_counter"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()
-        const val COLOR_GRAY = 0xFF8E8E93.toInt()
+        const val COLOR_GRAY_LIGHT = 0xFFC7C7CC.toInt()
+        const val COLOR_GRAY_DARK = 0xFF48484A.toInt()
         const val MAX_TRANSCRIPTION_ENTRIES = 50
     }
 
@@ -924,9 +941,9 @@ class VoquillIME : InputMethodService() {
         private var currentLevel = 0f
         private var targetLevel = 0f
 
-        private val basePhaseStep = 0.14f
-        private val attackSmoothing = 0.25f
-        private val decaySmoothing = 0.25f
+        private val basePhaseStep = 0.18f
+        private val attackSmoothing = 0.3f
+        private val decaySmoothing = 0.12f
 
         private val waveConfigs = listOf(
             WaveConfig(0.8f, 1.0f, 0f, 1.0f),
