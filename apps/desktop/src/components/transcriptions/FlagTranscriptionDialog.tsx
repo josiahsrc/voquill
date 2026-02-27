@@ -110,7 +110,8 @@ export const FlagTranscriptionDialog = () => {
           id: transcription.id,
           filePath: transcription.audio ? audioPath : "",
           feedback,
-          prompt: transcription.transcriptionPrompt ?? null,
+          transcriptionPrompt: transcription.transcriptionPrompt ?? null,
+          postProcessingPrompt: transcription.postProcessPrompt ?? null,
           rawTranscription:
             transcription.rawTranscript ?? transcription.transcript,
           postProcessedTranscription: transcription.transcript ?? null,

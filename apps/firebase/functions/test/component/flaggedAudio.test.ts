@@ -24,7 +24,8 @@ const buildFlaggedAudio = (overrides?: Partial<FlaggedAudio>): FlaggedAudio => (
 	id: "flagged-1",
 	filePath: "users/uid/flaggedAudio/test.wav",
 	feedback: "transcription was wrong",
-	prompt: "some context",
+	transcriptionPrompt: "some context",
+	postProcessingPrompt: "rewrite formally",
 	rawTranscription: "hello wrold",
 	postProcessedTranscription: "hello world",
 	transcriptionProvider: "groq",
@@ -52,7 +53,8 @@ describe("flaggedAudio/upsert", () => {
 		expect(doc).toBeDefined();
 		expect(doc?.data.filePath).toBe(flaggedAudio.filePath);
 		expect(doc?.data.feedback).toBe(flaggedAudio.feedback);
-		expect(doc?.data.prompt).toBe(flaggedAudio.prompt);
+		expect(doc?.data.transcriptionPrompt).toBe(flaggedAudio.transcriptionPrompt);
+		expect(doc?.data.postProcessingPrompt).toBe(flaggedAudio.postProcessingPrompt);
 		expect(doc?.data.rawTranscription).toBe(flaggedAudio.rawTranscription);
 		expect(doc?.data.postProcessedTranscription).toBe(
 			flaggedAudio.postProcessedTranscription,
@@ -72,7 +74,8 @@ describe("flaggedAudio/upsert", () => {
 
 		const flaggedAudio = buildFlaggedAudio({
 			id: "null-fields-test",
-			prompt: null,
+			transcriptionPrompt: null,
+			postProcessingPrompt: null,
 			postProcessedTranscription: null,
 			postProcessingProvider: null,
 		});
@@ -81,7 +84,8 @@ describe("flaggedAudio/upsert", () => {
 
 		const doc = await firemix().get(mixpath.flaggedAudio("null-fields-test"));
 		expect(doc).toBeDefined();
-		expect(doc?.data.prompt).toBeNull();
+		expect(doc?.data.transcriptionPrompt).toBeNull();
+		expect(doc?.data.postProcessingPrompt).toBeNull();
 		expect(doc?.data.postProcessedTranscription).toBeNull();
 		expect(doc?.data.postProcessingProvider).toBeNull();
 	});
