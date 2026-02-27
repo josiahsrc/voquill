@@ -15,13 +15,13 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
     let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     let mut log_content = String::new();
-    log_content.push_str(&format!("=== Voquill Startup Diagnostics ===\n"));
+    log_content.push_str("=== Voquill Startup Diagnostics ===\n");
     log_content.push_str(&format!("Timestamp: {}\n", timestamp));
     log_content.push_str(&format!("Version: {}\n", env!("CARGO_PKG_VERSION")));
     log_content.push_str(&format!("OS: {}\n", std::env::consts::OS));
     log_content.push_str(&format!("Arch: {}\n", std::env::consts::ARCH));
     log_content.push_str(&format!("Family: {}\n", std::env::consts::FAMILY));
-    log_content.push_str("\n");
+    log_content.push('\n');
 
     // Environment variables related to GPU
     log_content.push_str("=== Environment Variables ===\n");
@@ -30,11 +30,11 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
     } else {
         log_content.push_str("VOQUILL_WHISPER_DISABLE_GPU: <not set>\n");
     }
-    log_content.push_str("\n");
+    log_content.push('\n');
 
     // GPU Information
     log_content.push_str("=== GPU Detection ===\n");
-    log_content.push_str("\n");
+    log_content.push('\n');
 
     // System info
     log_content.push_str("=== System Information ===\n");

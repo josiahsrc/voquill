@@ -7,7 +7,7 @@ fn serialize_additional_languages(
     languages: &Option<Vec<String>>,
 ) -> Option<String> {
     languages.as_ref().map(|languages|
-        languages.join(&SEP.to_string())
+        languages.join(SEP)
     )
 }
 
@@ -104,7 +104,7 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.openclaw_gateway_url)
     .bind(&preferences.openclaw_token)
     .bind(&preferences.active_tone_id)
-    .bind(&preferences.got_started_at)
+    .bind(preferences.got_started_at)
     .bind(preferences.gpu_enumeration_enabled)
     .bind(&preferences.paste_keybind)
     .bind(&preferences.last_seen_feature)

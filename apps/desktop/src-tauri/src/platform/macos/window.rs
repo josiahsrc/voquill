@@ -50,11 +50,8 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
         })
         .map_err(|err| err.to_string())?;
 
-    let result = rx
-        .recv()
-        .map_err(|_| "failed to surface window on main thread".to_string())?;
-
-    result
+    rx.recv()
+        .map_err(|_| "failed to surface window on main thread".to_string())?
 }
 
 pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
@@ -85,11 +82,8 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
         })
         .map_err(|err| err.to_string())?;
 
-    let result = rx
-        .recv()
-        .map_err(|_| "failed to show overlay on main thread".to_string())?;
-
-    result
+    rx.recv()
+        .map_err(|_| "failed to show overlay on main thread".to_string())?
 }
 
 pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), String> {

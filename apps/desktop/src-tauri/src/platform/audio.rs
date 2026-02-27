@@ -182,6 +182,12 @@ unsafe impl Sync for RecordingManager {}
 unsafe impl Send for ActiveRecording {}
 unsafe impl Sync for ActiveRecording {}
 
+impl Default for RecordingManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecordingManager {
     pub fn new() -> Self {
         Self {
