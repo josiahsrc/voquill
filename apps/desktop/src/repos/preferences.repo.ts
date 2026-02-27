@@ -25,6 +25,8 @@ type LocalUserPreferences = {
   gpuEnumerationEnabled: boolean;
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
+  openclawGatewayUrl: Nullable<string>;
+  openclawToken: Nullable<string>;
   lastSeenFeature: Nullable<string>;
   isEnterprise: boolean;
   languageSwitchEnabled: boolean;
@@ -35,6 +37,7 @@ type LocalUserPreferences = {
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
   dictationPillVisibility: DictationPillVisibility;
+  useNewBackend: boolean;
 };
 
 // Normalize post-processing mode for backwards compatibility
@@ -69,13 +72,10 @@ const fromLocalPreferences = (
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
   agentMode: preferences.agentMode,
   agentModeApiKeyId: preferences.agentModeApiKeyId,
+  openclawGatewayUrl: preferences.openclawGatewayUrl ?? null,
+  openclawToken: preferences.openclawToken ?? null,
   lastSeenFeature: preferences.lastSeenFeature,
   isEnterprise: preferences.isEnterprise,
-  languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
-  secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
-  activeDictationLanguage:
-    (preferences.activeDictationLanguage as "primary" | "secondary") ??
-    "primary",
   preferredMicrophone: preferences.preferredMicrophone ?? null,
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
   incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
@@ -102,11 +102,13 @@ const toLocalPreferences = (
   gpuEnumerationEnabled: preferences.gpuEnumerationEnabled,
   agentMode: preferences.agentMode ?? null,
   agentModeApiKeyId: preferences.agentModeApiKeyId ?? null,
+  openclawGatewayUrl: preferences.openclawGatewayUrl ?? null,
+  openclawToken: preferences.openclawToken ?? null,
   lastSeenFeature: preferences.lastSeenFeature ?? null,
   isEnterprise: preferences.isEnterprise,
-  languageSwitchEnabled: preferences.languageSwitchEnabled ?? false,
-  secondaryDictationLanguage: preferences.secondaryDictationLanguage ?? null,
-  activeDictationLanguage: preferences.activeDictationLanguage ?? "primary",
+  languageSwitchEnabled: false,
+  secondaryDictationLanguage: null,
+  activeDictationLanguage: "primary",
   preferredMicrophone: preferences.preferredMicrophone ?? null,
   ignoreUpdateDialog: preferences.ignoreUpdateDialog ?? false,
   incognitoModeEnabled: preferences.incognitoModeEnabled ?? false,
@@ -114,6 +116,7 @@ const toLocalPreferences = (
   dictationPillVisibility: getEffectivePillVisibility(
     preferences.dictationPillVisibility,
   ),
+  useNewBackend: true,
 });
 
 export abstract class BaseUserPreferencesRepo extends BaseRepo {

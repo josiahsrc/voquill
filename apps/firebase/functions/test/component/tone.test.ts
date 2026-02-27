@@ -11,6 +11,34 @@ beforeAll(setUp);
 afterAll(tearDown);
 
 describe("api", () => {
+	it("accepts a long promptTemplate", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await expect(
+			invokeHandler("tone/upsertMyTone", {
+				tone: buildTone({
+					promptTemplate: "a".repeat(24_001),
+				}),
+			}),
+		).resolves.not.toThrow();
+	});
+
+	it("accepts a long systemPromptTemplate", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await expect(
+			invokeHandler("tone/upsertMyTone", {
+				tone: buildTone({
+					systemPromptTemplate: "a".repeat(24_001),
+				}),
+			}),
+		).resolves.not.toThrow();
+	});
+
 	it("lets me manage my tones", async () => {
 		const creds = await createUserCreds();
 		await signInWithCreds(creds);
@@ -41,4 +69,5 @@ describe("api", () => {
 		const fourthList = await invokeHandler("tone/listMyTones", {});
 		expect(fourthList.tones.length).toBe(0);
 	});
+
 });

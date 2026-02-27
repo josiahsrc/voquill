@@ -88,17 +88,17 @@ export class OpenRouterLlmApi extends BaseOpenAILlmApi {
 }
 
 export class OllamaLlmApi extends BaseOpenAILlmApi {
-  private baseURL: string;
+  private ollamaUrl: string;
 
   constructor(opts: { url: string; apiKey: string; model: string }) {
     const baseURL = `${opts.url}/v1`;
     super({ baseURL, apiKey: opts.apiKey || "ollama", model: opts.model });
-    this.baseURL = baseURL;
+    this.ollamaUrl = opts.url;
   }
 
   async pullModel(): Promise<PullModelResponse> {
     try {
-      const res = await fetch(`${this.baseURL}/api/pull`, {
+      const res = await fetch(`${this.ollamaUrl}/api/pull`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: this.model }),

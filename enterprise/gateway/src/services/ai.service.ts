@@ -1,8 +1,10 @@
-import type { HandlerInput, HandlerOutput } from "@repo/functions";
+import type { CloudModel, HandlerInput, HandlerOutput } from "@repo/functions";
 import type { AuthContext, Nullable } from "@repo/types";
 import { retry } from "@repo/utilities";
-import { listEnabledLlmProvidersWithKeys } from "../repo/llm-provider.repo";
-import { listEnabledSttProvidersWithKeys } from "../repo/stt-provider.repo";
+import { listActiveLlmProvidersWithKeys } from "../repo/llm-provider.repo";
+import { insertMetric } from "../repo/metrics.repo";
+import { listActiveSttProvidersWithKeys } from "../repo/stt-provider.repo";
+import type { LlmProviderRow } from "../types/llm-provider.types";
 import { requireAuth } from "../utils/auth.utils";
 import { ClientError } from "../utils/error.utils";
 import { createLlmApi } from "../utils/llm-provider.utils";
@@ -25,11 +27,36 @@ const MIME_TO_EXT: Record<string, string> = {
 let llmIndex = 0;
 let sttIndex = 0;
 
+const CLOUD_MODEL_MIN_TIER: Record<CloudModel, number> = {
+  low: 1,
+  medium: 2,
+  large: 3,
+};
+
+export function selectLlmProvider(
+  providers: LlmProviderRow[],
+  model: CloudModel,
+  index: number,
+): LlmProviderRow {
+  const minTier = CLOUD_MODEL_MIN_TIER[model];
+  const eligible = providers.filter((p) => p.tier >= minTier);
+
+  if (eligible.length === 0) {
+    throw new Error(
+      `No LLM providers configured for tier >= ${minTier} (model: ${model})`,
+    );
+  }
+
+  const lowestTier = eligible[0].tier;
+  const group = eligible.filter((p) => p.tier === lowestTier);
+  return group[index % group.length];
+}
+
 export async function transcribeAudio(opts: {
   auth: Nullable<AuthContext>;
   input: HandlerInput<"ai/transcribeAudio">;
 }): Promise<HandlerOutput<"ai/transcribeAudio">> {
-  requireAuth(opts.auth);
+  const auth = requireAuth(opts.auth);
   const { input } = opts;
 
   const blob = Buffer.from(input.audioBase64, "base64");
@@ -48,62 +75,123 @@ export async function transcribeAudio(opts: {
   }
 
   if (input.simulate) {
-    return { text: "Simulated response" };
+    const text = "Simulated response";
+    insertMetric({
+      userId: auth.userId,
+      operation: "transcribe",
+      providerName: "simulated",
+      status: "success",
+      latencyMs: 100,
+      wordCount: text.split(/\s+/).filter(Boolean).length,
+    }).catch(() => {});
+    return { text };
   }
 
-  const providers = await listEnabledSttProvidersWithKeys();
+  const providers = await listActiveSttProvidersWithKeys();
   if (providers.length === 0) {
-    throw new Error("No enabled STT providers configured");
+    throw new Error("No active STT providers configured");
   }
 
   const provider = providers[sttIndex % providers.length];
   sttIndex++;
 
+  const startTime = Date.now();
   const transcription = createTranscriptionApi(provider);
-  const result = await retry({
-    retries: 3,
-    fn: async () =>
-      transcription.transcribe({
-        audioBuffer: blob,
-        mimeType: input.audioMimeType,
-        prompt: input.prompt,
-        language: input.language,
-      }),
-  });
+  try {
+    const result = await retry({
+      retries: 3,
+      fn: async () =>
+        transcription.transcribe({
+          audioBuffer: blob,
+          mimeType: input.audioMimeType,
+          prompt: input.prompt,
+          language: input.language,
+        }),
+    });
 
-  return { text: result.text };
+    const wordCount = result.text.split(/\s+/).filter(Boolean).length;
+    insertMetric({
+      userId: auth.userId,
+      operation: "transcribe",
+      providerName: provider.name,
+      status: "success",
+      latencyMs: Date.now() - startTime,
+      wordCount,
+    }).catch(() => {});
+
+    return { text: result.text };
+  } catch (error) {
+    insertMetric({
+      userId: auth.userId,
+      operation: "transcribe",
+      providerName: provider.name,
+      status: "error",
+      latencyMs: Date.now() - startTime,
+      wordCount: 0,
+    }).catch(() => {});
+    throw error;
+  }
 }
 
 export async function generateText(opts: {
   auth: Nullable<AuthContext>;
   input: HandlerInput<"ai/generateText">;
 }): Promise<HandlerOutput<"ai/generateText">> {
-  requireAuth(opts.auth);
+  const auth = requireAuth(opts.auth);
   const { input } = opts;
 
   if (input.simulate) {
-    return { text: "Simulated generated text." };
+    const text = "Simulated generated text.";
+    insertMetric({
+      userId: auth.userId,
+      operation: "generate",
+      providerName: "simulated",
+      status: "success",
+      latencyMs: 100,
+      wordCount: text.split(/\s+/).filter(Boolean).length,
+    }).catch(() => {});
+    return { text };
   }
 
-  const providers = await listEnabledLlmProvidersWithKeys();
-  if (providers.length === 0) {
-    throw new Error("No enabled LLM providers configured");
-  }
-
-  const provider = providers[llmIndex % providers.length];
+  const allProviders = await listActiveLlmProvidersWithKeys();
+  const model: CloudModel = input.model ?? "medium";
+  const provider = selectLlmProvider(allProviders, model, llmIndex);
   llmIndex++;
 
+  const startTime = Date.now();
   const llmApi = createLlmApi(provider);
-  const result = await retry({
-    retries: 3,
-    fn: async () =>
-      llmApi.generateText({
-        system: input.system ?? undefined,
-        prompt: input.prompt,
-        model: provider.model,
-        jsonResponse: input.jsonResponse ?? undefined,
-      }),
-  });
+  try {
+    const result = await retry({
+      retries: 3,
+      fn: async () =>
+        llmApi.generateText({
+          system: input.system ?? undefined,
+          prompt: input.prompt,
+          model: provider.model,
+          jsonResponse: input.jsonResponse ?? undefined,
+        }),
+    });
 
-  return { text: result.text };
+    const wordCount = result.text.split(/\s+/).filter(Boolean).length;
+    insertMetric({
+      userId: auth.userId,
+      operation: "generate",
+      providerName: provider.name,
+      status: "success",
+      latencyMs: Date.now() - startTime,
+      wordCount,
+    }).catch(() => {});
+
+    return { text: result.text };
+  } catch (error) {
+    insertMetric({
+      userId: auth.userId,
+      operation: "generate",
+      providerName: provider.name,
+      status: "error",
+      latencyMs: Date.now() - startTime,
+      wordCount: 0,
+    }).catch(() => {});
+    throw error;
+  }
 }

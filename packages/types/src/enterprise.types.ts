@@ -8,9 +8,12 @@ export const EnterpriseStylingModeZod = z.enum(
 ) as z.ZodType<EnterpriseStylingMode>;
 
 export type EnterpriseConfig = {
+  allowPostProcessing: boolean;
   allowChangePostProcessing: boolean;
   allowChangeTranscriptionMethod: boolean;
   allowChangeAgentMode: boolean;
+  allowEmailSignIn: boolean;
+  allowDevTools: boolean;
   stylingMode: EnterpriseStylingMode;
 };
 
@@ -23,9 +26,41 @@ export type EnterpriseLicense = {
 
 export const EnterpriseConfigZod = z
   .object({
+    allowPostProcessing: z.boolean(),
     allowChangePostProcessing: z.boolean(),
     allowChangeTranscriptionMethod: z.boolean(),
     allowChangeAgentMode: z.boolean(),
+    allowEmailSignIn: z.boolean(),
+    allowDevTools: z.boolean(),
     stylingMode: EnterpriseStylingModeZod,
   })
   .strict() satisfies z.ZodType<EnterpriseConfig>;
+
+export type OidcProvider = {
+  id: string;
+  name: string;
+  issuerUrl: string;
+  clientId: string;
+  isEnabled: boolean;
+  createdAt: string;
+};
+
+export type OidcProviderInput = {
+  id?: string;
+  name: string;
+  issuerUrl: string;
+  clientId: string;
+  clientSecret?: string;
+  isEnabled: boolean;
+};
+
+export const OidcProviderInputZod = z
+  .object({
+    id: z.string().optional(),
+    name: z.string().min(1),
+    issuerUrl: z.string().url(),
+    clientId: z.string().min(1),
+    clientSecret: z.string().optional(),
+    isEnabled: z.boolean(),
+  })
+  .strict() satisfies z.ZodType<OidcProviderInput>;

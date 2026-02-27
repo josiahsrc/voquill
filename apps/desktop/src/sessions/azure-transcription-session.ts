@@ -34,7 +34,11 @@ export class AzureTranscriptionSession implements TranscriptionSession {
       const state = getAppState();
       const language = await loadMyEffectiveDictationLanguage(state);
       const dictionaryEntries = collectDictionaryEntries(state);
-      const prompt = buildLocalizedTranscriptionPrompt(dictionaryEntries);
+      const prompt = buildLocalizedTranscriptionPrompt({
+        entries: dictionaryEntries,
+        dictationLanguage: language,
+        state,
+      });
 
       this.session = await createAzureStreamingSession({
         subscriptionKey: this.subscriptionKey,

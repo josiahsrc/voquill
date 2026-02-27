@@ -102,6 +102,13 @@ function getManifestKeyDetails(
         defaultMessage: "Installer for all macOS architectures",
       }),
     },
+    "windows-x86_64-portable": {
+      platform: "windows",
+      label: intl.formatMessage({ defaultMessage: "Windows (x64)" }),
+      description: intl.formatMessage({
+        defaultMessage: "Portable installer",
+      }),
+    },
     "windows-x86_64": {
       platform: "windows",
       label: intl.formatMessage({ defaultMessage: "Windows (x64)" }),
@@ -203,6 +210,10 @@ const ASSET_KEY_MAPPINGS: Array<{
     ],
   },
   {
+    match: (name) => /^Voquill[._]Portable[._]Installer\.exe$/i.test(name),
+    keys: ["windows-x86_64-portable"],
+  },
+  {
     match: (name) => /^Voquill[._](?!GPU).*\.msi$/i.test(name),
     keys: ["windows-x86_64", "windows-x86_64-msi"],
   },
@@ -244,12 +255,15 @@ export async function fetchReleaseManifest(signal?: AbortSignal) {
 
     const allReleases = (await response.json()) as GithubRelease[];
 
-    const latestCpu = allReleases.find(
+    const cpuReleases = allReleases.filter(
       (r) => r.tag_name && RELEASE_TAG_PATTERNS.cpu.test(r.tag_name),
     );
-    const latestGpu = allReleases.find(
+    const gpuReleases = allReleases.filter(
       (r) => r.tag_name && RELEASE_TAG_PATTERNS.gpu.test(r.tag_name),
     );
+
+    const latestCpu = cpuReleases[0];
+    const latestGpu = gpuReleases[0];
 
     const validReleases = [latestCpu, latestGpu].filter(
       (r): r is GithubRelease => r !== undefined,
@@ -264,7 +278,33 @@ export async function fetchReleaseManifest(signal?: AbortSignal) {
     };
 
     const manifest = transformGithubRelease(combined);
-    return manifest ?? undefined;
+    if (!manifest) return undefined;
+
+    const previousCpu = cpuReleases[1];
+    const previousGpu = gpuReleases[1];
+    const fallbackReleases = [previousCpu, previousGpu].filter(
+      (r): r is GithubRelease => r !== undefined,
+    );
+
+    if (fallbackReleases.length > 0) {
+      const fallbackAssets = fallbackReleases.flatMap((r) => r.assets ?? []);
+      const fallbackCombined: GithubRelease = {
+        ...fallbackReleases[0],
+        assets: fallbackAssets,
+      };
+      const fallbackManifest = transformGithubRelease(fallbackCombined);
+      if (fallbackManifest) {
+        for (const [key, details] of Object.entries(
+          fallbackManifest.platforms,
+        )) {
+          if (!manifest.platforms[key] && details) {
+            manifest.platforms[key] = details;
+          }
+        }
+      }
+    }
+
+    return manifest;
   } catch {
     return undefined;
   }
@@ -481,7 +521,7 @@ async function buildPlatformPreference(platform: Platform) {
       return ["darwin-universal", "darwin-aarch64", "darwin-x86_64"];
     }
     case "windows":
-      return ["windows-x86_64", "windows-x86_64-msi", "windows-x86_64-nsis"];
+      return ["windows-x86_64-portable", "windows-x86_64", "windows-x86_64-msi", "windows-x86_64-nsis"];
     case "linux":
       return [
         "linux-x86_64",

@@ -16,6 +16,7 @@ import type {
   HandleTranscriptResult,
   StrategyValidationError,
 } from "../types/strategy.types";
+import { getLogger } from "../utils/log.utils";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
 import { BaseStrategy } from "./base.strategy";
 
@@ -77,9 +78,10 @@ export class AgentStrategy extends BaseStrategy {
   }
 
   private async initAgent(): Promise<Agent | null> {
+    getLogger().info("Initializing agent");
     const { repo, warnings } = getAgentRepo();
     if (!repo) {
-      console.warn("No agent repo configured:", warnings);
+      getLogger().warning(`No agent repo configured: ${warnings.join(", ")}`);
       return null;
     }
 
@@ -170,14 +172,16 @@ export class AgentStrategy extends BaseStrategy {
       const liveTools: string[] = [];
       this.uiMessages.push({ text: "", sender: "agent", tools: liveTools });
 
+      getLogger().info(`Running agent with transcript (${rawTranscript.length} chars)`);
       const result = await this.agent.run(rawTranscript, {
         onToolExecuted: (tool) => {
+          getLogger().verbose(`Agent tool executed: ${tool.displayName}`);
           liveTools.push(tool.displayName);
           this.updateWindowState(this.uiMessages);
         },
       });
-      console.log("Agent response:", result.response);
-      console.log("Agent history:", result.history);
+      getLogger().info(`Agent response: ${result.response?.length ?? 0} chars, history=${result.history.length} turns`);
+      getLogger().verbose(`Agent response: ${result.response}`);
 
       this.uiMessages.pop();
 
@@ -220,7 +224,7 @@ export class AgentStrategy extends BaseStrategy {
         postProcessWarnings: [],
       };
     } catch (error) {
-      console.error("Agent failed to process request", error);
+      getLogger().error(`Agent failed to process request: ${error}`);
       const errorMessage =
         error instanceof Error ? error.message : "An error occurred.";
       await showToast({
@@ -241,6 +245,7 @@ export class AgentStrategy extends BaseStrategy {
   }
 
   async cleanup(): Promise<void> {
+    getLogger().verbose("Cleaning up agent strategy");
     this.agent?.clearHistory();
     this.uiMessages = [];
     this.isFirstTurn = true;

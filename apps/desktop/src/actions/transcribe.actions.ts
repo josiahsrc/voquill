@@ -12,27 +12,32 @@ import {
   getTranscriptionRepo,
 } from "../repos";
 import { getAppState, produceAppState } from "../store";
-import { TextFieldInfo } from "../types/accessibility.types";
 import { PostProcessingMode, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
 import { StopRecordingResponse } from "../types/transcription-session.types";
 import {
-  applySpacingInContext,
-  extractTextFieldContext,
-} from "../utils/accessibility.utils";
+  extractJsonFromMarkdown,
+  unwrapNestedLlmResponse,
+} from "../utils/ai.utils";
 import { createId } from "../utils/id.utils";
-import { mapDictationLanguageToWhisperLanguage } from "../utils/language.utils";
 import {
-  buildLocalizedPostProcessingPrompt,
+  coerceToDictationLanguage,
+  mapDictationLanguageToWhisperLanguage,
+} from "../utils/language.utils";
+import { getLogger } from "../utils/log.utils";
+import {
   buildLocalizedTranscriptionPrompt,
+  buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
   collectDictionaryEntries,
+  PostProcessingPromptInput,
   PROCESSED_TRANSCRIPTION_JSON_SCHEMA,
   PROCESSED_TRANSCRIPTION_SCHEMA,
 } from "../utils/prompt.utils";
-import { getToneTemplateWithFallback } from "../utils/tone.utils";
+import { getToneById, getToneConfig } from "../utils/tone.utils";
 import {
   getMyEffectiveUserId,
+  getMyUserName,
   loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
@@ -41,6 +46,7 @@ import { addWordsToCurrentUser } from "./user.actions";
 export type TranscribeAudioInput = {
   samples: AudioSamples;
   sampleRate: number;
+  dictationLanguage?: string;
 };
 
 export type TranscribeAudioMetadata = {
@@ -61,7 +67,7 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
-  a11yInfo: Nullable<TextFieldInfo>;
+  dictationLanguage?: string;
 };
 
 export type PostProcessMetadata = {
@@ -91,6 +97,7 @@ export type TranscriptionMetadata = TranscribeAudioMetadata &
 export const transcribeAudio = async ({
   samples,
   sampleRate,
+  dictationLanguage: dictationLanguageOverride,
 }: TranscribeAudioInput): Promise<TranscribeAudioResult> => {
   const state = getAppState();
 
@@ -104,27 +111,26 @@ export const transcribeAudio = async ({
   } = getTranscribeAudioRepo();
   warnings.push(...transcribeWarnings);
 
-  const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
+  const dictationLanguage = dictationLanguageOverride
+    ? coerceToDictationLanguage(dictationLanguageOverride)
+    : await loadMyEffectiveDictationLanguage(state);
   const whisperLanguage =
     mapDictationLanguageToWhisperLanguage(dictationLanguage);
 
+  getLogger().verbose(
+    `Transcribing audio: language=${dictationLanguage}, whisper=${whisperLanguage}, sampleRate=${sampleRate}`,
+  );
+
   const dictionaryEntries = collectDictionaryEntries(state);
-  const baseTranscriptionPrompt =
-    buildLocalizedTranscriptionPrompt(dictionaryEntries);
-  const transcriptionPrompt = (() => {
-    // Adding a patch to generate text precisely when dealing with different
-    //   variants of Chinese.
-    // See reference: https://github.com/openai/whisper/discussions/277
-    if (dictationLanguage === "zh-CN") {
-      return `以下是普通话的句子。\n\n${baseTranscriptionPrompt}`.trim();
-    }
+  const transcriptionPrompt = buildLocalizedTranscriptionPrompt({
+    entries: dictionaryEntries,
+    dictationLanguage,
+    state,
+  });
 
-    if (dictationLanguage === "zh-TW" || dictationLanguage === "zh-HK") {
-      return `以下是普通話的句子。\n\n${baseTranscriptionPrompt}`.trim();
-    }
-
-    return baseTranscriptionPrompt;
-  })();
+  getLogger().verbose(
+    `Transcription prompt: ${transcriptionPrompt.length} chars, apiKeyId=${transcriptionApiKeyId ?? "none"}`,
+  );
 
   const transcribeStart = performance.now();
   const transcribeOutput = await transcribeRepo.transcribeAudio({
@@ -136,6 +142,10 @@ export const transcribeAudio = async ({
   const transcribeDuration = performance.now() - transcribeStart;
   const rawTranscript = transcribeOutput.text.trim();
 
+  getLogger().info(
+    `Transcription complete in ${Math.round(transcribeDuration)}ms (${rawTranscript.length} chars, mode=${transcribeOutput.metadata?.transcriptionMode ?? "unknown"})`,
+  );
+
   metadata.modelSize = state.settings.aiTranscription.modelSize || null;
   metadata.inferenceDevice = transcribeOutput.metadata?.inferenceDevice || null;
   metadata.transcriptionDurationMs = Math.round(transcribeDuration);
@@ -143,6 +153,10 @@ export const transcribeAudio = async ({
   metadata.transcriptionApiKeyId = transcriptionApiKeyId;
   metadata.transcriptionMode =
     transcribeOutput.metadata?.transcriptionMode || null;
+
+  if (warnings.length > 0) {
+    getLogger().warning(`Transcription warnings: ${warnings.join("; ")}`);
+  }
 
   return {
     rawTranscript,
@@ -158,7 +172,7 @@ export const transcribeAudio = async ({
 export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
-  a11yInfo,
+  dictationLanguage: dictationLanguageOverride,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -172,22 +186,47 @@ export const postProcessTranscript = async ({
   } = getGenerateTextRepo();
   warnings.push(...genWarnings);
 
+  const tone = getToneById(state, toneId);
+  const toneProcessingDisabled = tone?.shouldDisablePostProcessing ?? false;
+  const enterpriseProcessingDisabled =
+    state.enterpriseConfig?.allowPostProcessing === false;
+
   let processedTranscript = rawTranscript;
-  if (genRepo) {
-    const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
-    const toneTemplate = getToneTemplateWithFallback(state, toneId);
-
-    const textFieldContext = extractTextFieldContext(a11yInfo);
-    const ppPrompt = buildLocalizedPostProcessingPrompt({
-      transcript: rawTranscript,
+  if (toneProcessingDisabled || enterpriseProcessingDisabled) {
+    getLogger().info(`Post-processing disabled for tone=${toneId}`);
+    metadata.postProcessMode = "none";
+  } else if (genRepo) {
+    getLogger().verbose(
+      `Post-processing with tone=${toneId ?? "default"}, apiKeyId=${genApiKeyId ?? "none"}`,
+    );
+    const dictationLanguage = dictationLanguageOverride
+      ? coerceToDictationLanguage(dictationLanguageOverride)
+      : await loadMyEffectiveDictationLanguage(state);
+    const toneConfig = getToneConfig(state, toneId);
+    getLogger().verbose(
+      "Post-process language:",
       dictationLanguage,
-      toneTemplate,
-      textFieldContext: textFieldContext ?? null,
-    });
+      "toneName:",
+      tone?.name ?? "unknown",
+    );
 
-    const ppSystem = buildSystemPostProcessingTonePrompt();
+    const promptInput: PostProcessingPromptInput = {
+      transcript: rawTranscript,
+      userName: getMyUserName(state),
+      dictationLanguage,
+      tone: toneConfig,
+    };
+    const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
+    const ppPrompt = buildPostProcessingPrompt(promptInput);
+    getLogger().verbose(
+      "Post-process prompt length:",
+      ppPrompt.length,
+      "system length:",
+      ppSystem.length,
+    );
 
     const postprocessStart = performance.now();
+    getLogger().verbose("Calling LLM for post-processing");
     const genOutput = await genRepo.generateText({
       system: ppSystem,
       prompt: ppPrompt,
@@ -200,21 +239,36 @@ export const postProcessTranscript = async ({
     const postprocessDuration = performance.now() - postprocessStart;
     metadata.postprocessDurationMs = Math.round(postprocessDuration);
 
+    getLogger().info(
+      `Post-processing complete in ${Math.round(postprocessDuration)}ms`,
+    );
+    getLogger().verbose("LLM raw output:", genOutput.text);
+
     try {
-      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(
-        JSON.parse(genOutput.text),
+      const extractedJson = extractJsonFromMarkdown(genOutput.text);
+      const parsed = unwrapNestedLlmResponse(
+        JSON.parse(extractedJson),
+        "processedTranscription",
       );
+
+      const validationResult = PROCESSED_TRANSCRIPTION_SCHEMA.safeParse(parsed);
       if (!validationResult.success) {
+        getLogger().warning(
+          "Post-processing validation failed:",
+          validationResult.error.message,
+        );
         warnings.push(
-          `Post-processing response validation failed: ${validationResult.error.message}`,
+          `Post-processing response validation failed: ${validationResult.error.message}\n\nResponse was: ${genOutput.text}`,
         );
       } else {
         processedTranscript =
           validationResult.data.processedTranscription.trim();
+        getLogger().verbose("Processed transcript:", processedTranscript);
       }
     } catch (e) {
+      getLogger().error("Failed to parse post-processing response:", e);
       warnings.push(
-        `Failed to parse post-processing response: ${(e as Error).message}`,
+        `Failed to parse post-processing response: ${(e as Error).message}\n\nResponse was: ${genOutput.text}`,
       );
     }
 
@@ -222,17 +276,15 @@ export const postProcessTranscript = async ({
     metadata.postProcessApiKeyId = genApiKeyId;
     metadata.postProcessMode = genOutput.metadata?.postProcessingMode || null;
     metadata.postProcessDevice = genOutput.metadata?.inferenceDevice || null;
+    getLogger().verbose(
+      "Post-process mode:",
+      metadata.postProcessMode,
+      "device:",
+      metadata.postProcessDevice,
+    );
   } else {
+    getLogger().info("No post-processing repo configured, skipping");
     metadata.postProcessMode = "none";
-  }
-
-  if (a11yInfo) {
-    processedTranscript = applySpacingInContext({
-      textToInsert: processedTranscript,
-      info: a11yInfo,
-    });
-  } else {
-    processedTranscript = processedTranscript.trim();
   }
 
   return {
@@ -260,6 +312,7 @@ export type StoreTranscriptionOutput = {
 export const storeTranscription = async (
   input: StoreTranscriptionInput,
 ): Promise<StoreTranscriptionOutput> => {
+  getLogger().verbose("Storing transcription record");
   const rate = input.audio.sampleRate;
 
   const sampleCount = (() => {
@@ -279,12 +332,15 @@ export const storeTranscription = async (
   })();
 
   if (rate == null || Number.isNaN(rate)) {
-    console.error("Received audio payload without sample rate", input.audio);
+    getLogger().error("Received audio payload without sample rate");
     showErrorSnackbar("Recording missing sample rate. Please try again.");
     return { transcription: null, wordCount: 0 };
   }
 
   if (rate <= 0 || sampleCount === 0) {
+    getLogger().warning(
+      `Skipping store: rate=${rate}, sampleCount=${sampleCount}`,
+    );
     return { transcription: null, wordCount: 0 };
   }
 
@@ -294,6 +350,9 @@ export const storeTranscription = async (
   const wordsAdded = input.transcript ? countWords(input.transcript) : 0;
 
   if (incognitoEnabled) {
+    getLogger().verbose(
+      `Incognito mode: skipping storage (includeInStats=${includeInStats}, words=${wordsAdded})`,
+    );
     if (wordsAdded > 0 && includeInStats) {
       try {
         await addWordsToCurrentUser(wordsAdded);

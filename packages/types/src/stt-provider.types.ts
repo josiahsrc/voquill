@@ -8,7 +8,7 @@ export type SttProvider = {
   url: string;
   apiKeySuffix: string;
   model: string;
-  isEnabled: boolean;
+  tier: number;
   pullStatus: PullStatus;
   pullError: string | null;
   createdAt: string;
@@ -21,7 +21,7 @@ export type SttProviderInput = {
   url: string;
   apiKey?: string;
   model: string;
-  isEnabled: boolean;
+  tier: number;
 };
 
 export const SttProviderInputZod = z
@@ -32,6 +32,6 @@ export const SttProviderInputZod = z
     url: z.string(),
     apiKey: z.string().default(""),
     model: z.string(),
-    isEnabled: z.boolean(),
+    tier: z.number().int(),
   })
   .strict() satisfies z.ZodType<SttProviderInput>;

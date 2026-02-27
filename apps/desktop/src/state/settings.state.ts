@@ -5,6 +5,7 @@ import {
   OpenRouterProvider,
 } from "@repo/types";
 import {
+  type AgentMode,
   CPU_DEVICE_VALUE,
   DEFAULT_AGENT_MODE,
   DEFAULT_MODEL_SIZE,
@@ -14,8 +15,6 @@ import {
   type TranscriptionMode,
 } from "../types/ai.types";
 import { ActionStatus } from "../types/state.types";
-
-import { Nullable } from "@repo/types";
 
 export type SettingsApiKeyProvider = ApiKeyProvider;
 
@@ -34,10 +33,10 @@ export type SettingsGenerativeState = {
   selectedApiKeyId: string | null;
 };
 
-export type LanguageSwitchState = {
-  enabled: boolean;
-  secondaryLanguage: Nullable<string>;
-  activeLanguage: "primary" | "secondary";
+export type SettingsAgentModeState = Omit<SettingsGenerativeState, "mode"> & {
+  mode: AgentMode;
+  openclawGatewayUrl: string | null;
+  openclawToken: string | null;
 };
 
 export type SettingsState = {
@@ -52,10 +51,11 @@ export type SettingsState = {
   aiPostProcessingDialogOpen: boolean;
   agentModeDialogOpen: boolean;
   moreSettingsDialogOpen: boolean;
+  dictationLanguageDialogOpen: boolean;
+  appKeybindingsDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
-  agentMode: SettingsGenerativeState;
-  languageSwitch: LanguageSwitchState;
+  agentMode: SettingsAgentModeState;
   apiKeys: SettingsApiKey[];
   apiKeysStatus: ActionStatus;
   hotkeyIds: string[];
@@ -67,6 +67,7 @@ export type SettingsState = {
   openRouterSearchQuery: string;
   openRouterProviders: OpenRouterProvider[];
   openRouterProvidersStatus: ActionStatus;
+  autoDownloadLogs: boolean;
 };
 
 export const INITIAL_SETTINGS_STATE: SettingsState = {
@@ -81,6 +82,8 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessingDialogOpen: false,
   agentModeDialogOpen: false,
   moreSettingsDialogOpen: false,
+  dictationLanguageDialogOpen: false,
+  appKeybindingsDialogOpen: false,
   aiTranscription: {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,
@@ -95,11 +98,8 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   agentMode: {
     mode: DEFAULT_AGENT_MODE,
     selectedApiKeyId: null,
-  },
-  languageSwitch: {
-    enabled: false,
-    secondaryLanguage: null,
-    activeLanguage: "primary",
+    openclawGatewayUrl: null,
+    openclawToken: null,
   },
   apiKeys: [],
   apiKeysStatus: "idle",
@@ -112,4 +112,5 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   openRouterSearchQuery: "",
   openRouterProviders: [],
   openRouterProvidersStatus: "idle",
+  autoDownloadLogs: false,
 };

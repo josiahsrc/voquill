@@ -40,7 +40,7 @@ describe("stt provider", () => {
           url: "https://api.speaches.com/v1",
           apiKey: "sk-test-key-1234567890abcdef",
           model: "whisper-1",
-          isEnabled: true,
+          tier: 1,
         },
       },
       adminToken,
@@ -52,7 +52,7 @@ describe("stt provider", () => {
     expect(data.providers[0].name).toBe("Production Speaches");
     expect(data.providers[0].url).toBe("https://api.speaches.com/v1");
     expect(data.providers[0].model).toBe("whisper-1");
-    expect(data.providers[0].isEnabled).toBe(true);
+    expect(data.providers[0].tier).toBe(1);
     expect(data.providers[0].apiKeySuffix).toBe("cdef");
     createdId = data.providers[0].id;
   });
@@ -76,7 +76,7 @@ describe("stt provider", () => {
           url: "https://api.speaches.com/v2",
           apiKey: "sk-new-key-abcdefghijklmnop",
           model: "whisper-2",
-          isEnabled: false,
+          tier: 0,
         },
       },
       adminToken,
@@ -87,7 +87,7 @@ describe("stt provider", () => {
     expect(data.providers[0].name).toBe("Updated Speaches");
     expect(data.providers[0].url).toBe("https://api.speaches.com/v2");
     expect(data.providers[0].model).toBe("whisper-2");
-    expect(data.providers[0].isEnabled).toBe(false);
+    expect(data.providers[0].tier).toBe(0);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
@@ -101,7 +101,7 @@ describe("stt provider", () => {
           name: "No Key Change",
           url: "https://api.speaches.com/v3",
           model: "whisper-3",
-          isEnabled: true,
+          tier: 1,
         },
       },
       adminToken,
@@ -112,7 +112,7 @@ describe("stt provider", () => {
     expect(data.providers[0].name).toBe("No Key Change");
     expect(data.providers[0].url).toBe("https://api.speaches.com/v3");
     expect(data.providers[0].model).toBe("whisper-3");
-    expect(data.providers[0].isEnabled).toBe(true);
+    expect(data.providers[0].tier).toBe(1);
     expect(data.providers[0].apiKeySuffix).toBe("mnop");
   });
 
@@ -127,7 +127,7 @@ describe("stt provider", () => {
           url: "https://api.speaches.com/v4",
           apiKey: "",
           model: "whisper-4",
-          isEnabled: false,
+          tier: 0,
         },
       },
       adminToken,
@@ -149,7 +149,7 @@ describe("stt provider", () => {
           name: "No Key Provider",
           url: "https://api.speaches.com/v5",
           model: "whisper-5",
-          isEnabled: true,
+          tier: 1,
         },
       },
       adminToken,
@@ -194,7 +194,7 @@ describe("stt provider", () => {
             url: "https://example.com",
             apiKey: "sk-test",
             model: "whisper-1",
-            isEnabled: true,
+            tier: 1,
           },
         },
         userToken,

@@ -37,6 +37,11 @@ extern "C" {
         attribute: CFStringRef,
         value: CFTypeRef,
     ) -> AXError;
+    fn AXUIElementIsAttributeSettable(
+        element: AXUIElementRef,
+        attribute: CFStringRef,
+        settable: *mut bool,
+    ) -> AXError;
     fn AXValueGetValue(value: CFTypeRef, value_type: i32, out: *mut CFRange) -> bool;
     fn AXValueCreate(value_type: i32, value: *const CFRange) -> CFTypeRef;
 }
@@ -680,6 +685,80 @@ unsafe fn gather_screen_context(element: CFTypeRef, depth: usize) -> String {
     }
 
     texts.join("\n")
+}
+
+pub fn insert_text_at_cursor(text: &str) -> Result<(), String> {
+    let text = text.to_string();
+    catch_unwind(AssertUnwindSafe(move || unsafe {
+        insert_text_at_cursor_impl(&text)
+    }))
+    .unwrap_or_else(|_| Err("accessibility insert panicked".to_string()))
+}
+
+unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
+    let ax_focused_ui_element = CFString::new("AXFocusedUIElement");
+    let ax_selected_text = CFString::new("AXSelectedText");
+    let ax_value = CFString::new("AXValue");
+
+    let system_wide = AXUIElementCreateSystemWide();
+    if system_wide.is_null() {
+        return Err("failed to get system-wide AX element".to_string());
+    }
+
+    let mut focused_element: CFTypeRef = ptr::null();
+    let result = AXUIElementCopyAttributeValue(
+        system_wide,
+        ax_focused_ui_element.as_concrete_TypeRef(),
+        &mut focused_element,
+    );
+
+    CFRelease(system_wide);
+
+    if result != AX_ERROR_SUCCESS || focused_element.is_null() {
+        return Err("no focused element".to_string());
+    }
+
+    // Check if the focused element actually supports setting AXSelectedText
+    let mut settable = false;
+    let settable_result = AXUIElementIsAttributeSettable(
+        focused_element,
+        ax_selected_text.as_concrete_TypeRef(),
+        &mut settable,
+    );
+
+    if settable_result != AX_ERROR_SUCCESS || !settable {
+        CFRelease(focused_element);
+        return Err("AXSelectedText is not settable on focused element".to_string());
+    }
+
+    // Snapshot the field value before inserting so we can verify
+    let value_before = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
+
+    let cf_text = CFString::new(text);
+    let set_result = AXUIElementSetAttributeValue(
+        focused_element,
+        ax_selected_text.as_concrete_TypeRef(),
+        cf_text.as_CFTypeRef(),
+    );
+
+    if set_result != AX_ERROR_SUCCESS {
+        CFRelease(focused_element);
+        return Err(format!(
+            "AXUIElementSetAttributeValue failed: {set_result}"
+        ));
+    }
+
+    // Verify: if we can read the value and it didn't change, the insert silently failed
+    let value_after = get_string_attribute(focused_element, ax_value.as_concrete_TypeRef());
+    CFRelease(focused_element);
+
+    if let (Some(before), Some(after)) = (&value_before, &value_after) {
+        if before == after {
+            return Err("AXSelectedText accepted but field value unchanged".to_string());
+        }
+    }
+
+    Ok(())
 }
 
 pub fn get_selected_text() -> Option<String> {

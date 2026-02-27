@@ -27,14 +27,14 @@ const useMode = () => {
 };
 
 type LoginFormProps = {
-  hideGoogleButton?: boolean;
   hideModeSwitch?: boolean;
+  hideOidcProviders?: boolean;
   defaultMode?: LoginMode;
 };
 
 export const LoginForm = ({
-  hideGoogleButton = false,
   hideModeSwitch = false,
+  hideOidcProviders = false,
   defaultMode,
 }: LoginFormProps) => {
   const mode = useMode();
@@ -79,12 +79,15 @@ export const LoginForm = ({
       <TransitionGroup>
         {mode === "signIn" && (
           <Collapse key="signIn" timeout={400} unmountOnExit>
-            <SignInForm hideGoogleButton={hideGoogleButton} />
+            <SignInForm hideOidcProviders={hideOidcProviders} />
           </Collapse>
         )}
         {mode === "signUp" && (
           <Collapse key="signUp" timeout={400} unmountOnExit>
-            <SignUpForm hideGoogleButton={hideGoogleButton} hideModeSwitch={hideModeSwitch} />
+            <SignUpForm
+              hideModeSwitch={hideModeSwitch}
+              hideOidcProviders={hideOidcProviders}
+            />
           </Collapse>
         )}
         {mode === "resetPassword" && (

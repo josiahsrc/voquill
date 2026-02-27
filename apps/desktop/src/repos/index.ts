@@ -3,7 +3,9 @@ import { Nullable } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
+import { getLogger } from "../utils/log.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
+import { buildOpenAICompatibleUrl } from "../utils/openai-compatible.utils";
 import {
   GenerativePrefs,
   getAgentModePrefs,
@@ -28,7 +30,9 @@ import {
   EnterpriseGenerateTextRepo,
   GeminiGenerateTextRepo,
   GroqGenerateTextRepo,
+  NewServerGenerateTextRepo,
   OllamaGenerateTextRepo,
+  OpenAICompatibleGenerateTextRepo,
   OpenAIGenerateTextRepo,
   OpenRouterGenerateTextRepo,
 } from "./generate-text.repo";
@@ -60,11 +64,12 @@ import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
-  CloudTranscribeAudioRepo,
   EnterpriseTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
+  NewServerTranscribeAudioRepo,
+  OpenAICompatibleTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
   SpeachesTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
@@ -157,17 +162,26 @@ export type GenerateTextRepoOutput = {
 const getGenTextRepoInternal = ({
   prefs,
   cloudModel,
+  useNewBackend = true,
 }: {
   prefs: GenerativePrefs;
   cloudModel: CloudModel;
+  useNewBackend?: boolean;
 }): GenerateTextRepoOutput => {
   const state = getAppState();
 
   if (prefs.mode === "cloud") {
+    getLogger().verbose("Using cloud generate text repo with model");
+    let repo: BaseGenerateTextRepo;
+    if (getIsEnterpriseEnabled()) {
+      repo = new EnterpriseGenerateTextRepo(cloudModel);
+    } else if (useNewBackend) {
+      repo = new NewServerGenerateTextRepo();
+    } else {
+      repo = new CloudGenerateTextRepo(cloudModel);
+    }
     return {
-      repo: getIsEnterpriseEnabled()
-        ? new EnterpriseGenerateTextRepo()
-        : new CloudGenerateTextRepo(cloudModel),
+      repo,
       apiKeyId: null,
       warnings: prefs.warnings,
     };
@@ -180,22 +194,50 @@ const getGenTextRepoInternal = ({
       const baseUrl = apiKeyRecord?.baseUrl || OLLAMA_DEFAULT_URL;
       const model = prefs.postProcessingModel;
       const ollamaApiKey = apiKeyRecord?.keyFull || undefined;
+      getLogger().verbose(
+        `Configuring Ollama repo with baseUrl=${baseUrl} and model=${model}`,
+      );
       if (model) {
         repo = new OllamaGenerateTextRepo(`${baseUrl}/v1`, model, ollamaApiKey);
       } else {
         prefs.warnings.push("No model configured for Ollama post-processing.");
+      }
+    } else if (prefs.provider === "openai-compatible") {
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl;
+      const model = prefs.postProcessingModel;
+      const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      const includeV1Path = apiKeyRecord?.includeV1Path;
+      const fullUrl = buildOpenAICompatibleUrl(baseUrl, includeV1Path);
+      getLogger().verbose(
+        `Configuring OpenAI Compatible repo with baseUrl=${fullUrl} and model=${model}`,
+      );
+      if (model) {
+        repo = new OpenAICompatibleGenerateTextRepo(
+          fullUrl,
+          model,
+          providerApiKey,
+        );
+      } else {
+        prefs.warnings.push(
+          "No model configured for OpenAI Compatible post-processing.",
+        );
       }
     } else if (prefs.provider === "openrouter") {
       // Get OpenRouter-specific config from the API key
       const apiKey = getRec(state.apiKeyById, prefs.apiKeyId);
       const config = apiKey?.openRouterConfig;
       const providerRouting = config?.providerRouting ?? undefined;
+      getLogger().verbose(
+        `Configuring OpenRouter repo with providerRouting=${providerRouting}`,
+      );
       repo = new OpenRouterGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
         providerRouting,
       );
     } else if (prefs.provider === "openai") {
+      getLogger().verbose("Configuring OpenAI repo for generate text");
       repo = new OpenAIGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
@@ -207,27 +249,34 @@ const getGenTextRepoInternal = ({
       if (!endpoint) {
         prefs.warnings.push("No endpoint configured for Azure OpenAI.");
       }
+      getLogger().verbose(
+        `Configuring Azure OpenAI repo with endpoint=${endpoint} and deployment=${deploymentName}`,
+      );
       repo = new AzureOpenAIGenerateTextRepo(
         prefs.apiKeyValue,
         endpoint,
         deploymentName,
       );
     } else if (prefs.provider === "deepseek") {
+      getLogger().verbose("Configuring Deepseek repo for generate text");
       repo = new DeepseekGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
     } else if (prefs.provider === "gemini") {
+      getLogger().verbose("Configuring Gemini repo for generate text");
       repo = new GeminiGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
     } else if (prefs.provider === "claude") {
+      getLogger().verbose("Configuring Claude repo for generate text");
       repo = new ClaudeGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
       );
     } else {
+      getLogger().verbose("Configuring Groq repo for generate text");
       repo = new GroqGenerateTextRepo(
         prefs.apiKeyValue,
         prefs.postProcessingModel,
@@ -253,7 +302,15 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
 export const getAgentRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getAgentModePrefs(state);
-  return getGenTextRepoInternal({ prefs, cloudModel: "large" });
+  if (prefs.mode === "openclaw") {
+    throw new Error("OpenClaw provides its own LLM processor");
+  }
+
+  return getGenTextRepoInternal({
+    prefs,
+    cloudModel: "large",
+    useNewBackend: false,
+  });
 };
 
 export type TranscribeAudioRepoOutput = {
@@ -266,10 +323,14 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
   const prefs = getTranscriptionPrefs(getAppState());
 
   if (prefs.mode === "cloud") {
+    let repo: BaseTranscribeAudioRepo;
+    if (getIsEnterpriseEnabled()) {
+      repo = new EnterpriseTranscribeAudioRepo();
+    } else {
+      repo = new NewServerTranscribeAudioRepo();
+    }
     return {
-      repo: getIsEnterpriseEnabled()
-        ? new EnterpriseTranscribeAudioRepo()
-        : new CloudTranscribeAudioRepo(),
+      repo,
       apiKeyId: null,
       warnings: prefs.warnings,
     };
@@ -292,6 +353,19 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       repo = new GeminiTranscribeAudioRepo(
         prefs.apiKeyValue,
         prefs.transcriptionModel,
+      );
+    } else if (prefs.provider === "openai-compatible") {
+      const state = getAppState();
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl;
+      const model = prefs.transcriptionModel || "whisper-1";
+      const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      const includeV1Path = apiKeyRecord?.includeV1Path;
+      const fullUrl = buildOpenAICompatibleUrl(baseUrl, includeV1Path);
+      repo = new OpenAICompatibleTranscribeAudioRepo(
+        fullUrl,
+        model,
+        providerApiKey,
       );
     } else if (prefs.provider === "speaches") {
       const state = getAppState();

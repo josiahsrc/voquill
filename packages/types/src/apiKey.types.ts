@@ -10,6 +10,7 @@ export const API_KEY_PROVIDERS = [
   "deepgram",
   "openrouter",
   "ollama",
+  "openai-compatible",
   "azure",
   "deepseek",
   "gemini",
@@ -30,4 +31,5 @@ export type ApiKey = {
   openRouterConfig?: Nullable<OpenRouterConfig>;
   baseUrl?: string | null;
   azureRegion?: string | null;
+  includeV1Path?: boolean | null;
 };

@@ -1,9 +1,10 @@
 import {
   EnterpriseConfigZod,
   FullConfig,
-  Member,
-  type EnterpriseLicense,
   LlmProviderInputZod,
+  Member,
+  METRICS_RANGES,
+  OidcProviderInputZod,
   SttProviderInputZod,
   Term,
   TermZod,
@@ -13,10 +14,19 @@ import {
   type Auth,
   type EmptyObject,
   type EnterpriseConfig,
+  type EnterpriseLicense,
+  type FlaggedAudio,
   type JsonResponse,
   type LlmProvider,
   type LlmProviderInput,
+  type MetricsDaily,
+  type MetricsPerProvider,
+  type MetricsPerUser,
+  type MetricsRange,
+  type MetricsSummary,
   type Nullable,
+  type OidcProvider,
+  type OidcProviderInput,
   type SttProvider,
   type SttProviderInput,
   type User,
@@ -24,7 +34,7 @@ import {
 } from "@repo/types";
 import { z } from "zod";
 
-export const CLOUD_MODELS = ["medium", "large"] as const;
+export const CLOUD_MODELS = ["low", "medium", "large"] as const;
 export type CloudModel = (typeof CLOUD_MODELS)[number];
 export const CloudModelZod = z.enum(CLOUD_MODELS);
 
@@ -72,6 +82,21 @@ type HandlerDefinitions = {
       isAdmin: boolean;
     };
     output: EmptyObject;
+  };
+  "auth/createApiToken": {
+    input: EmptyObject;
+    output: {
+      apiToken: string;
+      apiRefreshToken: string;
+    };
+  };
+  "auth/refreshApiToken": {
+    input: {
+      apiRefreshToken: string;
+    };
+    output: {
+      apiToken: string;
+    };
   };
   "auth/deleteUser": {
     input: {
@@ -181,6 +206,14 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
 
+  // flagged audio
+  "flaggedAudio/upsert": {
+    input: {
+      flaggedAudio: FlaggedAudio;
+    };
+    output: EmptyObject;
+  };
+
   // member
   "member/tryInitialize": {
     input: EmptyObject;
@@ -232,12 +265,24 @@ type HandlerDefinitions = {
       user: Nullable<User>;
     };
   };
-
   "user/listAllUsers": {
     input: EmptyObject;
     output: {
       users: UserWithAuth[];
     };
+  };
+  "user/incrementWordCount": {
+    input: {
+      wordCount: number;
+      timezone?: Nullable<string>;
+    };
+    output: EmptyObject;
+  };
+  "user/trackStreak": {
+    input: {
+      timezone?: Nullable<string>;
+    };
+    output: EmptyObject;
   };
 
   // stripe
@@ -351,11 +396,48 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
 
+  // oidc providers
+  "oidcProvider/list": {
+    input: EmptyObject;
+    output: {
+      providers: OidcProvider[];
+    };
+  };
+  "oidcProvider/upsert": {
+    input: {
+      provider: OidcProviderInput;
+    };
+    output: EmptyObject;
+  };
+  "oidcProvider/delete": {
+    input: {
+      providerId: string;
+    };
+    output: EmptyObject;
+  };
+  "oidcProvider/listEnabled": {
+    input: EmptyObject;
+    output: {
+      providers: OidcProvider[];
+    };
+  };
+
   // config
   "config/getFullConfig": {
     input: EmptyObject;
     output: {
       config: FullConfig;
+    };
+  };
+
+  // metrics
+  "metrics/getSummary": {
+    input: { range: MetricsRange };
+    output: {
+      summary: MetricsSummary;
+      daily: MetricsDaily[];
+      perUser: MetricsPerUser[];
+      perProvider: MetricsPerProvider[];
     };
   };
 };
@@ -382,7 +464,7 @@ export const JsonResponseZod = z
 
 export const AiTranscribeAudioInputZod = z
   .object({
-    prompt: z.string().max(20_000).nullable().optional(),
+    prompt: z.string().nullable().optional(),
     audioBase64: z.string().min(1),
     audioMimeType: z.string().min(1),
     simulate: z.boolean().nullable().optional(),
@@ -392,8 +474,8 @@ export const AiTranscribeAudioInputZod = z
 
 export const AiGenerateTextInputZod = z
   .object({
-    system: z.string().max(3_000).nullable().optional(),
-    prompt: z.string().max(25_000),
+    system: z.string().nullable().optional(),
+    prompt: z.string(),
     simulate: z.boolean().nullable().optional(),
     jsonResponse: JsonResponseZod.nullable().optional(),
     model: CloudModelZod.nullable().optional(),
@@ -417,6 +499,19 @@ export const SetMyUserInputZod = z
     value: UserZod,
   })
   .strict() satisfies z.ZodType<HandlerInput<"user/setMyUser">>;
+
+export const IncrementWordCountInputZod = z
+  .object({
+    wordCount: z.number().int(),
+    timezone: z.string().min(1).nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/incrementWordCount">>;
+
+export const TrackStreakInputZod = z
+  .object({
+    timezone: z.string().min(1).nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/trackStreak">>;
 
 export const UpsertTermInputZod = z
   .object({
@@ -523,3 +618,50 @@ export const UpsertEnterpriseConfigInputZod = z
     config: EnterpriseConfigZod,
   })
   .strict() satisfies z.ZodType<HandlerInput<"enterprise/upsertConfig">>;
+
+export const UpsertOidcProviderInputZod = z
+  .object({
+    provider: OidcProviderInputZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/upsert">>;
+
+export const DeleteOidcProviderInputZod = z
+  .object({
+    providerId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/delete">>;
+
+export const RefreshApiTokenInputZod = z
+  .object({
+    apiRefreshToken: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;
+
+export const FlaggedAudioZod = z
+  .object({
+    id: z.string().min(1),
+    filePath: z.string().min(1),
+    feedback: z.string().min(1),
+    transcriptionPrompt: z.string().nullable(),
+    postProcessingPrompt: z.string().nullable(),
+    rawTranscription: z.string().min(1),
+    postProcessedTranscription: z.string().nullable(),
+    transcriptionProvider: z.string().min(1),
+    postProcessingProvider: z.string().nullable(),
+    sampleRate: z.number().int().positive().nullable(),
+  })
+  .strict() satisfies z.ZodType<FlaggedAudio>;
+
+export const UpsertFlaggedAudioInputZod = z
+  .object({
+    flaggedAudio: FlaggedAudioZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"flaggedAudio/upsert">>;
+
+export const MetricsRangeZod = z.enum(METRICS_RANGES);
+
+export const GetMetricsSummaryInputZod = z
+  .object({
+    range: MetricsRangeZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"metrics/getSummary">>;

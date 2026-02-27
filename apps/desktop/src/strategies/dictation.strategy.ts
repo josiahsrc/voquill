@@ -14,6 +14,7 @@ import type {
   HandleTranscriptResult,
   StrategyValidationError,
 } from "../types/strategy.types";
+import { getLogger } from "../utils/log.utils";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
 import {
   applyReplacements,
@@ -57,8 +58,9 @@ export class DictationStrategy extends BaseStrategy {
 
   async handleTranscript({
     rawTranscript,
+    processedTranscript,
+    sessionPostProcessMetadata,
     toneId,
-    a11yInfo,
     currentApp,
     loadingToken,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
@@ -86,21 +88,32 @@ export class DictationStrategy extends BaseStrategy {
           destinationValue: term.destinationValue,
         }));
 
+      getLogger().verbose(
+        `Applying ${replacementRules.length} replacement rules`,
+      );
       const afterReplacements = applyReplacements(
         rawTranscript,
         replacementRules,
       );
       sanitizedTranscript = applySymbolConversions(afterReplacements);
 
-      const result = await postProcessTranscript({
-        rawTranscript: sanitizedTranscript,
-        toneId,
-        a11yInfo,
-      });
+      if (processedTranscript && sessionPostProcessMetadata) {
+        const afterProcessedReplacements = applyReplacements(
+          processedTranscript,
+          replacementRules,
+        );
+        transcript = applySymbolConversions(afterProcessedReplacements);
+        postProcessMetadata = sessionPostProcessMetadata;
+      } else {
+        const result = await postProcessTranscript({
+          rawTranscript: sanitizedTranscript,
+          toneId,
+        });
 
-      transcript = result.transcript;
-      postProcessMetadata = result.metadata;
-      postProcessWarnings = result.warnings;
+        transcript = result.transcript;
+        postProcessMetadata = result.metadata;
+        postProcessWarnings = result.warnings;
+      }
 
       await resetPhase();
 
@@ -108,14 +121,22 @@ export class DictationStrategy extends BaseStrategy {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
           const keybind = currentApp?.pasteKeybind ?? null;
-          await invoke<void>("paste", { text: transcript, keybind });
+          getLogger().verbose(
+            `Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`,
+          );
+
+          // Add a space to the end so you don't have to press space before your next dictation
+          const textToPaste = transcript.trim() + " ";
+          await invoke<void>("paste", { text: textToPaste, keybind });
+
+          getLogger().info("Transcript pasted successfully");
         } catch (error) {
-          console.error("Failed to paste transcription", error);
+          getLogger().error(`Failed to paste transcription: ${error}`);
           showErrorSnackbar("Unable to paste transcription.");
         }
       }
     } catch (error) {
-      console.error("Failed to process transcription", error);
+      getLogger().error(`Failed to process transcription: ${error}`);
 
       const errorMessage =
         error instanceof Error ? error.message : "An error occurred.";

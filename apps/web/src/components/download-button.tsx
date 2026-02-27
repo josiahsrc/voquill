@@ -110,7 +110,7 @@ export function DownloadButton({
   };
 
   return (
-    <a href={downloadHref} className={classes} onClick={handleClick}>
+    <a href={downloadHref} className={classes} onClick={handleClick} rel="noopener noreferrer">
       <Icon className={styles.buttonIcon} size={BUTTON_ICON_SIZE} />
       <span>{buttonLabel}</span>
     </a>

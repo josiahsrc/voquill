@@ -27,12 +27,15 @@ describe("enterprise config", () => {
     );
   });
 
-  it("returns defaults (both false)", async () => {
+  it("returns defaults", async () => {
     const data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowPostProcessing).toBe(true);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
-    expect(data.config.stylingMode).toBe("app");
+    expect(data.config.allowEmailSignIn).toBe(true);
+    expect(data.config.allowDevTools).toBe(false);
+    expect(data.config.stylingMode).toBe("manual");
   });
 
   it("returns license from license key", async () => {
@@ -50,9 +53,12 @@ describe("enterprise config", () => {
       "enterprise/upsertConfig",
       {
         config: {
+          allowPostProcessing: true,
           allowChangePostProcessing: true,
           allowChangeTranscriptionMethod: true,
           allowChangeAgentMode: true,
+          allowEmailSignIn: false,
+          allowDevTools: true,
           stylingMode: "manual",
         },
       },
@@ -60,9 +66,12 @@ describe("enterprise config", () => {
     );
 
     const data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowPostProcessing).toBe(true);
     expect(data.config.allowChangePostProcessing).toBe(true);
     expect(data.config.allowChangeTranscriptionMethod).toBe(true);
     expect(data.config.allowChangeAgentMode).toBe(true);
+    expect(data.config.allowEmailSignIn).toBe(false);
+    expect(data.config.allowDevTools).toBe(true);
     expect(data.config.stylingMode).toBe("manual");
   });
 
@@ -71,9 +80,12 @@ describe("enterprise config", () => {
       "enterprise/upsertConfig",
       {
         config: {
+          allowPostProcessing: false,
           allowChangePostProcessing: false,
           allowChangeTranscriptionMethod: false,
           allowChangeAgentMode: false,
+          allowEmailSignIn: true,
+          allowDevTools: false,
           stylingMode: "app",
         },
       },
@@ -81,10 +93,48 @@ describe("enterprise config", () => {
     );
 
     const data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowPostProcessing).toBe(false);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
     expect(data.config.allowChangeAgentMode).toBe(false);
+    expect(data.config.allowEmailSignIn).toBe(true);
+    expect(data.config.allowDevTools).toBe(false);
     expect(data.config.stylingMode).toBe("app");
+  });
+
+  it("allowDevTools toggles independently", async () => {
+    await invoke(
+      "enterprise/upsertConfig",
+      {
+        config: {
+          allowPostProcessing: true,
+          allowChangePostProcessing: false,
+          allowChangeTranscriptionMethod: false,
+          allowChangeAgentMode: false,
+          allowEmailSignIn: true,
+          allowDevTools: true,
+          stylingMode: "manual",
+        },
+      },
+      adminToken,
+    );
+
+    let data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowDevTools).toBe(true);
+
+    await invoke(
+      "enterprise/upsertConfig",
+      {
+        config: {
+          ...data.config,
+          allowDevTools: false,
+        },
+      },
+      adminToken,
+    );
+
+    data = await invoke("enterprise/getConfig", {}, userToken);
+    expect(data.config.allowDevTools).toBe(false);
   });
 
   it("upsert requires admin", async () => {
@@ -93,9 +143,12 @@ describe("enterprise config", () => {
         "enterprise/upsertConfig",
         {
           config: {
+            allowPostProcessing: true,
             allowChangePostProcessing: true,
             allowChangeTranscriptionMethod: true,
             allowChangeAgentMode: true,
+            allowEmailSignIn: true,
+            allowDevTools: false,
             stylingMode: "manual",
           },
         },

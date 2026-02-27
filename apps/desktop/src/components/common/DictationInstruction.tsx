@@ -49,12 +49,12 @@ export const DictationInstruction = () => {
     <Typography variant="body2" color="text.secondary" component="div">
       {combos.length === 1 ? (
         <FormattedMessage
-          defaultMessage="Press {hotkeys} to start dictating."
+          defaultMessage="Press {hotkeys} to dictate anywhere."
           values={{ hotkeys }}
         />
       ) : (
         <FormattedMessage
-          defaultMessage="Press one of {hotkeys} to start dictating."
+          defaultMessage="Press one of {hotkeys} to dictate anywhere."
           values={{ hotkeys }}
         />
       )}

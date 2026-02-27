@@ -1,4 +1,4 @@
-import { ArrowForward, Email, Google } from "@mui/icons-material";
+import { ArrowForward, Email } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { signOut, submitSignInWithGoogle } from "../../actions/login.actions";
+import { signOut } from "../../actions/login.actions";
 import {
   goToOnboardingPage,
   setAwaitingSignInNavigation,
@@ -18,8 +18,10 @@ import {
 } from "../../actions/onboarding.actions";
 import { useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
+import { getShouldShowEmailForm } from "../../utils/login.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { LoginForm } from "../login/LoginForm";
+import { OidcProviders } from "../login/OidcProviders";
 import { TermsNotice } from "../login/TermsNotice";
 import {
   BackButton,
@@ -38,6 +40,7 @@ export const SignInForm = () => {
     (state) => state.onboarding.awaitingSignInNavigation,
   );
   const isSignedIn = Boolean(auth);
+  const showEmailButton = useAppStore((state) => getShouldShowEmailForm(state));
 
   useEffect(() => {
     if (isSignedIn && awaitingSignInNavigation) {
@@ -63,12 +66,6 @@ export const SignInForm = () => {
   const handleCancelLocalSetup = () => {
     trackButtonClick("onboarding_cancel_local_setup");
     setConfirmLocalSetupOpen(false);
-  };
-
-  const handleContinueWithGoogle = () => {
-    trackButtonClick("onboarding_continue_with_google");
-    setAwaitingSignInNavigation(true);
-    submitSignInWithGoogle();
   };
 
   const handleOpenEmailDialog = () => {
@@ -159,27 +156,25 @@ export const SignInForm = () => {
           <FormattedMessage defaultMessage="Create your account" />
         </Typography>
 
-        {!isEnterprise && (
+        <OidcProviders
+          variant="contained"
+          onBeforeSignIn={() => {
+            trackButtonClick("onboarding_continue_with_provider");
+            setAwaitingSignInNavigation(true);
+          }}
+        />
+
+        {showEmailButton && (
           <Button
             fullWidth
-            variant="contained"
-            startIcon={<Google />}
-            onClick={handleContinueWithGoogle}
+            variant="outlined"
+            startIcon={<Email />}
+            onClick={handleOpenEmailDialog}
             disabled={loginStatus === "loading"}
           >
-            <FormattedMessage defaultMessage="Continue with Google" />
+            <FormattedMessage defaultMessage="Sign up with email" />
           </Button>
         )}
-
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<Email />}
-          onClick={handleOpenEmailDialog}
-          disabled={loginStatus === "loading"}
-        >
-          <FormattedMessage defaultMessage="Sign up with email" />
-        </Button>
 
         <TermsNotice align="left" />
       </Stack>
@@ -191,7 +186,7 @@ export const SignInForm = () => {
         fullWidth
       >
         <DialogContent>
-          <LoginForm hideGoogleButton hideModeSwitch defaultMode="signUp" />
+          <LoginForm hideModeSwitch hideOidcProviders defaultMode="signUp" />
         </DialogContent>
       </Dialog>
 

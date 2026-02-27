@@ -1,7 +1,7 @@
 name: app
 description: "A new Flutter project."
 publish_to: "none"
-version: 1.0.6+7
+version: 1.3.1+19
 
 environment:
   sdk: ^3.10.3
@@ -32,8 +32,18 @@ dependencies:
   firebase_core: ^4.4.0
   firebase_auth: ^6.1.4
   cloud_functions: ^6.0.6
+  google_sign_in: ^6.2.2
   flutter_svg: ^2.0.17
   url_launcher: ^6.3.1
+  shared_preferences: ^2.5.4
+  permission_handler: ^12.0.1
+  flutter_video_looper:
+    path: ../packages/flutter_video_looper
+  rive: ^0.14.2
+  purchases_flutter: ^8.10.0
+  purchases_ui_flutter: ^8.0.0
+  flutter_dotenv: ^6.0.0
+  mixpanel_flutter: ^2.5.0
 
 dev_dependencies:
   flutter_test:
@@ -42,8 +52,10 @@ dev_dependencies:
   draft_builder: ^0.0.12
   build_runner: ^2.7.1
   json_serializable: ^6.11.2
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
+    - .env
     - assets/

@@ -1,3 +1,5 @@
+import 'package:app/actions/onboarding_actions.dart';
+import 'package:app/store/store.dart';
 import 'package:app/widgets/common/declarative_text_field.dart';
 import 'package:app/widgets/common/multi_page_presenter.dart';
 import 'package:app/widgets/onboarding/microphone_access_form.dart';
@@ -10,6 +12,7 @@ class AboutYouForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final presenter = context.presenter();
+    final state = useAppStore().select(context, (s) => s.onboarding);
 
     return OnboardingFormLayout(
       backButton: const MultiPageBackButton(),
@@ -28,8 +31,8 @@ class AboutYouForm extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DeclarativeTextField(
-              value: '',
-              onChanged: (v) {},
+              value: state.name,
+              onChanged: setOnboardingName,
               decoration: const InputDecoration(
                 labelText: 'Name',
                 hintText: 'Enter your name',
@@ -37,8 +40,8 @@ class AboutYouForm extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             DeclarativeTextField(
-              value: '',
-              onChanged: (v) {},
+              value: state.title,
+              onChanged: setOnboardingTitle,
               decoration: const InputDecoration(
                 labelText: 'Title',
                 hintText: 'e.g. Software Engineer',
@@ -46,8 +49,8 @@ class AboutYouForm extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             DeclarativeTextField(
-              value: '',
-              onChanged: (v) {},
+              value: state.company,
+              onChanged: setOnboardingCompany,
               decoration: const InputDecoration(
                 labelText: 'Company',
                 hintText: 'e.g. Acme Inc.',

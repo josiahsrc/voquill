@@ -191,6 +191,24 @@ export type OpenAITestIntegrationArgs = {
   apiKey: string;
 };
 
+export type OpenAICompatibleTestIntegrationArgs = {
+  baseUrl: string;
+  apiKey?: string;
+};
+
+export const openaiCompatibleTestIntegration = async ({
+  baseUrl,
+  apiKey,
+}: OpenAICompatibleTestIntegrationArgs): Promise<boolean> => {
+  const client = createClient(apiKey || "dummy", baseUrl);
+
+  // Test connectivity by listing models
+  const response = await client.models.list();
+  
+  // If we get here, the connection is successful
+  return true;
+};
+
 export const openaiTestIntegration = async ({
   apiKey,
 }: OpenAITestIntegrationArgs): Promise<boolean> => {

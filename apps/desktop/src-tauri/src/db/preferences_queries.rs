@@ -1,6 +1,27 @@
 use sqlx::{Row, SqlitePool};
 
 use crate::domain::UserPreferences;
+const SEP: &str = "::";
+
+fn serialize_additional_languages(
+    languages: &Option<Vec<String>>,
+) -> Option<String> {
+    languages.as_ref().map(|languages|
+        languages.join(&SEP.to_string())
+    )
+}
+
+fn deserialize_additional_languages(
+    value: Option<String>,
+) -> Option<Vec<String>> {
+    value.map(|v| {
+        if v.is_empty() {
+            Vec::new()
+        } else {
+            v.split(SEP).map(|s| s.to_owned()).collect()
+        }
+    })
+}
 
 pub async fn upsert_user_preferences(
     pool: SqlitePool,
@@ -19,6 +40,8 @@ pub async fn upsert_user_preferences(
              post_processing_ollama_model,
              agent_mode,
              agent_mode_api_key_id,
+             openclaw_gateway_url,
+             openclaw_token,
              active_tone_id,
              got_started_at,
              gpu_enumeration_enabled,
@@ -28,13 +51,15 @@ pub async fn upsert_user_preferences(
              language_switch_enabled,
              secondary_dictation_language,
              active_dictation_language,
+             additional_dictation_languages,
              preferred_microphone,
              ignore_update_dialog,
              incognito_mode_enabled,
              incognito_mode_include_in_stats,
-             dictation_pill_visibility
+             dictation_pill_visibility,
+             use_new_backend
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -46,6 +71,8 @@ pub async fn upsert_user_preferences(
             post_processing_ollama_model = excluded.post_processing_ollama_model,
             agent_mode = excluded.agent_mode,
             agent_mode_api_key_id = excluded.agent_mode_api_key_id,
+            openclaw_gateway_url = excluded.openclaw_gateway_url,
+            openclaw_token = excluded.openclaw_token,
             active_tone_id = excluded.active_tone_id,
             got_started_at = excluded.got_started_at,
             gpu_enumeration_enabled = excluded.gpu_enumeration_enabled,
@@ -55,11 +82,13 @@ pub async fn upsert_user_preferences(
             language_switch_enabled = excluded.language_switch_enabled,
             secondary_dictation_language = excluded.secondary_dictation_language,
             active_dictation_language = excluded.active_dictation_language,
+            additional_dictation_languages = excluded.additional_dictation_languages,
             preferred_microphone = excluded.preferred_microphone,
             ignore_update_dialog = excluded.ignore_update_dialog,
             incognito_mode_enabled = excluded.incognito_mode_enabled,
             incognito_mode_include_in_stats = excluded.incognito_mode_include_in_stats,
-            dictation_pill_visibility = excluded.dictation_pill_visibility",
+            dictation_pill_visibility = excluded.dictation_pill_visibility,
+            use_new_backend = excluded.use_new_backend",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -72,6 +101,8 @@ pub async fn upsert_user_preferences(
     .bind(&preferences.post_processing_ollama_model)
     .bind(&preferences.agent_mode)
     .bind(&preferences.agent_mode_api_key_id)
+    .bind(&preferences.openclaw_gateway_url)
+    .bind(&preferences.openclaw_token)
     .bind(&preferences.active_tone_id)
     .bind(&preferences.got_started_at)
     .bind(preferences.gpu_enumeration_enabled)
@@ -81,11 +112,13 @@ pub async fn upsert_user_preferences(
     .bind(preferences.language_switch_enabled)
     .bind(&preferences.secondary_dictation_language)
     .bind(&preferences.active_dictation_language)
+    .bind(serialize_additional_languages(&preferences.additional_dictation_languages))
     .bind(&preferences.preferred_microphone)
     .bind(preferences.ignore_update_dialog)
     .bind(preferences.incognito_mode_enabled)
     .bind(preferences.incognito_mode_include_in_stats)
     .bind(&preferences.dictation_pill_visibility)
+    .bind(preferences.use_new_backend)
     .execute(&pool)
     .await?;
 
@@ -109,6 +142,8 @@ pub async fn fetch_user_preferences(
             post_processing_ollama_model,
             agent_mode,
             agent_mode_api_key_id,
+            openclaw_gateway_url,
+            openclaw_token,
             active_tone_id,
             got_started_at,
             gpu_enumeration_enabled,
@@ -118,11 +153,13 @@ pub async fn fetch_user_preferences(
             language_switch_enabled,
             secondary_dictation_language,
             active_dictation_language,
+            additional_dictation_languages,
             preferred_microphone,
             ignore_update_dialog,
             incognito_mode_enabled,
             incognito_mode_include_in_stats,
-            dictation_pill_visibility
+            dictation_pill_visibility,
+            use_new_backend
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -163,6 +200,12 @@ pub async fn fetch_user_preferences(
         agent_mode_api_key_id: row
             .try_get::<Option<String>, _>("agent_mode_api_key_id")
             .unwrap_or(None),
+        openclaw_gateway_url: row
+            .try_get::<Option<String>, _>("openclaw_gateway_url")
+            .unwrap_or(None),
+        openclaw_token: row
+            .try_get::<Option<String>, _>("openclaw_token")
+            .unwrap_or(None),
         active_tone_id: row
             .try_get::<Option<String>, _>("active_tone_id")
             .unwrap_or(None),
@@ -193,6 +236,9 @@ pub async fn fetch_user_preferences(
         active_dictation_language: row
             .try_get::<Option<String>, _>("active_dictation_language")
             .unwrap_or(None),
+        additional_dictation_languages: deserialize_additional_languages(row
+            .try_get::<Option<String>, _>("additional_dictation_languages")
+            .unwrap_or(None)),
         preferred_microphone: row
             .try_get::<Option<String>, _>("preferred_microphone")
             .unwrap_or(None),
@@ -211,6 +257,10 @@ pub async fn fetch_user_preferences(
         dictation_pill_visibility: row
             .try_get::<String, _>("dictation_pill_visibility")
             .unwrap_or_else(|_| "while_active".to_string()),
+        use_new_backend: row
+            .try_get::<i64, _>("use_new_backend")
+            .map(|v| v != 0)
+            .unwrap_or(false),
     });
 
     Ok(preferences)

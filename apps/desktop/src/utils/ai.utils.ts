@@ -8,6 +8,40 @@ import {
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
 
+export const unwrapNestedLlmResponse = <T extends Record<string, unknown>>(
+  parsed: T,
+  key: string & keyof T,
+): T => {
+  const value = parsed[key];
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    key in value &&
+    typeof (value as Record<string, unknown>)[key] === "string"
+  ) {
+    return { ...parsed, [key]: (value as Record<string, unknown>)[key] } as T;
+  }
+  return parsed;
+};
+
+export const extractJsonFromMarkdown = (text: string): string => {
+  // Try to extract JSON from markdown code blocks
+  const jsonBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (jsonBlockMatch) {
+    return jsonBlockMatch[1].trim();
+  }
+
+  // Try to extract JSON from inline code blocks
+  const inlineJsonMatch = text.match(/`([^`]+)`/);
+  if (inlineJsonMatch) {
+    return inlineJsonMatch[1].trim();
+  }
+
+  // Return original text if no markdown formatting found
+  return text.trim();
+};
+
 export const applyAiPreferences = (
   draft: AppState,
   preferences: UserPreferences,
@@ -34,11 +68,7 @@ export const applyAiPreferences = (
   draft.settings.agentMode.mode = agentMode as any;
   draft.settings.agentMode.selectedApiKeyId =
     preferences.agentModeApiKeyId ?? null;
-
-  draft.settings.languageSwitch.enabled =
-    preferences.languageSwitchEnabled ?? false;
-  draft.settings.languageSwitch.secondaryLanguage =
-    preferences.secondaryDictationLanguage ?? null;
-  draft.settings.languageSwitch.activeLanguage =
-    preferences.activeDictationLanguage ?? "primary";
+  draft.settings.agentMode.openclawGatewayUrl =
+    preferences.openclawGatewayUrl ?? null;
+  draft.settings.agentMode.openclawToken = preferences.openclawToken ?? null;
 };

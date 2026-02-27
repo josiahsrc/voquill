@@ -8,15 +8,18 @@ import {
   AuthRegisterInputZod,
   AuthResetPasswordInputZod,
   DeleteLlmProviderInputZod,
+  DeleteOidcProviderInputZod,
   DeleteSttProviderInputZod,
   DeleteTermInputZod,
   DeleteToneInputZod,
   EmptyObjectZod,
+  GetMetricsSummaryInputZod,
   PullLlmProviderInputZod,
   PullSttProviderInputZod,
   SetMyUserInputZod,
   UpsertEnterpriseConfigInputZod,
   UpsertLlmProviderInputZod,
+  UpsertOidcProviderInputZod,
   UpsertSttProviderInputZod,
   UpsertTermInputZod,
   UpsertToneInputZod,
@@ -27,6 +30,7 @@ import type { Request, Response } from "express";
 import express from "express";
 import { runMigrations } from "./db/migrate";
 import { generateText, transcribeAudio } from "./services/ai.service";
+import { getMetricsSummaryHandler } from "./services/metrics.service";
 import {
   deleteUser,
   login,
@@ -48,6 +52,12 @@ import {
   upsertLlmProviderHandler,
 } from "./services/llm-provider.service";
 import { getMyMember, tryInitialize } from "./services/member.service";
+import {
+  deleteOidcProviderHandler,
+  listEnabledOidcProvidersHandler,
+  listOidcProvidersHandler,
+  upsertOidcProviderHandler,
+} from "./services/oidc-provider.service";
 import {
   deleteSttProviderHandler,
   listSttProvidersHandler,
@@ -75,6 +85,7 @@ import {
   listAllUsersHandler,
   setMyUser,
 } from "./services/user.service";
+import oidcRoutes from "./routes/oidc.routes";
 import { extractAuth } from "./utils/auth.utils";
 import { getGatewayVersion } from "./utils/env.utils";
 import {
@@ -86,8 +97,10 @@ import {
 import { validateData, validateLicense } from "./utils/validation.utils";
 
 const app = express();
+app.set("trust proxy", true);
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
+app.use(oidcRoutes);
 
 type HandlerRequest = {
   name: HandlerName;
@@ -251,6 +264,27 @@ app.post("/handler", async (req: Request, res: Response) => {
       data = await upsertEnterpriseConfigHandler({
         auth,
         input: validateData(UpsertEnterpriseConfigInputZod, input),
+      });
+    } else if (name === "oidcProvider/list") {
+      validateData(EmptyObjectZod, input);
+      data = await listOidcProvidersHandler({ auth });
+    } else if (name === "oidcProvider/upsert") {
+      data = await upsertOidcProviderHandler({
+        auth,
+        input: validateData(UpsertOidcProviderInputZod, input),
+      });
+    } else if (name === "oidcProvider/delete") {
+      data = await deleteOidcProviderHandler({
+        auth,
+        input: validateData(DeleteOidcProviderInputZod, input),
+      });
+    } else if (name === "oidcProvider/listEnabled") {
+      validateData(EmptyObjectZod, input);
+      data = await listEnabledOidcProvidersHandler();
+    } else if (name === "metrics/getSummary") {
+      data = await getMetricsSummaryHandler({
+        auth,
+        input: validateData(GetMetricsSummaryInputZod, input),
       });
     } else if (name === "config/getFullConfig") {
       validateData(EmptyObjectZod, input);

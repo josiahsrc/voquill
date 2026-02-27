@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "778214168359",
+    "project_id": "voquill-dev",
+    "storage_bucket": "voquill-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778214168359:android:44302d780bb11229d77b02",
+        "android_client_info": {
+          "package_name": "com.voquill.mobile.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "778214168359-a9h2ffqo7barp055f58hmh55343a73hg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRM0jt733_QsHwMC2E_uI4BUEJOlDPqsk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "778214168359-a9h2ffqo7barp055f58hmh55343a73hg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "778214168359-062ds2e4o27utk6q7htloo6re9857lfb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.voquill.mobile.dev"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

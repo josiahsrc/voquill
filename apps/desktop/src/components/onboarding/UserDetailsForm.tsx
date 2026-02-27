@@ -59,10 +59,10 @@ export const UserDetailsForm = () => {
 
   const handleContinue = () => {
     trackButtonClick("onboarding_user_details_continue");
-    if (isMacOS()) {
-      goToOnboardingPage("micPerms");
+    if (isEnterprise) {
+      goToOnboardingPage(isMacOS() ? "micPerms" : "keybindings");
     } else {
-      goToOnboardingPage("keybindings");
+      goToOnboardingPage("referralSource");
     }
   };
 
@@ -134,7 +134,9 @@ export const UserDetailsForm = () => {
                 variant="outlined"
                 size="small"
                 label={<FormattedMessage defaultMessage="Company" />}
-                placeholder={intl.formatMessage({ defaultMessage: "Acme Inc." })}
+                placeholder={intl.formatMessage({
+                  defaultMessage: "Acme Inc.",
+                })}
                 value={company}
                 onChange={handleCompanyChange}
                 onBlur={handleCompanyBlur}

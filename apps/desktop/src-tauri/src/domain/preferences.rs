@@ -25,6 +25,10 @@ pub struct UserPreferences {
     #[serde(default)]
     pub agent_mode_api_key_id: Option<String>,
     #[serde(default)]
+    pub openclaw_gateway_url: Option<String>,
+    #[serde(default)]
+    pub openclaw_token: Option<String>,
+    #[serde(default)]
     pub active_tone_id: Option<String>,
     #[serde(default)]
     pub got_started_at: Option<i64>,
@@ -43,6 +47,8 @@ pub struct UserPreferences {
     #[serde(default)]
     pub active_dictation_language: Option<String>,
     #[serde(default)]
+    pub additional_dictation_languages: Option<Vec<String>>,
+    #[serde(default)]
     pub preferred_microphone: Option<String>,
     #[serde(default)]
     pub ignore_update_dialog: bool,
@@ -52,6 +58,8 @@ pub struct UserPreferences {
     pub incognito_mode_include_in_stats: bool,
     #[serde(default = "default_dictation_pill_visibility")]
     pub dictation_pill_visibility: String,
+    #[serde(default)]
+    pub use_new_backend: bool,
 }
 
 fn default_dictation_pill_visibility() -> String {

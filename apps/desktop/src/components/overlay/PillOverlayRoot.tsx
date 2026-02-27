@@ -1,6 +1,7 @@
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { Box, LinearProgress, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { Box, IconButton, LinearProgress, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
@@ -74,6 +75,10 @@ export const PillOverlayRoot = () => {
   const isIdle = phase === "idle";
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
+  const overlayShown =
+    (isHovered && isIdle) || isFlashingTooltip || (isManualMode && isListening);
+  const showStyleSwitchers = isHovered || (isManualMode && isListening);
+  const flashingInfo = isFlashingTooltip && !showStyleSwitchers;
 
   useEffect(() => {
     document.body.style.margin = "0";
@@ -146,6 +151,13 @@ export const PillOverlayRoot = () => {
     emitTo("main", "on-click-dictate", {}).catch(console.error);
   };
 
+  const handleCancelDictation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    invoke("restore_overlay_focus").catch(() => {});
+    emitTo("main", "cancel-dictation", {}).catch(console.error);
+  };
+
   return (
     <Box
       sx={{
@@ -166,17 +178,11 @@ export const PillOverlayRoot = () => {
       {/* Tooltip */}
       <Box
         sx={{
-          opacity: (isHovered && isIdle) || isFlashingTooltip ? 1 : 0,
-          transform:
-            (isHovered && isIdle) || isFlashingTooltip
-              ? "translateY(0)"
-              : "translateY(4px)",
+          opacity: overlayShown ? 1 : 0,
+          transform: overlayShown ? "translateY(0)" : "translateY(4px)",
           transition: "all 150ms ease-out",
           marginBottom: theme.spacing(1),
-          pointerEvents:
-            isManualMode && ((isHovered && isIdle) || isFlashingTooltip)
-              ? "auto"
-              : "none",
+          pointerEvents: isManualMode && overlayShown ? "auto" : "none",
         }}
       >
         <Box
@@ -212,8 +218,11 @@ export const PillOverlayRoot = () => {
                   sx={{
                     fontSize: "16px",
                     cursor: "pointer",
-                    opacity: isHovered ? 1 : 0,
-                    width: isHovered ? 16 : 0,
+                    padding: "8px",
+                    margin: "-8px",
+                    boxSizing: "content-box",
+                    opacity: showStyleSwitchers ? 1 : 0,
+                    width: showStyleSwitchers ? 16 : 0,
                     transition: "opacity 200ms ease-out, width 150ms ease-out",
                     overflow: "hidden",
                     flexShrink: 0,
@@ -222,7 +231,7 @@ export const PillOverlayRoot = () => {
                 <Box
                   component="span"
                   sx={{
-                    width: isFlashingTooltip && !isHovered ? 140 : 82,
+                    width: flashingInfo ? 140 : 82,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -243,8 +252,11 @@ export const PillOverlayRoot = () => {
                   sx={{
                     fontSize: "16px",
                     cursor: "pointer",
-                    opacity: isHovered ? 1 : 0,
-                    width: isHovered ? 16 : 0,
+                    padding: "8px",
+                    margin: "-8px",
+                    boxSizing: "content-box",
+                    opacity: showStyleSwitchers ? 1 : 0,
+                    width: showStyleSwitchers ? 16 : 0,
                     transition: "opacity 200ms ease-out, width 150ms ease-out",
                     overflow: "hidden",
                     flexShrink: 0,
@@ -285,111 +297,142 @@ export const PillOverlayRoot = () => {
         }}
       >
         <Box
-          onMouseDown={handleMouseDownDictate}
           sx={{
             position: "relative",
-            width: isExpanded ? EXPANDED_PILL_WIDTH : MIN_PILL_WIDTH,
-            height: isExpanded ? EXPANDED_PILL_HEIGHT : MIN_PILL_HEIGHT,
-            borderRadius: isExpanded ? theme.spacing(2) : theme.spacing(0.75),
-            backgroundColor: alpha(
-              theme.palette.common.black,
-              isExpanded ? 0.92 : 0.6,
-            ),
-            border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
-            backdropFilter: "blur(14px)",
-            transition: "all 200ms ease-out",
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            pointerEvents: "auto",
           }}
         >
-          {/* Inner content container */}
           <Box
+            onMouseDown={handleMouseDownDictate}
             sx={{
               position: "relative",
-              width: EXPANDED_PILL_WIDTH - 8,
-              height: "100%",
+              width: isExpanded ? EXPANDED_PILL_WIDTH : MIN_PILL_WIDTH,
+              height: isExpanded ? EXPANDED_PILL_HEIGHT : MIN_PILL_HEIGHT,
+              borderRadius: isExpanded ? theme.spacing(2) : theme.spacing(0.75),
+              backgroundColor: alpha(
+                theme.palette.common.black,
+                isExpanded ? 0.92 : 0.6,
+              ),
+              border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
+              backdropFilter: "blur(14px)",
+              transition: "all 200ms ease-out",
+              overflow: "hidden",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              opacity: isExpanded ? 1 : 0,
-              transition: "opacity 150ms ease-out",
+              cursor: "pointer",
+              pointerEvents: "auto",
             }}
           >
-            {isHovered && (
-              <Typography
-                sx={{
-                  position: "absolute",
-                  color: alpha(theme.palette.common.white, 0.4),
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  letterSpacing: "0.02em",
-                  whiteSpace: "nowrap",
-                  opacity: isIdle ? 1 : 0,
-                  transition: "opacity 150ms ease-out",
-                }}
-              >
-                <FormattedMessage defaultMessage="Click to dictate" />
-              </Typography>
-            )}
-
-            {/* Processing indicator */}
+            {/* Inner content container */}
             <Box
               sx={{
-                position: "absolute",
-                width: "100%",
+                position: "relative",
+                width: EXPANDED_PILL_WIDTH - 8,
                 height: "100%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: isProcessing ? 1 : 0,
+                opacity: isExpanded ? 1 : 0,
                 transition: "opacity 150ms ease-out",
               }}
             >
-              <LinearProgress sx={{ width: "100%", height: "2px" }} />
-            </Box>
+              {isHovered && (
+                <Typography
+                  sx={{
+                    position: "absolute",
+                    color: alpha(theme.palette.common.white, 0.4),
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    letterSpacing: "0.02em",
+                    whiteSpace: "nowrap",
+                    opacity: isIdle ? 1 : 0,
+                    transition: "opacity 150ms ease-out",
+                  }}
+                >
+                  <FormattedMessage defaultMessage="Click to dictate" />
+                </Typography>
+              )}
 
-            {/* Audio waveform */}
-            <Box
-              sx={{
-                position: "absolute",
-                inset: 0,
-                opacity: isListening ? 1 : 0,
-                transition: "opacity 150ms ease-out",
-              }}
-            >
-              <AudioWaveform
-                levels={levels}
-                active={isListening}
-                processing={isProcessing}
-                strokeColor={theme.palette.common.white}
-                width={EXPANDED_PILL_WIDTH}
-                height={EXPANDED_PILL_HEIGHT}
-                baselineOffset={0}
+              {/* Processing indicator */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: isProcessing ? 1 : 0,
+                  transition: "opacity 150ms ease-out",
+                }}
+              >
+                <LinearProgress sx={{ width: "100%", height: "2px" }} />
+              </Box>
+
+              {/* Audio waveform */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: isListening ? 1 : 0,
+                  transition: "opacity 150ms ease-out",
+                }}
+              >
+                <AudioWaveform
+                  levels={levels}
+                  active={isListening}
+                  processing={isProcessing}
+                  strokeColor={theme.palette.common.white}
+                  width={EXPANDED_PILL_WIDTH}
+                  height={EXPANDED_PILL_HEIGHT}
+                  baselineOffset={0}
+                />
+              </Box>
+
+              {/* Gradient overlay for waveform edges */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  pointerEvents: "none",
+                  opacity: isIdle ? 0 : 1,
+                  transition: "opacity 150ms ease-out",
+                  background: `linear-gradient(90deg, ${alpha(
+                    theme.palette.common.black,
+                    0.9,
+                  )} 0%, transparent 18%, transparent 85%, ${alpha(
+                    theme.palette.common.black,
+                    0.9,
+                  )} 100%)`,
+                }}
               />
             </Box>
-
-            {/* Gradient overlay for waveform edges */}
-            <Box
-              sx={{
-                position: "absolute",
-                inset: 0,
-                pointerEvents: "none",
-                opacity: isIdle ? 0 : 1,
-                transition: "opacity 150ms ease-out",
-                background: `linear-gradient(90deg, ${alpha(
-                  theme.palette.common.black,
-                  0.9,
-                )} 0%, transparent 18%, transparent 85%, ${alpha(
-                  theme.palette.common.black,
-                  0.9,
-                )} 100%)`,
-              }}
-            />
           </Box>
+
+          {/* Cancel button */}
+          <IconButton
+            onMouseDown={handleCancelDictation}
+            size="small"
+            sx={{
+              position: "absolute",
+              top: -4,
+              right: -6,
+              width: 18,
+              height: 18,
+              backgroundColor: theme.palette.grey[600],
+              opacity: !isIdle && isHovered ? 1 : 0,
+              transform: !isIdle && isHovered ? "scale(1)" : "scale(0)",
+              pointerEvents: !isIdle && isHovered ? "auto" : "none",
+              transition: "opacity 200ms ease-out, transform 200ms ease-out",
+              color: theme.palette.common.white,
+              zIndex: 1,
+              "&:hover": {
+                backgroundColor: theme.palette.grey[500],
+              },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 12 }} />
+          </IconButton>
         </Box>
       </Box>
     </Box>

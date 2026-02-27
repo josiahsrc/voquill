@@ -2,6 +2,10 @@ import { Transcription } from "@repo/types";
 import { getRec } from "@repo/utilities";
 import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
+import {
+  applyReplacements,
+  applySymbolConversions,
+} from "../utils/string.utils";
 import { postProcessTranscript, transcribeAudio } from "./transcribe.actions";
 
 export const openTranscriptionDetailsDialog = (transcriptionId: string) => {
@@ -17,14 +21,42 @@ export const closeTranscriptionDetailsDialog = () => {
   });
 };
 
+export const openRetranscribeDialog = (transcriptionId: string) => {
+  produceAppState((draft) => {
+    draft.transcriptions.retranscribeDialogTranscriptionId = transcriptionId;
+    draft.transcriptions.retranscribeDialogOpen = true;
+  });
+};
+
+export const closeRetranscribeDialog = () => {
+  produceAppState((draft) => {
+    draft.transcriptions.retranscribeDialogOpen = false;
+  });
+};
+
+export const openFlagTranscriptionDialog = (transcriptionId: string) => {
+  produceAppState((draft) => {
+    draft.transcriptions.flagDialogTranscriptionId = transcriptionId;
+    draft.transcriptions.flagDialogOpen = true;
+  });
+};
+
+export const closeFlagTranscriptionDialog = () => {
+  produceAppState((draft) => {
+    draft.transcriptions.flagDialogOpen = false;
+  });
+};
+
 type RetranscribeTranscriptionParams = {
   transcriptionId: string;
   toneId?: string | null;
+  languageCode?: string | null;
 };
 
 export const retranscribeTranscription = async ({
   transcriptionId,
   toneId,
+  languageCode,
 }: RetranscribeTranscriptionParams): Promise<void> => {
   const state = getAppState();
   const transcription = getRec(state.transcriptionById, transcriptionId);
@@ -39,16 +71,29 @@ export const retranscribeTranscription = async ({
   const transcribeResult = await transcribeAudio({
     samples: audioData.samples,
     sampleRate: audioData.sampleRate,
+    dictationLanguage: languageCode ?? undefined,
   });
 
+  const rawTranscript = transcribeResult.rawTranscript;
+
+  const replacementRules = Object.values(state.termById)
+    .filter((term) => term.isReplacement)
+    .map((term) => ({
+      sourceValue: term.sourceValue,
+      destinationValue: term.destinationValue,
+    }));
+
+  const afterReplacements = applyReplacements(rawTranscript, replacementRules);
+  const sanitizedTranscript = applySymbolConversions(afterReplacements);
+
   const postProcessResult = await postProcessTranscript({
-    rawTranscript: transcribeResult.rawTranscript,
+    rawTranscript: sanitizedTranscript,
     toneId: toneId ?? null,
-    a11yInfo: null,
+    dictationLanguage: languageCode ?? undefined,
   });
 
   const finalTranscript = postProcessResult.transcript;
-  const rawTranscript = transcribeResult.rawTranscript;
+
   const warnings = [
     ...transcribeResult.warnings,
     ...postProcessResult.warnings,
@@ -65,6 +110,7 @@ export const retranscribeTranscription = async ({
   const updatedPayload: Transcription = {
     ...transcription,
     transcript: finalTranscript,
+    sanitizedTranscript,
     modelSize: metadata?.modelSize ?? null,
     inferenceDevice: metadata?.inferenceDevice ?? null,
     rawTranscript: rawTranscript ?? finalTranscript,

@@ -6,8 +6,8 @@ import {
   User,
 } from "@repo/types";
 import { listify } from "@repo/utilities";
+import { getVersion } from "@tauri-apps/api/app";
 import dayjs from "dayjs";
-import mixpanel from "mixpanel-browser";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
@@ -15,7 +15,7 @@ import {
   migrateLocalUserToCloud,
   refreshCurrentUser,
 } from "../../actions/user.actions";
-import { useAsyncEffect } from "../../hooks/async.hooks";
+import { useAsyncData, useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { detectLocale } from "../../i18n";
@@ -28,13 +28,15 @@ import {
 } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
-import { CURRENT_COHORT } from "../../utils/analytics.utils";
+import { CURRENT_COHORT, getMixpanel } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import {
   getEnterpriseTarget,
+  invokeEnterprise,
   loadEnterpriseTarget,
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
+import { getLogger } from "../../utils/log.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
   getEffectivePillVisibility,
@@ -64,6 +66,10 @@ export const AppSideEffects = () => {
   const tokensRefreshedRef = useRef(false);
   const authReadyRef = useRef(false);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const versionData = useAsyncData(getVersion, []);
+  const allowDevTools = useAppStore(
+    (state) => state.enterpriseConfig?.allowDevTools ?? true,
+  );
   const userId = useAppStore((state) => state.auth?.uid ?? "");
   const initialized = useAppStore((state) => state.initialized);
   const member = useAppStore((state) => {
@@ -80,6 +86,7 @@ export const AppSideEffects = () => {
   const prefs = useAppStore((state) => getMyUserPreferences(state));
 
   const onAuthStateChanged = (user: AuthUser | null) => {
+    getLogger().info(`Auth state changed (uid=${user?.uid ?? "none"})`);
     authReadyRef.current = true;
     setAuthReady(true);
     produceAppState((draft) => {
@@ -89,13 +96,21 @@ export const AppSideEffects = () => {
   };
 
   useEffect(() => {
+    if (allowDevTools) {
+      return;
+    }
+
+    const handler = (e: MouseEvent) => e.preventDefault();
+    document.addEventListener("contextmenu", handler);
+    return () => document.removeEventListener("contextmenu", handler);
+  }, [isEnterprise, allowDevTools]);
+
+  useEffect(() => {
     authReadyRef.current = false;
 
     const timeoutId = setTimeout(() => {
       if (!authReadyRef.current) {
-        console.warn(
-          "[AppSideEffects] Auth timed out, proceeding without auth",
-        );
+        getLogger().warning("Auth timed out, proceeding without auth");
         onAuthStateChanged(null);
       }
     }, AUTH_READY_TIMEOUT_MS);
@@ -127,10 +142,10 @@ export const AppSideEffects = () => {
   }, []);
 
   useIntervalAsync(ENTERPRISE_REFRESH_INTERVAL_MS, async () => {
-    console.log("Loading enterprise target...");
+    getLogger().verbose("Loading enterprise target");
     const debugInfo = await loadEnterpriseTarget();
 
-    console.log(
+    getLogger().verbose(
       "Enterprise target reloaded from",
       debugInfo,
       getEnterpriseTarget(),
@@ -144,15 +159,22 @@ export const AppSideEffects = () => {
     if (repo) {
       isEnterprise = true;
       [config, license] = await repo.getConfig().catch((e) => {
-        console.error("Failed to refresh enterprise config:", e);
+        getLogger().error(`Failed to refresh enterprise config: ${e}`);
         return [null, null];
       });
     }
+
+    const oidcProviders = isEnterprise
+      ? await invokeEnterprise("oidcProvider/listEnabled", {})
+          .then((res) => res.providers)
+          .catch(() => [])
+      : [];
 
     produceAppState((draft) => {
       draft.enterpriseConfig = config;
       draft.enterpriseLicense = license;
       draft.isEnterprise = isEnterprise;
+      draft.oidcProviders = oidcProviders;
     });
 
     if (!tokensRefreshedRef.current) {
@@ -214,6 +236,7 @@ export const AppSideEffects = () => {
 
   useEffect(() => {
     if (streamReady && initReady && !initialized && enterpriseReady) {
+      getLogger().info("App fully initialized");
       produceAppState((draft) => {
         draft.initialized = true;
       });
@@ -236,10 +259,13 @@ export const AppSideEffects = () => {
     }
 
     isMigratingLocalUserRef.current = true;
+    getLogger().info("Migrating local user to cloud");
     (async () => {
       try {
         await migrateLocalUserToCloud();
+        getLogger().info("Local user migrated to cloud successfully");
       } catch (error) {
+        getLogger().error(`Failed to migrate local user to cloud: ${error}`);
         showErrorSnackbar(error);
       } finally {
         isMigratingLocalUserRef.current = false;
@@ -254,10 +280,15 @@ export const AppSideEffects = () => {
       return;
     }
 
+    const mp = getMixpanel();
+    if (!mp) {
+      return;
+    }
+
     const currentUserId = auth?.uid ?? null;
     const prevUserId = prevUserIdRef.current;
     if (prevUserId && !currentUserId) {
-      mixpanel.reset();
+      mp.reset();
     }
 
     const isPro = member?.plan === "pro";
@@ -275,24 +306,23 @@ export const AppSideEffects = () => {
     const planStatus = member?.plan ?? "community";
 
     if (currentUserId && currentUserId !== prevUserId) {
-      mixpanel.identify(currentUserId);
+      mp.identify(currentUserId);
 
-      // Set creation time to ISO 8601 (2024-01-01T12:00:00.000Z) for Mixpanel
-      mixpanel.people.set_once({
+      mp.people.set_once({
         $created: new Date().toISOString(),
         initialPlatform: platform,
         initialLocale: locale,
         initialCohort: CURRENT_COHORT,
       });
 
-      mixpanel.register_once({
+      mp.register_once({
         initialPlatform: platform,
         initialLocale: locale,
         initialCohort: CURRENT_COHORT,
       });
     }
 
-    mixpanel.people.set({
+    mp.people.set({
       $email: auth?.email ?? undefined,
       $name: auth?.displayName ?? undefined,
       planStatus,
@@ -306,9 +336,12 @@ export const AppSideEffects = () => {
       activeSystemCohort: CURRENT_COHORT,
       daysSinceOnboarded,
       pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
+      company: cloudUser?.company ?? undefined,
+      title: cloudUser?.title ?? undefined,
+      referralSource: cloudUser?.referralSource ?? undefined,
     });
 
-    mixpanel.register({
+    mp.register({
       userId: currentUserId,
       planStatus,
       isPro,
@@ -322,8 +355,14 @@ export const AppSideEffects = () => {
       pillState: getEffectivePillVisibility(prefs?.dictationPillVisibility),
     });
 
+    if (versionData.state === "success") {
+      mp.register({
+        appVersion: versionData.data,
+      });
+    }
+
     prevUserIdRef.current = currentUserId;
-  }, [initialized, auth, member, cloudUser, localUser, prefs]);
+  }, [initialized, auth, member, cloudUser, localUser, prefs, versionData]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({

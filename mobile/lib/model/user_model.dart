@@ -28,6 +28,10 @@ class User with EquatableMixin {
   final bool? hasMigratedPreferredMicrophone;
   final String? cohort;
   final bool? shouldShowUpgradeDialog;
+  final int? streak;
+  final String? streakRecordedAt;
+  final String? selectedToneId;
+  final List<String>? activeToneIds;
 
   const User({
     required this.id,
@@ -50,6 +54,10 @@ class User with EquatableMixin {
     this.hasMigratedPreferredMicrophone,
     this.cohort,
     this.shouldShowUpgradeDialog,
+    this.streak,
+    this.streakRecordedAt,
+    this.selectedToneId,
+    this.activeToneIds,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
@@ -77,5 +85,9 @@ class User with EquatableMixin {
     hasMigratedPreferredMicrophone,
     cohort,
     shouldShowUpgradeDialog,
+    streak,
+    streakRecordedAt,
+    selectedToneId,
+    activeToneIds,
   ];
 }

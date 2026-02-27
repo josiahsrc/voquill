@@ -1,10 +1,12 @@
 import {
+  type AgentMode,
   DictationPillVisibility,
   Nullable,
   StylingMode,
   User,
   UserPreferences,
 } from "@repo/types";
+import dayjs from "dayjs";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
@@ -14,6 +16,7 @@ import {
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
+import { getLogger } from "../utils/log.utils";
 import {
   getMyEffectiveUserId,
   getMyUser,
@@ -23,6 +26,7 @@ import {
   setUserPreferences,
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
+import { setLocalStorageValue } from "./local-storage.actions";
 
 const updateUser = async (
   updateCallback: (user: User) => void,
@@ -32,6 +36,7 @@ const updateUser = async (
   const state = getAppState();
   const existing = getMyUser(state);
   if (!existing) {
+    getLogger().warning(`updateUser: user not found (${errorMessage})`);
     showErrorSnackbar(errorMessage);
     return;
   }
@@ -43,14 +48,19 @@ const updateUser = async (
   };
 
   updateCallback(payload);
+  produceAppState((draft) => {
+    setCurrentUser(draft, payload);
+  });
 
   try {
-    const saved = await repo.setMyUser(payload);
-    produceAppState((draft) => {
-      setCurrentUser(draft, saved);
-    });
+    getLogger().verbose(`Saving user (id=${payload.id})`);
+    await repo.setMyUser(payload);
+    getLogger().verbose("User saved successfully");
   } catch (error) {
-    console.error("Failed to update user", error);
+    getLogger().error(`Failed to update user: ${error}`);
+    produceAppState((draft) => {
+      setCurrentUser(draft, existing);
+    });
     showErrorSnackbar(saveErrorMessage);
     throw error;
   }
@@ -71,11 +81,10 @@ export const createDefaultPreferences = (): UserPreferences => ({
   gpuEnumerationEnabled: false,
   agentMode: null,
   agentModeApiKeyId: null,
+  openclawGatewayUrl: null,
+  openclawToken: null,
   lastSeenFeature: null,
   isEnterprise: false,
-  languageSwitchEnabled: false,
-  secondaryDictationLanguage: null,
-  activeDictationLanguage: "primary",
   preferredMicrophone: null,
   ignoreUpdateDialog: false,
   incognitoModeEnabled: false,
@@ -95,12 +104,14 @@ const updateUserPreferences = async (
   updateCallback(payload);
 
   try {
+    getLogger().verbose(`Saving user preferences (userId=${myUserId})`);
     const saved = await getUserPreferencesRepo().setUserPreferences(payload);
     produceAppState((draft) => {
       setUserPreferences(draft, saved);
     });
+    getLogger().verbose("User preferences saved successfully");
   } catch (error) {
-    console.error("Failed to update user preferences", error);
+    getLogger().error(`Failed to update user preferences: ${error}`);
     showErrorSnackbar(saveErrorMessage);
     throw error;
   }
@@ -111,6 +122,36 @@ const getCurrentUsageMonth = (): string => {
   const year = now.getFullYear();
   const month = `${now.getMonth() + 1}`.padStart(2, "0");
   return `${year}-${month}`;
+};
+
+const getCurrentDateString = (): string => dayjs().format("YYYY-MM-DD");
+
+const getYesterdayDateString = (): string =>
+  dayjs().subtract(1, "day").format("YYYY-MM-DD");
+
+export const recordStreak = async (): Promise<void> => {
+  const state = getAppState();
+  const user = getMyUser(state);
+  if (!user) {
+    return;
+  }
+
+  const today = getCurrentDateString();
+  if (user.streakRecordedAt === today) {
+    return;
+  }
+
+  const yesterday = getYesterdayDateString();
+  const isConsecutive = user.streakRecordedAt === yesterday;
+
+  await updateUser(
+    (u) => {
+      u.streak = isConsecutive ? (u.streak ?? 0) + 1 : 1;
+      u.streakRecordedAt = today;
+    },
+    "Unable to update streak. User not found.",
+    "Failed to update streak. Please try again.",
+  );
 };
 
 export const addWordsToCurrentUser = async (
@@ -138,6 +179,7 @@ export const addWordsToCurrentUser = async (
 
 export const refreshCurrentUser = async (): Promise<void> => {
   try {
+    getLogger().verbose("Refreshing current user and preferences");
     const [user, preferences] = await Promise.all([
       getUserRepo().getMyUser(),
       getUserPreferencesRepo().getUserPreferences(),
@@ -153,8 +195,11 @@ export const refreshCurrentUser = async (): Promise<void> => {
         draft.userPrefs = null;
       }
     });
+    getLogger().verbose(
+      `User refreshed (hasUser=${!!user}, hasPrefs=${!!preferences})`,
+    );
   } catch (error) {
-    console.error("Failed to refresh user", error);
+    getLogger().error(`Failed to refresh user: ${error}`);
   }
 };
 
@@ -232,6 +277,7 @@ export const setUserName = async (name: string): Promise<void> => {
 };
 
 export const persistAiPreferences = async (): Promise<void> => {
+  getLogger().verbose("Persisting AI preferences");
   const state = getAppState();
   await updateUserPreferences((preferences) => {
     preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
@@ -240,6 +286,9 @@ export const persistAiPreferences = async (): Promise<void> => {
     preferences.agentMode = state.settings.agentMode.mode;
     preferences.agentModeApiKeyId =
       state.settings.agentMode.selectedApiKeyId ?? null;
+    preferences.openclawGatewayUrl =
+      state.settings.agentMode.openclawGatewayUrl ?? null;
+    preferences.openclawToken = state.settings.agentMode.openclawToken ?? null;
     preferences.transcriptionMode = state.settings.aiTranscription.mode;
     preferences.transcriptionApiKeyId =
       state.settings.aiTranscription.selectedApiKeyId ?? null;
@@ -249,12 +298,6 @@ export const persistAiPreferences = async (): Promise<void> => {
       state.settings.aiTranscription.modelSize ?? null;
     preferences.gpuEnumerationEnabled =
       state.settings.aiTranscription.gpuEnumerationEnabled;
-    preferences.languageSwitchEnabled =
-      state.settings.languageSwitch.enabled ?? false;
-    preferences.secondaryDictationLanguage =
-      state.settings.languageSwitch.secondaryLanguage ?? null;
-    preferences.activeDictationLanguage =
-      state.settings.languageSwitch.activeLanguage ?? "primary";
   }, "Failed to save AI preferences. Please try again.");
 };
 
@@ -338,11 +381,29 @@ export const setPreferredPostProcessingApiKeyId = async (
   await persistAiPreferences();
 };
 
-export const setPreferredAgentMode = async (
-  mode: PostProcessingMode,
-): Promise<void> => {
+export const setPreferredAgentMode = async (mode: AgentMode): Promise<void> => {
   produceAppState((draft) => {
     draft.settings.agentMode.mode = mode;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setOpenclawGatewayUrl = async (
+  url: Nullable<string>,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.agentMode.openclawGatewayUrl = url;
+  });
+
+  await persistAiPreferences();
+};
+
+export const setOpenclawToken = async (
+  token: Nullable<string>,
+): Promise<void> => {
+  produceAppState((draft) => {
+    draft.settings.agentMode.openclawToken = token;
   });
 
   await persistAiPreferences();
@@ -359,75 +420,6 @@ export const setPreferredAgentModeApiKeyId = async (
 };
 
 export const syncAiPreferences = persistAiPreferences;
-
-export const getDefaultSecondaryLanguage = (
-  primaryLanguage: string,
-): string => {
-  const baseLanguage = primaryLanguage.split("-")[0].toLowerCase();
-  return baseLanguage === "en" ? "fr" : "en";
-};
-
-export const setLanguageSwitchEnabled = async (
-  enabled: boolean,
-): Promise<void> => {
-  const state = getAppState();
-
-  produceAppState((draft) => {
-    draft.settings.languageSwitch.enabled = enabled;
-
-    if (enabled && !draft.settings.languageSwitch.secondaryLanguage) {
-      const user = getMyUser(state);
-      const primaryLanguage = user?.preferredLanguage ?? "en";
-      draft.settings.languageSwitch.secondaryLanguage =
-        getDefaultSecondaryLanguage(primaryLanguage);
-    }
-
-    if (!enabled) {
-      draft.settings.languageSwitch.activeLanguage = "primary";
-    }
-  });
-
-  await persistAiPreferences();
-};
-
-export const setSecondaryDictationLanguage = async (
-  language: Nullable<string>,
-): Promise<void> => {
-  produceAppState((draft) => {
-    draft.settings.languageSwitch.secondaryLanguage = language;
-  });
-
-  await persistAiPreferences();
-};
-
-export const toggleActiveDictationLanguage = async (): Promise<void> => {
-  const state = getAppState();
-  const { enabled, secondaryLanguage, activeLanguage } =
-    state.settings.languageSwitch;
-
-  if (!enabled || !secondaryLanguage) {
-    return;
-  }
-
-  const newActiveLanguage =
-    activeLanguage === "primary" ? "secondary" : "primary";
-
-  produceAppState((draft) => {
-    draft.settings.languageSwitch.activeLanguage = newActiveLanguage;
-  });
-
-  await persistAiPreferences();
-};
-
-export const setActiveDictationLanguage = async (
-  language: "primary" | "secondary",
-): Promise<void> => {
-  produceAppState((draft) => {
-    draft.settings.languageSwitch.activeLanguage = language;
-  });
-
-  await persistAiPreferences();
-};
 
 export const migrateLocalUserToCloud = async (): Promise<void> => {
   const state = getAppState();
@@ -548,6 +540,7 @@ export const setSelectedToneId = async (toneId: string): Promise<void> => {
     "Unable to select style. User not found.",
     "Failed to select style. Please try again.",
   );
+  setLocalStorageValue("voquill:checklist-writing-style", true);
 };
 
 export const activateAndSelectTone = async (toneId: string): Promise<void> => {

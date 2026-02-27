@@ -8,6 +8,7 @@ import {
   Hotkey,
   Member,
   Nullable,
+  OidcProvider,
   Term,
   Tone,
   Transcription,
@@ -52,11 +53,13 @@ export type AppState = {
   keysHeld: string[];
   isRecordingHotkey: boolean;
   activeRecordingMode: Nullable<RecordingMode>;
+  dictationLanguageOverride: Nullable<string>;
   overlayPhase: OverlayPhase;
   audioLevels: number[];
   permissions: PermissionMap;
   confettiCounter: number;
   userPrefs: Nullable<UserPreferences>;
+  localStorageCache: Record<string, unknown>;
 
   memberById: Record<string, Member>;
   userById: Record<string, User>;
@@ -71,6 +74,7 @@ export type AppState = {
   enterpriseConfig: Nullable<EnterpriseConfig>;
   enterpriseLicense: Nullable<EnterpriseLicense>;
   isEnterprise: boolean;
+  oidcProviders: OidcProvider[];
 
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
@@ -100,9 +104,12 @@ export const INITIAL_APP_STATE: AppState = {
   userPrefs: null,
   isRecordingHotkey: false,
   activeRecordingMode: null,
+  dictationLanguageOverride: null,
   enterpriseConfig: null,
   enterpriseLicense: null,
   isEnterprise: false,
+  localStorageCache: {},
+  oidcProviders: [],
   memberById: {},
   userById: {},
   termById: {},

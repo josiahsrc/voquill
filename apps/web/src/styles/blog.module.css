@@ -1,0 +1,406 @@
+.blogMain {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  padding: 0 24px 120px;
+}
+
+.blogHeader {
+  margin-bottom: 48px;
+}
+
+.blogTitle {
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.blogSubtitle {
+  font-size: 1.1rem;
+  opacity: 0.6;
+  max-width: 520px;
+}
+
+.blogGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 32px;
+}
+
+.blogCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 20px;
+  background: var(--level1);
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+}
+
+.blogCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+.cardImageWrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.blogCard:hover .cardImage {
+  transform: scale(1.03);
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  opacity: 0.5;
+  padding: 0 32px;
+}
+
+.cardMeta:first-child {
+  padding-top: 32px;
+}
+
+.cardMetaSeparator {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.cardTitle {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  padding: 0 32px;
+}
+
+.cardDescription {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.7;
+  padding: 0 32px;
+}
+
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding: 0 32px;
+}
+
+.cardTag {
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--level2);
+  opacity: 0.7;
+}
+
+.readMore {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: 0 32px 32px;
+}
+
+.blogCard:hover .readMore {
+  opacity: 1;
+}
+
+/* Blog post detail */
+.postMain {
+  width: min(780px, 100%);
+  margin: 0 auto;
+  padding: 0 24px 120px;
+  gap: 0;
+}
+
+.postHeader {
+  margin-bottom: 16px;
+}
+
+.postBreadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+
+.postBreadcrumb a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: opacity 0.2s ease;
+}
+
+.postBreadcrumb a:hover {
+  opacity: 0.7;
+}
+
+.postTitle {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.postMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  opacity: 0.5;
+}
+
+.postHeroWrapper {
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.postHeroImage {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.postContent {
+  line-height: 1.85;
+  font-size: 1.05rem;
+}
+
+.postContent > :first-child {
+  margin-top: 0;
+}
+
+.postContent :global(h1) {
+  display: none;
+}
+
+.postContent :global(h2) {
+  margin-top: 48px;
+  margin-bottom: 16px;
+  font-size: clamp(1.4rem, 2.5vw, 1.7rem);
+  letter-spacing: -0.02em;
+}
+
+.postContent :global(h3) {
+  margin-top: 32px;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+
+.postContent :global(p) {
+  margin: 20px 0;
+  opacity: 0.85;
+}
+
+.postContent :global(img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  margin: 28px 0;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: zoom-in;
+  transition: box-shadow 0.2s ease;
+}
+
+.postContent :global(img):hover {
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.14);
+}
+
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  cursor: zoom-out;
+  padding: 24px;
+  animation: lightboxFadeIn 0.2s ease;
+}
+
+.lightboxImage {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes lightboxFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.postContent :global(ul),
+.postContent :global(ol) {
+  margin: 20px 0 20px 24px;
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+  opacity: 0.85;
+}
+
+.postContent :global(li) {
+  line-height: 1.7;
+}
+
+.postContent :global(a) {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  font-weight: 500;
+}
+
+.postContent :global(a:hover) {
+  opacity: 0.7;
+}
+
+.postContent :global(strong) {
+  font-weight: 600;
+}
+
+.postContent :global(blockquote) {
+  border-left: 3px solid var(--border);
+  padding: 12px 24px;
+  margin: 24px 0;
+  opacity: 0.85;
+  font-style: italic;
+}
+
+.postContent :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-size: 0.95rem;
+}
+
+.postContent :global(th),
+.postContent :global(td) {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.postContent :global(th) {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.postContent :global(td) {
+  opacity: 0.8;
+}
+
+.postContent :global(code) {
+  font-size: 0.9em;
+  background: var(--level1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.postContent :global(pre) {
+  background: var(--level1);
+  padding: 20px;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin: 24px 0;
+}
+
+.postContent :global(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.postFooter {
+  margin-top: 64px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.postFooterCta {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.postFooterCta h3 {
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.postFooterCta p {
+  opacity: 0.6;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .blogGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .blogCard {
+    gap: 10px;
+  }
+
+  .cardMeta {
+    padding: 0 16px;
+  }
+
+  .cardMeta:first-child {
+    padding-top: 16px;
+  }
+
+  .cardTitle {
+    padding: 0 16px;
+  }
+
+  .cardDescription {
+    padding: 0 16px;
+  }
+
+  .cardTags {
+    padding: 0 16px;
+  }
+
+  .readMore {
+    padding: 0 16px 16px;
+  }
+
+  .postContent {
+    font-size: 1rem;
+  }
+}

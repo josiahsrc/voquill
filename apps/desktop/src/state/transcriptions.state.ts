@@ -6,6 +6,11 @@ export type TranscriptionsState = {
   status: ActionStatus;
   detailsDialogOpen: boolean;
   detailsDialogTranscriptionId: Nullable<string>;
+  retranscribeDialogOpen: boolean;
+  retranscribeDialogTranscriptionId: Nullable<string>;
+  retranscribingIds: string[];
+  flagDialogOpen: boolean;
+  flagDialogTranscriptionId: Nullable<string>;
 };
 
 export const INITIAL_TRANSCRIPTIONS_STATE: TranscriptionsState = {
@@ -13,4 +18,9 @@ export const INITIAL_TRANSCRIPTIONS_STATE: TranscriptionsState = {
   status: "idle",
   detailsDialogOpen: false,
   detailsDialogTranscriptionId: null,
+  retranscribeDialogOpen: false,
+  retranscribeDialogTranscriptionId: null,
+  retranscribingIds: [],
+  flagDialogOpen: false,
+  flagDialogTranscriptionId: null,
 };

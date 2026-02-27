@@ -1,10 +1,12 @@
 import {
   AutoFixHighOutlined,
+  BarChartOutlined,
   ClassOutlined,
   GroupOutlined,
   MicOutlined,
-  SettingsOutlined,
   PaletteOutlined,
+  SettingsOutlined,
+  VpnKeyOutlined,
 } from "@mui/icons-material";
 import {
   Box,
@@ -23,6 +25,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import AppLogo from "../../assets/app-logo.svg?react";
 import { getAppName } from "../../utils/env.utils";
 import HomeSideEffects from "./HomeSideEffects";
+import UserInfoDialog from "./UserInfoDialog";
 
 const SIDEBAR_WIDTH = 300;
 
@@ -58,6 +61,16 @@ export default function HomePage() {
       icon: <AutoFixHighOutlined />,
     },
     {
+      label: intl.formatMessage({ defaultMessage: "Identity Providers" }),
+      path: "/oidc-providers",
+      icon: <VpnKeyOutlined />,
+    },
+    {
+      label: intl.formatMessage({ defaultMessage: "Usage Metrics" }),
+      path: "/metrics",
+      icon: <BarChartOutlined />,
+    },
+    {
       label: intl.formatMessage({ defaultMessage: "Settings" }),
       path: "/settings",
       icon: <SettingsOutlined />,
@@ -67,6 +80,7 @@ export default function HomePage() {
   return (
     <Stack direction="row" sx={{ height: "100%" }}>
       <HomeSideEffects />
+      <UserInfoDialog />
       <Stack
         sx={{
           width: SIDEBAR_WIDTH,

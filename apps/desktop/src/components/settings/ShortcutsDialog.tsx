@@ -9,34 +9,27 @@ import {
   Typography,
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
-import { setLanguageSwitchEnabled } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
+  CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
-  LANGUAGE_SWITCH_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {
-  const { open, hotkeysStatus, languageSwitchEnabled, isManualStyling } =
-    useAppStore((state) => ({
-      open: state.settings.shortcutsDialogOpen,
-      hotkeysStatus: state.settings.hotkeysStatus,
-      languageSwitchEnabled: state.settings.languageSwitch.enabled,
-      isManualStyling: getEffectiveStylingMode(state) === "manual",
-    }));
+  const { open, hotkeysStatus, isManualStyling } = useAppStore((state) => ({
+    open: state.settings.shortcutsDialogOpen,
+    hotkeysStatus: state.settings.hotkeysStatus,
+    isManualStyling: getEffectiveStylingMode(state) === "manual",
+  }));
 
   const handleClose = () => {
     produceAppState((draft) => {
       draft.settings.shortcutsDialogOpen = false;
     });
-  };
-
-  const handleLanguageSwitchEnabledChange = (enabled: boolean) => {
-    void setLanguageSwitchEnabled(enabled);
   };
 
   const renderContent = () => {
@@ -69,6 +62,13 @@ export const ShortcutsDialog = () => {
           }
           actionName={AGENT_DICTATE_HOTKEY}
         />
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Cancel transcription" />}
+          description={
+            <FormattedMessage defaultMessage="Cancel the current dictation or agent session." />
+          }
+          actionName={CANCEL_TRANSCRIPTION_HOTKEY}
+        />
         {isManualStyling && (
           <HotkeySetting
             title={<FormattedMessage defaultMessage="Switch writing style" />}
@@ -78,17 +78,6 @@ export const ShortcutsDialog = () => {
             actionName={SWITCH_WRITING_STYLE_HOTKEY}
           />
         )}
-        <HotkeySetting
-          title={
-            <FormattedMessage defaultMessage="Switch dictation language" />
-          }
-          description={
-            <FormattedMessage defaultMessage="Quickly switch between your primary and secondary dictation languages." />
-          }
-          actionName={LANGUAGE_SWITCH_HOTKEY}
-          enabled={languageSwitchEnabled}
-          onEnabledChange={handleLanguageSwitchEnabledChange}
-        />
       </Stack>
     );
   };

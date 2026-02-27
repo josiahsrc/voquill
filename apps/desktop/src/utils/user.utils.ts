@@ -5,8 +5,9 @@ import {
   User,
   UserPreferences,
 } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import { countWords, getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import dayjs from "dayjs";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
 import type { AppState } from "../state/app.state";
@@ -16,8 +17,13 @@ import {
   getAllowsChangeAgentMode,
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
+  getIsEnterpriseEnabled,
 } from "./enterprise.utils";
-import { KEYBOARD_LAYOUT_LANGUAGE } from "./language.utils";
+import {
+  coerceToDictationLanguage,
+  DictationLanguageCode,
+  KEYBOARD_LAYOUT_LANGUAGE,
+} from "./language.utils";
 import { getEffectivePlan, getMemberExceedsLimitByState } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -77,12 +83,11 @@ export const getMyPrimaryDictationLanguage = (state: AppState): string => {
   return getDetectedSystemLocale();
 };
 
-export const getMyRawDictationLanguage = (state: AppState): string => {
-  const { enabled, secondaryLanguage, activeLanguage } =
-    state.settings.languageSwitch;
-
-  if (enabled && activeLanguage === "secondary" && secondaryLanguage) {
-    return secondaryLanguage;
+export const getMyDictationLanguage = (state: AppState): string => {
+  // TODO: We should pass the dictation language into the processors instead of overriding
+  const override = state.dictationLanguageOverride;
+  if (override) {
+    return override;
   }
 
   return getMyPrimaryDictationLanguage(state);
@@ -90,8 +95,8 @@ export const getMyRawDictationLanguage = (state: AppState): string => {
 
 export const loadMyEffectiveDictationLanguage = async (
   state: AppState,
-): Promise<string> => {
-  let lang = getMyRawDictationLanguage(state);
+): Promise<DictationLanguageCode> => {
+  let lang = getMyDictationLanguage(state);
   if (lang === KEYBOARD_LAYOUT_LANGUAGE) {
     lang = await invoke<string>("get_keyboard_language").catch((e) => {
       console.error("Failed to get keyboard language:", e);
@@ -99,7 +104,7 @@ export const loadMyEffectiveDictationLanguage = async (
     });
   }
 
-  return lang;
+  return coerceToDictationLanguage(lang);
 };
 
 export const formatDictationLanguageCode = (language: string): string => {
@@ -208,7 +213,10 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   if (config.mode === "api") {
     const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
     const provider = selectedApiKey?.provider;
-    const noKeyRequired = provider === "speaches" || provider === "ollama";
+    const noKeyRequired =
+      provider === "speaches" ||
+      provider === "ollama" ||
+      provider === "openai-compatible";
     if (apiKey || noKeyRequired) {
       return {
         mode: "api",
@@ -293,13 +301,16 @@ const getGenPrefsInternal = ({
   }
 
   if (config.mode === "api") {
-    if (apiKey) {
-      const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
+    const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
+    const provider = selectedApiKey?.provider;
+    const noKeyRequired =
+      provider === "ollama" || provider === "openai-compatible";
+    if (apiKey || noKeyRequired) {
       return {
         mode: "api",
-        provider: selectedApiKey?.provider ?? "groq",
+        provider: provider ?? "groq",
         apiKeyId: config.selectedApiKeyId!,
-        apiKeyValue: apiKey,
+        apiKeyValue: apiKey ?? "",
         postProcessingModel: selectedApiKey?.postProcessingModel ?? null,
         warnings,
       };
@@ -320,13 +331,61 @@ export const getGenerativePrefs = (state: AppState): GenerativePrefs => {
   });
 };
 
-export const getAgentModePrefs = (state: AppState): GenerativePrefs => {
+export type OpenClawGenerativePrefs = {
+  mode: "openclaw";
+  gatewayUrl: string;
+  token: string;
+  warnings: string[];
+};
+
+export type AgentModePrefs = GenerativePrefs | OpenClawGenerativePrefs;
+
+export const getAgentModePrefs = (state: AppState): AgentModePrefs => {
+  const agentMode = state.settings.agentMode;
+
+  if (agentMode.mode === "openclaw" && !getIsEnterpriseEnabled()) {
+    const warnings: string[] = [];
+    if (!agentMode.openclawGatewayUrl) {
+      warnings.push("OpenClaw gateway URL is not configured.");
+    }
+    if (!agentMode.openclawToken) {
+      warnings.push("OpenClaw token is not configured.");
+    }
+    return {
+      mode: "openclaw",
+      gatewayUrl: agentMode.openclawGatewayUrl ?? "",
+      token: agentMode.openclawToken ?? "",
+      warnings,
+    };
+  }
+
   return getGenPrefsInternal({
     state,
-    config: state.settings.agentMode,
+    config: agentMode as GenerativeConfigInput,
     context: "agent mode",
     allowChange: getAllowsChangeAgentMode(state),
   });
+};
+
+export const getEffectiveStreak = (state: AppState): number => {
+  const user = getMyUser(state);
+  const streak = user?.streak;
+  const recordedAt = user?.streakRecordedAt;
+  if (!streak || !recordedAt) {
+    return 0;
+  }
+
+  const today = dayjs().format("YYYY-MM-DD");
+  if (recordedAt === today) {
+    return streak;
+  }
+
+  const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  if (recordedAt === yesterday) {
+    return streak;
+  }
+
+  return 0;
 };
 
 export const getEffectivePillVisibility = (
@@ -341,4 +400,41 @@ export const getEffectivePillVisibility = (
   }
 
   return "while_active";
+};
+
+const SILENCE_PADDING_MS = 1500;
+const MIN_DURATION_FOR_PADDING_MS = 4000;
+
+export type DictationSpeed = {
+  wpm: number;
+  sampleCount: number;
+};
+
+export const getDictationSpeed = (state: AppState): DictationSpeed | null => {
+  const ids = state.transcriptions.transcriptionIds;
+  let totalWpm = 0;
+  let count = 0;
+
+  for (const id of ids) {
+    const t = getRec(state.transcriptionById, id);
+    if (
+      !t ||
+      !t.audio?.durationMs ||
+      t.audio.durationMs <= 0 ||
+      !t.transcript
+    ) {
+      continue;
+    }
+    const words = countWords(t.transcript);
+    if (words <= 0) continue;
+    let durationMs = t.audio.durationMs;
+    if (durationMs >= MIN_DURATION_FOR_PADDING_MS) {
+      durationMs -= SILENCE_PADDING_MS;
+    }
+    totalWpm += words / (durationMs / 60000);
+    count++;
+  }
+
+  if (count === 0) return null;
+  return { wpm: Math.round(totalWpm / count), sampleCount: count };
 };

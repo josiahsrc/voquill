@@ -85,7 +85,7 @@ const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;
 if (mixpanelToken) {
   mixpanel.init(mixpanelToken, {
     debug: import.meta.env.DEV,
-    track_pageview: true,
+    track_pageview: false,
     persistence: "localStorage",
   });
 }

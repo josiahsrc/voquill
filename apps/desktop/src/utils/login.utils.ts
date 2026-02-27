@@ -1,5 +1,5 @@
-import type { AppState } from "../state/app.state";
 import { getIntl } from "../i18n/intl";
+import type { AppState } from "../state/app.state";
 
 export const validateEmail = (state: AppState): string | null => {
   const email = state.login.email;
@@ -98,4 +98,11 @@ export const getCanSubmitSignUp = (state: AppState): boolean => {
   const confirmPasswordError = getSignUpConfirmPasswordValidation(state);
 
   return !emailError && !passwordError && !confirmPasswordError;
+};
+
+export const getShouldShowEmailForm = (state: AppState): boolean => {
+  if (!state.isEnterprise) {
+    return true;
+  }
+  return state.enterpriseConfig?.allowEmailSignIn ?? true;
 };

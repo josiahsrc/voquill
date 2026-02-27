@@ -48,7 +48,7 @@ export async function upsertLlmProviderHandler(opts: {
     url: provider.url,
     ...apiKeyFields,
     model: provider.model,
-    isEnabled: provider.isEnabled,
+    tier: provider.tier,
   });
 
   return {};

@@ -2,12 +2,13 @@ import {
   loadLlmProviders,
   pullLlmProvider,
 } from "../../actions/llm-providers.actions";
+import { loadOidcProviders } from "../../actions/oidc-providers.actions";
 import { loadSettings } from "../../actions/settings.actions";
 import {
   loadSttProviders,
   pullSttProvider,
 } from "../../actions/stt-providers.actions";
-import { loadUsers } from "../../actions/users.actions";
+import { loadMyUser, loadUsers } from "../../actions/users.actions";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { getAppState } from "../../store";
 
@@ -16,7 +17,11 @@ const FIVE_MINUTES = 1000 * 60 * 5;
 
 export default function HomeSideEffects() {
   useIntervalAsync(FIVE_MINUTES, async () => {
-    await Promise.allSettled([loadSttProviders(), loadLlmProviders()]);
+    await Promise.allSettled([
+      loadSttProviders(),
+      loadLlmProviders(),
+      loadOidcProviders(),
+    ]);
   }, []);
 
   useIntervalAsync(TEN_SECONDS, async () => {
@@ -38,7 +43,7 @@ export default function HomeSideEffects() {
   }, []);
 
   useIntervalAsync(TEN_SECONDS, async () => {
-    await Promise.allSettled([loadSettings(), loadUsers()]);
+    await Promise.allSettled([loadSettings(), loadUsers(), loadMyUser()]);
   }, []);
 
   return null;

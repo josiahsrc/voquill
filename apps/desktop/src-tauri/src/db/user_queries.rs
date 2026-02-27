@@ -22,9 +22,12 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
              cohort,
              styling_mode,
              selected_tone_id,
-             active_tone_ids
+             active_tone_ids,
+             streak,
+             streak_recorded_at,
+             referral_source
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)
          ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
             bio = excluded.bio,
@@ -42,7 +45,10 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
             cohort = excluded.cohort,
             styling_mode = excluded.styling_mode,
             selected_tone_id = excluded.selected_tone_id,
-            active_tone_ids = excluded.active_tone_ids",
+            active_tone_ids = excluded.active_tone_ids,
+            streak = excluded.streak,
+            streak_recorded_at = excluded.streak_recorded_at,
+            referral_source = excluded.referral_source",
     )
     .bind(&user.id)
     .bind(&user.name)
@@ -62,6 +68,9 @@ pub async fn upsert_user(pool: SqlitePool, user: &User) -> Result<User, sqlx::Er
     .bind(&user.styling_mode)
     .bind(&user.selected_tone_id)
     .bind(&user.active_tone_ids)
+    .bind(&user.streak)
+    .bind(&user.streak_recorded_at)
+    .bind(&user.referral_source)
     .execute(&pool)
     .await?;
 
@@ -88,7 +97,10 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
             cohort,
             styling_mode,
             selected_tone_id,
-            active_tone_ids
+            active_tone_ids,
+            streak,
+            streak_recorded_at,
+            referral_source
          FROM user_profiles
          LIMIT 1",
     )
@@ -126,6 +138,9 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 styling_mode: row.try_get::<Option<String>, _>("styling_mode").unwrap_or(None),
                 selected_tone_id: row.try_get::<Option<String>, _>("selected_tone_id").unwrap_or(None),
                 active_tone_ids: row.try_get::<Option<String>, _>("active_tone_ids").unwrap_or(None),
+                streak: row.try_get::<Option<i64>, _>("streak").unwrap_or(None),
+                streak_recorded_at: row.try_get::<Option<String>, _>("streak_recorded_at").unwrap_or(None),
+                referral_source: row.try_get::<Option<String>, _>("referral_source").unwrap_or(None),
             })
         }
         None => None,

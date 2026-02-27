@@ -16,6 +16,7 @@ class AppCheckboxListTile extends StatelessWidget {
     this.leadingSpacing,
     this.fade,
     this.footer,
+    this.secondary,
   });
 
   final Widget? leading;
@@ -28,6 +29,7 @@ class AppCheckboxListTile extends StatelessWidget {
   final double? leadingSpacing;
   final bool? fade;
   final Widget? footer;
+  final Widget? secondary;
 
   @override
   Widget build(BuildContext context) {
@@ -68,13 +70,12 @@ class AppCheckboxListTile extends StatelessWidget {
 
     return AppListTile(
       highlighted: value,
-      leading: maybeFadeWidget(leading),
+      leading: checkbox,
       title: maybeFadeWidget(title),
       onTap: onChanged == null ? null : () => onChanged!(!value),
       subtitle: maybeFadeWidget(subtitle),
-      trailingSpacing: kAppListTileInkSpacing,
-      trailing: checkbox,
-      leadingSpacing: leadingSpacing,
+      leadingSpacing: leadingSpacing ?? kAppListTileInkSpacing,
+      trailing: maybeFadeWidget(secondary),
       footer: maybeFadeWidget(footer),
     );
   }

@@ -12,7 +12,8 @@ import { useIsOnboarded } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import {
   getEffectivePlan,
-  getIsPaying,
+  getIsOnTrial,
+  getIsPro,
   planToDisplayName,
 } from "../../utils/member.utils";
 import { getInitials } from "../../utils/string.utils";
@@ -22,6 +23,7 @@ import {
   MenuPopoverBuilder,
   type MenuPopoverItem,
 } from "../common/MenuPopover";
+import { TrialCountdown } from "../common/TrialCountdown";
 import { maybeArrayElements } from "../settings/AIPostProcessingConfiguration";
 
 export type BaseHeaderProps = {
@@ -54,7 +56,8 @@ export const AppHeader = () => {
   const nav = useNavigate();
   const { leftContent } = useHeaderPortal();
   const isOnboarded = useIsOnboarded();
-  const isPaying = useAppStore(getIsPaying);
+  const isPro = useAppStore(getIsPro);
+  const isOnTrial = useAppStore(getIsOnTrial);
   const plan = useAppStore((state) => getEffectivePlan(state));
   const planName = useAppStore((state) => {
     const plan = getEffectivePlan(state);
@@ -89,7 +92,7 @@ export const AppHeader = () => {
       },
       leading: <AccountCircleOutlined />,
     },
-    ...maybeArrayElements<MenuPopoverItem>(!isPaying, [
+    ...maybeArrayElements<MenuPopoverItem>(!isPro, [
       {
         kind: "listItem",
         title: <FormattedMessage defaultMessage="Upgrade to Pro" />,
@@ -124,6 +127,7 @@ export const AppHeader = () => {
             <FormattedMessage defaultMessage="Upgrade" />
           </Button>
         )}
+        {isOnTrial && <TrialCountdown />}
         <MenuPopoverBuilder
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           transformOrigin={{ vertical: "top", horizontal: "right" }}

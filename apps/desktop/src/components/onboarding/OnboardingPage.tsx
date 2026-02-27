@@ -8,6 +8,7 @@ import { ChooseTranscriptionForm } from "./ChooseTranscriptionForm";
 import { KeybindingsForm } from "./KeybindingsForm";
 import { MicCheckForm } from "./MicCheckForm";
 import { MicPermsForm } from "./MicPermsForm";
+import { ReferralSourceForm } from "./ReferralSourceForm";
 import { SignInForm } from "./SignInForm";
 import { TutorialForm } from "./TutorialForm";
 import { UnlockedProForm } from "./UnlockedProForm";
@@ -31,6 +32,7 @@ export default function OnboardingPage() {
       {currentPage === "chooseTranscription" && <ChooseTranscriptionForm />}
       {currentPage === "chooseLlm" && <ChooseLlmForm />}
       {currentPage === "userDetails" && <UserDetailsForm />}
+      {currentPage === "referralSource" && <ReferralSourceForm />}
       {currentPage === "micPerms" && <MicPermsForm />}
       {currentPage === "a11yPerms" && <A11yPermsForm />}
       {currentPage === "keybindings" && <KeybindingsForm />}

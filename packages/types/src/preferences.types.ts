@@ -21,10 +21,9 @@ export type UserPreferences = {
   gpuEnumerationEnabled: boolean;
   agentMode: Nullable<AgentMode>;
   agentModeApiKeyId: Nullable<string>;
+  openclawGatewayUrl: Nullable<string>;
+  openclawToken: Nullable<string>;
   lastSeenFeature: Nullable<string>;
-  languageSwitchEnabled: boolean;
-  secondaryDictationLanguage: Nullable<string>;
-  activeDictationLanguage: "primary" | "secondary";
   preferredMicrophone: Nullable<string>;
   ignoreUpdateDialog: boolean;
   incognitoModeEnabled: boolean;

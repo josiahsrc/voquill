@@ -70,6 +70,8 @@ pub const API_KEY_BASE_URL_MIGRATION_SQL: &str =
     include_str!("migrations/035_api_key_base_url.sql");
 pub const API_KEY_AZURE_REGION_MIGRATION_SQL: &str =
     include_str!("migrations/036_api_key_azure_region.sql");
+pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
+    include_str!("migrations/056_api_key_include_v1_path.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");
@@ -93,6 +95,14 @@ pub const USER_SELECTED_TONE_ID_MIGRATION_SQL: &str =
     include_str!("migrations/049_user_selected_tone_id.sql");
 pub const USER_ACTIVE_TONE_IDS_MIGRATION_SQL: &str =
     include_str!("migrations/050_user_active_tone_ids.sql");
+pub const ADDITIONAL_DICTATION_LANGUAGES_MIGRATION_SQL: &str =
+    include_str!("migrations/051_additional_dictation_languages.sql");
+pub const USE_NEW_BACKEND_MIGRATION_SQL: &str = include_str!("migrations/052_use_new_backend.sql");
+pub const OPENCLAW_PREFERENCES_MIGRATION_SQL: &str =
+    include_str!("migrations/053_openclaw_preferences.sql");
+pub const USER_STREAK_MIGRATION_SQL: &str = include_str!("migrations/054_user_streak.sql");
+pub const USER_REFERRAL_SOURCE_MIGRATION_SQL: &str =
+    include_str!("migrations/055_user_referral_source.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -394,6 +404,42 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 50,
             description: "add_user_active_tone_ids",
             sql: USER_ACTIVE_TONE_IDS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 51,
+            description: "add_additional_dictation_languages",
+            sql: ADDITIONAL_DICTATION_LANGUAGES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 52,
+            description: "add_use_new_backend",
+            sql: USE_NEW_BACKEND_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 53,
+            description: "add_openclaw_preferences",
+            sql: OPENCLAW_PREFERENCES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 54,
+            description: "add_user_streak",
+            sql: USER_STREAK_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 55,
+            description: "add_user_referral_source",
+            sql: USER_REFERRAL_SOURCE_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 56,
+            description: "add_api_key_include_v1_path",
+            sql: API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

@@ -1,9 +1,8 @@
+import { FormattedMessage } from "react-intl";
 import { useAppStore } from "../../store";
 import { VirtualizedListPage } from "../common/VirtualizedListPage";
 import { TranscriptionsSideEffects } from "./TranscriptionsSideEffects";
 import { TranscriptionRow } from "./TranscriptRow";
-import { TranscriptionDetailsDialog } from "./TranscriptionDetailsDialog";
-import { FormattedMessage } from "react-intl";
 
 export default function TranscriptionsPage() {
   const transcriptionIds = useAppStore(
@@ -13,7 +12,6 @@ export default function TranscriptionsPage() {
   return (
     <>
       <TranscriptionsSideEffects />
-      <TranscriptionDetailsDialog />
       <VirtualizedListPage
         title={<FormattedMessage defaultMessage="History" />}
         subtitle={
