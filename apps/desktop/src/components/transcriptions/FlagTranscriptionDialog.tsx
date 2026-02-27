@@ -5,15 +5,22 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  LinearProgress,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import { invokeHandler } from "@repo/functions";
 import { getRec } from "@repo/utilities";
+import { getStorage, ref, uploadBytesResumable } from "firebase/storage";
 import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { closeFlagTranscriptionDialog } from "../../actions/transcriptions.actions";
+import { getTranscriptionRepo } from "../../repos";
 import { useAppStore } from "../../store";
+import { buildWaveFile, ensureFloat32Array } from "../../utils/audio.utils";
+import { getEffectiveAuth } from "../../utils/auth.utils";
 import { AudioPlayerPill } from "./AudioPlayerPill";
 import { TranscriptionTextBlock } from "./TranscriptionTextBlock";
 
@@ -43,17 +50,93 @@ export const FlagTranscriptionDialog = () => {
   });
   const intl = useIntl();
   const [feedback, setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const handleClose = useCallback(() => {
+    if (submitting) return;
     closeFlagTranscriptionDialog();
     setFeedback("");
-  }, []);
+    setProgress(0);
+  }, [submitting]);
 
-  const handleSubmit = useCallback(() => {
-    // Upload logic deferred — just close for now
-    closeFlagTranscriptionDialog();
-    setFeedback("");
-  }, []);
+  const handleSubmit = useCallback(async () => {
+    if (!transcription) return;
+
+    const auth = getEffectiveAuth();
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    setSubmitting(true);
+    setProgress(0);
+
+    try {
+      const audioPath = `users/${uid}/flaggedAudio/${transcription.id}.wav`;
+
+      if (transcription.audio) {
+        const audioData = await getTranscriptionRepo().loadTranscriptionAudio(
+          transcription.id,
+        );
+        const wavBuffer = buildWaveFile(
+          ensureFloat32Array(audioData.samples),
+          audioData.sampleRate,
+        );
+
+        await new Promise<void>((resolve, reject) => {
+          const storage = getStorage();
+          const fileRef = ref(storage, audioPath);
+          const task = uploadBytesResumable(
+            fileRef,
+            new Uint8Array(wavBuffer),
+            { contentType: "audio/wav" },
+          );
+
+          task.on(
+            "state_changed",
+            (snapshot) => {
+              const ratio = snapshot.bytesTransferred / snapshot.totalBytes;
+              setProgress(ratio * 90);
+            },
+            reject,
+            resolve,
+          );
+        });
+      }
+
+      setProgress(90);
+
+      await invokeHandler("flaggedAudio/upsert", {
+        flaggedAudio: {
+          id: transcription.id,
+          filePath: transcription.audio ? audioPath : "",
+          feedback,
+          prompt: transcription.transcriptionPrompt ?? null,
+          rawTranscription:
+            transcription.rawTranscript ?? transcription.transcript,
+          postProcessedTranscription: transcription.transcript ?? null,
+          transcriptionProvider: transcription.transcriptionMode ?? "unknown",
+          postProcessingProvider: transcription.postProcessMode ?? null,
+        },
+      });
+
+      setProgress(100);
+
+      showSnackbar(
+        intl.formatMessage({
+          defaultMessage: "Transcription flagged successfully",
+        }),
+        { mode: "success" },
+      );
+
+      closeFlagTranscriptionDialog();
+      setFeedback("");
+      setProgress(0);
+    } catch (error) {
+      showErrorSnackbar(error);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [transcription, feedback, intl]);
 
   const rawTranscriptText = useMemo(
     () => transcription?.rawTranscript ?? transcription?.transcript ?? "",
@@ -177,14 +260,15 @@ export const FlagTranscriptionDialog = () => {
           </Typography>
         )}
       </DialogContent>
+      {submitting && <LinearProgress variant="determinate" value={progress} />}
       <DialogActions>
-        <Button onClick={handleClose}>
+        <Button onClick={handleClose} disabled={submitting}>
           <FormattedMessage defaultMessage="Cancel" />
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={!transcription}
+          disabled={!transcription || submitting}
         >
           <FormattedMessage defaultMessage="Submit" />
         </Button>

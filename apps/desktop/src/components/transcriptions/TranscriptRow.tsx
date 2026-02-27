@@ -18,6 +18,7 @@ import {
 } from "../../actions/transcriptions.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
+import { getIsVoquillCloudUser } from "../../utils/member.utils";
 import { TypographyWithMore } from "../common/TypographyWithMore";
 import { AudioPlayerPill } from "./AudioPlayerPill";
 
@@ -27,6 +28,7 @@ export type TranscriptionRowProps = {
 
 export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   const intl = useIntl();
+  const isCloudUser = useAppStore(getIsVoquillCloudUser);
   const transcription = useAppStore((state) =>
     getRec(state.transcriptionById, id),
   );
@@ -195,23 +197,6 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               </Tooltip>
               <Tooltip
                 title={intl.formatMessage({
-                  defaultMessage: "Flag transcription",
-                })}
-                placement="top"
-              >
-                <IconButton
-                  aria-label={intl.formatMessage({
-                    defaultMessage: "Flag transcription",
-                  })}
-                  size="small"
-                  onClick={() => openFlagTranscriptionDialog(id)}
-                  sx={{ p: 0.5 }}
-                >
-                  <FlagOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip
-                title={intl.formatMessage({
                   defaultMessage: "Export transcription",
                 })}
                 placement="top"
@@ -227,6 +212,26 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
                   <FileDownloadOutlinedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
+              {isCloudUser && (
+                <Tooltip
+                  title={intl.formatMessage({
+                    defaultMessage: "Report a problem with this transcription",
+                  })}
+                  placement="top"
+                >
+                  <IconButton
+                    aria-label={intl.formatMessage({
+                      defaultMessage:
+                        "Report a problem with this transcription",
+                    })}
+                    size="small"
+                    onClick={() => openFlagTranscriptionDialog(id)}
+                    sx={{ p: 0.5 }}
+                  >
+                    <FlagOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
             </>
           }
         />

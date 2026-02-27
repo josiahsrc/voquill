@@ -19,6 +19,11 @@ export const getEffectivePlan = (state: AppState): EffectivePlan => {
   return getMyMember(state)?.plan ?? "community";
 };
 
+export const getIsVoquillCloudUser = (state: AppState): boolean => {
+  const plan = getEffectivePlan(state);
+  return plan === "free" || plan === "pro";
+};
+
 export const planToDisplayName = (plan: EffectivePlan): string => {
   if (plan === "enterprise") {
     return getIntl().formatMessage({ defaultMessage: "Enterprise" });
