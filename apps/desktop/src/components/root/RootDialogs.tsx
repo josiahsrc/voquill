@@ -14,6 +14,7 @@ import { UpgradePlanDialog } from "../pricing/UpgradePlanDialog";
 import { UpdateDialog } from "./UpdateDialog";
 import { DeleteAccountDialog } from "../settings/DeleteAccountDialog";
 import { ToneEditorDialog } from "../tones/ToneEditorDialog";
+import { FlagTranscriptionDialog } from "../transcriptions/FlagTranscriptionDialog";
 import { RetranscribeDialog } from "../transcriptions/RetranscribeDialog";
 
 export const RootDialogs = () => {
@@ -21,6 +22,7 @@ export const RootDialogs = () => {
     <>
       <UpdateDialog />
       <RetranscribeDialog />
+      <FlagTranscriptionDialog />
       <ToneEditorDialog />
       <AITranscriptionDialog />
       <AIPostProcessingDialog />
