@@ -1,7 +1,11 @@
 package com.voquill.mobile
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Canvas
@@ -14,20 +18,32 @@ import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
 import android.inputmethodservice.InputMethodService
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.util.Base64
 import android.util.Log
 import android.view.Choreographer
+import android.view.Gravity
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
-import android.view.inputmethod.InputMethodManager
+import android.view.animation.DecelerateInterpolator
+import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import java.util.UUID
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
@@ -40,14 +56,45 @@ class VoquillIME : InputMethodService() {
 
     enum class Phase { IDLE, RECORDING, LOADING }
 
+    private data class SharedTone(
+        val name: String,
+        val promptTemplate: String,
+    )
+
+    private data class SharedTerm(
+        val sourceValue: String,
+        val isReplacement: Boolean,
+    )
+
+    private data class MemberInfo(
+        val plan: String,
+        val isOnTrial: Boolean,
+        val trialEndsAt: String?,
+        val wordsToday: Int,
+    )
+
+    private data class ConfigInfo(
+        val freeWordsPerDay: Int,
+    )
+
     private var currentPhase = Phase.IDLE
 
     private lateinit var keyboardBackground: FrameLayout
     private lateinit var waveformContainer: FrameLayout
-    private lateinit var pillButton: LinearLayout
-    private lateinit var pillIcon: ImageView
+    private lateinit var pillButton: FrameLayout
+    private lateinit var statusRow: LinearLayout
     private lateinit var pillLabel: TextView
-    private lateinit var globeButton: ImageButton
+    private lateinit var statusLabel: TextView
+    private lateinit var statusDot: TextView
+    private lateinit var upgradeButton: TextView
+    private lateinit var logoButton: ImageButton
+    private lateinit var languageChip: TextView
+    private lateinit var utilAtButton: ImageButton
+    private lateinit var utilSpaceButton: ImageButton
+    private lateinit var utilReturnButton: ImageButton
+    private lateinit var utilDeleteButton: ImageButton
+    private lateinit var toneScroll: HorizontalScrollView
+    private lateinit var toneChipRow: LinearLayout
 
     private var waveformView: AudioWaveformView? = null
     private var progressView: IndeterminateProgressView? = null
@@ -59,6 +106,21 @@ class VoquillIME : InputMethodService() {
 
     private var cachedIdToken: String? = null
     private var cachedIdTokenExpiry = 0L
+
+    private var selectedToneId: String? = null
+    private var activeToneIds: List<String> = emptyList()
+    private var toneById: Map<String, SharedTone> = emptyMap()
+    private var dictationLanguages: List<String> = listOf("en")
+    private var memberInfo: MemberInfo? = null
+    private var configInfo: ConfigInfo? = null
+
+    private var keyboardCounterRunnable: Runnable? = null
+    private var memberRefreshRunnable: Runnable? = null
+    private var statusAnimator: ValueAnimator? = null
+    private var statusBannerVisible = false
+    private var baseKeyboardHeightPx = 0
+    private var baseKeyboardPaddingBottomPx = 0
+    private var lastKeyboardCounter = -1
 
     private val executor = Executors.newSingleThreadExecutor()
 
@@ -75,12 +137,30 @@ class VoquillIME : InputMethodService() {
     override fun onCreateInputView(): View {
         val view = layoutInflater.inflate(R.layout.keyboard_view, null)
 
+        val keyboardContent: FrameLayout = view.findViewById(R.id.keyboard_content)
         keyboardBackground = view.findViewById(R.id.keyboard_background)
         waveformContainer = view.findViewById(R.id.waveform_container)
         pillButton = view.findViewById(R.id.pill_button)
-        pillIcon = view.findViewById(R.id.pill_icon)
+        statusRow = view.findViewById(R.id.status_row)
         pillLabel = view.findViewById(R.id.pill_label)
-        globeButton = view.findViewById(R.id.globe_button)
+        statusLabel = view.findViewById(R.id.status_label)
+        statusDot = view.findViewById(R.id.status_dot)
+        upgradeButton = view.findViewById(R.id.upgrade_button)
+        statusRow.alpha = 0f
+        logoButton = view.findViewById(R.id.logo_button)
+        languageChip = view.findViewById(R.id.language_chip)
+        utilAtButton = view.findViewById(R.id.util_at_button)
+        utilSpaceButton = view.findViewById(R.id.util_space_button)
+        utilReturnButton = view.findViewById(R.id.util_return_button)
+        utilDeleteButton = view.findViewById(R.id.util_delete_button)
+        toneScroll = view.findViewById(R.id.tone_scroll)
+        toneChipRow = view.findViewById(R.id.tone_chip_row)
+        toneScroll.isHorizontalFadingEdgeEnabled = true
+        toneScroll.isVerticalFadingEdgeEnabled = false
+        toneScroll.setFadingEdgeLength((18 * resources.displayMetrics.density).toInt())
+
+        baseKeyboardHeightPx = keyboardContent.layoutParams.height
+        baseKeyboardPaddingBottomPx = keyboardContent.paddingBottom
 
         waveformView = AudioWaveformView(this).also {
             waveformContainer.addView(it, FrameLayout.LayoutParams(
@@ -91,23 +171,55 @@ class VoquillIME : InputMethodService() {
 
         progressView = IndeterminateProgressView(this).also {
             it.alpha = 0f
-            waveformContainer.addView(it, FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            ))
+            val horizontalInset = (16 * resources.displayMetrics.density).toInt()
+            waveformContainer.addView(
+                it,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    (20 * resources.displayMetrics.density).toInt(),
+                    Gravity.CENTER_VERTICAL,
+                ).apply {
+                    marginStart = horizontalInset
+                    marginEnd = horizontalInset
+                },
+            )
         }
 
-        pillButton.setOnClickListener { onPillTap() }
-        globeButton.setOnClickListener {
-            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-            @Suppress("DEPRECATION")
-            imm.switchToNextInputMethod(window.window!!.attributes.token, false)
+        pillButton.setOnTouchListener { v, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> v.animate().scaleX(0.95f).scaleY(0.95f).setDuration(100).start()
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
+                }
+            }
+            false
         }
+        pillButton.setOnClickListener { onPillTap() }
+        addButtonFeedback(logoButton)
+        addButtonFeedback(languageChip)
+        addButtonFeedback(utilAtButton)
+        addButtonFeedback(utilSpaceButton)
+        addButtonFeedback(utilReturnButton)
+        addButtonFeedback(utilDeleteButton)
+        addButtonFeedback(upgradeButton)
+
+        logoButton.setOnClickListener { openMainApp() }
+        languageChip.setOnClickListener { onLanguageChipTap() }
+        utilAtButton.setOnClickListener { currentInputConnection?.commitText("@", 1) }
+        utilSpaceButton.setOnClickListener { currentInputConnection?.commitText(" ", 1) }
+        utilReturnButton.setOnClickListener { onReturnTap() }
+        utilDeleteButton.setOnClickListener { sendDeleteKey() }
+        upgradeButton.setOnClickListener { openUpgrade() }
 
         window.window?.decorView?.setBackgroundColor(Color.TRANSPARENT)
         window.window?.navigationBarColor = Color.TRANSPARENT
+        applySafeAreaInsets(view, keyboardContent)
 
         waveformView?.startAnimating()
+        reloadKeyboardConfig()
+        startKeyboardCounterPolling()
+        startMemberRefreshPolling()
+        refreshMemberData()
         applyPhase(Phase.IDLE)
 
         return view
@@ -128,29 +240,48 @@ class VoquillIME : InputMethodService() {
     private fun applyPhase(phase: Phase) {
         currentPhase = phase
         val dark = isDarkMode
-        val activeColor = if (dark) Color.WHITE else Color.BLACK
-        val idleColor = if (dark) Color.argb(64, 255, 255, 255) else Color.argb(51, 0, 0, 0)
+        val activeColor = Color.WHITE
+        val loadingColor = if (dark) COLOR_GRAY_DARK else COLOR_GRAY_LIGHT
         val pillBg = pillButton.background as? GradientDrawable
             ?: (pillButton.background?.mutate() as? GradientDrawable)
 
         keyboardBackground.setBackgroundResource(
             if (dark) R.drawable.keyboard_background_dark else R.drawable.keyboard_background_light
         )
-        val globeTint = if (dark) Color.argb(180, 255, 255, 255) else Color.argb(140, 0, 0, 0)
-        globeButton.setColorFilter(globeTint)
+        val labelColor = if (dark) Color.WHITE else Color.BLACK
+        val secondaryLabelColor = if (dark) Color.argb(191, 235, 235, 245) else Color.argb(153, 60, 60, 67)
+        val tertiaryLabelColor = if (dark) Color.argb(128, 235, 235, 245) else Color.argb(77, 60, 60, 67)
+        val utilityBackground = if (dark) COLOR_UTILITY_DARK else COLOR_UTILITY_LIGHT
+        logoButton.setColorFilter(labelColor)
+        languageChip.setTextColor(labelColor)
+        utilAtButton.setColorFilter(labelColor)
+        utilSpaceButton.setColorFilter(labelColor)
+        utilReturnButton.setColorFilter(labelColor)
+        utilDeleteButton.setColorFilter(labelColor)
+        statusLabel.setTextColor(secondaryLabelColor)
+        statusDot.setTextColor(tertiaryLabelColor)
+        upgradeButton.setTextColor(COLOR_BLUE)
+        setRoundedFill(logoButton, utilityBackground, 8f)
+        setRoundedFill(languageChip, utilityBackground, 8f)
+        setRoundedFill(utilAtButton, utilityBackground, 8f)
+        setRoundedFill(utilSpaceButton, utilityBackground, 8f)
+        setRoundedFill(utilReturnButton, utilityBackground, 8f)
+        setRoundedFill(utilDeleteButton, utilityBackground, 8f)
+        renderToneChips()
+        updateStatusBanner()
 
         when (phase) {
             Phase.IDLE -> {
-                waveformView?.alpha = 1f
+                waveformView?.alpha = 0f
                 progressView?.alpha = 0f
                 progressView?.stopAnimating()
                 waveformView?.isActive = false
-                waveformView?.waveColor = idleColor
+                waveformView?.waveColor = activeColor
                 pillBg?.setColor(COLOR_BLUE)
-                pillIcon.setImageResource(R.drawable.ic_mic)
-                pillIcon.visibility = View.VISIBLE
-                pillLabel.text = "Tap to dictate"
+                pillLabel.text = "tap to dictate"
+                pillLabel.alpha = 1f
                 pillButton.isClickable = true
+                pillButton.isEnabled = true
             }
             Phase.RECORDING -> {
                 waveformView?.alpha = 1f
@@ -158,21 +289,22 @@ class VoquillIME : InputMethodService() {
                 progressView?.stopAnimating()
                 waveformView?.isActive = true
                 waveformView?.waveColor = activeColor
-                pillBg?.setColor(COLOR_RED)
-                pillIcon.setImageResource(R.drawable.ic_stop)
-                pillIcon.visibility = View.VISIBLE
-                pillLabel.text = "Stop dictating"
+                pillBg?.setColor(COLOR_BLUE)
+                pillLabel.alpha = 0f
                 pillButton.isClickable = true
+                pillButton.isEnabled = true
             }
             Phase.LOADING -> {
                 waveformView?.alpha = 0f
+                waveformView?.isActive = false
                 progressView?.alpha = 1f
                 progressView?.barColor = activeColor
                 progressView?.startAnimating()
-                pillBg?.setColor(COLOR_GRAY)
-                pillIcon.visibility = View.GONE
-                pillLabel.text = "Loading..."
+                pillBg?.setColor(loadingColor)
+                pillLabel.text = "Processing..."
+                pillLabel.alpha = 0f
                 pillButton.isClickable = false
+                pillButton.isEnabled = false
             }
         }
     }
@@ -184,8 +316,12 @@ class VoquillIME : InputMethodService() {
                     currentInputConnection?.commitText("[Microphone permission not granted — open Voquill app to allow]", 1)
                     return
                 }
+                if (!startAudioCapture()) {
+                    currentInputConnection?.commitText("[Failed to start microphone: $lastDebugLog]", 1)
+                    applyPhase(Phase.IDLE)
+                    return
+                }
                 applyPhase(Phase.RECORDING)
-                startAudioCapture()
             }
             Phase.RECORDING -> {
                 stopAudioCapture()
@@ -196,7 +332,490 @@ class VoquillIME : InputMethodService() {
         }
     }
 
+    private fun addButtonFeedback(button: View) {
+        button.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    view.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).start()
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    view.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
+                }
+            }
+            false
+        }
+    }
+
+    private fun setRoundedFill(view: View, color: Int, radiusDp: Float) {
+        val radiusPx = radiusDp * resources.displayMetrics.density
+        val drawable = (view.background as? GradientDrawable)?.mutate() as? GradientDrawable
+            ?: GradientDrawable()
+        drawable.shape = GradientDrawable.RECTANGLE
+        drawable.cornerRadius = radiusPx
+        drawable.setColor(color)
+        view.background = drawable
+    }
+
+    private fun applySafeAreaInsets(rootView: View, keyboardContent: FrameLayout) {
+        val applyInset: (Int) -> Unit = { bottomInset ->
+            val safeInset = max(0, bottomInset)
+
+            keyboardContent.layoutParams = keyboardContent.layoutParams.apply {
+                height = baseKeyboardHeightPx + safeInset
+            }
+            keyboardContent.setPadding(
+                keyboardContent.paddingLeft,
+                keyboardContent.paddingTop,
+                keyboardContent.paddingRight,
+                baseKeyboardPaddingBottomPx + safeInset,
+            )
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            rootView.setOnApplyWindowInsetsListener { _, windowInsets ->
+                val barInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemBars())
+                val gestureInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemGestures())
+                applyInset(max(barInsets.bottom, gestureInsets.bottom))
+                windowInsets
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            rootView.setOnApplyWindowInsetsListener { _, windowInsets ->
+                @Suppress("DEPRECATION")
+                applyInset(windowInsets.systemWindowInsetBottom)
+                windowInsets
+            }
+        }
+
+        rootView.post {
+            val windowInsets = rootView.rootWindowInsets
+            if (windowInsets != null) {
+                val insetBottom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val barInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemBars())
+                    val gestureInsets = windowInsets.getInsets(android.view.WindowInsets.Type.systemGestures())
+                    max(barInsets.bottom, gestureInsets.bottom)
+                } else {
+                    @Suppress("DEPRECATION")
+                    windowInsets.systemWindowInsetBottom
+                }
+                applyInset(insetBottom)
+            }
+        }
+
+        rootView.requestApplyInsets()
+    }
+
+    private fun openMainApp(showPaywall: Boolean = false) {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        if (showPaywall) {
+            launchIntent.putExtra(EXTRA_SHOW_PAYWALL, true)
+        }
+        try {
+            startActivity(launchIntent)
+        } catch (e: Exception) {
+            dbg("openMainApp failed: ${e.message}")
+        }
+    }
+
+    private fun openUpgrade() {
+        openMainApp(showPaywall = true)
+    }
+
+    private fun sendDeleteKey() {
+        val connection = currentInputConnection ?: return
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+    }
+
+    private fun onReturnTap() {
+        val connection = currentInputConnection ?: return
+        val editorInfo = currentInputEditorInfo
+        val action = (editorInfo?.imeOptions ?: 0) and EditorInfo.IME_MASK_ACTION
+
+        if (action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
+            if (connection.performEditorAction(action)) {
+                return
+            }
+        }
+
+        val inputType = editorInfo?.inputType ?: 0
+        val isMultiLine = (inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0 ||
+            (inputType and InputType.TYPE_TEXT_FLAG_IME_MULTI_LINE) != 0
+
+        if (isMultiLine) {
+            connection.commitText("\n", 1)
+            return
+        }
+
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+    }
+
+    private fun startKeyboardCounterPolling() {
+        stopKeyboardCounterPolling()
+        val runnable = object : Runnable {
+            override fun run() {
+                checkKeyboardCounter()
+                handler.postDelayed(this, 1000)
+            }
+        }
+        keyboardCounterRunnable = runnable
+        handler.post(runnable)
+    }
+
+    private fun stopKeyboardCounterPolling() {
+        keyboardCounterRunnable?.let { handler.removeCallbacks(it) }
+        keyboardCounterRunnable = null
+    }
+
+    private fun checkKeyboardCounter() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val counter = prefs.getInt(KEY_KEYBOARD_UPDATE_COUNTER, 0)
+        if (counter != lastKeyboardCounter) {
+            lastKeyboardCounter = counter
+            reloadKeyboardConfig()
+        }
+    }
+
+    private fun reloadKeyboardConfig() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        loadLanguageConfig(prefs)
+        loadToneConfig(prefs)
+        renderToneChips()
+    }
+
+    private fun loadLanguageConfig(prefs: android.content.SharedPreferences) {
+        dictationLanguages = loadStringList(prefs, KEY_DICTATION_LANGUAGES).ifEmpty { listOf("en") }
+        val currentLanguage = prefs.getString(KEY_DICTATION_LANGUAGE, dictationLanguages.first()) ?: dictationLanguages.first()
+        val languageCode = currentLanguage.substringBefore("-").uppercase(Locale.US)
+        languageChip.text = languageCode
+        languageChip.visibility = if (dictationLanguages.size > 1) View.VISIBLE else View.GONE
+    }
+
+    private fun onLanguageChipTap() {
+        if (dictationLanguages.size <= 1) {
+            return
+        }
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val currentLanguage = prefs.getString(KEY_DICTATION_LANGUAGE, dictationLanguages.first()) ?: dictationLanguages.first()
+        val currentIndex = dictationLanguages.indexOf(currentLanguage).let { if (it >= 0) it else 0 }
+        val nextLanguage = dictationLanguages[(currentIndex + 1) % dictationLanguages.size]
+        prefs.edit()
+            .putString(KEY_DICTATION_LANGUAGE, nextLanguage)
+            .putInt(KEY_APP_UPDATE_COUNTER, prefs.getInt(KEY_APP_UPDATE_COUNTER, 0) + 1)
+            .apply()
+        loadLanguageConfig(prefs)
+    }
+
+    private fun loadToneConfig(prefs: android.content.SharedPreferences) {
+        activeToneIds = loadStringList(prefs, KEY_ACTIVE_TONE_IDS)
+        toneById = loadToneById(prefs)
+        selectedToneId = prefs.getString(KEY_SELECTED_TONE_ID, null) ?: activeToneIds.firstOrNull()
+    }
+
+    private fun renderToneChips() {
+        if (!::toneChipRow.isInitialized) {
+            return
+        }
+        toneChipRow.removeAllViews()
+        toneChipRow.setPadding(0, 0, 0, 0)
+
+        if (activeToneIds.isEmpty() || toneById.isEmpty()) {
+            toneScroll.visibility = View.GONE
+            return
+        }
+        toneScroll.visibility = View.VISIBLE
+
+        val density = resources.displayMetrics.density
+        activeToneIds.forEachIndexed { index, toneId ->
+            val tone = toneById[toneId] ?: return@forEachIndexed
+            val chip = TextView(this).apply {
+                text = tone.name
+                textSize = 13f
+                setPadding((14 * density).toInt(), (6 * density).toInt(), (14 * density).toInt(), (6 * density).toInt())
+                gravity = Gravity.CENTER
+                isClickable = true
+                isFocusable = true
+                tag = toneId
+                setOnClickListener { onToneChipTap(toneId) }
+            }
+            addButtonFeedback(chip)
+            applyToneChipStyle(chip, toneId == selectedToneId)
+
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                (32 * density).toInt(),
+            )
+            if (index < activeToneIds.size - 1) {
+                params.marginEnd = (8 * density).toInt()
+            }
+            toneChipRow.addView(chip, params)
+        }
+        centerToneContent()
+    }
+
+    private fun onToneChipTap(toneId: String) {
+        selectedToneId = toneId
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(KEY_SELECTED_TONE_ID, toneId)
+            .putInt(KEY_APP_UPDATE_COUNTER, prefs.getInt(KEY_APP_UPDATE_COUNTER, 0) + 1)
+            .apply()
+        renderToneChips()
+    }
+
+    private fun centerToneContent() {
+        toneScroll.post {
+            val viewportWidth = toneScroll.width
+            val contentWidth = toneChipRow.width
+            val inset = max(0, (viewportWidth - contentWidth) / 2)
+            toneChipRow.setPadding(inset, toneChipRow.paddingTop, inset, toneChipRow.paddingBottom)
+            toneScroll.scrollTo(0, 0)
+        }
+    }
+
+    private fun applyToneChipStyle(chip: TextView, selected: Boolean) {
+        val dark = isDarkMode
+        val chipBg = if (selected) {
+            Color.argb(51, 51, 128, 255)
+        } else if (dark) {
+            COLOR_UTILITY_DARK
+        } else {
+            COLOR_UTILITY_LIGHT
+        }
+        val textColor = if (selected) COLOR_BLUE else if (dark) Color.WHITE else Color.BLACK
+        chip.setTextColor(textColor)
+        setRoundedFill(chip, chipBg, 16f)
+    }
+
+    private fun startMemberRefreshPolling() {
+        stopMemberRefreshPolling()
+        val runnable = object : Runnable {
+            override fun run() {
+                refreshMemberData()
+                handler.postDelayed(this, MEMBER_REFRESH_INTERVAL_MS)
+            }
+        }
+        memberRefreshRunnable = runnable
+        handler.postDelayed(runnable, MEMBER_REFRESH_INTERVAL_MS)
+    }
+
+    private fun stopMemberRefreshPolling() {
+        memberRefreshRunnable?.let { handler.removeCallbacks(it) }
+        memberRefreshRunnable = null
+    }
+
+    private fun refreshMemberData() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val functionUrl = prefs.getString(KEY_FUNCTION_URL, null)
+        if (functionUrl.isNullOrBlank()) {
+            handler.post {
+                memberInfo = null
+                configInfo = null
+                setStatusBannerVisible(false)
+            }
+            return
+        }
+
+        executor.execute {
+            val idToken = fetchIdTokenSync()
+            if (idToken.isNullOrBlank()) {
+                handler.post {
+                    memberInfo = null
+                    configInfo = null
+                    setStatusBannerVisible(false)
+                }
+                return@execute
+            }
+
+            val member = getMyMemberSync(idToken, functionUrl)
+            val config = getFullConfigSync(idToken, functionUrl)
+            handler.post {
+                memberInfo = member
+                if (config != null) {
+                    configInfo = config
+                }
+                updateStatusBanner()
+            }
+        }
+    }
+
+    private fun getMyMemberSync(idToken: String, functionUrl: String): MemberInfo? {
+        return try {
+            val result = invokeHandlerSync(
+                functionUrl = functionUrl,
+                idToken = idToken,
+                name = "member/getMyMember",
+                args = JSONObject(),
+            ) ?: return null
+            val memberJson = result.optJSONObject("member") ?: return null
+            val trialEndsAt = memberJson.optString("trialEndsAt", "").takeIf { it.isNotBlank() }
+            MemberInfo(
+                plan = memberJson.optString("plan", "free"),
+                isOnTrial = memberJson.optBoolean("isOnTrial", false),
+                trialEndsAt = trialEndsAt,
+                wordsToday = memberJson.optInt("wordsToday", 0),
+            )
+        } catch (e: Exception) {
+            dbg("getMyMember failed: ${e.message}")
+            null
+        }
+    }
+
+    private fun getFullConfigSync(idToken: String, functionUrl: String): ConfigInfo? {
+        return try {
+            val result = invokeHandlerSync(
+                functionUrl = functionUrl,
+                idToken = idToken,
+                name = "config/getFullConfig",
+                args = JSONObject(),
+            ) ?: return null
+            val configJson = result.optJSONObject("config") ?: return null
+            ConfigInfo(
+                freeWordsPerDay = configJson.optInt("freeWordsPerDay", 0),
+            )
+        } catch (e: Exception) {
+            dbg("getFullConfig failed: ${e.message}")
+            null
+        }
+    }
+
+    private fun updateStatusBanner() {
+        val member = memberInfo ?: run {
+            setStatusBannerVisible(false)
+            return
+        }
+
+        if (member.isOnTrial) {
+            val trialEndDate = member.trialEndsAt?.let { parseIsoDate(it) }
+            val message = if (trialEndDate != null) {
+                val secondsRemaining = trialEndDate.time - System.currentTimeMillis()
+                val daysLeft = max(0, Math.ceil(secondsRemaining / 86400000.0).toInt())
+                when (daysLeft) {
+                    0 -> "Last day of trial"
+                    1 -> "1 day left in trial"
+                    else -> "$daysLeft days left in trial"
+                }
+            } else {
+                "Your trial ends soon"
+            }
+            statusLabel.text = message
+            setStatusBannerVisible(true)
+            return
+        }
+
+        if (member.plan == "free") {
+            val config = configInfo
+            statusLabel.text = if (config != null) {
+                val remaining = max(0, config.freeWordsPerDay - member.wordsToday)
+                val formatted = java.text.NumberFormat.getIntegerInstance().format(remaining)
+                "$formatted words left today"
+            } else {
+                "Free plan"
+            }
+            setStatusBannerVisible(true)
+            return
+        }
+
+        setStatusBannerVisible(false)
+    }
+
+    private fun setStatusBannerVisible(visible: Boolean) {
+        if (visible == statusBannerVisible) {
+            return
+        }
+        statusBannerVisible = visible
+        statusAnimator?.cancel()
+
+        val density = resources.displayMetrics.density
+        val expandedHeight = (20 * density).toInt()
+        val lp = statusRow.layoutParams as LinearLayout.LayoutParams
+
+        if (visible) {
+            statusRow.visibility = View.VISIBLE
+            statusRow.alpha = 0f
+            lp.height = 0
+            statusRow.layoutParams = lp
+
+            statusAnimator = ValueAnimator.ofInt(0, expandedHeight).apply {
+                duration = 220
+                interpolator = DecelerateInterpolator()
+                addUpdateListener { animator ->
+                    val height = animator.animatedValue as Int
+                    lp.height = height
+                    statusRow.layoutParams = lp
+                    statusRow.alpha = animator.animatedFraction
+                }
+                start()
+            }
+            return
+        }
+
+        val startHeight = if (statusRow.height > 0) statusRow.height else expandedHeight
+        statusAnimator = ValueAnimator.ofInt(startHeight, 0).apply {
+            duration = 180
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { animator ->
+                val height = animator.animatedValue as Int
+                lp.height = height
+                statusRow.layoutParams = lp
+                statusRow.alpha = 1f - animator.animatedFraction
+            }
+            start()
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (!statusBannerVisible) {
+                        lp.height = expandedHeight
+                        statusRow.layoutParams = lp
+                        statusRow.visibility = View.GONE
+                        statusRow.alpha = 0f
+                    }
+                }
+            })
+        }
+    }
+
+    private fun parseIsoDate(value: String): Date? {
+        val patterns = arrayOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+            "yyyy-MM-dd'T'HH:mm:ssXXX",
+        )
+        for (pattern in patterns) {
+            try {
+                val format = SimpleDateFormat(pattern, Locale.US)
+                format.timeZone = TimeZone.getTimeZone("UTC")
+                return format.parse(value)
+            } catch (_: Exception) {
+                continue
+            }
+        }
+        return null
+    }
+
     private fun handleTranscription() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val functionUrl = prefs.getString(KEY_FUNCTION_URL, null)
+        if (functionUrl.isNullOrBlank()) {
+            currentInputConnection?.commitText("[Missing function URL]", 1)
+            applyPhase(Phase.IDLE)
+            return
+        }
+
+        val selectedToneId = prefs.getString(KEY_SELECTED_TONE_ID, null)
+        val toneById = loadToneById(prefs)
+        val termIds = loadStringList(prefs, KEY_TERM_IDS)
+        val termById = loadTermById(prefs)
+        val dictationLanguage = prefs.getString(KEY_DICTATION_LANGUAGE, "en") ?: "en"
+        val userName = prefs.getString(KEY_USER_NAME, null) ?: "User"
+        val prompt = buildLocalizedTranscriptionPrompt(
+            termIds = termIds,
+            termById = termById,
+            userName = userName,
+            language = dictationLanguage,
+        )
+        val whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
+
         executor.execute {
             val idToken = fetchIdTokenSync()
             if (idToken == null) {
@@ -207,14 +826,62 @@ class VoquillIME : InputMethodService() {
                 return@execute
             }
 
-            val text = transcribeAudioSync(idToken)
-            handler.post {
-                if (!text.isNullOrEmpty()) {
-                    currentInputConnection?.commitText(text, 1)
-                } else {
+            val rawTranscript = transcribeAudioSync(
+                idToken = idToken,
+                functionUrl = functionUrl,
+                prompt = prompt,
+                language = whisperLanguage,
+            )
+            if (rawTranscript.isNullOrBlank()) {
+                handler.post {
                     currentInputConnection?.commitText("[Transcribe failed: $lastDebugLog]", 1)
+                    applyPhase(Phase.IDLE)
                 }
+                return@execute
+            }
+
+            val selectedTone = selectedToneId?.let { toneById[it] }
+            var finalText = rawTranscript
+            if (selectedTone != null) {
+                val processed = generateProcessedTranscriptionSync(
+                    idToken = idToken,
+                    functionUrl = functionUrl,
+                    transcript = rawTranscript,
+                    tonePromptTemplate = selectedTone.promptTemplate,
+                    userName = userName,
+                    dictationLanguage = dictationLanguage,
+                )
+                if (!processed.isNullOrBlank()) {
+                    finalText = processed
+                }
+            }
+
+            val cleanText = finalText.trim()
+            if (cleanText.isEmpty()) {
+                handler.post {
+                    applyPhase(Phase.IDLE)
+                }
+                return@execute
+            }
+
+            incrementWordCountSync(
+                idToken = idToken,
+                functionUrl = functionUrl,
+                text = cleanText,
+            )
+            saveTranscription(
+                prefs = prefs,
+                text = cleanText,
+                rawTranscript = rawTranscript,
+                toneId = selectedToneId,
+                toneName = selectedTone?.name,
+            )
+
+            val committedText = "$cleanText "
+            handler.post {
+                currentInputConnection?.commitText(committedText, 1)
                 applyPhase(Phase.IDLE)
+                refreshMemberData()
             }
         }
     }
@@ -317,7 +984,12 @@ class VoquillIME : InputMethodService() {
         }
     }
 
-    private fun transcribeAudioSync(idToken: String): String? {
+    private fun transcribeAudioSync(
+        idToken: String,
+        functionUrl: String,
+        prompt: String,
+        language: String,
+    ): String? {
         return try {
             val audioFile = File(audioFilePath)
             if (!audioFile.exists() || audioFile.length() == 0L) {
@@ -326,36 +998,21 @@ class VoquillIME : InputMethodService() {
             }
 
             val audioBase64 = Base64.encodeToString(audioFile.readBytes(), Base64.NO_WRAP)
-            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val functionUrl = prefs.getString(KEY_FUNCTION_URL, null)
-                ?: run { dbg("transcribeAudio: missing functionUrl"); return null }
 
             dbg("transcribeAudio: ${audioFile.length()} bytes → $functionUrl")
 
-            val url = URL(functionUrl)
-            val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Authorization", "Bearer $idToken")
-            conn.doOutput = true
-
-            val payload = JSONObject().apply {
-                put("data", JSONObject().apply {
-                    put("name", "ai/transcribeAudio")
-                    put("args", JSONObject().apply {
-                        put("audioBase64", audioBase64)
-                        put("audioMimeType", "audio/mp4")
-                    })
-                })
-            }
-            conn.outputStream.use { it.write(payload.toString().toByteArray()) }
-
-            val status = conn.responseCode
-            val body = (if (status in 200..299) conn.inputStream else conn.errorStream)
-                .bufferedReader().readText()
-
-            val json = JSONObject(body)
-            val text = json.getJSONObject("result").getString("text")
+            val result = invokeHandlerSync(
+                functionUrl = functionUrl,
+                idToken = idToken,
+                name = "ai/transcribeAudio",
+                args = JSONObject().apply {
+                    put("audioBase64", audioBase64)
+                    put("audioMimeType", "audio/mp4")
+                    put("prompt", prompt)
+                    put("language", language)
+                },
+            ) ?: return null
+            val text = result.optString("text", "")
             dbg("transcribeAudio: success")
             text
         } catch (e: Exception) {
@@ -364,9 +1021,376 @@ class VoquillIME : InputMethodService() {
         }
     }
 
-    private fun startAudioCapture() {
-        smoothedLevel = 0f
+    private fun generateProcessedTranscriptionSync(
+        idToken: String,
+        functionUrl: String,
+        transcript: String,
+        tonePromptTemplate: String,
+        userName: String,
+        dictationLanguage: String,
+    ): String? {
+        return try {
+            val result = invokeHandlerSync(
+                functionUrl = functionUrl,
+                idToken = idToken,
+                name = "ai/generateText",
+                args = JSONObject().apply {
+                    put("system", buildSystemPostProcessingPrompt())
+                    put(
+                        "prompt",
+                        buildPostProcessingPrompt(
+                            transcript = transcript,
+                            tonePromptTemplate = tonePromptTemplate,
+                            userName = userName,
+                            dictationLanguage = dictationLanguage,
+                        ),
+                    )
+                    put("jsonResponse", buildPostProcessingJsonResponse())
+                },
+            ) ?: return null
+            val text = result.optString("text", "")
+            val parsed = try {
+                JSONObject(text).optString("processedTranscription", "")
+            } catch (_: Exception) {
+                ""
+            }
+            if (parsed.isNotBlank()) {
+                parsed.trim()
+            } else {
+                dbg("Could not parse processedTranscription from JSON, using raw")
+                text.trim()
+            }
+        } catch (e: Exception) {
+            dbg("Post-processing failed, using raw transcript: ${e.message}")
+            null
+        }
+    }
+
+    private fun incrementWordCountSync(idToken: String, functionUrl: String, text: String) {
         try {
+            val wordCount = text.split(Regex("\\s+")).filter { it.isNotBlank() }.size
+            if (wordCount <= 0) {
+                return
+            }
+
+            invokeHandlerSync(
+                functionUrl = functionUrl,
+                idToken = idToken,
+                name = "user/incrementWordCount",
+                args = JSONObject().apply {
+                    put("wordCount", wordCount)
+                    put("timezone", TimeZone.getDefault().id)
+                },
+            )
+        } catch (e: Exception) {
+            dbg("incrementWordCount failed: ${e.message}")
+        }
+    }
+
+    private fun saveTranscription(
+        prefs: android.content.SharedPreferences,
+        text: String,
+        rawTranscript: String,
+        toneId: String?,
+        toneName: String?,
+    ) {
+        val id = UUID.randomUUID().toString()
+        val record = JSONObject().apply {
+            put("id", id)
+            put("text", text)
+            put("rawTranscript", rawTranscript)
+            put("createdAt", isoTimestampNow())
+            if (!toneId.isNullOrBlank()) put("toneId", toneId)
+            if (!toneName.isNullOrBlank()) put("toneName", toneName)
+        }
+
+        val audioSource = File(audioFilePath)
+        if (audioSource.exists() && audioSource.length() > 0L) {
+            val audioDir = File(filesDir, "keyboard_audio")
+            if (!audioDir.exists()) {
+                audioDir.mkdirs()
+            }
+            val destination = File(audioDir, "$id.m4a")
+            try {
+                audioSource.copyTo(destination, overwrite = true)
+                record.put("audioPath", destination.absolutePath)
+            } catch (e: Exception) {
+                dbg("Failed to copy audio: ${e.message}")
+            }
+        }
+
+        val existing = loadJsonArray(prefs, KEY_TRANSCRIPTIONS)
+        val merged = JSONArray()
+        merged.put(record)
+
+        val keepOldCount = max(0, MAX_TRANSCRIPTION_ENTRIES - 1)
+        val kept = min(existing.length(), keepOldCount)
+        for (i in 0 until kept) {
+            merged.put(existing.opt(i))
+        }
+
+        for (i in keepOldCount until existing.length()) {
+            val old = existing.optJSONObject(i) ?: continue
+            val oldAudioPath = old.optString("audioPath", "")
+            if (oldAudioPath.isNotBlank()) {
+                File(oldAudioPath).delete()
+            }
+        }
+
+        prefs
+            .edit()
+            .putString(KEY_TRANSCRIPTIONS, merged.toString())
+            .putInt(KEY_APP_UPDATE_COUNTER, prefs.getInt(KEY_APP_UPDATE_COUNTER, 0) + 1)
+            .apply()
+    }
+
+    private fun invokeHandlerSync(
+        functionUrl: String,
+        idToken: String,
+        name: String,
+        args: JSONObject,
+    ): JSONObject? {
+        return try {
+            val response = postJsonSync(
+                urlString = functionUrl,
+                payload = JSONObject().apply {
+                    put(
+                        "data",
+                        JSONObject().apply {
+                            put("name", name)
+                            put("args", args)
+                        },
+                    )
+                },
+                authorization = "Bearer $idToken",
+            ) ?: return null
+
+            if (response.status !in 200..299) {
+                dbg("$name failed: HTTP ${response.status} ${response.body.take(200)}")
+                return null
+            }
+
+            val json = JSONObject(response.body)
+            val result = json.optJSONObject("result")
+            if (result == null) {
+                dbg("$name failed: invalid response")
+                return null
+            }
+            result
+        } catch (e: Exception) {
+            dbg("$name failed: ${e.message}")
+            null
+        }
+    }
+
+    private data class HttpResponse(
+        val status: Int,
+        val body: String,
+    )
+
+    private fun postJsonSync(
+        urlString: String,
+        payload: JSONObject,
+        authorization: String? = null,
+    ): HttpResponse? {
+        return try {
+            val url = URL(urlString)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            if (!authorization.isNullOrBlank()) {
+                conn.setRequestProperty("Authorization", authorization)
+            }
+            conn.doOutput = true
+            conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+            val status = conn.responseCode
+            val stream = if (status in 200..299) conn.inputStream else conn.errorStream
+            val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            conn.disconnect()
+            HttpResponse(status, body)
+        } catch (e: Exception) {
+            dbg("HTTP call failed: ${e.message}")
+            null
+        }
+    }
+
+    private fun loadJsonArray(prefs: android.content.SharedPreferences, key: String): JSONArray {
+        val raw = prefs.getString(key, null) ?: return JSONArray()
+        return try {
+            JSONArray(raw)
+        } catch (_: Exception) {
+            JSONArray()
+        }
+    }
+
+    private fun loadStringList(prefs: android.content.SharedPreferences, key: String): List<String> {
+        val array = loadJsonArray(prefs, key)
+        val out = ArrayList<String>(array.length())
+        for (i in 0 until array.length()) {
+            out.add(array.optString(i))
+        }
+        return out
+    }
+
+    private fun loadToneById(prefs: android.content.SharedPreferences): Map<String, SharedTone> {
+        val raw = prefs.getString(KEY_TONE_BY_ID, null) ?: return emptyMap()
+        return try {
+            val root = JSONObject(raw)
+            val out = HashMap<String, SharedTone>()
+            val keys = root.keys()
+            while (keys.hasNext()) {
+                val toneId = keys.next()
+                val toneJson = root.optJSONObject(toneId) ?: continue
+                val name = toneJson.optString("name", "")
+                val promptTemplate = toneJson.optString("promptTemplate", "")
+                if (name.isNotBlank() && promptTemplate.isNotBlank()) {
+                    out[toneId] = SharedTone(name, promptTemplate)
+                }
+            }
+            out
+        } catch (_: Exception) {
+            emptyMap()
+        }
+    }
+
+    private fun loadTermById(prefs: android.content.SharedPreferences): Map<String, SharedTerm> {
+        val raw = prefs.getString(KEY_TERM_BY_ID, null) ?: return emptyMap()
+        return try {
+            val root = JSONObject(raw)
+            val out = HashMap<String, SharedTerm>()
+            val keys = root.keys()
+            while (keys.hasNext()) {
+                val termId = keys.next()
+                val termJson = root.optJSONObject(termId) ?: continue
+                val sourceValue = termJson.optString("sourceValue", "")
+                if (sourceValue.isBlank()) {
+                    continue
+                }
+                val isReplacement = termJson.optBoolean("isReplacement", false)
+                out[termId] = SharedTerm(sourceValue = sourceValue, isReplacement = isReplacement)
+            }
+            out
+        } catch (_: Exception) {
+            emptyMap()
+        }
+    }
+
+    private fun buildTranscriptionPrompt(
+        termIds: List<String>,
+        termById: Map<String, SharedTerm>,
+        userName: String,
+    ): String {
+        val glossary = ArrayList<String>()
+        glossary.add("Voquill")
+        glossary.add(userName)
+        for (termId in termIds) {
+            val term = termById[termId] ?: continue
+            if (term.isReplacement) continue
+            val sanitized = term.sourceValue
+                .replace("\u0000", "")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+            if (sanitized.isNotEmpty()) {
+                glossary.add(sanitized)
+            }
+        }
+        return "Glossary: ${glossary.joinToString(", ")}\n" +
+            "Consider this glossary when transcribing. Do not mention these rules; simply return the cleaned transcript."
+    }
+
+    private fun buildLocalizedTranscriptionPrompt(
+        termIds: List<String>,
+        termById: Map<String, SharedTerm>,
+        userName: String,
+        language: String,
+    ): String {
+        val base = buildTranscriptionPrompt(termIds, termById, userName)
+        return when (language) {
+            "zh-CN" -> "以下是普通话的句子。\n\n$base"
+            "zh-TW", "zh-HK" -> "以下是普通話的句子。\n\n$base"
+            else -> base
+        }
+    }
+
+    private fun mapDictationLanguageToWhisperLanguage(language: String): String {
+        return language.substringBefore("-")
+    }
+
+    private fun isoTimestampNow(): String {
+        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US)
+        formatter.timeZone = TimeZone.getDefault()
+        return formatter.format(Date())
+    }
+
+    private fun buildSystemPostProcessingPrompt(): String {
+        return "You are a transcript rewriting assistant. You modify the style and tone of the transcript " +
+            "while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a " +
+            "single field 'processedTranscription' that contains the rewritten transcript."
+    }
+
+    private fun buildPostProcessingPrompt(
+        transcript: String,
+        tonePromptTemplate: String,
+        userName: String,
+        dictationLanguage: String,
+    ): String {
+        return """
+            Your task is to post-process a transcription.
+
+            Context:
+            - The speaker's name is $userName.
+            - The speaker wants the processed transcription to be in the $dictationLanguage language.
+
+            Instructions:
+            ```
+            $tonePromptTemplate
+            ```
+
+            Here is the transcript that you need to process:
+            ```
+            $transcript
+            ```
+
+            Post-process transcription according to the instructions.
+
+            **CRITICAL** Your response MUST be in JSON format.
+        """.trimIndent()
+    }
+
+    private fun buildPostProcessingJsonResponse(): JSONObject {
+        return JSONObject().apply {
+            put("name", "transcription_cleaning")
+            put("description", "JSON response with the processed transcription")
+            put(
+                "schema",
+                JSONObject().apply {
+                    put("type", "object")
+                    put(
+                        "properties",
+                        JSONObject().apply {
+                            put(
+                                "processedTranscription",
+                                JSONObject().apply {
+                                    put("type", "string")
+                                    put(
+                                        "description",
+                                        "The processed version of the transcript. Empty if no transcript.",
+                                    )
+                                },
+                            )
+                        },
+                    )
+                    put("required", JSONArray().put("processedTranscription"))
+                    put("additionalProperties", false)
+                },
+            )
+        }
+    }
+
+    private fun startAudioCapture(): Boolean {
+        smoothedLevel = 0f
+        return try {
             val file = File(audioFilePath)
             if (file.exists()) file.delete()
 
@@ -389,8 +1413,10 @@ class VoquillIME : InputMethodService() {
             }
             levelRunnable = runnable
             handler.postDelayed(runnable, 30)
+            true
         } catch (e: Exception) {
             dbg("startAudioCapture: ${e.message}")
+            false
         }
     }
 
@@ -402,11 +1428,12 @@ class VoquillIME : InputMethodService() {
             val clampedDb = max(db, -50.0)
             val normalized = ((clampedDb + 50) / 50).toFloat()
             val curved = normalized.pow(0.7f)
+            val tunedLevel = curved * 0.55f
 
             val s = if (curved > smoothedLevel) 0.4f else 0.4f
-            smoothedLevel += (curved - smoothedLevel) * s
+            smoothedLevel += (tunedLevel - smoothedLevel) * s
 
-            waveformView?.updateLevel(max(smoothedLevel, 0.08f))
+            waveformView?.updateLevel(max(smoothedLevel, 0.04f))
         } catch (_: Exception) {}
     }
 
@@ -420,8 +1447,18 @@ class VoquillIME : InputMethodService() {
         mediaRecorder = null
     }
 
+    override fun onFinishInput() {
+        super.onFinishInput()
+        if (currentPhase == Phase.RECORDING) {
+            stopAudioCapture()
+            applyPhase(Phase.IDLE)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        stopKeyboardCounterPolling()
+        stopMemberRefreshPolling()
         stopAudioCapture()
         waveformView?.stopAnimating()
         progressView?.stopAnimating()
@@ -434,10 +1471,28 @@ class VoquillIME : InputMethodService() {
         const val KEY_API_KEY = "voquill_api_key"
         const val KEY_FUNCTION_URL = "voquill_function_url"
         const val KEY_AUTH_URL = "voquill_auth_url"
+        const val KEY_USER_NAME = "voquill_user_name"
+        const val KEY_DICTATION_LANGUAGE = "voquill_dictation_language"
+        const val KEY_DICTATION_LANGUAGES = "voquill_dictation_languages"
+        const val KEY_SELECTED_TONE_ID = "voquill_selected_tone_id"
+        const val KEY_ACTIVE_TONE_IDS = "voquill_active_tone_ids"
+        const val KEY_TONE_BY_ID = "voquill_tone_by_id"
+        const val KEY_TERM_IDS = "voquill_term_ids"
+        const val KEY_TERM_BY_ID = "voquill_term_by_id"
+        const val KEY_TRANSCRIPTIONS = "voquill_transcriptions"
+        const val KEY_MIXPANEL_UID = "voquill_mixpanel_uid"
+        const val KEY_MIXPANEL_TOKEN = "voquill_mixpanel_token"
+        const val KEY_APP_UPDATE_COUNTER = "voquill_app_update_counter"
+        const val KEY_KEYBOARD_UPDATE_COUNTER = "voquill_keyboard_update_counter"
+        const val EXTRA_SHOW_PAYWALL = "voquill_show_paywall"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()
-        const val COLOR_RED = 0xFFFF3B30.toInt()
-        const val COLOR_GRAY = 0xFF8E8E93.toInt()
+        const val COLOR_GRAY_LIGHT = 0xFFC7C7CC.toInt()
+        const val COLOR_GRAY_DARK = 0xFF48484A.toInt()
+        const val COLOR_UTILITY_LIGHT = 0xFFD1D1D6.toInt()
+        const val COLOR_UTILITY_DARK = 0xFF3A3A3C.toInt()
+        const val MEMBER_REFRESH_INTERVAL_MS = 300_000L
+        const val MAX_TRANSCRIPTION_ENTRIES = 50
     }
 
     private class WaveConfig(
@@ -455,9 +1510,9 @@ class VoquillIME : InputMethodService() {
         private var currentLevel = 0f
         private var targetLevel = 0f
 
-        private val basePhaseStep = 0.14f
-        private val attackSmoothing = 0.25f
-        private val decaySmoothing = 0.25f
+        private val basePhaseStep = 0.18f
+        private val attackSmoothing = 0.3f
+        private val decaySmoothing = 0.12f
 
         private val waveConfigs = listOf(
             WaveConfig(0.8f, 1.0f, 0f, 1.0f),
@@ -530,7 +1585,7 @@ class VoquillIME : InputMethodService() {
                 canvas.drawLine(0f, mid, w, mid, paint)
             } else {
                 for (cfg in waveConfigs) {
-                    val amp = h * 0.45f * currentLevel * cfg.multiplier
+                    val amp = h * 0.22f * currentLevel * cfg.multiplier
                     val segments = 60
                     paint.color = waveColor
                     paint.alpha = (cfg.opacity * 255).toInt()

@@ -14,60 +14,191 @@
         android:elevation="8dp" />
 
     <FrameLayout
+        android:id="@+id/keyboard_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="320dp"
         android:elevation="9dp"
         android:paddingTop="24dp"
-        android:paddingBottom="16dp">
-
-        <FrameLayout
-            android:id="@+id/waveform_container"
-            android:layout_width="match_parent"
-            android:layout_height="110dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp" />
+        android:paddingBottom="8dp">
 
         <LinearLayout
-            android:id="@+id/pill_button"
+            android:id="@+id/top_left_row"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="126dp"
-            android:background="@drawable/pill_background"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp">
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/pill_icon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_mic" />
+            <ImageButton
+                android:id="@+id/logo_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Open Voquill app"
+                android:padding="6dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_voquill_logo" />
 
             <TextView
-                android:id="@+id/pill_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:id="@+id/language_chip"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_marginStart="8dp"
-                android:text="Tap to dictate"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                android:gravity="center"
+                android:text="EN"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/globe_button"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="bottom|start"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="186dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Switch keyboard"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_globe" />
+        <LinearLayout
+            android:id="@+id/util_button_row"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/util_at_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Insert at symbol"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_at" />
+
+            <ImageButton
+                android:id="@+id/util_space_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Insert space"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_space" />
+
+            <ImageButton
+                android:id="@+id/util_return_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Insert return"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_return" />
+
+            <ImageButton
+                android:id="@+id/util_delete_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Delete"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_util_delete" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/pill_stack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:id="@+id/pill_button"
+                android:layout_width="220dp"
+                android:layout_height="56dp"
+                android:background="@drawable/pill_background"
+                android:clickable="true"
+                android:clipToOutline="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackgroundBorderless">
+
+                <FrameLayout
+                    android:id="@+id/waveform_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <TextView
+                    android:id="@+id/pill_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="tap to dictate"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="normal" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/status_row"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/status_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/status_dot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="·"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/upgrade_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Upgrade"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/tone_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="10dp"
+            android:fillViewport="true"
+            android:fadingEdgeLength="18dp"
+            android:overScrollMode="never"
+            android:requiresFadingEdge="horizontal"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/tone_chip_row"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:gravity="center"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
     </FrameLayout>
 </FrameLayout>
