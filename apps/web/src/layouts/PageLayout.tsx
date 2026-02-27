@@ -25,8 +25,8 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
           <Link to="/contact">Contact</Link>
-        </div>
-      </div>
+        </nav>
+      </footer>
     </div>
   );
 }
