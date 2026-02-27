@@ -23,7 +23,7 @@ pub struct OverlayPhasePayload {
 }
 
 impl OverlayPhase {
-    pub fn from_str(value: &str) -> Option<Self> {
+    pub fn parse(value: &str) -> Option<Self> {
         match value {
             "idle" => Some(Self::Idle),
             "recording" => Some(Self::Recording),

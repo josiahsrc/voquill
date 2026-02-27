@@ -829,7 +829,7 @@ pub async fn start_recording(
         match recorder_clone.start(Some(level_emitter), Some(chunk_emitter)) {
             Ok(()) => Ok(()),
             Err(err) => {
-                let already_recording = (&*err)
+                let already_recording = (*err)
                     .downcast_ref::<crate::errors::RecordingError>()
                     .map(|inner| matches!(inner, crate::errors::RecordingError::AlreadyRecording))
                     .unwrap_or(false);
@@ -877,7 +877,7 @@ pub async fn stop_recording(
             })
         }
         Err(err) => {
-            let not_recording = (&*err)
+            let not_recording = (*err)
                 .downcast_ref::<crate::errors::RecordingError>()
                 .map(|inner| matches!(inner, crate::errors::RecordingError::NotRecording))
                 .unwrap_or(false);
@@ -1203,7 +1203,7 @@ pub fn set_phase(
     overlay_state: State<'_, crate::state::OverlayState>,
 ) -> Result<(), String> {
     let resolved =
-        OverlayPhase::from_str(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
+        OverlayPhase::parse(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
 
     overlay_state.set_phase(&resolved);
 
@@ -1262,7 +1262,7 @@ pub fn set_menu_icon(
 
 #[tauri::command]
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
-    Ok(tokio::time::timeout(
+    tokio::time::timeout(
         std::time::Duration::from_secs(2),
         tauri::async_runtime::spawn_blocking(
             crate::platform::accessibility::get_text_field_info,
@@ -1270,7 +1270,7 @@ pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
     )
     .await
     .map_err(|_| "get_text_field_info timed out".to_string())?
-    .map_err(|err| err.to_string())?)
+    .map_err(|err| err.to_string())
 }
 
 #[tauri::command]

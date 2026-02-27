@@ -39,12 +39,12 @@ fn get_primary_screen_size(app: &tauri::AppHandle) -> (f64, f64) {
 }
 
 fn build_overlay_webview_url(
-    app: &tauri::AppHandle,
+    _app: &tauri::AppHandle,
     query_param: &str,
 ) -> tauri::Result<tauri::WebviewUrl> {
     #[cfg(debug_assertions)]
     {
-        if let Some(mut dev_url) = app.config().build.dev_url.clone() {
+        if let Some(mut dev_url) = _app.config().build.dev_url.clone() {
             let query = match dev_url.query() {
                 Some(existing) if !existing.is_empty() => format!("{existing}&{query_param}=1"),
                 _ => format!("{query_param}=1"),

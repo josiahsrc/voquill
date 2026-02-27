@@ -1,0 +1,45 @@
+name: Build Web
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - ".github/workflows/build-web.yml"
+
+permissions:
+  checks: write
+  pull-requests: write
+
+jobs:
+  build:
+    name: Build Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web workspace
+        run: npm run build -- --filter=web...
+
+      - name: Deploy preview channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOQUILL_PROD }}
+          projectId: voquill-prod
+          expires: 7d
+          entryPoint: apps/web

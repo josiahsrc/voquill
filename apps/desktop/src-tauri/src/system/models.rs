@@ -7,9 +7,10 @@ use std::{
 
 const MODEL_URL_ENV: &str = "VOQUILL_WHISPER_MODEL_URL";
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum WhisperModelSize {
     Tiny,
+    #[default]
     Base,
     Small,
     Medium,
@@ -69,12 +70,6 @@ impl WhisperModelSize {
             MODEL_URL_ENV,
             self.as_str().to_ascii_uppercase().replace('-', "_")
         )
-    }
-}
-
-impl Default for WhisperModelSize {
-    fn default() -> Self {
-        Self::Base
     }
 }
 
@@ -152,7 +147,7 @@ fn resolve_model_url(size: WhisperModelSize) -> io::Result<String> {
 fn download_model(url: &str, destination: &Path) -> io::Result<()> {
     let parent = destination
         .parent()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Invalid model destination path"))?;
+        .ok_or_else(|| io::Error::other("Invalid model destination path"))?;
 
     fs::create_dir_all(parent)?;
 
@@ -161,7 +156,7 @@ fn download_model(url: &str, destination: &Path) -> io::Result<()> {
         destination
             .file_name()
             .and_then(|value| value.to_str())
-            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Invalid model filename"))?
+            .ok_or_else(|| io::Error::other("Invalid model filename"))?
     );
 
     let temp_path = destination.with_file_name(temp_name);
@@ -170,20 +165,14 @@ fn download_model(url: &str, destination: &Path) -> io::Result<()> {
     let _ = fs::remove_file(&temp_path);
 
     let mut response = reqwest::blocking::get(url).map_err(|err| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to request whisper model: {err}"),
-        )
+        io::Error::other(format!("Failed to request whisper model: {err}"))
     })?;
 
     if !response.status().is_success() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!(
-                "Failed to download whisper model, server returned status: {}",
-                response.status()
-            ),
-        ));
+        return Err(io::Error::other(format!(
+            "Failed to download whisper model, server returned status: {}",
+            response.status()
+        )));
     }
 
     let mut temp_file = fs::File::create(&temp_path)?;
