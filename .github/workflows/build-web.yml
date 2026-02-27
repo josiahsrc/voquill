@@ -30,3 +30,12 @@ jobs:
 
       - name: Build web workspace
         run: npm run build -- --filter=web...
+
+      - name: Deploy preview channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOQUILL_PROD }}
+          projectId: voquill-prod
+          expires: 7d
+          entryPoint: apps/web
