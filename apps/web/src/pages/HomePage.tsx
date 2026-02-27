@@ -21,7 +21,7 @@ function HomePage() {
         <OrganizationJsonLd />
         <SoftwareAppJsonLd
           name="Voquill"
-          description="Type four times faster with a voice-first keyboard. Open-source speech-to-text that runs locally on your device."
+          description="Type four times faster with your voice. Open-source alternative to Wispr Flow."
           url="https://voquill.com"
           operatingSystem="macOS, Windows, Linux"
           category="ProductivityApplication"

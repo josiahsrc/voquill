@@ -54,7 +54,7 @@ export function OrganizationJsonLd() {
     url: "https://voquill.com",
     logo: "https://voquill.com/app-icon.svg",
     description:
-      "Voquill is an open-source voice typing application that runs AI models locally on your device for private, fast speech-to-text.",
+      "VType four times faster with your voice. Open-source alternative to Wispr Flow.",
     sameAs: ["https://github.com/josiahsrc/voquill"],
   };
 

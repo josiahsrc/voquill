@@ -28,7 +28,7 @@ const routes = [
     path: "/",
     title: "Voquill | Your keyboard is holding you back",
     description:
-      "Type four times faster with a voice-first keyboard. Open-source speech-to-text that runs locally on your device.",
+      "Type four times faster with your voice. Open-source alternative to Wispr Flow.",
     ogType: "website",
   },
   {
