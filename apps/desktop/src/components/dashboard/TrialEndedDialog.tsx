@@ -1,10 +1,9 @@
-import { ArrowForward, Close } from "@mui/icons-material";
+import { ArrowForward } from "@mui/icons-material";
 import {
   Box,
   Button,
   Chip,
   Dialog,
-  IconButton,
   LinearProgress,
   Stack,
   Typography,
@@ -107,19 +106,6 @@ export const TrialEndedDialog = () => {
 
       <Box
         sx={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          zIndex: 1,
-        }}
-      >
-        <IconButton onClick={handleDismiss} size="large">
-          <Close />
-        </IconButton>
-      </Box>
-
-      <Box
-        sx={{
           position: "relative",
           zIndex: 1,
           display: "flex",
@@ -135,13 +121,10 @@ export const TrialEndedDialog = () => {
         <Stack spacing={4} alignItems="center" maxWidth={480}>
           <Stack spacing={2} alignItems="center" textAlign="center">
             <Typography variant="h4" fontWeight={700}>
-              <FormattedMessage defaultMessage="Thanks for trying Voquill" />
+              <FormattedMessage defaultMessage="Don't lose unlimited dictation" />
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              <FormattedMessage
-                defaultMessage="Your pro trial has ended. You're on the free plan now with {total} words per day. Upgrade whenever you're ready."
-                values={{ total: freeWordsPerDay.toLocaleString() }}
-              />
+              <FormattedMessage defaultMessage="You've been dictating without limits all week. Keep unlimited words, faster processing, and priority features." />
             </Typography>
             {totalTimeSaved > 4 && (
               <Stack direction="row" spacing={1}>
@@ -228,15 +211,22 @@ export const TrialEndedDialog = () => {
                 onClick={handleUpgrade}
                 endIcon={<ArrowForward />}
               >
-                <FormattedMessage defaultMessage="Reclaim my super powers" />
+                <FormattedMessage defaultMessage="Keep Pro plan" />
               </Button>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                textAlign="center"
+              >
+                <FormattedMessage defaultMessage="Cancel anytime, no questions asked" />
+              </Typography>
             </Stack>
             <Button
               onClick={handleDismiss}
               fullWidth
               sx={{ color: "text.secondary" }}
             >
-              <FormattedMessage defaultMessage="Continue with free" />
+              <FormattedMessage defaultMessage="Downgrade to free plan" />
             </Button>
           </Stack>
         </Stack>
