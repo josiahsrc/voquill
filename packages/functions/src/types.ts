@@ -648,6 +648,7 @@ export const FlaggedAudioZod = z
     postProcessedTranscription: z.string().nullable(),
     transcriptionProvider: z.string().min(1),
     postProcessingProvider: z.string().nullable(),
+    sampleRate: z.number().int().positive().nullable(),
   })
   .strict() satisfies z.ZodType<FlaggedAudio>;
 

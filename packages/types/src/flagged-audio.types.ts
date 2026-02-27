@@ -10,4 +10,5 @@ export type FlaggedAudio = {
   postProcessedTranscription: Nullable<string>;
   transcriptionProvider: string;
   postProcessingProvider: Nullable<string>;
+  sampleRate: Nullable<number>;
 };

@@ -72,11 +72,13 @@ export const FlagTranscriptionDialog = () => {
 
     try {
       const audioPath = `users/${uid}/flaggedAudio/${transcription.id}.wav`;
+      let sampleRate: number | null = null;
 
       if (transcription.audio) {
         const audioData = await getTranscriptionRepo().loadTranscriptionAudio(
           transcription.id,
         );
+        sampleRate = audioData.sampleRate;
         const wavBuffer = buildWaveFile(
           ensureFloat32Array(audioData.samples),
           audioData.sampleRate,
@@ -117,6 +119,7 @@ export const FlagTranscriptionDialog = () => {
           postProcessedTranscription: transcription.transcript ?? null,
           transcriptionProvider: transcription.transcriptionMode ?? "unknown",
           postProcessingProvider: transcription.postProcessMode ?? null,
+          sampleRate,
         },
       });
 

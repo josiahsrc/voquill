@@ -30,6 +30,7 @@ const buildFlaggedAudio = (overrides?: Partial<FlaggedAudio>): FlaggedAudio => (
 	postProcessedTranscription: "hello world",
 	transcriptionProvider: "groq",
 	postProcessingProvider: "cloud",
+	sampleRate: 16000,
 	...overrides,
 });
 
