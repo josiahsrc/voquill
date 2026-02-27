@@ -15,6 +15,7 @@ import {
   type EmptyObject,
   type EnterpriseConfig,
   type EnterpriseLicense,
+  type FlaggedAudio,
   type JsonResponse,
   type LlmProvider,
   type LlmProviderInput,
@@ -201,6 +202,14 @@ type HandlerDefinitions = {
   "tone/deleteGlobalTone": {
     input: {
       toneId: string;
+    };
+    output: EmptyObject;
+  };
+
+  // flagged audio
+  "flaggedAudio/upsert": {
+    input: {
+      flaggedAudio: FlaggedAudio;
     };
     output: EmptyObject;
   };
@@ -627,6 +636,25 @@ export const RefreshApiTokenInputZod = z
     apiRefreshToken: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;
+
+export const FlaggedAudioZod = z
+  .object({
+    id: z.string().min(1),
+    filePath: z.string().min(1),
+    feedback: z.string().min(1),
+    prompt: z.string().nullable(),
+    rawTranscription: z.string().min(1),
+    postProcessedTranscription: z.string().nullable(),
+    transcriptionProvider: z.string().min(1),
+    postProcessingProvider: z.string().nullable(),
+  })
+  .strict() satisfies z.ZodType<FlaggedAudio>;
+
+export const UpsertFlaggedAudioInputZod = z
+  .object({
+    flaggedAudio: FlaggedAudioZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"flaggedAudio/upsert">>;
 
 export const MetricsRangeZod = z.enum(METRICS_RANGES);
 

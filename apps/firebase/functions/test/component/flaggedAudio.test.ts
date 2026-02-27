@@ -1,6 +1,17 @@
-import { deleteObject, getStorage, ref, uploadBytes } from "firebase/storage";
+import { firemix } from "@firemix/mixed";
+import { mixpath } from "@repo/firemix";
+import { invokeHandler } from "@repo/functions";
+import type { FlaggedAudio } from "@repo/types";
+import {
+	deleteObject,
+	getBytes,
+	getStorage,
+	ref,
+	uploadBytes,
+} from "firebase/storage";
 import {
 	createUserCreds,
+	markUserAsSubscribed,
 	signInWithCreds,
 	signOutUser,
 } from "../helpers/firebase";
@@ -9,11 +20,95 @@ import { setUp, tearDown } from "../helpers/setup";
 beforeAll(setUp);
 afterAll(tearDown);
 
+const buildFlaggedAudio = (overrides?: Partial<FlaggedAudio>): FlaggedAudio => ({
+	id: "flagged-1",
+	filePath: "users/uid/flaggedAudio/test.wav",
+	feedback: "transcription was wrong",
+	prompt: "some context",
+	rawTranscription: "hello wrold",
+	postProcessedTranscription: "hello world",
+	transcriptionProvider: "groq",
+	postProcessingProvider: "cloud",
+	...overrides,
+});
+
 const buildAudioBytes = (sizeInBytes: number): Uint8Array => {
 	return new Uint8Array(sizeInBytes);
 };
 
 const SMALL_AUDIO = buildAudioBytes(1024);
+
+describe("flaggedAudio/upsert", () => {
+	it("creates a flagged audio document", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const flaggedAudio = buildFlaggedAudio({ id: "create-test" });
+
+		await invokeHandler("flaggedAudio/upsert", { flaggedAudio });
+
+		const doc = await firemix().get(mixpath.flaggedAudio("create-test"));
+		expect(doc).toBeDefined();
+		expect(doc?.data.filePath).toBe(flaggedAudio.filePath);
+		expect(doc?.data.feedback).toBe(flaggedAudio.feedback);
+		expect(doc?.data.prompt).toBe(flaggedAudio.prompt);
+		expect(doc?.data.rawTranscription).toBe(flaggedAudio.rawTranscription);
+		expect(doc?.data.postProcessedTranscription).toBe(
+			flaggedAudio.postProcessedTranscription,
+		);
+		expect(doc?.data.transcriptionProvider).toBe(
+			flaggedAudio.transcriptionProvider,
+		);
+		expect(doc?.data.postProcessingProvider).toBe(
+			flaggedAudio.postProcessingProvider,
+		);
+	});
+
+	it("stores null for optional fields", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const flaggedAudio = buildFlaggedAudio({
+			id: "null-fields-test",
+			prompt: null,
+			postProcessedTranscription: null,
+			postProcessingProvider: null,
+		});
+
+		await invokeHandler("flaggedAudio/upsert", { flaggedAudio });
+
+		const doc = await firemix().get(mixpath.flaggedAudio("null-fields-test"));
+		expect(doc).toBeDefined();
+		expect(doc?.data.prompt).toBeNull();
+		expect(doc?.data.postProcessedTranscription).toBeNull();
+		expect(doc?.data.postProcessingProvider).toBeNull();
+	});
+
+	it("rejects unauthenticated requests", async () => {
+		await createUserCreds();
+		await signOutUser();
+
+		await expect(
+			invokeHandler("flaggedAudio/upsert", {
+				flaggedAudio: buildFlaggedAudio(),
+			}),
+		).rejects.toThrow();
+	});
+
+	it("rejects invalid input", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await expect(
+			invokeHandler("flaggedAudio/upsert", {
+				flaggedAudio: { id: "" },
+			} as any),
+		).rejects.toThrow();
+	});
+});
 
 describe("storage rules", () => {
 	it("allows an authenticated user to upload audio to their own path", async () => {
@@ -39,7 +134,6 @@ describe("storage rules", () => {
 		);
 		await uploadBytes(fileRef, SMALL_AUDIO, { contentType: "audio/wav" });
 
-		const { getBytes } = await import("firebase/storage");
 		await expect(getBytes(fileRef)).rejects.toThrow();
 	});
 
