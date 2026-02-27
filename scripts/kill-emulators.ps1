@@ -1,7 +1,7 @@
 # Kill all processes running on Firebase emulator ports
 
 # Firebase emulator ports from firebase.json
-$PORTS = @(9099, 5001, 8760, 4000, 9199, 9000)
+$PORTS = @(9099, 5001, 8760, 4000, 9199, 9000, 1421)
 
 Write-Host "Killing processes on Firebase emulator ports..."
 

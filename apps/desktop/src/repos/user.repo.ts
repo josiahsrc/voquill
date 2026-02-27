@@ -26,6 +26,7 @@ type LocalUser = {
   activeToneIds?: string | null;
   streak?: number | null;
   streakRecordedAt?: string | null;
+  referralSource?: string | null;
 };
 
 const fromLocalUser = (localUser: LocalUser): User => {
@@ -62,6 +63,7 @@ const fromLocalUser = (localUser: LocalUser): User => {
       : null,
     streak: localUser.streak ?? undefined,
     streakRecordedAt: localUser.streakRecordedAt ?? undefined,
+    referralSource: localUser.referralSource ?? undefined,
   };
 };
 
@@ -85,6 +87,7 @@ const toLocalUser = (user: User): LocalUser => ({
   activeToneIds: user.activeToneIds ? JSON.stringify(user.activeToneIds) : null,
   streak: user.streak ?? null,
   streakRecordedAt: user.streakRecordedAt ?? null,
+  referralSource: user.referralSource ?? null,
 });
 
 export abstract class BaseUserRepo extends BaseRepo {

@@ -48,6 +48,8 @@ export class Logger {
     } else if (this.head === 0 && onBufferWrapCallback) {
       setTimeout(onBufferWrapCallback, 0);
     }
+
+    console.log(entry);
   }
 
   info(...args: unknown[]): void {
@@ -79,6 +81,21 @@ export class Logger {
       ...this.buffer.slice(this.head),
       ...this.buffer.slice(0, this.head),
     ];
+  }
+
+  stopwatch<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    const start = Date.now();
+    return fn()
+      .then((result) => {
+        const duration = Date.now() - start;
+        this.info(`${label} completed in ${duration}ms`);
+        return result;
+      })
+      .catch((error) => {
+        const duration = Date.now() - start;
+        this.error(`${label} failed in ${duration}ms`, error);
+        throw error;
+      });
   }
 }
 

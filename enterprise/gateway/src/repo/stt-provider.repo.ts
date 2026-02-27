@@ -58,7 +58,7 @@ export async function upsertSttProvider(opts: {
     );
   } else if (opts.apiKeyEncrypted) {
     await pool.query(
-      `UPDATE stt_providers SET provider = $1, name = $2, url = $3, api_key_encrypted = $4, api_key_suffix = $5, model = $6, tier = $7
+      `UPDATE stt_providers SET provider = $1, name = $2, url = $3, api_key_encrypted = $4, api_key_suffix = $5, model = $6, tier = $7, pull_status = 'in_progress', pull_error = NULL
        WHERE id = $8`,
       [
         opts.provider,
@@ -73,7 +73,7 @@ export async function upsertSttProvider(opts: {
     );
   } else {
     await pool.query(
-      `UPDATE stt_providers SET provider = $1, name = $2, url = $3, model = $4, tier = $5
+      `UPDATE stt_providers SET provider = $1, name = $2, url = $3, model = $4, tier = $5, pull_status = 'in_progress', pull_error = NULL
        WHERE id = $6`,
       [opts.provider, opts.name, opts.url, opts.model, opts.tier, opts.id],
     );

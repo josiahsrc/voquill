@@ -17,7 +17,7 @@
     "@azure/openai": "^2.0.0",
     "@google/genai": "^1.37.0",
     "@repo/utilities": "*",
-    "groq-sdk": "^0.29.0",
+    "groq-sdk": "^0.37.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.47.0",
     "openai": "^4.73.0",
     "wavefile": "^11.0.0",

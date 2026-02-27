@@ -73,3 +73,4 @@ export const toneFromDatabase = (dbTone: DatabaseTone): Tone => ({
 	...dbTone,
 	createdAt: dbTone.createdAt.toDate().getTime(),
 });
+

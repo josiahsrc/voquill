@@ -1,13 +1,17 @@
 import {
 	AiGenerateTextInputZod,
 	AiTranscribeAudioInputZod,
+	UpsertFlaggedAudioInputZod,
 	DeleteTermInputZod,
 	DeleteToneInputZod,
 	EmptyObjectZod,
 	HandlerName,
+	IncrementWordCountInputZod,
+	RefreshApiTokenInputZod,
 	SetMyUserInputZod,
 	StripeCreateCheckoutSessionInputZod,
 	StripeGetPricesInputZod,
+	TrackStreakInputZod,
 	UpsertTermInputZod,
 	UpsertToneInputZod,
 } from "@repo/functions";
@@ -16,6 +20,11 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
 import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
+import { upsertFlaggedAudio } from "./services/flaggedAudio.service";
+import {
+	createApiToken,
+	refreshApiToken,
+} from "./services/apiToken.service";
 import { getFullConfigResp } from "./services/config.service";
 import {
 	getMyMember,
@@ -40,7 +49,12 @@ import {
 	listMyTones,
 	upsertMyTone,
 } from "./services/tone.service";
-import { getMyUser, setMyUser } from "./services/user.service";
+import {
+	getMyUser,
+	incrementWordCount,
+	setMyUser,
+	trackStreak,
+} from "./services/user.service";
 import {
 	getDatabaseUrl,
 	getFlavor,
@@ -65,6 +79,7 @@ getFirestore().settings({ ignoreUndefinedProperties: true });
 export * as auth from "./functions/auth.functions";
 export * as member from "./functions/member.functions";
 export * as rateLimit from "./functions/rateLimit.functions";
+export * as revenuecat from "./functions/revenuecat.functions";
 export * as stripe from "./functions/stripe.functions";
 export * as user from "./functions/user.functions";
 
@@ -169,6 +184,16 @@ export const handler = onCall(
 				data = await getMyUser({
 					auth,
 				});
+			} else if (name === "user/incrementWordCount") {
+				data = await incrementWordCount({
+					auth,
+					input: validateData(IncrementWordCountInputZod, args),
+				});
+			} else if (name === "user/trackStreak") {
+				data = await trackStreak({
+					auth,
+					input: validateData(TrackStreakInputZod, args ?? {}),
+				});
 			} else if (name === "config/getFullConfig") {
 				validateData(EmptyObjectZod, args ?? {});
 				data = getFullConfigResp();
@@ -201,6 +226,20 @@ export const handler = onCall(
 				validateData(EmptyObjectZod, args ?? {});
 				data = await listMyTones({
 					auth,
+				});
+			} else if (name === "auth/createApiToken") {
+				validateData(EmptyObjectZod, args ?? {});
+				data = await createApiToken({
+					auth,
+				});
+			} else if (name === "auth/refreshApiToken") {
+				data = await refreshApiToken({
+					input: validateData(RefreshApiTokenInputZod, args),
+				});
+			} else if (name === "flaggedAudio/upsert") {
+				data = await upsertFlaggedAudio({
+					auth,
+					input: validateData(UpsertFlaggedAudioInputZod, args),
 				});
 			} else {
 				throw new NotFoundError(`unknown handler: ${name}`);

@@ -127,6 +127,39 @@ describe("api", () => {
 		expect(myUser?.streakRecordedAt).toBe("2026-02-12");
 	});
 
+	it("sets and retrieves referralSource", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		const testUser = buildUser({ referralSource: "google_search" });
+		await invokeHandler("user/setMyUser", { value: testUser });
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.referralSource).toBe("google_search");
+	});
+
+	it("can set referralSource to null", async () => {
+		const creds = await createUserCreds();
+		await signInWithCreds(creds);
+		await markUserAsSubscribed();
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ referralSource: "social_media" }),
+		});
+
+		await invokeHandler("user/setMyUser", {
+			value: buildUser({ referralSource: null }),
+		});
+
+		const myUser = await invokeHandler("user/getMyUser", {}).then(
+			(res) => res.user,
+		);
+		expect(myUser?.referralSource).toBeNull();
+	});
+
 	it("can set stylingMode to null", async () => {
 		const creds = await createUserCreds();
 		await signInWithCreds(creds);
@@ -144,5 +177,208 @@ describe("api", () => {
 			(res) => res.user,
 		);
 		expect(myUser?.stylingMode).toBeNull();
+	});
+
+	describe("incrementWordCount", () => {
+		it("increments wordsTotal and wordsThisMonth", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({ wordsTotal: 0, wordsThisMonth: 0 }),
+			});
+
+			await invokeHandler("user/incrementWordCount", { wordCount: 10 });
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.wordsTotal).toBe(10);
+			expect(user?.wordsThisMonth).toBe(10);
+		});
+
+		it("accumulates multiple increments", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({ wordsTotal: 0, wordsThisMonth: 0 }),
+			});
+
+			await invokeHandler("user/incrementWordCount", { wordCount: 5 });
+			await invokeHandler("user/incrementWordCount", { wordCount: 3 });
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.wordsTotal).toBe(8);
+			expect(user?.wordsThisMonth).toBe(8);
+		});
+
+		it("resets wordsThisMonth on month change", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({
+					wordsTotal: 100,
+					wordsThisMonth: 50,
+					wordsThisMonthMonth: "2020-01",
+				}),
+			});
+
+			await invokeHandler("user/incrementWordCount", { wordCount: 7 });
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.wordsTotal).toBe(107);
+			expect(user?.wordsThisMonth).toBe(7);
+		});
+
+		it("is a no-op for wordCount <= 0", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({ wordsTotal: 10, wordsThisMonth: 5 }),
+			});
+
+			await invokeHandler("user/incrementWordCount", { wordCount: 0 });
+			await invokeHandler("user/incrementWordCount", { wordCount: -1 });
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.wordsTotal).toBe(10);
+			expect(user?.wordsThisMonth).toBe(5);
+		});
+
+		it("accepts a timezone parameter", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({ wordsTotal: 0, wordsThisMonth: 0 }),
+			});
+
+			await invokeHandler("user/incrementWordCount", {
+				wordCount: 5,
+				timezone: "America/New_York",
+			});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.wordsTotal).toBe(5);
+			expect(user?.wordsThisMonth).toBe(5);
+			expect(user?.wordsThisMonthMonth).toBeDefined();
+		});
+	});
+
+	describe("trackStreak", () => {
+		it("sets streak to 1 on first call", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser(),
+			});
+
+			await invokeHandler("user/trackStreak", {});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.streak).toBe(1);
+			expect(user?.streakRecordedAt).toBeDefined();
+		});
+
+		it("is idempotent on the same day", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser(),
+			});
+
+			await invokeHandler("user/trackStreak", {});
+			await invokeHandler("user/trackStreak", {});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.streak).toBe(1);
+		});
+
+		it("increments streak on consecutive day", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			const yesterday = new Date(Date.now() - 86400000)
+				.toISOString()
+				.slice(0, 10);
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({
+					streak: 1,
+					streakRecordedAt: yesterday,
+				}),
+			});
+
+			await invokeHandler("user/trackStreak", {});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.streak).toBe(2);
+		});
+
+		it("resets streak on gap", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser({
+					streak: 5,
+					streakRecordedAt: "2020-01-01",
+				}),
+			});
+
+			await invokeHandler("user/trackStreak", {});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.streak).toBe(1);
+		});
+
+		it("accepts a timezone parameter", async () => {
+			const creds = await createUserCreds();
+			await signInWithCreds(creds);
+			await markUserAsSubscribed();
+
+			await invokeHandler("user/setMyUser", {
+				value: buildUser(),
+			});
+
+			await invokeHandler("user/trackStreak", {
+				timezone: "America/New_York",
+			});
+
+			const user = await invokeHandler("user/getMyUser", {}).then(
+				(res) => res.user,
+			);
+			expect(user?.streak).toBe(1);
+			expect(user?.streakRecordedAt).toBeDefined();
+		});
 	});
 });

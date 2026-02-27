@@ -2,13 +2,22 @@ use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode}
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use std::{thread, time::Duration};
 
+use super::accessibility;
+
 const KEY_V: CGKeyCode = 9;
 
 pub(crate) fn paste_text_into_focused_field(text: &str, _keybind: Option<&str>) -> Result<(), String> {
     if text.trim().is_empty() {
         return Ok(());
     }
-    paste_via_clipboard(text)
+
+    match accessibility::insert_text_at_cursor(text) {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            eprintln!("[macos::input] accessibility insert failed ({err}), falling back to clipboard paste");
+            paste_via_clipboard(text)
+        }
+    }
 }
 
 fn paste_via_clipboard(text: &str) -> Result<(), String> {

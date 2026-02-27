@@ -24,9 +24,9 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
         <nav className={styles.pageLinks} aria-label="Legal">
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
-          <a href="mailto:hello@voquill.com">Contact</a>
-        </nav>
-      </footer>
+          <Link to="/contact">Contact</Link>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,11 @@ import { getHotkeyRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { registerHotkeys } from "../../utils/app.utils";
 import { createId } from "../../utils/id.utils";
-import { getDefaultHotkeyCombosForAction } from "../../utils/keyboard.utils";
+import {
+  getDefaultHotkeyCombosForAction,
+  getHotkeyCombosForAction,
+  syncHotkeyCombosToNative,
+} from "../../utils/keyboard.utils";
 import { HotKey } from "../common/HotKey";
 
 export type HotkeySettingProps = {
@@ -22,6 +26,12 @@ export type HotkeySettingProps = {
 
 const areCombosEqual = (a: string[], b: string[]) =>
   a.length === b.length && a.every((key, index) => key === b[index]);
+
+const isSubsetOrEqualCombo = (a: string[], b: string[]) => {
+  if (a.length === 0 || a.length > b.length) return false;
+  const bSet = new Set(b.map((k) => k.toLowerCase()));
+  return a.every((k) => bSet.has(k.toLowerCase()));
+};
 
 export const HotkeySetting = ({
   title,
@@ -43,6 +53,32 @@ export const HotkeySetting = ({
   );
   const defaultCombos = getDefaultHotkeyCombosForAction(actionName);
 
+  const hasConflict = useAppStore((state) => {
+    const myCombos = getHotkeyCombosForAction(state, actionName);
+    if (myCombos.length === 0) return false;
+
+    const otherActions = new Set(
+      Object.values(state.hotkeyById)
+        .filter((h) => h.actionName !== actionName && h.keys.length > 0)
+        .map((h) => h.actionName),
+    );
+
+    for (const otherAction of otherActions) {
+      const otherCombos = getHotkeyCombosForAction(state, otherAction);
+      for (const mine of myCombos) {
+        for (const other of otherCombos) {
+          if (
+            isSubsetOrEqualCombo(mine, other) ||
+            isSubsetOrEqualCombo(other, mine)
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  });
+
   const saveKey = async (id?: string, keys?: string[]) => {
     const newValue: Hotkey = {
       id: id ?? createId(),
@@ -59,6 +95,7 @@ export const HotkeySetting = ({
         draft.settings.hotkeysStatus = "success";
       });
       await getHotkeyRepo().saveHotkey(newValue);
+      await syncHotkeyCombosToNative();
     } catch (error) {
       console.error("Failed to save hotkey", error);
       showErrorSnackbar("Failed to save hotkey. Please try again.");
@@ -74,6 +111,7 @@ export const HotkeySetting = ({
         );
       });
       await getHotkeyRepo().deleteHotkey(id);
+      await syncHotkeyCombosToNative();
     } catch (error) {
       console.error("Failed to delete hotkey", error);
       showErrorSnackbar("Failed to delete hotkey. Please try again.");
@@ -200,6 +238,15 @@ export const HotkeySetting = ({
                 </IconButton>
               </Stack>
             ))}
+          {hasConflict && (
+            <Typography
+              variant="caption"
+              color="warning.main"
+              sx={{ maxWidth: 220, textAlign: "right" }}
+            >
+              <FormattedMessage defaultMessage="This shortcut overlaps with another. One may trigger both actions." />
+            </Typography>
+          )}
           {!hasEnabledToggle &&
             (hotkeys.length > 0 || defaultCombos.length > 0) && (
               <Button

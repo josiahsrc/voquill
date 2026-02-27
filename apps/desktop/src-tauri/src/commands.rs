@@ -294,13 +294,20 @@ pub fn request_accessibility_permission() -> Result<crate::domain::PermissionSta
 }
 
 #[tauri::command]
-pub fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
-    crate::platform::app_info::get_current_app_info()
-        .map(|info| CurrentAppInfoResponse {
-            app_name: info.app_name,
-            icon_base64: info.icon_base64,
-        })
-        .map_err(|err| err.to_string())
+pub async fn get_current_app_info() -> Result<CurrentAppInfoResponse, String> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        tauri::async_runtime::spawn_blocking(|| {
+            crate::platform::app_info::get_current_app_info().map(|info| CurrentAppInfoResponse {
+                app_name: info.app_name,
+                icon_base64: info.icon_base64,
+            })
+        }),
+    )
+    .await
+    .map_err(|_| "get_current_app_info timed out".to_string())?
+    .map_err(|err| err.to_string())?
+    .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -432,6 +439,87 @@ pub async fn transcription_audio_load(
 }
 
 #[tauri::command]
+pub async fn export_transcription(
+    app: AppHandle,
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<bool, String> {
+    let pool = database.pool();
+
+    let row = sqlx::query(
+        "SELECT transcript, raw_transcript, audio_path
+         FROM transcriptions
+         WHERE id = ?1",
+    )
+    .bind(&id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|err| err.to_string())?
+    .ok_or_else(|| "Transcription not found".to_string())?;
+
+    let transcript: String = row.get("transcript");
+    let raw_transcript: Option<String> = row.get("raw_transcript");
+    let audio_path: Option<String> = row.get("audio_path");
+
+    let short_id = if id.len() > 8 { &id[..8] } else { &id };
+    let dialog = rfd::AsyncFileDialog::new()
+        .set_file_name(format!("voquill-{short_id}.zip"))
+        .add_filter("ZIP Archive", &["zip"])
+        .save_file()
+        .await;
+
+    let save_path = match dialog {
+        Some(handle) => handle.path().to_path_buf(),
+        None => return Ok(false),
+    };
+
+    let audio_dir =
+        crate::system::audio_store::audio_dir(&app).map_err(|err| err.to_string())?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+
+        let file = std::fs::File::create(&save_path)
+            .map_err(|err| format!("Failed to create file: {err}"))?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options = SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+
+        zip.start_file("processed.txt", options)
+            .map_err(|err| err.to_string())?;
+        zip.write_all(transcript.as_bytes())
+            .map_err(|err| err.to_string())?;
+
+        if let Some(ref raw) = raw_transcript {
+            if !raw.is_empty() {
+                zip.start_file("raw.txt", options)
+                    .map_err(|err| err.to_string())?;
+                zip.write_all(raw.as_bytes())
+                    .map_err(|err| err.to_string())?;
+            }
+        }
+
+        if let Some(ref audio_path_str) = audio_path {
+            let audio_path_buf = PathBuf::from(audio_path_str);
+            if audio_path_buf.starts_with(&audio_dir) && audio_path_buf.exists() {
+                let audio_data = std::fs::read(&audio_path_buf)
+                    .map_err(|err| format!("Failed to read audio: {err}"))?;
+                zip.start_file("audio.wav", options)
+                    .map_err(|err| err.to_string())?;
+                zip.write_all(&audio_data)
+                    .map_err(|err| err.to_string())?;
+            }
+        }
+
+        zip.finish().map_err(|err| err.to_string())?;
+        Ok::<bool, String>(true)
+    })
+    .await
+    .map_err(|err| err.to_string())?
+}
+
+#[tauri::command]
 pub async fn term_create(
     term: crate::domain::Term,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -522,6 +610,7 @@ pub async fn api_key_create(
         key,
         base_url,
         azure_region,
+        include_v1_path,
     } = api_key;
 
     let protected = protect_api_key(&key);
@@ -541,6 +630,7 @@ pub async fn api_key_create(
         openrouter_config: None,
         base_url,
         azure_region,
+        include_v1_path,
     };
 
     crate::db::api_key_queries::insert_api_key(database.pool(), &stored)
@@ -1144,6 +1234,11 @@ pub fn stop_key_listener() -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn sync_hotkey_combos(combos: Vec<Vec<String>>) {
+    crate::platform::keyboard::sync_combos(combos);
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
@@ -1158,10 +1253,24 @@ pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), Strin
 }
 
 #[tauri::command]
+pub fn set_menu_icon(
+    app: AppHandle,
+    variant: crate::system::tray::MenuIconVariant,
+) -> Result<(), String> {
+    crate::system::tray::set_menu_icon(&app, variant)
+}
+
+#[tauri::command]
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
-    tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_text_field_info)
-        .await
-        .map_err(|err| err.to_string())
+    Ok(tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        tauri::async_runtime::spawn_blocking(
+            crate::platform::accessibility::get_text_field_info,
+        ),
+    )
+    .await
+    .map_err(|_| "get_text_field_info timed out".to_string())?
+    .map_err(|err| err.to_string())?)
 }
 
 #[tauri::command]

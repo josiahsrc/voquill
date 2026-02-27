@@ -133,9 +133,9 @@ export const DICTATION_LANGUAGES = {
   "pt-BR": "Português (Brasil)",
 };
 
-type DictationLanguageCode = keyof typeof DICTATION_LANGUAGES;
+export type DictationLanguageCode = keyof typeof DICTATION_LANGUAGES;
 
-const ORDERED_DICTATION_LANGUAGES: DictationLanguageCode[] = [
+export const ORDERED_DICTATION_LANGUAGES: DictationLanguageCode[] = [
   "en",
   "es",
   "de",
@@ -242,6 +242,21 @@ const ORDERED_DICTATION_LANGUAGES: DictationLanguageCode[] = [
   "su",
   "yue",
 ];
+
+export const coerceToDictationLanguage = (
+  language: string,
+): DictationLanguageCode => {
+  if (DICTATION_LANGUAGES[language as DictationLanguageCode]) {
+    return language as DictationLanguageCode;
+  }
+
+  const baseLanguage = language.split("-")[0];
+  if (DICTATION_LANGUAGES[baseLanguage as DictationLanguageCode]) {
+    return baseLanguage as DictationLanguageCode;
+  }
+
+  throw new Error(`Unsupported dictation language: ${language}`);
+};
 
 export const KEYBOARD_LAYOUT_LANGUAGE = "keyboard-layout";
 const getKeyboardLayoutTranslation = () =>

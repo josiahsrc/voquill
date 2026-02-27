@@ -16,6 +16,7 @@ import {
 } from "../utils/voice.utils";
 
 const MAX_BLOB_BYTES = 16 * 1024 * 1024; // 16 MB
+const MAX_PROMPT_CHARS = 12000;
 
 export const runTranscribeAudio = async ({
 	auth,
@@ -32,6 +33,12 @@ export const runTranscribeAudio = async ({
 
 	if (blobBytes > MAX_BLOB_BYTES) {
 		throw new ClientError("Audio data exceeds maximum size of 16 MB");
+	}
+
+	if (input.prompt && input.prompt.length > MAX_PROMPT_CHARS) {
+		throw new ClientError(
+			`Prompt exceeds maximum length of ${MAX_PROMPT_CHARS} characters`,
+		);
 	}
 
 	const access = await checkAccess(auth);
@@ -73,6 +80,18 @@ export const runGenerateText = async ({
 	auth: Nullable<AuthData>;
 	input: HandlerInput<"ai/generateText">;
 }): Promise<HandlerOutput<"ai/generateText">> => {
+	if (input.prompt.length > MAX_PROMPT_CHARS) {
+		throw new ClientError(
+			`Prompt exceeds maximum length of ${MAX_PROMPT_CHARS} characters`,
+		);
+	}
+
+	if (input.system && input.system.length > MAX_PROMPT_CHARS) {
+		throw new ClientError(
+			`System prompt exceeds maximum length of ${MAX_PROMPT_CHARS} characters`,
+		);
+	}
+
 	const access = await checkAccess(auth);
 	await validateMemberWithinTokenLimits({ auth: access.auth });
 

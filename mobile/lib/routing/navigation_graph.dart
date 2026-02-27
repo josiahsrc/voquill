@@ -55,6 +55,15 @@ class IsOnboardedCondition extends NavigationCondition {
   }
 }
 
+class HasPermissionsCondition extends NavigationCondition {
+  const HasPermissionsCondition();
+
+  @override
+  bool evaluate(AppState state, String currentLocation) {
+    return state.hasPermissions;
+  }
+}
+
 class IsAtLocationCondition extends NavigationCondition {
   final String location;
 

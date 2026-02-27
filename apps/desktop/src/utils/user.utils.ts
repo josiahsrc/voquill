@@ -5,7 +5,7 @@ import {
   User,
   UserPreferences,
 } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import { countWords, getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { detectLocale, matchSupportedLocale } from "../i18n";
@@ -19,7 +19,11 @@ import {
   getAllowsChangeTranscription,
   getIsEnterpriseEnabled,
 } from "./enterprise.utils";
-import { KEYBOARD_LAYOUT_LANGUAGE } from "./language.utils";
+import {
+  coerceToDictationLanguage,
+  DictationLanguageCode,
+  KEYBOARD_LAYOUT_LANGUAGE,
+} from "./language.utils";
 import { getEffectivePlan, getMemberExceedsLimitByState } from "./member.utils";
 
 export const LOCAL_USER_ID = "local-user-id";
@@ -91,7 +95,7 @@ export const getMyDictationLanguage = (state: AppState): string => {
 
 export const loadMyEffectiveDictationLanguage = async (
   state: AppState,
-): Promise<string> => {
+): Promise<DictationLanguageCode> => {
   let lang = getMyDictationLanguage(state);
   if (lang === KEYBOARD_LAYOUT_LANGUAGE) {
     lang = await invoke<string>("get_keyboard_language").catch((e) => {
@@ -100,7 +104,7 @@ export const loadMyEffectiveDictationLanguage = async (
     });
   }
 
-  return lang;
+  return coerceToDictationLanguage(lang);
 };
 
 export const formatDictationLanguageCode = (language: string): string => {
@@ -396,4 +400,41 @@ export const getEffectivePillVisibility = (
   }
 
   return "while_active";
+};
+
+const SILENCE_PADDING_MS = 1500;
+const MIN_DURATION_FOR_PADDING_MS = 4000;
+
+export type DictationSpeed = {
+  wpm: number;
+  sampleCount: number;
+};
+
+export const getDictationSpeed = (state: AppState): DictationSpeed | null => {
+  const ids = state.transcriptions.transcriptionIds;
+  let totalWpm = 0;
+  let count = 0;
+
+  for (const id of ids) {
+    const t = getRec(state.transcriptionById, id);
+    if (
+      !t ||
+      !t.audio?.durationMs ||
+      t.audio.durationMs <= 0 ||
+      !t.transcript
+    ) {
+      continue;
+    }
+    const words = countWords(t.transcript);
+    if (words <= 0) continue;
+    let durationMs = t.audio.durationMs;
+    if (durationMs >= MIN_DURATION_FOR_PADDING_MS) {
+      durationMs -= SILENCE_PADDING_MS;
+    }
+    totalWpm += words / (durationMs / 60000);
+    count++;
+  }
+
+  if (count === 0) return null;
+  return { wpm: Math.round(totalWpm / count), sampleCount: count };
 };

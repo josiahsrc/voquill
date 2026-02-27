@@ -21,6 +21,7 @@ import {
 import { AppState } from "../../state/app.state";
 import { useAppStore } from "../../store";
 import { TranscriptionToneMenu } from "./TranscriptionToneMenu";
+import { TranscriptionTextBlock } from "./TranscriptionTextBlock";
 
 const formatModelSizeLabel = (
   modelSize?: string | null,
@@ -32,52 +33,6 @@ const formatModelSizeLabel = (
   }
 
   return value.charAt(0).toUpperCase() + value.slice(1);
-};
-
-const renderTextBlock = (
-  label: React.ReactNode,
-  value: string | null | undefined,
-  options?: { placeholder?: React.ReactNode; monospace?: boolean },
-) => {
-  const normalized = value?.trim();
-
-  return (
-    <Box>
-      <Typography variant="caption" color="text.secondary">
-        {label}
-      </Typography>
-      {normalized ? (
-        <Box
-          sx={(theme) => ({
-            mt: 0.5,
-            p: 1,
-            borderRadius: 1,
-            bgcolor:
-              theme.vars?.palette.level1 ?? theme.palette.background.default,
-          })}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              fontFamily: options?.monospace
-                ? '"Roboto Mono", monospace'
-                : undefined,
-            }}
-          >
-            {normalized}
-          </Typography>
-        </Box>
-      ) : (
-        <Typography variant="body2" color="text.secondary">
-          {options?.placeholder ?? (
-            <FormattedMessage defaultMessage="Not provided." />
-          )}
-        </Typography>
-      )}
-    </Box>
-  );
 };
 
 const resolveApiKeyLabel = (
@@ -285,34 +240,35 @@ export const TranscriptionDetailsDialog = () => {
                 <FormattedMessage defaultMessage="Outputs" />
               </Typography>
               <Stack spacing={1.25} sx={{ mt: 1 }}>
-                {renderTextBlock(
-                  <FormattedMessage defaultMessage="Raw transcription" />,
-                  rawTranscriptText,
-                  {
-                    placeholder: (
-                      <FormattedMessage defaultMessage="Raw transcript unavailable." />
-                    ),
-                    monospace: true,
-                  },
+                <TranscriptionTextBlock
+                  label={
+                    <FormattedMessage defaultMessage="Raw transcription" />
+                  }
+                  value={rawTranscriptText}
+                  placeholder={
+                    <FormattedMessage defaultMessage="Raw transcript unavailable." />
+                  }
+                  monospace
+                />
+                {sanitizedTranscriptText && (
+                  <TranscriptionTextBlock
+                    label={
+                      <FormattedMessage defaultMessage="After replacements" />
+                    }
+                    value={sanitizedTranscriptText}
+                    monospace
+                  />
                 )}
-                {sanitizedTranscriptText &&
-                  renderTextBlock(
-                    <FormattedMessage defaultMessage="After replacements" />,
-                    sanitizedTranscriptText,
-                    {
-                      monospace: true,
-                    },
-                  )}
-                {renderTextBlock(
-                  <FormattedMessage defaultMessage="Final transcription" />,
-                  finalTranscriptText,
-                  {
-                    placeholder: (
-                      <FormattedMessage defaultMessage="Final transcript unavailable." />
-                    ),
-                    monospace: true,
-                  },
-                )}
+                <TranscriptionTextBlock
+                  label={
+                    <FormattedMessage defaultMessage="Final transcription" />
+                  }
+                  value={finalTranscriptText}
+                  placeholder={
+                    <FormattedMessage defaultMessage="Final transcript unavailable." />
+                  }
+                  monospace
+                />
               </Stack>
             </Box>
 
@@ -426,16 +382,14 @@ export const TranscriptionDetailsDialog = () => {
                     {transcriptionApiKeyLabel}
                   </Typography>
                 </Box>
-                {renderTextBlock(
-                  <FormattedMessage defaultMessage="Prompt" />,
-                  transcriptionPrompt,
-                  {
-                    placeholder: (
-                      <FormattedMessage defaultMessage="No custom prompt applied." />
-                    ),
-                    monospace: true,
-                  },
-                )}
+                <TranscriptionTextBlock
+                  label={<FormattedMessage defaultMessage="Prompt" />}
+                  value={transcriptionPrompt}
+                  placeholder={
+                    <FormattedMessage defaultMessage="No custom prompt applied." />
+                  }
+                  monospace
+                />
               </Stack>
             </Box>
 
@@ -470,16 +424,14 @@ export const TranscriptionDetailsDialog = () => {
                     {postProcessApiKeyLabel}
                   </Typography>
                 </Box>
-                {renderTextBlock(
-                  <FormattedMessage defaultMessage="Prompt" />,
-                  postProcessPrompt,
-                  {
-                    placeholder: (
-                      <FormattedMessage defaultMessage="No LLM post-processing was applied." />
-                    ),
-                    monospace: true,
-                  },
-                )}
+                <TranscriptionTextBlock
+                  label={<FormattedMessage defaultMessage="Prompt" />}
+                  value={postProcessPrompt}
+                  placeholder={
+                    <FormattedMessage defaultMessage="No LLM post-processing was applied." />
+                  }
+                  monospace
+                />
               </Stack>
             </Box>
           </Stack>

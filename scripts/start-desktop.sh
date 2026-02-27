@@ -20,6 +20,7 @@ if [ "${FLAVOR}" = "emulators" ]; then
   export VITE_USE_EMULATORS="true"
   ./scripts/kill-emulators.sh
   ./scripts/clear-desktop-db.sh local
+  (cd apps/firebase && npx firebase-tools use dev)
   export PS1="[emulators] \$ "
   npm run dev
 else

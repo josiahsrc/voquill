@@ -4,14 +4,17 @@ import {
   type DownloadEvent,
   type Update,
 } from "@tauri-apps/plugin-updater";
+import { getIntl } from "../i18n/intl";
 import { getAppState, produceAppState } from "../store";
+import { isMacOS } from "../utils/env.utils";
 import { daysToMilliseconds } from "../utils/time.utils";
 import { getMyUserPreferences } from "../utils/user.utils";
 import { markSurfaceWindowForNextLaunch } from "../utils/window.utils";
 import { showErrorSnackbar } from "./app.actions";
+import { showToast } from "./toast.actions";
 
 let availableUpdate: Update | null = null;
-let checkingPromise: Promise<void> | null = null;
+let checkingPromise: Promise<boolean> | null = null;
 let installingPromise: Promise<void> | null = null;
 
 const isBusy = () => {
@@ -19,12 +22,12 @@ const isBusy = () => {
   return status === "downloading" || status === "installing";
 };
 
-export const checkForAppUpdates = async (): Promise<void> => {
+export const checkForAppUpdates = async (): Promise<boolean> => {
   if (checkingPromise || isBusy()) {
-    return checkingPromise ?? Promise.resolve();
+    return checkingPromise ?? Promise.resolve(false);
   }
 
-  const run = async () => {
+  const run = async (): Promise<boolean> => {
     produceAppState((draft) => {
       draft.updater.status = "checking";
       draft.updater.errorMessage = null;
@@ -44,7 +47,7 @@ export const checkForAppUpdates = async (): Promise<void> => {
         draft.updater.status = "error";
         draft.updater.errorMessage = message;
       });
-      return;
+      return false;
     }
 
     if (!update) {
@@ -69,7 +72,7 @@ export const checkForAppUpdates = async (): Promise<void> => {
         draft.updater.downloadedBytes = null;
         draft.updater.totalBytes = null;
       });
-      return;
+      return false;
     }
 
     if (availableUpdate) {
@@ -105,12 +108,36 @@ export const checkForAppUpdates = async (): Promise<void> => {
         draft.updater.dialogOpen = true;
       }
     });
+
+    // It's hard to see the update menu icon on Linux and Windows, so show a
+    // toast notification when an update is available. On macOS, the menu icon
+    // is more visible and users are more accustomed to checking there for
+    // updates, so we can skip the toast.
+    if (shouldAutoShowDialog && !isMacOS()) {
+      const intl = getIntl();
+      await showToast({
+        title: intl.formatMessage({
+          defaultMessage: "New update available",
+        }),
+        message: intl.formatMessage(
+          {
+            defaultMessage: "Version {version} is ready to install.",
+          },
+          { version: update.version },
+        ),
+        toastType: "info",
+        action: "surface_window",
+        duration: 8_000,
+      });
+    }
+
+    return true;
   };
 
   checkingPromise = run();
 
   try {
-    await checkingPromise;
+    return await checkingPromise;
   } finally {
     checkingPromise = null;
   }

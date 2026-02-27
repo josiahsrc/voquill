@@ -4,8 +4,8 @@ import { getRec } from "@repo/utilities";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { getLogger } from "../utils/log.utils";
-import { getIsNewBackendEnabled } from "../utils/new-server.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
+import { buildOpenAICompatibleUrl } from "../utils/openai-compatible.utils";
 import {
   GenerativePrefs,
   getAgentModePrefs,
@@ -64,12 +64,12 @@ import {
   AldeaTranscribeAudioRepo,
   AzureTranscribeAudioRepo,
   BaseTranscribeAudioRepo,
-  CloudTranscribeAudioRepo,
   EnterpriseTranscribeAudioRepo,
   GeminiTranscribeAudioRepo,
   GroqTranscribeAudioRepo,
   LocalTranscribeAudioRepo,
   NewServerTranscribeAudioRepo,
+  OpenAICompatibleTranscribeAudioRepo,
   OpenAITranscribeAudioRepo,
   SpeachesTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
@@ -175,7 +175,7 @@ const getGenTextRepoInternal = ({
     let repo: BaseGenerateTextRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseGenerateTextRepo(cloudModel);
-    } else if (useNewBackend && getIsNewBackendEnabled()) {
+    } else if (useNewBackend) {
       repo = new NewServerGenerateTextRepo();
     } else {
       repo = new CloudGenerateTextRepo(cloudModel);
@@ -204,15 +204,17 @@ const getGenTextRepoInternal = ({
       }
     } else if (prefs.provider === "openai-compatible") {
       const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
-      const baseUrl = apiKeyRecord?.baseUrl || "http://127.0.0.1:8080";
+      const baseUrl = apiKeyRecord?.baseUrl;
       const model = prefs.postProcessingModel;
       const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      const includeV1Path = apiKeyRecord?.includeV1Path;
+      const fullUrl = buildOpenAICompatibleUrl(baseUrl, includeV1Path);
       getLogger().verbose(
-        `Configuring OpenAI Compatible repo with baseUrl=${baseUrl} and model=${model}`,
+        `Configuring OpenAI Compatible repo with baseUrl=${fullUrl} and model=${model}`,
       );
       if (model) {
         repo = new OpenAICompatibleGenerateTextRepo(
-          `${baseUrl}/v1`,
+          fullUrl,
           model,
           providerApiKey,
         );
@@ -304,7 +306,11 @@ export const getAgentRepo = (): GenerateTextRepoOutput => {
     throw new Error("OpenClaw provides its own LLM processor");
   }
 
-  return getGenTextRepoInternal({ prefs, cloudModel: "large", useNewBackend: false });
+  return getGenTextRepoInternal({
+    prefs,
+    cloudModel: "large",
+    useNewBackend: false,
+  });
 };
 
 export type TranscribeAudioRepoOutput = {
@@ -320,10 +326,8 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
     let repo: BaseTranscribeAudioRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseTranscribeAudioRepo();
-    } else if (getIsNewBackendEnabled()) {
-      repo = new NewServerTranscribeAudioRepo();
     } else {
-      repo = new CloudTranscribeAudioRepo();
+      repo = new NewServerTranscribeAudioRepo();
     }
     return {
       repo,
@@ -349,6 +353,19 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
       repo = new GeminiTranscribeAudioRepo(
         prefs.apiKeyValue,
         prefs.transcriptionModel,
+      );
+    } else if (prefs.provider === "openai-compatible") {
+      const state = getAppState();
+      const apiKeyRecord = getRec(state.apiKeyById, prefs.apiKeyId);
+      const baseUrl = apiKeyRecord?.baseUrl;
+      const model = prefs.transcriptionModel || "whisper-1";
+      const providerApiKey = apiKeyRecord?.keyFull || undefined;
+      const includeV1Path = apiKeyRecord?.includeV1Path;
+      const fullUrl = buildOpenAICompatibleUrl(baseUrl, includeV1Path);
+      repo = new OpenAICompatibleTranscribeAudioRepo(
+        fullUrl,
+        model,
+        providerApiKey,
       );
     } else if (prefs.provider === "speaches") {
       const state = getAppState();

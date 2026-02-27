@@ -15,6 +15,7 @@ import {
   Paper,
   Select,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -38,12 +39,14 @@ import {
   groqTestIntegration,
   OPENAI_GENERATE_TEXT_MODELS,
   OPENAI_TRANSCRIPTION_MODELS,
+  openaiCompatibleTestIntegration,
   openaiTestIntegration,
   OPENROUTER_FAVORITE_MODELS,
   openrouterTestIntegration,
   TRANSCRIPTION_MODELS,
 } from "@repo/voice-ai";
 import { speachesTestIntegration } from "../../utils/speaches.utils";
+import { OPENAI_COMPATIBLE_DEFAULT_URL } from "../../utils/openai-compatible.utils";
 import { useCallback, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {
@@ -62,7 +65,9 @@ import {
   OLLAMA_DEFAULT_URL,
   ollamaTestIntegration,
 } from "../../utils/ollama.utils";
+import { GroqModelPicker } from "./GroqModelPicker";
 import { OllamaModelPicker } from "./OllamaModelPicker";
+import { OpenAICompatibleModelPicker } from "./OpenAICompatibleModelPicker";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { OpenRouterProviderRouting } from "./OpenRouterProviderRouting";
 
@@ -82,6 +87,7 @@ type AddApiKeyCardProps = {
     baseUrl?: string,
     azureRegion?: string,
     transcriptionModel?: string,
+    includeV1Path?: boolean,
   ) => Promise<void>;
   onCancel: () => void;
   context: ApiKeyListContext;
@@ -96,6 +102,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [azureOpenAIEndpoint, setAzureOpenAIEndpoint] = useState("");
   const [speachesUrl, setSpeachesUrl] = useState("");
   const [speachesModel, setSpeachesModel] = useState("");
+  const [includeV1Path, setIncludeV1Path] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const isOllama = provider === "ollama";
@@ -132,8 +139,20 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
             ? azureOpenAIEndpoint
             : undefined;
       const azureRegionValue = isAzureSTT ? azureRegion : undefined;
-      const transcriptionModelValue = isSpeaches ? speachesModel || undefined : undefined;
-      await onSave(name, provider, keyToSave, baseUrl, azureRegionValue, transcriptionModelValue);
+      const transcriptionModelValue =
+        isSpeaches || (isOpenAICompatible && context === "transcription")
+          ? speachesModel || undefined
+          : undefined;
+      const includeV1PathValue = isOpenAICompatible ? includeV1Path : undefined;
+      await onSave(
+        name,
+        provider,
+        keyToSave,
+        baseUrl,
+        azureRegionValue,
+        transcriptionModelValue,
+        includeV1PathValue,
+      );
       setName("");
       setKey("");
       setOllamaUrl("");
@@ -141,6 +160,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
       setAzureOpenAIEndpoint("");
       setSpeachesUrl("");
       setSpeachesModel("");
+      setIncludeV1Path(true);
     } catch (error) {
       console.error("Failed to save API key", error);
     } finally {
@@ -160,6 +180,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
     azureRegion,
     azureOpenAIEndpoint,
     provider,
+    includeV1Path,
     onSave,
     saving,
   ]);
@@ -204,9 +225,7 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         {context === "post-processing" && (
           <MenuItem value="ollama">Ollama</MenuItem>
         )}
-        {context === "post-processing" && (
-          <MenuItem value="openai-compatible">OpenAI Compatible</MenuItem>
-        )}
+        <MenuItem value="openai-compatible">OpenAI Compatible</MenuItem>
         {context === "post-processing" && (
           <MenuItem value="deepseek">DeepSeek</MenuItem>
         )}
@@ -317,6 +336,33 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
               <FormattedMessage defaultMessage="Only needed if your instance requires authentication" />
             }
           />
+          {isOpenAICompatible && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="body2">
+                <FormattedMessage defaultMessage="Include /v1 path" />
+              </Typography>
+              <Switch
+                checked={includeV1Path}
+                onChange={(event) => setIncludeV1Path(event.target.checked)}
+                disabled={saving}
+                size="small"
+              />
+            </Box>
+          )}
+          {isOpenAICompatible && context === "transcription" && (
+            <TextField
+              label={<FormattedMessage defaultMessage="Model" />}
+              value={speachesModel}
+              onChange={(event) => setSpeachesModel(event.target.value)}
+              placeholder="whisper-1"
+              size="small"
+              fullWidth
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
+              }
+            />
+          )}
         </>
       ) : isSpeaches ? (
         <>
@@ -387,9 +433,16 @@ const testApiKey = async (
   apiKey: SettingsApiKey,
   context: ApiKeyListContext,
 ): Promise<boolean> => {
-  if (apiKey.provider === "ollama" || apiKey.provider === "openai-compatible") {
+  if (apiKey.provider === "ollama") {
     return ollamaTestIntegration({
       baseUrl: apiKey.baseUrl || OLLAMA_DEFAULT_URL,
+      apiKey: apiKey.keyFull || undefined,
+    });
+  }
+
+  if (apiKey.provider === "openai-compatible") {
+    return openaiCompatibleTestIntegration({
+      baseUrl: apiKey.baseUrl || OPENAI_COMPATIBLE_DEFAULT_URL,
       apiKey: apiKey.keyFull || undefined,
     });
   }
@@ -617,9 +670,7 @@ const ApiKeyCard = ({
             disabled={testing || deleting}
           />
         </Box>
-      ) : (apiKey.provider === "ollama" ||
-          apiKey.provider === "openai-compatible") &&
-        context === "post-processing" ? (
+      ) : apiKey.provider === "ollama" && context === "post-processing" ? (
         <Box onClick={(e) => e.stopPropagation()}>
           <OllamaModelPicker
             baseUrl={apiKey.baseUrl ?? null}
@@ -627,9 +678,34 @@ const ApiKeyCard = ({
             selectedModel={currentModel}
             onModelSelect={onModelChange}
             disabled={testing || deleting}
-            provider={apiKey.provider}
           />
         </Box>
+      ) : apiKey.provider === "openai-compatible" &&
+        context === "post-processing" ? (
+        <Box onClick={(e) => e.stopPropagation()}>
+          <OpenAICompatibleModelPicker
+            baseUrl={apiKey.baseUrl ?? null}
+            apiKey={apiKey.keyFull}
+            selectedModel={currentModel}
+            onModelSelect={onModelChange}
+            disabled={testing || deleting}
+          />
+        </Box>
+      ) : apiKey.provider === "openai-compatible" &&
+        context === "transcription" ? (
+        <TextField
+          label={<FormattedMessage defaultMessage="Model" />}
+          value={currentModel ?? ""}
+          onChange={(event) => onModelChange(event.target.value || null)}
+          onClick={(e) => e.stopPropagation()}
+          placeholder="whisper-1"
+          size="small"
+          fullWidth
+          disabled={testing || deleting}
+          helperText={
+            <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
+          }
+        />
       ) : apiKey.provider === "speaches" ? (
         <TextField
           label={<FormattedMessage defaultMessage="Model" />}
@@ -644,6 +720,15 @@ const ApiKeyCard = ({
             <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
           }
         />
+      ) : apiKey.provider === "groq" ? (
+        <Box onClick={(e) => e.stopPropagation()}>
+          <GroqModelPicker
+            apiKey={apiKey.keyFull ?? null}
+            selectedModel={currentModel}
+            onModelSelect={onModelChange}
+            disabled={testing || deleting}
+          />
+        </Box>
       ) : models.length > 0 ? (
         <FormControl fullWidth size="small">
           <InputLabel id={`model-select-label-${apiKey.id}`}>
@@ -689,7 +774,6 @@ export const ApiKeyList = ({
       context === "transcription" &&
       (key.provider === "openrouter" ||
         key.provider === "ollama" ||
-        key.provider === "openai-compatible" ||
         key.provider === "deepseek" ||
         key.provider === "claude")
     ) {
@@ -750,6 +834,7 @@ export const ApiKeyList = ({
       baseUrl?: string,
       azureRegion?: string,
       transcriptionModel?: string,
+      includeV1Path?: boolean,
     ) => {
       const created = await createApiKey({
         id: generateApiKeyId(),
@@ -758,6 +843,7 @@ export const ApiKeyList = ({
         key,
         baseUrl,
         azureRegion,
+        includeV1Path,
       });
 
       if (transcriptionModel) {

@@ -10,10 +10,7 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import {
-  OllamaRepo,
-  OpenAICompatibleRepo,
-} from "../../repos/ollama.repo";
+import { OllamaRepo, OpenAICompatibleRepo } from "../../repos/ollama.repo";
 import { OLLAMA_DEFAULT_URL } from "../../utils/ollama.utils";
 
 type OllamaModelPickerProps = {

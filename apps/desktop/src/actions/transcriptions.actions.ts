@@ -21,14 +21,42 @@ export const closeTranscriptionDetailsDialog = () => {
   });
 };
 
+export const openRetranscribeDialog = (transcriptionId: string) => {
+  produceAppState((draft) => {
+    draft.transcriptions.retranscribeDialogTranscriptionId = transcriptionId;
+    draft.transcriptions.retranscribeDialogOpen = true;
+  });
+};
+
+export const closeRetranscribeDialog = () => {
+  produceAppState((draft) => {
+    draft.transcriptions.retranscribeDialogOpen = false;
+  });
+};
+
+export const openFlagTranscriptionDialog = (transcriptionId: string) => {
+  produceAppState((draft) => {
+    draft.transcriptions.flagDialogTranscriptionId = transcriptionId;
+    draft.transcriptions.flagDialogOpen = true;
+  });
+};
+
+export const closeFlagTranscriptionDialog = () => {
+  produceAppState((draft) => {
+    draft.transcriptions.flagDialogOpen = false;
+  });
+};
+
 type RetranscribeTranscriptionParams = {
   transcriptionId: string;
   toneId?: string | null;
+  languageCode?: string | null;
 };
 
 export const retranscribeTranscription = async ({
   transcriptionId,
   toneId,
+  languageCode,
 }: RetranscribeTranscriptionParams): Promise<void> => {
   const state = getAppState();
   const transcription = getRec(state.transcriptionById, transcriptionId);
@@ -43,6 +71,7 @@ export const retranscribeTranscription = async ({
   const transcribeResult = await transcribeAudio({
     samples: audioData.samples,
     sampleRate: audioData.sampleRate,
+    dictationLanguage: languageCode ?? undefined,
   });
 
   const rawTranscript = transcribeResult.rawTranscript;
@@ -60,6 +89,7 @@ export const retranscribeTranscription = async ({
   const postProcessResult = await postProcessTranscript({
     rawTranscript: sanitizedTranscript,
     toneId: toneId ?? null,
+    dictationLanguage: languageCode ?? undefined,
   });
 
   const finalTranscript = postProcessResult.transcript;

@@ -3,6 +3,7 @@ import {
   Contact,
   DatabaseMember,
   DatabaseUser,
+  FlaggedAudio,
   Nullable,
   TermDoc,
   ToneDoc,
@@ -39,3 +40,10 @@ export const termDocs = (userId: Nullable<string>): FiremixPath<TermDoc> => {
 export const toneDocs = (userId: Nullable<string>): FiremixPath<ToneDoc> => {
   return ["toneDocs", ...listify(userId)];
 };
+
+export const flaggedAudio = (
+  flaggedAudioId?: Nullable<string>,
+): FiremixPath<FlaggedAudio> => {
+  return ["flaggedAudio", ...listify(flaggedAudioId)];
+};
+

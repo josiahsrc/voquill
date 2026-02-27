@@ -1,5 +1,6 @@
 import UIKit
 import AVFoundation
+import Mixpanel
 
 // MARK: - Audio Waveform
 
@@ -9,9 +10,9 @@ class AudioWaveformView: UIView {
     private var currentLevel: CGFloat = 0.0
     private var targetLevel: CGFloat = 0.0
 
-    private let basePhaseStep: CGFloat = 0.14
-    private let attackSmoothing: CGFloat = 0.25
-    private let decaySmoothing: CGFloat = 0.25
+    private let basePhaseStep: CGFloat = 0.18
+    private let attackSmoothing: CGFloat = 0.3
+    private let decaySmoothing: CGFloat = 0.12
 
     private struct WaveConfig {
         let frequency: CGFloat
@@ -102,7 +103,6 @@ class AudioWaveformView: UIView {
         let w = rect.width, h = rect.height, mid = h / 2
 
         if !isActive && currentLevel < 0.01 {
-            // Draw flat line when idle
             let path = UIBezierPath()
             path.move(to: CGPoint(x: 0, y: mid))
             path.addLine(to: CGPoint(x: w, y: mid))
@@ -212,7 +212,6 @@ class IndeterminateProgressView: UIView {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         let w = rect.width, h = rect.height, mid = h / 2
 
-        // Track line
         let trackPath = UIBezierPath()
         trackPath.move(to: CGPoint(x: 0, y: mid))
         trackPath.addLine(to: CGPoint(x: w, y: mid))
@@ -225,11 +224,9 @@ class IndeterminateProgressView: UIView {
 
         let t = time / cycleDuration
 
-        // Head moves with easeInOut across the full range
         let headT = easeInOut(min(t * 1.2, 1.0))
         let head = -0.1 + headT * 1.2
 
-        // Tail starts later and catches up
         let tailRaw = max((t - 0.2) / 0.8, 0)
         let tailT = easeInOut(min(tailRaw, 1.0))
         let tail = -0.1 + tailT * 1.2
@@ -257,29 +254,100 @@ class IndeterminateProgressView: UIView {
 
 class KeyboardViewController: UIInputViewController {
 
-    enum Phase {
+    private enum PillVisual {
         case idle, recording, loading
     }
 
-    private var currentPhase: Phase = .idle
+    private var dictationPhase: DictationPhase = .idle
+    private var isProcessing = false
 
+    private var pillButton: UIView!
+    private var pillLabel: UILabel!
     private var waveformView: AudioWaveformView!
     private var progressView: IndeterminateProgressView!
-    private var pillButton: UIView!
-    private var pillIcon: UIImageView!
-    private var pillLabel: UILabel!
     private var nextKeyboardButton: UIButton?
-    private var labelToIconConstraint: NSLayoutConstraint!
-    private var labelCenteredConstraint: NSLayoutConstraint!
+    private var logoButton: UIButton!
+    private var languageChip: UIButton!
 
-    private var audioRecorder: AVAudioRecorder?
-    private var levelTimer: Timer?
-    private var smoothedLevel: Float = 0
+    private var toneContainer: UIScrollView!
+    private var selectedToneId: String?
+    private var activeToneIds: [String] = []
+    private var toneById: [String: SharedTone] = [:]
+
+    private var termIds: [String] = []
+    private var termById: [String: SharedTerm] = [:]
+
+    private var dictationLanguages: [String] = ["en"]
+
+    private var audioLevelTimer: Timer?
+    private var smoothedAudioLevel: CGFloat = 0
+    private var appCounterPoller: Timer?
+    private var lastAppCounter: Int = -1
+
+    private var deleteRepeatTimer: Timer?
+    private var deleteWordTimer: Timer?
+    private var deleteIsWordMode = false
+
+    private var cachedIdToken: String?
+    private var cachedIdTokenExpiry: Date?
+    private var lastDebugLog: String = ""
+
+    private var memberInfo: MemberInfo?
+    private var configInfo: ConfigInfo?
+    private var memberRefreshTimer: Timer?
+    private var statusBanner: UIView!
+    private var statusIcon: UIImageView!
+    private var statusLabel: UILabel!
+    private var upgradeButton: UIButton!
+    private var fullAccessBanner: UIView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        initMixpanel()
         buildUI()
-        applyPhase(.idle, animated: false)
+        startKeyboardCounterPoller()
+    }
+
+    private func initMixpanel() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let token = defaults?.string(forKey: "voquill_mixpanel_token"),
+              !token.isEmpty else { return }
+        Mixpanel.initialize(token: token, trackAutomaticEvents: false)
+        syncMixpanelUser()
+    }
+
+    private func syncMixpanelUser() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        guard let uid = defaults?.string(forKey: "voquill_mixpanel_uid"),
+              !uid.isEmpty else { return }
+        Mixpanel.mainInstance().identify(distinctId: uid)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        syncFullAccessStatus()
+        loadTones()
+        loadLanguage()
+        loadDictionary()
+        refreshDictationState()
+        startDarwinObservers()
+        refreshMemberData()
+        startMemberRefreshTimer()
+    }
+
+    private func syncFullAccessStatus() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        defaults?.set(hasFullAccess, forKey: "voquill_keyboard_has_full_access")
+        updateFullAccessState()
+    }
+
+    private func updateFullAccessState() {
+        pillButton.isHidden = !hasFullAccess
+        fullAccessBanner.isHidden = hasFullAccess
+    }
+
+    @objc private func onOpenSettingsTap() {
+        openURL(UIApplication.openSettingsURLString)
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -288,20 +356,53 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func updateColorsForAppearance() {
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        let activeColor: UIColor = isDark ? .white : .black
-        let idleColor: UIColor = isDark ? UIColor.white.withAlphaComponent(0.25) : UIColor.black.withAlphaComponent(0.2)
-        progressView.barColor = activeColor
+        waveformView.waveColor = .white
+        progressView.barColor = .white
+    }
 
-        switch currentPhase {
-        case .idle:
-            waveformView.waveColor = idleColor
+    // MARK: - Dictation State
+
+    private func refreshDictationState() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        let phaseStr = defaults?.string(forKey: DictationConstants.phaseKey) ?? "idle"
+        var newPhase = DictationPhase(rawValue: phaseStr) ?? .idle
+
+        if newPhase != .idle && isHeartbeatStale(defaults) {
+            NSLog("[VoquillKB] Heartbeat stale, resetting phase to idle")
+            defaults?.set("idle", forKey: DictationConstants.phaseKey)
+            newPhase = .idle
+        }
+
+        let oldPhase = dictationPhase
+        dictationPhase = newPhase
+
+        if isProcessing { return }
+
+        switch newPhase {
         case .recording:
-            waveformView.waveColor = activeColor
-        case .loading:
-            progressView.barColor = activeColor
+            applyPillVisual(.recording, animated: oldPhase != newPhase)
+            startAudioLevelPolling()
+        case .active:
+            stopAudioLevelPolling()
+            if oldPhase == .recording {
+                handleTranscription()
+            } else {
+                applyPillVisual(.idle, animated: oldPhase != newPhase)
+            }
+        case .idle:
+            stopAudioLevelPolling()
+            applyPillVisual(.idle, animated: oldPhase != newPhase)
         }
     }
+
+    private func isHeartbeatStale(_ defaults: UserDefaults?) -> Bool {
+        let heartbeat = defaults?.double(forKey: DictationConstants.heartbeatKey)
+        guard let heartbeat = heartbeat, heartbeat > 0 else { return true }
+        let elapsed = Date().timeIntervalSince1970 - heartbeat
+        return elapsed > DictationConstants.heartbeatStaleThreshold
+    }
+
+    // MARK: - Build UI
 
     private func buildUI() {
         view.backgroundColor = .clear
@@ -310,67 +411,206 @@ class KeyboardViewController: UIInputViewController {
         hc.priority = .defaultHigh
         hc.isActive = true
 
-        // === WAVEFORM ===
-        waveformView = AudioWaveformView()
-        waveformView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(waveformView)
+        logoButton = UIButton(type: .custom)
+        logoButton.translatesAutoresizingMaskIntoConstraints = false
+        logoButton.backgroundColor = UIColor.systemGray4
+        logoButton.layer.cornerRadius = 8
+        logoButton.clipsToBounds = true
+        logoButton.addTarget(self, action: #selector(onLogoButtonTap), for: .touchUpInside)
+        addButtonFeedback(logoButton)
+        view.addSubview(logoButton)
 
-        // === PROGRESS ===
-        progressView = IndeterminateProgressView()
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.alpha = 0
-        view.addSubview(progressView)
-
+        let logoImageView = UIImageView(image: UIImage(named: "VoquillLogo")?.withRenderingMode(.alwaysTemplate))
+        logoImageView.translatesAutoresizingMaskIntoConstraints = false
+        logoImageView.contentMode = .scaleAspectFit
+        logoImageView.tintColor = .label
+        logoImageView.isUserInteractionEnabled = false
+        logoButton.addSubview(logoImageView)
         NSLayoutConstraint.activate([
-            waveformView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            waveformView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            waveformView.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            waveformView.heightAnchor.constraint(equalToConstant: 110),
-
-            progressView.leadingAnchor.constraint(equalTo: waveformView.leadingAnchor),
-            progressView.trailingAnchor.constraint(equalTo: waveformView.trailingAnchor),
-            progressView.topAnchor.constraint(equalTo: waveformView.topAnchor),
-            progressView.heightAnchor.constraint(equalTo: waveformView.heightAnchor)
+            logoImageView.centerXAnchor.constraint(equalTo: logoButton.centerXAnchor),
+            logoImageView.centerYAnchor.constraint(equalTo: logoButton.centerYAnchor),
+            logoImageView.widthAnchor.constraint(equalToConstant: 28),
+            logoImageView.heightAnchor.constraint(equalToConstant: 28),
         ])
 
-        // === PILL BUTTON ===
+        languageChip = UIButton(type: .system)
+        languageChip.translatesAutoresizingMaskIntoConstraints = false
+        languageChip.setTitle("EN", for: .normal)
+        languageChip.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        languageChip.setTitleColor(.label, for: .normal)
+        languageChip.backgroundColor = UIColor.systemGray4
+        languageChip.layer.cornerRadius = 8
+        languageChip.clipsToBounds = true
+        languageChip.isUserInteractionEnabled = true
+        languageChip.addTarget(self, action: #selector(onLanguageChipTap), for: .touchUpInside)
+        addButtonFeedback(languageChip)
+        view.addSubview(languageChip)
+
+        let btnConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        let utilStack = UIStackView()
+        utilStack.translatesAutoresizingMaskIntoConstraints = false
+        utilStack.axis = .horizontal
+        utilStack.spacing = 8
+        view.addSubview(utilStack)
+
+        for (index, iconName) in ["at", "space", "return.left", "delete.left"].enumerated() {
+            let btn = UIButton(type: .system)
+            btn.setImage(UIImage(systemName: iconName, withConfiguration: btnConfig), for: .normal)
+            btn.tintColor = .label
+            btn.backgroundColor = UIColor.systemGray4
+            btn.layer.cornerRadius = 8
+            btn.clipsToBounds = true
+            btn.tag = index
+            if index == 3 {
+                btn.addTarget(self, action: #selector(onDeleteDown), for: .touchDown)
+                btn.addTarget(self, action: #selector(onDeleteUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+            } else {
+                btn.addTarget(self, action: #selector(onUtilButtonTap(_:)), for: .touchDown)
+            }
+            addButtonFeedback(btn)
+            NSLayoutConstraint.activate([
+                btn.widthAnchor.constraint(equalToConstant: 40),
+                btn.heightAnchor.constraint(equalToConstant: 40)
+            ])
+            utilStack.addArrangedSubview(btn)
+        }
+
         pillButton = UIView()
         pillButton.translatesAutoresizingMaskIntoConstraints = false
         pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-        pillButton.layer.cornerRadius = 24
+        pillButton.layer.cornerRadius = 28
+        pillButton.clipsToBounds = true
         pillButton.isUserInteractionEnabled = true
-        view.addSubview(pillButton)
 
-        let tap = UITapGestureRecognizer(target: self, action: #selector(onPillTap))
-        pillButton.addGestureRecognizer(tap)
+        let press = UILongPressGestureRecognizer(target: self, action: #selector(onPillPress(_:)))
+        press.minimumPressDuration = 0
+        pillButton.addGestureRecognizer(press)
 
-        pillIcon = UIImageView()
-        pillIcon.translatesAutoresizingMaskIntoConstraints = false
-        pillIcon.tintColor = .white
-        pillIcon.contentMode = .scaleAspectFit
-        pillButton.addSubview(pillIcon)
+        waveformView = AudioWaveformView()
+        waveformView.translatesAutoresizingMaskIntoConstraints = false
+        waveformView.alpha = 0
+        waveformView.isUserInteractionEnabled = false
+        pillButton.addSubview(waveformView)
+
+        progressView = IndeterminateProgressView()
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        progressView.alpha = 0
+        progressView.isUserInteractionEnabled = false
+        pillButton.addSubview(progressView)
 
         pillLabel = UILabel()
         pillLabel.translatesAutoresizingMaskIntoConstraints = false
         pillLabel.textColor = .white
         pillLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        pillLabel.textAlignment = .center
         pillButton.addSubview(pillLabel)
 
+        statusBanner = UIView()
+        statusBanner.translatesAutoresizingMaskIntoConstraints = false
+        statusBanner.isHidden = true
+
+        statusIcon = UIImageView()
+        statusIcon.translatesAutoresizingMaskIntoConstraints = false
+        statusIcon.tintColor = .secondaryLabel
+        statusIcon.contentMode = .scaleAspectFit
+        statusBanner.addSubview(statusIcon)
+
+        statusLabel = UILabel()
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        statusLabel.textColor = .secondaryLabel
+        statusBanner.addSubview(statusLabel)
+
+        let dot = UILabel()
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        dot.text = "·"
+        dot.font = .systemFont(ofSize: 12, weight: .bold)
+        dot.textColor = .tertiaryLabel
+        statusBanner.addSubview(dot)
+
+        upgradeButton = UIButton(type: .system)
+        upgradeButton.translatesAutoresizingMaskIntoConstraints = false
+        upgradeButton.setTitle("Upgrade", for: .normal)
+        upgradeButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .semibold)
+        upgradeButton.addTarget(self, action: #selector(onUpgradeTap), for: .touchUpInside)
+        statusBanner.addSubview(upgradeButton)
+
         NSLayoutConstraint.activate([
-            pillButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            pillButton.topAnchor.constraint(equalTo: waveformView.bottomAnchor, constant: 16),
-            pillButton.heightAnchor.constraint(equalToConstant: 48),
-
-            pillIcon.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 20),
-            pillIcon.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
-            pillIcon.widthAnchor.constraint(equalToConstant: 20),
-            pillIcon.heightAnchor.constraint(equalToConstant: 20),
-
-            pillLabel.trailingAnchor.constraint(equalTo: pillButton.trailingAnchor, constant: -20),
-            pillLabel.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor)
+            statusBanner.heightAnchor.constraint(equalToConstant: 20),
+            statusIcon.leadingAnchor.constraint(equalTo: statusBanner.leadingAnchor),
+            statusIcon.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
+            statusIcon.widthAnchor.constraint(equalToConstant: 14),
+            statusIcon.heightAnchor.constraint(equalToConstant: 14),
+            statusLabel.leadingAnchor.constraint(equalTo: statusIcon.trailingAnchor, constant: 4),
+            statusLabel.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
+            dot.leadingAnchor.constraint(equalTo: statusLabel.trailingAnchor, constant: 4),
+            dot.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
+            upgradeButton.leadingAnchor.constraint(equalTo: dot.trailingAnchor, constant: 4),
+            upgradeButton.trailingAnchor.constraint(equalTo: statusBanner.trailingAnchor),
+            upgradeButton.centerYAnchor.constraint(equalTo: statusBanner.centerYAnchor),
         ])
 
-        // === NEXT KEYBOARD ===
+        let lockIcon = UIImageView(image: UIImage(systemName: "lock.fill"))
+        lockIcon.translatesAutoresizingMaskIntoConstraints = false
+        lockIcon.tintColor = .secondaryLabel
+        lockIcon.contentMode = .scaleAspectFit
+
+        let accessLabel = UILabel()
+        accessLabel.translatesAutoresizingMaskIntoConstraints = false
+        accessLabel.text = "Full Access required"
+        accessLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        accessLabel.textColor = .label
+
+        let labelRow = UIStackView(arrangedSubviews: [lockIcon, accessLabel])
+        labelRow.axis = .horizontal
+        labelRow.spacing = 6
+        labelRow.alignment = .center
+
+        NSLayoutConstraint.activate([
+            lockIcon.widthAnchor.constraint(equalToConstant: 18),
+            lockIcon.heightAnchor.constraint(equalToConstant: 18),
+        ])
+
+        let settingsButton = UIButton(type: .system)
+        settingsButton.setTitle("Open Settings", for: .normal)
+        settingsButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
+        settingsButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+        settingsButton.setTitleColor(.white, for: .normal)
+        settingsButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        settingsButton.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        settingsButton.layer.cornerRadius = 16
+        settingsButton.addTarget(self, action: #selector(onOpenSettingsTap), for: .touchUpInside)
+        addButtonFeedback(settingsButton)
+
+        fullAccessBanner = UIStackView(arrangedSubviews: [labelRow, settingsButton])
+        (fullAccessBanner as! UIStackView).axis = .vertical
+        (fullAccessBanner as! UIStackView).spacing = 8
+        (fullAccessBanner as! UIStackView).alignment = .center
+        fullAccessBanner.translatesAutoresizingMaskIntoConstraints = false
+        fullAccessBanner.isHidden = true
+
+        let pillStack = UIStackView(arrangedSubviews: [pillButton, fullAccessBanner, statusBanner])
+        pillStack.translatesAutoresizingMaskIntoConstraints = false
+        pillStack.axis = .vertical
+        pillStack.alignment = .center
+        pillStack.spacing = 6
+        view.addSubview(pillStack)
+
+        NSLayoutConstraint.activate([
+            waveformView.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor),
+            waveformView.trailingAnchor.constraint(equalTo: pillButton.trailingAnchor),
+            waveformView.topAnchor.constraint(equalTo: pillButton.topAnchor),
+            waveformView.bottomAnchor.constraint(equalTo: pillButton.bottomAnchor),
+
+            progressView.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 16),
+            progressView.trailingAnchor.constraint(equalTo: pillButton.trailingAnchor, constant: -16),
+            progressView.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
+            progressView.heightAnchor.constraint(equalToConstant: 20),
+
+            pillLabel.centerXAnchor.constraint(equalTo: pillButton.centerXAnchor),
+            pillLabel.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
+        ])
+
         let nkb = UIButton(type: .system)
         nkb.setImage(UIImage(systemName: "globe", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18)), for: .normal)
         nkb.tintColor = .label
@@ -379,41 +619,77 @@ class KeyboardViewController: UIInputViewController {
         view.addSubview(nkb)
         nextKeyboardButton = nkb
 
-        NSLayoutConstraint.activate([
-            nkb.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
-            nkb.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
-            nkb.widthAnchor.constraint(equalToConstant: 36),
-            nkb.heightAnchor.constraint(equalToConstant: 36)
-        ])
+        toneContainer = UIScrollView()
+        toneContainer.translatesAutoresizingMaskIntoConstraints = false
+        toneContainer.showsHorizontalScrollIndicator = false
+        view.addSubview(toneContainer)
 
-        labelToIconConstraint = pillLabel.leadingAnchor.constraint(equalTo: pillIcon.trailingAnchor, constant: 8)
-        labelCenteredConstraint = pillLabel.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor, constant: 20)
-        labelToIconConstraint.isActive = true
+        let topSpacer = UIView()
+        topSpacer.translatesAutoresizingMaskIntoConstraints = false
+        topSpacer.isHidden = true
+        view.addSubview(topSpacer)
+
+        let bottomSpacer = UIView()
+        bottomSpacer.translatesAutoresizingMaskIntoConstraints = false
+        bottomSpacer.isHidden = true
+        view.addSubview(bottomSpacer)
+
+        NSLayoutConstraint.activate([
+            logoButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            logoButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            logoButton.heightAnchor.constraint(equalToConstant: 40),
+            logoButton.widthAnchor.constraint(equalToConstant: 40),
+
+            languageChip.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            languageChip.leadingAnchor.constraint(equalTo: logoButton.trailingAnchor, constant: 8),
+            languageChip.heightAnchor.constraint(equalToConstant: 40),
+            languageChip.widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
+
+            utilStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
+            utilStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+
+            topSpacer.topAnchor.constraint(equalTo: utilStack.bottomAnchor),
+            topSpacer.bottomAnchor.constraint(equalTo: pillStack.topAnchor),
+            topSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            topSpacer.widthAnchor.constraint(equalToConstant: 0),
+
+            bottomSpacer.topAnchor.constraint(equalTo: pillStack.bottomAnchor),
+            bottomSpacer.bottomAnchor.constraint(equalTo: toneContainer.topAnchor),
+            bottomSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomSpacer.widthAnchor.constraint(equalToConstant: 0),
+
+            topSpacer.heightAnchor.constraint(equalTo: bottomSpacer.heightAnchor),
+
+            pillStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            pillButton.widthAnchor.constraint(equalToConstant: 220),
+            pillButton.heightAnchor.constraint(equalToConstant: 56),
+
+            toneContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            toneContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            toneContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
+            toneContainer.heightAnchor.constraint(equalToConstant: 32),
+
+            nkb.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            nkb.centerYAnchor.constraint(equalTo: toneContainer.centerYAnchor),
+            nkb.widthAnchor.constraint(equalToConstant: 36),
+            nkb.heightAnchor.constraint(equalToConstant: 36),
+        ])
 
         waveformView.startAnimating()
         updateColorsForAppearance()
     }
 
-    private func applyPhase(_ phase: Phase, animated: Bool) {
-        currentPhase = phase
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        let activeColor: UIColor = isDark ? .white : .black
-        let idleColor: UIColor = isDark ? UIColor.white.withAlphaComponent(0.25) : UIColor.black.withAlphaComponent(0.2)
-
+    private func applyPillVisual(_ visual: PillVisual, animated: Bool) {
         let changes: () -> Void
-        switch phase {
+        switch visual {
         case .idle:
             changes = {
-                self.waveformView.alpha = 1
-                self.progressView.alpha = 0
+                self.waveformView.alpha = 0
                 self.waveformView.isActive = false
-                self.waveformView.waveColor = idleColor
+                self.progressView.alpha = 0
                 self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-                self.pillIcon.image = UIImage(systemName: "mic.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold))
-                self.pillIcon.isHidden = false
-                self.labelCenteredConstraint.isActive = false
-                self.labelToIconConstraint.isActive = true
-                self.pillLabel.text = "Tap to dictate"
+                self.pillLabel.text = self.dictationPhase == .idle ? "Activate Voquill" : "Tap to dictate"
+                self.pillLabel.alpha = 1
                 self.pillButton.isUserInteractionEnabled = true
             }
             progressView.stopAnimating()
@@ -421,28 +697,22 @@ class KeyboardViewController: UIInputViewController {
         case .recording:
             changes = {
                 self.waveformView.alpha = 1
-                self.progressView.alpha = 0
                 self.waveformView.isActive = true
-                self.waveformView.waveColor = activeColor
-                self.pillButton.backgroundColor = .systemRed
-                self.pillIcon.image = UIImage(systemName: "stop.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold))
-                self.pillIcon.isHidden = false
-                self.labelCenteredConstraint.isActive = false
-                self.labelToIconConstraint.isActive = true
-                self.pillLabel.text = "Stop dictating"
+                self.progressView.alpha = 0
+                self.pillButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+                self.pillLabel.alpha = 0
                 self.pillButton.isUserInteractionEnabled = true
             }
+            progressView.stopAnimating()
 
         case .loading:
             changes = {
                 self.waveformView.alpha = 0
+                self.waveformView.isActive = false
                 self.progressView.alpha = 1
                 self.pillButton.backgroundColor = UIColor.systemGray3
-                self.pillIcon.image = nil
-                self.pillIcon.isHidden = true
-                self.labelToIconConstraint.isActive = false
-                self.labelCenteredConstraint.isActive = true
-                self.pillLabel.text = "Loading..."
+                self.pillLabel.text = "Processing..."
+                self.pillLabel.alpha = 0
                 self.pillButton.isUserInteractionEnabled = false
             }
             progressView.startAnimating()
@@ -455,115 +725,661 @@ class KeyboardViewController: UIInputViewController {
         }
     }
 
-    @objc private func onPillTap() {
-        switch currentPhase {
-        case .idle:
-            applyPhase(.recording, animated: true)
-            startAudioCapture()
-        case .recording:
-            stopAudioCapture()
-            applyPhase(.loading, animated: true)
-            fetchWeather { [weak self] result in
-                DispatchQueue.main.async {
-                    self?.textDocumentProxy.insertText(result)
-                    self?.applyPhase(.idle, animated: true)
+    // MARK: - Actions
+
+    @objc private func onPillPress(_ gesture: UILongPressGestureRecognizer) {
+        switch gesture.state {
+        case .began:
+            UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseInOut) {
+                self.pillButton.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+            }
+        case .ended:
+            UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0, options: []) {
+                self.pillButton.transform = .identity
+            }
+            let location = gesture.location(in: pillButton)
+            if pillButton.bounds.contains(location) {
+                switch dictationPhase {
+                case .idle:
+                    Mixpanel.mainInstance().track(event: "Activate Dictation Mode")
+                    openURL("voquill://dictate")
+                case .active:
+                    DarwinNotificationManager.shared.post(DictationConstants.startRecording)
+                case .recording:
+                    DarwinNotificationManager.shared.post(DictationConstants.stopRecording)
                 }
             }
-        case .loading:
-            break
+        case .cancelled, .failed:
+            UIView.animate(withDuration: 0.15, delay: 0, options: .curveEaseInOut) {
+                self.pillButton.transform = .identity
+            }
+        default: break
         }
     }
 
-    // MARK: - Weather API
+    private func addButtonFeedback(_ button: UIButton) {
+        button.addTarget(self, action: #selector(onButtonDown(_:)), for: .touchDown)
+        button.addTarget(self, action: #selector(onButtonUp(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+    }
 
-    private func fetchWeather(completion: @escaping (String) -> Void) {
-        // Salt Lake City, Utah coordinates
-        let urlString = "https://api.open-meteo.com/v1/forecast?latitude=40.76&longitude=-111.89&current_weather=true&temperature_unit=fahrenheit"
-        guard let url = URL(string: urlString) else {
-            completion("Could not fetch weather")
+    @objc private func onButtonDown(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.curveEaseInOut, .allowUserInteraction, .beginFromCurrentState]) {
+            sender.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
+        }
+    }
+
+    @objc private func onButtonUp(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.15, delay: 0, usingSpringWithDamping: 0.6, initialSpringVelocity: 0, options: [.allowUserInteraction, .beginFromCurrentState]) {
+            sender.transform = .identity
+        }
+    }
+
+
+    private func openURL(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        var responder: UIResponder? = self
+        while let r = responder {
+            if let application = r as? UIApplication {
+                application.open(url, options: [:], completionHandler: nil)
+                return
+            }
+            responder = r.next
+        }
+
+        let selector = NSSelectorFromString("openURL:")
+        responder = self
+        while let r = responder {
+            if r.responds(to: selector) {
+                r.perform(selector, with: url)
+                return
+            }
+            responder = r.next
+        }
+    }
+
+    // MARK: - Keyboard Counter Polling
+
+    private func startKeyboardCounterPoller() {
+        appCounterPoller = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.checkKeyboardCounter()
+        }
+    }
+
+    private func checkKeyboardCounter() {
+        let counter = CounterRepo().getKeyboard()
+        if counter != lastAppCounter {
+            lastAppCounter = counter
+            loadTones()
+            loadLanguage()
+            loadDictionary()
+            syncMixpanelUser()
+        }
+
+        if dictationPhase != .idle {
+            refreshDictationState()
+        }
+    }
+
+    // MARK: - Dictionary
+
+    private func loadDictionary() {
+        guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId) else { return }
+        let loaded = SharedTerm.loadFromDefaults(defaults)
+        termIds = loaded.termIds
+        termById = loaded.termById
+    }
+
+    // MARK: - Language Chip
+
+    private func loadLanguage() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        let language = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
+        dictationLanguages = defaults?.stringArray(forKey: "voquill_dictation_languages") ?? ["en"]
+        let code = language.components(separatedBy: "-").first ?? language
+        languageChip.setTitle(code.uppercased(), for: .normal)
+        languageChip.isHidden = dictationLanguages.count <= 1
+    }
+
+    @objc private func onLogoButtonTap() {
+        openURL("voquill://open")
+    }
+
+    @objc private func onLanguageChipTap() {
+        guard !dictationLanguages.isEmpty else { return }
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        let current = defaults?.string(forKey: "voquill_dictation_language") ?? "en"
+        let currentIndex = dictationLanguages.firstIndex(of: current) ?? 0
+        let nextIndex = (currentIndex + 1) % dictationLanguages.count
+        let next = dictationLanguages[nextIndex]
+
+        defaults?.set(next, forKey: "voquill_dictation_language")
+        let code = next.components(separatedBy: "-").first ?? next
+        languageChip.setTitle(code.uppercased(), for: .normal)
+
+        CounterRepo().incrementApp()
+    }
+
+    // MARK: - Tone Selector
+
+    private func loadTones() {
+        let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+        let toneData = defaults.flatMap { SharedTone.loadFromDefaults($0) }
+        activeToneIds = toneData?.activeToneIds ?? []
+        toneById = toneData?.toneById ?? [:]
+        selectedToneId = defaults?.string(forKey: "voquill_selected_tone_id") ?? activeToneIds.first
+        renderToneChips()
+    }
+
+    private func renderToneChips() {
+        toneContainer.subviews.forEach { $0.removeFromSuperview() }
+
+        if activeToneIds.isEmpty || toneById.isEmpty {
+            let label = UILabel()
+            label.text = "No tones available"
+            label.font = .systemFont(ofSize: 13, weight: .medium)
+            label.textColor = .secondaryLabel
+            label.sizeToFit()
+            label.frame.origin = .zero
+            toneContainer.addSubview(label)
+            toneContainer.contentSize = label.frame.size
             return
         }
 
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
-            guard let data = data, error == nil else {
-                completion("Could not fetch weather")
+        var xOffset: CGFloat = 0
+        for (index, toneId) in activeToneIds.enumerated() {
+            guard let tone = toneById[toneId] else { continue }
+            let chip = UIButton(type: .system)
+            chip.setTitle(tone.name, for: .normal)
+            chip.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+            chip.contentEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
+            chip.layer.cornerRadius = 16
+            chip.clipsToBounds = true
+            chip.tag = index
+            chip.addTarget(self, action: #selector(onToneChipTap(_:)), for: .touchUpInside)
+            addButtonFeedback(chip)
+            applyChipStyle(chip, selected: toneId == selectedToneId)
+            chip.sizeToFit()
+            chip.frame = CGRect(x: xOffset, y: 0, width: chip.frame.width, height: 32)
+            toneContainer.addSubview(chip)
+            xOffset += chip.frame.width + 8
+        }
+        toneContainer.contentSize = CGSize(width: max(0, xOffset - 8), height: 32)
+    }
+
+    private func centerToneContent() {
+        let containerWidth = toneContainer.bounds.width
+        let contentWidth = toneContainer.contentSize.width
+        if contentWidth < containerWidth {
+            let inset = (containerWidth - contentWidth) / 2
+            toneContainer.contentInset = UIEdgeInsets(top: 0, left: inset, bottom: 0, right: inset)
+        } else {
+            toneContainer.contentInset = .zero
+        }
+    }
+
+    private func applyChipStyle(_ chip: UIButton, selected: Bool) {
+        if selected {
+            chip.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 0.2)
+            chip.setTitleColor(.systemBlue, for: .normal)
+        } else {
+            chip.backgroundColor = UIColor.systemGray4
+            chip.setTitleColor(.label, for: .normal)
+        }
+    }
+
+    @objc private func onToneChipTap(_ sender: UIButton) {
+        let index = sender.tag
+        guard index < activeToneIds.count else { return }
+        selectedToneId = activeToneIds[index]
+
+        if let defaults = UserDefaults(suiteName: DictationConstants.appGroupId) {
+            defaults.set(selectedToneId, forKey: "voquill_selected_tone_id")
+        }
+
+        for view in toneContainer.subviews {
+            guard let chip = view as? UIButton else { continue }
+            applyChipStyle(chip, selected: chip.tag == index)
+        }
+    }
+
+    // MARK: - Member Status
+
+    private func startMemberRefreshTimer() {
+        memberRefreshTimer?.invalidate()
+        memberRefreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            self?.refreshMemberData()
+        }
+    }
+
+    private func refreshMemberData() {
+        fetchIdToken { [weak self] idToken in
+            guard let self = self, let idToken = idToken else { return }
+            guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId),
+                  let functionUrl = defaults.string(forKey: "voquill_function_url") else { return }
+
+            let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
+            let repo = MemberRepo(config: config)
+
+            Task {
+                do {
+                    async let memberResult = repo.getMyMember()
+                    async let configResult = repo.getFullConfig()
+                    let (member, cfg) = try await (memberResult, configResult)
+
+                    await MainActor.run {
+                        self.memberInfo = member
+                        if let cfg = cfg { self.configInfo = cfg }
+                        self.updateStatusBanner()
+                    }
+                } catch {
+                    NSLog("[VoquillKB] Failed to refresh member: %@", error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func updateStatusBanner() {
+        guard let member = memberInfo else {
+            setStatusBannerVisible(false)
+            return
+        }
+
+        if member.isOnTrial {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let trialEndsAt = member.trialEndsAt,
+                let endDate = formatter.date(from: trialEndsAt) {
+                let secondsRemaining = endDate.timeIntervalSince(Date())
+                let daysLeft = max(0, Int(ceil(secondsRemaining / 86400)))
+                let text = daysLeft == 0 ? "Last day of trial" :
+                           daysLeft == 1 ? "1 day left in trial" :
+                           "\(daysLeft) days left in trial"
+                statusIcon.image = UIImage(systemName: "hourglass.bottomhalf.filled")
+                statusLabel.text = text
+                setStatusBannerVisible(true)
+            } else {
+                statusIcon.image = UIImage(systemName: "hourglass.bottomhalf.filled")
+                statusLabel.text = "Your trial ends soon"
+                setStatusBannerVisible(true)
+            }
+        } else if member.plan == "free" {
+            if let config = configInfo {
+                let remaining = max(0, config.freeWordsPerDay - member.wordsToday)
+                let formatter = NumberFormatter()
+                formatter.numberStyle = .decimal
+                let formatted = formatter.string(from: NSNumber(value: remaining)) ?? "\(remaining)"
+                statusIcon.image = UIImage(systemName: "pencil.line")
+                statusLabel.text = "\(formatted) words left today"
+                setStatusBannerVisible(true)
+            } else {
+                statusIcon.image = UIImage(systemName: "pencil.line")
+                statusLabel.text = "Free plan"
+                setStatusBannerVisible(true)
+            }
+        } else {
+            setStatusBannerVisible(false)
+        }
+    }
+
+    private func setStatusBannerVisible(_ visible: Bool) {
+        let alreadyVisible = !statusBanner.isHidden
+        guard visible != alreadyVisible else { return }
+
+        if visible {
+            statusBanner.alpha = 0
+            statusBanner.isHidden = false
+        }
+
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseInOut) {
+            self.statusBanner.alpha = visible ? 1 : 0
+            self.view.layoutIfNeeded()
+        } completion: { _ in
+            if !visible {
+                self.statusBanner.isHidden = true
+            }
+        }
+    }
+
+    @objc private func onUpgradeTap() {
+        Mixpanel.mainInstance().track(event: "Button Click", properties: ["name": "upgrade keyboard"])
+        openURL("voquill://upgrade")
+    }
+
+    @objc private func onUtilButtonTap(_ sender: UIButton) {
+        switch sender.tag {
+        case 0: textDocumentProxy.insertText("@")
+        case 1: textDocumentProxy.insertText(" ")
+        case 2: textDocumentProxy.insertText("\n")
+        default: break
+        }
+    }
+
+    @objc private func onDeleteDown() {
+        textDocumentProxy.deleteBackward()
+        deleteIsWordMode = false
+        deleteRepeatTimer?.invalidate()
+        deleteWordTimer?.invalidate()
+
+        deleteRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            self.deleteRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in
+                guard let self = self else { return }
+                if self.deleteIsWordMode {
+                    self.deleteWord()
+                } else {
+                    self.textDocumentProxy.deleteBackward()
+                }
+            }
+        }
+
+        deleteWordTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            self?.deleteIsWordMode = true
+        }
+    }
+
+    @objc private func onDeleteUp() {
+        deleteRepeatTimer?.invalidate()
+        deleteRepeatTimer = nil
+        deleteWordTimer?.invalidate()
+        deleteWordTimer = nil
+        deleteIsWordMode = false
+    }
+
+    private func deleteWord() {
+        guard let text = textDocumentProxy.documentContextBeforeInput, !text.isEmpty else {
+            textDocumentProxy.deleteBackward()
+            return
+        }
+        let trimmed = text.hasSuffix(" ") ? String(text.dropLast()) : text
+        if let lastSpace = trimmed.lastIndex(of: " ") {
+            let count = text.distance(from: lastSpace, to: text.endIndex)
+            for _ in 0..<count {
+                textDocumentProxy.deleteBackward()
+            }
+        } else {
+            for _ in 0..<text.count {
+                textDocumentProxy.deleteBackward()
+            }
+        }
+    }
+
+    // MARK: - Transcription
+
+    private func dbg(_ msg: String) {
+        NSLog("[VoquillKB] %@", msg)
+        lastDebugLog = msg
+    }
+
+    private func handleTranscription() {
+        guard hasFullAccess else {
+            DispatchQueue.main.async {
+                self.textDocumentProxy.insertText("[Enable Full Access in Settings > Voquill Keyboard]")
+            }
+            return
+        }
+
+        let capturedToneId = selectedToneId
+        let capturedToneById = toneById
+
+        isProcessing = true
+        applyPillVisual(.loading, animated: true)
+
+        fetchIdToken { [weak self] idToken in
+            guard let self = self else { return }
+
+            guard let idToken = idToken else {
+                DispatchQueue.main.async {
+                    self.textDocumentProxy.insertText("[Auth failed: \(self.lastDebugLog)]")
+                    self.isProcessing = false
+                    self.applyPillVisual(.idle, animated: true)
+                }
                 return
             }
 
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let currentWeather = json["current_weather"] as? [String: Any],
-                   let temperature = currentWeather["temperature"] as? Double {
-                    let tempInt = Int(round(temperature))
-                    completion("It's currently \(tempInt)°F in Utah")
-                } else {
-                    completion("Could not parse weather data")
+            guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId),
+                  let functionUrl = defaults.string(forKey: "voquill_function_url") else {
+                DispatchQueue.main.async {
+                    self.textDocumentProxy.insertText("[Missing function URL]")
+                    self.isProcessing = false
+                    self.applyPillVisual(.idle, animated: true)
                 }
-            } catch {
-                completion("Could not parse weather data")
+                return
+            }
+
+            guard let audioUrl = DictationConstants.audioFileURL else {
+                DispatchQueue.main.async {
+                    self.textDocumentProxy.insertText("[Missing audio file]")
+                    self.isProcessing = false
+                    self.applyPillVisual(.idle, animated: true)
+                }
+                return
+            }
+
+            let dictationLanguage = defaults.string(forKey: "voquill_dictation_language") ?? "en"
+            let userName = defaults.string(forKey: "voquill_user_name") ?? "User"
+            let prompt = buildLocalizedTranscriptionPrompt(
+                termIds: self.termIds,
+                termById: self.termById,
+                userName: userName,
+                language: dictationLanguage
+            )
+            let whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
+
+            Task {
+                let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
+                do {
+                    let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(
+                        audioFileURL: audioUrl,
+                        prompt: prompt,
+                        language: whisperLanguage
+                    )
+
+                    guard !rawTranscript.isEmpty else {
+                        await MainActor.run {
+                            self.isProcessing = false
+                            self.applyPillVisual(.idle, animated: true)
+                        }
+                        return
+                    }
+
+                    var finalText = rawTranscript
+                    do {
+                        if let tone = capturedToneId.flatMap({ capturedToneById[$0] }) {
+                            let raw = try await CloudGenerateTextRepo(config: config).generate(
+                                system: buildSystemPostProcessingPrompt(),
+                                prompt: buildPostProcessingPrompt(
+                                    transcript: rawTranscript,
+                                    tonePromptTemplate: tone.promptTemplate
+                                ),
+                                jsonResponse: postProcessingJsonResponse
+                            )
+                            if let data = raw.data(using: .utf8),
+                               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                               let processed = json["processedTranscription"] as? String {
+                                finalText = processed.trimmingCharacters(in: .whitespacesAndNewlines)
+                            } else {
+                                self.dbg("Could not parse processedTranscription from JSON, using raw")
+                                finalText = raw
+                            }
+                        }
+                    } catch {
+                        self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
+                    }
+
+                    let tz = TimeZone.current.identifier
+                    UserRepo(config: config).incrementWordCount(text: finalText, timezone: tz)
+
+                    let trimmed = finalText.trimmingCharacters(in: .whitespacesAndNewlines) + " "
+                    await MainActor.run {
+                        self.textDocumentProxy.insertText(trimmed)
+                        self.isProcessing = false
+                        self.applyPillVisual(.idle, animated: true)
+                        self.refreshMemberData()
+                    }
+
+                    let tone = capturedToneId.flatMap { capturedToneById[$0] }
+                    TranscriptionRepo().save(
+                        text: finalText,
+                        rawTranscript: rawTranscript,
+                        toneId: capturedToneId,
+                        toneName: tone?.name,
+                        audioSourceUrl: audioUrl
+                    )
+                } catch {
+                    self.dbg("Transcription failed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        self.textDocumentProxy.insertText("[Transcription failed: \(error.localizedDescription)]")
+                        self.isProcessing = false
+                        self.applyPillVisual(.idle, animated: true)
+                    }
+                }
             }
         }
-        task.resume()
     }
 
-    // MARK: - Audio
+    // MARK: - Authentication
 
-    private func startAudioCapture() {
-        smoothedLevel = 0
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .default)
-            try session.setActive(true)
+    private func fetchIdToken(completion: @escaping (String?) -> Void) {
+        if let token = cachedIdToken, let expiry = cachedIdTokenExpiry, Date() < expiry {
+            completion(token)
+            return
+        }
 
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("voquill_kb.m4a")
-            try? FileManager.default.removeItem(at: url)
+        guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId) else {
+            dbg("UserDefaults not accessible")
+            completion(nil)
+            return
+        }
 
-            let settings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 44100.0,
-                AVNumberOfChannelsKey: 1,
-                AVEncoderAudioQualityKey: AVAudioQuality.low.rawValue
+        let apiRefreshToken = defaults.string(forKey: "voquill_api_refresh_token")
+        let functionUrl = defaults.string(forKey: "voquill_function_url")
+        let apiKey = defaults.string(forKey: "voquill_api_key")
+        let authUrl = defaults.string(forKey: "voquill_auth_url")
+
+        guard let apiRefreshToken = apiRefreshToken,
+              let functionUrl = functionUrl,
+              let apiKey = apiKey,
+              let authUrl = authUrl else {
+            dbg("Missing auth keys in UserDefaults")
+            completion(nil)
+            return
+        }
+
+        refreshApiToken(functionUrl: functionUrl, apiRefreshToken: apiRefreshToken) { [weak self] customToken in
+            guard let self = self, let customToken = customToken else {
+                completion(nil)
+                return
+            }
+            self.exchangeCustomToken(authUrl: authUrl, apiKey: apiKey, customToken: customToken) { [weak self] idToken, expiresIn in
+                guard let self = self, let idToken = idToken, let expiresIn = expiresIn else {
+                    completion(nil)
+                    return
+                }
+                self.cachedIdToken = idToken
+                self.cachedIdTokenExpiry = Date().addingTimeInterval(expiresIn - 300)
+                completion(idToken)
+            }
+        }
+    }
+
+    private func refreshApiToken(functionUrl: String, apiRefreshToken: String, completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: functionUrl) else {
+            dbg("refreshApiToken: invalid URL")
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let payload: [String: Any] = [
+            "data": [
+                "name": "auth/refreshApiToken",
+                "args": ["apiRefreshToken": apiRefreshToken]
             ]
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
-            audioRecorder = try AVAudioRecorder(url: url, settings: settings)
-            audioRecorder?.isMeteringEnabled = true
-            audioRecorder?.prepareToRecord()
-            audioRecorder?.record()
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                self?.dbg("refreshApiToken: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let result = json["result"] as? [String: Any],
+                  let apiToken = result["apiToken"] as? String else {
+                self?.dbg("refreshApiToken: unexpected response")
+                completion(nil)
+                return
+            }
+            completion(apiToken)
+        }.resume()
+    }
 
-            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { [weak self] _ in
-                self?.updateLevels()
+    private func exchangeCustomToken(authUrl: String, apiKey: String, customToken: String, completion: @escaping (String?, TimeInterval?) -> Void) {
+        let urlString = "\(authUrl)/v1/accounts:signInWithCustomToken?key=\(apiKey)"
+        guard let url = URL(string: urlString) else {
+            dbg("exchangeCustomToken: invalid URL")
+            completion(nil, nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = ["token": customToken, "returnSecureToken": true]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                self?.dbg("exchangeCustomToken: \(error.localizedDescription)")
+                completion(nil, nil)
+                return
             }
-        } catch {
-            // Fallback simulated
-            levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
-                self?.waveformView?.updateLevel(CGFloat.random(in: 0.3...0.7))
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let idToken = json["idToken"] as? String,
+                  let expiresInStr = json["expiresIn"] as? String,
+                  let expiresIn = TimeInterval(expiresInStr) else {
+                self?.dbg("exchangeCustomToken: unexpected response")
+                completion(nil, nil)
+                return
             }
+            completion(idToken, expiresIn)
+        }.resume()
+    }
+
+    // MARK: - Audio Level Polling
+
+    private func startAudioLevelPolling() {
+        stopAudioLevelPolling()
+        smoothedAudioLevel = 0
+        audioLevelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
+            let raw = CGFloat(defaults?.float(forKey: DictationConstants.audioLevelKey) ?? 0)
+            self.smoothedAudioLevel += (raw - self.smoothedAudioLevel) * 0.3
+            self.waveformView?.updateLevel(self.smoothedAudioLevel)
         }
     }
 
-    private func updateLevels() {
-        guard let recorder = audioRecorder, recorder.isRecording else { return }
-        recorder.updateMeters()
-
-        let avgPower = recorder.averagePower(forChannel: 0)
-        let clampedPower = max(avgPower, -50)
-        let normalized = (clampedPower + 50) / 50
-        let curved = pow(normalized, 0.7)
-
-        let attack: Float = 0.4
-        let decay: Float = 0.4
-        let s = curved > smoothedLevel ? attack : decay
-        smoothedLevel += (curved - smoothedLevel) * s
-
-        waveformView.updateLevel(CGFloat(max(smoothedLevel, 0.08)))
+    private func stopAudioLevelPolling() {
+        audioLevelTimer?.invalidate()
+        audioLevelTimer = nil
     }
 
-    private func stopAudioCapture() {
-        levelTimer?.invalidate()
-        levelTimer = nil
-        audioRecorder?.stop()
-        audioRecorder = nil
-        try? AVAudioSession.sharedInstance().setActive(false)
+    // MARK: - Darwin Notification Observers
+
+    private func startDarwinObservers() {
+        DarwinNotificationManager.shared.observe(DictationConstants.dictationPhaseChanged) { [weak self] in
+            self?.handlePhaseChange()
+        }
+    }
+
+    private func handlePhaseChange() {
+        refreshDictationState()
     }
 
     // MARK: - System
@@ -573,11 +1389,20 @@ class KeyboardViewController: UIInputViewController {
         nextKeyboardButton?.isHidden = !needsInputModeSwitchKey
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        centerToneContent()
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if currentPhase == .recording {
-            stopAudioCapture()
-        }
+        appCounterPoller?.invalidate()
+        appCounterPoller = nil
+        memberRefreshTimer?.invalidate()
+        memberRefreshTimer = nil
+        onDeleteUp()
+        DarwinNotificationManager.shared.removeObserver(DictationConstants.dictationPhaseChanged)
+        stopAudioLevelPolling()
         waveformView.stopAnimating()
         progressView.stopAnimating()
     }

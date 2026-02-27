@@ -1,10 +1,10 @@
 import {
   EnterpriseConfigZod,
   FullConfig,
-  Member,
-  OidcProviderInputZod,
-  type EnterpriseLicense,
   LlmProviderInputZod,
+  Member,
+  METRICS_RANGES,
+  OidcProviderInputZod,
   SttProviderInputZod,
   Term,
   TermZod,
@@ -14,8 +14,9 @@ import {
   type Auth,
   type EmptyObject,
   type EnterpriseConfig,
+  type EnterpriseLicense,
+  type FlaggedAudio,
   type JsonResponse,
-  METRICS_RANGES,
   type LlmProvider,
   type LlmProviderInput,
   type MetricsDaily,
@@ -81,6 +82,21 @@ type HandlerDefinitions = {
       isAdmin: boolean;
     };
     output: EmptyObject;
+  };
+  "auth/createApiToken": {
+    input: EmptyObject;
+    output: {
+      apiToken: string;
+      apiRefreshToken: string;
+    };
+  };
+  "auth/refreshApiToken": {
+    input: {
+      apiRefreshToken: string;
+    };
+    output: {
+      apiToken: string;
+    };
   };
   "auth/deleteUser": {
     input: {
@@ -190,6 +206,14 @@ type HandlerDefinitions = {
     output: EmptyObject;
   };
 
+  // flagged audio
+  "flaggedAudio/upsert": {
+    input: {
+      flaggedAudio: FlaggedAudio;
+    };
+    output: EmptyObject;
+  };
+
   // member
   "member/tryInitialize": {
     input: EmptyObject;
@@ -241,12 +265,24 @@ type HandlerDefinitions = {
       user: Nullable<User>;
     };
   };
-
   "user/listAllUsers": {
     input: EmptyObject;
     output: {
       users: UserWithAuth[];
     };
+  };
+  "user/incrementWordCount": {
+    input: {
+      wordCount: number;
+      timezone?: Nullable<string>;
+    };
+    output: EmptyObject;
+  };
+  "user/trackStreak": {
+    input: {
+      timezone?: Nullable<string>;
+    };
+    output: EmptyObject;
   };
 
   // stripe
@@ -428,7 +464,7 @@ export const JsonResponseZod = z
 
 export const AiTranscribeAudioInputZod = z
   .object({
-    prompt: z.string().max(20_000).nullable().optional(),
+    prompt: z.string().nullable().optional(),
     audioBase64: z.string().min(1),
     audioMimeType: z.string().min(1),
     simulate: z.boolean().nullable().optional(),
@@ -438,8 +474,8 @@ export const AiTranscribeAudioInputZod = z
 
 export const AiGenerateTextInputZod = z
   .object({
-    system: z.string().max(3_000).nullable().optional(),
-    prompt: z.string().max(25_000),
+    system: z.string().nullable().optional(),
+    prompt: z.string(),
     simulate: z.boolean().nullable().optional(),
     jsonResponse: JsonResponseZod.nullable().optional(),
     model: CloudModelZod.nullable().optional(),
@@ -463,6 +499,19 @@ export const SetMyUserInputZod = z
     value: UserZod,
   })
   .strict() satisfies z.ZodType<HandlerInput<"user/setMyUser">>;
+
+export const IncrementWordCountInputZod = z
+  .object({
+    wordCount: z.number().int(),
+    timezone: z.string().min(1).nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/incrementWordCount">>;
+
+export const TrackStreakInputZod = z
+  .object({
+    timezone: z.string().min(1).nullable().optional(),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"user/trackStreak">>;
 
 export const UpsertTermInputZod = z
   .object({
@@ -581,6 +630,33 @@ export const DeleteOidcProviderInputZod = z
     providerId: z.string().min(1),
   })
   .strict() satisfies z.ZodType<HandlerInput<"oidcProvider/delete">>;
+
+export const RefreshApiTokenInputZod = z
+  .object({
+    apiRefreshToken: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"auth/refreshApiToken">>;
+
+export const FlaggedAudioZod = z
+  .object({
+    id: z.string().min(1),
+    filePath: z.string().min(1),
+    feedback: z.string().min(1),
+    transcriptionPrompt: z.string().nullable(),
+    postProcessingPrompt: z.string().nullable(),
+    rawTranscription: z.string().min(1),
+    postProcessedTranscription: z.string().nullable(),
+    transcriptionProvider: z.string().min(1),
+    postProcessingProvider: z.string().nullable(),
+    sampleRate: z.number().int().positive().nullable(),
+  })
+  .strict() satisfies z.ZodType<FlaggedAudio>;
+
+export const UpsertFlaggedAudioInputZod = z
+  .object({
+    flaggedAudio: FlaggedAudioZod,
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"flaggedAudio/upsert">>;
 
 export const MetricsRangeZod = z.enum(METRICS_RANGES);
 

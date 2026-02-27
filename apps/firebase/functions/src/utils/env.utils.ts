@@ -40,6 +40,10 @@ export const STRIPE_WEBHOOK_SECRET_VAR = "STRIPE_WEBHOOK_SECRET";
 export const getStripeWebhookSecret = () =>
 	env.get(STRIPE_WEBHOOK_SECRET_VAR).required().asString();
 
+export const REVENUECAT_WEBHOOK_SECRET_VAR = "REVENUECAT_WEBHOOK_SECRET";
+export const getRevenueCatWebhookSecret = () =>
+	env.get(REVENUECAT_WEBHOOK_SECRET_VAR).default("test").asString();
+
 export const LOOPS_API_KEY_VAR = "LOOPS_API_KEY";
 export const getLoopsApiKey = () => getOptionalString(LOOPS_API_KEY_VAR);
 

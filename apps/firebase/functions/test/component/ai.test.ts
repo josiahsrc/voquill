@@ -133,7 +133,7 @@ describe("ai/transcribeAudio", () => {
 			plan: "pro",
 		});
 
-		const longPrompt = "a".repeat(20_001);
+		const longPrompt = "a".repeat(12_001);
 
 		await expect(
 			invokeHandler("ai/transcribeAudio", {
@@ -143,7 +143,7 @@ describe("ai/transcribeAudio", () => {
 				simulate: true,
 				language: "en",
 			}),
-		).rejects.toThrow(/String must contain at most 20000 character\(s\)/);
+		).rejects.toThrow("Prompt exceeds maximum length of 12000 characters");
 	});
 });
 
@@ -228,14 +228,14 @@ describe("ai/generateText", () => {
 			plan: "pro",
 		});
 
-		const longPrompt = "a".repeat(25_001);
+		const longPrompt = "a".repeat(12_001);
 
 		await expect(
 			invokeHandler("ai/generateText", {
 				prompt: longPrompt,
 				simulate: true,
 			}),
-		).rejects.toThrow(/String must contain at most 25000 character\(s\)/);
+		).rejects.toThrow("Prompt exceeds maximum length of 12000 characters");
 	});
 });
 

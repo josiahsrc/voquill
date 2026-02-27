@@ -2,6 +2,7 @@ import { Box, Stack, Typography } from "@mui/material";
 import { getVersion } from "@tauri-apps/api/app";
 import { Outlet } from "react-router-dom";
 import { useAsyncData } from "../../hooks/async.hooks";
+import { TranscriptionDetailsDialog } from "../transcriptions/TranscriptionDetailsDialog";
 import { DashboardMenu } from "./DashboardMenu";
 import { FeatureReleaseDialog } from "./FeatureReleaseDialog";
 import { PermissionsDialog } from "./PermissionsDialog";
@@ -14,6 +15,7 @@ export default function DashboardPage() {
     <>
       <FeatureReleaseDialog />
       <PermissionsDialog />
+      <TranscriptionDetailsDialog />
       <TrialEndedDialog />
       <Stack direction="row" sx={{ height: "100%", width: "100%" }}>
         <Box

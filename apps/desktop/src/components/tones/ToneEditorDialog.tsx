@@ -24,7 +24,7 @@ import { useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 
-const MAX_PROMPT_LEN = 1000;
+const MAX_PROMPT_LEN = 8000;
 
 export const ToneEditorDialog = () => {
   const toneEditor = useAppStore((state) => state.toneEditor);
