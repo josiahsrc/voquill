@@ -25,7 +25,9 @@ export class BatchTranscriptionSession implements TranscriptionSession {
     const rate = audio.sampleRate;
 
     if (rate == null || rate <= 0 || payloadSamples.length === 0) {
-      getLogger().warning(`Batch session: skipping transcription (rate=${rate}, samples=${payloadSamples.length})`);
+      getLogger().warning(
+        `Batch session: skipping transcription (rate=${rate}, samples=${payloadSamples.length})`,
+      );
       return {
         rawTranscript: null,
         metadata: {},
@@ -36,13 +38,17 @@ export class BatchTranscriptionSession implements TranscriptionSession {
     const warnings: string[] = [];
 
     try {
-      getLogger().info(`Batch transcription: ${payloadSamples.length} samples at ${rate}Hz`);
+      getLogger().info(
+        `Batch transcription: ${payloadSamples.length} samples at ${rate}Hz`,
+      );
       const result = await transcribeAudio({
         samples: payloadSamples,
         sampleRate: rate,
       });
 
-      getLogger().info(`Batch transcription result: ${result.rawTranscript.length} chars`);
+      getLogger().info(
+        `Batch transcription result: ${result.rawTranscript.length} chars`,
+      );
       return {
         rawTranscript: result.rawTranscript,
         metadata: result.metadata,
