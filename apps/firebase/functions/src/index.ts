@@ -1,6 +1,7 @@
 import {
 	AiGenerateTextInputZod,
 	AiTranscribeAudioInputZod,
+	UpsertFlaggedAudioInputZod,
 	DeleteTermInputZod,
 	DeleteToneInputZod,
 	EmptyObjectZod,
@@ -19,6 +20,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
 import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
+import { upsertFlaggedAudio } from "./services/flaggedAudio.service";
 import {
 	createApiToken,
 	refreshApiToken,
@@ -233,6 +235,11 @@ export const handler = onCall(
 			} else if (name === "auth/refreshApiToken") {
 				data = await refreshApiToken({
 					input: validateData(RefreshApiTokenInputZod, args),
+				});
+			} else if (name === "flaggedAudio/upsert") {
+				data = await upsertFlaggedAudio({
+					auth,
+					input: validateData(UpsertFlaggedAudioInputZod, args),
 				});
 			} else {
 				throw new NotFoundError(`unknown handler: ${name}`);
