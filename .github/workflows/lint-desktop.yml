@@ -58,6 +58,7 @@ jobs:
       - name: Build dependencies
         run: npm run build -- --filter=desktop^...
       - name: Lint TypeScript
+        if: matrix.os == 'ubuntu-22.04'
         run: npm run lint --workspace=desktop
       - name: Lint Rust
         working-directory: apps/desktop/src-tauri
