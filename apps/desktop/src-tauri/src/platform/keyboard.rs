@@ -694,7 +694,7 @@ pub(crate) fn run_listen_loop(
     .map_err(|err| format!("keyboard listener error: {err:?}"))
 }
 
-#[cfg(test)]
+#[cfg(all(test, any(target_os = "macos", target_os = "windows")))]
 mod tests {
     use super::{matches_any_combo, update_grab_hotkey_state, GrabDecision, GrabHotkeyState};
     use std::collections::HashSet;
