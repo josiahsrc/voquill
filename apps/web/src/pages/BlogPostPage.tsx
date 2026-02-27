@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useIntl } from "react-intl";
 import BaseLayout from "../layouts/BaseLayout";
@@ -15,6 +16,34 @@ function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>();
   const intl = useIntl();
   const post = slug ? getBlogPost(slug) : undefined;
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const articleRef = useRef<HTMLElement>(null);
+
+  const closeLightbox = useCallback(() => setLightboxSrc(null), []);
+
+  useEffect(() => {
+    const el = articleRef.current;
+    if (!el) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "IMG") {
+        setLightboxSrc((target as HTMLImageElement).src);
+      }
+    };
+
+    el.addEventListener("click", handleClick);
+    return () => el.removeEventListener("click", handleClick);
+  }, [post]);
+
+  useEffect(() => {
+    if (!lightboxSrc) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [lightboxSrc, closeLightbox]);
 
   if (!post) {
     return <NotFoundPage />;
@@ -28,6 +57,7 @@ function BlogPostPage() {
       title={title}
       description={post.description}
       ogType="article"
+      ogImage={post.image}
       articleMeta={{
         publishedTime: post.date,
         modifiedTime: post.date,
@@ -70,10 +100,29 @@ function BlogPostPage() {
             </span>
           </div>
         </header>
+        {post.image && (
+          <div className={styles.postHeroWrapper}>
+            <img
+              src={post.image}
+              alt=""
+              className={styles.postHeroImage}
+            />
+          </div>
+        )}
         <article
+          ref={articleRef}
           className={styles.postContent}
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+        {lightboxSrc && (
+          <div className={styles.lightboxOverlay} onClick={closeLightbox}>
+            <img
+              src={lightboxSrc}
+              alt=""
+              className={styles.lightboxImage}
+            />
+          </div>
+        )}
         <footer className={styles.postFooter}>
           <div className={styles.postFooterCta}>
             <h3>

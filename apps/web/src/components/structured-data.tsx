@@ -11,7 +11,9 @@ export function ArticleJsonLd({ post, url }: ArticleJsonLdProps) {
     "@type": "Article",
     headline: post.title,
     description: post.description,
-    image: "https://voquill.com/social.jpg",
+    image: post.image
+      ? `https://voquill.com${post.image}`
+      : "https://voquill.com/social.jpg",
     datePublished: post.date,
     dateModified: post.date,
     author: {

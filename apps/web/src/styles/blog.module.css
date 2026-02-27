@@ -30,18 +30,35 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 32px;
   border-radius: 20px;
   background: var(--level1);
   border: 1px solid var(--border);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   text-decoration: none;
   color: inherit;
+  overflow: hidden;
 }
 
 .blogCard:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-soft);
+}
+
+.cardImageWrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.blogCard:hover .cardImage {
+  transform: scale(1.03);
 }
 
 .cardMeta {
@@ -50,6 +67,11 @@
   gap: 12px;
   font-size: 0.85rem;
   opacity: 0.5;
+  padding: 0 32px;
+}
+
+.cardMeta:first-child {
+  padding-top: 32px;
 }
 
 .cardMetaSeparator {
@@ -65,12 +87,14 @@
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.35;
+  padding: 0 32px;
 }
 
 .cardDescription {
   font-size: 0.95rem;
   line-height: 1.6;
   opacity: 0.7;
+  padding: 0 32px;
 }
 
 .cardTags {
@@ -78,6 +102,7 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
+  padding: 0 32px;
 }
 
 .cardTag {
@@ -94,6 +119,7 @@
   font-weight: 600;
   opacity: 0.7;
   transition: opacity 0.2s ease;
+  padding: 0 32px 32px;
 }
 
 .blogCard:hover .readMore {
@@ -105,10 +131,11 @@
   width: min(780px, 100%);
   margin: 0 auto;
   padding: 0 24px 120px;
+  gap: 0;
 }
 
 .postHeader {
-  margin-bottom: 48px;
+  margin-bottom: 16px;
 }
 
 .postBreadcrumb {
@@ -117,7 +144,7 @@
   gap: 8px;
   font-size: 0.85rem;
   opacity: 0.5;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .postBreadcrumb a {
@@ -134,7 +161,7 @@
   font-size: clamp(2rem, 4vw, 2.8rem);
   letter-spacing: -0.03em;
   line-height: 1.2;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .postMeta {
@@ -145,9 +172,27 @@
   opacity: 0.5;
 }
 
+.postHeroWrapper {
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.postHeroImage {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
 .postContent {
   line-height: 1.85;
   font-size: 1.05rem;
+}
+
+.postContent > :first-child {
+  margin-top: 0;
 }
 
 .postContent :global(h1) {
@@ -171,6 +216,52 @@
 .postContent :global(p) {
   margin: 20px 0;
   opacity: 0.85;
+}
+
+.postContent :global(img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  margin: 28px 0;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: zoom-in;
+  transition: box-shadow 0.2s ease;
+}
+
+.postContent :global(img):hover {
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.14);
+}
+
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  cursor: zoom-out;
+  padding: 24px;
+  animation: lightboxFadeIn 0.2s ease;
+}
+
+.lightboxImage {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes lightboxFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .postContent :global(ul),
@@ -282,7 +373,31 @@
   }
 
   .blogCard {
-    padding: 24px;
+    gap: 10px;
+  }
+
+  .cardMeta {
+    padding: 0 16px;
+  }
+
+  .cardMeta:first-child {
+    padding-top: 16px;
+  }
+
+  .cardTitle {
+    padding: 0 16px;
+  }
+
+  .cardDescription {
+    padding: 0 16px;
+  }
+
+  .cardTags {
+    padding: 0 16px;
+  }
+
+  .readMore {
+    padding: 0 16px 16px;
   }
 
   .postContent {

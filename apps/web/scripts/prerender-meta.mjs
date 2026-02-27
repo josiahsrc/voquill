@@ -72,6 +72,7 @@ if (fs.existsSync(CONTENT_DIR)) {
       ogType: "article",
       articleDate: fm.date || "",
       articleAuthor: fm.author || "Voquill Team",
+      image: fm.image || "",
     });
   }
 }
@@ -119,6 +120,16 @@ function injectMeta(html, route) {
     /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/,
     `<link rel="canonical" href="${url}" />`,
   );
+
+  if (route.image) {
+    const imageUrl = route.image.startsWith("http")
+      ? route.image
+      : `${BASE_URL}${route.image}`;
+    html = html.replace(
+      /<meta\s+property="og:image"\s+content="[^"]*"\s*\/?>/,
+      `<meta property="og:image" content="${imageUrl}" />`,
+    );
+  }
 
   if (route.ogType === "article" && route.articleDate) {
     const articleTags = [

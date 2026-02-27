@@ -12,6 +12,13 @@ marked.use({
         .trim();
       return `<h${depth} id="${id}">${this.parser.parseInline(tokens)}</h${depth}>\n`;
     },
+    link({ href, text }) {
+      const isExternal = href.startsWith("http");
+      if (isExternal) {
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+      }
+      return `<a href="${href}">${text}</a>`;
+    },
   },
 });
 
@@ -22,6 +29,7 @@ export type BlogPost = {
   date: string;
   author: string;
   tags: string[];
+  image?: string;
   content: string;
   readingTimeMinutes: number;
 };
@@ -74,6 +82,7 @@ function toFrontmatter(raw: Record<string, string>, slug: string): BlogFrontmatt
     date: raw.date || "",
     author: raw.author || "Voquill Team",
     tags: parseTags(raw.tags || "[]"),
+    ...(raw.image ? { image: raw.image } : {}),
   };
 }
 

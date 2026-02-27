@@ -15,6 +15,7 @@ type BaseLayoutProps = {
   title?: string;
   description?: string;
   ogType?: "website" | "article";
+  ogImage?: string;
   articleMeta?: ArticleMeta;
   noIndex?: boolean;
 };
@@ -24,6 +25,7 @@ export function BaseLayout({
   title,
   description,
   ogType = "website",
+  ogImage,
   articleMeta,
   noIndex = false,
 }: BaseLayoutProps) {
@@ -69,6 +71,14 @@ export function BaseLayout({
     updateMetaTag("name", "twitter:title", finalTitle);
     updateMetaTag("name", "twitter:description", finalDescription);
 
+    if (ogImage) {
+      const fullImageUrl = ogImage.startsWith("http")
+        ? ogImage
+        : `${FALLBACK_CANONICAL_ORIGIN}${ogImage}`;
+      updateMetaTag("property", "og:image", fullImageUrl);
+      updateMetaTag("name", "twitter:image", fullImageUrl);
+    }
+
     if (articleMeta) {
       updateMetaTag("property", "article:published_time", articleMeta.publishedTime);
       updateMetaTag("property", "article:modified_time", articleMeta.modifiedTime);
@@ -79,7 +89,7 @@ export function BaseLayout({
     }
 
     updateCanonicalLink(noIndex ? "" : canonicalUrl);
-  }, [finalTitle, finalDescription, canonicalUrl, ogType, articleMeta, noIndex, intl.locale]);
+  }, [finalTitle, finalDescription, canonicalUrl, ogType, ogImage, articleMeta, noIndex, intl.locale]);
 
   return <>{children}</>;
 }

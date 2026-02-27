@@ -1,131 +1,90 @@
 ---
-title: "How Voice Typing Can 4x Your Productivity: A Complete Guide"
-description: "Discover how voice typing software like Voquill can help you type four times faster, reduce repetitive strain, and transform your writing workflow with speech-to-text technology."
+title: "Why We're Building Voquill: Open Source AI Dictation"
+description: "We built Voquill because voice typing makes you 4x faster and because your words deserve to stay yours. Here's why we're building an open-source, privacy-first voice typing app."
 date: "2026-02-26"
-slug: "voice-typing-productivity-guide"
+slug: "why-were-building-voquill"
 author: "Voquill Team"
-tags: ["voice typing", "productivity", "speech to text", "dictation"]
+tags: ["voquill", "open source", "voice typing", "privacy", "productivity"]
+image: "/blog/why-were-building-voquill-hero.png"
 ---
 
-# How Voice Typing Can 4x Your Productivity: A Complete Guide
+# Why We're Building Voquill
 
-The average person types at around 40 words per minute. But we speak at 150 words per minute — nearly four times faster. If you spend hours each day writing emails, documents, or code comments, that gap between typing speed and speaking speed represents an enormous productivity opportunity.
+We love productivity tools. We spend our days in them in now (Claude Code, Slack, ChatGPT) but we noticed something: typing is the real  bottleneck.
 
-Voice typing is no longer the clunky, error-prone technology it was a decade ago. Modern speech-to-text tools powered by AI can accurately transcribe your speech in real time, clean up filler words, and even format your text — all without an internet connection.
+So we built [Voquill](/) around two principles:
 
-This guide covers everything you need to know about voice typing: how it works, why it matters, and how to make the switch.
+1. **Voice typing makes you dramatically faster.** You can type 4x faster with your voice.
+2. **You should be in full control.** Open source, know what's happening with your voice, local processing, bring-your-own-backend-if-you-want.
 
-## What Is Voice Typing?
+Here's the thinking behind each one.
 
-Voice typing (also known as speech-to-text, voice dictation, or voice-to-text) is the process of converting spoken words into written text using software. Instead of pressing keys on a keyboard, you simply speak, and the software transcribes your words.
+## Principle 1: You Type Faster by Speaking
 
-Modern voice typing tools go well beyond basic transcription. The best ones can:
+### You Spend More Time Typing Than You Think
 
-- **Punctuate automatically** based on your natural pauses and tone
-- **Remove filler words** like "um," "uh," and "you know"
-- **Apply formatting** such as paragraphs and lists
-- **Learn your vocabulary** through custom dictionaries
-- **Work offline** for complete privacy
+Knowledge workers spend roughly **[40% of their workday](https://www.typing.com/articles/the-time-saving-of-fast-typists)** writing. This can be in emails, documents, Slack messages, code comments, meeting notes, etc. That's about three hours a day, just thinking about what to say and pressing keys.
 
-## Why Voice Typing Is a Productivity Game-Changer
+The average person types at about 40 words per minute but we speak at around 150-220 words per minute. That's nearly **four times faster**.
 
-### 1. Speed: Type 4x Faster
+The math is simple: if you could type at the speed you speak, three hours of writing becomes 45 minutes. That's over two hours back in your day, every day.
 
-The math is straightforward. At 40 WPM typing versus 150 WPM speaking, voice typing lets you produce text roughly four times faster. For someone who writes for two hours a day, that translates to either finishing in 30 minutes or producing four times more content in the same period.
+![Formatted email](/blog/keyboard-vs-voice.png)
 
-### 2. Reduced Physical Strain
+### Speaking Is Not Just Faster, It's WAY Better
 
-Repetitive strain injuries (RSI) are increasingly common among knowledge workers. Conditions like carpal tunnel syndrome, tendonitis, and general wrist pain affect millions of people who type for a living. Voice typing eliminates the repetitive hand movements that cause these problems.
+Voice typing is fundamentally more natural than a keyboard. It's how our brains are wired to communicate. When you type, your brain has to coordinate thought with fine motor skills translating ideas through your fingers. When you speak, the words just come out.
 
-### 3. Better Flow State
+That means a better "flow" state, fewer interruptions, and ideas that land closer to what you actually meant. Research from Stanford's HCI lab has even found that [speech input produces fewer errors](https://hci.stanford.edu/research/speech/) than keyboard input
 
-When you type, your brain has to coordinate thought with fine motor skills. Speaking is far more natural — we've been doing it since childhood. Voice typing lets you stay in a creative flow state because you're not bottlenecked by your fingers. Ideas come out as fast as you can think them.
+It's also easier on your body. Voice typing eliminates the repetitive hand movements (and repetitive strain injuries) entirely.
 
-### 4. Multitasking Ability
+### Voquill Minimizes Post-Editing
 
-Voice typing frees up your hands entirely. You can dictate notes while organizing your desk, respond to emails while stretching, or draft a document while pacing around your office. This physical freedom can make long writing sessions far less draining.
+One of the biggest annoyances on voice typing has always been the cleanup: you dictate something, then spend ten minutes fixing punctuation, formatting, and incorrect words. That defeats the whole purpose.
 
-### 5. Accessibility
+We solve this. Voquill uses AI to automatically format your text based on context. Proper punctuation, capitalization, paragraph breaks, bullets, and sentence structure are applied as you speak. If you dictate an email, Voquill formats it as an email.
 
-For people with disabilities, injuries, or conditions that make typing difficult, voice typing is transformative. It removes physical barriers to written communication and makes technology more inclusive.
+![Formatted email](/blog/email_formatted.png)
 
-## How Modern Speech-to-Text Technology Works
+## Principle 2: You Should Be In Full Control
 
-Today's voice typing tools use deep learning models — specifically, transformer-based neural networks — trained on thousands of hours of speech data. Here's a simplified breakdown:
+### Voice Is Personal
 
-1. **Audio capture:** Your microphone records your voice as a digital waveform.
-2. **Feature extraction:** The software converts the audio into a spectrogram — a visual representation of the sound frequencies over time.
-3. **Neural network inference:** An AI model (such as OpenAI's Whisper) processes the spectrogram and predicts the most likely sequence of words.
-4. **Post-processing:** The raw transcript is cleaned up — punctuation is added, filler words are removed, and formatting is applied based on context.
+The words you speak are personal. Something feels eerily more intimate and invasive about a computer system storing your voice than your text. They're first drafts of your thoughts, whether it's the emails to your team, the notes from a confidential meeting, the message to your doctor. You should know exactly where they're going and how they're being processed.
 
-The accuracy of modern models like Whisper is remarkable, often exceeding 95% even with accents, background noise, and technical jargon.
+That's why everything in Voquill is **open source** from day one. Every line of code is public. You can read exactly what happens to your audio, verify how it gets processed, and trust the tool you're speaking to.
 
-## Voice Typing vs. Traditional Typing: A Comparison
+No hidden data collection. No black-box processing. No words fed into an LLM training pipeline or stored in a database.
 
-| Feature | Traditional Typing | Voice Typing |
-|---|---|---|
-| Speed | ~40 WPM | ~150 WPM |
-| Physical strain | High (RSI risk) | Minimal |
-| Learning curve | Years of practice | Minutes to start |
-| Works offline | Always | Depends on tool |
-| Privacy | Full control | Depends on tool |
-| Accuracy | Near-perfect | 95%+ with AI cleanup |
+### Bring Your Own Everything
 
-## Getting Started with Voice Typing
+Traditional voice typing tools send your data to a cloud server for processing and you have no choice. We don't like that. When we built the first version of Voquill, we wanted users to bring their own API key. Now, we even have more options.
 
-### Choose the Right Tool
+With Voquill, you can choose between:
 
-Not all voice typing tools are created equal. Here's what to look for:
+- **Run AI models locally** — models run on your own device, no internet required, no data leaves your machine.
+- **Bring your own API key** — connect to the transcription provider (OpenAI, Groq, etc.) you already use and trust.
+- **Use our Voquill server** — it's completely open-sourced so you can see what's going on. 
 
-- **Offline support:** Cloud-based tools send your audio to remote servers, which raises privacy concerns and adds latency. Tools that run AI models locally on your device offer better privacy and faster response times.
-- **AI post-processing:** Raw transcription is rarely perfect. Look for tools that use language models to clean up grammar, remove filler words, and format text intelligently.
-- **Custom dictionary:** If you use industry-specific jargon, acronyms, or proper nouns, you need a tool that lets you add custom terms so the AI recognizes them.
-- **Cross-platform support:** Make sure the tool works on your operating system — whether that's macOS, Windows, or Linux.
-- **Tone control:** The best tools let you choose the tone of your output (casual, formal, business) so the post-processed text matches your intent.
+![Voquill server options](/blog/voquill-server-options.png)
 
-### Tips for Effective Voice Typing
+[Enterprises](https://docs.voquill.com/enterprise/overview) also get:
+- **Use a verified service your organization trusts** — plug into the infrastructure your team has already approved.
+- **Use your own server** — deploy the Voquill backend server to your own cloud or an on-premise instance.
 
-1. **Speak naturally.** Don't try to dictate like a robot. Modern AI handles natural speech patterns, including pauses and self-corrections.
-2. **Use a good microphone.** A dedicated USB microphone or a quality headset will dramatically improve accuracy compared to a built-in laptop mic.
-3. **Set up your dictionary.** Add names, technical terms, and abbreviations that you use regularly.
-4. **Start with low-stakes writing.** Practice with emails and notes before moving to important documents.
-5. **Review and edit.** Voice typing gets you 90% of the way there fast. Spend your remaining time polishing rather than drafting.
+### Enterprise-Friendly by Design
 
-## Privacy Matters: Local vs. Cloud Speech-to-Text
+This matters especially for companies that handle sensitive data (think legal firms, healthcare, financial institutions, etc.). They can't send voice recordings to a third-party API and hope for the best.
 
-One of the most important considerations when choosing a voice typing tool is what happens to your audio data.
+With Voquill, enterprises can:
 
-**Cloud-based tools** send your voice recordings to remote servers for processing. This means:
+- Run AI models locally on company hardware.
+- Bring their own API key to a registered, verified service.
+- Connect to their own cloud or on-premises server with full audit control.
 
-- Your audio is transmitted over the internet
-- A third party processes (and potentially stores) your speech
-- You need an internet connection to use the tool
-- There may be latency depending on your connection
+Voquill gives them a private, auditable, self-hosted option that fits into the security posture they already have. Check out our [Enterprise Docs](https://docs.voquill.com/enterprise/overview) to learn more.
 
-**Local-first tools** run the AI model directly on your computer. This means:
+## Try It Free
 
-- Your audio never leaves your device
-- No internet connection is required
-- Processing is instant with no network latency
-- Your data remains completely private
-
-For professionals handling sensitive information — lawyers, doctors, executives, journalists — local processing isn't just a nice-to-have. It's a requirement.
-
-## The Future of Voice Typing
-
-Voice typing technology is improving rapidly. Here's what's on the horizon:
-
-- **Even higher accuracy** as models are trained on more diverse datasets
-- **Real-time translation** — speak in one language, type in another
-- **Context awareness** — AI that understands your writing style and adapts over time
-- **Seamless integration** into every text field on your computer
-
-We're moving toward a world where the keyboard is optional for most text input. Voice typing isn't replacing keyboards entirely — it's giving you a faster, more natural alternative for the writing that takes up most of your day.
-
-## Start Typing with Your Voice Today
-
-If you've been curious about voice typing, there's never been a better time to try it. The technology is mature, accurate, and increasingly private.
-
-[Voquill](https://voquill.com) is an open-source voice typing app that runs AI models locally on your device. It supports macOS, Windows, and Linux, offers customizable tones for post-processing, and keeps your data completely private — no cloud required.
-
-[Download Voquill](https://voquill.com/download) and experience what it's like to type four times faster.
+[Download Voquill](/download) and see what it's like to type with your voice. Free, open source, and built to keep your words yours.

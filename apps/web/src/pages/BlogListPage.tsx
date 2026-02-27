@@ -45,6 +45,16 @@ function BlogListPage() {
               to={`/blog/${post.slug}`}
               className={styles.blogCard}
             >
+              {post.image && (
+                <div className={styles.cardImageWrapper}>
+                  <img
+                    src={post.image}
+                    alt=""
+                    className={styles.cardImage}
+                    loading="lazy"
+                  />
+                </div>
+              )}
               <div className={styles.cardMeta}>
                 <time dateTime={post.date}>{formatBlogDate(post.date)}</time>
                 <span className={styles.cardMetaSeparator} />
