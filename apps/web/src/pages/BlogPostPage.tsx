@@ -8,7 +8,6 @@ import {
   ArticleJsonLd,
   BreadcrumbJsonLd,
 } from "../components/structured-data";
-import DownloadButton from "../components/download-button";
 import NotFoundPage from "./NotFoundPage";
 import styles from "../styles/blog.module.css";
 
@@ -123,22 +122,6 @@ function BlogPostPage() {
             />
           </div>
         )}
-        <footer className={styles.postFooter}>
-          <div className={styles.postFooterCta}>
-            <h3>
-              {intl.formatMessage({
-                defaultMessage: "Ready to try voice typing?",
-              })}
-            </h3>
-            <p>
-              {intl.formatMessage({
-                defaultMessage:
-                  "Download Voquill for free and start typing with your voice today.",
-              })}
-            </p>
-            <DownloadButton />
-          </div>
-        </footer>
       </PageLayout>
     </BaseLayout>
   );
