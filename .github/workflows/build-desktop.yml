@@ -97,6 +97,9 @@ jobs:
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
           MACOSX_DEPLOYMENT_TARGET: "13.3"
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+          # Throwaway signing key for CI build validation only.
+          # Real releases use secrets in release-desktop.yml.
+          TAURI_SIGNING_PRIVATE_KEY: "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5aUtXaXlvTkZnYkczNzBvTm1xcllXMy9jSnBBOHFjQndDMWtobHRWaVJid0FBQkFBQUFBQUFBQUFBQUlBQUFBQUtxOVJwNUt3bEFLcUtxeTd3RFJ4YjVrNDlMbTN6OHlLVEU5V3B3RVowL1V4SWU1ZTd3VEVoSFVhdTluVTJxMmZtWXlQUVJoU0JXZDU4Qy9LcmRuamRGTStCbDBzelVlZy9FYzM2YXVxNU9FbEtXMER4QU5tMkFscHBMenZqS0J5N0p4b1VhTlAvejQ9Cg=="
         working-directory: apps/desktop
         run: npm run tauri build -- --ci ${{ matrix.args }}
 
