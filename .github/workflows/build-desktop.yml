@@ -99,9 +99,20 @@ jobs:
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
           # Throwaway signing key for CI build validation only.
           # Real releases use secrets in release-desktop.yml.
-          TAURI_SIGNING_PRIVATE_KEY: "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5aUtXaXlvTkZnYkczNzBvTm1xcllXMy9jSnBBOHFjQndDMWtobHRWaVJid0FBQkFBQUFBQUFBQUFBQUlBQUFBQUtxOVJwNUt3bEFLcUtxeTd3RFJ4YjVrNDlMbTN6OHlLVEU5V3B3RVowL1V4SWU1ZTd3VEVoSFVhdTluVTJxMmZtWXlQUVJoU0JXZDU4Qy9LcmRuamRGTStCbDBzelVlZy9FYzM2YXVxNU9FbEtXMER4QU5tMkFscHBMenZqS0J5N0p4b1VhTlAvejQ9Cg=="
+          TAURI_SIGNING_PRIVATE_KEY: "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5OVRKZlAyVDN3dlF1Wm5mbWh1MXYwV3VjRlR2SVhUY2JqdmZUUGdtM1JOMEFBQkFBQUFBQUFBQUFBQUlBQUFBQXp4N2IwQXBxS3lTQnFWeXJuMmpaeGpKdkd5VUhTeit1cklsd3dQVTJvSnkzUktQMVlrQklPQ0duQkVZSStiMEdqTDFaSWJXZW96eTdab0VyaTZMUVNuWlpjSTZTY3NpVXA0bUZVVjh3TldRNHF1Qk1CUFBqcTduS3RMQ3FwMDFQM0VjYTlWdTZQZTQ9Cg=="
+          TAURI_CI_PUBKEY: "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ2NTZFNDMzMzYyMjBCMzgKUldRNEN5STJNK1JXUmpWRDMzem12QUtjVkFxWERXanl0ZVRCWi9JOTd3bmRFRVFuQkp1QmpiN0EK"
         working-directory: apps/desktop
-        run: npm run tauri build -- --ci ${{ matrix.args }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = 'src-tauri/tauri.conf.json';
+            const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (c.plugins?.updater?.pubkey === '__UPDATER_PUBLIC_KEY__') {
+              c.plugins.updater.pubkey = process.env.TAURI_CI_PUBKEY;
+            }
+            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
+          "
+          npm run tauri build -- --ci ${{ matrix.args }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
