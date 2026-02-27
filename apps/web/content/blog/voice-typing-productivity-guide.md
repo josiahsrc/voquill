@@ -23,7 +23,7 @@ Here's the thinking behind each one.
 
 ### You Spend More Time Typing Than You Think
 
-Knowledge workers spend roughly **[40% of their workday](https://www.typing.com/articles/the-time-saving-of-fast-typists)** writing. This can be in emails, documents, Slack messages, code comments, meeting notes, etc. That's about three hours a day, just thinking about what to say and pressing keys.
+Knowledge workers spend roughly **[40% of their workday](https://www.typing.com/articles/the-time-saving-of-fast-typists)** writing. This can be in emails, documents, Slack messages, code comments, LLM conversations, meeting notes, etc. That's about three hours a day, just thinking about what to say and pressing keys.
 
 The average person types at about 40 words per minute but we speak at around 150-220 words per minute. That's nearly **four times faster**.
 
