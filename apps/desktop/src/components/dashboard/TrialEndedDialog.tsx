@@ -12,12 +12,12 @@ import { delayed } from "@repo/utilities";
 import { useEffect, useRef } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
-import { showToast } from "../../actions/toast.actions";
 import { markUpgradeDialogSeen } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { trackButtonClick, trackPageView } from "../../utils/analytics.utils";
 import { getMyMember } from "../../utils/member.utils";
 import { getMyUser } from "../../utils/user.utils";
+import { surfaceMainWindow } from "../../utils/window.utils";
 import { TrialEndedBackground } from "./TrialEndedBackground";
 
 const MIN_WORDS_THRESHOLD = 100;
@@ -55,20 +55,21 @@ export const TrialEndedDialog = () => {
   useEffect(() => {
     if (shouldShow && !hasFocusedRef.current) {
       hasFocusedRef.current = true;
-      delayed(1000 * 4).then(() =>
-        showToast({
-          title: intl.formatMessage({
-            defaultMessage: "Your Pro trial has ended",
-          }),
-          message: intl.formatMessage({
-            defaultMessage:
-              "Upgrade now to continue voice typing without any limits.",
-          }),
-          toastType: "info",
-          action: "surface_window",
-          duration: 8_000,
-        }),
-      );
+      delayed(1000 * 4).then(() => {
+        surfaceMainWindow();
+        // showToast({
+        //   title: intl.formatMessage({
+        //     defaultMessage: "Your Pro trial has ended",
+        //   }),
+        //   message: intl.formatMessage({
+        //     defaultMessage:
+        //       "Upgrade now to continue voice typing without any limits.",
+        //   }),
+        //   toastType: "info",
+        //   action: "surface_window",
+        //   duration: 8_000,
+        // });
+      });
     }
 
     if (!shouldShow) {
