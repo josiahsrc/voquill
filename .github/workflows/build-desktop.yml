@@ -25,18 +25,21 @@ jobs:
             rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
             tauri_platform: macos
             node_platform: darwin
+            bundle_dir: apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle
           - label: Windows
             os: windows-latest
             args: ""
             rust_targets: ""
             tauri_platform: windows
             node_platform: win32
+            bundle_dir: D:\cargo\release\bundle
           - label: Linux
             os: ubuntu-22.04
             args: ""
             rust_targets: ""
             tauri_platform: linux
             node_platform: linux
+            bundle_dir: apps/desktop/src-tauri/target/release/bundle
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -96,3 +99,18 @@ jobs:
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
         working-directory: apps/desktop
         run: npm run tauri build -- --ci ${{ matrix.args }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: voquill-${{ matrix.tauri_platform }}
+          path: |
+            ${{ matrix.bundle_dir }}/**/*.dmg
+            ${{ matrix.bundle_dir }}/**/*.app.tar.gz
+            ${{ matrix.bundle_dir }}/**/*.msi
+            ${{ matrix.bundle_dir }}/**/*.nsis.zip
+            ${{ matrix.bundle_dir }}/**/*.exe
+            ${{ matrix.bundle_dir }}/**/*.deb
+            ${{ matrix.bundle_dir }}/**/*.AppImage
+          if-no-files-found: warn
+          retention-days: 7
