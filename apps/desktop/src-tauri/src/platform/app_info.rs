@@ -247,6 +247,7 @@ fn extract_app_name_from_title(window: &FocusedWindow) -> Option<String> {
 
 // ── Shared utilities ────────────────────────────────────────────────
 
+#[cfg(target_os = "macos")]
 fn fallback_icon_base64() -> String {
     let fallback = fallback_icon(DEFAULT_ICON_SIZE);
     match encode_icon_as_png(&fallback) {
