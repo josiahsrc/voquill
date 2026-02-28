@@ -17,7 +17,11 @@ import {
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
-import { normalizeLocalWhisperModel } from "../utils/local-transcription.utils";
+import {
+  normalizeTranscriptionDevice,
+  normalizeLocalWhisperModel,
+  supportsGpuTranscriptionDevice,
+} from "../utils/local-transcription.utils";
 import { getLogger } from "../utils/log.utils";
 import {
   getMyEffectiveUserId,
@@ -366,8 +370,7 @@ export const setPreferredTranscriptionApiKeyId = async (
 export const setPreferredTranscriptionDevice = async (
   device: string,
 ): Promise<void> => {
-  const normalizedDevice =
-    device === CPU_DEVICE_VALUE ? CPU_DEVICE_VALUE : "gpu";
+  const normalizedDevice = normalizeTranscriptionDevice(device);
 
   produceAppState((draft) => {
     draft.settings.aiTranscription.device = normalizedDevice;
@@ -393,7 +396,8 @@ export const setGpuEnumerationEnabled = async (
   enabled: boolean,
 ): Promise<void> => {
   produceAppState((draft) => {
-    draft.settings.aiTranscription.gpuEnumerationEnabled = enabled;
+    draft.settings.aiTranscription.gpuEnumerationEnabled =
+      supportsGpuTranscriptionDevice() && enabled;
   });
 
   await persistAiPreferences();

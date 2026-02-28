@@ -35,6 +35,7 @@ import { formatSize } from "../../utils/format.utils";
 import { type LocalSidecarDownloadSnapshot } from "../../utils/local-transcription-sidecar.utils";
 import {
   isGpuPreferredTranscriptionDevice,
+  supportsGpuTranscriptionDevice,
   type LocalWhisperModel,
   normalizeLocalWhisperModel,
 } from "../../utils/local-transcription.utils";
@@ -121,6 +122,7 @@ export const AITranscriptionConfiguration = ({
   const localTranscriptionConfig = transcription.localModelManagement;
 
   const preferGpu = isGpuPreferredTranscriptionDevice(transcription.device);
+  const supportsGpuDevice = supportsGpuTranscriptionDevice();
   const deviceValue = preferGpu ? "gpu" : CPU_DEVICE_VALUE;
   const modelValue = normalizeLocalWhisperModel(transcription.modelSize);
   const modelDownloadSnapshot =
@@ -262,24 +264,26 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          <FormControl fullWidth size="small" sx={{ position: "relative" }}>
-            <InputLabel id="processing-device-label">
-              <FormattedMessage defaultMessage="Processing device" />
-            </InputLabel>
-            <Select
-              labelId="processing-device-label"
-              label={<FormattedMessage defaultMessage="Processing device" />}
-              value={deviceValue}
-              onChange={(event) => handleDeviceChange(event.target.value)}
-            >
-              <MenuItem value={CPU_DEVICE_VALUE}>
-                <FormattedMessage defaultMessage="CPU processing" />
-              </MenuItem>
-              <MenuItem value="gpu">
-                <FormattedMessage defaultMessage="GPU acceleration (auto fallback)" />
-              </MenuItem>
-            </Select>
-          </FormControl>
+          {supportsGpuDevice && (
+            <FormControl fullWidth size="small" sx={{ position: "relative" }}>
+              <InputLabel id="processing-device-label">
+                <FormattedMessage defaultMessage="Processing device" />
+              </InputLabel>
+              <Select
+                labelId="processing-device-label"
+                label={<FormattedMessage defaultMessage="Processing device" />}
+                value={deviceValue}
+                onChange={(event) => handleDeviceChange(event.target.value)}
+              >
+                <MenuItem value={CPU_DEVICE_VALUE}>
+                  <FormattedMessage defaultMessage="CPU processing" />
+                </MenuItem>
+                <MenuItem value="gpu">
+                  <FormattedMessage defaultMessage="GPU acceleration (auto fallback)" />
+                </MenuItem>
+              </Select>
+            </FormControl>
+          )}
 
           <FormControl fullWidth size="small">
             <InputLabel id="model-size-label">
