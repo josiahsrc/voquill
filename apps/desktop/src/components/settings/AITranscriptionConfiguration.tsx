@@ -55,30 +55,34 @@ type ModelOption = {
 };
 
 const MODEL_OPTIONS: ModelOption[] = [
-  { value: "tiny", label: "Tiny (77 MB)", helper: "Fastest, lowest accuracy" },
+  {
+    value: "tiny",
+    label: "Whisper Tiny (77 MB)",
+    helper: "Fastest, lowest accuracy",
+  },
   {
     value: "base",
-    label: "Base (148 MB)",
+    label: "Whisper Base (148 MB)",
     helper: "Great balance of speed and accuracy",
   },
   {
     value: "small",
-    label: "Small (488 MB)",
+    label: "Whisper Small (488 MB)",
     helper: "Recommended with GPU acceleration",
   },
   {
     value: "medium",
-    label: "Medium (1.53 GB)",
+    label: "Whisper Medium (1.53 GB)",
     helper: "Balanced quality and speed",
   },
   {
     value: "turbo",
-    label: "Large Turbo (1.6 GB)",
+    label: "Whisper Large v3 Turbo (1.6 GB)",
     helper: "Fast large model, great accuracy",
   },
   {
     value: "large",
-    label: "Large (3.1 GB)",
+    label: "Whisper Large v3 (3.1 GB)",
     helper: "Highest accuracy, requires GPU",
   },
 ];
@@ -301,13 +305,7 @@ export const AITranscriptionConfiguration = ({
                 const option = MODEL_OPTIONS.find(
                   (item) => item.value === model,
                 );
-                const suffix = isLocalTranscriptionModelSelectable(
-                  transcription,
-                  model,
-                )
-                  ? ""
-                  : ` • ${intl.formatMessage({ defaultMessage: "Not downloaded" })}`;
-                return `${option?.label ?? model}${suffix}`;
+                return option?.label ?? model;
               }}
               sx={
                 showInlineModelDownloadAction
@@ -358,10 +356,7 @@ export const AITranscriptionConfiguration = ({
                               ? intl.formatMessage({
                                   defaultMessage: "Downloaded",
                                 })
-                              : status?.validationError ||
-                                intl.formatMessage({
-                                  defaultMessage: "Not downloaded",
-                                })}
+                              : status?.validationError || null}
                           </Typography>
                         </Box>
                         <Button
