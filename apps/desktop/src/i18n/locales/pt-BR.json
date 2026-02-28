@@ -176,6 +176,7 @@
   "done": "Concluído",
   "downgrade_to_free_plan": "Rebaixar para o plano gratuito",
   "download": "Baixar",
+  "download_installer": "Baixar instalador",
   "download_logs": "Baixar logs",
   "downloading_update": "Baixando atualização...",
   "e_g_podcast_conference_etc": "por exemplo, Podcast, conferência, etc.",
@@ -482,7 +483,6 @@
   "update_available": "Atualização disponível",
   "update_ready": "Atualização pronta",
   "upgrade": "Upgrade",
-  "upgrade_now_to_continue_voice_typing_without_any_limits": "Atualize agora para continuar a digitação por voz sem limites.",
   "upgrade_to_pro": "Fazer upgrade para Pro",
   "upgrade_your_plan": "Fazer upgrade do seu plano",
   "url_of_your_local_speaches_docker_instance": "URL da sua instância local do Docker Speaches",
@@ -536,5 +536,5 @@
   "you_ve_been_dictating_without_limits_all_week_keep_unlimited": "Você tem ditado sem limites a semana toda. Mantenha palavras ilimitadas, processamento mais rápido e recursos prioritários.",
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "URL do endpoint do seu recurso Azure OpenAI",
-  "your_pro_trial_has_ended": "Seu teste Pro terminou"
+  "your_operating_system_is_preventing_voquill_from_modifying_f": "Seu sistema operacional está impedindo o Voquill de modificar arquivos em seu local de instalação atual. Use o botão de download para obter o instalador mais recente e, em seguida, execute‑o para concluir a atualização manualmente."
 }

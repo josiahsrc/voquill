@@ -380,6 +380,7 @@ jobs:
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_INSTALLER_SIGNING_IDENTITY: ${{ secrets.APPLE_INSTALLER_SIGNING_IDENTITY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -540,6 +541,17 @@ jobs:
             exit 1
           }
 
+      - name: Assert Developer ID Installer identity is present
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euo pipefail
+          out="$(security find-identity -v -p basic)"
+          echo "$out"
+          echo "$out" | grep -q "Developer ID Installer" || {
+            echo "No 'Developer ID Installer' identity found. Import a .p12 exported with its private key." >&2
+            exit 1
+          }
+
       - name: Prepare Apple notary API key
         if: matrix.os == 'macos-14'
         run: |
@@ -661,6 +673,57 @@ jobs:
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
+
+      - name: Build, sign, notarize, and upload macOS PKG
+        if: matrix.os == 'macos-14'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          APPLE_INSTALLER_SIGNING_IDENTITY: ${{ env.APPLE_INSTALLER_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${APPLE_INSTALLER_SIGNING_IDENTITY}" ]]; then
+            echo "Missing APPLE_INSTALLER_SIGNING_IDENTITY secret." >&2
+            exit 1
+          fi
+
+          bundle_dir="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos"
+          app_bundle_path="$(find "${bundle_dir}" -maxdepth 1 -type d -name '*.app' | head -n 1)"
+          if [[ -z "${app_bundle_path}" ]]; then
+            echo "No .app bundle found under ${bundle_dir}" >&2
+            ls -la "${bundle_dir}" || true
+            exit 1
+          fi
+
+          pkg_name="Voquill_${RELEASE_VERSION}_universal.pkg"
+          unsigned_pkg="Voquill_unsigned.pkg"
+
+          pkgbuild \
+            --component "${app_bundle_path}" \
+            --install-location /Applications \
+            --identifier com.voquill.desktop \
+            --version "${RELEASE_VERSION}" \
+            "${unsigned_pkg}"
+
+          productsign \
+            --sign "${APPLE_INSTALLER_SIGNING_IDENTITY}" \
+            "${unsigned_pkg}" \
+            "${pkg_name}"
+
+          pkgutil --check-signature "${pkg_name}"
+
+          xcrun notarytool submit "${pkg_name}" \
+            --key "${GITHUB_WORKSPACE}/AuthKey.p8" \
+            --key-id "${APPLE_API_KEY_ID}" \
+            --issuer "${APPLE_API_ISSUER}" \
+            --wait
+
+          xcrun stapler staple "${pkg_name}"
+
+          gh release upload "${RELEASE_TAG}" "${pkg_name}" --clobber
 
       - name: Azure login for code signing
         if: matrix.os == 'windows-latest'

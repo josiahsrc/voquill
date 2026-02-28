@@ -1,14 +1,8 @@
 import mixpanel from "mixpanel-browser";
-import { getIsEnterpriseEnabled } from "./enterprise.utils";
 
 export const CURRENT_COHORT = "2025-02-a";
 
 export function getMixpanel() {
-  if (getIsEnterpriseEnabled()) {
-    // Disable Mixpanel for Enterprise users
-    return null;
-  }
-
   const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;
   if (!mixpanelToken) {
     // Mixpanel token is not set, do not initialize Mixpanel

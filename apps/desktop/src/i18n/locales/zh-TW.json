@@ -176,6 +176,7 @@
   "done": "完成",
   "downgrade_to_free_plan": "降級至免費方案",
   "download": "下載",
+  "download_installer": "下載安裝程式",
   "download_logs": "下載日誌",
   "downloading_update": "正在下載更新...",
   "e_g_podcast_conference_etc": "例如：Podcast、會議等。",
@@ -482,7 +483,6 @@
   "update_available": "有可用更新",
   "update_ready": "更新已就緒",
   "upgrade": "升級",
-  "upgrade_now_to_continue_voice_typing_without_any_limits": "立即升級，即可無限制繼續語音輸入。",
   "upgrade_to_pro": "升級至專業版",
   "upgrade_your_plan": "升級您的方案",
   "url_of_your_local_speaches_docker_instance": "本機 Speaches Docker 實例的 URL",
@@ -536,5 +536,5 @@
   "you_ve_been_dictating_without_limits_all_week_keep_unlimited": "您本週一直在無限制地進行語音輸入。保持無限字數、更快的處理速度以及優先功能。",
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "您的 Azure OpenAI 資源端點網址",
-  "your_pro_trial_has_ended": "您的 Pro 試用已結束"
+  "your_operating_system_is_preventing_voquill_from_modifying_f": "您的作業系統正阻止 Voquill 修改其目前安裝位置的檔案。請使用下載按鈕取得最新的安裝程式，然後執行它以手動完成更新。"
 }

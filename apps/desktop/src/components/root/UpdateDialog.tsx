@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useCallback, useMemo } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import Markdown from "react-markdown";
 import {
   dismissUpdateDialog,
@@ -21,7 +22,7 @@ import {
 } from "../../actions/updater.actions";
 import { useAppStore } from "../../store";
 import { formatSize } from "../../utils/format.utils";
-import { FormattedMessage, useIntl } from "react-intl";
+import { isReadOnlyFilesystemInstallError } from "../../utils/updater.utils";
 
 const formatReleaseDate = (isoDate: string | null) => {
   if (!isoDate) {
@@ -49,6 +50,9 @@ export const UpdateDialog = () => {
   const currentVersion = useAppStore((state) => state.updater.currentVersion);
   const releaseDate = useAppStore((state) => state.updater.releaseDate);
   const releaseNotes = useAppStore((state) => state.updater.releaseNotes);
+  const manualInstallerUrl = useAppStore(
+    (state) => state.updater.manualInstallerUrl,
+  );
   const downloadProgress = useAppStore(
     (state) => state.updater.downloadProgress,
   );
@@ -58,6 +62,10 @@ export const UpdateDialog = () => {
 
   const isUpdating = status === "downloading" || status === "installing";
   const showProgress = status === "downloading" || status === "installing";
+  const showManualInstallerAction =
+    status === "error" &&
+    isReadOnlyFilesystemInstallError(errorMessage) &&
+    Boolean(manualInstallerUrl);
 
   const versionLabel = availableVersion
     ? intl.formatMessage(
@@ -124,6 +132,13 @@ export const UpdateDialog = () => {
     }
     await installAvailableUpdate();
   }, [isUpdating]);
+
+  const handleOpenManualInstaller = useCallback(() => {
+    if (!manualInstallerUrl) {
+      return;
+    }
+    openUrl(manualInstallerUrl);
+  }, [manualInstallerUrl]);
 
   return (
     <Dialog
@@ -217,8 +232,29 @@ export const UpdateDialog = () => {
           )}
 
           {status === "error" && errorMessage && (
-            <Alert severity="error" variant="outlined">
-              {errorMessage}
+            <Alert
+              severity="error"
+              variant="outlined"
+              action={
+                showManualInstallerAction ? (
+                  <Button
+                    color="error"
+                    size="small"
+                    onClick={handleOpenManualInstaller}
+                  >
+                    <FormattedMessage defaultMessage="Download installer" />
+                  </Button>
+                ) : undefined
+              }
+            >
+              <Stack spacing={1}>
+                <Typography variant="body2">{errorMessage}</Typography>
+                {showManualInstallerAction && (
+                  <Typography variant="body2">
+                    <FormattedMessage defaultMessage="Your operating system is preventing Voquill from modifying files in its current install location. Use the download button to get the latest installer, then run it to complete the update manually." />
+                  </Typography>
+                )}
+              </Stack>
             </Alert>
           )}
         </Stack>
