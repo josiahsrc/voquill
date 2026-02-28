@@ -12,9 +12,10 @@
 
 **[Visit our website →](https://voquill.com)**
 
-<img src="docs/demo.gif" alt="Voquill Demo" width="600" />
+<img src="docs/demo.gif" alt="Voquill Demo" width="600" style="border-radius: 12px;" />
 
 </div>
+</br>
 
 Voquill is an open-source, cross-platform AI voice typing app that lets you dictate into any desktop application, clean the transcript with AI, and keep your personal glossary in sync. The repo bundles the production desktop app, marketing site, Firebase backend, the mobile app, and all shared packages in a single Turborepo.
 
@@ -29,13 +30,13 @@ Voquill is an open-source, cross-platform AI voice typing app that lets you dict
 
 ## Screenshots
 
-| | |
-|---|---|
-| **Home** — Track your streaks, words per minute, and recent transcriptions at a glance. | ![Home](docs/home-page.png) |
-| **History** — Browse and replay past transcriptions with full audio playback. | ![History](docs/history.png) |
+|                                                                                                                           |                                            |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Home** — Track your streaks, words per minute, and recent transcriptions at a glance.                                   | ![Home](docs/home-page.png)                |
+| **History** — Browse and replay past transcriptions with full audio playback.                                             | ![History](docs/history.png)               |
 | **Writing Styles** — Switch between tones like Polished, Verbatim, and Chat to control how your voice sounds on the page. | ![Writing Styles](docs/writing-styles.png) |
-| **Dictionary** — Add custom terms and replacement rules so Voquill always spells your words correctly. | ![Dictionary](docs/dictionary.png) |
-| **Providers** — Bring your own API key and choose your preferred transcription and post-processing provider. | ![Providers](docs/providers.png) |
+| **Dictionary** — Add custom terms and replacement rules so Voquill always spells your words correctly.                    | ![Dictionary](docs/dictionary.png)         |
+| **Providers** — Bring your own API key and choose your preferred transcription and post-processing provider.              | ![Providers](docs/providers.png)           |
 
 ## License
 
