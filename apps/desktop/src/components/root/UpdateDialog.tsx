@@ -21,6 +21,7 @@ import {
 } from "../../actions/updater.actions";
 import { useAppStore } from "../../store";
 import { formatSize } from "../../utils/format.utils";
+import { isReadOnlyFilesystemInstallError } from "../../utils/updater.utils";
 import { FormattedMessage, useIntl } from "react-intl";
 
 const formatReleaseDate = (isoDate: string | null) => {
@@ -49,6 +50,9 @@ export const UpdateDialog = () => {
   const currentVersion = useAppStore((state) => state.updater.currentVersion);
   const releaseDate = useAppStore((state) => state.updater.releaseDate);
   const releaseNotes = useAppStore((state) => state.updater.releaseNotes);
+  const manualInstallerUrl = useAppStore(
+    (state) => state.updater.manualInstallerUrl,
+  );
   const downloadProgress = useAppStore(
     (state) => state.updater.downloadProgress,
   );
@@ -58,6 +62,10 @@ export const UpdateDialog = () => {
 
   const isUpdating = status === "downloading" || status === "installing";
   const showProgress = status === "downloading" || status === "installing";
+  const showManualInstallerAction =
+    status === "error" &&
+    isReadOnlyFilesystemInstallError(errorMessage) &&
+    Boolean(manualInstallerUrl);
 
   const versionLabel = availableVersion
     ? intl.formatMessage(
@@ -124,6 +132,13 @@ export const UpdateDialog = () => {
     }
     await installAvailableUpdate();
   }, [isUpdating]);
+
+  const handleOpenManualInstaller = useCallback(() => {
+    if (!manualInstallerUrl) {
+      return;
+    }
+    openUrl(manualInstallerUrl);
+  }, [manualInstallerUrl]);
 
   return (
     <Dialog
@@ -217,8 +232,29 @@ export const UpdateDialog = () => {
           )}
 
           {status === "error" && errorMessage && (
-            <Alert severity="error" variant="outlined">
-              {errorMessage}
+            <Alert
+              severity="error"
+              variant="outlined"
+              action={
+                showManualInstallerAction ? (
+                  <Button
+                    color="error"
+                    size="small"
+                    onClick={handleOpenManualInstaller}
+                  >
+                    <FormattedMessage defaultMessage="Download installer" />
+                  </Button>
+                ) : undefined
+              }
+            >
+              <Stack spacing={1}>
+                <Typography variant="body2">{errorMessage}</Typography>
+                {showManualInstallerAction && (
+                  <Typography variant="body2">
+                    <FormattedMessage defaultMessage="Voquill can't update itself from this location. Download the installer package to finish updating." />
+                  </Typography>
+                )}
+              </Stack>
             </Alert>
           )}
         </Stack>

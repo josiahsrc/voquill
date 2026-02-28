@@ -14,6 +14,7 @@ export type UpdaterState = {
   availableVersion: string | null;
   releaseDate: string | null;
   releaseNotes: string | null;
+  manualInstallerUrl: string | null;
   downloadedBytes: number | null;
   totalBytes: number | null;
   downloadProgress: number | null;
@@ -29,6 +30,7 @@ export const INITIAL_UPDATER_STATE: UpdaterState = {
   availableVersion: null,
   releaseDate: null,
   releaseNotes: null,
+  manualInstallerUrl: null,
   downloadedBytes: null,
   totalBytes: null,
   downloadProgress: null,
