@@ -3,10 +3,12 @@ import {
   RocketLaunchOutlined,
 } from "@mui/icons-material";
 import { Avatar, Box, Button, Stack, Typography } from "@mui/material";
-import { useMemo } from "react";
+import { getIdentifier } from "@tauri-apps/api/app";
+import { useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
+import { useAsyncData } from "../../hooks/async.hooks";
 import { useHeaderPortal } from "../../hooks/header.hooks";
 import { useIsOnboarded } from "../../hooks/user.hooks";
 import { produceAppState, useAppStore } from "../../store";
@@ -25,6 +27,7 @@ import {
 } from "../common/MenuPopover";
 import { TrialCountdown } from "../common/TrialCountdown";
 import { maybeArrayElements } from "../settings/AIPostProcessingConfiguration";
+import { GpuMigrationDialog } from "./GpuMigrationDialog";
 
 export type BaseHeaderProps = {
   logo?: React.ReactNode;
@@ -75,6 +78,11 @@ export const AppHeader = () => {
   });
 
   const myInitials = useMemo(() => getInitials(myName), [myName]);
+  const identifierData = useAsyncData(getIdentifier, []);
+  const isGpuBuild =
+    identifierData.state === "success" &&
+    identifierData.data.split(".").includes("gpu");
+  const [gpuMigrationDialogOpen, setGpuMigrationDialogOpen] = useState(false);
 
   const handleLogoClick = () => {
     nav("/");
@@ -109,6 +117,20 @@ export const AppHeader = () => {
   if (isOnboarded) {
     rightContent = (
       <Stack direction="row" alignItems="center" gap={1.5}>
+        {isGpuBuild && (
+          <Button
+            onClick={() => setGpuMigrationDialogOpen(true)}
+            variant="contained"
+            sx={{
+              fontWeight: 600,
+              fontSize: 13,
+              px: 1.5,
+              py: 0.75,
+            }}
+          >
+            <FormattedMessage defaultMessage="GPU App Deprecation | Upgrade Now" />
+          </Button>
+        )}
         {plan === "free" && (
           <Button
             onClick={() => openUpgradePlanDialog()}
@@ -180,10 +202,16 @@ export const AppHeader = () => {
   );
 
   return (
-    <BaseHeader
-      logo={logo}
-      leftContent={leftContent}
-      rightContent={rightContent}
-    />
+    <>
+      <BaseHeader
+        logo={logo}
+        leftContent={leftContent}
+        rightContent={rightContent}
+      />
+      <GpuMigrationDialog
+        open={gpuMigrationDialogOpen}
+        onClose={() => setGpuMigrationDialogOpen(false)}
+      />
+    </>
   );
 };
