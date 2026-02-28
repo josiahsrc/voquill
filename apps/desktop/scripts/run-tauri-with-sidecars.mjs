@@ -7,8 +7,6 @@ const tauriCommand = tauriArgs[0];
 
 if (tauriCommand === "build" || tauriCommand === "dev") {
   const targets = resolveTargets(tauriArgs);
-  const includeGpuSidecar =
-    process.env.VOQUILL_INCLUDE_GPU_SIDECAR === "true" || hasGpuFeatures(tauriArgs);
   const sidecarProfile =
     process.env.VOQUILL_SIDECAR_PROFILE ||
     (tauriCommand === "build" ? "release" : "debug");
@@ -16,7 +14,6 @@ if (tauriCommand === "build" || tauriCommand === "dev") {
   for (const target of targets) {
     const prepareEnv = {
       ...process.env,
-      VOQUILL_INCLUDE_GPU_SIDECAR: includeGpuSidecar ? "true" : "false",
       VOQUILL_SIDECAR_PROFILE: sidecarProfile,
     };
 
@@ -31,21 +28,6 @@ if (tauriCommand === "build" || tauriCommand === "dev") {
 }
 
 run("tauri", tauriArgs, process.env);
-
-function hasGpuFeatures(args) {
-  for (let i = 0; i < args.length; i += 1) {
-    if (args[i] === "--features") {
-      const featureArg = args[i + 1] || "";
-      if (featureArg.includes("gpu")) {
-        return true;
-      }
-    } else if (args[i].startsWith("--features=") && args[i].includes("gpu")) {
-      return true;
-    }
-  }
-
-  return false;
-}
 
 function resolveTargets(args) {
   const requestedTarget = readOptionValue(args, "--target");

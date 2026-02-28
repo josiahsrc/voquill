@@ -216,7 +216,7 @@ if ($EnableGpu) {
 
 Write-Host "[OK] Windows dependencies installed."
 if ($EnableGpu) {
-  Write-Host "[INFO] GPU dependencies ready. Rebuild with 'npm run dev:windows:gpu --workspace apps/desktop'."
+  Write-Host "[INFO] GPU dependencies ready. Desktop builds now include the GPU sidecar automatically."
 }
 else {
   Write-Host "[INFO] GPU dependencies were skipped. Set VOQUILL_ENABLE_GPU=1 or rerun with -EnableGpu to install them."

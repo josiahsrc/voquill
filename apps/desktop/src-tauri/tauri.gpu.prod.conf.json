@@ -2,17 +2,6 @@
   "productName": "Voquill GPU",
   "identifier": "com.voquill.desktop.gpu",
   "mainBinaryName": "Voquill GPU",
-  "bundle": {
-    "externalBin": [
-      "binaries/rust-transcription-cpu",
-      "binaries/rust-transcription-gpu"
-    ],
-    "linux": {
-      "deb": {
-        "depends": ["libxdo3", "libvulkan1"]
-      }
-    }
-  },
   "plugins": {
     "updater": {
       "endpoints": [

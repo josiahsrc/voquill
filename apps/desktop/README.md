@@ -17,8 +17,7 @@ Use platform-specific commands (required for native features):
 ```bash
 npm run dev:mac          # macOS
 npm run dev:windows      # Windows
-npm run dev:linux        # Linux (CPU-only Whisper)
-npm run dev:linux:gpu    # Linux (Vulkan GPU acceleration)
+npm run dev:linux        # Linux
 ```
 
 > **Note:** Do not use `npm run dev` directly—use the platform-specific commands above.
@@ -68,7 +67,6 @@ src-tauri/
 |----------|-------------|
 | `VITE_FLAVOR` | Environment: `dev`, `prod`, or `emulators` (default) |
 | `VITE_USE_EMULATORS` | Connect to Firebase emulators |
-| `VOQUILL_WHISPER_DISABLE_GPU` | Force CPU-only Whisper inference |
 | `VOQUILL_ENABLE_DEVTOOLS` | Open dev tools on startup |
 | `VOQUILL_DESKTOP_PLATFORM` | Override platform detection |
 

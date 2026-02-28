@@ -22,8 +22,8 @@ const buildTarget =
   process.env.TAURI_ENV_TARGET_TRIPLE?.trim() ||
   null;
 const targetTriple = buildTarget || resolveHostTargetTriple();
-const includeGpu = process.env.VOQUILL_INCLUDE_GPU_SIDECAR === "true";
 const buildProfile = process.env.VOQUILL_SIDECAR_PROFILE === "release" ? "release" : "debug";
+const requireNativeGpuSidecar = process.env.VOQUILL_REQUIRE_GPU_SIDECAR === "true";
 const executableSuffix = isWindowsTarget(targetTriple) ? ".exe" : "";
 
 if (!existsSync(sidecarManifestPath)) {
@@ -32,12 +32,23 @@ if (!existsSync(sidecarManifestPath)) {
 
 mkdirSync(tauriBinariesDir, { recursive: true });
 
-buildAndCopy("rust-transcription-cpu", false);
-if (includeGpu) {
-  buildAndCopy("rust-transcription-gpu", true);
+const cpuSidecarPath = buildAndCopy("rust-transcription-cpu", false);
+const gpuBuildSupported = supportsNativeGpuSidecar(targetTriple);
+
+if (gpuBuildSupported) {
+  const gpuSidecarPath = buildAndCopy("rust-transcription-gpu", true, {
+    allowFailure: !requireNativeGpuSidecar,
+  });
+
+  if (!gpuSidecarPath) {
+    mirrorCpuSidecarAsGpu(cpuSidecarPath);
+  }
+} else {
+  mirrorCpuSidecarAsGpu(cpuSidecarPath);
 }
 
-function buildAndCopy(binaryName, gpuEnabled) {
+function buildAndCopy(binaryName, gpuEnabled, options = {}) {
+  const allowFailure = options.allowFailure === true;
   const cargoArgs = [
     "build",
     "--manifest-path",
@@ -58,7 +69,10 @@ function buildAndCopy(binaryName, gpuEnabled) {
     cargoArgs.push("--features", "gpu");
   }
 
-  run("cargo", cargoArgs, repoRoot);
+  const buildOk = run("cargo", cargoArgs, repoRoot, { allowFailure });
+  if (!buildOk) {
+    return null;
+  }
 
   const sourceBinaryPath = join(
     rustTargetDir,
@@ -85,9 +99,27 @@ function buildAndCopy(binaryName, gpuEnabled) {
   console.log(
     `[sidecar] Prepared ${binaryName} for ${targetTriple}: ${destinationBinaryPath}`,
   );
+
+  return destinationBinaryPath;
 }
 
-function run(command, args, cwd) {
+function mirrorCpuSidecarAsGpu(cpuSidecarPath) {
+  const gpuDestinationPath = join(
+    tauriBinariesDir,
+    `rust-transcription-gpu-${targetTriple}${executableSuffix}`,
+  );
+  copyFileSync(cpuSidecarPath, gpuDestinationPath);
+  if (!isWindowsTarget(targetTriple)) {
+    chmodSync(gpuDestinationPath, 0o755);
+  }
+
+  console.warn(
+    `[sidecar] Using CPU sidecar binary for rust-transcription-gpu on ${targetTriple}: ${gpuDestinationPath}`,
+  );
+}
+
+function run(command, args, cwd, options = {}) {
+  const allowFailure = options.allowFailure === true;
   const result = spawnSync(command, args, {
     cwd,
     stdio: "inherit",
@@ -96,8 +128,16 @@ function run(command, args, cwd) {
 
   if (result.status !== 0) {
     const rendered = [command, ...args].join(" ");
+    if (allowFailure) {
+      console.warn(
+        `[sidecar] Command failed (${result.status ?? "unknown"}): ${rendered}`,
+      );
+      return false;
+    }
     fail(`Command failed (${result.status ?? "unknown"}): ${rendered}`);
   }
+
+  return true;
 }
 
 function resolveHostTargetTriple() {
@@ -153,6 +193,10 @@ function mapPlatformArchToTarget(platform, arch) {
 
 function isWindowsTarget(target) {
   return target.includes("windows");
+}
+
+function supportsNativeGpuSidecar(target) {
+  return target.includes("windows") || target.includes("linux");
 }
 
 function fail(message) {
