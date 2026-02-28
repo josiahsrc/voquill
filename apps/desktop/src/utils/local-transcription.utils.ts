@@ -59,12 +59,10 @@ export const normalizeLocalWhisperModel = (
 export const isGpuPreferredTranscriptionDevice = (
   device: string | null | undefined,
 ): boolean => {
-  if (isMacOS()) {
-    return false;
-  }
-
-  const normalized = device?.trim().toLowerCase();
-  return !!normalized && normalized !== CPU_DEVICE_VALUE;
+  return (
+    supportsGpuTranscriptionDevice() &&
+    normalizeTranscriptionDevice(device).startsWith("gpu:")
+  );
 };
 
 export const supportsGpuTranscriptionDevice = (): boolean => !isMacOS();
@@ -77,5 +75,26 @@ export const normalizeTranscriptionDevice = (
   }
 
   const normalized = device?.trim().toLowerCase();
-  return normalized === CPU_DEVICE_VALUE ? CPU_DEVICE_VALUE : "gpu";
+  if (!normalized) {
+    return CPU_DEVICE_VALUE;
+  }
+
+  if (
+    normalized === "cpu" ||
+    normalized === CPU_DEVICE_VALUE ||
+    normalized.startsWith("cpu:")
+  ) {
+    return CPU_DEVICE_VALUE;
+  }
+
+  if (normalized === "gpu") {
+    return "gpu:0";
+  }
+
+  const gpuMatch = normalized.match(/^gpu[:-](\d+)$/);
+  if (gpuMatch) {
+    return `gpu:${gpuMatch[1]}`;
+  }
+
+  return "gpu:0";
 };

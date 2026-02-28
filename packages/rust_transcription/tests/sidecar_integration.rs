@@ -75,6 +75,36 @@ struct TranscribeResponse {
     inference_device: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ProcessorInfo {
+    id: String,
+    kind: String,
+    name: String,
+    index: i32,
+    free_memory_bytes: Option<u64>,
+    total_memory_bytes: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ProcessorListResponse {
+    processors: Vec<ProcessorInfo>,
+    selected_processor_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SelectedProcessorResponse {
+    processor: ProcessorInfo,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SelectProcessorRequest {
+    processor_id: String,
+}
+
 struct RunningSidecar {
     child: Child,
     client: Client,
@@ -223,7 +253,11 @@ async fn cpu_sidecar_delete_model_removes_model_and_partial_fragments(
     tokio::fs::write(&partial_path, b"partial bytes").await?;
     tokio::fs::write(&keep_path, b"should stay").await?;
 
-    let response = sidecar.client.delete(sidecar.url("/v1/models/tiny")).send().await?;
+    let response = sidecar
+        .client
+        .delete(sidecar.url("/v1/models/tiny"))
+        .send()
+        .await?;
     assert_eq!(response.status(), StatusCode::OK);
 
     let status = response.json::<ModelStatusResponse>().await?;
@@ -264,7 +298,11 @@ async fn cpu_sidecar_delete_model_rejects_while_download_is_active(
         DownloadJobStatus::Pending | DownloadJobStatus::Running
     ));
 
-    let response = sidecar.client.delete(sidecar.url("/v1/models/tiny")).send().await?;
+    let response = sidecar
+        .client
+        .delete(sidecar.url("/v1/models/tiny"))
+        .send()
+        .await?;
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     let body = response.json::<ApiErrorEnvelope>().await?;
@@ -272,6 +310,73 @@ async fn cpu_sidecar_delete_model_rejects_while_download_is_active(
     assert!(body.error.message.contains("currently downloading"));
 
     server_task.abort();
+    Ok(())
+}
+
+#[tokio::test]
+async fn cpu_sidecar_processor_selection_roundtrip(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let sidecar = RunningSidecar::start_cpu().await?;
+
+    let processors = sidecar
+        .client
+        .get(sidecar.url("/v1/processors"))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<ProcessorListResponse>()
+        .await?;
+
+    assert!(!processors.processors.is_empty());
+    assert_eq!(processors.selected_processor_id, "cpu:0");
+    assert!(processors
+        .processors
+        .iter()
+        .any(|processor| processor.id == "cpu:0"));
+
+    let selected = sidecar
+        .client
+        .get(sidecar.url("/v1/processors/selected"))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<SelectedProcessorResponse>()
+        .await?;
+
+    assert_eq!(selected.processor.id, "cpu:0");
+    assert_eq!(selected.processor.kind, "cpu");
+    assert_eq!(selected.processor.index, 0);
+    assert!(!selected.processor.name.is_empty());
+    assert_eq!(selected.processor.free_memory_bytes, None);
+    assert_eq!(selected.processor.total_memory_bytes, None);
+
+    let update = sidecar
+        .client
+        .put(sidecar.url("/v1/processors/selected"))
+        .json(&SelectProcessorRequest {
+            processor_id: "cpu:0".to_string(),
+        })
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<SelectedProcessorResponse>()
+        .await?;
+
+    assert_eq!(update.processor.id, "cpu:0");
+
+    let invalid = sidecar
+        .client
+        .put(sidecar.url("/v1/processors/selected"))
+        .json(&SelectProcessorRequest {
+            processor_id: "gpu:999".to_string(),
+        })
+        .send()
+        .await?;
+
+    assert_eq!(invalid.status(), StatusCode::BAD_REQUEST);
+    let invalid_body = invalid.json::<ApiErrorEnvelope>().await?;
+    assert_eq!(invalid_body.error.code, "invalid_processor");
+
     Ok(())
 }
 
@@ -432,10 +537,7 @@ fn load_wav_as_f32_mono(
 
 async fn start_slow_download_server(
     response_delay: Duration,
-) -> Result<
-    (String, tokio::task::JoinHandle<()>),
-    Box<dyn std::error::Error + Send + Sync>,
-> {
+) -> Result<(String, tokio::task::JoinHandle<()>), Box<dyn std::error::Error + Send + Sync>> {
     let listener = TokioTcpListener::bind("127.0.0.1:0").await?;
     let addr = listener.local_addr()?;
     let url = format!("http://{addr}/tiny.bin");

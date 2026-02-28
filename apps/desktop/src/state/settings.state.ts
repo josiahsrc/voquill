@@ -7,6 +7,7 @@ import {
 import type {
   LocalSidecarDownloadSnapshot,
   LocalSidecarModelStatus,
+  LocalSidecarProcessor,
 } from "../utils/local-transcription-sidecar.utils";
 import {
   LOCAL_WHISPER_MODELS,
@@ -37,6 +38,9 @@ export type LocalTranscriptionModelManagementState = {
   modelStatuses: LocalTranscriptionModelStatusMap;
   modelStatusesLoading: boolean;
   modelStatusesLoaded: boolean;
+  availableProcessors: LocalSidecarProcessor[];
+  processorsLoading: boolean;
+  processorsLoaded: boolean;
   modelDownloads: Partial<
     Record<LocalWhisperModel, LocalSidecarDownloadSnapshot>
   >;
@@ -138,6 +142,9 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
       modelStatuses: createEmptyLocalTranscriptionModelStatusMap(),
       modelStatusesLoading: false,
       modelStatusesLoaded: false,
+      availableProcessors: [],
+      processorsLoading: false,
+      processorsLoaded: false,
       modelDownloads: {},
       modelDeletes: {},
     },

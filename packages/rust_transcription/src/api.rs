@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::errors::ApiError;
 use crate::models::WhisperModel;
 use crate::state::AppState;
-use crate::transcription::TranscriptionInput;
+use crate::transcription::{ProcessorInfo, TranscriptionInput};
 
 pub fn create_router(state: AppState) -> Router {
     Router::new()
@@ -23,6 +23,11 @@ pub fn create_router(state: AppState) -> Router {
         )
         .route("/v1/models/:model", delete(delete_model))
         .route("/v1/models/:model/status", get(get_model_status))
+        .route("/v1/processors", get(list_processors))
+        .route(
+            "/v1/processors/selected",
+            get(get_selected_processor).put(set_selected_processor),
+        )
         .route("/v1/transcriptions", post(transcribe))
         .layer(DefaultBodyLimit::max(250 * 1024 * 1024))
         .with_state(state)
@@ -40,6 +45,63 @@ async fn get_health(State(state): State<AppState>) -> Json<HealthResponse> {
         status: "ok",
         mode: state.config.mode.as_str(),
     })
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProcessorListResponse {
+    processors: Vec<ProcessorInfo>,
+    selected_processor_id: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SelectedProcessorResponse {
+    processor: ProcessorInfo,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetSelectedProcessorRequest {
+    processor_id: String,
+}
+
+async fn list_processors(
+    State(state): State<AppState>,
+) -> Result<Json<ProcessorListResponse>, ApiError> {
+    let processors = state.transcriber.list_processors();
+    let selected = state
+        .transcriber
+        .get_selected_processor()
+        .map_err(|err| ApiError::internal("processor_state_unavailable", err))?;
+
+    Ok(Json(ProcessorListResponse {
+        processors,
+        selected_processor_id: selected.id,
+    }))
+}
+
+async fn get_selected_processor(
+    State(state): State<AppState>,
+) -> Result<Json<SelectedProcessorResponse>, ApiError> {
+    let processor = state
+        .transcriber
+        .get_selected_processor()
+        .map_err(|err| ApiError::internal("processor_state_unavailable", err))?;
+
+    Ok(Json(SelectedProcessorResponse { processor }))
+}
+
+async fn set_selected_processor(
+    State(state): State<AppState>,
+    Json(request): Json<SetSelectedProcessorRequest>,
+) -> Result<Json<SelectedProcessorResponse>, ApiError> {
+    let processor = state
+        .transcriber
+        .set_selected_processor(&request.processor_id)
+        .map_err(|err| ApiError::bad_request("invalid_processor", err))?;
+
+    Ok(Json(SelectedProcessorResponse { processor }))
 }
 
 #[derive(Debug, Deserialize)]

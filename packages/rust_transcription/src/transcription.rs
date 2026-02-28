@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::compute::ComputeMode;
+use serde::Serialize;
 use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
 };
@@ -25,18 +26,103 @@ pub struct TranscriptionOutput {
     pub inference_device: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProcessorKind {
+    Cpu,
+    Gpu,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessorInfo {
+    pub id: String,
+    pub kind: ProcessorKind,
+    pub name: String,
+    pub index: i32,
+    pub free_memory_bytes: Option<u64>,
+    pub total_memory_bytes: Option<u64>,
+}
+
+#[derive(Debug, Clone)]
+struct ProcessorEntry {
+    info: ProcessorInfo,
+    #[cfg(feature = "gpu")]
+    gpu_device: Option<i32>,
+}
+
 #[derive(Clone)]
 pub struct TranscriptionEngine {
     mode: ComputeMode,
     context_cache: Arc<Mutex<HashMap<String, Arc<WhisperContext>>>>,
+    processors: Arc<Vec<ProcessorEntry>>,
+    selected_processor_id: Arc<Mutex<String>>,
 }
 
 impl TranscriptionEngine {
     pub fn new(mode: ComputeMode) -> Self {
+        let processors = discover_processors(mode);
+        let selected_processor_id = processors
+            .first()
+            .map(|processor| processor.info.id.clone())
+            .unwrap_or_else(|| default_processor_id(mode));
+
         Self {
             mode,
             context_cache: Arc::new(Mutex::new(HashMap::new())),
+            processors: Arc::new(processors),
+            selected_processor_id: Arc::new(Mutex::new(selected_processor_id)),
         }
+    }
+
+    pub fn list_processors(&self) -> Vec<ProcessorInfo> {
+        self.processors
+            .iter()
+            .map(|processor| processor.info.clone())
+            .collect()
+    }
+
+    pub fn get_selected_processor(&self) -> Result<ProcessorInfo, String> {
+        Ok(self.selected_processor_entry()?.info)
+    }
+
+    pub fn set_selected_processor(&self, processor_id: &str) -> Result<ProcessorInfo, String> {
+        let normalized = processor_id.trim().to_ascii_lowercase();
+        if normalized.is_empty() {
+            return Err("processorId must not be empty".to_string());
+        }
+
+        let processor = self
+            .processors
+            .iter()
+            .find(|candidate| candidate.info.id == normalized)
+            .cloned()
+            .ok_or_else(|| {
+                format!(
+                    "unknown processor '{}'; available values: {}",
+                    processor_id,
+                    self.processors
+                        .iter()
+                        .map(|candidate| candidate.info.id.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            })?;
+
+        let mut selected = self
+            .selected_processor_id
+            .lock()
+            .map_err(|_| "selected processor lock poisoned".to_string())?;
+
+        if *selected != processor.info.id {
+            *selected = processor.info.id.clone();
+            self.context_cache
+                .lock()
+                .map_err(|_| "context cache lock poisoned".to_string())?
+                .clear();
+        }
+
+        Ok(processor.info)
     }
 
     pub async fn transcribe(
@@ -83,7 +169,8 @@ impl TranscriptionEngine {
             return Err("unable to resample audio".to_string());
         }
 
-        let context = self.context_for_model(&input.model_path)?;
+        let selected_processor = self.selected_processor_entry()?;
+        let context = self.context_for_model(&input.model_path, &selected_processor)?;
         let mut state = context
             .create_state()
             .map_err(|err| format!("failed to create whisper state: {err}"))?;
@@ -122,7 +209,7 @@ impl TranscriptionEngine {
             .map_err(|err| format!("failed to run whisper inference: {err}"))?;
 
         let text = collect_transcription(&state)?;
-        let inference_device = self.mode.as_str().to_ascii_uppercase();
+        let inference_device = selected_processor.info.name.clone();
 
         Ok(TranscriptionOutput {
             text,
@@ -139,30 +226,36 @@ impl TranscriptionEngine {
             .to_str()
             .ok_or_else(|| "model path is not valid UTF-8".to_string())?;
 
-        let params = self.context_params()?;
+        let selected_processor = self.selected_processor_entry()?;
+        let params = self.context_params(&selected_processor)?;
         WhisperContext::new_with_params(model_path_str, params)
             .map(|_| true)
             .map_err(|err| format!("failed to load model: {err}"))
     }
 
-    fn context_for_model(&self, model_path: &Path) -> Result<Arc<WhisperContext>, String> {
-        let key = model_path
+    fn context_for_model(
+        &self,
+        model_path: &Path,
+        selected_processor: &ProcessorEntry,
+    ) -> Result<Arc<WhisperContext>, String> {
+        let model_key = model_path
             .to_str()
             .ok_or_else(|| "model path is not valid UTF-8".to_string())?
             .to_string();
+        let cache_key = format!("{}::{model_key}", selected_processor.info.id);
 
         if let Some(existing) = self
             .context_cache
             .lock()
             .map_err(|_| "context cache lock poisoned".to_string())?
-            .get(&key)
+            .get(&cache_key)
             .cloned()
         {
             return Ok(existing);
         }
 
-        let params = self.context_params()?;
-        let context = WhisperContext::new_with_params(&key, params)
+        let params = self.context_params(selected_processor)?;
+        let context = WhisperContext::new_with_params(&model_key, params)
             .map_err(|err| format!("failed to initialize whisper context: {err}"))?;
 
         let context = Arc::new(context);
@@ -171,10 +264,16 @@ impl TranscriptionEngine {
             .lock()
             .map_err(|_| "context cache lock poisoned".to_string())?;
 
-        Ok(cache.entry(key).or_insert_with(|| context.clone()).clone())
+        Ok(cache
+            .entry(cache_key)
+            .or_insert_with(|| context.clone())
+            .clone())
     }
 
-    fn context_params(&self) -> Result<WhisperContextParameters<'_>, String> {
+    fn context_params(
+        &self,
+        selected_processor: &ProcessorEntry,
+    ) -> Result<WhisperContextParameters<'_>, String> {
         let mut params = WhisperContextParameters::default();
         match self.mode {
             ComputeMode::Cpu => {
@@ -185,15 +284,31 @@ impl TranscriptionEngine {
                 #[cfg(feature = "gpu")]
                 {
                     params.use_gpu(true);
+                    params.gpu_device(selected_processor.gpu_device.unwrap_or(0));
                     Ok(params)
                 }
 
                 #[cfg(not(feature = "gpu"))]
                 {
+                    let _ = selected_processor;
                     Err("gpu mode requested but binary was built without gpu feature".to_string())
                 }
             }
         }
+    }
+
+    fn selected_processor_entry(&self) -> Result<ProcessorEntry, String> {
+        let selected_id = self
+            .selected_processor_id
+            .lock()
+            .map_err(|_| "selected processor lock poisoned".to_string())?
+            .clone();
+
+        self.processors
+            .iter()
+            .find(|processor| processor.info.id == selected_id)
+            .cloned()
+            .ok_or_else(|| format!("selected processor '{}' is unavailable", selected_id))
     }
 }
 
@@ -274,5 +389,79 @@ pub fn ensure_gpu_runtime_available() -> Result<(), String> {
     #[cfg(not(feature = "gpu"))]
     {
         Err("gpu runtime check requested but gpu feature is not enabled".to_string())
+    }
+}
+
+fn default_processor_id(mode: ComputeMode) -> String {
+    match mode {
+        ComputeMode::Cpu => "cpu:0".to_string(),
+        ComputeMode::Gpu => "gpu:0".to_string(),
+    }
+}
+
+fn discover_processors(mode: ComputeMode) -> Vec<ProcessorEntry> {
+    match mode {
+        ComputeMode::Cpu => vec![ProcessorEntry {
+            info: ProcessorInfo {
+                id: "cpu:0".to_string(),
+                kind: ProcessorKind::Cpu,
+                name: "CPU".to_string(),
+                index: 0,
+                free_memory_bytes: None,
+                total_memory_bytes: None,
+            },
+        }],
+        ComputeMode::Gpu => discover_gpu_processors(),
+    }
+}
+
+fn discover_gpu_processors() -> Vec<ProcessorEntry> {
+    #[cfg(feature = "gpu")]
+    {
+        let devices = std::panic::catch_unwind(vulkan::list_devices).unwrap_or_default();
+        if devices.is_empty() {
+            return vec![ProcessorEntry {
+                info: ProcessorInfo {
+                    id: "gpu:0".to_string(),
+                    kind: ProcessorKind::Gpu,
+                    name: "GPU 0".to_string(),
+                    index: 0,
+                    free_memory_bytes: None,
+                    total_memory_bytes: None,
+                },
+                #[cfg(feature = "gpu")]
+                gpu_device: Some(0),
+            }];
+        }
+
+        return devices
+            .into_iter()
+            .map(|device| ProcessorEntry {
+                info: ProcessorInfo {
+                    id: format!("gpu:{}", device.id),
+                    kind: ProcessorKind::Gpu,
+                    name: device.name,
+                    index: device.id,
+                    free_memory_bytes: Some(device.vram.free as u64),
+                    total_memory_bytes: Some(device.vram.total as u64),
+                },
+                #[cfg(feature = "gpu")]
+                gpu_device: Some(device.id),
+            })
+            .collect();
+    }
+
+    #[cfg(not(feature = "gpu"))]
+    {
+        vec![ProcessorEntry {
+            info: ProcessorInfo {
+                id: "gpu:0".to_string(),
+                kind: ProcessorKind::Gpu,
+                name: "GPU 0".to_string(),
+                index: 0,
+                free_memory_bytes: None,
+                total_memory_bytes: None,
+            },
+        }]
     }
 }

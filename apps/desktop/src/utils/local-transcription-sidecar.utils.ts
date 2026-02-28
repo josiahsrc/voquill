@@ -40,14 +40,34 @@ type SidecarTranscriptionResponse = {
   durationMs: number;
 };
 
+type SidecarProcessorResponse = {
+  id: string;
+  kind: "cpu" | "gpu";
+  name: string;
+  index: number;
+  freeMemoryBytes: number | null;
+  totalMemoryBytes: number | null;
+};
+
+type SidecarProcessorListResponse = {
+  processors: SidecarProcessorResponse[];
+  selectedProcessorId: string;
+};
+
+type SidecarSelectedProcessorResponse = {
+  processor: SidecarProcessorResponse;
+};
+
 type SidecarRuntime = {
   mode: SidecarMode;
   baseUrl: string;
   child: ShellChildProcess;
+  selectedProcessorId?: string;
 };
 
 export type LocalSidecarModelStatus = SidecarModelStatusResponse;
 export type LocalSidecarDownloadSnapshot = SidecarDownloadSnapshot;
+export type LocalSidecarProcessor = SidecarProcessorResponse;
 
 export type LocalSidecarTranscribeInput = {
   model: LocalWhisperModel;
@@ -56,6 +76,7 @@ export type LocalSidecarTranscribeInput = {
   language?: string;
   initialPrompt?: string;
   preferGpu: boolean;
+  processorId?: string;
 };
 
 export type LocalSidecarTranscribeOutput = {
@@ -104,23 +125,33 @@ export class LocalTranscriptionSidecarManager {
     model,
     preferGpu,
     validate = true,
+    processorId,
   }: {
     model: LocalWhisperModel;
     preferGpu: boolean;
     validate?: boolean;
+    processorId?: string;
   }): Promise<LocalSidecarModelStatus> {
     const runtime = await this.resolveRuntime(preferGpu);
-    return await this.getModelStatusByMode(runtime.mode, model, validate);
+    return await this.getModelStatusByMode(
+      runtime.mode,
+      model,
+      validate,
+      SIDECAR_REQUEST_RETRIES,
+      processorId,
+    );
   }
 
   async listModelStatuses({
     preferGpu,
     validate = true,
     models = LOCAL_WHISPER_MODELS,
+    processorId,
   }: {
     preferGpu: boolean;
     validate?: boolean;
     models?: LocalWhisperModel[];
+    processorId?: string;
   }): Promise<Record<LocalWhisperModel, LocalSidecarModelStatus>> {
     const runtime = await this.resolveRuntime(preferGpu);
     const statuses = await Promise.all(
@@ -129,6 +160,8 @@ export class LocalTranscriptionSidecarManager {
           runtime.mode,
           model,
           validate,
+          SIDECAR_REQUEST_RETRIES,
+          processorId,
         );
         return [model, status] as const;
       }),
@@ -146,18 +179,27 @@ export class LocalTranscriptionSidecarManager {
     model,
     preferGpu,
     onProgress,
+    processorId,
   }: {
     model: LocalWhisperModel;
     preferGpu: boolean;
     onProgress?: (snapshot: LocalSidecarDownloadSnapshot) => void;
+    processorId?: string;
   }): Promise<LocalSidecarModelStatus> {
     const runtime = await this.resolveRuntime(preferGpu);
-    await this.downloadModelOnMode(runtime.mode, model, onProgress);
+    await this.downloadModelOnMode(
+      runtime.mode,
+      model,
+      onProgress,
+      processorId,
+    );
 
     const finalStatus = await this.getModelStatusByMode(
       runtime.mode,
       model,
       true,
+      SIDECAR_REQUEST_RETRIES,
+      processorId,
     );
     if (!finalStatus.downloaded || !finalStatus.valid) {
       throw new Error(
@@ -173,9 +215,11 @@ export class LocalTranscriptionSidecarManager {
   async deleteModel({
     model,
     preferGpu,
+    processorId,
   }: {
     model: LocalWhisperModel;
     preferGpu: boolean;
+    processorId?: string;
   }): Promise<LocalSidecarModelStatus> {
     const runtime = await this.resolveRuntime(preferGpu);
     const status = await this.requestModeJson<SidecarModelStatusResponse>(
@@ -184,10 +228,65 @@ export class LocalTranscriptionSidecarManager {
       {
         method: "DELETE",
       },
+      {
+        processorId,
+      },
     );
 
     this.invalidateModelReadiness(model);
     return status;
+  }
+
+  async listProcessors({
+    preferGpu,
+  }: {
+    preferGpu: boolean;
+  }): Promise<LocalSidecarProcessor[]> {
+    const runtime = await this.resolveRuntime(preferGpu);
+    const response = await this.requestModeJson<SidecarProcessorListResponse>(
+      runtime.mode,
+      "/v1/processors",
+    );
+
+    runtime.selectedProcessorId = response.selectedProcessorId;
+    return response.processors;
+  }
+
+  async getSelectedProcessor({
+    preferGpu,
+  }: {
+    preferGpu: boolean;
+  }): Promise<LocalSidecarProcessor> {
+    const runtime = await this.resolveRuntime(preferGpu);
+    const response =
+      await this.requestModeJson<SidecarSelectedProcessorResponse>(
+        runtime.mode,
+        "/v1/processors/selected",
+      );
+    runtime.selectedProcessorId = response.processor.id;
+    return response.processor;
+  }
+
+  async selectProcessor({
+    preferGpu,
+    processorId,
+  }: {
+    preferGpu: boolean;
+    processorId: string;
+  }): Promise<LocalSidecarProcessor> {
+    const runtime = await this.resolveRuntime(preferGpu);
+    const response =
+      await this.requestModeJson<SidecarSelectedProcessorResponse>(
+        runtime.mode,
+        "/v1/processors/selected",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ processorId }),
+        },
+      );
+    runtime.selectedProcessorId = response.processor.id;
+    return response.processor;
   }
 
   async transcribe(
@@ -196,7 +295,11 @@ export class LocalTranscriptionSidecarManager {
     const runtime = await this.resolveRuntime(input.preferGpu);
 
     try {
-      return await this.transcribeInMode(runtime.mode, input);
+      return await this.transcribeInMode(
+        runtime.mode,
+        input,
+        input.processorId,
+      );
     } catch (error) {
       if (
         input.preferGpu &&
@@ -204,7 +307,7 @@ export class LocalTranscriptionSidecarManager {
         this.shouldFallbackToCpu(error)
       ) {
         this.markGpuUnavailable(error);
-        return await this.transcribeInMode("cpu", input);
+        return await this.transcribeInMode("cpu", input, input.processorId);
       }
 
       throw error;
@@ -214,8 +317,9 @@ export class LocalTranscriptionSidecarManager {
   private async transcribeInMode(
     mode: SidecarMode,
     input: LocalSidecarTranscribeInput,
+    processorId?: string,
   ): Promise<LocalSidecarTranscribeOutput> {
-    await this.ensureModelReady(mode, input.model);
+    await this.ensureModelReady(mode, input.model, processorId);
 
     try {
       const result = await this.requestModeJson<SidecarTranscriptionResponse>(
@@ -225,6 +329,9 @@ export class LocalTranscriptionSidecarManager {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: this.toTranscribeRequestBody(input),
+        },
+        {
+          processorId,
         },
       );
 
@@ -243,7 +350,7 @@ export class LocalTranscriptionSidecarManager {
       }
 
       this.invalidateModelReadiness(input.model);
-      await this.downloadModelOnMode(mode, input.model);
+      await this.downloadModelOnMode(mode, input.model, undefined, processorId);
 
       const retry = await this.requestModeJson<SidecarTranscriptionResponse>(
         mode,
@@ -252,6 +359,9 @@ export class LocalTranscriptionSidecarManager {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: this.toTranscribeRequestBody(input),
+        },
+        {
+          processorId,
         },
       );
 
@@ -343,9 +453,6 @@ export class LocalTranscriptionSidecarManager {
 
       for (const line of lines) {
         const port = this.parseBoundPortLine(line);
-        getLogger().info(
-          `[local-sidecar:${mode}] ${line} -> port=${port ?? "no port"}`,
-        );
         if (port === null) {
           continue;
         }
@@ -487,14 +594,15 @@ export class LocalTranscriptionSidecarManager {
   private async ensureModelReady(
     mode: SidecarMode,
     model: LocalWhisperModel,
+    processorId?: string,
   ): Promise<void> {
-    const cacheKey = `${mode}:${model}`;
+    const cacheKey = `${mode}:${processorId ?? "default"}:${model}`;
     const existing = this.readyModels.get(cacheKey);
     if (existing) {
       return await existing;
     }
 
-    const pending = this.ensureModelReadyInternal(mode, model)
+    const pending = this.ensureModelReadyInternal(mode, model, processorId)
       .then(() => undefined)
       .catch((error) => {
         this.readyModels.delete(cacheKey);
@@ -508,14 +616,27 @@ export class LocalTranscriptionSidecarManager {
   private async ensureModelReadyInternal(
     mode: SidecarMode,
     model: LocalWhisperModel,
+    processorId?: string,
   ): Promise<void> {
-    const currentStatus = await this.getModelStatusByMode(mode, model, true, 1);
+    const currentStatus = await this.getModelStatusByMode(
+      mode,
+      model,
+      true,
+      1,
+      processorId,
+    );
 
     if (!currentStatus.downloaded || !currentStatus.valid) {
-      await this.downloadModelOnMode(mode, model);
+      await this.downloadModelOnMode(mode, model, undefined, processorId);
     }
 
-    const finalStatus = await this.getModelStatusByMode(mode, model, true, 1);
+    const finalStatus = await this.getModelStatusByMode(
+      mode,
+      model,
+      true,
+      1,
+      processorId,
+    );
 
     if (!finalStatus.downloaded || !finalStatus.valid) {
       throw new Error(
@@ -532,6 +653,7 @@ export class LocalTranscriptionSidecarManager {
     model: LocalWhisperModel,
     validate: boolean,
     retries = SIDECAR_REQUEST_RETRIES,
+    processorId?: string,
   ): Promise<LocalSidecarModelStatus> {
     return await this.requestModeJson<SidecarModelStatusResponse>(
       mode,
@@ -539,6 +661,7 @@ export class LocalTranscriptionSidecarManager {
       undefined,
       {
         retries,
+        processorId,
       },
     );
   }
@@ -547,12 +670,16 @@ export class LocalTranscriptionSidecarManager {
     mode: SidecarMode,
     model: LocalWhisperModel,
     onProgress?: (snapshot: LocalSidecarDownloadSnapshot) => void,
+    processorId?: string,
   ): Promise<void> {
     const job = await this.requestModeJson<SidecarDownloadSnapshot>(
       mode,
       `/v1/models/${model}/download`,
       {
         method: "POST",
+      },
+      {
+        processorId,
       },
     );
 
@@ -577,6 +704,7 @@ export class LocalTranscriptionSidecarManager {
         undefined,
         {
           retries: 1,
+          processorId,
         },
       );
 
@@ -629,15 +757,18 @@ export class LocalTranscriptionSidecarManager {
     options?: {
       timeoutMs?: number;
       retries?: number;
+      processorId?: string;
     },
   ): Promise<T> {
     const retries = options?.retries ?? SIDECAR_REQUEST_RETRIES;
     const timeoutMs = options?.timeoutMs ?? SIDECAR_REQUEST_TIMEOUT_MS;
+    const processorId = options?.processorId;
     let lastError: unknown = null;
 
     for (let attempt = 1; attempt <= retries; attempt += 1) {
       const runtime = await this.ensureRuntime(mode);
       try {
+        await this.syncRuntimeProcessor(runtime, processorId);
         return await this.requestJsonByBaseUrl<T>(runtime.baseUrl, path, {
           init,
           timeoutMs,
@@ -789,6 +920,39 @@ export class LocalTranscriptionSidecarManager {
 
     this.runtimes.delete(mode);
     await runtime.child.kill().catch(() => {});
+  }
+
+  private async syncRuntimeProcessor(
+    runtime: SidecarRuntime,
+    processorId?: string,
+  ): Promise<void> {
+    if (
+      !processorId ||
+      !processorId.startsWith(`${runtime.mode}:`) ||
+      runtime.selectedProcessorId === processorId
+    ) {
+      return;
+    }
+
+    const response =
+      await this.requestJsonByBaseUrl<SidecarSelectedProcessorResponse>(
+        runtime.baseUrl,
+        "/v1/processors/selected",
+        {
+          init: {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ processorId }),
+          },
+        },
+      );
+
+    runtime.selectedProcessorId = response.processor.id;
+    if (response.processor.id !== processorId) {
+      throw new SidecarRequestError(
+        `Sidecar selected unexpected processor '${response.processor.id}'`,
+      );
+    }
   }
 
   private async resolveModelsDir(): Promise<string> {

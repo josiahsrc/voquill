@@ -15,6 +15,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import {
   deleteLocalTranscriptionModel,
   downloadLocalTranscriptionModel,
+  refreshLocalTranscriptionProcessors,
   refreshLocalTranscriptionModelStatuses,
 } from "../../actions/settings-local-transcription.actions";
 import { showErrorSnackbar } from "../../actions/app.actions";
@@ -34,9 +35,8 @@ import { getAllowsChangeTranscription } from "../../utils/enterprise.utils";
 import { formatSize } from "../../utils/format.utils";
 import { type LocalSidecarDownloadSnapshot } from "../../utils/local-transcription-sidecar.utils";
 import {
-  isGpuPreferredTranscriptionDevice,
-  supportsGpuTranscriptionDevice,
   type LocalWhisperModel,
+  normalizeTranscriptionDevice,
   normalizeLocalWhisperModel,
 } from "../../utils/local-transcription.utils";
 import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
@@ -125,9 +125,7 @@ export const AITranscriptionConfiguration = ({
   const allowChange = useAppStore(getAllowsChangeTranscription);
   const localTranscriptionConfig = transcription.localModelManagement;
 
-  const preferGpu = isGpuPreferredTranscriptionDevice(transcription.device);
-  const supportsGpuDevice = supportsGpuTranscriptionDevice();
-  const deviceValue = preferGpu ? "gpu" : CPU_DEVICE_VALUE;
+  const deviceValue = normalizeTranscriptionDevice(transcription.device);
   const modelValue = normalizeLocalWhisperModel(transcription.modelSize);
   const modelDownloadSnapshot =
     localTranscriptionConfig.modelDownloads[modelValue];
@@ -139,6 +137,47 @@ export const AITranscriptionConfiguration = ({
     modelValue,
   );
   const showInlineModelDownloadAction = !modelSelectable;
+
+  useEffect(() => {
+    if (transcription.mode !== "local") {
+      return;
+    }
+
+    void refreshLocalTranscriptionProcessors();
+  }, [transcription.mode]);
+
+  useEffect(() => {
+    if (transcription.mode !== "local") {
+      return;
+    }
+
+    if (!localTranscriptionConfig.processorsLoaded) {
+      return;
+    }
+
+    if (localTranscriptionConfig.availableProcessors.length === 0) {
+      return;
+    }
+
+    if (
+      localTranscriptionConfig.availableProcessors.some(
+        (processor) => processor.id === deviceValue,
+      )
+    ) {
+      return;
+    }
+
+    const fallbackProcessor =
+      localTranscriptionConfig.availableProcessors[0]?.id || CPU_DEVICE_VALUE;
+    if (fallbackProcessor !== deviceValue) {
+      void setPreferredTranscriptionDevice(fallbackProcessor);
+    }
+  }, [
+    transcription.mode,
+    deviceValue,
+    localTranscriptionConfig.availableProcessors,
+    localTranscriptionConfig.processorsLoaded,
+  ]);
 
   useEffect(() => {
     if (transcription.mode !== "local") {
@@ -268,26 +307,33 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          {supportsGpuDevice && (
-            <FormControl fullWidth size="small" sx={{ position: "relative" }}>
-              <InputLabel id="processing-device-label">
-                <FormattedMessage defaultMessage="Processing device" />
-              </InputLabel>
-              <Select
-                labelId="processing-device-label"
-                label={<FormattedMessage defaultMessage="Processing device" />}
-                value={deviceValue}
-                onChange={(event) => handleDeviceChange(event.target.value)}
-              >
-                <MenuItem value={CPU_DEVICE_VALUE}>
-                  <FormattedMessage defaultMessage="CPU processing" />
+          <FormControl fullWidth size="small" sx={{ position: "relative" }}>
+            <InputLabel id="processing-device-label">
+              <FormattedMessage defaultMessage="Processing device" />
+            </InputLabel>
+            <Select
+              labelId="processing-device-label"
+              label={<FormattedMessage defaultMessage="Processing device" />}
+              value={deviceValue}
+              onChange={(event) => handleDeviceChange(event.target.value)}
+              disabled={localTranscriptionConfig.processorsLoading}
+            >
+              {(localTranscriptionConfig.availableProcessors.length > 0
+                ? localTranscriptionConfig.availableProcessors
+                : [
+                    {
+                      id: CPU_DEVICE_VALUE,
+                      name: "CPU",
+                      kind: "cpu" as const,
+                    },
+                  ]
+              ).map((processor) => (
+                <MenuItem key={processor.id} value={processor.id}>
+                  {processor.name}
                 </MenuItem>
-                <MenuItem value="gpu">
-                  <FormattedMessage defaultMessage="GPU acceleration (auto fallback)" />
-                </MenuItem>
-              </Select>
-            </FormControl>
-          )}
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControl fullWidth size="small">
             <InputLabel id="model-size-label">
