@@ -2,6 +2,12 @@
   "productName": "Voquill GPU (dev)",
   "identifier": "com.voquill.desktop.gpu.dev",
   "mainBinaryName": "Voquill GPU (dev)",
+  "bundle": {
+    "externalBin": [
+      "binaries/rust-transcription-cpu",
+      "binaries/rust-transcription-gpu"
+    ]
+  },
   "plugins": {
     "updater": {
       "endpoints": [

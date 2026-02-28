@@ -72,7 +72,9 @@ fn main() {
                     || err_str.contains("GPU")
                 {
                     eprintln!("[startup] This appears to be a GPU/graphics driver issue.");
-                    eprintln!("[startup] Try setting VOQUILL_WHISPER_DISABLE_GPU=1 to disable GPU acceleration.");
+                    eprintln!(
+                        "[startup] Local transcription can fall back to CPU from Settings if GPU acceleration is unstable."
+                    );
                 }
                 std::process::exit(1);
             }
@@ -86,7 +88,9 @@ fn main() {
             } else {
                 eprintln!("[startup] Panic message: <unknown>");
             }
-            eprintln!("[startup] If this is a GPU-related crash, try setting VOQUILL_WHISPER_DISABLE_GPU=1");
+            eprintln!(
+                "[startup] If this is GPU-related, switch local transcription to CPU in Settings."
+            );
             std::process::exit(1);
         }
     }

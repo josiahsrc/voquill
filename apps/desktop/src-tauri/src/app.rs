@@ -27,6 +27,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_shell::init())
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -87,40 +88,10 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 use crate::platform::Recorder;
                 use std::sync::Arc;
 
-                let transcriber_state = crate::state::TranscriberState::new();
-
                 let recorder: Arc<dyn Recorder> =
                     Arc::new(crate::platform::audio::RecordingManager::new());
 
                 app.manage(recorder);
-                app.manage(transcriber_state);
-
-                let pool_for_bg = pool.clone();
-                let app_handle_for_bg = app_handle.clone();
-                tauri::async_runtime::spawn(async move {
-                    let transcription_mode =
-                        crate::db::preferences_queries::fetch_transcription_mode(pool_for_bg)
-                            .await
-                            .ok()
-                            .flatten();
-
-                    let should_init_whisper =
-                        matches!(transcription_mode.as_deref(), None | Some("local"));
-
-                    if should_init_whisper {
-                        eprintln!("[app] Transcription mode is local or unset, initializing Whisper in background...");
-                        if let Err(err) =
-                            initialize_transcriber_background(&app_handle_for_bg).await
-                        {
-                            eprintln!("[app] Background Whisper initialization failed: {err}");
-                        }
-                    } else {
-                        eprintln!(
-                            "[app] Transcription mode is '{}', skipping Whisper initialization",
-                            transcription_mode.as_deref().unwrap_or("unknown")
-                        );
-                    }
-                });
 
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
@@ -191,7 +162,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::store_transcription_audio,
             crate::commands::storage_upload_data,
             crate::commands::storage_get_download_url,
-            crate::commands::transcribe_audio,
             crate::commands::surface_main_window,
             crate::commands::set_toast_overlay_click_through,
             crate::commands::set_agent_overlay_click_through,
@@ -231,37 +201,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,
-            crate::commands::initialize_local_transcriber,
             crate::commands::read_enterprise_target,
             crate::commands::get_keyboard_language,
         ])
-}
-
-async fn initialize_transcriber_background(app: &tauri::AppHandle) -> Result<(), String> {
-    use std::sync::Arc;
-    use tauri::Manager;
-
-    let transcriber_state = app.state::<crate::state::TranscriberState>();
-    if transcriber_state.is_initialized() {
-        return Ok(());
-    }
-
-    let default_model_size = crate::system::models::WhisperModelSize::default();
-    let app_clone = app.clone();
-    let model_path = tauri::async_runtime::spawn_blocking(move || {
-        crate::system::models::ensure_whisper_model(&app_clone, default_model_size)
-            .map_err(|err| err.to_string())
-    })
-    .await
-    .map_err(|err| err.to_string())??;
-
-    let new_transcriber: Arc<dyn crate::platform::Transcriber> = Arc::new(
-        crate::platform::whisper::WhisperTranscriber::new(&model_path)
-            .map_err(|err| format!("Failed to initialize Whisper transcriber: {err}"))?,
-    );
-
-    let _ = transcriber_state.initialize(new_transcriber);
-    eprintln!("[app] Background Whisper initialization completed successfully");
-
-    Ok(())
 }

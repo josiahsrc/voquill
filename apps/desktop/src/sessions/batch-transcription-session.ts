@@ -1,4 +1,4 @@
-import { showErrorSnackbar } from "../actions/app.actions";
+import { showToast } from "../actions/toast.actions";
 import { transcribeAudio } from "../actions/transcribe.actions";
 import {
   StopRecordingResponse,
@@ -56,13 +56,14 @@ export class BatchTranscriptionSession implements TranscriptionSession {
       };
     } catch (error) {
       getLogger().error(`Failed to transcribe audio: ${error}`);
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to transcribe audio. Please try again.";
+      const message = String(error);
       if (message) {
         warnings.push(`Transcription failed: ${message}`);
-        showErrorSnackbar(message);
+        showToast({
+          title: "Transcription failed",
+          message,
+          toastType: "error",
+        });
       }
 
       return {

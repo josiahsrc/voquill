@@ -23,15 +23,6 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
     log_content.push_str(&format!("Family: {}\n", std::env::consts::FAMILY));
     log_content.push('\n');
 
-    // Environment variables related to GPU
-    log_content.push_str("=== Environment Variables ===\n");
-    if let Ok(val) = std::env::var("VOQUILL_WHISPER_DISABLE_GPU") {
-        log_content.push_str(&format!("VOQUILL_WHISPER_DISABLE_GPU: {}\n", val));
-    } else {
-        log_content.push_str("VOQUILL_WHISPER_DISABLE_GPU: <not set>\n");
-    }
-    log_content.push('\n');
-
     // GPU Information
     log_content.push_str("=== GPU Detection ===\n");
     log_content.push('\n');

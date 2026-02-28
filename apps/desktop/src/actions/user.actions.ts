@@ -8,14 +8,20 @@ import {
 } from "@repo/types";
 import dayjs from "dayjs";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
+import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
 import {
+  CPU_DEVICE_VALUE,
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
+import {
+  isGpuPreferredTranscriptionDevice,
+  normalizeLocalWhisperModel,
+} from "../utils/local-transcription.utils";
 import { getLogger } from "../utils/log.utils";
 import {
   getMyEffectiveUserId,
@@ -339,6 +345,9 @@ export const setPreferredTranscriptionMode = async (
   });
 
   await persistAiPreferences();
+  if (mode === "local") {
+    await prefetchLocalTranscriptionModel();
+  }
 };
 
 export const setAllModesToCloud = async (): Promise<void> => {
@@ -364,11 +373,17 @@ export const setPreferredTranscriptionApiKeyId = async (
 export const setPreferredTranscriptionDevice = async (
   device: string,
 ): Promise<void> => {
+  const normalizedDevice =
+    device === CPU_DEVICE_VALUE ? CPU_DEVICE_VALUE : "gpu";
+
   produceAppState((draft) => {
-    draft.settings.aiTranscription.device = device;
+    draft.settings.aiTranscription.device = normalizedDevice;
+    draft.settings.aiTranscription.gpuEnumerationEnabled =
+      normalizedDevice !== CPU_DEVICE_VALUE;
   });
 
   await persistAiPreferences();
+  await prefetchLocalTranscriptionModel();
 };
 
 export const setPreferredTranscriptionModelSize = async (
@@ -379,6 +394,27 @@ export const setPreferredTranscriptionModelSize = async (
   });
 
   await persistAiPreferences();
+  await prefetchLocalTranscriptionModel();
+};
+
+const prefetchLocalTranscriptionModel = async (): Promise<void> => {
+  const state = getAppState();
+  if (state.settings.aiTranscription.mode !== "local") {
+    return;
+  }
+
+  const model = normalizeLocalWhisperModel(
+    state.settings.aiTranscription.modelSize,
+  );
+  const preferGpu = isGpuPreferredTranscriptionDevice(
+    state.settings.aiTranscription.device,
+  );
+
+  await getLocalTranscriptionSidecarManager()
+    .prefetchModel({ model, preferGpu })
+    .catch((error) => {
+      getLogger().warning(`Failed to prefetch transcription model: ${error}`);
+    });
 };
 
 export const setGpuEnumerationEnabled = async (
