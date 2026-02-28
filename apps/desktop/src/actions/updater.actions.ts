@@ -41,11 +41,9 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
       update = await check();
     } catch (error) {
       console.error("Failed to check for updates", error);
-      const message =
-        error instanceof Error ? error.message : "Unable to check for updates.";
       produceAppState((draft) => {
         draft.updater.status = "error";
-        draft.updater.errorMessage = message;
+        draft.updater.errorMessage = String(error);
       });
       return false;
     }
@@ -232,11 +230,9 @@ export const installAvailableUpdate = async (): Promise<void> => {
       succeeded = true;
     } catch (error) {
       console.error("Failed to download or install update", error);
-      const message =
-        error instanceof Error ? error.message : "Failed to install update.";
       produceAppState((draft) => {
         draft.updater.status = "error";
-        draft.updater.errorMessage = message;
+        draft.updater.errorMessage = String(error);
         draft.updater.dialogOpen = true;
         draft.updater.downloadProgress = null;
         draft.updater.downloadedBytes = null;
