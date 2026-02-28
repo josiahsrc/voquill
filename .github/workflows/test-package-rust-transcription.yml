@@ -66,15 +66,7 @@ jobs:
           "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
       - name: Run non-ignored integration tests
-        run: |
-          cargo test \
-            --manifest-path packages/rust_transcription/Cargo.toml \
-            --test sidecar_integration \
-            -- --nocapture
+        run: cargo test --manifest-path packages/rust_transcription/Cargo.toml --test sidecar_integration -- --nocapture
 
       - name: Run ignored end-to-end integration tests
-        run: |
-          cargo test \
-            --manifest-path packages/rust_transcription/Cargo.toml \
-            --test sidecar_integration \
-            -- --ignored --nocapture
+        run: cargo test --manifest-path packages/rust_transcription/Cargo.toml --test sidecar_integration -- --ignored --nocapture
