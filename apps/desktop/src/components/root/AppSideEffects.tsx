@@ -339,6 +339,7 @@ export const AppSideEffects = () => {
       company: cloudUser?.company ?? undefined,
       title: cloudUser?.title ?? undefined,
       referralSource: cloudUser?.referralSource ?? undefined,
+      isEnterprise,
     });
 
     mp.register({
@@ -362,7 +363,16 @@ export const AppSideEffects = () => {
     }
 
     prevUserIdRef.current = currentUserId;
-  }, [initialized, auth, member, cloudUser, localUser, prefs, versionData]);
+  }, [
+    initialized,
+    auth,
+    member,
+    cloudUser,
+    localUser,
+    prefs,
+    versionData,
+    isEnterprise,
+  ]);
 
   // You cannot refresh the page in Tauri, here's a hotkey to help with that
   useKeyDownHandler({
