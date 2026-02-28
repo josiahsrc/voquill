@@ -1,10 +1,10 @@
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { fetch } from "@tauri-apps/plugin-http";
-import { getLogger } from "./log.utils";
 import {
   LOCAL_WHISPER_MODELS,
   LocalWhisperModel,
 } from "./local-transcription.utils";
+import { getLogger } from "./log.utils";
 import { ShellChildProcess, spawnShellSidecar } from "./tauri-shell.utils";
 
 type SidecarMode = "cpu" | "gpu";
@@ -67,10 +67,8 @@ export type LocalSidecarTranscribeOutput = {
 };
 
 const SIDECAR_HOST = "127.0.0.1";
-const SIDECAR_PORT_BY_MODE: Record<SidecarMode, number> = {
-  cpu: 7771,
-  gpu: 7772,
-};
+const SIDECAR_DYNAMIC_PORT = "0";
+const SIDECAR_BOUND_PORT_PREFIX = "RUST_TRANSCRIPTION_BOUND_PORT=";
 const SIDECAR_HEALTH_TIMEOUT_MS = 2_000;
 const SIDECAR_STARTUP_TIMEOUT_MS = 15_000;
 const SIDECAR_STARTUP_POLL_INTERVAL_MS = 150;
@@ -314,13 +312,49 @@ export class LocalTranscriptionSidecarManager {
   }
 
   private async startRuntime(mode: SidecarMode): Promise<SidecarRuntime> {
-    const port = SIDECAR_PORT_BY_MODE[mode];
     const binaryName =
       mode === "gpu"
         ? "binaries/rust-transcription-gpu"
         : "binaries/rust-transcription-cpu";
     const modelsDir = await this.resolveModelsDir();
-    const baseUrl = `http://${SIDECAR_HOST}:${port}`;
+    let stdoutBuffer = "";
+    let resolveBoundPort: ((port: number) => void) | null = null;
+    let rejectBoundPort: ((reason?: unknown) => void) | null = null;
+    const boundPortPromise = new Promise<number>((resolve, reject) => {
+      resolveBoundPort = resolve;
+      rejectBoundPort = reject;
+    });
+    const failBoundPort = (message: string): void => {
+      if (!rejectBoundPort) {
+        return;
+      }
+      rejectBoundPort(new Error(message));
+      resolveBoundPort = null;
+      rejectBoundPort = null;
+    };
+    const handleStdout = (chunk: string): void => {
+      if (!resolveBoundPort) {
+        return;
+      }
+
+      stdoutBuffer += chunk;
+      const lines = stdoutBuffer.split(/\r?\n/);
+      stdoutBuffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const port = this.parseBoundPortLine(line);
+        getLogger().info(
+          `[local-sidecar:${mode}] ${line} -> port=${port ?? "no port"}`,
+        );
+        if (port === null) {
+          continue;
+        }
+        resolveBoundPort(port);
+        resolveBoundPort = null;
+        rejectBoundPort = null;
+        return;
+      }
+    };
 
     let childPid = -1;
     const child = await spawnShellSidecar({
@@ -328,23 +362,34 @@ export class LocalTranscriptionSidecarManager {
       options: {
         env: {
           RUST_TRANSCRIPTION_HOST: SIDECAR_HOST,
-          RUST_TRANSCRIPTION_PORT: String(port),
+          RUST_TRANSCRIPTION_PORT: SIDECAR_DYNAMIC_PORT,
           RUST_TRANSCRIPTION_MODELS_DIR: modelsDir,
         },
       },
-      onClose: () => {
+      onStdout: handleStdout,
+      onClose: (payload) => {
         const runtime = this.runtimes.get(mode);
         if (runtime?.child.pid === childPid) {
           this.runtimes.delete(mode);
         }
+        failBoundPort(
+          `${mode.toUpperCase()} sidecar exited before startup completed (code=${payload.code ?? "unknown"}, signal=${payload.signal ?? "unknown"})`,
+        );
       },
       onError: (message) => {
         getLogger().warning(`[local-sidecar:${mode}] ${message}`);
+        failBoundPort(
+          `${mode.toUpperCase()} sidecar failed before startup completed: ${message}`,
+        );
       },
     });
     childPid = child.pid;
 
+    let port = 0;
+    let baseUrl = "";
     try {
+      port = await this.waitForBoundPort(mode, boundPortPromise);
+      baseUrl = `http://${SIDECAR_HOST}:${port}`;
       await this.waitUntilHealthy(baseUrl, mode);
     } catch (error) {
       await child.kill().catch(() => {});
@@ -367,6 +412,38 @@ export class LocalTranscriptionSidecarManager {
     );
 
     return runtime;
+  }
+
+  private parseBoundPortLine(line: string): number | null {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith(SIDECAR_BOUND_PORT_PREFIX)) {
+      return null;
+    }
+
+    const portValue = trimmed.slice(SIDECAR_BOUND_PORT_PREFIX.length).trim();
+    const port = Number.parseInt(portValue, 10);
+    if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
+      return null;
+    }
+
+    return port;
+  }
+
+  private async waitForBoundPort(
+    mode: SidecarMode,
+    boundPortPromise: Promise<number>,
+  ): Promise<number> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(
+          new Error(
+            `Timed out waiting for ${mode.toUpperCase()} transcription sidecar port announcement`,
+          ),
+        );
+      }, SIDECAR_STARTUP_TIMEOUT_MS);
+    });
+
+    return await Promise.race([boundPortPromise, timeoutPromise]);
   }
 
   private async waitUntilHealthy(
