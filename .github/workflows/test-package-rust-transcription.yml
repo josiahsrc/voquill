@@ -1,0 +1,54 @@
+name: Test Package Rust Transcription
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "packages/rust_transcription/**"
+      - "apps/firebase/functions/assets/**"
+      - ".github/workflows/test-package-rust-transcription.yml"
+
+jobs:
+  integration-tests:
+    name: Rust Transcription Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            packages/rust_transcription -> packages/rust_transcription/target
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            pkg-config \
+            clang \
+            libclang-dev
+
+      - name: Run non-ignored integration tests
+        run: |
+          cargo test \
+            --manifest-path packages/rust_transcription/Cargo.toml \
+            --test sidecar_integration \
+            -- --nocapture
+
+      - name: Run ignored end-to-end integration tests
+        run: |
+          cargo test \
+            --manifest-path packages/rust_transcription/Cargo.toml \
+            --test sidecar_integration \
+            -- --ignored --nocapture
