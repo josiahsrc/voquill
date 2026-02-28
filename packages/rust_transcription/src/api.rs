@@ -2,7 +2,7 @@ use std::io::ErrorKind;
 use std::path::Path as FsPath;
 use std::time::Instant;
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
@@ -24,6 +24,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/v1/models/:model", delete(delete_model))
         .route("/v1/models/:model/status", get(get_model_status))
         .route("/v1/transcriptions", post(transcribe))
+        .layer(DefaultBodyLimit::max(250 * 1024 * 1024))
         .with_state(state)
 }
 

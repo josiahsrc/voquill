@@ -162,9 +162,9 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
 }
 
 export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
-  // Local whisper can handle longer segments, but 120s is a safe default
+  // Local whisper can handle longer segments, but 60s is a safe default
   protected getSegmentDurationSec(): number {
-    return 120;
+    return 60;
   }
 
   protected getOverlapDurationSec(): number {
