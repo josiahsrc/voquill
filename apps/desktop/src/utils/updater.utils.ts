@@ -41,7 +41,9 @@ export const isReadOnlyFilesystemInstallError = (
   const normalized = message.toLowerCase();
   return (
     normalized.includes("read-only file system") ||
-    normalized.includes("os error 30")
+    normalized.includes("os error 30") ||
+    normalized.includes("cross-device link") ||
+    normalized.includes("os error 18")
   );
 };
 
