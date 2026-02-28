@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::compute::ComputeMode;
+use serde::Serialize;
 use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
 };
@@ -17,12 +18,27 @@ pub struct TranscriptionInput {
     pub sample_rate: u32,
     pub language: Option<String>,
     pub initial_prompt: Option<String>,
+    pub device_id: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct TranscriptionOutput {
     pub text: String,
     pub inference_device: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ComputeDevice {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone)]
+struct ResolvedDevice {
+    id: String,
+    #[cfg(feature = "gpu")]
+    gpu_device: i32,
 }
 
 #[derive(Clone)]
@@ -47,6 +63,13 @@ impl TranscriptionEngine {
         tokio::task::spawn_blocking(move || engine.transcribe_blocking(input))
             .await
             .map_err(|err| format!("transcription task failed: {err}"))?
+    }
+
+    pub async fn list_devices(&self) -> Result<Vec<ComputeDevice>, String> {
+        let engine = self.clone();
+        tokio::task::spawn_blocking(move || engine.list_devices_blocking())
+            .await
+            .map_err(|err| format!("device listing task failed: {err}"))?
     }
 
     pub async fn validate_model(&self, model_path: PathBuf) -> Result<bool, String> {
@@ -83,7 +106,8 @@ impl TranscriptionEngine {
             return Err("unable to resample audio".to_string());
         }
 
-        let context = self.context_for_model(&input.model_path)?;
+        let device = self.resolve_device_blocking(input.device_id.as_deref())?;
+        let context = self.context_for_model(&input.model_path, &device)?;
         let mut state = context
             .create_state()
             .map_err(|err| format!("failed to create whisper state: {err}"))?;
@@ -139,17 +163,23 @@ impl TranscriptionEngine {
             .to_str()
             .ok_or_else(|| "model path is not valid UTF-8".to_string())?;
 
-        let params = self.context_params()?;
+        let device = self.resolve_device_blocking(None)?;
+        let params = self.context_params(&device)?;
         WhisperContext::new_with_params(model_path_str, params)
             .map(|_| true)
             .map_err(|err| format!("failed to load model: {err}"))
     }
 
-    fn context_for_model(&self, model_path: &Path) -> Result<Arc<WhisperContext>, String> {
-        let key = model_path
+    fn context_for_model(
+        &self,
+        model_path: &Path,
+        device: &ResolvedDevice,
+    ) -> Result<Arc<WhisperContext>, String> {
+        let model_key = model_path
             .to_str()
             .ok_or_else(|| "model path is not valid UTF-8".to_string())?
             .to_string();
+        let key = format!("{model_key}#{}", device.id);
 
         if let Some(existing) = self
             .context_cache
@@ -161,8 +191,8 @@ impl TranscriptionEngine {
             return Ok(existing);
         }
 
-        let params = self.context_params()?;
-        let context = WhisperContext::new_with_params(&key, params)
+        let params = self.context_params(device)?;
+        let context = WhisperContext::new_with_params(&model_key, params)
             .map_err(|err| format!("failed to initialize whisper context: {err}"))?;
 
         let context = Arc::new(context);
@@ -174,10 +204,14 @@ impl TranscriptionEngine {
         Ok(cache.entry(key).or_insert_with(|| context.clone()).clone())
     }
 
-    fn context_params(&self) -> Result<WhisperContextParameters<'_>, String> {
+    fn context_params(
+        &self,
+        device: &ResolvedDevice,
+    ) -> Result<WhisperContextParameters<'_>, String> {
         let mut params = WhisperContextParameters::default();
         match self.mode {
             ComputeMode::Cpu => {
+                let _ = device;
                 params.use_gpu(false);
                 Ok(params)
             }
@@ -185,7 +219,101 @@ impl TranscriptionEngine {
                 #[cfg(feature = "gpu")]
                 {
                     params.use_gpu(true);
+                    params.gpu_device(device.gpu_device);
                     Ok(params)
+                }
+
+                #[cfg(not(feature = "gpu"))]
+                {
+                    Err("gpu mode requested but binary was built without gpu feature".to_string())
+                }
+            }
+        }
+    }
+
+    fn list_devices_blocking(&self) -> Result<Vec<ComputeDevice>, String> {
+        match self.mode {
+            ComputeMode::Cpu => Ok(vec![ComputeDevice {
+                id: "cpu:0".to_string(),
+                name: "CPU".to_string(),
+            }]),
+            ComputeMode::Gpu => {
+                #[cfg(feature = "gpu")]
+                {
+                    let gpu_devices = std::panic::catch_unwind(vulkan::list_devices)
+                        .map_err(|_| "vulkan device enumeration panicked".to_string())?;
+
+                    Ok(gpu_devices
+                        .into_iter()
+                        .map(|device| ComputeDevice {
+                            id: format!("gpu:{}", device.id),
+                            name: device.name,
+                        })
+                        .collect())
+                }
+
+                #[cfg(not(feature = "gpu"))]
+                {
+                    Err("gpu mode requested but binary was built without gpu feature".to_string())
+                }
+            }
+        }
+    }
+
+    fn resolve_device_blocking(
+        &self,
+        requested_device_id: Option<&str>,
+    ) -> Result<ResolvedDevice, String> {
+        let devices = self.list_devices_blocking()?;
+        if devices.is_empty() {
+            return Err(format!("no {} devices available", self.mode.as_str()));
+        }
+
+        let selected = if let Some(device_id) = requested_device_id
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            devices
+                .into_iter()
+                .find(|device| device.id == device_id)
+                .ok_or_else(|| format!("unsupported deviceId '{device_id}'"))?
+        } else {
+            devices
+                .into_iter()
+                .next()
+                .expect("checked non-empty devices")
+        };
+
+        match self.mode {
+            ComputeMode::Cpu => {
+                #[cfg(feature = "gpu")]
+                {
+                    Ok(ResolvedDevice {
+                        id: selected.id,
+                        gpu_device: 0,
+                    })
+                }
+
+                #[cfg(not(feature = "gpu"))]
+                {
+                    Ok(ResolvedDevice { id: selected.id })
+                }
+            }
+            ComputeMode::Gpu => {
+                #[cfg(feature = "gpu")]
+                {
+                    let (_, index) = selected
+                        .id
+                        .split_once(':')
+                        .ok_or_else(|| format!("invalid gpu device id '{}'", selected.id))?;
+                    let gpu_device = index
+                        .parse::<i32>()
+                        .map_err(|_| format!("invalid gpu device id '{}'", selected.id))?;
+
+                    Ok(ResolvedDevice {
+                        id: selected.id,
+                        gpu_device,
+                    })
                 }
 
                 #[cfg(not(feature = "gpu"))]

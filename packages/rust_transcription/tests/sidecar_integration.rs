@@ -66,6 +66,7 @@ struct TranscribeRequest {
     sample_rate: u32,
     language: Option<String>,
     initial_prompt: Option<String>,
+    device_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -73,6 +74,19 @@ struct TranscribeRequest {
 struct TranscribeResponse {
     text: String,
     inference_device: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeviceDetails {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DevicesResponse {
+    devices: Vec<DeviceDetails>,
 }
 
 struct RunningSidecar {
@@ -105,6 +119,35 @@ impl RunningSidecar {
         for (key, value) in extra_env {
             command.env(key, value);
         }
+
+        let child = command.spawn()?;
+
+        let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
+
+        let mut sidecar = Self {
+            child,
+            client,
+            base_url,
+            models_dir,
+        };
+
+        sidecar.wait_until_healthy().await?;
+        Ok(sidecar)
+    }
+
+    #[cfg(feature = "gpu")]
+    async fn start_gpu() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let port = reserve_local_port()?;
+        let models_dir = tempfile::tempdir()?;
+        let base_url = format!("http://127.0.0.1:{port}");
+
+        let mut command = Command::new(env!("CARGO_BIN_EXE_rust-transcription-gpu"));
+        command
+            .env("RUST_TRANSCRIPTION_HOST", "127.0.0.1")
+            .env("RUST_TRANSCRIPTION_PORT", port.to_string())
+            .env("RUST_TRANSCRIPTION_MODELS_DIR", models_dir.path())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit());
 
         let child = command.spawn()?;
 
@@ -198,6 +241,7 @@ async fn cpu_sidecar_health_and_missing_model_error_flow(
             sample_rate: 16_000,
             language: Some("en".to_string()),
             initial_prompt: None,
+            device_id: None,
         })
         .send()
         .await?;
@@ -207,6 +251,73 @@ async fn cpu_sidecar_health_and_missing_model_error_flow(
     let body = response.json::<ApiErrorEnvelope>().await?;
     assert_eq!(body.error.code, "model_not_downloaded");
     assert!(body.error.message.contains("download"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn cpu_sidecar_lists_cpu_device_and_accepts_device_id(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let sidecar = RunningSidecar::start_cpu().await?;
+
+    let devices = sidecar
+        .client
+        .get(sidecar.url("/v1/devices"))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<DevicesResponse>()
+        .await?;
+
+    assert_eq!(devices.devices.len(), 1);
+    assert_eq!(devices.devices[0].id, "cpu:0");
+    assert_eq!(devices.devices[0].name, "CPU");
+
+    let response = sidecar
+        .client
+        .post(sidecar.url("/v1/transcriptions"))
+        .json(&TranscribeRequest {
+            model: "tiny".to_string(),
+            samples: vec![0.1_f32, -0.1_f32, 0.0_f32],
+            sample_rate: 16_000,
+            language: Some("en".to_string()),
+            initial_prompt: None,
+            device_id: Some(devices.devices[0].id.clone()),
+        })
+        .send()
+        .await?;
+
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let body = response.json::<ApiErrorEnvelope>().await?;
+    assert_eq!(body.error.code, "model_not_downloaded");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn cpu_sidecar_rejects_invalid_device_id(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let sidecar = RunningSidecar::start_cpu().await?;
+    tokio::fs::write(sidecar.model_path(TINY_MODEL_FILENAME), b"fake model bytes").await?;
+
+    let response = sidecar
+        .client
+        .post(sidecar.url("/v1/transcriptions"))
+        .json(&TranscribeRequest {
+            model: "tiny".to_string(),
+            samples: vec![0.1_f32, -0.1_f32, 0.0_f32],
+            sample_rate: 16_000,
+            language: Some("en".to_string()),
+            initial_prompt: None,
+            device_id: Some("cpu:999".to_string()),
+        })
+        .send()
+        .await?;
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = response.json::<ApiErrorEnvelope>().await?;
+    assert_eq!(body.error.code, "invalid_device");
+    assert!(body.error.message.contains("unsupported deviceId"));
 
     Ok(())
 }
@@ -223,7 +334,11 @@ async fn cpu_sidecar_delete_model_removes_model_and_partial_fragments(
     tokio::fs::write(&partial_path, b"partial bytes").await?;
     tokio::fs::write(&keep_path, b"should stay").await?;
 
-    let response = sidecar.client.delete(sidecar.url("/v1/models/tiny")).send().await?;
+    let response = sidecar
+        .client
+        .delete(sidecar.url("/v1/models/tiny"))
+        .send()
+        .await?;
     assert_eq!(response.status(), StatusCode::OK);
 
     let status = response.json::<ModelStatusResponse>().await?;
@@ -264,7 +379,11 @@ async fn cpu_sidecar_delete_model_rejects_while_download_is_active(
         DownloadJobStatus::Pending | DownloadJobStatus::Running
     ));
 
-    let response = sidecar.client.delete(sidecar.url("/v1/models/tiny")).send().await?;
+    let response = sidecar
+        .client
+        .delete(sidecar.url("/v1/models/tiny"))
+        .send()
+        .await?;
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     let body = response.json::<ApiErrorEnvelope>().await?;
@@ -350,6 +469,21 @@ async fn cpu_sidecar_end_to_end_download_and_transcribe(
             sample_rate,
             language: Some("en".to_string()),
             initial_prompt: Some("Transcribe clearly.".to_string()),
+            device_id: Some(
+                sidecar
+                    .client
+                    .get(sidecar.url("/v1/devices"))
+                    .send()
+                    .await?
+                    .error_for_status()?
+                    .json::<DevicesResponse>()
+                    .await?
+                    .devices
+                    .first()
+                    .ok_or("missing cpu device")?
+                    .id
+                    .clone(),
+            ),
         })
         .send()
         .await?
@@ -359,6 +493,40 @@ async fn cpu_sidecar_end_to_end_download_and_transcribe(
 
     assert!(!transcription.text.trim().is_empty());
     assert_eq!(transcription.inference_device, "CPU");
+
+    Ok(())
+}
+
+#[cfg(feature = "gpu")]
+#[tokio::test]
+#[ignore = "requires Vulkan-capable GPU runtime"]
+async fn gpu_sidecar_lists_gpu_devices() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let sidecar = RunningSidecar::start_gpu().await?;
+
+    let health = sidecar
+        .client
+        .get(sidecar.url("/health"))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<HealthResponse>()
+        .await?;
+    assert_eq!(health.mode, "gpu");
+
+    let devices = sidecar
+        .client
+        .get(sidecar.url("/v1/devices"))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<DevicesResponse>()
+        .await?;
+
+    assert!(!devices.devices.is_empty());
+    assert!(devices
+        .devices
+        .iter()
+        .all(|device| device.id.starts_with("gpu:")));
 
     Ok(())
 }
@@ -432,10 +600,7 @@ fn load_wav_as_f32_mono(
 
 async fn start_slow_download_server(
     response_delay: Duration,
-) -> Result<
-    (String, tokio::task::JoinHandle<()>),
-    Box<dyn std::error::Error + Send + Sync>,
-> {
+) -> Result<(String, tokio::task::JoinHandle<()>), Box<dyn std::error::Error + Send + Sync>> {
     let listener = TokioTcpListener::bind("127.0.0.1:0").await?;
     let addr = listener.local_addr()?;
     let url = format!("http://{addr}/tiny.bin");

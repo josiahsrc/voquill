@@ -8,6 +8,7 @@ It exposes one REST interface for both CPU and GPU binaries:
 - `GET /v1/models/{model}/download/{jobId}`
 - `DELETE /v1/models/{model}`
 - `GET /v1/models/{model}/status`
+- `GET /v1/devices`
 - `POST /v1/transcriptions`
 
 Supported models: `tiny`, `base`, `small`, `medium`, `large`, `turbo`.
@@ -108,6 +109,26 @@ Response:
 }
 ```
 
+### `GET /v1/devices`
+
+Returns available compute devices for the running sidecar mode.
+
+- CPU sidecar: returns CPU devices (typically one device: `cpu:0`).
+- GPU sidecar: returns available Vulkan GPU devices (`gpu:{index}`).
+
+Response:
+
+```json
+{
+  "devices": [
+    {
+      "id": "cpu:0",
+      "name": "CPU"
+    }
+  ]
+}
+```
+
 ### `POST /v1/transcriptions`
 
 Request:
@@ -118,9 +139,12 @@ Request:
   "samples": [0.01, -0.02],
   "sampleRate": 16000,
   "language": "en",
-  "initialPrompt": "Glossary: Voquill"
+  "initialPrompt": "Glossary: Voquill",
+  "deviceId": "cpu:0"
 }
 ```
+
+`deviceId` is optional. If omitted, the sidecar uses the first available device from `GET /v1/devices`.
 
 Response:
 

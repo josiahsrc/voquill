@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::errors::ApiError;
 use crate::models::WhisperModel;
 use crate::state::AppState;
-use crate::transcription::TranscriptionInput;
+use crate::transcription::{ComputeDevice, TranscriptionInput};
 
 pub fn create_router(state: AppState) -> Router {
     Router::new()
@@ -23,6 +23,7 @@ pub fn create_router(state: AppState) -> Router {
         )
         .route("/v1/models/:model", delete(delete_model))
         .route("/v1/models/:model/status", get(get_model_status))
+        .route("/v1/devices", get(list_devices))
         .route("/v1/transcriptions", post(transcribe))
         .layer(DefaultBodyLimit::max(250 * 1024 * 1024))
         .with_state(state)
@@ -40,6 +41,22 @@ async fn get_health(State(state): State<AppState>) -> Json<HealthResponse> {
         status: "ok",
         mode: state.config.mode.as_str(),
     })
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DevicesResponse {
+    devices: Vec<ComputeDevice>,
+}
+
+async fn list_devices(State(state): State<AppState>) -> Result<Json<DevicesResponse>, ApiError> {
+    let devices = state
+        .transcriber
+        .list_devices()
+        .await
+        .map_err(|err| ApiError::internal("device_list_failed", err))?;
+
+    Ok(Json(DevicesResponse { devices }))
 }
 
 #[derive(Debug, Deserialize)]
@@ -160,6 +177,7 @@ struct TranscribeRequest {
     sample_rate: u32,
     language: Option<String>,
     initial_prompt: Option<String>,
+    device_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -208,6 +226,7 @@ async fn transcribe(
             sample_rate: request.sample_rate,
             language: request.language,
             initial_prompt: request.initial_prompt,
+            device_id: request.device_id,
         })
         .await
         .map_err(map_transcription_error)?;
@@ -357,6 +376,8 @@ fn map_transcription_error(error: String) -> ApiError {
 
     if lower.contains("sample") || lower.contains("language") || lower.contains("prompt") {
         ApiError::bad_request("invalid_transcription_request", error)
+    } else if lower.contains("device") {
+        ApiError::bad_request("invalid_device", error)
     } else {
         ApiError::internal("transcription_failed", error)
     }
@@ -426,6 +447,22 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri("/v1/models/tiny/status")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn devices_endpoint_returns_ok() {
+        let app = create_router(test_state());
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/devices")
                     .body(Body::empty())
                     .unwrap(),
             )
