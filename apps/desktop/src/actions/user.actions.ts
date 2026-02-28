@@ -90,7 +90,6 @@ export const createDefaultPreferences = (): UserPreferences => ({
   incognitoModeEnabled: false,
   incognitoModeIncludeInStats: false,
   dictationPillVisibility: "while_active",
-  useNewBackend: true,
 });
 
 const updateUserPreferences = async (
@@ -100,8 +99,21 @@ const updateUserPreferences = async (
   const state = getAppState();
   const myUserId = getMyEffectiveUserId(state);
 
-  const existing = getMyUserPreferences(state) ?? createDefaultPreferences();
-  const payload: UserPreferences = { ...existing, userId: myUserId };
+  let existing = getMyUserPreferences(state);
+  if (!existing) {
+    try {
+      existing = await getUserPreferencesRepo().getUserPreferences();
+    } catch (error) {
+      getLogger().error(
+        `Failed to load existing preferences before update: ${error}`,
+      );
+      showErrorSnackbar(saveErrorMessage);
+      throw error;
+    }
+  }
+
+  const safeExisting = existing ?? createDefaultPreferences();
+  const payload: UserPreferences = { ...safeExisting, userId: myUserId };
   updateCallback(payload);
 
   try {
@@ -181,13 +193,30 @@ export const addWordsToCurrentUser = async (
 export const refreshCurrentUser = async (): Promise<void> => {
   try {
     getLogger().verbose("Refreshing current user and preferences");
-    const [user, preferences] = await Promise.all([
+    const [userResult, preferencesResult] = await Promise.allSettled([
       getUserRepo().getMyUser(),
       getUserPreferencesRepo().getUserPreferences(),
     ]);
+
+    const user = userResult.status === "fulfilled" ? userResult.value : null;
+    const hasPreferencesResult = preferencesResult.status === "fulfilled";
+    const preferences = hasPreferencesResult ? preferencesResult.value : null;
+    if (userResult.status === "rejected") {
+      getLogger().warning(`Failed to refresh user: ${userResult.reason}`);
+    }
+    if (preferencesResult.status === "rejected") {
+      getLogger().warning(
+        `Failed to refresh user preferences: ${preferencesResult.reason}`,
+      );
+    }
+
     produceAppState((draft) => {
       if (user) {
         setCurrentUser(draft, user);
+      }
+
+      if (!hasPreferencesResult) {
+        return;
       }
 
       if (preferences) {
@@ -197,7 +226,7 @@ export const refreshCurrentUser = async (): Promise<void> => {
       }
     });
     getLogger().verbose(
-      `User refreshed (hasUser=${!!user}, hasPrefs=${!!preferences})`,
+      `User refreshed (hasUser=${!!user}, hasPrefs=${hasPreferencesResult ? !!preferences : "unavailable"})`,
     );
   } catch (error) {
     getLogger().error(`Failed to refresh user: ${error}`);
@@ -577,10 +606,4 @@ export const markUpgradeDialogSeen = async (): Promise<void> => {
     "Unable to mark upgrade dialog as seen. User not found.",
     "Failed to mark upgrade dialog as seen. Please try again.",
   );
-};
-
-export const setUseNewBackend = async (enabled: boolean): Promise<void> => {
-  await updateUserPreferences((preferences) => {
-    preferences.useNewBackend = enabled;
-  }, "Failed to save backend preference. Please try again.");
 };

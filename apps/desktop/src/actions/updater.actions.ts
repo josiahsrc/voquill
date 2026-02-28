@@ -8,6 +8,10 @@ import { getIntl } from "../i18n/intl";
 import { getAppState, produceAppState } from "../store";
 import { isMacOS } from "../utils/env.utils";
 import { daysToMilliseconds } from "../utils/time.utils";
+import {
+  buildManualMacInstallerUrl,
+  isReadOnlyFilesystemInstallError,
+} from "../utils/updater.utils";
 import { getMyUserPreferences } from "../utils/user.utils";
 import { markSurfaceWindowForNextLaunch } from "../utils/window.utils";
 import { showErrorSnackbar } from "./app.actions";
@@ -31,6 +35,7 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
     produceAppState((draft) => {
       draft.updater.status = "checking";
       draft.updater.errorMessage = null;
+      draft.updater.manualInstallerUrl = null;
       draft.updater.downloadProgress = null;
       draft.updater.downloadedBytes = null;
       draft.updater.totalBytes = null;
@@ -41,11 +46,10 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
       update = await check();
     } catch (error) {
       console.error("Failed to check for updates", error);
-      const message =
-        error instanceof Error ? error.message : "Unable to check for updates.";
       produceAppState((draft) => {
         draft.updater.status = "error";
-        draft.updater.errorMessage = message;
+        draft.updater.errorMessage = String(error);
+        draft.updater.manualInstallerUrl = null;
       });
       return false;
     }
@@ -67,6 +71,7 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
         draft.updater.currentVersion = null;
         draft.updater.releaseDate = null;
         draft.updater.releaseNotes = null;
+        draft.updater.manualInstallerUrl = null;
         draft.updater.errorMessage = null;
         draft.updater.downloadProgress = null;
         draft.updater.downloadedBytes = null;
@@ -100,6 +105,9 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
       draft.updater.availableVersion = update.version;
       draft.updater.releaseDate = update.date ?? null;
       draft.updater.releaseNotes = update.body ?? null;
+      draft.updater.manualInstallerUrl = isMacOS()
+        ? buildManualMacInstallerUrl(update.version, update.rawJson)
+        : null;
       draft.updater.errorMessage = null;
       draft.updater.downloadProgress = null;
       draft.updater.downloadedBytes = null;
@@ -231,18 +239,23 @@ export const installAvailableUpdate = async (): Promise<void> => {
       await update.downloadAndInstall(handleDownloadEvent);
       succeeded = true;
     } catch (error) {
+      const errorMessage = String(error);
+      const shouldUseManualInstaller =
+        isMacOS() && isReadOnlyFilesystemInstallError(errorMessage);
       console.error("Failed to download or install update", error);
-      const message =
-        error instanceof Error ? error.message : "Failed to install update.";
       produceAppState((draft) => {
         draft.updater.status = "error";
-        draft.updater.errorMessage = message;
+        draft.updater.errorMessage = errorMessage;
         draft.updater.dialogOpen = true;
         draft.updater.downloadProgress = null;
         draft.updater.downloadedBytes = null;
         draft.updater.totalBytes = null;
       });
-      showErrorSnackbar("Failed to install update. Please try again.");
+      showErrorSnackbar(
+        shouldUseManualInstaller
+          ? "Automatic install failed from this location. Download the installer package to complete the update."
+          : "Failed to install update. Please try again.",
+      );
       return false;
     }
 

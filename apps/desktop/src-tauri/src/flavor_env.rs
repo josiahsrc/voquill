@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::{env, path::{Path, PathBuf}};
 
 const DEFAULT_FLAVOR: &str = "dev";
 
@@ -61,7 +61,7 @@ fn get_env_search_dirs() -> Vec<PathBuf> {
     dirs
 }
 
-fn load_env_for_flavor(base_dir: &PathBuf, flavor: &str) -> bool {
+fn load_env_for_flavor(base_dir: &Path, flavor: &str) -> bool {
     let env_file = base_dir.join(format!(".env.{flavor}"));
     if !env_file.exists() {
         return false;

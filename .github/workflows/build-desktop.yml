@@ -1,0 +1,130 @@
+name: Build Desktop
+
+on:
+  pull_request:
+    branches:
+      - main
+      - linting
+    paths:
+      - "apps/desktop/**"
+      - "packages/**"
+      - ".github/workflows/build-desktop.yml"
+
+jobs:
+  build:
+    name: Build Desktop (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macOS
+            os: macos-14
+            args: "--target universal-apple-darwin"
+            rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+            tauri_platform: macos
+            node_platform: darwin
+            bundle_dir: apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle
+          - label: Windows
+            os: windows-latest
+            args: ""
+            rust_targets: ""
+            tauri_platform: windows
+            node_platform: win32
+            bundle_dir: D:\cargo\release\bundle
+          - label: Linux
+            os: ubuntu-22.04
+            args: ""
+            rust_targets: ""
+            tauri_platform: linux
+            node_platform: linux
+            bundle_dir: apps/desktop/src-tauri/target/release/bundle
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            apps/desktop/src-tauri -> target
+
+      - name: Set Windows-only build environment
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          echo "CARGO_TARGET_DIR=D:\cargo" >> $env:GITHUB_ENV
+
+      - name: Install system dependencies (Linux)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          if apt-cache show libwebkit2gtk-4.1-dev >/dev/null 2>&1; then
+            WEBKIT_PKG=libwebkit2gtk-4.1-dev
+          else
+            WEBKIT_PKG=libwebkit2gtk-4.0-dev
+          fi
+          sudo apt-get install -y \
+            build-essential pkg-config cmake \
+            libgtk-3-dev "$WEBKIT_PKG" \
+            libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend and dependencies
+        env:
+          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
+          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+        run: npm run build -- --filter=desktop...
+
+      - name: Build Tauri app
+        env:
+          TAURI_PLATFORM: ${{ matrix.tauri_platform }}
+          VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+          MACOSX_DEPLOYMENT_TARGET: "13.3"
+          CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+          # Throwaway signing key for CI build validation only.
+          # Real releases use secrets in release-desktop.yml.
+          TAURI_SIGNING_PRIVATE_KEY: "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5OVRKZlAyVDN3dlF1Wm5mbWh1MXYwV3VjRlR2SVhUY2JqdmZUUGdtM1JOMEFBQkFBQUFBQUFBQUFBQUlBQUFBQXp4N2IwQXBxS3lTQnFWeXJuMmpaeGpKdkd5VUhTeit1cklsd3dQVTJvSnkzUktQMVlrQklPQ0duQkVZSStiMEdqTDFaSWJXZW96eTdab0VyaTZMUVNuWlpjSTZTY3NpVXA0bUZVVjh3TldRNHF1Qk1CUFBqcTduS3RMQ3FwMDFQM0VjYTlWdTZQZTQ9Cg=="
+          TAURI_CI_PUBKEY: "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ2NTZFNDMzMzYyMjBCMzgKUldRNEN5STJNK1JXUmpWRDMzem12QUtjVkFxWERXanl0ZVRCWi9JOTd3bmRFRVFuQkp1QmpiN0EK"
+        working-directory: apps/desktop
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = 'src-tauri/tauri.conf.json';
+            const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (c.plugins?.updater?.pubkey === '__UPDATER_PUBLIC_KEY__') {
+              c.plugins.updater.pubkey = process.env.TAURI_CI_PUBKEY;
+            }
+            fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
+          "
+          npm run tauri build -- --ci ${{ matrix.args }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: voquill-${{ matrix.tauri_platform }}
+          path: |
+            ${{ matrix.bundle_dir }}/**/*.dmg
+            ${{ matrix.bundle_dir }}/**/*.app.tar.gz
+            ${{ matrix.bundle_dir }}/**/*.msi
+            ${{ matrix.bundle_dir }}/**/*.nsis.zip
+            ${{ matrix.bundle_dir }}/**/*.exe
+            ${{ matrix.bundle_dir }}/**/*.deb
+            ${{ matrix.bundle_dir }}/**/*.AppImage
+          if-no-files-found: warn
+          retention-days: 7

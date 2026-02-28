@@ -5,6 +5,10 @@ import OfflineShowcase from "../components/offline-showcase";
 import PricingSection from "../components/pricing-section";
 import PrivacyShowcase from "../components/privacy-showcase";
 import SpeedShowcase from "../components/speed-showcase";
+import {
+  OrganizationJsonLd,
+  SoftwareAppJsonLd,
+} from "../components/structured-data";
 import TextCleanupShowcase from "../components/text-cleanup-showcase";
 import VideoSection from "../components/video-section";
 import BaseLayout from "../layouts/BaseLayout";
@@ -14,6 +18,14 @@ function HomePage() {
   return (
     <BaseLayout>
       <PageLayout>
+        <OrganizationJsonLd />
+        <SoftwareAppJsonLd
+          name="Voquill"
+          description="Type four times faster with your voice. Open-source alternative to Wispr Flow."
+          url="https://voquill.com"
+          operatingSystem="macOS, Windows, Linux"
+          category="ProductivityApplication"
+        />
         <HeroSection />
         <VideoSection />
         <AppsCarousel />

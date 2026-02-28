@@ -4,8 +4,8 @@ import { getRec } from "@repo/utilities";
 import { isOpenAIRealtimeModel } from "@repo/voice-ai";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
+import { getIsEmulators } from "../utils/env.utils";
 import { getLogger } from "../utils/log.utils";
-import { getIsNewBackendEnabled } from "../utils/new-server.utils";
 import { OLLAMA_DEFAULT_URL } from "../utils/ollama.utils";
 import { buildOpenAICompatibleUrl } from "../utils/openai-compatible.utils";
 import {
@@ -166,11 +166,11 @@ export type GenerateTextRepoOutput = {
 const getGenTextRepoInternal = ({
   prefs,
   cloudModel,
-  useNewBackend = true,
+  useNewBackend,
 }: {
   prefs: GenerativePrefs;
   cloudModel: CloudModel;
-  useNewBackend?: boolean;
+  useNewBackend: boolean;
 }): GenerateTextRepoOutput => {
   const state = getAppState();
 
@@ -179,7 +179,7 @@ const getGenTextRepoInternal = ({
     let repo: BaseGenerateTextRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseGenerateTextRepo(cloudModel);
-    } else if (useNewBackend && getIsNewBackendEnabled()) {
+    } else if (useNewBackend) {
       repo = new NewServerGenerateTextRepo();
     } else {
       repo = new CloudGenerateTextRepo(cloudModel);
@@ -313,7 +313,11 @@ const getGenTextRepoInternal = ({
 export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   const state = getAppState();
   const prefs = getGenerativePrefs(state);
-  return getGenTextRepoInternal({ prefs, cloudModel: "medium" });
+  return getGenTextRepoInternal({
+    prefs,
+    cloudModel: "medium",
+    useNewBackend: !getIsEmulators(),
+  });
 };
 
 export const getAgentRepo = (): GenerateTextRepoOutput => {
@@ -343,10 +347,10 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
     let repo: BaseTranscribeAudioRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseTranscribeAudioRepo();
-    } else if (getIsNewBackendEnabled()) {
-      repo = new NewServerTranscribeAudioRepo();
-    } else {
+    } else if (getIsEmulators()) {
       repo = new CloudTranscribeAudioRepo();
+    } else {
+      repo = new NewServerTranscribeAudioRepo();
     }
     return {
       repo,

@@ -229,7 +229,7 @@ unsafe fn extract_text_from_element(
     let value_safe_roles = [
         "AXStaticText", "AXLink", "AXCell", "AXMenuItem",
     ];
-    if value_safe_roles.iter().any(|&r| role == r) {
+    if value_safe_roles.contains(&role) {
         if let Some(value) = get_string_attribute(element, ax_value) {
             let t = value.trim();
             if !t.is_empty() && t.len() < 500 {
@@ -259,6 +259,7 @@ unsafe fn extract_text_from_element(
     texts
 }
 
+#[allow(clippy::too_many_arguments)]
 unsafe fn extract_text_from_web_area(
     element: CFTypeRef,
     ax_role: CFStringRef,
@@ -328,6 +329,7 @@ unsafe fn extract_text_from_web_area(
     texts
 }
 
+#[allow(clippy::too_many_arguments)]
 unsafe fn extract_text_recursive(
     element: CFTypeRef,
     ax_role: CFStringRef,

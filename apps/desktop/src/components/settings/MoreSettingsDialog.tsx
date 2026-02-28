@@ -25,7 +25,6 @@ import {
   setIncognitoModeEnabled,
   setIncognitoModeIncludeInStats,
   setStylingMode,
-  setUseNewBackend,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import type { LogLevel } from "../../types/log.types";
@@ -57,9 +56,7 @@ export const MoreSettingsDialog = () => {
     dictationPillVisibility,
     stylingMode,
     canChangeStylingMode,
-    useNewBackend,
     autoDownloadLogs,
-    isEnterprise,
   ] = useAppStore((state) => {
     const prefs = getMyUserPreferences(state);
     return [
@@ -70,9 +67,7 @@ export const MoreSettingsDialog = () => {
       getEffectivePillVisibility(prefs?.dictationPillVisibility),
       getEffectiveStylingMode(state),
       getAllowChangeStylingMode(state),
-      prefs?.useNewBackend ?? false,
       state.settings.autoDownloadLogs,
-      state.isEnterprise,
     ] as const;
   });
 
@@ -109,11 +104,6 @@ export const MoreSettingsDialog = () => {
   const handleStylingModeChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
     void setStylingMode(value === "" ? null : (value as StylingMode));
-  };
-
-  const handleToggleUseNewBackend = (event: ChangeEvent<HTMLInputElement>) => {
-    const enabled = event.target.checked;
-    void setUseNewBackend(enabled);
   };
 
   const [logLevel, setLogLevelState] = useState<LogLevel>(getLogLevel);
@@ -271,22 +261,6 @@ export const MoreSettingsDialog = () => {
                     {intl.formatMessage({ defaultMessage: "Manual" })}
                   </MenuItem>
                 </Select>
-              }
-            />
-          )}
-
-          {!isEnterprise && (
-            <SettingSection
-              title={<FormattedMessage defaultMessage="Use new backend" />}
-              description={
-                <FormattedMessage defaultMessage="Use the new cloud backend for transcription and text generation. Requires cloud mode to be enabled." />
-              }
-              action={
-                <Switch
-                  edge="end"
-                  checked={useNewBackend}
-                  onChange={handleToggleUseNewBackend}
-                />
               }
             />
           )}

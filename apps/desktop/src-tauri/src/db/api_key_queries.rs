@@ -20,7 +20,7 @@ pub async fn insert_api_key(pool: SqlitePool, api_key: &ApiKey) -> Result<ApiKey
     .bind(&api_key.openrouter_config)
     .bind(&api_key.base_url)
     .bind(&api_key.azure_region)
-    .bind(&api_key.include_v1_path)
+    .bind(api_key.include_v1_path)
     .execute(&pool)
     .await?;
 
@@ -76,7 +76,7 @@ pub async fn update_api_key(pool: SqlitePool, request: &ApiKeyUpdateRequest) -> 
     .bind(&request.openrouter_config)
     .bind(&request.base_url)
     .bind(&request.azure_region)
-    .bind(&request.include_v1_path)
+    .bind(request.include_v1_path)
     .execute(&pool)
     .await?;
 

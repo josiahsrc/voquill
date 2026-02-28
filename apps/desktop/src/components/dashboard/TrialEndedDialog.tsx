@@ -1,10 +1,9 @@
-import { ArrowForward, Close } from "@mui/icons-material";
+import { ArrowForward } from "@mui/icons-material";
 import {
   Box,
   Button,
   Chip,
   Dialog,
-  IconButton,
   LinearProgress,
   Stack,
   Typography,
@@ -13,12 +12,12 @@ import { delayed } from "@repo/utilities";
 import { useEffect, useRef } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
-import { showToast } from "../../actions/toast.actions";
 import { markUpgradeDialogSeen } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { trackButtonClick, trackPageView } from "../../utils/analytics.utils";
 import { getMyMember } from "../../utils/member.utils";
 import { getMyUser } from "../../utils/user.utils";
+import { surfaceMainWindow } from "../../utils/window.utils";
 import { TrialEndedBackground } from "./TrialEndedBackground";
 
 const MIN_WORDS_THRESHOLD = 100;
@@ -56,20 +55,21 @@ export const TrialEndedDialog = () => {
   useEffect(() => {
     if (shouldShow && !hasFocusedRef.current) {
       hasFocusedRef.current = true;
-      delayed(1000 * 4).then(() =>
-        showToast({
-          title: intl.formatMessage({
-            defaultMessage: "Your Pro trial has ended",
-          }),
-          message: intl.formatMessage({
-            defaultMessage:
-              "Upgrade now to continue voice typing without any limits.",
-          }),
-          toastType: "info",
-          action: "surface_window",
-          duration: 8_000,
-        }),
-      );
+      delayed(1000 * 4).then(() => {
+        surfaceMainWindow();
+        // showToast({
+        //   title: intl.formatMessage({
+        //     defaultMessage: "Your Pro trial has ended",
+        //   }),
+        //   message: intl.formatMessage({
+        //     defaultMessage:
+        //       "Upgrade now to continue voice typing without any limits.",
+        //   }),
+        //   toastType: "info",
+        //   action: "surface_window",
+        //   duration: 8_000,
+        // });
+      });
     }
 
     if (!shouldShow) {
@@ -107,19 +107,6 @@ export const TrialEndedDialog = () => {
 
       <Box
         sx={{
-          position: "absolute",
-          top: 16,
-          right: 16,
-          zIndex: 1,
-        }}
-      >
-        <IconButton onClick={handleDismiss} size="large">
-          <Close />
-        </IconButton>
-      </Box>
-
-      <Box
-        sx={{
           position: "relative",
           zIndex: 1,
           display: "flex",
@@ -135,13 +122,10 @@ export const TrialEndedDialog = () => {
         <Stack spacing={4} alignItems="center" maxWidth={480}>
           <Stack spacing={2} alignItems="center" textAlign="center">
             <Typography variant="h4" fontWeight={700}>
-              <FormattedMessage defaultMessage="Thanks for trying Voquill" />
+              <FormattedMessage defaultMessage="Don't lose unlimited dictation" />
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              <FormattedMessage
-                defaultMessage="Your pro trial has ended. You're on the free plan now with {total} words per day. Upgrade whenever you're ready."
-                values={{ total: freeWordsPerDay.toLocaleString() }}
-              />
+              <FormattedMessage defaultMessage="You've been dictating without limits all week. Keep unlimited words, faster processing, and priority features." />
             </Typography>
             {totalTimeSaved > 4 && (
               <Stack direction="row" spacing={1}>
@@ -228,15 +212,22 @@ export const TrialEndedDialog = () => {
                 onClick={handleUpgrade}
                 endIcon={<ArrowForward />}
               >
-                <FormattedMessage defaultMessage="Reclaim my super powers" />
+                <FormattedMessage defaultMessage="Keep Pro plan" />
               </Button>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                textAlign="center"
+              >
+                <FormattedMessage defaultMessage="Cancel anytime, no questions asked" />
+              </Typography>
             </Stack>
             <Button
               onClick={handleDismiss}
               fullWidth
               sx={{ color: "text.secondary" }}
             >
-              <FormattedMessage defaultMessage="Continue with free" />
+              <FormattedMessage defaultMessage="Downgrade to free plan" />
             </Button>
           </Stack>
         </Stack>

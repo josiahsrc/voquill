@@ -485,6 +485,7 @@ pub(crate) fn send_event_to_tcp(
     }
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
     let pressed_normalized: HashSet<String> =
         pressed.iter().map(|key| key.to_ascii_lowercase()).collect();
@@ -508,6 +509,7 @@ pub(crate) fn matches_any_combo(pressed: &HashSet<String>, combos: &[Vec<String>
     false
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn is_modifier_like_key_label(key_label: &str) -> bool {
     let normalized = key_label.to_ascii_lowercase();
     normalized.starts_with("meta")
@@ -518,6 +520,7 @@ fn is_modifier_like_key_label(key_label: &str) -> bool {
         || normalized.starts_with("function")
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn matches_modifier_only_combo(pressed: &HashSet<String>, combos: &[Vec<String>]) -> bool {
     let pressed_normalized: HashSet<String> =
         pressed.iter().map(|key| key.to_ascii_lowercase()).collect();
@@ -542,6 +545,7 @@ fn matches_modifier_only_combo(pressed: &HashSet<String>, combos: &[Vec<String>]
     false
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 #[derive(Debug, Default)]
 pub(crate) struct GrabHotkeyState {
     pub pressed_keys: HashSet<String>,
@@ -549,12 +553,14 @@ pub(crate) struct GrabHotkeyState {
     pub combo_active: bool,
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GrabDecision {
     PassThrough,
     Suppress,
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub(crate) fn update_grab_hotkey_state(
     state: &mut GrabHotkeyState,
     key_label: &str,
@@ -604,6 +610,7 @@ pub(crate) fn update_grab_hotkey_state(
 
 pub(crate) struct ListenerContext {
     pub writer: Arc<Mutex<BufWriter<TcpStream>>>,
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     pub combos: Arc<Mutex<Vec<Vec<String>>>>,
 }
 
@@ -620,34 +627,43 @@ pub(crate) fn setup_listener_process() -> Result<ListenerContext, String> {
         .map_err(|err| format!("failed to configure listener socket: {err}"))?;
 
     let writer = Arc::new(Mutex::new(BufWriter::new(stream)));
+
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     let combos: Arc<Mutex<Vec<Vec<String>>>> = Arc::new(Mutex::new(Vec::new()));
 
-    let combos_for_stdin = combos.clone();
-    thread::spawn(move || {
-        let stdin = std::io::stdin();
-        let reader = BufReader::new(stdin.lock());
-        for line in reader.lines() {
-            let line = match line {
-                Ok(l) => l,
-                Err(_) => break,
-            };
-            if line.trim().is_empty() {
-                continue;
-            }
-            match serde_json::from_str::<Vec<Vec<String>>>(&line) {
-                Ok(new_combos) => {
-                    if let Ok(mut guard) = combos_for_stdin.lock() {
-                        *guard = new_combos;
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    {
+        let combos_for_stdin = combos.clone();
+        thread::spawn(move || {
+            let stdin = std::io::stdin();
+            let reader = BufReader::new(stdin.lock());
+            for line in reader.lines() {
+                let line = match line {
+                    Ok(l) => l,
+                    Err(_) => break,
+                };
+                if line.trim().is_empty() {
+                    continue;
+                }
+                match serde_json::from_str::<Vec<Vec<String>>>(&line) {
+                    Ok(new_combos) => {
+                        if let Ok(mut guard) = combos_for_stdin.lock() {
+                            *guard = new_combos;
+                        }
+                    }
+                    Err(err) => {
+                        eprintln!("Keyboard child: malformed combo update: {err}");
                     }
                 }
-                Err(err) => {
-                    eprintln!("Keyboard child: malformed combo update: {err}");
-                }
             }
-        }
-    });
+        });
+    }
 
-    Ok(ListenerContext { writer, combos })
+    Ok(ListenerContext {
+        writer,
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        combos,
+    })
 }
 
 pub(crate) fn run_listen_loop(
@@ -678,7 +694,7 @@ pub(crate) fn run_listen_loop(
     .map_err(|err| format!("keyboard listener error: {err:?}"))
 }
 
-#[cfg(test)]
+#[cfg(all(test, any(target_os = "macos", target_os = "windows")))]
 mod tests {
     use super::{matches_any_combo, update_grab_hotkey_state, GrabDecision, GrabHotkeyState};
     use std::collections::HashSet;

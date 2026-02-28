@@ -24,7 +24,7 @@ pub fn get_keyboard_language() -> Result<String, String> {
         }
 
         let langs: CFArray<CFType> = CFArray::wrap_under_get_rule(langs_ptr as _);
-        if langs.len() == 0 {
+        if langs.is_empty() {
             core_foundation::base::CFRelease(source);
             return Err("No languages found for input source".to_string());
         }
