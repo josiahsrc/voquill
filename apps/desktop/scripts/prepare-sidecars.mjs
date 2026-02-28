@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { chmodSync, copyFileSync, existsSync, mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -14,7 +14,12 @@ const sidecarManifestPath = join(
   "rust_transcription",
   "Cargo.toml",
 );
-const rustTargetDir = join(repoRoot, "packages", "rust_transcription", "target");
+const cargoTargetDirOverride = process.env.CARGO_TARGET_DIR?.trim() || null;
+const rustTargetDir = cargoTargetDirOverride
+  ? (isAbsolute(cargoTargetDirOverride)
+      ? cargoTargetDirOverride
+      : resolve(repoRoot, cargoTargetDirOverride))
+  : join(repoRoot, "packages", "rust_transcription", "target");
 const tauriBinariesDir = join(desktopDir, "src-tauri", "binaries");
 
 const buildTarget =
