@@ -289,7 +289,7 @@ fn reserve_local_port() -> Result<u16, std::io::Error> {
 
 fn audio_asset_path(file_name: &str) -> Result<PathBuf, Box<dyn std::error::Error + Send + Sync>> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../apps/firebase/functions/assets")
+        .join("assets")
         .join(file_name);
 
     if !path.exists() {

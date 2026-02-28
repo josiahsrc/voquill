@@ -1,19 +1,35 @@
 name: Test Package Rust Transcription
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/rust_transcription/**"
+      - ".github/workflows/test-package-rust-transcription.yml"
   pull_request:
     branches:
       - main
     paths:
       - "packages/rust_transcription/**"
-      - "apps/firebase/functions/assets/**"
       - ".github/workflows/test-package-rust-transcription.yml"
+  workflow_dispatch:
 
 jobs:
   integration-tests:
-    name: Rust Transcription Integration Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    name: Rust Transcription Integration Tests (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Ubuntu
+            os: ubuntu-latest
+          - label: Windows
+            os: windows-latest
+          - label: macOS
+            os: macos-latest
     permissions:
       contents: read
     steps:
@@ -29,7 +45,8 @@ jobs:
           workspaces: |
             packages/rust_transcription -> packages/rust_transcription/target
 
-      - name: Install system dependencies
+      - name: Install system dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -38,6 +55,15 @@ jobs:
             pkg-config \
             clang \
             libclang-dev
+
+      - name: Install system dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          choco install -y llvm --no-progress
+          "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+          "CLANG_PATH=C:\Program Files\LLVM\bin\clang.exe" >> $env:GITHUB_ENV
+          "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
       - name: Run non-ignored integration tests
         run: |

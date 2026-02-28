@@ -74,7 +74,7 @@ Fast binary-level integration test:
 cargo test --manifest-path packages/rust_transcription/Cargo.toml --test sidecar_integration
 ```
 
-Full end-to-end test (downloads tiny model and transcribes `apps/firebase/functions/assets/test.wav`):
+Full end-to-end test (downloads tiny model and transcribes `packages/rust_transcription/assets/test.wav`):
 
 ```bash
 cargo test --manifest-path packages/rust_transcription/Cargo.toml --test sidecar_integration -- --ignored
