@@ -21,7 +21,7 @@ required-features = ["gpu"]
 [dependencies]
 axum = { version = "0.7", features = ["macros"] }
 futures-util = "0.3"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["fs", "macros", "net", "rt-multi-thread", "sync", "time"] }
@@ -33,3 +33,5 @@ whisper-rs = { version = "0.15.1", default-features = false }
 [dev-dependencies]
 http-body-util = "0.1"
 tower = "0.5"
+hound = "3.5"
+tempfile = "3"

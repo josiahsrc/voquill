@@ -174,7 +174,7 @@ impl TranscriptionEngine {
         Ok(cache.entry(key).or_insert_with(|| context.clone()).clone())
     }
 
-    fn context_params(&self) -> Result<WhisperContextParameters, String> {
+    fn context_params(&self) -> Result<WhisperContextParameters<'_>, String> {
         let mut params = WhisperContextParameters::default();
         match self.mode {
             ComputeMode::Cpu => {
