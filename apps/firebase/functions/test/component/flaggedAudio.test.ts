@@ -1,6 +1,6 @@
 import { firemix } from "@firemix/mixed";
 import { mixpath } from "@repo/firemix";
-import { invokeHandler } from "@repo/functions";
+import { HandlerInput, invokeHandler } from "@repo/functions";
 import type { FlaggedAudio } from "@repo/types";
 import {
 	deleteObject,
@@ -20,7 +20,9 @@ import { setUp, tearDown } from "../helpers/setup";
 beforeAll(setUp);
 afterAll(tearDown);
 
-const buildFlaggedAudio = (overrides?: Partial<FlaggedAudio>): FlaggedAudio => ({
+const buildFlaggedAudio = (
+	overrides?: Partial<FlaggedAudio>,
+): FlaggedAudio => ({
 	id: "flagged-1",
 	filePath: "users/uid/flaggedAudio/test.wav",
 	feedback: "transcription was wrong",
@@ -54,8 +56,12 @@ describe("flaggedAudio/upsert", () => {
 		expect(doc).toBeDefined();
 		expect(doc?.data.filePath).toBe(flaggedAudio.filePath);
 		expect(doc?.data.feedback).toBe(flaggedAudio.feedback);
-		expect(doc?.data.transcriptionPrompt).toBe(flaggedAudio.transcriptionPrompt);
-		expect(doc?.data.postProcessingPrompt).toBe(flaggedAudio.postProcessingPrompt);
+		expect(doc?.data.transcriptionPrompt).toBe(
+			flaggedAudio.transcriptionPrompt,
+		);
+		expect(doc?.data.postProcessingPrompt).toBe(
+			flaggedAudio.postProcessingPrompt,
+		);
 		expect(doc?.data.rawTranscription).toBe(flaggedAudio.rawTranscription);
 		expect(doc?.data.postProcessedTranscription).toBe(
 			flaggedAudio.postProcessedTranscription,
@@ -110,7 +116,7 @@ describe("flaggedAudio/upsert", () => {
 		await expect(
 			invokeHandler("flaggedAudio/upsert", {
 				flaggedAudio: { id: "" },
-			} as any),
+			} as unknown as HandlerInput<"flaggedAudio/upsert">),
 		).rejects.toThrow();
 	});
 });
