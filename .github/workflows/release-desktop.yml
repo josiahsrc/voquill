@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - linux-audio-fix
     paths:
       - "apps/desktop/**"
       - "apps/windows-installer/**"
