@@ -1,7 +1,9 @@
+use std::io::ErrorKind;
+use std::path::Path as FsPath;
 use std::time::Instant;
 
 use axum::extract::{Path, Query, State};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -19,6 +21,7 @@ pub fn create_router(state: AppState) -> Router {
             "/v1/models/:model/download/:job_id",
             get(get_download_progress),
         )
+        .route("/v1/models/:model", delete(delete_model))
         .route("/v1/models/:model/status", get(get_model_status))
         .route("/v1/transcriptions", post(transcribe))
         .with_state(state)
@@ -105,54 +108,47 @@ async fn get_model_status(
     Query(query): Query<ModelStatusQuery>,
 ) -> Result<Json<ModelStatusResponse>, ApiError> {
     let model = parse_model(&path.model)?;
+    let status = read_model_status(&state, model, query.validate.unwrap_or(true)).await?;
+    Ok(Json(status))
+}
+
+async fn delete_model(
+    State(state): State<AppState>,
+    Path(path): Path<ModelPath>,
+) -> Result<Json<ModelStatusResponse>, ApiError> {
+    let model = parse_model(&path.model)?;
+
+    if let Some(active_job) = state.downloads.get_active_job(model).await {
+        if matches!(
+            active_job.status,
+            crate::downloads::DownloadJobStatus::Pending
+                | crate::downloads::DownloadJobStatus::Running
+        ) {
+            return Err(ApiError::bad_request(
+                "download_in_progress",
+                format!(
+                    "model '{}' is currently downloading; wait for it to finish before deleting",
+                    model.as_slug()
+                ),
+            ));
+        }
+    }
+
     let model_path = state.model_path(model);
-    let metadata = tokio::fs::metadata(&model_path).await.ok();
-
-    let downloaded = metadata
-        .as_ref()
-        .map(|meta| meta.is_file() && meta.len() > 0)
-        .unwrap_or(false);
-
-    let file_bytes = metadata.map(|meta| meta.len());
-
-    if !downloaded {
-        return Ok(Json(ModelStatusResponse {
-            model,
-            downloaded: false,
-            valid: false,
-            file_bytes,
-            validation_error: None,
-        }));
+    match tokio::fs::remove_file(&model_path).await {
+        Ok(_) => {}
+        Err(err) if err.kind() == ErrorKind::NotFound => {}
+        Err(err) => {
+            return Err(ApiError::internal(
+                "model_delete_failed",
+                format!("failed to delete model '{}': {err}", model.as_slug()),
+            ));
+        }
     }
 
-    let should_validate = query.validate.unwrap_or(true);
-
-    if !should_validate {
-        return Ok(Json(ModelStatusResponse {
-            model,
-            downloaded: true,
-            valid: true,
-            file_bytes,
-            validation_error: None,
-        }));
-    }
-
-    match state.transcriber.validate_model(model_path).await {
-        Ok(valid) => Ok(Json(ModelStatusResponse {
-            model,
-            downloaded: true,
-            valid,
-            file_bytes,
-            validation_error: None,
-        })),
-        Err(err) => Ok(Json(ModelStatusResponse {
-            model,
-            downloaded: true,
-            valid: false,
-            file_bytes,
-            validation_error: Some(err),
-        })),
-    }
+    remove_partial_model_downloads(&model_path, model).await?;
+    let status = read_model_status(&state, model, false).await?;
+    Ok(Json(status))
 }
 
 #[derive(Debug, Deserialize)]
@@ -236,6 +232,125 @@ fn parse_model(value: &str) -> Result<WhisperModel, ApiError> {
     })
 }
 
+async fn read_model_status(
+    state: &AppState,
+    model: WhisperModel,
+    validate: bool,
+) -> Result<ModelStatusResponse, ApiError> {
+    let model_path = state.model_path(model);
+    let metadata = tokio::fs::metadata(&model_path).await.ok();
+
+    let downloaded = metadata
+        .as_ref()
+        .map(|meta| meta.is_file() && meta.len() > 0)
+        .unwrap_or(false);
+
+    let file_bytes = metadata.map(|meta| meta.len());
+
+    if !downloaded {
+        return Ok(ModelStatusResponse {
+            model,
+            downloaded: false,
+            valid: false,
+            file_bytes,
+            validation_error: None,
+        });
+    }
+
+    if !validate {
+        return Ok(ModelStatusResponse {
+            model,
+            downloaded: true,
+            valid: true,
+            file_bytes,
+            validation_error: None,
+        });
+    }
+
+    match state.transcriber.validate_model(model_path).await {
+        Ok(valid) => Ok(ModelStatusResponse {
+            model,
+            downloaded: true,
+            valid,
+            file_bytes,
+            validation_error: None,
+        }),
+        Err(err) => Ok(ModelStatusResponse {
+            model,
+            downloaded: true,
+            valid: false,
+            file_bytes,
+            validation_error: Some(err),
+        }),
+    }
+}
+
+async fn remove_partial_model_downloads(
+    model_path: &FsPath,
+    model: WhisperModel,
+) -> Result<(), ApiError> {
+    let parent = match model_path.parent() {
+        Some(parent) => parent,
+        None => return Ok(()),
+    };
+    let filename = match model_path.file_name().and_then(|name| name.to_str()) {
+        Some(filename) => filename,
+        None => return Ok(()),
+    };
+    let prefix = format!("{filename}.");
+
+    let mut entries = match tokio::fs::read_dir(parent).await {
+        Ok(entries) => entries,
+        Err(err) if err.kind() == ErrorKind::NotFound => return Ok(()),
+        Err(err) => {
+            return Err(ApiError::internal(
+                "model_delete_failed",
+                format!(
+                    "failed to inspect model directory for '{}': {err}",
+                    model.as_slug()
+                ),
+            ));
+        }
+    };
+
+    while let Some(entry) = entries.next_entry().await.map_err(|err| {
+        ApiError::internal(
+            "model_delete_failed",
+            format!(
+                "failed to enumerate partial model downloads for '{}': {err}",
+                model.as_slug()
+            ),
+        )
+    })? {
+        let file_name = match entry.file_name().to_str() {
+            Some(value) => value.to_string(),
+            None => continue,
+        };
+
+        if !file_name.starts_with(&prefix) || !file_name.ends_with(".download") {
+            continue;
+        }
+
+        let partial_path = entry.path();
+        match tokio::fs::remove_file(&partial_path).await {
+            Ok(_) => {}
+            Err(err) if err.kind() == ErrorKind::NotFound => {}
+            Err(err) => {
+                return Err(ApiError::internal(
+                    "model_delete_failed",
+                    format!(
+                        "failed to delete partial model file '{}' for '{}': {err}",
+                        partial_path.display(),
+                        model.as_slug()
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn map_transcription_error(error: String) -> ApiError {
     let lower = error.to_ascii_lowercase();
 
@@ -310,6 +425,23 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri("/v1/models/tiny/status")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn delete_endpoint_handles_missing_model() {
+        let app = create_router(test_state());
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri("/v1/models/tiny")
                     .body(Body::empty())
                     .unwrap(),
             )

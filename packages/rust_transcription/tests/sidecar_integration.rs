@@ -6,10 +6,13 @@ use std::time::{Duration, Instant};
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener as TokioTcpListener;
 use tokio::time::sleep;
 
 const HEALTH_TIMEOUT: Duration = Duration::from_secs(20);
 const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(900);
+const TINY_MODEL_FILENAME: &str = "ggml-tiny.bin";
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,22 +79,34 @@ struct RunningSidecar {
     child: Child,
     client: Client,
     base_url: String,
-    _models_dir: TempDir,
+    models_dir: TempDir,
 }
 
 impl RunningSidecar {
     async fn start_cpu() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        Self::start_cpu_with_env(&[]).await
+    }
+
+    async fn start_cpu_with_env(
+        extra_env: &[(&str, &str)],
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let port = reserve_local_port()?;
         let models_dir = tempfile::tempdir()?;
         let base_url = format!("http://127.0.0.1:{port}");
 
-        let child = Command::new(env!("CARGO_BIN_EXE_rust-transcription-cpu"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_rust-transcription-cpu"));
+        command
             .env("RUST_TRANSCRIPTION_HOST", "127.0.0.1")
             .env("RUST_TRANSCRIPTION_PORT", port.to_string())
             .env("RUST_TRANSCRIPTION_MODELS_DIR", models_dir.path())
             .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()?;
+            .stderr(Stdio::inherit());
+
+        for (key, value) in extra_env {
+            command.env(key, value);
+        }
+
+        let child = command.spawn()?;
 
         let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
 
@@ -99,7 +114,7 @@ impl RunningSidecar {
             child,
             client,
             base_url,
-            _models_dir: models_dir,
+            models_dir,
         };
 
         sidecar.wait_until_healthy().await?;
@@ -131,6 +146,10 @@ impl RunningSidecar {
 
     fn url(&self, path: &str) -> String {
         format!("{}{}", self.base_url, path)
+    }
+
+    fn model_path(&self, filename: &str) -> PathBuf {
+        self.models_dir.path().join(filename)
     }
 }
 
@@ -189,6 +208,70 @@ async fn cpu_sidecar_health_and_missing_model_error_flow(
     assert_eq!(body.error.code, "model_not_downloaded");
     assert!(body.error.message.contains("download"));
 
+    Ok(())
+}
+
+#[tokio::test]
+async fn cpu_sidecar_delete_model_removes_model_and_partial_fragments(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let sidecar = RunningSidecar::start_cpu().await?;
+    let model_path = sidecar.model_path(TINY_MODEL_FILENAME);
+    let partial_path = sidecar.model_path(&format!("{TINY_MODEL_FILENAME}.partial.download"));
+    let keep_path = sidecar.model_path(&format!("{TINY_MODEL_FILENAME}.keep"));
+
+    tokio::fs::write(&model_path, b"fake model bytes").await?;
+    tokio::fs::write(&partial_path, b"partial bytes").await?;
+    tokio::fs::write(&keep_path, b"should stay").await?;
+
+    let response = sidecar.client.delete(sidecar.url("/v1/models/tiny")).send().await?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let status = response.json::<ModelStatusResponse>().await?;
+    assert!(!status.downloaded);
+    assert!(!status.valid);
+
+    assert!(!model_path.exists(), "expected model file to be deleted");
+    assert!(
+        !partial_path.exists(),
+        "expected partial model fragment to be deleted"
+    );
+    assert!(keep_path.exists(), "expected unrelated file to remain");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn cpu_sidecar_delete_model_rejects_while_download_is_active(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let (download_url, server_task) = start_slow_download_server(Duration::from_secs(10)).await?;
+    let sidecar = RunningSidecar::start_cpu_with_env(&[(
+        "RUST_TRANSCRIPTION_MODEL_URL_TINY",
+        download_url.as_str(),
+    )])
+    .await?;
+
+    let download = sidecar
+        .client
+        .post(sidecar.url("/v1/models/tiny/download"))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<DownloadJobSnapshot>()
+        .await?;
+
+    assert!(matches!(
+        download.status,
+        DownloadJobStatus::Pending | DownloadJobStatus::Running
+    ));
+
+    let response = sidecar.client.delete(sidecar.url("/v1/models/tiny")).send().await?;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let body = response.json::<ApiErrorEnvelope>().await?;
+    assert_eq!(body.error.code, "download_in_progress");
+    assert!(body.error.message.contains("currently downloading"));
+
+    server_task.abort();
     Ok(())
 }
 
@@ -345,4 +428,36 @@ fn load_wav_as_f32_mono(
     };
 
     Ok((mono, sample_rate))
+}
+
+async fn start_slow_download_server(
+    response_delay: Duration,
+) -> Result<
+    (String, tokio::task::JoinHandle<()>),
+    Box<dyn std::error::Error + Send + Sync>,
+> {
+    let listener = TokioTcpListener::bind("127.0.0.1:0").await?;
+    let addr = listener.local_addr()?;
+    let url = format!("http://{addr}/tiny.bin");
+
+    let task = tokio::spawn(async move {
+        if let Ok((mut stream, _)) = listener.accept().await {
+            let mut request_buffer = [0_u8; 1024];
+            let _ = stream.read(&mut request_buffer).await;
+
+            sleep(response_delay).await;
+
+            let body = [0_u8; 1024];
+            let headers = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+
+            let _ = stream.write_all(headers.as_bytes()).await;
+            let _ = stream.write_all(&body).await;
+            let _ = stream.flush().await;
+        }
+    });
+
+    Ok((url, task))
 }

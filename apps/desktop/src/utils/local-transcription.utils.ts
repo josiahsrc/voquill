@@ -3,6 +3,12 @@ import { CPU_DEVICE_VALUE } from "../types/ai.types";
 export type LocalWhisperModel = "tiny" | "medium" | "large" | "turbo";
 
 export const DEFAULT_LOCAL_WHISPER_MODEL: LocalWhisperModel = "tiny";
+export const LOCAL_WHISPER_MODELS: LocalWhisperModel[] = [
+  "tiny",
+  "medium",
+  "turbo",
+  "large",
+];
 
 export const normalizeLocalWhisperModel = (
   value: string | null | undefined,

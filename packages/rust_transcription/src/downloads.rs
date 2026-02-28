@@ -131,6 +131,12 @@ impl DownloadRegistry {
         }
     }
 
+    pub async fn get_active_job(&self, model: WhisperModel) -> Option<DownloadJobSnapshot> {
+        let store = self.inner.lock().await;
+        let job_id = store.active_by_model.get(&model).copied()?;
+        store.snapshot(job_id)
+    }
+
     async fn run_download_job(
         &self,
         job_id: Uuid,

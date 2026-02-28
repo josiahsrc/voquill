@@ -8,7 +8,6 @@ import {
 } from "@repo/types";
 import dayjs from "dayjs";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
-import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
 import {
@@ -18,10 +17,7 @@ import {
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
-import {
-  isGpuPreferredTranscriptionDevice,
-  normalizeLocalWhisperModel,
-} from "../utils/local-transcription.utils";
+import { normalizeLocalWhisperModel } from "../utils/local-transcription.utils";
 import { getLogger } from "../utils/log.utils";
 import {
   getMyEffectiveUserId,
@@ -345,9 +341,6 @@ export const setPreferredTranscriptionMode = async (
   });
 
   await persistAiPreferences();
-  if (mode === "local") {
-    await prefetchLocalTranscriptionModel();
-  }
 };
 
 export const setAllModesToCloud = async (): Promise<void> => {
@@ -383,38 +376,17 @@ export const setPreferredTranscriptionDevice = async (
   });
 
   await persistAiPreferences();
-  await prefetchLocalTranscriptionModel();
 };
 
 export const setPreferredTranscriptionModelSize = async (
   modelSize: string,
 ): Promise<void> => {
+  const normalizedModelSize = normalizeLocalWhisperModel(modelSize);
   produceAppState((draft) => {
-    draft.settings.aiTranscription.modelSize = modelSize;
+    draft.settings.aiTranscription.modelSize = normalizedModelSize;
   });
 
   await persistAiPreferences();
-  await prefetchLocalTranscriptionModel();
-};
-
-const prefetchLocalTranscriptionModel = async (): Promise<void> => {
-  const state = getAppState();
-  if (state.settings.aiTranscription.mode !== "local") {
-    return;
-  }
-
-  const model = normalizeLocalWhisperModel(
-    state.settings.aiTranscription.modelSize,
-  );
-  const preferGpu = isGpuPreferredTranscriptionDevice(
-    state.settings.aiTranscription.device,
-  );
-
-  await getLocalTranscriptionSidecarManager()
-    .prefetchModel({ model, preferGpu })
-    .catch((error) => {
-      getLogger().warning(`Failed to prefetch transcription model: ${error}`);
-    });
 };
 
 export const setGpuEnumerationEnabled = async (

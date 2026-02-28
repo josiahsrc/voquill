@@ -2,10 +2,10 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 import { fetch } from "@tauri-apps/plugin-http";
 import { getLogger } from "./log.utils";
 import {
-  ShellChildProcess,
-  spawnShellSidecar,
-} from "./tauri-shell.utils";
-import { LocalWhisperModel } from "./local-transcription.utils";
+  LOCAL_WHISPER_MODELS,
+  LocalWhisperModel,
+} from "./local-transcription.utils";
+import { ShellChildProcess, spawnShellSidecar } from "./tauri-shell.utils";
 
 type SidecarMode = "cpu" | "gpu";
 type DownloadJobStatus = "pending" | "running" | "completed" | "failed";
@@ -45,6 +45,9 @@ type SidecarRuntime = {
   baseUrl: string;
   child: ShellChildProcess;
 };
+
+export type LocalSidecarModelStatus = SidecarModelStatusResponse;
+export type LocalSidecarDownloadSnapshot = SidecarDownloadSnapshot;
 
 export type LocalSidecarTranscribeInput = {
   model: LocalWhisperModel;
@@ -99,15 +102,94 @@ export class LocalTranscriptionSidecarManager {
   private modelsDirPromise: Promise<string> | null = null;
   private gpuUnavailable = false;
 
-  async prefetchModel({
+  async getModelStatus({
+    model,
+    preferGpu,
+    validate = true,
+  }: {
+    model: LocalWhisperModel;
+    preferGpu: boolean;
+    validate?: boolean;
+  }): Promise<LocalSidecarModelStatus> {
+    const runtime = await this.resolveRuntime(preferGpu);
+    return await this.getModelStatusByMode(runtime.mode, model, validate);
+  }
+
+  async listModelStatuses({
+    preferGpu,
+    validate = true,
+    models = LOCAL_WHISPER_MODELS,
+  }: {
+    preferGpu: boolean;
+    validate?: boolean;
+    models?: LocalWhisperModel[];
+  }): Promise<Record<LocalWhisperModel, LocalSidecarModelStatus>> {
+    const runtime = await this.resolveRuntime(preferGpu);
+    const statuses = await Promise.all(
+      models.map(async (model) => {
+        const status = await this.getModelStatusByMode(
+          runtime.mode,
+          model,
+          validate,
+        );
+        return [model, status] as const;
+      }),
+    );
+
+    const map = {} as Record<LocalWhisperModel, LocalSidecarModelStatus>;
+    for (const [model, status] of statuses) {
+      map[model] = status;
+    }
+
+    return map;
+  }
+
+  async downloadModel({
+    model,
+    preferGpu,
+    onProgress,
+  }: {
+    model: LocalWhisperModel;
+    preferGpu: boolean;
+    onProgress?: (snapshot: LocalSidecarDownloadSnapshot) => void;
+  }): Promise<LocalSidecarModelStatus> {
+    const runtime = await this.resolveRuntime(preferGpu);
+    await this.downloadModelOnMode(runtime.mode, model, onProgress);
+
+    const finalStatus = await this.getModelStatusByMode(
+      runtime.mode,
+      model,
+      true,
+    );
+    if (!finalStatus.downloaded || !finalStatus.valid) {
+      throw new Error(
+        finalStatus.validationError ||
+          `Model '${model}' failed validation (${runtime.mode.toUpperCase()})`,
+      );
+    }
+
+    this.markModelReady(runtime.mode, model);
+    return finalStatus;
+  }
+
+  async deleteModel({
     model,
     preferGpu,
   }: {
     model: LocalWhisperModel;
     preferGpu: boolean;
-  }): Promise<void> {
+  }): Promise<LocalSidecarModelStatus> {
     const runtime = await this.resolveRuntime(preferGpu);
-    await this.ensureModelReady(runtime.mode, model);
+    const status = await this.requestModeJson<SidecarModelStatusResponse>(
+      runtime.mode,
+      `/v1/models/${model}`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    this.invalidateModelReadiness(model);
+    return status;
   }
 
   async transcribe(
@@ -116,30 +198,7 @@ export class LocalTranscriptionSidecarManager {
     const runtime = await this.resolveRuntime(input.preferGpu);
 
     try {
-      await this.ensureModelReady(runtime.mode, input.model);
-      const result = await this.requestModeJson<SidecarTranscriptionResponse>(
-        runtime.mode,
-        "/v1/transcriptions",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: input.model,
-            samples: input.samples,
-            sampleRate: input.sampleRate,
-            language: input.language,
-            initialPrompt: input.initialPrompt,
-          }),
-        },
-      );
-
-      return {
-        text: result.text,
-        model: result.model,
-        inferenceDevice: result.inferenceDevice,
-        durationMs: result.durationMs,
-        mode: runtime.mode,
-      };
+      return await this.transcribeInMode(runtime.mode, input);
     } catch (error) {
       if (
         input.preferGpu &&
@@ -147,36 +206,77 @@ export class LocalTranscriptionSidecarManager {
         this.shouldFallbackToCpu(error)
       ) {
         this.markGpuUnavailable(error);
-        const cpuRuntime = await this.ensureRuntime("cpu");
-        await this.ensureModelReady(cpuRuntime.mode, input.model);
-        const cpuResult =
-          await this.requestModeJson<SidecarTranscriptionResponse>(
-            cpuRuntime.mode,
-            "/v1/transcriptions",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                model: input.model,
-                samples: input.samples,
-                sampleRate: input.sampleRate,
-                language: input.language,
-                initialPrompt: input.initialPrompt,
-              }),
-            },
-          );
-
-        return {
-          text: cpuResult.text,
-          model: cpuResult.model,
-          inferenceDevice: cpuResult.inferenceDevice,
-          durationMs: cpuResult.durationMs,
-          mode: "cpu",
-        };
+        return await this.transcribeInMode("cpu", input);
       }
 
       throw error;
     }
+  }
+
+  private async transcribeInMode(
+    mode: SidecarMode,
+    input: LocalSidecarTranscribeInput,
+  ): Promise<LocalSidecarTranscribeOutput> {
+    await this.ensureModelReady(mode, input.model);
+
+    try {
+      const result = await this.requestModeJson<SidecarTranscriptionResponse>(
+        mode,
+        "/v1/transcriptions",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: this.toTranscribeRequestBody(input),
+        },
+      );
+
+      this.markModelReady(mode, input.model);
+
+      return {
+        text: result.text,
+        model: result.model,
+        inferenceDevice: result.inferenceDevice,
+        durationMs: result.durationMs,
+        mode,
+      };
+    } catch (error) {
+      if (!this.isModelMissingError(error)) {
+        throw error;
+      }
+
+      this.invalidateModelReadiness(input.model);
+      await this.downloadModelOnMode(mode, input.model);
+
+      const retry = await this.requestModeJson<SidecarTranscriptionResponse>(
+        mode,
+        "/v1/transcriptions",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: this.toTranscribeRequestBody(input),
+        },
+      );
+
+      this.markModelReady(mode, input.model);
+
+      return {
+        text: retry.text,
+        model: retry.model,
+        inferenceDevice: retry.inferenceDevice,
+        durationMs: retry.durationMs,
+        mode,
+      };
+    }
+  }
+
+  private toTranscribeRequestBody(input: LocalSidecarTranscribeInput): string {
+    return JSON.stringify({
+      model: input.model,
+      samples: input.samples,
+      sampleRate: input.sampleRate,
+      language: input.language,
+      initialPrompt: input.initialPrompt,
+    });
   }
 
   private async resolveRuntime(preferGpu: boolean): Promise<SidecarRuntime> {
@@ -332,20 +432,45 @@ export class LocalTranscriptionSidecarManager {
     mode: SidecarMode,
     model: LocalWhisperModel,
   ): Promise<void> {
-    const currentStatus =
-      await this.requestModeJson<SidecarModelStatusResponse>(
-        mode,
-        `/v1/models/${model}/status?validate=true`,
-        undefined,
-        {
-          retries: 1,
-        },
-      );
+    const currentStatus = await this.getModelStatusByMode(mode, model, true, 1);
 
-    if (currentStatus.downloaded && currentStatus.valid) {
-      return;
+    if (!currentStatus.downloaded || !currentStatus.valid) {
+      await this.downloadModelOnMode(mode, model);
     }
 
+    const finalStatus = await this.getModelStatusByMode(mode, model, true, 1);
+
+    if (!finalStatus.downloaded || !finalStatus.valid) {
+      throw new Error(
+        finalStatus.validationError ||
+          `Model '${model}' failed validation (${mode.toUpperCase()})`,
+      );
+    }
+
+    this.markModelReady(mode, model);
+  }
+
+  private async getModelStatusByMode(
+    mode: SidecarMode,
+    model: LocalWhisperModel,
+    validate: boolean,
+    retries = SIDECAR_REQUEST_RETRIES,
+  ): Promise<LocalSidecarModelStatus> {
+    return await this.requestModeJson<SidecarModelStatusResponse>(
+      mode,
+      `/v1/models/${model}/status?validate=${validate ? "true" : "false"}`,
+      undefined,
+      {
+        retries,
+      },
+    );
+  }
+
+  private async downloadModelOnMode(
+    mode: SidecarMode,
+    model: LocalWhisperModel,
+    onProgress?: (snapshot: LocalSidecarDownloadSnapshot) => void,
+  ): Promise<void> {
     const job = await this.requestModeJson<SidecarDownloadSnapshot>(
       mode,
       `/v1/models/${model}/download`,
@@ -353,6 +478,19 @@ export class LocalTranscriptionSidecarManager {
         method: "POST",
       },
     );
+
+    onProgress?.(job);
+
+    if (job.status === "completed") {
+      return;
+    }
+
+    if (job.status === "failed") {
+      throw new Error(
+        job.error ||
+          `Model download failed for '${model}' (${mode.toUpperCase()})`,
+      );
+    }
 
     const deadline = Date.now() + MODEL_DOWNLOAD_TIMEOUT_MS;
     while (Date.now() < deadline) {
@@ -365,8 +503,10 @@ export class LocalTranscriptionSidecarManager {
         },
       );
 
+      onProgress?.(progress);
+
       if (progress.status === "completed") {
-        break;
+        return;
       }
 
       if (progress.status === "failed") {
@@ -379,27 +519,30 @@ export class LocalTranscriptionSidecarManager {
       await sleep(MODEL_DOWNLOAD_POLL_INTERVAL_MS);
     }
 
-    if (Date.now() >= deadline) {
-      throw new Error(
-        `Model download timed out for '${model}' (${mode.toUpperCase()})`,
-      );
-    }
-
-    const finalStatus = await this.requestModeJson<SidecarModelStatusResponse>(
-      mode,
-      `/v1/models/${model}/status?validate=true`,
-      undefined,
-      {
-        retries: 1,
-      },
+    throw new Error(
+      `Model download timed out for '${model}' (${mode.toUpperCase()})`,
     );
+  }
 
-    if (!finalStatus.downloaded || !finalStatus.valid) {
-      throw new Error(
-        finalStatus.validationError ||
-          `Model '${model}' failed validation (${mode.toUpperCase()})`,
-      );
+  private markModelReady(mode: SidecarMode, model: LocalWhisperModel): void {
+    this.readyModels.set(`${mode}:${model}`, Promise.resolve());
+  }
+
+  private invalidateModelReadiness(model: LocalWhisperModel): void {
+    this.readyModels.delete(`cpu:${model}`);
+    this.readyModels.delete(`gpu:${model}`);
+  }
+
+  private isModelMissingError(error: unknown): boolean {
+    if (!(error instanceof SidecarRequestError)) {
+      return false;
     }
+
+    if (error.status !== 404) {
+      return false;
+    }
+
+    return !error.code || error.code === "model_not_downloaded";
   }
 
   private async requestModeJson<T>(

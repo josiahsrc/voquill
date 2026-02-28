@@ -6,6 +6,7 @@ It exposes one REST interface for both CPU and GPU binaries:
 
 - `POST /v1/models/{model}/download`
 - `GET /v1/models/{model}/download/{jobId}`
+- `DELETE /v1/models/{model}`
 - `GET /v1/models/{model}/status`
 - `POST /v1/transcriptions`
 
@@ -83,6 +84,11 @@ cargo test --manifest-path packages/rust_transcription/Cargo.toml --test sidecar
 ### `GET /v1/models/{model}/download/{jobId}`
 
 Returns download progress.
+
+### `DELETE /v1/models/{model}`
+
+Deletes a downloaded model file (and any partial download fragments) if no
+active download is running for that model.
 
 ### `GET /v1/models/{model}/status?validate=true`
 
