@@ -16,7 +16,7 @@
     "dev:vite": "node scripts/run-vite-with-flavor.mjs dev",
     "build": "tsc && node scripts/run-vite-with-flavor.mjs build",
     "preview": "node scripts/run-vite-with-flavor.mjs preview",
-    "tauri": "tauri",
+    "tauri": "node scripts/run-tauri-with-sidecars.mjs",
     "test:webdriver": "wdio run webdriver/wdio.conf.js",
     "i18n:extract": "node ./scripts/i18n-extract-with-prune.mjs",
     "i18n:sync": "node ./scripts/i18n-sync.mjs",
