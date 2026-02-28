@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { relaunch } from "@tauri-apps/plugin-process";
 import {
   check,
@@ -235,6 +236,19 @@ export const installAvailableUpdate = async (): Promise<void> => {
       }
     };
 
+    // Set surface flags before calling downloadAndInstall because on Windows,
+    // the process exits during this call (the Tauri updater spawns the NSIS
+    // installer then calls std::process::exit) and the .then() callback never
+    // runs. The file-based flag is checked by Rust on startup to skip the
+    // autostart-hidden logic; the localStorage flag is consumed by TypeScript
+    // to call surfaceMainWindow().
+    markSurfaceWindowForNextLaunch();
+    try {
+      await invoke("mark_surface_after_update");
+    } catch (error) {
+      console.error("Failed to mark surface after update", error);
+    }
+
     try {
       await update.downloadAndInstall(handleDownloadEvent);
       succeeded = true;
@@ -271,7 +285,6 @@ export const installAvailableUpdate = async (): Promise<void> => {
       if (!succeeded) {
         return;
       }
-      markSurfaceWindowForNextLaunch();
       try {
         await availableUpdate?.close();
         await relaunch();

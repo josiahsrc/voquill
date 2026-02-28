@@ -2,6 +2,7 @@ use sqlx::sqlite::SqlitePoolOptions;
 use tauri::{Manager, WindowEvent};
 
 const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
+pub(crate) const SURFACE_AFTER_UPDATE_FLAG: &str = "surface-after-update";
 
 pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
@@ -47,6 +48,23 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             // Write startup diagnostics for debugging
             crate::system::diagnostics::write_startup_diagnostics(app.handle());
 
+            // Check if a previous update left the surface-after-update flag.
+            // On Windows, the NSIS installer relaunches the app with the original
+            // command-line args (including --voquill-autostart-hidden if the app
+            // was auto-started). The flag tells us to show the window anyway.
+            let should_surface_after_update = {
+                let mut result = false;
+                if let Ok(config_dir) = app.path().app_config_dir() {
+                    let flag_file = config_dir.join(SURFACE_AFTER_UPDATE_FLAG);
+                    if flag_file.exists() {
+                        eprintln!("[app] Detected post-update launch, will surface window");
+                        let _ = std::fs::remove_file(&flag_file);
+                        result = true;
+                    }
+                }
+                result
+            };
+
             let db_url = {
                 let handle = app.handle();
                 crate::system::paths::database_url(handle)
@@ -67,7 +85,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             #[cfg(desktop)]
             {
-                if std::env::args().any(|arg| arg == AUTOSTART_HIDDEN_ARG) {
+                if !should_surface_after_update
+                    && std::env::args().any(|arg| arg == AUTOSTART_HIDDEN_ARG)
+                {
                     if let Some(main_window) = app.get_webview_window("main") {
                         let _ = main_window.hide();
                         #[cfg(target_os = "macos")]
@@ -234,6 +254,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::initialize_local_transcriber,
             crate::commands::read_enterprise_target,
             crate::commands::get_keyboard_language,
+            crate::commands::mark_surface_after_update,
         ])
 }
 
