@@ -437,8 +437,7 @@ jobs:
             build-essential pkg-config cmake \
             libgtk-3-dev "$WEBKIT_PKG" \
             libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf \
-            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-            gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
 
       - name: Set Linux CPU build environment
         if: matrix.os == 'ubuntu-22.04' && matrix.gpu_variant == false
