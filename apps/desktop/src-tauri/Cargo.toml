@@ -17,12 +17,6 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
-[features]
-default = []
-linux-gpu = ["whisper-rs/vulkan"]
-mac-gpu = ["whisper-rs/metal"]
-windows-gpu = ["whisper-rs/vulkan"]
-
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png", "devtools", "macos-private-api"] }
 tauri-plugin-autostart = "2"
@@ -34,11 +28,11 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-http = "2"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tauri-plugin-shell = "2"
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "sqlite"] }
 thiserror = "1"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 cpal = "0.15"
-whisper-rs = { version = "0.15.1", default-features = false }
 tauri-plugin-os = "2.3.1"
 rdev = { git = "https://github.com/josiahsrc/rdev" }
 strum = "0.24"

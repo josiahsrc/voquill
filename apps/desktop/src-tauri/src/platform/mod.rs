@@ -55,33 +55,12 @@ pub use windows::keyboard_language;
 pub mod app_info;
 
 pub mod audio;
-pub mod whisper;
 
 #[cfg(desktop)]
 pub mod keyboard;
 
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
 pub type ChunkCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
-
-#[derive(Clone, Debug, Default)]
-pub struct TranscriptionRequest {
-    pub device: Option<TranscriptionDevice>,
-    pub model_path: Option<String>,
-    pub initial_prompt: Option<String>,
-    pub language: Option<String>,
-}
-
-#[derive(Clone, Debug)]
-pub enum TranscriptionDevice {
-    Cpu,
-    Gpu(GpuDescriptor),
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct GpuDescriptor {
-    pub id: Option<u32>,
-    pub name: Option<String>,
-}
 
 pub trait Recorder: Send + Sync {
     fn start(
@@ -95,13 +74,4 @@ pub trait Recorder: Send + Sync {
     fn current_sample_rate(&self) -> Option<u32> {
         None
     }
-}
-
-pub trait Transcriber: Send + Sync {
-    fn transcribe(
-        &self,
-        samples: &[f32],
-        sample_rate: u32,
-        request: Option<&TranscriptionRequest>,
-    ) -> Result<String, String>;
 }

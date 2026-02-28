@@ -62,4 +62,6 @@ jobs:
         run: npm run lint --workspace=desktop
       - name: Lint Rust
         working-directory: apps/desktop/src-tauri
+        env:
+          TAURI_CONFIG: '{"bundle":{"externalBin":[]}}'
         run: cargo clippy -- -D warnings

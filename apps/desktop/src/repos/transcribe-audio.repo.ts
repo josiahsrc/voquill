@@ -11,15 +11,9 @@ import {
   OpenAITranscriptionModel,
   TranscriptionModel,
 } from "@repo/voice-ai";
-import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
-import {
-  CPU_DEVICE_VALUE,
-  DEFAULT_MODEL_SIZE,
-  TranscriptionMode,
-} from "../types/ai.types";
+import { DEFAULT_MODEL_SIZE, TranscriptionMode } from "../types/ai.types";
 import { AudioSamples } from "../types/audio.types";
-import { buildDeviceLabel } from "../types/gpu.types";
 import {
   buildWaveFile,
   ensureFloat32Array,
@@ -28,7 +22,6 @@ import {
 import { getEffectiveAuth } from "../utils/auth.utils";
 import { invokeEnterprise } from "../utils/enterprise.utils";
 import { NEW_SERVER_URL } from "../utils/new-server.utils";
-import { loadDiscreteGpus } from "../utils/gpu.utils";
 import { openaiCompatibleTranscribeAudio } from "../utils/openai-compatible-transcribe.utils";
 import { speachesTranscribeAudio } from "../utils/speaches.utils";
 import {
@@ -36,17 +29,18 @@ import {
   splitAudioTranscription,
 } from "../utils/transcribe.utils";
 import { BaseRepo } from "./base.repo";
-
-type TranscriptionDeviceSelection = {
-  cpu?: boolean;
-  deviceId?: number;
-  deviceName?: string;
-};
+import {
+  isGpuPreferredTranscriptionDevice,
+  type LocalWhisperModel,
+  normalizeTranscriptionDevice,
+  normalizeLocalWhisperModel,
+} from "../utils/local-transcription.utils";
+import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
 
 type TranscriptionOptionsPayload = {
-  modelSize: string;
-  device?: TranscriptionDeviceSelection;
-  deviceLabel: string;
+  model: LocalWhisperModel;
+  preferGpu: boolean;
+  processorId: string;
 };
 
 export type TranscribeAudioMetadata = {
@@ -170,9 +164,9 @@ export abstract class BaseTranscribeAudioRepo extends BaseRepo {
 }
 
 export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
-  // Local whisper can handle longer segments, but 120s is a safe default
+  // Local whisper can handle longer segments, but 60s is a safe default
   protected getSegmentDurationSec(): number {
-    return 120;
+    return 60;
   }
 
   protected getOverlapDurationSec(): number {
@@ -184,74 +178,37 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     return 1;
   }
 
-  private async resolveTranscriptionOptions(): Promise<TranscriptionOptionsPayload> {
+  private resolveTranscriptionOptions(): TranscriptionOptionsPayload {
     const state = getAppState();
     const { device, modelSize } = state.settings.aiTranscription;
 
-    const normalizedModelSize =
-      modelSize?.trim().toLowerCase() || DEFAULT_MODEL_SIZE;
-
-    const options: TranscriptionOptionsPayload = {
-      modelSize: normalizedModelSize,
-      deviceLabel: "CPU",
+    return {
+      model: normalizeLocalWhisperModel(modelSize || DEFAULT_MODEL_SIZE),
+      preferGpu: isGpuPreferredTranscriptionDevice(device),
+      processorId: normalizeTranscriptionDevice(device),
     };
-
-    const ensureCpu = () => {
-      options.device = { cpu: true };
-      options.deviceLabel = "CPU";
-      return options;
-    };
-
-    if (!device || device === CPU_DEVICE_VALUE) {
-      return ensureCpu();
-    }
-
-    const match = /^gpu-(\d+)$/.exec(device);
-    if (!match) {
-      return ensureCpu();
-    }
-
-    const index = Number.parseInt(match[1] ?? "", 10);
-    if (Number.isNaN(index)) {
-      return ensureCpu();
-    }
-
-    const gpus = await loadDiscreteGpus();
-    const selected = gpus[index];
-    if (!selected) {
-      return ensureCpu();
-    }
-
-    options.device = {
-      cpu: false,
-      deviceId: selected.device,
-      deviceName: selected.name,
-    };
-    options.deviceLabel = `GPU · ${buildDeviceLabel(selected)}`;
-
-    return options;
   }
 
   protected async transcribeSegment(
     input: TranscribeSegmentInput,
   ): Promise<TranscribeAudioOutput> {
-    const options = await this.resolveTranscriptionOptions();
-    const transcript = await invoke<string>("transcribe_audio", {
+    const options = this.resolveTranscriptionOptions();
+    const sidecarManager = getLocalTranscriptionSidecarManager();
+    const output = await sidecarManager.transcribe({
+      model: options.model,
+      preferGpu: options.preferGpu,
+      processorId: options.processorId,
       samples: Array.from(input.samples),
       sampleRate: input.sampleRate,
-      options: {
-        modelSize: options.modelSize,
-        device: options.device,
-        initialPrompt: input.prompt,
-        language: input.language,
-      },
+      initialPrompt: input.prompt ?? undefined,
+      language: input.language,
     });
 
     return {
-      text: transcript,
+      text: output.text,
       metadata: {
-        inferenceDevice: options.deviceLabel,
-        modelSize: options.modelSize,
+        inferenceDevice: output.inferenceDevice,
+        modelSize: output.model,
         transcriptionMode: "local",
       },
     };

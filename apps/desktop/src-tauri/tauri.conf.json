@@ -34,6 +34,10 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
+    "externalBin": [
+      "binaries/rust-transcription-cpu",
+      "binaries/rust-transcription-gpu"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

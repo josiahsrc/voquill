@@ -1,31 +1,45 @@
 import {
-  Alert,
   Box,
   Button,
+  CircularProgress,
   FormControl,
   InputLabel,
+  LinearProgress,
   MenuItem,
   Select,
   Stack,
   Typography,
 } from "@mui/material";
-import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useMemo, useState } from "react";
-import { FormattedMessage } from "react-intl";
+import { useCallback, useEffect } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import {
-  setGpuEnumerationEnabled,
+  deleteLocalTranscriptionModel,
+  downloadLocalTranscriptionModel,
+  refreshLocalTranscriptionProcessors,
+  refreshLocalTranscriptionModelStatuses,
+} from "../../actions/settings-local-transcription.actions";
+import { showErrorSnackbar } from "../../actions/app.actions";
+import {
   setPreferredTranscriptionApiKeyId,
   setPreferredTranscriptionDevice,
   setPreferredTranscriptionMode,
   setPreferredTranscriptionModelSize,
 } from "../../actions/user.actions";
-import { useSupportedDiscreteGpus } from "../../hooks/gpu.hooks";
+import {
+  isLocalTranscriptionModelDownloadInProgress,
+  isLocalTranscriptionModelSelectable,
+} from "../../state/settings.state";
 import { useAppStore } from "../../store";
-import { getAllowsChangeTranscription } from "../../utils/enterprise.utils";
-import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
-import { buildDeviceLabel, type GpuInfo } from "../../types/gpu.types";
-import { isGPUBuild } from "../../utils/env.utils";
+import { getAllowsChangeTranscription } from "../../utils/enterprise.utils";
+import { formatSize } from "../../utils/format.utils";
+import { type LocalSidecarDownloadSnapshot } from "../../utils/local-transcription-sidecar.utils";
+import {
+  type LocalWhisperModel,
+  normalizeTranscriptionDevice,
+  normalizeLocalWhisperModel,
+} from "../../utils/local-transcription.utils";
+import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
 import {
   SegmentedControl,
   SegmentedControlOption,
@@ -35,39 +49,69 @@ import { ApiKeyList } from "./ApiKeyList";
 import { VoquillCloudSetting } from "./VoquillCloudSetting";
 
 type ModelOption = {
-  value: string;
+  value: LocalWhisperModel;
   label: string;
   helper: string;
 };
 
 const MODEL_OPTIONS: ModelOption[] = [
-  { value: "tiny", label: "Tiny (77 MB)", helper: "Fastest, lowest accuracy" },
+  {
+    value: "tiny",
+    label: "Whisper Tiny (77 MB)",
+    helper: "Fastest, lowest accuracy",
+  },
   {
     value: "base",
-    label: "Base (148 MB)",
+    label: "Whisper Base (148 MB)",
     helper: "Great balance of speed and accuracy",
   },
   {
     value: "small",
-    label: "Small (488 MB)",
+    label: "Whisper Small (488 MB)",
     helper: "Recommended with GPU acceleration",
   },
   {
     value: "medium",
-    label: "Medium (1.53 GB)",
-    helper: "High accuracy, slower on CPU",
+    label: "Whisper Medium (1.53 GB)",
+    helper: "Balanced quality and speed",
   },
   {
-    value: "large-turbo",
-    label: "Large Turbo (1.6 GB)",
+    value: "turbo",
+    label: "Whisper Large v3 Turbo (1.6 GB)",
     helper: "Fast large model, great accuracy",
   },
   {
     value: "large",
-    label: "Large (3.1 GB)",
+    label: "Whisper Large v3 (3.1 GB)",
     helper: "Highest accuracy, requires GPU",
   },
 ];
+
+const formatDownloadProgress = (
+  snapshot: LocalSidecarDownloadSnapshot | undefined,
+): string | null => {
+  if (!snapshot) {
+    return null;
+  }
+
+  const progressPart =
+    snapshot.progress != null
+      ? `${Math.round(Math.max(0, Math.min(1, snapshot.progress)) * 100)}%`
+      : null;
+
+  const bytesPart =
+    snapshot.totalBytes != null && snapshot.totalBytes > 0
+      ? `${formatSize(snapshot.bytesDownloaded)} of ${formatSize(snapshot.totalBytes)}`
+      : snapshot.bytesDownloaded > 0
+        ? formatSize(snapshot.bytesDownloaded)
+        : null;
+
+  if (progressPart && bytesPart) {
+    return `${progressPart} • ${bytesPart}`;
+  }
+
+  return progressPart || bytesPart;
+};
 
 export type AITranscriptionConfigurationProps = {
   hideCloudOption?: boolean;
@@ -76,60 +120,100 @@ export type AITranscriptionConfigurationProps = {
 export const AITranscriptionConfiguration = ({
   hideCloudOption,
 }: AITranscriptionConfigurationProps) => {
+  const intl = useIntl();
   const transcription = useAppStore((state) => state.settings.aiTranscription);
   const allowChange = useAppStore(getAllowsChangeTranscription);
-  const [gpuEnumerationError, setGpuEnumerationError] = useState<string | null>(
-    null,
+  const localTranscriptionConfig = transcription.localModelManagement;
+
+  const deviceValue = normalizeTranscriptionDevice(transcription.device);
+  const modelValue = normalizeLocalWhisperModel(transcription.modelSize);
+  const modelDownloadSnapshot =
+    localTranscriptionConfig.modelDownloads[modelValue];
+  const modelDownloading = isLocalTranscriptionModelDownloadInProgress(
+    modelDownloadSnapshot,
   );
-  const [isEnablingGpu, setIsEnablingGpu] = useState(false);
-
-  // Only load GPUs if already enabled (persisted state)
-  const { gpus, loading: gpusLoading } = useSupportedDiscreteGpus(
-    transcription.gpuEnumerationEnabled,
+  const modelSelectable = isLocalTranscriptionModelSelectable(
+    transcription,
+    modelValue,
   );
+  const showInlineModelDownloadAction = !modelSelectable;
 
-  // Single click handler - does everything in one place
-  const handleEnableHardwareAcceleration = useCallback(async () => {
-    setGpuEnumerationError(null);
-    setIsEnablingGpu(true);
-
-    try {
-      // Fetch GPUs directly here, don't rely on hook state
-      const gpuList = await invoke<GpuInfo[]>("list_gpus");
-      const supported = gpuList.filter(
-        (info) =>
-          info.backend === "Vulkan" && info.deviceType === "DiscreteGpu",
-      );
-
-      console.log("[gpu] Detected supported GPUs:", supported);
-
-      if (supported.length > 0) {
-        // Success - enable GPU enumeration (this will trigger hook to load GPUs for dropdown)
-        await setGpuEnumerationEnabled(true);
-        console.log("GPUs enabled for transcription processing.");
-      } else {
-        setGpuEnumerationError(
-          "No compatible GPUs found. Make sure you have a discrete GPU with Vulkan support.",
-        );
-      }
-    } catch (error) {
-      console.error("Failed to enumerate GPUs:", error);
-      setGpuEnumerationError("Failed to detect GPUs. Please try again.");
-    } finally {
-      setIsEnablingGpu(false);
+  useEffect(() => {
+    if (transcription.mode !== "local") {
+      return;
     }
-  }, []);
 
-  const deviceOptions = useMemo(
-    () => [
-      { value: CPU_DEVICE_VALUE, label: "CPU processing" },
-      ...gpus.map((gpu, index) => ({
-        value: `gpu-${index}`,
-        label: buildDeviceLabel(gpu),
-      })),
-    ],
-    [gpus],
-  );
+    void refreshLocalTranscriptionProcessors();
+  }, [transcription.mode]);
+
+  useEffect(() => {
+    if (transcription.mode !== "local") {
+      return;
+    }
+
+    if (!localTranscriptionConfig.processorsLoaded) {
+      return;
+    }
+
+    if (localTranscriptionConfig.availableProcessors.length === 0) {
+      return;
+    }
+
+    if (
+      localTranscriptionConfig.availableProcessors.some(
+        (processor) => processor.id === deviceValue,
+      )
+    ) {
+      return;
+    }
+
+    const fallbackProcessor =
+      localTranscriptionConfig.availableProcessors[0]?.id || CPU_DEVICE_VALUE;
+    if (fallbackProcessor !== deviceValue) {
+      void setPreferredTranscriptionDevice(fallbackProcessor);
+    }
+  }, [
+    transcription.mode,
+    deviceValue,
+    localTranscriptionConfig.availableProcessors,
+    localTranscriptionConfig.processorsLoaded,
+  ]);
+
+  useEffect(() => {
+    if (transcription.mode !== "local") {
+      return;
+    }
+
+    void refreshLocalTranscriptionModelStatuses();
+  }, [transcription.mode, transcription.device]);
+
+  useEffect(() => {
+    if (
+      transcription.mode !== "local" ||
+      !localTranscriptionConfig.modelStatusesLoaded
+    ) {
+      return;
+    }
+
+    if (isLocalTranscriptionModelSelectable(transcription, modelValue)) {
+      return;
+    }
+
+    const fallbackModel = MODEL_OPTIONS.find((option) =>
+      isLocalTranscriptionModelSelectable(transcription, option.value),
+    )?.value;
+
+    if (!fallbackModel || fallbackModel === modelValue) {
+      return;
+    }
+
+    void setPreferredTranscriptionModelSize(fallbackModel);
+  }, [
+    transcription,
+    localTranscriptionConfig.modelStatusesLoaded,
+    modelValue,
+    transcription.mode,
+  ]);
 
   const handleModeChange = useCallback((mode: TranscriptionMode) => {
     void setPreferredTranscriptionMode(mode);
@@ -139,13 +223,62 @@ export const AITranscriptionConfiguration = ({
     void setPreferredTranscriptionDevice(device);
   }, []);
 
-  const handleModelSizeChange = useCallback((modelSize: string) => {
-    void setPreferredTranscriptionModelSize(modelSize);
-  }, []);
+  const handleModelSizeChange = useCallback(
+    (rawModelSize: string) => {
+      const modelSize = normalizeLocalWhisperModel(rawModelSize);
+      if (!isLocalTranscriptionModelSelectable(transcription, modelSize)) {
+        showErrorSnackbar("Download this model before selecting it.");
+        return;
+      }
+
+      void setPreferredTranscriptionModelSize(modelSize);
+    },
+    [transcription],
+  );
 
   const handleApiKeyChange = useCallback((id: string | null) => {
     void setPreferredTranscriptionApiKeyId(id);
   }, []);
+
+  const handleDownloadModel = useCallback(
+    (model: LocalWhisperModel) => {
+      if (
+        isLocalTranscriptionModelDownloadInProgress(
+          localTranscriptionConfig.modelDownloads[model],
+        )
+      ) {
+        return;
+      }
+
+      void downloadLocalTranscriptionModel(model);
+    },
+    [localTranscriptionConfig.modelDownloads],
+  );
+
+  const handleDeleteModel = useCallback(
+    (model: LocalWhisperModel) => {
+      if (localTranscriptionConfig.modelDeletes[model]) {
+        return;
+      }
+
+      void (async () => {
+        const statuses = await deleteLocalTranscriptionModel(model);
+        if (modelValue !== model || !statuses) {
+          return;
+        }
+
+        const fallbackModel = MODEL_OPTIONS.find(
+          (option) =>
+            statuses[option.value]?.downloaded && statuses[option.value]?.valid,
+        )?.value;
+
+        if (fallbackModel) {
+          await setPreferredTranscriptionModelSize(fallbackModel);
+        }
+      })();
+    },
+    [localTranscriptionConfig.modelDeletes, modelValue],
+  );
 
   if (!allowChange) {
     return <ManagedByOrgNotice />;
@@ -174,67 +307,33 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          {!transcription.gpuEnumerationEnabled && isGPUBuild() && (
-            <Alert
-              severity="info"
-              sx={{
-                width: "100%",
-                "& .MuiAlert-message": { width: "100%" },
-              }}
+          <FormControl fullWidth size="small" sx={{ position: "relative" }}>
+            <InputLabel id="processing-device-label">
+              <FormattedMessage defaultMessage="Processing device" />
+            </InputLabel>
+            <Select
+              labelId="processing-device-label"
+              label={<FormattedMessage defaultMessage="Processing device" />}
+              value={deviceValue}
+              onChange={(event) => handleDeviceChange(event.target.value)}
+              disabled={localTranscriptionConfig.processorsLoading}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  width: "100%",
-                }}
-              >
-                <Typography variant="body2" sx={{ pt: 0.25 }}>
-                  <FormattedMessage defaultMessage="Have an NVIDIA GPU?" />
-                </Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  disabled={isEnablingGpu}
-                  onClick={handleEnableHardwareAcceleration}
-                  sx={{ fontSize: "0.75rem", py: 0.5, flexShrink: 0 }}
-                >
-                  {isEnablingGpu ? (
-                    <FormattedMessage defaultMessage="Detecting..." />
-                  ) : (
-                    <FormattedMessage defaultMessage="Enable hardware acceleration" />
-                  )}
-                </Button>
-              </Box>
-            </Alert>
-          )}
-
-          {gpuEnumerationError && (
-            <Alert severity="warning">{gpuEnumerationError}</Alert>
-          )}
-
-          {transcription.gpuEnumerationEnabled && (
-            <FormControl fullWidth size="small">
-              <InputLabel id="processing-device-label">
-                <FormattedMessage defaultMessage="Processing device" />
-              </InputLabel>
-              <Select
-                labelId="processing-device-label"
-                label={<FormattedMessage defaultMessage="Processing device" />}
-                value={transcription.device}
-                onChange={(event) => handleDeviceChange(event.target.value)}
-                disabled={gpusLoading}
-              >
-                {deviceOptions.map(({ value, label }) => (
-                  <MenuItem key={value} value={value}>
-                    {label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
+              {(localTranscriptionConfig.availableProcessors.length > 0
+                ? localTranscriptionConfig.availableProcessors
+                : [
+                    {
+                      id: CPU_DEVICE_VALUE,
+                      name: "CPU",
+                      kind: "cpu" as const,
+                    },
+                  ]
+              ).map((processor) => (
+                <MenuItem key={processor.id} value={processor.id}>
+                  {processor.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControl fullWidth size="small">
             <InputLabel id="model-size-label">
@@ -243,27 +342,202 @@ export const AITranscriptionConfiguration = ({
             <Select
               labelId="model-size-label"
               label={<FormattedMessage defaultMessage="Model size" />}
-              value={transcription.modelSize}
-              onChange={(event) => handleModelSizeChange(event.target.value)}
+              value={modelValue}
+              onChange={(event) =>
+                handleModelSizeChange(String(event.target.value))
+              }
+              renderValue={(value) => {
+                const model = normalizeLocalWhisperModel(String(value));
+                const option = MODEL_OPTIONS.find(
+                  (item) => item.value === model,
+                );
+                return option?.label ?? model;
+              }}
+              sx={
+                showInlineModelDownloadAction
+                  ? {
+                      "& .MuiSelect-select": {
+                        pr: "132px !important",
+                      },
+                    }
+                  : undefined
+              }
             >
-              {MODEL_OPTIONS.map(({ value, label, helper }) => (
-                <MenuItem key={value} value={value}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={600}>
-                      {label}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
-                      {helper}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
+              {MODEL_OPTIONS.map(({ value, label, helper }) => {
+                const status = localTranscriptionConfig.modelStatuses[value];
+                const downloadSnapshot =
+                  localTranscriptionConfig.modelDownloads[value];
+                const downloading =
+                  isLocalTranscriptionModelDownloadInProgress(downloadSnapshot);
+                const deleting = !!localTranscriptionConfig.modelDeletes[value];
+                const selectable = isLocalTranscriptionModelSelectable(
+                  transcription,
+                  value,
+                );
+                const progressLabel = formatDownloadProgress(downloadSnapshot);
+
+                return (
+                  <MenuItem key={value} value={value}>
+                    <Stack spacing={0.75} sx={{ width: "100%" }}>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        gap={1}
+                        sx={{ width: "100%" }}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {label}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                          >
+                            {helper}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {selectable
+                              ? intl.formatMessage({
+                                  defaultMessage: "Downloaded",
+                                })
+                              : status?.validationError || null}
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color={selectable ? "error" : "primary"}
+                          disabled={downloading || deleting}
+                          sx={{
+                            minWidth: 0,
+                            minHeight: 24,
+                            px: 1.25,
+                            borderRadius: 999,
+                            boxShadow: "none",
+                            textTransform: "none",
+                            fontSize: 12,
+                            lineHeight: 1.2,
+                            alignSelf: "center",
+                            "&:hover": {
+                              boxShadow: "none",
+                            },
+                          }}
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            if (selectable) {
+                              handleDeleteModel(value);
+                              return;
+                            }
+                            handleDownloadModel(value);
+                          }}
+                        >
+                          {downloading
+                            ? intl.formatMessage({
+                                defaultMessage: "Downloading...",
+                              })
+                            : deleting
+                              ? intl.formatMessage({
+                                  defaultMessage: "Deleting...",
+                                })
+                              : selectable
+                                ? intl.formatMessage({
+                                    defaultMessage: "Delete",
+                                  })
+                                : intl.formatMessage({
+                                    defaultMessage: "Download",
+                                  })}
+                        </Button>
+                      </Stack>
+
+                      {downloading && (
+                        <LinearProgress
+                          variant={
+                            downloadSnapshot?.progress != null
+                              ? "determinate"
+                              : "indeterminate"
+                          }
+                          value={
+                            downloadSnapshot?.progress != null
+                              ? Math.max(
+                                  0,
+                                  Math.min(1, downloadSnapshot.progress),
+                                ) * 100
+                              : undefined
+                          }
+                        />
+                      )}
+
+                      {downloading && progressLabel && (
+                        <Typography variant="caption" color="text.secondary">
+                          {progressLabel}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </MenuItem>
+                );
+              })}
             </Select>
+            {showInlineModelDownloadAction && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  right: 36,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  zIndex: 1,
+                }}
+              >
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  sx={{
+                    minWidth: 0,
+                    minHeight: 24,
+                    px: 1.25,
+                    borderRadius: 999,
+                    boxShadow: "none",
+                    textTransform: "none",
+                    fontSize: 12,
+                    lineHeight: 1.2,
+                    "&:hover": {
+                      boxShadow: "none",
+                    },
+                  }}
+                  disabled={modelDownloading}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleDownloadModel(modelValue);
+                  }}
+                >
+                  {modelDownloading
+                    ? intl.formatMessage({ defaultMessage: "Downloading..." })
+                    : intl.formatMessage({ defaultMessage: "Download" })}
+                </Button>
+              </Box>
+            )}
           </FormControl>
+
+          {localTranscriptionConfig.modelStatusesLoading && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <CircularProgress size={14} />
+              <Typography variant="caption" color="text.secondary">
+                <FormattedMessage defaultMessage="Refreshing model status..." />
+              </Typography>
+            </Stack>
+          )}
         </Stack>
       )}
 

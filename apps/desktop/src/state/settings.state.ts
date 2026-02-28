@@ -4,6 +4,15 @@ import {
   OpenRouterModel,
   OpenRouterProvider,
 } from "@repo/types";
+import type {
+  LocalSidecarDownloadSnapshot,
+  LocalSidecarModelStatus,
+  LocalSidecarProcessor,
+} from "../utils/local-transcription-sidecar.utils";
+import {
+  LOCAL_WHISPER_MODELS,
+  type LocalWhisperModel,
+} from "../utils/local-transcription.utils";
 import {
   type AgentMode,
   CPU_DEVICE_VALUE,
@@ -20,12 +29,31 @@ export type SettingsApiKeyProvider = ApiKeyProvider;
 
 export type SettingsApiKey = ApiKey;
 
+export type LocalTranscriptionModelStatusMap = Record<
+  LocalWhisperModel,
+  LocalSidecarModelStatus | null
+>;
+
+export type LocalTranscriptionModelManagementState = {
+  modelStatuses: LocalTranscriptionModelStatusMap;
+  modelStatusesLoading: boolean;
+  modelStatusesLoaded: boolean;
+  availableProcessors: LocalSidecarProcessor[];
+  processorsLoading: boolean;
+  processorsLoaded: boolean;
+  modelDownloads: Partial<
+    Record<LocalWhisperModel, LocalSidecarDownloadSnapshot>
+  >;
+  modelDeletes: Partial<Record<LocalWhisperModel, boolean>>;
+};
+
 export type SettingsTranscriptionState = {
   mode: TranscriptionMode;
   modelSize: string;
   device: string;
   selectedApiKeyId: string | null;
   gpuEnumerationEnabled: boolean;
+  localModelManagement: LocalTranscriptionModelManagementState;
 };
 
 export type SettingsGenerativeState = {
@@ -70,6 +98,26 @@ export type SettingsState = {
   autoDownloadLogs: boolean;
 };
 
+export const createEmptyLocalTranscriptionModelStatusMap =
+  (): LocalTranscriptionModelStatusMap =>
+    Object.fromEntries(
+      LOCAL_WHISPER_MODELS.map((model) => [model, null]),
+    ) as LocalTranscriptionModelStatusMap;
+
+export const isLocalTranscriptionModelDownloadInProgress = (
+  snapshot: LocalSidecarDownloadSnapshot | undefined,
+): boolean => {
+  return snapshot?.status === "pending" || snapshot?.status === "running";
+};
+
+export const isLocalTranscriptionModelSelectable = (
+  transcription: SettingsTranscriptionState,
+  model: LocalWhisperModel,
+): boolean => {
+  const status = transcription.localModelManagement.modelStatuses[model];
+  return !!status?.downloaded && !!status?.valid;
+};
+
 export const INITIAL_SETTINGS_STATE: SettingsState = {
   changePasswordDialogOpen: false,
   deleteAccountDialog: false,
@@ -90,6 +138,16 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     device: CPU_DEVICE_VALUE,
     selectedApiKeyId: null,
     gpuEnumerationEnabled: false,
+    localModelManagement: {
+      modelStatuses: createEmptyLocalTranscriptionModelStatusMap(),
+      modelStatusesLoading: false,
+      modelStatusesLoaded: false,
+      availableProcessors: [],
+      processorsLoading: false,
+      processorsLoaded: false,
+      modelDownloads: {},
+      modelDeletes: {},
+    },
   },
   aiPostProcessing: {
     mode: DEFAULT_POST_PROCESSING_MODE,

@@ -82,7 +82,3 @@ export const isWindows11 = (): boolean => {
 
   return false;
 };
-
-export const isGPUBuild = (): boolean => {
-  return import.meta.env.VITE_GPU_BUILD === "true";
-};
