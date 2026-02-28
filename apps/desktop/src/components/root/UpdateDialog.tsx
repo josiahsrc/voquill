@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useCallback, useMemo } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 import Markdown from "react-markdown";
 import {
   dismissUpdateDialog,
@@ -22,7 +23,6 @@ import {
 import { useAppStore } from "../../store";
 import { formatSize } from "../../utils/format.utils";
 import { isReadOnlyFilesystemInstallError } from "../../utils/updater.utils";
-import { FormattedMessage, useIntl } from "react-intl";
 
 const formatReleaseDate = (isoDate: string | null) => {
   if (!isoDate) {
@@ -251,7 +251,7 @@ export const UpdateDialog = () => {
                 <Typography variant="body2">{errorMessage}</Typography>
                 {showManualInstallerAction && (
                   <Typography variant="body2">
-                    <FormattedMessage defaultMessage="Voquill can't update itself from this location. Download the installer package to finish updating." />
+                    <FormattedMessage defaultMessage="Your operating system is preventing Voquill from modifying files in its current install location. Use the download button to get the latest installer, then run it to complete the update manually." />
                   </Typography>
                 )}
               </Stack>

@@ -176,6 +176,7 @@
   "done": "완료",
   "downgrade_to_free_plan": "무료 플랜으로 다운그레이드",
   "download": "다운로드",
+  "download_installer": "설치 프로그램 다운로드",
   "download_logs": "로그 다운로드",
   "downloading_update": "업데이트 다운로드 중...",
   "e_g_podcast_conference_etc": "예: 팟캐스트, 회의 등",
@@ -482,7 +483,6 @@
   "update_available": "업데이트 사용 가능",
   "update_ready": "업데이트 준비 완료",
   "upgrade": "업그레이드",
-  "upgrade_now_to_continue_voice_typing_without_any_limits": "제한 없이 음성 입력을 계속하려면 지금 업그레이드하세요.",
   "upgrade_to_pro": "Pro로 업그레이드",
   "upgrade_your_plan": "요금제 업그레이드",
   "url_of_your_local_speaches_docker_instance": "로컬 Speaches Docker 인스턴스의 URL",
@@ -536,5 +536,5 @@
   "you_ve_been_dictating_without_limits_all_week_keep_unlimited": "이번 주 내내 제한 없이 받아쓰기를 사용하고 있습니다. 무제한 단어, 더 빠른 처리, 그리고 우선 기능을 유지하세요.",
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "Azure OpenAI 리소스 엔드포인트 URL",
-  "your_pro_trial_has_ended": "프로 체험판이 종료되었습니다"
+  "your_operating_system_is_preventing_voquill_from_modifying_f": "운영 체제가 현재 설치 위치에서 Voquill이 파일을 수정하는 것을 방지하고 있습니다. 다운로드 버튼을 사용하여 최신 설치 프로그램을 받고, 이를 실행하여 업데이트를 수동으로 완료하십시오."
 }
