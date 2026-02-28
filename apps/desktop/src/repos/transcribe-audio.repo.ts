@@ -32,7 +32,6 @@ import { BaseRepo } from "./base.repo";
 import {
   isGpuPreferredTranscriptionDevice,
   type LocalWhisperModel,
-  normalizeTranscriptionDevice,
   normalizeLocalWhisperModel,
 } from "../utils/local-transcription.utils";
 import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
@@ -40,7 +39,6 @@ import { getLocalTranscriptionSidecarManager } from "../utils/local-transcriptio
 type TranscriptionOptionsPayload = {
   model: LocalWhisperModel;
   preferGpu: boolean;
-  processorId: string;
 };
 
 export type TranscribeAudioMetadata = {
@@ -185,7 +183,6 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     return {
       model: normalizeLocalWhisperModel(modelSize || DEFAULT_MODEL_SIZE),
       preferGpu: isGpuPreferredTranscriptionDevice(device),
-      processorId: normalizeTranscriptionDevice(device),
     };
   }
 
@@ -197,7 +194,6 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     const output = await sidecarManager.transcribe({
       model: options.model,
       preferGpu: options.preferGpu,
-      processorId: options.processorId,
       samples: Array.from(input.samples),
       sampleRate: input.sampleRate,
       initialPrompt: input.prompt ?? undefined,
