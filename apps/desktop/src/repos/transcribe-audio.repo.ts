@@ -31,12 +31,13 @@ import {
 import { BaseRepo } from "./base.repo";
 import {
   isGpuPreferredTranscriptionDevice,
+  type LocalWhisperModel,
   normalizeLocalWhisperModel,
 } from "../utils/local-transcription.utils";
 import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
 
 type TranscriptionOptionsPayload = {
-  model: "tiny" | "medium" | "large" | "turbo";
+  model: LocalWhisperModel;
   preferGpu: boolean;
 };
 

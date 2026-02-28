@@ -408,7 +408,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri("/v1/models/base/status")
+                    .uri("/v1/models/nano/status")
                     .body(Body::empty())
                     .unwrap(),
             )

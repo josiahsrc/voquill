@@ -1,10 +1,18 @@
 import { CPU_DEVICE_VALUE } from "../types/ai.types";
 
-export type LocalWhisperModel = "tiny" | "medium" | "large" | "turbo";
+export type LocalWhisperModel =
+  | "tiny"
+  | "base"
+  | "small"
+  | "medium"
+  | "large"
+  | "turbo";
 
 export const DEFAULT_LOCAL_WHISPER_MODEL: LocalWhisperModel = "tiny";
 export const LOCAL_WHISPER_MODELS: LocalWhisperModel[] = [
   "tiny",
+  "base",
+  "small",
   "medium",
   "turbo",
   "large",
@@ -15,15 +23,23 @@ export const normalizeLocalWhisperModel = (
 ): LocalWhisperModel => {
   const normalized = value?.trim().toLowerCase();
 
-  if (normalized === "tiny" || normalized === "base") {
+  if (normalized === "tiny" || normalized === "tiny.en") {
     return "tiny";
   }
 
-  if (normalized === "medium" || normalized === "small") {
+  if (normalized === "base" || normalized === "base.en") {
+    return "base";
+  }
+
+  if (normalized === "small" || normalized === "small.en") {
+    return "small";
+  }
+
+  if (normalized === "medium" || normalized === "medium.en") {
     return "medium";
   }
 
-  if (normalized === "large") {
+  if (normalized === "large" || normalized === "large-v3") {
     return "large";
   }
 

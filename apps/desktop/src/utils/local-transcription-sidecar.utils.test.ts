@@ -5,10 +5,17 @@ import {
 } from "./local-transcription.utils";
 
 describe("local-transcription-sidecar manager helpers", () => {
-  it("normalizes legacy model values to supported sidecar models", () => {
-    expect(normalizeLocalWhisperModel("base")).toBe("tiny");
-    expect(normalizeLocalWhisperModel("small")).toBe("medium");
+  it("normalizes model values to supported sidecar models", () => {
+    expect(normalizeLocalWhisperModel("tiny")).toBe("tiny");
+    expect(normalizeLocalWhisperModel("tiny.en")).toBe("tiny");
+    expect(normalizeLocalWhisperModel("base")).toBe("base");
+    expect(normalizeLocalWhisperModel("base.en")).toBe("base");
+    expect(normalizeLocalWhisperModel("small")).toBe("small");
+    expect(normalizeLocalWhisperModel("small.en")).toBe("small");
+    expect(normalizeLocalWhisperModel("medium")).toBe("medium");
+    expect(normalizeLocalWhisperModel("medium.en")).toBe("medium");
     expect(normalizeLocalWhisperModel("large-turbo")).toBe("turbo");
+    expect(normalizeLocalWhisperModel("large-v3")).toBe("large");
     expect(normalizeLocalWhisperModel("large")).toBe("large");
   });
 

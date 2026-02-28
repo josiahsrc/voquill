@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 pub enum WhisperModel {
     Tiny,
+    Base,
+    Small,
     Medium,
     Large,
     #[serde(
@@ -18,6 +20,8 @@ impl WhisperModel {
     pub fn from_slug(value: &str) -> Option<Self> {
         match value.trim().to_ascii_lowercase().as_str() {
             "tiny" => Some(Self::Tiny),
+            "base" => Some(Self::Base),
+            "small" => Some(Self::Small),
             "medium" => Some(Self::Medium),
             "large" => Some(Self::Large),
             "turbo" | "large-turbo" | "large_v3_turbo" | "large-v3-turbo" => Some(Self::Turbo),
@@ -28,6 +32,8 @@ impl WhisperModel {
     pub fn as_slug(self) -> &'static str {
         match self {
             Self::Tiny => "tiny",
+            Self::Base => "base",
+            Self::Small => "small",
             Self::Medium => "medium",
             Self::Large => "large",
             Self::Turbo => "turbo",
@@ -37,6 +43,8 @@ impl WhisperModel {
     pub fn filename(self) -> &'static str {
         match self {
             Self::Tiny => "ggml-tiny.bin",
+            Self::Base => "ggml-base.bin",
+            Self::Small => "ggml-small.bin",
             Self::Medium => "ggml-medium.bin",
             Self::Large => "ggml-large-v3.bin",
             Self::Turbo => "ggml-large-v3-turbo.bin",
@@ -58,6 +66,12 @@ impl WhisperModel {
 
         match self {
             Self::Tiny => "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
+            Self::Base => {
+                "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin"
+            }
+            Self::Small => {
+                "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+            }
             Self::Medium => {
                 "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin"
             }
@@ -72,6 +86,6 @@ impl WhisperModel {
     }
 
     pub fn supported() -> &'static [&'static str] {
-        &["tiny", "medium", "large", "turbo"]
+        &["tiny", "base", "small", "medium", "large", "turbo"]
     }
 }

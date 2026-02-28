@@ -10,7 +10,7 @@ It exposes one REST interface for both CPU and GPU binaries:
 - `GET /v1/models/{model}/status`
 - `POST /v1/transcriptions`
 
-Supported models: `tiny`, `medium`, `large`, `turbo`.
+Supported models: `tiny`, `base`, `small`, `medium`, `large`, `turbo`.
 
 ## Build
 
@@ -43,6 +43,8 @@ If GPU runtime is not available, the GPU binary exits with a non-zero code.
 - `RUST_TRANSCRIPTION_PORT` (default CPU `7771`, GPU `7772`)
 - `RUST_TRANSCRIPTION_MODELS_DIR` (default `./models`)
 - `RUST_TRANSCRIPTION_MODEL_URL_TINY`
+- `RUST_TRANSCRIPTION_MODEL_URL_BASE`
+- `RUST_TRANSCRIPTION_MODEL_URL_SMALL`
 - `RUST_TRANSCRIPTION_MODEL_URL_MEDIUM`
 - `RUST_TRANSCRIPTION_MODEL_URL_LARGE`
 - `RUST_TRANSCRIPTION_MODEL_URL_TURBO`

@@ -56,13 +56,23 @@ type ModelOption = {
 const MODEL_OPTIONS: ModelOption[] = [
   { value: "tiny", label: "Tiny (77 MB)", helper: "Fastest, lowest accuracy" },
   {
+    value: "base",
+    label: "Base (148 MB)",
+    helper: "Great balance of speed and accuracy",
+  },
+  {
+    value: "small",
+    label: "Small (488 MB)",
+    helper: "Recommended with GPU acceleration",
+  },
+  {
     value: "medium",
     label: "Medium (1.53 GB)",
     helper: "Balanced quality and speed",
   },
   {
     value: "turbo",
-    label: "Turbo (1.6 GB)",
+    label: "Large Turbo (1.6 GB)",
     helper: "Fast large model, great accuracy",
   },
   {
