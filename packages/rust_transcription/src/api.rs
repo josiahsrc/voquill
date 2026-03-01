@@ -1,7 +1,9 @@
 use std::io::ErrorKind;
 use std::path::Path as FsPath;
+use std::path::PathBuf;
 use std::time::Instant;
 
+use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::routing::{delete, get, post};
 use axum::{Json, Router};
@@ -25,6 +27,22 @@ pub fn create_router(state: AppState) -> Router {
         .route("/v1/models/:model/status", get(get_model_status))
         .route("/v1/devices", get(list_devices))
         .route("/v1/transcriptions", post(transcribe))
+        .route(
+            "/v1/transcriptions/sessions",
+            post(create_transcription_session),
+        )
+        .route(
+            "/v1/transcriptions/sessions/:session_id/chunks",
+            post(append_transcription_session_chunk),
+        )
+        .route(
+            "/v1/transcriptions/sessions/:session_id/finalize",
+            post(finalize_transcription_session),
+        )
+        .route(
+            "/v1/transcriptions/sessions/:session_id",
+            delete(delete_transcription_session),
+        )
         .layer(DefaultBodyLimit::max(250 * 1024 * 1024))
         .with_state(state)
 }
@@ -180,6 +198,40 @@ struct TranscribeRequest {
     device_id: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTranscriptionSessionRequest {
+    model: WhisperModel,
+    sample_rate: u32,
+    language: Option<String>,
+    initial_prompt: Option<String>,
+    device_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TranscriptionSessionPath {
+    session_id: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTranscriptionSessionResponse {
+    session_id: Uuid,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppendTranscriptionChunkResponse {
+    received_samples: usize,
+    buffered_samples: usize,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteTranscriptionSessionResponse {
+    deleted: bool,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct TranscribeResponse {
@@ -193,43 +245,20 @@ async fn transcribe(
     State(state): State<AppState>,
     Json(request): Json<TranscribeRequest>,
 ) -> Result<Json<TranscribeResponse>, ApiError> {
-    let model_path = state.model_path(request.model);
-
-    let metadata = tokio::fs::metadata(&model_path).await.map_err(|_| {
-        ApiError::not_found(
-            "model_not_downloaded",
-            format!(
-                "model '{}' is not downloaded; call /v1/models/{}/download first",
-                request.model.as_slug(),
-                request.model.as_slug()
-            ),
-        )
-    })?;
-
-    if !metadata.is_file() || metadata.len() == 0 {
-        return Err(ApiError::not_found(
-            "model_not_downloaded",
-            format!(
-                "model '{}' is not downloaded; call /v1/models/{}/download first",
-                request.model.as_slug(),
-                request.model.as_slug()
-            ),
-        ));
-    }
+    let model_path = ensure_model_downloaded(&state, request.model).await?;
 
     let started = Instant::now();
-    let output = state
-        .transcriber
-        .transcribe(TranscriptionInput {
-            model_path,
-            samples: request.samples,
-            sample_rate: request.sample_rate,
-            language: request.language,
-            initial_prompt: request.initial_prompt,
-            device_id: request.device_id,
-        })
-        .await
-        .map_err(map_transcription_error)?;
+    let output = run_transcription_request(
+        &state,
+        request.model,
+        model_path,
+        request.samples,
+        request.sample_rate,
+        request.language,
+        request.initial_prompt,
+        request.device_id,
+    )
+    .await?;
 
     Ok(Json(TranscribeResponse {
         text: output.text,
@@ -237,6 +266,101 @@ async fn transcribe(
         inference_device: output.inference_device,
         duration_ms: started.elapsed().as_millis(),
     }))
+}
+
+async fn create_transcription_session(
+    State(state): State<AppState>,
+    Json(request): Json<CreateTranscriptionSessionRequest>,
+) -> Result<Json<CreateTranscriptionSessionResponse>, ApiError> {
+    let _ = ensure_model_downloaded(&state, request.model).await?;
+
+    let session_id = state
+        .transcription_sessions
+        .create(
+            crate::streaming_sessions::BufferedTranscriptionSessionInput {
+                model: request.model,
+                sample_rate: request.sample_rate,
+                language: request.language,
+                initial_prompt: request.initial_prompt,
+                device_id: request.device_id,
+            },
+        )
+        .await;
+
+    Ok(Json(CreateTranscriptionSessionResponse { session_id }))
+}
+
+async fn append_transcription_session_chunk(
+    State(state): State<AppState>,
+    Path(path): Path<TranscriptionSessionPath>,
+    bytes: Bytes,
+) -> Result<Json<AppendTranscriptionChunkResponse>, ApiError> {
+    let session_id = parse_session_id(&path.session_id)?;
+    let samples = decode_f32le_samples(bytes.as_ref())?;
+    let received_samples = samples.len();
+
+    let buffered_samples = state
+        .transcription_sessions
+        .append_samples(session_id, samples)
+        .await
+        .ok_or_else(|| {
+            ApiError::not_found(
+                "session_not_found",
+                "transcription session does not exist or has already completed",
+            )
+        })?;
+
+    Ok(Json(AppendTranscriptionChunkResponse {
+        received_samples,
+        buffered_samples,
+    }))
+}
+
+async fn finalize_transcription_session(
+    State(state): State<AppState>,
+    Path(path): Path<TranscriptionSessionPath>,
+) -> Result<Json<TranscribeResponse>, ApiError> {
+    let session_id = parse_session_id(&path.session_id)?;
+    let session = state
+        .transcription_sessions
+        .take(session_id)
+        .await
+        .ok_or_else(|| {
+            ApiError::not_found(
+                "session_not_found",
+                "transcription session does not exist or has already completed",
+            )
+        })?;
+
+    let model_path = ensure_model_downloaded(&state, session.model).await?;
+    let started = Instant::now();
+    let output = run_transcription_request(
+        &state,
+        session.model,
+        model_path,
+        session.samples,
+        session.sample_rate,
+        session.language,
+        session.initial_prompt,
+        session.device_id,
+    )
+    .await?;
+
+    Ok(Json(TranscribeResponse {
+        text: output.text,
+        model: session.model,
+        inference_device: output.inference_device,
+        duration_ms: started.elapsed().as_millis(),
+    }))
+}
+
+async fn delete_transcription_session(
+    State(state): State<AppState>,
+    Path(path): Path<TranscriptionSessionPath>,
+) -> Result<Json<DeleteTranscriptionSessionResponse>, ApiError> {
+    let session_id = parse_session_id(&path.session_id)?;
+    let deleted = state.transcription_sessions.remove(session_id).await;
+    Ok(Json(DeleteTranscriptionSessionResponse { deleted }))
 }
 
 fn parse_model(value: &str) -> Result<WhisperModel, ApiError> {
@@ -250,6 +374,88 @@ fn parse_model(value: &str) -> Result<WhisperModel, ApiError> {
             ),
         )
     })
+}
+
+fn parse_session_id(value: &str) -> Result<Uuid, ApiError> {
+    Uuid::parse_str(value.trim())
+        .map_err(|_| ApiError::bad_request("invalid_session_id", "sessionId must be a valid UUID"))
+}
+
+fn decode_f32le_samples(bytes: &[u8]) -> Result<Vec<f32>, ApiError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    if bytes.len() % std::mem::size_of::<f32>() != 0 {
+        return Err(ApiError::bad_request(
+            "invalid_audio_chunk",
+            "audio chunk byte length must be a multiple of 4",
+        ));
+    }
+
+    let mut samples = Vec::with_capacity(bytes.len() / std::mem::size_of::<f32>());
+    for chunk in bytes.chunks_exact(std::mem::size_of::<f32>()) {
+        let value = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+        if value.is_finite() {
+            samples.push(value);
+        }
+    }
+
+    Ok(samples)
+}
+
+async fn ensure_model_downloaded(
+    state: &AppState,
+    model: WhisperModel,
+) -> Result<PathBuf, ApiError> {
+    let model_path = state.model_path(model);
+    let metadata = tokio::fs::metadata(&model_path).await.map_err(|_| {
+        ApiError::not_found(
+            "model_not_downloaded",
+            format!(
+                "model '{}' is not downloaded; call /v1/models/{}/download first",
+                model.as_slug(),
+                model.as_slug()
+            ),
+        )
+    })?;
+
+    if !metadata.is_file() || metadata.len() == 0 {
+        return Err(ApiError::not_found(
+            "model_not_downloaded",
+            format!(
+                "model '{}' is not downloaded; call /v1/models/{}/download first",
+                model.as_slug(),
+                model.as_slug()
+            ),
+        ));
+    }
+
+    Ok(model_path)
+}
+
+async fn run_transcription_request(
+    state: &AppState,
+    model: WhisperModel,
+    model_path: PathBuf,
+    samples: Vec<f32>,
+    sample_rate: u32,
+    language: Option<String>,
+    initial_prompt: Option<String>,
+    device_id: Option<String>,
+) -> Result<crate::transcription::TranscriptionOutput, ApiError> {
+    state
+        .transcriber
+        .transcribe(TranscriptionInput {
+            model_path,
+            samples,
+            sample_rate,
+            language,
+            initial_prompt,
+            device_id,
+        })
+        .await
+        .map_err(|error| map_transcription_error(model, error))
 }
 
 async fn read_model_status(
@@ -371,13 +577,26 @@ async fn remove_partial_model_downloads(
     Ok(())
 }
 
-fn map_transcription_error(error: String) -> ApiError {
+fn map_transcription_error(model: WhisperModel, error: String) -> ApiError {
     let lower = error.to_ascii_lowercase();
 
-    if lower.contains("sample") || lower.contains("language") || lower.contains("prompt") {
+    if lower.contains("sample")
+        || lower.contains("language")
+        || lower.contains("prompt")
+        || lower.contains("session")
+    {
         ApiError::bad_request("invalid_transcription_request", error)
     } else if lower.contains("device") {
         ApiError::bad_request("invalid_device", error)
+    } else if lower.contains("model") && lower.contains("failed") {
+        ApiError::not_found(
+            "model_not_downloaded",
+            format!(
+                "model '{}' is not downloaded; call /v1/models/{}/download first",
+                model.as_slug(),
+                model.as_slug()
+            ),
+        )
     } else {
         ApiError::internal("transcription_failed", error)
     }

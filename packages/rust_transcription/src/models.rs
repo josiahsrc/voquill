@@ -66,9 +66,7 @@ impl WhisperModel {
 
         match self {
             Self::Tiny => "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin",
-            Self::Base => {
-                "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin"
-            }
+            Self::Base => "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
             Self::Small => {
                 "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
             }

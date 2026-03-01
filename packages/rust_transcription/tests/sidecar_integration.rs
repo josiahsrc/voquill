@@ -69,6 +69,35 @@ struct TranscribeRequest {
     device_id: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTranscriptionSessionRequest {
+    model: String,
+    sample_rate: u32,
+    language: Option<String>,
+    initial_prompt: Option<String>,
+    device_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTranscriptionSessionResponse {
+    session_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AppendTranscriptionChunkResponse {
+    received_samples: usize,
+    buffered_samples: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteTranscriptionSessionResponse {
+    deleted: bool,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TranscribeResponse {
@@ -318,6 +347,75 @@ async fn cpu_sidecar_rejects_invalid_device_id(
     let body = response.json::<ApiErrorEnvelope>().await?;
     assert_eq!(body.error.code, "invalid_device");
     assert!(body.error.message.contains("unsupported deviceId"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn cpu_sidecar_transcription_session_lifecycle(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let sidecar = RunningSidecar::start_cpu().await?;
+    tokio::fs::write(sidecar.model_path(TINY_MODEL_FILENAME), b"fake model bytes").await?;
+
+    let session = sidecar
+        .client
+        .post(sidecar.url("/v1/transcriptions/sessions"))
+        .json(&CreateTranscriptionSessionRequest {
+            model: "tiny".to_string(),
+            sample_rate: 16_000,
+            language: Some("en".to_string()),
+            initial_prompt: Some("Please transcribe.".to_string()),
+            device_id: Some("cpu:0".to_string()),
+        })
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<CreateTranscriptionSessionResponse>()
+        .await?;
+
+    let chunk_bytes = encode_f32le_samples(&[0.1_f32, -0.1_f32, 0.0_f32]);
+    let append = sidecar
+        .client
+        .post(sidecar.url(&format!(
+            "/v1/transcriptions/sessions/{}/chunks",
+            session.session_id
+        )))
+        .header("Content-Type", "application/octet-stream")
+        .body(chunk_bytes)
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<AppendTranscriptionChunkResponse>()
+        .await?;
+
+    assert_eq!(append.received_samples, 3);
+    assert_eq!(append.buffered_samples, 3);
+
+    let deleted = sidecar
+        .client
+        .delete(sidecar.url(&format!(
+            "/v1/transcriptions/sessions/{}",
+            session.session_id
+        )))
+        .send()
+        .await?
+        .error_for_status()?
+        .json::<DeleteTranscriptionSessionResponse>()
+        .await?;
+
+    assert!(deleted.deleted);
+
+    let missing_response = sidecar
+        .client
+        .post(sidecar.url(&format!(
+            "/v1/transcriptions/sessions/{}/chunks",
+            session.session_id
+        )))
+        .header("Content-Type", "application/octet-stream")
+        .body(encode_f32le_samples(&[0.0_f32]))
+        .send()
+        .await?;
+    assert_eq!(missing_response.status(), StatusCode::NOT_FOUND);
 
     Ok(())
 }
@@ -625,4 +723,12 @@ async fn start_slow_download_server(
     });
 
     Ok((url, task))
+}
+
+fn encode_f32le_samples(values: &[f32]) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(values.len() * std::mem::size_of::<f32>());
+    for value in values {
+        bytes.extend_from_slice(&value.to_le_bytes());
+    }
+    bytes
 }

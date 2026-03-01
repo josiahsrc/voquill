@@ -3,12 +3,14 @@ use std::path::PathBuf;
 use crate::config::SidecarConfig;
 use crate::downloads::DownloadRegistry;
 use crate::models::WhisperModel;
+use crate::streaming_sessions::TranscriptionSessionRegistry;
 use crate::transcription::TranscriptionEngine;
 
 #[derive(Clone)]
 pub struct AppState {
     pub config: SidecarConfig,
     pub downloads: DownloadRegistry,
+    pub transcription_sessions: TranscriptionSessionRegistry,
     pub http_client: reqwest::Client,
     pub transcriber: TranscriptionEngine,
 }
@@ -24,6 +26,7 @@ impl AppState {
             transcriber: TranscriptionEngine::new(config.mode),
             config,
             downloads: DownloadRegistry::default(),
+            transcription_sessions: TranscriptionSessionRegistry::default(),
             http_client,
         })
     }

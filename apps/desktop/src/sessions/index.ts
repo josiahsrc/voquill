@@ -9,6 +9,7 @@ import { AzureTranscriptionSession } from "./azure-transcription-session";
 import { BatchTranscriptionSession } from "./batch-transcription-session";
 import { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 import { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
+import { LocalTranscriptionSession } from "./local-transcription-session";
 import { NewServerTranscriptionSession } from "./new-server-transcription-session";
 
 export { AssemblyAITranscriptionSession } from "./assemblyai-transcription-session";
@@ -16,6 +17,7 @@ export { AzureTranscriptionSession } from "./azure-transcription-session";
 export { BatchTranscriptionSession } from "./batch-transcription-session";
 export { DeepgramTranscriptionSession } from "./deepgram-transcription-session";
 export { ElevenLabsTranscriptionSession } from "./elevenlabs-transcription-session";
+export { LocalTranscriptionSession } from "./local-transcription-session";
 export { NewServerTranscriptionSession } from "./new-server-transcription-session";
 
 export const createTranscriptionSession = (
@@ -44,6 +46,10 @@ export const createTranscriptionSession = (
     !getIsEmulators()
   ) {
     return new NewServerTranscriptionSession();
+  }
+
+  if (prefs.mode === "local") {
+    return new LocalTranscriptionSession();
   }
 
   return new BatchTranscriptionSession();

@@ -41,6 +41,19 @@ type SidecarTranscriptionResponse = {
   durationMs: number;
 };
 
+type SidecarCreateTranscriptionSessionResponse = {
+  sessionId: string;
+};
+
+type SidecarAppendTranscriptionChunkResponse = {
+  receivedSamples: number;
+  bufferedSamples: number;
+};
+
+type SidecarDeleteTranscriptionSessionResponse = {
+  deleted: boolean;
+};
+
 type SidecarDeviceResponse = {
   id: string;
   name: string;
@@ -64,7 +77,7 @@ export type LocalSidecarDevice = SidecarDeviceResponse & {
 
 export type LocalSidecarTranscribeInput = {
   model: LocalWhisperModel;
-  samples: number[];
+  samples: number[] | Float32Array;
   sampleRate: number;
   language?: string;
   initialPrompt?: string;
@@ -72,12 +85,23 @@ export type LocalSidecarTranscribeInput = {
   deviceId?: string;
 };
 
+export type LocalSidecarStreamingSessionInput = Omit<
+  LocalSidecarTranscribeInput,
+  "samples"
+>;
+
 export type LocalSidecarTranscribeOutput = {
   text: string;
   model: LocalWhisperModel;
   inferenceDevice: string;
   durationMs: number;
   mode: SidecarMode;
+};
+
+export type LocalSidecarStreamingSession = {
+  writeAudioChunk: (samples: number[] | Float32Array) => void;
+  finalize: () => Promise<LocalSidecarTranscribeOutput>;
+  cleanup: () => void;
 };
 
 const SIDECAR_HOST = "127.0.0.1";
@@ -91,6 +115,7 @@ const SIDECAR_REQUEST_RETRIES = 2;
 const SIDECAR_REQUEST_RETRY_DELAY_MS = 250;
 const MODEL_DOWNLOAD_TIMEOUT_MS = 45 * 60 * 1_000;
 const MODEL_DOWNLOAD_POLL_INTERVAL_MS = 500;
+const SIDECAR_UPLOAD_CHUNK_SAMPLE_COUNT = 16_000;
 
 const sleep = async (ms: number): Promise<void> =>
   await new Promise((resolve) => setTimeout(resolve, ms));
@@ -244,32 +269,36 @@ export class LocalTranscriptionSidecarManager {
     }
   }
 
+  async createStreamingSession(
+    input: LocalSidecarStreamingSessionInput,
+  ): Promise<LocalSidecarStreamingSession> {
+    const runtime = await this.resolveRuntime(input.preferGpu);
+
+    try {
+      return await this.createStreamingSessionInMode(runtime.mode, input);
+    } catch (error) {
+      if (
+        input.preferGpu &&
+        runtime.mode === "gpu" &&
+        this.shouldFallbackToCpu(error)
+      ) {
+        this.markGpuUnavailable(error);
+        return await this.createStreamingSessionInMode("cpu", {
+          ...input,
+          deviceId: undefined,
+        });
+      }
+
+      throw error;
+    }
+  }
+
   private async transcribeInMode(
     mode: SidecarMode,
     input: LocalSidecarTranscribeInput,
   ): Promise<LocalSidecarTranscribeOutput> {
-    await this.ensureModelReady(mode, input.model);
-
     try {
-      const result = await this.requestModeJson<SidecarTranscriptionResponse>(
-        mode,
-        "/v1/transcriptions",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: this.toTranscribeRequestBody(mode, input),
-        },
-      );
-
-      this.markModelReady(mode, input.model);
-
-      return {
-        text: result.text,
-        model: result.model,
-        inferenceDevice: result.inferenceDevice,
-        durationMs: result.durationMs,
-        mode,
-      };
+      return await this.transcribeViaStreamingSession(mode, input);
     } catch (error) {
       if (!this.isModelMissingError(error)) {
         throw error;
@@ -277,33 +306,183 @@ export class LocalTranscriptionSidecarManager {
 
       this.invalidateModelReadiness(input.model);
       await this.downloadModelOnMode(mode, input.model);
-
-      const retry = await this.requestModeJson<SidecarTranscriptionResponse>(
-        mode,
-        "/v1/transcriptions",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: this.toTranscribeRequestBody(mode, input),
-        },
-      );
-
-      this.markModelReady(mode, input.model);
-
-      return {
-        text: retry.text,
-        model: retry.model,
-        inferenceDevice: retry.inferenceDevice,
-        durationMs: retry.durationMs,
-        mode,
-      };
+      return await this.transcribeViaStreamingSession(mode, input);
     }
   }
 
-  private toTranscribeRequestBody(
+  private async transcribeViaStreamingSession(
     mode: SidecarMode,
     input: LocalSidecarTranscribeInput,
-  ): string {
+  ): Promise<LocalSidecarTranscribeOutput> {
+    const session = await this.createStreamingSessionInMode(mode, input);
+    const floatSamples = this.toFloat32Array(input.samples);
+
+    try {
+      for (
+        let cursor = 0;
+        cursor < floatSamples.length;
+        cursor += SIDECAR_UPLOAD_CHUNK_SAMPLE_COUNT
+      ) {
+        const end = Math.min(
+          cursor + SIDECAR_UPLOAD_CHUNK_SAMPLE_COUNT,
+          floatSamples.length,
+        );
+        session.writeAudioChunk(floatSamples.subarray(cursor, end));
+      }
+
+      return await session.finalize();
+    } catch (error) {
+      session.cleanup();
+      throw error;
+    }
+  }
+
+  private async createStreamingSessionInMode(
+    mode: SidecarMode,
+    input: LocalSidecarStreamingSessionInput,
+  ): Promise<LocalSidecarStreamingSession> {
+    await this.ensureModelReady(mode, input.model);
+
+    const created =
+      await this.requestModeJson<SidecarCreateTranscriptionSessionResponse>(
+        mode,
+        "/v1/transcriptions/sessions",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(this.toSessionConfigPayload(mode, input)),
+        },
+      );
+    this.markModelReady(mode, input.model);
+
+    const sessionPath = `/v1/transcriptions/sessions/${created.sessionId}`;
+    let queue = Promise.resolve();
+    let queuedError: unknown = null;
+    let released = false;
+    let finalizePromise: Promise<LocalSidecarTranscribeOutput> | null = null;
+
+    const releaseSession = async (): Promise<void> => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      await this.requestModeJson<SidecarDeleteTranscriptionSessionResponse>(
+        mode,
+        sessionPath,
+        {
+          method: "DELETE",
+        },
+        {
+          retries: 1,
+        },
+      );
+    };
+
+    const queueChunkUpload = (samples: Float32Array): void => {
+      if (released || queuedError || samples.length === 0) {
+        return;
+      }
+
+      const body = new ArrayBuffer(samples.byteLength);
+      new Uint8Array(body).set(
+        new Uint8Array(samples.buffer, samples.byteOffset, samples.byteLength),
+      );
+
+      queue = queue
+        .then(async () => {
+          if (released || queuedError) {
+            return;
+          }
+
+          await this.requestModeJson<SidecarAppendTranscriptionChunkResponse>(
+            mode,
+            `${sessionPath}/chunks`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/octet-stream" },
+              body,
+            },
+            {
+              retries: 1,
+            },
+          );
+        })
+        .catch((error) => {
+          queuedError = error;
+          getLogger().warning(
+            `[local-sidecar:${mode}] failed to stream audio chunk (${this.toErrorMessage(error)})`,
+          );
+        });
+    };
+
+    return {
+      writeAudioChunk: (samples) => {
+        if (released || finalizePromise) {
+          return;
+        }
+        queueChunkUpload(this.toFloat32Array(samples));
+      },
+      finalize: async () => {
+        if (finalizePromise) {
+          return await finalizePromise;
+        }
+
+        finalizePromise = (async () => {
+          await queue;
+          if (queuedError) {
+            throw queuedError;
+          }
+
+          const result =
+            await this.requestModeJson<SidecarTranscriptionResponse>(
+              mode,
+              `${sessionPath}/finalize`,
+              {
+                method: "POST",
+              },
+            );
+          this.markModelReady(mode, input.model);
+
+          return {
+            text: result.text,
+            model: result.model,
+            inferenceDevice: result.inferenceDevice,
+            durationMs: result.durationMs,
+            mode,
+          };
+        })();
+
+        try {
+          return await finalizePromise;
+        } finally {
+          await releaseSession().catch((error) => {
+            getLogger().verbose(
+              `[local-sidecar:${mode}] failed to release transcription session (${this.toErrorMessage(error)})`,
+            );
+          });
+        }
+      },
+      cleanup: () => {
+        void releaseSession().catch((error) => {
+          getLogger().verbose(
+            `[local-sidecar:${mode}] failed to clean up transcription session (${this.toErrorMessage(error)})`,
+          );
+        });
+      },
+    };
+  }
+
+  private toSessionConfigPayload(
+    mode: SidecarMode,
+    input: LocalSidecarStreamingSessionInput,
+  ): {
+    model: LocalWhisperModel;
+    sampleRate: number;
+    language?: string;
+    initialPrompt?: string;
+    deviceId?: string;
+  } {
     const normalizedDeviceId = input.deviceId?.trim().toLowerCase();
     const deviceId =
       mode === "gpu"
@@ -314,14 +493,21 @@ export class LocalTranscriptionSidecarManager {
           ? normalizedDeviceId
           : undefined;
 
-    return JSON.stringify({
+    return {
       model: input.model,
-      samples: input.samples,
       sampleRate: input.sampleRate,
       language: input.language,
       initialPrompt: input.initialPrompt,
       deviceId,
-    });
+    };
+  }
+
+  private toFloat32Array(samples: number[] | Float32Array): Float32Array {
+    if (samples instanceof Float32Array) {
+      return samples;
+    }
+
+    return Float32Array.from(samples);
   }
 
   private async resolveRuntime(preferGpu: boolean): Promise<SidecarRuntime> {
@@ -363,7 +549,10 @@ export class LocalTranscriptionSidecarManager {
       mode === "gpu"
         ? "binaries/rust-transcription-gpu"
         : "binaries/rust-transcription-cpu";
-    getLogger().info("Starting local transcription sidecar with binary:", binaryName);
+    getLogger().info(
+      "Starting local transcription sidecar with binary:",
+      binaryName,
+    );
     const modelsDir = await this.resolveModelsDir();
     let stdoutBuffer = "";
     let resolveBoundPort: ((port: number) => void) | null = null;
@@ -591,7 +780,9 @@ export class LocalTranscriptionSidecarManager {
     );
   }
 
-  private async listDevicesByMode(mode: SidecarMode): Promise<LocalSidecarDevice[]> {
+  private async listDevicesByMode(
+    mode: SidecarMode,
+  ): Promise<LocalSidecarDevice[]> {
     const response = await this.requestModeJson<SidecarDevicesResponse>(
       mode,
       "/v1/devices",

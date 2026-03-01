@@ -10,6 +10,10 @@ It exposes one REST interface for both CPU and GPU binaries:
 - `GET /v1/models/{model}/status`
 - `GET /v1/devices`
 - `POST /v1/transcriptions`
+- `POST /v1/transcriptions/sessions`
+- `POST /v1/transcriptions/sessions/{sessionId}/chunks`
+- `POST /v1/transcriptions/sessions/{sessionId}/finalize`
+- `DELETE /v1/transcriptions/sessions/{sessionId}`
 
 Supported models: `tiny`, `base`, `small`, `medium`, `large`, `turbo`.
 
@@ -156,3 +160,50 @@ Response:
   "durationMs": 385
 }
 ```
+
+### `POST /v1/transcriptions/sessions`
+
+Creates a buffered transcription session for chunked audio upload.
+
+Request:
+
+```json
+{
+  "model": "tiny",
+  "sampleRate": 16000,
+  "language": "en",
+  "initialPrompt": "Glossary: Voquill",
+  "deviceId": "cpu:0"
+}
+```
+
+Response:
+
+```json
+{
+  "sessionId": "uuid"
+}
+```
+
+### `POST /v1/transcriptions/sessions/{sessionId}/chunks`
+
+Uploads one audio chunk as raw little-endian `Float32` bytes (`Content-Type: application/octet-stream`).
+
+Response:
+
+```json
+{
+  "receivedSamples": 1600,
+  "bufferedSamples": 6400
+}
+```
+
+### `POST /v1/transcriptions/sessions/{sessionId}/finalize`
+
+Finalizes and transcribes all buffered samples for the session.
+
+Response shape matches `POST /v1/transcriptions`.
+
+### `DELETE /v1/transcriptions/sessions/{sessionId}`
+
+Deletes a buffered transcription session (idempotent cleanup).

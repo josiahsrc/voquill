@@ -5,6 +5,7 @@ mod downloads;
 mod errors;
 mod models;
 mod state;
+mod streaming_sessions;
 mod transcription;
 
 pub use compute::ComputeMode;

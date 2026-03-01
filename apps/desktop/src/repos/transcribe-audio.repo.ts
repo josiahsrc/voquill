@@ -199,7 +199,7 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
     const output = await sidecarManager.transcribe({
       model: options.model,
       preferGpu: options.preferGpu,
-      samples: Array.from(input.samples),
+      samples: input.samples,
       sampleRate: input.sampleRate,
       initialPrompt: input.prompt ?? undefined,
       language: input.language,
