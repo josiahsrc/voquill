@@ -55,9 +55,9 @@ impl WhisperModelSize {
             Self::Medium => {
                 Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin")
             }
-            Self::LargeTurbo => {
-                Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin")
-            }
+            Self::LargeTurbo => Some(
+                "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
+            ),
             Self::Large => {
                 Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin")
             }
@@ -164,9 +164,8 @@ fn download_model(url: &str, destination: &Path) -> io::Result<()> {
     // Clean up any previous partial download.
     let _ = fs::remove_file(&temp_path);
 
-    let mut response = reqwest::blocking::get(url).map_err(|err| {
-        io::Error::other(format!("Failed to request whisper model: {err}"))
-    })?;
+    let mut response = reqwest::blocking::get(url)
+        .map_err(|err| io::Error::other(format!("Failed to request whisper model: {err}")))?;
 
     if !response.status().is_success() {
         return Err(io::Error::other(format!(

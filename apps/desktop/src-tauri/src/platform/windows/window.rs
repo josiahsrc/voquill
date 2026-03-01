@@ -12,7 +12,12 @@ use windows::Win32::UI::WindowsAndMessaging::{
 fn set_layered_window_attributes(hwnd: HWND, alpha: u8) {
     use windows::Win32::UI::WindowsAndMessaging::SetLayeredWindowAttributes;
     unsafe {
-        let _ = SetLayeredWindowAttributes(hwnd, windows::Win32::Foundation::COLORREF(0), alpha, LWA_ALPHA);
+        let _ = SetLayeredWindowAttributes(
+            hwnd,
+            windows::Win32::Foundation::COLORREF(0),
+            alpha,
+            LWA_ALPHA,
+        );
     }
 }
 
@@ -106,7 +111,10 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
         .map_err(|_| "failed to show overlay on main thread".to_string())?
 }
 
-pub fn set_overlay_click_through(window: &WebviewWindow, click_through: bool) -> Result<(), String> {
+pub fn set_overlay_click_through(
+    window: &WebviewWindow,
+    click_through: bool,
+) -> Result<(), String> {
     if !click_through {
         save_foreground_window();
     }
