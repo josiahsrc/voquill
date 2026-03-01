@@ -392,7 +392,7 @@ export class LocalTranscriptionSidecarManager {
       for (const line of lines) {
         const port = this.parseBoundPortLine(line);
         getLogger().info(
-          `[local-sidecar:${mode}] ${line} -> port=${port ?? "no port"}`,
+          `[local-sidecar:${mode}:${binaryName}] ${line} -> port=${port ?? "no port"}`,
         );
         if (port === null) {
           continue;

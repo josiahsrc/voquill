@@ -5,7 +5,6 @@
 - Avoid over-engineering. Implement solutions that are as simple as possible while still meeting requirements.
 - Your changes should have minimal impact. Do not break existing functionality.
 - Write clear, maintainable code that is self documenting. Do not comments on new code except where it's necessary to explain non-obvious things.
-- When the user corrects you, track any meaningful lessons learned inside of a markdown file in the `docs/lessons` directory.
 - Prefer to follow existing patterns such as dialogs, state management, and API interactions, etc.
 
 ** Repository structure **

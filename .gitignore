@@ -19,6 +19,7 @@ node_modules
 
 # Testing
 coverage
+models
 
 # Turbo
 .turbo
