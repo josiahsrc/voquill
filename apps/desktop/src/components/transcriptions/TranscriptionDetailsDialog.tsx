@@ -11,16 +11,14 @@ import {
   Typography,
 } from "@mui/material";
 import { getRec } from "@repo/utilities";
-import { useCallback, useMemo, useState } from "react";
-import { FormattedMessage, useIntl } from "react-intl";
-import { showErrorSnackbar } from "../../actions/app.actions";
+import { useMemo } from "react";
+import { FormattedMessage } from "react-intl";
 import {
   closeTranscriptionDetailsDialog,
-  retranscribeTranscription,
+  openRetranscribeDialog,
 } from "../../actions/transcriptions.actions";
 import { AppState } from "../../state/app.state";
 import { useAppStore } from "../../store";
-import { TranscriptionToneMenu } from "./TranscriptionToneMenu";
 import { TranscriptionTextBlock } from "./TranscriptionTextBlock";
 
 const formatModelSizeLabel = (
@@ -68,42 +66,11 @@ export const TranscriptionDetailsDialog = () => {
     return getRec(state.transcriptionById, transcriptionId);
   });
   const apiKeysById = useAppStore((state) => state.apiKeyById);
-  const intl = useIntl();
-  const [isRetranscribing, setIsRetranscribing] = useState(false);
 
-  const handleClose = useCallback(() => {
-    closeTranscriptionDetailsDialog();
-  }, []);
-
-  const handleRetranscribe = useCallback(
-    async (toneId: string | null) => {
-      if (!transcription?.id) {
-        showErrorSnackbar(
-          intl.formatMessage({
-            defaultMessage: "Unable to load transcription details.",
-          }),
-        );
-        return;
-      }
-
-      try {
-        setIsRetranscribing(true);
-        await retranscribeTranscription({
-          transcriptionId: transcription.id,
-          toneId,
-        });
-      } catch (error) {
-        const fallbackMessage = intl.formatMessage({
-          defaultMessage: "Unable to retranscribe audio snippet.",
-        });
-        const message =
-          error instanceof Error ? error.message : fallbackMessage;
-        showErrorSnackbar(message || fallbackMessage);
-      } finally {
-        setIsRetranscribing(false);
-      }
-    },
-    [intl, transcription?.id],
+  const isRetranscribing = useAppStore((state) =>
+    transcription?.id
+      ? state.transcriptions.retranscribingIds.includes(transcription.id)
+      : false,
   );
 
   const transcriptionModeLabel = useMemo(() => {
@@ -228,7 +195,7 @@ export const TranscriptionDetailsDialog = () => {
   }, [transcription?.warnings]);
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={closeTranscriptionDetailsDialog} fullWidth maxWidth="sm">
       <DialogTitle>
         <FormattedMessage defaultMessage="Transcription Details" />
       </DialogTitle>
@@ -442,19 +409,19 @@ export const TranscriptionDetailsDialog = () => {
         )}
       </DialogContent>
       <DialogActions>
-        <TranscriptionToneMenu onToneSelect={handleRetranscribe}>
-          {({ ref, open }) => (
-            <Button
-              ref={ref}
-              startIcon={<ReplayRoundedIcon />}
-              onClick={open}
-              disabled={isRetranscribing || !transcription}
-            >
-              <FormattedMessage defaultMessage="Retranscribe" />
-            </Button>
-          )}
-        </TranscriptionToneMenu>
-        <Button onClick={handleClose}>
+        <Button
+          startIcon={<ReplayRoundedIcon />}
+          onClick={() => {
+            if (transcription?.id) {
+              closeTranscriptionDetailsDialog();
+              openRetranscribeDialog(transcription.id);
+            }
+          }}
+          disabled={isRetranscribing || !transcription}
+        >
+          <FormattedMessage defaultMessage="Retranscribe" />
+        </Button>
+        <Button onClick={closeTranscriptionDetailsDialog}>
           <FormattedMessage defaultMessage="Close" />
         </Button>
       </DialogActions>
