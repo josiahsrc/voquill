@@ -129,7 +129,7 @@ export const AITranscriptionConfiguration = ({
   );
   const deviceValue = hasSelectedDevice
     ? transcription.device
-    : transcription.availableDevices[0]?.id ?? CPU_DEVICE_VALUE;
+    : (transcription.availableDevices[0]?.id ?? CPU_DEVICE_VALUE);
   const modelValue = normalizeLocalWhisperModel(transcription.modelSize);
   const modelDownloadSnapshot =
     localTranscriptionConfig.modelDownloads[modelValue];
@@ -291,13 +291,19 @@ export const AITranscriptionConfiguration = ({
               labelId="processing-device-label"
               label={<FormattedMessage defaultMessage="Processing device" />}
               value={deviceValue}
-              onChange={(event) => handleDeviceChange(String(event.target.value))}
+              onChange={(event) =>
+                handleDeviceChange(String(event.target.value))
+              }
             >
               {transcription.availableDevices.length === 0 ? (
                 <MenuItem value={CPU_DEVICE_VALUE} disabled>
                   {transcription.availableDevicesLoading
-                    ? intl.formatMessage({ defaultMessage: "Loading devices..." })
-                    : intl.formatMessage({ defaultMessage: "No devices available" })}
+                    ? intl.formatMessage({
+                        defaultMessage: "Loading devices...",
+                      })
+                    : intl.formatMessage({
+                        defaultMessage: "No devices available",
+                      })}
                 </MenuItem>
               ) : (
                 transcription.availableDevices.map((device) => {

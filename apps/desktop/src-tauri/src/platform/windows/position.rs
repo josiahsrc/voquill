@@ -68,11 +68,14 @@ pub fn is_cursor_in_bounds(
     let (bounds_x, bounds_y) = match anchor {
         OverlayAnchor::BottomCenter => {
             let x = monitor.visible_x + (monitor.visible_width - physical_bounds_width) / 2.0;
-            let y = monitor.visible_y + monitor.visible_height - physical_bounds_height - physical_margin;
+            let y = monitor.visible_y + monitor.visible_height
+                - physical_bounds_height
+                - physical_margin;
             (x, y)
         }
         OverlayAnchor::TopRight => {
-            let x = monitor.visible_x + monitor.visible_width - physical_bounds_width - physical_margin;
+            let x =
+                monitor.visible_x + monitor.visible_width - physical_bounds_width - physical_margin;
             let y = monitor.visible_y + physical_margin;
             (x, y)
         }

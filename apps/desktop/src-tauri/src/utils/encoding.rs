@@ -25,7 +25,10 @@ mod tests {
     #[test]
     fn plain_utf8() {
         let input = b"{\"gatewayUrl\":\"https://example.com\"}";
-        assert_eq!(decode_to_utf8(input).unwrap(), "{\"gatewayUrl\":\"https://example.com\"}");
+        assert_eq!(
+            decode_to_utf8(input).unwrap(),
+            "{\"gatewayUrl\":\"https://example.com\"}"
+        );
     }
 
     #[test]

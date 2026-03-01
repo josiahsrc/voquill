@@ -86,7 +86,10 @@ export const normalizeTranscriptionDevice = (
   }
 
   const normalizedLegacyGpu = normalized.replace(/^gpu-(\d+)$/, "gpu:$1");
-  const normalizedLegacyCpu = normalizedLegacyGpu.replace(/^cpu-(\d+)$/, "cpu:$1");
+  const normalizedLegacyCpu = normalizedLegacyGpu.replace(
+    /^cpu-(\d+)$/,
+    "cpu:$1",
+  );
 
   if (
     normalizedLegacyCpu === CPU_DEVICE_VALUE ||

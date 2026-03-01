@@ -430,8 +430,7 @@ pub async fn export_transcription(
         None => return Ok(false),
     };
 
-    let audio_dir =
-        crate::system::audio_store::audio_dir(&app).map_err(|err| err.to_string())?;
+    let audio_dir = crate::system::audio_store::audio_dir(&app).map_err(|err| err.to_string())?;
 
     tauri::async_runtime::spawn_blocking(move || {
         use std::io::Write;
@@ -440,8 +439,8 @@ pub async fn export_transcription(
         let file = std::fs::File::create(&save_path)
             .map_err(|err| format!("Failed to create file: {err}"))?;
         let mut zip = zip::ZipWriter::new(file);
-        let options = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
         zip.start_file("processed.txt", options)
             .map_err(|err| err.to_string())?;
@@ -464,8 +463,7 @@ pub async fn export_transcription(
                     .map_err(|err| format!("Failed to read audio: {err}"))?;
                 zip.start_file("audio.wav", options)
                     .map_err(|err| err.to_string())?;
-                zip.write_all(&audio_data)
-                    .map_err(|err| err.to_string())?;
+                zip.write_all(&audio_data).map_err(|err| err.to_string())?;
             }
         }
 
@@ -1006,8 +1004,10 @@ pub fn restore_overlay_focus() {
 
 #[tauri::command]
 pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
-    let join_result =
-        tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text, keybind.as_deref())).await;
+    let join_result = tauri::async_runtime::spawn_blocking(move || {
+        platform_paste_text(&text, keybind.as_deref())
+    })
+    .await;
 
     match join_result {
         Ok(result) => {
@@ -1045,10 +1045,7 @@ pub fn set_phase(
 }
 
 #[tauri::command]
-pub fn set_pill_hover_enabled(
-    enabled: bool,
-    overlay_state: State<'_, crate::state::OverlayState>,
-) {
+pub fn set_pill_hover_enabled(enabled: bool, overlay_state: State<'_, crate::state::OverlayState>) {
     overlay_state.set_pill_hover_enabled(enabled);
 }
 
@@ -1093,9 +1090,7 @@ pub fn set_menu_icon(
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
-        tauri::async_runtime::spawn_blocking(
-            crate::platform::accessibility::get_text_field_info,
-        ),
+        tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_text_field_info),
     )
     .await
     .map_err(|_| "get_text_field_info timed out".to_string())?
@@ -1129,10 +1124,7 @@ pub fn get_keyboard_language() -> Result<String, String> {
 ///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json
 #[tauri::command]
 pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>), String> {
-    let mut path = app
-        .path()
-        .app_config_dir()
-        .map_err(|err| err.to_string())?;
+    let mut path = app.path().app_config_dir().map_err(|err| err.to_string())?;
     path.push("enterprise.json");
     let path_str = path.to_string_lossy().to_string();
     eprintln!("[ENTERPRISE] Reading enterprise target from {:?}", path);
@@ -1141,6 +1133,7 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
     }
 
     let bytes = std::fs::read(&path).map_err(|err| err.to_string())?;
-    let content = decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
+    let content =
+        decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
     Ok((path_str, Some(content)))
 }

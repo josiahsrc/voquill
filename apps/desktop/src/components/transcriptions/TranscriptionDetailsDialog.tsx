@@ -195,7 +195,12 @@ export const TranscriptionDetailsDialog = () => {
   }, [transcription?.warnings]);
 
   return (
-    <Dialog open={open} onClose={closeTranscriptionDetailsDialog} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={closeTranscriptionDetailsDialog}
+      fullWidth
+      maxWidth="sm"
+    >
       <DialogTitle>
         <FormattedMessage defaultMessage="Transcription Details" />
       </DialogTitle>

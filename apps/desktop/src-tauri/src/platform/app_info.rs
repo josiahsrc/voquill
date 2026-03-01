@@ -1,5 +1,5 @@
 #[cfg(target_os = "macos")]
-use cocoa::base::{id, nil, YES, NO};
+use cocoa::base::{id, nil, NO, YES};
 #[cfg(target_os = "macos")]
 use cocoa::foundation::{NSPoint, NSRect, NSSize, NSString};
 #[cfg(target_os = "macos")]
@@ -65,8 +65,7 @@ unsafe fn macos_get_app_info() -> Result<CurrentAppInfo, AppInfoError> {
     }
 
     let name_ns: id = msg_send![app, localizedName];
-    let app_name = nsstring_to_string(name_ns)
-        .unwrap_or_else(|| "Unknown application".to_string());
+    let app_name = nsstring_to_string(name_ns).unwrap_or_else(|| "Unknown application".to_string());
 
     let icon: id = msg_send![app, icon];
     let icon_base64 = if icon != nil {
@@ -106,8 +105,7 @@ unsafe fn macos_render_icon_png(icon: id, size: u32) -> Result<String, AppInfoEr
     }
 
     let _: () = msg_send![class!(NSGraphicsContext), saveGraphicsState];
-    let ctx: id =
-        msg_send![class!(NSGraphicsContext), graphicsContextWithBitmapImageRep: rep];
+    let ctx: id = msg_send![class!(NSGraphicsContext), graphicsContextWithBitmapImageRep: rep];
     if ctx == nil {
         let _: () = msg_send![rep, release];
         let _: () = msg_send![class!(NSGraphicsContext), restoreGraphicsState];

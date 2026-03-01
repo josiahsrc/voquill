@@ -39,9 +39,7 @@ pub fn wtype_key(modifiers: &[&str], key: &str) -> Result<(), String> {
     for m in modifiers.iter().rev() {
         cmd.arg("-m").arg(*m);
     }
-    let status = cmd
-        .status()
-        .map_err(|err| format!("wtype failed: {err}"))?;
+    let status = cmd.status().map_err(|err| format!("wtype failed: {err}"))?;
     if status.success() {
         Ok(())
     } else {
