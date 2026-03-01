@@ -64,7 +64,15 @@ export const isGpuPreferredTranscriptionDevice = (
   }
 
   const normalized = device?.trim().toLowerCase();
-  return !!normalized && normalized !== CPU_DEVICE_VALUE;
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    normalized === "gpu" ||
+    normalized.startsWith("gpu:") ||
+    normalized.startsWith("gpu-")
+  );
 };
 
 export const supportsGpuTranscriptionDevice = (): boolean => !isMacOS();
@@ -72,10 +80,35 @@ export const supportsGpuTranscriptionDevice = (): boolean => !isMacOS();
 export const normalizeTranscriptionDevice = (
   device: string | null | undefined,
 ): string => {
+  const normalized = device?.trim().toLowerCase();
+  if (!normalized) {
+    return CPU_DEVICE_VALUE;
+  }
+
+  const normalizedLegacyGpu = normalized.replace(/^gpu-(\d+)$/, "gpu:$1");
+  const normalizedLegacyCpu = normalizedLegacyGpu.replace(/^cpu-(\d+)$/, "cpu:$1");
+
+  if (
+    normalizedLegacyCpu === CPU_DEVICE_VALUE ||
+    normalizedLegacyCpu.startsWith("cpu:")
+  ) {
+    return normalizedLegacyCpu;
+  }
+
   if (!supportsGpuTranscriptionDevice()) {
     return CPU_DEVICE_VALUE;
   }
 
-  const normalized = device?.trim().toLowerCase();
-  return normalized === CPU_DEVICE_VALUE ? CPU_DEVICE_VALUE : "gpu";
+  if (normalizedLegacyCpu === "gpu" || normalizedLegacyCpu.startsWith("gpu:")) {
+    return normalizedLegacyCpu;
+  }
+
+  return CPU_DEVICE_VALUE;
+};
+
+export const getTranscriptionSidecarDeviceId = (
+  device: string | null | undefined,
+): string | undefined => {
+  const normalized = normalizeTranscriptionDevice(device);
+  return normalized.includes(":") ? normalized : undefined;
 };

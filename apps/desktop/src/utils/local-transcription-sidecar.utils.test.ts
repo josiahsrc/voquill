@@ -5,7 +5,9 @@ vi.mock("./env.utils", () => ({
 }));
 
 import {
+  getTranscriptionSidecarDeviceId,
   isGpuPreferredTranscriptionDevice,
+  normalizeTranscriptionDevice,
   normalizeLocalWhisperModel,
 } from "./local-transcription.utils";
 import { isMacOS } from "./env.utils";
@@ -36,14 +38,32 @@ describe("local-transcription-sidecar manager helpers", () => {
 
   it("treats any non-cpu device value as gpu preference on supported OSes", () => {
     expect(isGpuPreferredTranscriptionDevice("cpu")).toBe(false);
+    expect(isGpuPreferredTranscriptionDevice("cpu:0")).toBe(false);
     expect(isGpuPreferredTranscriptionDevice("gpu")).toBe(true);
+    expect(isGpuPreferredTranscriptionDevice("gpu:0")).toBe(true);
     expect(isGpuPreferredTranscriptionDevice("gpu-0")).toBe(true);
   });
 
   it("always uses CPU preference on macOS", () => {
     vi.mocked(isMacOS).mockReturnValue(true);
     expect(isGpuPreferredTranscriptionDevice("gpu")).toBe(false);
-    expect(isGpuPreferredTranscriptionDevice("gpu-0")).toBe(false);
+    expect(isGpuPreferredTranscriptionDevice("gpu:0")).toBe(false);
     expect(isGpuPreferredTranscriptionDevice("cpu")).toBe(false);
+  });
+
+  it("normalizes transcription devices while preserving concrete IDs", () => {
+    expect(normalizeTranscriptionDevice("cpu")).toBe("cpu");
+    expect(normalizeTranscriptionDevice("cpu:0")).toBe("cpu:0");
+    expect(normalizeTranscriptionDevice("gpu")).toBe("gpu");
+    expect(normalizeTranscriptionDevice("gpu:2")).toBe("gpu:2");
+    expect(normalizeTranscriptionDevice("gpu-2")).toBe("gpu:2");
+    expect(normalizeTranscriptionDevice("unknown")).toBe("cpu");
+  });
+
+  it("extracts sidecar device IDs only for concrete selections", () => {
+    expect(getTranscriptionSidecarDeviceId("cpu")).toBeUndefined();
+    expect(getTranscriptionSidecarDeviceId("gpu")).toBeUndefined();
+    expect(getTranscriptionSidecarDeviceId("cpu:0")).toBe("cpu:0");
+    expect(getTranscriptionSidecarDeviceId("gpu:1")).toBe("gpu:1");
   });
 });

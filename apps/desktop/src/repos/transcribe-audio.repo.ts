@@ -30,15 +30,18 @@ import {
 } from "../utils/transcribe.utils";
 import { BaseRepo } from "./base.repo";
 import {
+  getTranscriptionSidecarDeviceId,
   isGpuPreferredTranscriptionDevice,
   type LocalWhisperModel,
   normalizeLocalWhisperModel,
 } from "../utils/local-transcription.utils";
 import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
+import { getLogger } from "../utils/log.utils";
 
 type TranscriptionOptionsPayload = {
   model: LocalWhisperModel;
   preferGpu: boolean;
+  deviceId?: string;
 };
 
 export type TranscribeAudioMetadata = {
@@ -179,10 +182,12 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
   private resolveTranscriptionOptions(): TranscriptionOptionsPayload {
     const state = getAppState();
     const { device, modelSize } = state.settings.aiTranscription;
+    getLogger().info("transcribing with", device, modelSize);
 
     return {
       model: normalizeLocalWhisperModel(modelSize || DEFAULT_MODEL_SIZE),
       preferGpu: isGpuPreferredTranscriptionDevice(device),
+      deviceId: getTranscriptionSidecarDeviceId(device),
     };
   }
 
@@ -198,6 +203,7 @@ export class LocalTranscribeAudioRepo extends BaseTranscribeAudioRepo {
       sampleRate: input.sampleRate,
       initialPrompt: input.prompt ?? undefined,
       language: input.language,
+      deviceId: options.deviceId,
     });
 
     return {

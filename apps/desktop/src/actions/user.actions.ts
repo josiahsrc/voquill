@@ -11,13 +11,13 @@ import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
 import {
-  CPU_DEVICE_VALUE,
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
 import {
+  isGpuPreferredTranscriptionDevice,
   normalizeTranscriptionDevice,
   normalizeLocalWhisperModel,
   supportsGpuTranscriptionDevice,
@@ -375,7 +375,7 @@ export const setPreferredTranscriptionDevice = async (
   produceAppState((draft) => {
     draft.settings.aiTranscription.device = normalizedDevice;
     draft.settings.aiTranscription.gpuEnumerationEnabled =
-      normalizedDevice !== CPU_DEVICE_VALUE;
+      isGpuPreferredTranscriptionDevice(normalizedDevice);
   });
 
   await persistAiPreferences();

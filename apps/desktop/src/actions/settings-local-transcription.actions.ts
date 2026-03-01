@@ -1,20 +1,92 @@
 import type { AppState } from "../state/app.state";
+import { CPU_DEVICE_VALUE } from "../types/ai.types";
 import {
   createEmptyLocalTranscriptionModelStatusMap,
   isLocalTranscriptionModelDownloadInProgress,
   type LocalTranscriptionModelStatusMap,
 } from "../state/settings.state";
 import { getAppState, produceAppState } from "../store";
-import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
+import {
+  getLocalTranscriptionSidecarManager,
+  type LocalSidecarDevice,
+} from "../utils/local-transcription-sidecar.utils";
 import {
   isGpuPreferredTranscriptionDevice,
   LOCAL_WHISPER_MODELS,
   type LocalWhisperModel,
+  normalizeTranscriptionDevice,
 } from "../utils/local-transcription.utils";
 import { showErrorSnackbar } from "./app.actions";
+import { setPreferredTranscriptionDevice } from "./user.actions";
 
 const getPreferGpu = (state: AppState): boolean =>
   isGpuPreferredTranscriptionDevice(state.settings.aiTranscription.device);
+
+const resolvePreferredDevice = (
+  currentDevice: string,
+  devices: LocalSidecarDevice[],
+): string => {
+  const normalizedCurrent = normalizeTranscriptionDevice(currentDevice);
+  if (devices.some((device) => device.id === normalizedCurrent)) {
+    return normalizedCurrent;
+  }
+
+  const firstCpuDevice = devices.find((device) => device.mode === "cpu")?.id;
+  const firstGpuDevice = devices.find((device) => device.mode === "gpu")?.id;
+  if (normalizedCurrent.startsWith("gpu")) {
+    return firstGpuDevice ?? firstCpuDevice ?? CPU_DEVICE_VALUE;
+  }
+
+  return firstCpuDevice ?? firstGpuDevice ?? CPU_DEVICE_VALUE;
+};
+
+export const refreshLocalTranscriptionDevices = async ({
+  showErrors = true,
+}: {
+  showErrors?: boolean;
+} = {}): Promise<LocalSidecarDevice[] | null> => {
+  const state = getAppState();
+  if (state.settings.aiTranscription.mode !== "local") {
+    return null;
+  }
+
+  produceAppState((draft) => {
+    draft.settings.aiTranscription.availableDevicesLoading = true;
+  });
+
+  try {
+    const sidecarManager = getLocalTranscriptionSidecarManager();
+    const devices = await sidecarManager.listAvailableDevices();
+    const resolvedDevice = resolvePreferredDevice(
+      state.settings.aiTranscription.device,
+      devices,
+    );
+
+    produceAppState((draft) => {
+      draft.settings.aiTranscription.availableDevices = devices;
+    });
+
+    if (resolvedDevice !== state.settings.aiTranscription.device) {
+      await setPreferredTranscriptionDevice(resolvedDevice);
+    }
+
+    return devices;
+  } catch (error) {
+    produceAppState((draft) => {
+      draft.settings.aiTranscription.availableDevices = [];
+    });
+
+    if (showErrors) {
+      showErrorSnackbar(`Unable to load local devices: ${error}`);
+    }
+
+    return null;
+  } finally {
+    produceAppState((draft) => {
+      draft.settings.aiTranscription.availableDevicesLoading = false;
+    });
+  }
+};
 
 export const refreshLocalTranscriptionModelStatuses = async ({
   showErrors = true,

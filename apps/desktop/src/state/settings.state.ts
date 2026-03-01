@@ -5,6 +5,7 @@ import {
   OpenRouterProvider,
 } from "@repo/types";
 import type {
+  LocalSidecarDevice,
   LocalSidecarDownloadSnapshot,
   LocalSidecarModelStatus,
 } from "../utils/local-transcription-sidecar.utils";
@@ -47,6 +48,8 @@ export type SettingsTranscriptionState = {
   mode: TranscriptionMode;
   modelSize: string;
   device: string;
+  availableDevices: LocalSidecarDevice[];
+  availableDevicesLoading: boolean;
   selectedApiKeyId: string | null;
   gpuEnumerationEnabled: boolean;
   localModelManagement: LocalTranscriptionModelManagementState;
@@ -132,6 +135,8 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,
     device: CPU_DEVICE_VALUE,
+    availableDevices: [],
+    availableDevicesLoading: false,
     selectedApiKeyId: null,
     gpuEnumerationEnabled: false,
     localModelManagement: {

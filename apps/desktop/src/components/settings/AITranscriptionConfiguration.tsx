@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
+  refreshLocalTranscriptionDevices,
   deleteLocalTranscriptionModel,
   downloadLocalTranscriptionModel,
   refreshLocalTranscriptionModelStatuses,
@@ -34,8 +35,6 @@ import { getAllowsChangeTranscription } from "../../utils/enterprise.utils";
 import { formatSize } from "../../utils/format.utils";
 import { type LocalSidecarDownloadSnapshot } from "../../utils/local-transcription-sidecar.utils";
 import {
-  isGpuPreferredTranscriptionDevice,
-  supportsGpuTranscriptionDevice,
   type LocalWhisperModel,
   normalizeLocalWhisperModel,
 } from "../../utils/local-transcription.utils";
@@ -125,9 +124,12 @@ export const AITranscriptionConfiguration = ({
   const allowChange = useAppStore(getAllowsChangeTranscription);
   const localTranscriptionConfig = transcription.localModelManagement;
 
-  const preferGpu = isGpuPreferredTranscriptionDevice(transcription.device);
-  const supportsGpuDevice = supportsGpuTranscriptionDevice();
-  const deviceValue = preferGpu ? "gpu" : CPU_DEVICE_VALUE;
+  const hasSelectedDevice = transcription.availableDevices.some(
+    (device) => device.id === transcription.device,
+  );
+  const deviceValue = hasSelectedDevice
+    ? transcription.device
+    : transcription.availableDevices[0]?.id ?? CPU_DEVICE_VALUE;
   const modelValue = normalizeLocalWhisperModel(transcription.modelSize);
   const modelDownloadSnapshot =
     localTranscriptionConfig.modelDownloads[modelValue];
@@ -139,6 +141,14 @@ export const AITranscriptionConfiguration = ({
     modelValue,
   );
   const showInlineModelDownloadAction = !modelSelectable;
+
+  useEffect(() => {
+    if (transcription.mode !== "local") {
+      return;
+    }
+
+    void refreshLocalTranscriptionDevices();
+  }, [transcription.mode]);
 
   useEffect(() => {
     if (transcription.mode !== "local") {
@@ -268,26 +278,43 @@ export const AITranscriptionConfiguration = ({
 
       {transcription.mode === "local" && (
         <Stack spacing={3} sx={{ width: "100%" }}>
-          {supportsGpuDevice && (
-            <FormControl fullWidth size="small" sx={{ position: "relative" }}>
-              <InputLabel id="processing-device-label">
-                <FormattedMessage defaultMessage="Processing device" />
-              </InputLabel>
-              <Select
-                labelId="processing-device-label"
-                label={<FormattedMessage defaultMessage="Processing device" />}
-                value={deviceValue}
-                onChange={(event) => handleDeviceChange(event.target.value)}
-              >
-                <MenuItem value={CPU_DEVICE_VALUE}>
-                  <FormattedMessage defaultMessage="CPU processing" />
+          <FormControl
+            fullWidth
+            size="small"
+            sx={{ position: "relative" }}
+            disabled={transcription.availableDevicesLoading}
+          >
+            <InputLabel id="processing-device-label">
+              <FormattedMessage defaultMessage="Processing device" />
+            </InputLabel>
+            <Select
+              labelId="processing-device-label"
+              label={<FormattedMessage defaultMessage="Processing device" />}
+              value={deviceValue}
+              onChange={(event) => handleDeviceChange(String(event.target.value))}
+            >
+              {transcription.availableDevices.length === 0 ? (
+                <MenuItem value={CPU_DEVICE_VALUE} disabled>
+                  {transcription.availableDevicesLoading
+                    ? intl.formatMessage({ defaultMessage: "Loading devices..." })
+                    : intl.formatMessage({ defaultMessage: "No devices available" })}
                 </MenuItem>
-                <MenuItem value="gpu">
-                  <FormattedMessage defaultMessage="GPU acceleration (auto fallback)" />
-                </MenuItem>
-              </Select>
-            </FormControl>
-          )}
+              ) : (
+                transcription.availableDevices.map((device) => {
+                  const modeLabel =
+                    device.mode === "gpu"
+                      ? intl.formatMessage({ defaultMessage: "GPU" })
+                      : intl.formatMessage({ defaultMessage: "CPU" });
+
+                  return (
+                    <MenuItem key={device.id} value={device.id}>
+                      {`${modeLabel} • ${device.name}`}
+                    </MenuItem>
+                  );
+                })
+              )}
+            </Select>
+          </FormControl>
 
           <FormControl fullWidth size="small">
             <InputLabel id="model-size-label">

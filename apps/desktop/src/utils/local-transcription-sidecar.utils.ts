@@ -3,6 +3,7 @@ import { fetch } from "@tauri-apps/plugin-http";
 import {
   LOCAL_WHISPER_MODELS,
   LocalWhisperModel,
+  supportsGpuTranscriptionDevice,
 } from "./local-transcription.utils";
 import { getLogger } from "./log.utils";
 import { ShellChildProcess, spawnShellSidecar } from "./tauri-shell.utils";
@@ -40,6 +41,15 @@ type SidecarTranscriptionResponse = {
   durationMs: number;
 };
 
+type SidecarDeviceResponse = {
+  id: string;
+  name: string;
+};
+
+type SidecarDevicesResponse = {
+  devices: SidecarDeviceResponse[];
+};
+
 type SidecarRuntime = {
   mode: SidecarMode;
   baseUrl: string;
@@ -48,6 +58,9 @@ type SidecarRuntime = {
 
 export type LocalSidecarModelStatus = SidecarModelStatusResponse;
 export type LocalSidecarDownloadSnapshot = SidecarDownloadSnapshot;
+export type LocalSidecarDevice = SidecarDeviceResponse & {
+  mode: SidecarMode;
+};
 
 export type LocalSidecarTranscribeInput = {
   model: LocalWhisperModel;
@@ -56,6 +69,7 @@ export type LocalSidecarTranscribeInput = {
   language?: string;
   initialPrompt?: string;
   preferGpu: boolean;
+  deviceId?: string;
 };
 
 export type LocalSidecarTranscribeOutput = {
@@ -142,6 +156,22 @@ export class LocalTranscriptionSidecarManager {
     return map;
   }
 
+  async listAvailableDevices(): Promise<LocalSidecarDevice[]> {
+    const cpuDevices = await this.listDevicesByMode("cpu");
+    const devices = [...cpuDevices];
+
+    if (supportsGpuTranscriptionDevice() && !this.gpuUnavailable) {
+      try {
+        const gpuDevices = await this.listDevicesByMode("gpu");
+        devices.push(...gpuDevices);
+      } catch (error) {
+        this.markGpuUnavailable(error);
+      }
+    }
+
+    return devices;
+  }
+
   async downloadModel({
     model,
     preferGpu,
@@ -204,7 +234,10 @@ export class LocalTranscriptionSidecarManager {
         this.shouldFallbackToCpu(error)
       ) {
         this.markGpuUnavailable(error);
-        return await this.transcribeInMode("cpu", input);
+        return await this.transcribeInMode("cpu", {
+          ...input,
+          deviceId: undefined,
+        });
       }
 
       throw error;
@@ -224,7 +257,7 @@ export class LocalTranscriptionSidecarManager {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: this.toTranscribeRequestBody(input),
+          body: this.toTranscribeRequestBody(mode, input),
         },
       );
 
@@ -251,7 +284,7 @@ export class LocalTranscriptionSidecarManager {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: this.toTranscribeRequestBody(input),
+          body: this.toTranscribeRequestBody(mode, input),
         },
       );
 
@@ -267,13 +300,27 @@ export class LocalTranscriptionSidecarManager {
     }
   }
 
-  private toTranscribeRequestBody(input: LocalSidecarTranscribeInput): string {
+  private toTranscribeRequestBody(
+    mode: SidecarMode,
+    input: LocalSidecarTranscribeInput,
+  ): string {
+    const normalizedDeviceId = input.deviceId?.trim().toLowerCase();
+    const deviceId =
+      mode === "gpu"
+        ? normalizedDeviceId?.startsWith("gpu:")
+          ? normalizedDeviceId
+          : undefined
+        : normalizedDeviceId?.startsWith("cpu:")
+          ? normalizedDeviceId
+          : undefined;
+
     return JSON.stringify({
       model: input.model,
       samples: input.samples,
       sampleRate: input.sampleRate,
       language: input.language,
       initialPrompt: input.initialPrompt,
+      deviceId,
     });
   }
 
@@ -316,6 +363,7 @@ export class LocalTranscriptionSidecarManager {
       mode === "gpu"
         ? "binaries/rust-transcription-gpu"
         : "binaries/rust-transcription-cpu";
+    getLogger().info("Starting local transcription sidecar with binary:", binaryName);
     const modelsDir = await this.resolveModelsDir();
     let stdoutBuffer = "";
     let resolveBoundPort: ((port: number) => void) | null = null;
@@ -541,6 +589,22 @@ export class LocalTranscriptionSidecarManager {
         retries,
       },
     );
+  }
+
+  private async listDevicesByMode(mode: SidecarMode): Promise<LocalSidecarDevice[]> {
+    const response = await this.requestModeJson<SidecarDevicesResponse>(
+      mode,
+      "/v1/devices",
+      undefined,
+      {
+        retries: 1,
+      },
+    );
+
+    return response.devices.map((device) => ({
+      ...device,
+      mode,
+    }));
   }
 
   private async downloadModelOnMode(
