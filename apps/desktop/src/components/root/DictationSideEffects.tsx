@@ -1,7 +1,7 @@
 import { AppTarget } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { secondsToMilliseconds } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
 import { refreshMember } from "../../actions/member.actions";
@@ -82,6 +82,7 @@ export const DictationSideEffects = () => {
   const recordingWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastStyleSwitchRef = useRef(0);
+  const [isStopping, setIsStopping] = useState(false);
 
   const isManualStyling = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",
@@ -91,6 +92,7 @@ export const DictationSideEffects = () => {
   );
   const additionalLanguageEntries = useAppStore(getAdditionalLanguageEntries);
   const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
+  const isDictationInteractable = isDictationUnlocked && !isStopping;
   const pillHoverEnabled = useAppStore((state) => {
     if (!getIsDictationUnlocked(state)) {
       return false;
@@ -183,7 +185,7 @@ export const DictationSideEffects = () => {
     }
   }, []);
 
-  const stopRecording = useCallback(async () => {
+  const stopRecordingRaw = useCallback(async () => {
     getLogger().info("Stopping recording");
     clearRecordingTimers();
 
@@ -308,6 +310,15 @@ export const DictationSideEffects = () => {
       abortRecording();
     }
   }, []);
+
+  const stopRecording = useCallback(async () => {
+    setIsStopping(true);
+    try {
+      await stopRecordingRaw();
+    } finally {
+      setIsStopping(false);
+    }
+  }, [stopRecordingRaw, setIsStopping]);
 
   const startRecordingTimers = useCallback(() => {
     clearRecordingTimers();
@@ -504,13 +515,13 @@ export const DictationSideEffects = () => {
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    isDisabled: !isDictationUnlocked,
+    isDisabled: !isDictationInteractable,
     controller: dictationController,
   });
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
-    isDisabled: !isDictationUnlocked,
+    isDisabled: !isDictationInteractable,
     controller: agentController,
   });
 
@@ -521,7 +532,7 @@ export const DictationSideEffects = () => {
   });
 
   useHotkeyHoldMany({
-    isDisabled: !isDictationUnlocked,
+    isDisabled: !isDictationInteractable,
     actions: additionalLanguageControllers,
   });
 
@@ -553,7 +564,9 @@ export const DictationSideEffects = () => {
   });
 
   useTauriListen<void>("on-click-dictate", () => {
-    debouncedToggle("dictation", dictationController);
+    if (isDictationInteractable) {
+      debouncedToggle("dictation", dictationController);
+    }
   });
 
   useTauriListen<void>("tone-switch-forward", () => {
