@@ -68,6 +68,11 @@ type StartRecordingResponse = {
   sampleRate: number;
 };
 
+type AbortMessage = {
+  title?: string;
+  body: unknown;
+};
+
 export const DictationSideEffects = () => {
   const intl = useIntl();
 
@@ -94,6 +99,40 @@ export const DictationSideEffects = () => {
     return visibility === "persistent";
   });
 
+  const dictationController = useMemo(
+    () =>
+      new ActivationController(
+        () => startDictationRecording(),
+        () => stopDictationRecording(),
+      ),
+    [],
+  );
+
+  const agentController = useMemo(
+    () =>
+      new ActivationController(
+        () => startAgentRecording(),
+        () => stopAgentRecording(),
+      ),
+    [],
+  );
+
+  const additionalLanguageControllers = useMemo(
+    () =>
+      additionalLanguageEntries.map((entry) => ({
+        actionName: entry.actionName,
+        controller: new ActivationController(
+          () =>
+            startRecording({
+              mode: "dictate",
+              language: entry.language,
+            }),
+          () => stopRecording(),
+        ),
+      })),
+    [additionalLanguageEntries],
+  );
+
   const clearRecordingTimers = useCallback(() => {
     if (recordingWarningTimerRef.current) {
       clearTimeout(recordingWarningTimerRef.current);
@@ -105,13 +144,19 @@ export const DictationSideEffects = () => {
     }
   }, []);
 
-  const abortRecording = useCallback(async (error?: unknown) => {
+  const abortRecording = useCallback(async (message?: AbortMessage) => {
     getLogger().info("Aborting recording");
     clearRecordingTimers();
     invoke<void>("set_phase", { phase: "idle" });
     invoke("stop_recording").catch((e) =>
       getLogger().verbose(`stop_recording failed during abort: ${e}`),
     );
+
+    dictationController.reset();
+    agentController.reset();
+    for (const { controller } of additionalLanguageControllers) {
+      controller.reset();
+    }
 
     strategyRef.current?.cleanup();
     strategyRef.current = null;
@@ -121,12 +166,15 @@ export const DictationSideEffects = () => {
       draft.activeRecordingMode = null;
     });
 
-    if (error) {
+    if (message) {
+      playAlertSound();
       showToast({
-        title: intl.formatMessage({
-          defaultMessage: "Recording aborted",
-        }),
-        message: String(error),
+        title:
+          message.title ||
+          intl.formatMessage({
+            defaultMessage: "Recording stopped",
+          }),
+        message: String(message.body),
         toastType: "error",
         duration: 8_000,
       });
@@ -183,7 +231,9 @@ export const DictationSideEffects = () => {
     );
 
     if (!audio) {
-      abortRecording("No audio data received");
+      abortRecording({
+        body: "No audio data received",
+      });
       return;
     }
 
@@ -203,14 +253,16 @@ export const DictationSideEffects = () => {
       `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${appTarget?.name ?? "unknown"}`,
     );
     if (!rawTranscript) {
-      abortRecording("No transcript received");
+      abortRecording();
       return;
     }
 
     const session = sessionRef.current;
     const strategy = strategyRef.current;
     if (!session || !strategy) {
-      abortRecording("Recording session was not properly initialized");
+      abortRecording({
+        body: "Recording session was not properly initialized",
+      });
       return;
     }
 
@@ -303,23 +355,20 @@ export const DictationSideEffects = () => {
         draft.dictationLanguageOverride = language;
       });
 
-      let strategy: BaseStrategy;
-      if (mode === "agent") {
-        strategy = new AgentStrategy();
-      } else {
-        strategy = new DictationStrategy();
+      let strategy: BaseStrategy | null = strategyRef.current ?? null;
+      if (!strategy) {
+        if (mode === "agent") {
+          strategy = new AgentStrategy();
+        } else {
+          strategy = new DictationStrategy();
+        }
       }
 
-      const validationError = strategyRef.current?.validateAvailability();
+      const validationError = strategy.validateAvailability();
       if (validationError) {
-        getLogger().warning(`Recording blocked: ${validationError.title}`);
-        playAlertSound();
-        showToast({
+        abortRecording({
           title: validationError.title,
-          message: validationError.body,
-          toastType: "error",
-          action: validationError.action ?? undefined,
-          duration: 8_000,
+          body: validationError.body,
         });
         return;
       }
@@ -417,40 +466,6 @@ export const DictationSideEffects = () => {
     getLogger().info("Stopping agent recording");
     await stopRecording();
   }, [stopRecording]);
-
-  const dictationController = useMemo(
-    () =>
-      new ActivationController(
-        () => startDictationRecording(),
-        () => stopDictationRecording(),
-      ),
-    [],
-  );
-
-  const agentController = useMemo(
-    () =>
-      new ActivationController(
-        () => startAgentRecording(),
-        () => stopAgentRecording(),
-      ),
-    [],
-  );
-
-  const additionalLanguageControllers = useMemo(
-    () =>
-      additionalLanguageEntries.map((entry) => ({
-        actionName: entry.actionName,
-        controller: new ActivationController(
-          () =>
-            startRecording({
-              mode: "dictate",
-              language: entry.language,
-            }),
-          () => stopRecording(),
-        ),
-      })),
-    [additionalLanguageEntries, startRecording, stopRecording],
-  );
 
   const handleSwitchWritingStyle = useCallback(() => {
     const now = Date.now();
