@@ -130,6 +130,14 @@ export class ActivationController {
     this.doDeactivate();
   }
 
+  forceReset(): void {
+    this._isActive = false;
+    this._isLocked = false;
+    this.ignoreNextActivation = false;
+    this.pressTimestamp = null;
+    this.clearPendingDeactivation();
+  }
+
   clearIgnore(): void {
     this.ignoreNextActivation = false;
   }
