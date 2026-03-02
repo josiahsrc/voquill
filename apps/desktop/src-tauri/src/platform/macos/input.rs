@@ -17,7 +17,7 @@ pub(crate) fn paste_text_into_focused_field(
     match accessibility::insert_text_at_cursor(text) {
         Ok(()) => Ok(()),
         Err(err) => {
-            eprintln!("[macos::input] accessibility insert failed ({err}), falling back to clipboard paste");
+            log::warn!("Accessibility insert failed ({err}), falling back to clipboard paste");
             paste_via_clipboard(text)
         }
     }

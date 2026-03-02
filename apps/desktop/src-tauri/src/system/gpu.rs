@@ -87,12 +87,12 @@ fn enumerate_gpus_directly() -> Vec<GpuAdapterInfo> {
 
 /// Enumerate GPUs in a separate child process to protect against crashes
 fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
-    eprintln!("[gpu] Enumerating GPUs in child process...");
+    log::info!("Enumerating GPUs in child process...");
 
     let exe = match std::env::current_exe() {
         Ok(path) => path,
         Err(err) => {
-            eprintln!("[gpu] ERROR: Failed to get current exe path: {err}");
+            log::error!("Failed to get current exe path: {err}");
             return Vec::new();
         }
     };
@@ -114,7 +114,7 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(err) => {
-            eprintln!("[gpu] ERROR: Failed to spawn GPU enumerator process: {err}");
+            log::error!("Failed to spawn GPU enumerator process: {err}");
             return Vec::new();
         }
     };
@@ -127,7 +127,7 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     let mut stdout = match child.stdout.take() {
         Some(stdout) => stdout,
         None => {
-            eprintln!("[gpu] ERROR: Failed to capture child stdout");
+            log::error!("Failed to capture child stdout");
             let _ = child.kill();
             return Vec::new();
         }
@@ -136,7 +136,7 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     // Read all output
     let mut output = String::new();
     if let Err(err) = stdout.read_to_string(&mut output) {
-        eprintln!("[gpu] ERROR: Failed to read from child stdout: {err}");
+        log::error!("Failed to read from child stdout: {err}");
         let _ = child.kill();
         return Vec::new();
     }
@@ -145,15 +145,15 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     match child.wait() {
         Ok(status) => {
             if !status.success() {
-                eprintln!(
-                    "[gpu] WARNING: GPU enumerator process exited with status: {}",
+                log::warn!(
+                    "GPU enumerator process exited with status: {}",
                     status
                 );
                 return Vec::new();
             }
         }
         Err(err) => {
-            eprintln!("[gpu] ERROR: Failed to wait for child process: {err}");
+            log::error!("Failed to wait for child process: {err}");
             return Vec::new();
         }
     }
@@ -161,15 +161,15 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     // Parse JSON output
     match serde_json::from_str::<Vec<GpuAdapterInfo>>(output.trim()) {
         Ok(gpus) => {
-            eprintln!(
-                "[gpu] Successfully enumerated {} GPU(s) via child process",
+            log::info!(
+                "Successfully enumerated {} GPU(s) via child process",
                 gpus.len()
             );
             gpus
         }
         Err(err) => {
-            eprintln!("[gpu] ERROR: Failed to parse GPU enumeration output: {err}");
-            eprintln!("[gpu] Output was: {}", output.trim());
+            log::error!("Failed to parse GPU enumeration output: {err}");
+            log::error!("Output was: {}", output.trim());
             Vec::new()
         }
     }

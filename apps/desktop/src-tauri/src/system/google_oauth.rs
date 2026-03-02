@@ -81,7 +81,7 @@ pub async fn start_google_oauth(
         .opener()
         .open_url(auth_url, Option::<String>::None)
     {
-        eprintln!("Failed to open browser for Google OAuth flow: {err}");
+        log::error!("Failed to open browser for Google OAuth flow: {err}");
     }
 
     let authorization_code = server_handle

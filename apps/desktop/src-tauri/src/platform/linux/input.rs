@@ -13,30 +13,30 @@ pub(crate) fn paste_text_into_focused_field(
 
     let override_text = env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
     let target = override_text.as_deref().unwrap_or(text);
-    eprintln!(
-        "[voquill] attempting to inject text ({} chars)",
+    log::info!(
+        "attempting to inject text ({} chars)",
         target.chars().count()
     );
 
     if wayland::is_wayland() {
-        eprintln!("[voquill] Wayland session detected");
+        log::info!("Wayland session detected");
         return wayland::wayland_paste_via_clipboard(target, keybind)
             .or_else(|err| {
-                eprintln!("[voquill] Wayland paste failed ({err}), trying X11 fallback");
+                log::warn!("Wayland paste failed ({err}), trying X11 fallback");
                 paste_via_clipboard(target, keybind)
             })
             .or_else(|err| {
-                eprintln!("[voquill] X11 paste failed ({err}), trying wtype text fallback");
+                log::warn!("X11 paste failed ({err}), trying wtype text fallback");
                 wayland::wtype_text(target)
             })
             .or_else(|err| {
-                eprintln!("[voquill] wtype text failed ({err}), trying enigo typing fallback");
+                log::warn!("wtype text failed ({err}), trying enigo typing fallback");
                 enigo_type_text(target)
             });
     }
 
     paste_via_clipboard(target, keybind).or_else(|err| {
-        eprintln!("Clipboard paste failed ({err}). Falling back to simulated typing.");
+        log::warn!("Clipboard paste failed ({err}), falling back to simulated typing");
         enigo_type_text(target)
     })
 }
@@ -136,8 +136,8 @@ fn is_ctrl_shift_v_window() -> bool {
         return false;
     };
 
-    eprintln!(
-        "[voquill] focused window class: res_name={}, res_class={}",
+    log::debug!(
+        "focused window class: res_name={}, res_class={}",
         res_name, res_class
     );
 

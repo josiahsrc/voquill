@@ -8,8 +8,16 @@
   "permissions": [
     "core:default",
     "core:event:default",
+    "log:default",
     "autostart:default",
     "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        { "path": "$APPLOG" },
+        { "path": "$APPLOG/**" }
+      ]
+    },
     "updater:default",
     "process:default",
     {

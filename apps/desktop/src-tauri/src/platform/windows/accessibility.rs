@@ -34,10 +34,7 @@ pub fn get_text_field_info() -> TextFieldInfo {
     match try_get_text_field_info() {
         Ok(info) => info,
         Err(e) => {
-            eprintln!(
-                "[windows::accessibility] Error getting text field info: {:?}",
-                e
-            );
+            log::error!("Error getting text field info: {:?}", e);
             empty_text_field_info()
         }
     }
@@ -55,7 +52,7 @@ fn try_get_text_field_info() -> Result<TextFieldInfo, windows::core::Error> {
         let pattern = focused.GetCurrentPattern(UIA_TextPatternId)?;
 
         if pattern.as_raw().is_null() {
-            eprintln!("[windows::accessibility] Focused element does not support TextPattern");
+            log::debug!("Focused element does not support TextPattern");
             return Ok(empty_text_field_info());
         }
 
@@ -102,13 +99,8 @@ pub fn get_screen_context() -> ScreenContextInfo {
     match try_get_screen_context() {
         Ok(info) => info,
         Err(e) => {
-            eprintln!(
-                "[windows::accessibility] Error getting screen context: {:?}",
-                e
-            );
-            ScreenContextInfo {
-                screen_context: None,
-            }
+            log::error!("Error getting screen context: {:?}", e);
+            ScreenContextInfo { screen_context: None }
         }
     }
 }

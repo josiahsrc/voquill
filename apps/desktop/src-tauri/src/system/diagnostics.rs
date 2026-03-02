@@ -7,7 +7,7 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
     let log_path = match crate::system::paths::startup_diagnostics_path(app) {
         Ok(path) => path,
         Err(err) => {
-            eprintln!("[diagnostics] ERROR: Failed to get diagnostics log path: {err}");
+            log::error!("Failed to get diagnostics log path: {err}");
             return;
         }
     };
@@ -43,16 +43,16 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
     {
         Ok(mut file) => {
             if let Err(err) = file.write_all(log_content.as_bytes()) {
-                eprintln!("[diagnostics] ERROR: Failed to write to diagnostics log: {err}");
+                log::error!("Failed to write to diagnostics log: {err}");
             } else {
-                eprintln!(
-                    "[diagnostics] Startup diagnostics written to: {}",
+                log::info!(
+                    "Startup diagnostics written to: {}",
                     log_path.display()
                 );
             }
         }
         Err(err) => {
-            eprintln!("[diagnostics] ERROR: Failed to open diagnostics log file: {err}");
+            log::error!("Failed to open diagnostics log file: {err}");
         }
     }
 }

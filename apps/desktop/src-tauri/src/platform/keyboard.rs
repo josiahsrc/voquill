@@ -37,7 +37,7 @@ impl KeyEventEmitter {
 
     fn handle_event(&self, event: &Event) {
         if debug_keys_enabled() {
-            eprintln!("[keys] event: {:?}", event.event_type);
+            log::debug!("event: {:?}", event.event_type);
         }
 
         match event.event_type {
@@ -84,7 +84,7 @@ impl KeyEventEmitter {
 
     fn emit(&self, payload: KeysHeldPayload) {
         if let Err(err) = self.app.emit_to(EventTarget::any(), EVT_KEYS_HELD, payload) {
-            eprintln!("Failed to emit keys-held event: {err}");
+            log::error!("Failed to emit keys-held event: {err}");
         }
     }
 }
@@ -126,7 +126,7 @@ pub fn sync_combos(combos: Vec<Vec<String>>) {
         if let Some(stdin) = guard.as_mut() {
             if let Ok(json) = serde_json::to_string(&combos) {
                 if let Err(err) = writeln!(stdin, "{json}") {
-                    eprintln!("Failed to write combos to child stdin: {err}");
+                    log::error!("Failed to write combos to child stdin: {err}");
                 }
                 let _ = stdin.flush();
             }
@@ -141,7 +141,7 @@ pub fn start_key_listener(app: &AppHandle) -> Result<(), String> {
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
 
-    eprintln!("Starting keyboard listener");
+    log::info!("Starting keyboard listener");
     let emitter = Arc::new(KeyEventEmitter::new(app));
     let (join_handle, running) = start_external_listener(emitter.clone())?;
     *state = Some(ListenerHandle {
@@ -165,7 +165,7 @@ pub fn stop_key_listener() -> Result<(), String> {
         handle.running.store(false, Ordering::SeqCst);
         stop_listener_child();
         if let Err(err) = handle.join_handle.join() {
-            eprintln!("Keyboard listener thread join failed: {err:?}");
+            log::error!("Keyboard listener thread join failed: {err:?}");
         }
         handle.emitter.reset();
     }
@@ -230,7 +230,7 @@ fn run_listener_thread(
 ) {
     while running.load(Ordering::SeqCst) {
         if let Err(err) = ensure_listener_child(port) {
-            eprintln!("Keyboard listener child error: {err}");
+            log::error!("Keyboard listener child error: {err}");
             thread::sleep(Duration::from_millis(500));
             continue;
         }
@@ -240,14 +240,14 @@ fn run_listener_thread(
                 let result = pump_stream(stream, emitter.clone());
                 emitter.reset();
                 if let Err(err) = result {
-                    eprintln!("Keyboard listener stream error: {err}");
+                    log::error!("Keyboard listener stream error: {err}");
                 }
             }
             Err(err) if err.kind() == ErrorKind::WouldBlock => {
                 thread::sleep(Duration::from_millis(50));
             }
             Err(err) => {
-                eprintln!("Keyboard listener accept error: {err}");
+                log::error!("Keyboard listener accept error: {err}");
                 thread::sleep(Duration::from_millis(200));
             }
         }
@@ -296,7 +296,7 @@ fn ensure_listener_child(port: u16) -> Result<(), String> {
                     return Ok(());
                 }
                 Err(err) => {
-                    eprintln!("Keyboard listener child wait failed: {err}");
+                    log::warn!("Keyboard listener child wait failed: {err}");
                     *guard = None;
                     true
                 }
@@ -330,7 +330,7 @@ fn ensure_listener_child(port: u16) -> Result<(), String> {
                 if let Some(stdin) = guard.as_mut() {
                     if let Ok(json) = serde_json::to_string(&combos) {
                         if let Err(err) = writeln!(stdin, "{json}") {
-                            eprintln!("Failed to send initial combos to child: {err}");
+                            log::error!("Failed to send initial combos to child: {err}");
                         }
                         let _ = stdin.flush();
                     }
@@ -359,10 +359,10 @@ fn stop_listener_child() {
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     if let Some(mut child) = guard.take() {
         if let Err(err) = child.kill() {
-            eprintln!("Failed to kill keyboard listener child: {err}");
+            log::error!("Failed to kill keyboard listener child: {err}");
         }
         if let Err(err) = child.wait() {
-            eprintln!("Failed to wait for keyboard listener child: {err}");
+            log::error!("Failed to wait for keyboard listener child: {err}");
         }
     }
 }
@@ -388,8 +388,8 @@ fn pump_stream(stream: TcpStream, emitter: Arc<KeyEventEmitter>) -> Result<(), S
                 #[cfg(target_os = "windows")]
                 if payload.scan_code == 0 {
                     if debug_keys_enabled() {
-                        eprintln!(
-                            "[keys] Ignoring injected event (scan_code=0): {:?} {}",
+                        log::debug!(
+                            "Ignoring injected event (scan_code=0): {:?} {}",
                             payload.kind, payload.key_label
                         );
                     }
@@ -400,7 +400,7 @@ fn pump_stream(stream: TcpStream, emitter: Arc<KeyEventEmitter>) -> Result<(), S
                     emitter.handle_event(&event);
                 }
             }
-            Err(err) => eprintln!("Malformed keyboard event payload: {err}: {line}"),
+            Err(err) => log::warn!("Malformed keyboard event payload: {err}: {line}"),
         }
     }
 

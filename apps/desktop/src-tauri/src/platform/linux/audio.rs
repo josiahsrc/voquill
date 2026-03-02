@@ -15,7 +15,7 @@ fn parse_alsa_cards() -> HashMap<String, String> {
     let contents = match fs::read_to_string("/proc/asound/cards") {
         Ok(contents) => contents,
         Err(err) => {
-            eprintln!("[audio] failed to read /proc/asound/cards: {err}");
+            log::error!("failed to read /proc/asound/cards: {err}");
             return map;
         }
     };

@@ -48,7 +48,7 @@ pub fn warm_audio_output() {
 
     // Store the sender for later use
     if AUDIO_SENDER.set(tx).is_err() {
-        eprintln!("[audio] Audio sender already initialized");
+        log::warn!("Audio sender already initialized");
         return;
     }
 
@@ -57,11 +57,11 @@ pub fn warm_audio_output() {
         // Create the output stream once and keep it alive
         let (_stream, handle) = match OutputStream::try_default() {
             Ok(result) => {
-                eprintln!("[audio] Pre-warmed audio output stream");
+                log::info!("Pre-warmed audio output stream");
                 result
             }
             Err(err) => {
-                eprintln!("[audio] Failed to create audio output: {err}");
+                log::error!("Failed to create audio output: {err}");
                 // Still process requests, but they'll fail gracefully
                 for request in rx {
                     let AudioRequest::Play(bytes) = request;
@@ -140,17 +140,17 @@ fn play_clip_fallback(bytes: &'static [u8]) {
                         sink.sleep_until_end();
                     }
                     Err(err) => {
-                        eprintln!("Failed to decode audio clip: {err}");
+                        log::error!("Failed to decode audio clip: {err}");
                     }
                 },
                 Err(err) => {
-                    eprintln!("Failed to create audio sink: {err}");
+                    log::error!("Failed to create audio sink: {err}");
                 }
             }
 
             drop(stream);
         } else {
-            eprintln!("Failed to open default audio output stream");
+            log::error!("Failed to open default audio output stream");
         }
     });
 }

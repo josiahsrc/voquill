@@ -114,7 +114,7 @@ async fn delete_audio_entries(
         for (id, path) in entries {
             let file_path = PathBuf::from(&path);
             if let Err(err) = crate::system::audio_store::delete_audio_file(&app, &file_path) {
-                eprintln!("Failed to delete audio file for transcription {id}: {err}");
+                log::error!("Failed to delete audio file for transcription {id}: {err}");
             }
             removed.push(id);
         }
@@ -606,7 +606,7 @@ pub async fn api_key_list(
                 .map(|api_key| {
                     let full_key = reveal_api_key(&api_key.salt, &api_key.key_ciphertext)
                         .map_err(|err| {
-                            eprintln!("Failed to reveal API key {}: {}", api_key.id, err);
+                            log::error!("Failed to reveal API key {}: {}", api_key.id, err);
                             err
                         })
                         .ok();
@@ -729,7 +729,7 @@ pub async fn clear_local_data(
     transaction.commit().await.map_err(|err| err.to_string())?;
 
     if let Err(err) = sqlx::query("VACUUM").execute(&pool).await {
-        eprintln!("VACUUM failed after clearing local data: {err}");
+        log::warn!("VACUUM failed after clearing local data: {err}");
     }
 
     Ok(())
@@ -767,7 +767,7 @@ pub async fn start_recording(
     let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
         let payload = RecordingLevelPayload { levels };
         if let Err(err) = level_emit_handle.emit_to(EventTarget::any(), EVT_REC_LEVEL, payload) {
-            eprintln!("Failed to emit recording_level event: {err}");
+            log::error!("Failed to emit recording_level event: {err}");
         }
     });
 
@@ -775,7 +775,7 @@ pub async fn start_recording(
     let chunk_emitter: ChunkCallback = Arc::new(move |samples: Vec<f32>| {
         let payload = AudioChunkPayload { samples };
         if let Err(err) = chunk_emit_handle.emit_to(EventTarget::any(), EVT_AUDIO_CHUNK, payload) {
-            eprintln!("Failed to emit audio_chunk event: {err}");
+            log::error!("Failed to emit audio_chunk event: {err}");
         }
     });
 
@@ -810,7 +810,7 @@ pub async fn start_recording(
                 });
             }
 
-            eprintln!("Failed to start recording via command: {message}");
+            log::error!("Failed to start recording via command: {message}");
             Err(message)
         }
     }
@@ -845,7 +845,7 @@ pub async fn stop_recording(
             }
 
             let message = err.to_string();
-            eprintln!("Failed to stop recording via command: {message}");
+            log::error!("Failed to stop recording via command: {message}");
             Err(message)
         }
     })
@@ -1012,14 +1012,14 @@ pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> 
     match join_result {
         Ok(result) => {
             if let Err(err) = result.as_ref() {
-                eprintln!("Paste failed: {err}");
+                log::error!("Paste failed: {err}");
             }
 
             result
         }
         Err(err) => {
             let message = format!("Paste task join error: {err}");
-            eprintln!("{message}");
+            log::error!("{message}");
             Err(message)
         }
     }
@@ -1127,7 +1127,7 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
     let mut path = app.path().app_config_dir().map_err(|err| err.to_string())?;
     path.push("enterprise.json");
     let path_str = path.to_string_lossy().to_string();
-    eprintln!("[ENTERPRISE] Reading enterprise target from {:?}", path);
+    log::info!("Reading enterprise target from {:?}", path);
     if !path.exists() {
         return Ok((path_str, None));
     }

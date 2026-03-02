@@ -18,13 +18,13 @@ pub(crate) fn paste_text_into_focused_field(
 
     let override_text = env::var("VOQUILL_DEBUG_PASTE_TEXT").ok();
     let target = override_text.as_deref().unwrap_or(text);
-    eprintln!(
-        "[voquill] attempting to inject text ({} chars)",
+    log::info!(
+        "attempting to inject text ({} chars)",
         target.chars().count()
     );
 
     paste_via_clipboard(target, keybind).or_else(|err| {
-        eprintln!("Clipboard paste failed ({err}). Falling back to simulated typing.");
+        log::warn!("Clipboard paste failed ({err}), falling back to simulated typing");
         use enigo::{Enigo, KeyboardControllable};
         let mut enigo = Enigo::new();
         release_modifier_keys();
@@ -48,7 +48,7 @@ fn is_console_window() -> bool {
         }
 
         let class_str = String::from_utf16_lossy(&class_name[..len as usize]);
-        eprintln!("[voquill] foreground window class: {}", class_str);
+        log::debug!("foreground window class: {}", class_str);
 
         class_str == "ConsoleWindowClass"
     }
@@ -190,7 +190,7 @@ fn send_paste_keys(keybind: Option<&str>) {
 
     let use_shift = keybind == Some("ctrl+shift+v");
     if is_console && !use_shift {
-        eprintln!("[voquill] detected console window, using right-click to paste");
+        log::info!("detected console window, using right-click to paste");
         send_right_click();
     } else {
         send_key_down(VK_CONTROL);

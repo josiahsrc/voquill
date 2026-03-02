@@ -54,7 +54,7 @@ pub async fn start_enterprise_oidc_flow(
         .opener()
         .open_url(auth_url, Option::<String>::None)
     {
-        eprintln!("Failed to open browser for enterprise OIDC flow: {err}");
+        log::error!("Failed to open browser for enterprise OIDC flow: {err}");
     }
 
     let payload = server_handle

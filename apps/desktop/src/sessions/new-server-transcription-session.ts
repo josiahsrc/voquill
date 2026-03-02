@@ -17,7 +17,6 @@ import {
 import { getToneConfig } from "../utils/tone.utils";
 import {
   getGenerativePrefs,
-  getMyUser,
   getMyUserName,
   loadMyEffectiveDictationLanguage,
 } from "../utils/user.utils";
@@ -325,8 +324,7 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
       const state = getAppState();
       const entries = collectDictionaryEntries(state);
       const glossary = ["Voquill", ...entries.sources];
-      const user = getMyUser(state);
-      const language = user?.preferredLanguage ?? undefined;
+      const language = await loadMyEffectiveDictationLanguage(state);
 
       this.session = await startNewServerStreaming(
         sampleRate,

@@ -94,7 +94,6 @@ export type SettingsState = {
   openRouterSearchQuery: string;
   openRouterProviders: OpenRouterProvider[];
   openRouterProvidersStatus: ActionStatus;
-  autoDownloadLogs: boolean;
 };
 
 export const createEmptyLocalTranscriptionModelStatusMap =
@@ -168,5 +167,4 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   openRouterSearchQuery: "",
   openRouterProviders: [],
   openRouterProvidersStatus: "idle",
-  autoDownloadLogs: false,
 };

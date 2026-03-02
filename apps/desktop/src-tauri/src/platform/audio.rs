@@ -168,7 +168,7 @@ fn compute_level_bins(samples: &[f32]) -> Vec<f32> {
 impl Drop for ActiveRecording {
     fn drop(&mut self) {
         if let Err(err) = self._stream.pause() {
-            eprintln!("[recording] failed to pause input stream: {err}");
+            log::error!("failed to pause input stream: {err}");
         }
     }
 }
@@ -243,15 +243,15 @@ impl RecordingManager {
 
         match result {
             Ok(active) => {
-                eprintln!(
-                    "[recording] using cached device '{}' via host {:?}",
+                log::info!(
+                    "using cached device '{}' via host {:?}",
                     cached.device_name, cached.host_id
                 );
                 Some((active, cached.host_id, cached.device_name))
             }
             Err(err) => {
-                eprintln!(
-                    "[recording] cached device '{}' failed: {err}",
+                log::warn!(
+                    "cached device '{}' failed: {err}",
                     cached.device_name
                 );
                 None
@@ -313,7 +313,7 @@ impl RecordingManager {
             let host = match cpal::host_from_id(host_id) {
                 Ok(value) => value,
                 Err(err) => {
-                    eprintln!("[recording] failed to load host {host_id:?}: {err}");
+                    log::error!("failed to load host {host_id:?}: {err}");
                     continue;
                 }
             };
@@ -332,8 +332,8 @@ impl RecordingManager {
                     return Ok(());
                 }
                 Err(err) => {
-                    eprintln!(
-                        "[recording] host {host_id:?} did not yield a usable input device: {err}"
+                    log::warn!(
+                        "host {host_id:?} did not yield a usable input device: {err}"
                     );
                     last_err = Some(err);
                 }
@@ -415,7 +415,7 @@ impl Recorder for RecordingManager {
     fn clear_device_cache(&self) {
         if let Ok(mut guard) = self.last_successful_device.lock() {
             *guard = None;
-            eprintln!("[recording] device cache cleared");
+            log::debug!("device cache cleared");
         }
     }
 
@@ -624,7 +624,7 @@ fn try_start_on_device(
         .play()
         .map_err(|err| RecordingError::StreamPlay(err.to_string()))?;
 
-    eprintln!("[recording] started on device '{label}'");
+    log::info!("started on device '{label}'");
 
     Ok(ActiveRecording {
         _stream: stream,
@@ -665,15 +665,15 @@ fn start_recording_on_host(
         let fallback_preferred = preferred_label.or(preferred_normalized);
 
         if let Some(reason) = avoid_reason {
-            eprintln!(
-                "[recording] deprioritising device '{label}' ({reason}); will try if others fail"
+            log::debug!(
+                "deprioritising device '{label}' ({reason}); will try if others fail"
             );
         }
 
         let config = match device.default_input_config() {
             Ok(cfg) => cfg,
             Err(err) => {
-                eprintln!("[recording] device '{label}' rejected default config: {err}");
+                log::warn!("device '{label}' rejected default config: {err}");
                 last_err = Some(RecordingError::StreamConfig(err.to_string()));
                 continue;
             }
@@ -707,7 +707,7 @@ fn start_recording_on_host(
                 chunk_emitter.clone(),
             ),
             other => {
-                eprintln!("[recording] device '{label}' has unsupported sample format: {other:?}");
+                log::warn!("device '{label}' has unsupported sample format: {other:?}");
                 last_err = Some(RecordingError::UnsupportedFormat(other));
                 continue;
             }
@@ -716,31 +716,31 @@ fn start_recording_on_host(
         let stream = match stream_result {
             Ok(stream) => stream,
             Err(err) => {
-                eprintln!("[recording] failed to build stream for '{label}': {err}");
+                log::error!("failed to build stream for '{label}': {err}");
                 last_err = Some(err);
                 continue;
             }
         };
 
         if let Err(err) = stream.play() {
-            eprintln!("[recording] failed to start stream for '{label}': {err}");
+            log::error!("failed to start stream for '{label}': {err}");
             last_err = Some(RecordingError::StreamPlay(err.to_string()));
             continue;
         }
 
         if matches_preferred {
-            eprintln!(
-                "[recording] using preferred input device '{label}' via host {:?}",
+            log::info!(
+                "using preferred input device '{label}' via host {:?}",
                 host.id()
             );
         } else if let Some(preferred) = fallback_preferred {
-            eprintln!(
-                "[recording] preferred input '{preferred}' not available; using '{label}' via host {:?}",
+            log::warn!(
+                "preferred input '{preferred}' not available; using '{label}' via host {:?}",
                 host.id()
             );
         } else {
-            eprintln!(
-                "[recording] using input device '{label}' via host {:?}",
+            log::info!(
+                "using input device '{label}' via host {:?}",
                 host.id()
             );
         }
@@ -905,7 +905,7 @@ pub fn list_input_devices() -> Vec<InputDeviceDescriptor> {
         let host = match cpal::host_from_id(host_id) {
             Ok(value) => value,
             Err(err) => {
-                eprintln!("[recording] failed to enumerate host {host_id:?}: {err}");
+                log::error!("failed to enumerate host {host_id:?}: {err}");
                 continue;
             }
         };
@@ -1025,7 +1025,7 @@ where
                     shared_buffer.extend_from_slice(&mono_samples);
                 }
             },
-            |err| eprintln!("[recording] stream error: {err}"),
+            |err| log::error!("stream error: {err}"),
             None,
         )
         .map_err(|err| RecordingError::StreamBuild(err.to_string()))

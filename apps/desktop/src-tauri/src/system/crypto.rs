@@ -21,7 +21,7 @@ pub fn runtime_secret() -> &'static [u8] {
             Ok(value) if !value.is_empty() => value.into_bytes(),
             _ => {
                 LOGGED_FALLBACK.get_or_init(|| {
-                    eprintln!(
+                    log::warn!(
                         "{SECRET_ENV} not set; falling back to default secret. Set this \
                          environment variable to secure stored API keys."
                     );

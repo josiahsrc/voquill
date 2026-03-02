@@ -31,13 +31,13 @@ pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
                 gtk_window.set_keep_above(false);
 
                 if let Err(err) = window_for_handle.unminimize() {
-                    eprintln!("Failed to unminimize window: {err}");
+                    log::error!("Failed to unminimize window: {err}");
                 }
                 if let Err(err) = window_for_handle.show() {
-                    eprintln!("Failed to show window: {err}");
+                    log::error!("Failed to show window: {err}");
                 }
                 if let Err(err) = window_for_handle.set_focus() {
-                    eprintln!("Failed to focus window: {err}");
+                    log::error!("Failed to focus window: {err}");
                 }
 
                 Ok(())

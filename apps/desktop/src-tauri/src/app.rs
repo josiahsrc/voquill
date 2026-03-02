@@ -1,5 +1,6 @@
 use sqlx::sqlite::SqlitePoolOptions;
 use tauri::{Manager, WindowEvent};
+use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 
 const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
 
@@ -7,6 +8,18 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
 
     tauri::Builder::default()
+        .plugin({
+            let file_name = chrono::Local::now().format("voquill_%Y-%m-%d_%H%M%S").to_string();
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::LogDir { file_name: Some(file_name.into()) }),
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::Webview),
+                ])
+                .level(log::LevelFilter::Debug)
+                .timezone_strategy(TimezoneStrategy::UseLocal)
+                .build()
+        })
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // When a second instance is launched, bring the existing window to the foreground
             if let Some(window) = app.get_webview_window("main") {
@@ -36,14 +49,18 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     #[cfg(target_os = "macos")]
                     {
                         if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
-                            eprintln!("Failed to hide dock icon: {err}");
+                            log::error!("Failed to hide dock icon: {err}");
                         }
                     }
                 }
             }
         })
         .setup(|app| {
-            eprintln!("[app] Starting application setup...");
+            std::panic::set_hook(Box::new(|info| {
+                log::error!("PANIC: {info}");
+            }));
+
+            log::info!("Starting application setup...");
 
             // Write startup diagnostics for debugging
             crate::system::diagnostics::write_startup_diagnostics(app.handle());
@@ -74,7 +91,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                         #[cfg(target_os = "macos")]
                         {
                             if let Err(err) = crate::platform::macos::dock::hide_dock_icon() {
-                                eprintln!("Failed to hide dock icon on autostart: {err}");
+                                log::error!("Failed to hide dock icon on autostart: {err}");
                             }
                         }
                     }
@@ -131,7 +148,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
             if std::env::var("VOQUILL_ENABLE_DEVTOOLS").is_ok() {
-                eprintln!("[app] VOQUILL_ENABLE_DEVTOOLS detected, opening dev tools...");
+                log::info!("VOQUILL_ENABLE_DEVTOOLS detected, opening dev tools...");
                 if let Some(main_window) = app.get_webview_window("main") {
                     main_window.open_devtools();
                 }

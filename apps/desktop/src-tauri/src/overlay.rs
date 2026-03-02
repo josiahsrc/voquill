@@ -96,7 +96,7 @@ fn create_overlay_window(
     let window = builder.build()?;
 
     if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
-        eprintln!("Failed to configure {label} as non-activating: {err}");
+        log::error!("Failed to configure {label} as non-activating: {err}");
     }
 
     Ok(())
@@ -145,7 +145,7 @@ pub fn ensure_toast_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
     let window = builder.build()?;
 
     if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
-        eprintln!("Failed to configure {TOAST_OVERLAY_LABEL} as non-activating: {err}");
+        log::error!("Failed to configure {TOAST_OVERLAY_LABEL} as non-activating: {err}");
     }
 
     Ok(())
@@ -186,7 +186,7 @@ pub fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
     let window = builder.build()?;
 
     if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
-        eprintln!("Failed to configure {AGENT_OVERLAY_LABEL} as non-activating: {err}");
+        log::error!("Failed to configure {AGENT_OVERLAY_LABEL} as non-activating: {err}");
     }
 
     Ok(())

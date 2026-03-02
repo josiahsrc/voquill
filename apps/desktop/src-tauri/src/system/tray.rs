@@ -80,12 +80,12 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
             }
             "install-update" => {
                 if let Err(err) = app.emit(EVT_INSTALL_UPDATE, ()) {
-                    eprintln!("Failed to emit install-update event: {err}");
+                    log::error!("Failed to emit install-update event: {err}");
                 }
             }
             "register-current-app" => {
                 if let Err(err) = app.emit(EVT_REGISTER_CURRENT_APP, ()) {
-                    eprintln!("Failed to emit register-current-app event: {err}");
+                    log::error!("Failed to emit register-current-app event: {err}");
                 }
             }
             "quit-voquill" => app.exit(0),

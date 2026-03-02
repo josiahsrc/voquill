@@ -36,7 +36,7 @@ import {
   loadEnterpriseTarget,
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
-import { getLogger } from "../../utils/log.utils";
+import { getLogger, initLogging } from "../../utils/log.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import {
   getEffectivePillVisibility,
@@ -84,6 +84,10 @@ export const AppSideEffects = () => {
     return uid ? (state.userById[uid] ?? null) : null;
   });
   const prefs = useAppStore((state) => getMyUserPreferences(state));
+
+  useEffect(() => {
+    void initLogging();
+  }, []);
 
   const onAuthStateChanged = (user: AuthUser | null) => {
     getLogger().info(`Auth state changed (uid=${user?.uid ?? "none"})`);
