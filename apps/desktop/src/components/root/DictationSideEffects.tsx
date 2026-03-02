@@ -339,8 +339,6 @@ export const DictationSideEffects = () => {
         duration: 5_000,
       });
 
-      dictationController.reset();
-      agentController.reset();
       stopRecording();
     }, RECORDING_AUTO_STOP_DURATION_MS);
   }, [stopRecording, intl, clearRecordingTimers]);
