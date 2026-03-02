@@ -351,7 +351,7 @@ export const DictationSideEffects = () => {
       const mode = args.mode;
       const language = args.language || getMyPrimaryDictationLanguage(state);
       produceAppState((draft) => {
-        draft.activeRecordingMode = "dictate";
+        draft.activeRecordingMode = mode;
         draft.dictationLanguageOverride = language;
       });
 
