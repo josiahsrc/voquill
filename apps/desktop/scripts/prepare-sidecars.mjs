@@ -38,9 +38,9 @@ if (!existsSync(sidecarManifestPath)) {
 mkdirSync(tauriBinariesDir, { recursive: true });
 
 const cpuSidecarPath = buildAndCopy("rust-transcription-cpu", false);
-const gpuBuildSupported = supportsNativeGpuSidecar(targetTriple);
+const gpuBuildState = resolveGpuBuildState(targetTriple);
 
-if (gpuBuildSupported) {
+if (gpuBuildState.canBuildNative) {
   const gpuSidecarPath = buildAndCopy("rust-transcription-gpu", true, {
     allowFailure: !requireNativeGpuSidecar,
   });
@@ -49,6 +49,15 @@ if (gpuBuildSupported) {
     mirrorCpuSidecarAsGpu(cpuSidecarPath);
   }
 } else {
+  if (requireNativeGpuSidecar) {
+    fail(
+      `Native GPU sidecar is required for ${targetTriple}, but unavailable: ${gpuBuildState.reason}`,
+    );
+  }
+
+  console.warn(
+    `[sidecar] Skipping native GPU sidecar build for ${targetTriple}: ${gpuBuildState.reason}`,
+  );
   mirrorCpuSidecarAsGpu(cpuSidecarPath);
 }
 
@@ -202,6 +211,30 @@ function isWindowsTarget(target) {
 
 function supportsNativeGpuSidecar(target) {
   return target.includes("windows") || target.includes("linux");
+}
+
+function resolveGpuBuildState(target) {
+  if (!supportsNativeGpuSidecar(target)) {
+    return {
+      canBuildNative: false,
+      reason: "native GPU sidecar builds are unsupported on this platform",
+    };
+  }
+
+  if (isWindowsTarget(target)) {
+    const vulkanSdkDir = process.env.VULKAN_SDK?.trim();
+    if (!vulkanSdkDir || !existsSync(vulkanSdkDir)) {
+      return {
+        canBuildNative: false,
+        reason: "VULKAN_SDK is not set to an existing directory",
+      };
+    }
+  }
+
+  return {
+    canBuildNative: true,
+    reason: null,
+  };
 }
 
 function fail(message) {
