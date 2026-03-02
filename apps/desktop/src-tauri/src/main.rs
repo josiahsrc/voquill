@@ -22,7 +22,41 @@ fn init_x11_threads() {
 #[cfg(not(target_os = "linux"))]
 fn init_x11_threads() {}
 
+fn install_panic_hook() {
+    let previous_hook = std::panic::take_hook();
+
+    std::panic::set_hook(Box::new(move |panic_info| {
+        let thread_name = std::thread::current()
+            .name()
+            .map(str::to_owned)
+            .unwrap_or_else(|| "<unnamed>".to_string());
+        let location = panic_info
+            .location()
+            .map(|loc| format!("{}:{}:{}", loc.file(), loc.line(), loc.column()))
+            .unwrap_or_else(|| "<unknown>".to_string());
+        let message = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            (*s).to_string()
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "<non-string payload>".to_string()
+        };
+        let backtrace = std::backtrace::Backtrace::force_capture();
+
+        eprintln!("[crash] PANIC in thread '{thread_name}' at {location}: {message}");
+        eprintln!("[crash] Backtrace:\n{backtrace}");
+
+        log::error!(
+            "PANIC in thread '{thread_name}' at {location}: {message}\nBacktrace:\n{backtrace}"
+        );
+
+        previous_hook(panic_info);
+    }));
+}
+
 fn main() {
+    install_panic_hook();
+
     // CRITICAL: Initialize X11 threading before ANY other operations
     init_x11_threads();
 
@@ -77,15 +111,9 @@ fn main() {
                 std::process::exit(1);
             }
         }
-        Err(panic_info) => {
+        Err(_) => {
             eprintln!("[startup] PANIC: Application panicked during startup!");
-            if let Some(s) = panic_info.downcast_ref::<&str>() {
-                eprintln!("[startup] Panic message: {s}");
-            } else if let Some(s) = panic_info.downcast_ref::<String>() {
-                eprintln!("[startup] Panic message: {s}");
-            } else {
-                eprintln!("[startup] Panic message: <unknown>");
-            }
+            eprintln!("[startup] Panic details were logged by the global panic hook.");
             eprintln!("[startup] If this is a GPU-related crash, try setting VOQUILL_WHISPER_DISABLE_GPU=1");
             std::process::exit(1);
         }

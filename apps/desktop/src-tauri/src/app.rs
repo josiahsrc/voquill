@@ -55,10 +55,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             }
         })
         .setup(|app| {
-            std::panic::set_hook(Box::new(|info| {
-                log::error!("PANIC: {info}");
-            }));
-
             log::info!("Starting application setup...");
 
             // Write startup diagnostics for debugging
