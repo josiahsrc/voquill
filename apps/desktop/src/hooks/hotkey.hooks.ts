@@ -20,7 +20,9 @@ export const useHotkeyHoldMany = (args: {
   isDisabled?: boolean;
 }) => {
   const keysHeld = useAppStore((s) => s.keysHeld);
+  const isRecordingHotkey = useAppStore((state) => state.isRecordingHotkey);
   const hotkeyById = useAppStore((state) => state.hotkeyById);
+  const isDisabled = Boolean(args.isDisabled || isRecordingHotkey);
   const combosByAction = useMemo(() => {
     const map: Record<string, string[][]> = {};
     const state = getAppState();
@@ -69,7 +71,7 @@ export const useHotkeyHoldMany = (args: {
         matchesCombo(keysHeld, combo),
       );
 
-      if (args.isDisabled) {
+      if (isDisabled) {
         wasPressedRef.current.set(action.actionName, isPressed);
         action.controller.reset();
         continue;
@@ -103,7 +105,7 @@ export const useHotkeyHoldMany = (args: {
 
       wasPressedRef.current.set(action.actionName, isPressed);
     }
-  }, [keysHeld, combosByAction, args.actions, args.isDisabled]);
+  }, [keysHeld, combosByAction, args.actions, isDisabled]);
 };
 
 export const useHotkeyFire = (args: {
@@ -112,6 +114,8 @@ export const useHotkeyFire = (args: {
   onFire?: () => void;
 }) => {
   const keysHeld = useAppStore((state) => state.keysHeld);
+  const isRecordingHotkey = useAppStore((state) => state.isRecordingHotkey);
+  const isDisabled = Boolean(args.isDisabled || isRecordingHotkey);
   const availableCombos = useAppStore((state) =>
     getHotkeyCombosForAction(state, args.actionName),
   );
@@ -123,7 +127,7 @@ export const useHotkeyFire = (args: {
   const wasDisabledRef = useRef(false);
 
   useEffect(() => {
-    if (args.isDisabled) {
+    if (isDisabled) {
       previousKeysHeldRef.current = keysHeld;
       comboStateRef.current.clear();
       wasDisabledRef.current = true;
@@ -215,5 +219,5 @@ export const useHotkeyFire = (args: {
     }
 
     previousKeysHeldRef.current = keysHeld;
-  }, [keysHeld, availableCombos, args.isDisabled, args.onFire]);
+  }, [keysHeld, availableCombos, isDisabled, args.onFire]);
 };
