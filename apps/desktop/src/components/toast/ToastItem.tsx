@@ -1,3 +1,6 @@
+import CloseIcon from "@mui/icons-material/Close";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
   Box,
   Button,
@@ -6,9 +9,6 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useIntl } from "react-intl";
 import { Toast, ToastAction } from "../../types/toast.types";
 
@@ -43,6 +43,8 @@ export const ToastItem = ({ toast, onClose, onAction }: ToastItemProps) => {
         return intl.formatMessage({ defaultMessage: "Fix" });
       case "surface_window":
         return intl.formatMessage({ defaultMessage: "Open" });
+      case "confirm_cancel_transcription":
+        return intl.formatMessage({ defaultMessage: "Yes, cancel" });
     }
   };
 

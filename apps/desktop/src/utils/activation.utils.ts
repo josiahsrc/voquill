@@ -1,7 +1,5 @@
 const TAP_THRESHOLD_MS = 500;
 
-const singletonControllers = new Map<string, ActivationController>();
-
 export class ActivationController {
   private _isActive = false;
   private _isLocked = false;
@@ -147,21 +145,6 @@ export class ActivationController {
   dispose(): void {
     this.clearPendingDeactivation();
   }
-}
-
-export function getOrCreateController(
-  key: string,
-  onActivate: () => void,
-  onDeactivate: () => void,
-): ActivationController {
-  let controller = singletonControllers.get(key);
-  if (!controller) {
-    controller = new ActivationController(onActivate, onDeactivate);
-    singletonControllers.set(key, controller);
-  } else {
-    controller.setCallbacks(onActivate, onDeactivate);
-  }
-  return controller;
 }
 
 const lastToggleByKey = new Map<string, number>();

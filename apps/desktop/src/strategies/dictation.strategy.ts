@@ -62,18 +62,7 @@ export class DictationStrategy extends BaseStrategy {
     sessionPostProcessMetadata,
     toneId,
     currentApp,
-    loadingToken,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
-    const resetPhase = async () => {
-      if (
-        loadingToken &&
-        this.context.overlayLoadingTokenRef.current === loadingToken
-      ) {
-        this.context.overlayLoadingTokenRef.current = null;
-        await invoke<void>("set_phase", { phase: "idle" });
-      }
-    };
-
     let transcript: string | null = null;
     let sanitizedTranscript: string | null = null;
     let postProcessMetadata: PostProcessMetadata = {};
@@ -115,8 +104,6 @@ export class DictationStrategy extends BaseStrategy {
         postProcessWarnings = result.warnings;
       }
 
-      await resetPhase();
-
       if (transcript) {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
@@ -147,7 +134,6 @@ export class DictationStrategy extends BaseStrategy {
         message: errorMessage,
         toastType: "error",
       });
-      await resetPhase();
     }
 
     return {
