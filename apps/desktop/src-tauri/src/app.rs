@@ -12,7 +12,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             let file_name = chrono::Local::now().format("voquill_%Y-%m-%d_%H%M%S").to_string();
             tauri_plugin_log::Builder::new()
                 .targets([
-                    Target::new(TargetKind::LogDir { file_name: Some(file_name.into()) }),
+                    Target::new(TargetKind::LogDir { file_name: Some(file_name) }),
                     Target::new(TargetKind::Stdout),
                     Target::new(TargetKind::Webview),
                 ])

@@ -12,6 +12,5 @@
 
 ## Who built it?
 
-- [ ] I built most/all of it
-- [ ] Split between me and an agentic tool
-- [ ] An agentic tool built most/all of it
+- [ ] Human
+- [ ] AI
