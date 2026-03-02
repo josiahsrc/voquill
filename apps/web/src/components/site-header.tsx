@@ -24,6 +24,10 @@ export function SiteHeader() {
       label: intl.formatMessage({ defaultMessage: "Pricing" }),
     },
     {
+      href: "/blog",
+      label: intl.formatMessage({ defaultMessage: "Blog" }),
+    },
+    {
       href: "https://docs.voquill.com",
       label: intl.formatMessage({ defaultMessage: "Docs" }),
       external: true,

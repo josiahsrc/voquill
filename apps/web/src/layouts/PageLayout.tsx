@@ -19,9 +19,9 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
       <div className={styles.headerSpacer} />
       <main className={mainClasses}>{children}</main>
       <SiteFooter />
-      <div className={styles.pageMeta}>
+      <footer className={styles.pageMeta}>
         <span>© {currentYear} Handaptive LLC</span>
-        <div className={styles.pageLinks}>
+        <nav className={styles.pageLinks} aria-label="Legal">
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
           <Link to="/contact">Contact</Link>

@@ -13,6 +13,7 @@ function NotFoundPage() {
       description={intl.formatMessage({
         defaultMessage: "Sorry, we couldn't find that page.",
       })}
+      noIndex
     >
       <PageLayout>
         <section className={styles.heroContent}>
