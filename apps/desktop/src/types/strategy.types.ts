@@ -1,5 +1,4 @@
 import type { AppTarget, Nullable } from "@repo/types";
-import type { RefObject } from "react";
 import type {
   PostProcessMetadata,
   TranscribeAudioMetadata,
@@ -33,8 +32,4 @@ export type HandleTranscriptResult = {
   sanitizedTranscript: string | null;
   postProcessMetadata: PostProcessMetadata;
   postProcessWarnings: string[];
-};
-
-export type StrategyContext = {
-  overlayLoadingTokenRef: RefObject<symbol | null>;
 };

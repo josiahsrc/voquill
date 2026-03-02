@@ -5,12 +5,20 @@ import {
   Nullable,
   User,
 } from "@repo/types";
-import { listify } from "@repo/utilities";
+import { getRec, listify } from "@repo/utilities";
 import { getVersion } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
+import { isEqual } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { openUpgradePlanDialog } from "../../actions/pricing.actions";
+import {
+  checkForAppUpdates,
+  dismissUpdateDialog,
+  installAvailableUpdate,
+} from "../../actions/updater.actions";
 import {
   migrateLocalUserToCloud,
   refreshCurrentUser,
@@ -18,6 +26,7 @@ import {
 import { useAsyncData, useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
+import { useTauriListen } from "../../hooks/tauri.hooks";
 import { detectLocale } from "../../i18n";
 import {
   getAuthRepo,
@@ -26,8 +35,9 @@ import {
   getMemberRepo,
   getUserRepo,
 } from "../../repos";
-import { produceAppState, useAppStore } from "../../store";
+import { getAppState, produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
+import { OverlayPhase } from "../../types/overlay.types";
 import { CURRENT_COHORT, getMixpanel } from "../../utils/analytics.utils";
 import { registerMembers, registerUsers } from "../../utils/app.utils";
 import {
@@ -37,14 +47,36 @@ import {
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getLogger, initLogging } from "../../utils/log.utils";
+import { isPermissionAuthorized } from "../../utils/permission.utils";
 import { getPlatform } from "../../utils/platform.utils";
+import { minutesToMilliseconds } from "../../utils/time.utils";
 import {
   getEffectivePillVisibility,
   getMyUserPreferences,
   LOCAL_USER_ID,
 } from "../../utils/user.utils";
+import {
+  consumeSurfaceWindowFlag,
+  surfaceMainWindow,
+} from "../../utils/window.utils";
 
 type StreamRet = Nullable<[Nullable<Member>, Nullable<User>]>;
+
+type KeysHeldPayload = {
+  keys: string[];
+};
+
+type OverlayPhasePayload = {
+  phase: OverlayPhase;
+};
+
+type RecordingLevelPayload = {
+  levels?: number[];
+};
+
+type ToastActionPayload = {
+  action: string;
+};
 
 // Timeout for Firebase Auth initialization (handles cases where IndexedDB hangs on some Linux systems)
 const AUTH_READY_TIMEOUT_MS = 4_000;
@@ -53,7 +85,7 @@ const AUTH_READY_TIMEOUT_MS = 4_000;
 const CONFIG_REFRESH_INTERVAL_MS = 1000 * 60 * 10;
 
 // 5 minutes
-const TOKEN_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const TOKEN_REFRESH_INTERVAL_MS = 1000;
 
 // 60 seconds
 const ENTERPRISE_REFRESH_INTERVAL_MS = 1000 * 60;
@@ -66,6 +98,7 @@ export const AppSideEffects = () => {
   const tokensRefreshedRef = useRef(false);
   const authReadyRef = useRef(false);
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const updateInitializedRef = useRef(false);
   const versionData = useAsyncData(getVersion, []);
   const allowDevTools = useAppStore(
     (state) => state.enterpriseConfig?.allowDevTools ?? true,
@@ -84,9 +117,32 @@ export const AppSideEffects = () => {
     return uid ? (state.userById[uid] ?? null) : null;
   });
   const prefs = useAppStore((state) => getMyUserPreferences(state));
+  const keyPermAuthorized = useAppStore((state) =>
+    isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
+  );
+
+  useAsyncEffect(async () => {
+    if (keyPermAuthorized) {
+      getLogger().info(
+        "Accessibility permission authorized, starting key listener",
+      );
+      await invoke("start_key_listener");
+    } else {
+      getLogger().info(
+        "Accessibility permission not authorized, stopping key listener",
+      );
+      await invoke("stop_key_listener");
+    }
+  }, [keyPermAuthorized]);
 
   useEffect(() => {
     void initLogging();
+  }, []);
+
+  useAsyncEffect(async () => {
+    if (consumeSurfaceWindowFlag()) {
+      await surfaceMainWindow();
+    }
   }, []);
 
   const onAuthStateChanged = (user: AuthUser | null) => {
@@ -98,6 +154,37 @@ export const AppSideEffects = () => {
       draft.initialized = false;
     });
   };
+
+  useTauriListen<OverlayPhasePayload>("overlay_phase", (payload) => {
+    produceAppState((draft) => {
+      draft.overlayPhase = payload.phase;
+      if (payload.phase !== "recording") {
+        draft.audioLevels = [];
+      }
+    });
+  });
+
+  useTauriListen<RecordingLevelPayload>("recording_level", (payload) => {
+    const raw = Array.isArray(payload.levels) ? payload.levels : [];
+    const sanitized = raw.map((value) =>
+      typeof value === "number" && Number.isFinite(value) ? value : 0,
+    );
+
+    produceAppState((draft) => {
+      draft.audioLevels = sanitized;
+    });
+  });
+
+  useTauriListen<KeysHeldPayload>("keys_held", (payload) => {
+    const existing = getAppState().keysHeld;
+    if (isEqual(existing, payload.keys)) {
+      return;
+    }
+
+    produceAppState((draft) => {
+      draft.keysHeld = payload.keys;
+    });
+  });
 
   useEffect(() => {
     if (allowDevTools) {
@@ -399,6 +486,42 @@ export const AppSideEffects = () => {
         window.location.href = "/dashboard/settings";
       }
     },
+  });
+
+  // check for app updates every minute
+  useIntervalAsync(
+    minutesToMilliseconds(1),
+    async () => {
+      if (!updateInitializedRef.current) {
+        dismissUpdateDialog();
+        updateInitializedRef.current = true;
+      }
+
+      const available = await checkForAppUpdates();
+      invoke("set_menu_icon", {
+        variant: available ? "update" : "default",
+      }).catch(console.error);
+    },
+    [],
+  );
+
+  useTauriListen<ToastActionPayload>("toast-action", async (payload) => {
+    if (payload.action === "upgrade") {
+      surfaceMainWindow();
+      openUpgradePlanDialog();
+    } else if (payload.action === "open_agent_settings") {
+      surfaceMainWindow();
+      produceAppState((draft) => {
+        draft.settings.agentModeDialogOpen = true;
+      });
+    } else if (payload.action === "surface_window") {
+      surfaceMainWindow();
+    }
+  });
+
+  useTauriListen<void>("tray-install-update", () => {
+    surfaceMainWindow();
+    installAvailableUpdate();
   });
 
   return null;
