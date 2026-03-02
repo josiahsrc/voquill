@@ -5,15 +5,20 @@ import { getHotkeyCombosForAction } from "../utils/keyboard.utils";
 
 type HoldAction = { actionName: string; controller: ActivationController };
 
-export const useHotkeyHold = (args: HoldAction) => {
+type HotkeyHoldArgs = HoldAction & { isDisabled?: boolean };
+
+export const useHotkeyHold = (args: HotkeyHoldArgs) => {
   const actions = useMemo(
     () => [{ actionName: args.actionName, controller: args.controller }],
     [args.actionName, args.controller],
   );
-  useHotkeyHoldMany({ actions });
+  useHotkeyHoldMany({ actions, isDisabled: args.isDisabled });
 };
 
-export const useHotkeyHoldMany = (args: { actions: HoldAction[] }) => {
+export const useHotkeyHoldMany = (args: {
+  actions: HoldAction[];
+  isDisabled?: boolean;
+}) => {
   const keysHeld = useAppStore((s) => s.keysHeld);
   const hotkeyById = useAppStore((state) => state.hotkeyById);
   const combosByAction = useMemo(() => {
@@ -60,6 +65,15 @@ export const useHotkeyHoldMany = (args: { actions: HoldAction[] }) => {
     for (const action of args.actions) {
       const availableCombos = combosByAction[action.actionName] ?? [];
       const wasPressed = wasPressedRef.current.get(action.actionName) ?? false;
+      const isPressed = availableCombos.some((combo) =>
+        matchesCombo(keysHeld, combo),
+      );
+
+      if (args.isDisabled) {
+        wasPressedRef.current.set(action.actionName, isPressed);
+        action.controller.reset();
+        continue;
+      }
 
       if (
         action.controller.isActive &&
@@ -75,10 +89,6 @@ export const useHotkeyHoldMany = (args: { actions: HoldAction[] }) => {
         continue;
       }
 
-      const isPressed = availableCombos.some((combo) =>
-        matchesCombo(keysHeld, combo),
-      );
-
       if (isPressed && !wasPressed) {
         if (action.controller.shouldIgnoreActivation) {
           wasPressedRef.current.set(action.actionName, isPressed);
@@ -93,7 +103,7 @@ export const useHotkeyHoldMany = (args: { actions: HoldAction[] }) => {
 
       wasPressedRef.current.set(action.actionName, isPressed);
     }
-  }, [keysHeld, combosByAction, args.actions]);
+  }, [keysHeld, combosByAction, args.actions, args.isDisabled]);
 };
 
 export const useHotkeyFire = (args: {
@@ -110,13 +120,17 @@ export const useHotkeyFire = (args: {
   const comboStateRef = useRef<Map<string, { contaminated: boolean }>>(
     new Map(),
   );
+  const wasDisabledRef = useRef(false);
 
   useEffect(() => {
     if (args.isDisabled) {
       previousKeysHeldRef.current = keysHeld;
       comboStateRef.current.clear();
+      wasDisabledRef.current = true;
       return;
     }
+    const wasDisabled = wasDisabledRef.current;
+    wasDisabledRef.current = false;
 
     const normalize = (key: string) => key.toLowerCase();
     const toNormalizedSet = (keys: string[]) =>
@@ -157,6 +171,10 @@ export const useHotkeyFire = (args: {
         previousIncludesAll && previousSet.size === requiredSet.size;
       const currentExact =
         currentIncludesAll && currentSet.size === requiredSet.size;
+
+      if (wasDisabled && currentIncludesAll) {
+        comboState.contaminated = true;
+      }
 
       if (!previousIncludesAll && currentIncludesAll) {
         comboState.contaminated = false;

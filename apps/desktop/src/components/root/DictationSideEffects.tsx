@@ -90,6 +90,7 @@ export const DictationSideEffects = () => {
     (state) => state.activeRecordingMode !== null,
   );
   const additionalLanguageEntries = useAppStore(getAdditionalLanguageEntries);
+  const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
   const pillHoverEnabled = useAppStore((state) => {
     if (!getIsDictationUnlocked(state)) {
       return false;
@@ -503,11 +504,13 @@ export const DictationSideEffects = () => {
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
+    isDisabled: !isDictationUnlocked,
     controller: dictationController,
   });
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
+    isDisabled: !isDictationUnlocked,
     controller: agentController,
   });
 
@@ -518,6 +521,7 @@ export const DictationSideEffects = () => {
   });
 
   useHotkeyHoldMany({
+    isDisabled: !isDictationUnlocked,
     actions: additionalLanguageControllers,
   });
 
