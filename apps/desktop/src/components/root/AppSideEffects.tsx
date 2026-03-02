@@ -27,6 +27,7 @@ import { useAsyncData, useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
 import { useStreamWithSideEffects } from "../../hooks/stream.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
+import { useToastAction } from "../../hooks/toast.hooks";
 import { detectLocale } from "../../i18n";
 import {
   getAuthRepo,
@@ -72,10 +73,6 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
-};
-
-type ToastActionPayload = {
-  action: string;
 };
 
 // Timeout for Firebase Auth initialization (handles cases where IndexedDB hangs on some Linux systems)
@@ -505,7 +502,7 @@ export const AppSideEffects = () => {
     [],
   );
 
-  useTauriListen<ToastActionPayload>("toast-action", async (payload) => {
+  useToastAction(async (payload) => {
     if (payload.action === "upgrade") {
       surfaceMainWindow();
       openUpgradePlanDialog();

@@ -18,6 +18,7 @@ import {
   useHotkeyHoldMany,
 } from "../../hooks/hotkey.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
+import { useToastAction } from "../../hooks/toast.hooks";
 import { createTranscriptionSession } from "../../sessions";
 import { RecordingMode } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
@@ -477,6 +478,23 @@ export const DictationSideEffects = () => {
     void switchWritingStyleForward();
   }, []);
 
+  const promptCancelTranscription = useCallback(() => {
+    void showToast({
+      title: intl.formatMessage({
+        defaultMessage: "Cancel transcription?",
+      }),
+      message: intl.formatMessage({
+        defaultMessage:
+          "This will stop the current recording and discard the transcript.",
+      }),
+      toastType: "info",
+      action: "confirm_cancel_transcription",
+      duration: 8_000,
+    }).catch((error) => {
+      getLogger().error(`Failed to show cancel transcription toast: ${error}`);
+    });
+  }, [intl]);
+
   useHotkeyFire({
     actionName: SWITCH_WRITING_STYLE_HOTKEY,
     isDisabled: !isManualStyling,
@@ -496,7 +514,7 @@ export const DictationSideEffects = () => {
   useHotkeyFire({
     actionName: CANCEL_TRANSCRIPTION_HOTKEY,
     isDisabled: !isActiveSession,
-    onFire: () => abortRecording(),
+    onFire: promptCancelTranscription,
   });
 
   useHotkeyHoldMany({
@@ -522,6 +540,12 @@ export const DictationSideEffects = () => {
 
   useTauriListen<void>("cancel-dictation", () => {
     abortRecording();
+  });
+
+  useToastAction(async (payload) => {
+    if (payload.action === "confirm_cancel_transcription") {
+      await abortRecording();
+    }
   });
 
   useTauriListen<void>("on-click-dictate", () => {
