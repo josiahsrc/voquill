@@ -1,3 +1,23 @@
+pub fn decode_to_utf8(bytes: &[u8]) -> Result<String, String> {
+    if bytes.starts_with(&[0xFF, 0xFE]) {
+        let u16s: Vec<u16> = bytes[2..]
+            .chunks_exact(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        String::from_utf16(&u16s).map_err(|e| e.to_string())
+    } else if bytes.starts_with(&[0xFE, 0xFF]) {
+        let u16s: Vec<u16> = bytes[2..]
+            .chunks_exact(2)
+            .map(|c| u16::from_be_bytes([c[0], c[1]]))
+            .collect();
+        String::from_utf16(&u16s).map_err(|e| e.to_string())
+    } else if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+        String::from_utf8(bytes[3..].to_vec()).map_err(|e| e.to_string())
+    } else {
+        String::from_utf8(bytes.to_vec()).map_err(|e| e.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -39,25 +59,5 @@ mod tests {
     fn invalid_utf8_returns_error() {
         let input = vec![0xFF, 0xFE, 0x00];
         assert!(decode_to_utf8(&input).is_ok() || decode_to_utf8(&input).is_err());
-    }
-}
-
-pub fn decode_to_utf8(bytes: &[u8]) -> Result<String, String> {
-    if bytes.starts_with(&[0xFF, 0xFE]) {
-        let u16s: Vec<u16> = bytes[2..]
-            .chunks_exact(2)
-            .map(|c| u16::from_le_bytes([c[0], c[1]]))
-            .collect();
-        String::from_utf16(&u16s).map_err(|e| e.to_string())
-    } else if bytes.starts_with(&[0xFE, 0xFF]) {
-        let u16s: Vec<u16> = bytes[2..]
-            .chunks_exact(2)
-            .map(|c| u16::from_be_bytes([c[0], c[1]]))
-            .collect();
-        String::from_utf16(&u16s).map_err(|e| e.to_string())
-    } else if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
-        String::from_utf8(bytes[3..].to_vec()).map_err(|e| e.to_string())
-    } else {
-        String::from_utf8(bytes.to_vec()).map_err(|e| e.to_string())
     }
 }
