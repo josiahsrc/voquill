@@ -35,7 +35,7 @@ function Get-LogDirForFlavor {
 
     if ($SelectedFlavor -ne "auto") {
         $identifier = $identifierByFlavor[$SelectedFlavor]
-        $candidate = Join-Path $env:APPDATA "$identifier\logs"
+        $candidate = Join-Path $env:LOCALAPPDATA "$identifier\logs"
         if (Test-Path $candidate) {
             return $candidate
         }
@@ -46,7 +46,7 @@ function Get-LogDirForFlavor {
         ForEach-Object {
             $candidateFlavor = $_
             $candidateIdentifier = $identifierByFlavor[$candidateFlavor]
-            $candidatePath = Join-Path $env:APPDATA "$candidateIdentifier\logs"
+            $candidatePath = Join-Path $env:LOCALAPPDATA "$candidateIdentifier\logs"
             if (Test-Path $candidatePath) {
                 $latestLog = Get-ChildItem -Path $candidatePath -Filter "voquill_*.log" -File -ErrorAction SilentlyContinue |
                     Sort-Object LastWriteTime -Descending |
@@ -62,7 +62,7 @@ function Get-LogDirForFlavor {
         Sort-Object LastWriteUtc -Descending
 
     if (-not $candidates) {
-        throw "No Voquill log directory found under %APPDATA%."
+        throw "No Voquill log directory found under %LOCALAPPDATA%."
     }
 
     return $candidates[0].Path
