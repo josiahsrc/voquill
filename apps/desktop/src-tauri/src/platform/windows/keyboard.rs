@@ -12,6 +12,7 @@ fn scan_code(event: &Event) -> u32 {
 pub fn run_listener_process() -> Result<(), String> {
     let ctx = setup_listener_process()?;
 
+    rdev::set_get_key_unicode(false);
     let grab_result = rdev::grab({
         let writer = ctx.writer.clone();
         let combos = ctx.combos.clone();
