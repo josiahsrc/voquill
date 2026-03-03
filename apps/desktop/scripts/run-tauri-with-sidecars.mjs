@@ -106,6 +106,7 @@ function run(command, args, env) {
     cwd: process.cwd(),
     stdio: "inherit",
     env,
+    shell: true,
   });
 
   if (result.status !== 0) {
