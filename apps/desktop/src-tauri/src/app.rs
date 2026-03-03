@@ -18,6 +18,16 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 ])
                 .level(log::LevelFilter::Debug)
                 .timezone_strategy(TimezoneStrategy::UseLocal)
+                .format(|out, message, record| {
+                    let now = chrono::Local::now();
+                    out.finish(format_args!(
+                        "[{}][{}][{}] {}",
+                        now.format("%Y-%m-%d][%H:%M:%S%.3f"),
+                        record.level(),
+                        record.target(),
+                        message
+                    ))
+                })
                 .build()
         })
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
