@@ -1,4 +1,7 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
 use tauri::{Emitter, Manager, WebviewWindowBuilder};
 
 pub const PILL_OVERLAY_LABEL: &str = "pill-overlay";
@@ -195,6 +198,32 @@ pub fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
 struct CursorFollowerState {
     pill_hovered: AtomicBool,
     pill_expanded: AtomicBool,
+    last_monitor: Mutex<Option<MonitorSnapshot>>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct MonitorSnapshot {
+    visible_x: i64,
+    visible_y: i64,
+    visible_width: i64,
+    visible_height: i64,
+    scale_factor: i64,
+}
+
+fn quantize_coordinate(value: f64) -> i64 {
+    (value * 1000.0).round() as i64
+}
+
+impl MonitorSnapshot {
+    fn from_monitor(monitor: &crate::domain::MonitorAtCursor) -> Self {
+        Self {
+            visible_x: quantize_coordinate(monitor.visible_x),
+            visible_y: quantize_coordinate(monitor.visible_y),
+            visible_width: quantize_coordinate(monitor.visible_width),
+            visible_height: quantize_coordinate(monitor.visible_height),
+            scale_factor: quantize_coordinate(monitor.scale_factor),
+        }
+    }
 }
 
 fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
@@ -206,37 +235,52 @@ fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
 
     let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
 
-    if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-        crate::platform::position::set_overlay_position(
-            &pill_window,
-            &monitor,
-            OverlayAnchor::BottomCenter,
-            PILL_OVERLAY_WIDTH,
-            PILL_OVERLAY_HEIGHT,
-            bottom_offset,
-        );
-    }
+    let monitor_snapshot = MonitorSnapshot::from_monitor(&monitor);
+    let monitor_changed = {
+        let mut guard = match state.last_monitor.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        let changed = guard.as_ref() != Some(&monitor_snapshot);
+        if changed {
+            *guard = Some(monitor_snapshot);
+        }
+        changed
+    };
 
-    if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
-        crate::platform::position::set_overlay_position(
-            &toast_window,
-            &monitor,
-            OverlayAnchor::TopRight,
-            TOAST_OVERLAY_WIDTH,
-            TOAST_OVERLAY_HEIGHT,
-            TOAST_OVERLAY_RIGHT_OFFSET,
-        );
-    }
+    if monitor_changed {
+        if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+            crate::platform::position::set_overlay_position(
+                &pill_window,
+                &monitor,
+                OverlayAnchor::BottomCenter,
+                PILL_OVERLAY_WIDTH,
+                PILL_OVERLAY_HEIGHT,
+                bottom_offset,
+            );
+        }
 
-    if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
-        crate::platform::position::set_overlay_position(
-            &agent_window,
-            &monitor,
-            OverlayAnchor::TopLeft,
-            AGENT_OVERLAY_WIDTH,
-            AGENT_OVERLAY_HEIGHT,
-            AGENT_OVERLAY_LEFT_OFFSET,
-        );
+        if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
+            crate::platform::position::set_overlay_position(
+                &toast_window,
+                &monitor,
+                OverlayAnchor::TopRight,
+                TOAST_OVERLAY_WIDTH,
+                TOAST_OVERLAY_HEIGHT,
+                TOAST_OVERLAY_RIGHT_OFFSET,
+            );
+        }
+
+        if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
+            crate::platform::position::set_overlay_position(
+                &agent_window,
+                &monitor,
+                OverlayAnchor::TopLeft,
+                AGENT_OVERLAY_WIDTH,
+                AGENT_OVERLAY_HEIGHT,
+                AGENT_OVERLAY_LEFT_OFFSET,
+            );
+        }
     }
 
     if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
@@ -303,6 +347,7 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
     let state = Arc::new(CursorFollowerState {
         pill_hovered: AtomicBool::new(false),
         pill_expanded: AtomicBool::new(false),
+        last_monitor: Mutex::new(None),
     });
 
     glib::timeout_add_local(Duration::from_millis(CURSOR_POLL_INTERVAL_MS), move || {
@@ -319,6 +364,7 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
         let state = CursorFollowerState {
             pill_hovered: AtomicBool::new(false),
             pill_expanded: AtomicBool::new(false),
+            last_monitor: Mutex::new(None),
         };
 
         loop {

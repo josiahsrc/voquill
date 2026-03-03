@@ -74,6 +74,11 @@ type AbortMessage = {
   body: unknown;
 };
 
+type RawStopResp = {
+  shouldContinue: boolean;
+  abortMessage?: string;
+};
+
 export const DictationSideEffects = () => {
   const intl = useIntl();
 
@@ -185,7 +190,7 @@ export const DictationSideEffects = () => {
     }
   }, []);
 
-  const stopRecordingRaw = useCallback(async () => {
+  const stopRecordingRaw = useCallback(async (): Promise<RawStopResp> => {
     getLogger().info("Stopping recording");
     clearRecordingTimers();
 
@@ -235,10 +240,10 @@ export const DictationSideEffects = () => {
     );
 
     if (!audio) {
-      abortRecording({
-        body: "No audio data received",
-      });
-      return;
+      return {
+        shouldContinue: false,
+        abortMessage: "No audio data received",
+      };
     }
 
     getLogger().info("Finalizing transcription session");
@@ -257,17 +262,18 @@ export const DictationSideEffects = () => {
       `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${appTarget?.name ?? "unknown"}`,
     );
     if (!rawTranscript) {
-      abortRecording();
-      return;
+      return {
+        shouldContinue: false,
+      };
     }
 
     const session = sessionRef.current;
     const strategy = strategyRef.current;
     if (!session || !strategy) {
-      abortRecording({
-        body: "Recording session was not properly initialized",
-      });
-      return;
+      return {
+        shouldContinue: false,
+        abortMessage: "Recording session was not properly initialized",
+      };
     }
 
     getLogger().info("Post-processing transcript");
@@ -306,15 +312,27 @@ export const DictationSideEffects = () => {
     }
 
     refreshMember();
-    if (!result.shouldContinue) {
-      abortRecording();
-    }
+    return {
+      shouldContinue: result.shouldContinue,
+    };
   }, []);
 
   const stopRecording = useCallback(async () => {
     setIsStopping(true);
     try {
-      await stopRecordingRaw();
+      const res = await stopRecordingRaw().catch((error) => {
+        getLogger().error(`Error during stopRecording: ${error}`);
+        return {
+          shouldContinue: false,
+          abortMessage: String(error),
+        };
+      });
+
+      if (!res.shouldContinue) {
+        await abortRecording(
+          res.abortMessage ? { body: res.abortMessage } : undefined,
+        );
+      }
     } finally {
       setIsStopping(false);
     }
