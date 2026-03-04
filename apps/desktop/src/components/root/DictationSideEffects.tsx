@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
 import { refreshMember } from "../../actions/member.actions";
-import { showToast } from "../../actions/toast.actions";
+import { dismissToast, showToast } from "../../actions/toast.actions";
 import {
   switchWritingStyleBackward,
   switchWritingStyleForward,
@@ -87,6 +87,7 @@ export const DictationSideEffects = () => {
   const recordingWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastStyleSwitchRef = useRef(0);
+  const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isStopping, setIsStopping] = useState(false);
 
   const isManualStyling = useAppStore(
@@ -153,9 +154,17 @@ export const DictationSideEffects = () => {
     }
   }, []);
 
+  const clearCancelPromptTimer = useCallback(() => {
+    if (cancelPromptTimerRef.current) {
+      clearTimeout(cancelPromptTimerRef.current);
+      cancelPromptTimerRef.current = null;
+    }
+  }, []);
+
   const abortRecording = useCallback(async (message?: AbortMessage) => {
     getLogger().info("Aborting recording");
     clearRecordingTimers();
+    clearCancelPromptTimer();
     invoke<void>("set_phase", { phase: "idle" });
     invoke("stop_recording").catch((e) =>
       getLogger().verbose(`stop_recording failed during abort: ${e}`),
@@ -509,17 +518,29 @@ export const DictationSideEffects = () => {
   }, []);
 
   const promptCancelTranscription = useCallback(() => {
+    if (cancelPromptTimerRef.current) {
+      clearCancelPromptTimer();
+      dismissToast();
+      abortRecording();
+      return;
+    }
+
+    const CANCEL_PROMPT_DURATION = 5_000;
+    cancelPromptTimerRef.current = setTimeout(() => {
+      cancelPromptTimerRef.current = null;
+    }, CANCEL_PROMPT_DURATION);
+
     void showToast({
       title: intl.formatMessage({
         defaultMessage: "Cancel transcription?",
       }),
       message: intl.formatMessage({
         defaultMessage:
-          "This will stop the current recording and discard the transcript.",
+          "Press the 'cancel' hotkey again to discard the transcript.",
       }),
       toastType: "info",
       action: "confirm_cancel_transcription",
-      duration: 8_000,
+      duration: CANCEL_PROMPT_DURATION,
     }).catch((error) => {
       getLogger().error(`Failed to show cancel transcription toast: ${error}`);
     });
