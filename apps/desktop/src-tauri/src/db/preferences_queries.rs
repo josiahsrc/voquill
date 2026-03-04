@@ -3,17 +3,11 @@ use sqlx::{Row, SqlitePool};
 use crate::domain::UserPreferences;
 const SEP: &str = "::";
 
-fn serialize_additional_languages(
-    languages: &Option<Vec<String>>,
-) -> Option<String> {
-    languages.as_ref().map(|languages|
-        languages.join(SEP)
-    )
+fn serialize_additional_languages(languages: &Option<Vec<String>>) -> Option<String> {
+    languages.as_ref().map(|languages| languages.join(SEP))
 }
 
-fn deserialize_additional_languages(
-    value: Option<String>,
-) -> Option<Vec<String>> {
+fn deserialize_additional_languages(value: Option<String>) -> Option<Vec<String>> {
     value.map(|v| {
         if v.is_empty() {
             Vec::new()
@@ -236,9 +230,10 @@ pub async fn fetch_user_preferences(
         active_dictation_language: row
             .try_get::<Option<String>, _>("active_dictation_language")
             .unwrap_or(None),
-        additional_dictation_languages: deserialize_additional_languages(row
-            .try_get::<Option<String>, _>("additional_dictation_languages")
-            .unwrap_or(None)),
+        additional_dictation_languages: deserialize_additional_languages(
+            row.try_get::<Option<String>, _>("additional_dictation_languages")
+                .unwrap_or(None),
+        ),
         preferred_microphone: row
             .try_get::<Option<String>, _>("preferred_microphone")
             .unwrap_or(None),

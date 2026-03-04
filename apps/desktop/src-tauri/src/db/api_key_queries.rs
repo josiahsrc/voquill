@@ -59,7 +59,10 @@ pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error
     Ok(api_keys)
 }
 
-pub async fn update_api_key(pool: SqlitePool, request: &ApiKeyUpdateRequest) -> Result<(), sqlx::Error> {
+pub async fn update_api_key(
+    pool: SqlitePool,
+    request: &ApiKeyUpdateRequest,
+) -> Result<(), sqlx::Error> {
     sqlx::query(
         "UPDATE api_keys SET 
             transcription_model = CASE WHEN ?2 IS NOT NULL THEN ?2 ELSE transcription_model END,

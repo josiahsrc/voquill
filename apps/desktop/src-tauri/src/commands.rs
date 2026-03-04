@@ -9,13 +9,10 @@ use crate::domain::{
     RecordingLevelPayload, TranscriptionAudioSnapshot, EVT_AUDIO_CHUNK, EVT_OVERLAY_PHASE,
     EVT_REC_LEVEL,
 };
-use crate::platform::{
-    ChunkCallback, GpuDescriptor, LevelCallback, TranscriptionDevice, TranscriptionRequest,
-};
+use crate::platform::{ChunkCallback, LevelCallback};
 use crate::system::crypto::{protect_api_key, reveal_api_key};
-use crate::utils::decode_to_utf8;
-use crate::system::models::WhisperModelSize;
 use crate::system::StorageRepo;
+use crate::utils::decode_to_utf8;
 use sqlx::Row;
 
 use crate::platform::input::paste_text_into_focused_field as platform_paste_text;
@@ -87,46 +84,6 @@ pub enum AudioClip {
 #[serde(rename_all = "camelCase")]
 pub struct StartRecordingArgs {
     pub preferred_microphone: Option<String>,
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TranscriptionDeviceSelectionDto {
-    #[serde(default)]
-    pub cpu: bool,
-    pub device_id: Option<u32>,
-    pub device_name: Option<String>,
-}
-
-impl TranscriptionDeviceSelectionDto {
-    fn into_request(self) -> TranscriptionRequest {
-        let mut request = TranscriptionRequest::default();
-
-        if self.cpu {
-            request.device = Some(TranscriptionDevice::Cpu);
-            return request;
-        }
-
-        if self.device_id.is_some() || self.device_name.is_some() {
-            request.device = Some(TranscriptionDevice::Gpu(GpuDescriptor {
-                id: self.device_id,
-                name: self.device_name,
-            }));
-        }
-
-        request
-    }
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TranscriptionOptionsDto {
-    #[serde(default)]
-    pub device: Option<TranscriptionDeviceSelectionDto>,
-    pub model_size: Option<String>,
-    pub initial_prompt: Option<String>,
-    #[serde(default)]
-    pub language: Option<String>,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -473,8 +430,7 @@ pub async fn export_transcription(
         None => return Ok(false),
     };
 
-    let audio_dir =
-        crate::system::audio_store::audio_dir(&app).map_err(|err| err.to_string())?;
+    let audio_dir = crate::system::audio_store::audio_dir(&app).map_err(|err| err.to_string())?;
 
     tauri::async_runtime::spawn_blocking(move || {
         use std::io::Write;
@@ -483,8 +439,8 @@ pub async fn export_transcription(
         let file = std::fs::File::create(&save_path)
             .map_err(|err| format!("Failed to create file: {err}"))?;
         let mut zip = zip::ZipWriter::new(file);
-        let options = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
         zip.start_file("processed.txt", options)
             .map_err(|err| err.to_string())?;
@@ -507,8 +463,7 @@ pub async fn export_transcription(
                     .map_err(|err| format!("Failed to read audio: {err}"))?;
                 zip.start_file("audio.wav", options)
                     .map_err(|err| err.to_string())?;
-                zip.write_all(&audio_data)
-                    .map_err(|err| err.to_string())?;
+                zip.write_all(&audio_data).map_err(|err| err.to_string())?;
             }
         }
 
@@ -959,134 +914,6 @@ pub fn storage_get_download_url(app: AppHandle, path: String) -> Result<String, 
 }
 
 #[tauri::command]
-pub async fn transcribe_audio(
-    app: AppHandle,
-    samples: Vec<f64>,
-    sample_rate: u32,
-    options: Option<TranscriptionOptionsDto>,
-    transcriber_state: State<'_, crate::state::TranscriberState>,
-) -> Result<String, String> {
-    let mut request = TranscriptionRequest::default();
-    let mut model_size = WhisperModelSize::default();
-
-    if let Some(TranscriptionOptionsDto {
-        device,
-        model_size: maybe_model_size,
-        initial_prompt,
-        language: maybe_language,
-    }) = options
-    {
-        if let Some(device_dto) = device {
-            request = device_dto.into_request();
-        }
-
-        if let Some(prompt_value) = initial_prompt {
-            let sanitized: String = prompt_value.chars().filter(|ch| *ch != '\0').collect();
-            let trimmed = sanitized.trim();
-            if !trimmed.is_empty() {
-                request.initial_prompt = Some(trimmed.to_string());
-            }
-        }
-
-        if let Some(language_value) = maybe_language {
-            let sanitized: String = language_value.chars().filter(|ch| *ch != '\0').collect();
-            let trimmed = sanitized.trim();
-            if !trimmed.is_empty() {
-                request.language = Some(trimmed.to_string());
-            }
-        }
-
-        if let Some(size_value) = maybe_model_size {
-            match size_value.parse::<WhisperModelSize>() {
-                Ok(parsed) => {
-                    model_size = parsed;
-                }
-                Err(_) => {
-                    log::warn!(
-                        "Unrecognised Whisper model size '{}'; falling back to default.",
-                        size_value
-                    );
-                }
-            }
-        }
-    }
-
-    let initial_path = crate::system::paths::whisper_model_path(&app, model_size)
-        .map_err(|err| err.to_string())?;
-
-    let model_path = if initial_path.exists() {
-        initial_path
-    } else {
-        let handle = app.clone();
-        tauri::async_runtime::spawn_blocking(move || {
-            crate::system::models::ensure_whisper_model(&handle, model_size)
-                .map_err(|err| err.to_string())
-        })
-        .await
-        .map_err(|err| err.to_string())??
-    };
-
-    let transcriber = if let Some(existing) = transcriber_state.get() {
-        existing.clone()
-    } else {
-        log::info!("Transcriber not initialized, performing lazy initialization...");
-        let init_model_path = model_path.clone();
-        let new_transcriber: Arc<dyn crate::platform::Transcriber> = Arc::new(
-            crate::platform::whisper::WhisperTranscriber::new(&init_model_path)
-                .map_err(|err| format!("Failed to initialize Whisper transcriber: {err}"))?,
-        );
-        let _ = transcriber_state.initialize(new_transcriber.clone());
-        new_transcriber
-    };
-
-    let model_path_string = model_path.to_string_lossy().into_owned();
-    request.model_path = Some(model_path_string);
-
-    let request = Some(request);
-    let join_result = tauri::async_runtime::spawn_blocking(move || {
-        let original_len = samples.len();
-        let mut filtered = Vec::with_capacity(original_len);
-        for sample in samples {
-            if sample.is_finite() {
-                filtered.push(sample as f32);
-            }
-        }
-
-        if filtered.len() != original_len {
-            log::warn!(
-                "Discarded {} non-finite audio samples before transcription",
-                original_len - filtered.len()
-            );
-        }
-
-        if filtered.is_empty() {
-            return Err("No usable audio samples provided".to_string());
-        }
-
-        let request_ref = request.as_ref();
-        transcriber
-            .transcribe(filtered.as_slice(), sample_rate, request_ref)
-            .map(|text| text.trim().to_string())
-    })
-    .await;
-
-    match join_result {
-        Ok(result) => {
-            if let Err(err) = result.as_ref() {
-                log::error!("Transcription failed: {err}");
-            }
-
-            result
-        }
-        Err(err) => {
-            let message = format!("Transcription task join error: {err}");
-            log::error!("{message}");
-            Err(message)
-        }
-    }
-}
-
-#[tauri::command]
 pub async fn purge_stale_transcription_audio(
     app: AppHandle,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -1177,8 +1004,10 @@ pub fn restore_overlay_focus() {
 
 #[tauri::command]
 pub async fn paste(text: String, keybind: Option<String>) -> Result<(), String> {
-    let join_result =
-        tauri::async_runtime::spawn_blocking(move || platform_paste_text(&text, keybind.as_deref())).await;
+    let join_result = tauri::async_runtime::spawn_blocking(move || {
+        platform_paste_text(&text, keybind.as_deref())
+    })
+    .await;
 
     match join_result {
         Ok(result) => {
@@ -1216,10 +1045,7 @@ pub fn set_phase(
 }
 
 #[tauri::command]
-pub fn set_pill_hover_enabled(
-    enabled: bool,
-    overlay_state: State<'_, crate::state::OverlayState>,
-) {
+pub fn set_pill_hover_enabled(enabled: bool, overlay_state: State<'_, crate::state::OverlayState>) {
     overlay_state.set_pill_hover_enabled(enabled);
 }
 
@@ -1264,9 +1090,7 @@ pub fn set_menu_icon(
 pub async fn get_text_field_info() -> Result<TextFieldInfo, String> {
     tokio::time::timeout(
         std::time::Duration::from_secs(2),
-        tauri::async_runtime::spawn_blocking(
-            crate::platform::accessibility::get_text_field_info,
-        ),
+        tauri::async_runtime::spawn_blocking(crate::platform::accessibility::get_text_field_info),
     )
     .await
     .map_err(|_| "get_text_field_info timed out".to_string())?
@@ -1288,39 +1112,6 @@ pub async fn get_selected_text() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-pub async fn initialize_local_transcriber(
-    app: AppHandle,
-    transcriber_state: State<'_, crate::state::TranscriberState>,
-) -> Result<bool, String> {
-    if transcriber_state.is_initialized() {
-        return Ok(false);
-    }
-
-    log::info!("Pre-warming Whisper transcriber...");
-
-    let default_model_size = WhisperModelSize::default();
-    let model_path = {
-        let handle = app.clone();
-        tauri::async_runtime::spawn_blocking(move || {
-            crate::system::models::ensure_whisper_model(&handle, default_model_size)
-                .map_err(|err| err.to_string())
-        })
-        .await
-        .map_err(|err| err.to_string())??
-    };
-
-    let new_transcriber: Arc<dyn crate::platform::Transcriber> = Arc::new(
-        crate::platform::whisper::WhisperTranscriber::new(&model_path)
-            .map_err(|err| format!("Failed to initialize Whisper transcriber: {err}"))?,
-    );
-
-    transcriber_state.initialize(new_transcriber)?;
-    log::info!("Whisper transcriber initialized successfully");
-
-    Ok(true)
-}
-
-#[tauri::command]
 pub fn get_keyboard_language() -> Result<String, String> {
     crate::platform::keyboard_language::get_keyboard_language()
 }
@@ -1333,10 +1124,7 @@ pub fn get_keyboard_language() -> Result<String, String> {
 ///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json
 #[tauri::command]
 pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>), String> {
-    let mut path = app
-        .path()
-        .app_config_dir()
-        .map_err(|err| err.to_string())?;
+    let mut path = app.path().app_config_dir().map_err(|err| err.to_string())?;
     path.push("enterprise.json");
     let path_str = path.to_string_lossy().to_string();
     log::info!("Reading enterprise target from {:?}", path);
@@ -1345,7 +1133,7 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
     }
 
     let bytes = std::fs::read(&path).map_err(|err| err.to_string())?;
-    let content = decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
+    let content =
+        decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
     Ok((path_str, Some(content)))
 }
-

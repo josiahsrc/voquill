@@ -323,6 +323,7 @@ jobs:
             node_platform: darwin
             artifact_name: desktop-macos
             gpu_variant: false
+            require_gpu_sidecar: false
 
           - label: Windows (CPU)
             os: windows-latest
@@ -332,15 +333,17 @@ jobs:
             node_platform: win32
             artifact_name: desktop-windows
             gpu_variant: false
+            require_gpu_sidecar: true
 
           - label: Windows (GPU)
             os: windows-latest
-            args: "--features windows-gpu"
+            args: ""
             rust_targets: ""
             tauri_platform: windows
             node_platform: win32
             artifact_name: desktop-windows-gpu
             gpu_variant: true
+            require_gpu_sidecar: true
 
           - label: Linux (CPU)
             os: ubuntu-22.04
@@ -350,15 +353,17 @@ jobs:
             node_platform: linux
             artifact_name: desktop-linux
             gpu_variant: false
+            require_gpu_sidecar: true
 
           - label: Linux (GPU)
             os: ubuntu-22.04
-            args: "--features linux-gpu"
+            args: ""
             rust_targets: ""
             tauri_platform: linux
             node_platform: linux
             artifact_name: desktop-linux-gpu
             gpu_variant: true
+            require_gpu_sidecar: true
     env:
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
@@ -366,9 +371,9 @@ jobs:
       RELEASE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       VITE_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
-      VITE_GPU_BUILD: ${{ matrix.gpu_variant }}
       VOQUILL_BUILD_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
       VOQUILL_DESKTOP_FLAVOR: ${{ needs.metadata.outputs.release_flavor }}
+      VOQUILL_REQUIRE_GPU_SIDECAR: ${{ matrix.require_gpu_sidecar && 'true' || 'false' }}
       TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
       TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -411,10 +416,10 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri -> ${{ matrix.os == 'windows-latest' && 'D:\cargo' || 'target' }}
-          key: ${{ matrix.os }}-${{ matrix.gpu_variant && 'gpu' || 'cpu' }}-native-off
+          key: ${{ matrix.os }}-native-off
 
-      - name: Set Windows GPU build environment
-        if: matrix.os == 'windows-latest' && matrix.gpu_variant == true
+      - name: Set Windows sidecar build environment
+        if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           echo "WHISPER_CMAKE_ARGS=-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w" >> $env:GITHUB_ENV
@@ -439,15 +444,8 @@ jobs:
             libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
 
-      - name: Set Linux CPU build environment
-        if: matrix.os == 'ubuntu-22.04' && matrix.gpu_variant == false
-        shell: bash
-        run: |
-          # Disable -march=native to ensure compatibility with older CPUs (no AVX2 requirement)
-          echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF" >> "$GITHUB_ENV"
-
       - name: Install Vulkan SDK (Linux)
-        if: matrix.os == 'ubuntu-22.04' && matrix.gpu_variant == true
+        if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
           set -euo pipefail
@@ -459,26 +457,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y vulkan-sdk
 
-      - name: Set Linux GPU build environment
-        if: matrix.os == 'ubuntu-22.04' && matrix.gpu_variant == true
+      - name: Set Linux sidecar build environment
+        if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
-          # Disable -march=native for broader compatibility, enable Vulkan
+          # Disable -march=native for broader compatibility and enable Vulkan for GPU sidecar builds.
           echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: npm ci --include=optional
 
       - name: Install Vulkan SDK (Windows)
-        if: matrix.os == 'windows-latest' && matrix.gpu_variant == true
+        if: matrix.os == 'windows-latest'
         uses: jakoch/install-vulkan-sdk-action@v1
         with:
           version: "1.3.290.0"
           cache: true
           runtime: true
 
-      - name: Install GPU build deps (Windows)
-        if: matrix.os == 'windows-latest' && matrix.gpu_variant == true
+      - name: Install sidecar GPU build deps (Windows)
+        if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
           # 1) LLVM / Clang (for bindgen / whisper-rs-sys)
@@ -772,7 +770,7 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+          RELEASE_TAG: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
         run: |
           $nsisDir = "D:\cargo\release\bundle\nsis"
           $installers = Get-ChildItem -Path $nsisDir -Filter "*.exe"

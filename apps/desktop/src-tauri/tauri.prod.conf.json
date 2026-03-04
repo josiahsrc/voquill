@@ -5,7 +5,7 @@
   "bundle": {
     "linux": {
       "deb": {
-        "depends": ["libxdo3"]
+        "depends": ["libxdo3", "libvulkan1"]
       }
     }
   },

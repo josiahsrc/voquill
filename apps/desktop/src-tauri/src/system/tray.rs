@@ -45,10 +45,16 @@ pub fn setup_tray(app: &mut tauri::App) -> tauri::Result<()> {
     use tauri::{Emitter, Manager};
 
     let open_item = MenuItem::with_id(app, "open-dashboard", "Open Dashboard", true, None::<&str>)?;
-    let update_item = MenuItem::with_id(app, "install-update", "Install Update", false, None::<&str>)?;
+    let update_item =
+        MenuItem::with_id(app, "install-update", "Install Update", false, None::<&str>)?;
     let _ = UPDATE_MENU_ITEM.set(update_item.clone());
-    let register_current_app_item =
-        MenuItem::with_id(app, "register-current-app", "Register this app", true, None::<&str>)?;
+    let register_current_app_item = MenuItem::with_id(
+        app,
+        "register-current-app",
+        "Register this app",
+        true,
+        None::<&str>,
+    )?;
     let quit_item = MenuItem::with_id(app, "quit-voquill", "Quit Voquill", true, None::<&str>)?;
 
     let menu = MenuBuilder::new(app)

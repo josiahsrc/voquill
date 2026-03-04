@@ -16,6 +16,12 @@ import {
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
+import {
+  isGpuPreferredTranscriptionDevice,
+  normalizeTranscriptionDevice,
+  normalizeLocalWhisperModel,
+  supportsGpuTranscriptionDevice,
+} from "../utils/local-transcription.utils";
 import { getLogger } from "../utils/log.utils";
 import {
   getMyEffectiveUserId,
@@ -364,8 +370,12 @@ export const setPreferredTranscriptionApiKeyId = async (
 export const setPreferredTranscriptionDevice = async (
   device: string,
 ): Promise<void> => {
+  const normalizedDevice = normalizeTranscriptionDevice(device);
+
   produceAppState((draft) => {
-    draft.settings.aiTranscription.device = device;
+    draft.settings.aiTranscription.device = normalizedDevice;
+    draft.settings.aiTranscription.gpuEnumerationEnabled =
+      isGpuPreferredTranscriptionDevice(normalizedDevice);
   });
 
   await persistAiPreferences();
@@ -374,8 +384,9 @@ export const setPreferredTranscriptionDevice = async (
 export const setPreferredTranscriptionModelSize = async (
   modelSize: string,
 ): Promise<void> => {
+  const normalizedModelSize = normalizeLocalWhisperModel(modelSize);
   produceAppState((draft) => {
-    draft.settings.aiTranscription.modelSize = modelSize;
+    draft.settings.aiTranscription.modelSize = normalizedModelSize;
   });
 
   await persistAiPreferences();
@@ -385,7 +396,8 @@ export const setGpuEnumerationEnabled = async (
   enabled: boolean,
 ): Promise<void> => {
   produceAppState((draft) => {
-    draft.settings.aiTranscription.gpuEnumerationEnabled = enabled;
+    draft.settings.aiTranscription.gpuEnumerationEnabled =
+      supportsGpuTranscriptionDevice() && enabled;
   });
 
   await persistAiPreferences();

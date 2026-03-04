@@ -3,7 +3,10 @@ use enigo::{Enigo, Key, KeyboardControllable};
 use std::{env, ffi::CStr, ptr, thread, time::Duration};
 use x11::xlib;
 
-pub(crate) fn paste_text_into_focused_field(text: &str, keybind: Option<&str>) -> Result<(), String> {
+pub(crate) fn paste_text_into_focused_field(
+    text: &str,
+    keybind: Option<&str>,
+) -> Result<(), String> {
     if text.trim().is_empty() {
         return Ok(());
     }

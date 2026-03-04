@@ -1,0 +1,37 @@
+[package]
+name = "rust_transcription"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Voquill transcription sidecar (CPU/GPU)"
+
+[features]
+default = []
+gpu = ["whisper-rs/vulkan"]
+
+[[bin]]
+name = "rust-transcription-cpu"
+path = "src/bin/cpu.rs"
+
+[[bin]]
+name = "rust-transcription-gpu"
+path = "src/bin/gpu.rs"
+required-features = ["gpu"]
+
+[dependencies]
+axum = { version = "0.7", features = ["macros"] }
+futures-util = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["fs", "macros", "net", "rt-multi-thread", "sync", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid = { version = "1", features = ["serde", "v4"] }
+whisper-rs = { version = "0.15.1", default-features = false }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = "0.5"
+hound = "3.5"
+tempfile = "3"

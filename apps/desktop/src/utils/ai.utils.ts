@@ -7,6 +7,11 @@ import {
   DEFAULT_POST_PROCESSING_MODE,
   DEFAULT_TRANSCRIPTION_MODE,
 } from "../types/ai.types";
+import {
+  isGpuPreferredTranscriptionDevice,
+  normalizeTranscriptionDevice,
+  supportsGpuTranscriptionDevice,
+} from "./local-transcription.utils";
 
 export const unwrapNestedLlmResponse = <T extends Record<string, unknown>>(
   parsed: T,
@@ -51,12 +56,16 @@ export const applyAiPreferences = (
   draft.settings.aiTranscription.mode = transcriptionMode;
   draft.settings.aiTranscription.selectedApiKeyId =
     preferences.transcriptionApiKeyId ?? null;
-  draft.settings.aiTranscription.device =
-    preferences.transcriptionDevice ?? CPU_DEVICE_VALUE;
+  const normalizedDevice = normalizeTranscriptionDevice(
+    preferences.transcriptionDevice ?? CPU_DEVICE_VALUE,
+  );
+  draft.settings.aiTranscription.device = normalizedDevice;
   draft.settings.aiTranscription.modelSize =
     preferences.transcriptionModelSize ?? DEFAULT_MODEL_SIZE;
   draft.settings.aiTranscription.gpuEnumerationEnabled =
-    preferences.gpuEnumerationEnabled ?? false;
+    supportsGpuTranscriptionDevice() &&
+    (preferences.gpuEnumerationEnabled ??
+      isGpuPreferredTranscriptionDevice(normalizedDevice));
 
   const postProcessingMode =
     preferences.postProcessingMode ?? DEFAULT_POST_PROCESSING_MODE;

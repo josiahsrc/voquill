@@ -6,7 +6,10 @@ use super::accessibility;
 
 const KEY_V: CGKeyCode = 9;
 
-pub(crate) fn paste_text_into_focused_field(text: &str, _keybind: Option<&str>) -> Result<(), String> {
+pub(crate) fn paste_text_into_focused_field(
+    text: &str,
+    _keybind: Option<&str>,
+) -> Result<(), String> {
     if text.trim().is_empty() {
         return Ok(());
     }

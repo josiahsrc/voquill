@@ -111,9 +111,7 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
         Some(row) => {
             let onboarded_raw = row.get::<i64, _>("onboarded");
             let play_interaction_raw = row.try_get::<i64, _>("play_interaction_chime").unwrap_or(1);
-            let tutorial_finished_raw = row
-                .try_get::<i64, _>("has_finished_tutorial")
-                .unwrap_or(0);
+            let tutorial_finished_raw = row.try_get::<i64, _>("has_finished_tutorial").unwrap_or(0);
             let migrated_microphone_raw = row
                 .try_get::<i64, _>("has_migrated_preferred_microphone")
                 .unwrap_or(0);
@@ -135,12 +133,22 @@ pub async fn fetch_user(pool: SqlitePool) -> Result<Option<User>, sqlx::Error> {
                 has_finished_tutorial: tutorial_finished_raw != 0,
                 has_migrated_preferred_microphone: migrated_microphone_raw != 0,
                 cohort: row.try_get::<Option<String>, _>("cohort").unwrap_or(None),
-                styling_mode: row.try_get::<Option<String>, _>("styling_mode").unwrap_or(None),
-                selected_tone_id: row.try_get::<Option<String>, _>("selected_tone_id").unwrap_or(None),
-                active_tone_ids: row.try_get::<Option<String>, _>("active_tone_ids").unwrap_or(None),
+                styling_mode: row
+                    .try_get::<Option<String>, _>("styling_mode")
+                    .unwrap_or(None),
+                selected_tone_id: row
+                    .try_get::<Option<String>, _>("selected_tone_id")
+                    .unwrap_or(None),
+                active_tone_ids: row
+                    .try_get::<Option<String>, _>("active_tone_ids")
+                    .unwrap_or(None),
                 streak: row.try_get::<Option<i64>, _>("streak").unwrap_or(None),
-                streak_recorded_at: row.try_get::<Option<String>, _>("streak_recorded_at").unwrap_or(None),
-                referral_source: row.try_get::<Option<String>, _>("referral_source").unwrap_or(None),
+                streak_recorded_at: row
+                    .try_get::<Option<String>, _>("streak_recorded_at")
+                    .unwrap_or(None),
+                referral_source: row
+                    .try_get::<Option<String>, _>("referral_source")
+                    .unwrap_or(None),
             })
         }
         None => None,

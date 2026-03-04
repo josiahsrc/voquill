@@ -146,7 +146,10 @@ export const transcribeAudio = async ({
     `Transcription complete in ${Math.round(transcribeDuration)}ms (${rawTranscript.length} chars, mode=${transcribeOutput.metadata?.transcriptionMode ?? "unknown"})`,
   );
 
-  metadata.modelSize = state.settings.aiTranscription.modelSize || null;
+  metadata.modelSize =
+    transcribeOutput.metadata?.modelSize ||
+    state.settings.aiTranscription.modelSize ||
+    null;
   metadata.inferenceDevice = transcribeOutput.metadata?.inferenceDevice || null;
   metadata.transcriptionDurationMs = Math.round(transcribeDuration);
   metadata.transcriptionPrompt = transcriptionPrompt;
