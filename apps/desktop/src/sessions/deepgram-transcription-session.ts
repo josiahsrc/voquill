@@ -296,6 +296,7 @@ const startDeepgramStreaming = async (
 
 export class DeepgramTranscriptionSession implements TranscriptionSession {
   private session: DeepgramStreamingSession | null = null;
+  private startupPromise: Promise<void> | null = null;
   private apiKey: string;
 
   constructor(apiKey: string) {
@@ -303,18 +304,25 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
   }
 
   async onRecordingStart(sampleRate: number): Promise<void> {
-    try {
-      console.log("[Deepgram] Starting streaming session...");
-      this.session = await startDeepgramStreaming(this.apiKey, sampleRate);
-      console.log("[Deepgram] Streaming session started successfully");
-    } catch (error) {
-      console.error("[Deepgram] Failed to start streaming:", error);
-    }
+    this.startupPromise = (async () => {
+      try {
+        console.log("[Deepgram] Starting streaming session...");
+        this.session = await startDeepgramStreaming(this.apiKey, sampleRate);
+        console.log("[Deepgram] Streaming session started successfully");
+      } catch (error) {
+        console.error("[Deepgram] Failed to start streaming:", error);
+      }
+    })();
+    await this.startupPromise;
   }
 
   async finalize(
     _audio: StopRecordingResponse,
   ): Promise<TranscriptionSessionResult> {
+    if (this.startupPromise) {
+      await this.startupPromise;
+    }
+
     if (!this.session) {
       return {
         rawTranscript: null,
