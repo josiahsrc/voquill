@@ -21,3 +21,7 @@ export async function showToast(options: ShowToastOptions): Promise<void> {
 
   await emitTo("toast-overlay", "toast", { toast });
 }
+
+export async function dismissToast(): Promise<void> {
+  await emitTo("toast-overlay", "dismiss-toast", {});
+}

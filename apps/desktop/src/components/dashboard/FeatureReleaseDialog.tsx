@@ -199,7 +199,6 @@ export const FeatureReleaseDialog = () => {
     (state) => getMyUserPreferences(state)?.lastSeenFeature,
   );
   const myUserPrefs = useAppStore((state) => state.userPrefs);
-  console.log("User prefs in FeatureReleaseDialog:", myUserPrefs);
   const isCommunity = useAppStore(
     (state) => getEffectivePlan(state) === "community",
   );
@@ -207,7 +206,7 @@ export const FeatureReleaseDialog = () => {
   const [pageIndex, setPageIndex] = useState(0);
 
   const pageCount = isCommunity ? 4 : 3;
-  const open = lastSeenFeature !== CURRENT_FEATURE;
+  const open = myUserPrefs !== null && lastSeenFeature !== CURRENT_FEATURE;
 
   useEffect(() => {
     if (open && !hasConfettiFired.current) {

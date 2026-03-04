@@ -51,6 +51,12 @@ export const ToastOverlaySideEffects = () => {
     };
   }, []);
 
+  useTauriListen<void>("dismiss-toast", () => {
+    produceAppState((draft) => {
+      draft.currentToast = null;
+    });
+  });
+
   useEffect(() => {
     if (currentToast !== null) {
       const duration = currentToast.duration ?? DEFAULT_TOAST_DURATION_MS;
