@@ -281,7 +281,6 @@ export const DictationSideEffects = () => {
     if (!session || !strategy) {
       return {
         shouldContinue: false,
-        abortMessage: "Recording session was not properly initialized",
       };
     }
 
