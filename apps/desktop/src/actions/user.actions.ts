@@ -18,8 +18,8 @@ import {
 } from "../types/ai.types";
 import {
   isGpuPreferredTranscriptionDevice,
-  normalizeTranscriptionDevice,
   normalizeLocalWhisperModel,
+  normalizeTranscriptionDevice,
   supportsGpuTranscriptionDevice,
 } from "../utils/local-transcription.utils";
 import { getLogger } from "../utils/log.utils";
@@ -98,9 +98,9 @@ export const createDefaultPreferences = (): UserPreferences => ({
   dictationPillVisibility: "while_active",
 });
 
-const updateUserPreferences = async (
+export const updateUserPreferences = async (
   updateCallback: (preferences: UserPreferences) => void,
-  saveErrorMessage: string,
+  saveErrorMessage = "Failed to save AI preferences. Please try again.",
 ): Promise<void> => {
   const state = getAppState();
   const myUserId = getMyEffectiveUserId(state);
@@ -312,31 +312,6 @@ export const setUserName = async (name: string): Promise<void> => {
   );
 };
 
-export const persistAiPreferences = async (): Promise<void> => {
-  getLogger().verbose("Persisting AI preferences");
-  const state = getAppState();
-  await updateUserPreferences((preferences) => {
-    preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
-    preferences.postProcessingApiKeyId =
-      state.settings.aiPostProcessing.selectedApiKeyId ?? null;
-    preferences.agentMode = state.settings.agentMode.mode;
-    preferences.agentModeApiKeyId =
-      state.settings.agentMode.selectedApiKeyId ?? null;
-    preferences.openclawGatewayUrl =
-      state.settings.agentMode.openclawGatewayUrl ?? null;
-    preferences.openclawToken = state.settings.agentMode.openclawToken ?? null;
-    preferences.transcriptionMode = state.settings.aiTranscription.mode;
-    preferences.transcriptionApiKeyId =
-      state.settings.aiTranscription.selectedApiKeyId ?? null;
-    preferences.transcriptionDevice =
-      state.settings.aiTranscription.device ?? null;
-    preferences.transcriptionModelSize =
-      state.settings.aiTranscription.modelSize ?? null;
-    preferences.gpuEnumerationEnabled =
-      state.settings.aiTranscription.gpuEnumerationEnabled;
-  }, "Failed to save AI preferences. Please try again.");
-};
-
 export const setPreferredTranscriptionMode = async (
   mode: TranscriptionMode,
 ): Promise<void> => {
@@ -344,7 +319,9 @@ export const setPreferredTranscriptionMode = async (
     draft.settings.aiTranscription.mode = mode;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.transcriptionMode = mode;
+  });
 };
 
 export const setAllModesToCloud = async (): Promise<void> => {
@@ -354,7 +331,11 @@ export const setAllModesToCloud = async (): Promise<void> => {
     draft.settings.agentMode.mode = "cloud";
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.transcriptionMode = "cloud";
+    preferences.postProcessingMode = "cloud";
+    preferences.agentMode = "cloud";
+  });
 };
 
 export const setPreferredTranscriptionApiKeyId = async (
@@ -364,21 +345,28 @@ export const setPreferredTranscriptionApiKeyId = async (
     draft.settings.aiTranscription.selectedApiKeyId = id;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.transcriptionApiKeyId = id;
+  });
 };
 
 export const setPreferredTranscriptionDevice = async (
   device: string,
 ): Promise<void> => {
   const normalizedDevice = normalizeTranscriptionDevice(device);
+  const gpuEnumerationEnabled =
+    isGpuPreferredTranscriptionDevice(normalizedDevice);
 
   produceAppState((draft) => {
     draft.settings.aiTranscription.device = normalizedDevice;
     draft.settings.aiTranscription.gpuEnumerationEnabled =
-      isGpuPreferredTranscriptionDevice(normalizedDevice);
+      gpuEnumerationEnabled;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.transcriptionDevice = normalizedDevice;
+    preferences.gpuEnumerationEnabled = gpuEnumerationEnabled;
+  });
 };
 
 export const setPreferredTranscriptionModelSize = async (
@@ -389,18 +377,22 @@ export const setPreferredTranscriptionModelSize = async (
     draft.settings.aiTranscription.modelSize = normalizedModelSize;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.transcriptionModelSize = normalizedModelSize;
+  });
 };
 
 export const setGpuEnumerationEnabled = async (
   enabled: boolean,
 ): Promise<void> => {
+  const nextEnabled = supportsGpuTranscriptionDevice() && enabled;
   produceAppState((draft) => {
-    draft.settings.aiTranscription.gpuEnumerationEnabled =
-      supportsGpuTranscriptionDevice() && enabled;
+    draft.settings.aiTranscription.gpuEnumerationEnabled = nextEnabled;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.gpuEnumerationEnabled = nextEnabled;
+  });
 };
 
 export const setPreferredPostProcessingMode = async (
@@ -410,7 +402,9 @@ export const setPreferredPostProcessingMode = async (
     draft.settings.aiPostProcessing.mode = mode;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.postProcessingMode = mode;
+  });
 };
 
 export const setPreferredPostProcessingApiKeyId = async (
@@ -420,7 +414,9 @@ export const setPreferredPostProcessingApiKeyId = async (
     draft.settings.aiPostProcessing.selectedApiKeyId = id;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.postProcessingApiKeyId = id;
+  });
 };
 
 export const setPreferredAgentMode = async (mode: AgentMode): Promise<void> => {
@@ -428,27 +424,9 @@ export const setPreferredAgentMode = async (mode: AgentMode): Promise<void> => {
     draft.settings.agentMode.mode = mode;
   });
 
-  await persistAiPreferences();
-};
-
-export const setOpenclawGatewayUrl = async (
-  url: Nullable<string>,
-): Promise<void> => {
-  produceAppState((draft) => {
-    draft.settings.agentMode.openclawGatewayUrl = url;
+  await updateUserPreferences((preferences) => {
+    preferences.agentMode = mode;
   });
-
-  await persistAiPreferences();
-};
-
-export const setOpenclawToken = async (
-  token: Nullable<string>,
-): Promise<void> => {
-  produceAppState((draft) => {
-    draft.settings.agentMode.openclawToken = token;
-  });
-
-  await persistAiPreferences();
 };
 
 export const setPreferredAgentModeApiKeyId = async (
@@ -458,10 +436,10 @@ export const setPreferredAgentModeApiKeyId = async (
     draft.settings.agentMode.selectedApiKeyId = id;
   });
 
-  await persistAiPreferences();
+  await updateUserPreferences((preferences) => {
+    preferences.agentModeApiKeyId = id;
+  });
 };
-
-export const syncAiPreferences = persistAiPreferences;
 
 export const migrateLocalUserToCloud = async (): Promise<void> => {
   const state = getAppState();

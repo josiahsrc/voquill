@@ -1,18 +1,18 @@
 import { ApiKey } from "@repo/types";
+import dayjs from "dayjs";
 import { getApiKeyRepo } from "../repos";
-import { getAppState, produceAppState } from "../store";
-import { registerApiKeys } from "../utils/app.utils";
-import { showErrorSnackbar } from "./app.actions";
-import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
-} from "../types/ai.types";
-import { syncAiPreferences } from "./user.actions";
 import type {
   CreateApiKeyPayload,
   UpdateApiKeyPayload,
 } from "../repos/api-key.repo";
-import dayjs from "dayjs";
+import { getAppState, produceAppState } from "../store";
+import {
+  DEFAULT_POST_PROCESSING_MODE,
+  DEFAULT_TRANSCRIPTION_MODE,
+} from "../types/ai.types";
+import { registerApiKeys } from "../utils/app.utils";
+import { showErrorSnackbar } from "./app.actions";
+import { updateUserPreferences } from "./user.actions";
 
 let loadApiKeysPromise: Promise<void> | null = null;
 
@@ -104,7 +104,15 @@ export const deleteApiKey = async (id: string): Promise<void> => {
       }
     });
 
-    await syncAiPreferences();
+    const state = getAppState();
+    await updateUserPreferences((preferences) => {
+      preferences.transcriptionMode = state.settings.aiTranscription.mode;
+      preferences.transcriptionApiKeyId =
+        state.settings.aiTranscription.selectedApiKeyId ?? null;
+      preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
+      preferences.postProcessingApiKeyId =
+        state.settings.aiPostProcessing.selectedApiKeyId ?? null;
+    });
   } catch (error) {
     console.error("Failed to delete API key", error);
     showErrorSnackbar(
