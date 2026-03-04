@@ -2,6 +2,16 @@
   "productName": "Voquill GPU (dev)",
   "identifier": "com.voquill.desktop.gpu.dev",
   "mainBinaryName": "Voquill GPU (dev)",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "depends": [
+          "libxdo3",
+          "libvulkan1"
+        ]
+      }
+    }
+  },
   "plugins": {
     "updater": {
       "endpoints": [
