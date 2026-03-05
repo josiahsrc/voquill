@@ -18,8 +18,10 @@ class AppDialog extends StatelessWidget {
     return AlertDialog(
       insetPadding: Theming.padding.onlyHorizontal(),
       contentPadding: Theming.padding.onlyVertical(),
+      titlePadding: Theming.padding.withoutBottom(),
       title: title,
       content: SizedBox(width: double.maxFinite, child: content),
+      actionsPadding: Theming.padding.withoutTop(),
       actions: actions,
     );
   }
