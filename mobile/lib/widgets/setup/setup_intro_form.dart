@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app/actions/auth_actions.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/common/asset_video_player.dart';
@@ -53,8 +55,9 @@ class SetupIntroForm extends StatelessWidget {
             ),
             const Spacer(),
             AssetVideoPlayer.phone(
-              asset: 'assets/voquill-demo-ios.mp4',
-              aspectRatio: 292 / 540,
+              asset: Platform.isIOS
+                  ? 'assets/demo-ios.mp4'
+                  : 'assets/demo-android.mp4',
             ),
             const Spacer(flex: 2),
             SizedBox(

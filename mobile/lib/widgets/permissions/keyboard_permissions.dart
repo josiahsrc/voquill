@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app/store/store.dart';
 import 'package:app/utils/channel_utils.dart';
 import 'package:app/widgets/common/asset_video_player.dart';
@@ -74,8 +76,9 @@ class _KeyboardPermissionsState extends State<KeyboardPermissions>
         ),
         child: Center(
           child: AssetVideoPlayer.phone(
-            asset: 'assets/voquill-keyboard-perms-ios.mp4',
-            aspectRatio: 290 / 596,
+            asset: Platform.isIOS
+                ? 'assets/keyboard-perms-ios.mp4'
+                : 'assets/keyboard-perms-android.mp4',
             pip: true,
           ),
         ),
