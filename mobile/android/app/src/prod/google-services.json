@@ -15,6 +15,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "777461284594-b462o6aa00ighnb5i1c55qv7efdr0kq6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.voquill.mobile",
+            "certificate_hash": "08c553a5ac9b17775e87989f2b4a24aae853d0fe"
+          }
+        },
+        {
+          "client_id": "777461284594-fj07ndiq69p7r8b4563qngvo084a6l2t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.voquill.mobile",
+            "certificate_hash": "90682f31cb7adf39c5e125d3f804de9e1f7be294"
+          }
+        },
+        {
           "client_id": "777461284594-qbm266ok82572jbapa8nqlu090eakeoc.apps.googleusercontent.com",
           "client_type": 3
         }
