@@ -21,8 +21,11 @@ export type TranscriptionSessionFinalizeOptions = {
   a11yInfo?: unknown;
 };
 
+export type InterimResultCallback = (segment: string) => void;
+
 export interface TranscriptionSession {
   onRecordingStart(sampleRate: number): Promise<void>;
+  setInterimResultCallback?(callback: InterimResultCallback): void;
   finalize(
     audio: StopRecordingResponse,
     options?: TranscriptionSessionFinalizeOptions,

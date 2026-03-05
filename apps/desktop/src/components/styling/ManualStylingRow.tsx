@@ -18,6 +18,7 @@ import { produceAppState, useAppStore } from "../../store";
 import {
   getActiveManualToneIds,
   getManuallySelectedToneId,
+  VERBATIM_TONE_ID,
 } from "../../utils/tone.utils";
 import { ListTile } from "../common/ListTile";
 import {
@@ -175,7 +176,18 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
           onMouseDown={stopPropagation}
         />
       }
-      title={tone?.name}
+      title={
+        id === VERBATIM_TONE_ID ? (
+          <>
+            {tone?.name}{" "}
+            <span style={{ fontSize: 12 }}>
+              <FormattedMessage defaultMessage="(Streams output in real-time for supported providers)" />
+            </span>
+          </>
+        ) : (
+          tone?.name
+        )
+      }
       subtitle={
         <Typography
           variant="body2"

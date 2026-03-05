@@ -1,6 +1,7 @@
 import { convertFloat32ToBase64PCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
+  InterimResultCallback,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -9,6 +10,7 @@ import {
 type ElevenLabsStreamingSession = {
   finalize: () => Promise<string>;
   cleanup: () => void;
+  setInterimCallback: (cb: InterimResultCallback) => void;
 };
 
 const ELEVENLABS_WS_URL = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
@@ -91,6 +93,11 @@ const startElevenLabsStreaming = async (
     let sentChunkCount = 0;
     let pendingSampleCount = 0;
     let pendingChunks: Float32Array[] = [];
+    let interimCallback: InterimResultCallback | null = null;
+
+    const setInterimCallback = (cb: InterimResultCallback) => {
+      interimCallback = cb;
+    };
 
     const getText = () => {
       return (
@@ -311,7 +318,7 @@ const startElevenLabsStreaming = async (
         );
 
         console.log("[ElevenLabs WebSocket] Session ready, listener attached");
-        resolve({ finalize, cleanup });
+        resolve({ finalize, cleanup, setInterimCallback });
       } catch (error) {
         console.error(
           "[ElevenLabs WebSocket] Error setting up listener:",
@@ -333,12 +340,16 @@ const startElevenLabsStreaming = async (
         );
 
         if (messageType === "committed_transcript") {
-          finalTranscript += (finalTranscript ? " " : "") + (data.text || "");
+          const segmentText = data.text || "";
+          finalTranscript += (finalTranscript ? " " : "") + segmentText;
           partialTranscript = "";
           console.log(
             "[ElevenLabs WebSocket] Committed transcript received:",
             finalTranscript.substring(0, 100),
           );
+          if (interimCallback && segmentText) {
+            interimCallback(segmentText);
+          }
           if (isFinalized) {
             completeFinalize();
           }
@@ -373,15 +384,23 @@ const startElevenLabsStreaming = async (
 export class ElevenLabsTranscriptionSession implements TranscriptionSession {
   private session: ElevenLabsStreamingSession | null = null;
   private apiKey: string;
+  private interimCallback: InterimResultCallback | null = null;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+  }
+
+  setInterimResultCallback(callback: InterimResultCallback): void {
+    this.interimCallback = callback;
   }
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
       console.log("[ElevenLabs] Starting streaming session...");
       this.session = await startElevenLabsStreaming(this.apiKey, sampleRate);
+      if (this.interimCallback) {
+        this.session.setInterimCallback(this.interimCallback);
+      }
       console.log("[ElevenLabs] Streaming session started successfully");
     } catch (error) {
       console.error("[ElevenLabs] Failed to start streaming:", error);

@@ -1,6 +1,7 @@
 import { convertFloat32ToPCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
+  InterimResultCallback,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -9,6 +10,7 @@ import {
 type DeepgramStreamingSession = {
   finalize: () => Promise<string>;
   cleanup: () => void;
+  setInterimCallback: (cb: InterimResultCallback) => void;
 };
 
 const startDeepgramStreaming = async (
@@ -36,6 +38,11 @@ const startDeepgramStreaming = async (
   let sentChunkCount = 0;
   let pendingSampleCount = 0;
   let pendingChunks: Float32Array[] = [];
+  let interimCallback: InterimResultCallback | null = null;
+
+  const setInterimCallback = (cb: InterimResultCallback) => {
+    interimCallback = cb;
+  };
 
   const getText = () => {
     return (
@@ -234,7 +241,7 @@ const startDeepgramStreaming = async (
       console.log("[Deepgram WebSocket] Connected, flushing buffered audio...");
       flushPendingSamples(false);
       console.log("[Deepgram WebSocket] Session ready");
-      resolve({ finalize, cleanup });
+      resolve({ finalize, cleanup, setInterimCallback });
     };
 
     ws.onmessage = (event) => {
@@ -259,6 +266,9 @@ const startDeepgramStreaming = async (
               "[Deepgram WebSocket] Final transcript received:",
               finalTranscript.substring(0, 100),
             );
+            if (interimCallback) {
+              interimCallback(transcript);
+            }
             if (speechFinal && isFinalized) {
               completeFinalize();
             }
@@ -298,9 +308,14 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
   private session: DeepgramStreamingSession | null = null;
   private startupPromise: Promise<void> | null = null;
   private apiKey: string;
+  private interimCallback: InterimResultCallback | null = null;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+  }
+
+  setInterimResultCallback(callback: InterimResultCallback): void {
+    this.interimCallback = callback;
   }
 
   async onRecordingStart(sampleRate: number): Promise<void> {
@@ -308,6 +323,9 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
       try {
         console.log("[Deepgram] Starting streaming session...");
         this.session = await startDeepgramStreaming(this.apiKey, sampleRate);
+        if (this.interimCallback) {
+          this.session.setInterimCallback(this.interimCallback);
+        }
         console.log("[Deepgram] Streaming session started successfully");
       } catch (error) {
         console.error("[Deepgram] Failed to start streaming:", error);

@@ -52,9 +52,10 @@ import {
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
-import { getToneIdToUse } from "../../utils/tone.utils";
+import { getToneIdToUse, VERBATIM_TONE_ID } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
+  getGenerativePrefs,
   getIsDictationUnlocked,
   getMyPreferredMicrophone,
   getMyPrimaryDictationLanguage,
@@ -417,6 +418,30 @@ export const DictationSideEffects = () => {
           `Transcription prefs: mode=${transcriptPrefs.mode}`,
         );
         const session = createTranscriptionSession(transcriptPrefs);
+        if (
+          session.setInterimResultCallback &&
+          strategy instanceof DictationStrategy
+        ) {
+          const toneId = getToneIdToUse(state, {
+            currentAppToneId: null,
+          });
+          if (toneId === VERBATIM_TONE_ID) {
+            const genPrefs = getGenerativePrefs(state);
+            if (genPrefs.mode !== "none") {
+              strategy.configureStreamingPostProcess(toneId);
+              getLogger().verbose(
+                "Streaming with per-segment post-processing enabled",
+              );
+            } else {
+              getLogger().verbose(
+                "Streaming enabled (raw, no post-processing)",
+              );
+            }
+            session.setInterimResultCallback((segment) => {
+              strategy.handleInterimSegment(segment);
+            });
+          }
+        }
         tryPlayAudioChime("start_recording_clip");
 
         sessionRef.current = session;

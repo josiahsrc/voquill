@@ -1,6 +1,7 @@
 import { convertFloat32ToPCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import {
+  InterimResultCallback,
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
@@ -8,6 +9,7 @@ import {
 
 type AssemblyAIStreamingSession = {
   finalize: () => Promise<string>;
+  setInterimCallback: (cb: InterimResultCallback) => void;
   cleanup: () => void;
 };
 
@@ -35,6 +37,11 @@ const startAssemblyAIStreaming = async (
     let sentChunkCount = 0;
     let pendingSampleCount = 0;
     let pendingChunks: Float32Array[] = [];
+    let interimCallback: InterimResultCallback | null = null;
+
+    const setInterimCallback = (cb: InterimResultCallback) => {
+      interimCallback = cb;
+    };
 
     let currentTurn = 0;
     let extra = "";
@@ -250,7 +257,7 @@ const startAssemblyAIStreaming = async (
 
         console.log("[AssemblyAI WebSocket] Session ready, listener attached");
         // Session is ready
-        resolve({ finalize, cleanup });
+        resolve({ finalize, cleanup, setInterimCallback });
       } catch (error) {
         console.error(
           "[AssemblyAI WebSocket] Error setting up listener:",
@@ -272,12 +279,16 @@ const startAssemblyAIStreaming = async (
 
         if (data.type === "Turn" && data.end_of_turn) {
           // Final formatted transcript
+          const segmentText = data.transcript || "";
           finalTranscript +=
-            (finalTranscript ? " " : "") + (data.transcript || "");
+            (finalTranscript ? " " : "") + segmentText;
           console.log(
             "[AssemblyAI WebSocket] Final formatted transcript received:",
             finalTranscript.substring(0, 100),
           );
+          if (interimCallback && segmentText) {
+            interimCallback(segmentText);
+          }
           if (currentTurn === data.turn_order) {
             extra = "";
           }
@@ -312,15 +323,23 @@ const startAssemblyAIStreaming = async (
 export class AssemblyAITranscriptionSession implements TranscriptionSession {
   private session: AssemblyAIStreamingSession | null = null;
   private apiKey: string;
+  private interimCallback: InterimResultCallback | null = null;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+  }
+
+  setInterimResultCallback(callback: InterimResultCallback): void {
+    this.interimCallback = callback;
   }
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
       console.log("[AssemblyAI] Starting streaming session...");
       this.session = await startAssemblyAIStreaming(this.apiKey, sampleRate);
+      if (this.interimCallback) {
+        this.session.setInterimCallback(this.interimCallback);
+      }
       console.log("[AssemblyAI] Streaming session started successfully");
     } catch (error) {
       console.error("[AssemblyAI] Failed to start streaming:", error);
