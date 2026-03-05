@@ -2,6 +2,7 @@ import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/common/app_list_tile.dart';
 import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/common/list_tile_section.dart';
+import 'package:app/widgets/settings/delete_account_dialog.dart';
 import 'package:flutter/material.dart';
 
 class DangerZonePage extends StatelessWidget {
@@ -27,7 +28,10 @@ class DangerZonePage extends StatelessWidget {
                     leading: const Icon(Icons.person_remove_outlined),
                     title: const Text('Delete account'),
                     variant: AppListTileVariant.warning,
-                    onTap: () {},
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => const DeleteAccountDialog(),
+                    ),
                   ),
                 ],
               ),
