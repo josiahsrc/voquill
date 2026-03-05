@@ -201,6 +201,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::transcription_audio_load,
             crate::commands::purge_stale_transcription_audio,
             crate::commands::export_transcription,
+            crate::commands::export_diagnostics,
             crate::commands::term_create,
             crate::commands::term_update,
             crate::commands::term_list,

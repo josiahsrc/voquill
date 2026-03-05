@@ -475,6 +475,66 @@ pub async fn export_transcription(
 }
 
 #[tauri::command]
+pub async fn export_diagnostics(
+    app: AppHandle,
+    diagnostics_info: String,
+) -> Result<bool, String> {
+    let dialog = rfd::AsyncFileDialog::new()
+        .set_file_name("voquill-diagnostics.zip")
+        .add_filter("ZIP Archive", &["zip"])
+        .save_file()
+        .await;
+
+    let save_path = match dialog {
+        Some(handle) => handle.path().to_path_buf(),
+        None => return Ok(false),
+    };
+
+    let logs_dir = crate::system::paths::logs_dir(&app).map_err(|err| err.to_string())?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+
+        let file = std::fs::File::create(&save_path)
+            .map_err(|err| format!("Failed to create file: {err}"))?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
+        // Write diagnostics info
+        zip.start_file("diagnostics.txt", options)
+            .map_err(|err| err.to_string())?;
+        zip.write_all(diagnostics_info.as_bytes())
+            .map_err(|err| err.to_string())?;
+
+        // Include all files from the logs directory
+        if let Ok(entries) = std::fs::read_dir(&logs_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if !path.is_file() {
+                    continue;
+                }
+                let filename = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown");
+                let data =
+                    std::fs::read(&path).map_err(|err| format!("Failed to read log: {err}"))?;
+                zip.start_file(format!("logs/{filename}"), options)
+                    .map_err(|err| err.to_string())?;
+                zip.write_all(&data).map_err(|err| err.to_string())?;
+            }
+        }
+
+        zip.finish().map_err(|err| err.to_string())?;
+        Ok::<bool, String>(true)
+    })
+    .await
+    .map_err(|err| err.to_string())?
+}
+
+#[tauri::command]
 pub async fn term_create(
     term: crate::domain::Term,
     database: State<'_, crate::state::OptionKeyDatabase>,
