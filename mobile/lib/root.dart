@@ -5,7 +5,6 @@ import 'package:app/actions/app_actions.dart';
 import 'package:app/actions/keyboard_actions.dart';
 import 'package:app/actions/permission_actions.dart';
 import 'package:app/api/counter_api.dart';
-import 'package:app/utils/channel_utils.dart';
 import 'package:app/flavor.dart';
 import 'package:app/routing/build_router.dart';
 import 'package:app/routing/route_refresher.dart';
@@ -99,8 +98,6 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       showAppOverlay(AppOverlayType.dictation);
     } else if (call.method == 'showPaywall') {
       showAppOverlay(AppOverlayType.paywall);
-    } else if (call.method == 'pipModeChanged') {
-      pipModeNotifier.value = call.arguments as bool;
     }
   }
 

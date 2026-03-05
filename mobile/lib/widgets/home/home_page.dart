@@ -126,9 +126,7 @@ class HomePage extends StatelessWidget {
               padding: Theming.padding.onlyHorizontal(),
               child: Text(
                 'Your transcriptions from the keyboard will appear here.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: context.colors.level1,
-                ),
+                style: theme.textTheme.bodyMedium,
               ),
             ),
           )
