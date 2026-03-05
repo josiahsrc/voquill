@@ -21,7 +21,11 @@ Future<bool> signInWithGoogle() async {
     final userCred = await FirebaseAuth.instance.signInWithCredential(
       credential,
     );
-    await _onSignedIn(userCred.user!.uid, email: userCred.user!.email);
+    await _onSignedIn(
+      userCred.user!.uid,
+      email: userCred.user!.email,
+      displayName: userCred.user!.displayName,
+    );
     return true;
   } catch (e) {
     _logger.e('Google sign-in failed', e);
@@ -32,13 +36,30 @@ Future<bool> signInWithGoogle() async {
 Future<bool> signInWithApple() async {
   try {
     final provider = AppleAuthProvider();
+    provider.addScope('name');
+    provider.addScope('email');
     final userCred = await FirebaseAuth.instance.signInWithProvider(provider);
-    await _onSignedIn(userCred.user!.uid, email: userCred.user!.email);
+    final displayName =
+        _extractAppleDisplayName(userCred) ?? userCred.user!.displayName;
+    await _onSignedIn(
+      userCred.user!.uid,
+      email: userCred.user!.email,
+      displayName: displayName,
+    );
     return true;
   } catch (e) {
     _logger.e('Apple sign-in failed', e);
     rethrow;
   }
+}
+
+String? _extractAppleDisplayName(UserCredential cred) {
+  final profile = cred.additionalUserInfo?.profile;
+  if (profile == null) return null;
+  final first = profile['firstName'] as String? ?? '';
+  final last = profile['lastName'] as String? ?? '';
+  final name = '$first $last'.trim();
+  return name.isEmpty ? null : name;
 }
 
 Future<void> signUpWithEmail(String email, String password) async {
@@ -86,9 +107,17 @@ Future<void> signOut() async {
   await GoogleSignIn().signOut();
 }
 
-Future<void> _onSignedIn(String uid, {String? email}) async {
+Future<void> _onSignedIn(
+  String uid, {
+  String? email,
+  String? displayName,
+}) async {
   produceAppState((draft) {
     draft.auth = AuthUser(uid: uid, email: email);
+    if (displayName != null && displayName.isNotEmpty) {
+      draft.onboarding.name = displayName;
+      draft.onboarding.nameProvidedByAuth = true;
+    }
   });
 
   try {

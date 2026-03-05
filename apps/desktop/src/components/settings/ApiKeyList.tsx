@@ -1,5 +1,6 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   Box,
   Button,
@@ -429,6 +430,355 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   );
 };
 
+type EditApiKeyCardProps = {
+  apiKey: SettingsApiKey;
+  onSave: (payload: {
+    name: string;
+    key: string;
+    baseUrl?: string | null;
+    azureRegion?: string | null;
+    includeV1Path?: boolean | null;
+    transcriptionModel?: string | null;
+  }) => Promise<void>;
+  onCancel: () => void;
+  onTest: (overrides: Partial<SettingsApiKey>) => void;
+  testing: boolean;
+  context: ApiKeyListContext;
+};
+
+const EditApiKeyCard = ({
+  apiKey,
+  onSave,
+  onCancel,
+  onTest,
+  testing,
+  context,
+}: EditApiKeyCardProps) => {
+  const [name, setName] = useState(apiKey.name);
+  const [key, setKey] = useState("");
+  const [baseUrl, setBaseUrl] = useState(apiKey.baseUrl ?? "");
+  const [azureRegion, setAzureRegion] = useState(apiKey.azureRegion ?? "");
+  const [includeV1Path, setIncludeV1Path] = useState(
+    apiKey.includeV1Path ?? true,
+  );
+  const [transcriptionModel, setTranscriptionModel] = useState(
+    apiKey.transcriptionModel ?? "",
+  );
+  const [saving, setSaving] = useState(false);
+
+  const provider = apiKey.provider;
+  const isOllama = provider === "ollama";
+  const isOpenAICompatible = provider === "openai-compatible";
+  const isOllamaLike = isOllama || isOpenAICompatible;
+  const isAzure = provider === "azure";
+  const isAzureOpenAI = isAzure && context === "post-processing";
+  const isAzureSTT = isAzure && context === "transcription";
+  const isSpeaches = provider === "speaches";
+
+  const canSave = isOllamaLike
+    ? !!name
+    : isSpeaches
+      ? !!name
+      : isAzureSTT
+        ? !!name && !!azureRegion
+        : isAzureOpenAI
+          ? !!name && !!baseUrl
+          : !!name;
+
+  const handleSave = useCallback(async () => {
+    if (!canSave || saving) return;
+    setSaving(true);
+    try {
+      const baseUrlValue = isOllamaLike
+        ? baseUrl || OLLAMA_DEFAULT_URL
+        : isSpeaches
+          ? baseUrl || "http://localhost:8000"
+          : isAzureOpenAI
+            ? baseUrl
+            : apiKey.baseUrl;
+      const azureRegionValue = isAzureSTT ? azureRegion : apiKey.azureRegion;
+      const transcriptionModelValue =
+        isSpeaches || (isOpenAICompatible && context === "transcription")
+          ? transcriptionModel || null
+          : undefined;
+      const includeV1PathValue = isOpenAICompatible
+        ? includeV1Path
+        : apiKey.includeV1Path;
+      await onSave({
+        name,
+        key,
+        baseUrl: baseUrlValue,
+        azureRegion: azureRegionValue,
+        includeV1Path: includeV1PathValue,
+        transcriptionModel: transcriptionModelValue,
+      });
+    } catch (error) {
+      console.error("Failed to save API key", error);
+    } finally {
+      setSaving(false);
+    }
+  }, [
+    canSave,
+    saving,
+    isOllamaLike,
+    isSpeaches,
+    isAzureOpenAI,
+    isAzureSTT,
+    isOpenAICompatible,
+    name,
+    key,
+    baseUrl,
+    azureRegion,
+    includeV1Path,
+    transcriptionModel,
+    apiKey,
+    context,
+    onSave,
+  ]);
+
+  const handleTest = useCallback(() => {
+    const overrides: Partial<SettingsApiKey> = { name };
+    if (key) overrides.keyFull = key;
+    if (isOllamaLike) overrides.baseUrl = baseUrl || OLLAMA_DEFAULT_URL;
+    else if (isSpeaches) overrides.baseUrl = baseUrl || "http://localhost:8000";
+    else if (isAzureOpenAI) overrides.baseUrl = baseUrl;
+    if (isAzureSTT) overrides.azureRegion = azureRegion;
+    onTest(overrides);
+  }, [
+    name,
+    key,
+    baseUrl,
+    azureRegion,
+    isOllamaLike,
+    isSpeaches,
+    isAzureOpenAI,
+    isAzureSTT,
+    onTest,
+  ]);
+
+  const providerLabel = provider.toUpperCase();
+
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+        borderColor: "primary.main",
+        borderWidth: 1,
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+        <FormattedMessage
+          defaultMessage="Provider: {provider}"
+          values={{ provider: providerLabel }}
+        />
+      </Typography>
+      <TextField
+        label={<FormattedMessage defaultMessage="Key name" />}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        size="small"
+        fullWidth
+        disabled={saving}
+      />
+      {isAzure ? (
+        context === "transcription" ? (
+          <>
+            <TextField
+              label={<FormattedMessage defaultMessage="Azure Region" />}
+              value={azureRegion}
+              onChange={(e) => setAzureRegion(e.target.value)}
+              placeholder="e.g., eastus, westus, northeurope"
+              size="small"
+              fullWidth
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Azure service region for Speech-to-Text" />
+              }
+            />
+            <TextField
+              label={<FormattedMessage defaultMessage="Subscription Key" />}
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="Leave blank to keep current key"
+              size="small"
+              fullWidth
+              type="password"
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Leave blank to keep current key" />
+              }
+            />
+          </>
+        ) : (
+          <>
+            <TextField
+              label={
+                <FormattedMessage defaultMessage="Azure OpenAI Endpoint" />
+              }
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="https://my-resource.openai.azure.com"
+              size="small"
+              fullWidth
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Your Azure OpenAI resource endpoint URL" />
+              }
+            />
+            <TextField
+              label={<FormattedMessage defaultMessage="API Key" />}
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="Leave blank to keep current key"
+              size="small"
+              fullWidth
+              type="password"
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Leave blank to keep current key" />
+              }
+            />
+          </>
+        )
+      ) : isOllamaLike ? (
+        <>
+          <TextField
+            label={<FormattedMessage defaultMessage="Base URL" />}
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+            placeholder={OLLAMA_DEFAULT_URL}
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Leave empty to use the default URL" />
+            }
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="API key (optional)" />}
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder="Leave blank to keep current key"
+            size="small"
+            fullWidth
+            type="password"
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Leave blank to keep current key" />
+            }
+          />
+          {isOpenAICompatible && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="body2">
+                <FormattedMessage defaultMessage="Include /v1 path" />
+              </Typography>
+              <Switch
+                checked={includeV1Path}
+                onChange={(e) => setIncludeV1Path(e.target.checked)}
+                disabled={saving}
+                size="small"
+              />
+            </Box>
+          )}
+          {isOpenAICompatible && context === "transcription" && (
+            <TextField
+              label={<FormattedMessage defaultMessage="Model" />}
+              value={transcriptionModel}
+              onChange={(e) => setTranscriptionModel(e.target.value)}
+              placeholder="whisper-1"
+              size="small"
+              fullWidth
+              disabled={saving}
+              helperText={
+                <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
+              }
+            />
+          )}
+        </>
+      ) : isSpeaches ? (
+        <>
+          <TextField
+            label={<FormattedMessage defaultMessage="Speaches URL" />}
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+            placeholder="http://localhost:8000"
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="URL of your local Speaches Docker instance" />
+            }
+          />
+          <TextField
+            label={<FormattedMessage defaultMessage="Model" />}
+            value={transcriptionModel}
+            onChange={(e) => setTranscriptionModel(e.target.value)}
+            placeholder="Systran/faster-whisper-large-v3"
+            size="small"
+            fullWidth
+            disabled={saving}
+            helperText={
+              <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
+            }
+          />
+        </>
+      ) : (
+        <TextField
+          label={<FormattedMessage defaultMessage="API key" />}
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
+          placeholder="Leave blank to keep current key"
+          size="small"
+          fullWidth
+          type="password"
+          disabled={saving}
+          helperText={
+            <FormattedMessage defaultMessage="Leave blank to keep current key" />
+          }
+        />
+      )}
+      <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleTest}
+          disabled={testing || saving}
+        >
+          {testing ? (
+            <FormattedMessage defaultMessage="Testing..." />
+          ) : (
+            <FormattedMessage defaultMessage="Test" />
+          )}
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={onCancel}
+          size="small"
+          disabled={saving}
+        >
+          <FormattedMessage defaultMessage="Cancel" />
+        </Button>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={handleSave}
+          disabled={!canSave || saving}
+        >
+          {saving ? (
+            <FormattedMessage defaultMessage="Saving..." />
+          ) : (
+            <FormattedMessage defaultMessage="Save" />
+          )}
+        </Button>
+      </Box>
+    </Paper>
+  );
+};
+
 const testApiKey = async (
   apiKey: SettingsApiKey,
   context: ApiKeyListContext,
@@ -559,6 +909,7 @@ const ApiKeyCard = ({
   selected,
   onSelect,
   onTest,
+  onEdit,
   onDelete,
   testing,
   deleting,
@@ -569,6 +920,7 @@ const ApiKeyCard = ({
   selected: boolean;
   onSelect: () => void;
   onTest: () => void;
+  onEdit: () => void;
   testing: boolean;
   onDelete: () => void;
   deleting: boolean;
@@ -639,6 +991,20 @@ const ApiKeyCard = ({
               <FormattedMessage defaultMessage="Test" />
             )}
           </Button>
+          <Tooltip title={<FormattedMessage defaultMessage="Edit key" />}>
+            <span>
+              <IconButton
+                size="small"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit();
+                }}
+                disabled={deleting || testing}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
           <Tooltip title={<FormattedMessage defaultMessage="Delete key" />}>
             <span>
               <IconButton
@@ -804,6 +1170,7 @@ export const ApiKeyList = ({
   });
   const status = useAppStore((state) => state.settings.apiKeysStatus);
   const [showAddCard, setShowAddCard] = useState(false);
+  const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [testingApiKeyId, setTestingApiKeyId] = useState<string | null>(null);
   const [apiKeyToDelete, setApiKeyToDelete] = useState<SettingsApiKey | null>(
     null,
@@ -924,6 +1291,57 @@ export const ApiKeyList = ({
     [context],
   );
 
+  const handleEditApiKey = useCallback(
+    async (
+      apiKeyId: string,
+      payload: {
+        name: string;
+        key: string;
+        baseUrl?: string | null;
+        azureRegion?: string | null;
+        includeV1Path?: boolean | null;
+        transcriptionModel?: string | null;
+      },
+    ) => {
+      await updateApiKey({
+        id: apiKeyId,
+        name: payload.name,
+        key: payload.key || undefined,
+        baseUrl: payload.baseUrl,
+        azureRegion: payload.azureRegion,
+        includeV1Path: payload.includeV1Path,
+        transcriptionModel:
+          payload.transcriptionModel !== undefined
+            ? payload.transcriptionModel
+            : undefined,
+      });
+      setEditingApiKeyId(null);
+    },
+    [],
+  );
+
+  const handleTestEditingApiKey = useCallback(
+    async (apiKey: SettingsApiKey, overrides: Partial<SettingsApiKey>) => {
+      const merged = { ...apiKey, ...overrides };
+      setTestingApiKeyId(apiKey.id);
+      try {
+        const success = await testApiKey(merged, context);
+        if (success) {
+          showSnackbar("Integration successful", { mode: "success" });
+        } else {
+          showErrorSnackbar("Integration failed. Provide a valid API key.");
+        }
+      } catch (error) {
+        showErrorSnackbar(
+          error instanceof Error ? error.message : "API key test failed.",
+        );
+      } finally {
+        setTestingApiKeyId(null);
+      }
+    },
+    [context],
+  );
+
   const loadingState = (
     <Stack spacing={1} alignItems="center">
       <CircularProgress size={24} />
@@ -983,20 +1401,35 @@ export const ApiKeyList = ({
         emptyState
       ) : (
         <Stack spacing={1.5} alignItems="stretch" sx={{ width: "100%" }}>
-          {apiKeys.map((apiKey) => (
-            <ApiKeyCard
-              key={apiKey.id}
-              apiKey={apiKey}
-              selected={selectedApiKeyId === apiKey.id}
-              onSelect={() => onChange(apiKey.id)}
-              onTest={() => handleTestApiKey(apiKey)}
-              testing={testingApiKeyId === apiKey.id}
-              onDelete={() => handleRequestDelete(apiKey)}
-              deleting={deletingApiKeyId === apiKey.id}
-              onModelChange={(model) => handleModelChange(apiKey.id, model)}
-              context={context}
-            />
-          ))}
+          {apiKeys.map((apiKey) =>
+            editingApiKeyId === apiKey.id ? (
+              <EditApiKeyCard
+                key={apiKey.id}
+                apiKey={apiKey}
+                onSave={(payload) => handleEditApiKey(apiKey.id, payload)}
+                onCancel={() => setEditingApiKeyId(null)}
+                onTest={(overrides) =>
+                  handleTestEditingApiKey(apiKey, overrides)
+                }
+                testing={testingApiKeyId === apiKey.id}
+                context={context}
+              />
+            ) : (
+              <ApiKeyCard
+                key={apiKey.id}
+                apiKey={apiKey}
+                selected={selectedApiKeyId === apiKey.id}
+                onSelect={() => onChange(apiKey.id)}
+                onTest={() => handleTestApiKey(apiKey)}
+                onEdit={() => setEditingApiKeyId(apiKey.id)}
+                testing={testingApiKeyId === apiKey.id}
+                onDelete={() => handleRequestDelete(apiKey)}
+                deleting={deletingApiKeyId === apiKey.id}
+                onModelChange={(model) => handleModelChange(apiKey.id, model)}
+                context={context}
+              />
+            ),
+          )}
         </Stack>
       )}
       {showAddCard ? (

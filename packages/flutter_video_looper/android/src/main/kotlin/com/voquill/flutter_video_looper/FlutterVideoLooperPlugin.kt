@@ -13,6 +13,24 @@ import io.flutter.plugin.platform.PlatformViewFactory
 class FlutterVideoLooperPlugin : FlutterPlugin, ActivityAware {
     private var viewFactory: VideoLooperViewFactory? = null
 
+    companion object {
+        private val activeViews = mutableListOf<VideoLooperPlatformView>()
+
+        fun registerView(view: VideoLooperPlatformView) {
+            activeViews.add(view)
+        }
+
+        fun unregisterView(view: VideoLooperPlatformView) {
+            activeViews.remove(view)
+        }
+
+        fun onPipModeChanged(isInPip: Boolean) {
+            for (view in activeViews) {
+                view.onPipModeChanged(isInPip)
+            }
+        }
+    }
+
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         viewFactory = VideoLooperViewFactory(binding.binaryMessenger, binding.flutterAssets)
         binding.platformViewRegistry.registerViewFactory(

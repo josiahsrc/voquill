@@ -9,8 +9,3 @@
 - [ ] Automated tests
 - [ ] Manual verification
 - [ ] Code inspection
-
-## Who built it?
-
-- [ ] Human
-- [ ] AI

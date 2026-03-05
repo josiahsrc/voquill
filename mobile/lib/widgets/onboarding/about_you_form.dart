@@ -24,21 +24,21 @@ class AboutYouForm extends StatelessWidget {
       ],
       child: OnboardingBody(
         title: const Text('Tell us about yourself'),
-        description: const Text(
-          'Help us personalize your experience.',
-        ),
+        description: const Text('Help us personalize your experience.'),
         child: Column(
+          spacing: 16,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DeclarativeTextField(
-              value: state.name,
-              onChanged: setOnboardingName,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'Enter your name',
+            if (!state.nameProvidedByAuth) ...[
+              DeclarativeTextField(
+                value: state.name,
+                onChanged: setOnboardingName,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'Enter your name',
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+            ],
             DeclarativeTextField(
               value: state.title,
               onChanged: setOnboardingTitle,
@@ -47,7 +47,6 @@ class AboutYouForm extends StatelessWidget {
                 hintText: 'e.g. Software Engineer',
               ),
             ),
-            const SizedBox(height: 16),
             DeclarativeTextField(
               value: state.company,
               onChanged: setOnboardingCompany,
