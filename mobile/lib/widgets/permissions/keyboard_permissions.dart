@@ -1,8 +1,11 @@
+import 'dart:io' show Platform;
+
 import 'package:app/store/store.dart';
 import 'package:app/utils/channel_utils.dart';
 import 'package:app/widgets/common/asset_video_player.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_video_looper/flutter_video_looper.dart';
 
 class KeyboardPermissions extends StatefulWidget {
   const KeyboardPermissions({
@@ -51,6 +54,31 @@ class _KeyboardPermissionsState extends State<KeyboardPermissions>
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isAndroid) {
+      return ValueListenableBuilder<bool>(
+        valueListenable: pipModeNotifier,
+        builder: (context, isInPip, _) {
+          if (isInPip) {
+            return ColoredBox(
+              color: Colors.black,
+              child: Center(
+                child: FlutterVideoLooper.asset(
+                  path: _videoAsset,
+                  isPipEnabled: true,
+                ),
+              ),
+            );
+          }
+          return _buildContent(context);
+        },
+      );
+    }
+    return _buildContent(context);
+  }
+
+  static const _videoAsset = 'assets/voquill-keyboard-perms-ios.mp4';
+
+  Widget _buildContent(BuildContext context) {
     final isEnabled = useAppStore().select(
       context,
       (s) => s.hasKeyboardPermission,
@@ -74,7 +102,7 @@ class _KeyboardPermissionsState extends State<KeyboardPermissions>
         ),
         child: Center(
           child: AssetVideoPlayer.phone(
-            asset: 'assets/voquill-keyboard-perms-ios.mp4',
+            asset: _videoAsset,
             aspectRatio: 290 / 596,
             pip: true,
           ),
