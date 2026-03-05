@@ -56,6 +56,8 @@ export type CreateApiKeyPayload = {
 
 export type UpdateApiKeyPayload = {
   id: string;
+  name?: string;
+  key?: string;
   transcriptionModel?: string | null;
   postProcessingModel?: string | null;
   openRouterConfig?: OpenRouterConfig | null;
@@ -67,7 +69,7 @@ export type UpdateApiKeyPayload = {
 export abstract class BaseApiKeyRepo extends BaseRepo {
   abstract listApiKeys(): Promise<ApiKey[]>;
   abstract createApiKey(payload: CreateApiKeyPayload): Promise<ApiKey>;
-  abstract updateApiKey(payload: UpdateApiKeyPayload): Promise<void>;
+  abstract updateApiKey(payload: UpdateApiKeyPayload): Promise<ApiKey>;
   abstract deleteApiKey(id: string): Promise<void>;
 }
 
@@ -84,8 +86,7 @@ export class LocalApiKeyRepo extends BaseApiKeyRepo {
     return fromLocalApiKey(created);
   }
 
-  async updateApiKey(payload: UpdateApiKeyPayload): Promise<void> {
-    // Convert OpenRouterConfig object to JSON string for Rust
+  async updateApiKey(payload: UpdateApiKeyPayload): Promise<ApiKey> {
     const request = {
       ...payload,
       openRouterConfig:
@@ -95,7 +96,8 @@ export class LocalApiKeyRepo extends BaseApiKeyRepo {
             : null
           : undefined,
     };
-    await invoke<void>("api_key_update", { request });
+    const updated = await invoke<LocalApiKey>("api_key_update", { request });
+    return fromLocalApiKey(updated);
   }
 
   async deleteApiKey(id: string): Promise<void> {

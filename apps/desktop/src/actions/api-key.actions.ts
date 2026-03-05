@@ -124,48 +124,21 @@ export const deleteApiKey = async (id: string): Promise<void> => {
 
 export const updateApiKey = async (
   payload: UpdateApiKeyPayload,
-): Promise<void> => {
+): Promise<ApiKey> => {
   try {
-    await getApiKeyRepo().updateApiKey(payload);
+    const updated = await getApiKeyRepo().updateApiKey(payload);
 
     produceAppState((draft) => {
-      const apiKey = draft.apiKeyById[payload.id];
-      if (apiKey) {
-        if (payload.transcriptionModel !== undefined) {
-          apiKey.transcriptionModel = payload.transcriptionModel ?? null;
-        }
-        if (payload.postProcessingModel !== undefined) {
-          apiKey.postProcessingModel = payload.postProcessingModel ?? null;
-        }
-        if (payload.openRouterConfig !== undefined) {
-          apiKey.openRouterConfig = payload.openRouterConfig ?? null;
-        }
-        if (payload.azureRegion !== undefined) {
-          apiKey.azureRegion = payload.azureRegion ?? null;
-        }
-      }
+      draft.apiKeyById[updated.id] = updated;
       const index = draft.settings.apiKeys.findIndex(
-        (apiKey) => apiKey.id === payload.id,
+        (k) => k.id === updated.id,
       );
       if (index !== -1) {
-        if (payload.transcriptionModel !== undefined) {
-          draft.settings.apiKeys[index].transcriptionModel =
-            payload.transcriptionModel ?? null;
-        }
-        if (payload.postProcessingModel !== undefined) {
-          draft.settings.apiKeys[index].postProcessingModel =
-            payload.postProcessingModel ?? null;
-        }
-        if (payload.openRouterConfig !== undefined) {
-          draft.settings.apiKeys[index].openRouterConfig =
-            payload.openRouterConfig ?? null;
-        }
-        if (payload.azureRegion !== undefined) {
-          draft.settings.apiKeys[index].azureRegion =
-            payload.azureRegion ?? null;
-        }
+        draft.settings.apiKeys[index] = updated;
       }
     });
+
+    return updated;
   } catch (error) {
     console.error("Failed to update API key", error);
     showErrorSnackbar(
