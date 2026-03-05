@@ -525,11 +525,7 @@ export class LocalTranscriptionSidecarManager {
   private async ensureRuntime(mode: SidecarMode): Promise<SidecarRuntime> {
     const existing = this.runtimes.get(mode);
     if (existing) {
-      const healthy = await this.checkHealth(existing.baseUrl, mode);
-      if (healthy) {
-        return existing;
-      }
-      await this.disposeRuntime(mode);
+      return existing;
     }
 
     const pending = this.starting.get(mode);
