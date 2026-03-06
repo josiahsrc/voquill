@@ -17,6 +17,7 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
+  TroubleshootOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
 } from "@mui/icons-material";
@@ -169,6 +170,12 @@ export default function SettingsPage() {
     });
   };
 
+  const openDiagnosticsDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.diagnosticsDialogOpen = true;
+    });
+  };
+
   const openShortcutsDialog = () => {
     produceAppState((draft) => {
       draft.settings.shortcutsDialogOpen = true;
@@ -247,6 +254,11 @@ export default function SettingsPage() {
         title={<FormattedMessage defaultMessage="Hotkey shortcuts" />}
         leading={<KeyboardAltOutlined />}
         onClick={openShortcutsDialog}
+      />
+      <ListTile
+        title={<FormattedMessage defaultMessage="Diagnostics" />}
+        leading={<TroubleshootOutlined />}
+        onClick={openDiagnosticsDialog}
       />
       {!isMacOS() && (
         <ListTile

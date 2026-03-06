@@ -5,20 +5,6 @@ import {
   debug as tauriDebug,
   attachConsole,
 } from "@tauri-apps/plugin-log";
-import type { LogLevel } from "../types/log.types";
-
-const LOG_LEVEL_KEY = "voquill_log_level";
-
-export const getLogLevel = (): LogLevel => {
-  const stored = localStorage.getItem(LOG_LEVEL_KEY);
-  if (stored === "verbose" || stored === "info") return stored;
-  return "info";
-};
-
-export const setLogLevel = (level: LogLevel): void => {
-  localStorage.setItem(LOG_LEVEL_KEY, level);
-};
-
 type Logger = {
   info(...args: unknown[]): void;
   warning(...args: unknown[]): void;
@@ -51,7 +37,6 @@ const logger: Logger = {
     void tauriError(stringify(args));
   },
   verbose(...args: unknown[]) {
-    if (getLogLevel() !== "verbose") return;
     void tauriDebug(stringify(args));
   },
   stopwatch<T>(label: string, fn: () => Promise<T>): Promise<T> {

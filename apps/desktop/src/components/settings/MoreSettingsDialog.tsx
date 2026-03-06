@@ -1,4 +1,3 @@
-import FolderOpenRoundedIcon from "@mui/icons-material/FolderOpenRounded";
 import type { SelectChangeEvent } from "@mui/material";
 import {
   Button,
@@ -12,9 +11,7 @@ import {
   Switch,
 } from "@mui/material";
 import type { DictationPillVisibility, StylingMode } from "@repo/types";
-import { appLogDir } from "@tauri-apps/api/path";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   setDictationPillVisibility,
@@ -24,10 +21,8 @@ import {
   setStylingMode,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
-import type { LogLevel } from "../../types/log.types";
 import { getAllowChangeStylingMode } from "../../utils/enterprise.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
-import { getLogLevel, setLogLevel } from "../../utils/log.utils";
 import {
   getEffectivePillVisibility,
   getMyUserPreferences,
@@ -90,19 +85,6 @@ export const MoreSettingsDialog = () => {
   const handleStylingModeChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
     void setStylingMode(value === "" ? null : (value as StylingMode));
-  };
-
-  const [logLevel, setLogLevelState] = useState<LogLevel>(getLogLevel);
-
-  const handleLogLevelChange = (event: SelectChangeEvent<LogLevel>) => {
-    const level = event.target.value as LogLevel;
-    setLogLevel(level);
-    setLogLevelState(level);
-  };
-
-  const handleOpenLogsFolder = async () => {
-    const dir = await appLogDir();
-    await revealItemInDir(dir);
   };
 
   return (
@@ -211,43 +193,7 @@ export const MoreSettingsDialog = () => {
             />
           )}
 
-          <SettingSection
-            title={<FormattedMessage defaultMessage="Log level" />}
-            description={
-              <FormattedMessage defaultMessage="Controls how much detail is captured in diagnostic logs." />
-            }
-            action={
-              <Select<LogLevel>
-                size="small"
-                value={logLevel}
-                onChange={handleLogLevelChange}
-                sx={{ minWidth: 152 }}
-              >
-                <MenuItem value="info">
-                  {intl.formatMessage({ defaultMessage: "Info" })}
-                </MenuItem>
-                <MenuItem value="verbose">
-                  {intl.formatMessage({ defaultMessage: "Verbose" })}
-                </MenuItem>
-              </Select>
-            }
-          />
 
-          <SettingSection
-            title={<FormattedMessage defaultMessage="Logs" />}
-            description={
-              <FormattedMessage defaultMessage="Open the folder where diagnostic log files are stored." />
-            }
-            action={
-              <Button
-                size="small"
-                startIcon={<FolderOpenRoundedIcon />}
-                onClick={() => void handleOpenLogsFolder()}
-              >
-                <FormattedMessage defaultMessage="Open folder" />
-              </Button>
-            }
-          />
         </Stack>
       </DialogContent>
       <DialogActions>

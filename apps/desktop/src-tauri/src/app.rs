@@ -72,6 +72,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             log::info!("Starting application setup...");
 
+            // Purge old log files, keeping the latest 10
+            crate::system::diagnostics::purge_old_logs(app.handle());
+
             // Write startup diagnostics for debugging
             crate::system::diagnostics::write_startup_diagnostics(app.handle());
 
@@ -201,6 +204,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::transcription_audio_load,
             crate::commands::purge_stale_transcription_audio,
             crate::commands::export_transcription,
+            crate::commands::export_diagnostics,
             crate::commands::term_create,
             crate::commands::term_update,
             crate::commands::term_list,

@@ -92,11 +92,18 @@ export class LocalTranscriptionSession implements TranscriptionSession {
     const warnings = [...this.startupWarnings];
 
     if (!this.session) {
+      getLogger().info(
+        `[local-stream-session] no streaming session, using batch fallback`,
+      );
       return await this.finalizeWithBatchFallback(audio, warnings);
     }
 
     try {
+      getLogger().info(`[local-stream-session] finalizing streaming session`);
       const output = await this.session.finalize();
+      getLogger().info(
+        `[local-stream-session] streaming finalize succeeded (${output.text.length} chars)`,
+      );
       return {
         rawTranscript: output.text.trim() || null,
         metadata: {
@@ -110,11 +117,12 @@ export class LocalTranscriptionSession implements TranscriptionSession {
       };
     } catch (error) {
       const message = this.toErrorMessage(error);
+      const errorName = error instanceof Error ? error.name : typeof error;
       warnings.push(
         `Local streaming transcription failed, falling back to batch mode (${message})`,
       );
       getLogger().warning(
-        `[local-stream-session] finalize failed, falling back (${message})`,
+        `[local-stream-session] finalize failed [${errorName}], falling back to batch (${message})`,
       );
       return await this.finalizeWithBatchFallback(audio, warnings);
     } finally {
@@ -123,6 +131,9 @@ export class LocalTranscriptionSession implements TranscriptionSession {
   }
 
   cleanup(): void {
+    getLogger().info(
+      `[local-stream-session] cleanup (hasSession=${!!this.session}, hasUnlisten=${!!this.unlisten})`,
+    );
     this.unlisten?.();
     this.unlisten = null;
     this.session?.cleanup();
@@ -141,7 +152,7 @@ export class LocalTranscriptionSession implements TranscriptionSession {
 
     if (rate == null || rate <= 0 || payloadSamples.length === 0) {
       getLogger().warning(
-        `Local fallback: skipping transcription (rate=${rate}, samples=${payloadSamples.length})`,
+        `[local-stream-session] batch fallback: skipping transcription (rate=${rate}, samples=${payloadSamples.length})`,
       );
       return {
         rawTranscript: null,
@@ -153,10 +164,16 @@ export class LocalTranscriptionSession implements TranscriptionSession {
       };
     }
 
+    getLogger().info(
+      `[local-stream-session] batch fallback: transcribing ${payloadSamples.length} samples at ${rate}Hz`,
+    );
     const result = await transcribeAudio({
       samples: payloadSamples,
       sampleRate: rate,
     });
+    getLogger().info(
+      `[local-stream-session] batch fallback: transcription complete (${result.rawTranscript.length} chars)`,
+    );
 
     return {
       rawTranscript: result.rawTranscript,

@@ -80,6 +80,7 @@ export type SettingsState = {
   moreSettingsDialogOpen: boolean;
   dictationLanguageDialogOpen: boolean;
   appKeybindingsDialogOpen: boolean;
+  diagnosticsDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
   agentMode: SettingsAgentModeState;
@@ -130,6 +131,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   moreSettingsDialogOpen: false,
   dictationLanguageDialogOpen: false,
   appKeybindingsDialogOpen: false,
+  diagnosticsDialogOpen: false,
   aiTranscription: {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,
