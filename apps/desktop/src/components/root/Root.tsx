@@ -11,11 +11,12 @@ import { RootConfetti } from "./RootConfetti";
 import { RootDialogs } from "./RootDialogs";
 import { RootSideEffects } from "./RootSideEffects";
 
-function ErrorFallback({ error }: { error: Error }) {
+function ErrorFallback({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : String(error);
   return (
     <Box sx={{ padding: 2 }}>
       <h2>Something went wrong:</h2>
-      <pre style={{ whiteSpace: "pre-wrap" }}>{error.message}</pre>
+      <pre style={{ whiteSpace: "pre-wrap" }}>{message}</pre>
     </Box>
   );
 }

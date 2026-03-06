@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run tauri dev",
+    "dev": "pnpm run tauri dev",
     "build": "vite build",
     "tauri": "tauri",
     "tauri:build": "tauri build"

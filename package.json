@@ -14,17 +14,22 @@
     "turbo": "^2.5.8",
     "typescript": "5.9.2"
   },
-  "overrides": {
-    "@types/react": "19.2.10"
-  },
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "npm@10.8.2",
-  "workspaces": [
-    "apps/*",
-    "apps/firebase/functions",
-    "packages/*",
-    "enterprise/*"
-  ]
+  "packageManager": "pnpm@10.11.0",
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.10"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "bcrypt",
+      "protobufjs",
+      "chromedriver",
+      "@firebase/util",
+      "re2"
+    ]
+  }
 }
