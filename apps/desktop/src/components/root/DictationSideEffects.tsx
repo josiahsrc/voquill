@@ -162,7 +162,9 @@ export const DictationSideEffects = () => {
   }, []);
 
   const abortRecording = useCallback(async (message?: AbortMessage) => {
-    getLogger().info("Aborting recording");
+    getLogger().info(
+      `Aborting recording (hasSession=${!!sessionRef.current}, hasStrategy=${!!strategyRef.current}${message ? `, reason=${String(message.body).slice(0, 120)}` : ""})`,
+    );
     clearRecordingTimers();
     clearCancelPromptTimer();
     invoke<void>("set_phase", { phase: "idle" });
@@ -329,7 +331,9 @@ export const DictationSideEffects = () => {
     setIsStopping(true);
     try {
       const res = await stopRecordingRaw().catch((error) => {
-        getLogger().error(`Error during stopRecording: ${error}`);
+        getLogger().error(
+          `Error during stopRecording: ${error}${error instanceof Error ? ` [name=${error.name}, stack=${error.stack}]` : ""}`,
+        );
         return {
           shouldContinue: false,
           abortMessage: String(error),
@@ -413,10 +417,13 @@ export const DictationSideEffects = () => {
       const preferredMicrophone = getMyPreferredMicrophone(state);
       const transcriptPrefs = getTranscriptionPrefs(state);
       try {
-        getLogger().verbose(
+        getLogger().info(
           `Transcription prefs: mode=${transcriptPrefs.mode}`,
         );
         const session = createTranscriptionSession(transcriptPrefs);
+        getLogger().info(
+          `Created transcription session: ${session.constructor.name}`,
+        );
         tryPlayAudioChime("start_recording_clip");
 
         sessionRef.current = session;
