@@ -15,7 +15,31 @@
     "typescript": "5.9.2"
   },
   "overrides": {
-    "@types/react": "19.2.10"
+    "@types/react": "19.2.10",
+    "axios": "^1.13.5",
+    "basic-ftp": "^5.2.0",
+    "fast-xml-parser": "^5.4.0",
+    "minimatch": "^9.0.7",
+    "rollup": "^4.59.0",
+    "react-router-dom": "^6.30.3",
+    "react-router": "^6.30.3",
+    "@remix-run/router": "^1.23.2",
+    "undici": "^7.18.2",
+    "glob": {
+      "minimatch": "^9.0.7"
+    },
+    "filelist": {
+      "minimatch": "^9.0.7"
+    },
+    "readdir-glob": {
+      "minimatch": "^9.0.7"
+    },
+    "mocha": {
+      "minimatch": "^9.0.7"
+    },
+    "@wdio/reporter": {
+      "diff": "^8.0.3"
+    }
   },
   "engines": {
     "node": ">=18"
