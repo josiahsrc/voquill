@@ -5,7 +5,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json ./
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/types ./packages/types
 COPY packages/functions ./packages/functions
@@ -13,7 +13,7 @@ COPY packages/utilities ./packages/utilities
 COPY enterprise/gateway ./enterprise/gateway
 COPY enterprise/LICENCE ./enterprise/LICENCE
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 RUN pnpm --filter @repo/types run build
 RUN pnpm --filter @repo/utilities run build
 RUN pnpm --filter @repo/functions run build
