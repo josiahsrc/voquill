@@ -417,9 +417,7 @@ export const DictationSideEffects = () => {
       const preferredMicrophone = getMyPreferredMicrophone(state);
       const transcriptPrefs = getTranscriptionPrefs(state);
       try {
-        getLogger().info(
-          `Transcription prefs: mode=${transcriptPrefs.mode}`,
-        );
+        getLogger().info(`Transcription prefs: mode=${transcriptPrefs.mode}`);
         const session = createTranscriptionSession(transcriptPrefs);
         getLogger().info(
           `Created transcription session: ${session.constructor.name}`,

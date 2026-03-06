@@ -117,8 +117,7 @@ export class LocalTranscriptionSession implements TranscriptionSession {
       };
     } catch (error) {
       const message = this.toErrorMessage(error);
-      const errorName =
-        error instanceof Error ? error.name : typeof error;
+      const errorName = error instanceof Error ? error.name : typeof error;
       warnings.push(
         `Local streaming transcription failed, falling back to batch mode (${message})`,
       );
