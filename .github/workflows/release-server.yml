@@ -78,21 +78,24 @@ jobs:
             echo "GOOGLE_CLOUD_PROJECT=${FIREBASE_PROJECT_ID}"
           } >> "${GITHUB_ENV}"
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build Firebase functions
-        run: npm run build -- --filter=functions...
+        run: pnpm run build --filter=functions...
 
       - name: Install Firebase CLI
-        run: npm install -g firebase-tools@latest
+        run: pnpm add -g firebase-tools@latest
 
       - name: Configure Firebase credentials
         env:

@@ -44,12 +44,15 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -89,13 +92,13 @@ jobs:
             libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build frontend and dependencies
         env:
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
-        run: npm run build -- --filter=desktop...
+        run: pnpm run build -- --filter=desktop...
 
       - name: Build Tauri app
         env:
@@ -118,7 +121,7 @@ jobs:
             }
             fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
           "
-          npm run tauri build -- --ci ${{ matrix.args }}
+          pnpm run tauri build -- --ci ${{ matrix.args }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

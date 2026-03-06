@@ -22,8 +22,8 @@ if [ "${FLAVOR}" = "emulators" ]; then
   ./scripts/clear-desktop-db.sh local
   (cd apps/firebase && npx firebase-tools use dev)
   export PS1="[emulators] \$ "
-  npm run dev -- --filter=desktop... --filter=functions...
+  pnpm run dev --filter=desktop... --filter=functions...
 else
   export VITE_USE_EMULATORS="false"
-  npm run dev --workspace=apps/desktop
+  pnpm --filter desktop run dev
 fi

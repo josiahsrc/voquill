@@ -27,17 +27,17 @@ APP_CONFIGS = {
     "desktop": {
         "app_dir": SCRIPT_DIR.parent / "apps" / "desktop",
         "locales_dir": SCRIPT_DIR.parent / "apps" / "desktop" / "src" / "i18n" / "locales",
-        "i18n_command": ["npm", "run", "i18n"],
+        "i18n_command": ["pnpm", "run", "i18n"],
     },
     "web": {
         "app_dir": SCRIPT_DIR.parent / "apps" / "web",
         "locales_dir": SCRIPT_DIR.parent / "apps" / "web" / "src" / "i18n" / "locales",
-        "i18n_command": ["npm", "run", "i18n:extract", "&&", "npm", "run", "i18n:sync"],
+        "i18n_command": ["pnpm", "run", "i18n:extract", "&&", "pnpm", "run", "i18n:sync"],
     },
     "admin": {
         "app_dir": SCRIPT_DIR.parent / "enterprise" / "admin",
         "locales_dir": SCRIPT_DIR.parent / "enterprise" / "admin" / "src" / "i18n" / "locales",
-        "i18n_command": ["npm", "run", "i18n"],
+        "i18n_command": ["pnpm", "run", "i18n"],
     },
 }
 
@@ -166,8 +166,8 @@ def main():
 
     print(f"\nRunning i18n command in {app_dir}...")
     if args.app == "web":
-        subprocess.run(["npm", "run", "i18n:extract"], cwd=app_dir, check=True)
-        subprocess.run(["npm", "run", "i18n:sync"], cwd=app_dir, check=True)
+        subprocess.run(["pnpm", "run", "i18n:extract"], cwd=app_dir, check=True)
+        subprocess.run(["pnpm", "run", "i18n:sync"], cwd=app_dir, check=True)
     else:
         subprocess.run(config["i18n_command"], cwd=app_dir, check=True)
 

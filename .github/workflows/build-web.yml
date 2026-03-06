@@ -22,18 +22,21 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build web workspace
-        run: npm run build -- --filter=web...
+        run: pnpm run build --filter=web...
 
       - name: Deploy preview channel
         uses: FirebaseExtended/action-hosting-deploy@v0

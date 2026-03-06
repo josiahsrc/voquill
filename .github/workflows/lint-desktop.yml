@@ -25,12 +25,14 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -54,12 +56,12 @@ jobs:
             libgtk-3-dev "$WEBKIT_PKG" \
             libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Build dependencies
-        run: npm run build -- --filter=desktop^...
+        run: pnpm run build --filter=desktop^...
       - name: Lint TypeScript
         if: matrix.os == 'ubuntu-22.04'
-        run: npm run lint --workspace=desktop
+        run: pnpm --filter desktop run lint
       - name: Lint Rust
         working-directory: apps/desktop/src-tauri
         env:

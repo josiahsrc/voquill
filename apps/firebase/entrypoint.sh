@@ -43,7 +43,7 @@ exec firebase emulators:start \
 firebasePid="$!"
 
 cd functions
-exec npm run watch &
+exec pnpm run watch &
 functionsPid="$!"
 cd ../
 
