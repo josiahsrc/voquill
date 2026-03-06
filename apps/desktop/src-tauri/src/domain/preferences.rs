@@ -60,6 +60,8 @@ pub struct UserPreferences {
     pub dictation_pill_visibility: String,
     #[serde(default)]
     pub use_new_backend: bool,
+    #[serde(default)]
+    pub realtime_output_enabled: bool,
 }
 
 fn default_dictation_pill_visibility() -> String {

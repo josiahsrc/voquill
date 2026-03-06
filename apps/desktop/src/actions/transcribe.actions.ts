@@ -67,6 +67,7 @@ export type TranscribeAudioResult = {
 export type PostProcessInput = {
   rawTranscript: string;
   toneId: Nullable<string>;
+  precedingContext?: string;
   dictationLanguage?: string;
 };
 
@@ -176,6 +177,7 @@ export const postProcessTranscript = async ({
   rawTranscript,
   toneId,
   dictationLanguage: dictationLanguageOverride,
+  precedingContext,
 }: PostProcessInput): Promise<PostProcessResult> => {
   const state = getAppState();
 
@@ -218,6 +220,7 @@ export const postProcessTranscript = async ({
       userName: getMyUserName(state),
       dictationLanguage,
       tone: toneConfig,
+      precedingContext,
     };
     const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
     const ppPrompt = buildPostProcessingPrompt(promptInput);

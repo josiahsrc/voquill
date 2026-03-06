@@ -333,12 +333,16 @@ const startElevenLabsStreaming = async (
         );
 
         if (messageType === "committed_transcript") {
-          finalTranscript += (finalTranscript ? " " : "") + (data.text || "");
+          const committedText = data.text || "";
+          finalTranscript += (finalTranscript ? " " : "") + committedText;
           partialTranscript = "";
           console.log(
             "[ElevenLabs WebSocket] Committed transcript received:",
             finalTranscript.substring(0, 100),
           );
+          if (onInterimResult && committedText) {
+            onInterimResult(committedText);
+          }
           if (isFinalized) {
             completeFinalize();
           }
@@ -373,15 +377,20 @@ const startElevenLabsStreaming = async (
 export class ElevenLabsTranscriptionSession implements TranscriptionSession {
   private session: ElevenLabsStreamingSession | null = null;
   private apiKey: string;
+  private interimCallback: ((segment: string) => void) | null = null;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
+  setInterimResultCallback(callback: (segment: string) => void): void {
+    this.interimCallback = callback;
+  }
+
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
       console.log("[ElevenLabs] Starting streaming session...");
-      this.session = await startElevenLabsStreaming(this.apiKey, sampleRate);
+      this.session = await startElevenLabsStreaming(this.apiKey, sampleRate, this.interimCallback ?? undefined);
       console.log("[ElevenLabs] Streaming session started successfully");
     } catch (error) {
       console.error("[ElevenLabs] Failed to start streaming:", error);

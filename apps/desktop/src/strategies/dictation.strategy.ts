@@ -23,8 +23,67 @@ import {
 import { BaseStrategy } from "./base.strategy";
 
 export class DictationStrategy extends BaseStrategy {
+  private streamedSegmentCount = 0;
+  private streamedProcessedText = "";
+  private streamingPostProcess = false;
+  private streamingToneId: string | null = null;
+  private pasteQueue: Promise<void> = Promise.resolve();
+
   shouldStoreTranscript(): boolean {
     return true;
+  }
+
+  get hasStreamedSegments(): boolean {
+    return this.streamedSegmentCount > 0;
+  }
+
+  configureStreamingPostProcess(toneId: string | null): void {
+    this.streamingPostProcess = true;
+    this.streamingToneId = toneId;
+  }
+
+  handleInterimSegment(segment: string): void {
+    const state = getAppState();
+    const replacementRules = Object.values(state.termById)
+      .filter((term) => term.isReplacement)
+      .map((term) => ({
+        sourceValue: term.sourceValue,
+        destinationValue: term.destinationValue,
+      }));
+
+    const afterReplacements = applyReplacements(segment, replacementRules);
+    const sanitized = applySymbolConversions(afterReplacements);
+
+    if (!sanitized) return;
+
+    const isFirst = this.streamedSegmentCount === 0;
+    this.streamedSegmentCount++;
+
+    this.pasteQueue = this.pasteQueue.then(async () => {
+      let text = sanitized;
+
+      if (this.streamingPostProcess) {
+        try {
+          const result = await postProcessTranscript({
+            rawTranscript: sanitized,
+            toneId: this.streamingToneId,
+            precedingContext: this.streamedProcessedText || undefined,
+          });
+          text = result.transcript;
+        } catch (error) {
+          getLogger().error(`Failed to post-process segment: ${error}`);
+        }
+      }
+
+      const textToPaste = (isFirst ? "" : " ") + text;
+      this.streamedProcessedText += (isFirst ? "" : " ") + text;
+
+      try {
+        await invoke<void>("paste", { text: textToPaste, keybind: null });
+      } catch (error) {
+        getLogger().error(`Failed to paste interim segment: ${error}`);
+      }
+    });
   }
 
   validateAvailability(): Nullable<StrategyValidationError> {
@@ -86,7 +145,18 @@ export class DictationStrategy extends BaseStrategy {
       );
       sanitizedTranscript = applySymbolConversions(afterReplacements);
 
-      if (processedTranscript && sessionPostProcessMetadata) {
+      if (this.hasStreamedSegments) {
+        await this.pasteQueue;
+        try {
+          await invoke<void>("paste", { text: " ", keybind: null });
+        } catch {
+          // Non-critical trailing space
+        }
+        transcript = this.streamedProcessedText || sanitizedTranscript;
+        getLogger().info(
+          `Streaming dictation complete (${this.streamedSegmentCount} segments, postProcessed=${this.streamingPostProcess})`,
+        );
+      } else if (processedTranscript && sessionPostProcessMetadata) {
         const afterProcessedReplacements = applyReplacements(
           processedTranscript,
           replacementRules,
@@ -104,7 +174,7 @@ export class DictationStrategy extends BaseStrategy {
         postProcessWarnings = result.warnings;
       }
 
-      if (transcript) {
+      if (transcript && !this.hasStreamedSegments) {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
           const keybind = currentApp?.pasteKeybind ?? null;
@@ -112,7 +182,6 @@ export class DictationStrategy extends BaseStrategy {
             `Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`,
           );
 
-          // Add a space to the end so you don't have to press space before your next dictation
           const textToPaste = transcript.trim() + " ";
           await invoke<void>("paste", { text: textToPaste, keybind });
 

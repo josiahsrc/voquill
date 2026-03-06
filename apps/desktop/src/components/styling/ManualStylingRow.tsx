@@ -9,6 +9,7 @@ import { IconButton, Radio, Stack, Tooltip, Typography } from "@mui/material";
 import { getRec } from "@repo/utilities";
 import { useCallback, useMemo } from "react";
 import { FormattedMessage } from "react-intl";
+import { VERBATIM_TONE_ID } from "../../utils/tone.utils";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import {
   deselectActiveTone,
@@ -175,7 +176,18 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
           onMouseDown={stopPropagation}
         />
       }
-      title={tone?.name}
+      title={
+        id === VERBATIM_TONE_ID ? (
+          <>
+            {tone?.name}{" "}
+            <span style={{ fontSize: 12 }}>
+              <FormattedMessage defaultMessage="(Streams output in real-time when enabled in settings)" />
+            </span>
+          </>
+        ) : (
+          tone?.name
+        )
+      }
       subtitle={
         <Typography
           variant="body2"

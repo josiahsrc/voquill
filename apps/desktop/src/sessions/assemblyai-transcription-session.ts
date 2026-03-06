@@ -14,6 +14,7 @@ type AssemblyAIStreamingSession = {
 const startAssemblyAIStreaming = async (
   apiKey: string,
   sampleRate: number,
+  onInterimResult?: (segment: string) => void,
 ): Promise<AssemblyAIStreamingSession> => {
   console.log("[AssemblyAI WebSocket] Starting with sample rate:", sampleRate);
   const MIN_CHUNK_DURATION_MS = 50;
@@ -272,12 +273,16 @@ const startAssemblyAIStreaming = async (
 
         if (data.type === "Turn" && data.end_of_turn) {
           // Final formatted transcript
+          const turnTranscript = data.transcript || "";
           finalTranscript +=
-            (finalTranscript ? " " : "") + (data.transcript || "");
+            (finalTranscript ? " " : "") + turnTranscript;
           console.log(
             "[AssemblyAI WebSocket] Final formatted transcript received:",
             finalTranscript.substring(0, 100),
           );
+          if (onInterimResult && turnTranscript) {
+            onInterimResult(turnTranscript);
+          }
           if (currentTurn === data.turn_order) {
             extra = "";
           }
@@ -312,15 +317,20 @@ const startAssemblyAIStreaming = async (
 export class AssemblyAITranscriptionSession implements TranscriptionSession {
   private session: AssemblyAIStreamingSession | null = null;
   private apiKey: string;
+  private interimCallback: ((segment: string) => void) | null = null;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
+  setInterimResultCallback(callback: (segment: string) => void): void {
+    this.interimCallback = callback;
+  }
+
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
       console.log("[AssemblyAI] Starting streaming session...");
-      this.session = await startAssemblyAIStreaming(this.apiKey, sampleRate);
+      this.session = await startAssemblyAIStreaming(this.apiKey, sampleRate, this.interimCallback ?? undefined);
       console.log("[AssemblyAI] Streaming session started successfully");
     } catch (error) {
       console.error("[AssemblyAI] Failed to start streaming:", error);
