@@ -1,10 +1,10 @@
+import type { JsonResponse } from "@repo/types";
+import { countWords, retry } from "@repo/utilities";
 import OpenAI, { toFile } from "openai";
 import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse } from "@repo/types";
 
 export const OPENAI_GENERATE_TEXT_MODELS = [
   "gpt-4o",
@@ -202,8 +202,8 @@ export const openaiCompatibleTestIntegration = async ({
   const client = createClient(apiKey || "dummy", baseUrl);
 
   // Test connectivity by listing models
-  const response = await client.models.list();
-  
+  await client.models.list();
+
   // If we get here, the connection is successful
   return true;
 };
