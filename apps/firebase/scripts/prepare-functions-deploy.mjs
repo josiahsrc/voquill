@@ -24,6 +24,7 @@ const functionsDir = path.join(pruneOutputDir, "apps/firebase/functions");
 const packagesDir = path.join(pruneOutputDir, "packages");
 const localPackagesDir = path.join(functionsDir, ".repo-packages");
 const MAX_BUFFER_SIZE = 1024 * 1024 * 200;
+const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
 
 function runCommand(command, args, { cwd = repoRoot, errorMessage } = {}) {
   const result = spawnSync(command, args, {
@@ -141,27 +142,59 @@ function copyBuiltPackages() {
   }
 }
 
-function rewritePackageJson() {
-  const packageJsonPath = path.join(functionsDir, "package.json");
-  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-
-  const rewriteSection = (section) => {
+function rewriteRepoDependencies(pkg, resolveRepoDependencySpecifier) {
+  for (const section of DEPENDENCY_SECTIONS) {
     if (!pkg[section]) {
-      return;
+      continue;
     }
 
     for (const depName of Object.keys(pkg[section])) {
-      if (depName.startsWith("@repo/")) {
-        const localName = depName.replace("@repo/", "");
-        pkg[section][depName] = `file:./.repo-packages/${localName}`;
+      if (!depName.startsWith("@repo/")) {
+        continue;
       }
+
+      const localName = depName.replace("@repo/", "");
+      pkg[section][depName] = resolveRepoDependencySpecifier({ section, localName });
     }
-  };
+  }
+}
 
-  rewriteSection("dependencies");
-  rewriteSection("devDependencies");
+function rewriteFunctionsPackageJson() {
+  const packageJsonPath = path.join(functionsDir, "package.json");
+  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+  rewriteRepoDependencies(pkg, ({ section, localName }) => {
+    if (section === "peerDependencies") {
+      return "*";
+    }
 
+    return `file:./.repo-packages/${localName}`;
+  });
   writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
+}
+
+function rewriteLocalPackageJsons() {
+  for (const scope of SCOPES) {
+    if (!scope.startsWith("@repo/")) {
+      continue;
+    }
+
+    const localName = scope.replace("@repo/", "");
+    const packageJsonPath = path.join(localPackagesDir, localName, "package.json");
+
+    if (!existsSync(packageJsonPath)) {
+      continue;
+    }
+
+    const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+    rewriteRepoDependencies(pkg, ({ section, localName: targetLocalName }) => {
+      if (section === "peerDependencies") {
+        return "*";
+      }
+
+      return `file:../${targetLocalName}`;
+    });
+    writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
+  }
 }
 
 function generateLockfile() {
@@ -177,7 +210,8 @@ function main() {
   copyFirebaseConfig();
   copyEnvFiles();
   stageLocalPackages();
-  rewritePackageJson();
+  rewriteFunctionsPackageJson();
+  rewriteLocalPackageJsons();
   generateLockfile();
 
   // Emit the absolute path to the Firebase app directory so shell scripts can use it.
