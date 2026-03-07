@@ -66,8 +66,8 @@ importers:
         specifier: ^7.4.0
         version: 7.9.0
       '@tauri-apps/api':
-        specifier: ~2.8.0
-        version: 2.8.0
+        specifier: ~2.9.0
+        version: 2.9.1
       '@tauri-apps/plugin-autostart':
         specifier: ^2.5.1
         version: 2.5.1
@@ -160,7 +160,7 @@ importers:
         specifier: ^6.7.4
         version: 6.13.0
       '@tauri-apps/cli':
-        specifier: ^2
+        specifier: ~2.10.0
         version: 2.10.1
       '@types/chroma-js':
         specifier: ^3.1.2
@@ -432,11 +432,11 @@ importers:
   apps/windows-installer:
     dependencies:
       '@tauri-apps/api':
-        specifier: ^2.0.0
-        version: 2.10.1
+        specifier: ~2.9.0
+        version: 2.9.1
     devDependencies:
       '@tauri-apps/cli':
-        specifier: ^2.0.0
+        specifier: ~2.10.0
         version: 2.10.1
       typescript:
         specifier: ^5.9.2
@@ -2974,8 +2974,8 @@ packages:
   '@tauri-apps/api@2.10.1':
     resolution: {integrity: sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==}
 
-  '@tauri-apps/api@2.8.0':
-    resolution: {integrity: sha512-ga7zdhbS2GXOMTIZRT0mYjKJtR9fivsXzsyq5U3vjDL0s6DTMwYRm0UHNjzTY5dh4+LSC68Sm/7WEiimbQNYlw==}
+  '@tauri-apps/api@2.9.1':
+    resolution: {integrity: sha512-IGlhP6EivjXHepbBic618GOmiWe4URJiIeZFlB7x3czM0yDHHYviH1Xvoiv4FefdkQtn6v7TuwWCRfOGdnVUGw==}
 
   '@tauri-apps/cli-darwin-arm64@2.10.1':
     resolution: {integrity: sha512-Z2OjCXiZ+fbYZy7PmP3WRnOpM9+Fy+oonKDEmUE6MwN4IGaYqgceTjwHucc/kEEYZos5GICve35f7ZiizgqEnQ==}
@@ -11345,7 +11345,7 @@ snapshots:
 
   '@tauri-apps/api@2.10.1': {}
 
-  '@tauri-apps/api@2.8.0': {}
+  '@tauri-apps/api@2.9.1': {}
 
   '@tauri-apps/cli-darwin-arm64@2.10.1':
     optional: true
@@ -11396,7 +11396,7 @@ snapshots:
 
   '@tauri-apps/plugin-autostart@2.5.1':
     dependencies:
-      '@tauri-apps/api': 2.8.0
+      '@tauri-apps/api': 2.9.1
 
   '@tauri-apps/plugin-http@2.5.7':
     dependencies:
@@ -11404,19 +11404,19 @@ snapshots:
 
   '@tauri-apps/plugin-log@2.7.1':
     dependencies:
-      '@tauri-apps/api': 2.8.0
+      '@tauri-apps/api': 2.9.1
 
   '@tauri-apps/plugin-opener@2.5.3':
     dependencies:
-      '@tauri-apps/api': 2.8.0
+      '@tauri-apps/api': 2.9.1
 
   '@tauri-apps/plugin-os@2.3.2':
     dependencies:
-      '@tauri-apps/api': 2.8.0
+      '@tauri-apps/api': 2.9.1
 
   '@tauri-apps/plugin-process@2.3.1':
     dependencies:
-      '@tauri-apps/api': 2.8.0
+      '@tauri-apps/api': 2.9.1
 
   '@tauri-apps/plugin-sql@2.3.2':
     dependencies:
@@ -11424,7 +11424,7 @@ snapshots:
 
   '@tauri-apps/plugin-updater@2.9.0':
     dependencies:
-      '@tauri-apps/api': 2.8.0
+      '@tauri-apps/api': 2.9.1
 
   '@testim/chrome-version@1.1.4': {}
 
