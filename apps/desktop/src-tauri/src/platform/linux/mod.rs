@@ -1,5 +1,7 @@
 pub mod accessibility;
 pub mod audio;
+pub(crate) mod evdev_keys;
+pub(crate) mod evdev_listener;
 pub mod feedback;
 pub mod input;
 pub mod keyboard;

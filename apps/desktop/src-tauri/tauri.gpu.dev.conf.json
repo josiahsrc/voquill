@@ -6,7 +6,11 @@
     "linux": {
       "deb": {
         "conflicts": ["voquill-dev"],
-        "replaces": ["voquill-dev"]
+        "replaces": ["voquill-dev"],
+        "depends": [
+          "libxdo3",
+          "libvulkan1"
+        ]
       }
     }
   },

@@ -6,7 +6,11 @@
     "linux": {
       "deb": {
         "conflicts": ["voquill-gpu-dev"],
-        "replaces": ["voquill-gpu-dev"]
+        "replaces": ["voquill-gpu-dev"],
+        "depends": [
+          "libxdo3",
+          "libvulkan1"
+        ]
       }
     }
   },
