@@ -121,7 +121,7 @@ jobs:
             }
             fs.writeFileSync(p, JSON.stringify(c, null, 2) + '\n');
           "
-          pnpm run tauri build -- --ci ${{ matrix.args }}
+          pnpm run tauri build --ci ${{ matrix.args }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
