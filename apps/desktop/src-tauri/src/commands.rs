@@ -519,11 +519,15 @@ pub async fn export_diagnostics(
                     .file_name()
                     .and_then(|n| n.to_str())
                     .unwrap_or("unknown");
-                let data =
+                let raw =
                     std::fs::read(&path).map_err(|err| format!("Failed to read log: {err}"))?;
+                let content = match std::str::from_utf8(&raw) {
+                    Ok(text) => crate::utils::log_sanitizer::sanitize_log_content(text).into_bytes(),
+                    Err(_) => raw,
+                };
                 zip.start_file(format!("logs/{filename}"), options)
                     .map_err(|err| err.to_string())?;
-                zip.write_all(&data).map_err(|err| err.to_string())?;
+                zip.write_all(&content).map_err(|err| err.to_string())?;
             }
         }
 
