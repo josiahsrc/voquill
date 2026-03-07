@@ -247,7 +247,7 @@ export const createAzureStreamingSession = async ({
     recognizer.recognized = (_s, e) => {
       if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
         fullTranscript += (fullTranscript ? " " : "") + e.result.text;
-        console.log("[Azure Streaming] Recognized segment:", e.result.text);
+        console.log("[Azure Streaming] Recognized segment, length:", e.result.text.length);
       } else if (e.result.reason === sdk.ResultReason.NoMatch) {
         console.log("[Azure Streaming] No speech recognized in segment");
       }
@@ -255,7 +255,7 @@ export const createAzureStreamingSession = async ({
 
     recognizer.recognizing = (_s, e) => {
       if (e.result.reason === sdk.ResultReason.RecognizingSpeech) {
-        console.log("[Azure Streaming] Recognizing:", e.result.text);
+        console.log("[Azure Streaming] Recognizing, length:", e.result.text.length);
       }
     };
 
@@ -309,7 +309,7 @@ export const createAzureStreamingSession = async ({
             pushStream.close();
 
             const timeout = setTimeout(() => {
-              console.log("[Azure Streaming] Timeout reached, finalizing with transcript:", fullTranscript);
+              console.log("[Azure Streaming] Timeout reached, finalizing with transcript length:", fullTranscript.length);
               recognizer.close();
               resolveFinalize(fullTranscript);
             }, 2000);
@@ -317,7 +317,7 @@ export const createAzureStreamingSession = async ({
             recognizer.stopContinuousRecognitionAsync(
               () => {
                 clearTimeout(timeout);
-                console.log("[Azure Streaming] Recognition stopped, final transcript:", fullTranscript);
+                console.log("[Azure Streaming] Recognition stopped, final transcript length:", fullTranscript.length);
                 recognizer.close();
                 resolveFinalize(fullTranscript);
               },
