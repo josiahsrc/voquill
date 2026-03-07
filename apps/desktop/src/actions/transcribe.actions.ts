@@ -245,7 +245,7 @@ export const postProcessTranscript = async ({
     getLogger().info(
       `Post-processing complete in ${Math.round(postprocessDuration)}ms`,
     );
-    getLogger().verbose("LLM raw output:", genOutput.text);
+    getLogger().verbose("LLM raw output length:", genOutput.text.length);
 
     try {
       const extractedJson = extractJsonFromMarkdown(genOutput.text);
@@ -261,17 +261,20 @@ export const postProcessTranscript = async ({
           validationResult.error.message,
         );
         warnings.push(
-          `Post-processing response validation failed: ${validationResult.error.message}\n\nResponse was: ${genOutput.text}`,
+          `Post-processing response validation failed: ${validationResult.error.message}`,
         );
       } else {
         processedTranscript =
           validationResult.data.processedTranscription.trim();
-        getLogger().verbose("Processed transcript:", processedTranscript);
+        getLogger().verbose(
+          "Processed transcript length:",
+          processedTranscript.length,
+        );
       }
     } catch (e) {
       getLogger().error("Failed to parse post-processing response:", e);
       warnings.push(
-        `Failed to parse post-processing response: ${(e as Error).message}\n\nResponse was: ${genOutput.text}`,
+        `Failed to parse post-processing response: ${(e as Error).message}`,
       );
     }
 

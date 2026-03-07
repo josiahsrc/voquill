@@ -104,12 +104,10 @@ export class AzureTranscriptionSession implements TranscriptionSession {
       const durationMs = Math.round(performance.now() - finalizeStart);
 
       console.log("[Azure] Transcript timing:", { durationMs });
-      console.log("[Azure] Received transcript:", {
-        length: transcript?.length ?? 0,
-        preview:
-          transcript?.substring(0, 50) +
-          (transcript && transcript.length > 50 ? "..." : ""),
-      });
+      console.log(
+        "[Azure] Received transcript, length:",
+        transcript?.length ?? 0,
+      );
 
       return {
         rawTranscript: transcript || null,

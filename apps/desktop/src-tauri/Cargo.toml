@@ -54,6 +54,8 @@ tokio = { version = "1", features = ["time"] }
 hostname = "0.4"
 rfd = "0.15"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+regex = "1"
+once_cell = "1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"

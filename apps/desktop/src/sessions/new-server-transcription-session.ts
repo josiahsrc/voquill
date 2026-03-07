@@ -258,8 +258,8 @@ const startNewServerStreaming = async (
 
         if (msg.type === "transcript") {
           console.log(
-            "[NewServer WebSocket] Transcript received:",
-            msg.text?.substring(0, 50),
+            "[NewServer WebSocket] Transcript received, length:",
+            msg.text?.length ?? 0,
             "processed:",
             !!msg.processed,
           );
@@ -410,9 +410,6 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
       console.log("[NewServer] Received transcript:", {
         rawLength: result.text?.length ?? 0,
         processedLength: result.processed?.text?.length ?? 0,
-        preview:
-          result.text?.substring(0, 50) +
-          (result.text && result.text.length > 50 ? "..." : ""),
       });
 
       return {
