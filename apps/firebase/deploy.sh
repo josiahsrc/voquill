@@ -28,4 +28,12 @@ if ! command -v firebase >/dev/null 2>&1; then
 fi
 
 echo "Deploying from pruned workspace at $PRUNED_FIREBASE_DIR"
-(cd "$PRUNED_FIREBASE_DIR" && firebase deploy --only functions,firestore,storage --project "$ENVIRONMENT")
+DEPLOY_FLAGS=()
+
+# CI runs without an interactive terminal, so explicit flags are required for
+# firestore index deletions when remote state drifts from the tracked json file.
+if [[ "${CI:-}" == "true" || ! -t 0 ]]; then
+  DEPLOY_FLAGS+=(--non-interactive --force)
+fi
+
+(cd "$PRUNED_FIREBASE_DIR" && firebase deploy --only functions,firestore,storage --project "$ENVIRONMENT" "${DEPLOY_FLAGS[@]}")
