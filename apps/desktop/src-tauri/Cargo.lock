@@ -18,12 +18,14 @@ dependencies = [
  "dispatch",
  "dotenvy",
  "enigo",
+ "evdev",
  "ferrous-focus",
  "gtk",
  "hostname",
  "hound",
  "image",
  "jsonwebtoken",
+ "libc",
  "log",
  "objc",
  "once_cell",
@@ -1807,6 +1809,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "evdev"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab6055a93a963297befb0f4f6e18f314aec9767a4bbe88b151126df2433610a7"
+dependencies = [
+ "bitvec",
+ "cfg-if",
+ "libc",
+ "nix 0.23.2",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "event-listener"
 version = "5.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1914,7 +1929,7 @@ version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38e2275cc4e4fc009b0669731a1e5ab7ebf11f469eaede2bab9309a5b4d6057f"
 dependencies = [
- "memoffset",
+ "memoffset 0.9.1",
  "rustc_version",
 ]
 
@@ -3511,6 +3526,15 @@ checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
 name = "memoffset"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
+name = "memoffset"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
@@ -3697,6 +3721,19 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nix"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f3790c00a0150112de0f4cd161e3d7fc4b2d8a5542ffc35f099a2562aecb35c"
+dependencies = [
+ "bitflags 1.3.2",
+ "cc",
+ "cfg-if",
+ "libc",
+ "memoffset 0.6.5",
+]
+
+[[package]]
+name = "nix"
 version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
@@ -3705,7 +3742,7 @@ dependencies = [
  "cfg-if",
  "cfg_aliases 0.2.1",
  "libc",
- "memoffset",
+ "memoffset 0.9.1",
 ]
 
 [[package]]
@@ -7283,7 +7320,7 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89daebc3e6fd160ac4aa9fc8b3bf71e1f74fbf92367ae71fb83a037e8bf164b9"
 dependencies = [
- "memoffset",
+ "memoffset 0.9.1",
  "tempfile",
  "winapi",
 ]
@@ -8651,7 +8688,7 @@ dependencies = [
  "futures-core",
  "futures-lite",
  "hex",
- "nix",
+ "nix 0.30.1",
  "ordered-stream",
  "serde",
  "serde_repr",

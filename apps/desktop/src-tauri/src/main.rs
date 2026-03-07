@@ -12,8 +12,12 @@ mod flavor_env;
 /// - CPAL/ALSA for audio capture
 ///
 /// Without XInitThreads, concurrent X11 access causes crashes.
+/// Skipped on Wayland sessions where X11 is not the primary display protocol.
 #[cfg(target_os = "linux")]
 fn init_x11_threads() {
+    if std::env::var("WAYLAND_DISPLAY").is_ok() {
+        return;
+    }
     unsafe {
         x11::xlib::XInitThreads();
     }
@@ -22,9 +26,22 @@ fn init_x11_threads() {
 #[cfg(not(target_os = "linux"))]
 fn init_x11_threads() {}
 
+/// On Wayland, ensure GDK uses the Wayland backend so GTK doesn't
+/// attempt an X11 connection that may lack authorization.
+#[cfg(target_os = "linux")]
+fn configure_gdk_backend() {
+    if std::env::var("WAYLAND_DISPLAY").is_ok() && std::env::var("GDK_BACKEND").is_err() {
+        std::env::set_var("GDK_BACKEND", "wayland");
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn configure_gdk_backend() {}
+
 fn main() {
     // CRITICAL: Initialize X11 threading before ANY other operations
     init_x11_threads();
+    configure_gdk_backend();
 
     // Initialize startup logging
     eprintln!("=== Voquill Startup ===");
