@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.js --external:bcrypt --external:pg-native && rm -rf dist/db/migrations && mkdir -p dist/db && cp -r src/db/migrations dist/db/migrations",
-    "dev": "nodemon --exec \"npm run build && node dist/index.js\"",
+    "dev": "nodemon --exec \"pnpm run build && node dist/index.js\"",
     "start": "node dist/index.js",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
@@ -15,9 +15,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@repo/functions": "*",
-    "@repo/types": "*",
-    "@repo/utilities": "*",
+    "@repo/functions": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/utilities": "workspace:*",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "express": "^4.22.1",
@@ -29,7 +29,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@repo/typescript-config": "*",
+    "@repo/typescript-config": "workspace:*",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.23",

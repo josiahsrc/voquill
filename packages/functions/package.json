@@ -13,12 +13,14 @@
     "dist"
   ],
   "dependencies": {
-    "@repo/types": "*"
+    "@repo/types": "workspace:*",
+    "zod": "^3.25.76"
   },
   "peerDependencies": {
     "firebase": "^11.1.0"
   },
   "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
     "firebase": "^11.1.0",
     "typescript": "5.9.2"
   }

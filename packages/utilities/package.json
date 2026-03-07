@@ -15,9 +15,10 @@
     "dist"
   ],
   "dependencies": {
-    "@repo/types": "*"
+    "@repo/types": "workspace:*"
   },
   "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
     "typescript": "5.9.2",
     "vite": "^7.1.12",
     "vitest": "^4.0.6"

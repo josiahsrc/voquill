@@ -22,8 +22,8 @@ if ($Flavor -eq "emulators") {
     npx firebase-tools use dev
     Pop-Location
     function global:prompt { "[emulators] PS $($executionContext.SessionState.Path.CurrentLocation)> " }
-    npm run dev -- --filter=desktop... --filter=functions...
+    pnpm exec turbo run dev --filter=desktop... --filter=functions...
 } else {
     $env:VITE_USE_EMULATORS = "false"
-    npm run dev --workspace=apps/desktop
+    pnpm --filter desktop run dev
 }

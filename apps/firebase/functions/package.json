@@ -5,8 +5,8 @@
   "type": "commonjs",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --outdir=lib --tsconfig=tsconfig.build.json",
-    "check-types": "npm run type-check",
-    "dev": "concurrently \"npm run watch\" \"npm run dev:emulators\"",
+    "check-types": "pnpm run type-check",
+    "dev": "concurrently \"pnpm run watch\" \"pnpm run dev:emulators\"",
     "dev:emulators": "firebase emulators:start --config ../firebase.json",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
@@ -16,7 +16,7 @@
     "test:unit": "vitest run src",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "watch": "nodemon --exec \"npm run build\""
+    "watch": "nodemon --exec \"pnpm run build\""
   },
   "engines": {
     "node": "20"
@@ -24,12 +24,12 @@
   "main": "lib/index.js",
   "dependencies": {
     "@firemix/mixed": "^0.1.7",
-    "@repo/firemix": "*",
-    "@repo/functions": "*",
-    "@repo/pricing": "*",
-    "@repo/types": "*",
-    "@repo/utilities": "*",
-    "@repo/voice-ai": "*",
+    "@repo/firemix": "workspace:*",
+    "@repo/functions": "workspace:*",
+    "@repo/pricing": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/utilities": "workspace:*",
+    "@repo/voice-ai": "workspace:*",
     "dayjs": "^1.11.13",
     "env-var": "^7.4.1",
     "firebase": "^12.6.0",
@@ -50,8 +50,8 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
-    "@repo/eslint-config": "*",
-    "@repo/typescript-config": "*",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "@types/sharp": "^0.31.1",
     "@types/stripe": "^8.0.416",

@@ -147,10 +147,10 @@ function rewritePackageJson() {
   writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
 }
 
-function updatePackageLock() {
-  runCommand("npm", ["install", "--package-lock-only"], {
+function generateLockfile() {
+  runCommand("pnpm", ["install", "--lockfile-only"], {
     cwd: functionsDir,
-    errorMessage: "Failed to refresh package-lock.json for functions",
+    errorMessage: "Failed to generate pnpm-lock.yaml for functions",
   });
 }
 
@@ -160,7 +160,7 @@ function main() {
   copyEnvFiles();
   stageLocalPackages();
   rewritePackageJson();
-  updatePackageLock();
+  generateLockfile();
 
   // Emit the absolute path to the Firebase app directory so shell scripts can use it.
   process.stdout.write(`${path.join(pruneOutputDir, "apps/firebase")}\n`);

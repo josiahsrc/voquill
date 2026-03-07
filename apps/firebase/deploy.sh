@@ -11,13 +11,13 @@ PRUNED_FIREBASE_DIR=$(node "$SCRIPT_DIR/scripts/prepare-functions-deploy.mjs")
 PRUNED_FUNCTIONS_DIR="$PRUNED_FIREBASE_DIR/functions"
 
 echo "Installing workspace dependencies in pruned functions directory..."
-(cd "$PRUNED_FUNCTIONS_DIR" && npm install)
+(cd "$PRUNED_FUNCTIONS_DIR" && pnpm install)
 
 echo "Linting functions..."
-(cd "$PRUNED_FUNCTIONS_DIR" && npm run lint)
+(cd "$PRUNED_FUNCTIONS_DIR" && pnpm run lint)
 
 echo "Building functions bundle..."
-(cd "$PRUNED_FUNCTIONS_DIR" && npm run build)
+(cd "$PRUNED_FUNCTIONS_DIR" && pnpm run build)
 
 PATH="$PRUNED_FUNCTIONS_DIR/node_modules/.bin:$PATH"
 export PATH
