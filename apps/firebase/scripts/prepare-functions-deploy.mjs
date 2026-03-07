@@ -114,12 +114,29 @@ function stageLocalPackages() {
     }
 
     const packageName = scope.replace("@repo/", "");
-    const sourcePath = path.join(packagesDir, packageName);
+    const sourcePath = path.join(repoRoot, "packages", packageName);
 
     if (existsSync(sourcePath)) {
       cpSync(sourcePath, path.join(localPackagesDir, packageName), {
         recursive: true,
+        filter: (src) => !src.includes("node_modules"),
       });
+    }
+  }
+}
+
+function copyBuiltPackages() {
+  for (const scope of SCOPES) {
+    if (!scope.startsWith("@repo/")) {
+      continue;
+    }
+
+    const packageName = scope.replace("@repo/", "");
+    const builtDist = path.join(repoRoot, "packages", packageName, "dist");
+    const prunedDist = path.join(packagesDir, packageName, "dist");
+
+    if (existsSync(builtDist) && existsSync(path.join(packagesDir, packageName))) {
+      cpSync(builtDist, prunedDist, { recursive: true });
     }
   }
 }
@@ -156,6 +173,7 @@ function generateLockfile() {
 
 function main() {
   runTurboPrune();
+  copyBuiltPackages();
   copyFirebaseConfig();
   copyEnvFiles();
   stageLocalPackages();

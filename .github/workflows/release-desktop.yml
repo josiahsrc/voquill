@@ -468,7 +468,7 @@ jobs:
           echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --include=optional
+        run: pnpm install --frozen-lockfile
 
       - name: Install Vulkan SDK (Windows)
         if: matrix.os == 'windows-latest'
