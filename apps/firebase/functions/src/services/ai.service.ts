@@ -1,6 +1,6 @@
 import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { Nullable } from "@repo/types";
-import { countWords } from "@repo/utilities/src/string";
+import { countWords } from "@repo/utilities";
 import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
 import { AuthData } from "firebase-functions/tasks";
 import { mapCloudModelToGroqModel } from "../utils/ai.utils";
