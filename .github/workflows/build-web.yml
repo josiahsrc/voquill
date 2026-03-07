@@ -36,7 +36,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web workspace
-        run: pnpm run build --filter=web...
+        run: pnpm exec turbo run build --filter=web...
 
       - name: Deploy preview channel
         uses: FirebaseExtended/action-hosting-deploy@v0

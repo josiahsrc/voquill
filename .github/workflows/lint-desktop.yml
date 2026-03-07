@@ -58,7 +58,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build dependencies
-        run: pnpm run build --filter=desktop^...
+        run: pnpm exec turbo run build --filter=desktop^...
       - name: Lint TypeScript
         if: matrix.os == 'ubuntu-22.04'
         run: pnpm --filter desktop run lint

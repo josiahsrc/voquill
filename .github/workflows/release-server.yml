@@ -92,7 +92,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Firebase functions
-        run: pnpm run build --filter=functions...
+        run: pnpm exec turbo run build --filter=functions...
 
       - name: Install Firebase CLI
         run: pnpm add -g firebase-tools@latest

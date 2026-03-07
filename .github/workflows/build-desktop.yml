@@ -98,7 +98,7 @@ jobs:
         env:
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
-        run: pnpm run build -- --filter=desktop...
+        run: pnpm exec turbo run build --filter=desktop...
 
       - name: Build Tauri app
         env:

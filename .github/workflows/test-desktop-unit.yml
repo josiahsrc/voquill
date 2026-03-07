@@ -31,7 +31,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build dependencies
-        run: pnpm run build --filter=desktop^...
+        run: pnpm exec turbo run build --filter=desktop^...
 
       - name: Run desktop unit tests
         run: pnpm --filter desktop run test:unit

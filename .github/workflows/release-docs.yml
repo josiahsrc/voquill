@@ -33,7 +33,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build docs workspace
-        run: pnpm run build --filter=docs...
+        run: pnpm exec turbo run build --filter=docs...
 
       - name: Configure Firebase credentials
         env:
