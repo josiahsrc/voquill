@@ -167,8 +167,8 @@ const startAssemblyAIStreaming = async (
           // Wait a bit for final transcript
           const timeout = setTimeout(() => {
             console.log(
-              "[AssemblyAI WebSocket] Timeout reached, finalizing with transcript:",
-              getText(),
+              "[AssemblyAI WebSocket] Timeout reached, finalizing with transcript length:",
+              getText().length,
             );
             cleanup();
             resolveFinalize(getText());
@@ -183,8 +183,8 @@ const startAssemblyAIStreaming = async (
               originalOnClose.call(currentWs, {} as CloseEvent);
             cleanup();
             console.log(
-              "[AssemblyAI WebSocket] WebSocket closed, finalizing with transcript:",
-              getText(),
+              "[AssemblyAI WebSocket] WebSocket closed, finalizing with transcript length:",
+              getText().length,
             );
             resolveFinalize(getText());
           };
@@ -275,8 +275,8 @@ const startAssemblyAIStreaming = async (
           finalTranscript +=
             (finalTranscript ? " " : "") + (data.transcript || "");
           console.log(
-            "[AssemblyAI WebSocket] Final formatted transcript received:",
-            finalTranscript.substring(0, 100),
+            "[AssemblyAI WebSocket] Final formatted transcript received, length:",
+            finalTranscript.length,
           );
           if (currentTurn === data.turn_order) {
             extra = "";
@@ -349,12 +349,10 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
       const durationMs = Math.round(performance.now() - finalizeStart);
 
       console.log("[AssemblyAI] Transcript timing:", { durationMs });
-      console.log("[AssemblyAI] Received transcript:", {
-        length: transcript?.length ?? 0,
-        preview:
-          transcript?.substring(0, 50) +
-          (transcript && transcript.length > 50 ? "..." : ""),
-      });
+      console.log(
+        "[AssemblyAI] Received transcript, length:",
+        transcript?.length ?? 0,
+      );
 
       return {
         rawTranscript: transcript || null,
