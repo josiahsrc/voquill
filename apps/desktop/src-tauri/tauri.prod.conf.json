@@ -5,7 +5,9 @@
   "bundle": {
     "linux": {
       "deb": {
-        "depends": ["libxdo3", "libvulkan1"]
+        "depends": ["libxdo3", "libvulkan1"],
+        "conflicts": ["voquill-gpu"],
+        "replaces": ["voquill-gpu"]
       }
     }
   },

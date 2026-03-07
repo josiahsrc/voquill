@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app/utils/theme_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_video_looper/flutter_video_looper.dart';
@@ -14,9 +16,10 @@ class AssetVideoPlayer extends StatelessWidget {
   static Widget phone({
     Key? key,
     required String asset,
-    required double aspectRatio,
+    double? aspectRatio,
     bool? pip,
   }) {
+    final fallbackAspectRatio = Platform.isIOS ? 276 / 596 : 242 / 540;
     return Container(
       height: 400,
       decoration: BoxDecoration(
@@ -27,7 +30,7 @@ class AssetVideoPlayer extends StatelessWidget {
       child: AssetVideoPlayer(
         key: key,
         asset: asset,
-        aspectRatio: aspectRatio,
+        aspectRatio: aspectRatio ?? fallbackAspectRatio,
         borderRadius: BorderRadius.all(Radius.circular(28)),
         pip: pip,
       ),
@@ -46,8 +49,10 @@ class AssetVideoPlayer extends StatelessWidget {
       aspectRatio: aspectRatio,
       child: ClipRRect(
         borderRadius: radius,
-        child:
-            FlutterVideoLooper.asset(path: asset, isPipEnabled: pip ?? false),
+        child: FlutterVideoLooper.asset(
+          path: asset,
+          isPipEnabled: pip ?? false,
+        ),
       ),
     );
   }

@@ -2,6 +2,14 @@
   "productName": "Voquill GPU (dev)",
   "identifier": "com.voquill.desktop.gpu.dev",
   "mainBinaryName": "Voquill GPU (dev)",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "conflicts": ["voquill-dev"],
+        "replaces": ["voquill-dev"]
+      }
+    }
+  },
   "plugins": {
     "updater": {
       "endpoints": [

@@ -62,18 +62,32 @@ pub async fn fetch_api_keys(pool: SqlitePool) -> Result<Vec<ApiKey>, sqlx::Error
 pub async fn update_api_key(
     pool: SqlitePool,
     request: &ApiKeyUpdateRequest,
+    salt: Option<&str>,
+    key_hash: Option<&str>,
+    key_ciphertext: Option<&str>,
+    key_suffix: Option<&str>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
-        "UPDATE api_keys SET 
-            transcription_model = CASE WHEN ?2 IS NOT NULL THEN ?2 ELSE transcription_model END,
-            post_processing_model = CASE WHEN ?3 IS NOT NULL THEN ?3 ELSE post_processing_model END,
-            openrouter_config = CASE WHEN ?4 IS NOT NULL THEN ?4 ELSE openrouter_config END,
-            base_url = CASE WHEN ?5 IS NOT NULL THEN ?5 ELSE base_url END,
-            azure_region = CASE WHEN ?6 IS NOT NULL THEN ?6 ELSE azure_region END,
-            include_v1_path = CASE WHEN ?7 IS NOT NULL THEN ?7 ELSE include_v1_path END
+        "UPDATE api_keys SET
+            name = CASE WHEN ?2 IS NOT NULL THEN ?2 ELSE name END,
+            salt = CASE WHEN ?3 IS NOT NULL THEN ?3 ELSE salt END,
+            key_hash = CASE WHEN ?4 IS NOT NULL THEN ?4 ELSE key_hash END,
+            key_ciphertext = CASE WHEN ?5 IS NOT NULL THEN ?5 ELSE key_ciphertext END,
+            key_suffix = CASE WHEN ?6 IS NOT NULL THEN ?6 ELSE key_suffix END,
+            transcription_model = CASE WHEN ?7 IS NOT NULL THEN ?7 ELSE transcription_model END,
+            post_processing_model = CASE WHEN ?8 IS NOT NULL THEN ?8 ELSE post_processing_model END,
+            openrouter_config = CASE WHEN ?9 IS NOT NULL THEN ?9 ELSE openrouter_config END,
+            base_url = CASE WHEN ?10 IS NOT NULL THEN ?10 ELSE base_url END,
+            azure_region = CASE WHEN ?11 IS NOT NULL THEN ?11 ELSE azure_region END,
+            include_v1_path = CASE WHEN ?12 IS NOT NULL THEN ?12 ELSE include_v1_path END
          WHERE id = ?1",
     )
     .bind(&request.id)
+    .bind(&request.name)
+    .bind(salt)
+    .bind(key_hash)
+    .bind(key_ciphertext)
+    .bind(key_suffix)
     .bind(&request.transcription_model)
     .bind(&request.post_processing_model)
     .bind(&request.openrouter_config)

@@ -149,4 +149,4 @@ if [[ "${VOQUILL_ENABLE_GPU:-}" == "1" ]]; then
 fi
 
 echo "[OK] Linux dependencies installed. You can now run the desktop app with:"
-echo "   npm run dev --workspace apps/desktop"
+echo "   pnpm --filter desktop run dev"

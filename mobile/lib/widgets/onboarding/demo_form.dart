@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/widgets/common/app_button.dart';
 import 'package:app/widgets/common/asset_video_player.dart';
@@ -41,8 +43,9 @@ class DemoForm extends StatelessWidget {
             ),
             Spacer(),
             AssetVideoPlayer.phone(
-              asset: 'assets/voquill-demo-ios.mp4',
-              aspectRatio: 292 / 540,
+              asset: Platform.isIOS
+                  ? 'assets/demo-ios.mp4'
+                  : 'assets/demo-android.mp4',
             ),
             Spacer(),
           ],

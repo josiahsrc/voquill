@@ -356,6 +356,9 @@ export class LocalTranscriptionSidecarManager {
     this.markModelReady(mode, input.model);
 
     const sessionPath = `/v1/transcriptions/sessions/${created.sessionId}`;
+    getLogger().info(
+      `[local-sidecar:${mode}] created streaming session ${created.sessionId}`,
+    );
     let queue = Promise.resolve();
     let queuedError: unknown = null;
     let released = false;
@@ -431,9 +434,15 @@ export class LocalTranscriptionSidecarManager {
         finalizePromise = (async () => {
           await queue;
           if (queuedError) {
+            getLogger().warning(
+              `[local-sidecar:${mode}] finalize aborting due to queued chunk error: ${this.toErrorMessage(queuedError)}`,
+            );
             throw queuedError;
           }
 
+          getLogger().info(
+            `[local-sidecar:${mode}] sending finalize request for session ${created.sessionId}`,
+          );
           const result =
             await this.requestModeJson<SidecarTranscriptionResponse>(
               mode,
@@ -442,6 +451,9 @@ export class LocalTranscriptionSidecarManager {
                 method: "POST",
               },
             );
+          getLogger().info(
+            `[local-sidecar:${mode}] finalize response received (${result.text.length} chars)`,
+          );
           this.markModelReady(mode, input.model);
 
           return {
@@ -525,11 +537,7 @@ export class LocalTranscriptionSidecarManager {
   private async ensureRuntime(mode: SidecarMode): Promise<SidecarRuntime> {
     const existing = this.runtimes.get(mode);
     if (existing) {
-      const healthy = await this.checkHealth(existing.baseUrl, mode);
-      if (healthy) {
-        return existing;
-      }
-      await this.disposeRuntime(mode);
+      return existing;
     }
 
     const pending = this.starting.get(mode);
@@ -900,12 +908,22 @@ export class LocalTranscriptionSidecarManager {
         });
       } catch (error) {
         lastError = error;
+        const errorDesc = String(error);
+        const isTransport = this.isTransportError(error);
+        const isRetriable = this.isRetriableError(error);
 
-        if (this.isTransportError(error)) {
+        getLogger().warning(
+          `[local-sidecar:${mode}] request failed for ${path} (attempt ${attempt}/${retries}, transport=${isTransport}, retriable=${isRetriable}): ${errorDesc}`,
+        );
+
+        if (isTransport) {
+          getLogger().warning(
+            `[local-sidecar:${mode}] disposing runtime due to transport error`,
+          );
           await this.disposeRuntime(mode);
         }
 
-        if (attempt < retries && this.isRetriableError(error)) {
+        if (attempt < retries && isRetriable) {
           await sleep(SIDECAR_REQUEST_RETRY_DELAY_MS * attempt);
           continue;
         }

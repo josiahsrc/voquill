@@ -46,6 +46,10 @@ pub struct ApiKeyCreateRequest {
 pub struct ApiKeyUpdateRequest {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transcription_model: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub post_processing_model: Option<String>,

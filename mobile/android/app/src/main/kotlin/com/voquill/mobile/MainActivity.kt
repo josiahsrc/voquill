@@ -2,8 +2,10 @@ package com.voquill.mobile
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
+import com.voquill.flutter_video_looper.FlutterVideoLooperPlugin
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -65,6 +67,14 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onResume() {
         super.onResume()
         maybeShowPaywallFromIntent(intent)
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        FlutterVideoLooperPlugin.onPipModeChanged(isInPictureInPictureMode)
     }
 
     override fun onNewIntent(intent: Intent) {

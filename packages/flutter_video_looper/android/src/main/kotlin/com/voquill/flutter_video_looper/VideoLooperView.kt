@@ -3,6 +3,7 @@ package com.voquill.flutter_video_looper
 import android.app.Activity
 import android.app.PictureInPictureParams
 import android.content.Context
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.util.Rational
@@ -68,13 +69,23 @@ class VideoLooperPlatformView(
 
         player.prepare()
         player.play()
+
+        if (isPipEnabled) {
+            FlutterVideoLooperPlugin.registerView(this)
+        }
     }
 
     override fun getView(): View = playerView
 
     override fun dispose() {
+        FlutterVideoLooperPlugin.unregisterView(this)
+        disableAutoEnterPip()
         player.release()
         channel.setMethodCallHandler(null)
+    }
+
+    fun onPipModeChanged(isInPip: Boolean) {
+        channel.invokeMethod("onPipModeChanged", isInPip)
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -98,6 +109,9 @@ class VideoLooperPlatformView(
         if (videoWidth > 0 && videoHeight > 0) {
             builder.setAspectRatio(Rational(videoWidth, videoHeight))
         }
+        val rect = Rect()
+        playerView.getGlobalVisibleRect(rect)
+        builder.setSourceRectHint(rect)
         act.enterPictureInPictureMode(builder.build())
     }
 
@@ -108,6 +122,16 @@ class VideoLooperPlatformView(
         if (videoWidth > 0 && videoHeight > 0) {
             builder.setAspectRatio(Rational(videoWidth, videoHeight))
         }
+        val rect = Rect()
+        playerView.getGlobalVisibleRect(rect)
+        builder.setSourceRectHint(rect)
+        act.setPictureInPictureParams(builder.build())
+    }
+
+    private fun disableAutoEnterPip() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val act = activity ?: return
+        val builder = PictureInPictureParams.Builder().setAutoEnterEnabled(false)
         act.setPictureInPictureParams(builder.build())
     }
 }

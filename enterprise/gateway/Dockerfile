@@ -1,10 +1,11 @@
 FROM node:20-alpine AS builder
 
 RUN apk add --no-cache python3 make g++
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-COPY package.json package-lock.json turbo.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc turbo.json ./
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/types ./packages/types
 COPY packages/functions ./packages/functions
@@ -12,19 +13,21 @@ COPY packages/utilities ./packages/utilities
 COPY enterprise/gateway ./enterprise/gateway
 COPY enterprise/LICENCE ./enterprise/LICENCE
 
-RUN npm ci
-RUN npm run build --workspace=@repo/types
-RUN npm run build --workspace=@repo/utilities
-RUN npm run build --workspace=@repo/functions
-RUN npm run build --workspace=@repo/enterprise-gateway
+RUN pnpm install
+RUN pnpm --filter @repo/types run build
+RUN pnpm --filter @repo/utilities run build
+RUN pnpm --filter @repo/functions run build
+RUN pnpm --filter @repo/enterprise-gateway run build
 
 FROM node:20-alpine AS dev
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
 COPY --from=builder /app ./
 
-CMD ["npm", "run", "dev", "--workspace=@repo/enterprise-gateway"]
+CMD ["pnpm", "--filter", "@repo/enterprise-gateway", "run", "dev"]
 
 FROM node:20-alpine AS production
 

@@ -21,6 +21,7 @@ class _FlutterVideoLooperState extends State<FlutterVideoLooper>
     with WidgetsBindingObserver {
   static const _viewType = 'flutter_video_looper';
   MethodChannel? _channel;
+  bool _isPipDialogShown = false;
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _FlutterVideoLooperState extends State<FlutterVideoLooper>
     if (widget.isPipEnabled) {
       WidgetsBinding.instance.removeObserver(this);
     }
+    _dismissPipDialog();
     _channel?.invokeMethod('dispose');
     super.dispose();
   }
@@ -49,6 +51,40 @@ class _FlutterVideoLooperState extends State<FlutterVideoLooper>
 
   void _onPlatformViewCreated(int id) {
     _channel = MethodChannel('flutter_video_looper_$id');
+    _channel?.setMethodCallHandler(_handleMethodCall);
+  }
+
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
+    if (call.method == 'onPipModeChanged') {
+      final isInPip = call.arguments as bool;
+      if (isInPip) {
+        _showPipDialog();
+      } else {
+        _dismissPipDialog();
+      }
+    }
+  }
+
+  void _showPipDialog() {
+    if (_isPipDialogShown || !mounted) return;
+    _isPipDialogShown = true;
+    Navigator.of(context, rootNavigator: true).push(
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (_, _, _) => ColoredBox(
+          color: const Color(0xFF000000),
+          child: Center(
+            child: FlutterVideoLooper.asset(path: widget.path),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _dismissPipDialog() {
+    if (!_isPipDialogShown) return;
+    _isPipDialogShown = false;
+    Navigator.of(context, rootNavigator: true).pop();
   }
 
   Map<String, dynamic> get _creationParams => {

@@ -475,6 +475,66 @@ pub async fn export_transcription(
 }
 
 #[tauri::command]
+pub async fn export_diagnostics(
+    app: AppHandle,
+    diagnostics_info: String,
+) -> Result<bool, String> {
+    let dialog = rfd::AsyncFileDialog::new()
+        .set_file_name("voquill-diagnostics.zip")
+        .add_filter("ZIP Archive", &["zip"])
+        .save_file()
+        .await;
+
+    let save_path = match dialog {
+        Some(handle) => handle.path().to_path_buf(),
+        None => return Ok(false),
+    };
+
+    let logs_dir = crate::system::paths::logs_dir(&app).map_err(|err| err.to_string())?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+
+        let file = std::fs::File::create(&save_path)
+            .map_err(|err| format!("Failed to create file: {err}"))?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
+        // Write diagnostics info
+        zip.start_file("diagnostics.txt", options)
+            .map_err(|err| err.to_string())?;
+        zip.write_all(diagnostics_info.as_bytes())
+            .map_err(|err| err.to_string())?;
+
+        // Include all files from the logs directory
+        if let Ok(entries) = std::fs::read_dir(&logs_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if !path.is_file() {
+                    continue;
+                }
+                let filename = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown");
+                let data =
+                    std::fs::read(&path).map_err(|err| format!("Failed to read log: {err}"))?;
+                zip.start_file(format!("logs/{filename}"), options)
+                    .map_err(|err| err.to_string())?;
+                zip.write_all(&data).map_err(|err| err.to_string())?;
+            }
+        }
+
+        zip.finish().map_err(|err| err.to_string())?;
+        Ok::<bool, String>(true)
+    })
+    .await
+    .map_err(|err| err.to_string())?
+}
+
+#[tauri::command]
 pub async fn term_create(
     term: crate::domain::Term,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -631,10 +691,55 @@ pub async fn api_key_delete(
 pub async fn api_key_update(
     request: crate::domain::ApiKeyUpdateRequest,
     database: State<'_, crate::state::OptionKeyDatabase>,
-) -> Result<(), String> {
-    crate::db::api_key_queries::update_api_key(database.pool(), &request)
+) -> Result<ApiKeyView, String> {
+    let (salt, key_hash, key_ciphertext, key_suffix, full_key) =
+        match request.key.as_deref().filter(|k| !k.is_empty()) {
+            Some(raw_key) => {
+                let protected = protect_api_key(raw_key);
+                (
+                    Some(protected.salt_b64),
+                    Some(protected.hash_b64),
+                    Some(protected.ciphertext_b64),
+                    protected.key_suffix,
+                    Some(raw_key.to_string()),
+                )
+            }
+            None => (None, None, None, None, None),
+        };
+
+    crate::db::api_key_queries::update_api_key(
+        database.pool(),
+        &request,
+        salt.as_deref(),
+        key_hash.as_deref(),
+        key_ciphertext.as_deref(),
+        key_suffix.as_deref(),
+    )
+    .await
+    .map_err(|err| err.to_string())?;
+
+    // Re-fetch the updated key to return fresh data
+    let all_keys = crate::db::api_key_queries::fetch_api_keys(database.pool())
         .await
-        .map_err(|err| err.to_string())
+        .map_err(|err| err.to_string())?;
+
+    let updated = all_keys
+        .into_iter()
+        .find(|k| k.id == request.id)
+        .ok_or_else(|| "API key not found after update".to_string())?;
+
+    let revealed = if full_key.is_some() {
+        full_key
+    } else {
+        reveal_api_key(&updated.salt, &updated.key_ciphertext)
+            .map_err(|err| {
+                log::error!("Failed to reveal API key {}: {}", updated.id, err);
+                err
+            })
+            .ok()
+    };
+
+    Ok(ApiKeyView::from(updated).with_full_key(revealed))
 }
 
 #[tauri::command]

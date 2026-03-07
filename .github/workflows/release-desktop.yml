@@ -9,7 +9,7 @@ on:
       - "apps/windows-installer/**"
       - "packages/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/release-desktop.yml"
   workflow_dispatch:
     inputs:
@@ -390,12 +390,15 @@ jobs:
         with:
           ref: ${{ needs.metadata.outputs.commit_sha }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Sync Tauri release configuration
         run: node scripts/ci/set-tauri-release-config.mjs
@@ -465,7 +468,7 @@ jobs:
           echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
 
       - name: Install dependencies
-        run: npm ci --include=optional
+        run: pnpm install --frozen-lockfile
 
       - name: Install Vulkan SDK (Windows)
         if: matrix.os == 'windows-latest'
@@ -642,7 +645,7 @@ jobs:
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
-        run: npm run build -- --filter=desktop...
+        run: pnpm exec turbo run build --filter=desktop...
 
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
@@ -663,7 +666,7 @@ jobs:
           VOQUILL_GOOGLE_CLIENT_SECRET: ${{ steps.google-oauth.outputs.client_secret }}
         with:
           projectPath: apps/desktop
-          tauriScript: npm run --workspace desktop tauri
+          tauriScript: pnpm --filter desktop run tauri
           args: ${{ steps.tauri-cli-args.outputs.args }}
           tagName: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
           releaseName: ${{ matrix.gpu_variant == true && format('desktop-gpu{0} v{1}', needs.metadata.outputs.release_suffix, needs.metadata.outputs.version) || format('desktop{0} v{1}', needs.metadata.outputs.release_suffix, needs.metadata.outputs.version) }}
@@ -800,8 +803,8 @@ jobs:
 
           Write-Host "Building portable Windows installer..."
           Set-Location apps/windows-installer
-          npm install
-          npm run tauri:build
+          pnpm install
+          pnpm run tauri:build
 
       - name: Sign Windows portable installer
         if: matrix.os == 'windows-latest'

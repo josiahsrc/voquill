@@ -114,12 +114,29 @@ function stageLocalPackages() {
     }
 
     const packageName = scope.replace("@repo/", "");
-    const sourcePath = path.join(packagesDir, packageName);
+    const sourcePath = path.join(repoRoot, "packages", packageName);
 
     if (existsSync(sourcePath)) {
       cpSync(sourcePath, path.join(localPackagesDir, packageName), {
         recursive: true,
+        filter: (src) => !src.includes("node_modules"),
       });
+    }
+  }
+}
+
+function copyBuiltPackages() {
+  for (const scope of SCOPES) {
+    if (!scope.startsWith("@repo/")) {
+      continue;
+    }
+
+    const packageName = scope.replace("@repo/", "");
+    const builtDist = path.join(repoRoot, "packages", packageName, "dist");
+    const prunedDist = path.join(packagesDir, packageName, "dist");
+
+    if (existsSync(builtDist) && existsSync(path.join(packagesDir, packageName))) {
+      cpSync(builtDist, prunedDist, { recursive: true });
     }
   }
 }
@@ -147,20 +164,21 @@ function rewritePackageJson() {
   writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
 }
 
-function updatePackageLock() {
-  runCommand("npm", ["install", "--package-lock-only"], {
+function generateLockfile() {
+  runCommand("pnpm", ["install", "--lockfile-only"], {
     cwd: functionsDir,
-    errorMessage: "Failed to refresh package-lock.json for functions",
+    errorMessage: "Failed to generate pnpm-lock.yaml for functions",
   });
 }
 
 function main() {
   runTurboPrune();
+  copyBuiltPackages();
   copyFirebaseConfig();
   copyEnvFiles();
   stageLocalPackages();
   rewritePackageJson();
-  updatePackageLock();
+  generateLockfile();
 
   // Emit the absolute path to the Firebase app directory so shell scripts can use it.
   process.stdout.write(`${path.join(pruneOutputDir, "apps/firebase")}\n`);

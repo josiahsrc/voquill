@@ -1,18 +1,18 @@
 import { ApiKey } from "@repo/types";
+import dayjs from "dayjs";
 import { getApiKeyRepo } from "../repos";
-import { getAppState, produceAppState } from "../store";
-import { registerApiKeys } from "../utils/app.utils";
-import { showErrorSnackbar } from "./app.actions";
-import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
-} from "../types/ai.types";
-import { syncAiPreferences } from "./user.actions";
 import type {
   CreateApiKeyPayload,
   UpdateApiKeyPayload,
 } from "../repos/api-key.repo";
-import dayjs from "dayjs";
+import { getAppState, produceAppState } from "../store";
+import {
+  DEFAULT_POST_PROCESSING_MODE,
+  DEFAULT_TRANSCRIPTION_MODE,
+} from "../types/ai.types";
+import { registerApiKeys } from "../utils/app.utils";
+import { showErrorSnackbar } from "./app.actions";
+import { updateUserPreferences } from "./user.actions";
 
 let loadApiKeysPromise: Promise<void> | null = null;
 
@@ -104,7 +104,15 @@ export const deleteApiKey = async (id: string): Promise<void> => {
       }
     });
 
-    await syncAiPreferences();
+    const state = getAppState();
+    await updateUserPreferences((preferences) => {
+      preferences.transcriptionMode = state.settings.aiTranscription.mode;
+      preferences.transcriptionApiKeyId =
+        state.settings.aiTranscription.selectedApiKeyId ?? null;
+      preferences.postProcessingMode = state.settings.aiPostProcessing.mode;
+      preferences.postProcessingApiKeyId =
+        state.settings.aiPostProcessing.selectedApiKeyId ?? null;
+    });
   } catch (error) {
     console.error("Failed to delete API key", error);
     showErrorSnackbar(
@@ -116,48 +124,21 @@ export const deleteApiKey = async (id: string): Promise<void> => {
 
 export const updateApiKey = async (
   payload: UpdateApiKeyPayload,
-): Promise<void> => {
+): Promise<ApiKey> => {
   try {
-    await getApiKeyRepo().updateApiKey(payload);
+    const updated = await getApiKeyRepo().updateApiKey(payload);
 
     produceAppState((draft) => {
-      const apiKey = draft.apiKeyById[payload.id];
-      if (apiKey) {
-        if (payload.transcriptionModel !== undefined) {
-          apiKey.transcriptionModel = payload.transcriptionModel ?? null;
-        }
-        if (payload.postProcessingModel !== undefined) {
-          apiKey.postProcessingModel = payload.postProcessingModel ?? null;
-        }
-        if (payload.openRouterConfig !== undefined) {
-          apiKey.openRouterConfig = payload.openRouterConfig ?? null;
-        }
-        if (payload.azureRegion !== undefined) {
-          apiKey.azureRegion = payload.azureRegion ?? null;
-        }
-      }
+      draft.apiKeyById[updated.id] = updated;
       const index = draft.settings.apiKeys.findIndex(
-        (apiKey) => apiKey.id === payload.id,
+        (k) => k.id === updated.id,
       );
       if (index !== -1) {
-        if (payload.transcriptionModel !== undefined) {
-          draft.settings.apiKeys[index].transcriptionModel =
-            payload.transcriptionModel ?? null;
-        }
-        if (payload.postProcessingModel !== undefined) {
-          draft.settings.apiKeys[index].postProcessingModel =
-            payload.postProcessingModel ?? null;
-        }
-        if (payload.openRouterConfig !== undefined) {
-          draft.settings.apiKeys[index].openRouterConfig =
-            payload.openRouterConfig ?? null;
-        }
-        if (payload.azureRegion !== undefined) {
-          draft.settings.apiKeys[index].azureRegion =
-            payload.azureRegion ?? null;
-        }
+        draft.settings.apiKeys[index] = updated;
       }
     });
+
+    return updated;
   } catch (error) {
     console.error("Failed to update API key", error);
     showErrorSnackbar(
