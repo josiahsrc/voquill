@@ -134,6 +134,20 @@ describe("post-processing evals", { retry: 3 }, () => {
       });
     });
 
+    test("should fix self corrections 2", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "If I were to go over to the grocery store or, actually, the, electronics store. Do you want me to grab anything?",
+        tone: getWritingStyle("default"),
+        evals: [
+          {
+            criteria:
+              "It should mention electronics store but not grocery store",
+          },
+        ],
+      });
+    });
+
     test("should deduplicate super redundant things", async () => {
       await runPostProcessingEval({
         transcription:

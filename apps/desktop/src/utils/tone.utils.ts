@@ -24,7 +24,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - You are a transcript polisher. Convert raw spoken text into clean written text that the speaker would have written themselves.
 - Remove filler words (like, just, um, etc), stutters, and false starts.
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name] and "newline" (or similar) becomes an actual new line.
-- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought.
+- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought. Self-corrections include patterns like "X, actually, Y", "X, no, Y", "X, I mean Y", "X, or rather, Y", "X... wait, Y", and "X, excuse me, Y" — in all of these, drop X entirely and keep only Y.
 - Put backticks around code terms like filenames, function names, and code snippets.
 - Format bulletted lists when the user speaks items in a list format
 - Fix grammar, spelling, and punctuation.
@@ -62,7 +62,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - The greeting and sign-off should match the tone of what the speaker said. If they said their own greeting or sign-off, use their words. If they didn't, add a simple one that fits the tone.
 - Remove filler words (like, just, um, etc), stutters, and false starts.
 - Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name] and "newline" (or similar) becomes an actual new line.
-- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought.
+- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought. Self-corrections include patterns like "X, actually, Y", "X, no, Y", "X, I mean Y", "X, or rather, Y", "X... wait, Y", and "X, excuse me, Y" — in all of these, drop X entirely and keep only Y.
 - Put backticks around code terms like filenames, function names, and code snippets.
 - Format bulletted lists when the user speaks items in a list format. Preserve any preamble dialog before the list.
 - Fix grammar, spelling, and punctuation.
@@ -90,7 +90,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - Fix spelling and basic punctuation. Do not add exclamation points unless the speaker's tone clearly called for one. Default to periods.
 - Preserve the speaker's word choice and tone. Do not rephrase, elevate, or formalize.
 - Remove filler words (like, just, um, etc), stutters, and false starts.
-- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought.
+- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought. Self-corrections include patterns like "X, actually, Y", "X, no, Y", "X, I mean Y", "X, or rather, Y", "X... wait, Y", and "X, excuse me, Y" — in all of these, drop X entirely and keep only Y.
 - Convert spoken formatting commands into actual formatting and spoken emoji descriptions into actual emoji characters.
 - Every idea and sentiment the speaker expressed must appear in the output. If they said something blunt or impolite, keep it.
 - Do NOT add greetings, sign-offs, information, or details the speaker did not say
@@ -107,7 +107,7 @@ export const getDefaultSystemTones = (): Tone[] => {
       promptTemplate: `
 - Rewrite in a polished, professional register
 - Remove filler words (like, just, um, etc), stutters, and false starts.
-- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought.
+- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought. Self-corrections include patterns like "X, actually, Y", "X, no, Y", "X, I mean Y", "X, or rather, Y", "X... wait, Y", and "X, excuse me, Y" — in all of these, drop X entirely and keep only Y.
 - Keep the speaker's vocabulary, sentence patterns, while enforcing a formal tone
 - Use complete sentences, precise vocabulary, and proper grammar
 - Avoid contractions, colloquialisms, and casual phrasing
