@@ -139,7 +139,7 @@ class SettingsPage extends StatelessWidget {
               children: [
                 AppListTile(
                   leading: const Icon(Icons.warning_amber_outlined),
-                  title: const Text('Danger Zone'),
+                  title: const Text('Danger zone'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/dashboard/danger-zone'),
                 ),

@@ -14,7 +14,7 @@ class DangerZonePage extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           ...const AppSliverAppBar(
-            title: Text('Danger Zone'),
+            title: Text('Danger zone'),
             subtitle: Text(
               'These actions have permanent consequences and cannot be undone.',
             ),
