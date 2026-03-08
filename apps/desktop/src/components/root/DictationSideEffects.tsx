@@ -268,7 +268,6 @@ export const DictationSideEffects = () => {
       a11yInfo,
     });
     const rawTranscript = transcribeResult?.rawTranscript;
-    const processedTranscript = transcribeResult?.processedTranscript;
     getLogger().verbose(
       `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${appTarget?.name ?? "unknown"}`,
     );
@@ -289,8 +288,6 @@ export const DictationSideEffects = () => {
     getLogger().info("Post-processing transcript");
     const result = await strategy.handleTranscript({
       rawTranscript,
-      processedTranscript,
-      sessionPostProcessMetadata: transcribeResult.postProcessMetadata,
       toneId,
       a11yInfo,
       currentApp: appTarget,

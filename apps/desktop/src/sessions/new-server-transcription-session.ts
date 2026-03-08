@@ -7,48 +7,19 @@ import {
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
 import { getEffectiveAuth } from "../utils/auth.utils";
+import { getLogger } from "../utils/log.utils";
 import { NEW_SERVER_URL } from "../utils/new-server.utils";
-import {
-  buildPostProcessingPrompt,
-  buildSystemPostProcessingTonePrompt,
-  collectDictionaryEntries,
-  PostProcessingPromptInput,
-} from "../utils/prompt.utils";
-import { getToneConfig } from "../utils/tone.utils";
-import {
-  getGenerativePrefs,
-  getMyUserName,
-  loadMyEffectiveDictationLanguage,
-} from "../utils/user.utils";
-
-type ProcessMessage = {
-  role: "system" | "user";
-  content: string;
-};
+import { collectDictionaryEntries } from "../utils/prompt.utils";
+import { loadMyEffectiveDictationLanguage } from "../utils/user.utils";
 
 type TranscriptResult = {
   text: string;
-  durationMs?: number;
-  processed?: {
-    text: string;
-    wordsUsed: number;
-    tokensUsed: number;
-    durationMs?: number;
-  };
-};
-
-type ReplacementRule = {
   source: string;
-  destination: string;
-};
-
-type FinalizeOptions = {
-  prompt?: ProcessMessage[];
-  replacements?: ReplacementRule[];
+  durationMs?: number;
 };
 
 type NewServerStreamingSession = {
-  finalize: (options?: FinalizeOptions) => Promise<TranscriptResult>;
+  finalize: () => Promise<TranscriptResult>;
   cleanup: () => void;
 };
 
@@ -120,19 +91,17 @@ const startNewServerStreaming = async (
     let finalizeRejecter: ((error: Error) => void) | null = null;
     let finalizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const finalize = (options?: FinalizeOptions): Promise<TranscriptResult> => {
+    const finalize = (): Promise<TranscriptResult> => {
       return new Promise((resolveFinalize, rejectFinalize) => {
         console.log(
           "[NewServer WebSocket] Finalize called, isFinalized:",
           isFinalized,
           "ws state:",
           ws?.readyState,
-          "with prompt:",
-          !!options?.prompt,
         );
 
         if (isFinalized) {
-          resolveFinalize({ text: "" });
+          resolveFinalize({ text: "", source: "" });
           return;
         }
 
@@ -142,16 +111,7 @@ const startNewServerStreaming = async (
 
         if (ws && ws.readyState === WebSocket.OPEN) {
           console.log("[NewServer WebSocket] Sending finalize message...");
-          const message: Record<string, unknown> = {
-            type: "finalize",
-          };
-          if (options?.prompt && options.prompt.length > 0) {
-            message.prompt = options.prompt;
-          }
-          if (options?.replacements && options.replacements.length > 0) {
-            message.replacements = options.replacements;
-          }
-          ws.send(JSON.stringify(message));
+          ws.send(JSON.stringify({ type: "finalize" }));
 
           finalizeTimeout = setTimeout(() => {
             console.log("[NewServer WebSocket] Timeout reached");
@@ -166,12 +126,12 @@ const startNewServerStreaming = async (
           }, 15000);
         } else {
           cleanup();
-          resolveFinalize({ text: "" });
+          resolveFinalize({ text: "", source: "" });
         }
       });
     };
 
-    const wsUrl = NEW_SERVER_URL.replace(/^http/, "ws") + "/v1/transcribe";
+    const wsUrl = NEW_SERVER_URL.replace(/^http/, "ws") + "/v1/transcribe-raw";
     console.log("[NewServer WebSocket] Connecting to:", wsUrl);
     ws = new WebSocket(wsUrl);
 
@@ -260,8 +220,8 @@ const startNewServerStreaming = async (
           console.log(
             "[NewServer WebSocket] Transcript received, length:",
             msg.text?.length ?? 0,
-            "processed:",
-            !!msg.processed,
+            "source:",
+            msg.source,
           );
           if (finalizeTimeout) {
             clearTimeout(finalizeTimeout);
@@ -269,19 +229,11 @@ const startNewServerStreaming = async (
           }
           cleanup();
           if (finalizeResolver) {
-            const result: TranscriptResult = {
+            finalizeResolver({
               text: msg.text || "",
+              source: msg.source || "",
               durationMs: msg.durationMs,
-            };
-            if (msg.processed) {
-              result.processed = {
-                text: msg.processed.text || "",
-                wordsUsed: msg.processed.wordsUsed || 0,
-                tokensUsed: msg.processed.tokensUsed || 0,
-                durationMs: msg.processed.durationMs,
-              };
-            }
-            finalizeResolver(result);
+            });
             finalizeResolver = null;
           }
           return;
@@ -319,21 +271,20 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
-      console.log("[NewServer] Starting streaming session...");
+      getLogger().info("[NewServer] Starting streaming session...");
 
       const state = getAppState();
       const entries = collectDictionaryEntries(state);
-      const glossary = ["Voquill", ...entries.sources];
       const language = await loadMyEffectiveDictationLanguage(state);
-
       this.session = await startNewServerStreaming(
         sampleRate,
-        glossary,
+        entries.sources,
         language,
       );
-      console.log("[NewServer] Streaming session started successfully");
+
+      getLogger().info("[NewServer] Streaming session started successfully");
     } catch (error) {
-      console.error("[NewServer] Failed to start streaming:", error);
+      getLogger().error("[NewServer] Failed to start streaming:", error);
       this.startError =
         error instanceof Error ? error : new Error(String(error));
       throw new Error(
@@ -344,7 +295,7 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
 
   async finalize(
     _audio: StopRecordingResponse,
-    options?: TranscriptionSessionFinalizeOptions,
+    _options?: TranscriptionSessionFinalizeOptions,
   ): Promise<TranscriptionSessionResult> {
     if (!this.session) {
       const reason = this.startError
@@ -361,78 +312,25 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
     }
 
     try {
-      console.log("[NewServer] Finalizing streaming session...");
-
-      const state = getAppState();
-      const postProcessingMode = getGenerativePrefs(state).mode;
-      const useCloudPostProcessing = postProcessingMode === "cloud";
-
-      let prompt: ProcessMessage[] | undefined;
-      let userPrompt: string | undefined;
-
-      if (useCloudPostProcessing) {
-        const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
-        const toneId = options?.toneId ?? null;
-        const toneConfig = getToneConfig(state, toneId);
-        const userName = getMyUserName(state);
-
-        const promptInput: PostProcessingPromptInput = {
-          transcript: "{{transcript}}",
-          dictationLanguage,
-          userName,
-          tone: toneConfig,
-        };
-        const systemPrompt = buildSystemPostProcessingTonePrompt(promptInput);
-        userPrompt = buildPostProcessingPrompt(promptInput);
-
-        prompt = [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ];
-        console.log("[NewServer] Including cloud post-processing prompt");
-      } else {
-        console.log(
-          `[NewServer] Post-processing mode is "${postProcessingMode}", skipping server-side processing`,
-        );
-      }
-
-      const entries = collectDictionaryEntries(state);
-
-      const result = await this.session.finalize({
-        prompt,
-        replacements: entries.replacements,
-      });
-
-      console.log("[NewServer] Transcript timing:", {
-        transcriptionMs: result.durationMs,
-        postProcessMs: result.processed?.durationMs,
-      });
-      console.log("[NewServer] Received transcript:", {
-        rawLength: result.text?.length ?? 0,
-        processedLength: result.processed?.text?.length ?? 0,
+      getLogger().info("[NewServer] Finalizing streaming session...");
+      const result = await this.session.finalize();
+      getLogger().info("[NewServer] Transcript received:", {
+        length: result.text?.length ?? 0,
+        source: result.source,
+        durationMs: result.durationMs,
       });
 
       return {
         rawTranscript: result.text || null,
-        processedTranscript: result.processed?.text || null,
         metadata: {
-          inferenceDevice: "Cloud • New Server (Streaming)",
+          inferenceDevice: `Cloud • ${result.source || "New Server"}`,
           transcriptionMode: "cloud",
           transcriptionDurationMs: result.durationMs ?? null,
         },
-        postProcessMetadata:
-          result.processed && userPrompt
-            ? {
-                postProcessPrompt: userPrompt,
-                postProcessMode: "cloud",
-                postProcessDevice: "Cloud • New Server",
-                postprocessDurationMs: result.processed.durationMs ?? null,
-              }
-            : undefined,
         warnings: [],
       };
     } catch (error) {
-      console.error("[NewServer] Failed to finalize session:", error);
+      getLogger().error("[NewServer] Failed to finalize session:", error);
       return {
         rawTranscript: null,
         metadata: {
