@@ -10,7 +10,6 @@ export type StopRecordingResponse = {
 
 export type TranscriptionSessionResult = {
   rawTranscript: string | null;
-  processedTranscript?: string | null;
   metadata: TranscribeAudioMetadata;
   postProcessMetadata?: PostProcessMetadata;
   warnings: string[];

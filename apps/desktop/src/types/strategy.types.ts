@@ -15,8 +15,6 @@ export type StrategyValidationError = {
 
 export type HandleTranscriptParams = {
   rawTranscript: string;
-  processedTranscript?: string | null;
-  sessionPostProcessMetadata?: PostProcessMetadata;
   toneId: string | null;
   a11yInfo: TextFieldInfo | null;
   currentApp: AppTarget | null;

@@ -1,9 +1,11 @@
 import 'package:app/actions/app_actions.dart';
+import 'package:app/actions/styles_actions.dart';
 import 'package:app/api/user_api.dart';
 import 'package:app/model/firebase_model.dart';
 import 'package:app/model/user_model.dart';
 import 'package:app/store/store.dart';
 import 'package:app/utils/log_utils.dart';
+import 'package:app/utils/tone_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _logger = createNamedLogger('onboarding_actions');
@@ -197,4 +199,6 @@ Future<void> finishOnboarding() async {
     });
     rethrow;
   }
+
+  selectTone(polishedToneId);
 }

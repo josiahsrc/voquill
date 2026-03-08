@@ -58,8 +58,6 @@ export class DictationStrategy extends BaseStrategy {
 
   async handleTranscript({
     rawTranscript,
-    processedTranscript,
-    sessionPostProcessMetadata,
     toneId,
     currentApp,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
@@ -86,23 +84,14 @@ export class DictationStrategy extends BaseStrategy {
       );
       sanitizedTranscript = applySymbolConversions(afterReplacements);
 
-      if (processedTranscript && sessionPostProcessMetadata) {
-        const afterProcessedReplacements = applyReplacements(
-          processedTranscript,
-          replacementRules,
-        );
-        transcript = applySymbolConversions(afterProcessedReplacements);
-        postProcessMetadata = sessionPostProcessMetadata;
-      } else {
-        const result = await postProcessTranscript({
-          rawTranscript: sanitizedTranscript,
-          toneId,
-        });
+      const result = await postProcessTranscript({
+        rawTranscript: sanitizedTranscript,
+        toneId,
+      });
 
-        transcript = result.transcript;
-        postProcessMetadata = result.metadata;
-        postProcessWarnings = result.warnings;
-      }
+      transcript = result.transcript;
+      postProcessMetadata = result.metadata;
+      postProcessWarnings = result.warnings;
 
       if (transcript) {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));

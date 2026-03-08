@@ -31,7 +31,6 @@ import {
   EnterpriseGenerateTextRepo,
   GeminiGenerateTextRepo,
   GroqGenerateTextRepo,
-  NewServerGenerateTextRepo,
   OllamaGenerateTextRepo,
   OpenAICompatibleGenerateTextRepo,
   OpenAIGenerateTextRepo,
@@ -164,11 +163,9 @@ export type GenerateTextRepoOutput = {
 const getGenTextRepoInternal = ({
   prefs,
   cloudModel,
-  useNewBackend,
 }: {
   prefs: GenerativePrefs;
   cloudModel: CloudModel;
-  useNewBackend: boolean;
 }): GenerateTextRepoOutput => {
   const state = getAppState();
 
@@ -177,8 +174,6 @@ const getGenTextRepoInternal = ({
     let repo: BaseGenerateTextRepo;
     if (getIsEnterpriseEnabled()) {
       repo = new EnterpriseGenerateTextRepo(cloudModel);
-    } else if (useNewBackend) {
-      repo = new NewServerGenerateTextRepo();
     } else {
       repo = new CloudGenerateTextRepo(cloudModel);
     }
@@ -301,7 +296,6 @@ export const getGenerateTextRepo = (): GenerateTextRepoOutput => {
   return getGenTextRepoInternal({
     prefs,
     cloudModel: "medium",
-    useNewBackend: !getIsEmulators(),
   });
 };
 
@@ -315,7 +309,6 @@ export const getAgentRepo = (): GenerateTextRepoOutput => {
   return getGenTextRepoInternal({
     prefs,
     cloudModel: "large",
-    useNewBackend: false,
   });
 };
 
