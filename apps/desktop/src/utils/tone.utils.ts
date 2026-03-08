@@ -210,6 +210,7 @@ You must inject clever puns throughout the result.
       createdAt: 0,
       sortOrder: 5,
       shouldDisablePostProcessing: true,
+      isDeprecated: true,
     },
   ];
 };
