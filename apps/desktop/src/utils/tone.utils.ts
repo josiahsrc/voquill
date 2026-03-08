@@ -10,7 +10,6 @@ export const VERBATIM_TONE_ID = "verbatim";
 export const EMAIL_TONE_ID = "email";
 export const CHAT_TONE_ID = "chat";
 export const FORMAL_TONE_ID = "formal";
-export const DISABLED_TONE_ID = "disabled";
 
 export const getDefaultSystemTones = (): Tone[] => {
   const intl = getIntl();
@@ -46,15 +45,9 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Verbatim",
       }),
-      promptTemplate: `
-- Produce a near-exact transcription that preserves the speaker's voice
-- Add punctuation, capitalization, and paragraph breaks for readability
-- Format bulletted lists when the user speaks items in a list format
-- Remove filler words (um, uh, like, you know), false starts, repeated words, and content the speaker later corrected
-- Do NOT fix grammar, do NOT restructure sentences, and do NOT change the speaker's word choices or phrasing
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]"
-- Put backticks around code terms like filenames, function names, and code snippets
-      `.trim(),
+      shouldDisablePostProcessing: true,
+      promptTemplate:
+        "Do not apply any post-processing to the transcription. Keep everything exactly as you said it.",
       isSystem: true,
       createdAt: 0,
       sortOrder: 1,
@@ -126,17 +119,6 @@ export const getDefaultSystemTones = (): Tone[] => {
       isSystem: true,
       createdAt: 0,
       sortOrder: 4,
-    },
-    {
-      id: DISABLED_TONE_ID,
-      name: intl.formatMessage({
-        defaultMessage: "Disabled",
-      }),
-      promptTemplate: "Do not apply any post-processing to the transcription.",
-      isSystem: true,
-      createdAt: 0,
-      sortOrder: 5,
-      shouldDisablePostProcessing: true,
     },
     ...getDeprecatedSystemTones(),
   ];
@@ -217,6 +199,17 @@ You must inject clever puns throughout the result.
       createdAt: 0,
       sortOrder: 4,
       isDeprecated: true,
+    },
+    {
+      id: "disabled",
+      name: intl.formatMessage({
+        defaultMessage: "Disabled",
+      }),
+      promptTemplate: "Do not apply any post-processing to the transcription.",
+      isSystem: true,
+      createdAt: 0,
+      sortOrder: 5,
+      shouldDisablePostProcessing: true,
     },
   ];
 };
