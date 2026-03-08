@@ -1,6 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { retry } from "@repo/utilities/src/async";
-import { countWords } from "@repo/utilities/src/string";
+import { retry, countWords } from "@repo/utilities";
 import type { JsonResponse } from "@repo/types";
 
 export const GEMINI_GENERATE_TEXT_MODELS = [

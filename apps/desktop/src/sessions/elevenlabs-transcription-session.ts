@@ -234,8 +234,8 @@ const startElevenLabsStreaming = async (
         if (ws && ws.readyState === WebSocket.OPEN) {
           finalizeTimeout = setTimeout(() => {
             console.log(
-              "[ElevenLabs WebSocket] Timeout waiting for final transcript:",
-              getText(),
+              "[ElevenLabs WebSocket] Timeout waiting for final transcript, length:",
+              getText().length,
             );
             cleanup();
             if (finalizeResolver) {
@@ -257,8 +257,8 @@ const startElevenLabsStreaming = async (
       }
       if (finalizeResolver) {
         console.log(
-          "[ElevenLabs WebSocket] Completing finalize with transcript:",
-          getText(),
+          "[ElevenLabs WebSocket] Completing finalize with transcript length:",
+          getText().length,
         );
         cleanup();
         finalizeResolver(getText());
@@ -337,8 +337,8 @@ const startElevenLabsStreaming = async (
           finalTranscript += (finalTranscript ? " " : "") + committedText;
           partialTranscript = "";
           console.log(
-            "[ElevenLabs WebSocket] Committed transcript received:",
-            finalTranscript.substring(0, 100),
+            "[ElevenLabs WebSocket] Committed transcript received, length:",
+            finalTranscript.length,
           );
           if (onInterimResult && committedText) {
             onInterimResult(committedText);
@@ -418,12 +418,10 @@ export class ElevenLabsTranscriptionSession implements TranscriptionSession {
       const durationMs = Math.round(performance.now() - finalizeStart);
 
       console.log("[ElevenLabs] Transcript timing:", { durationMs });
-      console.log("[ElevenLabs] Received transcript:", {
-        length: transcript?.length ?? 0,
-        preview:
-          transcript?.substring(0, 50) +
-          (transcript && transcript.length > 50 ? "..." : ""),
-      });
+      console.log(
+        "[ElevenLabs] Received transcript, length:",
+        transcript?.length ?? 0,
+      );
 
       return {
         rawTranscript: transcript || null,

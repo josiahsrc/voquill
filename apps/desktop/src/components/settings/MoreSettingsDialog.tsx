@@ -217,8 +217,6 @@ export const MoreSettingsDialog = () => {
               }
             />
           )}
-
-
         </Stack>
       </DialogContent>
       <DialogActions>

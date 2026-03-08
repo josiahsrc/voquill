@@ -167,8 +167,8 @@ const startDeepgramStreaming = async (
 
         finalizeTimeout = setTimeout(() => {
           console.log(
-            "[Deepgram WebSocket] Timeout reached, finalizing with transcript:",
-            getText(),
+            "[Deepgram WebSocket] Timeout reached, finalizing with transcript length:",
+            getText().length,
           );
           cleanup();
           if (finalizeResolver) {
@@ -190,8 +190,8 @@ const startDeepgramStreaming = async (
     }
     if (finalizeResolver) {
       console.log(
-        "[Deepgram WebSocket] Completing finalize with transcript:",
-        getText(),
+        "[Deepgram WebSocket] Completing finalize with transcript length:",
+        getText().length,
       );
       cleanup();
       finalizeResolver(getText());
@@ -257,8 +257,8 @@ const startDeepgramStreaming = async (
             finalTranscript += (finalTranscript ? " " : "") + transcript;
             partialTranscript = "";
             console.log(
-              "[Deepgram WebSocket] Final transcript received:",
-              finalTranscript.substring(0, 100),
+              "[Deepgram WebSocket] Final transcript received, length:",
+              finalTranscript.length,
             );
             if (onInterimResult) {
               onInterimResult(transcript);
@@ -350,12 +350,10 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
       const durationMs = Math.round(performance.now() - finalizeStart);
 
       console.log("[Deepgram] Transcript timing:", { durationMs });
-      console.log("[Deepgram] Received transcript:", {
-        length: transcript?.length ?? 0,
-        preview:
-          transcript?.substring(0, 50) +
-          (transcript && transcript.length > 50 ? "..." : ""),
-      });
+      console.log(
+        "[Deepgram] Received transcript, length:",
+        transcript?.length ?? 0,
+      );
 
       return {
         rawTranscript: transcript || null,

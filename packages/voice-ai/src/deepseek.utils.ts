@@ -3,8 +3,7 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { retry } from "@repo/utilities/src/async";
-import { countWords } from "@repo/utilities/src/string";
+import { retry, countWords } from "@repo/utilities";
 import type { JsonResponse } from "@repo/types";
 
 export const DEEPSEEK_MODELS = ["deepseek-chat", "deepseek-reasoner"] as const;

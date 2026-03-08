@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "i18n:extract": "node scripts/i18n-extract-with-prune.mjs",
     "i18n:sync": "node scripts/i18n-sync.mjs",
-    "i18n": "npm run i18n:extract && npm run i18n:sync"
+    "i18n": "pnpm run i18n:extract && pnpm run i18n:sync"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -18,8 +18,8 @@
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
     "@mui/x-charts": "^8.27.0",
-    "@repo/functions": "*",
-    "@repo/types": "*",
+    "@repo/functions": "workspace:*",
+    "@repo/types": "workspace:*",
     "immer": "^10.1.3",
     "jwt-decode": "^4.0.0",
     "lodash-es": "^4.17.23",

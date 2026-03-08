@@ -24,6 +24,7 @@ const functionsDir = path.join(pruneOutputDir, "apps/firebase/functions");
 const packagesDir = path.join(pruneOutputDir, "packages");
 const localPackagesDir = path.join(functionsDir, ".repo-packages");
 const MAX_BUFFER_SIZE = 1024 * 1024 * 200;
+const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
 
 function runCommand(command, args, { cwd = repoRoot, errorMessage } = {}) {
   const result = spawnSync(command, args, {
@@ -114,53 +115,104 @@ function stageLocalPackages() {
     }
 
     const packageName = scope.replace("@repo/", "");
-    const sourcePath = path.join(packagesDir, packageName);
+    const sourcePath = path.join(repoRoot, "packages", packageName);
 
     if (existsSync(sourcePath)) {
       cpSync(sourcePath, path.join(localPackagesDir, packageName), {
         recursive: true,
+        filter: (src) => !src.includes("node_modules"),
       });
     }
   }
 }
 
-function rewritePackageJson() {
-  const packageJsonPath = path.join(functionsDir, "package.json");
-  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+function copyBuiltPackages() {
+  for (const scope of SCOPES) {
+    if (!scope.startsWith("@repo/")) {
+      continue;
+    }
 
-  const rewriteSection = (section) => {
+    const packageName = scope.replace("@repo/", "");
+    const builtDist = path.join(repoRoot, "packages", packageName, "dist");
+    const prunedDist = path.join(packagesDir, packageName, "dist");
+
+    if (existsSync(builtDist) && existsSync(path.join(packagesDir, packageName))) {
+      cpSync(builtDist, prunedDist, { recursive: true });
+    }
+  }
+}
+
+function rewriteRepoDependencies(pkg, resolveRepoDependencySpecifier) {
+  for (const section of DEPENDENCY_SECTIONS) {
     if (!pkg[section]) {
-      return;
+      continue;
     }
 
     for (const depName of Object.keys(pkg[section])) {
-      if (depName.startsWith("@repo/")) {
-        const localName = depName.replace("@repo/", "");
-        pkg[section][depName] = `file:./.repo-packages/${localName}`;
+      if (!depName.startsWith("@repo/")) {
+        continue;
       }
+
+      const localName = depName.replace("@repo/", "");
+      pkg[section][depName] = resolveRepoDependencySpecifier({ section, localName });
     }
-  };
+  }
+}
 
-  rewriteSection("dependencies");
-  rewriteSection("devDependencies");
+function rewriteFunctionsPackageJson() {
+  const packageJsonPath = path.join(functionsDir, "package.json");
+  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+  rewriteRepoDependencies(pkg, ({ section, localName }) => {
+    if (section === "peerDependencies") {
+      return "*";
+    }
 
+    return `file:./.repo-packages/${localName}`;
+  });
   writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
 }
 
-function updatePackageLock() {
-  runCommand("npm", ["install", "--package-lock-only"], {
+function rewriteLocalPackageJsons() {
+  for (const scope of SCOPES) {
+    if (!scope.startsWith("@repo/")) {
+      continue;
+    }
+
+    const localName = scope.replace("@repo/", "");
+    const packageJsonPath = path.join(localPackagesDir, localName, "package.json");
+
+    if (!existsSync(packageJsonPath)) {
+      continue;
+    }
+
+    const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+    rewriteRepoDependencies(pkg, ({ section, localName: targetLocalName }) => {
+      if (section === "peerDependencies") {
+        return "*";
+      }
+
+      return `file:../${targetLocalName}`;
+    });
+    writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
+  }
+}
+
+function generateLockfile() {
+  runCommand("pnpm", ["install", "--lockfile-only"], {
     cwd: functionsDir,
-    errorMessage: "Failed to refresh package-lock.json for functions",
+    errorMessage: "Failed to generate pnpm-lock.yaml for functions",
   });
 }
 
 function main() {
   runTurboPrune();
+  copyBuiltPackages();
   copyFirebaseConfig();
   copyEnvFiles();
   stageLocalPackages();
-  rewritePackageJson();
-  updatePackageLock();
+  rewriteFunctionsPackageJson();
+  rewriteLocalPackageJsons();
+  generateLockfile();
 
   // Emit the absolute path to the Firebase app directory so shell scripts can use it.
   process.stdout.write(`${path.join(pruneOutputDir, "apps/firebase")}\n`);

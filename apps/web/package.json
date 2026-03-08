@@ -22,9 +22,9 @@
   },
   "devDependencies": {
     "@formatjs/cli": "^6.7.4",
-    "@repo/eslint-config": "*",
-    "@repo/types": "*",
-    "@repo/typescript-config": "*",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/mixpanel-browser": "^2.60.0",
     "@types/node": "^22.15.3",
     "@types/react": "19.2.10",

@@ -9,7 +9,7 @@ on:
       - "apps/windows-installer/**"
       - "packages/**"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/release-desktop.yml"
   workflow_dispatch:
     inputs:
@@ -49,8 +49,6 @@ jobs:
       dev_tag_name: ${{ steps.meta.outputs.dev_tag_name }}
       release_notes: ${{ steps.release_notes.outputs.release-notes }}
       release_body: ${{ steps.release_body.outputs.release_body }}
-      gpu_tag_name: ${{ steps.meta.outputs.gpu_tag_name }}
-      gpu_channel_release_tag: ${{ steps.meta.outputs.gpu_channel_release_tag }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -179,14 +177,10 @@ jobs:
             CHANNEL_RELEASE_TAG="desktop-dev"
             RELEASE_FLAVOR="prod"
             RELEASE_SUFFIX="-dev"
-            GPU_TAG_NAME="desktop-gpu-dev-v${VERSION}"
-            GPU_CHANNEL_RELEASE_TAG="desktop-gpu-dev"
           else
             CHANNEL_RELEASE_TAG="desktop-prod"
             RELEASE_FLAVOR="prod"
             RELEASE_SUFFIX=""
-            GPU_TAG_NAME="desktop-gpu-v${VERSION}"
-            GPU_CHANNEL_RELEASE_TAG="desktop-gpu-prod"
           fi
 
           {
@@ -202,8 +196,6 @@ jobs:
             echo "release_notes_from=${RELEASE_NOTES_FROM}"
             echo "release_notes_to=${RELEASE_NOTES_TO}"
             echo "release_notes_from_ref=${RELEASE_NOTES_FROM_REF}"
-            echo "gpu_tag_name=${GPU_TAG_NAME}"
-            echo "gpu_channel_release_tag=${GPU_CHANNEL_RELEASE_TAG}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes
@@ -282,27 +274,6 @@ jobs:
               sha: targetSha,
             });
 
-      - name: Create GPU release tag
-        uses: actions/github-script@v7
-        env:
-          TAG_NAME: ${{ steps.meta.outputs.gpu_tag_name }}
-          TARGET_SHA: ${{ steps.meta.outputs.commit_sha }}
-        with:
-          script: |
-            const tagName = process.env.TAG_NAME;
-            const targetSha = process.env.TARGET_SHA;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            core.info(`Creating GPU tag ${tagName} at ${targetSha}`);
-
-            await github.rest.git.createRef({
-              owner,
-              repo,
-              ref: `refs/tags/${tagName}`,
-              sha: targetSha,
-            });
-
   build:
     name: Build ${{ matrix.label }}
     needs: metadata
@@ -322,47 +293,24 @@ jobs:
             tauri_platform: macos
             node_platform: darwin
             artifact_name: desktop-macos
-            gpu_variant: false
             require_gpu_sidecar: false
 
-          - label: Windows (CPU)
+          - label: Windows
             os: windows-latest
             args: ""
             rust_targets: ""
             tauri_platform: windows
             node_platform: win32
             artifact_name: desktop-windows
-            gpu_variant: false
             require_gpu_sidecar: true
 
-          - label: Windows (GPU)
-            os: windows-latest
-            args: ""
-            rust_targets: ""
-            tauri_platform: windows
-            node_platform: win32
-            artifact_name: desktop-windows-gpu
-            gpu_variant: true
-            require_gpu_sidecar: true
-
-          - label: Linux (CPU)
+          - label: Linux
             os: ubuntu-22.04
             args: ""
             rust_targets: ""
             tauri_platform: linux
             node_platform: linux
             artifact_name: desktop-linux
-            gpu_variant: false
-            require_gpu_sidecar: true
-
-          - label: Linux (GPU)
-            os: ubuntu-22.04
-            args: ""
-            rust_targets: ""
-            tauri_platform: linux
-            node_platform: linux
-            artifact_name: desktop-linux-gpu
-            gpu_variant: true
             require_gpu_sidecar: true
     env:
       RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
@@ -390,12 +338,15 @@ jobs:
         with:
           ref: ${{ needs.metadata.outputs.commit_sha }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Sync Tauri release configuration
         run: node scripts/ci/set-tauri-release-config.mjs
@@ -465,7 +416,7 @@ jobs:
           echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
 
       - name: Install dependencies
-        run: npm ci --include=optional
+        run: pnpm install --frozen-lockfile
 
       - name: Install Vulkan SDK (Windows)
         if: matrix.os == 'windows-latest'
@@ -601,21 +552,12 @@ jobs:
         env:
           MATRIX_ARGS: ${{ matrix.args }}
           RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
-          GPU_VARIANT: ${{ matrix.gpu_variant }}
         run: |
           set -euo pipefail
-          if [[ "${GPU_VARIANT}" == "true" ]]; then
-            if [[ "${RELEASE_ENV}" == "prod" ]]; then
-              config_file="src-tauri/tauri.gpu.prod.conf.json"
-            else
-              config_file="src-tauri/tauri.gpu.dev.conf.json"
-            fi
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            config_file="src-tauri/tauri.prod.conf.json"
           else
-            if [[ "${RELEASE_ENV}" == "prod" ]]; then
-              config_file="src-tauri/tauri.prod.conf.json"
-            else
-              config_file="src-tauri/tauri.dev.conf.json"
-            fi
+            config_file="src-tauri/tauri.dev.conf.json"
           fi
           config_flag="--config ${config_file}"
           matrix_args="${MATRIX_ARGS}"
@@ -642,7 +584,7 @@ jobs:
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
-        run: npm run build -- --filter=desktop...
+        run: pnpm exec turbo run build --filter=desktop...
 
       - name: Build and publish
         uses: tauri-apps/tauri-action@v0
@@ -663,10 +605,10 @@ jobs:
           VOQUILL_GOOGLE_CLIENT_SECRET: ${{ steps.google-oauth.outputs.client_secret }}
         with:
           projectPath: apps/desktop
-          tauriScript: npm run --workspace desktop tauri
+          tauriScript: pnpm --filter desktop run tauri
           args: ${{ steps.tauri-cli-args.outputs.args }}
-          tagName: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
-          releaseName: ${{ matrix.gpu_variant == true && format('desktop-gpu{0} v{1}', needs.metadata.outputs.release_suffix, needs.metadata.outputs.version) || format('desktop{0} v{1}', needs.metadata.outputs.release_suffix, needs.metadata.outputs.version) }}
+          tagName: ${{ needs.metadata.outputs.tag_name }}
+          releaseName: ${{ format('desktop{0} v{1}', needs.metadata.outputs.release_suffix, needs.metadata.outputs.version) }}
           releaseBody: ${{ needs.metadata.outputs.release_body }}
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
@@ -677,7 +619,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
           RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
           APPLE_INSTALLER_SIGNING_IDENTITY: ${{ env.APPLE_INSTALLER_SIGNING_IDENTITY }}
         run: |
@@ -770,7 +712,7 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
         run: |
           $nsisDir = "D:\cargo\release\bundle\nsis"
           $installers = Get-ChildItem -Path $nsisDir -Filter "*.exe"
@@ -800,8 +742,8 @@ jobs:
 
           Write-Host "Building portable Windows installer..."
           Set-Location apps/windows-installer
-          npm install
-          npm run tauri:build
+          pnpm install
+          pnpm run tauri:build
 
       - name: Sign Windows portable installer
         if: matrix.os == 'windows-latest'
@@ -839,7 +781,7 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ matrix.gpu_variant == true && needs.metadata.outputs.gpu_tag_name || needs.metadata.outputs.tag_name }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
         run: |
           $installerExe = "D:\cargo\release\voquill-installer.exe"
 
@@ -868,25 +810,16 @@ jobs:
         run: gh run rerun ${{ github.run_id }} --failed
 
   update-channel:
-    name: Update channel release (${{ matrix.variant }})
+    name: Update channel release
     needs: [metadata, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    strategy:
-      matrix:
-        include:
-          - variant: cpu
-            release_tag: ${{ needs.metadata.outputs.tag_name }}
-            channel_tag: ${{ needs.metadata.outputs.channel_release_tag }}
-          - variant: gpu
-            release_tag: ${{ needs.metadata.outputs.gpu_tag_name }}
-            channel_tag: ${{ needs.metadata.outputs.gpu_channel_release_tag }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
-      CHANNEL_TAG: ${{ matrix.channel_tag }}
-      RELEASE_TAG: ${{ matrix.release_tag }}
+      CHANNEL_TAG: ${{ needs.metadata.outputs.channel_release_tag }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
     steps:
       - name: Download latest.json from release
         run: |

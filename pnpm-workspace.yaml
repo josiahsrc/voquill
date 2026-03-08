@@ -1,0 +1,5 @@
+packages:
+  - "apps/*"
+  - "apps/firebase/functions"
+  - "packages/*"
+  - "enterprise/*"

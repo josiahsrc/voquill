@@ -37,6 +37,10 @@ apps/desktop/src/i18n/locales/.cache/
 apps/windows-installer/src-tauri/installer/Voquill_Setup.exe
 
 
+# Lockfiles (npm/yarn — we use pnpm)
+package-lock.json
+yarn.lock
+
 # Debug
 npm-debug.log*
 yarn-debug.log*

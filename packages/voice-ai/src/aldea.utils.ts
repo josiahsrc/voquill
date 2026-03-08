@@ -1,5 +1,4 @@
-import { retry } from "@repo/utilities/src/async";
-import { countWords } from "@repo/utilities/src/string";
+import { retry, countWords } from "@repo/utilities";
 
 const ALDEA_API_URL = "https://api.aldea.ai/v1/listen";
 

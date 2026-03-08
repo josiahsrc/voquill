@@ -4,16 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run tauri dev",
+    "dev": "pnpm run tauri dev",
     "build": "vite build",
     "tauri": "tauri",
     "tauri:build": "tauri build"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.0.0"
+    "@tauri-apps/api": "~2.9.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
+    "@tauri-apps/cli": "~2.10.0",
     "typescript": "^5.9.2",
     "vite": "^6.0.0"
   }
