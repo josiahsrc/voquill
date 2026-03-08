@@ -1,7 +1,7 @@
 {
   "productName": "Voquill (dev)",
   "identifier": "com.voquill.desktop.dev",
-  "mainBinaryName": "voquill-desktop-dev",
+  "mainBinaryName": "Voquill (dev)",
   "bundle": {
     "linux": {
       "deb": {

@@ -861,18 +861,36 @@ jobs:
       RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
       RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
     steps:
-      - name: Download .deb from release
+      - name: Download and repackage .deb from release
+        env:
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
         run: |
           set -euo pipefail
           mkdir -p debs
           gh release download "$RELEASE_TAG" --pattern "*.deb" --dir debs --repo "$GITHUB_REPOSITORY"
-          deb_file="$(ls debs/*.deb | head -n 1)"
-          if [[ -z "${deb_file}" ]]; then
+          orig_deb="$(ls debs/*.deb | head -n 1)"
+          if [[ -z "${orig_deb}" ]]; then
             echo "No .deb file found in release ${RELEASE_TAG}" >&2
             exit 1
           fi
-          echo "Found .deb: ${deb_file}"
-          echo "DEB_FILE=${deb_file}" >> "$GITHUB_ENV"
+          echo "Original .deb: ${orig_deb}"
+
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            pkg_name="voquill-desktop"
+          else
+            pkg_name="voquill-desktop-dev"
+          fi
+
+          # Repack with correct package name
+          mkdir -p repack
+          dpkg-deb -R "${orig_deb}" repack/
+          sed -i "s/^Package: .*/Package: ${pkg_name}/" repack/DEBIAN/control
+          new_deb="debs/${pkg_name}_${RELEASE_VERSION}_amd64.deb"
+          dpkg-deb -b repack "${new_deb}"
+          rm -rf repack
+
+          echo "Repackaged as: ${new_deb}"
+          echo "DEB_FILE=${new_deb}" >> "$GITHUB_ENV"
 
       - name: Clone APT repository
         run: |
