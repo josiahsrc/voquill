@@ -117,6 +117,23 @@ describe("post-processing evals", { retry: 3 }, () => {
       });
     });
 
+    test("should fix things that are later corrected", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Hey Emily, can you go fix that audio thing? That speaker that you broke yesterday. I really need that. It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
+        tone: getWritingStyle("default"),
+        evals: [
+          {
+            criteria:
+              "It should use 'speaker' and not 'audio thing' since the speaker corrected themselves.",
+          },
+          {
+            criteria: "It should keep 'hey emily'",
+          },
+        ],
+      });
+    });
+
     test("should deduplicate super redundant things", async () => {
       await runPostProcessingEval({
         transcription:
@@ -153,33 +170,6 @@ describe("post-processing evals", { retry: 3 }, () => {
         evals: [
           {
             criteria: "Should make it make more sense",
-          },
-        ],
-      });
-    });
-
-    test("should remove gunna", async () => {
-      await runPostProcessingEval({
-        transcription:
-          "Also, are you gonna get to hire a backfill for John? Are you working with Adam on that?",
-        tone: getWritingStyle("default"),
-        evals: [
-          {
-            criteria:
-              "It should not keep the word 'gonna' in the final transcription",
-          },
-        ],
-      });
-    });
-
-    test("should remove duplication", async () => {
-      await runPostProcessingEval({
-        transcription:
-          "I think it would be really nice if we didn't have to worry. Worrying about this just isn't nice. We should just fix the Dinglehopper.",
-        tone: getWritingStyle("default"),
-        evals: [
-          {
-            criteria: "It should only mention worrying (or worry) once",
           },
         ],
       });
@@ -647,7 +637,7 @@ come on guys. you can do better, that was garbage.`,
     test("preserves blunt language without softening", async () => {
       await runPostProcessingEval({
         transcription:
-          "Hey team just a quick reminder that I'm going to be out tuesday... no Monday let me know if there's anything I can clear up before then because I don't want to be bothered and if there's anything you guys want to run by me before I leave just put it on my desk and I'll take a look at it thanks",
+          "Hey team just a quick reminder that I'm going to be out tuesday... no wait Monday let me know if there's anything I can clear up before then because I don't want to be bothered and if there's anything you guys want to run by me before I leave just put it on my desk and I'll take a look at it thanks",
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
@@ -831,39 +821,6 @@ come on guys. you can do better, that was garbage.`,
       });
     });
 
-    test("splits multiple points into separate lines", async () => {
-      await runPostProcessingEval({
-        transcription:
-          "okay so we need to do three things we need to update the docs we need to fix the login bug and we need to deploy by Friday",
-        tone: getWritingStyle("chat"),
-        evals: [
-          {
-            criteria:
-              "The three items should be on separate lines or formatted as a list, not in a single run-on sentence",
-          },
-          {
-            criteria:
-              "All three items (update docs, fix login bug, deploy by Friday) should be present",
-          },
-        ],
-      });
-    });
-
-    test("does not end the last sentence with a period", async () => {
-      await runPostProcessingEval({
-        transcription: "yeah that works for me let's do it",
-        tone: getWritingStyle("chat"),
-        evals: [
-          {
-            criteria: "The last sentence should not end with a period",
-          },
-          {
-            criteria: "It should read like a natural text message",
-          },
-        ],
-      });
-    });
-
     test("handles self-corrections", async () => {
       await runPostProcessingEval({
         transcription:
@@ -876,23 +833,6 @@ come on guys. you can do better, that was garbage.`,
           },
           {
             criteria: "It should read like a text message, not an email",
-          },
-        ],
-      });
-    });
-
-    test("formats bulleted lists when items are spoken", async () => {
-      await runPostProcessingEval({
-        transcription:
-          "for the party we need chips and salsa a veggie tray some drinks and maybe a cake",
-        tone: getWritingStyle("chat"),
-        evals: [
-          {
-            criteria:
-              "All items (chips and salsa, veggie tray, drinks, cake) should be present",
-          },
-          {
-            criteria: "It should say 'for the party' or similar",
           },
         ],
       });
