@@ -5,7 +5,7 @@ import { AppState } from "../state/app.state";
 import { getEffectiveStylingMode } from "./feature.utils";
 import { getMyUser, getMyUserPreferences } from "./user.utils";
 
-export const CLEAN_TONE_ID = "default";
+export const POLISHED_TONE_ID = "default";
 export const VERBATIM_TONE_ID = "verbatim";
 export const EMAIL_TONE_ID = "email";
 export const CHAT_TONE_ID = "chat";
@@ -16,7 +16,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 
   return [
     {
-      id: CLEAN_TONE_ID,
+      id: POLISHED_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Polished",
       }),
