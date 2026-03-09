@@ -231,6 +231,9 @@ importers:
 
   apps/docs:
     dependencies:
+      '@astrojs/sitemap':
+        specifier: ^3.7.0
+        version: 3.7.0
       '@astrojs/starlight':
         specifier: ^0.37.5
         version: 0.37.6(astro@5.18.0(@types/node@24.12.0)(jiti@2.6.1)(rollup@4.59.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))
