@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useRef, useCallback } from "react";
 import styles from "./text-cleanup-animation.module.css";
 

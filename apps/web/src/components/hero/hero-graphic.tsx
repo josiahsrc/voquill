@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import styles from "./hero.module.css";
 
 // Bezier curve type
@@ -118,6 +120,9 @@ const BASE_TEXT =
 const REPEATED_TEXT = BASE_TEXT.repeat(10);
 
 export function HeroGraphic() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // Compute all paths once using useMemo
   const { waves, outputCurvePath, iconX, iconY, viewBox } = useMemo(() => {
     // Use larger dimensions for SVG viewBox to zoom out
@@ -194,22 +199,23 @@ export function HeroGraphic() {
           <path id="outputTextPath" d={outputCurvePath} fill="none" />
         </defs>
 
-        {/* Animated sine waves along input curve */}
-        {waves.map((wave, index) => (
-          <path
-            key={index}
-            fill="none"
-            className={styles.wavePath}
-            style={{ opacity: wave.opacity }}
-          >
-            <animate
-              attributeName="d"
-              values={wave.frames}
-              dur={`${wave.duration}s`}
-              repeatCount="indefinite"
-            />
-          </path>
-        ))}
+        {/* Animated sine waves along input curve (client-only to avoid hydration mismatch from floating-point differences) */}
+        {mounted &&
+          waves.map((wave, index) => (
+            <path
+              key={index}
+              fill="none"
+              className={styles.wavePath}
+              style={{ opacity: wave.opacity }}
+            >
+              <animate
+                attributeName="d"
+                values={wave.frames}
+                dur={`${wave.duration}s`}
+                repeatCount="indefinite"
+              />
+            </path>
+          ))}
 
         {/* Scrolling text along output curve */}
         <text className={styles.pathText}>
@@ -226,45 +232,46 @@ export function HeroGraphic() {
           </textPath>
         </text>
 
-        {/* Spark particles - rendered before icon so they appear behind */}
-        {SPARKS.map((spark, index) => (
-          <circle
-            key={index}
-            cx={iconX}
-            cy={iconY}
-            r={3}
-            className={styles.spark}
-          >
-            <animate
-              attributeName="cx"
-              values={`${iconX};${iconX + spark.translateX}`}
-              dur={`${spark.duration}s`}
-              begin={`${spark.delay}s`}
-              repeatCount="indefinite"
-            />
-            <animate
-              attributeName="cy"
-              values={`${iconY};${iconY + spark.translateY}`}
-              dur={`${spark.duration}s`}
-              begin={`${spark.delay}s`}
-              repeatCount="indefinite"
-            />
-            <animate
-              attributeName="opacity"
-              values="0.6;0"
-              dur={`${spark.duration}s`}
-              begin={`${spark.delay}s`}
-              repeatCount="indefinite"
-            />
-            <animate
-              attributeName="r"
-              values="3;1"
-              dur={`${spark.duration}s`}
-              begin={`${spark.delay}s`}
-              repeatCount="indefinite"
-            />
-          </circle>
-        ))}
+        {/* Spark particles - rendered before icon so they appear behind (client-only) */}
+        {mounted &&
+          SPARKS.map((spark, index) => (
+            <circle
+              key={index}
+              cx={iconX}
+              cy={iconY}
+              r={3}
+              className={styles.spark}
+            >
+              <animate
+                attributeName="cx"
+                values={`${iconX};${iconX + spark.translateX}`}
+                dur={`${spark.duration}s`}
+                begin={`${spark.delay}s`}
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="cy"
+                values={`${iconY};${iconY + spark.translateY}`}
+                dur={`${spark.duration}s`}
+                begin={`${spark.delay}s`}
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="0.6;0"
+                dur={`${spark.duration}s`}
+                begin={`${spark.delay}s`}
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="r"
+                values="3;1"
+                dur={`${spark.duration}s`}
+                begin={`${spark.delay}s`}
+                repeatCount="indefinite"
+              />
+            </circle>
+          ))}
 
         {/* Icon glow */}
         <circle cx={iconX} cy={iconY} r={38} className={styles.iconGlow} />

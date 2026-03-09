@@ -1,3 +1,5 @@
+"use client";
+
 import { FormattedMessage } from "react-intl";
 import pageStyles from "../../styles/page.module.css";
 import styles from "./offline-showcase.module.css";
@@ -190,7 +192,7 @@ export default function OfflineShowcase() {
             </svg>
           </div>
           <span className={styles.srOnly}>
-            Offline icon representing local-first functionality.
+            <FormattedMessage defaultMessage="Offline icon representing local-first functionality." />
           </span>
         </div>
       </div>

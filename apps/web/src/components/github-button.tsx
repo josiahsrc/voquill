@@ -1,3 +1,5 @@
+"use client";
+
 import type { CSSProperties } from "react";
 import { FormattedMessage } from "react-intl";
 import styles from "../styles/page.module.css";
