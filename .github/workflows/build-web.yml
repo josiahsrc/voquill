@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - "apps/web/**"
-      - "packages/**"
       - ".github/workflows/build-web.yml"
 
 permissions:
