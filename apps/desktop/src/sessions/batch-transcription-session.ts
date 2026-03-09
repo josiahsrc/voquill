@@ -74,7 +74,11 @@ export class BatchTranscriptionSession implements TranscriptionSession {
     }
   }
 
-  cleanup(): void {
-    // No-op for batch transcription
+  cleanup(): void {}
+
+  supportsStreaming(): boolean {
+    return false;
   }
+
+  setInterimResultCallback(): void {}
 }

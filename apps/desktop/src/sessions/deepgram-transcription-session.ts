@@ -14,6 +14,7 @@ type DeepgramStreamingSession = {
 const startDeepgramStreaming = async (
   apiKey: string,
   sampleRate: number,
+  onInterimResult?: (segment: string) => void,
 ): Promise<DeepgramStreamingSession> => {
   console.log("[Deepgram WebSocket] Starting with sample rate:", sampleRate);
   const MIN_CHUNK_DURATION_MS = 20;
@@ -259,6 +260,9 @@ const startDeepgramStreaming = async (
               "[Deepgram WebSocket] Final transcript received, length:",
               finalTranscript.length,
             );
+            if (onInterimResult) {
+              onInterimResult(transcript);
+            }
             if (speechFinal && isFinalized) {
               completeFinalize();
             }
@@ -298,16 +302,29 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
   private session: DeepgramStreamingSession | null = null;
   private startupPromise: Promise<void> | null = null;
   private apiKey: string;
+  private interimCallback: ((segment: string) => void) | null = null;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+  }
+
+  supportsStreaming(): boolean {
+    return true;
+  }
+
+  setInterimResultCallback(callback: (segment: string) => void): void {
+    this.interimCallback = callback;
   }
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     this.startupPromise = (async () => {
       try {
         console.log("[Deepgram] Starting streaming session...");
-        this.session = await startDeepgramStreaming(this.apiKey, sampleRate);
+        this.session = await startDeepgramStreaming(
+          this.apiKey,
+          sampleRate,
+          this.interimCallback ?? undefined,
+        );
         console.log("[Deepgram] Streaming session started successfully");
       } catch (error) {
         console.error("[Deepgram] Failed to start streaming:", error);

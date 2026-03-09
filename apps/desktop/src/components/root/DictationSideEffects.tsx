@@ -419,7 +419,13 @@ export const DictationSideEffects = () => {
         getLogger().info(
           `Created transcription session: ${session.constructor.name}`,
         );
+
         tryPlayAudioChime("start_recording_clip");
+        if (session.supportsStreaming()) {
+          session.setInterimResultCallback((segment) => {
+            strategy.handleInterimSegment(segment);
+          });
+        }
 
         sessionRef.current = session;
         strategyRef.current = strategy;

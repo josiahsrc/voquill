@@ -27,6 +27,7 @@ const startNewServerStreaming = async (
   sampleRate: number,
   glossary: string[],
   language?: string,
+  interimCallback?: (segment: string) => void,
 ): Promise<NewServerStreamingSession> => {
   console.log("[NewServer WebSocket] Starting with sample rate:", sampleRate);
 
@@ -34,6 +35,7 @@ const startNewServerStreaming = async (
   let isFinalized = false;
   let isReady = false;
   let sentChunkCount = 0;
+  let lastInterimText = "";
   const bufferedChunks: Float32Array[] = [];
 
   const unlisten = await listen<{ samples: number[] }>(
@@ -216,6 +218,17 @@ const startNewServerStreaming = async (
           return;
         }
 
+        if (msg.type === "partial_transcript") {
+          if (interimCallback && msg.is_final && msg.text) {
+            const newText = msg.text.slice(lastInterimText.length).trim();
+            if (newText) {
+              lastInterimText = msg.text;
+              interimCallback(newText);
+            }
+          }
+          return;
+        }
+
         if (msg.type === "transcript") {
           console.log(
             "[NewServer WebSocket] Transcript received, length:",
@@ -268,6 +281,7 @@ const startNewServerStreaming = async (
 export class NewServerTranscriptionSession implements TranscriptionSession {
   private session: NewServerStreamingSession | null = null;
   private startError: Error | null = null;
+  private interimCallback: ((segment: string) => void) | null = null;
 
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
@@ -280,6 +294,7 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
         sampleRate,
         entries.sources,
         language,
+        this.interimCallback ?? undefined,
       );
 
       getLogger().info("[NewServer] Streaming session started successfully");
@@ -349,5 +364,13 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
       this.session.cleanup();
       this.session = null;
     }
+  }
+
+  supportsStreaming(): boolean {
+    return true;
+  }
+
+  setInterimResultCallback(callback: (segment: string) => void): void {
+    this.interimCallback = callback;
   }
 }

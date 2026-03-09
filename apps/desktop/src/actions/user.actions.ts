@@ -96,6 +96,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   incognitoModeEnabled: false,
   incognitoModeIncludeInStats: false,
   dictationPillVisibility: "while_active",
+  realtimeOutputEnabled: false,
 });
 
 export const updateUserPreferences = async (
@@ -528,6 +529,14 @@ export const setDictationPillVisibility = async (
   await updateUserPreferences((preferences) => {
     preferences.dictationPillVisibility = visibility;
   }, "Failed to save dictation pill visibility preference. Please try again.");
+};
+
+export const setRealtimeOutputEnabled = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.realtimeOutputEnabled = enabled;
+  }, "Failed to save real-time output preference. Please try again.");
 };
 
 export const setStylingMode = async (

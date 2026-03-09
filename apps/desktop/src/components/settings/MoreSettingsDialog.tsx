@@ -18,6 +18,7 @@ import {
   setIgnoreUpdateDialog,
   setIncognitoModeEnabled,
   setIncognitoModeIncludeInStats,
+  setRealtimeOutputEnabled,
   setStylingMode,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
@@ -37,6 +38,7 @@ export const MoreSettingsDialog = () => {
     incognitoModeEnabled,
     incognitoIncludeInStats,
     dictationPillVisibility,
+    realtimeOutputEnabled,
     stylingMode,
     canChangeStylingMode,
   ] = useAppStore((state) => {
@@ -47,6 +49,7 @@ export const MoreSettingsDialog = () => {
       prefs?.incognitoModeEnabled ?? false,
       prefs?.incognitoModeIncludeInStats ?? false,
       getEffectivePillVisibility(prefs?.dictationPillVisibility),
+      prefs?.realtimeOutputEnabled ?? false,
       getEffectiveStylingMode(state),
       getAllowChangeStylingMode(state),
     ] as const;
@@ -80,6 +83,10 @@ export const MoreSettingsDialog = () => {
   ) => {
     const visibility = event.target.value as DictationPillVisibility;
     void setDictationPillVisibility(visibility);
+  };
+
+  const handleToggleRealtimeOutput = (event: ChangeEvent<HTMLInputElement>) => {
+    void setRealtimeOutputEnabled(event.target.checked);
   };
 
   const handleStylingModeChange = (event: SelectChangeEvent<string>) => {
@@ -166,6 +173,20 @@ export const MoreSettingsDialog = () => {
                   {intl.formatMessage({ defaultMessage: "Hidden" })}
                 </MenuItem>
               </Select>
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Real-time output" />}
+            description={
+              <FormattedMessage defaultMessage="Stream dictation text as you speak instead of pasting all at once when you stop. Only applies to Verbatim mode with supported providers." />
+            }
+            action={
+              <Switch
+                edge="end"
+                checked={realtimeOutputEnabled}
+                onChange={handleToggleRealtimeOutput}
+              />
             }
           />
 

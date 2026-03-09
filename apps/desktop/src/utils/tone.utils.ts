@@ -312,7 +312,7 @@ export const getSortedToneIds = (state: AppState): string[] => {
 
 export const getToneIdToUse = (
   state: AppState,
-  args: {
+  opts?: {
     currentAppToneId: Nullable<string>;
   },
 ): Nullable<string> => {
@@ -320,6 +320,6 @@ export const getToneIdToUse = (
   if (mode === "manual") {
     return getManuallySelectedToneId(state);
   } else {
-    return args.currentAppToneId;
+    return opts?.currentAppToneId ?? null;
   }
 };

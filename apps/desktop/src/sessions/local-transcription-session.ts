@@ -141,6 +141,12 @@ export class LocalTranscriptionSession implements TranscriptionSession {
     this.context = null;
   }
 
+  supportsStreaming(): boolean {
+    return false;
+  }
+
+  setInterimResultCallback(): void {}
+
   private async finalizeWithBatchFallback(
     audio: StopRecordingResponse,
     warnings: string[],

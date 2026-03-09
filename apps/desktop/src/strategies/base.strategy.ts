@@ -18,4 +18,6 @@ export abstract class BaseStrategy {
   abstract shouldStoreTranscript(): boolean;
 
   abstract cleanup(): Promise<void>;
+
+  handleInterimSegment(_segment: string): void {}
 }

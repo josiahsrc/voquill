@@ -20,11 +20,65 @@ import {
   applyReplacements,
   applySymbolConversions,
 } from "../utils/string.utils";
+import { getToneIdToUse, VERBATIM_TONE_ID } from "../utils/tone.utils";
+import { getMyUserPreferences } from "../utils/user.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class DictationStrategy extends BaseStrategy {
+  private streamedSegmentCount = 0;
+  private streamedProcessedText = "";
+  private pasteQueue: Promise<void> = Promise.resolve();
+
   shouldStoreTranscript(): boolean {
     return true;
+  }
+
+  get hasStreamedSegments(): boolean {
+    return this.streamedSegmentCount > 0;
+  }
+
+  handleInterimSegment(segment: string): void {
+    const state = getAppState();
+
+    const realtimeEnabled =
+      getMyUserPreferences(state)?.realtimeOutputEnabled ?? false;
+    const toneId = getToneIdToUse(state);
+    if (!realtimeEnabled || toneId !== VERBATIM_TONE_ID) {
+      return;
+    }
+
+    const sanitized = this.sanitizeTranscript(segment);
+    if (!sanitized) {
+      return;
+    }
+
+    const isFirst = this.streamedSegmentCount === 0;
+    this.streamedSegmentCount++;
+
+    this.pasteQueue = this.pasteQueue.then(async () => {
+      const text = sanitized;
+      const textToPaste = (isFirst ? "" : " ") + text;
+      this.streamedProcessedText += (isFirst ? "" : " ") + text;
+
+      try {
+        await invoke<void>("paste", { text: textToPaste, keybind: null });
+      } catch (error) {
+        getLogger().error(`Failed to paste interim segment: ${error}`);
+      }
+    });
+  }
+
+  private sanitizeTranscript(text: string): string | null {
+    const state = getAppState();
+    const replacementRules = Object.values(state.termById)
+      .filter((term) => term.isReplacement)
+      .map((term) => ({
+        sourceValue: term.sourceValue,
+        destinationValue: term.destinationValue,
+      }));
+
+    const afterReplacements = applyReplacements(text, replacementRules);
+    return applySymbolConversions(afterReplacements);
   }
 
   validateAvailability(): Nullable<StrategyValidationError> {
@@ -56,52 +110,61 @@ export class DictationStrategy extends BaseStrategy {
     await invoke<void>("set_phase", { phase });
   }
 
-  async handleTranscript({
-    rawTranscript,
-    toneId,
-    currentApp,
-  }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
+  private async handleFinalStreamedTranscript(
+    args: HandleTranscriptParams,
+  ): Promise<HandleTranscriptResult> {
+    const sanitizedTranscript = this.sanitizeTranscript(args.rawTranscript);
+
+    await this.pasteQueue;
+    try {
+      await invoke<void>("paste", { text: " ", keybind: null });
+    } catch {
+      // Non-critical trailing space
+    }
+
+    const transcript = this.streamedProcessedText || sanitizedTranscript;
+    getLogger().verbose(
+      `Streaming dictation complete (${this.streamedSegmentCount} segments)`,
+    );
+
+    return {
+      shouldContinue: false,
+      transcript: transcript,
+      sanitizedTranscript,
+      postProcessMetadata: {},
+      postProcessWarnings: [],
+    };
+  }
+
+  private async handleFinalBulkTranscript(
+    args: HandleTranscriptParams,
+  ): Promise<HandleTranscriptResult> {
     let transcript: string | null = null;
     let sanitizedTranscript: string | null = null;
     let postProcessMetadata: PostProcessMetadata = {};
     let postProcessWarnings: string[] = [];
 
     try {
-      const state = getAppState();
-      const replacementRules = Object.values(state.termById)
-        .filter((term) => term.isReplacement)
-        .map((term) => ({
-          sourceValue: term.sourceValue,
-          destinationValue: term.destinationValue,
-        }));
+      sanitizedTranscript = this.sanitizeTranscript(args.rawTranscript);
+      if (sanitizedTranscript) {
+        const result = await postProcessTranscript({
+          rawTranscript: sanitizedTranscript,
+          toneId: args.toneId,
+        });
 
-      getLogger().verbose(
-        `Applying ${replacementRules.length} replacement rules`,
-      );
-      const afterReplacements = applyReplacements(
-        rawTranscript,
-        replacementRules,
-      );
-      sanitizedTranscript = applySymbolConversions(afterReplacements);
-
-      const result = await postProcessTranscript({
-        rawTranscript: sanitizedTranscript,
-        toneId,
-      });
-
-      transcript = result.transcript;
-      postProcessMetadata = result.metadata;
-      postProcessWarnings = result.warnings;
+        transcript = result.transcript;
+        postProcessMetadata = result.metadata;
+        postProcessWarnings = result.warnings;
+      }
 
       if (transcript) {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
-          const keybind = currentApp?.pasteKeybind ?? null;
+          const keybind = args.currentApp?.pasteKeybind ?? null;
           getLogger().verbose(
             `Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`,
           );
 
-          // Add a space to the end so you don't have to press space before your next dictation
           const textToPaste = transcript.trim() + " ";
           await invoke<void>("paste", { text: textToPaste, keybind });
 
@@ -132,6 +195,16 @@ export class DictationStrategy extends BaseStrategy {
       postProcessMetadata,
       postProcessWarnings,
     };
+  }
+
+  async handleTranscript(
+    args: HandleTranscriptParams,
+  ): Promise<HandleTranscriptResult> {
+    if (this.hasStreamedSegments) {
+      return this.handleFinalStreamedTranscript(args);
+    } else {
+      return this.handleFinalBulkTranscript(args);
+    }
   }
 
   async cleanup(): Promise<void> {
