@@ -9,7 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getGentextRepo,
+  getOpenAIGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,7 +48,7 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getGentextRepo().generateText({
+  const output = await getOpenAIGentextRepo().generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {

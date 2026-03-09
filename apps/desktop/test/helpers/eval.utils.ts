@@ -3,6 +3,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   BaseGenerateTextRepo,
+  GroqGenerateTextRepo,
   OpenAIGenerateTextRepo,
 } from "../../src/repos/generate-text.repo";
 import {
@@ -17,7 +18,7 @@ import {
   StyleToneConfig,
   ToneConfig,
 } from "../../src/utils/tone.utils";
-import { getOpenAIApiKey } from "./env.utils";
+import { getGroqApiKey, getOpenAIApiKey } from "./env.utils";
 
 export type Eval = string;
 
@@ -29,9 +30,14 @@ const EVAL_RESULT_SCHEMA = z.object({
 const EVAL_RESULT_JSON_SCHEMA =
   zodToJsonSchema(EVAL_RESULT_SCHEMA, "Schema").definitions?.Schema ?? {};
 
-export function getGentextRepo(): BaseGenerateTextRepo {
+export function getOpenAIGentextRepo(): BaseGenerateTextRepo {
   const apiKey = getOpenAIApiKey();
   return new OpenAIGenerateTextRepo(apiKey, "gpt-4o-mini");
+}
+
+export function getGroqGentextRepo(): BaseGenerateTextRepo {
+  const apiKey = getGroqApiKey();
+  return new GroqGenerateTextRepo(apiKey, null);
 }
 
 export function getEvalRepo(): BaseGenerateTextRepo {
@@ -95,11 +101,13 @@ export const postProcess = async ({
   transcription,
   language = "en",
   userName = "Thomas Gundan",
+  repo,
 }: {
   tone: ToneConfig;
   transcription: string;
   language?: string;
   userName?: string;
+  repo?: BaseGenerateTextRepo;
 }): Promise<string> => {
   const promptInput: PostProcessingPromptInput = {
     transcript: transcription,
@@ -110,7 +118,7 @@ export const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getGentextRepo().generateText({
+  const output = await (repo ?? getOpenAIGentextRepo()).generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
