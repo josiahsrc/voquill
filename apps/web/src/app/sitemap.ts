@@ -1,12 +1,8 @@
 import type { MetadataRoute } from "next";
 import { getAllBlogPosts } from "../lib/blog";
-import { DEFAULT_SITE_LAST_MODIFIED, SITE_URL } from "../lib/site";
+import { DEFAULT_SITE_LAST_MODIFIED, toAbsoluteSiteUrl } from "../lib/site";
 
 export const dynamic = "force-static";
-
-function toAbsoluteUrl(path: string): string {
-  return path === "/" ? SITE_URL : `${SITE_URL}${path}`;
-}
 
 function isIsoDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -21,25 +17,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
-      url: toAbsoluteUrl("/"),
+      url: toAbsoluteSiteUrl("/"),
       lastModified: DEFAULT_SITE_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: toAbsoluteUrl("/download"),
+      url: toAbsoluteSiteUrl("/download"),
       lastModified: DEFAULT_SITE_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
-      url: toAbsoluteUrl("/blog"),
+      url: toAbsoluteSiteUrl("/blog"),
       lastModified: blogLastModified,
       changeFrequency: "weekly",
       priority: 0.7,
     },
+    {
+      url: toAbsoluteSiteUrl("/contact"),
+      lastModified: DEFAULT_SITE_LAST_MODIFIED,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
     ...posts.map((post) => ({
-      url: toAbsoluteUrl(`/blog/${post.slug}`),
+      url: toAbsoluteSiteUrl(`/blog/${post.slug}`),
       lastModified: isIsoDate(post.date)
         ? post.date
         : DEFAULT_SITE_LAST_MODIFIED,
@@ -47,13 +49,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     })),
     {
-      url: toAbsoluteUrl("/privacy"),
+      url: toAbsoluteSiteUrl("/privacy"),
       lastModified: DEFAULT_SITE_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
-      url: toAbsoluteUrl("/terms"),
+      url: toAbsoluteSiteUrl("/terms"),
       lastModified: DEFAULT_SITE_LAST_MODIFIED,
       changeFrequency: "monthly",
       priority: 0.5,
