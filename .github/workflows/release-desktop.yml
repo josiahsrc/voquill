@@ -578,6 +578,25 @@ jobs:
           echo "args=${combined_args}" >> "$GITHUB_OUTPUT"
           echo "config=${config_file}" >> "$GITHUB_OUTPUT"
 
+      - name: Set Linux package and binary names
+        if: matrix.os == 'ubuntu-22.04'
+        shell: bash
+        env:
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+        run: |
+          set -euo pipefail
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            config_file="apps/desktop/src-tauri/tauri.prod.conf.json"
+            pkg_name="voquill-desktop"
+          else
+            config_file="apps/desktop/src-tauri/tauri.dev.conf.json"
+            pkg_name="voquill-desktop-dev"
+          fi
+          tmp=$(mktemp)
+          jq --arg name "$pkg_name" '.productName = $name | .mainBinaryName = $name' "$config_file" > "$tmp"
+          mv "$tmp" "$config_file"
+          echo "Set productName and mainBinaryName to '${pkg_name}' in ${config_file}"
+
       - name: Turbo build desktop workspace
         env:
           MACOSX_DEPLOYMENT_TARGET: "13.3"
@@ -848,3 +867,78 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload "$CHANNEL_TAG" dist/latest.json --clobber
+
+  publish-apt:
+    name: Publish to APT repository
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
+    if: contains(fromJSON('["desktop-linux"]'), 'desktop-linux')
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+    steps:
+      - name: Download .deb from release
+        run: |
+          set -euo pipefail
+          mkdir -p debs
+          gh release download "$RELEASE_TAG" --pattern "*.deb" --dir debs --repo "$GITHUB_REPOSITORY"
+          deb_file="$(ls debs/*.deb | head -n 1)"
+          if [[ -z "${deb_file}" ]]; then
+            echo "No .deb file found in release ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          echo "Found .deb: ${deb_file}"
+
+          # Add Section field if missing (required by reprepro)
+          mkdir -p repack
+          dpkg-deb -R "${deb_file}" repack/
+          if ! grep -q "^Section:" repack/DEBIAN/control; then
+            echo "Section: utils" >> repack/DEBIAN/control
+            dpkg-deb -b repack "${deb_file}"
+          fi
+          rm -rf repack
+
+          echo "DEB_FILE=${deb_file}" >> "$GITHUB_ENV"
+
+      - name: Clone APT repository
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${{ secrets.APT_REPO_TOKEN }}@github.com/voquill/apt.git" apt-repo
+
+      - name: Import GPG key
+        env:
+          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          echo "${APT_GPG_PRIVATE_KEY}" | gpg --batch --import
+
+      - name: Install reprepro
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      - name: Add package to repository
+        run: |
+          set -euo pipefail
+          cd apt-repo
+
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            codename="stable"
+          else
+            codename="dev"
+          fi
+
+          echo "Adding ${DEB_FILE} to codename '${codename}'"
+          reprepro --basedir . includedeb "${codename}" "../${DEB_FILE}"
+
+      - name: Push updated repository
+        run: |
+          set -euo pipefail
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update packages from ${RELEASE_TAG}"
+          git push

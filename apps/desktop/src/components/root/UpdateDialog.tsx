@@ -22,7 +22,12 @@ import {
 } from "../../actions/updater.actions";
 import { useAppStore } from "../../store";
 import { formatSize } from "../../utils/format.utils";
+import { getPlatform } from "../../utils/platform.utils";
 import { isReadOnlyFilesystemInstallError } from "../../utils/updater.utils";
+import { CopyableCommand } from "../CopyableCommand";
+
+const APT_UPDATE_COMMAND =
+  "sudo apt-get update && sudo apt-get upgrade voquill-desktop";
 
 const formatReleaseDate = (isoDate: string | null) => {
   if (!isoDate) {
@@ -60,9 +65,12 @@ export const UpdateDialog = () => {
   const totalBytes = useAppStore((state) => state.updater.totalBytes);
   const errorMessage = useAppStore((state) => state.updater.errorMessage);
 
+  const isLinux = getPlatform() === "linux";
   const isUpdating = status === "downloading" || status === "installing";
-  const showProgress = status === "downloading" || status === "installing";
+  const showProgress =
+    !isLinux && (status === "downloading" || status === "installing");
   const showManualInstallerAction =
+    !isLinux &&
     status === "error" &&
     isReadOnlyFilesystemInstallError(errorMessage) &&
     Boolean(manualInstallerUrl);
@@ -201,6 +209,32 @@ export const UpdateDialog = () => {
             </Stack>
           )}
 
+          {isLinux && (
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                <FormattedMessage
+                  defaultMessage="Visit the {link} to download the latest version, or if you installed with APT, run this command:"
+                  values={{
+                    link: (
+                      <Link
+                        component="button"
+                        variant="body2"
+                        onClick={() => openUrl("https://voquill.com/download")}
+                        sx={{ verticalAlign: "baseline" }}
+                      >
+                        <FormattedMessage defaultMessage="downloads page" />
+                      </Link>
+                    ),
+                  }}
+                />
+              </Typography>
+              <CopyableCommand command={APT_UPDATE_COMMAND} />
+              <Typography variant="caption" color="text.secondary">
+                <FormattedMessage defaultMessage="After updating, restart Voquill to use the new version." />
+              </Typography>
+            </Stack>
+          )}
+
           {showProgress && (
             <Stack spacing={1}>
               <LinearProgress
@@ -225,13 +259,13 @@ export const UpdateDialog = () => {
             </Stack>
           )}
 
-          {status === "installing" && (
+          {!isLinux && status === "installing" && (
             <Alert severity="info" variant="outlined">
               <FormattedMessage defaultMessage="Installation in progress. Voquill may restart automatically when finished." />
             </Alert>
           )}
 
-          {status === "error" && errorMessage && (
+          {!isLinux && status === "error" && errorMessage && (
             <Alert
               severity="error"
               variant="outlined"
@@ -260,23 +294,31 @@ export const UpdateDialog = () => {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} disabled={isUpdating}>
-          <FormattedMessage defaultMessage="Later" />
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleInstall}
-          disabled={isUpdating}
-          endIcon={
-            isUpdating ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              <ArrowUpwardOutlined />
-            )
-          }
-        >
-          <FormattedMessage defaultMessage="Update" />
-        </Button>
+        {isLinux ? (
+          <Button onClick={handleClose}>
+            <FormattedMessage defaultMessage="Close" />
+          </Button>
+        ) : (
+          <>
+            <Button onClick={handleClose} disabled={isUpdating}>
+              <FormattedMessage defaultMessage="Later" />
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleInstall}
+              disabled={isUpdating}
+              endIcon={
+                isUpdating ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <ArrowUpwardOutlined />
+                )
+              }
+            >
+              <FormattedMessage defaultMessage="Update" />
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   );

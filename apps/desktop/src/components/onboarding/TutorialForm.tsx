@@ -25,7 +25,7 @@ import {
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
-import { CHAT_TONE_ID, EMAIL_TONE_ID } from "../../utils/tone.utils";
+import { POLISHED_TONE_ID, EMAIL_TONE_ID } from "../../utils/tone.utils";
 import { getMyUser } from "../../utils/user.utils";
 import { DictationInstruction } from "../common/DictationInstruction";
 import { HotkeyBadge } from "../common/HotkeyBadge";
@@ -130,7 +130,7 @@ export const TutorialForm = () => {
     init();
     return () => {
       cancelled = true;
-      setChatTone(CHAT_TONE_ID, submissionCompleteRef.current).then(() => {
+      setChatTone(POLISHED_TONE_ID, submissionCompleteRef.current).then(() => {
         clearLocalStorageValue("voquill:checklist-writing-style");
       });
       produceAppState((draft) => {
@@ -193,7 +193,7 @@ ${userName}`;
 
     if (stepIndex === 0) {
       // Discord step
-      setChatTone(CHAT_TONE_ID);
+      setChatTone(POLISHED_TONE_ID);
     } else if (stepIndex === 1) {
       // Email step
       setChatTone(EMAIL_TONE_ID);

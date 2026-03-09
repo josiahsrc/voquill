@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { FormattedMessage, useIntl } from "react-intl";

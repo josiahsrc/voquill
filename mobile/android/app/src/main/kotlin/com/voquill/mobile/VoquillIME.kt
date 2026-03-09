@@ -107,6 +107,10 @@ class VoquillIME : InputMethodService() {
     private var cachedIdToken: String? = null
     private var cachedIdTokenExpiry = 0L
 
+    private var deleteRepeatRunnable: Runnable? = null
+    private var deleteWordRunnable: Runnable? = null
+    private var deleteIsWordMode = false
+
     private var selectedToneId: String? = null
     private var activeToneIds: List<String> = emptyList()
     private var toneById: Map<String, SharedTone> = emptyMap()
@@ -208,7 +212,22 @@ class VoquillIME : InputMethodService() {
         utilAtButton.setOnClickListener { currentInputConnection?.commitText("@", 1) }
         utilSpaceButton.setOnClickListener { currentInputConnection?.commitText(" ", 1) }
         utilReturnButton.setOnClickListener { onReturnTap() }
-        utilDeleteButton.setOnClickListener { sendDeleteKey() }
+        utilDeleteButton.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    v.isPressed = true
+                    onDeleteDown()
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.isPressed = false
+                    onDeleteUp()
+                    v.performClick()
+                    true
+                }
+                else -> false
+            }
+        }
         upgradeButton.setOnClickListener { openUpgrade() }
 
         window.window?.decorView?.setBackgroundColor(Color.TRANSPARENT)
@@ -426,6 +445,53 @@ class VoquillIME : InputMethodService() {
         val connection = currentInputConnection ?: return
         connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
         connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+    }
+
+    private fun onDeleteDown() {
+        sendDeleteKey()
+        deleteIsWordMode = false
+        deleteRepeatRunnable?.let { handler.removeCallbacks(it) }
+        deleteWordRunnable?.let { handler.removeCallbacks(it) }
+
+        deleteRepeatRunnable = Runnable {
+            val repeatAction = object : Runnable {
+                override fun run() {
+                    if (deleteIsWordMode) {
+                        deleteWord()
+                    } else {
+                        sendDeleteKey()
+                    }
+                    handler.postDelayed(this, 80)
+                }
+            }
+            deleteRepeatRunnable = repeatAction
+            repeatAction.run()
+        }
+        handler.postDelayed(deleteRepeatRunnable!!, 400)
+
+        deleteWordRunnable = Runnable { deleteIsWordMode = true }
+        handler.postDelayed(deleteWordRunnable!!, 2000)
+    }
+
+    private fun onDeleteUp() {
+        deleteRepeatRunnable?.let { handler.removeCallbacks(it) }
+        deleteRepeatRunnable = null
+        deleteWordRunnable?.let { handler.removeCallbacks(it) }
+        deleteWordRunnable = null
+        deleteIsWordMode = false
+    }
+
+    private fun deleteWord() {
+        val connection = currentInputConnection ?: return
+        val text = connection.getTextBeforeCursor(1000, 0)?.toString()
+        if (text.isNullOrEmpty()) {
+            sendDeleteKey()
+            return
+        }
+        val trimmed = if (text.endsWith(" ")) text.dropLast(1) else text
+        val lastSpace = trimmed.lastIndexOf(' ')
+        val count = if (lastSpace >= 0) text.length - lastSpace else text.length
+        connection.deleteSurroundingText(count, 0)
     }
 
     private fun onReturnTap() {

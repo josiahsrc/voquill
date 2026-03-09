@@ -1,7 +1,7 @@
 import 'package:app/model/tone_model.dart';
 import 'package:app/state/app_state.dart';
 
-const defaultToneId = 'default';
+const polishedToneId = 'default';
 const verbatimToneId = 'verbatim';
 const emailToneId = 'email';
 const chatToneId = 'chat';
@@ -21,20 +21,22 @@ String formatPromptForPreview(String prompt) {
 
 List<Tone> getDefaultSystemTones() => const [
   Tone(
-    id: defaultToneId,
+    id: polishedToneId,
     name: 'Polished',
     promptTemplate: '''
-- Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally talks
-- Keep the speaker's vocabulary, sentence patterns, and tone intact
-- The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it
-- Remove filler words and speech disfluencies that carry no meaning — words that could be deleted without changing what the speaker is saying or how they're saying it
-- Keep words that contribute to the speaker's tone and style
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
-- Format bulletted lists when the user speaks items in a list format
-- The resulting transcription should make sense
-- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
-- Put backticks around code terms like filenames, function names, and code snippets
-- Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)''',
+You are a transcript polisher. Rewrite raw spoken text into what the speaker would have written themselves. The result should read as a cohesive piece of writing, not as a sequence of cleaned-up spoken sentences.
+
+Clean up:
+- Remove filler words, stutters, false starts, and throwaway words or phrases that do not address anyone or add meaning to the written text.
+- When the speaker self-corrects, drop the original and keep only the corrected version. Words like "actually", "no", "I mean", "or rather", "wait", and "excuse me" between two alternatives signal a self-correction — always keep only what comes after.
+- Merge redundant restatements of the same idea into a single clear expression.
+- Fix grammar, spelling, and punctuation. Combine sentence fragments with the sentences they relate to. Connect related ideas across sentences for natural written flow.
+
+Format:
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]". Convert spoken formatting commands to actual formatting and spoken emoji descriptions to actual emoji characters.
+- Put backticks around code terms. Format spoken lists as bulleted lists.
+
+Preserve the speaker's tone, personality, level of formality, and words that carry emotion or character. Refine phrasing so it reads naturally as written text, not as a transcript. Do not add, infer, or hallucinate any information the speaker did not say. Output ONLY the polished text.''',
     isSystem: true,
     createdAt: 0,
     sortOrder: 0,
@@ -42,14 +44,9 @@ List<Tone> getDefaultSystemTones() => const [
   Tone(
     id: verbatimToneId,
     name: 'Verbatim',
-    promptTemplate: '''
-- Produce a near-exact transcription that preserves the speaker's voice
-- Add punctuation, capitalization, and paragraph breaks for readability
-- Remove filler words (um, uh, like, you know), false starts, repeated words, and content the speaker later corrected
-- Do NOT fix grammar, do NOT restructure sentences, and do NOT change the speaker's word choices or phrasing
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]"
-- Put backticks around code terms like filenames, function names, and code snippets
-- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word''',
+    promptTemplate:
+        "Do not apply any post-processing to the transcription. Keep everything exactly as you said it.",
+    shouldDisablePostProcessing: true,
     isSystem: true,
     createdAt: 0,
     sortOrder: 1,
@@ -58,20 +55,24 @@ List<Tone> getDefaultSystemTones() => const [
     id: emailToneId,
     name: 'Email',
     promptTemplate: '''
-- Sound like the speaker, but written
-- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
-- Fit the speaker's words into an email format but do NOT add new phrasing, ideas, or words that would otherwise change the intent.
-- Preserve the speaker's greeting and sign-off if present
-- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
-- Format bulletted lists when the user speaks items in a list format
-- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
-- The resulting transcription should make sense
-- Put backticks around code terms like filenames, function names, and code snippets
-- It should remove and fix content that was later corrected by the speaker
-- Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
-- DO NOT introduce new phrasing
-- DO NOT remove phrasing that would change the speaker's intent except for fixing errors''',
+You are a transcript polisher. Rewrite raw spoken text into a well-formatted email the speaker would have written themselves. No subject line.
+
+Structure:
+- Format as: greeting, body paragraphs, and sign-off with the speaker's name.
+- If the speaker said their own greeting or sign-off, use their words. If they didn't, add a simple one that fits the tone.
+- Format spoken lists as bulleted lists, preserving any preamble before the list.
+
+Clean up:
+- Remove filler words, stutters, false starts, and throwaway words or phrases that do not address anyone or add meaning.
+- When the speaker self-corrects, drop the original and keep only the corrected version. Words like "actually", "no", "I mean", "or rather", "wait", and "excuse me" between two alternatives signal a self-correction — always keep only what comes after.
+- Merge redundant restatements of the same idea into a single clear expression.
+- Fix grammar, spelling, and punctuation. Combine sentence fragments with the sentences they relate to. Connect related ideas across sentences for natural written flow.
+
+Format:
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]". Convert spoken formatting commands to actual formatting and spoken emoji descriptions to actual emoji characters.
+- Put backticks around code terms.
+
+Preserve the speaker's tone, personality, level of formality, and words that carry emotion or character. Refine phrasing so it reads naturally as a written email, not as a transcript. Do not add, infer, or hallucinate any information the speaker did not say. Output ONLY the formatted email with proper line breaks where applicable.''',
     isSystem: true,
     createdAt: 0,
     sortOrder: 2,
@@ -80,18 +81,16 @@ List<Tone> getDefaultSystemTones() => const [
     id: chatToneId,
     name: 'Chat',
     promptTemplate: '''
-- Keep the language casual and conversational like a text message, but make sure to capitalize the first letter of each sentence
-- Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally talks
-- Remove filler words that detract from the casual tone of the message
-- Remove speech disfluencies (stutters, false starts, repeated words)
-- Keep the speaker's vocabulary, sentence patterns, and tone intact
-- Keep question marks and exclamation points to preserve the speaker's intent
-- Never end the last sentence with a period
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- You are formatting spoken words into a chat message. The speaker dictated this out loud — make it sound like them typing.
+- Keep it casual and concise. Do not over-structure or over-punctuate.
 - Format bulletted lists when the user speaks items in a list format
-- Convert newlines and other intents into actual formatting where applicable (e.g. \\n for line breaks, etc.) and remove the word
-- Put backticks around code terms like filenames, function names, and code snippets
-- It should remove content that was later corrected by the speaker''',
+- Fix spelling and basic punctuation. Do not add exclamation points unless the speaker's tone clearly called for one. Default to periods.
+- Preserve the speaker's tone and personality. Do not elevate or formalize, but refine phrasing to read naturally as written text.
+- Remove filler words (like, just, um, etc), stutters, and false starts.
+- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought. Self-corrections include patterns like "X, actually, Y", "X, no, Y", "X, I mean Y", "X, or rather, Y", "X... wait, Y", and "X, excuse me, Y" — in all of these, drop X entirely and keep only Y.
+- Convert spoken formatting commands into actual formatting and spoken emoji descriptions into actual emoji characters.
+- Every idea and sentiment the speaker expressed must appear in the output. If they said something blunt or impolite, keep it.
+- Do NOT add greetings, sign-offs, information, or details the speaker did not say''',
     isSystem: true,
     createdAt: 0,
     sortOrder: 3,
@@ -101,7 +100,8 @@ List<Tone> getDefaultSystemTones() => const [
     name: 'Formal',
     promptTemplate: '''
 - Rewrite in a polished, professional register
-- Fix grammar, remove filler and disfluencies, and restructure for readability
+- Remove filler words (like, just, um, etc), stutters, and false starts.
+- Always remove/fix words that are later self-corrected. Keep only the final intended version of each thought. Self-corrections include patterns like "X, actually, Y", "X, no, Y", "X, I mean Y", "X, or rather, Y", "X... wait, Y", and "X, excuse me, Y" — in all of these, drop X entirely and keep only Y.
 - Keep the speaker's vocabulary, sentence patterns, while enforcing a formal tone
 - Use complete sentences, precise vocabulary, and proper grammar
 - Avoid contractions, colloquialisms, and casual phrasing
@@ -113,15 +113,6 @@ List<Tone> getDefaultSystemTones() => const [
     createdAt: 0,
     sortOrder: 4,
   ),
-  Tone(
-    id: disabledToneId,
-    name: 'Disabled',
-    promptTemplate: 'Do not apply any post-processing to the transcription.',
-    isSystem: true,
-    createdAt: 0,
-    sortOrder: 5,
-    shouldDisablePostProcessing: true,
-  ),
 ];
 
 List<Tone> mergeSystemTones(List<Tone> userTones) {
@@ -131,9 +122,10 @@ List<Tone> mergeSystemTones(List<Tone> userTones) {
 
 List<String> getActiveManualToneIds(AppState state) {
   final toneIds = state.user?.activeToneIds ?? [];
-  final validToneIds =
-      toneIds.where((id) => state.toneById.containsKey(id)).toList();
-  return validToneIds.isNotEmpty ? validToneIds : [defaultToneId];
+  final validToneIds = toneIds
+      .where((id) => state.toneById.containsKey(id))
+      .toList();
+  return validToneIds.isNotEmpty ? validToneIds : [polishedToneId];
 }
 
 String getManuallySelectedToneId(AppState state) {
@@ -145,7 +137,7 @@ String getManuallySelectedToneId(AppState state) {
     return tone.id;
   }
 
-  return activeIds.firstOrNull ?? defaultToneId;
+  return activeIds.firstOrNull ?? polishedToneId;
 }
 
 List<String> getSortedToneIds(AppState state) {
@@ -154,19 +146,18 @@ List<String> getSortedToneIds(AppState state) {
     ...getActiveManualToneIds(state),
   };
 
-  final tones = state.toneById.values
-      .where((t) => t.isDeprecated != true || usedToneIds.contains(t.id))
-      .toList()
-    ..sort(_compareTones);
+  final tones =
+      state.toneById.values
+          .where((t) => t.isDeprecated != true || usedToneIds.contains(t.id))
+          .toList()
+        ..sort(_compareTones);
 
   return tones.map((t) => t.id).toList();
 }
 
 List<String> getActiveSortedToneIds(AppState state) {
   final activeSet = getActiveManualToneIds(state).toSet();
-  return getSortedToneIds(state)
-      .where((id) => activeSet.contains(id))
-      .toList();
+  return getSortedToneIds(state).where((id) => activeSet.contains(id)).toList();
 }
 
 int _compareTones(Tone a, Tone b) {

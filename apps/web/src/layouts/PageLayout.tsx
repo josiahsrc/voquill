@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { FormattedMessage } from "react-intl";
+import Link from "next/link";
 import SiteFooter from "../components/site-footer";
 import SiteHeader from "../components/site-header";
 import styles from "../styles/page.module.css";
@@ -22,9 +25,15 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
       <div className={styles.pageMeta}>
         <span>© {currentYear} Handaptive LLC</span>
         <div className={styles.pageLinks}>
-          <Link to="/privacy">Privacy</Link>
-          <Link to="/terms">Terms</Link>
-          <Link to="/contact">Contact</Link>
+          <Link href="/privacy">
+            <FormattedMessage defaultMessage="Privacy" />
+          </Link>
+          <Link href="/terms">
+            <FormattedMessage defaultMessage="Terms" />
+          </Link>
+          <Link href="/contact">
+            <FormattedMessage defaultMessage="Contact" />
+          </Link>
         </div>
       </div>
     </div>

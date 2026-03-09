@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
 import { FormattedMessage, useIntl } from "react-intl";
 import DownloadButton from "../download-button";
 import {
@@ -59,7 +61,7 @@ export function HeroSection() {
               );
             })}
           </div>
-          <Link to="/download" className={styles.heroMoreLink}>
+          <Link href="/download" className={styles.heroMoreLink}>
             <FormattedMessage defaultMessage="More download options" />
           </Link>
           <a
@@ -70,7 +72,10 @@ export function HeroSection() {
           >
             <img
               src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1061874&theme=dark"
-              alt="Voquill - The open source WisprFlow alternative | Product Hunt"
+              alt={intl.formatMessage({
+                defaultMessage:
+                  "Voquill - The open source WisprFlow alternative | Product Hunt",
+              })}
               width="250"
               height="54"
             />

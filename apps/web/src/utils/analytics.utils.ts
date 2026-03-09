@@ -1,9 +1,8 @@
 import mixpanel from "mixpanel-browser";
 
 export function getMixpanel() {
-  const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;
+  const mixpanelToken = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
   if (!mixpanelToken) {
-    // Mixpanel token is not set, do not initialize Mixpanel
     return null;
   }
 

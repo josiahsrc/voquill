@@ -9,7 +9,7 @@
 
 ** Repository structure **
 
-- This is a Turborepo monorepo. Root-level: `npm run build`, `npm run lint`, `npm run check-types`, `npm run test`.
+- This is a Turborepo monorepo. Root-level: `pnpm run build`, `pnpm run lint`, `pnpm run check-types`, `pnpm run test`.
 - Shared packages live in `packages/` (types, functions, ui, etc.). After modifying `packages/types` or `packages/functions`, rebuild them before downstream consumers can see changes.
 - Use `<FormattedMessage defaultMessage="..." />` or `useIntl()` for i18n — never pass an `id` prop.
 
@@ -25,17 +25,17 @@
 ** `apps/firebase/functions` — Firebase Cloud Functions **
 
 - Single `handler()` dispatches by `name` field, with Zod validation and `HandlerInput<"handler/name">` typing.
-- Scripts: `npm run build`, `npm run test`.
+- Scripts: `pnpm run build`, `pnpm run test`.
 
 ** `enterprise/gateway` — Enterprise API gateway **
 
 - Handler pattern: if-else chain in `src/index.ts`.
-- Scripts: `npm run build`, `npm run check-types`, `npm run test`
+- Scripts: `pnpm run build`, `pnpm run check-types`, `pnpm run test`
 
 ** `enterprise/admin` — Enterprise admin dashboard (React) **
 
 - Follows STT provider pattern for new provider types (state, actions, tab, dialog, side effects).
-- Scripts: `npm run build`, `npm run lint`.
+- Scripts: `pnpm run build`, `pnpm run lint`.
 
 ** `mobile/` — Flutter mobile app **
 
@@ -44,8 +44,12 @@
 - Uses `flutter_zustand` and `draft` for state management, following similar patterns as the desktop app.
 - Use `./mobile/generate.sh` to re-generate code.
 
-** `apps/web` — Marketing website (Astro) **
+** `apps/web` — Marketing website (Next.js static export) **
 
-- Scripts: `npm run build`.
+- Next.js App Router with `output: 'export'` for fully static HTML.
+- Page components live in `src/views/`, route definitions in `src/app/`.
+- Uses react-intl for i18n with babel-plugin-formatjs (custom `.babelrc.js`).
+- Build output goes to `out/` directory (deployed via Firebase Hosting).
+- Scripts: `pnpm run build`.
 
 ** Important scripts **

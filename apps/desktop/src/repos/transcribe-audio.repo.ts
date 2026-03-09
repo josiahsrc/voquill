@@ -21,22 +21,23 @@ import {
 } from "../utils/audio.utils";
 import { getEffectiveAuth } from "../utils/auth.utils";
 import { invokeEnterprise } from "../utils/enterprise.utils";
-import { NEW_SERVER_URL } from "../utils/new-server.utils";
-import { openaiCompatibleTranscribeAudio } from "../utils/openai-compatible-transcribe.utils";
-import { speachesTranscribeAudio } from "../utils/speaches.utils";
-import {
-  mergeTranscriptions,
-  splitAudioTranscription,
-} from "../utils/transcribe.utils";
-import { BaseRepo } from "./base.repo";
+import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
 import {
   getTranscriptionSidecarDeviceId,
   isGpuPreferredTranscriptionDevice,
   type LocalWhisperModel,
   normalizeLocalWhisperModel,
 } from "../utils/local-transcription.utils";
-import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
 import { getLogger } from "../utils/log.utils";
+import { NEW_SERVER_URL } from "../utils/new-server.utils";
+import { openaiCompatibleTranscribeAudio } from "../utils/openai-compatible-transcribe.utils";
+import { collectDictionaryEntries } from "../utils/prompt.utils";
+import { speachesTranscribeAudio } from "../utils/speaches.utils";
+import {
+  mergeTranscriptions,
+  splitAudioTranscription,
+} from "../utils/transcribe.utils";
+import { BaseRepo } from "./base.repo";
 
 type TranscriptionOptionsPayload = {
   model: LocalWhisperModel;
@@ -652,7 +653,7 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
   protected async transcribeSegment(
     input: TranscribeSegmentInput,
   ): Promise<TranscribeAudioOutput> {
-    const wsUrl = NEW_SERVER_URL.replace(/^http/, "ws") + "/v1/transcribe";
+    const wsUrl = NEW_SERVER_URL.replace(/^http/, "ws") + "/v1/transcribe-raw";
 
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(wsUrl);
@@ -699,17 +700,13 @@ export class NewServerTranscribeAudioRepo extends BaseTranscribeAudioRepo {
           }
 
           if (msg.type === "authenticated") {
-            const firstLine = input.prompt?.split("\n")[0] ?? "";
-            const glossary = firstLine
-              .replace(/^Glossary:\s*/i, "")
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean);
+            const state = getAppState();
+            const entries = collectDictionaryEntries(state);
             ws.send(
               JSON.stringify({
                 type: "config",
                 sampleRate: input.sampleRate,
-                glossary,
+                glossary: entries.sources,
                 language: input.language,
               }),
             );

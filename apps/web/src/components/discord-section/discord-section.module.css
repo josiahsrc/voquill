@@ -3,24 +3,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 80px 24px;
+  padding: 48px 24px;
   overflow: hidden;
-}
-
-/* Large washed out background Discord logo */
-.backgroundIcon {
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  color: rgba(88, 101, 242, 0.08);
-  pointer-events: none;
-  z-index: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .backgroundIcon {
-    color: rgba(114, 137, 218, 0.1);
-  }
 }
 
 /* Centered content */
@@ -146,18 +130,6 @@
 
 @media (max-width: 720px) {
   .section {
-    padding: 60px 18px;
-  }
-
-  .backgroundIcon {
-    width: 350px;
-    height: 350px;
-  }
-}
-
-@media (max-width: 520px) {
-  .backgroundIcon {
-    width: 280px;
-    height: 280px;
+    padding: 36px 18px;
   }
 }

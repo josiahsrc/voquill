@@ -117,8 +117,6 @@ export class DictationStrategy extends BaseStrategy {
 
   async handleTranscript({
     rawTranscript,
-    processedTranscript,
-    sessionPostProcessMetadata,
     toneId,
     currentApp,
   }: HandleTranscriptParams): Promise<HandleTranscriptResult> {
@@ -153,16 +151,9 @@ export class DictationStrategy extends BaseStrategy {
           // Non-critical trailing space
         }
         transcript = this.streamedProcessedText || sanitizedTranscript;
-        getLogger().info(
+        getLogger().verbose(
           `Streaming dictation complete (${this.streamedSegmentCount} segments, postProcessed=${this.streamingPostProcess})`,
         );
-      } else if (processedTranscript && sessionPostProcessMetadata) {
-        const afterProcessedReplacements = applyReplacements(
-          processedTranscript,
-          replacementRules,
-        );
-        transcript = applySymbolConversions(afterProcessedReplacements);
-        postProcessMetadata = sessionPostProcessMetadata;
       } else {
         const result = await postProcessTranscript({
           rawTranscript: sanitizedTranscript,

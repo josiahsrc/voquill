@@ -17,7 +17,7 @@ class _OnboardingTryDiscordFormState extends State<OnboardingTryDiscordForm> {
   @override
   void initState() {
     super.initState();
-    selectTone(chatToneId);
+    selectTone(polishedToneId);
   }
 
   @override

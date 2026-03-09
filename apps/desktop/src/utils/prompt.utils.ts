@@ -66,6 +66,10 @@ export const collectDictionaryEntries = (
     }
   }
 
+  // These should always be added to the vocabulary
+  recordSource("Voquill");
+  recordSource(getMyUserName(state));
+
   return {
     sources: Array.from(sources.values()),
     replacements: Array.from(replacements.values()),
@@ -256,9 +260,7 @@ export const buildLocalizedTranscriptionPrompt = (args: {
   dictationLanguage: DictationLanguageCode;
   state: AppState;
 }): string => {
-  const name = getMyUserName(args.state);
-  const effectiveEntries = ["Voquill", name, ...args.entries.sources];
-  const joinedEntries = effectiveEntries.join(", ");
+  const joinedEntries = args.entries.sources.join(", ");
   const prompt =
     getRec(transcriptionPromptByCode, args.dictationLanguage) ??
     transcriptionPromptByCode.en;

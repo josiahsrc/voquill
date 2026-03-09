@@ -1,6 +1,8 @@
+"use client";
+
 import { useState } from "react";
 import { useIntl } from "react-intl";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import styles from "../styles/page.module.css";
 import DownloadButton from "./download-button";
 import GitHubButton from "./github-button";
@@ -24,6 +26,10 @@ export function SiteHeader() {
       label: intl.formatMessage({ defaultMessage: "Pricing" }),
     },
     {
+      href: "/blog",
+      label: intl.formatMessage({ defaultMessage: "Blog" }),
+    },
+    {
       href: "https://docs.voquill.com",
       label: intl.formatMessage({ defaultMessage: "Docs" }),
       external: true,
@@ -38,7 +44,7 @@ export function SiteHeader() {
   return (
     <div className={styles.headerWrapper}>
       <header className={styles.header}>
-        <Link to="/" className={styles.logo}>
+        <Link href="/" className={styles.logo}>
           <LogoMark className={styles.logoMark} />
           <span>Voquill</span>
         </Link>
@@ -54,7 +60,7 @@ export function SiteHeader() {
                 {label}
               </a>
             ) : (
-              <Link key={href} to={href} className={styles.navLink}>
+              <Link key={href} href={href} className={styles.navLink}>
                 {label}
               </Link>
             )
@@ -115,7 +121,7 @@ export function SiteHeader() {
               ) : (
                 <Link
                   key={href}
-                  to={href}
+                  href={href}
                   className={styles.mobileNavLink}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

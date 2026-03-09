@@ -1,3 +1,6 @@
+"use client";
+
+import { FormattedMessage } from "react-intl";
 import styles from "./app-icon-showcase.module.css";
 
 type IconDefinition = {
@@ -46,8 +49,10 @@ export default function AppIconShowcase({ className }: AppIconShowcaseProps) {
         ))}
       </div>
       <p className={styles.srOnly}>
-        Supported destinations include{" "}
-        {icons.map((icon) => icon.label).join(", ")}.
+        <FormattedMessage
+          defaultMessage="Supported destinations include {icons}."
+          values={{ icons: icons.map((icon) => icon.label).join(", ") }}
+        />
       </p>
     </div>
   );

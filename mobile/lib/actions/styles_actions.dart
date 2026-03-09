@@ -159,9 +159,9 @@ Future<void> deleteTone(String toneId) async {
   final wasSelected = previous.selectedToneId == toneId;
 
   final newSelectedToneId =
-      wasSelected ? defaultToneId : previous.selectedToneId;
+      wasSelected ? polishedToneId : previous.selectedToneId;
   if (wasSelected) {
-    await setSelectedToneId(defaultToneId);
+    await setSelectedToneId(polishedToneId);
   }
 
   final updated = (previous.draft()
