@@ -19,9 +19,7 @@ import {
 } from "../../src/utils/tone.utils";
 import { getGroqApiKey } from "./env.utils";
 
-export type Eval = {
-  criteria: string;
-};
+export type Eval = string;
 
 const EVAL_RESULT_SCHEMA = z.object({
   score: z.number().min(0).max(10),
@@ -59,13 +57,14 @@ export async function runEval({
 
   // for (const e of evals) {
   const promises = evals.map(async (e) => {
+    const criteria = e;
     const output = await repo.generateText({
       system:
         "You are an evaluator. Score the final text based on the given criteria. Return a score between 0 and 10 and a reason for your score. Evaluate only if the statement in criteria is true in the final text. Don't judge quality generally.",
       prompt: [
         `Original text: ${originalText}`,
         `Final text: ${finalText}`,
-        `Criteria: ${e.criteria}`,
+        `Criteria: ${criteria}`,
       ].join("\n\n"),
       jsonResponse: {
         name: "eval_result",
@@ -76,11 +75,11 @@ export async function runEval({
 
     const result = EVAL_RESULT_SCHEMA.parse(JSON.parse(output.text));
 
-    console.log(`Eval Result for criteria "${e.criteria}":`, result);
+    console.log(`Eval Result for criteria "${criteria}":`, result);
     expect(
       result.score,
       [
-        `Eval failed for "${e.criteria}"`,
+        `Eval failed for "${criteria}"`,
         `Reason: ${result.reason}`,
         `Original: ${originalText}`,
         `Final: ${finalText}`,
