@@ -22,7 +22,7 @@ Download the latest release for your platform from [voquill.com/download](https:
 
 ### Linux (Debian/Ubuntu)
 
-Install via APT for automatic updates:
+There are multiple Linux installation options available on the [voquill.com/download](https://voquill.com/download) page. The easiest is via the APT package for automatic updates:
 
 ```bash
 curl -fsSL https://voquill.github.io/apt/install.sh | bash
@@ -64,11 +64,11 @@ sudo apt-get update && sudo apt-get upgrade voquill-desktop
 
 ## Transcription Modes
 
-| Mode  | Description                                      |
-| ----- | ------------------------------------------------ |
+| Mode  | Description                                           |
+| ----- | ----------------------------------------------------- |
 | Local | On-device transcription using Whisper. Fully offline. |
-| API   | Direct connection to Groq's Whisper API.         |
-| Cloud | Transcription via Voquill's cloud service.       |
+| API   | Direct connection to Groq's Whisper API.              |
+| Cloud | Transcription via Voquill's cloud service.            |
 
 ## Recording Your First Transcription
 
