@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
 import { FormattedMessage, useIntl } from "react-intl";
 import DownloadButton from "../download-button";
 import {
@@ -59,7 +61,7 @@ export function HeroSection() {
               );
             })}
           </div>
-          <Link to="/download" className={styles.heroMoreLink}>
+          <Link href="/download" className={styles.heroMoreLink}>
             <FormattedMessage defaultMessage="More download options" />
           </Link>
           <a

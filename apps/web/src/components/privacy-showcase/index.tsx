@@ -1,3 +1,5 @@
+"use client";
+
 import { FormattedMessage } from "react-intl";
 import PrivacyLock from "../privacy-lock";
 import styles from "../../styles/page.module.css";

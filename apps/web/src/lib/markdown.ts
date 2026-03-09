@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { marked } from "marked";
 
 marked.setOptions({
@@ -7,45 +9,14 @@ marked.setOptions({
 
 export type LegalSlug = "terms" | "privacy" | "contact" | "delete-account";
 
-const markdownCache = new Map<LegalSlug, string>();
-const rawMarkdownFiles = import.meta.glob<string>("../../content/*.md", {
-  import: "default",
-  query: "?raw",
-  eager: true,
-});
-
-const legalSlugs: LegalSlug[] = ["terms", "privacy", "contact", "delete-account"];
-
-const isLegalSlug = (value: string): value is LegalSlug => {
-  return legalSlugs.includes(value as LegalSlug);
-};
-
-for (const [path, raw] of Object.entries(rawMarkdownFiles)) {
-  const fileName = path.split("/").pop();
-
-  if (!fileName) {
-    continue;
-  }
-
-  const slug = fileName.replace(".md", "");
-
-  if (!isLegalSlug(slug)) {
-    continue;
-  }
-
+export function renderMarkdown(slug: LegalSlug): string {
+  const filePath = path.join(process.cwd(), "content", `${slug}.md`);
+  const raw = fs.readFileSync(filePath, "utf-8");
   const rendered = marked.parse(raw);
 
   if (typeof rendered !== "string") {
     throw new Error(`Failed to render markdown for ${slug}`);
   }
 
-  markdownCache.set(slug, rendered);
-}
-
-export function getMarkdownContent(slug: LegalSlug): string {
-  if (markdownCache.has(slug)) {
-    return markdownCache.get(slug)!;
-  }
-
-  throw new Error(`Missing markdown content for ${slug}`);
+  return rendered;
 }

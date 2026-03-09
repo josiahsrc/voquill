@@ -1,3 +1,5 @@
+"use client";
+
 import { FormattedMessage } from "react-intl";
 import pageStyles from "../../styles/page.module.css";
 import styles from "./offline-showcase.module.css";

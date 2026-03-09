@@ -1,3 +1,5 @@
+"use client";
+
 import { FormattedMessage } from "react-intl";
 import styles from "./app-icon-showcase.module.css";
 

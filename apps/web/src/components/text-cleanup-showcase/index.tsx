@@ -1,3 +1,5 @@
+"use client";
+
 import { FormattedMessage } from "react-intl";
 import DownloadButton from "../download-button";
 import TextCleanupAnimation from "./text-cleanup-animation";

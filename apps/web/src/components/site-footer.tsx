@@ -1,3 +1,5 @@
+"use client";
+
 import { FormattedMessage } from "react-intl";
 import DownloadButton from "./download-button";
 import styles from "../styles/page.module.css";

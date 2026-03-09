@@ -1,6 +1,8 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import DiscordIcon from "../../assets/discord.svg?react";
+import DiscordIcon from "../../assets/discord.svg";
 import pageStyles from "../../styles/page.module.css";
 import styles from "./discord-section.module.css";
 
@@ -38,7 +40,6 @@ export default function DiscordSection() {
 
   return (
     <section className={styles.section} id="community">
-      <DiscordIcon className={styles.backgroundIcon} />
       <div className={styles.content}>
         <div className={styles.badges}>
           <span className={`${pageStyles.badge} ${styles.newBadge}`}>

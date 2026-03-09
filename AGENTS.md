@@ -44,8 +44,12 @@
 - Uses `flutter_zustand` and `draft` for state management, following similar patterns as the desktop app.
 - Use `./mobile/generate.sh` to re-generate code.
 
-** `apps/web` — Marketing website (Astro) **
+** `apps/web` — Marketing website (Next.js static export) **
 
+- Next.js App Router with `output: 'export'` for fully static HTML.
+- Page components live in `src/views/`, route definitions in `src/app/`.
+- Uses react-intl for i18n with babel-plugin-formatjs (custom `.babelrc.js`).
+- Build output goes to `out/` directory (deployed via Firebase Hosting).
 - Scripts: `pnpm run build`.
 
 ** Important scripts **

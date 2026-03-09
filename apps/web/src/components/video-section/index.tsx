@@ -1,3 +1,5 @@
+"use client";
+
 import { FormattedMessage, useIntl } from "react-intl";
 import styles from "./video-section.module.css";
 
