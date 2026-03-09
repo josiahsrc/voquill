@@ -4,12 +4,12 @@ import { useIntl } from "react-intl";
 import Link from "next/link";
 import Image from "next/image";
 import PageLayout from "../layouts/PageLayout";
-import type { BlogPost } from "../lib/blog-utils";
+import type { BlogPostPreview } from "../lib/blog";
 import { formatBlogDate } from "../lib/blog-utils";
 import styles from "../styles/blog.module.css";
 
 type Props = {
-  posts: Omit<BlogPost, "content">[];
+  posts: BlogPostPreview[];
 };
 
 export default function BlogListPage({ posts }: Props) {
@@ -39,7 +39,7 @@ export default function BlogListPage({ posts }: Props) {
               <div className={styles.cardImageWrapper}>
                 <Image
                   src={post.image}
-                  alt=""
+                  alt={post.title}
                   className={styles.cardImage}
                   width={680}
                   height={383}

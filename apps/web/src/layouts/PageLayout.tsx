@@ -22,9 +22,9 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
       <div className={styles.headerSpacer} />
       <main className={mainClasses}>{children}</main>
       <SiteFooter />
-      <div className={styles.pageMeta}>
+      <footer className={styles.pageMeta}>
         <span>© {currentYear} Handaptive LLC</span>
-        <div className={styles.pageLinks}>
+        <nav className={styles.pageLinks} aria-label="Legal">
           <Link href="/privacy">
             <FormattedMessage defaultMessage="Privacy" />
           </Link>
@@ -34,8 +34,8 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
           <Link href="/contact">
             <FormattedMessage defaultMessage="Contact" />
           </Link>
-        </div>
-      </div>
+        </nav>
+      </footer>
     </div>
   );
 }

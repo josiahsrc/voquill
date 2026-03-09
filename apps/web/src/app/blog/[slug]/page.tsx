@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getBlogPost, getAllBlogSlugs } from "../../../lib/blog";
+import { DEFAULT_SOCIAL_IMAGE_URL, toAbsoluteSiteUrl } from "../../../lib/site";
 import BlogPostPage from "../../../views/BlogPostPage";
 
 type Props = {
@@ -16,18 +17,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = getBlogPost(slug);
   if (!post) return {};
 
+  const postPath = `/blog/${post.slug}`;
+  const postUrl = toAbsoluteSiteUrl(postPath);
+  const socialImageUrl = post.image
+    ? toAbsoluteSiteUrl(post.image)
+    : DEFAULT_SOCIAL_IMAGE_URL;
+
   return {
     title: `${post.title} | Voquill Blog`,
     description: post.description,
-    alternates: { canonical: `/blog/${post.slug}` },
+    alternates: { canonical: postPath },
     openGraph: {
       type: "article",
+      url: postUrl,
       title: post.title,
       description: post.description,
-      ...(post.image ? { images: [post.image] } : {}),
+      images: [{ url: socialImageUrl, alt: post.title }],
       publishedTime: post.date,
       authors: [post.author],
       tags: post.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+      images: [socialImageUrl],
     },
   };
 }
