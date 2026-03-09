@@ -885,6 +885,9 @@ jobs:
           mkdir -p repack
           dpkg-deb -R "${orig_deb}" repack/
           sed -i "s/^Package: .*/Package: ${pkg_name}/" repack/DEBIAN/control
+          if ! grep -q "^Section:" repack/DEBIAN/control; then
+            echo "Section: utils" >> repack/DEBIAN/control
+          fi
           new_deb="debs/${pkg_name}_${RELEASE_VERSION}_amd64.deb"
           dpkg-deb -b repack "${new_deb}"
           rm -rf repack
