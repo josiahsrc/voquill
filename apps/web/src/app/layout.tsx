@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Providers } from "../providers";
 import { PageViewTracker } from "../components/page-view-tracker";
+import { SITE_URL } from "../lib/site";
 import "../styles/global.css";
 
 export const metadata: Metadata = {
@@ -11,10 +12,10 @@ export const metadata: Metadata = {
     type: "website",
     title: "Voquill",
     description: "Type four times faster with a voice-first keyboard.",
-    url: "https://voquill.com",
+    url: SITE_URL,
     images: [
       {
-        url: "https://voquill.com/social.jpg",
+        url: `${SITE_URL}/social.jpg`,
         type: "image/jpeg",
         alt: "Voquill voice-first typing",
       },
@@ -24,14 +25,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Voquill | Your keyboard is holding you back",
     description: "Type four times faster with a voice-first keyboard.",
-    images: ["https://voquill.com/social.jpg"],
+    images: [`${SITE_URL}/social.jpg`],
   },
   icons: {
     icon: "/app-icon.svg",
     shortcut: "/app-icon.svg",
     apple: "/app-icon.svg",
   },
-  metadataBase: new URL("https://voquill.com"),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: "/",
   },
