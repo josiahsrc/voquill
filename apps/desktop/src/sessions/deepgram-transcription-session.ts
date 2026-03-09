@@ -320,7 +320,11 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
     this.startupPromise = (async () => {
       try {
         console.log("[Deepgram] Starting streaming session...");
-        this.session = await startDeepgramStreaming(this.apiKey, sampleRate, this.interimCallback ?? undefined);
+        this.session = await startDeepgramStreaming(
+          this.apiKey,
+          sampleRate,
+          this.interimCallback ?? undefined,
+        );
         console.log("[Deepgram] Streaming session started successfully");
       } catch (error) {
         console.error("[Deepgram] Failed to start streaming:", error);

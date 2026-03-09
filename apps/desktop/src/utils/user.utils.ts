@@ -241,9 +241,7 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   };
 };
 
-export const getTranscriptionSupportsStreaming = (
-  state: AppState,
-): boolean => {
+export const getTranscriptionSupportsStreaming = (state: AppState): boolean => {
   const prefs = getTranscriptionPrefs(state);
   const session = createTranscriptionSession(prefs);
   return session.supportsStreaming();

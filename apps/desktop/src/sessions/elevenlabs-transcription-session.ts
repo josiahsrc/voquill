@@ -395,7 +395,11 @@ export class ElevenLabsTranscriptionSession implements TranscriptionSession {
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
       console.log("[ElevenLabs] Starting streaming session...");
-      this.session = await startElevenLabsStreaming(this.apiKey, sampleRate, this.interimCallback ?? undefined);
+      this.session = await startElevenLabsStreaming(
+        this.apiKey,
+        sampleRate,
+        this.interimCallback ?? undefined,
+      );
       console.log("[ElevenLabs] Streaming session started successfully");
     } catch (error) {
       console.error("[ElevenLabs] Failed to start streaming:", error);

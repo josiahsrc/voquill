@@ -274,8 +274,7 @@ const startAssemblyAIStreaming = async (
         if (data.type === "Turn" && data.end_of_turn) {
           // Final formatted transcript
           const turnTranscript = data.transcript || "";
-          finalTranscript +=
-            (finalTranscript ? " " : "") + turnTranscript;
+          finalTranscript += (finalTranscript ? " " : "") + turnTranscript;
           console.log(
             "[AssemblyAI WebSocket] Final formatted transcript received, length:",
             finalTranscript.length,
@@ -334,7 +333,11 @@ export class AssemblyAITranscriptionSession implements TranscriptionSession {
   async onRecordingStart(sampleRate: number): Promise<void> {
     try {
       console.log("[AssemblyAI] Starting streaming session...");
-      this.session = await startAssemblyAIStreaming(this.apiKey, sampleRate, this.interimCallback ?? undefined);
+      this.session = await startAssemblyAIStreaming(
+        this.apiKey,
+        sampleRate,
+        this.interimCallback ?? undefined,
+      );
       console.log("[AssemblyAI] Streaming session started successfully");
     } catch (error) {
       console.error("[AssemblyAI] Failed to start streaming:", error);

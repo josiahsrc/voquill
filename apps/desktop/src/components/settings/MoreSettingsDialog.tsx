@@ -85,9 +85,7 @@ export const MoreSettingsDialog = () => {
     void setDictationPillVisibility(visibility);
   };
 
-  const handleToggleRealtimeOutput = (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleToggleRealtimeOutput = (event: ChangeEvent<HTMLInputElement>) => {
     void setRealtimeOutputEnabled(event.target.checked);
   };
 
@@ -179,9 +177,7 @@ export const MoreSettingsDialog = () => {
           />
 
           <SettingSection
-            title={
-              <FormattedMessage defaultMessage="Real-time output" />
-            }
+            title={<FormattedMessage defaultMessage="Real-time output" />}
             description={
               <FormattedMessage defaultMessage="Stream dictation text as you speak instead of pasting all at once when you stop. Only applies to Verbatim mode with supported providers." />
             }
