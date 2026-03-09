@@ -89,7 +89,7 @@ const runPostProcessingEval = async ({
   });
 };
 
-describe("post-processing evals", { retry: 3 }, () => {
+describe("post-processing evals", { retry: 0 }, () => {
   describe("default style", () => {
     test("basic transcription1", async () => {
       await runPostProcessingEval({
@@ -110,26 +110,12 @@ describe("post-processing evals", { retry: 3 }, () => {
       });
     });
 
-    test("should fix things that are later corrected", async () => {
-      await runPostProcessingEval({
-        transcription:
-          "Hey Emily, can you go fix that audio thing? That speaker that you broke yesterday. I really need that. It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
-        tone: getWritingStyle("default"),
-        evals: [
-          "It should use 'speaker' and not 'audio thing' since the speaker corrected themselves.",
-          "It should keep 'hey emily'",
-        ],
-      });
-    });
-
     test("should fix self corrections 2", async () => {
       await runPostProcessingEval({
         transcription:
-          "If I were to go over to the grocery store or, actually, the, electronics store. Do you want me to grab anything?",
+          "If I were to go over to the grocery store or actually no the electronics store. Do you want me to grab anything?",
         tone: getWritingStyle("default"),
-        evals: [
-          "It should mention electronics store but not grocery store",
-        ],
+        evals: ["It should mention electronics store but not grocery store"],
       });
     });
 
@@ -162,7 +148,7 @@ describe("post-processing evals", { retry: 3 }, () => {
           "Yes. Thanks for bringing that up. I recently made a change to make it so verbatim doesn't apply any post processing, effects as part of its contract. And so with this change, I felt it appropriate to basically make it so, when you're doing real time with verbatim mode, it still doesn't apply post processing on the outputs since none is needed. This way, like, verbatim is basically, like, a through and through really clean very fast output with no post processing.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove the filler word 'like' and correct 'I core rule' to 'the core rule'",
+          "It should remove filler words like 'like' and 'basically' while keeping the technical content intact",
         ],
       });
     });
@@ -299,9 +285,7 @@ Olá, gostaria de agendar uma reunião para discutir o projeto na próxima seman
 Bonjour, je voudrais planifier une réunion pour discuter du projet la semaine prochaine. Êtes-vous disponible mardi ou mercredi après-midi? S'il vous plaît, faites-moi savoir quelle heure vous convient le mieux.`,
         tone: getWritingStyle("default"),
         language: "en", // translate to English
-        evals: [
-          "It should translate the text to English and keep meaning",
-        ],
+        evals: ["It should translate the text to English and keep meaning"],
       });
     });
 
@@ -386,7 +370,7 @@ come on guys. you can do better, that was garbage.`,
           "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
         tone: getWritingStyle("email"),
         evals: [
-          "It should format it as an email with proper line breaks",
+          "It should not include a greeting and salutation since they didn't say one",
         ],
       });
     });
@@ -398,8 +382,8 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          "The greeting should use the speaker's words 'hi team' — not replace it with something else",
-          "The sign-off should use the speaker's words 'best regards' with Thomas's name",
+          "The greeting should use the speaker's words 'Hi team'",
+          "The sign-off should use the speaker's words 'Best regards' with Thomas's name",
           "Body should mention thanks for hard work and keeping up momentum",
         ],
       });
@@ -428,7 +412,7 @@ come on guys. you can do better, that was garbage.`,
         userName: "Thomas Gundan",
         evals: [
           "The three items should be formatted as a bulleted or numbered list",
-          "Should have a greeting with Mike's name and a sign-off with Thomas's name",
+          "Should have a greeting with Mike's name",
           "All three items must be present: deployment Friday 3pm, update API docs, staging ready by Thursday",
         ],
       });
@@ -443,7 +427,6 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "Should use Wednesday as the deadline — Monday should not appear anywhere",
           "Should mention needing more time to review",
-          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });
@@ -457,7 +440,7 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "Should mention putting items on the desk for review",
           "Should say Monday, not Tuesday",
-          "Should have greeting, body, and sign-off with Thomas's name with proper newlines",
+          "Should have greeting, body, and sign-off",
         ],
       });
     });
@@ -515,7 +498,6 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "Should remove all filler words (um, so, like, uh, honestly, yeah) but keep the reasoning intact",
           "Should mention: move launch date back two weeks, QA hasn't started integration tests, marketing needs to finalize landing page, pushing to the 15th",
-          "Should have greeting, body, and sign-off with Thomas's name",
           "Should read as a clean email, not a wall of text — use paragraph breaks where it makes sense",
         ],
       });

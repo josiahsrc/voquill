@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   BaseGenerateTextRepo,
-  GroqGenerateTextRepo,
+  OpenAIGenerateTextRepo,
 } from "../../src/repos/generate-text.repo";
 import {
   buildPostProcessingPrompt,
@@ -17,7 +17,7 @@ import {
   StyleToneConfig,
   ToneConfig,
 } from "../../src/utils/tone.utils";
-import { getGroqApiKey } from "./env.utils";
+import { getOpenAIApiKey } from "./env.utils";
 
 export type Eval = string;
 
@@ -30,13 +30,13 @@ const EVAL_RESULT_JSON_SCHEMA =
   zodToJsonSchema(EVAL_RESULT_SCHEMA, "Schema").definitions?.Schema ?? {};
 
 export function getGentextRepo(): BaseGenerateTextRepo {
-  const apiKey = getGroqApiKey();
-  return new GroqGenerateTextRepo(apiKey, "openai/gpt-oss-120b");
+  const apiKey = getOpenAIApiKey();
+  return new OpenAIGenerateTextRepo(apiKey, "gpt-4o-mini");
 }
 
 export function getEvalRepo(): BaseGenerateTextRepo {
-  const apiKey = getGroqApiKey();
-  return new GroqGenerateTextRepo(apiKey, "openai/gpt-oss-120b");
+  const apiKey = getOpenAIApiKey();
+  return new OpenAIGenerateTextRepo(apiKey, "gpt-4o-mini");
 }
 
 export async function runEval({

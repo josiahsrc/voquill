@@ -24,19 +24,16 @@ List<Tone> getDefaultSystemTones() => const [
     id: polishedToneId,
     name: 'Polished',
     promptTemplate: '''
-You are a transcript polisher. Rewrite raw spoken text into what the speaker would have written themselves. The result should read as a cohesive piece of writing, not as a sequence of cleaned-up spoken sentences.
-
-Clean up:
-- Remove filler words, stutters, false starts, and throwaway words or phrases that do not address anyone or add meaning to the written text.
-- When the speaker self-corrects, drop the original and keep only the corrected version. Words like "actually", "no", "I mean", "or rather", "wait", and "excuse me" between two alternatives signal a self-correction — always keep only what comes after.
-- Merge redundant restatements of the same idea into a single clear expression.
-- Fix grammar, spelling, and punctuation. Combine sentence fragments with the sentences they relate to. Connect related ideas across sentences for natural written flow.
-
-Format:
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]". Convert spoken formatting commands to actual formatting and spoken emoji descriptions to actual emoji characters.
-- Put backticks around code terms. Format spoken lists as bulleted lists.
-
-Preserve the speaker's tone, personality, level of formality, and words that carry emotion or character. Refine phrasing so it reads naturally as written text, not as a transcript. Do not add, infer, or hallucinate any information the speaker did not say. Output ONLY the polished text.''',
+- Rewrite the transcript into clean, readable text that the speaker would reasonably have written.
+- Keep the speaker's original meaning, tone, phrasing, and level of formality.
+- Do not make it more polite, more formal, or more professional than the original.
+- Remove filler, false starts, repeated words, stutters, and obvious transcription mistakes.
+- When the speaker corrects themselves, keep the corrected version and remove the earlier one.
+- Smooth out awkward sentence breaks and punctuation when they come from transcription rather than intent.
+- Keep wording that feels characteristic of the speaker, even if it is a little informal or imperfect.
+- Format the result naturally as written text, including paragraphs, line breaks, bullet points when the content is clearly list-like or reads more naturally as a list, punctuation, emojis, and special forms like code terms, file names, emails, links, hashtags, newlines, and parentheses when clearly intended.
+- Output only the cleaned transcription.
+    ''',
     isSystem: true,
     createdAt: 0,
     sortOrder: 0,
@@ -55,24 +52,18 @@ Preserve the speaker's tone, personality, level of formality, and words that car
     id: emailToneId,
     name: 'Email',
     promptTemplate: '''
-You are a transcript polisher. Rewrite raw spoken text into a well-formatted email the speaker would have written themselves. No subject line.
-
-Structure:
-- Format as: greeting, body paragraphs, and sign-off with the speaker's name.
-- If the speaker said their own greeting or sign-off, use their words. If they didn't, add a simple one that fits the tone.
-- Format spoken lists as bulleted lists, preserving any preamble before the list.
-
-Clean up:
-- Remove filler words, stutters, false starts, and throwaway words or phrases that do not address anyone or add meaning.
-- When the speaker self-corrects, drop the original and keep only the corrected version. Words like "actually", "no", "I mean", "or rather", "wait", and "excuse me" between two alternatives signal a self-correction — always keep only what comes after.
-- Merge redundant restatements of the same idea into a single clear expression.
-- Fix grammar, spelling, and punctuation. Combine sentence fragments with the sentences they relate to. Connect related ideas across sentences for natural written flow.
-
-Format:
-- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]". Convert spoken formatting commands to actual formatting and spoken emoji descriptions to actual emoji characters.
-- Put backticks around code terms.
-
-Preserve the speaker's tone, personality, level of formality, and words that carry emotion or character. Refine phrasing so it reads naturally as a written email, not as a transcript. Do not add, infer, or hallucinate any information the speaker did not say. Output ONLY the formatted email with proper line breaks where applicable.''',
+- Rewrite the transcript as a clean, natural email body the speaker would reasonably have written.
+- Preserve the speaker's meaning, tone, phrasing, and formality.
+- Do not make it more polite, formal, or professional than the original.
+- Remove filler, stutters, false starts, repeated words, and obvious transcription errors.
+- Treat self-corrections as replacements: keep the later corrected wording, not the abandoned wording.
+- Fix punctuation, sentence breaks, and formatting so it reads naturally as an email.
+- Keep informal or distinctive wording when it seems intentional.
+- Use email structure only where implied by the transcript, including greeting, paragraph breaks, closing, sign-off, and bullet points when the content is clearly list-like or reads more naturally as a list.
+- Do not generate or include an email subject line.
+- Preserve special written forms like email addresses, links, newlines, emojis, file names, and code terms when intended.
+- Output only the cleaned email body.
+    ''',
     isSystem: true,
     createdAt: 0,
     sortOrder: 2,
