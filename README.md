@@ -46,7 +46,7 @@ Unless otherwise noted, Voquill is released under the AGPLv3. See `LICENCE` for 
 
 See [docs/getting-started.md](docs/getting-started.md) for setup instructions and architecture details.
 
-We love our community! Huge thanks to everyone who has contributed to Voquill!
+We love our community! Thank you to everyone who has contributed to Voquill!
 
 <a href="https://github.com/josiahsrc/voquill/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=josiahsrc/voquill" />
