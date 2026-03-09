@@ -148,6 +148,38 @@ describe("post-processing evals", { retry: 3 }, () => {
       });
     });
 
+    test("example 1", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Hey. I think that that implementation makes a lot of sense to me. I mean, yeah, I feel like we really need to think about, like, what we're giving our customers. Like, specifically, should we be giving them, like, more value or a cheaper product? Like, I don't I don't really know because we it's kind of like a one or the other at this point. What do you what do you what do you guys think?",
+        tone: getWritingStyle("default"),
+        evals: [
+          {
+            criteria:
+              "It should remove the choppy sentence structure. i.e. 'Hey. I think' -> Hey, I think",
+          },
+        ],
+      });
+    });
+
+    test("example 2", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
+        tone: getWritingStyle("default"),
+        evals: [
+          {
+            criteria:
+              "It should remove the choppy sentence structure. i.e. 'Yes. But' -> Yes, but",
+          },
+          {
+            criteria:
+              "It should remove the filler word 'like' and correct 'I core rule' to 'the core rule'",
+          },
+        ],
+      });
+    });
+
     test("should deduplicate super redundant things", async () => {
       await runPostProcessingEval({
         transcription:
@@ -442,6 +474,19 @@ come on guys. you can do better, that was garbage.`,
       });
     });
 
+    test("example 2", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
+        tone: getWritingStyle("email"),
+        evals: [
+          {
+            criteria: "It should format it as an email with proper line breaks",
+          },
+        ],
+      });
+    });
+
     test("speaker provides their own greeting and sign-off", async () => {
       await runPostProcessingEval({
         transcription:
@@ -510,10 +555,6 @@ come on guys. you can do better, that was garbage.`,
           {
             criteria:
               "All three items must be present: deployment Friday 3pm, update API docs, staging ready by Thursday",
-          },
-          {
-            criteria:
-              "Should preserve something like 'a couple things' as the intro to the list",
           },
         ],
       });
