@@ -141,35 +141,42 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
   const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
   const modeToggle = showModeToggle ? (
-    <ToggleButtonGroup
-      exclusive
-      size="small"
-      value={realtimeOutputEnabled ? "realtime" : "bulk"}
-      onChange={(e, value) => {
-        if (!value) return;
-        e.stopPropagation();
-        void setRealtimeOutputEnabled(value === "realtime");
-      }}
-      onClick={stopPropagation}
-      onMouseDown={stopPropagation}
-      sx={{
-        height: 24,
-        "& .MuiToggleButton-root": {
-          py: 0,
-          px: 1,
-          fontSize: "0.7rem",
-          textTransform: "none",
-          lineHeight: 1,
-        },
-      }}
+    <Tooltip
+      disableInteractive
+      title={
+        <FormattedMessage defaultMessage="Realtime streams words as you speak. Bulk outputs text all at once and is better if you're switching between pages frequently." />
+      }
     >
-      <ToggleButton value="realtime">
-        <FormattedMessage defaultMessage="Realtime" />
-      </ToggleButton>
-      <ToggleButton value="bulk">
-        <FormattedMessage defaultMessage="Bulk" />
-      </ToggleButton>
-    </ToggleButtonGroup>
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={realtimeOutputEnabled ? "realtime" : "bulk"}
+        onChange={(e, value) => {
+          if (!value) return;
+          e.stopPropagation();
+          void setRealtimeOutputEnabled(value === "realtime");
+        }}
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        sx={{
+          height: 24,
+          "& .MuiToggleButton-root": {
+            py: 0,
+            px: 1,
+            fontSize: "0.7rem",
+            textTransform: "none",
+            lineHeight: 1,
+          },
+        }}
+      >
+        <ToggleButton value="realtime">
+          <FormattedMessage defaultMessage="Realtime" />
+        </ToggleButton>
+        <ToggleButton value="bulk">
+          <FormattedMessage defaultMessage="Bulk" />
+        </ToggleButton>
+      </ToggleButtonGroup>
+    </Tooltip>
   ) : null;
 
   const trailing = (
