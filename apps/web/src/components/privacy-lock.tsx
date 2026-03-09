@@ -1,4 +1,3 @@
-import { FormattedMessage } from "react-intl";
 import styles from "./privacy-lock.module.css";
 
 type PrivacyLockProps = {
@@ -190,7 +189,7 @@ export default function PrivacyLock({ className }: PrivacyLockProps) {
         </svg>
       </div>
       <span className={styles.srOnly}>
-        <FormattedMessage defaultMessage="Animated lock icon representing privacy and security." />
+        Animated lock icon representing privacy and security.
       </span>
     </div>
   );

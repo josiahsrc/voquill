@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { FormattedMessage } from "react-intl";
 import { Link } from "react-router-dom";
 import SiteFooter from "../components/site-footer";
 import SiteHeader from "../components/site-header";
@@ -23,15 +22,9 @@ export function PageLayout({ children, mainClassName }: PageLayoutProps) {
       <div className={styles.pageMeta}>
         <span>© {currentYear} Handaptive LLC</span>
         <div className={styles.pageLinks}>
-          <Link to="/privacy">
-            <FormattedMessage defaultMessage="Privacy" />
-          </Link>
-          <Link to="/terms">
-            <FormattedMessage defaultMessage="Terms" />
-          </Link>
-          <Link to="/contact">
-            <FormattedMessage defaultMessage="Contact" />
-          </Link>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
+          <Link to="/contact">Contact</Link>
         </div>
       </div>
     </div>

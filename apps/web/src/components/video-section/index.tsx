@@ -1,9 +1,7 @@
-import { FormattedMessage, useIntl } from "react-intl";
+import { FormattedMessage } from "react-intl";
 import styles from "./video-section.module.css";
 
 export default function VideoSection() {
-  const intl = useIntl();
-
   return (
     <section className={styles.videoSection} id="what-is-voquill">
       <h2 className={styles.heading}>
@@ -13,7 +11,7 @@ export default function VideoSection() {
         <iframe
           className={styles.videoFrame}
           src="https://www.youtube.com/embed/LOiiocR1xTQ"
-          title={intl.formatMessage({ defaultMessage: "Voquill Demo" })}
+          title="Voquill Demo"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
