@@ -190,7 +190,7 @@ export default function OfflineShowcase() {
             </svg>
           </div>
           <span className={styles.srOnly}>
-            Offline icon representing local-first functionality.
+            <FormattedMessage defaultMessage="Offline icon representing local-first functionality." />
           </span>
         </div>
       </div>

@@ -70,7 +70,10 @@ export function HeroSection() {
           >
             <img
               src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1061874&theme=dark"
-              alt="Voquill - The open source WisprFlow alternative | Product Hunt"
+              alt={intl.formatMessage({
+                defaultMessage:
+                  "Voquill - The open source WisprFlow alternative | Product Hunt",
+              })}
               width="250"
               height="54"
             />
