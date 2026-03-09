@@ -92,7 +92,6 @@ export type PostProcessingPromptInput = {
   userName: string;
   dictationLanguage: string;
   tone: ToneConfig;
-  precedingContext?: string;
 };
 
 const buildPostProcessingTemplateVars = (
@@ -109,21 +108,13 @@ const buildPostProcessingTemplateVars = (
 export const buildSystemPostProcessingTonePrompt = (
   input: PostProcessingPromptInput,
 ): string => {
-  let systemPrompt: string;
   if (input.tone.kind === "template" && input.tone.systemPromptTemplate) {
-    systemPrompt = applyTemplateVars(
+    return applyTemplateVars(
       input.tone.systemPromptTemplate,
       buildPostProcessingTemplateVars(input),
     );
-  } else {
-    systemPrompt = "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a single field 'processedTranscription' that contains the rewritten transcript.";
   }
-
-  if (input.precedingContext) {
-    systemPrompt += "\n\nThis is a continuation of an ongoing dictation. The following text has already been processed and output. Use it ONLY for context to ensure proper punctuation, capitalization, and flow. Do NOT repeat or include it in your response. Process ONLY the new transcript provided.\n\nAlready processed:\n" + input.precedingContext;
-  }
-
-  return systemPrompt;
+  return "You are a transcript rewriting assistant. You modify the style and tone of the transcript while keeping the subject matter the same. Your response MUST be in JSON format with ONLY a single field 'processedTranscription' that contains the rewritten transcript.";
 };
 
 type ReplacementRule = {

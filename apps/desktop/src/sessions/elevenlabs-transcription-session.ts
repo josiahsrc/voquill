@@ -54,6 +54,7 @@ const getElevenLabsToken = async (apiKey: string): Promise<string> => {
 const startElevenLabsStreaming = async (
   apiKey: string,
   inputSampleRate: number,
+  onInterimResult?: (segment: string) => void,
 ): Promise<ElevenLabsStreamingSession> => {
   const sampleRate = SUPPORTED_SAMPLE_RATES.includes(inputSampleRate)
     ? inputSampleRate
@@ -381,6 +382,10 @@ export class ElevenLabsTranscriptionSession implements TranscriptionSession {
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+  }
+
+  supportsStreaming(): boolean {
+    return true;
   }
 
   setInterimResultCallback(callback: (segment: string) => void): void {

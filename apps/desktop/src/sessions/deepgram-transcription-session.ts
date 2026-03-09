@@ -308,6 +308,10 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
     this.apiKey = apiKey;
   }
 
+  supportsStreaming(): boolean {
+    return true;
+  }
+
   setInterimResultCallback(callback: (segment: string) => void): void {
     this.interimCallback = callback;
   }

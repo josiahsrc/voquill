@@ -143,4 +143,10 @@ export class AzureTranscriptionSession implements TranscriptionSession {
       this.session = null;
     }
   }
+
+  supportsStreaming(): boolean {
+    return false;
+  }
+
+  setInterimResultCallback(): void {}
 }

@@ -52,14 +52,12 @@ import {
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
-import { getToneIdToUse, VERBATIM_TONE_ID } from "../../utils/tone.utils";
+import { getToneIdToUse } from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
-  getGenerativePrefs,
   getIsDictationUnlocked,
   getMyPreferredMicrophone,
   getMyPrimaryDictationLanguage,
-  getMyUserPreferences,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
 
@@ -421,33 +419,13 @@ export const DictationSideEffects = () => {
         getLogger().info(
           `Created transcription session: ${session.constructor.name}`,
         );
-        if (
-          session.setInterimResultCallback &&
-          strategy instanceof DictationStrategy
-        ) {
-          const realtimeEnabled =
-            getMyUserPreferences(state)?.realtimeOutputEnabled ?? false;
-          const toneId = getToneIdToUse(state, {
-            currentAppToneId: null,
-          });
-          if (realtimeEnabled && toneId === VERBATIM_TONE_ID) {
-            const genPrefs = getGenerativePrefs(state);
-            if (genPrefs.mode !== "none") {
-              strategy.configureStreamingPostProcess(toneId);
-              getLogger().verbose(
-                "Streaming with per-segment post-processing enabled",
-              );
-            } else {
-              getLogger().verbose(
-                "Streaming enabled (raw, no post-processing)",
-              );
-            }
-            session.setInterimResultCallback((segment) => {
-              strategy.handleInterimSegment(segment);
-            });
-          }
-        }
+
         tryPlayAudioChime("start_recording_clip");
+        if (session.supportsStreaming()) {
+          session.setInterimResultCallback((segment) => {
+            strategy.handleInterimSegment(segment);
+          });
+        }
 
         sessionRef.current = session;
         strategyRef.current = strategy;

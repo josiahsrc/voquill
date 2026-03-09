@@ -29,5 +29,6 @@ export interface TranscriptionSession {
     options?: TranscriptionSessionFinalizeOptions,
   ): Promise<TranscriptionSessionResult>;
   cleanup(): void;
-  setInterimResultCallback?(callback: InterimResultCallback): void;
+  supportsStreaming(): boolean;
+  setInterimResultCallback(callback: InterimResultCallback): void;
 }
