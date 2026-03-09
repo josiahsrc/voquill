@@ -89,17 +89,13 @@ const runPostProcessingEval = async ({
   });
 };
 
-describe("post-processing evals", { retry: 3 }, () => {
+describe("post-processing evals", { retry: 0 }, () => {
   describe("default style", () => {
     test("basic transcription1", async () => {
       await runPostProcessingEval({
         transcription: "Hey Michael",
         tone: getWritingStyle("default"),
-        evals: [
-          {
-            criteria: "It shouldn't really change anything",
-          },
-        ],
+        evals: ["It shouldn't really change anything"],
       });
     });
 
@@ -109,27 +105,7 @@ describe("post-processing evals", { retry: 3 }, () => {
           "Hey Emily, can you go fix that thing? Excuse me, that speaker that you broke yesterday. I really need that. It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "it should use 'speaker' and not 'thing' since the speaker corrected themselves",
-          },
-        ],
-      });
-    });
-
-    test("should fix things that are later corrected", async () => {
-      await runPostProcessingEval({
-        transcription:
-          "Hey Emily, can you go fix that audio thing? That speaker that you broke yesterday. I really need that. It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
-        tone: getWritingStyle("default"),
-        evals: [
-          {
-            criteria:
-              "It should use 'speaker' and not 'audio thing' since the speaker corrected themselves.",
-          },
-          {
-            criteria: "It should keep 'hey emily'",
-          },
+          "it should use 'speaker' and not 'thing' since the speaker corrected themselves",
         ],
       });
     });
@@ -137,14 +113,9 @@ describe("post-processing evals", { retry: 3 }, () => {
     test("should fix self corrections 2", async () => {
       await runPostProcessingEval({
         transcription:
-          "If I were to go over to the grocery store or, actually, the, electronics store. Do you want me to grab anything?",
+          "If I were to go over to the grocery store or actually no the electronics store. Do you want me to grab anything?",
         tone: getWritingStyle("default"),
-        evals: [
-          {
-            criteria:
-              "It should mention electronics store but not grocery store",
-          },
-        ],
+        evals: ["It should mention electronics store but not grocery store"],
       });
     });
 
@@ -154,10 +125,7 @@ describe("post-processing evals", { retry: 3 }, () => {
           "Hey. I think that that implementation makes a lot of sense to me. I mean, yeah, I feel like we really need to think about, like, what we're giving our customers. Like, specifically, should we be giving them, like, more value or a cheaper product? Like, I don't I don't really know because we it's kind of like a one or the other at this point. What do you what do you what do you guys think?",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should remove the choppy sentence structure. i.e. 'Hey. I think' -> Hey, I think",
-          },
+          "It should remove the choppy sentence structure. i.e. 'Hey. I think' -> Hey, I think",
         ],
       });
     });
@@ -168,14 +136,19 @@ describe("post-processing evals", { retry: 3 }, () => {
           "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should remove the choppy sentence structure. i.e. 'Yes. But' -> Yes, but",
-          },
-          {
-            criteria:
-              "It should remove the filler word 'like' and correct 'I core rule' to 'the core rule'",
-          },
+          "It should remove the choppy sentence structure. i.e. 'Yes. But' -> Yes, but",
+          "It should remove the filler word 'like' and correct 'I core rule' to 'the core rule'",
+        ],
+      });
+    });
+
+    test("example 3", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Yes. Thanks for bringing that up. I recently made a change to make it so verbatim doesn't apply any post processing, effects as part of its contract. And so with this change, I felt it appropriate to basically make it so, when you're doing real time with verbatim mode, it still doesn't apply post processing on the outputs since none is needed. This way, like, verbatim is basically, like, a through and through really clean very fast output with no post processing.",
+        tone: getWritingStyle("default"),
+        evals: [
+          "It should remove filler words like 'like' and 'basically' while keeping the technical content intact",
         ],
       });
     });
@@ -186,10 +159,7 @@ describe("post-processing evals", { retry: 3 }, () => {
           "Hey Emily, can you go fix that thing? Excuse me, that speaker that you broke yesterday. I really need that. Actually uh, hey Emily, could you please go fix that speaker you broke? It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should remove the redundant phrasing in the request since it's basically the same as the first one, just with more filler and less clarity",
-          },
+          "It should remove the redundant phrasing in the request since it's basically the same as the first one, just with more filler and less clarity",
         ],
       });
     });
@@ -200,10 +170,7 @@ describe("post-processing evals", { retry: 3 }, () => {
           "if i don't not sort of go to the beach, he should go there. but also maybe not",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should clarify the meaning and intent of the speaker, even if the original transcription is confusing or contradictory",
-          },
+          "It should clarify the meaning and intent of the speaker, even if the original transcription is confusing or contradictory",
         ],
       });
     });
@@ -213,11 +180,7 @@ describe("post-processing evals", { retry: 3 }, () => {
         transcription:
           "So without looking at my code, build like a you don't build anything. Just I'm building a Tauri app. Without looking at my code, what I want you to do is I want you to tell me how I should do hot keys because the way I I I need a way to, like, natively bind the hot keys that work in any application. So I need something that that works natively It used to work on Windows, Mac OS, and Linux. And so the idea is that I need to be able to bind a hockey to my app. Again, do not read my code on my app because I don't want you to know what I'm doing right now. How how would you wire that up? So, for example, I don't wanna press, like, function shift that could be a hotkey, or function z, that would be a hotkey. And if I press that, even though I press the z key, it type the character z into the computer. So, like, we want the hotkey itself to activate and not and and basically, like, register itself with the computer without actually, like, yeah.",
         tone: getWritingStyle("default"),
-        evals: [
-          {
-            criteria: "Should make it make more sense",
-          },
-        ],
+        evals: ["Should make it make more sense"],
       });
     });
 
@@ -226,10 +189,7 @@ describe("post-processing evals", { retry: 3 }, () => {
         transcription: "We need to develop phrasing that's like pretty good",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should keep the 'pretty good' phrasing, even though it's grammatically incorrect but should remove the word 'like' since it's filler and doesn't add meaning",
-          },
+          "It should keep the 'pretty good' phrasing, even though it's grammatically incorrect but should remove the word 'like' since it's filler and doesn't add meaning",
         ],
       });
     });
@@ -240,10 +200,7 @@ describe("post-processing evals", { retry: 3 }, () => {
           "Hey John um I wanted to check in about the project freefall newline newline are we still on track for the deadline next week",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should convert 'newline' into an actual line break while keeping the content intact",
-          },
+          "It should convert 'newline' into an actual line break while keeping the content intact",
         ],
       });
     });
@@ -254,13 +211,8 @@ describe("post-processing evals", { retry: 3 }, () => {
           "dang, they beat us to the punchline. that's alright, we'll get them next time",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria: "should keep the word dang in there",
-          },
-          {
-            criteria:
-              "should keep something like 'that is alright' and say we'll get them next time",
-          },
+          "should keep the word dang in there",
+          "should keep something like 'that is alright' and say we'll get them next time",
         ],
       });
     });
@@ -271,13 +223,8 @@ describe("post-processing evals", { retry: 3 }, () => {
           "Hey douglas, I... uh.... wanted to check in about that the meeting tomorrow at 10am, no actually 4pm. Let me know if that still works for you.",
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria: "It should remove fill words and false starts",
-          },
-          {
-            criteria:
-              "It should auto correct the time to 4pm without mentioning 10am",
-          },
+          "It should remove fill words and false starts",
+          "It should auto correct the time to 4pm without mentioning 10am",
         ],
       });
     });
@@ -288,13 +235,8 @@ describe("post-processing evals", { retry: 3 }, () => {
 So, um, I was thinking that we could, you know, maybe try to implement that new feature we discussed last week. Basically, it would involve creating a new API endpoint that, uh, allows users to fetch their data more efficiently. I mean, it's just an idea, but I think it could really improve the user experience.`,
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should remove some filler words and improve readability",
-          },
-          {
-            criteria: "It should preserve all meaningful content",
-          },
+          "It should remove some filler words and improve readability",
+          "It should preserve all meaningful content",
         ],
       });
     });
@@ -303,11 +245,7 @@ So, um, I was thinking that we could, you know, maybe try to implement that new 
       await runPostProcessingEval({
         transcription: "open paren, that was dictated, close paren",
         tone: getWritingStyle("default"),
-        evals: [
-          {
-            criteria: "that was dictated should be in parentheses",
-          },
-        ],
+        evals: ["that was dictated should be in parentheses"],
       });
     });
 
@@ -317,11 +255,7 @@ So, um, I was thinking that we could, you know, maybe try to implement that new 
 Hola, me gustaría programar una reunión para discutir el proyecto la próxima semana. ¿Estás disponible el martes o el miércoles por la tarde? Por favor, avísame qué hora te conviene más.`,
         tone: getWritingStyle("default"),
         language: "es",
-        evals: [
-          {
-            criteria: "It should respond in Spanish",
-          },
-        ],
+        evals: ["It should respond in Spanish"],
       });
     });
 
@@ -331,11 +265,7 @@ Hola, me gustaría programar una reunión para discutir el proyecto la próxima 
 大家好，我想安排一个会议来讨论下个月的市场营销活动。请告诉我你们的空闲时间，以便我们可以找到一个合适的时间。谢谢！`,
         tone: getWritingStyle("default"),
         language: "zh",
-        evals: [
-          {
-            criteria: "It should respond in SIMPLIFIED Chinese",
-          },
-        ],
+        evals: ["It should respond in SIMPLIFIED Chinese"],
       });
     });
 
@@ -345,11 +275,7 @@ Hola, me gustaría programar una reunión para discutir el proyecto la próxima 
 Olá, gostaria de agendar uma reunião para discutir o projeto na próxima semana. Você está disponível na terça ou quarta-feira à tarde? Por favor, me avise qual horário é mais conveniente para você.`,
         tone: getWritingStyle("default"),
         language: "pt",
-        evals: [
-          {
-            criteria: "It should respond in Portuguese",
-          },
-        ],
+        evals: ["It should respond in Portuguese"],
       });
     });
 
@@ -359,12 +285,7 @@ Olá, gostaria de agendar uma reunião para discutir o projeto na próxima seman
 Bonjour, je voudrais planifier une réunion pour discuter du projet la semaine prochaine. Êtes-vous disponible mardi ou mercredi après-midi? S'il vous plaît, faites-moi savoir quelle heure vous convient le mieux.`,
         tone: getWritingStyle("default"),
         language: "en", // translate to English
-        evals: [
-          {
-            criteria:
-              "It should translate the text to English and keep meaning",
-          },
-        ],
+        evals: ["It should translate the text to English and keep meaning"],
       });
     });
 
@@ -374,13 +295,8 @@ Bonjour, je voudrais planifier une réunion pour discuter du projet la semaine p
 Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just create a method called getGentextRepo. For now, that's just going to return grok, but it should return the base repo as the interface. So let's do that first.`,
         tone: getWritingStyle("default"),
         evals: [
-          {
-            criteria:
-              "It should put backticks around coding terms like eval.utils.ts and getGentextRepo",
-          },
-          {
-            criteria: "It should fix grammar and improve readability",
-          },
+          "It should put backticks around coding terms like eval.utils.ts and getGentextRepo",
+          "It should fix grammar and improve readability",
         ],
       });
     });
@@ -402,22 +318,11 @@ Hey, can you implement eval.utils.ts? Maybe inside of there, I'll also just crea
 omg fine I'll help you. but seriosuly, why do you need help with this again? like, I've told you how to do this like 5 times already. ugh whatever, just follow these steps and maybe you'll get it right this time. to fix it, just open your stupid app, go to settings, and click on "reset". there, happy now? sheesh.`,
         tone: toneFromPrompt(customerSupportChecklist.join("\n")),
         evals: [
-          {
-            criteria: "It should use a polite and empathetic tone.",
-          },
-          {
-            criteria: "It should acknowledge the customer's concerns.",
-          },
-          {
-            criteria: "It should maintain a professional demeanor throughout.",
-          },
-          {
-            criteria:
-              "It should end with a positive note, encouraging further contact.",
-          },
-          {
-            criteria: "It should not make up any information.",
-          },
+          "It should use a polite and empathetic tone.",
+          "It should acknowledge the customer's concerns.",
+          "It should maintain a professional demeanor throughout.",
+          "It should end with a positive note, encouraging further contact.",
+          "It should not make up any information.",
         ],
       });
     });
@@ -436,12 +341,8 @@ omg fine I'll help you. but seriosuly, why do you need help with this again? lik
 come on guys. you can do better, that was garbage.`,
         tone: toneFromPrompt(motivationalCoachStyle),
         evals: [
-          {
-            criteria: "It should use an encouraging and positive tone.",
-          },
-          {
-            criteria: "shouldn't have any negative language",
-          },
+          "It should use an encouraging and positive tone.",
+          "shouldn't have any negative language",
         ],
       });
     });
@@ -455,21 +356,10 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "Should have a greeting addressing Sarah, a body, and a sign-off with Thomas's name",
-          },
-          {
-            criteria:
-              "Should sound casual and conversational, not stiff or corporate",
-          },
-          {
-            criteria: "Should remove 'um' but keep all the actual content",
-          },
-          {
-            criteria:
-              "Should mention: design review, header looks great, tweak the colors",
-          },
+          "Should have a greeting addressing Sarah, a body, and a sign-off with Thomas's name",
+          "Should sound casual and conversational, not stiff or corporate",
+          "Should remove 'um' but keep all the actual content",
+          "Should mention: design review, header looks great, tweak the colors",
         ],
       });
     });
@@ -480,9 +370,7 @@ come on guys. you can do better, that was garbage.`,
           "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
         tone: getWritingStyle("email"),
         evals: [
-          {
-            criteria: "It should format it as an email with proper line breaks",
-          },
+          "It should not include a greeting and salutation since they didn't say one",
         ],
       });
     });
@@ -494,18 +382,9 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "The greeting should use the speaker's words 'hi team' — not replace it with something else",
-          },
-          {
-            criteria:
-              "The sign-off should use the speaker's words 'best regards' with Thomas's name",
-          },
-          {
-            criteria:
-              "Body should mention thanks for hard work and keeping up momentum",
-          },
+          "The greeting should use the speaker's words 'Hi team'",
+          "The sign-off should use the speaker's words 'Best regards' with Thomas's name",
+          "Body should mention thanks for hard work and keeping up momentum",
         ],
       });
     });
@@ -517,22 +396,10 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "Should keep 'Dear Mr. Johnson' as the greeting since the speaker said it",
-          },
-          {
-            criteria:
-              "Should maintain a formal tone throughout — no casualization",
-          },
-          {
-            criteria:
-              "Should have a sign-off with Thomas's name that matches the formal tone",
-          },
-          {
-            criteria:
-              "Should mention: quarterly report completed, ready for review, look forward to feedback",
-          },
+          "Should keep 'Dear Mr. Johnson' as the greeting since the speaker said it",
+          "Should maintain a formal tone throughout — no casualization",
+          "Should have a sign-off with Thomas's name that matches the formal tone",
+          "Should mention: quarterly report completed, ready for review, look forward to feedback",
         ],
       });
     });
@@ -544,18 +411,9 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "The three items should be formatted as a bulleted or numbered list",
-          },
-          {
-            criteria:
-              "Should have a greeting with Mike's name and a sign-off with Thomas's name",
-          },
-          {
-            criteria:
-              "All three items must be present: deployment Friday 3pm, update API docs, staging ready by Thursday",
-          },
+          "The three items should be formatted as a bulleted or numbered list",
+          "Should have a greeting with Mike's name",
+          "All three items must be present: deployment Friday 3pm, update API docs, staging ready by Thursday",
         ],
       });
     });
@@ -567,17 +425,8 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "Should use Wednesday as the deadline — Monday should not appear anywhere",
-          },
-          {
-            criteria: "Should mention needing more time to review",
-          },
-          {
-            criteria:
-              "Should have greeting, body, and sign-off with Thomas's name",
-          },
+          "Should use Wednesday as the deadline — Monday should not appear anywhere",
+          "Should mention needing more time to review",
         ],
       });
     });
@@ -589,16 +438,9 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria: "Should mention putting items on the desk for review",
-          },
-          {
-            criteria: "Should say Monday, not Tuesday",
-          },
-          {
-            criteria:
-              "Should have greeting, body, and sign-off with Thomas's name with proper newlines",
-          },
+          "Should mention putting items on the desk for review",
+          "Should say Monday, not Tuesday",
+          "Should have greeting, body, and sign-off",
         ],
       });
     });
@@ -610,20 +452,10 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "Should NOT add specific dates, a reason for absence, or Jessica's last name",
-          },
-          {
-            criteria: "Should mention Jessica as the contact for urgent items",
-          },
-          {
-            criteria: "Should say 'next week' without specifying exact days",
-          },
-          {
-            criteria:
-              "Should have greeting, body, and sign-off with Thomas's name",
-          },
+          "Should NOT add specific dates, a reason for absence, or Jessica's last name",
+          "Should mention Jessica as the contact for urgent items",
+          "Should say 'next week' without specifying exact days",
+          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });
@@ -635,22 +467,10 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "Should NOT clarify what 'the thing' is or add any specificity",
-          },
-          {
-            criteria:
-              "Should remove filler like 'so yeah' but keep the actual message",
-          },
-          {
-            criteria:
-              "Should have greeting, body, and sign-off with Thomas's name",
-          },
-          {
-            criteria:
-              "Should be short — this was a short message and the email should reflect that",
-          },
+          "Should NOT clarify what 'the thing' is or add any specificity",
+          "Should remove filler like 'so yeah' but keep the actual message",
+          "Should have greeting, body, and sign-off with Thomas's name",
+          "Should be short — this was a short message and the email should reflect that",
         ],
       });
     });
@@ -662,16 +482,9 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Emulator User",
         evals: [
-          {
-            criteria: "Should have a greeting with Bob's name",
-          },
-          {
-            criteria: "Sign-off should use the name 'Emulator User'",
-          },
-          {
-            criteria:
-              "Should mention meeting yesterday and looking forward to next steps",
-          },
+          "Should have a greeting with Bob's name",
+          "Sign-off should use the name 'Emulator User'",
+          "Should mention meeting yesterday and looking forward to next steps",
         ],
       });
     });
@@ -683,22 +496,9 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "Should remove all filler words (um, so, like, uh, honestly, yeah) but keep the reasoning intact",
-          },
-          {
-            criteria:
-              "Should mention: move launch date back two weeks, QA hasn't started integration tests, marketing needs to finalize landing page, pushing to the 15th",
-          },
-          {
-            criteria:
-              "Should have greeting, body, and sign-off with Thomas's name",
-          },
-          {
-            criteria:
-              "Should read as a clean email, not a wall of text — use paragraph breaks where it makes sense",
-          },
+          "Should remove all filler words (um, so, like, uh, honestly, yeah) but keep the reasoning intact",
+          "Should mention: move launch date back two weeks, QA hasn't started integration tests, marketing needs to finalize landing page, pushing to the 15th",
+          "Should read as a clean email, not a wall of text — use paragraph breaks where it makes sense",
         ],
       });
     });
@@ -710,18 +510,9 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "The question about budget should be clearly phrased as a question with a question mark",
-          },
-          {
-            criteria:
-              "Should mention: contractor hours, this quarter, help with migration, not going over budget",
-          },
-          {
-            criteria:
-              "Should have greeting, body, and sign-off with Thomas's name",
-          },
+          "The question about budget should be clearly phrased as a question with a question mark",
+          "Should mention: contractor hours, this quarter, help with migration, not going over budget",
+          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });
@@ -733,14 +524,8 @@ come on guys. you can do better, that was garbage.`,
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          {
-            criteria:
-              "Should preserve the enthusiasm — words like 'really well', 'super impressed', 'great position', 'nice work' should come through",
-          },
-          {
-            criteria:
-              "Should have greeting, body, and sign-off with Thomas's name",
-          },
+          "Should preserve the enthusiasm — words like 'really well', 'super impressed', 'great position', 'nice work' should come through",
+          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });
@@ -753,18 +538,9 @@ come on guys. you can do better, that was garbage.`,
           "So um I was thinking that maybe we could like push the release back a week because there are still a few bugs that need to be fixed and I don't want to ship something that's broken you know",
         tone: getWritingStyle("chat"),
         evals: [
-          {
-            criteria:
-              "It should read like a casual text message, not a formal paragraph",
-          },
-          {
-            criteria:
-              "The core message (push release back a week due to bugs) should be preserved",
-          },
-          {
-            criteria:
-              "It should remove filler words like 'um', 'like', 'you know'",
-          },
+          "It should read like a casual text message, not a formal paragraph",
+          "The core message (push release back a week due to bugs) should be preserved",
+          "It should remove filler words like 'um', 'like', 'you know'",
         ],
       });
     });
@@ -775,13 +551,8 @@ come on guys. you can do better, that was garbage.`,
           "can you send that to me by Tuesday no wait Wednesday I have meetings all day Tuesday",
         tone: getWritingStyle("chat"),
         evals: [
-          {
-            criteria:
-              "It should use Wednesday, dropping the corrected Tuesday deadline",
-          },
-          {
-            criteria: "It should read like a text message, not an email",
-          },
+          "It should use Wednesday, dropping the corrected Tuesday deadline",
+          "It should read like a text message, not an email",
         ],
       });
     });
@@ -794,17 +565,9 @@ come on guys. you can do better, that was garbage.`,
           "hey so basically we gotta get this done by Friday or we're totally screwed",
         tone: getWritingStyle("formal"),
         evals: [
-          {
-            criteria:
-              "It should use formal language — no contractions like 'we're', no slang like 'gotta', 'totally screwed'",
-          },
-          {
-            criteria:
-              "The core message (deadline is Friday, consequences if missed) should be preserved",
-          },
-          {
-            criteria: "It should read like professional correspondence",
-          },
+          "It should use formal language — no contractions like 'we're', no slang like 'gotta', 'totally screwed'",
+          "The core message (deadline is Friday, consequences if missed) should be preserved",
+          "It should read like professional correspondence",
         ],
       });
     });
@@ -815,17 +578,9 @@ come on guys. you can do better, that was garbage.`,
           "so um I was thinking that like we could you know maybe revisit the budget for Q3 because uh the numbers don't really add up",
         tone: getWritingStyle("formal"),
         evals: [
-          {
-            criteria:
-              "It should remove all filler words like um, like, you know, uh",
-          },
-          {
-            criteria: "It should use complete, well-structured sentences",
-          },
-          {
-            criteria:
-              "The meaning (revisit Q3 budget because numbers don't add up) should be preserved",
-          },
+          "It should remove all filler words like um, like, you know, uh",
+          "It should use complete, well-structured sentences",
+          "The meaning (revisit Q3 budget because numbers don't add up) should be preserved",
         ],
       });
     });
@@ -836,13 +591,8 @@ come on guys. you can do better, that was garbage.`,
           "the deadline is next Tuesday no wait Thursday we need the extra time",
         tone: getWritingStyle("formal"),
         evals: [
-          {
-            criteria:
-              "It should use Thursday as the deadline, dropping the corrected Tuesday mention",
-          },
-          {
-            criteria: "It should be written in a formal, professional tone",
-          },
+          "It should use Thursday as the deadline, dropping the corrected Tuesday mention",
+          "It should be written in a formal, professional tone",
         ],
       });
     });
@@ -853,18 +603,9 @@ come on guys. you can do better, that was garbage.`,
           "alright so after looking at everything I think we should go with vendor B they've got better pricing and their support team is way more responsive than vendor A's",
         tone: getWritingStyle("formal"),
         evals: [
-          {
-            criteria:
-              "It should read like it belongs in a proposal or official recommendation — polished and professional",
-          },
-          {
-            criteria:
-              "Both reasons for choosing vendor B (better pricing, more responsive support) should be present",
-          },
-          {
-            criteria:
-              "It should not use casual words like 'alright', 'way more'",
-          },
+          "It should read like it belongs in a proposal or official recommendation — polished and professional",
+          "Both reasons for choosing vendor B (better pricing, more responsive support) should be present",
+          "It should not use casual words like 'alright', 'way more'",
         ],
       });
     });

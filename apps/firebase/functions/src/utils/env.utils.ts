@@ -32,6 +32,10 @@ export const GROQ_API_KEY_VAR = "GROQ_API_KEY";
 export const getGroqApiKey = () =>
 	env.get(GROQ_API_KEY_VAR).required().asString();
 
+export const OPENAI_API_KEY_VAR = "OPENAI_API_KEY";
+export const getOpenAIApiKey = () =>
+	env.get(OPENAI_API_KEY_VAR).required().asString();
+
 export const STRIPE_SECRET_KEY_VAR = "STRIPE_SECRET_KEY";
 export const getStripeSecretKey = () =>
 	env.get(STRIPE_SECRET_KEY_VAR).required().asString();
