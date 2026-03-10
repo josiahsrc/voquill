@@ -1,0 +1,69 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { translations, type Locale } from '../../i18n/translations';
+
+export function getStaticPaths() {
+	return [
+		{ params: { locale: 'en' } },
+		{ params: { locale: 'es' } },
+	];
+}
+
+const locale = Astro.params.locale as Locale;
+const otherLocale: Locale = locale === 'en' ? 'es' : 'en';
+const i18n = translations[locale];
+---
+
+<Layout title={i18n.title} lang={locale}>
+	<main>
+		<h1>{i18n.title}</h1>
+		<p>{i18n.subtitle}</p>
+		<a href="#" class="cta">{i18n.cta}</a>
+		<nav class="lang-switcher">
+			<a href={`/${otherLocale}/`}>{otherLocale.toUpperCase()}</a>
+		</nav>
+	</main>
+</Layout>
+
+<style>
+	main {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		font-family: Inter, Roboto, 'Helvetica Neue', Arial, sans-serif;
+		text-align: center;
+		padding: 2rem;
+	}
+
+	h1 {
+		font-size: 2.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	p {
+		font-size: 1.25rem;
+		color: #4b5563;
+		margin-bottom: 2rem;
+	}
+
+	.cta {
+		background: linear-gradient(83.21deg, #3245ff 0%, #bc52ee 100%);
+		color: white;
+		padding: 12px 24px;
+		border-radius: 10px;
+		text-decoration: none;
+		font-size: 1.1rem;
+	}
+
+	.lang-switcher {
+		margin-top: 2rem;
+	}
+
+	.lang-switcher a {
+		color: #3245ff;
+		text-decoration: underline;
+		font-size: 0.9rem;
+	}
+</style>
