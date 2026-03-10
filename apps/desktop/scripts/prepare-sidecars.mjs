@@ -37,7 +37,7 @@ if (!existsSync(sidecarManifestPath)) {
 
 mkdirSync(tauriBinariesDir, { recursive: true });
 
-const cpuSidecarPath = buildAndCopy("rust-transcription-cpu", false);
+buildAndCopy("rust-transcription-cpu", false);
 const gpuBuildState = resolveGpuBuildState(targetTriple);
 
 if (gpuBuildState.canBuildNative) {
@@ -46,7 +46,7 @@ if (gpuBuildState.canBuildNative) {
   });
 
   if (!gpuSidecarPath) {
-    mirrorCpuSidecarAsGpu(cpuSidecarPath);
+    installGpuFallbackSidecar();
   }
 } else {
   if (requireNativeGpuSidecar) {
@@ -58,7 +58,7 @@ if (gpuBuildState.canBuildNative) {
   console.warn(
     `[sidecar] Skipping native GPU sidecar build for ${targetTriple}: ${gpuBuildState.reason}`,
   );
-  mirrorCpuSidecarAsGpu(cpuSidecarPath);
+  installGpuFallbackSidecar();
 }
 
 function buildAndCopy(binaryName, gpuEnabled, options = {}) {
@@ -117,18 +117,22 @@ function buildAndCopy(binaryName, gpuEnabled, options = {}) {
   return destinationBinaryPath;
 }
 
-function mirrorCpuSidecarAsGpu(cpuSidecarPath) {
+function installGpuFallbackSidecar() {
+  const fallbackBinaryPath = buildAndCopy(
+    "rust-transcription-gpu-unavailable",
+    false,
+  );
   const gpuDestinationPath = join(
     tauriBinariesDir,
     `rust-transcription-gpu-${targetTriple}${executableSuffix}`,
   );
-  copyFileSync(cpuSidecarPath, gpuDestinationPath);
+  copyFileSync(fallbackBinaryPath, gpuDestinationPath);
   if (!isWindowsTarget(targetTriple)) {
     chmodSync(gpuDestinationPath, 0o755);
   }
 
   console.warn(
-    `[sidecar] Using CPU sidecar binary for rust-transcription-gpu on ${targetTriple}: ${gpuDestinationPath}`,
+    `[sidecar] Installed GPU-unavailable fallback for rust-transcription-gpu on ${targetTriple}: ${gpuDestinationPath}`,
   );
 }
 

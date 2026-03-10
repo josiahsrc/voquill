@@ -627,6 +627,13 @@ export class LocalTranscriptionSidecarManager {
           `${mode.toUpperCase()} sidecar failed before startup completed: ${message}`,
         );
       },
+      onStderr: (chunk) => {
+        const message = chunk.trim();
+        if (!message) {
+          return;
+        }
+        getLogger().warning(`[local-sidecar:${mode}:${binaryName}] ${message}`);
+      },
     });
     childPid = child.pid;
 
@@ -698,8 +705,14 @@ export class LocalTranscriptionSidecarManager {
     const deadline = Date.now() + SIDECAR_STARTUP_TIMEOUT_MS;
 
     while (Date.now() < deadline) {
-      if (await this.checkHealth(baseUrl, mode)) {
+      const health = await this.checkHealth(baseUrl);
+      if (health.status === "ok" && health.mode === mode) {
         return;
+      }
+      if (health.status === "ok" && health.mode && health.mode !== mode) {
+        throw new Error(
+          `Expected ${mode.toUpperCase()} sidecar but ${health.mode.toUpperCase()} sidecar responded at ${baseUrl}`,
+        );
       }
       await sleep(SIDECAR_STARTUP_POLL_INTERVAL_MS);
     }
@@ -711,10 +724,9 @@ export class LocalTranscriptionSidecarManager {
 
   private async checkHealth(
     baseUrl: string,
-    mode: SidecarMode,
-  ): Promise<boolean> {
+  ): Promise<Partial<SidecarHealthResponse>> {
     try {
-      const response = await this.requestJsonByBaseUrl<SidecarHealthResponse>(
+      return await this.requestJsonByBaseUrl<SidecarHealthResponse>(
         baseUrl,
         "/health",
         {
@@ -722,10 +734,8 @@ export class LocalTranscriptionSidecarManager {
           retries: 1,
         },
       );
-
-      return response.status === "ok" && response.mode === mode;
     } catch {
-      return false;
+      return {};
     }
   }
 

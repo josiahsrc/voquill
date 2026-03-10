@@ -20,6 +20,10 @@ name = "rust-transcription-gpu"
 path = "src/bin/gpu.rs"
 required-features = ["gpu"]
 
+[[bin]]
+name = "rust-transcription-gpu-unavailable"
+path = "src/bin/gpu_unavailable.rs"
+
 [dependencies]
 axum = { version = "0.7", features = ["macros"] }
 futures-util = "0.3"
