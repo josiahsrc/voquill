@@ -4,6 +4,7 @@ import Header from '../../components/Header.astro';
 import Hero from '../../components/Hero.astro';
 import VideoSection from '../../components/VideoSection.astro';
 import AppsCarousel from '../../components/AppsCarousel.astro';
+import SpeedShowcase from '../../components/SpeedShowcase.astro';
 import { type Locale, t } from '../../i18n/translations';
 
 export function getStaticPaths() {
@@ -19,6 +20,7 @@ const i18n = t(locale);
 	<Hero locale={locale} />
 	<VideoSection locale={locale} />
 	<AppsCarousel locale={locale} />
+	<SpeedShowcase locale={locale} />
 
 	<script>
 		// ── Hero graphic ──

@@ -38,6 +38,18 @@ export const translations = {
 		downloadsPage: 'downloads page',
 		close: 'Close',
 		comingSoon: 'iOS/Android coming soon',
+		speedBadge: '4× faster than typing',
+		speedHeading: 'Your voice outruns your keyboard.',
+		speedDescription:
+			'Your thoughts move faster than your fingers ever will. Stop losing ideas to slow typing. Say what you\'re thinking and move on.',
+		speedDisplaySentence:
+			"Here's a really long sentence that I have to type out and it just goes on forever.",
+		speedKeyboard: 'Keyboard',
+		speedKeyboardWpm: '~45 wpm',
+		speedVoice: 'Voquill voice',
+		speedVoiceWpm: '~220 wpm',
+		speedKeyboardFooter: 'One letter at a time.',
+		speedVoiceFooter: 'Works at the speed of thought.',
 	},
 	es: {
 		siteTitle: 'Voquill | Tu teclado te está frenando',
@@ -78,6 +90,18 @@ export const translations = {
 		downloadsPage: 'página de descargas',
 		close: 'Cerrar',
 		comingSoon: 'iOS/Android próximamente',
+		speedBadge: '4× más rápido que escribir',
+		speedHeading: 'Tu voz supera a tu teclado.',
+		speedDescription:
+			'Tus pensamientos se mueven más rápido de lo que tus dedos jamás podrán. Deja de perder ideas por escribir lento. Di lo que piensas y sigue adelante.',
+		speedDisplaySentence:
+			'Esta es una oración muy larga que tengo que escribir y simplemente sigue y sigue para siempre.',
+		speedKeyboard: 'Teclado',
+		speedKeyboardWpm: '~45 ppm',
+		speedVoice: 'Voz de Voquill',
+		speedVoiceWpm: '~220 ppm',
+		speedKeyboardFooter: 'Una letra a la vez.',
+		speedVoiceFooter: 'Funciona a la velocidad del pensamiento.',
 	},
 } as const;
 
