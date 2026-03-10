@@ -196,6 +196,10 @@
   margin-top: 0;
 }
 
+.postContent :global(h1) {
+  display: none;
+}
+
 .postContent :global(h2) {
   margin-top: 48px;
   margin-bottom: 16px;
