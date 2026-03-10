@@ -80,7 +80,7 @@ function buildAndCopy(binaryName, gpuEnabled, options = {}) {
   }
 
   if (gpuEnabled) {
-    cargoArgs.push("--features", "gpu");
+    cargoArgs.push("--features", resolveGpuCargoFeatures(targetTriple).join(","));
   }
 
   const buildOk = run("cargo", cargoArgs, repoRoot, { allowFailure });
@@ -209,8 +209,24 @@ function isWindowsTarget(target) {
   return target.includes("windows");
 }
 
+function isAppleTarget(target) {
+  return target.includes("apple-darwin");
+}
+
 function supportsNativeGpuSidecar(target) {
-  return target.includes("windows") || target.includes("linux");
+  return isAppleTarget(target) || target.includes("windows") || target.includes("linux");
+}
+
+function resolveGpuCargoFeatures(target) {
+  if (isAppleTarget(target)) {
+    return ["gpu", "gpu-metal"];
+  }
+
+  if (target.includes("windows") || target.includes("linux")) {
+    return ["gpu", "gpu-vulkan"];
+  }
+
+  fail(`No GPU cargo feature mapping exists for ${target}`);
 }
 
 function resolveGpuBuildState(target) {

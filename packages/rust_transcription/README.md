@@ -23,7 +23,8 @@ From repository root:
 
 ```bash
 cargo build --manifest-path packages/rust_transcription/Cargo.toml --release --bin rust-transcription-cpu
-cargo build --manifest-path packages/rust_transcription/Cargo.toml --release --bin rust-transcription-gpu --features gpu
+cargo build --manifest-path packages/rust_transcription/Cargo.toml --release --bin rust-transcription-gpu --features gpu,gpu-metal   # macOS
+cargo build --manifest-path packages/rust_transcription/Cargo.toml --release --bin rust-transcription-gpu --features gpu,gpu-vulkan  # Linux/Windows
 ```
 
 ## Run
@@ -37,7 +38,8 @@ cargo run --manifest-path packages/rust_transcription/Cargo.toml --bin rust-tran
 GPU sidecar:
 
 ```bash
-cargo run --manifest-path packages/rust_transcription/Cargo.toml --bin rust-transcription-gpu --features gpu
+cargo run --manifest-path packages/rust_transcription/Cargo.toml --bin rust-transcription-gpu --features gpu,gpu-metal   # macOS
+cargo run --manifest-path packages/rust_transcription/Cargo.toml --bin rust-transcription-gpu --features gpu,gpu-vulkan  # Linux/Windows
 ```
 
 If GPU runtime is not available, the GPU binary exits with a non-zero code.
@@ -118,7 +120,7 @@ Response:
 Returns available compute devices for the running sidecar mode.
 
 - CPU sidecar: returns CPU devices (typically one device: `cpu:0`).
-- GPU sidecar: returns available Vulkan GPU devices (`gpu:{index}`).
+- GPU sidecar: returns available GPU backend devices (`gpu:{index}`), including Metal on macOS and Vulkan where available.
 
 Response:
 

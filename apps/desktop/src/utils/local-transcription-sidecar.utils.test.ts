@@ -1,22 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("./env.utils", () => ({
-  isMacOS: vi.fn(() => false),
-}));
+import { describe, expect, it } from "vitest";
 
 import {
   getTranscriptionSidecarDeviceId,
   isGpuPreferredTranscriptionDevice,
   normalizeTranscriptionDevice,
   normalizeLocalWhisperModel,
+  supportsGpuTranscriptionDevice,
 } from "./local-transcription.utils";
-import { isMacOS } from "./env.utils";
 
 describe("local-transcription-sidecar manager helpers", () => {
-  beforeEach(() => {
-    vi.mocked(isMacOS).mockReturnValue(false);
-  });
-
   it("normalizes model values to supported sidecar models", () => {
     expect(normalizeLocalWhisperModel("tiny")).toBe("tiny");
     expect(normalizeLocalWhisperModel("tiny.en")).toBe("tiny");
@@ -44,11 +36,8 @@ describe("local-transcription-sidecar manager helpers", () => {
     expect(isGpuPreferredTranscriptionDevice("gpu-0")).toBe(true);
   });
 
-  it("always uses CPU preference on macOS", () => {
-    vi.mocked(isMacOS).mockReturnValue(true);
-    expect(isGpuPreferredTranscriptionDevice("gpu")).toBe(false);
-    expect(isGpuPreferredTranscriptionDevice("gpu:0")).toBe(false);
-    expect(isGpuPreferredTranscriptionDevice("cpu")).toBe(false);
+  it("advertises GPU selection support", () => {
+    expect(supportsGpuTranscriptionDevice()).toBe(true);
   });
 
   it("normalizes transcription devices while preserving concrete IDs", () => {

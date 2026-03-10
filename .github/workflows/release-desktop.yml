@@ -293,7 +293,7 @@ jobs:
             tauri_platform: macos
             node_platform: darwin
             artifact_name: desktop-macos
-            require_gpu_sidecar: false
+            require_gpu_sidecar: true
 
           - label: Windows
             os: windows-latest

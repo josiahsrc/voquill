@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+#[cfg(feature = "gpu")]
+use std::ffi::CStr;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -7,9 +9,6 @@ use serde::Serialize;
 use whisper_rs::{
     FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
 };
-
-#[cfg(feature = "gpu")]
-use whisper_rs::vulkan;
 
 #[derive(Debug, Clone)]
 pub struct TranscriptionInput {
@@ -37,6 +36,7 @@ pub struct ComputeDevice {
 #[derive(Debug, Clone)]
 struct ResolvedDevice {
     id: String,
+    name: String,
     #[cfg(feature = "gpu")]
     gpu_device: i32,
 }
@@ -146,7 +146,7 @@ impl TranscriptionEngine {
             .map_err(|err| format!("failed to run whisper inference: {err}"))?;
 
         let text = collect_transcription(&state)?;
-        let inference_device = self.mode.as_str().to_ascii_uppercase();
+        let inference_device = device.name.clone();
 
         Ok(TranscriptionOutput {
             text,
@@ -240,16 +240,7 @@ impl TranscriptionEngine {
             ComputeMode::Gpu => {
                 #[cfg(feature = "gpu")]
                 {
-                    let gpu_devices = std::panic::catch_unwind(vulkan::list_devices)
-                        .map_err(|_| "vulkan device enumeration panicked".to_string())?;
-
-                    Ok(gpu_devices
-                        .into_iter()
-                        .map(|device| ComputeDevice {
-                            id: format!("gpu:{}", device.id),
-                            name: device.name,
-                        })
-                        .collect())
+                    list_gpu_devices()
                 }
 
                 #[cfg(not(feature = "gpu"))]
@@ -290,13 +281,17 @@ impl TranscriptionEngine {
                 {
                     Ok(ResolvedDevice {
                         id: selected.id,
+                        name: selected.name,
                         gpu_device: 0,
                     })
                 }
 
                 #[cfg(not(feature = "gpu"))]
                 {
-                    Ok(ResolvedDevice { id: selected.id })
+                    Ok(ResolvedDevice {
+                        id: selected.id,
+                        name: selected.name,
+                    })
                 }
             }
             ComputeMode::Gpu => {
@@ -312,6 +307,7 @@ impl TranscriptionEngine {
 
                     Ok(ResolvedDevice {
                         id: selected.id,
+                        name: selected.name,
                         gpu_device,
                     })
                 }
@@ -389,11 +385,8 @@ fn resample_to_16khz(samples: &[f32], sample_rate: u32) -> Vec<f32> {
 pub fn ensure_gpu_runtime_available() -> Result<(), String> {
     #[cfg(feature = "gpu")]
     {
-        let devices = std::panic::catch_unwind(vulkan::list_devices)
-            .map_err(|_| "vulkan device enumeration panicked".to_string())?;
-
-        if devices.is_empty() {
-            return Err("no Vulkan-capable GPU detected".to_string());
+        if list_gpu_devices()?.is_empty() {
+            return Err("no GPU-capable backend detected".to_string());
         }
 
         return Ok(());
@@ -403,4 +396,75 @@ pub fn ensure_gpu_runtime_available() -> Result<(), String> {
     {
         Err("gpu runtime check requested but gpu feature is not enabled".to_string())
     }
+}
+
+#[cfg(feature = "gpu")]
+fn list_gpu_devices() -> Result<Vec<ComputeDevice>, String> {
+    let mut devices = Vec::new();
+    let mut gpu_index = 0usize;
+
+    for index in 0..unsafe { whisper_rs::whisper_rs_sys::ggml_backend_dev_count() } {
+        let device = unsafe { whisper_rs::whisper_rs_sys::ggml_backend_dev_get(index) };
+        if device.is_null() {
+            continue;
+        }
+
+        let device_type = unsafe { whisper_rs::whisper_rs_sys::ggml_backend_dev_type(device) };
+        if device_type
+            != whisper_rs::whisper_rs_sys::ggml_backend_dev_type_GGML_BACKEND_DEVICE_TYPE_GPU
+        {
+            continue;
+        }
+
+        devices.push(ComputeDevice {
+            id: format!("gpu:{gpu_index}"),
+            name: describe_gpu_device(device),
+        });
+        gpu_index += 1;
+    }
+
+    Ok(devices)
+}
+
+#[cfg(feature = "gpu")]
+fn describe_gpu_device(device: whisper_rs::whisper_rs_sys::ggml_backend_dev_t) -> String {
+    let description = unsafe {
+        c_string(whisper_rs::whisper_rs_sys::ggml_backend_dev_description(device))
+    };
+    let name = unsafe { c_string(whisper_rs::whisper_rs_sys::ggml_backend_dev_name(device)) };
+    let backend = unsafe {
+        let registry = whisper_rs::whisper_rs_sys::ggml_backend_dev_backend_reg(device);
+        if registry.is_null() {
+            None
+        } else {
+            c_string(whisper_rs::whisper_rs_sys::ggml_backend_reg_name(registry))
+        }
+    };
+
+    let label = description
+        .filter(|value| !value.is_empty())
+        .or(name)
+        .unwrap_or_else(|| "GPU".to_string());
+
+    match backend {
+        Some(backend_name)
+            if !backend_name.is_empty() && !backend_name.eq_ignore_ascii_case(&label) =>
+        {
+            format!("{label} ({backend_name})")
+        }
+        _ => label,
+    }
+}
+
+#[cfg(feature = "gpu")]
+unsafe fn c_string(ptr: *const std::os::raw::c_char) -> Option<String> {
+    if ptr.is_null() {
+        return None;
+    }
+
+    CStr::from_ptr(ptr)
+        .to_str()
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
 }
