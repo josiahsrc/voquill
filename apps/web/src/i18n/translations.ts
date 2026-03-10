@@ -65,6 +65,11 @@ export const translations = {
 		offlineDescription:
 			'Other dictation tools send your audio straight to the cloud. Voquill can run entirely on your device \u2014 your words never leave your machine. Airplane mode, off the grid, wherever. It just works.',
 		offlineIconAlt: 'Offline icon representing local-first functionality.',
+		discordNewBadge: 'New!',
+		discordHeading: 'Join the conversation',
+		discordDescription:
+			"Voquill is built in the open. Join our Discord to share feedback, request features, report bugs, or just hang out with other people. We're building this together.",
+		discordJoin: 'Join Discord',
 	},
 	es: {
 		siteTitle: 'Voquill | Tu teclado te está frenando',
@@ -132,6 +137,11 @@ export const translations = {
 		offlineDescription:
 			'Otras herramientas de dictado envían tu audio directamente a la nube. Voquill puede funcionar completamente en tu dispositivo \u2014 tus palabras nunca salen de tu máquina. Modo avión, sin cobertura, donde sea. Simplemente funciona.',
 		offlineIconAlt: 'Ícono sin conexión que representa funcionalidad local.',
+		discordNewBadge: '¡Nuevo!',
+		discordHeading: 'Únete a la conversación',
+		discordDescription:
+			'Voquill se construye de forma abierta. Únete a nuestro Discord para compartir comentarios, solicitar funciones, reportar errores o simplemente pasar el rato. Lo estamos construyendo juntos.',
+		discordJoin: 'Unirse a Discord',
 	},
 } as const;
 

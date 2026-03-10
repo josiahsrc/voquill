@@ -1,0 +1,223 @@
+---
+import type { Locale } from '../i18n/translations';
+import { t } from '../i18n/translations';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+---
+
+<section class="discord-section" id="community">
+	<div class="discord-content">
+		<div class="badges">
+			<span class="badge new-badge">{i18n.discordNewBadge}</span>
+			<span class="badge online-badge" data-discord-online style="display:none">
+				<span class="ping-wrapper">
+					<span class="ping"></span>
+					<span class="ping-dot"></span>
+				</span>
+				<span data-discord-count></span>
+			</span>
+		</div>
+		<h2>{i18n.discordHeading}</h2>
+		<p>{i18n.discordDescription}</p>
+		<a
+			href="https://discord.gg/5jXkDvdVdt"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="discord-button"
+		>
+			<span class="discord-button-icon" aria-hidden="true"></span>
+			{i18n.discordJoin}
+		</a>
+	</div>
+</section>
+
+<script>
+	(function () {
+		var INVITE_CODE = '5jXkDvdVdt';
+		var TEN_MINUTES = 10 * 60 * 1000;
+
+		var badgeEl = document.querySelector('[data-discord-online]') as HTMLElement | null;
+		var countEl = document.querySelector('[data-discord-count]');
+		if (!badgeEl || !countEl) return;
+
+		function fetchCount() {
+			fetch('https://discord.com/api/v9/invites/' + INVITE_CODE + '?with_counts=true')
+				.then(function (r) { return r.ok ? r.json() : null; })
+				.then(function (data) {
+					if (data && data.approximate_presence_count) {
+						countEl!.textContent = data.approximate_presence_count.toLocaleString() + ' Online';
+						badgeEl!.style.display = '';
+					}
+				})
+				.catch(function () {});
+		}
+
+		fetchCount();
+		setInterval(fetchCount, TEN_MINUTES);
+	})();
+</script>
+
+<style>
+	.discord-section {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 48px 24px;
+		overflow: hidden;
+		max-width: min(1120px, 100%);
+		margin: 120px auto 0;
+	}
+
+	.discord-content {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 18px;
+		max-width: 560px;
+	}
+
+	.discord-content h2 {
+		font-size: clamp(1.8rem, 2.5vw, 2.2rem);
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+	}
+
+	.discord-content p {
+		font-size: 1.05rem;
+		line-height: 1.75;
+		color: var(--text-muted);
+	}
+
+	.badges {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.badge {
+		padding: 6px 18px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: var(--level1);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-strong);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.badge {
+			background: rgba(255, 255, 255, 0.12);
+			border-color: rgba(255, 255, 255, 0.24);
+			color: rgba(255, 255, 255, 0.92);
+		}
+	}
+
+	.new-badge {
+		background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+		color: white;
+		border-color: transparent;
+	}
+
+	.online-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		text-transform: none;
+		letter-spacing: normal;
+	}
+
+	.ping-wrapper {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 10px;
+		height: 10px;
+	}
+
+	.ping {
+		position: absolute;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background-color: #22c55e;
+		animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+	}
+
+	.ping-dot {
+		position: relative;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background-color: #22c55e;
+	}
+
+	@keyframes ping {
+		0% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		75%,
+		100% {
+			transform: scale(2);
+			opacity: 0;
+		}
+	}
+
+	.discord-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 12px 22px;
+		border-radius: 999px;
+		background: #5865f2;
+		color: white;
+		font-size: 0.95rem;
+		font-weight: 600;
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 16px rgba(88, 101, 242, 0.3);
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease,
+			background-color 0.2s ease;
+		margin-top: 8px;
+	}
+
+	.discord-button:hover {
+		background: #4752c4;
+		box-shadow: 0 6px 24px rgba(88, 101, 242, 0.4);
+		transform: translateY(-2px);
+	}
+
+	.discord-button:active {
+		transform: translateY(0);
+		box-shadow: 0 2px 8px rgba(88, 101, 242, 0.3);
+	}
+
+	.discord-button-icon {
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		background-color: white;
+		mask: url('/discord.svg') center/contain no-repeat;
+		-webkit-mask: url('/discord.svg') center/contain no-repeat;
+		flex-shrink: 0;
+	}
+
+	@media (max-width: 720px) {
+		.discord-section {
+			padding: 36px 18px;
+		}
+	}
+</style>
