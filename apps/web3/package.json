@@ -1,9 +1,0 @@
-{
-  "name": "web3",
-  "version": "0.0.1",
-  "private": true,
-  "scripts": {
-    "dev": "npx serve .",
-    "build": "echo 'Static site — nothing to build'"
-  }
-}
