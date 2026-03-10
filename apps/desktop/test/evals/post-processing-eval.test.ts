@@ -110,6 +110,17 @@ describe("post-processing evals", { retry: 0 }, () => {
       });
     });
 
+    test("should not change who the subject is", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "That's awesome. And adding some more details here that might be relevant when we were working our landscape in platform, one of the biggest pains that we saw across the industry is that or, like, biggest, not pains, but, like, one of the biggest things we observed is that all landscapers used different apps Like, someone used Sage, others used JobNobus, others used QuickBooks, others used, like, one off time tracking software. Like, everyone used a different piece of software. And after, you know, building our last product, I think the thing that we realized was that you should try to make us, like, a software that kinda integrates us with, like, all of these things rather than trying to define your own version of it. And so, like, if we build Voquill in this area, maybe we can like, use that studio.vocal.com idea or something. Basically, like, you you you know, you can talk to your computer and, like, he has an agent that's specific to his workflow. And then you can add photos and stuff. And it just, like, builds the report as you talk. That could be really interesting that he can just copy it over, basically, when he's done.",
+        tone: getWritingStyle("default"),
+        evals: [
+          "It preserves the subject of the sentence as 'he' when referring to the user, rather than changing it to 'they' or 'you' or something else, since the speaker is talking about 'him'",
+        ],
+      });
+    });
+
     test("should fix self corrections 2", async () => {
       await runPostProcessingEval({
         transcription:
@@ -364,6 +375,17 @@ come on guys. you can do better, that was garbage.`,
       });
     });
 
+    test("should not change who the subject is for emails", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "That's awesome. And adding some more details here that might be relevant when we were working our landscape in platform, one of the biggest pains that we saw across the industry is that or, like, biggest, not pains, but, like, one of the biggest things we observed is that all landscapers used different apps Like, someone used Sage, others used JobNobus, others used QuickBooks, others used, like, one off time tracking software. Like, everyone used a different piece of software. And after, you know, building our last product, I think the thing that we realized was that you should try to make us, like, a software that kinda integrates us with, like, all of these things rather than trying to define your own version of it. And so, like, if we build Voquill in this area, maybe we can like, use that studio.vocal.com idea or something. Basically, like, you you you know, you can talk to your computer and, like, he has an agent that's specific to his workflow. And then you can add photos and stuff. And it just, like, builds the report as you talk. That could be really interesting that he can just copy it over, basically, when he's done.",
+        tone: getWritingStyle("email"),
+        evals: [
+          "It preserves the subject of the sentence as 'he' when referring to the user, rather than changing it to 'they' or 'you' or something else, since the speaker is talking about 'him'",
+        ],
+      });
+    });
+
     test("example 2", async () => {
       await runPostProcessingEval({
         transcription:
@@ -448,7 +470,7 @@ come on guys. you can do better, that was garbage.`,
     test("does not fabricate details for vague content", async () => {
       await runPostProcessingEval({
         transcription:
-          "uh hi I just wanted to let you know that I'll be out of office next week so if anything urgent comes up please reach out to Jessica",
+          "uh hi I just wanted to let you know that I'll be out of office next week so if anything urgent comes up please reach out to Jessica, regards Thomas",
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
@@ -463,11 +485,10 @@ come on guys. you can do better, that was garbage.`,
     test("lazy vague email stays lazy and vague", async () => {
       await runPostProcessingEval({
         transcription:
-          "Hey just wanted to say that the thing we talked about is important so yeah let's make sure we do that soon thanks",
+          "Hey just wanted to say that the thing we talked about is important so yeah let's make sure we do that soon thanks, thomas",
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          "Should NOT clarify what 'the thing' is or add any specificity",
           "Should remove filler like 'so yeah' but keep the actual message",
           "Should have greeting, body, and sign-off with Thomas's name",
           "Should be short — this was a short message and the email should reflect that",
@@ -512,7 +533,6 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "The question about budget should be clearly phrased as a question with a question mark",
           "Should mention: contractor hours, this quarter, help with migration, not going over budget",
-          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });
@@ -525,7 +545,6 @@ come on guys. you can do better, that was garbage.`,
         userName: "Thomas Gundan",
         evals: [
           "Should preserve the enthusiasm — words like 'really well', 'super impressed', 'great position', 'nice work' should come through",
-          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });

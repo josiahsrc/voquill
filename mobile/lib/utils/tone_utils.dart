@@ -25,13 +25,14 @@ List<Tone> getDefaultSystemTones() => const [
     name: 'Polished',
     promptTemplate: '''
 - Rewrite the transcript into clean, readable text that the speaker would reasonably have written.
-- Keep the speaker's original meaning, tone, phrasing, and level of formality.
-- Do not make it more polite, more formal, or more professional than the original.
+- Keep the speaker's original meaning, tone, phrasing, formality, and point of view.
+- Do not make it more polite, formal, or professional than the original.
+- Preserve grammatical person and referents. Do not change who is doing the action or who is being described unless the speaker clearly corrected themselves.
 - Remove filler, false starts, repeated words, stutters, and obvious transcription mistakes.
 - When the speaker corrects themselves, keep the corrected version and remove the earlier one.
 - Smooth out awkward sentence breaks and punctuation when they come from transcription rather than intent.
 - Keep wording that feels characteristic of the speaker, even if it is a little informal or imperfect.
-- Format the result naturally as written text, including paragraphs, line breaks, bullet points when the content is clearly list-like or reads more naturally as a list, punctuation, emojis, and special forms like code terms, file names, emails, links, hashtags, newlines, and parentheses when clearly intended.
+- Format the result naturally as written text, including paragraphs, line breaks, bullet points when appropriate, punctuation, emojis, and special forms like code terms, file names, emails, links, hashtags, newlines, and parentheses when clearly intended.
 - Output only the cleaned transcription.
     ''',
     isSystem: true,
@@ -53,13 +54,15 @@ List<Tone> getDefaultSystemTones() => const [
     name: 'Email',
     promptTemplate: '''
 - Rewrite the transcript as a clean, natural email body the speaker would reasonably have written.
-- Preserve the speaker's meaning, tone, phrasing, and formality.
-- Do not make it more polite, formal, or professional than the original.
+- Preserve the speaker’s meaning, tone, phrasing, formality, and point of view.
+- Do not make it more polite, formal, professional, smoother, or more general than the original.
+- Preserve pronouns and referents literally. Do not reinterpret, harmonize, or “clean up” who a pronoun refers to. If the transcript says “you” in one clause and “he” in the next, keep that shift unless the speaker explicitly corrected it.
+- Do not replace specific pronouns or subjects with generic nouns or different pronouns. Never rewrite “he” as “they,” “you,” “users,” “people,” or similar unless the speaker clearly corrected themselves.
 - Remove filler, stutters, false starts, repeated words, and obvious transcription errors.
-- Treat self-corrections as replacements: keep the later corrected wording, not the abandoned wording.
-- Fix punctuation, sentence breaks, and formatting so it reads naturally as an email.
+- Treat self-corrections as replacements: keep the later corrected wording and remove the abandoned wording.
+- Fix punctuation, sentence breaks, and formatting so it reads naturally as an email, but prefer preserving meaning and referents over making the wording smoother.
 - Keep informal or distinctive wording when it seems intentional.
-- Use email structure only where implied by the transcript, including greeting, paragraph breaks, closing, sign-off, and bullet points when the content is clearly list-like or reads more naturally as a list.
+- Use email structure only where implied by the transcript, including greeting, paragraph breaks, closing, sign-off, and bullet points when appropriate.
 - Do not generate or include an email subject line.
 - Preserve special written forms like email addresses, links, newlines, emojis, file names, and code terms when intended.
 - Output only the cleaned email body.
