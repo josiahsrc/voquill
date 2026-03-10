@@ -309,7 +309,7 @@ class KeyboardViewController: UIInputViewController {
     private var keyboardMode: KeyboardMode = .typing
     private var dictationActionButton: UIButton!
     private var dictationButtonWidthConstraint: NSLayoutConstraint?
-    private var mockKeyboardView: UIView!
+    private var mockKeyboardView: EnKeyboardView!
     private var dictationContentView: UIView!
     private var utilStack: UIStackView!
 
@@ -696,6 +696,7 @@ class KeyboardViewController: UIInputViewController {
         // === TYPING CONTENT (mock keyboard) ===
 
         mockKeyboardView = EnKeyboardView()
+        mockKeyboardView.textDocumentProxy = textDocumentProxy
         mockKeyboardView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mockKeyboardView)
 
