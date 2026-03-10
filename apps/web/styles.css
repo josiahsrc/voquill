@@ -53,7 +53,13 @@ body {
 body {
   color: var(--text-strong);
   background: var(--level0);
-  font-family: "Roboto", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    "Roboto",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-weight: 400;
   min-height: 100vh;
   padding: 16px 24px 72px;
@@ -151,7 +157,7 @@ a {
 }
 
 .header-spacer {
-  height: 64px;
+  height: 128px;
 }
 
 /* ── Buttons ── */
@@ -166,7 +172,12 @@ a {
   font-size: 0.95rem;
   font-weight: 600;
   border: 1px solid var(--border);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
   cursor: pointer;
   gap: 10px;
 }
@@ -268,6 +279,40 @@ a {
   margin-top: 8px;
 }
 
+.hero-platform-list {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.hero-platform-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.hero-platform-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  color: var(--text-muted);
+}
+
+.product-hunt-badge img {
+  margin-top: 16px;
+  display: block;
+}
+
 .hero-more-link {
   font-size: 0.9rem;
   font-weight: 500;
@@ -331,6 +376,10 @@ a {
     align-items: center;
   }
 
+  .hero-platform-list {
+    justify-content: center;
+  }
+
   .hero-graphic {
     display: none;
   }
@@ -349,6 +398,11 @@ a {
 @media (max-width: 520px) {
   .hero h1 {
     font-size: clamp(2.2rem, 8vw, 2.8rem);
+  }
+
+  .hero-platform-icon {
+    width: 22px;
+    height: 22px;
   }
 }
 
@@ -389,7 +443,9 @@ a {
   background: transparent;
   color: var(--text-strong);
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .btn-ghost:hover {
@@ -480,7 +536,9 @@ a {
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .linux-copy-btn:hover {
