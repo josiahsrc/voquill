@@ -1,61 +1,98 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voquill | Your keyboard is holding you back</title>
-  <meta name="description" content="Type four times faster with your voice. Open-source alternative to Wispr Flow.">
-  <meta name="theme-color" content="#121212">
-  <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
-  <!-- Site header -->
-  <div class="site-header-wrapper">
-    <header class="site-header">
-      <a href="/" class="logo">
-        <span class="logo-mark" aria-hidden="true"></span>
-        <span>Voquill</span>
-      </a>
-      <nav aria-label="Primary navigation">
-        <a href="#overview">Demo</a>
-        <a href="#privacy">Security</a>
-        <a href="#pricing">Pricing</a>
-        <a href="/blog">Blog</a>
-        <a href="https://docs.voquill.com" target="_blank" rel="noopener noreferrer">Docs</a>
-        <a href="https://docs.voquill.com/enterprise/overview" target="_blank" rel="noopener noreferrer">Enterprise</a>
-      </nav>
-      <div class="header-actions">
-        <a href="https://github.com/josiahsrc/voquill" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-small"><span class="github-icon" aria-hidden="true"></span>GitHub</a>
-        <a href="/download" class="btn-primary btn-small">Download</a>
-      </div>
-      <button class="mobile-menu-btn" aria-label="Open menu">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
-    </header>
-  </div>
-
-  <div class="header-spacer"></div>
-
-  <!-- Hero -->
-  <section class="hero" id="overview">
-    <div class="hero-content">
-      <h1>Your keyboard is holding you back.</h1>
-      <p class="hero-subtitle">Make voice your new keyboard. Type four times faster by using your voice. Voquill is the open-source alternative to WisprFlow.</p>
-      <div class="hero-actions">
-        <a href="/download" class="btn-primary">Download</a>
-        <a href="https://github.com/josiahsrc/voquill" target="_blank" rel="noopener noreferrer" class="btn-secondary"><span class="github-icon" aria-hidden="true"></span>Open source</a>
-      </div>
-      <div class="hero-meta">
-        <p class="hero-note">Free to use. No credit card required.</p>
-        <a href="/download" class="hero-more-link">More download options</a>
-      </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voquill | Your keyboard is holding you back</title>
+    <meta
+      name="description"
+      content="Type four times faster with your voice. Open-source alternative to Wispr Flow."
+    />
+    <meta name="theme-color" content="#121212" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Site header -->
+    <div class="site-header-wrapper">
+      <header class="site-header">
+        <a href="/" class="logo">
+          <span class="logo-mark" aria-hidden="true"></span>
+          <span>Voquill</span>
+        </a>
+        <nav aria-label="Primary navigation">
+          <a href="#overview">Demo</a>
+          <a href="#privacy">Security</a>
+          <a href="#pricing">Pricing</a>
+          <a href="/blog">Blog</a>
+          <a
+            href="https://docs.voquill.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Docs</a
+          >
+          <a
+            href="https://docs.voquill.com/enterprise/overview"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Enterprise</a
+          >
+        </nav>
+        <div class="header-actions">
+          <a
+            href="https://github.com/josiahsrc/voquill"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-secondary btn-small"
+            ><span class="github-icon" aria-hidden="true"></span>GitHub</a
+          >
+          <a href="/download" class="btn-primary btn-small download-button"
+            >Download</a
+          >
+        </div>
+        <button class="mobile-menu-btn" aria-label="Open menu">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+      </header>
     </div>
-    <div class="hero-graphic" aria-hidden="true"></div>
-  </section>
 
-</body>
+    <div class="header-spacer"></div>
+
+    <!-- Hero -->
+    <section class="hero" id="overview">
+      <div class="hero-content">
+        <h1>Your keyboard is holding you back.</h1>
+        <p class="hero-subtitle">
+          Make voice your new keyboard. Type four times faster by using your
+          voice. Voquill is the open-source alternative to WisprFlow.
+        </p>
+        <div class="hero-actions">
+          <a href="/download" class="btn-primary download-button"
+            >Download for free</a
+          >
+          <a
+            href="https://github.com/josiahsrc/voquill"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-secondary"
+            ><span class="github-icon" aria-hidden="true"></span>Open source</a
+          >
+        </div>
+        <div class="hero-meta">
+          <p class="hero-note">Free to use. No credit card required.</p>
+          <a href="/download" class="hero-more-link">More download options</a>
+        </div>
+      </div>
+      <div class="hero-graphic" aria-hidden="true"></div>
+    </section>
+
+    <script src="download-button.js"></script>
+  </body>
 </html>
