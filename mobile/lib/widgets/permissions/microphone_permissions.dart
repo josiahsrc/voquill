@@ -72,7 +72,7 @@ class _MicrophonePermissionsState extends State<MicrophonePermissions>
         : FilledButton(
             key: const ValueKey('enable-mic'),
             onPressed: _requestPermission,
-            child: const Text('Enable microphone'),
+            child: const Text('Continue'),
           );
 
     return OnboardingFormLayout(
