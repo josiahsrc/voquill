@@ -260,6 +260,7 @@ class KeyboardViewController: UIInputViewController {
 
     private var dictationPhase: DictationPhase = .idle
     private var isProcessing = false
+    private var isCancellingDictation = false
 
     private var pillButton: UIView!
     private var pillLabel: UILabel!
@@ -386,6 +387,7 @@ class KeyboardViewController: UIInputViewController {
 
         let oldPhase = dictationPhase
         dictationPhase = newPhase
+        updateModeToggleButton()
 
         if isProcessing { return }
 
@@ -395,9 +397,10 @@ class KeyboardViewController: UIInputViewController {
             startAudioLevelPolling()
         case .active:
             stopAudioLevelPolling()
-            if oldPhase == .recording {
+            if oldPhase == .recording && !isCancellingDictation {
                 handleTranscription()
             } else {
+                isCancellingDictation = false
                 applyPillVisual(.idle, animated: oldPhase != newPhase)
             }
         case .idle:
@@ -727,7 +730,7 @@ class KeyboardViewController: UIInputViewController {
             mockKeyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
-        setKeyboardMode(.typing)
+        setKeyboardMode(.dictation)
         waveformView.startAnimating()
         updateColorsForAppearance()
     }
@@ -752,7 +755,7 @@ class KeyboardViewController: UIInputViewController {
         if keyboardMode == .typing {
             let iconConfig = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
             dictationActionButton.setImage(UIImage(systemName: "mic.fill", withConfiguration: iconConfig), for: .normal)
-            dictationActionButton.setTitle("Dictate", for: .normal)
+            dictationActionButton.setTitle("Dictation", for: .normal)
             dictationActionButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
             dictationActionButton.setTitleColor(.white, for: .normal)
             dictationActionButton.tintColor = .white
@@ -763,7 +766,8 @@ class KeyboardViewController: UIInputViewController {
             dictationButtonWidthConstraint = nil
         } else {
             let iconConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
-            dictationActionButton.setImage(UIImage(systemName: "keyboard", withConfiguration: iconConfig), for: .normal)
+            let iconName = dictationPhase == .recording ? "xmark" : "keyboard"
+            dictationActionButton.setImage(UIImage(systemName: iconName, withConfiguration: iconConfig), for: .normal)
             dictationActionButton.setTitle(nil, for: .normal)
             dictationActionButton.tintColor = .label
             dictationActionButton.backgroundColor = UIColor.systemGray4
@@ -776,10 +780,24 @@ class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func onModeToggleTap() {
-        if keyboardMode == .typing {
-            setKeyboardMode(.dictation)
+        if keyboardMode == .dictation {
+            if dictationPhase == .recording {
+                isCancellingDictation = true
+                DarwinNotificationManager.shared.post(DictationConstants.stopRecording)
+            } else {
+                setKeyboardMode(.typing)
+            }
         } else {
-            setKeyboardMode(.typing)
+            setKeyboardMode(.dictation)
+        }
+    }
+
+    private func activateDictation() {
+        Mixpanel.mainInstance().track(event: "Activate Dictation Mode")
+        if dictationPhase == .idle {
+            openURL("voquill://dictate")
+        } else if dictationPhase == .active {
+            DarwinNotificationManager.shared.post(DictationConstants.startRecording)
         }
     }
 
@@ -844,11 +862,8 @@ class KeyboardViewController: UIInputViewController {
             let location = gesture.location(in: pillButton)
             if pillButton.bounds.contains(location) {
                 switch dictationPhase {
-                case .idle:
-                    Mixpanel.mainInstance().track(event: "Activate Dictation Mode")
-                    openURL("voquill://dictate")
-                case .active:
-                    DarwinNotificationManager.shared.post(DictationConstants.startRecording)
+                case .idle, .active:
+                    activateDictation()
                 case .recording:
                     DarwinNotificationManager.shared.post(DictationConstants.stopRecording)
                 }
@@ -1318,7 +1333,6 @@ class KeyboardViewController: UIInputViewController {
                         self.isProcessing = false
                         self.applyPillVisual(.idle, animated: true)
                         self.refreshMemberData()
-                        self.setKeyboardMode(.typing)
                     }
 
                     let tone = capturedToneId.flatMap { capturedToneById[$0] }
