@@ -1,14 +1,19 @@
 import CloseIcon from "@mui/icons-material/Close";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import { Box, IconButton, Typography } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import { emitTo } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
+import { FormattedMessage } from "react-intl";
 import type { AgentWindowMessage } from "../../types/agent-window.types";
 import type { OverlayPhase } from "../../types/overlay.types";
 
 export const ASSISTANT_PANEL_OVERLAY_WIDTH = 600;
 export const ASSISTANT_PANEL_OVERLAY_HEIGHT = 272;
+const ASSISTANT_PANEL_COMPACT_WIDTH = 424;
+const ASSISTANT_PANEL_COMPACT_HEIGHT = 120;
+const ASSISTANT_PANEL_EXPANDED_WIDTH = 572;
+const ASSISTANT_PANEL_EXPANDED_HEIGHT = 258;
 const ASSISTANT_PANEL_HORIZONTAL_INSET = 14;
 const ASSISTANT_PANEL_TOP_INSET = 14;
 const ASSISTANT_PANEL_BOTTOM_INSET = 0;
@@ -21,7 +26,7 @@ const ASSISTANT_PANEL_HEADER_OFFSET_TOP = 18;
 const ASSISTANT_PANEL_HEADER_OFFSET_RIGHT = 24;
 const ASSISTANT_PANEL_TRANSCRIPT_TOP_OFFSET = 44;
 const PANEL_SURFACE_TRANSITION =
-  "opacity 220ms ease-out, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)";
+  "opacity 220ms ease-out, transform 340ms cubic-bezier(0.22, 1, 0.36, 1), width 340ms cubic-bezier(0.22, 1, 0.36, 1), height 340ms cubic-bezier(0.22, 1, 0.36, 1), border-radius 340ms cubic-bezier(0.22, 1, 0.36, 1)";
 
 type AssistantModePanelProps = {
   phase: OverlayPhase;
@@ -37,6 +42,26 @@ type UserPromptPreview = {
   head: string;
   tail: string | null;
 };
+
+const thinkingShimmer = keyframes`
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: -200% 50%;
+  }
+`;
+
+const textFadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(0.2em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const getLatestMessage = (
   messages: AgentWindowMessage[],
@@ -72,6 +97,50 @@ const formatUserPromptPreview = (text: string): UserPromptPreview | null => {
   };
 };
 
+const AnimatedText = ({
+  text,
+  color,
+}: {
+  text: string;
+  color: string;
+}) => {
+  const segments = text.split(/(\s+)/);
+
+  return (
+    <Typography
+      component="div"
+      sx={{
+        color,
+        fontSize: 14,
+        lineHeight: 1.45,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      }}
+    >
+      {segments.map((segment, index) =>
+        /\s+/.test(segment) ? (
+          <Box component="span" key={`space-${index}`}>
+            {segment}
+          </Box>
+        ) : (
+          <Box
+            component="span"
+            key={`word-${index}-${segment}`}
+            sx={{
+              display: "inline-block",
+              opacity: 0,
+              animation: `${textFadeIn} 380ms ease-out forwards`,
+              animationDelay: `${Math.min(index, 18) * 26}ms`,
+            }}
+          >
+            {segment}
+          </Box>
+        ),
+      )}
+    </Typography>
+  );
+};
+
 type TranscriptEntryProps = {
   message: AgentWindowMessage;
 };
@@ -80,6 +149,7 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
   const theme = useTheme();
   const tools = message.tools ?? [];
   const hasBody = Boolean(message.draft || message.text);
+  const isThinking = !hasBody;
 
   return (
     <Box
@@ -116,40 +186,54 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
         </Box>
       ) : null}
 
-      {message.draft ? (
+      {isThinking ? (
         <Typography
           sx={{
-            color: alpha(theme.palette.common.white, 0.92),
+            width: "fit-content",
             fontSize: 14,
             lineHeight: 1.45,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
+            fontWeight: 500,
+            color: "transparent",
+            backgroundImage: `linear-gradient(90deg, ${alpha(
+              theme.palette.common.white,
+              0.34,
+            )} 0%, ${alpha(theme.palette.common.white, 0.92)} 50%, ${alpha(
+              theme.palette.common.white,
+              0.34,
+            )} 100%)`,
+            backgroundSize: "200% 100%",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            animation: `${thinkingShimmer} 1.6s linear infinite`,
           }}
         >
-          {message.draft}
+          <FormattedMessage defaultMessage="Thinking" />
         </Typography>
       ) : null}
 
+      {message.draft ? (
+        <AnimatedText
+          text={message.draft}
+          color={alpha(theme.palette.common.white, 0.92)}
+        />
+      ) : null}
+
       {message.text ? (
-        <Typography
-          sx={{
-            color: message.isError
+        <AnimatedText
+          text={message.text}
+          color={
+            message.isError
               ? alpha(theme.palette.error.light, 0.94)
-              : alpha(theme.palette.common.white, 0.92),
-            fontSize: 14,
-            lineHeight: 1.45,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-          }}
-        >
-          {message.text}
-        </Typography>
+              : alpha(theme.palette.common.white, 0.92)
+          }
+        />
       ) : null}
     </Box>
   );
 };
 
 export const AssistantModePanel = ({
+  phase,
   messages,
   open,
 }: AssistantModePanelProps) => {
@@ -163,6 +247,7 @@ export const AssistantModePanel = ({
   const assistantMessages = messages.filter(
     (message) => message.sender === "agent",
   );
+  const isCompact = messages.length === 0;
 
   useEffect(() => {
     if (!open) {
@@ -185,7 +270,7 @@ export const AssistantModePanel = ({
         position: "absolute",
         inset: 0,
         display: "flex",
-        alignItems: "stretch",
+        alignItems: "flex-end",
         justifyContent: "center",
         padding: `${ASSISTANT_PANEL_TOP_INSET}px ${ASSISTANT_PANEL_HORIZONTAL_INSET}px ${ASSISTANT_PANEL_BOTTOM_INSET}px`,
         pointerEvents: "none",
@@ -194,8 +279,12 @@ export const AssistantModePanel = ({
       <Box
         sx={{
           position: "relative",
-          width: "100%",
-          height: "100%",
+          width: isCompact
+            ? `${ASSISTANT_PANEL_COMPACT_WIDTH}px`
+            : `${ASSISTANT_PANEL_EXPANDED_WIDTH}px`,
+          height: isCompact
+            ? `${ASSISTANT_PANEL_COMPACT_HEIGHT}px`
+            : `${ASSISTANT_PANEL_EXPANDED_HEIGHT}px`,
           borderRadius: `${ASSISTANT_PANEL_RADIUS}px`,
           backgroundColor: alpha(theme.palette.common.black, 0.96),
           border: `1px solid ${alpha(theme.palette.common.white, 0.12)}`,
@@ -243,6 +332,36 @@ export const AssistantModePanel = ({
             padding: `${ASSISTANT_PANEL_CONTENT_TOP_INSET}px ${ASSISTANT_PANEL_CONTENT_SIDE_INSET}px ${ASSISTANT_PANEL_CONTENT_BOTTOM_INSET}px`,
           }}
         >
+          {isCompact ? (
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "center",
+                paddingTop: theme.spacing(3.25),
+                px: theme.spacing(8),
+              }}
+            >
+              <Typography
+                sx={{
+                  color:
+                    phase === "recording"
+                      ? alpha(theme.palette.common.white, 0.96)
+                      : alpha(theme.palette.common.white, 0.8),
+                  fontSize: 18,
+                  lineHeight: 1.2,
+                  fontWeight: 500,
+                  textAlign: "center",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                <FormattedMessage defaultMessage="What can I help you with?" />
+              </Typography>
+            </Box>
+          ) : null}
+
           <Box
             sx={{
               position: "absolute",
@@ -254,6 +373,8 @@ export const AssistantModePanel = ({
               minWidth: 0,
               maxWidth: `calc(100% - ${theme.spacing(7)})`,
               zIndex: 3,
+              opacity: isCompact ? 0 : 1,
+              transition: "opacity 180ms ease-out",
             }}
           >
             {userPromptPreview ? (
@@ -305,6 +426,10 @@ export const AssistantModePanel = ({
               minWidth: 0,
               overflow: "hidden",
               zIndex: 0,
+              opacity: isCompact ? 0 : 1,
+              transition:
+                "opacity 220ms ease-out, transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+              transform: isCompact ? "translateY(8px)" : "translateY(0)",
             }}
           >
             <Box
