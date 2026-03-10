@@ -70,6 +70,10 @@ export const translations = {
 		discordDescription:
 			"Voquill is built in the open. Join our Discord to share feedback, request features, report bugs, or just hang out with other people. We're building this together.",
 		discordJoin: 'Join Discord',
+		ctaHeading: 'Ready to stop typing?',
+		footerPrivacy: 'Privacy',
+		footerTerms: 'Terms',
+		footerContact: 'Contact',
 	},
 	es: {
 		siteTitle: 'Voquill | Tu teclado te está frenando',
@@ -142,6 +146,10 @@ export const translations = {
 		discordDescription:
 			'Voquill se construye de forma abierta. Únete a nuestro Discord para compartir comentarios, solicitar funciones, reportar errores o simplemente pasar el rato. Lo estamos construyendo juntos.',
 		discordJoin: 'Unirse a Discord',
+		ctaHeading: '¿Listo para dejar de escribir?',
+		footerPrivacy: 'Privacidad',
+		footerTerms: 'Términos',
+		footerContact: 'Contacto',
 	},
 } as const;
 

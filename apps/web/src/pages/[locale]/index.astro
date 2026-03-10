@@ -9,6 +9,7 @@ import PrivacyShowcase from '../../components/PrivacyShowcase.astro';
 import TextCleanupShowcase from '../../components/TextCleanupShowcase.astro';
 import OfflineShowcase from '../../components/OfflineShowcase.astro';
 import DiscordSection from '../../components/DiscordSection.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
 import { type Locale, t } from '../../i18n/translations';
 
 export function getStaticPaths() {
@@ -29,6 +30,7 @@ const i18n = t(locale);
 	<TextCleanupShowcase locale={locale} />
 	<OfflineShowcase locale={locale} />
 	<DiscordSection locale={locale} />
+	<SiteFooter locale={locale} />
 
 	<script>
 		// ── Hero graphic ──

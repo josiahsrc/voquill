@@ -1,0 +1,110 @@
+---
+import type { Locale } from '../i18n/translations';
+import { t } from '../i18n/translations';
+import DownloadButton from './DownloadButton.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="site-footer" id="cta">
+	<div class="footer-inner">
+		<h2>{i18n.ctaHeading}</h2>
+		<div class="footer-actions">
+			<DownloadButton class="btn-primary" label={i18n.downloadForFree} />
+		</div>
+	</div>
+</footer>
+<div class="page-meta">
+	<span>&copy; {currentYear} Handaptive LLC</span>
+	<div class="page-links">
+		<a href="/privacy">{i18n.footerPrivacy}</a>
+		<a href="/terms">{i18n.footerTerms}</a>
+		<a href="/contact">{i18n.footerContact}</a>
+	</div>
+</div>
+
+<style>
+	.site-footer {
+		display: flex;
+		flex-direction: column;
+		gap: 40px;
+		padding: 48px;
+		margin-top: 120px;
+		border-radius: 32px;
+		background: var(--level1);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow);
+		max-width: min(1120px, 100%);
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.footer-inner {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+		max-width: 60ch;
+		align-items: center;
+		text-align: center;
+		margin: 0 auto;
+	}
+
+	.footer-inner h2 {
+		font-size: 2.5rem;
+		line-height: 1.1;
+		letter-spacing: -0.035em;
+		padding-bottom: 16px;
+	}
+
+	.footer-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+
+	.page-meta {
+		width: min(1120px, 100%);
+		margin: 48px auto 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 12px;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+
+	.page-links {
+		display: flex;
+		gap: 16px;
+	}
+
+	.page-links a {
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+	}
+
+	@media (max-width: 720px) {
+		.site-footer {
+			padding: 36px 24px;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.footer-actions {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.site-footer {
+			gap: 32px;
+		}
+	}
+</style>
