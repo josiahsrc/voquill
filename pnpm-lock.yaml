@@ -368,7 +368,9 @@ importers:
         specifier: ^4.0.6
         version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@22.19.15)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
-  apps/web:
+  apps/web: {}
+
+  apps/web2:
     dependencies:
       marked:
         specifier: ^16.4.0
@@ -12934,7 +12936,7 @@ snapshots:
 
   '@types/node-fetch@2.6.13':
     dependencies:
-      '@types/node': 22.19.15
+      '@types/node': 24.12.0
       form-data: 4.0.5
 
   '@types/node@17.0.45': {}
@@ -12990,7 +12992,7 @@ snapshots:
   '@types/request@2.48.13':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 22.19.15
+      '@types/node': 24.12.0
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.5
 
@@ -18278,7 +18280,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 22.19.15
+      '@types/node': 24.12.0
       long: 5.3.2
 
   proxy-addr@2.0.7:
