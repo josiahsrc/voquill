@@ -15,9 +15,9 @@
     "curl -fsSL https://voquill.github.io/apt/install.sh | bash";
 
   const PLATFORM_META = {
-    mac: { name: "macOS", icon: "apple.svg" },
-    windows: { name: "Windows", icon: "windows.svg" },
-    linux: { name: "Linux", icon: "ubuntu.svg" },
+    mac: { name: "macOS", icon: "assets/apple.svg" },
+    windows: { name: "Windows", icon: "assets/windows.svg" },
+    linux: { name: "Linux", icon: "assets/ubuntu.svg" },
   };
 
   const ASSET_KEY_MAPPINGS = [

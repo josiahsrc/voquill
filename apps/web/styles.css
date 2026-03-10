@@ -113,8 +113,8 @@ a {
   display: block;
   color: var(--text-strong);
   background-color: currentColor;
-  mask: url("app-logo.svg") center/contain no-repeat;
-  -webkit-mask: url("app-logo.svg") center/contain no-repeat;
+  mask: url("assets/app-logo.svg") center/contain no-repeat;
+  -webkit-mask: url("assets/app-logo.svg") center/contain no-repeat;
 }
 
 .github-icon {
@@ -122,8 +122,8 @@ a {
   width: 18px;
   height: 18px;
   background-color: currentColor;
-  mask: url("github.svg") center/contain no-repeat;
-  -webkit-mask: url("github.svg") center/contain no-repeat;
+  mask: url("assets/github.svg") center/contain no-repeat;
+  -webkit-mask: url("assets/github.svg") center/contain no-repeat;
   flex-shrink: 0;
 }
 
