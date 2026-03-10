@@ -1,0 +1,222 @@
+---
+import type { Locale } from '../i18n/translations';
+import { t } from '../i18n/translations';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+---
+
+<section class="apps-section">
+	<div class="apps-carousel-top">
+		<div class="apps-row-wrapper">
+			<div class="apps-row apps-scroll-left" style="animation-duration: 40s">
+			</div>
+		</div>
+	</div>
+	<div class="apps-content">
+		<span class="badge">{i18n.universalCompatibility}</span>
+		<h2>{i18n.oneVoiceEveryApp}</h2>
+		<p>{i18n.appsDescription}</p>
+	</div>
+	<div class="apps-carousel-bottom">
+		<div class="apps-row-wrapper">
+			<div
+				class="apps-row apps-scroll-right"
+				style="animation-duration: 35s"
+			>
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	.apps-section {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 80px;
+		padding: 80px 0;
+		overflow: hidden;
+		position: relative;
+		margin-top: 120px;
+	}
+
+	.apps-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 18px;
+		max-width: 640px;
+		padding: 0 24px;
+		z-index: 2;
+	}
+
+	.badge {
+		padding: 6px 16px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: var(--level1);
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.apps-content h2 {
+		font-size: clamp(2rem, 3vw, 2.6rem);
+		line-height: 1.2;
+		letter-spacing: -0.025em;
+	}
+
+	.apps-content p {
+		font-size: 1.05rem;
+		line-height: 1.75;
+		color: var(--text-muted);
+	}
+
+	.apps-carousel-top,
+	.apps-carousel-bottom {
+		width: min(1120px, 100%);
+	}
+
+	.apps-carousel-top {
+		margin-bottom: -20px;
+	}
+
+	.apps-carousel-bottom {
+		margin-top: -20px;
+	}
+
+	.apps-row-wrapper {
+		width: 100%;
+		overflow: hidden;
+		mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, 0) 0%,
+			rgba(0, 0, 0, 1) 15%,
+			rgba(0, 0, 0, 1) 85%,
+			rgba(0, 0, 0, 0) 100%
+		);
+		-webkit-mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, 0) 0%,
+			rgba(0, 0, 0, 1) 15%,
+			rgba(0, 0, 0, 1) 85%,
+			rgba(0, 0, 0, 0) 100%
+		);
+	}
+
+	.apps-row {
+		display: flex;
+		gap: 16px;
+		width: max-content;
+	}
+
+	.apps-scroll-left {
+		animation: apps-scroll-left linear infinite;
+	}
+
+	.apps-scroll-right {
+		animation: apps-scroll-right linear infinite;
+	}
+
+	:global(.apps-icon-card) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 64px;
+		height: 64px;
+		padding: 16px;
+		border-radius: 16px;
+		background: var(--level1);
+		border: 1px solid var(--border);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	:global(.apps-icon-card:hover) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+	}
+
+	:global(.apps-icon-image) {
+		width: 32px;
+		height: 32px;
+		object-fit: contain;
+		opacity: 0.85;
+		transition: opacity 0.2s ease;
+	}
+
+	:global(.apps-icon-card:hover .apps-icon-image) {
+		opacity: 1;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:global(.apps-icon-card) {
+			background: var(--level2);
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		}
+
+		:global(.apps-icon-card:hover) {
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+		}
+
+		:global(.apps-icon-image) {
+			filter: brightness(0) invert(1);
+			opacity: 0.7;
+		}
+
+		:global(.apps-icon-card:hover .apps-icon-image) {
+			opacity: 0.9;
+		}
+	}
+
+	@keyframes apps-scroll-left {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(-50%);
+		}
+	}
+
+	@keyframes apps-scroll-right {
+		from {
+			transform: translateX(-50%);
+		}
+		to {
+			transform: translateX(0);
+		}
+	}
+
+	@media (max-width: 720px) {
+		.apps-section {
+			gap: 32px;
+			padding: 60px 0;
+		}
+
+		.apps-row {
+			gap: 12px;
+		}
+
+		:global(.apps-icon-card) {
+			width: 52px;
+			height: 52px;
+			padding: 12px;
+			border-radius: 12px;
+		}
+
+		:global(.apps-icon-image) {
+			width: 28px;
+			height: 28px;
+		}
+	}
+</style>

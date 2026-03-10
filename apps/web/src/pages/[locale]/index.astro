@@ -1,69 +1,790 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { translations, type Locale } from '../../i18n/translations';
+import Header from '../../components/Header.astro';
+import Hero from '../../components/Hero.astro';
+import VideoSection from '../../components/VideoSection.astro';
+import AppsCarousel from '../../components/AppsCarousel.astro';
+import { type Locale, t } from '../../i18n/translations';
 
 export function getStaticPaths() {
-	return [
-		{ params: { locale: 'en' } },
-		{ params: { locale: 'es' } },
-	];
+	return [{ params: { locale: 'en' } }, { params: { locale: 'es' } }];
 }
 
 const locale = Astro.params.locale as Locale;
-const otherLocale: Locale = locale === 'en' ? 'es' : 'en';
-const i18n = translations[locale];
+const i18n = t(locale);
 ---
 
-<Layout title={i18n.title} lang={locale}>
-	<main>
-		<h1>{i18n.title}</h1>
-		<p>{i18n.subtitle}</p>
-		<a href="#" class="cta">{i18n.cta}</a>
-		<nav class="lang-switcher">
-			<a href={`/${otherLocale}/`}>{otherLocale.toUpperCase()}</a>
-		</nav>
-	</main>
+<Layout title={i18n.siteTitle} description={i18n.siteDescription} lang={locale}>
+	<Header locale={locale} />
+	<Hero locale={locale} />
+	<VideoSection locale={locale} />
+	<AppsCarousel locale={locale} />
+
+	<script>
+		// ── Download button ──
+		(function () {
+			const RELEASES_API_URL =
+				'https://api.github.com/repos/josiahsrc/voquill/releases';
+			const RELEASE_TAG_PATTERN = /^desktop-v\d/;
+			const LINUX_INSTALL_COMMAND =
+				'curl -fsSL https://voquill.github.io/apt/install.sh | bash';
+
+			const PLATFORM_META: Record<
+				string,
+				{ name: string; icon: string }
+			> = {
+				mac: { name: 'macOS', icon: '/apple.svg' },
+				windows: { name: 'Windows', icon: '/windows.svg' },
+				linux: { name: 'Linux', icon: '/ubuntu.svg' },
+			};
+
+			const ASSET_KEY_MAPPINGS = [
+				{
+					match: (n: string) =>
+						/^Voquill[._](?!GPU).*\.AppImage$/i.test(n),
+					keys: ['linux-x86_64', 'linux-x86_64-appimage'],
+				},
+				{
+					match: (n: string) =>
+						/^Voquill[._](?!GPU).*\.deb$/i.test(n),
+					keys: ['linux-x86_64-deb'],
+				},
+				{
+					match: (n: string) =>
+						/^Voquill[._](?!GPU).*\.rpm$/i.test(n),
+					keys: ['linux-x86_64-rpm'],
+				},
+				{
+					match: (n: string) => /\.app\.tar\.gz$/i.test(n),
+					keys: ['darwin-universal'],
+				},
+				{
+					match: (n: string) => /\.dmg$/i.test(n),
+					keys: ['darwin-universal'],
+				},
+				{
+					match: (n: string) =>
+						/darwin.*\.app\.tar\.gz$/i.test(n),
+					keys: ['darwin-aarch64', 'darwin-x86_64'],
+				},
+				{
+					match: (n: string) =>
+						/^Voquill[._]Portable[._]Installer\.exe$/i.test(n),
+					keys: ['windows-x86_64-portable'],
+				},
+				{
+					match: (n: string) =>
+						/^Voquill[._](?!GPU).*\.msi$/i.test(n),
+					keys: ['windows-x86_64', 'windows-x86_64-msi'],
+				},
+				{
+					match: (n: string) =>
+						/^Voquill[._](?!GPU).*setup.*\.exe$/i.test(n),
+					keys: ['windows-x86_64-nsis'],
+				},
+			];
+
+			function detectPlatform() {
+				var nav = window.navigator;
+				var hint = (nav as any).userAgentData
+					? ((nav as any).userAgentData.platform || '')
+					: '';
+				var ua = [nav.userAgent || '', hint, nav.platform || '']
+					.join(' ')
+					.toLowerCase();
+				if (ua.includes('win')) return 'windows';
+				if (ua.includes('mac') || ua.includes('darwin')) return 'mac';
+				if (ua.includes('linux') && !ua.includes('android'))
+					return 'linux';
+				return 'mac';
+			}
+
+			function isMobileDevice() {
+				var nav = window.navigator;
+				var hint = (nav as any).userAgentData
+					? ((nav as any).userAgentData.platform || '')
+					: '';
+				var ua = [nav.userAgent || '', hint, nav.platform || '']
+					.join(' ')
+					.toLowerCase();
+				return /iphone|ipad|ipod|android/.test(ua);
+			}
+
+			async function detectMacManifestKey() {
+				var nav = window.navigator;
+				var ua = [
+					nav.userAgent || '',
+					(nav as any).userAgentData
+						? ((nav as any).userAgentData.platform || '')
+						: '',
+					nav.platform || '',
+				]
+					.join(' ')
+					.toLowerCase();
+				if (
+					ua.includes('arm') ||
+					ua.includes('aarch') ||
+					ua.includes('apple silicon')
+				)
+					return 'darwin-aarch64';
+
+				if (
+					(nav as any).userAgentData &&
+					(nav as any).userAgentData.getHighEntropyValues
+				) {
+					try {
+						var data = await (
+							nav as any
+						).userAgentData.getHighEntropyValues(['architecture']);
+						var arch = (data.architecture || '').toLowerCase();
+						if (arch.includes('arm') || arch.includes('aarch'))
+							return 'darwin-aarch64';
+						if (arch.includes('86') || arch.includes('amd'))
+							return 'darwin-x86_64';
+					} catch (_e) {
+						/* ignore */
+					}
+				}
+				return undefined;
+			}
+
+			async function buildPlatformPreference(platform: string) {
+				switch (platform) {
+					case 'mac': {
+						var key = await detectMacManifestKey();
+						if (key === 'darwin-aarch64')
+							return ['darwin-aarch64', 'darwin-universal'];
+						if (key === 'darwin-x86_64')
+							return ['darwin-x86_64', 'darwin-universal'];
+						return [
+							'darwin-universal',
+							'darwin-aarch64',
+							'darwin-x86_64',
+						];
+					}
+					case 'windows':
+						return [
+							'windows-x86_64-portable',
+							'windows-x86_64',
+							'windows-x86_64-msi',
+							'windows-x86_64-nsis',
+						];
+					case 'linux':
+						return [
+							'linux-x86_64',
+							'linux-x86_64-appimage',
+							'linux-x86_64-deb',
+							'linux-x86_64-rpm',
+						];
+					default:
+						return [];
+				}
+			}
+
+			function resolveManifestKeys(asset: { name: string }) {
+				var name = asset.name.toLowerCase();
+				if (name.includes('gpu')) return undefined;
+				for (var i = 0; i < ASSET_KEY_MAPPINGS.length; i++) {
+					if (ASSET_KEY_MAPPINGS[i].match(name))
+						return ASSET_KEY_MAPPINGS[i].keys;
+				}
+				if (name.endsWith('.json')) return undefined;
+				if (name.includes('darwin') || name.includes('mac'))
+					return ['darwin-aarch64', 'darwin-x86_64'];
+				if (name.includes('windows') || name.includes('win'))
+					return ['windows-x86_64'];
+				if (name.includes('linux')) return ['linux-x86_64'];
+				return undefined;
+			}
+
+			function transformGithubRelease(release: {
+				assets: Array<{
+					name: string;
+					browser_download_url: string;
+				}>;
+			}) {
+				var assets = release.assets || [];
+				var platforms: Record<
+					string,
+					{ url: string; signature: string }
+				> = {};
+				for (var i = 0; i < assets.length; i++) {
+					var keys = resolveManifestKeys(assets[i]);
+					if (!keys) continue;
+					for (var j = 0; j < keys.length; j++) {
+						if (!platforms[keys[j]]) {
+							platforms[keys[j]] = {
+								url: assets[i].browser_download_url,
+								signature: '',
+							};
+						}
+					}
+				}
+				if (Object.keys(platforms).length === 0) return undefined;
+				return { platforms };
+			}
+
+			async function fetchReleaseManifest() {
+				try {
+					var response = await fetch(RELEASES_API_URL, {
+						headers: {
+							Accept: 'application/vnd.github+json',
+						},
+					});
+					if (!response.ok) return undefined;
+					var allReleases = await response.json();
+					var releases = allReleases.filter(function (r: any) {
+						return (
+							r.tag_name && RELEASE_TAG_PATTERN.test(r.tag_name)
+						);
+					});
+					var latest = releases[0];
+					if (!latest) return undefined;
+					var manifest = transformGithubRelease(latest);
+					if (!manifest) return undefined;
+					var fallback = releases[1];
+					if (fallback) {
+						var fallbackManifest =
+							transformGithubRelease(fallback);
+						if (fallbackManifest) {
+							for (var key in fallbackManifest.platforms) {
+								if (!manifest.platforms[key])
+									manifest.platforms[key] =
+										fallbackManifest.platforms[key];
+							}
+						}
+					}
+					return manifest;
+				} catch (_e) {
+					return undefined;
+				}
+			}
+
+			async function selectPlatformUrl(
+				manifest: {
+					platforms: Record<
+						string,
+						{ url: string; signature: string }
+					>;
+				},
+				platform: string,
+			) {
+				var pref = await buildPlatformPreference(platform);
+				for (var i = 0; i < pref.length; i++) {
+					var entry = manifest.platforms[pref[i]];
+					if (entry && entry.url) return entry.url;
+				}
+				return undefined;
+			}
+
+			function showLinuxDialog() {
+				if (document.getElementById('linux-install-dialog')) return;
+
+				var overlay = document.createElement('div');
+				overlay.id = 'linux-install-dialog';
+				overlay.className = 'dialog-overlay';
+
+				var dialog = document.createElement('div');
+				dialog.className = 'dialog';
+				dialog.setAttribute('role', 'dialog');
+				dialog.setAttribute('aria-label', 'Install Voquill on Linux');
+
+				dialog.innerHTML =
+					'<h2 class="dialog-title">Install Voquill on Linux</h2>' +
+					'<p class="dialog-description">Run this command in your terminal to install Voquill via APT:</p>' +
+					'<div class="linux-code-block"><code>' +
+					LINUX_INSTALL_COMMAND +
+					'</code>' +
+					'<button type="button" class="linux-copy-btn">Copy</button></div>' +
+					'<p class="dialog-hint">Supports Debian, Ubuntu, and other APT-based distributions. After installing, upgrade anytime with:</p>' +
+					'<div class="linux-code-block"><code>sudo apt-get update && sudo apt-get upgrade voquill-desktop</code></div>' +
+					'<p class="dialog-hint">Looking for other options? Visit the <a href="/download" class="inline-link">downloads page</a> for AppImage and other downloads.</p>' +
+					'<button type="button" class="btn-ghost dialog-close-btn">Close</button>';
+
+				overlay.appendChild(dialog);
+				document.body.appendChild(overlay);
+
+				var copyBtn = dialog.querySelector('.linux-copy-btn')!;
+				copyBtn.addEventListener('click', function () {
+					navigator.clipboard.writeText(LINUX_INSTALL_COMMAND);
+					copyBtn.textContent = 'Copied!';
+					setTimeout(function () {
+						copyBtn.textContent = 'Copy';
+					}, 2000);
+				});
+
+				function close() {
+					overlay.remove();
+				}
+				overlay.addEventListener('click', function (e) {
+					if (e.target === overlay) close();
+				});
+				dialog
+					.querySelector('.dialog-close-btn')!
+					.addEventListener('click', close);
+			}
+
+			async function upgradeButton(el: HTMLAnchorElement) {
+				var mobile = isMobileDevice();
+				var platform = detectPlatform();
+				var meta = PLATFORM_META[platform];
+
+				var iconSpan = el.querySelector(
+					'.download-button-icon',
+				) as HTMLElement;
+				if (!iconSpan) {
+					iconSpan = document.createElement('span');
+					iconSpan.className = 'download-button-icon';
+					iconSpan.setAttribute('aria-hidden', 'true');
+					el.prepend(iconSpan);
+				}
+				iconSpan.style.maskImage = 'url(' + meta.icon + ')';
+				iconSpan.style.webkitMaskImage = 'url(' + meta.icon + ')';
+
+				if (mobile) {
+					el.removeAttribute('href');
+					el.setAttribute('disabled', '');
+					el.classList.add('btn-disabled');
+					el.textContent = 'iOS/Android coming soon';
+					return;
+				}
+
+				var label = el.querySelector('.download-button-label');
+				if (!label) {
+					var text = el.textContent!.trim();
+					el.textContent = '';
+					el.appendChild(iconSpan);
+					label = document.createElement('span');
+					label.className = 'download-button-label';
+					label.textContent = text;
+					el.appendChild(label);
+				}
+
+				if (platform === 'linux') {
+					el.addEventListener('click', function (e) {
+						e.preventDefault();
+						showLinuxDialog();
+					});
+					return;
+				}
+
+				try {
+					var manifest = await fetchReleaseManifest();
+					if (!manifest) return;
+					var url = await selectPlatformUrl(manifest, platform);
+					if (url) el.href = url;
+				} catch (_e) {
+					// keep default href
+				}
+			}
+
+			document.addEventListener('DOMContentLoaded', function () {
+				var buttons = document.querySelectorAll('.download-button');
+				buttons.forEach(function (btn) {
+					upgradeButton(btn as HTMLAnchorElement);
+				});
+			});
+		})();
+	</script>
+
+	<script>
+		// ── Hero graphic ──
+		(function () {
+			function bezierPoint(
+				curve: {
+					sx: number;
+					sy: number;
+					c1x: number;
+					c1y: number;
+					c2x: number;
+					c2y: number;
+					ex: number;
+					ey: number;
+				},
+				t: number,
+			) {
+				var mt = 1 - t,
+					mt2 = mt * mt,
+					mt3 = mt2 * mt,
+					t2 = t * t,
+					t3 = t2 * t;
+
+				var x =
+					mt3 * curve.sx +
+					3 * mt2 * t * curve.c1x +
+					3 * mt * t2 * curve.c2x +
+					t3 * curve.ex;
+				var y =
+					mt3 * curve.sy +
+					3 * mt2 * t * curve.c1y +
+					3 * mt * t2 * curve.c2y +
+					t3 * curve.ey;
+
+				var dx =
+					3 * mt2 * (curve.c1x - curve.sx) +
+					6 * mt * t * (curve.c2x - curve.c1x) +
+					3 * t2 * (curve.ex - curve.c2x);
+				var dy =
+					3 * mt2 * (curve.c1y - curve.sy) +
+					6 * mt * t * (curve.c2y - curve.c1y) +
+					3 * t2 * (curve.ey - curve.c2y);
+
+				return { x: x, y: y, angle: Math.atan2(dy, dx) };
+			}
+
+			function generateWavePath(
+				curve: {
+					sx: number;
+					sy: number;
+					c1x: number;
+					c1y: number;
+					c2x: number;
+					c2y: number;
+					ex: number;
+					ey: number;
+				},
+				frequency: number,
+				amplitude: number,
+				timeOffset: number,
+			) {
+				var segments = 100;
+				var parts = [];
+				for (var i = 0; i <= segments; i++) {
+					var t = i / segments;
+					var p = bezierPoint(curve, t);
+					var perpX = -Math.sin(p.angle);
+					var perpY = Math.cos(p.angle);
+					var phase = t * frequency * Math.PI * 2 - timeOffset;
+					var sineValue = Math.sin(phase) * amplitude;
+					var fadeIn = Math.min(1, t * 5);
+					var fadeOut = Math.min(1, (1 - t) * 5);
+					var fade = fadeIn * fadeOut;
+					var px = p.x + perpX * sineValue * fade;
+					var py = p.y + perpY * sineValue * fade;
+					parts.push(
+						(i === 0 ? 'M ' : 'L ') +
+							px.toFixed(2) +
+							' ' +
+							py.toFixed(2),
+					);
+				}
+				return parts.join(' ');
+			}
+
+			function seededRandom(seed: number) {
+				var x =
+					Math.sin(seed * 12.9898 + seed * 78.233) * 43758.5453;
+				return x - Math.floor(x);
+			}
+
+			var WAVE_CONFIGS = [
+				{
+					frequency: 16 / 3,
+					amplitude: 14,
+					duration: 1.5,
+					opacity: 0.5,
+				},
+				{
+					frequency: 24 / 3,
+					amplitude: 10,
+					duration: 1.2,
+					opacity: 0.35,
+				},
+				{
+					frequency: 36 / 3,
+					amplitude: 6,
+					duration: 1,
+					opacity: 0.25,
+				},
+			];
+
+			var WAVE_FRAMES = 20;
+
+			var BASE_TEXT =
+				'So I\u2019ve been working on this really cool flower garden project lately. I\u2019m growing sunflowers, lavender, and these amazing dahlias that just started blooming. The colors are incredible and I can\u2019t wait to show you the photos. ';
+			var REPEATED_TEXT = '';
+			for (var r = 0; r < 10; r++) REPEATED_TEXT += BASE_TEXT;
+
+			var SPARKS: Array<{
+				tx: number;
+				ty: number;
+				delay: number;
+				dur: number;
+			}> = [];
+			for (var i = 0; i < 6; i++) {
+				var angle = seededRandom(i * 3.3) * Math.PI * 2;
+				var distance = 80 + seededRandom(i * 4.4) * 60;
+				SPARKS.push({
+					tx: Math.cos(angle) * distance,
+					ty: Math.sin(angle) * distance,
+					delay: seededRandom(i * 1.1) * 2,
+					dur: 0.6 + seededRandom(i * 2.2) * 0.5,
+				});
+			}
+
+			function buildGraphic() {
+				var NS = 'http://www.w3.org/2000/svg';
+				var vw = 1000,
+					vh = 750;
+				var cx = vw,
+					cy = vh;
+				var iconX = cx,
+					iconY = cy;
+
+				var inputCurve = {
+					sx: cx - vw * 0.1,
+					sy: -50,
+					c1x: cx + vw * 0.2,
+					c1y: cy - vh * 0.8,
+					c2x: cx - vw * 0.5,
+					c2y: cy - vh * 0.1,
+					ex: iconX - 28,
+					ey: iconY - 5,
+				};
+
+				var outputCurve = {
+					sx: iconX + 28,
+					sy: iconY + 8,
+					c1x: cx + vw * 0.4,
+					c1y: cy + vh * 0.1,
+					c2x: cx,
+					c2y: cy + vh * 0.4,
+					ex: cx + vw * 0.7,
+					ey: cy + vh * 0.5,
+				};
+
+				var outputCurvePath =
+					'M ' +
+					outputCurve.sx +
+					' ' +
+					outputCurve.sy +
+					' C ' +
+					outputCurve.c1x +
+					' ' +
+					outputCurve.c1y +
+					', ' +
+					outputCurve.c2x +
+					' ' +
+					outputCurve.c2y +
+					', ' +
+					outputCurve.ex +
+					' ' +
+					outputCurve.ey;
+
+				var wavesData = WAVE_CONFIGS.map(function (cfg) {
+					var frames = [];
+					for (var f = 0; f < WAVE_FRAMES; f++) {
+						var timeOffset = (f / WAVE_FRAMES) * Math.PI * 2;
+						frames.push(
+							generateWavePath(
+								inputCurve,
+								cfg.frequency,
+								cfg.amplitude,
+								timeOffset,
+							),
+						);
+					}
+					frames.push(frames[0]);
+					return {
+						frames: frames.join(';'),
+						opacity: cfg.opacity,
+						duration: cfg.duration,
+					};
+				});
+
+				var svg = document.createElementNS(NS, 'svg');
+				svg.setAttribute('class', 'hero-svg');
+				svg.setAttribute(
+					'viewBox',
+					'0 0 ' + vw * 2 + ' ' + vh * 2,
+				);
+				svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+
+				var defs = document.createElementNS(NS, 'defs');
+				var defPath = document.createElementNS(NS, 'path');
+				defPath.setAttribute('id', 'outputTextPath');
+				defPath.setAttribute('d', outputCurvePath);
+				defPath.setAttribute('fill', 'none');
+				defs.appendChild(defPath);
+				svg.appendChild(defs);
+
+				wavesData.forEach(function (w) {
+					var path = document.createElementNS(NS, 'path');
+					path.setAttribute('fill', 'none');
+					path.setAttribute('class', 'hero-wave-path');
+					path.setAttribute('style', 'opacity:' + w.opacity);
+					var anim = document.createElementNS(NS, 'animate');
+					anim.setAttribute('attributeName', 'd');
+					anim.setAttribute('values', w.frames);
+					anim.setAttribute('dur', w.duration + 's');
+					anim.setAttribute('repeatCount', 'indefinite');
+					path.appendChild(anim);
+					svg.appendChild(path);
+				});
+
+				var text = document.createElementNS(NS, 'text');
+				text.setAttribute('class', 'hero-path-text');
+				var textPath = document.createElementNS(NS, 'textPath');
+				textPath.setAttribute('href', '#outputTextPath');
+				textPath.textContent = REPEATED_TEXT;
+				var textAnim = document.createElementNS(NS, 'animate');
+				textAnim.setAttribute('attributeName', 'startOffset');
+				textAnim.setAttribute('from', '-1300');
+				textAnim.setAttribute('to', '0');
+				textAnim.setAttribute('dur', '15.5s');
+				textAnim.setAttribute('calcMode', 'linear');
+				textAnim.setAttribute('repeatCount', 'indefinite');
+				textPath.appendChild(textAnim);
+				text.appendChild(textPath);
+				svg.appendChild(text);
+
+				SPARKS.forEach(function (s) {
+					var c = document.createElementNS(NS, 'circle');
+					c.setAttribute('cx', String(iconX));
+					c.setAttribute('cy', String(iconY));
+					c.setAttribute('r', '3');
+					c.setAttribute('class', 'hero-spark');
+
+					function addAnim(
+						attr: string,
+						vals: string,
+						dur: number,
+						begin: number,
+					) {
+						var a = document.createElementNS(NS, 'animate');
+						a.setAttribute('attributeName', attr);
+						a.setAttribute('values', vals);
+						a.setAttribute('dur', dur + 's');
+						a.setAttribute('begin', begin + 's');
+						a.setAttribute('repeatCount', 'indefinite');
+						c.appendChild(a);
+					}
+
+					addAnim(
+						'cx',
+						iconX + ';' + (iconX + s.tx),
+						s.dur,
+						s.delay,
+					);
+					addAnim(
+						'cy',
+						iconY + ';' + (iconY + s.ty),
+						s.dur,
+						s.delay,
+					);
+					addAnim('opacity', '0.6;0', s.dur, s.delay);
+					addAnim('r', '3;1', s.dur, s.delay);
+					svg.appendChild(c);
+				});
+
+				var glow = document.createElementNS(NS, 'circle');
+				glow.setAttribute('cx', String(iconX));
+				glow.setAttribute('cy', String(iconY));
+				glow.setAttribute('r', '38');
+				glow.setAttribute('class', 'hero-icon-glow');
+				svg.appendChild(glow);
+
+				var circle = document.createElementNS(NS, 'circle');
+				circle.setAttribute('cx', String(iconX));
+				circle.setAttribute('cy', String(iconY));
+				circle.setAttribute('r', '30');
+				circle.setAttribute('class', 'hero-icon-circle');
+				svg.appendChild(circle);
+
+				var img = document.createElementNS(NS, 'image');
+				img.setAttribute('href', '/app-logo.svg');
+				img.setAttribute('x', String(iconX - 20));
+				img.setAttribute('y', String(iconY - 20));
+				img.setAttribute('width', '40');
+				img.setAttribute('height', '40');
+				img.setAttribute('class', 'hero-icon-logo');
+				svg.appendChild(img);
+
+				return svg;
+			}
+
+			document.addEventListener('DOMContentLoaded', function () {
+				var containers = document.querySelectorAll('.hero-graphic');
+				containers.forEach(function (el) {
+					el.appendChild(buildGraphic());
+				});
+			});
+		})();
+	</script>
+
+	<script>
+		// ── Apps carousel ──
+		(function () {
+			var topRowApps = [
+				{ name: 'Chromatic', slug: 'chromatic' },
+				{ name: 'Discord', slug: 'discord' },
+				{ name: 'Notion', slug: 'notion' },
+				{ name: 'Google Docs', slug: 'googledocs' },
+				{ name: 'Obsidian', slug: 'obsidian' },
+				{ name: 'WhatsApp', slug: 'whatsapp' },
+				{ name: 'Telegram', slug: 'telegram' },
+				{ name: 'Signal', slug: 'signal' },
+				{ name: 'Linear', slug: 'linear' },
+				{ name: 'Figma', slug: 'figma' },
+				{ name: 'Trello', slug: 'trello' },
+				{ name: 'Asana', slug: 'asana' },
+				{ name: 'Jira', slug: 'jira' },
+				{ name: 'Todoist', slug: 'todoist' },
+				{ name: 'Evernote', slug: 'evernote' },
+			];
+
+			var bottomRowApps = [
+				{ name: 'GitHub', slug: 'github' },
+				{ name: 'GitLab', slug: 'gitlab' },
+				{ name: 'Chrome', slug: 'googlechrome' },
+				{ name: 'Firefox', slug: 'firefox' },
+				{ name: 'Safari', slug: 'safari' },
+				{ name: 'Gmail', slug: 'gmail' },
+				{ name: 'YouTube', slug: 'youtube' },
+				{ name: 'Spotify', slug: 'spotify' },
+				{ name: 'Zoom', slug: 'zoom' },
+				{ name: 'Sketch', slug: 'sketch' },
+				{ name: 'Dribbble', slug: 'dribbble' },
+				{ name: 'Dropbox', slug: 'dropbox' },
+				{ name: 'Google Drive', slug: 'googledrive' },
+				{ name: 'iCloud', slug: 'icloud' },
+				{ name: 'WhatsApp', slug: 'whatsapp' },
+			];
+
+			function buildCards(
+				apps: Array<{ name: string; slug: string }>,
+			) {
+				var fragment = document.createDocumentFragment();
+				var all = apps.concat(apps);
+				all.forEach(function (app) {
+					var card = document.createElement('div');
+					card.className = 'apps-icon-card';
+					var img = document.createElement('img');
+					img.src =
+						'https://cdn.simpleicons.org/' + app.slug;
+					img.alt = app.name;
+					img.width = 32;
+					img.height = 32;
+					img.className = 'apps-icon-image';
+					img.loading = 'lazy';
+					img.decoding = 'async';
+					card.appendChild(img);
+					fragment.appendChild(card);
+				});
+				return fragment;
+			}
+
+			document.addEventListener('DOMContentLoaded', function () {
+				var topRow = document.querySelector(
+					'.apps-carousel-top .apps-row',
+				);
+				var bottomRow = document.querySelector(
+					'.apps-carousel-bottom .apps-row',
+				);
+				if (topRow) topRow.appendChild(buildCards(topRowApps));
+				if (bottomRow)
+					bottomRow.appendChild(buildCards(bottomRowApps));
+			});
+		})();
+	</script>
 </Layout>
-
-<style>
-	main {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-		font-family: Inter, Roboto, 'Helvetica Neue', Arial, sans-serif;
-		text-align: center;
-		padding: 2rem;
-	}
-
-	h1 {
-		font-size: 2.5rem;
-		margin-bottom: 0.5rem;
-	}
-
-	p {
-		font-size: 1.25rem;
-		color: #4b5563;
-		margin-bottom: 2rem;
-	}
-
-	.cta {
-		background: linear-gradient(83.21deg, #3245ff 0%, #bc52ee 100%);
-		color: white;
-		padding: 12px 24px;
-		border-radius: 10px;
-		text-decoration: none;
-		font-size: 1.1rem;
-	}
-
-	.lang-switcher {
-		margin-top: 2rem;
-	}
-
-	.lang-switcher a {
-		color: #3245ff;
-		text-decoration: underline;
-		font-size: 0.9rem;
-	}
-</style>
