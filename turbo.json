@@ -50,6 +50,19 @@
       ],
       "outputs": []
     },
+    "test:evals": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "vitest.config.*",
+        "test/evals/**",
+        "package.json",
+        "tsconfig.*"
+      ],
+      "outputs": []
+    },
     "dev": {
       "cache": false,
       "persistent": true

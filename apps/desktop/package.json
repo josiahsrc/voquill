@@ -25,7 +25,8 @@
     "lint": "prettier --check src && oxlint src",
     "test": "vitest run",
     "test:unit": "vitest run src",
-    "test:integration": "vitest run test/integration"
+    "test:integration": "vitest run test/integration",
+    "test:evals": "vitest run test/evals"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

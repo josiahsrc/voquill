@@ -1,7 +1,6 @@
 import {
 	AiGenerateTextInputZod,
 	AiTranscribeAudioInputZod,
-	UpsertFlaggedAudioInputZod,
 	DeleteTermInputZod,
 	DeleteToneInputZod,
 	EmptyObjectZod,
@@ -12,6 +11,7 @@ import {
 	StripeCreateCheckoutSessionInputZod,
 	StripeGetPricesInputZod,
 	TrackStreakInputZod,
+	UpsertFlaggedAudioInputZod,
 	UpsertTermInputZod,
 	UpsertToneInputZod,
 } from "@repo/functions";
@@ -20,12 +20,9 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
 import { runGenerateText, runTranscribeAudio } from "./services/ai.service";
-import { upsertFlaggedAudio } from "./services/flaggedAudio.service";
-import {
-	createApiToken,
-	refreshApiToken,
-} from "./services/apiToken.service";
+import { createApiToken, refreshApiToken } from "./services/apiToken.service";
 import { getFullConfigResp } from "./services/config.service";
+import { upsertFlaggedAudio } from "./services/flaggedAudio.service";
 import {
 	getMyMember,
 	handleCancelProTrials,
@@ -62,6 +59,7 @@ import {
 	GROQ_API_KEY_VAR,
 	isEmulated,
 	LOOPS_API_KEY_VAR,
+	OPENAI_API_KEY_VAR,
 	STRIPE_SECRET_KEY_VAR,
 } from "./utils/env.utils";
 import { NotFoundError, wrapAsync } from "./utils/error.utils";
@@ -101,7 +99,12 @@ export type HandlerRequest = {
  */
 export const handler = onCall(
 	{
-		secrets: [STRIPE_SECRET_KEY_VAR, GROQ_API_KEY_VAR, LOOPS_API_KEY_VAR],
+		secrets: [
+			STRIPE_SECRET_KEY_VAR,
+			GROQ_API_KEY_VAR,
+			OPENAI_API_KEY_VAR,
+			LOOPS_API_KEY_VAR,
+		],
 		memory: "1GiB",
 		maxInstances: 16,
 	},

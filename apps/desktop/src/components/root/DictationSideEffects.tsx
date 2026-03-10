@@ -444,6 +444,10 @@ export const DictationSideEffects = () => {
         const sampleRate = startRecordingResult.sampleRate;
         getLogger().verbose(`Recording started (sampleRate=${sampleRate})`);
         await sessionRef.current.onRecordingStart(sampleRate);
+        if (!sessionRef.current || !strategyRef.current) {
+          abortRecording();
+          return;
+        }
 
         startRecordingTimers();
       } catch (error) {

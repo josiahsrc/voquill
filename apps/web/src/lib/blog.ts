@@ -26,7 +26,6 @@ marked.use({
 
 import type { BlogPost } from "./blog-utils";
 export type { BlogPost };
-export type BlogPostPreview = Omit<BlogPost, "content">;
 
 function estimateReadingTime(text: string): number {
   const words = text.trim().split(/\s+/).length;
@@ -69,37 +68,12 @@ function parseTags(raw: string): string[] {
     .filter(Boolean);
 }
 
-function stripLeadingMarkdownH1(markdown: string): string {
-  const headingMatch = markdown.match(/^\s*#\s+.+\r?\n/);
-  if (!headingMatch) {
-    return markdown;
-  }
-
-  return markdown
-    .slice(headingMatch[0].length)
-    .replace(/^\s*\r?\n/, "");
-}
-
-function toBlogPostPreview(post: BlogPost): BlogPostPreview {
-  return {
-    slug: post.slug,
-    title: post.title,
-    description: post.description,
-    date: post.date,
-    author: post.author,
-    tags: post.tags,
-    image: post.image,
-    readingTimeMinutes: post.readingTimeMinutes,
-  };
-}
-
 function toBlogPost(
   raw: Record<string, string>,
   fileSlug: string,
   body: string,
 ): BlogPost {
-  const normalizedBody = stripLeadingMarkdownH1(body);
-  const rendered = marked.parse(normalizedBody);
+  const rendered = marked.parse(body);
   if (typeof rendered !== "string") {
     throw new Error(`Failed to render blog markdown for ${fileSlug}`);
   }
@@ -113,7 +87,7 @@ function toBlogPost(
     tags: parseTags(raw.tags || "[]"),
     ...(raw.image ? { image: raw.image } : {}),
     content: rendered,
-    readingTimeMinutes: estimateReadingTime(normalizedBody),
+    readingTimeMinutes: estimateReadingTime(body),
   };
 }
 
@@ -135,10 +109,6 @@ function loadAllPosts(): BlogPost[] {
 
 export function getAllBlogPosts(): BlogPost[] {
   return loadAllPosts();
-}
-
-export function getAllBlogPostPreviews(): BlogPostPreview[] {
-  return loadAllPosts().map(toBlogPostPreview);
 }
 
 export function getBlogPost(slug: string): BlogPost | undefined {

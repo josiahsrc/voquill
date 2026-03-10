@@ -4,6 +4,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   BaseGenerateTextRepo,
   GroqGenerateTextRepo,
+  OpenAIGenerateTextRepo,
 } from "../../src/repos/generate-text.repo";
 import {
   buildPostProcessingPrompt,
@@ -17,11 +18,9 @@ import {
   StyleToneConfig,
   ToneConfig,
 } from "../../src/utils/tone.utils";
-import { getGroqApiKey } from "./env.utils";
+import { getGroqApiKey, getOpenAIApiKey } from "./env.utils";
 
-export type Eval = {
-  criteria: string;
-};
+export type Eval = string;
 
 const EVAL_RESULT_SCHEMA = z.object({
   score: z.number().min(0).max(10),
@@ -31,14 +30,19 @@ const EVAL_RESULT_SCHEMA = z.object({
 const EVAL_RESULT_JSON_SCHEMA =
   zodToJsonSchema(EVAL_RESULT_SCHEMA, "Schema").definitions?.Schema ?? {};
 
-export function getGentextRepo(): BaseGenerateTextRepo {
+export function getOpenAIGentextRepo(): BaseGenerateTextRepo {
+  const apiKey = getOpenAIApiKey();
+  return new OpenAIGenerateTextRepo(apiKey, "gpt-4o-mini");
+}
+
+export function getGroqGentextRepo(): BaseGenerateTextRepo {
   const apiKey = getGroqApiKey();
-  return new GroqGenerateTextRepo(apiKey, "openai/gpt-oss-120b");
+  return new GroqGenerateTextRepo(apiKey, null);
 }
 
 export function getEvalRepo(): BaseGenerateTextRepo {
-  const apiKey = getGroqApiKey();
-  return new GroqGenerateTextRepo(apiKey, "openai/gpt-oss-120b");
+  const apiKey = getOpenAIApiKey();
+  return new OpenAIGenerateTextRepo(apiKey, "gpt-4o-mini");
 }
 
 export async function runEval({
@@ -59,13 +63,14 @@ export async function runEval({
 
   // for (const e of evals) {
   const promises = evals.map(async (e) => {
+    const criteria = e;
     const output = await repo.generateText({
       system:
         "You are an evaluator. Score the final text based on the given criteria. Return a score between 0 and 10 and a reason for your score. Evaluate only if the statement in criteria is true in the final text. Don't judge quality generally.",
       prompt: [
         `Original text: ${originalText}`,
         `Final text: ${finalText}`,
-        `Criteria: ${e.criteria}`,
+        `Criteria: ${criteria}`,
       ].join("\n\n"),
       jsonResponse: {
         name: "eval_result",
@@ -76,11 +81,11 @@ export async function runEval({
 
     const result = EVAL_RESULT_SCHEMA.parse(JSON.parse(output.text));
 
-    console.log(`Eval Result for criteria "${e.criteria}":`, result);
+    console.log(`Eval Result for criteria "${criteria}":`, result);
     expect(
       result.score,
       [
-        `Eval failed for "${e.criteria}"`,
+        `Eval failed for "${criteria}"`,
         `Reason: ${result.reason}`,
         `Original: ${originalText}`,
         `Final: ${finalText}`,
@@ -96,11 +101,13 @@ export const postProcess = async ({
   transcription,
   language = "en",
   userName = "Thomas Gundan",
+  repo,
 }: {
   tone: ToneConfig;
   transcription: string;
   language?: string;
   userName?: string;
+  repo?: BaseGenerateTextRepo;
 }): Promise<string> => {
   const promptInput: PostProcessingPromptInput = {
     transcript: transcription,
@@ -111,7 +118,7 @@ export const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getGentextRepo().generateText({
+  const output = await (repo ?? getOpenAIGentextRepo()).generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
