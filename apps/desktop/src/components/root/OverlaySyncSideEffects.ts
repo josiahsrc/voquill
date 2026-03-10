@@ -10,9 +10,10 @@ type OverlayReadyPayload = {
   windowLabel: string;
 };
 
-const OVERLAY_TARGETS = ["pill-overlay", "toast-overlay", "agent-overlay"];
+const OVERLAY_TARGETS = ["pill-overlay", "toast-overlay"];
 
 const buildFullSyncPayload = (state: AppState): OverlaySyncPayload => ({
+  activeRecordingMode: state.activeRecordingMode,
   hotkeyById: state.hotkeyById,
   agent: state.agent,
   userPrefs: state.userPrefs,
@@ -60,6 +61,11 @@ export const OverlaySyncSideEffects = () => {
     emitTo(windowLabel, "overlay_sync", fullPayload).catch(console.error);
   });
 
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.activeRecordingMode,
+    (activeRecordingMode) => ({ activeRecordingMode }),
+  );
   useOverlaySync(
     OVERLAY_TARGETS,
     (s) => s.hotkeyById,

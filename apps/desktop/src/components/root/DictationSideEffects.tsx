@@ -96,6 +96,7 @@ export const DictationSideEffects = () => {
   const isActiveSession = useAppStore(
     (state) => state.activeRecordingMode !== null,
   );
+  const activeRecordingMode = useAppStore((state) => state.activeRecordingMode);
   const additionalLanguageEntries = useAppStore(getAdditionalLanguageEntries);
   const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
   const isDictationInteractable = isDictationUnlocked && !isStopping;
@@ -283,6 +284,10 @@ export const DictationSideEffects = () => {
       return {
         shouldContinue: false,
       };
+    }
+
+    if (getAppState().activeRecordingMode === "agent") {
+      await strategy.setPhase("idle");
     }
 
     getLogger().info("Post-processing transcript");
@@ -590,7 +595,7 @@ export const DictationSideEffects = () => {
     syncHotkeyCombosToNative();
   }, [isActiveSession, isManualStyling]);
 
-  useTauriListen<void>("agent-overlay-close", async () => {
+  useTauriListen<void>("assistant-mode-close", async () => {
     const strategy = strategyRef.current;
     if (strategy) {
       await strategy.cleanup();
@@ -619,6 +624,12 @@ export const DictationSideEffects = () => {
     }
   });
 
+  useTauriListen<void>("on-click-agent-talk", () => {
+    if (isDictationInteractable) {
+      debouncedToggle("agent", agentController);
+    }
+  });
+
   useTauriListen<void>("tone-switch-forward", () => {
     switchWritingStyleForward();
   });
@@ -632,6 +643,12 @@ export const DictationSideEffects = () => {
       console.error,
     );
   }, [pillHoverEnabled]);
+
+  useEffect(() => {
+    invoke("set_pill_assistant_mode", {
+      assistantMode: activeRecordingMode === "agent",
+    }).catch(console.error);
+  }, [activeRecordingMode]);
 
   return null;
 };

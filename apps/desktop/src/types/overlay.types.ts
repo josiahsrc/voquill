@@ -5,6 +5,7 @@ export type OverlayPhase = "idle" | "recording" | "loading";
 export type OverlaySyncPayload = Partial<
   Pick<
     AppState,
+    | "activeRecordingMode"
     | "hotkeyById"
     | "agent"
     | "userPrefs"

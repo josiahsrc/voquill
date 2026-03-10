@@ -132,9 +132,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 crate::overlay::ensure_toast_overlay_window(app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-                crate::overlay::ensure_agent_overlay_window(app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
                 if let Some(pill_window) =
                     app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
                 {
@@ -147,13 +144,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 {
                     let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
                     let _ = crate::platform::window::set_overlay_click_through(&toast_window, true);
-                }
-
-                if let Some(agent_window) =
-                    app_handle.get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
-                {
-                    let _ = crate::platform::window::show_overlay_no_focus(&agent_window);
-                    let _ = crate::platform::window::set_overlay_click_through(&agent_window, true);
                 }
 
                 crate::overlay::start_cursor_follower(app_handle.clone());
@@ -194,7 +184,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::storage_get_download_url,
             crate::commands::surface_main_window,
             crate::commands::set_toast_overlay_click_through,
-            crate::commands::set_agent_overlay_click_through,
+            crate::commands::set_pill_assistant_mode,
             crate::commands::restore_overlay_focus,
             crate::commands::paste,
             crate::commands::transcription_create,

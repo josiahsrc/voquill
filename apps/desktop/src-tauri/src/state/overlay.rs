@@ -9,6 +9,7 @@ const PHASE_LOADING: u8 = 2;
 pub struct OverlayState {
     phase: AtomicU8,
     pill_hover_enabled: AtomicBool,
+    pill_assistant_mode: AtomicBool,
 }
 
 impl Default for OverlayState {
@@ -22,6 +23,7 @@ impl OverlayState {
         Self {
             phase: AtomicU8::new(PHASE_IDLE),
             pill_hover_enabled: AtomicBool::new(false),
+            pill_assistant_mode: AtomicBool::new(false),
         }
     }
 
@@ -52,5 +54,13 @@ impl OverlayState {
 
     pub fn is_pill_hover_enabled(&self) -> bool {
         self.pill_hover_enabled.load(Ordering::Relaxed)
+    }
+
+    pub fn set_pill_assistant_mode(&self, enabled: bool) {
+        self.pill_assistant_mode.store(enabled, Ordering::Relaxed);
+    }
+
+    pub fn is_pill_assistant_mode(&self) -> bool {
+        self.pill_assistant_mode.load(Ordering::Relaxed)
     }
 }

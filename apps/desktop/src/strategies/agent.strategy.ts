@@ -1,4 +1,5 @@
 import type { Nullable } from "@repo/types";
+import { invoke } from "@tauri-apps/api/core";
 import { showToast } from "../actions/toast.actions";
 import { Agent } from "../agent/agent";
 import { getIntl } from "../i18n";
@@ -128,6 +129,7 @@ export class AgentStrategy extends BaseStrategy {
   }
 
   async setPhase(phase: OverlayPhase): Promise<void> {
+    await invoke<void>("set_phase", { phase });
     produceAppState((draft) => {
       draft.agent.overlayPhase = phase;
     });

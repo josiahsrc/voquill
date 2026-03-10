@@ -1095,12 +1095,8 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 }
 
 #[tauri::command]
-pub fn set_agent_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
-    let window = app
-        .get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
-        .ok_or_else(|| "agent-overlay window not found".to_string())?;
-
-    crate::platform::window::set_overlay_click_through(&window, click_through)
+pub fn set_pill_assistant_mode(assistant_mode: bool, overlay_state: State<'_, crate::state::OverlayState>) {
+    overlay_state.set_pill_assistant_mode(assistant_mode);
 }
 
 #[tauri::command]
