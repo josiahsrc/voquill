@@ -7,6 +7,7 @@ import AppsCarousel from '../../components/AppsCarousel.astro';
 import SpeedShowcase from '../../components/SpeedShowcase.astro';
 import PrivacyShowcase from '../../components/PrivacyShowcase.astro';
 import TextCleanupShowcase from '../../components/TextCleanupShowcase.astro';
+import OfflineShowcase from '../../components/OfflineShowcase.astro';
 import { type Locale, t } from '../../i18n/translations';
 
 export function getStaticPaths() {
@@ -25,6 +26,7 @@ const i18n = t(locale);
 	<SpeedShowcase locale={locale} />
 	<PrivacyShowcase locale={locale} />
 	<TextCleanupShowcase locale={locale} />
+	<OfflineShowcase locale={locale} />
 
 	<script>
 		// ── Hero graphic ──

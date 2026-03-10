@@ -60,6 +60,11 @@ export const translations = {
 		cleanupHeading: 'Auto-correct with AI',
 		cleanupDescription:
 			'Voquill uses AI to clean up your transcripts. It removes filler words, hesitations, false starts, etc. Speak naturally, Voquill will handle the rest.',
+		offlineBadge: 'Works offline',
+		offlineHeading: 'No internet? No problem.',
+		offlineDescription:
+			'Other dictation tools send your audio straight to the cloud. Voquill can run entirely on your device \u2014 your words never leave your machine. Airplane mode, off the grid, wherever. It just works.',
+		offlineIconAlt: 'Offline icon representing local-first functionality.',
 	},
 	es: {
 		siteTitle: 'Voquill | Tu teclado te está frenando',
@@ -122,6 +127,11 @@ export const translations = {
 		cleanupHeading: 'Autocorrección con IA',
 		cleanupDescription:
 			'Voquill usa IA para limpiar tus transcripciones. Elimina muletillas, vacilaciones, falsos comienzos, etc. Habla con naturalidad, Voquill se encargará del resto.',
+		offlineBadge: 'Funciona sin conexión',
+		offlineHeading: '¿Sin internet? No hay problema.',
+		offlineDescription:
+			'Otras herramientas de dictado envían tu audio directamente a la nube. Voquill puede funcionar completamente en tu dispositivo \u2014 tus palabras nunca salen de tu máquina. Modo avión, sin cobertura, donde sea. Simplemente funciona.',
+		offlineIconAlt: 'Ícono sin conexión que representa funcionalidad local.',
 	},
 } as const;
 
