@@ -16,7 +16,6 @@ export default function VideoSection() {
           className={styles.videoFrame}
           src="https://www.youtube.com/embed/LOiiocR1xTQ"
           title={intl.formatMessage({ defaultMessage: "Voquill Demo" })}
-          loading="lazy"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
