@@ -301,6 +301,16 @@ class KeyboardViewController: UIInputViewController {
     private var upgradeButton: UIButton!
     private var fullAccessBanner: UIView!
 
+    private enum KeyboardMode {
+        case typing, dictation
+    }
+
+    private var keyboardMode: KeyboardMode = .typing
+    private var dictationActionButton: UIButton!
+    private var mockKeyboardView: UIView!
+    private var dictationContentView: UIView!
+    private var utilStack: UIStackView!
+
     override func viewDidLoad() {
         super.viewDidLoad()
         initMixpanel()
@@ -407,9 +417,11 @@ class KeyboardViewController: UIInputViewController {
     private func buildUI() {
         view.backgroundColor = .clear
 
-        let hc = view.heightAnchor.constraint(equalToConstant: 250)
+        let hc = view.heightAnchor.constraint(equalToConstant: 260)
         hc.priority = .defaultHigh
         hc.isActive = true
+
+        // === SHARED TOP ROW ===
 
         logoButton = UIButton(type: .custom)
         logoButton.translatesAutoresizingMaskIntoConstraints = false
@@ -446,14 +458,24 @@ class KeyboardViewController: UIInputViewController {
         addButtonFeedback(languageChip)
         view.addSubview(languageChip)
 
+        // Mode toggle button (always visible, switches between typing/dictation)
+        dictationActionButton = UIButton(type: .system)
+        dictationActionButton.translatesAutoresizingMaskIntoConstraints = false
+        dictationActionButton.layer.cornerRadius = 8
+        dictationActionButton.clipsToBounds = true
+        dictationActionButton.addTarget(self, action: #selector(onModeToggleTap), for: .touchUpInside)
+        addButtonFeedback(dictationActionButton)
+        view.addSubview(dictationActionButton)
+
+        // Util stack (dictation mode only)
         let btnConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
-        let utilStack = UIStackView()
+        utilStack = UIStackView()
         utilStack.translatesAutoresizingMaskIntoConstraints = false
         utilStack.axis = .horizontal
         utilStack.spacing = 8
         view.addSubview(utilStack)
 
-        for (index, iconName) in ["at", "space", "return.left", "delete.left"].enumerated() {
+        for (index, iconName) in ["space", "return.left", "delete.left"].enumerated() {
             let btn = UIButton(type: .system)
             btn.setImage(UIImage(systemName: iconName, withConfiguration: btnConfig), for: .normal)
             btn.tintColor = .label
@@ -461,7 +483,7 @@ class KeyboardViewController: UIInputViewController {
             btn.layer.cornerRadius = 8
             btn.clipsToBounds = true
             btn.tag = index
-            if index == 3 {
+            if index == 2 {
                 btn.addTarget(self, action: #selector(onDeleteDown), for: .touchDown)
                 btn.addTarget(self, action: #selector(onDeleteUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
             } else {
@@ -474,6 +496,12 @@ class KeyboardViewController: UIInputViewController {
             ])
             utilStack.addArrangedSubview(btn)
         }
+
+        // === DICTATION CONTENT ===
+
+        dictationContentView = UIView()
+        dictationContentView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(dictationContentView)
 
         pillButton = UIView()
         pillButton.translatesAutoresizingMaskIntoConstraints = false
@@ -594,7 +622,7 @@ class KeyboardViewController: UIInputViewController {
         pillStack.axis = .vertical
         pillStack.alignment = .center
         pillStack.spacing = 6
-        view.addSubview(pillStack)
+        dictationContentView.addSubview(pillStack)
 
         NSLayoutConstraint.activate([
             waveformView.leadingAnchor.constraint(equalTo: pillButton.leadingAnchor),
@@ -616,23 +644,60 @@ class KeyboardViewController: UIInputViewController {
         nkb.tintColor = .label
         nkb.translatesAutoresizingMaskIntoConstraints = false
         nkb.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
-        view.addSubview(nkb)
+        dictationContentView.addSubview(nkb)
         nextKeyboardButton = nkb
 
         toneContainer = UIScrollView()
         toneContainer.translatesAutoresizingMaskIntoConstraints = false
         toneContainer.showsHorizontalScrollIndicator = false
-        view.addSubview(toneContainer)
+        dictationContentView.addSubview(toneContainer)
 
         let topSpacer = UIView()
         topSpacer.translatesAutoresizingMaskIntoConstraints = false
         topSpacer.isHidden = true
-        view.addSubview(topSpacer)
+        dictationContentView.addSubview(topSpacer)
 
         let bottomSpacer = UIView()
         bottomSpacer.translatesAutoresizingMaskIntoConstraints = false
         bottomSpacer.isHidden = true
-        view.addSubview(bottomSpacer)
+        dictationContentView.addSubview(bottomSpacer)
+
+        NSLayoutConstraint.activate([
+            topSpacer.topAnchor.constraint(equalTo: dictationContentView.topAnchor),
+            topSpacer.bottomAnchor.constraint(equalTo: pillStack.topAnchor),
+            topSpacer.leadingAnchor.constraint(equalTo: dictationContentView.leadingAnchor),
+            topSpacer.widthAnchor.constraint(equalToConstant: 0),
+
+            bottomSpacer.topAnchor.constraint(equalTo: pillStack.bottomAnchor),
+            bottomSpacer.bottomAnchor.constraint(equalTo: toneContainer.topAnchor),
+            bottomSpacer.leadingAnchor.constraint(equalTo: dictationContentView.leadingAnchor),
+            bottomSpacer.widthAnchor.constraint(equalToConstant: 0),
+
+            topSpacer.heightAnchor.constraint(equalTo: bottomSpacer.heightAnchor),
+
+            pillStack.centerXAnchor.constraint(equalTo: dictationContentView.centerXAnchor),
+            pillButton.widthAnchor.constraint(equalToConstant: 220),
+            pillButton.heightAnchor.constraint(equalToConstant: 56),
+
+            toneContainer.leadingAnchor.constraint(equalTo: dictationContentView.leadingAnchor, constant: 16),
+            toneContainer.trailingAnchor.constraint(equalTo: dictationContentView.trailingAnchor, constant: -16),
+            toneContainer.bottomAnchor.constraint(equalTo: dictationContentView.bottomAnchor, constant: -8),
+            toneContainer.heightAnchor.constraint(equalToConstant: 32),
+
+            nkb.leadingAnchor.constraint(equalTo: dictationContentView.leadingAnchor, constant: 8),
+            nkb.centerYAnchor.constraint(equalTo: toneContainer.centerYAnchor),
+            nkb.widthAnchor.constraint(equalToConstant: 36),
+            nkb.heightAnchor.constraint(equalToConstant: 36),
+        ])
+
+        // === TYPING CONTENT (mock keyboard) ===
+
+        mockKeyboardView = UIView()
+        mockKeyboardView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(mockKeyboardView)
+        buildMockKeyboardKeys()
+
+        // === MAIN LAYOUT CONSTRAINTS ===
 
         NSLayoutConstraint.activate([
             logoButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
@@ -645,38 +710,145 @@ class KeyboardViewController: UIInputViewController {
             languageChip.heightAnchor.constraint(equalToConstant: 40),
             languageChip.widthAnchor.constraint(greaterThanOrEqualToConstant: 40),
 
-            utilStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
-            utilStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+            dictationActionButton.centerYAnchor.constraint(equalTo: logoButton.centerYAnchor),
+            dictationActionButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+            dictationActionButton.widthAnchor.constraint(equalToConstant: 40),
+            dictationActionButton.heightAnchor.constraint(equalToConstant: 40),
 
-            topSpacer.topAnchor.constraint(equalTo: utilStack.bottomAnchor),
-            topSpacer.bottomAnchor.constraint(equalTo: pillStack.topAnchor),
-            topSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            topSpacer.widthAnchor.constraint(equalToConstant: 0),
+            utilStack.centerYAnchor.constraint(equalTo: logoButton.centerYAnchor),
+            utilStack.trailingAnchor.constraint(equalTo: dictationActionButton.leadingAnchor, constant: -8),
 
-            bottomSpacer.topAnchor.constraint(equalTo: pillStack.bottomAnchor),
-            bottomSpacer.bottomAnchor.constraint(equalTo: toneContainer.topAnchor),
-            bottomSpacer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            bottomSpacer.widthAnchor.constraint(equalToConstant: 0),
+            dictationContentView.topAnchor.constraint(equalTo: logoButton.bottomAnchor, constant: 8),
+            dictationContentView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            dictationContentView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            dictationContentView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            topSpacer.heightAnchor.constraint(equalTo: bottomSpacer.heightAnchor),
-
-            pillStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            pillButton.widthAnchor.constraint(equalToConstant: 220),
-            pillButton.heightAnchor.constraint(equalToConstant: 56),
-
-            toneContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            toneContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            toneContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
-            toneContainer.heightAnchor.constraint(equalToConstant: 32),
-
-            nkb.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
-            nkb.centerYAnchor.constraint(equalTo: toneContainer.centerYAnchor),
-            nkb.widthAnchor.constraint(equalToConstant: 36),
-            nkb.heightAnchor.constraint(equalToConstant: 36),
+            mockKeyboardView.topAnchor.constraint(equalTo: logoButton.bottomAnchor, constant: 4),
+            mockKeyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            mockKeyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            mockKeyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
+        setKeyboardMode(.typing)
         waveformView.startAnimating()
         updateColorsForAppearance()
+    }
+
+    // MARK: - Mock Keyboard
+
+    private func buildMockKeyboardKeys() {
+        let keyboardStack = UIStackView()
+        keyboardStack.axis = .vertical
+        keyboardStack.spacing = 6
+        keyboardStack.distribution = .fillEqually
+        keyboardStack.translatesAutoresizingMaskIntoConstraints = false
+        mockKeyboardView.addSubview(keyboardStack)
+
+        let letterRows: [[String]] = [
+            ["Q","W","E","R","T","Y","U","I","O","P"],
+            ["A","S","D","F","G","H","J","K","L"],
+            ["Z","X","C","V","B","N","M"]
+        ]
+
+        for row in letterRows {
+            let rowStack = UIStackView()
+            rowStack.axis = .horizontal
+            rowStack.spacing = 4
+            rowStack.distribution = .fillEqually
+
+            for key in row {
+                rowStack.addArrangedSubview(createMockKey(key))
+            }
+
+            keyboardStack.addArrangedSubview(rowStack)
+        }
+
+        let bottomRow = UIStackView()
+        bottomRow.axis = .horizontal
+        bottomRow.spacing = 4
+        bottomRow.distribution = .fill
+
+        let numKey = createMockKey("123", bgColor: .systemGray3)
+        numKey.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        bottomRow.addArrangedSubview(numKey)
+
+        let spaceKey = createMockKey("space")
+        spaceKey.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        bottomRow.addArrangedSubview(spaceKey)
+
+        let returnKey = createMockKey("return", bgColor: .systemGray3)
+        returnKey.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        bottomRow.addArrangedSubview(returnKey)
+
+        keyboardStack.addArrangedSubview(bottomRow)
+
+        NSLayoutConstraint.activate([
+            keyboardStack.topAnchor.constraint(equalTo: mockKeyboardView.topAnchor, constant: 6),
+            keyboardStack.leadingAnchor.constraint(equalTo: mockKeyboardView.leadingAnchor, constant: 3),
+            keyboardStack.trailingAnchor.constraint(equalTo: mockKeyboardView.trailingAnchor, constant: -3),
+            keyboardStack.bottomAnchor.constraint(equalTo: mockKeyboardView.bottomAnchor, constant: -6),
+        ])
+    }
+
+    private func createMockKey(_ title: String, bgColor: UIColor = .white) -> UIView {
+        let key = UIView()
+        key.backgroundColor = bgColor
+        key.layer.cornerRadius = 5
+        key.layer.shadowColor = UIColor.black.cgColor
+        key.layer.shadowOffset = CGSize(width: 0, height: 1)
+        key.layer.shadowOpacity = 0.15
+        key.layer.shadowRadius = 0.5
+        key.clipsToBounds = false
+
+        let label = UILabel()
+        label.text = title
+        label.font = .systemFont(ofSize: title.count > 1 ? 14 : 16)
+        label.textColor = .label
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        key.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: key.centerYAnchor),
+        ])
+
+        return key
+    }
+
+    // MARK: - Keyboard Mode
+
+    private func setKeyboardMode(_ mode: KeyboardMode) {
+        keyboardMode = mode
+        let isTyping = mode == .typing
+
+        mockKeyboardView.isHidden = !isTyping
+        utilStack.isHidden = isTyping
+        dictationContentView.isHidden = isTyping
+
+        updateModeToggleButton()
+        view.bringSubviewToFront(dictationActionButton)
+    }
+
+    private func updateModeToggleButton() {
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        if keyboardMode == .typing {
+            dictationActionButton.setImage(UIImage(systemName: "mic.fill", withConfiguration: iconConfig), for: .normal)
+            dictationActionButton.tintColor = .white
+            dictationActionButton.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
+        } else {
+            dictationActionButton.setImage(UIImage(systemName: "keyboard", withConfiguration: iconConfig), for: .normal)
+            dictationActionButton.tintColor = .label
+            dictationActionButton.backgroundColor = UIColor.systemGray4
+        }
+    }
+
+    @objc private func onModeToggleTap() {
+        if keyboardMode == .typing {
+            setKeyboardMode(.dictation)
+        } else {
+            setKeyboardMode(.typing)
+        }
     }
 
     private func applyPillVisual(_ visual: PillVisual, animated: Bool) {
@@ -1047,9 +1219,8 @@ class KeyboardViewController: UIInputViewController {
 
     @objc private func onUtilButtonTap(_ sender: UIButton) {
         switch sender.tag {
-        case 0: textDocumentProxy.insertText("@")
-        case 1: textDocumentProxy.insertText(" ")
-        case 2: textDocumentProxy.insertText("\n")
+        case 0: textDocumentProxy.insertText(" ")
+        case 1: textDocumentProxy.insertText("\n")
         default: break
         }
     }
@@ -1215,6 +1386,7 @@ class KeyboardViewController: UIInputViewController {
                         self.isProcessing = false
                         self.applyPillVisual(.idle, animated: true)
                         self.refreshMemberData()
+                        self.setKeyboardMode(.typing)
                     }
 
                     let tone = capturedToneId.flatMap { capturedToneById[$0] }
@@ -1386,7 +1558,7 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
-        nextKeyboardButton?.isHidden = !needsInputModeSwitchKey
+        nextKeyboardButton?.isHidden = keyboardMode == .typing || !needsInputModeSwitchKey
     }
 
     override func viewDidLayoutSubviews() {
