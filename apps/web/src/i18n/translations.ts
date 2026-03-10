@@ -56,6 +56,10 @@ export const translations = {
 			"Process everything locally on your device, bring your own API key, or connect to our cloud. Don't believe us? See for yourself. Voquill is fully open-source.",
 		privacyLink: 'GitHub Source Code \u2192',
 		privacyLockAlt: 'Animated lock icon representing privacy and security.',
+		cleanupBadge: 'Smart text cleanup',
+		cleanupHeading: 'Auto-correct with AI',
+		cleanupDescription:
+			'Voquill uses AI to clean up your transcripts. It removes filler words, hesitations, false starts, etc. Speak naturally, Voquill will handle the rest.',
 	},
 	es: {
 		siteTitle: 'Voquill | Tu teclado te está frenando',
@@ -114,6 +118,10 @@ export const translations = {
 			'Procesa todo localmente en tu dispositivo, usa tu propia clave API o conéctate a nuestra nube. ¿No nos crees? Compruébalo tú mismo. Voquill es completamente de código abierto.',
 		privacyLink: 'Código fuente en GitHub \u2192',
 		privacyLockAlt: 'Ícono animado de candado que representa privacidad y seguridad.',
+		cleanupBadge: 'Limpieza inteligente de texto',
+		cleanupHeading: 'Autocorrección con IA',
+		cleanupDescription:
+			'Voquill usa IA para limpiar tus transcripciones. Elimina muletillas, vacilaciones, falsos comienzos, etc. Habla con naturalidad, Voquill se encargará del resto.',
 	},
 } as const;
 
