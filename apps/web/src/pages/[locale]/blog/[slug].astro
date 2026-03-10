@@ -1,0 +1,319 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Header from '../../../components/Header.astro';
+import SiteFooter from '../../../components/SiteFooter.astro';
+import { getAllBlogPosts, getBlogPost, formatBlogDate } from '../../../lib/blog';
+import type { Locale } from '../../../i18n/translations';
+import { t } from '../../../i18n/translations';
+
+export function getStaticPaths() {
+	const locales = ['en', 'es'] as const;
+	const posts = getAllBlogPosts();
+	return locales.flatMap((locale) =>
+		posts.map((post) => ({
+			params: { locale, slug: post.slug },
+		})),
+	);
+}
+
+const locale = Astro.params.locale as Locale;
+const i18n = t(locale);
+const post = getBlogPost(Astro.params.slug);
+
+if (!post) {
+	return Astro.redirect(`/${locale}/blog`);
+}
+---
+
+<Layout title={`${post.title} | Voquill Blog`} description={post.description} lang={locale}>
+	<Header locale={locale} />
+	<main class="post-main">
+		<header class="post-header">
+			<nav class="post-breadcrumb" aria-label="Breadcrumb">
+				<a href={`/${locale}`}>{i18n.blogHome}</a>
+				<span>/</span>
+				<a href={`/${locale}/blog`}>{i18n.blogTitle}</a>
+				<span>/</span>
+				<span>{post.title}</span>
+			</nav>
+			<h1 class="post-title">{post.title}</h1>
+			<div class="post-meta">
+				<time datetime={post.date}>{formatBlogDate(post.date)}</time>
+				<span class="meta-separator" />
+				<span>{post.author}</span>
+				<span class="meta-separator" />
+				<span>{post.readingTimeMinutes} {i18n.blogMinRead}</span>
+			</div>
+		</header>
+		{post.image && (
+			<div class="post-hero-wrapper">
+				<img src={post.image} alt="" class="post-hero-image" width="780" height="439" />
+			</div>
+		)}
+		<article class="post-content" data-post-content set:html={post.content} />
+	</main>
+	<SiteFooter locale={locale} />
+</Layout>
+
+<script>
+	(function () {
+		document.addEventListener('DOMContentLoaded', function () {
+			var article = document.querySelector('[data-post-content]');
+			if (!article) return;
+
+			article.addEventListener('click', function (e) {
+				var target = e.target as HTMLElement;
+				if (target.tagName !== 'IMG') return;
+
+				var overlay = document.createElement('div');
+				overlay.className = 'lightbox-overlay';
+				var img = document.createElement('img');
+				img.src = (target as HTMLImageElement).src;
+				img.className = 'lightbox-image';
+				overlay.appendChild(img);
+				document.body.appendChild(overlay);
+
+				function close() {
+					overlay.remove();
+				}
+				overlay.addEventListener('click', close);
+				document.addEventListener('keydown', function handler(e) {
+					if (e.key === 'Escape') {
+						close();
+						document.removeEventListener('keydown', handler);
+					}
+				});
+			});
+		});
+	})();
+</script>
+
+<style>
+	.post-main {
+		width: min(780px, 100%);
+		margin: 0 auto;
+		padding: 0 24px 120px;
+	}
+
+	.post-header {
+		margin-bottom: 16px;
+	}
+
+	.post-breadcrumb {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 0.85rem;
+		opacity: 0.5;
+		margin-bottom: 16px;
+	}
+
+	.post-breadcrumb a {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		transition: opacity 0.2s ease;
+	}
+
+	.post-breadcrumb a:hover {
+		opacity: 0.7;
+	}
+
+	.post-title {
+		font-size: clamp(2rem, 4vw, 2.8rem);
+		letter-spacing: -0.03em;
+		line-height: 1.2;
+		margin-bottom: 12px;
+	}
+
+	.post-meta {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		font-size: 0.9rem;
+		opacity: 0.5;
+	}
+
+	.meta-separator {
+		width: 3px;
+		height: 3px;
+		border-radius: 50%;
+		background: currentColor;
+		opacity: 0.5;
+	}
+
+	.post-hero-wrapper {
+		width: 100%;
+		margin-bottom: 20px;
+		border-radius: 16px;
+		overflow: hidden;
+	}
+
+	.post-hero-image {
+		width: 100%;
+		display: block;
+		aspect-ratio: 16 / 9;
+		object-fit: cover;
+	}
+
+	.post-content {
+		line-height: 1.85;
+		font-size: 1.05rem;
+	}
+
+	.post-content :global(> :first-child) {
+		margin-top: 0;
+	}
+
+	.post-content :global(h1) {
+		display: none;
+	}
+
+	.post-content :global(h2) {
+		margin-top: 48px;
+		margin-bottom: 16px;
+		font-size: clamp(1.4rem, 2.5vw, 1.7rem);
+		letter-spacing: -0.02em;
+	}
+
+	.post-content :global(h3) {
+		margin-top: 32px;
+		margin-bottom: 12px;
+		font-size: 1.2rem;
+		letter-spacing: -0.01em;
+	}
+
+	.post-content :global(p) {
+		margin: 20px 0;
+		opacity: 0.85;
+	}
+
+	.post-content :global(img) {
+		max-width: 100%;
+		height: auto;
+		display: block;
+		border-radius: 12px;
+		margin: 28px 0;
+		border: 1px solid var(--border);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+		cursor: zoom-in;
+		transition: box-shadow 0.2s ease;
+	}
+
+	.post-content :global(img):hover {
+		box-shadow: 0 6px 28px rgba(0, 0, 0, 0.14);
+	}
+
+	.post-content :global(ul),
+	.post-content :global(ol) {
+		margin: 20px 0 20px 24px;
+		padding-left: 20px;
+		display: grid;
+		gap: 10px;
+		opacity: 0.85;
+	}
+
+	.post-content :global(li) {
+		line-height: 1.7;
+	}
+
+	.post-content :global(a) {
+		color: inherit;
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+		font-weight: 500;
+	}
+
+	.post-content :global(a:hover) {
+		opacity: 0.7;
+	}
+
+	.post-content :global(strong) {
+		font-weight: 600;
+	}
+
+	.post-content :global(blockquote) {
+		border-left: 3px solid var(--border);
+		padding: 12px 24px;
+		margin: 24px 0;
+		opacity: 0.85;
+		font-style: italic;
+	}
+
+	.post-content :global(table) {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 28px 0;
+		font-size: 0.95rem;
+	}
+
+	.post-content :global(th),
+	.post-content :global(td) {
+		padding: 12px 16px;
+		text-align: left;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.post-content :global(th) {
+		font-weight: 600;
+		opacity: 0.9;
+	}
+
+	.post-content :global(td) {
+		opacity: 0.8;
+	}
+
+	.post-content :global(code) {
+		font-size: 0.9em;
+		background: var(--level1);
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.post-content :global(pre) {
+		background: var(--level1);
+		padding: 20px;
+		border-radius: 12px;
+		overflow-x: auto;
+		margin: 24px 0;
+	}
+
+	.post-content :global(pre code) {
+		background: none;
+		padding: 0;
+	}
+
+	@media (max-width: 600px) {
+		.post-content {
+			font-size: 1rem;
+		}
+	}
+</style>
+
+<style is:global>
+	.lightbox-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 1000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.85);
+		cursor: zoom-out;
+		padding: 24px;
+		animation: lightboxFadeIn 0.2s ease;
+	}
+
+	.lightbox-image {
+		max-width: 90vw;
+		max-height: 90vh;
+		object-fit: contain;
+		border-radius: 12px;
+		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
+	}
+
+	@keyframes lightboxFadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+</style>
