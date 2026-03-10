@@ -23,9 +23,9 @@ const currentYear = new Date().getFullYear();
 <div class="page-meta">
 	<span>&copy; {currentYear} Handaptive LLC</span>
 	<div class="page-links">
-		<a href="/privacy">{i18n.footerPrivacy}</a>
-		<a href="/terms">{i18n.footerTerms}</a>
-		<a href="/contact">{i18n.footerContact}</a>
+		<a href={`/${locale}/privacy`}>{i18n.footerPrivacy}</a>
+		<a href={`/${locale}/terms`}>{i18n.footerTerms}</a>
+		<a href={`/${locale}/contact`}>{i18n.footerContact}</a>
 	</div>
 </div>
 

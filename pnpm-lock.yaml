@@ -373,6 +373,9 @@ importers:
       astro:
         specifier: ^5.17.1
         version: 5.18.0(@types/node@24.12.0)(jiti@2.6.1)(rollup@4.59.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+      marked:
+        specifier: ^16.4.2
+        version: 16.4.2
 
   apps/web2:
     dependencies:
