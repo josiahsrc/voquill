@@ -26,6 +26,7 @@ jobs:
             tauri_platform: macos
             node_platform: darwin
             bundle_dir: apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle
+            require_gpu_sidecar: true
           - label: Windows
             os: windows-latest
             args: ""
@@ -33,6 +34,7 @@ jobs:
             tauri_platform: windows
             node_platform: win32
             bundle_dir: D:\cargo\release\bundle
+            require_gpu_sidecar: false
           - label: Linux
             os: ubuntu-22.04
             args: ""
@@ -40,6 +42,7 @@ jobs:
             tauri_platform: linux
             node_platform: linux
             bundle_dir: apps/desktop/src-tauri/target/release/bundle
+            require_gpu_sidecar: false
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -104,6 +107,7 @@ jobs:
         env:
           TAURI_PLATFORM: ${{ matrix.tauri_platform }}
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
+          VOQUILL_REQUIRE_GPU_SIDECAR: ${{ matrix.require_gpu_sidecar && 'true' || 'false' }}
           MACOSX_DEPLOYMENT_TARGET: "13.3"
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
           # Throwaway signing key for CI build validation only.
