@@ -1,0 +1,23 @@
+---
+import { marked } from 'marked';
+import fs from 'node:fs';
+import path from 'node:path';
+import LegalLayout from '../../layouts/LegalLayout.astro';
+import type { Locale } from '../../i18n/translations';
+
+export function getStaticPaths() {
+	return [{ params: { locale: 'en' } }, { params: { locale: 'es' } }];
+}
+
+const locale = Astro.params.locale as Locale;
+
+const mdPath = path.resolve('content/contact.md');
+const mdContent = fs.readFileSync(mdPath, 'utf-8');
+
+marked.setOptions({ gfm: true, breaks: true });
+const html = await marked.parse(mdContent);
+---
+
+<LegalLayout title="Contact | Voquill" description="Get in touch with the Voquill team for support, enterprise inquiries, or general questions." locale={locale}>
+	<Fragment set:html={html} />
+</LegalLayout>
