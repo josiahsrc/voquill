@@ -1,6 +1,7 @@
 ---
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
+import DownloadButton from './DownloadButton.astro';
 
 interface Props {
 	locale: Locale;
@@ -17,9 +18,7 @@ const i18n = t(locale);
 			{i18n.heroSubtitle}
 		</p>
 		<div class="hero-actions">
-			<a href="/download" class="btn-primary download-button"
-				>{i18n.downloadForFree}</a
-			>
+			<DownloadButton class="btn-primary" label={i18n.downloadForFree} />
 			<a
 				href="https://github.com/josiahsrc/voquill"
 				target="_blank"
