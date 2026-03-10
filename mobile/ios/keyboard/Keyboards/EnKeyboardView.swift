@@ -25,6 +25,14 @@ class EnKeyboardView: UIView {
     private let keyTextColor = UIColor.white
     private let shiftActiveTextColor = UIColor.black
 
+    // MARK: - Shift State
+
+    private var isShifted = true {
+        didSet { updateShiftAppearance() }
+    }
+    private var shiftKeyView: UIView?
+    private var charKeyLabels: [(view: UIView, label: UILabel, centerY: NSLayoutConstraint)] = []
+
     // MARK: - Touch State
 
     private var activeKeyView: UIView?
@@ -65,8 +73,11 @@ class EnKeyboardView: UIView {
     private func rebuild() {
         dismissPopups()
         subviews.forEach { $0.removeFromSuperview() }
+        shiftKeyView = nil
+        charKeyLabels = []
         backgroundColor = UIColor(white: 0.13, alpha: 1)
         clipsToBounds = false
+        isMultipleTouchEnabled = false
 
         let keyboardStack = UIStackView()
         keyboardStack.axis = .vertical
@@ -109,10 +120,18 @@ class EnKeyboardView: UIView {
         ])
         stack.addArrangedSubview(row2Container)
 
+        let shiftKey = makeSpecialKey(
+            systemIcon: isShifted ? "shift.fill" : "shift",
+            bgColor: isShifted ? shiftActiveColor : specialKeyColor,
+            textColor: isShifted ? shiftActiveTextColor : keyTextColor,
+            action: #selector(toggleShift)
+        )
+        shiftKeyView = shiftKey
+
         stack.addArrangedSubview(makeSideKeyRow(
-            leftKey: makeSpecialKey(systemIcon: "shift.fill", bgColor: shiftActiveColor, textColor: shiftActiveTextColor),
+            leftKey: shiftKey,
             centerKeys: ["Z","X","C","V","B","N","M"],
-            rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor)
+            rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor, action: #selector(backspacePressed))
         ))
 
         stack.addArrangedSubview(makeBottomRow(toggleLabel: "123", toggleAction: #selector(switchToNumbers)))
@@ -127,7 +146,7 @@ class EnKeyboardView: UIView {
         stack.addArrangedSubview(makeSideKeyRow(
             leftKey: makeSpecialKey(title: "#+=", bgColor: specialKeyColor, textColor: keyTextColor, fontSize: 15, action: #selector(switchToExtraSymbols)),
             centerKeys: [".",",","?","!","'"],
-            rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor)
+            rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor, action: #selector(backspacePressed))
         ))
 
         stack.addArrangedSubview(makeBottomRow(toggleLabel: "ABC", toggleAction: #selector(switchToLetters)))
@@ -142,7 +161,7 @@ class EnKeyboardView: UIView {
         stack.addArrangedSubview(makeSideKeyRow(
             leftKey: makeSpecialKey(title: "123", bgColor: specialKeyColor, textColor: keyTextColor, fontSize: 15, action: #selector(switchToNumbers)),
             centerKeys: [".",",","?","!","'"],
-            rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor)
+            rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor, action: #selector(backspacePressed))
         ))
 
         stack.addArrangedSubview(makeBottomRow(toggleLabel: "ABC", toggleAction: #selector(switchToLetters)))
@@ -185,10 +204,10 @@ class EnKeyboardView: UIView {
             leftKey.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             leftKey.widthAnchor.constraint(equalToConstant: sideKeyWidth),
 
-            centerStack.leadingAnchor.constraint(equalTo: leftKey.trailingAnchor, constant: keySpacing * 2),
+            centerStack.leadingAnchor.constraint(equalTo: leftKey.trailingAnchor, constant: keySpacing),
             centerStack.topAnchor.constraint(equalTo: container.topAnchor),
             centerStack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            centerStack.trailingAnchor.constraint(equalTo: rightKey.leadingAnchor, constant: -keySpacing * 2),
+            centerStack.trailingAnchor.constraint(equalTo: rightKey.leadingAnchor, constant: -keySpacing),
 
             rightKey.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             rightKey.topAnchor.constraint(equalTo: container.topAnchor),
@@ -207,11 +226,11 @@ class EnKeyboardView: UIView {
         toggleKey.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(toggleKey)
 
-        let spaceKey = makeSpecialKey(title: "space", bgColor: letterKeyColor, textColor: keyTextColor, fontSize: 16)
+        let spaceKey = makeSpecialKey(title: "space", bgColor: letterKeyColor, textColor: keyTextColor, fontSize: 16, action: #selector(spacePressed))
         spaceKey.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(spaceKey)
 
-        let returnKey = makeSpecialKey(title: "return", bgColor: specialKeyColor, textColor: keyTextColor, fontSize: 15)
+        let returnKey = makeSpecialKey(title: "return", bgColor: specialKeyColor, textColor: keyTextColor, fontSize: 15, action: #selector(returnPressed))
         returnKey.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(returnKey)
 
@@ -240,6 +259,9 @@ class EnKeyboardView: UIView {
     // MARK: - Character Key (touch-handled by EnKeyboardView)
 
     private func makeCharKey(_ character: String) -> UIView {
+        let isLetter = character.unicodeScalars.allSatisfy { CharacterSet.letters.contains($0) }
+        let displayChar = isLetter ? (isShifted ? character.uppercased() : character.lowercased()) : character
+
         let key = UIView()
         key.backgroundColor = letterKeyColor
         key.layer.cornerRadius = keyCornerRadius
@@ -250,19 +272,25 @@ class EnKeyboardView: UIView {
         key.clipsToBounds = false
         key.heightAnchor.constraint(equalToConstant: keyHeight).isActive = true
         key.isUserInteractionEnabled = false
-        key.accessibilityLabel = character
+        key.accessibilityLabel = displayChar
 
         let label = UILabel()
-        label.text = character
+        label.text = displayChar
         label.font = .systemFont(ofSize: 22, weight: .regular)
         label.textColor = keyTextColor
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         key.addSubview(label)
+
+        let centerY = label.centerYAnchor.constraint(equalTo: key.centerYAnchor, constant: isShifted ? 0 : 1.5)
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: key.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: key.centerYAnchor),
+            centerY,
         ])
+
+        if isLetter {
+            charKeyLabels.append((view: key, label: label, centerY: centerY))
+        }
 
         return key
     }
@@ -312,7 +340,7 @@ class EnKeyboardView: UIView {
             ])
         }
 
-        let button = KeyButton(target: self, action: action ?? #selector(noOp))
+        let button = KeyButton(target: self, action: action ?? #selector(spacePressed))
         button.translatesAutoresizingMaskIntoConstraints = false
         key.addSubview(button)
         NSLayoutConstraint.activate([
@@ -325,7 +353,34 @@ class EnKeyboardView: UIView {
         return key
     }
 
-    @objc private func noOp() {}
+    private static let sentenceEnders: Set<Character> = [".", "!", "?"]
+
+    @objc private func spacePressed() {
+        let charBeforeCursor = textDocumentProxy?.documentContextBeforeInput?.last
+        textDocumentProxy?.insertText(" ")
+
+        if mode != .letters, let prev = charBeforeCursor {
+            if Self.sentenceEnders.contains(prev) {
+                mode = .letters
+                isShifted = true
+            } else {
+                mode = .letters
+                isShifted = false
+            }
+        }
+    }
+
+    @objc private func backspacePressed() {
+        textDocumentProxy?.deleteBackward()
+    }
+
+    @objc private func returnPressed() {
+        textDocumentProxy?.insertText("\n")
+        if mode != .letters {
+            mode = .letters
+        }
+        isShifted = true
+    }
 
     // MARK: - Touch Handling (character keys)
 
@@ -357,6 +412,10 @@ class EnKeyboardView: UIView {
             return
         }
 
+        if activeKeyView != nil {
+            resetTouchState()
+        }
+
         let point = touch.location(in: self)
         guard let keyView = charKeyView(at: point),
               let character = keyView.accessibilityLabel else {
@@ -369,7 +428,7 @@ class EnKeyboardView: UIView {
         didSelectVariant = false
 
         showMagnify(for: keyView, character: character)
-        animateKeyPress(keyView, pressed: true)
+        setKeyHighlight(keyView, highlighted: true)
 
         let hasVariants = Self.variants[character.uppercased()] != nil
         if hasVariants {
@@ -407,8 +466,10 @@ class EnKeyboardView: UIView {
     private func commitAndReset() {
         if let strip = variantStrip, let selected = strip.selectedCharacter {
             textDocumentProxy?.insertText(selected)
+            if mode == .letters && isShifted { isShifted = false }
         } else if variantStrip == nil, let char = activeCharacter {
             textDocumentProxy?.insertText(char)
+            if mode == .letters && isShifted { isShifted = false }
         }
         resetTouchState()
     }
@@ -417,7 +478,7 @@ class EnKeyboardView: UIView {
         holdTimer?.invalidate()
         holdTimer = nil
         if let keyView = activeKeyView {
-            animateKeyPress(keyView, pressed: false)
+            setKeyHighlight(keyView, highlighted: false)
         }
         dismissPopups()
         activeKeyView = nil
@@ -470,18 +531,38 @@ class EnKeyboardView: UIView {
         variantStrip = nil
     }
 
-    // MARK: - Key Press Animation
+    // MARK: - Key Press Highlight
 
-    private func animateKeyPress(_ keyView: UIView, pressed: Bool) {
-        UIView.animate(
-            withDuration: pressed ? 0.05 : 0.12,
-            delay: 0,
-            options: [.allowUserInteraction, .beginFromCurrentState],
-            animations: {
-                keyView.transform = pressed ? CGAffineTransform(scaleX: 0.95, y: 0.95) : .identity
-                keyView.alpha = pressed ? 0.7 : 1.0
-            }
-        )
+    private func setKeyHighlight(_ keyView: UIView, highlighted: Bool) {
+        keyView.alpha = highlighted ? 0.7 : 1.0
+    }
+
+    // MARK: - Shift
+
+    @objc private func toggleShift() {
+        isShifted.toggle()
+    }
+
+    private func updateShiftAppearance() {
+        let offset: CGFloat = isShifted ? 0 : 1.5
+        for (view, label, centerY) in charKeyLabels {
+            let newChar = isShifted ? label.text!.uppercased() : label.text!.lowercased()
+            label.text = newChar
+            view.accessibilityLabel = newChar
+            centerY.constant = offset
+        }
+
+        guard let shiftKey = shiftKeyView else { return }
+        let iconName = isShifted ? "shift.fill" : "shift"
+        let bgColor = isShifted ? shiftActiveColor : specialKeyColor
+        let tintColor = isShifted ? shiftActiveTextColor : keyTextColor
+
+        shiftKey.backgroundColor = bgColor
+        if let imageView = shiftKey.subviews.compactMap({ $0 as? UIImageView }).first {
+            let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+            imageView.image = UIImage(systemName: iconName, withConfiguration: config)
+            imageView.tintColor = tintColor
+        }
     }
 
     // MARK: - Mode Actions
