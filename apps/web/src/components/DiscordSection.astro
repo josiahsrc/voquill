@@ -11,28 +11,40 @@ const i18n = t(locale);
 ---
 
 <section class="discord-section" id="community">
-	<div class="discord-content">
-		<div class="badges">
-			<span class="badge new-badge">{i18n.discordNewBadge}</span>
-			<span class="badge online-badge" data-discord-online style="display:none">
-				<span class="ping-wrapper">
-					<span class="ping"></span>
-					<span class="ping-dot"></span>
-				</span>
-				<span data-discord-count></span>
-			</span>
+	<div class="discord-card">
+		<div class="discord-bg-orbs" aria-hidden="true">
+			<span class="orb orb-1"></span>
+			<span class="orb orb-2"></span>
+			<span class="orb orb-3"></span>
+			<span class="orb orb-4"></span>
+			<span class="orb orb-5"></span>
+			<span class="orb orb-6"></span>
+			<span class="orb orb-7"></span>
+			<span class="orb orb-8"></span>
 		</div>
-		<h2>{i18n.discordHeading}</h2>
-		<p>{i18n.discordDescription}</p>
-		<a
-			href="https://discord.gg/5jXkDvdVdt"
-			target="_blank"
-			rel="noopener noreferrer"
-			class="discord-button"
-		>
-			<span class="discord-button-icon" aria-hidden="true"></span>
-			{i18n.discordJoin}
-		</a>
+		<div class="discord-content">
+			<div class="badges">
+				<span class="badge new-badge">{i18n.discordNewBadge}</span>
+				<span class="badge online-badge" data-discord-online style="display:none">
+					<span class="ping-wrapper">
+						<span class="ping"></span>
+						<span class="ping-dot"></span>
+					</span>
+					<span data-discord-count></span>
+				</span>
+			</div>
+			<h2>{i18n.discordHeading}</h2>
+			<p>{i18n.discordDescription}</p>
+			<a
+				href="https://discord.gg/5jXkDvdVdt"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="discord-button"
+			>
+				<span class="discord-button-icon" aria-hidden="true"></span>
+				{i18n.discordJoin}
+			</a>
+		</div>
 	</div>
 </section>
 
@@ -68,10 +80,137 @@ const i18n = t(locale);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 48px 24px;
-		overflow: hidden;
 		max-width: min(1120px, 100%);
 		margin: 120px auto 0;
+		padding: 0 24px;
+	}
+
+	.discord-card {
+		position: relative;
+		width: 100%;
+		border-radius: 32px;
+		background: linear-gradient(145deg, rgba(88, 101, 242, 0.08) 0%, rgba(88, 101, 242, 0.03) 50%, rgba(88, 101, 242, 0.06) 100%);
+		border: 1px solid rgba(88, 101, 242, 0.15);
+		box-shadow:
+			0 4px 24px rgba(88, 101, 242, 0.06),
+			0 0 0 1px rgba(88, 101, 242, 0.04);
+		padding: 64px 48px;
+		overflow: hidden;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.discord-card {
+			background: linear-gradient(145deg, rgba(88, 101, 242, 0.12) 0%, rgba(88, 101, 242, 0.04) 50%, rgba(88, 101, 242, 0.08) 100%);
+			border-color: rgba(88, 101, 242, 0.25);
+			box-shadow:
+				0 4px 32px rgba(88, 101, 242, 0.1),
+				0 0 0 1px rgba(88, 101, 242, 0.08);
+		}
+	}
+
+	/* Floating orbs */
+	.discord-bg-orbs {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.orb {
+		position: absolute;
+		border-radius: 50%;
+		background: rgba(88, 101, 242, 0.12);
+		border: 1px solid rgba(88, 101, 242, 0.1);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.orb {
+			background: rgba(88, 101, 242, 0.18);
+			border-color: rgba(88, 101, 242, 0.15);
+		}
+	}
+
+	.orb-1 {
+		width: 48px;
+		height: 48px;
+		top: 12%;
+		left: 8%;
+		animation: float-1 8s ease-in-out infinite;
+	}
+
+	.orb-2 {
+		width: 32px;
+		height: 32px;
+		top: 24%;
+		right: 12%;
+		animation: float-2 10s ease-in-out infinite;
+	}
+
+	.orb-3 {
+		width: 40px;
+		height: 40px;
+		bottom: 18%;
+		left: 14%;
+		animation: float-3 9s ease-in-out infinite;
+	}
+
+	.orb-4 {
+		width: 24px;
+		height: 24px;
+		bottom: 28%;
+		right: 8%;
+		animation: float-1 7s ease-in-out infinite 1s;
+	}
+
+	.orb-5 {
+		width: 20px;
+		height: 20px;
+		top: 50%;
+		left: 4%;
+		animation: float-2 11s ease-in-out infinite 0.5s;
+	}
+
+	.orb-6 {
+		width: 36px;
+		height: 36px;
+		top: 8%;
+		right: 28%;
+		animation: float-3 8.5s ease-in-out infinite 2s;
+	}
+
+	.orb-7 {
+		width: 28px;
+		height: 28px;
+		bottom: 10%;
+		right: 24%;
+		animation: float-1 9.5s ease-in-out infinite 1.5s;
+	}
+
+	.orb-8 {
+		width: 18px;
+		height: 18px;
+		top: 36%;
+		left: 24%;
+		animation: float-2 7.5s ease-in-out infinite 3s;
+	}
+
+	@keyframes float-1 {
+		0%, 100% { transform: translate(0, 0); }
+		25% { transform: translate(12px, -18px); }
+		50% { transform: translate(-8px, -28px); }
+		75% { transform: translate(16px, -10px); }
+	}
+
+	@keyframes float-2 {
+		0%, 100% { transform: translate(0, 0); }
+		25% { transform: translate(-14px, 12px); }
+		50% { transform: translate(10px, 20px); }
+		75% { transform: translate(-18px, 6px); }
+	}
+
+	@keyframes float-3 {
+		0%, 100% { transform: translate(0, 0); }
+		33% { transform: translate(16px, -14px); }
+		66% { transform: translate(-12px, 10px); }
 	}
 
 	.discord-content {
@@ -83,6 +222,7 @@ const i18n = t(locale);
 		text-align: center;
 		gap: 18px;
 		max-width: 560px;
+		margin: 0 auto;
 	}
 
 	.discord-content h2 {
@@ -216,8 +356,13 @@ const i18n = t(locale);
 	}
 
 	@media (max-width: 720px) {
-		.discord-section {
-			padding: 36px 18px;
+		.discord-card {
+			padding: 48px 24px;
+		}
+
+		.orb-5,
+		.orb-8 {
+			display: none;
 		}
 	}
 </style>
