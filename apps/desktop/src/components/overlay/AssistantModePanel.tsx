@@ -24,7 +24,7 @@ const ASSISTANT_PANEL_CONTENT_BOTTOM_INSET = 24;
 const ASSISTANT_PANEL_HEADER_HEIGHT = 24;
 const ASSISTANT_PANEL_HEADER_OFFSET_TOP = 18;
 const ASSISTANT_PANEL_HEADER_OFFSET_RIGHT = 24;
-const ASSISTANT_PANEL_TRANSCRIPT_TOP_OFFSET = 44;
+const ASSISTANT_PANEL_TRANSCRIPT_TOP_OFFSET = 56;
 const PANEL_SURFACE_TRANSITION =
   "opacity 220ms ease-out, transform 340ms cubic-bezier(0.22, 1, 0.36, 1), width 340ms cubic-bezier(0.22, 1, 0.36, 1), height 340ms cubic-bezier(0.22, 1, 0.36, 1), border-radius 340ms cubic-bezier(0.22, 1, 0.36, 1)";
 
@@ -239,6 +239,7 @@ export const AssistantModePanel = ({
 }: AssistantModePanelProps) => {
   const theme = useTheme();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const latestAssistantMessageRef = useRef<HTMLDivElement | null>(null);
   const latestUserMessage = getLatestMessage(messages, "me");
   const userPromptPreview = latestUserMessage?.text
     ? formatUserPromptPreview(latestUserMessage.text)
@@ -248,6 +249,10 @@ export const AssistantModePanel = ({
     (message) => message.sender === "agent",
   );
   const isCompact = messages.length === 0;
+  const latestAssistantMessage = assistantMessages[assistantMessages.length - 1];
+  const latestAssistantAutoScrollKey = latestAssistantMessage
+    ? `${assistantMessages.length}:${latestAssistantMessage.text}:${latestAssistantMessage.draft ?? ""}`
+    : "none";
 
   useEffect(() => {
     if (!open) {
@@ -255,14 +260,15 @@ export const AssistantModePanel = ({
     }
 
     const container = scrollContainerRef.current;
-    if (!container) {
+    const latestMessage = latestAssistantMessageRef.current;
+    if (!container || !latestMessage) {
       return;
     }
 
     requestAnimationFrame(() => {
-      container.scrollTop = container.scrollHeight;
+      container.scrollTop = Math.max(0, latestMessage.offsetTop);
     });
-  }, [messages, open]);
+  }, [latestAssistantAutoScrollKey, open]);
 
   return (
     <Box
@@ -448,6 +454,11 @@ export const AssistantModePanel = ({
               {assistantMessages.map((message, index) => (
                 <Box
                   key={`${index}-${message.text}-${message.draft ?? ""}`}
+                  ref={
+                    index === assistantMessages.length - 1
+                      ? latestAssistantMessageRef
+                      : undefined
+                  }
                   sx={{
                     display: "flex",
                     flexDirection: "column",
@@ -480,7 +491,7 @@ export const AssistantModePanel = ({
                 left: 0,
                 right: 0,
                 top: 0,
-                height: `${ASSISTANT_PANEL_TRANSCRIPT_TOP_OFFSET + 20}px`,
+                height: `${ASSISTANT_PANEL_TRANSCRIPT_TOP_OFFSET + 16}px`,
                 pointerEvents: "none",
                 background: `linear-gradient(to bottom, ${alpha(
                   theme.palette.common.black,
