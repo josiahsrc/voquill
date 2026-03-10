@@ -326,6 +326,74 @@ a {
   position: relative;
   width: 100%;
   min-height: 400px;
+  overflow: visible;
+}
+
+.hero-svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200vw;
+  height: 200vh;
+  pointer-events: none;
+}
+
+.hero-wave-path {
+  stroke: rgba(0, 0, 0, 1);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hero-path-text {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+  fill: rgba(0, 0, 0, 0.7);
+}
+
+.hero-icon-glow {
+  fill: rgba(0, 0, 0, 0.04);
+  filter: blur(8px);
+}
+
+.hero-icon-circle {
+  fill: #111111;
+}
+
+.hero-icon-logo {
+  filter: invert(1);
+}
+
+.hero-spark {
+  fill: rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero-wave-path {
+    stroke: rgba(255, 255, 255, 1);
+  }
+
+  .hero-path-text {
+    fill: rgba(255, 255, 255, 0.7);
+  }
+
+  .hero-icon-glow {
+    fill: rgba(255, 255, 255, 0.08);
+  }
+
+  .hero-icon-circle {
+    fill: #ffffff;
+  }
+
+  .hero-icon-logo {
+    filter: none;
+  }
+
+  .hero-spark {
+    fill: rgba(255, 255, 255, 0.6);
+  }
 }
 
 /* ── Mobile menu button ── */
