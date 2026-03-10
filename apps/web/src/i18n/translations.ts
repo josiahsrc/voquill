@@ -50,6 +50,12 @@ export const translations = {
 		speedVoiceWpm: '~220 wpm',
 		speedKeyboardFooter: 'One letter at a time.',
 		speedVoiceFooter: 'Works at the speed of thought.',
+		privacyBadge: 'Private and secure',
+		privacyHeading: 'Your data is yours. Period.',
+		privacyDescription:
+			"Process everything locally on your device, bring your own API key, or connect to our cloud. Don't believe us? See for yourself. Voquill is fully open-source.",
+		privacyLink: 'GitHub Source Code \u2192',
+		privacyLockAlt: 'Animated lock icon representing privacy and security.',
 	},
 	es: {
 		siteTitle: 'Voquill | Tu teclado te está frenando',
@@ -102,6 +108,12 @@ export const translations = {
 		speedVoiceWpm: '~220 ppm',
 		speedKeyboardFooter: 'Una letra a la vez.',
 		speedVoiceFooter: 'Funciona a la velocidad del pensamiento.',
+		privacyBadge: 'Privado y seguro',
+		privacyHeading: 'Tus datos son tuyos. Punto.',
+		privacyDescription:
+			'Procesa todo localmente en tu dispositivo, usa tu propia clave API o conéctate a nuestra nube. ¿No nos crees? Compruébalo tú mismo. Voquill es completamente de código abierto.',
+		privacyLink: 'Código fuente en GitHub \u2192',
+		privacyLockAlt: 'Ícono animado de candado que representa privacidad y seguridad.',
 	},
 } as const;
 
