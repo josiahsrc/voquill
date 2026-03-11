@@ -123,7 +123,10 @@ class DictationService {
 
     private func configureAudioSession() throws {
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.record, mode: .default)
+        try session.setCategory(.playAndRecord, mode: .default, options: [.mixWithOthers])
+        if #available(iOS 13.0, *) {
+            try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
+        }
         try session.setActive(true)
     }
 
