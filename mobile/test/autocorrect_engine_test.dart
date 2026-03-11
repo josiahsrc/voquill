@@ -50,9 +50,31 @@ void main() {
         expect(engine.correct('form'), equals('from'));
       });
 
-      test('returns null when edit distance > 2', () {
+      test('returns null when edit distance exceeds max for word length', () {
         final engine = _createEngine(['hello']);
         expect(engine.correct('xxxxx'), isNull);
+      });
+
+      test('max distance 1 for short words (<= 3 chars)', () {
+        final engine = _createEngine(['cat', 'dog']);
+        // 'cxx' is distance 2 from 'cat' — too far for a 3-char word
+        expect(engine.correct('cxx'), isNull);
+        // 'cot' is distance 1 from 'cat' — allowed
+        expect(engine.correct('cot'), equals('cat'));
+      });
+
+      test('max distance 2 for medium words (4-7 chars)', () {
+        final engine = _createEngine(['hello']);
+        // 'hxllo' is distance 1 — allowed
+        expect(engine.correct('hxllo'), equals('hello'));
+        // 'hxllo' is distance 1 — allowed
+        expect(engine.correct('hexlo'), equals('hello'));
+      });
+
+      test('max distance 3 for long words (8+ chars)', () {
+        final engine = _createEngine(['beautiful', 'something']);
+        // 'beutaful' has 3 errors — allowed for 8+ char words
+        expect(engine.correct('beutiful'), equals('beautiful'));
       });
 
       test('prefers edit distance 1 over distance 2', () {

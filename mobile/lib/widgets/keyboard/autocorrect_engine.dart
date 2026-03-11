@@ -55,8 +55,9 @@ class DictionaryAutoCorrectEngine extends AutoCorrectEngine {
       final lengthDiff = (candidate.length - lower.length).abs();
 
       // Prefix completion (>= 3 chars typed).
+      // Scored below edit distance so exact prefix matches are preferred.
       if (lower.length >= 3 && lengthDiff > 0 && candidate.startsWith(lower)) {
-        final score = i.toDouble() + (candidate.length - lower.length) * 100;
+        final score = (candidate.length - lower.length) * 50 + i * 0.01;
         if (score < bestScore) {
           bestScore = score;
           best = candidate;
@@ -64,10 +65,11 @@ class DictionaryAutoCorrectEngine extends AutoCorrectEngine {
         continue;
       }
 
-      // Edit distance correction (max distance 2).
-      if (lengthDiff > 2) continue;
+      // Edit distance correction — max distance scales with word length.
+      final maxDist = _maxEditDistance(lower.length);
+      if (lengthDiff > maxDist) continue;
       final dist = _editDistance(lower, candidate);
-      if (dist > 0 && dist <= 2) {
+      if (dist > 0 && dist <= maxDist) {
         final score = dist * 1000 + i.toDouble();
         if (score < bestScore) {
           bestScore = score;
@@ -82,6 +84,12 @@ class DictionaryAutoCorrectEngine extends AutoCorrectEngine {
       return best[0].toUpperCase() + best.substring(1);
     }
     return best;
+  }
+
+  static int _maxEditDistance(int wordLength) {
+    if (wordLength <= 3) return 1;
+    if (wordLength <= 7) return 2;
+    return 3;
   }
 
   static int _editDistance(String a, String b) {
