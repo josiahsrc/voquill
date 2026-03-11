@@ -213,6 +213,56 @@ unsafe fn get_range_attribute(
     }
 }
 
+unsafe fn is_element_inside_web_area(focused_element: CFTypeRef) -> bool {
+    if focused_element.is_null() {
+        return false;
+    }
+
+    let ax_parent = CFString::new("AXParent");
+    let ax_role = CFString::new("AXRole");
+    let mut current_element = focused_element;
+    let mut levels_up = 0;
+
+    while levels_up < MAX_LEVELS_UP {
+        if let Some(role) = get_string_attribute(current_element, ax_role.as_concrete_TypeRef()) {
+            if role == "AXWebArea" {
+                if current_element != focused_element {
+                    CFRelease(current_element);
+                }
+                return true;
+            }
+
+            if role == "AXWindow" || role == "AXApplication" {
+                break;
+            }
+        }
+
+        let mut parent: CFTypeRef = ptr::null();
+        let parent_result = AXUIElementCopyAttributeValue(
+            current_element,
+            ax_parent.as_concrete_TypeRef(),
+            &mut parent,
+        );
+
+        if parent_result != AX_ERROR_SUCCESS || parent.is_null() {
+            break;
+        }
+
+        if current_element != focused_element {
+            CFRelease(current_element);
+        }
+
+        current_element = parent;
+        levels_up += 1;
+    }
+
+    if current_element != focused_element {
+        CFRelease(current_element);
+    }
+
+    false
+}
+
 const MAX_CONTEXT_LENGTH: usize = 12000;
 const MAX_LEVELS_UP: usize = 20;
 const MAX_SIBLINGS: isize = 60;
@@ -735,6 +785,11 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 
     if result != AX_ERROR_SUCCESS || focused_element.is_null() {
         return Err("no focused element".to_string());
+    }
+
+    if is_element_inside_web_area(focused_element) {
+        CFRelease(focused_element);
+        return Err("focused element is inside AXWebArea".to_string());
     }
 
     // Check if the focused element actually supports setting AXSelectedText
