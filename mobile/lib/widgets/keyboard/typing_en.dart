@@ -1,8 +1,20 @@
+import 'package:app/widgets/keyboard/autocorrect_engine.dart';
 import 'package:app/widgets/keyboard/keyboard_types.dart';
 import 'package:app/widgets/keyboard/text_input_proxy.dart';
 import 'package:app/widgets/keyboard/typing_strategy.dart';
 
+final _wordPattern = RegExp(r"[a-zA-Z']+$");
+
 class TypingEn extends TypingStrategy {
+  final _engine = DictionaryAutoCorrectEngine(assetPath: 'assets/words/en.txt');
+
+  TypingEn() {
+    _engine.load();
+  }
+
+  @override
+  AutoCorrectEngine get autoCorrectEngine => _engine;
+
   @override
   String get initialMode => 'default';
 
@@ -150,8 +162,10 @@ class TypingEn extends TypingStrategy {
       case KeyType.character:
         if (spec.value != null) proxy.insertText(spec.value!);
       case KeyType.space:
+        _autoCorrect(proxy);
         proxy.insertText(' ');
       case KeyType.enter:
+        _autoCorrect(proxy);
         proxy.insertText('\n');
       case KeyType.backspace:
         proxy.deleteBackward();
@@ -160,5 +174,22 @@ class TypingEn extends TypingStrategy {
       case KeyType.spacer:
         break;
     }
+  }
+
+  void _autoCorrect(TextInputProxy proxy) {
+    if (!_engine.isLoaded) return;
+
+    final before = proxy.textBeforeCursor;
+    final match = _wordPattern.firstMatch(before);
+    if (match == null) return;
+
+    final word = match.group(0)!;
+    final correction = _engine.correct(word);
+    if (correction == null) return;
+
+    for (var i = 0; i < word.length; i++) {
+      proxy.deleteBackward();
+    }
+    proxy.insertText(correction);
   }
 }
