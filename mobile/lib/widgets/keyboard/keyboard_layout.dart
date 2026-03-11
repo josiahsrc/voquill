@@ -1,0 +1,72 @@
+import 'package:app/widgets/keyboard/keyboard_key.dart';
+import 'package:app/widgets/keyboard/keyboard_types.dart';
+import 'package:app/widgets/keyboard/typing_strategy.dart';
+import 'package:flutter/material.dart';
+
+class KeyboardLayout extends StatefulWidget {
+  final TypingStrategy strategy;
+
+  const KeyboardLayout({super.key, required this.strategy});
+
+  @override
+  State<KeyboardLayout> createState() => _KeyboardLayoutState();
+}
+
+class _KeyboardLayoutState extends State<KeyboardLayout> {
+  late String _mode;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.strategy.initialMode;
+  }
+
+  void _onKeyTap(KeySpec spec) {
+    if (spec.type == KeyType.modeSwitch && spec.targetMode != null) {
+      setState(() => _mode = spec.targetMode!);
+      return;
+    }
+
+    if (spec.type == KeyType.shift) {
+      setState(() {
+        _mode = widget.strategy.onModeTransition(_mode, KeyType.shift);
+      });
+      return;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = widget.strategy.layouts[_mode] ?? [];
+
+    return Column(
+      children: [
+        for (final row in rows)
+          _KeyboardRow(row: row, onKeyTap: _onKeyTap),
+      ],
+    );
+  }
+}
+
+class _KeyboardRow extends StatelessWidget {
+  final List<KeySpec> row;
+  final ValueChanged<KeySpec> onKeyTap;
+
+  const _KeyboardRow({required this.row, required this.onKeyTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Row(
+        children: [
+          for (final spec in row)
+            KeyboardKey(
+              spec: spec,
+              onTap: () => onKeyTap(spec),
+            ),
+        ],
+      ),
+    );
+  }
+}
