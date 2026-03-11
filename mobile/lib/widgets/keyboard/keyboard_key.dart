@@ -238,7 +238,7 @@ class _KeyboardKeyState extends State<KeyboardKey> {
               },
         child: Padding(
           key: _keyGlobalKey,
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: isSpecial

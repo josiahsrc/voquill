@@ -70,7 +70,7 @@ class DictionaryAutoCorrectEngine extends AutoCorrectEngine {
       if (lengthDiff > maxDist) continue;
       final dist = _editDistance(lower, candidate);
       if (dist > 0 && dist <= maxDist) {
-        final score = dist * 1000 + i.toDouble();
+        final score = dist * 1000 - candidate.length + i * 0.01;
         if (score < bestScore) {
           bestScore = score;
           best = candidate;

@@ -1,9 +1,8 @@
 import 'package:app/widgets/keyboard/autocorrect_engine.dart';
+import 'package:app/widgets/keyboard/autocorrect_utils.dart';
 import 'package:app/widgets/keyboard/keyboard_types.dart';
 import 'package:app/widgets/keyboard/text_input_proxy.dart';
 import 'package:app/widgets/keyboard/typing_strategy.dart';
-
-final _wordPattern = RegExp(r"[a-zA-Z']+$");
 
 class TypingEn extends TypingStrategy {
   final _engine = DictionaryAutoCorrectEngine(assetPath: 'assets/words/en.txt');
@@ -118,7 +117,11 @@ class TypingEn extends TypingStrategy {
       KeyRow(KeySpec.characters('1234567890')),
       KeyRow(KeySpec.characters('-/:;()\$&@"')),
       KeyRow([
-        const KeySpec.modeSwitch(label: '#+=', targetMode: 'symbols2', width: 64),
+        const KeySpec.modeSwitch(
+          label: '#+=',
+          targetMode: 'symbols2',
+          width: 64,
+        ),
         KeySpec.spacer(),
         ...KeySpec.characters('.,?!\''),
         KeySpec.spacer(),
@@ -134,7 +137,11 @@ class TypingEn extends TypingStrategy {
       KeyRow(KeySpec.characters('[]{}#%^*+=')),
       KeyRow(KeySpec.characters('_\\|~<>€£¥•')),
       KeyRow([
-        const KeySpec.modeSwitch(label: '123', targetMode: 'symbols', width: 64),
+        const KeySpec.modeSwitch(
+          label: '123',
+          targetMode: 'symbols',
+          width: 64,
+        ),
         KeySpec.spacer(),
         ...KeySpec.characters('.,?!\''),
         KeySpec.spacer(),
@@ -162,10 +169,10 @@ class TypingEn extends TypingStrategy {
       case KeyType.character:
         if (spec.value != null) proxy.insertText(spec.value!);
       case KeyType.space:
-        _autoCorrect(proxy);
+        applyAutoCorrect(_engine, proxy);
         proxy.insertText(' ');
       case KeyType.enter:
-        _autoCorrect(proxy);
+        applyAutoCorrect(_engine, proxy);
         proxy.insertText('\n');
       case KeyType.backspace:
         proxy.deleteBackward();
@@ -174,22 +181,5 @@ class TypingEn extends TypingStrategy {
       case KeyType.spacer:
         break;
     }
-  }
-
-  void _autoCorrect(TextInputProxy proxy) {
-    if (!_engine.isLoaded) return;
-
-    final before = proxy.textBeforeCursor;
-    final match = _wordPattern.firstMatch(before);
-    if (match == null) return;
-
-    final word = match.group(0)!;
-    final correction = _engine.correct(word);
-    if (correction == null) return;
-
-    for (var i = 0; i < word.length; i++) {
-      proxy.deleteBackward();
-    }
-    proxy.insertText(correction);
   }
 }
