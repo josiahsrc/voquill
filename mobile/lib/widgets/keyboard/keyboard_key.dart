@@ -6,12 +6,14 @@ class KeyboardKey extends StatefulWidget {
   final KeySpec spec;
   final VoidCallback? onTap;
   final ValueChanged<String>? onSubKeySelected;
+  final ValueChanged<int>? onCursorMove;
 
   const KeyboardKey({
     super.key,
     required this.spec,
     this.onTap,
     this.onSubKeySelected,
+    this.onCursorMove,
   });
 
   @override
@@ -23,6 +25,10 @@ class _KeyboardKeyState extends State<KeyboardKey> {
   OverlayEntry? _previewOverlay;
   int _selectedSubKeyIndex = -1;
   bool _pressed = false;
+  bool _isDraggingCursor = false;
+  double _cursorDragTotal = 0;
+  int _lastEmittedStep = 0;
+  static const _cursorDragThreshold = 6.5;
   final _keyGlobalKey = GlobalKey();
 
   @override
@@ -171,7 +177,7 @@ class _KeyboardKeyState extends State<KeyboardKey> {
         onPointerUp: (_) {
           setState(() => _pressed = false);
           _removePreviewOverlay();
-          if (_subKeysOverlay == null) {
+          if (_subKeysOverlay == null && !_isDraggingCursor) {
             widget.onTap?.call();
           }
         },
@@ -181,22 +187,54 @@ class _KeyboardKeyState extends State<KeyboardKey> {
         },
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onLongPressStart: (details) {
-            _selectedSubKeyIndex = -1;
-            _showSubKeys();
-          },
-          onLongPressMoveUpdate: (details) {
-            _updateSubKeySelection(details.globalPosition);
-          },
-          onLongPressEnd: (_) {
-            if (_selectedSubKeyIndex >= 0 &&
-                _selectedSubKeyIndex < widget.spec.subKeys.length) {
-              widget.onSubKeySelected
-                  ?.call(widget.spec.subKeys[_selectedSubKeyIndex]);
-            }
-            _removeSubKeysOverlay();
-            _selectedSubKeyIndex = -1;
-          },
+          onLongPressStart: widget.spec.type == KeyType.space
+              ? null
+              : (details) {
+                  _selectedSubKeyIndex = -1;
+                  _showSubKeys();
+                },
+          onLongPressMoveUpdate: widget.spec.type == KeyType.space
+              ? null
+              : (details) {
+                  _updateSubKeySelection(details.globalPosition);
+                },
+          onLongPressEnd: widget.spec.type == KeyType.space
+              ? null
+              : (_) {
+                  if (_selectedSubKeyIndex >= 0 &&
+                      _selectedSubKeyIndex < widget.spec.subKeys.length) {
+                    widget.onSubKeySelected
+                        ?.call(widget.spec.subKeys[_selectedSubKeyIndex]);
+                  }
+                  _removeSubKeysOverlay();
+                  _selectedSubKeyIndex = -1;
+                },
+          onHorizontalDragStart: widget.spec.type != KeyType.space
+              ? null
+              : (_) {
+                  _isDraggingCursor = true;
+                  _cursorDragTotal = 0;
+                  _lastEmittedStep = 0;
+                },
+          onHorizontalDragUpdate: widget.spec.type != KeyType.space
+              ? null
+              : (details) {
+                  _cursorDragTotal += details.delta.dx;
+                  final step =
+                      (_cursorDragTotal / _cursorDragThreshold).truncate();
+                  final delta = step - _lastEmittedStep;
+                  if (delta != 0) {
+                    widget.onCursorMove?.call(delta);
+                    _lastEmittedStep = step;
+                  }
+                },
+          onHorizontalDragEnd: widget.spec.type != KeyType.space
+              ? null
+              : (_) {
+                  _isDraggingCursor = false;
+                  _cursorDragTotal = 0;
+                  _lastEmittedStep = 0;
+                },
           child: Padding(
             key: _keyGlobalKey,
             padding: const EdgeInsets.all(2),

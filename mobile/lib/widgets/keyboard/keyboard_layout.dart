@@ -55,6 +55,7 @@ class _KeyboardLayoutState extends State<KeyboardLayout> {
             onKeyTap: _onKeyTap,
             onSubKeySelected: (spec, value) =>
                 _onKeyTap(spec.copyWithValue(value)),
+            onCursorMove: (offset) => widget.proxy.moveCursor(offset),
           ),
       ],
     );
@@ -65,11 +66,13 @@ class _KeyboardRow extends StatelessWidget {
   final List<KeySpec> row;
   final ValueChanged<KeySpec> onKeyTap;
   final void Function(KeySpec spec, String value) onSubKeySelected;
+  final ValueChanged<int> onCursorMove;
 
   const _KeyboardRow({
     required this.row,
     required this.onKeyTap,
     required this.onSubKeySelected,
+    required this.onCursorMove,
   });
 
   @override
@@ -83,6 +86,7 @@ class _KeyboardRow extends StatelessWidget {
               spec: spec,
               onTap: () => onKeyTap(spec),
               onSubKeySelected: (value) => onSubKeySelected(spec, value),
+              onCursorMove: onCursorMove,
             ),
         ],
       ),
