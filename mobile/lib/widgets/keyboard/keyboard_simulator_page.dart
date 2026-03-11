@@ -1,4 +1,3 @@
-import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:flutter/material.dart';
 
 class KeyboardSimulatorPage extends StatelessWidget {
@@ -7,8 +6,18 @@ class KeyboardSimulatorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [const AppSliverAppBar(title: Text('Keyboard Simulator'))],
+      appBar: AppBar(title: const Text('Keyboard Simulator')),
+      body: Column(
+        children: [
+          const Expanded(
+            flex: 2,
+            child: SizedBox.expand(),
+          ),
+          Flexible(
+            flex: 1,
+            child: Container(),
+          ),
+        ],
       ),
     );
   }
