@@ -12,6 +12,7 @@ import 'package:app/widgets/common/app_list_tile.dart';
 import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/common/list_tile_section.dart';
 import 'package:app/widgets/settings/edit_profile_dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -102,6 +103,13 @@ class SettingsPage extends StatelessWidget {
             child: ListTileSection(
               title: const Text('Advanced'),
               children: [
+                if (kDebugMode)
+                  AppListTile(
+                    leading: const Icon(Icons.keyboard_outlined),
+                    title: const Text('Keyboard simulator'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/dashboard/keyboard-simulator'),
+                  ),
                 AppListTile(
                   leading: const Icon(Icons.payment_outlined),
                   title: const Text('Manage subscription'),
