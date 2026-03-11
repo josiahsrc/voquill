@@ -40,16 +40,29 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     final subKeys = widget.spec.subKeys;
     final subKeyWidth = 40.0;
     final totalWidth = subKeys.length * subKeyWidth;
-    final left = position.dx + (size.width / 2) - (totalWidth / 2);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final centered = position.dx + (size.width / 2) - (totalWidth / 2);
+    final left = centered.clamp(4.0, screenWidth - totalWidth - 4.0);
 
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         left: left,
         top: position.dy - 48,
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: context.colors.level1,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(50),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Row(
+            spacing: 4,
             mainAxisSize: MainAxisSize.min,
             children: [
               for (var i = 0; i < subKeys.length; i++)
@@ -78,7 +91,9 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     final subKeys = widget.spec.subKeys;
     final subKeyWidth = 40.0;
     final totalWidth = subKeys.length * subKeyWidth;
-    final left = position.dx + (size.width / 2) - (totalWidth / 2);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final centered = position.dx + (size.width / 2) - (totalWidth / 2);
+    final left = centered.clamp(4.0, screenWidth - totalWidth - 4.0);
 
     final relativeX = globalPosition.dx - left;
     final index = (relativeX / subKeyWidth).floor();
@@ -163,16 +178,16 @@ class _SubKeyChip extends StatelessWidget {
       width: 40,
       height: 42,
       decoration: BoxDecoration(
-        color: isSelected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.surfaceContainer,
+        color: isSelected ? theme.colorScheme.primary : context.colors.level2,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Center(
         child: Text(
           label,
           style: theme.textTheme.titleSmall?.copyWith(
-            color: isSelected ? theme.colorScheme.onPrimary : null,
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : context.colors.onLevel2,
           ),
         ),
       ),
