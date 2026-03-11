@@ -19,6 +19,7 @@ class DictationService {
 
     private let defaults = UserDefaults(suiteName: DictationConstants.appGroupId)
     private var heartbeatTimer: Timer?
+    private var recordingTimeoutTimer: Timer?
 
     private init() {}
 
@@ -57,6 +58,7 @@ class DictationService {
         startHeartbeat()
         startInterruptionObserver()
         setPhase(.recording)
+        startRecordingTimeout()
 
         DarwinNotificationManager.shared.observe(DictationConstants.stopRecording) { [weak self] in
             self?.pauseRecording()
@@ -72,6 +74,7 @@ class DictationService {
     func pauseRecording() {
         guard currentPhase == .recording else { return }
         NSLog("[VoquillApp] pauseRecording")
+        stopRecordingTimeout()
         isRecording = false
         audioFile = nil
         defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
@@ -103,6 +106,7 @@ class DictationService {
         isRecording = true
         setPhase(.recording)
         updateLiveActivity(phase: "recording")
+        startRecordingTimeout()
     }
 
     func stopDictation() {
@@ -111,6 +115,7 @@ class DictationService {
         DarwinNotificationManager.shared.removeObserver(DictationConstants.startRecording)
         DarwinNotificationManager.shared.removeObserver(DictationConstants.stopDictation)
 
+        stopRecordingTimeout()
         isRecording = false
         stopAudioEngine()
         stopHeartbeat()
@@ -189,6 +194,23 @@ class DictationService {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
+    private func startRecordingTimeout() {
+        stopRecordingTimeout()
+        recordingTimeoutTimer = Timer.scheduledTimer(
+            withTimeInterval: DictationConstants.maxRecordingDuration,
+            repeats: false
+        ) { [weak self] _ in
+            guard let self = self, self.currentPhase == .recording else { return }
+            NSLog("[VoquillApp] Recording timeout reached")
+            self.pauseRecording()
+        }
+    }
+
+    private func stopRecordingTimeout() {
+        recordingTimeoutTimer?.invalidate()
+        recordingTimeoutTimer = nil
+    }
+
     // MARK: - Heartbeat
 
     private func startHeartbeat() {
@@ -238,6 +260,7 @@ class DictationService {
         switch type {
         case .began:
             NSLog("[VoquillApp] Audio session interrupted (e.g. phone call)")
+            stopRecordingTimeout()
             isRecording = false
             audioFile = nil
             defaults?.set(Float(0), forKey: DictationConstants.audioLevelKey)
@@ -258,6 +281,7 @@ class DictationService {
                         isRecording = true
                         setPhase(.recording)
                         updateLiveActivity(phase: "recording")
+                        startRecordingTimeout()
                     }
                 } catch {
                     NSLog("[VoquillApp] Failed to resume after interruption: %@", error.localizedDescription)
