@@ -10,7 +10,7 @@ class KeySpec {
   final String? targetMode;
   final IconData? icon;
   final int weight;
-  final double? maxWidth;
+  final double? width;
 
   const KeySpec({
     required this.label,
@@ -20,21 +20,21 @@ class KeySpec {
     this.targetMode,
     this.icon,
     this.weight = 1,
-    this.maxWidth,
+    this.width,
   });
 
   const KeySpec.character(
     String char, {
     this.subKeys = const [],
     this.weight = 1,
-    this.maxWidth = 40,
+    this.width = 40,
   }) : label = char,
        value = char,
        type = KeyType.character,
        targetMode = null,
        icon = null;
 
-  const KeySpec.backspace({this.weight = 1, this.maxWidth = 64})
+  const KeySpec.backspace({this.weight = 1, this.width = 64})
     : label = '⌫',
       value = null,
       type = KeyType.backspace,
@@ -42,7 +42,7 @@ class KeySpec {
       targetMode = null,
       icon = Icons.backspace_outlined;
 
-  const KeySpec.shift({this.weight = 1, this.maxWidth = 64})
+  const KeySpec.shift({this.weight = 1, this.width = 64})
     : label = '⇧',
       value = null,
       type = KeyType.shift,
@@ -50,7 +50,7 @@ class KeySpec {
       targetMode = null,
       icon = Icons.arrow_upward;
 
-  const KeySpec.space({this.weight = 1, this.maxWidth})
+  const KeySpec.space({this.weight = 1, this.width})
     : label = 'space',
       value = ' ',
       type = KeyType.space,
@@ -58,7 +58,7 @@ class KeySpec {
       targetMode = null,
       icon = null;
 
-  const KeySpec.enter({this.weight = 1, this.maxWidth})
+  const KeySpec.enter({this.weight = 1, this.width})
     : label = '↵',
       value = '\n',
       type = KeyType.enter,
@@ -66,7 +66,7 @@ class KeySpec {
       targetMode = null,
       icon = Icons.keyboard_return;
 
-  const KeySpec.spacer({this.weight = 1, this.maxWidth})
+  const KeySpec.spacer({this.weight = 1, this.width})
     : label = '',
       value = null,
       type = KeyType.spacer,
@@ -78,7 +78,7 @@ class KeySpec {
     required this.label,
     required this.targetMode,
     this.weight = 1,
-    this.maxWidth = 64,
+    this.width = 64,
   }) : value = null,
        type = KeyType.modeSwitch,
        subKeys = const [],
@@ -92,7 +92,7 @@ class KeySpec {
     targetMode: targetMode,
     icon: icon,
     weight: weight,
-    maxWidth: maxWidth,
+    width: width,
   );
 
   static List<KeySpec> characters(String chars) =>

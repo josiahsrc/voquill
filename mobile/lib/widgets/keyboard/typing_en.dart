@@ -106,11 +106,11 @@ class TypingEn extends TypingStrategy {
       KeyRow(KeySpec.characters('1234567890')),
       KeyRow(KeySpec.characters('-/:;()\$&@"')),
       KeyRow([
-        const KeySpec.modeSwitch(label: '#+=', targetMode: 'symbols2', maxWidth: 64),
+        const KeySpec.modeSwitch(label: '#+=', targetMode: 'symbols2', width: 64),
         KeySpec.spacer(),
         ...KeySpec.characters('.,?!\''),
         KeySpec.spacer(),
-        const KeySpec.backspace(maxWidth: 64),
+        const KeySpec.backspace(width: 64),
       ]),
       KeyRow([
         const KeySpec.modeSwitch(label: 'ABC', targetMode: 'default'),
@@ -122,11 +122,11 @@ class TypingEn extends TypingStrategy {
       KeyRow(KeySpec.characters('[]{}#%^*+=')),
       KeyRow(KeySpec.characters('_\\|~<>€£¥•')),
       KeyRow([
-        const KeySpec.modeSwitch(label: '123', targetMode: 'symbols', maxWidth: 64),
+        const KeySpec.modeSwitch(label: '123', targetMode: 'symbols', width: 64),
         KeySpec.spacer(),
         ...KeySpec.characters('.,?!\''),
         KeySpec.spacer(),
-        const KeySpec.backspace(maxWidth: 64),
+        const KeySpec.backspace(width: 64),
       ]),
       KeyRow([
         const KeySpec.modeSwitch(label: 'ABC', targetMode: 'default'),

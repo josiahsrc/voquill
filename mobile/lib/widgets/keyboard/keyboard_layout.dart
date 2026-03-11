@@ -86,7 +86,7 @@ class _KeyboardRow extends StatelessWidget {
           for (final spec in keyRow.keys)
             KeyboardRowChildData(
               weight: spec.weight,
-              maxWidth: spec.maxWidth,
+              maxWidth: spec.width,
               isSpacer: spec.type == KeyType.spacer,
               child: spec.type == KeyType.spacer
                   ? const SizedBox.shrink()
