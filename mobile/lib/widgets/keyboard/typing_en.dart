@@ -1,4 +1,5 @@
 import 'package:app/widgets/keyboard/keyboard_types.dart';
+import 'package:app/widgets/keyboard/text_input_proxy.dart';
 import 'package:app/widgets/keyboard/typing_strategy.dart';
 
 class TypingEn extends TypingStrategy {
@@ -137,5 +138,22 @@ class TypingEn extends TypingStrategy {
       return currentMode == 'shift' ? 'default' : 'shift';
     }
     return currentMode;
+  }
+
+  @override
+  void onKeyTap(KeySpec spec, TextInputProxy proxy) {
+    switch (spec.type) {
+      case KeyType.character:
+        if (spec.value != null) proxy.insertText(spec.value!);
+      case KeyType.space:
+        proxy.insertText(' ');
+      case KeyType.enter:
+        proxy.insertText('\n');
+      case KeyType.backspace:
+        proxy.deleteBackward();
+      case KeyType.shift:
+      case KeyType.modeSwitch:
+        break;
+    }
   }
 }

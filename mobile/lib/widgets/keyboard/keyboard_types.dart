@@ -71,6 +71,15 @@ class KeySpec {
         subKeys = const [],
         icon = null;
 
+  KeySpec copyWithValue(String newValue) => KeySpec(
+        label: newValue,
+        value: newValue,
+        type: type,
+        subKeys: subKeys,
+        targetMode: targetMode,
+        icon: icon,
+      );
+
   static List<KeySpec> characters(String chars) =>
       chars.split('').map((c) => KeySpec.character(c)).toList();
 }

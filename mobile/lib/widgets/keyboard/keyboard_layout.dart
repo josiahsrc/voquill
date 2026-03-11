@@ -1,12 +1,18 @@
 import 'package:app/widgets/keyboard/keyboard_key.dart';
 import 'package:app/widgets/keyboard/keyboard_types.dart';
+import 'package:app/widgets/keyboard/text_input_proxy.dart';
 import 'package:app/widgets/keyboard/typing_strategy.dart';
 import 'package:flutter/material.dart';
 
 class KeyboardLayout extends StatefulWidget {
   final TypingStrategy strategy;
+  final TextInputProxy proxy;
 
-  const KeyboardLayout({super.key, required this.strategy});
+  const KeyboardLayout({
+    super.key,
+    required this.strategy,
+    required this.proxy,
+  });
 
   @override
   State<KeyboardLayout> createState() => _KeyboardLayoutState();
@@ -33,6 +39,8 @@ class _KeyboardLayoutState extends State<KeyboardLayout> {
       });
       return;
     }
+
+    widget.strategy.onKeyTap(spec, widget.proxy);
   }
 
   @override
@@ -42,7 +50,12 @@ class _KeyboardLayoutState extends State<KeyboardLayout> {
     return Column(
       children: [
         for (final row in rows)
-          _KeyboardRow(row: row, onKeyTap: _onKeyTap),
+          _KeyboardRow(
+            row: row,
+            onKeyTap: _onKeyTap,
+            onSubKeySelected: (spec, value) =>
+                _onKeyTap(spec.copyWithValue(value)),
+          ),
       ],
     );
   }
@@ -51,8 +64,13 @@ class _KeyboardLayoutState extends State<KeyboardLayout> {
 class _KeyboardRow extends StatelessWidget {
   final List<KeySpec> row;
   final ValueChanged<KeySpec> onKeyTap;
+  final void Function(KeySpec spec, String value) onSubKeySelected;
 
-  const _KeyboardRow({required this.row, required this.onKeyTap});
+  const _KeyboardRow({
+    required this.row,
+    required this.onKeyTap,
+    required this.onSubKeySelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +82,7 @@ class _KeyboardRow extends StatelessWidget {
             KeyboardKey(
               spec: spec,
               onTap: () => onKeyTap(spec),
+              onSubKeySelected: (value) => onSubKeySelected(spec, value),
             ),
         ],
       ),

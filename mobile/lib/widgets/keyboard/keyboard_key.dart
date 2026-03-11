@@ -5,8 +5,14 @@ import 'package:flutter/material.dart';
 class KeyboardKey extends StatefulWidget {
   final KeySpec spec;
   final VoidCallback? onTap;
+  final ValueChanged<String>? onSubKeySelected;
 
-  const KeyboardKey({super.key, required this.spec, this.onTap});
+  const KeyboardKey({
+    super.key,
+    required this.spec,
+    this.onTap,
+    this.onSubKeySelected,
+  });
 
   @override
   State<KeyboardKey> createState() => _KeyboardKeyState();
@@ -183,6 +189,11 @@ class _KeyboardKeyState extends State<KeyboardKey> {
             _updateSubKeySelection(details.globalPosition);
           },
           onLongPressEnd: (_) {
+            if (_selectedSubKeyIndex >= 0 &&
+                _selectedSubKeyIndex < widget.spec.subKeys.length) {
+              widget.onSubKeySelected
+                  ?.call(widget.spec.subKeys[_selectedSubKeyIndex]);
+            }
             _removeSubKeysOverlay();
             _selectedSubKeyIndex = -1;
           },
