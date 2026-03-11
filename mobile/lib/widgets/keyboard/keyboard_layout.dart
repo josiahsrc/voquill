@@ -53,6 +53,7 @@ class _KeyboardLayoutState extends State<KeyboardLayout> {
         for (final keyRow in rows)
           _KeyboardRow(
             keyRow: keyRow,
+            mode: _mode,
             onKeyTap: _onKeyTap,
             onSubKeySelected: (spec, value) =>
                 _onKeyTap(spec.copyWithValue(value)),
@@ -65,16 +66,23 @@ class _KeyboardLayoutState extends State<KeyboardLayout> {
 
 class _KeyboardRow extends StatelessWidget {
   final KeyRow keyRow;
+  final String mode;
   final ValueChanged<KeySpec> onKeyTap;
   final void Function(KeySpec spec, String value) onSubKeySelected;
   final ValueChanged<int> onCursorMove;
 
   const _KeyboardRow({
     required this.keyRow,
+    required this.mode,
     required this.onKeyTap,
     required this.onSubKeySelected,
     required this.onCursorMove,
   });
+
+  bool _isKeyActive(KeySpec spec) {
+    if (spec.type == KeyType.shift) return mode == 'shift';
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +100,7 @@ class _KeyboardRow extends StatelessWidget {
                   ? const SizedBox.shrink()
                   : KeyboardKey(
                       spec: spec,
+                      isActive: _isKeyActive(spec),
                       onTap: () => onKeyTap(spec),
                       onSubKeySelected: (value) =>
                           onSubKeySelected(spec, value),

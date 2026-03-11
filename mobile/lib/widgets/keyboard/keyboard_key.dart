@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 class KeyboardKey extends StatefulWidget {
   final KeySpec spec;
+  final bool isActive;
   final VoidCallback? onTap;
   final ValueChanged<String>? onSubKeySelected;
   final ValueChanged<int>? onCursorMove;
@@ -11,6 +12,7 @@ class KeyboardKey extends StatefulWidget {
   const KeyboardKey({
     super.key,
     required this.spec,
+    this.isActive = false,
     this.onTap,
     this.onSubKeySelected,
     this.onCursorMove,
@@ -85,7 +87,9 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     final spacing = 4.0;
     final padding = 4.0;
     final totalWidth =
-        subKeys.length * subKeyWidth + (subKeys.length - 1) * spacing + padding * 2;
+        subKeys.length * subKeyWidth +
+        (subKeys.length - 1) * spacing +
+        padding * 2;
     final screenWidth = MediaQuery.of(context).size.width;
     final centered = position.dx + (size.width / 2) - (totalWidth / 2);
     final left = centered.clamp(4.0, screenWidth - totalWidth - 4.0);
@@ -139,7 +143,9 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     final spacing = 4.0;
     final padding = 4.0;
     final totalWidth =
-        subKeys.length * subKeyWidth + (subKeys.length - 1) * spacing + padding * 2;
+        subKeys.length * subKeyWidth +
+        (subKeys.length - 1) * spacing +
+        padding * 2;
     final screenWidth = MediaQuery.of(context).size.width;
     final centered = position.dx + (size.width / 2) - (totalWidth / 2);
     final left = centered.clamp(4.0, screenWidth - totalWidth - 4.0);
@@ -163,98 +169,104 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     final isSpecial = widget.spec.type != KeyType.character;
 
     return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (_) {
+        setState(() => _pressed = true);
+        _showPreview();
+      },
+      onPointerUp: (_) {
+        setState(() => _pressed = false);
+        _removePreviewOverlay();
+        if (_subKeysOverlay == null && !_isDraggingCursor) {
+          widget.onTap?.call();
+        }
+      },
+      onPointerCancel: (_) {
+        setState(() => _pressed = false);
+        _removePreviewOverlay();
+      },
+      child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onPointerDown: (_) {
-          setState(() => _pressed = true);
-          _showPreview();
-        },
-        onPointerUp: (_) {
-          setState(() => _pressed = false);
-          _removePreviewOverlay();
-          if (_subKeysOverlay == null && !_isDraggingCursor) {
-            widget.onTap?.call();
-          }
-        },
-        onPointerCancel: (_) {
-          setState(() => _pressed = false);
-          _removePreviewOverlay();
-        },
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onLongPressStart: widget.spec.type == KeyType.space
-              ? null
-              : (details) {
-                  _selectedSubKeyIndex = -1;
-                  _showSubKeys();
-                },
-          onLongPressMoveUpdate: widget.spec.type == KeyType.space
-              ? null
-              : (details) {
-                  _updateSubKeySelection(details.globalPosition);
-                },
-          onLongPressEnd: widget.spec.type == KeyType.space
-              ? null
-              : (_) {
-                  if (_selectedSubKeyIndex >= 0 &&
-                      _selectedSubKeyIndex < widget.spec.subKeys.length) {
-                    widget.onSubKeySelected
-                        ?.call(widget.spec.subKeys[_selectedSubKeyIndex]);
-                  }
-                  _removeSubKeysOverlay();
-                  _selectedSubKeyIndex = -1;
-                },
-          onHorizontalDragStart: widget.spec.type != KeyType.space
-              ? null
-              : (_) {
-                  _isDraggingCursor = true;
-                  _cursorDragTotal = 0;
-                  _lastEmittedStep = 0;
-                },
-          onHorizontalDragUpdate: widget.spec.type != KeyType.space
-              ? null
-              : (details) {
-                  _cursorDragTotal += details.delta.dx;
-                  final step =
-                      (_cursorDragTotal / _cursorDragThreshold).truncate();
-                  final delta = step - _lastEmittedStep;
-                  if (delta != 0) {
-                    widget.onCursorMove?.call(delta);
-                    _lastEmittedStep = step;
-                  }
-                },
-          onHorizontalDragEnd: widget.spec.type != KeyType.space
-              ? null
-              : (_) {
-                  _isDraggingCursor = false;
-                  _cursorDragTotal = 0;
-                  _lastEmittedStep = 0;
-                },
-          child: Padding(
-            key: _keyGlobalKey,
-            padding: const EdgeInsets.all(2),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: isSpecial
-                    ? (_pressed ? context.colors.level2 : context.colors.level1)
-                    : (_pressed ? context.colors.level1 : context.colors.level2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: SizedBox(
-                height: 42,
-                child: Center(
-                  child: widget.spec.icon != null
-                      ? Icon(widget.spec.icon, size: 18)
-                      : Text(
-                          widget.spec.label,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontSize: isSpecial ? 13 : 16,
-                          ),
+        onLongPressStart: widget.spec.type == KeyType.space
+            ? null
+            : (details) {
+                _selectedSubKeyIndex = -1;
+                _showSubKeys();
+              },
+        onLongPressMoveUpdate: widget.spec.type == KeyType.space
+            ? null
+            : (details) {
+                _updateSubKeySelection(details.globalPosition);
+              },
+        onLongPressEnd: widget.spec.type == KeyType.space
+            ? null
+            : (_) {
+                if (_selectedSubKeyIndex >= 0 &&
+                    _selectedSubKeyIndex < widget.spec.subKeys.length) {
+                  widget.onSubKeySelected?.call(
+                    widget.spec.subKeys[_selectedSubKeyIndex],
+                  );
+                }
+                _removeSubKeysOverlay();
+                _selectedSubKeyIndex = -1;
+              },
+        onHorizontalDragStart: widget.spec.type != KeyType.space
+            ? null
+            : (_) {
+                _isDraggingCursor = true;
+                _cursorDragTotal = 0;
+                _lastEmittedStep = 0;
+              },
+        onHorizontalDragUpdate: widget.spec.type != KeyType.space
+            ? null
+            : (details) {
+                _cursorDragTotal += details.delta.dx;
+                final step = (_cursorDragTotal / _cursorDragThreshold)
+                    .truncate();
+                final delta = step - _lastEmittedStep;
+                if (delta != 0) {
+                  widget.onCursorMove?.call(delta);
+                  _lastEmittedStep = step;
+                }
+              },
+        onHorizontalDragEnd: widget.spec.type != KeyType.space
+            ? null
+            : (_) {
+                _isDraggingCursor = false;
+                _cursorDragTotal = 0;
+                _lastEmittedStep = 0;
+              },
+        child: Padding(
+          key: _keyGlobalKey,
+          padding: const EdgeInsets.all(2),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isSpecial
+                  ? (_pressed ? context.colors.level2 : context.colors.level1)
+                  : (_pressed ? context.colors.level1 : context.colors.level2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: SizedBox(
+              height: 42,
+              child: Center(
+                child: widget.spec.icon != null
+                    ? Icon(
+                        widget.isActive && widget.spec.activeIcon != null
+                            ? widget.spec.activeIcon
+                            : widget.spec.icon,
+                        size: 20,
+                      )
+                    : Text(
+                        widget.spec.label,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontSize: isSpecial ? 16 : 22,
                         ),
-                ),
+                      ),
               ),
             ),
+          ),
         ),
-        ),
+      ),
     );
   }
 }
@@ -300,10 +312,7 @@ class _KeyPreviewBubble extends StatelessWidget {
               ],
             ),
             child: Center(
-              child: Text(
-                label,
-                style: theme.textTheme.headlineMedium,
-              ),
+              child: Text(label, style: theme.textTheme.headlineMedium),
             ),
           ),
           CustomPaint(

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 enum KeyType { character, backspace, shift, modeSwitch, space, enter, spacer }
@@ -9,6 +10,7 @@ class KeySpec {
   final List<String> subKeys;
   final String? targetMode;
   final IconData? icon;
+  final IconData? activeIcon;
   final int weight;
   final double? width;
 
@@ -19,6 +21,7 @@ class KeySpec {
     this.subKeys = const [],
     this.targetMode,
     this.icon,
+    this.activeIcon,
     this.weight = 1,
     this.width,
   });
@@ -32,7 +35,8 @@ class KeySpec {
        value = char,
        type = KeyType.character,
        targetMode = null,
-       icon = null;
+       icon = null,
+       activeIcon = null;
 
   const KeySpec.backspace({this.weight = 1, this.width = 64})
     : label = '⌫',
@@ -40,7 +44,8 @@ class KeySpec {
       type = KeyType.backspace,
       subKeys = const [],
       targetMode = null,
-      icon = Icons.backspace_outlined;
+      icon = Icons.backspace_outlined,
+      activeIcon = null;
 
   const KeySpec.shift({this.weight = 1, this.width = 64})
     : label = '⇧',
@@ -48,7 +53,8 @@ class KeySpec {
       type = KeyType.shift,
       subKeys = const [],
       targetMode = null,
-      icon = Icons.arrow_upward;
+      icon = CupertinoIcons.shift,
+      activeIcon = CupertinoIcons.shift_fill;
 
   const KeySpec.space({this.weight = 1, this.width})
     : label = 'space',
@@ -56,7 +62,8 @@ class KeySpec {
       type = KeyType.space,
       subKeys = const [],
       targetMode = null,
-      icon = null;
+      icon = null,
+      activeIcon = null;
 
   const KeySpec.enter({this.weight = 1, this.width})
     : label = '↵',
@@ -64,7 +71,8 @@ class KeySpec {
       type = KeyType.enter,
       subKeys = const [],
       targetMode = null,
-      icon = Icons.keyboard_return;
+      icon = Icons.keyboard_return,
+      activeIcon = null;
 
   const KeySpec.spacer({this.weight = 1, this.width})
     : label = '',
@@ -72,7 +80,8 @@ class KeySpec {
       type = KeyType.spacer,
       subKeys = const [],
       targetMode = null,
-      icon = null;
+      icon = null,
+      activeIcon = null;
 
   const KeySpec.modeSwitch({
     required this.label,
@@ -82,7 +91,8 @@ class KeySpec {
   }) : value = null,
        type = KeyType.modeSwitch,
        subKeys = const [],
-       icon = null;
+       icon = null,
+       activeIcon = null;
 
   KeySpec copyWithValue(String newValue) => KeySpec(
     label: newValue,
@@ -91,6 +101,7 @@ class KeySpec {
     subKeys: subKeys,
     targetMode: targetMode,
     icon: icon,
+    activeIcon: activeIcon,
     weight: weight,
     width: width,
   );

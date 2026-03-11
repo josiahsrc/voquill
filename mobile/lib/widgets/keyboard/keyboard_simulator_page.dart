@@ -34,12 +34,10 @@ class _KeyboardSimulatorPageState extends State<KeyboardSimulatorPage> {
                 child: SimulatorTextDisplay(proxy: _proxy),
               ),
             ),
+            TextFormField(),
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: KeyboardLayout(
-                strategy: TypingEn(),
-                proxy: _proxy,
-              ),
+              child: KeyboardLayout(strategy: TypingEn(), proxy: _proxy),
             ),
           ],
         ),
