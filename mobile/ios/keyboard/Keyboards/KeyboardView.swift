@@ -1,6 +1,6 @@
 import UIKit
 
-class EnKeyboardView: UIView {
+class KeyboardView: UIView {
 
     enum Mode {
         case letters
@@ -9,6 +9,8 @@ class EnKeyboardView: UIView {
     }
 
     weak var textDocumentProxy: UITextDocumentProxy?
+
+    private var layout: KeyboardLayout
 
     private var mode: Mode = .letters {
         didSet { rebuild() }
@@ -42,32 +44,24 @@ class EnKeyboardView: UIView {
     private var variantStrip: KeyVariantStrip?
     private var didSelectVariant = false
 
-    // MARK: - Variants
-
-    private static let variants: [String: [String]] = [
-        "A": ["À","Á","Â","Ä","Æ","Ã","Å","Ā"],
-        "C": ["Ç","Ć","Č"],
-        "E": ["È","É","Ê","Ë","Ē","Ė","Ę"],
-        "I": ["Î","Ï","Í","Ī","Į","Ì"],
-        "L": ["Ł"],
-        "N": ["Ñ","Ń"],
-        "O": ["Ô","Ö","Ò","Ó","Œ","Ø","Ō","Õ"],
-        "S": ["SS","Ś","Š"],
-        "U": ["Û","Ü","Ù","Ú","Ū"],
-        "Y": ["Ÿ"],
-        "Z": ["Ž","Ź","Ż"],
-    ]
-
     // MARK: - Init
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(layout: KeyboardLayout) {
+        self.layout = layout
+        super.init(frame: .zero)
         rebuild()
     }
 
     required init?(coder: NSCoder) {
+        self.layout = EnKeyboardLayout()
         super.init(coder: coder)
         rebuild()
+    }
+
+    func setLayout(_ newLayout: KeyboardLayout) {
+        layout = newLayout
+        mode = .letters
+        isShifted = true
     }
 
     private func rebuild() {
@@ -106,17 +100,17 @@ class EnKeyboardView: UIView {
     // MARK: - Letter Layout
 
     private func buildLetterRows(into stack: UIStackView) {
-        stack.addArrangedSubview(makeCharRow(["Q","W","E","R","T","Y","U","I","O","P"]))
+        stack.addArrangedSubview(makeCharRow(layout.letterRow1))
 
         let row2Container = UIView()
-        let row2 = makeCharRow(["A","S","D","F","G","H","J","K","L"])
+        let row2 = makeCharRow(layout.letterRow2)
         row2.translatesAutoresizingMaskIntoConstraints = false
         row2Container.addSubview(row2)
         NSLayoutConstraint.activate([
             row2.topAnchor.constraint(equalTo: row2Container.topAnchor),
             row2.bottomAnchor.constraint(equalTo: row2Container.bottomAnchor),
             row2.centerXAnchor.constraint(equalTo: row2Container.centerXAnchor),
-            row2.widthAnchor.constraint(equalTo: row2Container.widthAnchor, multiplier: 9.0/10.0),
+            row2.widthAnchor.constraint(equalTo: row2Container.widthAnchor, multiplier: layout.row2WidthMultiplier),
         ])
         stack.addArrangedSubview(row2Container)
 
@@ -130,7 +124,7 @@ class EnKeyboardView: UIView {
 
         stack.addArrangedSubview(makeSideKeyRow(
             leftKey: shiftKey,
-            centerKeys: ["Z","X","C","V","B","N","M"],
+            centerKeys: layout.letterRow3,
             rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor, action: #selector(backspacePressed))
         ))
 
@@ -140,12 +134,12 @@ class EnKeyboardView: UIView {
     // MARK: - Numbers/Symbols Layout
 
     private func buildNumberRows(into stack: UIStackView) {
-        stack.addArrangedSubview(makeCharRow(["1","2","3","4","5","6","7","8","9","0"]))
-        stack.addArrangedSubview(makeCharRow(["-","/",":",";","(",")","$","&","@","\""]))
+        stack.addArrangedSubview(makeCharRow(layout.numberRow1))
+        stack.addArrangedSubview(makeCharRow(layout.numberRow2))
 
         stack.addArrangedSubview(makeSideKeyRow(
             leftKey: makeSpecialKey(title: "#+=", bgColor: specialKeyColor, textColor: keyTextColor, fontSize: 15, action: #selector(switchToExtraSymbols)),
-            centerKeys: [".",",","?","!","'"],
+            centerKeys: layout.numberPunctuation,
             rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor, action: #selector(backspacePressed))
         ))
 
@@ -155,12 +149,12 @@ class EnKeyboardView: UIView {
     // MARK: - Extra Symbols Layout
 
     private func buildExtraSymbolRows(into stack: UIStackView) {
-        stack.addArrangedSubview(makeCharRow(["[","]","{","}","#","%","^","*","+","="]))
-        stack.addArrangedSubview(makeCharRow(["_","\\","|","~","<",">","€","£","¥","•"]))
+        stack.addArrangedSubview(makeCharRow(layout.symbolRow1))
+        stack.addArrangedSubview(makeCharRow(layout.symbolRow2))
 
         stack.addArrangedSubview(makeSideKeyRow(
             leftKey: makeSpecialKey(title: "123", bgColor: specialKeyColor, textColor: keyTextColor, fontSize: 15, action: #selector(switchToNumbers)),
-            centerKeys: [".",",","?","!","'"],
+            centerKeys: layout.symbolPunctuation,
             rightKey: makeSpecialKey(systemIcon: "delete.left", bgColor: specialKeyColor, textColor: keyTextColor, action: #selector(backspacePressed))
         ))
 
@@ -256,7 +250,7 @@ class EnKeyboardView: UIView {
         return container
     }
 
-    // MARK: - Character Key (touch-handled by EnKeyboardView)
+    // MARK: - Character Key (touch-handled by KeyboardView)
 
     private func makeCharKey(_ character: String) -> UIView {
         let isLetter = character.unicodeScalars.allSatisfy { CharacterSet.letters.contains($0) }
@@ -430,7 +424,7 @@ class EnKeyboardView: UIView {
         showMagnify(for: keyView, character: character)
         setKeyHighlight(keyView, highlighted: true)
 
-        let hasVariants = Self.variants[character.uppercased()] != nil
+        let hasVariants = layout.variants[character.uppercased()] != nil
         if hasVariants {
             holdTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
                 self?.showVariants()
@@ -505,7 +499,7 @@ class EnKeyboardView: UIView {
     private func showVariants() {
         guard let keyView = activeKeyView,
               let character = activeCharacter,
-              let chars = Self.variants[character.uppercased()] else { return }
+              let chars = layout.variants[character.uppercased()] else { return }
 
         magnifyView?.removeFromSuperview()
         magnifyView = nil
@@ -646,59 +640,34 @@ private class KeyMagnifyShapeView: UIView {
 
         let path = UIBezierPath()
 
-        // Top-left corner of bubble
         path.move(to: CGPoint(x: br, y: 0))
-
-        // Top edge
         path.addLine(to: CGPoint(x: w - br, y: 0))
-        // Top-right corner
         path.addQuadCurve(to: CGPoint(x: w, y: br), controlPoint: CGPoint(x: w, y: 0))
-
-        // Right edge of bubble down to where it narrows
         path.addLine(to: CGPoint(x: w, y: bubbleHeight - br))
-        // Bottom-right corner of bubble curving inward
         path.addQuadCurve(to: CGPoint(x: w - br, y: bubbleHeight), controlPoint: CGPoint(x: w, y: bubbleHeight))
-
-        // Shelf going right-to-left toward stem right edge
         path.addLine(to: CGPoint(x: stemX + keyWidth + sr, y: bubbleHeight))
-        // Concave curve transitioning from bubble shelf to stem right edge
         path.addQuadCurve(
             to: CGPoint(x: stemX + keyWidth, y: bubbleHeight + sr),
             controlPoint: CGPoint(x: stemX + keyWidth, y: bubbleHeight)
         )
-
-        // Right edge of stem going down
         path.addLine(to: CGPoint(x: stemX + keyWidth, y: h - sr))
-        // Bottom-right corner of stem
         path.addQuadCurve(
             to: CGPoint(x: stemX + keyWidth - sr, y: h),
             controlPoint: CGPoint(x: stemX + keyWidth, y: h)
         )
-
-        // Bottom edge of stem
         path.addLine(to: CGPoint(x: stemX + sr, y: h))
-        // Bottom-left corner of stem
         path.addQuadCurve(
             to: CGPoint(x: stemX, y: h - sr),
             controlPoint: CGPoint(x: stemX, y: h)
         )
-
-        // Left edge of stem going up
         path.addLine(to: CGPoint(x: stemX, y: bubbleHeight + sr))
-        // Concave curve transitioning from stem left edge to bubble shelf
         path.addQuadCurve(
             to: CGPoint(x: stemX - sr, y: bubbleHeight),
             controlPoint: CGPoint(x: stemX, y: bubbleHeight)
         )
-
-        // Shelf going left toward bubble left edge
         path.addLine(to: CGPoint(x: br, y: bubbleHeight))
-        // Bottom-left corner of bubble curving inward
         path.addQuadCurve(to: CGPoint(x: 0, y: bubbleHeight - br), controlPoint: CGPoint(x: 0, y: bubbleHeight))
-
-        // Left edge of bubble going up
         path.addLine(to: CGPoint(x: 0, y: br))
-        // Top-left corner
         path.addQuadCurve(to: CGPoint(x: br, y: 0), controlPoint: CGPoint(x: 0, y: 0))
 
         path.close()
@@ -813,17 +782,7 @@ private class KeyButton: UIControl {
     override var isHighlighted: Bool {
         didSet {
             guard let parent = superview else { return }
-            UIView.animate(
-                withDuration: isHighlighted ? 0.05 : 0.12,
-                delay: 0,
-                options: [.allowUserInteraction, .beginFromCurrentState],
-                animations: {
-                    parent.transform = self.isHighlighted
-                        ? CGAffineTransform(scaleX: 0.95, y: 0.95)
-                        : .identity
-                    parent.alpha = self.isHighlighted ? 0.7 : 1.0
-                }
-            )
+            parent.alpha = isHighlighted ? 0.7 : 1.0
         }
     }
 

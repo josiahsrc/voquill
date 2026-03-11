@@ -309,7 +309,7 @@ class KeyboardViewController: UIInputViewController {
     private var keyboardMode: KeyboardMode = .typing
     private var dictationActionButton: UIButton!
     private var dictationButtonWidthConstraint: NSLayoutConstraint?
-    private var mockKeyboardView: EnKeyboardView!
+    private var mockKeyboardView: KeyboardView!
     private var dictationContentView: UIView!
     private var utilStack: UIStackView!
 
@@ -695,7 +695,8 @@ class KeyboardViewController: UIInputViewController {
 
         // === TYPING CONTENT (mock keyboard) ===
 
-        mockKeyboardView = EnKeyboardView()
+        let language = UserDefaults(suiteName: DictationConstants.appGroupId)?.string(forKey: "voquill_dictation_language") ?? "en"
+        mockKeyboardView = KeyboardView(layout: keyboardLayout(for: language))
         mockKeyboardView.textDocumentProxy = textDocumentProxy
         mockKeyboardView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(mockKeyboardView)
@@ -958,6 +959,7 @@ class KeyboardViewController: UIInputViewController {
         let code = language.components(separatedBy: "-").first ?? language
         languageChip.setTitle(code.uppercased(), for: .normal)
         languageChip.isHidden = dictationLanguages.count <= 1
+        mockKeyboardView.setLayout(keyboardLayout(for: language))
     }
 
     @objc private func onLogoButtonTap() {
@@ -975,6 +977,7 @@ class KeyboardViewController: UIInputViewController {
         defaults?.set(next, forKey: "voquill_dictation_language")
         let code = next.components(separatedBy: "-").first ?? next
         languageChip.setTitle(code.uppercased(), for: .normal)
+        mockKeyboardView.setLayout(keyboardLayout(for: next))
 
         CounterRepo().incrementApp()
     }
