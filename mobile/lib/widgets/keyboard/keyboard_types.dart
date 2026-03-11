@@ -34,7 +34,7 @@ class KeySpec {
        targetMode = null,
        icon = null;
 
-  const KeySpec.backspace({this.weight = 1, this.maxWidth})
+  const KeySpec.backspace({this.weight = 1, this.maxWidth = 64})
     : label = '⌫',
       value = null,
       type = KeyType.backspace,
@@ -42,7 +42,7 @@ class KeySpec {
       targetMode = null,
       icon = Icons.backspace_outlined;
 
-  const KeySpec.shift({this.weight = 1, this.maxWidth})
+  const KeySpec.shift({this.weight = 1, this.maxWidth = 64})
     : label = '⇧',
       value = null,
       type = KeyType.shift,
@@ -78,7 +78,7 @@ class KeySpec {
     required this.label,
     required this.targetMode,
     this.weight = 1,
-    this.maxWidth,
+    this.maxWidth = 64,
   }) : value = null,
        type = KeyType.modeSwitch,
        subKeys = const [],

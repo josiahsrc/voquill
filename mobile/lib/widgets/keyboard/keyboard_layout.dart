@@ -1,4 +1,5 @@
 import 'package:app/widgets/keyboard/keyboard_key.dart';
+import 'package:app/widgets/keyboard/keyboard_row_layout.dart';
 import 'package:app/widgets/keyboard/keyboard_types.dart';
 import 'package:app/widgets/keyboard/text_input_proxy.dart';
 import 'package:app/widgets/keyboard/typing_strategy.dart';
@@ -75,60 +76,29 @@ class _KeyboardRow extends StatelessWidget {
     required this.onCursorMove,
   });
 
-  List<double> _computeWidths(double available) {
-    final keys = keyRow.keys;
-    final widths = List<double>.filled(keys.length, 0);
-    final totalWeight = keys.fold(0, (sum, k) => sum + k.weight);
-    var remaining = available;
-    var remainingWeight = totalWeight;
-
-    // First pass: clamp keys that have a maxWidth
-    for (var i = 0; i < keys.length; i++) {
-      final proportional = remaining * keys[i].weight / remainingWeight;
-      if (keys[i].maxWidth != null && proportional > keys[i].maxWidth!) {
-        widths[i] = keys[i].maxWidth!;
-        remaining -= widths[i];
-        remainingWeight -= keys[i].weight;
-      }
-    }
-
-    // Second pass: distribute remaining space to unclamped keys
-    for (var i = 0; i < keys.length; i++) {
-      if (widths[i] == 0) {
-        widths[i] = remaining * keys[i].weight / remainingWeight;
-      }
-    }
-
-    return widths;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final widths = _computeWidths(constraints.maxWidth);
-          return Row(
-            mainAxisAlignment: keyRow.alignment,
-            children: [
-              for (var i = 0; i < keyRow.keys.length; i++)
-                if (keyRow.keys[i].type == KeyType.spacer)
-                  SizedBox(width: widths[i])
-                else
-                  SizedBox(
-                    width: widths[i],
-                    child: KeyboardKey(
-                      spec: keyRow.keys[i],
-                      onTap: () => onKeyTap(keyRow.keys[i]),
+      child: KeyboardRowLayout(
+        mainAxisAlignment: keyRow.alignment,
+        children: [
+          for (final spec in keyRow.keys)
+            KeyboardRowChildData(
+              weight: spec.weight,
+              maxWidth: spec.maxWidth,
+              isSpacer: spec.type == KeyType.spacer,
+              child: spec.type == KeyType.spacer
+                  ? const SizedBox.shrink()
+                  : KeyboardKey(
+                      spec: spec,
+                      onTap: () => onKeyTap(spec),
                       onSubKeySelected: (value) =>
-                          onSubKeySelected(keyRow.keys[i], value),
+                          onSubKeySelected(spec, value),
                       onCursorMove: onCursorMove,
                     ),
-                  ),
-            ],
-          );
-        },
+            ),
+        ],
       ),
     );
   }
