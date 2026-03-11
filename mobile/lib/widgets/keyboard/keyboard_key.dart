@@ -13,23 +13,53 @@ class KeyboardKey extends StatefulWidget {
 }
 
 class _KeyboardKeyState extends State<KeyboardKey> {
-  OverlayEntry? _overlayEntry;
+  OverlayEntry? _subKeysOverlay;
+  OverlayEntry? _previewOverlay;
   int _selectedSubKeyIndex = -1;
   final _keyGlobalKey = GlobalKey();
 
   @override
   void dispose() {
-    _removeOverlay();
+    _removeSubKeysOverlay();
+    _removePreviewOverlay();
     super.dispose();
   }
 
-  void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
+  void _removeSubKeysOverlay() {
+    _subKeysOverlay?.remove();
+    _subKeysOverlay = null;
+  }
+
+  void _removePreviewOverlay() {
+    _previewOverlay?.remove();
+    _previewOverlay = null;
+  }
+
+  void _showPreview() {
+    if (widget.spec.type != KeyType.character) return;
+
+    final renderBox =
+        _keyGlobalKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final position = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    _previewOverlay = OverlayEntry(
+      builder: (context) => _KeyPreviewBubble(
+        label: widget.spec.label,
+        keyPosition: position,
+        keySize: size,
+      ),
+    );
+
+    Overlay.of(context).insert(_previewOverlay!);
   }
 
   void _showSubKeys() {
     if (widget.spec.subKeys.isEmpty) return;
+
+    _removePreviewOverlay();
 
     final renderBox =
         _keyGlobalKey.currentContext?.findRenderObject() as RenderBox?;
@@ -39,12 +69,15 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     final size = renderBox.size;
     final subKeys = widget.spec.subKeys;
     final subKeyWidth = 40.0;
-    final totalWidth = subKeys.length * subKeyWidth;
+    final spacing = 4.0;
+    final padding = 4.0;
+    final totalWidth =
+        subKeys.length * subKeyWidth + (subKeys.length - 1) * spacing + padding * 2;
     final screenWidth = MediaQuery.of(context).size.width;
     final centered = position.dx + (size.width / 2) - (totalWidth / 2);
     final left = centered.clamp(4.0, screenWidth - totalWidth - 4.0);
 
-    _overlayEntry = OverlayEntry(
+    _subKeysOverlay = OverlayEntry(
       builder: (context) => Positioned(
         left: left,
         top: position.dy - 48,
@@ -76,11 +109,11 @@ class _KeyboardKeyState extends State<KeyboardKey> {
       ),
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
+    Overlay.of(context).insert(_subKeysOverlay!);
   }
 
   void _updateSubKeySelection(Offset globalPosition) {
-    if (_overlayEntry == null || widget.spec.subKeys.isEmpty) return;
+    if (_subKeysOverlay == null || widget.spec.subKeys.isEmpty) return;
 
     final renderBox =
         _keyGlobalKey.currentContext?.findRenderObject() as RenderBox?;
@@ -90,20 +123,24 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     final size = renderBox.size;
     final subKeys = widget.spec.subKeys;
     final subKeyWidth = 40.0;
-    final totalWidth = subKeys.length * subKeyWidth;
+    final spacing = 4.0;
+    final padding = 4.0;
+    final totalWidth =
+        subKeys.length * subKeyWidth + (subKeys.length - 1) * spacing + padding * 2;
     final screenWidth = MediaQuery.of(context).size.width;
     final centered = position.dx + (size.width / 2) - (totalWidth / 2);
     final left = centered.clamp(4.0, screenWidth - totalWidth - 4.0);
 
-    final relativeX = globalPosition.dx - left;
-    final index = (relativeX / subKeyWidth).floor();
+    final relativeX = globalPosition.dx - left - padding;
+    final cellWidth = subKeyWidth + spacing;
+    final index = (relativeX / cellWidth).floor();
 
     final newIndex = index.clamp(0, subKeys.length - 1);
     if (newIndex != _selectedSubKeyIndex) {
       setState(() {
         _selectedSubKeyIndex = newIndex;
       });
-      _overlayEntry?.markNeedsBuild();
+      _subKeysOverlay?.markNeedsBuild();
     }
   }
 
@@ -118,20 +155,28 @@ class _KeyboardKeyState extends State<KeyboardKey> {
 
     return Expanded(
       flex: flex,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onLongPressStart: (details) {
-          _selectedSubKeyIndex = -1;
-          _showSubKeys();
+      child: Listener(
+        onPointerDown: (_) => _showPreview(),
+        onPointerUp: (_) {
+          _removePreviewOverlay();
+          if (_subKeysOverlay == null) {
+            widget.onTap?.call();
+          }
         },
-        onLongPressMoveUpdate: (details) {
-          _updateSubKeySelection(details.globalPosition);
-        },
-        onLongPressEnd: (_) {
-          _removeOverlay();
-          _selectedSubKeyIndex = -1;
-        },
-        child: Padding(
+        onPointerCancel: (_) => _removePreviewOverlay(),
+        child: GestureDetector(
+          onLongPressStart: (details) {
+            _selectedSubKeyIndex = -1;
+            _showSubKeys();
+          },
+          onLongPressMoveUpdate: (details) {
+            _updateSubKeySelection(details.globalPosition);
+          },
+          onLongPressEnd: (_) {
+            _removeSubKeysOverlay();
+            _selectedSubKeyIndex = -1;
+          },
+          child: Padding(
           key: _keyGlobalKey,
           padding: const EdgeInsets.all(2),
           child: DecoratedBox(
@@ -159,9 +204,87 @@ class _KeyboardKeyState extends State<KeyboardKey> {
             ),
           ),
         ),
+        ),
       ),
     );
   }
+}
+
+class _KeyPreviewBubble extends StatelessWidget {
+  final String label;
+  final Offset keyPosition;
+  final Size keySize;
+
+  const _KeyPreviewBubble({
+    required this.label,
+    required this.keyPosition,
+    required this.keySize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const bubbleWidth = 48.0;
+    const bubbleHeight = 56.0;
+    const stemHeight = 8.0;
+
+    final left = keyPosition.dx + (keySize.width / 2) - (bubbleWidth / 2);
+    final top = keyPosition.dy - bubbleHeight - stemHeight;
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: Column(
+        children: [
+          Container(
+            width: bubbleWidth,
+            height: bubbleHeight,
+            decoration: BoxDecoration(
+              color: context.colors.level2,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(50),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: theme.textTheme.headlineMedium,
+              ),
+            ),
+          ),
+          CustomPaint(
+            size: const Size(bubbleWidth, stemHeight),
+            painter: _StemPainter(color: context.colors.level2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StemPainter extends CustomPainter {
+  final Color color;
+
+  _StemPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final path = Path()
+      ..moveTo(size.width / 2 - 10, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width / 2 + 10, 0)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_StemPainter oldDelegate) => color != oldDelegate.color;
 }
 
 class _SubKeyChip extends StatelessWidget {
