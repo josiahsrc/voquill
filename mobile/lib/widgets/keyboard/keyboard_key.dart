@@ -16,6 +16,7 @@ class _KeyboardKeyState extends State<KeyboardKey> {
   OverlayEntry? _subKeysOverlay;
   OverlayEntry? _previewOverlay;
   int _selectedSubKeyIndex = -1;
+  bool _pressed = false;
   final _keyGlobalKey = GlobalKey();
 
   @override
@@ -156,15 +157,24 @@ class _KeyboardKeyState extends State<KeyboardKey> {
     return Expanded(
       flex: flex,
       child: Listener(
-        onPointerDown: (_) => _showPreview(),
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (_) {
+          setState(() => _pressed = true);
+          _showPreview();
+        },
         onPointerUp: (_) {
+          setState(() => _pressed = false);
           _removePreviewOverlay();
           if (_subKeysOverlay == null) {
             widget.onTap?.call();
           }
         },
-        onPointerCancel: (_) => _removePreviewOverlay(),
+        onPointerCancel: (_) {
+          setState(() => _pressed = false);
+          _removePreviewOverlay();
+        },
         child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onLongPressStart: (details) {
             _selectedSubKeyIndex = -1;
             _showSubKeys();
@@ -177,32 +187,29 @@ class _KeyboardKeyState extends State<KeyboardKey> {
             _selectedSubKeyIndex = -1;
           },
           child: Padding(
-          key: _keyGlobalKey,
-          padding: const EdgeInsets.all(2),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: isSpecial ? context.colors.level1 : context.colors.level2,
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(30),
-                  blurRadius: 1,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: SizedBox(
-              height: 42,
-              child: Center(
-                child: Text(
-                  widget.spec.label,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontSize: isSpecial ? 13 : 16,
-                  ),
+            key: _keyGlobalKey,
+            padding: const EdgeInsets.all(2),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: isSpecial
+                    ? (_pressed ? context.colors.level2 : context.colors.level1)
+                    : (_pressed ? context.colors.level1 : context.colors.level2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: SizedBox(
+                height: 42,
+                child: Center(
+                  child: widget.spec.icon != null
+                      ? Icon(widget.spec.icon, size: 18)
+                      : Text(
+                          widget.spec.label,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontSize: isSpecial ? 13 : 16,
+                          ),
+                        ),
                 ),
               ),
             ),
-          ),
         ),
         ),
       ),
