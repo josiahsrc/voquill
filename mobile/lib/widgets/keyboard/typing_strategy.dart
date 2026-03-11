@@ -4,7 +4,7 @@ import 'package:app/widgets/keyboard/text_input_proxy.dart';
 abstract class TypingStrategy {
   String get initialMode;
 
-  Map<String, List<List<KeySpec>>> get layouts;
+  Map<String, List<KeyRow>> get layouts;
 
   String onModeTransition(String currentMode, KeyType trigger);
 

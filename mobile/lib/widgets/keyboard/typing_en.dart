@@ -7,9 +7,9 @@ class TypingEn extends TypingStrategy {
   String get initialMode => 'default';
 
   @override
-  Map<String, List<List<KeySpec>>> get layouts => {
+  Map<String, List<KeyRow>> get layouts => {
     'default': [
-      [
+      KeyRow([
         const KeySpec.character('q'),
         const KeySpec.character('w'),
         const KeySpec.character('e', subKeys: ['è', 'é', 'ê', 'ë', 'ē']),
@@ -23,8 +23,8 @@ class TypingEn extends TypingStrategy {
           subKeys: ['ô', 'ö', 'ò', 'ó', 'œ', 'ø', 'ō'],
         ),
         const KeySpec.character('p'),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.character(
           'a',
           subKeys: ['à', 'á', 'â', 'ä', 'æ', 'ã', 'å', 'ā'],
@@ -37,8 +37,8 @@ class TypingEn extends TypingStrategy {
         const KeySpec.character('j'),
         const KeySpec.character('k'),
         const KeySpec.character('l', subKeys: ['ł']),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.shift(),
         const KeySpec.character('z', subKeys: ['ž', 'ź', 'ż']),
         const KeySpec.character('x'),
@@ -48,15 +48,15 @@ class TypingEn extends TypingStrategy {
         const KeySpec.character('n', subKeys: ['ñ', 'ń']),
         const KeySpec.character('m'),
         const KeySpec.backspace(),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.modeSwitch(label: '123', targetMode: 'symbols'),
-        const KeySpec.space(),
+        const KeySpec.space(weight: 4),
         const KeySpec.enter(),
-      ],
+      ]),
     ],
     'shift': [
-      [
+      KeyRow([
         const KeySpec.character('Q'),
         const KeySpec.character('W'),
         const KeySpec.character('E', subKeys: ['È', 'É', 'Ê', 'Ë', 'Ē']),
@@ -70,8 +70,8 @@ class TypingEn extends TypingStrategy {
           subKeys: ['Ô', 'Ö', 'Ò', 'Ó', 'Œ', 'Ø', 'Ō'],
         ),
         const KeySpec.character('P'),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.character(
           'A',
           subKeys: ['À', 'Á', 'Â', 'Ä', 'Æ', 'Ã', 'Å', 'Ā'],
@@ -84,8 +84,8 @@ class TypingEn extends TypingStrategy {
         const KeySpec.character('J'),
         const KeySpec.character('K'),
         const KeySpec.character('L', subKeys: ['Ł']),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.shift(),
         const KeySpec.character('Z', subKeys: ['Ž', 'Ź', 'Ż']),
         const KeySpec.character('X'),
@@ -95,40 +95,40 @@ class TypingEn extends TypingStrategy {
         const KeySpec.character('N', subKeys: ['Ñ', 'Ń']),
         const KeySpec.character('M'),
         const KeySpec.backspace(),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.modeSwitch(label: '123', targetMode: 'symbols'),
-        const KeySpec.space(),
+        const KeySpec.space(weight: 4),
         const KeySpec.enter(),
-      ],
+      ]),
     ],
     'symbols': [
-      KeySpec.characters('1234567890'),
-      KeySpec.characters('-/:;()\$&@"'),
-      [
+      KeyRow(KeySpec.characters('1234567890')),
+      KeyRow(KeySpec.characters('-/:;()\$&@"')),
+      KeyRow([
         const KeySpec.modeSwitch(label: '#+=', targetMode: 'symbols2'),
         ...KeySpec.characters('.,?!\''),
         const KeySpec.backspace(),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.modeSwitch(label: 'ABC', targetMode: 'default'),
-        const KeySpec.space(),
+        const KeySpec.space(weight: 4),
         const KeySpec.enter(),
-      ],
+      ]),
     ],
     'symbols2': [
-      KeySpec.characters('[]{}#%^*+='),
-      KeySpec.characters('_\\|~<>€£¥•'),
-      [
+      KeyRow(KeySpec.characters('[]{}#%^*+=')),
+      KeyRow(KeySpec.characters('_\\|~<>€£¥•')),
+      KeyRow([
         const KeySpec.modeSwitch(label: '123', targetMode: 'symbols'),
         ...KeySpec.characters('.,?!\''),
         const KeySpec.backspace(),
-      ],
-      [
+      ]),
+      KeyRow([
         const KeySpec.modeSwitch(label: 'ABC', targetMode: 'default'),
-        const KeySpec.space(),
+        const KeySpec.space(weight: 4),
         const KeySpec.enter(),
-      ],
+      ]),
     ],
   };
 
@@ -153,6 +153,7 @@ class TypingEn extends TypingStrategy {
         proxy.deleteBackward();
       case KeyType.shift:
       case KeyType.modeSwitch:
+      case KeyType.spacer:
         break;
     }
   }

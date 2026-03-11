@@ -161,14 +161,8 @@ class _KeyboardKeyState extends State<KeyboardKey> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isSpecial = widget.spec.type != KeyType.character;
-    final flex = switch (widget.spec.type) {
-      KeyType.space => 4,
-      _ => 1,
-    };
 
-    return Expanded(
-      flex: flex,
-      child: Listener(
+    return Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: (_) {
           setState(() => _pressed = true);
@@ -261,7 +255,6 @@ class _KeyboardKeyState extends State<KeyboardKey> {
             ),
         ),
         ),
-      ),
     );
   }
 }
