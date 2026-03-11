@@ -72,8 +72,7 @@ pub const API_KEY_AZURE_REGION_MIGRATION_SQL: &str =
     include_str!("migrations/036_api_key_azure_region.sql");
 pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
     include_str!("migrations/056_api_key_include_v1_path.sql");
-pub const REALTIME_OUTPUT_MIGRATION_SQL: &str =
-    include_str!("migrations/057_realtime_output.sql");
+pub const REALTIME_OUTPUT_MIGRATION_SQL: &str = include_str!("migrations/057_realtime_output.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");

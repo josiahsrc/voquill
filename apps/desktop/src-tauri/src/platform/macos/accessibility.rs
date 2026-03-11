@@ -48,20 +48,20 @@ extern "C" {
 
 /// Get text field information (cursor position, selection length, text content) without screen context.
 pub fn get_text_field_info() -> TextFieldInfo {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_text_field_info_impl() }))
-        .unwrap_or_else(|_| {
-            log::error!("get_text_field_info panicked, returning empty");
-            empty_text_field_info()
-        })
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_text_field_info_impl() })).unwrap_or_else(|_| {
+        log::error!("get_text_field_info panicked, returning empty");
+        empty_text_field_info()
+    })
 }
 
 /// Get screen context information gathered from the screen around the focused element.
 pub fn get_screen_context() -> ScreenContextInfo {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_screen_context_impl() }))
-        .unwrap_or_else(|_| {
-            log::error!("get_screen_context panicked, returning empty");
-            ScreenContextInfo { screen_context: None }
-        })
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_screen_context_impl() })).unwrap_or_else(|_| {
+        log::error!("get_screen_context panicked, returning empty");
+        ScreenContextInfo {
+            screen_context: None,
+        }
+    })
 }
 
 unsafe fn get_text_field_info_impl() -> TextFieldInfo {
@@ -834,11 +834,10 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 }
 
 pub fn get_selected_text() -> Option<String> {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_selected_text_impl() }))
-        .unwrap_or_else(|_| {
-            log::error!("get_selected_text panicked, returning None");
-            None
-        })
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_selected_text_impl() })).unwrap_or_else(|_| {
+        log::error!("get_selected_text panicked, returning None");
+        None
+    })
 }
 
 unsafe fn get_selected_text_impl() -> Option<String> {

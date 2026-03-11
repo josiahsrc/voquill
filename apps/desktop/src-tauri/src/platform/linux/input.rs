@@ -138,7 +138,8 @@ fn is_ctrl_shift_v_window() -> bool {
 
     log::debug!(
         "focused window class: res_name={}, res_class={}",
-        res_name, res_class
+        res_name,
+        res_class
     );
 
     let name_lower = res_name.to_ascii_lowercase();
