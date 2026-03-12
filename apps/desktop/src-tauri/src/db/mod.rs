@@ -76,6 +76,8 @@ pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
 pub const REALTIME_OUTPUT_MIGRATION_SQL: &str =
     include_str!("migrations/057_realtime_output.sql");
 pub const REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL: &str =
+    include_str!("migrations/058_remote_output_and_devices.sql");
+pub const REMOTE_OUTPUT_AND_DEVICES_COMPAT_MIGRATION_SQL: &str =
     include_str!("migrations/059_remote_output_and_devices.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
@@ -454,9 +456,15 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
         tauri_plugin_sql::Migration {
-            version: 59,
+            version: 58,
             description: "add_remote_output_and_paired_devices",
             sql: REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 59,
+            description: "remote_output_and_devices_compatibility_noop",
+            sql: REMOTE_OUTPUT_AND_DEVICES_COMPAT_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]
