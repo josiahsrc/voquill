@@ -55,6 +55,7 @@ export const MoreSettingsDialog = () => {
   const intl = useIntl();
   const [receiverBusy, setReceiverBusy] = useState(false);
   const [pairDialogOpen, setPairDialogOpen] = useState(false);
+  const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [pairName, setPairName] = useState("");
   const [pairDeviceId, setPairDeviceId] = useState("");
   const [pairAddress, setPairAddress] = useState("");
@@ -170,12 +171,30 @@ export const MoreSettingsDialog = () => {
     void setStylingMode(value === "" ? null : (value as StylingMode));
   };
 
-  const openPairDialog = () => {
+  const openPairDialog = (device?: PairedRemoteDevice) => {
+    if (device) {
+      setEditingDeviceId(device.id);
+      setPairName(device.name);
+      setPairDeviceId(device.id);
+      setPairAddress(device.lastKnownAddress ?? "");
+      setPairSecret(device.sharedSecret);
+      setPairPlatform(device.platform);
+      setPairRole(device.role);
+    } else {
+      setEditingDeviceId(null);
+      setPairName("");
+      setPairDeviceId("");
+      setPairAddress("");
+      setPairSecret("");
+      setPairPlatform("windows");
+      setPairRole("receiver");
+    }
     setPairDialogOpen(true);
   };
 
   const closePairDialog = () => {
     setPairDialogOpen(false);
+    setEditingDeviceId(null);
     setPairName("");
     setPairDeviceId("");
     setPairAddress("");
@@ -201,13 +220,14 @@ export const MoreSettingsDialog = () => {
     }
 
     try {
+      const existing = pairedDevices.find((device) => device.id === deviceId);
       await upsertPairedRemoteDevice({
         id: deviceId,
         name,
         platform: pairPlatform,
         role: pairRole,
         sharedSecret: secret,
-        pairedAt: new Date().toISOString(),
+        pairedAt: existing?.pairedAt ?? new Date().toISOString(),
         lastSeenAt: null,
         lastKnownAddress: requiresAddress ? address : null,
         trusted: true,
@@ -482,7 +502,11 @@ export const MoreSettingsDialog = () => {
           {pairedDevices.length > 0 && (
             <Stack spacing={1} sx={{ mt: -1 }}>
               {pairedDevices.map((device) => (
-                <PairedDeviceRow key={device.id} device={device} />
+                <PairedDeviceRow
+                  key={device.id}
+                  device={device}
+                  onEdit={() => openPairDialog(device)}
+                />
               ))}
             </Stack>
           )}
@@ -521,7 +545,13 @@ export const MoreSettingsDialog = () => {
 
       <Dialog open={pairDialogOpen} onClose={closePairDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <FormattedMessage defaultMessage="Add trusted remote device" />
+          <FormattedMessage
+            defaultMessage={
+              editingDeviceId
+                ? "Edit trusted remote device"
+                : "Add trusted remote device"
+            }
+          />
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
@@ -607,9 +637,10 @@ export const MoreSettingsDialog = () => {
 
 type PairedDeviceRowProps = {
   device: PairedRemoteDevice;
+  onEdit: () => void;
 };
 
-const PairedDeviceRow = ({ device }: PairedDeviceRowProps) => {
+const PairedDeviceRow = ({ device, onEdit }: PairedDeviceRowProps) => {
   return (
     <Stack
       spacing={0.25}
@@ -643,6 +674,11 @@ const PairedDeviceRow = ({ device }: PairedDeviceRowProps) => {
           values={{ role: device.role, platform: device.platform }}
         />
       </Typography>
+      <Stack direction="row" justifyContent="flex-end" sx={{ pt: 0.5 }}>
+        <Button size="small" onClick={onEdit}>
+          <FormattedMessage defaultMessage="Edit" />
+        </Button>
+      </Stack>
     </Stack>
   );
 };
