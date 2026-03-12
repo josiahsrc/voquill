@@ -1,5 +1,6 @@
 import 'package:app/store/store.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
+import 'package:app/widgets/permissions/permission_granted_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -77,7 +78,11 @@ class _MicrophonePermissionsState extends State<MicrophonePermissions>
 
     return OnboardingFormLayout(
       backButton: widget.backButton,
-      actions: [button],
+      actions: [
+        if (hasPermission)
+          const PermissionGrantedBanner(text: 'Microphone access granted'),
+        button,
+      ],
       child: OnboardingBody(
         title: const Text('Microphone access'),
         description: const Text(
@@ -125,11 +130,7 @@ class _FeatureItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 24,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+        Icon(icon, size: 24, color: theme.colorScheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
