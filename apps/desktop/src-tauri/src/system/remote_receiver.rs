@@ -158,6 +158,7 @@ async fn handle_connection(
                         "Sender is not paired.".to_string(),
                         None,
                         None,
+                        None,
                     );
                     write_message(
                         &mut writer,
@@ -178,6 +179,7 @@ async fn handle_connection(
                         Some(sender_device_id.clone()),
                         None,
                         "Sender authentication failed.".to_string(),
+                        None,
                         None,
                         None,
                     );
@@ -220,6 +222,7 @@ async fn handle_connection(
                         "No authenticated sender session.".to_string(),
                         None,
                         None,
+                        None,
                     );
                     write_message(
                         &mut writer,
@@ -236,6 +239,33 @@ async fn handle_connection(
                 };
 
                 let target_info = current_target_info();
+                let target_editable = current_target_editable_status();
+                if matches!(target_editable, Some(false)) {
+                    let message =
+                        "Target window is focused, but no editable text field is active."
+                            .to_string();
+                    state.record_error(
+                        Some(sender_device_id),
+                        Some(event_id.clone()),
+                        message.clone(),
+                        target_info.class_name.clone(),
+                        target_info.title.clone(),
+                        target_editable,
+                    );
+                    write_message(
+                        &mut writer,
+                        &OutgoingEnvelope::DeliveryError {
+                            session_id,
+                            event_id,
+                            sequence,
+                            code: "no_focused_text_field".to_string(),
+                            message,
+                        },
+                    )
+                    .await?;
+                    continue;
+                }
+
                 match paste_text_into_focused_field(&text, None) {
                     Ok(()) => {
                         let delivered_at = chrono::Utc::now().to_rfc3339();
@@ -245,6 +275,7 @@ async fn handle_connection(
                             Some(delivered_at.clone()),
                             target_info.class_name.clone(),
                             target_info.title.clone(),
+                            target_editable,
                         );
                         write_message(
                             &mut writer,
@@ -264,6 +295,7 @@ async fn handle_connection(
                             err.clone(),
                             target_info.class_name.clone(),
                             target_info.title.clone(),
+                            target_editable,
                         );
                         write_message(
                             &mut writer,
@@ -300,12 +332,27 @@ fn current_target_info() -> crate::platform::windows::input::WindowTargetInfo {
     crate::platform::windows::input::get_foreground_window_target_info()
 }
 
+#[cfg(target_os = "windows")]
+fn current_target_editable_status() -> Option<bool> {
+    let info = crate::platform::accessibility::get_text_field_info();
+    Some(
+        info.cursor_position.is_some()
+            || info.selection_length.is_some()
+            || info.text_content.is_some(),
+    )
+}
+
 #[cfg(not(target_os = "windows"))]
 fn current_target_info() -> FallbackWindowTargetInfo {
     FallbackWindowTargetInfo {
         class_name: None,
         title: None,
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn current_target_editable_status() -> Option<bool> {
+    None
 }
 
 #[cfg(not(target_os = "windows"))]

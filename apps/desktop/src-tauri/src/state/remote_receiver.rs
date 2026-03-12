@@ -21,6 +21,7 @@ pub struct RemoteReceiverStatus {
     pub last_error: Option<String>,
     pub last_target_class_name: Option<String>,
     pub last_target_title: Option<String>,
+    pub last_target_editable: Option<bool>,
 }
 
 struct RemoteReceiverStateInner {
@@ -68,6 +69,7 @@ impl RemoteReceiverState {
                     last_error: None,
                     last_target_class_name: None,
                     last_target_title: None,
+                    last_target_editable: None,
                 },
                 shutdown: None,
             })),
@@ -108,6 +110,7 @@ impl RemoteReceiverState {
         delivered_at: Option<String>,
         target_class_name: Option<String>,
         target_title: Option<String>,
+        target_editable: Option<bool>,
     ) {
         let mut inner = self.inner.lock().unwrap();
         inner.status.last_sender_device_id = sender_device_id;
@@ -117,6 +120,7 @@ impl RemoteReceiverState {
         inner.status.last_error = None;
         inner.status.last_target_class_name = target_class_name;
         inner.status.last_target_title = target_title;
+        inner.status.last_target_editable = target_editable;
     }
 
     pub fn record_error(
@@ -126,6 +130,7 @@ impl RemoteReceiverState {
         message: String,
         target_class_name: Option<String>,
         target_title: Option<String>,
+        target_editable: Option<bool>,
     ) {
         let mut inner = self.inner.lock().unwrap();
         inner.status.last_sender_device_id = sender_device_id;
@@ -135,6 +140,7 @@ impl RemoteReceiverState {
         inner.status.last_delivery_at = Some(chrono::Utc::now().to_rfc3339());
         inner.status.last_target_class_name = target_class_name;
         inner.status.last_target_title = target_title;
+        inner.status.last_target_editable = target_editable;
     }
 }
 

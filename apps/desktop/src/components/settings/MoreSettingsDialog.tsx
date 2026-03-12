@@ -320,6 +320,8 @@ export const MoreSettingsDialog = () => {
     : null;
   const lastTargetLooksLikeVoquill =
     receiverStatus?.lastTargetClassName === "Tauri Window";
+  const lastTargetMissingEditableField =
+    receiverStatus?.lastTargetEditable === false;
 
   const remoteTargetSummary =
     pairedDevices.length > 0
@@ -574,6 +576,15 @@ export const MoreSettingsDialog = () => {
                   sx={{ wordBreak: "break-word" }}
                 >
                   <FormattedMessage defaultMessage="The last delivery targeted the Voquill window itself. Focus the destination app on the receiver machine before sending text." />
+                </Typography>
+              )}
+              {lastTargetMissingEditableField && (
+                <Typography
+                  variant="caption"
+                  color="warning.main"
+                  sx={{ wordBreak: "break-word" }}
+                >
+                  <FormattedMessage defaultMessage="The last target window was active, but no editable text field was focused. Click back into the destination text field on the receiver machine before sending text." />
                 </Typography>
               )}
               <Typography variant="caption" color="text.secondary">
