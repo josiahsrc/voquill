@@ -8,18 +8,21 @@
   "scripts": {
     "build": "tsc",
     "dev": "mastra dev --port 4111",
+    "dev:server": "tsx scripts/dev-server.ts",
+    "cli": "tsx scripts/cli.ts",
     "clean": "rm -rf dist"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@mastra/core": "latest",
-    "@ai-sdk/openai": "latest"
+    "@ai-sdk/openai": "latest",
+    "@mastra/core": "latest"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "mastra": "latest",
+    "tsx": "^4.21.0",
     "typescript": "5.9.2"
   }
 }

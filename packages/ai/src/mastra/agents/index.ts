@@ -15,5 +15,5 @@ export const voquillAgent = new Agent({
   name: "Voquill Assistant",
   instructions:
     "You are Voquill's AI writing assistant. You help users with their writing, answer questions, and assist with tasks. Be concise, helpful, and friendly.",
-  model: provider("default"),
+  model: provider.chat("default"),
 });
