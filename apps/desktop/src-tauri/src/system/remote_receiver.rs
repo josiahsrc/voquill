@@ -156,6 +156,8 @@ async fn handle_connection(
                         Some(sender_device_id.clone()),
                         None,
                         "Sender is not paired.".to_string(),
+                        None,
+                        None,
                     );
                     write_message(
                         &mut writer,
@@ -176,6 +178,8 @@ async fn handle_connection(
                         Some(sender_device_id.clone()),
                         None,
                         "Sender authentication failed.".to_string(),
+                        None,
+                        None,
                     );
                     write_message(
                         &mut writer,
@@ -214,6 +218,8 @@ async fn handle_connection(
                         None,
                         Some(event_id.clone()),
                         "No authenticated sender session.".to_string(),
+                        None,
+                        None,
                     );
                     write_message(
                         &mut writer,
@@ -229,6 +235,7 @@ async fn handle_connection(
                     continue;
                 };
 
+                let target_info = current_target_info();
                 match paste_text_into_focused_field(&text, None) {
                     Ok(()) => {
                         let delivered_at = chrono::Utc::now().to_rfc3339();
@@ -236,6 +243,8 @@ async fn handle_connection(
                             Some(sender_device_id),
                             Some(event_id.clone()),
                             Some(delivered_at.clone()),
+                            target_info.class_name.clone(),
+                            target_info.title.clone(),
                         );
                         write_message(
                             &mut writer,
@@ -253,6 +262,8 @@ async fn handle_connection(
                             Some(sender_device_id),
                             Some(event_id.clone()),
                             err.clone(),
+                            target_info.class_name.clone(),
+                            target_info.title.clone(),
                         );
                         write_message(
                             &mut writer,
@@ -282,6 +293,25 @@ async fn handle_connection(
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn current_target_info() -> crate::platform::windows::input::WindowTargetInfo {
+    crate::platform::windows::input::get_foreground_window_target_info()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn current_target_info() -> FallbackWindowTargetInfo {
+    FallbackWindowTargetInfo {
+        class_name: None,
+        title: None,
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+struct FallbackWindowTargetInfo {
+    class_name: Option<String>,
+    title: Option<String>,
 }
 
 async fn write_message(

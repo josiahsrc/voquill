@@ -318,6 +318,8 @@ export const MoreSettingsDialog = () => {
   const lastDeliveryTimeLabel = receiverStatus?.lastDeliveryAt
     ? new Date(receiverStatus.lastDeliveryAt).toLocaleString()
     : null;
+  const lastTargetLooksLikeVoquill =
+    receiverStatus?.lastTargetClassName === "Tauri Window";
 
   const remoteTargetSummary =
     pairedDevices.length > 0
@@ -544,6 +546,34 @@ export const MoreSettingsDialog = () => {
                     defaultMessage="Last error: {message}"
                     values={{ message: receiverStatus.lastError }}
                   />
+                </Typography>
+              )}
+              {(receiverStatus.lastTargetClassName ||
+                receiverStatus.lastTargetTitle) && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ wordBreak: "break-word" }}
+                >
+                  <FormattedMessage
+                    defaultMessage="Last target: {className}{title}"
+                    values={{
+                      className:
+                        receiverStatus.lastTargetClassName ?? "unknown class",
+                      title: receiverStatus.lastTargetTitle
+                        ? ` (${receiverStatus.lastTargetTitle})`
+                        : "",
+                    }}
+                  />
+                </Typography>
+              )}
+              {lastTargetLooksLikeVoquill && (
+                <Typography
+                  variant="caption"
+                  color="warning.main"
+                  sx={{ wordBreak: "break-word" }}
+                >
+                  <FormattedMessage defaultMessage="The last delivery targeted the Voquill window itself. Focus the destination app on the receiver machine before sending text." />
                 </Typography>
               )}
               <Typography variant="caption" color="text.secondary">

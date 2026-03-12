@@ -35,6 +35,8 @@ export type RemoteReceiverStatus = {
   lastDeliveryStatus: Nullable<string>;
   lastDeliveryAt: Nullable<string>;
   lastError: Nullable<string>;
+  lastTargetClassName: Nullable<string>;
+  lastTargetTitle: Nullable<string>;
 };
 
 export type RouteTranscriptOutputArgs = {
