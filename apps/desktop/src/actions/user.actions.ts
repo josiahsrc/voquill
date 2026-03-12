@@ -97,6 +97,8 @@ export const createDefaultPreferences = (): UserPreferences => ({
   incognitoModeIncludeInStats: false,
   dictationPillVisibility: "while_active",
   realtimeOutputEnabled: false,
+  remoteOutputEnabled: false,
+  remoteTargetDeviceId: null,
 });
 
 export const updateUserPreferences = async (

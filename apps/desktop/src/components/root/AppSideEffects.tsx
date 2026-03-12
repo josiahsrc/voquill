@@ -13,7 +13,9 @@ import { isEqual } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { loadPairedRemoteDevices } from "../../actions/paired-remote-device.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
+import { refreshRemoteReceiverStatus } from "../../actions/remote-receiver.actions";
 import {
   checkForAppUpdates,
   dismissUpdateDialog,
@@ -318,6 +320,8 @@ export const AppSideEffects = () => {
   useAsyncEffect(async () => {
     if (authReady) {
       await refreshCurrentUser();
+      await loadPairedRemoteDevices();
+      await refreshRemoteReceiverStatus();
       setInitReady(true);
     }
   }, [authReady, isEnterprise]);

@@ -38,6 +38,8 @@ type LocalUserPreferences = {
   incognitoModeIncludeInStats: boolean;
   dictationPillVisibility: DictationPillVisibility;
   realtimeOutputEnabled: boolean;
+  remoteOutputEnabled: boolean;
+  remoteTargetDeviceId: Nullable<string>;
   useNewBackend: boolean;
 };
 
@@ -85,6 +87,8 @@ const fromLocalPreferences = (
     preferences.dictationPillVisibility,
   ),
   realtimeOutputEnabled: preferences.realtimeOutputEnabled ?? false,
+  remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
+  remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
 });
 
 const toLocalPreferences = (
@@ -119,6 +123,8 @@ const toLocalPreferences = (
     preferences.dictationPillVisibility,
   ),
   realtimeOutputEnabled: preferences.realtimeOutputEnabled ?? false,
+  remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
+  remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
   useNewBackend: true,
 });
 

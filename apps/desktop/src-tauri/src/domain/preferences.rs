@@ -62,6 +62,10 @@ pub struct UserPreferences {
     pub use_new_backend: bool,
     #[serde(default)]
     pub realtime_output_enabled: bool,
+    #[serde(default)]
+    pub remote_output_enabled: bool,
+    #[serde(default)]
+    pub remote_target_device_id: Option<String>,
 }
 
 fn default_dictation_pill_visibility() -> String {

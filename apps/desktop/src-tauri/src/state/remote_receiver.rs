@@ -1,0 +1,106 @@
+use std::sync::{Arc, Mutex};
+
+use rand::{rngs::OsRng, RngCore};
+use serde::Serialize;
+use sha2::{Digest, Sha256};
+use tokio::sync::watch;
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteReceiverStatus {
+    pub enabled: bool,
+    pub device_id: String,
+    pub device_name: String,
+    pub listen_address: Option<String>,
+    pub port: Option<u16>,
+    pub pairing_code: String,
+    pub last_sender_device_id: Option<String>,
+    pub last_event_id: Option<String>,
+}
+
+struct RemoteReceiverStateInner {
+    status: RemoteReceiverStatus,
+    shutdown: Option<watch::Sender<bool>>,
+}
+
+#[derive(Clone)]
+pub struct RemoteReceiverState {
+    inner: Arc<Mutex<RemoteReceiverStateInner>>,
+}
+
+impl Default for RemoteReceiverState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RemoteReceiverState {
+    pub fn new() -> Self {
+        let device_name = hostname::get()
+            .ok()
+            .and_then(|value| value.into_string().ok())
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| "Voquill Desktop".to_string());
+
+        let mut hasher = Sha256::new();
+        hasher.update(device_name.as_bytes());
+        let digest = hasher.finalize();
+        let device_id = format!("device-{:x}", digest)[..23].to_string();
+
+        Self {
+            inner: Arc::new(Mutex::new(RemoteReceiverStateInner {
+                status: RemoteReceiverStatus {
+                    enabled: false,
+                    device_id,
+                    device_name,
+                    listen_address: None,
+                    port: None,
+                    pairing_code: generate_pairing_code(),
+                    last_sender_device_id: None,
+                    last_event_id: None,
+                },
+                shutdown: None,
+            })),
+        }
+    }
+
+    pub fn status(&self) -> RemoteReceiverStatus {
+        self.inner.lock().unwrap().status.clone()
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.inner.lock().unwrap().status.enabled
+    }
+
+    pub fn start(&self, listen_address: String, port: u16, shutdown: watch::Sender<bool>) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.status.enabled = true;
+        inner.status.listen_address = Some(listen_address);
+        inner.status.port = Some(port);
+        inner.status.pairing_code = generate_pairing_code();
+        inner.shutdown = Some(shutdown);
+    }
+
+    pub fn stop(&self) {
+        let mut inner = self.inner.lock().unwrap();
+        if let Some(shutdown) = inner.shutdown.take() {
+            let _ = shutdown.send(true);
+        }
+        inner.status.enabled = false;
+        inner.status.listen_address = None;
+        inner.status.port = None;
+    }
+
+    pub fn record_delivery(&self, sender_device_id: Option<String>, event_id: Option<String>) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.status.last_sender_device_id = sender_device_id;
+        inner.status.last_event_id = event_id;
+    }
+}
+
+fn generate_pairing_code() -> String {
+    let mut bytes = [0u8; 4];
+    OsRng.fill_bytes(&mut bytes);
+    let value = u32::from_le_bytes(bytes) % 1_000_000;
+    format!("{value:06}")
+}

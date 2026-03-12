@@ -3,6 +3,7 @@ import {
   AppTarget,
   Hotkey,
   Member,
+  PairedRemoteDevice,
   Term,
   Tone,
   Transcription,
@@ -79,5 +80,14 @@ export const registerAppTargets = (
 ): void => {
   for (const appTarget of appTargets) {
     draft.appTargetById[appTarget.id] = appTarget;
+  }
+};
+
+export const registerPairedRemoteDevices = (
+  draft: AppState,
+  devices: PairedRemoteDevice[],
+): void => {
+  for (const device of devices) {
+    draft.pairedRemoteDeviceById[device.id] = device;
   }
 };

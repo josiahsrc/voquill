@@ -7,6 +7,7 @@ import {
   type PostProcessMetadata,
 } from "../actions/transcribe.actions";
 import { getIntl } from "../i18n";
+import { routeTranscriptOutput } from "../remote/output-router";
 import { getAppState } from "../store";
 import type { OverlayPhase } from "../types/overlay.types";
 import type {
@@ -61,7 +62,11 @@ export class DictationStrategy extends BaseStrategy {
       this.streamedProcessedText += (isFirst ? "" : " ") + text;
 
       try {
-        await invoke<void>("paste", { text: textToPaste, keybind: null });
+        await routeTranscriptOutput({
+          text: textToPaste,
+          mode: "dictation",
+          currentAppId: null,
+        });
       } catch (error) {
         getLogger().error(`Failed to paste interim segment: ${error}`);
       }
@@ -117,7 +122,11 @@ export class DictationStrategy extends BaseStrategy {
 
     await this.pasteQueue;
     try {
-      await invoke<void>("paste", { text: " ", keybind: null });
+      await routeTranscriptOutput({
+        text: " ",
+        mode: "dictation",
+        currentAppId: args.currentApp?.id ?? null,
+      });
     } catch {
       // Non-critical trailing space
     }
@@ -160,18 +169,21 @@ export class DictationStrategy extends BaseStrategy {
       if (transcript) {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
-          const keybind = args.currentApp?.pasteKeybind ?? null;
           getLogger().verbose(
-            `Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`,
+            `Routing transcript output (${transcript.length} chars, app=${args.currentApp?.id ?? "none"})`,
           );
 
           const textToPaste = transcript.trim() + " ";
-          await invoke<void>("paste", { text: textToPaste, keybind });
+          await routeTranscriptOutput({
+            text: textToPaste,
+            mode: "dictation",
+            currentAppId: args.currentApp?.id ?? null,
+          });
 
-          getLogger().info("Transcript pasted successfully");
+          getLogger().info("Transcript output routed successfully");
         } catch (error) {
-          getLogger().error(`Failed to paste transcription: ${error}`);
-          showErrorSnackbar("Unable to paste transcription.");
+          getLogger().error(`Failed to route transcription output: ${error}`);
+          showErrorSnackbar("Unable to insert transcription.");
         }
       }
     } catch (error) {

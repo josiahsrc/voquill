@@ -1,6 +1,7 @@
 pub mod api_key_queries;
 pub mod app_target_queries;
 pub mod hotkey_queries;
+pub mod paired_remote_device_queries;
 pub mod preferences_queries;
 pub mod term_queries;
 pub mod tone_queries;
@@ -74,6 +75,8 @@ pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
     include_str!("migrations/056_api_key_include_v1_path.sql");
 pub const REALTIME_OUTPUT_MIGRATION_SQL: &str =
     include_str!("migrations/057_realtime_output.sql");
+pub const REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL: &str =
+    include_str!("migrations/058_remote_output_and_devices.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");
@@ -448,6 +451,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 57,
             description: "add_realtime_output",
             sql: REALTIME_OUTPUT_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 58,
+            description: "add_remote_output_and_paired_devices",
+            sql: REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

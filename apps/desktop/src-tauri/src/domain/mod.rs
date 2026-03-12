@@ -5,6 +5,7 @@ pub mod keyboard;
 pub mod monitor;
 pub mod overlay;
 pub mod permissions;
+pub mod paired_remote_device;
 pub mod preferences;
 pub mod recording;
 pub mod term;
@@ -21,6 +22,7 @@ pub use overlay::{
     OverlayPhase, OverlayPhasePayload, PillExpandedPayload, EVT_OVERLAY_PHASE, EVT_PILL_EXPANDED,
 };
 pub use permissions::{PermissionKind, PermissionState, PermissionStatus};
+pub use paired_remote_device::PairedRemoteDevice;
 pub use preferences::UserPreferences;
 pub use recording::{
     AudioChunkPayload, RecordedAudio, RecordingLevelPayload, RecordingMetrics, RecordingResult,

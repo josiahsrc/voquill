@@ -195,6 +195,8 @@ export const submitOnboarding = async () => {
       incognitoModeIncludeInStats: false,
       dictationPillVisibility: "persistent",
       realtimeOutputEnabled: false,
+      remoteOutputEnabled: false,
+      remoteTargetDeviceId: null,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([
