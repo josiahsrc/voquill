@@ -240,31 +240,6 @@ async fn handle_connection(
 
                 let target_info = current_target_info();
                 let target_editable = current_target_editable_status();
-                if matches!(target_editable, Some(false)) {
-                    let message =
-                        "Target window is focused, but no editable text field is active."
-                            .to_string();
-                    state.record_error(
-                        Some(sender_device_id),
-                        Some(event_id.clone()),
-                        message.clone(),
-                        target_info.class_name.clone(),
-                        target_info.title.clone(),
-                        target_editable,
-                    );
-                    write_message(
-                        &mut writer,
-                        &OutgoingEnvelope::DeliveryError {
-                            session_id,
-                            event_id,
-                            sequence,
-                            code: "no_focused_text_field".to_string(),
-                            message,
-                        },
-                    )
-                    .await?;
-                    continue;
-                }
 
                 match paste_text_into_focused_field(&text, None) {
                     Ok(()) => {
