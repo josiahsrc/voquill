@@ -321,7 +321,8 @@ export const MoreSettingsDialog = () => {
   const lastTargetLooksLikeVoquill =
     receiverStatus?.lastTargetClassName === "Tauri Window";
   const lastTargetMissingEditableField =
-    receiverStatus?.lastTargetEditable === false;
+    receiverStatus?.lastTargetEditable === false &&
+    receiverStatus?.lastDeliveryStatus === "failed";
 
   const remoteTargetSummary =
     pairedDevices.length > 0
