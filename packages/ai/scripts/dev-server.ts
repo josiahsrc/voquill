@@ -17,8 +17,13 @@
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import { randomUUID } from "node:crypto";
+import type { ToolInfo } from "@repo/types";
 
 // Load .env from packages/ai/
 const envPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", ".env");
@@ -46,16 +51,11 @@ const LLM_MODEL = process.env.LLM_MODEL || "gpt-4o";
 
 // --- Tool definitions ---
 
-interface ToolInfo {
-  id: string;
-  description: string;
-  schema: Record<string, unknown>;
-}
-
 const tools: ToolInfo[] = [
   {
     id: "get-selected-text",
-    description: "Returns the currently selected text from the active application.",
+    description:
+      "Returns the currently selected text from the active application.",
     schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -63,7 +63,9 @@ const tools: ToolInfo[] = [
     description: "Writes text to the clipboard and triggers a paste action.",
     schema: {
       type: "object",
-      properties: { text: { type: "string", description: "The text to paste" } },
+      properties: {
+        text: { type: "string", description: "The text to paste" },
+      },
       required: ["text"],
     },
   },
@@ -81,7 +83,9 @@ const tools: ToolInfo[] = [
     description: "Searches the web and returns results.",
     schema: {
       type: "object",
-      properties: { query: { type: "string", description: "The search query" } },
+      properties: {
+        query: { type: "string", description: "The search query" },
+      },
       required: ["query"],
     },
   },
@@ -104,7 +108,9 @@ const permissions = new Map<string, PermissionRecord>();
 function executeTool(toolId: string, params: Record<string, unknown>): unknown {
   switch (toolId) {
     case "get-selected-text":
-      return { text: "[Mock] This is some selected text from the active application." };
+      return {
+        text: "[Mock] This is some selected text from the active application.",
+      };
     case "paste":
       console.log(`  [tool:paste] Would paste: "${params.text}"`);
       return { success: true };
@@ -114,8 +120,16 @@ function executeTool(toolId: string, params: Record<string, unknown>): unknown {
     case "web-search":
       return {
         results: [
-          { title: "Mock Result 1", url: "https://example.com/1", snippet: `Result for "${params.query}"` },
-          { title: "Mock Result 2", url: "https://example.com/2", snippet: `Another result for "${params.query}"` },
+          {
+            title: "Mock Result 1",
+            url: "https://example.com/1",
+            snippet: `Result for "${params.query}"`,
+          },
+          {
+            title: "Mock Result 2",
+            url: "https://example.com/2",
+            snippet: `Another result for "${params.query}"`,
+          },
         ],
       };
     default:
@@ -191,7 +205,11 @@ function handleToolsList(_req: IncomingMessage, res: ServerResponse) {
   json(res, 200, { tools });
 }
 
-async function handleToolPermission(toolId: string, req: IncomingMessage, res: ServerResponse) {
+async function handleToolPermission(
+  toolId: string,
+  req: IncomingMessage,
+  res: ServerResponse,
+) {
   const body = JSON.parse(await readBody(req));
   const id = randomUUID();
   const token = randomUUID();
@@ -205,11 +223,18 @@ async function handleToolPermission(toolId: string, req: IncomingMessage, res: S
   };
   permissions.set(id, record);
 
-  console.log(`  [permission] Auto-approved ${toolId} with params:`, JSON.stringify(body));
+  console.log(
+    `  [permission] Auto-approved ${toolId} with params:`,
+    JSON.stringify(body),
+  );
   json(res, 200, { permission_id: id });
 }
 
-function handlePermissionStatus(permissionId: string, _req: IncomingMessage, res: ServerResponse) {
+function handlePermissionStatus(
+  permissionId: string,
+  _req: IncomingMessage,
+  res: ServerResponse,
+) {
   const record = permissions.get(permissionId);
   if (!record) {
     json(res, 404, { error: "Permission not found" });
@@ -219,13 +244,17 @@ function handlePermissionStatus(permissionId: string, _req: IncomingMessage, res
   json(res, 200, { status: record.status, token: record.token });
 }
 
-async function handleToolExecute(toolId: string, req: IncomingMessage, res: ServerResponse) {
+async function handleToolExecute(
+  toolId: string,
+  req: IncomingMessage,
+  res: ServerResponse,
+) {
   const body = JSON.parse(await readBody(req));
   const { token } = body;
 
   // Find permission by token
   const record = Array.from(permissions.values()).find(
-    (p) => p.token === token && p.tool === toolId
+    (p) => p.token === token && p.tool === toolId,
   );
 
   if (!record) {

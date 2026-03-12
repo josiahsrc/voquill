@@ -17,7 +17,9 @@
   ],
   "dependencies": {
     "@ai-sdk/openai": "latest",
-    "@mastra/core": "latest"
+    "@mastra/core": "latest",
+    "@repo/types": "workspace:*",
+    "ai": "^6.0.116"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

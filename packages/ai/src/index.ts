@@ -1,2 +1,2 @@
 export { mastra } from "./mastra";
-export { voquillAgent } from "./mastra/agents";
+export { createVoquillAgent } from "./mastra/agents";

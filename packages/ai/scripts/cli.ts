@@ -9,8 +9,11 @@
  *   DESKTOP_API_KEY — session API key (default: dev)
  */
 
+import { MessageListInput } from "@mastra/core/agent/message-list";
 import * as readline from "node:readline";
-import { voquillAgent } from "../src/mastra/agents";
+import { createVoquillAgent } from "../src/mastra/agents";
+
+const agent = await createVoquillAgent();
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -41,9 +44,7 @@ function prompt() {
     process.stdout.write("\nassistant: ");
 
     try {
-      const response = await voquillAgent.stream(
-        messages as Parameters<typeof voquillAgent.stream>[0]
-      );
+      const response = await agent.stream(messages as MessageListInput);
 
       let fullResponse = "";
       for await (const chunk of response.textStream) {
@@ -62,7 +63,9 @@ function prompt() {
 }
 
 console.log("Voquill AI Agent — Interactive CLI");
-console.log(`LLM proxy: ${process.env.DESKTOP_API_URL || "http://localhost:4112"}`);
+console.log(
+  `LLM proxy: ${process.env.DESKTOP_API_URL || "http://localhost:4112"}`,
+);
 console.log("Commands: /clear, /quit\n");
 
 prompt();

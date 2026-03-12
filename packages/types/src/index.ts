@@ -1,3 +1,5 @@
+export * from "./ai-tool.types";
+export * from "./json-schema.types";
 export * from "./api-refresh-token.types";
 export * from "./apiKey.types";
 export * from "./app-target.types";
