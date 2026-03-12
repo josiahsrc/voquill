@@ -9,12 +9,20 @@ import {
   Select,
   Stack,
   Switch,
+  TextField,
   Typography,
 } from "@mui/material";
-import type { DictationPillVisibility, StylingMode } from "@repo/types";
+import type {
+  DictationPillVisibility,
+  PairedRemoteDevice,
+  RemoteDevicePlatform,
+  RemoteDeviceRole,
+  StylingMode,
+} from "@repo/types";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";
+import { upsertPairedRemoteDevice } from "../../actions/paired-remote-device.actions";
 import {
   startRemoteReceiver,
   stopRemoteReceiver,
@@ -45,6 +53,14 @@ import { SettingSection } from "../common/SettingSection";
 export const MoreSettingsDialog = () => {
   const intl = useIntl();
   const [receiverBusy, setReceiverBusy] = useState(false);
+  const [pairDialogOpen, setPairDialogOpen] = useState(false);
+  const [pairName, setPairName] = useState("");
+  const [pairDeviceId, setPairDeviceId] = useState("");
+  const [pairAddress, setPairAddress] = useState("");
+  const [pairSecret, setPairSecret] = useState("");
+  const [pairPlatform, setPairPlatform] =
+    useState<RemoteDevicePlatform>("windows");
+  const [pairRole, setPairRole] = useState<RemoteDeviceRole>("receiver");
   const [
     open,
     ignoreUpdateDialog,
@@ -152,6 +168,49 @@ export const MoreSettingsDialog = () => {
     void setStylingMode(value === "" ? null : (value as StylingMode));
   };
 
+  const openPairDialog = () => {
+    setPairDialogOpen(true);
+  };
+
+  const closePairDialog = () => {
+    setPairDialogOpen(false);
+    setPairName("");
+    setPairDeviceId("");
+    setPairAddress("");
+    setPairSecret("");
+    setPairPlatform("windows");
+    setPairRole("receiver");
+  };
+
+  const handleSaveManualPair = async () => {
+    const name = pairName.trim();
+    const deviceId = pairDeviceId.trim();
+    const address = pairAddress.trim();
+    const secret = pairSecret.trim();
+
+    if (!name || !deviceId || !address || !secret) {
+      showErrorSnackbar("All device pairing fields are required.");
+      return;
+    }
+
+    try {
+      await upsertPairedRemoteDevice({
+        id: deviceId,
+        name,
+        platform: pairPlatform,
+        role: pairRole,
+        sharedSecret: secret,
+        pairedAt: new Date().toISOString(),
+        lastSeenAt: null,
+        lastKnownAddress: address,
+        trusted: true,
+      });
+      closePairDialog();
+    } catch (error) {
+      showErrorSnackbar(error);
+    }
+  };
+
   const receiverSummary = receiverStatus?.enabled
     ? intl.formatMessage(
         {
@@ -181,7 +240,8 @@ export const MoreSettingsDialog = () => {
         });
 
   return (
-    <Dialog open={open} onClose={handleClose}>
+    <>
+      <Dialog open={open} onClose={handleClose}>
       <DialogTitle>
         <FormattedMessage defaultMessage="More settings" />
       </DialogTitle>
@@ -305,6 +365,9 @@ export const MoreSettingsDialog = () => {
                   />
                 </Typography>
               )}
+              <Typography variant="caption" color="text.secondary">
+                <FormattedMessage defaultMessage="Automated pairing is still in progress. For now, add trusted devices manually on both machines using the device IDs, receiver address, and a shared secret." />
+              </Typography>
             </Stack>
           )}
 
@@ -345,6 +408,26 @@ export const MoreSettingsDialog = () => {
             }
           />
 
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Trusted remote devices" />}
+            description={
+              <FormattedMessage defaultMessage="Add a trusted receiver manually while the automated pairing flow is under construction." />
+            }
+            action={
+              <Button size="small" variant="outlined" onClick={openPairDialog}>
+                <FormattedMessage defaultMessage="Add device" />
+              </Button>
+            }
+          />
+
+          {pairedDevices.length > 0 && (
+            <Stack spacing={1} sx={{ mt: -1 }}>
+              {pairedDevices.map((device) => (
+                <PairedDeviceRow key={device.id} device={device} />
+              ))}
+            </Stack>
+          )}
+
           {canChangeStylingMode && (
             <SettingSection
               title={<FormattedMessage defaultMessage="Styling mode" />}
@@ -375,6 +458,136 @@ export const MoreSettingsDialog = () => {
           <FormattedMessage defaultMessage="Close" />
         </Button>
       </DialogActions>
-    </Dialog>
+      </Dialog>
+
+      <Dialog open={pairDialogOpen} onClose={closePairDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <FormattedMessage defaultMessage="Add trusted remote device" />
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ pt: 0.5 }}>
+            <TextField
+              label={intl.formatMessage({ defaultMessage: "Device name" })}
+              value={pairName}
+              onChange={(event) => setPairName(event.target.value)}
+              fullWidth
+            />
+            <TextField
+              label={intl.formatMessage({ defaultMessage: "Device ID" })}
+              value={pairDeviceId}
+              onChange={(event) => setPairDeviceId(event.target.value)}
+              fullWidth
+            />
+            <Select<RemoteDeviceRole>
+              size="small"
+              value={pairRole}
+              onChange={(event) =>
+                setPairRole(event.target.value as RemoteDeviceRole)
+              }
+              fullWidth
+            >
+              <MenuItem value="receiver">
+                {intl.formatMessage({ defaultMessage: "Receiver device" })}
+              </MenuItem>
+              <MenuItem value="sender">
+                {intl.formatMessage({ defaultMessage: "Sender device" })}
+              </MenuItem>
+              <MenuItem value="both">
+                {intl.formatMessage({ defaultMessage: "Both roles" })}
+              </MenuItem>
+            </Select>
+            <Select<RemoteDevicePlatform>
+              size="small"
+              value={pairPlatform}
+              onChange={(event) =>
+                setPairPlatform(event.target.value as RemoteDevicePlatform)
+              }
+              fullWidth
+            >
+              <MenuItem value="windows">
+                {intl.formatMessage({ defaultMessage: "Windows" })}
+              </MenuItem>
+              <MenuItem value="macos">
+                {intl.formatMessage({ defaultMessage: "macOS" })}
+              </MenuItem>
+              <MenuItem value="linux">
+                {intl.formatMessage({ defaultMessage: "Linux" })}
+              </MenuItem>
+            </Select>
+            <TextField
+              label={intl.formatMessage({
+                defaultMessage: "Receiver address",
+              })}
+              helperText={intl.formatMessage({
+                defaultMessage: "Example: 192.168.1.25:43123",
+              })}
+              value={pairAddress}
+              onChange={(event) => setPairAddress(event.target.value)}
+              fullWidth
+            />
+            <TextField
+              label={intl.formatMessage({ defaultMessage: "Shared secret" })}
+              helperText={intl.formatMessage({
+                defaultMessage:
+                  "Use the same secret on both the sender and receiver device records.",
+              })}
+              value={pairSecret}
+              onChange={(event) => setPairSecret(event.target.value)}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closePairDialog}>
+            <FormattedMessage defaultMessage="Cancel" />
+          </Button>
+          <Button variant="contained" onClick={handleSaveManualPair}>
+            <FormattedMessage defaultMessage="Save" />
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
+
+type PairedDeviceRowProps = {
+  device: PairedRemoteDevice;
+};
+
+const PairedDeviceRow = ({ device }: PairedDeviceRowProps) => {
+  return (
+    <Stack
+      spacing={0.25}
+      sx={{
+        px: 1.5,
+        py: 1,
+        borderRadius: 1,
+        backgroundColor: "level1",
+      }}
+    >
+      <Typography variant="body2" fontWeight={600}>
+        {device.name}
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        <FormattedMessage
+          defaultMessage="Device ID: {deviceId}"
+          values={{ deviceId: device.id }}
+        />
+      </Typography>
+      {device.lastKnownAddress && (
+        <Typography variant="caption" color="text.secondary">
+          <FormattedMessage
+            defaultMessage="Address: {address}"
+            values={{ address: device.lastKnownAddress }}
+          />
+        </Typography>
+      )}
+      <Typography variant="caption" color="text.secondary">
+        <FormattedMessage
+          defaultMessage="Role: {role} • Platform: {platform}"
+          values={{ role: device.role, platform: device.platform }}
+        />
+      </Typography>
+    </Stack>
   );
 };
