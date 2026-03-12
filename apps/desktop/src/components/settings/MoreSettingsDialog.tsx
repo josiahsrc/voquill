@@ -649,26 +649,39 @@ const PairedDeviceRow = ({ device, onEdit }: PairedDeviceRowProps) => {
         py: 1,
         borderRadius: 1,
         backgroundColor: "level1",
+        minWidth: 0,
       }}
     >
       <Typography variant="body2" fontWeight={600}>
         {device.name}
       </Typography>
-      <Typography variant="caption" color="text.secondary">
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ wordBreak: "break-all" }}
+      >
         <FormattedMessage
           defaultMessage="Device ID: {deviceId}"
           values={{ deviceId: device.id }}
         />
       </Typography>
       {device.lastKnownAddress && (
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ wordBreak: "break-all" }}
+        >
           <FormattedMessage
             defaultMessage="Address: {address}"
             values={{ address: device.lastKnownAddress }}
           />
         </Typography>
       )}
-      <Typography variant="caption" color="text.secondary">
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ wordBreak: "break-word" }}
+      >
         <FormattedMessage
           defaultMessage="Role: {role} • Platform: {platform}"
           values={{ role: device.role, platform: device.platform }}
