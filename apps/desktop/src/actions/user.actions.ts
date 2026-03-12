@@ -541,6 +541,26 @@ export const setRealtimeOutputEnabled = async (
   }, "Failed to save real-time output preference. Please try again.");
 };
 
+export const setRemoteOutputEnabled = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteOutputEnabled = enabled;
+    if (!enabled) {
+      preferences.remoteTargetDeviceId = null;
+    }
+  }, "Failed to save remote output preference. Please try again.");
+};
+
+export const setRemoteTargetDeviceId = async (
+  deviceId: Nullable<string>,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteTargetDeviceId = deviceId;
+    preferences.remoteOutputEnabled = Boolean(deviceId);
+  }, "Failed to save remote target device. Please try again.");
+};
+
 export const setStylingMode = async (
   mode: Nullable<StylingMode>,
 ): Promise<void> => {

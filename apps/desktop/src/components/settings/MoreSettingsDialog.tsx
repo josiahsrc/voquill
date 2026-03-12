@@ -9,18 +9,30 @@ import {
   Select,
   Stack,
   Switch,
+  Typography,
 } from "@mui/material";
 import type { DictationPillVisibility, StylingMode } from "@repo/types";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { showErrorSnackbar } from "../../actions/app.actions";
+import {
+  startRemoteReceiver,
+  stopRemoteReceiver,
+} from "../../actions/remote-receiver.actions";
 import {
   setDictationPillVisibility,
   setIgnoreUpdateDialog,
   setIncognitoModeEnabled,
   setIncognitoModeIncludeInStats,
   setRealtimeOutputEnabled,
+  setRemoteOutputEnabled,
+  setRemoteTargetDeviceId,
   setStylingMode,
 } from "../../actions/user.actions";
+import {
+  getRemoteReceiverStatus,
+  listPairedRemoteDevices,
+} from "../../remote/device.store";
 import { produceAppState, useAppStore } from "../../store";
 import { getAllowChangeStylingMode } from "../../utils/enterprise.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
@@ -32,6 +44,7 @@ import { SettingSection } from "../common/SettingSection";
 
 export const MoreSettingsDialog = () => {
   const intl = useIntl();
+  const [receiverBusy, setReceiverBusy] = useState(false);
   const [
     open,
     ignoreUpdateDialog,
@@ -39,6 +52,10 @@ export const MoreSettingsDialog = () => {
     incognitoIncludeInStats,
     dictationPillVisibility,
     realtimeOutputEnabled,
+    remoteOutputEnabled,
+    remoteTargetDeviceId,
+    pairedDevices,
+    receiverStatus,
     stylingMode,
     canChangeStylingMode,
   ] = useAppStore((state) => {
@@ -50,6 +67,10 @@ export const MoreSettingsDialog = () => {
       prefs?.incognitoModeIncludeInStats ?? false,
       getEffectivePillVisibility(prefs?.dictationPillVisibility),
       prefs?.realtimeOutputEnabled ?? false,
+      prefs?.remoteOutputEnabled ?? false,
+      prefs?.remoteTargetDeviceId ?? null,
+      listPairedRemoteDevices(state),
+      getRemoteReceiverStatus(state),
       getEffectiveStylingMode(state),
       getAllowChangeStylingMode(state),
     ] as const;
@@ -89,10 +110,75 @@ export const MoreSettingsDialog = () => {
     void setRealtimeOutputEnabled(event.target.checked);
   };
 
+  const handleToggleRemoteOutput = (event: ChangeEvent<HTMLInputElement>) => {
+    const enabled = event.target.checked;
+    if (enabled && !remoteTargetDeviceId) {
+      showErrorSnackbar("Select a remote target device first.");
+      return;
+    }
+    void setRemoteOutputEnabled(enabled);
+  };
+
+  const handleRemoteTargetDeviceChange = (
+    event: SelectChangeEvent<string>,
+  ) => {
+    const deviceId = event.target.value || null;
+    void setRemoteTargetDeviceId(deviceId);
+  };
+
+  const handleToggleReceiver = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (receiverBusy) {
+      return;
+    }
+
+    setReceiverBusy(true);
+    try {
+      if (event.target.checked) {
+        await startRemoteReceiver();
+      } else {
+        await stopRemoteReceiver();
+      }
+    } catch (error) {
+      showErrorSnackbar(error);
+    } finally {
+      setReceiverBusy(false);
+    }
+  };
+
   const handleStylingModeChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
     void setStylingMode(value === "" ? null : (value as StylingMode));
   };
+
+  const receiverSummary = receiverStatus?.enabled
+    ? intl.formatMessage(
+        {
+          defaultMessage:
+            "Listening on {address}:{port}. Pairing code: {code}.",
+        },
+        {
+          address: receiverStatus.listenAddress ?? "0.0.0.0",
+          port: receiverStatus.port ?? "unknown",
+          code: receiverStatus.pairingCode,
+        },
+      )
+    : intl.formatMessage({
+        defaultMessage:
+          "Enable receiver mode on the target machine so paired senders can deliver final transcript text locally.",
+      });
+
+  const remoteTargetSummary =
+    pairedDevices.length > 0
+      ? intl.formatMessage({
+          defaultMessage:
+            "Route finalized dictation to a paired desktop instead of inserting locally.",
+        })
+      : intl.formatMessage({
+          defaultMessage:
+            "No paired remote devices yet. Pair a receiver before enabling remote output.",
+        });
 
   return (
     <Dialog open={open} onClose={handleClose}>
@@ -187,6 +273,75 @@ export const MoreSettingsDialog = () => {
                 checked={realtimeOutputEnabled}
                 onChange={handleToggleRealtimeOutput}
               />
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Remote receiver" />}
+            description={receiverSummary}
+            action={
+              <Switch
+                edge="end"
+                checked={receiverStatus?.enabled ?? false}
+                disabled={receiverBusy}
+                onChange={handleToggleReceiver}
+              />
+            }
+          />
+
+          {receiverStatus && (
+            <Stack spacing={0.5} sx={{ mt: -1 }}>
+              <Typography variant="caption" color="text.secondary">
+                <FormattedMessage
+                  defaultMessage="Device ID: {deviceId}"
+                  values={{ deviceId: receiverStatus.deviceId }}
+                />
+              </Typography>
+              {receiverStatus.lastSenderDeviceId && (
+                <Typography variant="caption" color="text.secondary">
+                  <FormattedMessage
+                    defaultMessage="Last sender: {senderId}"
+                    values={{ senderId: receiverStatus.lastSenderDeviceId }}
+                  />
+                </Typography>
+              )}
+            </Stack>
+          )}
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Remote output" />}
+            description={remoteTargetSummary}
+            action={
+              <Switch
+                edge="end"
+                checked={remoteOutputEnabled}
+                disabled={!remoteTargetDeviceId}
+                onChange={handleToggleRemoteOutput}
+              />
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Remote target device" />}
+            description={
+              <FormattedMessage defaultMessage="Choose which paired desktop should receive finalized dictation." />
+            }
+            action={
+              <Select<string>
+                size="small"
+                value={remoteTargetDeviceId ?? ""}
+                onChange={handleRemoteTargetDeviceChange}
+                sx={{ minWidth: 180 }}
+              >
+                <MenuItem value="">
+                  {intl.formatMessage({ defaultMessage: "Local device" })}
+                </MenuItem>
+                {pairedDevices.map((device) => (
+                  <MenuItem key={device.id} value={device.id}>
+                    {device.name}
+                  </MenuItem>
+                ))}
+              </Select>
             }
           />
 
