@@ -1,6 +1,6 @@
 import type { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { showErrorSnackbar } from "../actions/app.actions";
+import { showErrorSnackbar, showSnackbar } from "../actions/app.actions";
 import { showToast } from "../actions/toast.actions";
 import {
   postProcessTranscript,
@@ -122,11 +122,14 @@ export class DictationStrategy extends BaseStrategy {
 
     await this.pasteQueue;
     try {
-      await routeTranscriptOutput({
+      const result = await routeTranscriptOutput({
         text: " ",
         mode: "dictation",
         currentAppId: args.currentApp?.id ?? null,
       });
+      if (result.remote) {
+        showSnackbar("Remote dictation delivered.", { mode: "success" });
+      }
     } catch {
       // Non-critical trailing space
     }
@@ -174,11 +177,14 @@ export class DictationStrategy extends BaseStrategy {
           );
 
           const textToPaste = transcript.trim() + " ";
-          await routeTranscriptOutput({
+          const result = await routeTranscriptOutput({
             text: textToPaste,
             mode: "dictation",
             currentAppId: args.currentApp?.id ?? null,
           });
+          if (result.remote) {
+            showSnackbar("Remote dictation delivered.", { mode: "success" });
+          }
 
           getLogger().info("Transcript output routed successfully");
         } catch (error) {
