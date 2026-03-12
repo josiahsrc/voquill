@@ -15,7 +15,10 @@ import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { loadPairedRemoteDevices } from "../../actions/paired-remote-device.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
-import { refreshRemoteReceiverStatus } from "../../actions/remote-receiver.actions";
+import {
+  refreshRemoteReceiverStatus,
+  startRemoteReceiver,
+} from "../../actions/remote-receiver.actions";
 import {
   checkForAppUpdates,
   dismissUpdateDialog,
@@ -322,6 +325,11 @@ export const AppSideEffects = () => {
       await refreshCurrentUser();
       await loadPairedRemoteDevices();
       await refreshRemoteReceiverStatus();
+      const prefs = getMyUserPreferences(getAppState());
+      const receiverStatus = getAppState().remoteReceiverStatus;
+      if (prefs?.remoteReceiverAutoStart && !receiverStatus?.enabled) {
+        await startRemoteReceiver(prefs.remoteReceiverPort ?? null);
+      }
       setInitReady(true);
     }
   }, [authReady, isEnterprise]);

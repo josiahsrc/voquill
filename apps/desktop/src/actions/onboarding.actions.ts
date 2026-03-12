@@ -198,6 +198,7 @@ export const submitOnboarding = async () => {
       remoteOutputEnabled: false,
       remoteTargetDeviceId: null,
       remoteReceiverPort: null,
+      remoteReceiverAutoStart: false,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

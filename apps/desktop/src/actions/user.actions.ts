@@ -100,6 +100,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   remoteOutputEnabled: false,
   remoteTargetDeviceId: null,
   remoteReceiverPort: null,
+  remoteReceiverAutoStart: false,
 });
 
 export const updateUserPreferences = async (
@@ -568,6 +569,14 @@ export const setRemoteReceiverPort = async (
   await updateUserPreferences((preferences) => {
     preferences.remoteReceiverPort = port;
   }, "Failed to save remote receiver port. Please try again.");
+};
+
+export const setRemoteReceiverAutoStart = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteReceiverAutoStart = enabled;
+  }, "Failed to save remote receiver auto-start preference. Please try again.");
 };
 
 export const setStylingMode = async (

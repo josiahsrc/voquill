@@ -81,6 +81,8 @@ pub const REMOTE_OUTPUT_AND_DEVICES_COMPAT_MIGRATION_SQL: &str =
     include_str!("migrations/059_remote_output_and_devices.sql");
 pub const REMOTE_RECEIVER_PORT_MIGRATION_SQL: &str =
     include_str!("migrations/060_remote_receiver_port.sql");
+pub const REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL: &str =
+    include_str!("migrations/061_remote_receiver_auto_start.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");
@@ -473,6 +475,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 60,
             description: "add_remote_receiver_port",
             sql: REMOTE_RECEIVER_PORT_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 61,
+            description: "add_remote_receiver_auto_start",
+            sql: REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

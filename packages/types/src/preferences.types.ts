@@ -33,6 +33,7 @@ export type UserPreferences = {
   remoteOutputEnabled: boolean;
   remoteTargetDeviceId: Nullable<string>;
   remoteReceiverPort: Nullable<number>;
+  remoteReceiverAutoStart: boolean;
 
   // deprecated
   isEnterprise: boolean;

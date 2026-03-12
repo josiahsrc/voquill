@@ -36,6 +36,7 @@ import {
   setIncognitoModeIncludeInStats,
   setRealtimeOutputEnabled,
   setRemoteOutputEnabled,
+  setRemoteReceiverAutoStart,
   setRemoteReceiverPort,
   setRemoteTargetDeviceId,
   setStylingMode,
@@ -76,6 +77,7 @@ export const MoreSettingsDialog = () => {
     remoteOutputEnabled,
     remoteTargetDeviceId,
     remoteReceiverPort,
+    remoteReceiverAutoStart,
     pairedDevices,
     receiverStatus,
     stylingMode,
@@ -92,6 +94,7 @@ export const MoreSettingsDialog = () => {
       prefs?.remoteOutputEnabled ?? false,
       prefs?.remoteTargetDeviceId ?? null,
       prefs?.remoteReceiverPort ?? null,
+      prefs?.remoteReceiverAutoStart ?? false,
       listPairedRemoteDevices(state),
       getRemoteReceiverStatus(state),
       getEffectiveStylingMode(state),
@@ -185,6 +188,12 @@ export const MoreSettingsDialog = () => {
       return;
     }
     void setRemoteReceiverPort(nextValue);
+  };
+
+  const handleRemoteReceiverAutoStartChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    void setRemoteReceiverAutoStart(event.target.checked);
   };
 
   const openPairDialog = (device?: PairedRemoteDevice) => {
@@ -460,6 +469,20 @@ export const MoreSettingsDialog = () => {
                   defaultMessage: "Auto",
                 })}
                 sx={{ width: 120 }}
+              />
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Start receiver automatically" />}
+            description={
+              <FormattedMessage defaultMessage="When enabled, Voquill will start the remote receiver automatically on launch using the saved receiver port." />
+            }
+            action={
+              <Switch
+                edge="end"
+                checked={remoteReceiverAutoStart}
+                onChange={handleRemoteReceiverAutoStartChange}
               />
             }
           />

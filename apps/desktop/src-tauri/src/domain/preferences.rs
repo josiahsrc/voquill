@@ -68,6 +68,8 @@ pub struct UserPreferences {
     pub remote_target_device_id: Option<String>,
     #[serde(default)]
     pub remote_receiver_port: Option<i64>,
+    #[serde(default)]
+    pub remote_receiver_auto_start: bool,
 }
 
 fn default_dictation_pill_visibility() -> String {

@@ -55,9 +55,10 @@ pub async fn upsert_user_preferences(
              realtime_output_enabled,
              remote_output_enabled,
              remote_target_device_id,
-             remote_receiver_port
+             remote_receiver_port,
+             remote_receiver_auto_start
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -90,7 +91,8 @@ pub async fn upsert_user_preferences(
             realtime_output_enabled = excluded.realtime_output_enabled,
             remote_output_enabled = excluded.remote_output_enabled,
             remote_target_device_id = excluded.remote_target_device_id,
-            remote_receiver_port = excluded.remote_receiver_port",
+            remote_receiver_port = excluded.remote_receiver_port,
+            remote_receiver_auto_start = excluded.remote_receiver_auto_start",
     )
     .bind(&preferences.user_id)
     .bind(&preferences.transcription_mode)
@@ -125,6 +127,7 @@ pub async fn upsert_user_preferences(
     .bind(preferences.remote_output_enabled)
     .bind(&preferences.remote_target_device_id)
     .bind(preferences.remote_receiver_port)
+    .bind(preferences.remote_receiver_auto_start)
     .execute(&pool)
     .await?;
 
@@ -169,7 +172,8 @@ pub async fn fetch_user_preferences(
             realtime_output_enabled,
             remote_output_enabled,
             remote_target_device_id,
-            remote_receiver_port
+            remote_receiver_port,
+            remote_receiver_auto_start
          FROM user_preferences
          WHERE user_id = ?1
          LIMIT 1",
@@ -286,6 +290,10 @@ pub async fn fetch_user_preferences(
         remote_receiver_port: row
             .try_get::<Option<i64>, _>("remote_receiver_port")
             .unwrap_or(None),
+        remote_receiver_auto_start: row
+            .try_get::<i64, _>("remote_receiver_auto_start")
+            .map(|v| v != 0)
+            .unwrap_or(false),
     });
 
     Ok(preferences)

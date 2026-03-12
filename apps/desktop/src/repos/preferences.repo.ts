@@ -41,6 +41,7 @@ type LocalUserPreferences = {
   remoteOutputEnabled: boolean;
   remoteTargetDeviceId: Nullable<string>;
   remoteReceiverPort: Nullable<number>;
+  remoteReceiverAutoStart: boolean;
   useNewBackend: boolean;
 };
 
@@ -91,6 +92,7 @@ const fromLocalPreferences = (
   remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
   remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
   remoteReceiverPort: preferences.remoteReceiverPort ?? null,
+  remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
 });
 
 const toLocalPreferences = (
@@ -128,6 +130,7 @@ const toLocalPreferences = (
   remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
   remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
   remoteReceiverPort: preferences.remoteReceiverPort ?? null,
+  remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
   useNewBackend: true,
 });
 
