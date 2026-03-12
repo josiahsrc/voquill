@@ -301,10 +301,14 @@ export const MoreSettingsDialog = () => {
           code: receiverStatus.pairingCode,
         },
       )
-    : intl.formatMessage({
+      : intl.formatMessage({
         defaultMessage:
           "Enable receiver mode on the target machine so paired senders can deliver final transcript text locally.",
       });
+
+  const lastDeliveryTimeLabel = receiverStatus?.lastDeliveryAt
+    ? new Date(receiverStatus.lastDeliveryAt).toLocaleString()
+    : null;
 
   const remoteTargetSummary =
     pairedDevices.length > 0
@@ -468,15 +472,17 @@ export const MoreSettingsDialog = () => {
                   values={{ deviceId: receiverStatus.deviceId }}
                 />
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                <FormattedMessage
-                  defaultMessage="Connect address: {address}:{port}"
-                  values={{
-                    address: receiverStatus.listenAddress ?? "127.0.0.1",
-                    port: receiverStatus.port ?? "unknown",
-                  }}
-                />
-              </Typography>
+              {receiverStatus.enabled && (
+                <Typography variant="caption" color="text.secondary">
+                  <FormattedMessage
+                    defaultMessage="Connect address: {address}:{port}"
+                    values={{
+                      address: receiverStatus.listenAddress ?? "127.0.0.1",
+                      port: receiverStatus.port ?? "unknown",
+                    }}
+                  />
+                </Typography>
+              )}
               {receiverStatus.lastSenderDeviceId && (
                 <Typography variant="caption" color="text.secondary">
                   <FormattedMessage
@@ -487,12 +493,12 @@ export const MoreSettingsDialog = () => {
               )}
               {receiverStatus.lastDeliveryStatus && (
                 <Typography variant="caption" color="text.secondary">
-                  {receiverStatus.lastDeliveryAt ? (
+                  {lastDeliveryTimeLabel ? (
                     <FormattedMessage
                       defaultMessage="Last delivery: {status} at {timestamp}"
                       values={{
                         status: receiverStatus.lastDeliveryStatus,
-                        timestamp: receiverStatus.lastDeliveryAt,
+                        timestamp: lastDeliveryTimeLabel,
                       }}
                     />
                   ) : (
