@@ -334,12 +334,7 @@ fn current_target_info() -> crate::platform::windows::input::WindowTargetInfo {
 
 #[cfg(target_os = "windows")]
 fn current_target_editable_status() -> Option<bool> {
-    let info = crate::platform::accessibility::get_text_field_info();
-    Some(
-        info.cursor_position.is_some()
-            || info.selection_length.is_some()
-            || info.text_content.is_some(),
-    )
+    Some(crate::platform::accessibility::is_text_input_focused())
 }
 
 #[cfg(not(target_os = "windows"))]

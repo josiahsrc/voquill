@@ -10,7 +10,7 @@ use windows::Win32::UI::Accessibility::{
     UIA_AppBarControlTypeId, UIA_ButtonControlTypeId, UIA_CalendarControlTypeId,
     UIA_CheckBoxControlTypeId, UIA_ComboBoxControlTypeId, UIA_ControlTypePropertyId,
     UIA_CustomControlTypeId, UIA_DataGridControlTypeId, UIA_DataItemControlTypeId,
-    UIA_DocumentControlTypeId, UIA_GroupControlTypeId, UIA_HeaderControlTypeId,
+    UIA_DocumentControlTypeId, UIA_EditControlTypeId, UIA_GroupControlTypeId, UIA_HeaderControlTypeId,
     UIA_HeaderItemControlTypeId, UIA_HelpTextPropertyId, UIA_HyperlinkControlTypeId,
     UIA_ImageControlTypeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId,
     UIA_MenuBarControlTypeId, UIA_MenuControlTypeId, UIA_MenuItemControlTypeId, UIA_NamePropertyId,
@@ -38,6 +38,10 @@ pub fn get_text_field_info() -> TextFieldInfo {
             empty_text_field_info()
         }
     }
+}
+
+pub fn is_text_input_focused() -> bool {
+    try_is_text_input_focused().unwrap_or(false)
 }
 
 fn try_get_text_field_info() -> Result<TextFieldInfo, windows::core::Error> {
@@ -92,6 +96,37 @@ fn try_get_text_field_info() -> Result<TextFieldInfo, windows::core::Error> {
             selection_length,
             text_content,
         })
+    }
+}
+
+fn try_is_text_input_focused() -> Result<bool, windows::core::Error> {
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+        let automation: IUIAutomation =
+            CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)?;
+
+        let focused = automation.GetFocusedElement()?;
+        let control_type = get_control_type(&focused);
+
+        if matches!(
+            control_type,
+            value if value == UIA_EditControlTypeId.0 || value == UIA_DocumentControlTypeId.0
+        ) {
+            return Ok(true);
+        }
+
+        let text_pattern = focused.GetCurrentPattern(UIA_TextPatternId)?;
+        if !text_pattern.as_raw().is_null() {
+            return Ok(true);
+        }
+
+        let value_pattern = focused.GetCurrentPattern(UIA_ValuePatternId)?;
+        if !value_pattern.as_raw().is_null() {
+            return Ok(true);
+        }
+
+        Ok(false)
     }
 }
 
