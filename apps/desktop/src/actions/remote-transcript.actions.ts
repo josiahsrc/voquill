@@ -5,7 +5,6 @@ import { getAppState, produceAppState } from "../store";
 import { createId } from "../utils/id.utils";
 import { getLogger } from "../utils/log.utils";
 import { getMyEffectiveUserId, getMyUserPreferences } from "../utils/user.utils";
-import { tryRegisterCurrentAppTarget } from "./app-target.actions";
 import { insertLocalTranscriptOutput } from "../remote/output-router";
 import { showSnackbar } from "./app.actions";
 
@@ -69,16 +68,10 @@ export const handleRemoteFinalTextReceived = async (
     return;
   }
 
-  const currentApp = await tryRegisterCurrentAppTarget().catch((error) => {
-    getLogger().warning(
-      `Failed to resolve current app for remote transcript: ${error}`,
-    );
-    return null;
-  });
-
+  await new Promise<void>((resolve) => setTimeout(resolve, 20));
   await insertLocalTranscriptOutput(
     `${finalText} `,
-    currentApp?.pasteKeybind ?? null,
+    null,
   );
   await storeRemoteTranscription({
     rawTranscript: finalText,
