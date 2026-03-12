@@ -62,14 +62,26 @@ For standalone development/testing, `DESKTOP_API_URL` can point to any OpenAI-co
 
 ### Security
 
-On each app launch, the desktop app generates a random session API key (e.g., `crypto.randomUUID()`). This key is:
+Both the desktop API server and the sidecar are protected by a shared session API key. The key gates all access — without it, neither server responds to any request.
 
-1. Passed to the sidecar via the `DESKTOP_API_KEY` env var
-2. Used by the desktop API server to authenticate all incoming requests (both LLM proxy and tool endpoints)
+#### How it works
 
-The server rejects any request that doesn't include a valid `Authorization: Bearer <key>` header. Since the key is generated fresh per session and only shared between the desktop app and its own sidecar process, no other local process can access the LLM proxy or native tools.
+1. On app launch, the desktop app generates a random API key (`crypto.randomUUID()`) and holds it in memory
+2. The desktop API server starts on `http://localhost:4112` and rejects any request without `Authorization: Bearer <key>`
+3. The sidecar starts on `http://localhost:4111` with the same key passed via the `DESKTOP_API_KEY` env var, and also rejects unauthorized requests
+4. Both processes enforce the key on every request — the desktop app includes it when calling the sidecar, the sidecar includes it when calling the desktop API server
 
-The sidecar includes this key in all desktop API requests automatically.
+#### Why plain HTTP on localhost is sufficient
+
+The traffic between the desktop app and sidecar is `localhost` only — it never leaves the machine. The API key protects against the realistic threat: other programs on the machine discovering the ports (e.g., via port scanning) and making unauthorized requests. Without the key, they can't do anything.
+
+More heavyweight options (TLS, Unix domain sockets) don't meaningfully improve security for this scenario. If an attacker can sniff localhost traffic or read process memory, they already have enough access to bypass any of these measures. The API key is defense-in-depth that stops casual/automated access, which is the actual threat model. This is the same approach used by VS Code extensions, Ollama, Docker Desktop, and other local sidecar architectures.
+
+#### Key properties
+
+- **Ephemeral** — generated fresh every app launch, never persisted to disk
+- **In-memory only** — exists only in the two processes' memory (and the sidecar's env var at startup)
+- **Single-use scope** — valid only for the current session, invalidated when the app closes
 
 ### Shutdown
 
@@ -166,38 +178,81 @@ Native tools won't be available in standalone mode, but the agent can still chat
 
 All tools are **imperative** and **stateless** — the Mastra sidecar executes tools directly and gets results back inline. The tools themselves hold no state; they call out to services (the desktop API server, external APIs) that manage state. This lets the agent chain tools naturally in a single turn.
 
-Tools fall into two categories based on where they execute, but from the agent's perspective they all work the same way: request permission → execute.
+Tools fall into two categories based on where they execute, but from the agent's perspective they all work the same way: discover → request permission → exchange for token → execute.
+
+### Tool Discovery
+
+The desktop API server exposes a single endpoint that returns all available tools:
+
+```
+GET /tools/list
+  Response: {
+    tools: [
+      {
+        id: "paste",
+        description: "Writes to clipboard and triggers paste",
+        schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] }
+      },
+      ...
+    ]
+  }
+```
+
+On startup, the Mastra sidecar fetches this list and dynamically registers each tool. No tool definitions are hardcoded in `packages/ai/` — the desktop API server is the single source of truth for what tools exist, what they do, and what parameters they accept.
 
 ### Tool Permission System
 
-Every tool call goes through a two-step permission flow: **request permission**, then **execute**. This ensures the user stays in control of what the agent can do without interrupting the agent's reasoning.
+Every tool call goes through a three-step flow: **request permission** → **exchange for token** → **execute**. This ensures the user stays in control of what the agent can do, and that approved parameters cannot be tampered with after approval.
 
 #### API
 
 ```
 POST /tools/{tool}/permissions
-  Body: { ...params that will be passed to execute }
-  Response: { status: "allowed" | "pending" | "denied", permission_id: "..." }
+  Body: { ...tool_params }
+  Response: { permission_id: "..." }
 
 GET /tools/permissions/{permission_id}
-  Response: { status: "allowed" | "pending" | "denied" }
+  Response: { status: "pending" | "allowed" | "denied", token?: "..." }
 
 POST /tools/{tool}/execute
-  Body: { permission_id: "...", ...params }
+  Body: { token: "..." }
   Response: { result: {...} }
 ```
 
 #### Flow
 
 1. Agent calls `POST /tools/paste/permissions` with `{ text: "Hello" }`
-2. Server checks the allowlist for this tool + params
-3. If already allowed → `{ status: "allowed", permission_id: "abc" }`
-4. If not → server creates a permission request, shows a prompt in the desktop UI → `{ status: "pending", permission_id: "abc" }`
-5. Agent polls `GET /tools/permissions/abc` until it resolves to `allowed` or `denied`
-6. If `allowed` → agent calls `POST /tools/paste/execute` with `{ permission_id: "abc", text: "Hello" }`
+2. Server creates a permission record, storing the tool params as a JSON blob alongside it
+3. Server checks the allowlist for this tool + params
+4. Returns `{ permission_id: "abc" }`
+5. Agent calls `GET /tools/permissions/abc` to exchange the ID for a token
+6. If `pending` → the desktop UI is showing an approval prompt; agent polls again
 7. If `denied` → agent informs the user it couldn't perform the action
+8. If `allowed` → response includes a signed JWT `token` (which embeds the `permission_id`)
+9. Agent calls `POST /tools/paste/execute` with `{ token: "..." }` — **no params**
+10. Server verifies the JWT, extracts the `permission_id`, looks up the stored params, and executes the tool with those exact params
 
-The `execute` endpoint rejects any call without a matching, approved `permission_id`. You can't skip the permission step.
+#### Parameter Binding
+
+Tool parameters are **locked at permission time**. The agent passes the full params in step 1, and those params are stored with the permission record. When the tool executes in step 9, it uses the stored params — the execute request carries only the token, not the params. This means:
+
+- The user sees exactly what the agent wants to do before approving
+- There's no way to change the params after approval
+- The permission request is a signed intent
+
+#### Token Design
+
+The execution token is a **signed JWT** issued by the desktop API server. It contains:
+
+- `permission_id` — references the stored permission record (and its params)
+- `tool` — the tool ID (for validation)
+- Signed with a secret known only to the desktop API server
+
+The server verifies the JWT signature on execute, extracts the `permission_id`, loads the stored params, and runs the tool. No valid token = no execution.
+
+#### Storage
+
+Permission records, stored params, and issued tokens are all held **in-memory** at runtime — never persisted to disk or database. This is more secure since the data can't be read from the filesystem, and there's no need to survive a restart. Permissions and tokens are inherently ephemeral (scoped to a single app session), so in-memory storage is the right fit.
 
 #### Permission Granularity
 
@@ -216,56 +271,136 @@ A shared helper in `packages/ai/` keeps tool implementations dead simple:
 
 ```ts
 async function callTool(tool: string, params: Record<string, unknown>) {
-  const perm = await requestPermission(tool, params);
+  const { permissionId } = await requestPermission(tool, params);
 
-  if (perm.status === "pending") {
-    perm = await pollUntilResolved(perm.permissionId);
-  }
-
-  if (perm.status === "denied") {
+  const result = await pollForToken(permissionId);
+  if (result.status === "denied") {
     return { error: `User denied ${tool}` };
   }
 
-  return await executeTool(tool, perm.permissionId, params);
+  return await executeTool(tool, result.token);
 }
 ```
 
-Each Mastra tool is then just:
+Since tool definitions are fetched dynamically from `GET /tools/list`, the sidecar registers them generically:
 
 ```ts
-const pasteText = createTool({
-  id: "paste_text",
-  description: "Paste text at the current cursor position",
-  inputSchema: z.object({ text: z.string() }),
-  execute: ({ context }) => callTool("paste", { text: context.text }),
-});
+const tools = await fetchToolList();
+
+for (const tool of tools) {
+  agent.registerTool(createTool({
+    id: tool.id,
+    description: tool.description,
+    inputSchema: tool.schema,
+    execute: ({ context }) => callTool(tool.id, context),
+  }));
+}
 ```
 
-### Native Tool Endpoints
+### Tool Execution Strategies
 
-The desktop API server exposes native capabilities under the `/tools/` prefix. Each tool has `permissions` and `execute` routes. The execute handler wraps a Tauri `invoke()` call.
+Each tool definition includes an internal execution strategy that determines how the tool is actually invoked. The sidecar never sees this — it's the desktop API server's concern.
 
-| Tool | What it does |
-|---|---|
-| `paste` | Writes to clipboard and triggers paste via Tauri |
-| `type` | Types text via Tauri keyboard input |
-| `get-selected-text` | Returns the currently selected text |
-| `get-accessibility-info` | Returns accessibility tree / focused element info |
-| `capture-screenshot` | Takes a screenshot, returns base64 or file path |
-| `open-window` | Opens/focuses a Tauri window |
-| `close-window` | Closes a Tauri window |
+#### Strategy Types
 
-### API Tools
+```ts
+type TauriToolStrategy = { type: "tauri"; command: string };
+type HttpToolStrategy = { type: "http"; url: string; method: "GET" | "POST" };
+type CallableToolStrategy = { type: "callable"; path: string };
 
-These run directly in the Mastra sidecar (no tool server needed):
+type ToolStrategy = TauriToolStrategy | HttpToolStrategy | CallableToolStrategy;
+```
 
-| Tool | Action |
-|---|---|
-| `search_transcriptions` | Call server API to search user's transcription history |
-| `get_user_preferences` | Read user settings |
-| `web_search` | Call a search API |
+- **tauri** — invokes a Tauri command (paste, type, screenshot, etc.)
+- **http** — makes an HTTP request to an external URL
+- **callable** — calls an internal callable function (e.g., enterprise gateway endpoints)
 
-These tools make HTTP calls and return results to the agent. They can hit the same server the user is connected to (Firebase, enterprise gateway, etc.) using the auth token passed at startup.
+#### Tool Definition
+
+```ts
+// packages/types — shared between desktop API server and sidecar
+type ToolInfo = {
+  id: string;
+  description: string;
+  schema: JSONSchema;
+};
+
+type ToolPermissionStatus = "pending" | "allowed" | "denied";
+
+// apps/desktop — internal only
+type ToolDefinition = ToolInfo & {
+  strategy: ToolStrategy;
+};
+```
+
+`ToolInfo` and `ToolPermissionStatus` live in `packages/types` so they can be shared with the sidecar. `ToolDefinition` extends `ToolInfo` with the internal `strategy` field and stays in `apps/desktop` — the sidecar never sees it.
+
+#### Execution Repositories
+
+Each strategy type has a corresponding repo. The repo interface is generic over its strategy type, so each implementation receives the narrowed type directly — no casting needed.
+
+```ts
+interface ToolExecutionRepo<T extends ToolStrategy> {
+  execute(strategy: T, params: Record<string, unknown>): Promise<unknown>;
+}
+
+class TauriToolExecutionRepo implements ToolExecutionRepo<TauriToolStrategy> {
+  async execute(strategy: TauriToolStrategy, params) {
+    return await invoke(strategy.command, params);
+  }
+}
+
+class HttpToolExecutionRepo implements ToolExecutionRepo<HttpToolStrategy> {
+  async execute(strategy: HttpToolStrategy, params) {
+    return await fetch(strategy.url, { method: strategy.method, body: JSON.stringify(params) });
+  }
+}
+
+class CallableToolExecutionRepo implements ToolExecutionRepo<CallableToolStrategy> {
+  async execute(strategy: CallableToolStrategy, params) {
+    return await callFunction(strategy.path, params);
+  }
+}
+```
+
+#### Factory
+
+```ts
+function getExecutionRepo(strategy: ToolStrategy): ToolExecutionRepo<typeof strategy> {
+  switch (strategy.type) {
+    case "tauri": return new TauriToolExecutionRepo();
+    case "http": return new HttpToolExecutionRepo();
+    case "callable": return new CallableToolExecutionRepo();
+  }
+}
+```
+
+#### State
+
+Tool definitions and permission records live in Zustand app state as `byId` maps, following the existing pattern (`toneById`, `transcriptionById`, etc.):
+
+```ts
+// In AppState (top-level)
+toolById: Record<string, ToolDefinition>;
+toolPermissionById: Record<string, ToolPermission>;
+```
+
+The desktop API server reads from and writes to these maps directly. No separate registry class needed — the state *is* the registry.
+
+### Tool List
+
+| Tool | Strategy | What it does |
+|---|---|---|
+| `paste` | tauri | Writes to clipboard and triggers paste |
+| `type` | tauri | Types text via keyboard input |
+| `get-selected-text` | tauri | Returns the currently selected text |
+| `get-accessibility-info` | tauri | Returns accessibility tree / focused element info |
+| `capture-screenshot` | tauri | Takes a screenshot, returns base64 or file path |
+| `open-window` | tauri | Opens/focuses a Tauri window |
+| `close-window` | tauri | Closes a Tauri window |
+| `search_transcriptions` | http/callable | Search user's transcription history |
+| `get_user_preferences` | http/callable | Read user settings |
+| `web_search` | http | Call a search API |
 
 ## 4. Desktop App Frontend
 
@@ -315,7 +450,7 @@ const { messages, input, handleSubmit } = useChat({
 
 ### Desktop API Server Implementation
 
-The desktop API server runs in the renderer process, which gives it direct access to Tauri's `invoke()`. It starts before the sidecar launches and handles both LLM proxy routes and native tool routes on a single port.
+The desktop API server runs in the renderer process, which gives it direct access to Tauri's `invoke()`. It starts before the sidecar launches and handles LLM proxy routes, tool discovery, and the tool permission/execution flow on a single port.
 
 ```ts
 // Simplified — actual implementation in src/desktop-api/
@@ -327,23 +462,42 @@ app.post("/v1/chat/completions", async (req) => {
   // ... stream SSE response
 });
 
-// Tool permissions
+// Tool discovery
+app.get("/tools/list", async (req) => {
+  return { tools: Object.values(getState().toolById) }; // id, description, schema for each
+});
+
+// Request permission (stores params in state)
 app.post("/tools/:tool/permissions", async (req) => {
-  const { tool } = req.params;
-  const status = permissionManager.check(tool, req.body);
-  if (status === "allowed") return { status, permission_id: createId() };
-  const id = permissionManager.requestApproval(tool, req.body); // shows UI prompt
-  return { status: "pending", permission_id: id };
+  const id = createId();
+  setState(draft => {
+    draft.toolPermissionById[id] = {
+      id,
+      tool: req.params.tool,
+      params: req.body,
+      status: "pending",
+    };
+  });
+  return { permission_id: id };
 });
 
+// Exchange permission ID for execution token
 app.get("/tools/permissions/:id", async (req) => {
-  return { status: permissionManager.getStatus(req.params.id) };
+  const permission = getState().toolPermissionById[req.params.id];
+  if (permission.status === "allowed") {
+    const token = signJwt({ permission_id: permission.id, tool: permission.tool });
+    return { status: "allowed", token };
+  }
+  return { status: permission.status }; // "pending" or "denied"
 });
 
-// Tool execution
+// Execute tool with token (no params — uses stored params from permission)
 app.post("/tools/:tool/execute", async (req) => {
-  permissionManager.assertApproved(req.body.permission_id);
-  const result = await executeToolViaTauri(req.params.tool, req.body);
+  const claims = verifyJwt(req.body.token);
+  const permission = getState().toolPermissionById[claims.permission_id];
+  const tool = getState().toolById[req.params.tool];
+  const repo = getExecutionRepo(tool.strategy);
+  const result = await repo.execute(tool.strategy, permission.params);
   return { result };
 });
 ```
@@ -360,12 +514,13 @@ The server starts before the sidecar and its URL + session key are passed via `D
 5. End-to-end: user can chat with the AI via the desktop app
 
 ### Phase 2: Native Tools + Permission System
-6. Build the tool permission system (permissions endpoint, polling endpoint, approval UI)
-7. Add native tool execute endpoints to the desktop API server (`/tools/*/execute`)
-8. Build the `callTool` helper in `packages/ai/` (request permission → poll → execute)
-9. Define native tool schemas in Mastra using the helper
-10. Implement Tauri commands for paste, get selection, accessibility, screenshot, etc.
-11. End-to-end: agent can read screen context and take actions (with user approval)
+6. Build the tool registry and `GET /tools/list` endpoint on the desktop API server
+7. Build the permission system (permission request endpoint, token exchange via signed JWT, approval UI)
+8. Add tool execute endpoint (`POST /tools/{tool}/execute`) — validates JWT, loads stored params, executes
+9. Build the `callTool` helper in `packages/ai/` (request permission → poll for token → execute with token)
+10. Wire up dynamic tool registration in the sidecar (fetch `/tools/list` on startup, register tools generically)
+11. Implement Tauri commands for paste, get selection, accessibility, screenshot, etc.
+12. End-to-end: agent can read screen context and take actions (with user approval)
 
 ### Phase 3: Cloud + Enterprise LLM Routing
 10. Add cloud/enterprise provider routing in the desktop API server's LLM proxy
