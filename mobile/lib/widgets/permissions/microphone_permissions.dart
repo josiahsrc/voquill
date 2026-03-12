@@ -83,35 +83,63 @@ class _MicrophonePermissionsState extends State<MicrophonePermissions>
         description: const Text(
           'Voquill needs access to your microphone to transcribe your voice.',
         ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.mic,
-                  size: 56,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Tap the button below to grant microphone access.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _FeatureItem(
+              icon: Icons.mic,
+              text: 'Type using your voice',
+              theme: theme,
+            ),
+            const SizedBox(height: 16),
+            _FeatureItem(
+              icon: Icons.auto_awesome,
+              text: 'AI polishes your text',
+              theme: theme,
+            ),
+            const SizedBox(height: 16),
+            _FeatureItem(
+              icon: Icons.apps,
+              text: 'Works in any app',
+              theme: theme,
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _FeatureItem extends StatelessWidget {
+  const _FeatureItem({
+    required this.icon,
+    required this.text,
+    required this.theme,
+  });
+
+  final IconData icon;
+  final String text;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 24,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
