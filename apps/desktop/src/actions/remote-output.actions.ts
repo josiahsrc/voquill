@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { showSnackbar } from "./app.actions";
 
 export const sendRemoteTestOutput = async (
   targetDeviceId: string,
@@ -11,4 +12,5 @@ export const sendRemoteTestOutput = async (
       mode: "dictation",
     },
   });
+  showSnackbar("Remote delivery acknowledged.");
 };

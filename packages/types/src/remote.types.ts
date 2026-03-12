@@ -32,6 +32,9 @@ export type RemoteReceiverStatus = {
   pairingCode: string;
   lastSenderDeviceId: Nullable<string>;
   lastEventId: Nullable<string>;
+  lastDeliveryStatus: Nullable<string>;
+  lastDeliveryAt: Nullable<string>;
+  lastError: Nullable<string>;
 };
 
 export type RouteTranscriptOutputArgs = {

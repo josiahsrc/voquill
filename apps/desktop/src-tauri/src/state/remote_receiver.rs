@@ -16,6 +16,9 @@ pub struct RemoteReceiverStatus {
     pub pairing_code: String,
     pub last_sender_device_id: Option<String>,
     pub last_event_id: Option<String>,
+    pub last_delivery_status: Option<String>,
+    pub last_delivery_at: Option<String>,
+    pub last_error: Option<String>,
 }
 
 struct RemoteReceiverStateInner {
@@ -58,6 +61,9 @@ impl RemoteReceiverState {
                     pairing_code: generate_pairing_code(),
                     last_sender_device_id: None,
                     last_event_id: None,
+                    last_delivery_status: None,
+                    last_delivery_at: None,
+                    last_error: None,
                 },
                 shutdown: None,
             })),
@@ -91,10 +97,32 @@ impl RemoteReceiverState {
         inner.status.port = None;
     }
 
-    pub fn record_delivery(&self, sender_device_id: Option<String>, event_id: Option<String>) {
+    pub fn record_delivery(
+        &self,
+        sender_device_id: Option<String>,
+        event_id: Option<String>,
+        delivered_at: Option<String>,
+    ) {
         let mut inner = self.inner.lock().unwrap();
         inner.status.last_sender_device_id = sender_device_id;
         inner.status.last_event_id = event_id;
+        inner.status.last_delivery_status = Some("delivered".to_string());
+        inner.status.last_delivery_at = delivered_at;
+        inner.status.last_error = None;
+    }
+
+    pub fn record_error(
+        &self,
+        sender_device_id: Option<String>,
+        event_id: Option<String>,
+        message: String,
+    ) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.status.last_sender_device_id = sender_device_id;
+        inner.status.last_event_id = event_id;
+        inner.status.last_delivery_status = Some("failed".to_string());
+        inner.status.last_error = Some(message);
+        inner.status.last_delivery_at = Some(chrono::Utc::now().to_rfc3339());
     }
 }
 

@@ -139,6 +139,11 @@ async fn handle_connection(
                     .map_err(|err| format!("Failed to validate sender device: {err}"))?;
 
                 let Some(device) = device else {
+                    state.record_error(
+                        Some(sender_device_id.clone()),
+                        None,
+                        "Sender is not paired.".to_string(),
+                    );
                     write_message(
                         &mut writer,
                         &OutgoingEnvelope::DeliveryError {
@@ -154,6 +159,11 @@ async fn handle_connection(
                 };
 
                 if !device.trusted || device.shared_secret != auth_token {
+                    state.record_error(
+                        Some(sender_device_id.clone()),
+                        None,
+                        "Sender authentication failed.".to_string(),
+                    );
                     write_message(
                         &mut writer,
                         &OutgoingEnvelope::DeliveryError {
@@ -187,6 +197,11 @@ async fn handle_connection(
                 created_at: _created_at,
             } => {
                 let Some(sender_device_id) = authenticated_sender.clone() else {
+                    state.record_error(
+                        None,
+                        Some(event_id.clone()),
+                        "No authenticated sender session.".to_string(),
+                    );
                     write_message(
                         &mut writer,
                         &OutgoingEnvelope::DeliveryError {
@@ -203,9 +218,11 @@ async fn handle_connection(
 
                 match paste_text_into_focused_field(&text, None) {
                     Ok(()) => {
+                        let delivered_at = chrono::Utc::now().to_rfc3339();
                         state.record_delivery(
                             Some(sender_device_id),
                             Some(event_id.clone()),
+                            Some(delivered_at.clone()),
                         );
                         write_message(
                             &mut writer,
@@ -213,12 +230,17 @@ async fn handle_connection(
                                 session_id,
                                 event_id,
                                 sequence,
-                                delivered_at: chrono::Utc::now().to_rfc3339(),
+                                delivered_at,
                             },
                         )
                         .await?;
                     }
                     Err(err) => {
+                        state.record_error(
+                            Some(sender_device_id),
+                            Some(event_id.clone()),
+                            err.clone(),
+                        );
                         write_message(
                             &mut writer,
                             &OutgoingEnvelope::DeliveryError {

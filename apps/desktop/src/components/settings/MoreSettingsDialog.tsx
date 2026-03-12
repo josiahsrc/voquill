@@ -19,13 +19,14 @@ import type {
   RemoteDeviceRole,
   StylingMode,
 } from "@repo/types";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { sendRemoteTestOutput } from "../../actions/remote-output.actions";
 import { upsertPairedRemoteDevice } from "../../actions/paired-remote-device.actions";
 import {
   startRemoteReceiver,
+  refreshRemoteReceiverStatus,
   stopRemoteReceiver,
 } from "../../actions/remote-receiver.actions";
 import {
@@ -301,6 +302,21 @@ export const MoreSettingsDialog = () => {
             "No paired remote devices yet. Pair a receiver before enabling remote output.",
         });
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    void refreshRemoteReceiverStatus().catch(() => undefined);
+    const intervalId = window.setInterval(() => {
+      void refreshRemoteReceiverStatus().catch(() => undefined);
+    }, 2000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [open]);
+
   return (
     <>
       <Dialog open={open} onClose={handleClose}>
@@ -424,6 +440,38 @@ export const MoreSettingsDialog = () => {
                   <FormattedMessage
                     defaultMessage="Last sender: {senderId}"
                     values={{ senderId: receiverStatus.lastSenderDeviceId }}
+                  />
+                </Typography>
+              )}
+              {receiverStatus.lastDeliveryStatus && (
+                <Typography variant="caption" color="text.secondary">
+                  {receiverStatus.lastDeliveryAt ? (
+                    <FormattedMessage
+                      defaultMessage="Last delivery: {status} at {timestamp}"
+                      values={{
+                        status: receiverStatus.lastDeliveryStatus,
+                        timestamp: receiverStatus.lastDeliveryAt,
+                      }}
+                    />
+                  ) : (
+                    <FormattedMessage
+                      defaultMessage="Last delivery: {status}"
+                      values={{
+                        status: receiverStatus.lastDeliveryStatus,
+                      }}
+                    />
+                  )}
+                </Typography>
+              )}
+              {receiverStatus.lastError && (
+                <Typography
+                  variant="caption"
+                  color="error.main"
+                  sx={{ wordBreak: "break-word" }}
+                >
+                  <FormattedMessage
+                    defaultMessage="Last error: {message}"
+                    values={{ message: receiverStatus.lastError }}
                   />
                 </Typography>
               )}
