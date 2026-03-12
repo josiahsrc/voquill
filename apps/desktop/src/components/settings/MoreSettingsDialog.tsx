@@ -21,7 +21,8 @@ import type {
 } from "@repo/types";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { showErrorSnackbar } from "../../actions/app.actions";
+import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { sendRemoteTestOutput } from "../../actions/remote-output.actions";
 import { upsertPairedRemoteDevice } from "../../actions/paired-remote-device.actions";
 import {
   startRemoteReceiver,
@@ -61,6 +62,7 @@ export const MoreSettingsDialog = () => {
   const [pairPlatform, setPairPlatform] =
     useState<RemoteDevicePlatform>("windows");
   const [pairRole, setPairRole] = useState<RemoteDeviceRole>("receiver");
+  const [testBusy, setTestBusy] = useState(false);
   const [
     open,
     ignoreUpdateDialog,
@@ -213,6 +215,26 @@ export const MoreSettingsDialog = () => {
       closePairDialog();
     } catch (error) {
       showErrorSnackbar(error);
+    }
+  };
+
+  const handleSendTest = async () => {
+    if (!remoteTargetDeviceId) {
+      showErrorSnackbar("Select a remote target device first.");
+      return;
+    }
+    if (testBusy) {
+      return;
+    }
+
+    setTestBusy(true);
+    try {
+      await sendRemoteTestOutput(remoteTargetDeviceId);
+      showSnackbar("Remote test message sent.");
+    } catch (error) {
+      showErrorSnackbar(error);
+    } finally {
+      setTestBusy(false);
     }
   };
 
@@ -425,6 +447,23 @@ export const MoreSettingsDialog = () => {
                   </MenuItem>
                 ))}
               </Select>
+            }
+          />
+
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Remote transport test" />}
+            description={
+              <FormattedMessage defaultMessage="Send a fixed test message to the selected remote target to verify transport without using dictation." />
+            }
+            action={
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handleSendTest}
+                disabled={!remoteTargetDeviceId || testBusy}
+              >
+                <FormattedMessage defaultMessage="Send test" />
+              </Button>
             }
           />
 
