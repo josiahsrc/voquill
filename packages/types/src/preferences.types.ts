@@ -32,6 +32,7 @@ export type UserPreferences = {
   realtimeOutputEnabled: boolean;
   remoteOutputEnabled: boolean;
   remoteTargetDeviceId: Nullable<string>;
+  remoteReceiverPort: Nullable<number>;
 
   // deprecated
   isEnterprise: boolean;

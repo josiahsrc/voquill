@@ -36,6 +36,7 @@ import {
   setIncognitoModeIncludeInStats,
   setRealtimeOutputEnabled,
   setRemoteOutputEnabled,
+  setRemoteReceiverPort,
   setRemoteTargetDeviceId,
   setStylingMode,
 } from "../../actions/user.actions";
@@ -74,6 +75,7 @@ export const MoreSettingsDialog = () => {
     realtimeOutputEnabled,
     remoteOutputEnabled,
     remoteTargetDeviceId,
+    remoteReceiverPort,
     pairedDevices,
     receiverStatus,
     stylingMode,
@@ -89,6 +91,7 @@ export const MoreSettingsDialog = () => {
       prefs?.realtimeOutputEnabled ?? false,
       prefs?.remoteOutputEnabled ?? false,
       prefs?.remoteTargetDeviceId ?? null,
+      prefs?.remoteReceiverPort ?? null,
       listPairedRemoteDevices(state),
       getRemoteReceiverStatus(state),
       getEffectiveStylingMode(state),
@@ -156,7 +159,7 @@ export const MoreSettingsDialog = () => {
     setReceiverBusy(true);
     try {
       if (event.target.checked) {
-        await startRemoteReceiver();
+        await startRemoteReceiver(remoteReceiverPort);
       } else {
         await stopRemoteReceiver();
       }
@@ -170,6 +173,18 @@ export const MoreSettingsDialog = () => {
   const handleStylingModeChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
     void setStylingMode(value === "" ? null : (value as StylingMode));
+  };
+
+  const handleRemoteReceiverPortChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const raw = event.target.value.trim();
+    const nextValue = raw === "" ? null : Number(raw);
+    if (raw !== "" && (!Number.isInteger(nextValue) || nextValue <= 0)) {
+      showErrorSnackbar("Receiver port must be a positive integer.");
+      return;
+    }
+    void setRemoteReceiverPort(nextValue);
   };
 
   const openPairDialog = (device?: PairedRemoteDevice) => {
@@ -427,12 +442,39 @@ export const MoreSettingsDialog = () => {
             }
           />
 
+          <SettingSection
+            title={<FormattedMessage defaultMessage="Receiver port" />}
+            description={
+              <FormattedMessage defaultMessage="Leave blank to auto-assign a port, or set a fixed port and restart the receiver after changing it." />
+            }
+            action={
+              <TextField
+                size="small"
+                value={remoteReceiverPort ?? ""}
+                onChange={handleRemoteReceiverPortChange}
+                placeholder={intl.formatMessage({
+                  defaultMessage: "Auto",
+                })}
+                sx={{ width: 120 }}
+              />
+            }
+          />
+
           {receiverStatus && (
             <Stack spacing={0.5} sx={{ mt: -1 }}>
               <Typography variant="caption" color="text.secondary">
                 <FormattedMessage
                   defaultMessage="Device ID: {deviceId}"
                   values={{ deviceId: receiverStatus.deviceId }}
+                />
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                <FormattedMessage
+                  defaultMessage="Connect address: {address}:{port}"
+                  values={{
+                    address: receiverStatus.listenAddress ?? "127.0.0.1",
+                    port: receiverStatus.port ?? "unknown",
+                  }}
                 />
               </Typography>
               {receiverStatus.lastSenderDeviceId && (

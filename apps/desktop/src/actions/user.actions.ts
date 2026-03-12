@@ -99,6 +99,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   realtimeOutputEnabled: false,
   remoteOutputEnabled: false,
   remoteTargetDeviceId: null,
+  remoteReceiverPort: null,
 });
 
 export const updateUserPreferences = async (
@@ -559,6 +560,14 @@ export const setRemoteTargetDeviceId = async (
     preferences.remoteTargetDeviceId = deviceId;
     preferences.remoteOutputEnabled = Boolean(deviceId);
   }, "Failed to save remote target device. Please try again.");
+};
+
+export const setRemoteReceiverPort = async (
+  port: Nullable<number>,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteReceiverPort = port;
+  }, "Failed to save remote receiver port. Please try again.");
 };
 
 export const setStylingMode = async (

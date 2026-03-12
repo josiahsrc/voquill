@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use std::net::UdpSocket;
 use tauri::async_runtime;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
@@ -68,9 +69,10 @@ pub async fn start(
     let local_addr = listener
         .local_addr()
         .map_err(|err| format!("Failed to get receiver listener address: {err}"))?;
+    let connect_address = detect_connect_address().unwrap_or_else(|| "127.0.0.1".to_string());
 
     let (shutdown_tx, mut shutdown_rx) = watch::channel(false);
-    state.start("0.0.0.0".to_string(), local_addr.port(), shutdown_tx);
+    state.start(connect_address, local_addr.port(), shutdown_tx);
 
     let state_for_task = state.clone();
     async_runtime::spawn(async move {
@@ -101,6 +103,17 @@ pub async fn start(
     });
 
     Ok(state.status())
+}
+
+fn detect_connect_address() -> Option<String> {
+    let socket = UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("192.0.2.1:80").ok()?;
+    let local_addr = socket.local_addr().ok()?;
+    let ip = local_addr.ip();
+    if ip.is_loopback() || ip.is_unspecified() {
+        return None;
+    }
+    Some(ip.to_string())
 }
 
 pub fn stop(state: RemoteReceiverState) {

@@ -40,6 +40,7 @@ type LocalUserPreferences = {
   realtimeOutputEnabled: boolean;
   remoteOutputEnabled: boolean;
   remoteTargetDeviceId: Nullable<string>;
+  remoteReceiverPort: Nullable<number>;
   useNewBackend: boolean;
 };
 
@@ -89,6 +90,7 @@ const fromLocalPreferences = (
   realtimeOutputEnabled: preferences.realtimeOutputEnabled ?? false,
   remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
   remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
+  remoteReceiverPort: preferences.remoteReceiverPort ?? null,
 });
 
 const toLocalPreferences = (
@@ -125,6 +127,7 @@ const toLocalPreferences = (
   realtimeOutputEnabled: preferences.realtimeOutputEnabled ?? false,
   remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
   remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
+  remoteReceiverPort: preferences.remoteReceiverPort ?? null,
   useNewBackend: true,
 });
 
