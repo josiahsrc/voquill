@@ -127,7 +127,7 @@ export class DictationStrategy extends BaseStrategy {
         mode: "dictation",
         currentAppId: args.currentApp?.id ?? null,
       });
-      if (result.remote) {
+      if (result.remote && result.delivered) {
         showSnackbar("Remote dictation delivered.", { mode: "success" });
       }
     } catch {
@@ -182,7 +182,7 @@ export class DictationStrategy extends BaseStrategy {
             mode: "dictation",
             currentAppId: args.currentApp?.id ?? null,
           });
-          if (result.remote) {
+          if (result.remote && result.delivered) {
             showSnackbar("Remote dictation delivered.", { mode: "success" });
           }
 

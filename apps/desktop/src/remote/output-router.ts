@@ -18,6 +18,13 @@ export const routeTranscriptOutput = async (
     : null;
 
   if (prefs?.remoteOutputEnabled && prefs.remoteTargetDeviceId) {
+    if (!args.text.trim()) {
+      return {
+        delivered: false,
+        remote: true,
+      };
+    }
+
     await invoke<void>("remote_sender_deliver_final_text", {
       args: {
         targetDeviceId: prefs.remoteTargetDeviceId,
