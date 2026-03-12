@@ -1,0 +1,25 @@
+{
+  "name": "@voquill/ai",
+  "version": "0.1.0",
+  "description": "Mastra AI agent sidecar for Voquill.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "mastra dev --port 4111",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@mastra/core": "latest",
+    "@ai-sdk/openai": "latest"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "mastra": "latest",
+    "typescript": "5.9.2"
+  }
+}
