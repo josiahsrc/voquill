@@ -1,75 +1,75 @@
 import { createTool } from "@mastra/core/tools";
 import { jsonSchema } from "ai";
-import type { ToolInfo } from "@repo/types";
+import type {
+  ToolsListResult,
+  ToolsPermissionResult,
+  ToolsPermissionStatusResult,
+} from "@repo/types";
+import { getSidecarIpcClient } from "../sidecar/client";
 
-const desktopApiUrl =
-  process.env.DESKTOP_API_URL || "http://localhost:4112";
-const desktopApiKey = process.env.DESKTOP_API_KEY || "dev";
+const PERMISSION_POLL_INTERVAL_MS = 500;
+const PERMISSION_MAX_POLLS = 120;
 
-async function callDesktopApi(path: string, options?: RequestInit) {
-  const res = await fetch(`${desktopApiUrl}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${desktopApiKey}`,
-      ...options?.headers,
-    },
-  });
-  return res.json();
-}
+const ipc = getSidecarIpcClient();
 
 async function callTool(
   toolId: string,
-  params: Record<string, unknown>
+  params: Record<string, unknown>,
 ): Promise<unknown> {
-  const { permission_id } = await callDesktopApi(
-    `/tools/${toolId}/permissions`,
-    { method: "POST", body: JSON.stringify(params) }
+  const { permissionId } = await ipc.request<ToolsPermissionResult>(
+    "tools/permission",
+    {
+      tool: toolId,
+      params,
+    },
   );
 
   // Poll for approval
-  for (let i = 0; i < 60; i++) {
-    const result = await callDesktopApi(
-      `/tools/permissions/${permission_id}`
+  for (let i = 0; i < PERMISSION_MAX_POLLS; i++) {
+    const result = await ipc.request<ToolsPermissionStatusResult>(
+      "tools/permission-status",
+      {
+        permissionId,
+      },
     );
 
     if (result.status === "denied") {
       return { error: `User denied ${toolId}` };
     }
 
-    if (result.status === "allowed") {
-      const execution = await callDesktopApi(`/tools/${toolId}/execute`, {
-        method: "POST",
-        body: JSON.stringify({ token: result.token }),
+    if (result.status === "allowed" && result.token) {
+      return ipc.request("tools/execute", {
+        tool: toolId,
+        token: result.token,
       });
-      return execution.result;
     }
 
     // Still pending — wait before polling again
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) =>
+      setTimeout(resolve, PERMISSION_POLL_INTERVAL_MS),
+    );
   }
 
   return { error: `Permission timed out for ${toolId}` };
 }
 
 export async function fetchTools() {
-  const { tools } = (await callDesktopApi("/tools/list")) as {
-    tools: ToolInfo[];
-  };
+  const { tools } = await ipc.request<ToolsListResult>("tools/list", {});
 
   return Object.fromEntries(
-    tools.map((tool) =>
-      [
-        tool.id,
-        createTool({
-          id: tool.id,
-          description: tool.description,
-          inputSchema: jsonSchema(tool.schema),
-          execute: async (input) => {
-            return callTool(tool.id, input as Record<string, unknown>);
-          },
-        }),
-      ] as const
-    )
+    tools.map(
+      (tool) =>
+        [
+          tool.id,
+          createTool({
+            id: tool.id,
+            description: tool.description,
+            inputSchema: jsonSchema(tool.schema),
+            execute: async (input) => {
+              return callTool(tool.id, input as Record<string, unknown>);
+            },
+          }),
+        ] as const,
+    ),
   );
 }

@@ -1,33 +1,27 @@
 import { Agent } from "@mastra/core/agent";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createSidecarLanguageModel } from "../../sidecar/model";
 import { fetchTools } from "../tools";
-
-const desktopApiUrl =
-  process.env.DESKTOP_API_URL || "http://localhost:4112";
-const desktopApiKey = process.env.DESKTOP_API_KEY || "dev";
-
-const provider = createOpenAI({
-  baseURL: `${desktopApiUrl}/v1`,
-  apiKey: desktopApiKey,
-});
 
 export async function createVoquillAgent() {
   let tools: Record<string, any> = {};
   try {
     tools = await fetchTools();
-    console.log(
-      `Loaded ${Object.keys(tools).length} tools: ${Object.keys(tools).join(", ")}`
+    process.stderr.write(
+      `[sidecar] Loaded ${Object.keys(tools).length} tools: ${Object.keys(tools).join(", ")}\n`,
     );
   } catch (err) {
-    console.warn("Could not fetch tools from desktop API:", err instanceof Error ? err.message : err);
+    console.warn(
+      "Could not fetch tools from sidecar host:",
+      err instanceof Error ? err.message : err,
+    );
   }
 
   return new Agent({
     id: "voquill-agent",
     name: "Voquill Assistant",
     instructions:
-      "You are Voquill's AI writing assistant. You help users with their writing, answer questions, and assist with tasks. Be concise, helpful, and friendly.",
-    model: provider.chat("default"),
+      "You are Voquill. You are a computer-use assistant that performs tasks on behalf of the user. IMPORTANT: Proactively call tools to satisfy the user's requests.",
+    model: createSidecarLanguageModel(),
     tools,
   });
 }

@@ -7,9 +7,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "mastra dev --port 4111",
-    "dev:server": "tsx scripts/dev-server.ts",
-    "cli": "tsx scripts/cli.ts",
+    "dev": "node --import tsx ./scripts/dev-server.ts",
+    "dev:server": "node --import tsx ./scripts/dev-server.ts",
+    "cli": "node --import tsx ./scripts/cli.ts",
     "clean": "rm -rf dist"
   },
   "files": [
