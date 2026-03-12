@@ -48,20 +48,20 @@ extern "C" {
 
 /// Get text field information (cursor position, selection length, text content) without screen context.
 pub fn get_text_field_info() -> TextFieldInfo {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_text_field_info_impl() }))
-        .unwrap_or_else(|_| {
-            log::error!("get_text_field_info panicked, returning empty");
-            empty_text_field_info()
-        })
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_text_field_info_impl() })).unwrap_or_else(|_| {
+        log::error!("get_text_field_info panicked, returning empty");
+        empty_text_field_info()
+    })
 }
 
 /// Get screen context information gathered from the screen around the focused element.
 pub fn get_screen_context() -> ScreenContextInfo {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_screen_context_impl() }))
-        .unwrap_or_else(|_| {
-            log::error!("get_screen_context panicked, returning empty");
-            ScreenContextInfo { screen_context: None }
-        })
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_screen_context_impl() })).unwrap_or_else(|_| {
+        log::error!("get_screen_context panicked, returning empty");
+        ScreenContextInfo {
+            screen_context: None,
+        }
+    })
 }
 
 unsafe fn get_text_field_info_impl() -> TextFieldInfo {
@@ -211,6 +211,56 @@ unsafe fn get_range_attribute(
         CFRelease(value);
         (None, None)
     }
+}
+
+unsafe fn is_element_inside_web_area(focused_element: CFTypeRef) -> bool {
+    if focused_element.is_null() {
+        return false;
+    }
+
+    let ax_parent = CFString::new("AXParent");
+    let ax_role = CFString::new("AXRole");
+    let mut current_element = focused_element;
+    let mut levels_up = 0;
+
+    while levels_up < MAX_LEVELS_UP {
+        if let Some(role) = get_string_attribute(current_element, ax_role.as_concrete_TypeRef()) {
+            if role == "AXWebArea" {
+                if current_element != focused_element {
+                    CFRelease(current_element);
+                }
+                return true;
+            }
+
+            if role == "AXWindow" || role == "AXApplication" {
+                break;
+            }
+        }
+
+        let mut parent: CFTypeRef = ptr::null();
+        let parent_result = AXUIElementCopyAttributeValue(
+            current_element,
+            ax_parent.as_concrete_TypeRef(),
+            &mut parent,
+        );
+
+        if parent_result != AX_ERROR_SUCCESS || parent.is_null() {
+            break;
+        }
+
+        if current_element != focused_element {
+            CFRelease(current_element);
+        }
+
+        current_element = parent;
+        levels_up += 1;
+    }
+
+    if current_element != focused_element {
+        CFRelease(current_element);
+    }
+
+    false
 }
 
 const MAX_CONTEXT_LENGTH: usize = 12000;
@@ -737,6 +787,11 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
         return Err("no focused element".to_string());
     }
 
+    if is_element_inside_web_area(focused_element) {
+        CFRelease(focused_element);
+        return Err("focused element is inside AXWebArea".to_string());
+    }
+
     // Check if the focused element actually supports setting AXSelectedText
     let mut settable = false;
     let settable_result = AXUIElementIsAttributeSettable(
@@ -779,11 +834,10 @@ unsafe fn insert_text_at_cursor_impl(text: &str) -> Result<(), String> {
 }
 
 pub fn get_selected_text() -> Option<String> {
-    catch_unwind(AssertUnwindSafe(|| unsafe { get_selected_text_impl() }))
-        .unwrap_or_else(|_| {
-            log::error!("get_selected_text panicked, returning None");
-            None
-        })
+    catch_unwind(AssertUnwindSafe(|| unsafe { get_selected_text_impl() })).unwrap_or_else(|_| {
+        log::error!("get_selected_text panicked, returning None");
+        None
+    })
 }
 
 unsafe fn get_selected_text_impl() -> Option<String> {

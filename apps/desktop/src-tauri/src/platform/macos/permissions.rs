@@ -73,9 +73,7 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
                 if open_microphone_privacy_settings() {
                     prompt_result = true;
                 } else {
-                    log::error!(
-                        "Failed to open System Settings privacy pane for microphone"
-                    );
+                    log::error!("Failed to open System Settings privacy pane for microphone");
                 }
             }
 
@@ -84,10 +82,7 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
                 let state_pair_clone = Arc::clone(&state_pair);
 
                 let handler = ConcreteBlock::new(move |granted: bool| {
-                    log::debug!(
-                        "Microphone permission callback invoked granted={}",
-                        granted
-                    );
+                    log::debug!("Microphone permission callback invoked granted={}", granted);
                     let (lock, cvar) = &*state_pair_clone;
                     if let Ok(mut slot) = lock.lock() {
                         *slot = Some(granted);
@@ -113,10 +108,7 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
                         .map_err(|_| "Microphone request mutex poisoned".to_string())?;
                 }
                 let granted_value = result.as_ref().copied().unwrap_or(false);
-                log::debug!(
-                    "Microphone prompt resolved granted={}",
-                    granted_value
-                );
+                log::debug!("Microphone prompt resolved granted={}", granted_value);
             }
 
             let final_status: i64 =
@@ -126,10 +118,7 @@ pub(crate) fn request_microphone_permission() -> Result<PermissionStatus, String
                 final_status
             );
             let state = permission_state_from_authorization(final_status)?;
-            log::debug!(
-                "request_microphone_permission resolved_state={:?}",
-                state
-            );
+            log::debug!("request_microphone_permission resolved_state={:?}", state);
 
             Ok(PermissionStatus {
                 kind: PermissionKind::Microphone,
@@ -149,10 +138,7 @@ fn permission_state_from_authorization(status: i64) -> Result<PermissionState, S
         AUTH_STATUS_RESTRICTED => Ok(PermissionState::Restricted),
         AUTH_STATUS_NOT_DETERMINED => Ok(PermissionState::NotDetermined),
         other => {
-            log::error!(
-                "Unexpected microphone authorization status={}",
-                other
-            );
+            log::error!("Unexpected microphone authorization status={}", other);
             Err(format!("Unknown authorization status: {}", other))
         }
     }
