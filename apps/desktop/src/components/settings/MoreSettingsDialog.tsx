@@ -187,9 +187,14 @@ export const MoreSettingsDialog = () => {
     const deviceId = pairDeviceId.trim();
     const address = pairAddress.trim();
     const secret = pairSecret.trim();
+    const requiresAddress = pairRole === "receiver" || pairRole === "both";
 
-    if (!name || !deviceId || !address || !secret) {
-      showErrorSnackbar("All device pairing fields are required.");
+    if (!name || !deviceId || !secret || (requiresAddress && !address)) {
+      showErrorSnackbar(
+        requiresAddress
+          ? "Name, device ID, receiver address, and shared secret are required."
+          : "Name, device ID, and shared secret are required.",
+      );
       return;
     }
 
@@ -202,7 +207,7 @@ export const MoreSettingsDialog = () => {
         sharedSecret: secret,
         pairedAt: new Date().toISOString(),
         lastSeenAt: null,
-        lastKnownAddress: address,
+        lastKnownAddress: requiresAddress ? address : null,
         trusted: true,
       });
       closePairDialog();
@@ -210,6 +215,21 @@ export const MoreSettingsDialog = () => {
       showErrorSnackbar(error);
     }
   };
+
+  const addressLabel =
+    pairRole === "sender"
+      ? intl.formatMessage({ defaultMessage: "Sender address (optional)" })
+      : intl.formatMessage({ defaultMessage: "Receiver address" });
+
+  const addressHelperText =
+    pairRole === "sender"
+      ? intl.formatMessage({
+          defaultMessage:
+            "Optional for now. Only receiver targets need an address for delivery.",
+        })
+      : intl.formatMessage({
+          defaultMessage: "Example: 192.168.1.25:43123",
+        });
 
   const receiverSummary = receiverStatus?.enabled
     ? intl.formatMessage(
@@ -515,12 +535,8 @@ export const MoreSettingsDialog = () => {
               </MenuItem>
             </Select>
             <TextField
-              label={intl.formatMessage({
-                defaultMessage: "Receiver address",
-              })}
-              helperText={intl.formatMessage({
-                defaultMessage: "Example: 192.168.1.25:43123",
-              })}
+              label={addressLabel}
+              helperText={addressHelperText}
               value={pairAddress}
               onChange={(event) => setPairAddress(event.target.value)}
               fullWidth
