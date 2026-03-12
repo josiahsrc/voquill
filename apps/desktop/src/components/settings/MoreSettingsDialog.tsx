@@ -545,13 +545,11 @@ export const MoreSettingsDialog = () => {
 
       <Dialog open={pairDialogOpen} onClose={closePairDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <FormattedMessage
-            defaultMessage={
-              editingDeviceId
-                ? "Edit trusted remote device"
-                : "Add trusted remote device"
-            }
-          />
+          {editingDeviceId ? (
+            <FormattedMessage defaultMessage="Edit trusted remote device" />
+          ) : (
+            <FormattedMessage defaultMessage="Add trusted remote device" />
+          )}
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ pt: 0.5 }}>
