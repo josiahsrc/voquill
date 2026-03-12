@@ -359,10 +359,12 @@ pub async fn paired_remote_device_list(
 #[tauri::command]
 pub async fn remote_receiver_start(
     args: StartRemoteReceiverArgs,
+    app: AppHandle,
     database: State<'_, crate::state::OptionKeyDatabase>,
     receiver_state: State<'_, crate::state::RemoteReceiverState>,
 ) -> Result<crate::state::RemoteReceiverStatus, String> {
     crate::system::remote_receiver::start(
+        app,
         receiver_state.inner().clone(),
         database.pool(),
         args.port,

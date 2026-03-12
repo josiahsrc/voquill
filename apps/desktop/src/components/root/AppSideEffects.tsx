@@ -19,6 +19,7 @@ import {
   refreshRemoteReceiverStatus,
   startRemoteReceiver,
 } from "../../actions/remote-receiver.actions";
+import { handleRemoteFinalTextReceived } from "../../actions/remote-transcript.actions";
 import {
   checkForAppUpdates,
   dismissUpdateDialog,
@@ -78,6 +79,14 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
+};
+
+type RemoteFinalTextReceivedPayload = {
+  senderDeviceId: string;
+  eventId: string;
+  text: string;
+  mode: string;
+  createdAt: string;
 };
 
 // Timeout for Firebase Auth initialization (handles cases where IndexedDB hangs on some Linux systems)
@@ -187,6 +196,14 @@ export const AppSideEffects = () => {
       draft.keysHeld = payload.keys;
     });
   });
+
+  useTauriListen<RemoteFinalTextReceivedPayload>(
+    "remote_final_text_received",
+    async (payload) => {
+      await handleRemoteFinalTextReceived(payload);
+      await refreshRemoteReceiverStatus().catch(() => undefined);
+    },
+  );
 
   useEffect(() => {
     if (allowDevTools) {

@@ -38,12 +38,19 @@ export const routeTranscriptOutput = async (
     };
   }
 
-  await invoke<void>("paste", {
-    text: args.text,
-    keybind: currentApp?.pasteKeybind ?? null,
-  });
+  await insertLocalTranscriptOutput(args.text, currentApp?.pasteKeybind ?? null);
   return {
     delivered: true,
     remote: false,
   };
+};
+
+export const insertLocalTranscriptOutput = async (
+  text: string,
+  keybind: string | null,
+): Promise<void> => {
+  await invoke<void>("paste", {
+    text,
+    keybind,
+  });
 };

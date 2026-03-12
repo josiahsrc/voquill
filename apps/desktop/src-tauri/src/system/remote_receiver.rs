@@ -2,12 +2,14 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::net::UdpSocket;
 use tauri::async_runtime;
+use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::watch;
 
-use crate::platform::input::paste_text_into_focused_field;
 use crate::state::{RemoteReceiverState, RemoteReceiverStatus};
+
+pub const EVT_REMOTE_FINAL_TEXT_RECEIVED: &str = "remote_final_text_received";
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -53,7 +55,18 @@ enum OutgoingEnvelope {
     },
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteFinalTextReceivedPayload {
+    pub sender_device_id: String,
+    pub event_id: String,
+    pub text: String,
+    pub mode: String,
+    pub created_at: String,
+}
+
 pub async fn start(
+    app: AppHandle,
     state: RemoteReceiverState,
     pool: SqlitePool,
     port: Option<u16>,
@@ -86,8 +99,9 @@ pub async fn start(
                         Ok((stream, _)) => {
                             let state = state_for_task.clone();
                             let pool = pool.clone();
+                            let app = app.clone();
                             async_runtime::spawn(async move {
-                                if let Err(err) = handle_connection(stream, pool, state).await {
+                                if let Err(err) = handle_connection(stream, pool, state, app).await {
                                     log::error!("Remote receiver connection failed: {err}");
                                 }
                             });
@@ -124,6 +138,7 @@ async fn handle_connection(
     stream: TcpStream,
     pool: SqlitePool,
     state: RemoteReceiverState,
+    app: AppHandle,
 ) -> Result<(), String> {
     let (reader, mut writer) = stream.into_split();
     let mut lines = BufReader::new(reader).lines();
@@ -212,8 +227,8 @@ async fn handle_connection(
                 event_id,
                 sequence,
                 text,
-                mode: _mode,
-                created_at: _created_at,
+                mode,
+                created_at,
             } => {
                 let Some(sender_device_id) = authenticated_sender.clone() else {
                     state.record_error(
@@ -240,8 +255,15 @@ async fn handle_connection(
 
                 let target_info = current_target_info();
                 let target_editable = current_target_editable_status();
+                let payload = RemoteFinalTextReceivedPayload {
+                    sender_device_id: sender_device_id.clone(),
+                    event_id: event_id.clone(),
+                    text: text.clone(),
+                    mode,
+                    created_at,
+                };
 
-                match paste_text_into_focused_field(&text, None) {
+                match app.emit(EVT_REMOTE_FINAL_TEXT_RECEIVED, payload) {
                     Ok(()) => {
                         let delivered_at = chrono::Utc::now().to_rfc3339();
                         state.record_delivery(
@@ -264,10 +286,12 @@ async fn handle_connection(
                         .await?;
                     }
                     Err(err) => {
+                        let message =
+                            format!("Failed to emit remote transcript event: {err}");
                         state.record_error(
                             Some(sender_device_id),
                             Some(event_id.clone()),
-                            err.clone(),
+                            message.clone(),
                             target_info.class_name.clone(),
                             target_info.title.clone(),
                             target_editable,
@@ -278,8 +302,8 @@ async fn handle_connection(
                                 session_id,
                                 event_id,
                                 sequence,
-                                code: "insert_failed".to_string(),
-                                message: err,
+                                code: "event_emit_failed".to_string(),
+                                message,
                             },
                         )
                         .await?;
