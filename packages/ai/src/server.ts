@@ -11,9 +11,6 @@ loadPackageEnv();
 const DEFAULT_PORT = 4111;
 const API_KEY = process.env.SIDECAR_API_KEY || "dev";
 const requestedPort = parsePort(process.env.MASTRA_PORT) ?? DEFAULT_PORT;
-let agentPromise: Promise<
-  Awaited<ReturnType<typeof createVoquillAgent>>
-> | null = null;
 
 const server = createServer(async (req, res) => {
   try {
@@ -75,7 +72,9 @@ async function routeRequest(req: IncomingMessage, res: ServerResponse) {
 
     const body = await readJsonBody(req);
     const messages = Array.isArray(body.messages) ? body.messages : [];
-    const agent = await getAgent();
+    const conversationId =
+      typeof body.conversationId === "string" ? body.conversationId : "";
+    const agent = await createVoquillAgent(conversationId);
     const response = await agent.stream(messages);
 
     res.writeHead(200, {
@@ -124,11 +123,6 @@ function shutdown() {
   server.close(() => {
     process.exit(0);
   });
-}
-
-function getAgent() {
-  agentPromise ??= createVoquillAgent();
-  return agentPromise;
 }
 
 function parsePort(value: string | undefined): number | null {

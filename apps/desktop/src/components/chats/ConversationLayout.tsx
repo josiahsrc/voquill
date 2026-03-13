@@ -1,12 +1,13 @@
 import { SendRounded } from "@mui/icons-material";
 import { Box, IconButton, InputBase, Stack, Typography } from "@mui/material";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { sendChatMessage } from "../../actions/chat.actions";
 import { useAppStore } from "../../store";
 import { getLogger } from "../../utils/log.utils";
 import { FadingScrollArea } from "../common/FadingScrollArea";
 import { ChatMessageBubble } from "./ChatMessageBubble";
+import { ToolPermissionCard } from "./ToolPermissionCard";
 
 type ConversationLayoutProps = {
   conversationId: string;
@@ -26,6 +27,14 @@ export const ConversationLayout = ({
     (s) => s.chatMessageIdsByConversationId[conversationId] ?? [],
   );
   const sidecarRunning = useAppStore((s) => s.aiSidecar.status === "running");
+  const toolPermissions = useAppStore((s) => s.toolPermissionById);
+  const conversationPermissions = useMemo(
+    () =>
+      Object.values(toolPermissions).filter(
+        (p) => p.conversationId === conversationId,
+      ),
+    [toolPermissions, conversationId],
+  );
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -127,6 +136,9 @@ export const ConversationLayout = ({
             <Stack spacing={1.5}>
               {messageIds.map((id) => (
                 <ChatMessageBubble key={id} id={id} />
+              ))}
+              {conversationPermissions.map((p) => (
+                <ToolPermissionCard key={p.id} permission={p} />
               ))}
             </Stack>
           )}

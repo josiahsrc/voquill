@@ -16,6 +16,7 @@ export interface ToolsPermissionRequest {
   type: "tools/permission";
   tool: string;
   params: Record<string, unknown>;
+  conversationId: string;
 }
 
 export interface ToolsPermissionStatusRequest {

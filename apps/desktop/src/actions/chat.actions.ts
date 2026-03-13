@@ -187,7 +187,7 @@ export const sendChatMessage = async (
           "Content-Type": "application/json",
           Authorization: `Bearer ${aiSidecar.apiKey}`,
         },
-        body: JSON.stringify({ messages: allMessages }),
+        body: JSON.stringify({ messages: allMessages, conversationId }),
       },
     );
 

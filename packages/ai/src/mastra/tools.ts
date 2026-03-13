@@ -15,12 +15,14 @@ const ipc = getSidecarIpcClient();
 async function callTool(
   toolId: string,
   params: Record<string, unknown>,
+  conversationId: string,
 ): Promise<unknown> {
   const { permissionId } = await ipc.request<ToolsPermissionResult>(
     "tools/permission",
     {
       tool: toolId,
       params,
+      conversationId,
     },
   );
 
@@ -53,7 +55,7 @@ async function callTool(
   return { error: `Permission timed out for ${toolId}` };
 }
 
-export async function fetchTools() {
+export async function fetchTools(conversationId: string) {
   const { tools } = await ipc.request<ToolsListResult>("tools/list", {});
 
   return Object.fromEntries(
@@ -66,7 +68,11 @@ export async function fetchTools() {
             description: tool.description,
             inputSchema: jsonSchema(tool.schema),
             execute: async (input) => {
-              return callTool(tool.id, input as Record<string, unknown>);
+              return callTool(
+                tool.id,
+                input as Record<string, unknown>,
+                conversationId,
+              );
             },
           }),
         ] as const,

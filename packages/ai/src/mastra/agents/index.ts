@@ -2,10 +2,10 @@ import { Agent } from "@mastra/core/agent";
 import { createSidecarLanguageModel } from "../../sidecar/model";
 import { fetchTools } from "../tools";
 
-export async function createVoquillAgent() {
+export async function createVoquillAgent(conversationId: string) {
   let tools: Record<string, any> = {};
   try {
-    tools = await fetchTools();
+    tools = await fetchTools(conversationId);
     process.stderr.write(
       `[sidecar] Loaded ${Object.keys(tools).length} tools: ${Object.keys(tools).join(", ")}\n`,
     );

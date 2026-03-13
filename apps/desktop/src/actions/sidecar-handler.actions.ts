@@ -5,6 +5,7 @@ import type {
 } from "@repo/types";
 import { getAgentRepo } from "../repos";
 import { getAppState } from "../store";
+
 import {
   consumeToolToken,
   executeTool,
@@ -44,7 +45,7 @@ export async function handleSidecarRequest(
         const permissionId = requestToolPermission(
           request.tool,
           request.params,
-          state.pillConversationId ?? "",
+          request.conversationId,
         );
         return await respond({
           id: request.id,
