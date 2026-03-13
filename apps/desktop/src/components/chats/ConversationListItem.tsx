@@ -3,6 +3,7 @@ import { Box, IconButton, ListItemButton, Typography } from "@mui/material";
 import { useState } from "react";
 import { useIntl } from "react-intl";
 import { Conversation } from "@repo/types";
+import { formatRelativeTime } from "../../utils/date.utils";
 import {
   MenuPopoverBuilder,
   type MenuPopoverItem,
@@ -49,7 +50,7 @@ export const ConversationListItem = ({
           {conversation.title}
         </Typography>
         <Typography variant="caption" color="text.secondary" lineHeight={1.2}>
-          {new Date(conversation.updatedAt).toLocaleDateString()}
+          {formatRelativeTime(intl, conversation.updatedAt)}
         </Typography>
       </Box>
       {hovered && (
