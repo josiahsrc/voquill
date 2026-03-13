@@ -15,7 +15,9 @@ const OVERLAY_TARGETS = ["pill-overlay", "toast-overlay"];
 const buildFullSyncPayload = (state: AppState): OverlaySyncPayload => ({
   activeRecordingMode: state.activeRecordingMode,
   hotkeyById: state.hotkeyById,
-  agent: state.agent,
+  pillConversationId: state.pillConversationId,
+  chatMessageById: state.chatMessageById,
+  chatMessageIdsByConversationId: state.chatMessageIdsByConversationId,
   userPrefs: state.userPrefs,
   userById: state.userById,
   auth: state.auth,
@@ -73,8 +75,18 @@ export const OverlaySyncSideEffects = () => {
   );
   useOverlaySync(
     OVERLAY_TARGETS,
-    (s) => s.agent,
-    (agent) => ({ agent }),
+    (s) => s.pillConversationId,
+    (pillConversationId) => ({ pillConversationId }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.chatMessageById,
+    (chatMessageById) => ({ chatMessageById }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.chatMessageIdsByConversationId,
+    (chatMessageIdsByConversationId) => ({ chatMessageIdsByConversationId }),
   );
   useOverlaySync(
     OVERLAY_TARGETS,

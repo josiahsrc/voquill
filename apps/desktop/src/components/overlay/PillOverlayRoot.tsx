@@ -68,7 +68,14 @@ export const PillOverlayRoot = () => {
   const phase = useAppStore((state) => state.overlayPhase);
   const activeRecordingMode = useAppStore((state) => state.activeRecordingMode);
   const levels = useAppStore((state) => state.audioLevels);
-  const agentWindowState = useAppStore((state) => state.agent.windowState);
+  const pillMessages = useAppStore((state) => {
+    if (!state.pillConversationId) return [];
+    const ids =
+      state.chatMessageIdsByConversationId[state.pillConversationId] ?? [];
+    return ids
+      .map((id) => state.chatMessageById[id])
+      .filter((m): m is NonNullable<typeof m> => !!m);
+  });
   const isManualMode = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",
   );
@@ -86,7 +93,7 @@ export const PillOverlayRoot = () => {
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
   const isAssistantSessionActive = activeRecordingMode === "agent";
-  const assistantMessages = agentWindowState?.messages ?? [];
+  const assistantMessages = pillMessages;
   const showIdlePrompt = isExpanded && isIdle;
   const overlayShown =
     !isAssistantSessionActive &&

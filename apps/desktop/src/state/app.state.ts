@@ -22,7 +22,6 @@ import { Vector2 } from "../types/math.types";
 import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
 import { Toast } from "../types/toast.types";
-import { AgentState, INITIAL_AGENT_STATE } from "./agent.state";
 import {
   AiSidecarState,
   INITIAL_AI_SIDECAR_STATE,
@@ -96,7 +95,7 @@ export type AppState = {
   payment: PaymentState;
   pricing: PricingState;
   login: LoginState;
-  agent: AgentState;
+  pillConversationId: Nullable<string>;
   chat: ChatState;
 
   snackbarMessage?: string;
@@ -153,7 +152,7 @@ export const INITIAL_APP_STATE: AppState = {
   currentToast: null,
   overlayCursor: null,
   aiSidecar: INITIAL_AI_SIDECAR_STATE,
-  agent: INITIAL_AGENT_STATE,
+  pillConversationId: null,
   chat: INITIAL_CHAT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,

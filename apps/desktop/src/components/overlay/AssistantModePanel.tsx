@@ -2,10 +2,10 @@ import CloseIcon from "@mui/icons-material/Close";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import { Box, IconButton, Typography } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
+import type { ChatMessage } from "@repo/types";
 import { emitTo } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
 import { FormattedMessage } from "react-intl";
-import type { AgentWindowMessage } from "../../types/agent-window.types";
 import type { OverlayPhase } from "../../types/overlay.types";
 
 export const ASSISTANT_PANEL_OVERLAY_WIDTH = 600;
@@ -30,7 +30,7 @@ const PANEL_SURFACE_TRANSITION =
 
 type AssistantModePanelProps = {
   phase: OverlayPhase;
-  messages: AgentWindowMessage[];
+  messages: ChatMessage[];
   open: boolean;
 };
 
@@ -63,13 +63,13 @@ const textFadeIn = keyframes`
   }
 `;
 
-const getLatestMessage = (
-  messages: AgentWindowMessage[],
-  sender: AgentWindowMessage["sender"],
+const getLatestMessageByRole = (
+  messages: ChatMessage[],
+  role: ChatMessage["role"],
 ) => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message.sender === sender) {
+    if (message.role === role) {
       return message;
     }
   }
@@ -142,14 +142,13 @@ const AnimatedText = ({
 };
 
 type TranscriptEntryProps = {
-  message: AgentWindowMessage;
+  message: ChatMessage;
 };
 
 const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
   const theme = useTheme();
-  const tools = message.tools ?? [];
-  const hasBody = Boolean(message.draft || message.text);
-  const isThinking = !hasBody;
+  const isThinking = !message.content;
+  const isError = message.role === "system";
 
   return (
     <Box
@@ -159,33 +158,6 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
         gap: 0.5,
       }}
     >
-      {tools.length > 0 ? (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 0.25,
-            mb: hasBody ? 0.5 : 0,
-          }}
-        >
-          {tools.map((tool, index) => (
-            <Typography
-              key={`${tool}-${index}`}
-              sx={{
-                color: alpha(theme.palette.common.white, 0.46),
-                fontSize: 13,
-                lineHeight: 1.35,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {"\u2022"} {tool}
-            </Typography>
-          ))}
-        </Box>
-      ) : null}
-
       {isThinking ? (
         <Typography
           sx={{
@@ -211,18 +183,11 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
         </Typography>
       ) : null}
 
-      {message.draft ? (
+      {message.content ? (
         <AnimatedText
-          text={message.draft}
-          color={alpha(theme.palette.common.white, 0.92)}
-        />
-      ) : null}
-
-      {message.text ? (
-        <AnimatedText
-          text={message.text}
+          text={message.content}
           color={
-            message.isError
+            isError
               ? alpha(theme.palette.error.light, 0.94)
               : alpha(theme.palette.common.white, 0.92)
           }
@@ -240,18 +205,18 @@ export const AssistantModePanel = ({
   const theme = useTheme();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const latestAssistantMessageRef = useRef<HTMLDivElement | null>(null);
-  const latestUserMessage = getLatestMessage(messages, "me");
-  const userPromptPreview = latestUserMessage?.text
-    ? formatUserPromptPreview(latestUserMessage.text)
+  const latestUserMessage = getLatestMessageByRole(messages, "user");
+  const userPromptPreview = latestUserMessage?.content
+    ? formatUserPromptPreview(latestUserMessage.content)
     : null;
   const userPromptColor = alpha(theme.palette.common.white, 0.5);
   const assistantMessages = messages.filter(
-    (message) => message.sender === "agent",
+    (message) => message.role === "assistant" || message.role === "system",
   );
   const isCompact = messages.length === 0;
   const latestAssistantMessage = assistantMessages[assistantMessages.length - 1];
   const latestAssistantAutoScrollKey = latestAssistantMessage
-    ? `${assistantMessages.length}:${latestAssistantMessage.text}:${latestAssistantMessage.draft ?? ""}`
+    ? `${assistantMessages.length}:${latestAssistantMessage.content}`
     : "none";
 
   useEffect(() => {
@@ -453,7 +418,7 @@ export const AssistantModePanel = ({
             >
               {assistantMessages.map((message, index) => (
                 <Box
-                  key={`${index}-${message.text}-${message.draft ?? ""}`}
+                  key={message.id}
                   ref={
                     index === assistantMessages.length - 1
                       ? latestAssistantMessageRef

@@ -7,7 +7,9 @@ export type OverlaySyncPayload = Partial<
     AppState,
     | "activeRecordingMode"
     | "hotkeyById"
-    | "agent"
+    | "pillConversationId"
+    | "chatMessageById"
+    | "chatMessageIdsByConversationId"
     | "userPrefs"
     | "userById"
     | "auth"
