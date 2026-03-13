@@ -72,12 +72,12 @@ export const consumeToolToken = (
 export const executeTool = async (
   toolId: string,
   params: Record<string, unknown>,
-): Promise<void> => {
+): Promise<Record<string, unknown>> => {
   const state = getAppState();
   const toolInfo = state.toolInfoById[toolId];
   if (!toolInfo) {
     throw new Error(`Unknown tool: ${toolId}`);
   }
   const tool = createTool(toolInfo);
-  await tool.execute(params);
+  return await tool.execute(params);
 };

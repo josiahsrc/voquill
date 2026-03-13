@@ -77,11 +77,11 @@ export async function handleSidecarRequest(
             error: "Invalid or expired token",
           });
         }
-        await executeTool(request.tool, params);
+        const toolResult = await executeTool(request.tool, params);
         return await respond({
           id: request.id,
           status: "ok",
-          result: {},
+          result: toolResult,
         });
       }
       case "llm/chat":

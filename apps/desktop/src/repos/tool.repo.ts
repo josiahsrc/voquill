@@ -15,6 +15,15 @@ export class ToolRepo extends BaseRepo {
           required: ["text"],
         },
       },
+      {
+        id: "get_accessibility_info",
+        description:
+          "Get accessibility information about the currently focused UI element, including text field content, cursor position, selection, and surrounding screen context",
+        schema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ];
   }
 }
