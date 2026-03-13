@@ -30,6 +30,7 @@ import {
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
+import { formatMessagesAsPrompt } from "../utils/ai.utils";
 import { invokeEnterprise } from "../utils/enterprise.utils";
 import { BaseRepo } from "./base.repo";
 
@@ -79,13 +80,10 @@ export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
   }
 
   async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
-    const lastUserMsg = [...input.messages]
-      .reverse()
-      .find((m) => m.role === "user");
-    const systemMsg = input.messages.find((m) => m.role === "system");
+    const { system, prompt } = formatMessagesAsPrompt(input.messages);
     const response = await invokeHandler("ai/generateText", {
-      system: systemMsg?.content,
-      prompt: lastUserMsg?.content ?? "",
+      system,
+      prompt,
       model: this.model,
     });
     yield { type: "text-delta", text: response.text };
@@ -476,13 +474,10 @@ export class EnterpriseGenerateTextRepo extends BaseGenerateTextRepo {
   }
 
   async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
-    const lastUserMsg = [...input.messages]
-      .reverse()
-      .find((m) => m.role === "user");
-    const systemMsg = input.messages.find((m) => m.role === "system");
+    const { system, prompt } = formatMessagesAsPrompt(input.messages);
     const response = await invokeEnterprise("ai/generateText", {
-      system: systemMsg?.content,
-      prompt: lastUserMsg?.content ?? "",
+      system,
+      prompt,
       model: this.model,
     });
     yield { type: "text-delta", text: response.text };
