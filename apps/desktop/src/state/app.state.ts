@@ -51,6 +51,18 @@ import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
+export type StreamingToolCall = {
+  toolCallId: string;
+  toolName: string;
+  done: boolean;
+};
+
+export type StreamingMessageState = {
+  toolCalls: StreamingToolCall[];
+  reasoning: string;
+  isStreaming: boolean;
+};
+
 export type RecordingMode = "dictate" | "agent";
 
 export type PriceValue = HandlerOutput<"stripe/getPrices">["prices"];
@@ -82,6 +94,7 @@ export type AppState = {
   chatMessageIdsByConversationId: Record<string, string[]>;
   toolInfoById: Record<string, ToolInfo>;
   toolPermissionById: Record<string, ToolPermission>;
+  streamingMessageById: Record<string, StreamingMessageState>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
   enterpriseConfig: Nullable<EnterpriseConfig>;
@@ -138,6 +151,7 @@ export const INITIAL_APP_STATE: AppState = {
   chatMessageIdsByConversationId: {},
   toolInfoById: {},
   toolPermissionById: {},
+  streamingMessageById: {},
   overlayPhase: "idle",
   audioLevels: [],
   permissions: {

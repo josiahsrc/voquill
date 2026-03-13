@@ -78,15 +78,49 @@ async function routeRequest(req: IncomingMessage, res: ServerResponse) {
     const response = await agent.stream(messages);
 
     res.writeHead(200, {
-      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Type": "application/x-ndjson; charset=utf-8",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     });
 
-    for await (const chunk of response.textStream) {
-      res.write(chunk);
+    const reader = response.fullStream.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value) continue;
+
+        const { type } = value;
+        if (type === "text-delta") {
+          writeLine(res, { type: "text-delta", text: value.payload.text });
+        } else if (type === "tool-call") {
+          writeLine(res, {
+            type: "tool-call",
+            toolCallId: value.payload.toolCallId,
+            toolName: value.payload.toolName,
+          });
+        } else if (type === "tool-result") {
+          writeLine(res, {
+            type: "tool-result",
+            toolCallId: value.payload.toolCallId,
+          });
+        } else if (type === "reasoning-delta") {
+          writeLine(res, { type: "reasoning", text: value.payload.text });
+        } else if (type === "error") {
+          writeLine(res, {
+            type: "error",
+            error:
+              typeof value.payload === "string"
+                ? value.payload
+                : String(value.payload),
+          });
+        }
+      }
+    } finally {
+      reader.releaseLock();
     }
 
+    writeLine(res, { type: "finish" });
     res.end();
     return;
   }
@@ -112,6 +146,10 @@ async function readJsonBody(req: IncomingMessage) {
 
   const text = Buffer.concat(chunks).toString("utf-8");
   return text ? JSON.parse(text) : {};
+}
+
+function writeLine(res: ServerResponse, data: unknown) {
+  res.write(`${JSON.stringify(data)}\n`);
 }
 
 function json(res: ServerResponse, status: number, data: unknown) {

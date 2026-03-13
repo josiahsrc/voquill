@@ -1,4 +1,9 @@
-import type { ChatMessage, ChatMessageRole, Conversation } from "@repo/types";
+import type {
+  AgentStreamEvent,
+  ChatMessage,
+  ChatMessageRole,
+  Conversation,
+} from "@repo/types";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { getChatMessageRepo, getConversationRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
@@ -176,6 +181,11 @@ export const sendChatMessage = async (
     const ids = draft.chatMessageIdsByConversationId[conversationId] ?? [];
     ids.push(assistantId);
     draft.chatMessageIdsByConversationId[conversationId] = ids;
+    draft.streamingMessageById[assistantId] = {
+      toolCalls: [],
+      reasoning: "",
+      isStreaming: true,
+    };
   });
 
   try {
@@ -199,21 +209,80 @@ export const sendChatMessage = async (
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullResponse = "";
+    let buffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      fullResponse += chunk;
+      buffer += decoder.decode(value, { stream: true });
 
-      produceAppState((draft) => {
-        const msg = draft.chatMessageById[assistantId];
-        if (msg) {
-          msg.content = fullResponse;
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let event: AgentStreamEvent;
+        try {
+          event = JSON.parse(line);
+        } catch {
+          continue;
         }
-      });
+
+        switch (event.type) {
+          case "text-delta": {
+            fullResponse += event.text;
+            produceAppState((draft) => {
+              const msg = draft.chatMessageById[assistantId];
+              if (msg) msg.content = fullResponse;
+            });
+            break;
+          }
+          case "tool-call": {
+            produceAppState((draft) => {
+              const streaming = draft.streamingMessageById[assistantId];
+              if (streaming) {
+                streaming.toolCalls.push({
+                  toolCallId: event.toolCallId,
+                  toolName: event.toolName,
+                  done: false,
+                });
+              }
+            });
+            break;
+          }
+          case "tool-result": {
+            produceAppState((draft) => {
+              const streaming = draft.streamingMessageById[assistantId];
+              if (streaming) {
+                const tc = streaming.toolCalls.find(
+                  (t) => t.toolCallId === event.toolCallId,
+                );
+                if (tc) tc.done = true;
+              }
+            });
+            break;
+          }
+          case "reasoning": {
+            produceAppState((draft) => {
+              const streaming = draft.streamingMessageById[assistantId];
+              if (streaming) {
+                streaming.reasoning += event.text;
+              }
+            });
+            break;
+          }
+          case "error": {
+            throw new Error(event.error);
+          }
+        }
+      }
     }
+
+    produceAppState((draft) => {
+      const streaming = draft.streamingMessageById[assistantId];
+      if (streaming) streaming.isStreaming = false;
+    });
 
     const finalMessage: ChatMessage = {
       ...assistantMessage,
@@ -228,6 +297,8 @@ export const sendChatMessage = async (
         msg.content = error instanceof Error ? error.message : String(error);
         msg.role = "system";
       }
+      const streaming = draft.streamingMessageById[assistantId];
+      if (streaming) streaming.isStreaming = false;
     });
     throw error;
   }

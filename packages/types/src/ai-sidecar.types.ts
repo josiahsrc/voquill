@@ -88,3 +88,11 @@ export interface ToolsPermissionStatusResult {
 }
 
 export type SidecarMessage = SidecarReadyEvent | SidecarRequest | SidecarResponse;
+
+export type AgentStreamEvent =
+  | { type: "text-delta"; text: string }
+  | { type: "tool-call"; toolCallId: string; toolName: string }
+  | { type: "tool-result"; toolCallId: string }
+  | { type: "reasoning"; text: string }
+  | { type: "finish" }
+  | { type: "error"; error: string };
