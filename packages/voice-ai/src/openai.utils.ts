@@ -20,6 +20,9 @@ export const OPENAI_GENERATE_TEXT_MODELS = [
   "gpt-4o-mini",
   "gpt-4-turbo",
   "gpt-3.5-turbo",
+  "gpt-5.2",
+  "gpt-5.3",
+  "gpt-5.4",
 ] as const;
 export type OpenAIGenerateTextModel =
   (typeof OPENAI_GENERATE_TEXT_MODELS)[number];
