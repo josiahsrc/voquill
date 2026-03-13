@@ -1,4 +1,5 @@
 import {
+  ChatOutlined,
   ClassOutlined,
   HistoryOutlined,
   HomeOutlined,
@@ -43,6 +44,11 @@ const navItems: NavItem[] = [
     label: <FormattedMessage defaultMessage="Styles" />,
     path: "/dashboard/styling",
     icon: <PaletteOutlined />,
+  },
+  {
+    label: <FormattedMessage defaultMessage="Chats" />,
+    path: "/dashboard/chats",
+    icon: <ChatOutlined />,
   },
 ];
 
