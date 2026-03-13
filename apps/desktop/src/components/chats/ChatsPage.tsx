@@ -1,12 +1,13 @@
 import { AddRounded } from "@mui/icons-material";
 import { Box, Chip, Divider, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   createConversation,
   deleteConversation,
   loadChatMessages,
 } from "../../actions/chat.actions";
+import { useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
 import { ChatsSideEffects } from "./ChatsSideEffects";
 import { ConversationLayout } from "./ConversationLayout";
@@ -14,6 +15,15 @@ import { ConversationListLayout } from "./ConversationListLayout";
 
 export default function ChatsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const conversationIds = useAppStore((s) => s.chat.conversationIds);
+
+  useEffect(() => {
+    if (!selectedId && conversationIds.length > 0) {
+      const firstId = conversationIds[0];
+      setSelectedId(firstId);
+      void loadChatMessages(firstId);
+    }
+  }, [selectedId, conversationIds]);
 
   const handleSelect = async (id: string) => {
     setSelectedId(id);
