@@ -74,8 +74,7 @@ export const deleteConversation = async (id: string): Promise<void> => {
 export const loadChatMessages = async (
   conversationId: string,
 ): Promise<void> => {
-  const messages =
-    await getChatMessageRepo().listChatMessages(conversationId);
+  const messages = await getChatMessageRepo().listChatMessages(conversationId);
 
   produceAppState((draft) => {
     registerChatMessages(draft, conversationId, messages);
@@ -120,11 +119,11 @@ export const deleteChatMessages = async (
     for (const id of ids) {
       delete draft.chatMessageById[id];
     }
-    const existing =
-      draft.chatMessageIdsByConversationId[conversationId] ?? [];
+    const existing = draft.chatMessageIdsByConversationId[conversationId] ?? [];
     const idSet = new Set(ids);
-    draft.chatMessageIdsByConversationId[conversationId] =
-      existing.filter((mid) => !idSet.has(mid));
+    draft.chatMessageIdsByConversationId[conversationId] = existing.filter(
+      (mid) => !idSet.has(mid),
+    );
   });
 };
 
@@ -146,7 +145,19 @@ export const sendChatMessage = async (
     metadata: null,
   };
 
+  const isFirstMessage =
+    (getAppState().chatMessageIdsByConversationId[conversationId] ?? [])
+      .length === 0;
+
   await createChatMessage(userMessage);
+
+  if (isFirstMessage) {
+    const conversation = getAppState().conversationById[conversationId];
+    if (conversation) {
+      const title = text.length > 100 ? `${text.slice(0, 100)}…` : text;
+      updateConversation({ ...conversation, title });
+    }
+  }
 
   const allMessages = buildMessageHistory(conversationId);
 
@@ -162,8 +173,7 @@ export const sendChatMessage = async (
 
   produceAppState((draft) => {
     draft.chatMessageById[assistantId] = assistantMessage;
-    const ids =
-      draft.chatMessageIdsByConversationId[conversationId] ?? [];
+    const ids = draft.chatMessageIdsByConversationId[conversationId] ?? [];
     ids.push(assistantId);
     draft.chatMessageIdsByConversationId[conversationId] = ids;
   });
