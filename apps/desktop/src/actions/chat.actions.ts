@@ -1,10 +1,12 @@
-import { ChatMessage, Conversation } from "@repo/types";
+import type { ChatMessage, ChatMessageRole, Conversation } from "@repo/types";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { getChatMessageRepo, getConversationRepo } from "../repos";
-import { produceAppState } from "../store";
+import { getAppState, produceAppState } from "../store";
 import {
   registerChatMessages,
   registerConversations,
 } from "../utils/app.utils";
+import { createId } from "../utils/id.utils";
 
 export const loadConversations = async (): Promise<void> => {
   produceAppState((draft) => {
@@ -125,3 +127,109 @@ export const deleteChatMessages = async (
       existing.filter((mid) => !idSet.has(mid));
   });
 };
+
+export const sendChatMessage = async (
+  conversationId: string,
+  text: string,
+): Promise<void> => {
+  const { aiSidecar } = getAppState();
+  if (aiSidecar.status !== "running" || !aiSidecar.port || !aiSidecar.apiKey) {
+    throw new Error("AI sidecar is not running");
+  }
+
+  const userMessage: ChatMessage = {
+    id: createId(),
+    conversationId,
+    role: "user",
+    content: text,
+    createdAt: new Date().toISOString(),
+    metadata: null,
+  };
+
+  await createChatMessage(userMessage);
+
+  const allMessages = buildMessageHistory(conversationId);
+
+  const assistantId = createId();
+  const assistantMessage: ChatMessage = {
+    id: assistantId,
+    conversationId,
+    role: "assistant",
+    content: "",
+    createdAt: new Date().toISOString(),
+    metadata: null,
+  };
+
+  produceAppState((draft) => {
+    draft.chatMessageById[assistantId] = assistantMessage;
+    const ids =
+      draft.chatMessageIdsByConversationId[conversationId] ?? [];
+    ids.push(assistantId);
+    draft.chatMessageIdsByConversationId[conversationId] = ids;
+  });
+
+  try {
+    const response = await tauriFetch(
+      `http://127.0.0.1:${aiSidecar.port}/api/agents/voquill-agent/stream`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${aiSidecar.apiKey}`,
+        },
+        body: JSON.stringify({ messages: allMessages }),
+      },
+    );
+
+    if (!response.ok || !response.body) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(errorText || `Sidecar returned HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      fullResponse += chunk;
+
+      produceAppState((draft) => {
+        const msg = draft.chatMessageById[assistantId];
+        if (msg) {
+          msg.content = fullResponse;
+        }
+      });
+    }
+
+    const finalMessage: ChatMessage = {
+      ...assistantMessage,
+      content: fullResponse,
+      createdAt: new Date().toISOString(),
+    };
+    await getChatMessageRepo().createChatMessage(finalMessage);
+  } catch (error) {
+    produceAppState((draft) => {
+      const msg = draft.chatMessageById[assistantId];
+      if (msg) {
+        msg.content = error instanceof Error ? error.message : String(error);
+        msg.role = "system";
+      }
+    });
+    throw error;
+  }
+};
+
+function buildMessageHistory(
+  conversationId: string,
+): Array<{ role: ChatMessageRole; content: string }> {
+  const state = getAppState();
+  const ids = state.chatMessageIdsByConversationId[conversationId] ?? [];
+  return ids
+    .map((id) => state.chatMessageById[id])
+    .filter((m): m is ChatMessage => !!m && m.role !== "system")
+    .map((m) => ({ role: m.role, content: m.content }));
+}

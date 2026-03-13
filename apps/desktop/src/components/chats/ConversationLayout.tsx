@@ -1,10 +1,10 @@
 import { SendRounded } from "@mui/icons-material";
 import { Box, IconButton, InputBase, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { createChatMessage } from "../../actions/chat.actions";
-import { createId } from "../../utils/id.utils";
+import { sendChatMessage } from "../../actions/chat.actions";
 import { useAppStore } from "../../store";
+import { getLogger } from "../../utils/log.utils";
 import { FadingScrollArea } from "../common/FadingScrollArea";
 import { ChatMessageBubble } from "./ChatMessageBubble";
 
@@ -19,21 +19,24 @@ export const ConversationLayout = ({
   const messageIds = useAppStore(
     (s) => s.chatMessageIdsByConversationId[conversationId] ?? [],
   );
+  const sidecarRunning = useAppStore((s) => s.aiSidecar.status === "running");
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || sending) return;
     setInput("");
+    setSending(true);
 
-    await createChatMessage({
-      id: createId(),
-      conversationId,
-      role: "user",
-      content: text,
-      createdAt: new Date().toISOString(),
-      metadata: null,
-    });
+    try {
+      await sendChatMessage(conversationId, text);
+    } catch (error) {
+      getLogger().error("Failed to send message", error);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -59,7 +62,7 @@ export const ConversationLayout = ({
             </Typography>
           </Box>
         ) : (
-          <Stack spacing={1.5}>
+          <Stack spacing={1.5} ref={scrollRef}>
             {messageIds.map((id) => (
               <ChatMessageBubble key={id} id={id} />
             ))}
@@ -81,7 +84,9 @@ export const ConversationLayout = ({
         >
           <InputBase
             fullWidth
-            placeholder={intl.formatMessage({ defaultMessage: "Type a message…" })}
+            placeholder={intl.formatMessage({
+              defaultMessage: "Type a message…",
+            })}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -90,9 +95,15 @@ export const ConversationLayout = ({
                 handleSend();
               }
             }}
+            disabled={!sidecarRunning || sending}
             sx={{ px: 1 }}
           />
-          <IconButton onClick={handleSend} color="primary" size="small">
+          <IconButton
+            onClick={handleSend}
+            color="primary"
+            size="small"
+            disabled={!sidecarRunning || sending}
+          >
             <SendRounded />
           </IconButton>
         </Box>

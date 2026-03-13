@@ -3,6 +3,7 @@ import type {
   SidecarRequest,
   SidecarResponse,
 } from "@repo/types";
+import { handleSidecarRequest } from "../actions/sidecar-handler.actions";
 import { produceAppState } from "../store";
 import { getLogger } from "../utils/log.utils";
 import type { ShellChildProcess } from "../utils/tauri-shell.utils";
@@ -29,6 +30,8 @@ const isSidecarRequest = (value: unknown): value is SidecarRequest =>
   !("status" in value);
 
 export class AiSidecar extends BaseSidecar {
+  private apiKey: string | null = null;
+
   constructor() {
     super({
       binaryName: AI_SIDECAR_BINARY_NAME,
@@ -40,10 +43,15 @@ export class AiSidecar extends BaseSidecar {
     });
   }
 
+  getApiKey(): string | null {
+    return this.apiKey;
+  }
+
   protected async buildSpawnEnv(): Promise<Record<string, string>> {
+    this.apiKey = crypto.randomUUID();
     return {
       MASTRA_PORT: "0",
-      SIDECAR_API_KEY: crypto.randomUUID(),
+      SIDECAR_API_KEY: this.apiKey,
     };
   }
 
@@ -63,6 +71,8 @@ export class AiSidecar extends BaseSidecar {
   }
 
   protected handleStdoutLine(line: string, child: ShellChildProcess): void {
+    getLogger().verbose("[ai-sidecar] handleStdoutLine:", line.slice(0, 120));
+
     let message: unknown;
     try {
       message = JSON.parse(line);
@@ -72,7 +82,21 @@ export class AiSidecar extends BaseSidecar {
     }
 
     if (isSidecarRequest(message)) {
-      void this.respondToRequest(child, message);
+      getLogger().verbose(
+        "[ai-sidecar] Received request:",
+        (message as SidecarRequest).type,
+      );
+      const respond = async (response: SidecarResponse): Promise<void> => {
+        try {
+          await child.write(`${JSON.stringify(response)}\n`);
+        } catch (error) {
+          getLogger().warning(
+            `[ai-sidecar] Failed to write stdin response: ${toErrorMessage(error)}`,
+          );
+        }
+      };
+
+      void handleSidecarRequest(message, respond);
       return;
     }
 
@@ -80,23 +104,40 @@ export class AiSidecar extends BaseSidecar {
   }
 
   protected override onStarting(): void {
-    this.setAiSidecarState({ status: "starting", port: null, errorMessage: null });
+    this.setAiSidecarState({
+      status: "starting",
+      port: null,
+      apiKey: null,
+      errorMessage: null,
+    });
   }
 
   protected onStarted(runtime: SidecarRuntime): void {
     this.setAiSidecarState({
       status: "running",
       port: runtime.port,
+      apiKey: this.apiKey,
       errorMessage: null,
     });
   }
 
   protected onStopped(): void {
-    this.setAiSidecarState({ status: "idle", port: null, errorMessage: null });
+    this.apiKey = null;
+    this.setAiSidecarState({
+      status: "idle",
+      port: null,
+      apiKey: null,
+      errorMessage: null,
+    });
   }
 
   protected onError(message: string): void {
-    this.setAiSidecarState({ status: "error", port: null, errorMessage: message });
+    this.setAiSidecarState({
+      status: "error",
+      port: null,
+      apiKey: null,
+      errorMessage: message,
+    });
   }
 
   protected async checkHealthResponse(response: Response): Promise<boolean> {
@@ -107,45 +148,19 @@ export class AiSidecar extends BaseSidecar {
   private setAiSidecarState({
     status,
     port,
+    apiKey,
     errorMessage,
   }: {
     status: "idle" | "starting" | "running" | "error";
     port: number | null;
+    apiKey: string | null;
     errorMessage: string | null;
   }) {
     produceAppState((draft) => {
       draft.aiSidecar.status = status;
       draft.aiSidecar.port = port;
+      draft.aiSidecar.apiKey = apiKey;
       draft.aiSidecar.errorMessage = errorMessage;
     });
-  }
-
-  private async respondToRequest(
-    child: ShellChildProcess,
-    request: SidecarRequest,
-  ): Promise<void> {
-    const response: SidecarResponse =
-      request.type === "tools/list"
-        ? {
-            id: request.id,
-            status: "ok",
-            result: { tools: [] },
-          }
-        : {
-            id: request.id,
-            status: "error",
-            error:
-              request.type === "llm/chat"
-                ? "Desktop LLM bridge is not implemented yet."
-                : `Unsupported AI sidecar request: ${request.type}`,
-          };
-
-    try {
-      await child.write(`${JSON.stringify(response)}\n`);
-    } catch (error) {
-      getLogger().warning(
-        `[ai-sidecar] Failed to write stdin response for ${request.type}: ${toErrorMessage(error)}`,
-      );
-    }
   }
 }
