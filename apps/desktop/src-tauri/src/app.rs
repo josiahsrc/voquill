@@ -224,5 +224,13 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_selected_text,
             crate::commands::read_enterprise_target,
             crate::commands::get_keyboard_language,
+            crate::commands::conversation_create,
+            crate::commands::conversation_list,
+            crate::commands::conversation_update,
+            crate::commands::conversation_delete,
+            crate::commands::chat_message_create,
+            crate::commands::chat_message_list,
+            crate::commands::chat_message_update,
+            crate::commands::chat_message_delete_many,
         ])
 }

@@ -1,6 +1,8 @@
 import {
   ApiKey,
   AppTarget,
+  ChatMessage,
+  Conversation,
   Hotkey,
   Member,
   Term,
@@ -80,4 +82,26 @@ export const registerAppTargets = (
   for (const appTarget of appTargets) {
     draft.appTargetById[appTarget.id] = appTarget;
   }
+};
+
+export const registerConversations = (
+  draft: AppState,
+  conversations: Conversation[],
+): void => {
+  for (const conversation of conversations) {
+    draft.conversationById[conversation.id] = conversation;
+  }
+};
+
+export const registerChatMessages = (
+  draft: AppState,
+  conversationId: string,
+  messages: ChatMessage[],
+): void => {
+  for (const message of messages) {
+    draft.chatMessageById[message.id] = message;
+  }
+  draft.chatMessageIdsByConversationId[conversationId] = messages
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((m) => m.id);
 };

@@ -2,6 +2,8 @@ import { HandlerOutput } from "@repo/functions";
 import {
   ApiKey,
   AppTarget,
+  ChatMessage,
+  Conversation,
   EnterpriseConfig,
   EnterpriseLicense,
   FullConfig,
@@ -25,6 +27,7 @@ import {
   AiSidecarState,
   INITIAL_AI_SIDECAR_STATE,
 } from "./ai-sidecar.state";
+import { ChatState, INITIAL_CHAT_STATE } from "./chat.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
 import {
@@ -73,6 +76,9 @@ export type AppState = {
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
   toneById: Record<string, Tone>;
+  conversationById: Record<string, Conversation>;
+  chatMessageById: Record<string, ChatMessage>;
+  chatMessageIdsByConversationId: Record<string, string[]>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
   enterpriseConfig: Nullable<EnterpriseConfig>;
@@ -91,6 +97,7 @@ export type AppState = {
   pricing: PricingState;
   login: LoginState;
   agent: AgentState;
+  chat: ChatState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -123,6 +130,9 @@ export const INITIAL_APP_STATE: AppState = {
   priceValueByKey: {},
   apiKeyById: {},
   toneById: {},
+  conversationById: {},
+  chatMessageById: {},
+  chatMessageIdsByConversationId: {},
   overlayPhase: "idle",
   audioLevels: [],
   permissions: {
@@ -144,6 +154,7 @@ export const INITIAL_APP_STATE: AppState = {
   overlayCursor: null,
   aiSidecar: INITIAL_AI_SIDECAR_STATE,
   agent: INITIAL_AGENT_STATE,
+  chat: INITIAL_CHAT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,

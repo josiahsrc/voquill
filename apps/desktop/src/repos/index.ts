@@ -15,6 +15,14 @@ import {
 } from "../utils/user.utils";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
+import {
+  BaseChatMessageRepo,
+  LocalChatMessageRepo,
+} from "./chat-message.repo";
+import {
+  BaseConversationRepo,
+  LocalConversationRepo,
+} from "./conversation.repo";
 import { BaseAuthRepo, CloudAuthRepo, EnterpriseAuthRepo } from "./auth.repo";
 import {
   BaseConfigRepo,
@@ -152,6 +160,14 @@ export const getToneRepo = (): BaseToneRepo => {
 
 export const getStorageRepo = (): BaseStorageRepo => {
   return new LocalStorageRepo();
+};
+
+export const getConversationRepo = (): BaseConversationRepo => {
+  return new LocalConversationRepo();
+};
+
+export const getChatMessageRepo = (): BaseChatMessageRepo => {
+  return new LocalChatMessageRepo();
 };
 
 export type GenerateTextRepoOutput = {

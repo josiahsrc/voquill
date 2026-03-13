@@ -818,7 +818,9 @@ pub async fn clear_local_data(
     let pool = database.pool();
     let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
 
-    const TABLES_TO_CLEAR: [&str; 6] = [
+    const TABLES_TO_CLEAR: [&str; 8] = [
+        "chat_messages",
+        "conversations",
         "user_profiles",
         "transcriptions",
         "terms",
@@ -1219,6 +1221,88 @@ pub async fn get_selected_text() -> Result<Option<String>, String> {
 #[tauri::command]
 pub fn get_keyboard_language() -> Result<String, String> {
     crate::platform::keyboard_language::get_keyboard_language()
+}
+
+#[tauri::command]
+pub async fn conversation_create(
+    conversation: crate::domain::Conversation,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Conversation, String> {
+    crate::db::conversation_queries::insert_conversation(database.pool(), &conversation)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Conversation>, String> {
+    crate::db::conversation_queries::fetch_conversations(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_update(
+    conversation: crate::domain::Conversation,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Conversation, String> {
+    crate::db::conversation_queries::update_conversation(database.pool(), &conversation)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::conversation_queries::delete_conversation(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_create(
+    message: crate::domain::ChatMessage,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::ChatMessage, String> {
+    crate::db::chat_message_queries::insert_chat_message(database.pool(), &message)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_list(
+    conversation_id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::ChatMessage>, String> {
+    crate::db::chat_message_queries::fetch_chat_messages_by_conversation(
+        database.pool(),
+        &conversation_id,
+    )
+    .await
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_update(
+    message: crate::domain::ChatMessage,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::ChatMessage, String> {
+    crate::db::chat_message_queries::update_chat_message(database.pool(), &message)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_delete_many(
+    ids: Vec<String>,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::chat_message_queries::delete_chat_messages(database.pool(), &ids)
+        .await
+        .map_err(|err| err.to_string())
 }
 
 /// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
