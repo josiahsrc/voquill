@@ -1,6 +1,6 @@
 import { SendRounded } from "@mui/icons-material";
 import { Box, IconButton, InputBase, Stack, Typography } from "@mui/material";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { sendChatMessage } from "../../actions/chat.actions";
 import { useAppStore } from "../../store";
@@ -12,6 +12,12 @@ type ConversationLayoutProps = {
   conversationId: string;
 };
 
+const AUTO_SCROLL_THRESHOLD_PX = 32;
+
+const isNearBottom = (node: HTMLDivElement) =>
+  node.scrollHeight - node.clientHeight - node.scrollTop <=
+  AUTO_SCROLL_THRESHOLD_PX;
+
 export const ConversationLayout = ({
   conversationId,
 }: ConversationLayoutProps) => {
@@ -22,11 +28,57 @@ export const ConversationLayout = ({
   const sidecarRunning = useAppStore((s) => s.aiSidecar.status === "running");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const shouldStickToBottomRef = useRef(true);
+
+  const scrollToBottom = useCallback(() => {
+    const node = scrollViewportRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const node = scrollViewportRef.current;
+    if (!node) return;
+    shouldStickToBottomRef.current = isNearBottom(node);
+  }, []);
+
+  useEffect(() => {
+    shouldStickToBottomRef.current = true;
+    const frameId = requestAnimationFrame(scrollToBottom);
+    return () => cancelAnimationFrame(frameId);
+  }, [conversationId, scrollToBottom]);
+
+  useEffect(() => {
+    if (shouldStickToBottomRef.current) {
+      scrollToBottom();
+    }
+  }, [messageIds.length, scrollToBottom]);
+
+  useEffect(() => {
+    const contentNode = contentRef.current;
+    const viewportNode = scrollViewportRef.current;
+    if (!contentNode || !viewportNode || typeof ResizeObserver === "undefined")
+      return;
+
+    const observer = new ResizeObserver(() => {
+      if (shouldStickToBottomRef.current) {
+        requestAnimationFrame(scrollToBottom);
+      }
+    });
+
+    observer.observe(contentNode);
+    observer.observe(viewportNode);
+
+    return () => observer.disconnect();
+  }, [conversationId, scrollToBottom]);
 
   const handleSend = async () => {
     const text = input.trim();
     if (!text || sending) return;
+
+    shouldStickToBottomRef.current = true;
     setInput("");
     setSending(true);
 
@@ -48,27 +100,37 @@ export const ConversationLayout = ({
         overflow: "hidden",
       }}
     >
-      <FadingScrollArea fadeHeight={32} sx={{ pt: 5, pb: 5, px: 2 }}>
-        {messageIds.length === 0 ? (
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              <FormattedMessage defaultMessage="No messages yet" />
-            </Typography>
-          </Box>
-        ) : (
-          <Stack spacing={1.5} ref={scrollRef}>
-            {messageIds.map((id) => (
-              <ChatMessageBubble key={id} id={id} />
-            ))}
-          </Stack>
-        )}
+      <FadingScrollArea
+        fadeHeight={32}
+        viewportRef={scrollViewportRef}
+        onScroll={handleScroll}
+        sx={{ pt: 5, pb: 5, px: 2 }}
+      >
+        <Stack
+          ref={contentRef}
+          sx={{ minHeight: "100%", justifyContent: "flex-end" }}
+        >
+          {messageIds.length === 0 ? (
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                <FormattedMessage defaultMessage="No messages yet" />
+              </Typography>
+            </Box>
+          ) : (
+            <Stack spacing={1.5}>
+              {messageIds.map((id) => (
+                <ChatMessageBubble key={id} id={id} />
+              ))}
+            </Stack>
+          )}
+        </Stack>
       </FadingScrollArea>
 
       <Box sx={{ px: 2, pb: 2 }}>
