@@ -47,7 +47,6 @@ export const ConversationListItem = ({
       <Box sx={{ overflow: "hidden", flexGrow: 1, minWidth: 0 }}>
         <Typography variant="body2" noWrap lineHeight={1.3}>
           {conversation.title}
-          {conversation.title}
         </Typography>
         <Typography variant="caption" color="text.secondary" lineHeight={1.2}>
           {new Date(conversation.updatedAt).toLocaleDateString()}
