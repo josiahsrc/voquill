@@ -7,6 +7,8 @@ import {
   Member,
   Term,
   Tone,
+  ToolInfo,
+  ToolPermission,
   Transcription,
   User,
 } from "@repo/types";
@@ -91,6 +93,22 @@ export const registerConversations = (
   for (const conversation of conversations) {
     draft.conversationById[conversation.id] = conversation;
   }
+};
+
+export const registerToolInfos = (
+  draft: AppState,
+  toolInfos: ToolInfo[],
+): void => {
+  for (const toolInfo of toolInfos) {
+    draft.toolInfoById[toolInfo.id] = toolInfo;
+  }
+};
+
+export const registerToolPermission = (
+  draft: AppState,
+  permission: ToolPermission,
+): void => {
+  draft.toolPermissionById[permission.id] = permission;
 };
 
 export const registerChatMessages = (

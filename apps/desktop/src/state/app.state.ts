@@ -13,6 +13,8 @@ import {
   OidcProvider,
   Term,
   Tone,
+  ToolInfo,
+  ToolPermission,
   Transcription,
   User,
   UserPreferences,
@@ -78,6 +80,8 @@ export type AppState = {
   conversationById: Record<string, Conversation>;
   chatMessageById: Record<string, ChatMessage>;
   chatMessageIdsByConversationId: Record<string, string[]>;
+  toolInfoById: Record<string, ToolInfo>;
+  toolPermissionById: Record<string, ToolPermission>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
   enterpriseConfig: Nullable<EnterpriseConfig>;
@@ -132,6 +136,8 @@ export const INITIAL_APP_STATE: AppState = {
   conversationById: {},
   chatMessageById: {},
   chatMessageIdsByConversationId: {},
+  toolInfoById: {},
+  toolPermissionById: {},
   overlayPhase: "idle",
   audioLevels: [],
   permissions: {

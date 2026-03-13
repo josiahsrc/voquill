@@ -82,6 +82,7 @@ import {
   OpenAITranscribeAudioRepo,
   SpeachesTranscribeAudioRepo,
 } from "./transcribe-audio.repo";
+import { ToolRepo } from "./tool.repo";
 import {
   BaseTranscriptionRepo,
   LocalTranscriptionRepo,
@@ -168,6 +169,10 @@ export const getConversationRepo = (): BaseConversationRepo => {
 
 export const getChatMessageRepo = (): BaseChatMessageRepo => {
   return new LocalChatMessageRepo();
+};
+
+export const getToolRepo = (): ToolRepo => {
+  return new ToolRepo();
 };
 
 export type GenerateTextRepoOutput = {

@@ -4,13 +4,13 @@ import type {
   SidecarResponse,
 } from "@repo/types";
 import { getAgentRepo } from "../repos";
-import { getToolDefinition, getToolInfoList } from "../tools/tool-definitions";
-import { executeTool } from "../tools/tool-executor";
+import { getAppState } from "../store";
 import {
-  consumeToken,
-  createPermission,
-  getPermissionStatus,
-} from "../tools/tool-permissions";
+  consumeToolToken,
+  executeTool,
+  getToolPermissionStatus,
+  requestToolPermission,
+} from "./tool.actions";
 import { getLogger } from "../utils/log.utils";
 
 export type SidecarResponder = (response: SidecarResponse) => Promise<void>;
@@ -23,25 +23,28 @@ export async function handleSidecarRequest(
 
   try {
     switch (request.type) {
-      case "tools/list":
+      case "tools/list": {
+        const state = getAppState();
+        const tools = Object.values(state.toolInfoById);
         return await respond({
           id: request.id,
           status: "ok",
-          result: { tools: getToolInfoList() },
+          result: { tools },
         });
+      }
       case "tools/permission": {
-        const def = getToolDefinition(request.tool);
-        if (!def) {
+        const state = getAppState();
+        if (!state.toolInfoById[request.tool]) {
           return await respond({
             id: request.id,
             status: "error",
             error: `Unknown tool: ${request.tool}`,
           });
         }
-        const permissionId = createPermission(
+        const permissionId = requestToolPermission(
           request.tool,
           request.params,
-          def.autoApprove,
+          state.pillConversationId ?? "",
         );
         return await respond({
           id: request.id,
@@ -50,7 +53,7 @@ export async function handleSidecarRequest(
         });
       }
       case "tools/permission-status": {
-        const status = getPermissionStatus(request.permissionId);
+        const status = getToolPermissionStatus(request.permissionId);
         if (!status) {
           return await respond({
             id: request.id,
@@ -65,15 +68,7 @@ export async function handleSidecarRequest(
         });
       }
       case "tools/execute": {
-        const def = getToolDefinition(request.tool);
-        if (!def) {
-          return await respond({
-            id: request.id,
-            status: "error",
-            error: `Unknown tool: ${request.tool}`,
-          });
-        }
-        const params = consumeToken(request.tool, request.token);
+        const params = consumeToolToken(request.tool, request.token);
         if (!params) {
           return await respond({
             id: request.id,
@@ -81,7 +76,7 @@ export async function handleSidecarRequest(
             error: "Invalid or expired token",
           });
         }
-        await executeTool(def.strategy, params);
+        await executeTool(request.tool, params);
         return await respond({
           id: request.id,
           status: "ok",

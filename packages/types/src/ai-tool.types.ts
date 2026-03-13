@@ -7,3 +7,12 @@ export interface ToolInfo {
 }
 
 export type ToolPermissionStatus = "pending" | "allowed" | "denied";
+
+export interface ToolPermission {
+  id: string;
+  toolId: string;
+  params: Record<string, unknown>;
+  status: ToolPermissionStatus;
+  token?: string;
+  conversationId: string;
+}
