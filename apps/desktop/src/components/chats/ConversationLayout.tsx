@@ -43,6 +43,7 @@ export const ConversationLayout = ({
     <Stack
       sx={{
         flexGrow: 1,
+        minWidth: 0,
         height: "100%",
         overflow: "hidden",
       }}

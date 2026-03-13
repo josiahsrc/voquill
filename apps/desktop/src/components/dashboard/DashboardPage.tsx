@@ -23,11 +23,15 @@ export default function DashboardPage() {
             display: { xs: "none", sm: "flex" },
             flexDirection: "column",
             width: 224,
+            minWidth: 224,
+            maxWidth: 224,
           }}
         >
           <DashboardMenu />
         </Box>
-        <Outlet />
+        <Box sx={{ flexGrow: 1, minWidth: 0, height: "100%" }}>
+          <Outlet />
+        </Box>
         <Typography
           variant="caption"
           sx={{

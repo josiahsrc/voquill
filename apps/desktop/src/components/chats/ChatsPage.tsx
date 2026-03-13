@@ -63,11 +63,12 @@ export default function ChatsPage() {
         <Divider orientation="vertical" flexItem />
 
         {selectedId ? (
-          <ConversationLayout conversationId={selectedId} />
+          <ConversationLayout key={selectedId} conversationId={selectedId} />
         ) : (
           <Stack
             sx={{
               flexGrow: 1,
+              minWidth: 0,
               alignItems: "center",
               justifyContent: "center",
               gap: 1.5,
