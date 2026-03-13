@@ -7,8 +7,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "node --import tsx ./scripts/dev-server.ts",
-    "dev:server": "node --import tsx ./scripts/dev-server.ts",
+    "dev": "node --import tsx ./src/server.ts",
+    "dev:server": "node --import tsx ./src/server.ts",
     "cli": "node --import tsx ./scripts/cli.ts",
     "clean": "rm -rf dist"
   },

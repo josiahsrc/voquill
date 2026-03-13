@@ -3,15 +3,17 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from "node:http";
-import { createVoquillAgent } from "../src/mastra/agents";
-import { loadPackageEnv } from "./lib/env";
+import { createVoquillAgent } from "./mastra/agents";
+import { loadPackageEnv } from "./env";
 
 loadPackageEnv();
 
-const PORT = Number(process.env.MASTRA_PORT) || 4111;
+const DEFAULT_PORT = 4111;
 const API_KEY = process.env.SIDECAR_API_KEY || "dev";
-
-const agent = await createVoquillAgent();
+const requestedPort = parsePort(process.env.MASTRA_PORT) ?? DEFAULT_PORT;
+let agentPromise: Promise<
+  Awaited<ReturnType<typeof createVoquillAgent>>
+> | null = null;
 
 const server = createServer(async (req, res) => {
   try {
@@ -41,8 +43,11 @@ server.on("error", (error) => {
   process.exit(1);
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  process.stdout.write(`${JSON.stringify({ type: "ready", port: PORT })}\n`);
+server.listen(requestedPort, "127.0.0.1", () => {
+  const address = server.address();
+  const port =
+    address && typeof address === "object" ? address.port : requestedPort;
+  process.stdout.write(`${JSON.stringify({ type: "ready", port })}\n`);
 });
 
 process.on("SIGINT", shutdown);
@@ -50,20 +55,27 @@ process.on("SIGTERM", shutdown);
 
 async function routeRequest(req: IncomingMessage, res: ServerResponse) {
   const method = req.method || "GET";
-  const url = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+  const url = new URL(
+    req.url || "/",
+    `http://${req.headers.host || "127.0.0.1"}`,
+  );
 
   if (method === "GET" && url.pathname === "/health") {
     json(res, 200, { ok: true });
     return;
   }
 
-  if (method === "POST" && url.pathname === "/api/agents/voquill-agent/stream") {
+  if (
+    method === "POST" &&
+    url.pathname === "/api/agents/voquill-agent/stream"
+  ) {
     if (!checkAuth(req, res)) {
       return;
     }
 
     const body = await readJsonBody(req);
     const messages = Array.isArray(body.messages) ? body.messages : [];
+    const agent = await getAgent();
     const response = await agent.stream(messages);
 
     res.writeHead(200, {
@@ -112,4 +124,22 @@ function shutdown() {
   server.close(() => {
     process.exit(0);
   });
+}
+
+function getAgent() {
+  agentPromise ??= createVoquillAgent();
+  return agentPromise;
+}
+
+function parsePort(value: string | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const port = Number.parseInt(value, 10);
+  if (!Number.isInteger(port) || port < 0 || port > 65_535) {
+    return null;
+  }
+
+  return port;
 }

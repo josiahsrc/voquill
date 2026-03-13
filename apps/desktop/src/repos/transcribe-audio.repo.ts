@@ -21,7 +21,7 @@ import {
 } from "../utils/audio.utils";
 import { getEffectiveAuth } from "../utils/auth.utils";
 import { invokeEnterprise } from "../utils/enterprise.utils";
-import { getLocalTranscriptionSidecarManager } from "../utils/local-transcription-sidecar.utils";
+import { getLocalTranscriptionSidecarManager } from "../sidecars";
 import {
   getTranscriptionSidecarDeviceId,
   isGpuPreferredTranscriptionDevice,

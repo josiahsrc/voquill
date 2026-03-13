@@ -21,6 +21,10 @@ import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
 import { Toast } from "../types/toast.types";
 import { AgentState, INITIAL_AGENT_STATE } from "./agent.state";
+import {
+  AiSidecarState,
+  INITIAL_AI_SIDECAR_STATE,
+} from "./ai-sidecar.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
 import {
@@ -98,6 +102,7 @@ export type AppState = {
   currentToast: Toast | null;
 
   overlayCursor: Nullable<Vector2>;
+  aiSidecar: AiSidecarState;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -137,6 +142,7 @@ export const INITIAL_APP_STATE: AppState = {
   toastQueue: [],
   currentToast: null,
   overlayCursor: null,
+  aiSidecar: INITIAL_AI_SIDECAR_STATE,
   agent: INITIAL_AGENT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,

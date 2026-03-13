@@ -8,7 +8,7 @@ import type {
   LocalSidecarDevice,
   LocalSidecarDownloadSnapshot,
   LocalSidecarModelStatus,
-} from "../utils/local-transcription-sidecar.utils";
+} from "../sidecars";
 import {
   LOCAL_WHISPER_MODELS,
   type LocalWhisperModel,

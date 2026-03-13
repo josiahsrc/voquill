@@ -8,6 +8,13 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const desktopDir = resolve(scriptDir, "..");
 const repoRoot = resolve(desktopDir, "../..");
+const aiSidecarPackageDir = join(repoRoot, "packages", "ai");
+const aiSidecarEntrypoint = join(
+  aiSidecarPackageDir,
+  "src",
+  "server.ts",
+);
+const aiSidecarBinaryName = "voquill-ai-sidecar";
 const sidecarManifestPath = join(
   repoRoot,
   "packages",
@@ -16,9 +23,9 @@ const sidecarManifestPath = join(
 );
 const cargoTargetDirOverride = process.env.CARGO_TARGET_DIR?.trim() || null;
 const rustTargetDir = cargoTargetDirOverride
-  ? (isAbsolute(cargoTargetDirOverride)
-      ? cargoTargetDirOverride
-      : resolve(repoRoot, cargoTargetDirOverride))
+  ? isAbsolute(cargoTargetDirOverride)
+    ? cargoTargetDirOverride
+    : resolve(repoRoot, cargoTargetDirOverride)
   : join(repoRoot, "packages", "rust_transcription", "target");
 const tauriBinariesDir = join(desktopDir, "src-tauri", "binaries");
 
@@ -27,12 +34,17 @@ const buildTarget =
   process.env.TAURI_ENV_TARGET_TRIPLE?.trim() ||
   null;
 const targetTriple = buildTarget || resolveHostTargetTriple();
-const buildProfile = process.env.VOQUILL_SIDECAR_PROFILE === "release" ? "release" : "debug";
-const requireNativeGpuSidecar = process.env.VOQUILL_REQUIRE_GPU_SIDECAR === "true";
+const buildProfile =
+  process.env.VOQUILL_SIDECAR_PROFILE === "release" ? "release" : "debug";
+const requireNativeGpuSidecar =
+  process.env.VOQUILL_REQUIRE_GPU_SIDECAR === "true";
 const executableSuffix = isWindowsTarget(targetTriple) ? ".exe" : "";
 
 if (!existsSync(sidecarManifestPath)) {
   fail(`Missing sidecar manifest at ${sidecarManifestPath}`);
+}
+if (!existsSync(aiSidecarEntrypoint)) {
+  fail(`Missing AI sidecar entrypoint at ${aiSidecarEntrypoint}`);
 }
 
 mkdirSync(tauriBinariesDir, { recursive: true });
@@ -61,6 +73,8 @@ if (gpuBuildState.canBuildNative) {
   mirrorCpuSidecarAsGpu(cpuSidecarPath);
 }
 
+buildAiSidecar();
+
 function buildAndCopy(binaryName, gpuEnabled, options = {}) {
   const allowFailure = options.allowFailure === true;
   const cargoArgs = [
@@ -80,7 +94,10 @@ function buildAndCopy(binaryName, gpuEnabled, options = {}) {
   }
 
   if (gpuEnabled) {
-    cargoArgs.push("--features", resolveGpuCargoFeatures(targetTriple).join(","));
+    cargoArgs.push(
+      "--features",
+      resolveGpuCargoFeatures(targetTriple).join(","),
+    );
   }
 
   const buildOk = run("cargo", cargoArgs, repoRoot, { allowFailure });
@@ -100,9 +117,7 @@ function buildAndCopy(binaryName, gpuEnabled, options = {}) {
   );
 
   if (!existsSync(sourceBinaryPath)) {
-    fail(
-      `Expected sidecar binary was not produced: ${sourceBinaryPath}`,
-    );
+    fail(`Expected sidecar binary was not produced: ${sourceBinaryPath}`);
   }
 
   copyFileSync(sourceBinaryPath, destinationBinaryPath);
@@ -129,6 +144,40 @@ function mirrorCpuSidecarAsGpu(cpuSidecarPath) {
 
   console.warn(
     `[sidecar] Using CPU sidecar binary for rust-transcription-gpu on ${targetTriple}: ${gpuDestinationPath}`,
+  );
+}
+
+function buildAiSidecar() {
+  const destinationBinaryPath = join(
+    tauriBinariesDir,
+    `${aiSidecarBinaryName}-${targetTriple}${executableSuffix}`,
+  );
+
+  run(
+    "bun",
+    [
+      "build",
+      "--compile",
+      `--target=${resolveBunCompileTarget(targetTriple)}`,
+      aiSidecarEntrypoint,
+      "--outfile",
+      destinationBinaryPath,
+    ],
+    aiSidecarPackageDir,
+  );
+
+  if (!existsSync(destinationBinaryPath)) {
+    fail(
+      `Expected AI sidecar binary was not produced: ${destinationBinaryPath}`,
+    );
+  }
+
+  if (!isWindowsTarget(targetTriple)) {
+    chmodSync(destinationBinaryPath, 0o755);
+  }
+
+  console.log(
+    `[sidecar] Prepared ${aiSidecarBinaryName} for ${targetTriple}: ${destinationBinaryPath}`,
   );
 }
 
@@ -213,8 +262,35 @@ function isAppleTarget(target) {
   return target.includes("apple-darwin");
 }
 
+function resolveBunCompileTarget(target) {
+  if (target === "aarch64-apple-darwin") {
+    return "bun-darwin-arm64";
+  }
+  if (target === "x86_64-apple-darwin") {
+    return "bun-darwin-x64";
+  }
+  if (target === "x86_64-unknown-linux-gnu") {
+    return "bun-linux-x64";
+  }
+  if (target === "aarch64-unknown-linux-gnu") {
+    return "bun-linux-arm64";
+  }
+  if (target === "x86_64-pc-windows-msvc") {
+    return "bun-windows-x64";
+  }
+  if (target === "aarch64-pc-windows-msvc") {
+    return "bun-windows-arm64";
+  }
+
+  fail(`No Bun compile target mapping exists for ${target}`);
+}
+
 function supportsNativeGpuSidecar(target) {
-  return isAppleTarget(target) || target.includes("windows") || target.includes("linux");
+  return (
+    isAppleTarget(target) ||
+    target.includes("windows") ||
+    target.includes("linux")
+  );
 }
 
 function resolveGpuCargoFeatures(target) {

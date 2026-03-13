@@ -14,7 +14,6 @@ export function loadPackageEnv() {
   const envPath = resolve(
     dirname(fileURLToPath(import.meta.url)),
     "..",
-    "..",
     ".env",
   );
 

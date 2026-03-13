@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import * as readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { loadPackageEnv } from "./lib/env";
+import { loadPackageEnv } from "../src/env";
 import type {
   LlmChatRequest,
   OpenAiChatCompletion,
@@ -18,9 +18,8 @@ loadPackageEnv();
 
 const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sidecarApiKey = process.env.SIDECAR_API_KEY || randomUUID();
-const sidecarPort = Number(process.env.MASTRA_PORT) || 4111;
-const upstreamBaseUrl =
-  process.env.LLM_BASE_URL || "https://api.openai.com/v1";
+const sidecarPort = parsePort(process.env.MASTRA_PORT) ?? 4111;
+const upstreamBaseUrl = process.env.LLM_BASE_URL || "https://api.openai.com/v1";
 const upstreamApiKey =
   process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || "";
 const upstreamModel = process.env.LLM_MODEL || "gpt-5.4";
@@ -79,7 +78,7 @@ const permissions = new Map<string, PermissionRecord>();
 
 const sidecar = spawn(
   process.execPath,
-  ["--import", "tsx", "./scripts/dev-server.ts"],
+  ["--import", "tsx", "./src/server.ts"],
   {
     cwd: packageDir,
     env: {
@@ -134,9 +133,7 @@ let ready: SidecarReadyEvent;
 try {
   ready = await pendingReady.promise;
 } catch (error) {
-  console.error(
-    error instanceof Error ? error.message : String(error),
-  );
+  console.error(error instanceof Error ? error.message : String(error));
   shutdown(1);
   throw error;
 }
@@ -272,7 +269,9 @@ async function handleSidecarLine(line: string) {
   }
 }
 
-function handlePermission(request: Extract<SidecarRequest, { type: "tools/permission" }>) {
+function handlePermission(
+  request: Extract<SidecarRequest, { type: "tools/permission" }>,
+) {
   const id = randomUUID();
   const token = randomUUID();
 
@@ -358,7 +357,9 @@ async function handleLlmChat(request: LlmChatRequest) {
         ? upstreamModel
         : request.request.model,
     stream: request.request.stream,
-    stream_options: request.request.stream ? { include_usage: true } : undefined,
+    stream_options: request.request.stream
+      ? { include_usage: true }
+      : undefined,
   };
 
   const upstream = await fetch(`${upstreamBaseUrl}/chat/completions`, {
@@ -501,4 +502,17 @@ function createDeferred<T>() {
     resolve,
     reject,
   };
+}
+
+function parsePort(value: string | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const port = Number.parseInt(value, 10);
+  if (!Number.isInteger(port) || port < 0 || port > 65_535) {
+    return null;
+  }
+
+  return port;
 }

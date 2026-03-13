@@ -9,7 +9,7 @@ import { getAppState, produceAppState } from "../store";
 import {
   getLocalTranscriptionSidecarManager,
   type LocalSidecarDevice,
-} from "../utils/local-transcription-sidecar.utils";
+} from "../sidecars";
 import {
   isGpuPreferredTranscriptionDevice,
   LOCAL_WHISPER_MODELS,

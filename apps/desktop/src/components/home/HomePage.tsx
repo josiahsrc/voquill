@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "../../store";
+import type { AiSidecarStatus } from "../../state/ai-sidecar.state";
 import {
   getDictationSpeed,
   getEffectiveStreak,
@@ -50,6 +51,21 @@ function StatCard({
   );
 }
 
+function getAiSidecarChipColor(
+  status: AiSidecarStatus,
+): "success" | "warning" | "error" | "default" {
+  switch (status) {
+    case "running":
+      return "success";
+    case "starting":
+      return "warning";
+    case "error":
+      return "error";
+    default:
+      return "default";
+  }
+}
+
 export default function HomePage() {
   const user = useAppStore(getMyUser);
   const userName = useAppStore(getMyUserName);
@@ -60,11 +76,30 @@ export default function HomePage() {
   const wordsThisMonth = user?.wordsThisMonth ?? 0;
   const wordsTotal = user?.wordsTotal ?? 0;
   const navigate = useNavigate();
+  const aiSidecar = useAppStore((state) => state.aiSidecar);
 
   const recentIds = useAppStore(
     (state) => state.transcriptions.transcriptionIds,
   );
   const topIds = useMemo(() => recentIds.slice(0, 2), [recentIds]);
+  const aiSidecarStatusLabel =
+    aiSidecar.status === "running"
+      ? intl.formatMessage({ defaultMessage: "Running" })
+      : aiSidecar.status === "starting"
+        ? intl.formatMessage({ defaultMessage: "Starting" })
+        : aiSidecar.status === "error"
+          ? intl.formatMessage({ defaultMessage: "Error" })
+          : intl.formatMessage({ defaultMessage: "Idle" });
+  const aiSidecarStatusDescription = aiSidecar.port
+    ? intl.formatMessage(
+        { defaultMessage: "Listening on port {port}" },
+        { port: aiSidecar.port },
+      )
+    : aiSidecar.errorMessage
+      ? aiSidecar.errorMessage
+      : intl.formatMessage({
+          defaultMessage: "Started automatically with the desktop app.",
+        });
 
   return (
     <DashboardEntryLayout>
@@ -135,6 +170,31 @@ export default function HomePage() {
               </Card>
             </Tooltip>
           )}
+
+          <Card>
+            <CardContent sx={{ py: 2, px: 2.5, "&:last-child": { pb: 2 } }}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                spacing={2}
+              >
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    <FormattedMessage defaultMessage="AI sidecar" />
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {aiSidecarStatusDescription}
+                  </Typography>
+                </Box>
+                <Chip
+                  size="small"
+                  color={getAiSidecarChipColor(aiSidecar.status)}
+                  label={aiSidecarStatusLabel}
+                />
+              </Stack>
+            </CardContent>
+          </Card>
         </Stack>
 
         <GettingStartedList />
