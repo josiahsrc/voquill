@@ -96,7 +96,7 @@ export const ConversationLayout = ({
                 handleSend();
               }
             }}
-            disabled={!sidecarRunning || sending}
+            disabled={!sidecarRunning}
             sx={{ px: 1 }}
           />
           <IconButton
