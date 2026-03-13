@@ -31,7 +31,7 @@ export const ConversationLayout = ({
   const conversationPermissions = useMemo(
     () =>
       Object.values(toolPermissions).filter(
-        (p) => p.conversationId === conversationId,
+        (p) => p.conversationId === conversationId && p.status === "pending",
       ),
     [toolPermissions, conversationId],
   );

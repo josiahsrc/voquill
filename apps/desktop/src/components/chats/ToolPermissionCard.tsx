@@ -1,5 +1,5 @@
-import { CheckRounded, CloseRounded } from "@mui/icons-material";
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { CheckRounded, CloseRounded, InfoOutlined } from "@mui/icons-material";
+import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import type { ToolPermission } from "@repo/types";
 import { FormattedMessage } from "react-intl";
 import { resolveToolPermission } from "../../actions/tool.actions";
@@ -22,58 +22,57 @@ export const ToolPermissionCard = ({ permission }: ToolPermissionCardProps) => {
           py: 1.5,
           borderRadius: 1,
           border: 1,
-          borderColor: isPending ? "warning.main" : "divider",
+          borderColor: "primary.main",
           bgcolor: "background.paper",
         }}
       >
         <Stack spacing={1}>
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={0.5} alignItems="center">
             <Typography variant="body2" fontWeight={600}>
               {toolInfo?.description ?? permission.toolId}
             </Typography>
+            <Tooltip
+              title={
+                <Box
+                  component="pre"
+                  sx={{ m: 0, fontSize: "0.75rem", whiteSpace: "pre-wrap" }}
+                >
+                  {JSON.stringify(permission.params, null, 2)}
+                </Box>
+              }
+              arrow
+              placement="top"
+            >
+              <InfoOutlined
+                sx={{ fontSize: 16, color: "text.secondary", cursor: "help" }}
+              />
+            </Tooltip>
             {!isPending && (
               <Chip
                 size="small"
                 label={permission.status}
                 color={permission.status === "allowed" ? "success" : "error"}
+                sx={{ ml: "auto" }}
               />
             )}
           </Stack>
 
-          <Box
-            component="pre"
-            sx={{
-              m: 0,
-              p: 1,
-              borderRadius: 0.5,
-              bgcolor: "action.selected",
-              overflow: "auto",
-              fontSize: "0.8rem",
-            }}
-          >
-            {JSON.stringify(permission.params, null, 2)}
-          </Box>
-
           {isPending && (
-            <Stack direction="row" spacing={1}>
-              <Button
-                size="small"
-                variant="contained"
-                color="success"
-                startIcon={<CheckRounded />}
-                onClick={() => resolveToolPermission(permission.id, "allowed")}
-              >
-                <FormattedMessage defaultMessage="Allow" />
-              </Button>
-              <Button
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Chip
                 size="small"
                 variant="outlined"
-                color="error"
-                startIcon={<CloseRounded />}
+                label={<FormattedMessage defaultMessage="Deny" />}
+                icon={<CloseRounded />}
                 onClick={() => resolveToolPermission(permission.id, "denied")}
-              >
-                <FormattedMessage defaultMessage="Deny" />
-              </Button>
+              />
+              <Chip
+                size="small"
+                color="primary"
+                label={<FormattedMessage defaultMessage="Allow" />}
+                icon={<CheckRounded />}
+                onClick={() => resolveToolPermission(permission.id, "allowed")}
+              />
             </Stack>
           )}
         </Stack>
