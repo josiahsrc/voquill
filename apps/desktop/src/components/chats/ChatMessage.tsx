@@ -16,7 +16,7 @@ export const ChatMessage = ({ content, isMe }: ChatMessageProps) => {
           maxWidth: "75%",
           px: 2,
           py: 1,
-          borderRadius: 2,
+          borderRadius: 1,
           bgcolor: isMe ? "primary.main" : "action.hover",
           color: isMe ? "primary.contrastText" : "text.primary",
         }}

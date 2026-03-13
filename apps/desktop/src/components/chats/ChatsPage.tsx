@@ -198,7 +198,7 @@ export default function ChatsPage() {
               alignItems: "center",
               gap: 1,
               p: 1,
-              borderRadius: 2,
+              borderRadius: 1,
               border: 1,
               borderColor: "divider",
             }}
