@@ -1,7 +1,8 @@
 import { AzureOpenAI } from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse } from "@repo/types";
+import type { JsonResponse, LlmChatInput, LlmStreamEvent } from "@repo/types";
+import { openaiCompatibleStreamChat } from "./openai.utils";
 
 export const AZURE_OPENAI_MODELS = [
   "gpt-5-mini",
@@ -99,3 +100,24 @@ export const azureOpenAITestIntegration = async ({
   });
   return true;
 };
+
+// ============================================================================
+// Streaming Chat
+// ============================================================================
+
+export type AzureOpenAIStreamChatArgs = {
+  apiKey: string;
+  endpoint: string;
+  deploymentName: string;
+  input: LlmChatInput;
+};
+
+export async function* azureOpenaiStreamChat({
+  apiKey,
+  endpoint,
+  deploymentName,
+  input,
+}: AzureOpenAIStreamChatArgs): AsyncGenerator<LlmStreamEvent> {
+  const client = createClient(apiKey, endpoint);
+  yield* openaiCompatibleStreamChat(client, deploymentName, input);
+}

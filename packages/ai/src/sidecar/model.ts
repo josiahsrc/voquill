@@ -1,9 +1,10 @@
 import type { MastraLanguageModel } from "@mastra/core/agent";
 import { randomUUID } from "node:crypto";
 import type {
-  OpenAiChatCompletion,
-  OpenAiChatMessage,
-  OpenAiChatRequest,
+  LlmChatInput,
+  LlmMessage,
+  LlmStreamEvent,
+  LlmToolChoice,
 } from "@repo/types";
 import { getSidecarIpcClient } from "./client";
 
@@ -64,59 +65,50 @@ export function createSidecarLanguageModel(): SidecarLanguageModel {
       return this.doStream(options);
     },
     async doStream(options: SidecarCallOptions): Promise<SidecarStreamResult> {
-      const request = serializeLlmChatRequest(options, true);
-      const chunks = ipc.requestStream<OpenAiChatCompletion>("llm/chat", {
-        request,
+      const input = serializeChatInput(options);
+      const chunks = ipc.requestStream<LlmStreamEvent>("llm/chat", {
+        input,
       });
 
       const stream = new ReadableStream<SidecarStreamPart>({
         start(controller) {
-          void pumpOpenAiStream(chunks, controller);
+          void pumpLlmStream(chunks, controller);
         },
       });
 
       return {
         stream,
         request: {
-          body: request,
+          body: input,
         },
       };
     },
   };
 }
 
-function serializeLlmChatRequest(
-  options: SidecarCallOptions,
-  stream: boolean,
-): OpenAiChatRequest {
+function serializeChatInput(options: SidecarCallOptions): LlmChatInput {
   return {
-    model: MODEL_ID,
     messages: serializePrompt(options),
-    stream,
     tools: options.tools
       ?.filter((tool) => tool.type === "function")
       .map((tool) => ({
-        type: "function" as const,
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-          strict: tool.strict,
-        },
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.inputSchema,
       })),
-    tool_choice: serializeToolChoice(options.toolChoice),
-    max_tokens: options.maxOutputTokens,
+    toolChoice: serializeToolChoice(options.toolChoice),
+    maxTokens: options.maxOutputTokens,
     temperature: options.temperature,
-    stop: options.stopSequences,
-    top_p: options.topP,
-    frequency_penalty: options.frequencyPenalty,
-    presence_penalty: options.presencePenalty,
+    stopSequences: options.stopSequences,
+    topP: options.topP,
+    frequencyPenalty: options.frequencyPenalty,
+    presencePenalty: options.presencePenalty,
     seed: options.seed,
   };
 }
 
-function serializePrompt(options: SidecarCallOptions): OpenAiChatMessage[] {
-  const messages: OpenAiChatMessage[] = [];
+function serializePrompt(options: SidecarCallOptions): LlmMessage[] {
+  const messages: LlmMessage[] = [];
 
   for (const message of options.prompt) {
     if (message.role === "system") {
@@ -143,17 +135,14 @@ function serializePrompt(options: SidecarCallOptions): OpenAiChatMessage[] {
         .filter((part): part is PromptToolCallPart => part.type === "tool-call")
         .map((part) => ({
           id: part.toolCallId,
-          type: "function" as const,
-          function: {
-            name: part.toolName,
-            arguments: JSON.stringify(part.input ?? {}),
-          },
+          name: part.toolName,
+          arguments: JSON.stringify(part.input ?? {}),
         }));
 
       messages.push({
         role: "assistant",
         content: textParts.length > 0 ? textParts.join("\n") : null,
-        tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
       });
       continue;
     }
@@ -165,7 +154,7 @@ function serializePrompt(options: SidecarCallOptions): OpenAiChatMessage[] {
 
       messages.push({
         role: "tool",
-        tool_call_id: part.toolCallId,
+        toolCallId: part.toolCallId,
         content: serializeToolOutput(part.output),
       });
     }
@@ -226,7 +215,9 @@ function serializeToolOutput(output: PromptToolResultOutput) {
   }
 }
 
-function serializeToolChoice(toolChoice?: PromptToolChoice) {
+function serializeToolChoice(
+  toolChoice?: PromptToolChoice,
+): LlmToolChoice | undefined {
   if (!toolChoice) {
     return undefined;
   }
@@ -244,33 +235,20 @@ function serializeToolChoice(toolChoice?: PromptToolChoice) {
   }
 
   if (toolChoice.type === "tool") {
-    return {
-      type: "function" as const,
-      function: {
-        name: toolChoice.toolName,
-      },
-    };
+    return { name: toolChoice.toolName };
   }
+
+  return undefined;
 }
 
-async function pumpOpenAiStream(
-  chunks: AsyncIterable<OpenAiChatCompletion>,
+async function pumpLlmStream(
+  events: AsyncIterable<LlmStreamEvent>,
   controller: ReadableStreamDefaultController<SidecarStreamPart>,
 ) {
   const textId = randomUUID();
-  const toolCalls = new Map<
-    number,
-    {
-      id: string;
-      name: string;
-      input: string;
-    }
-  >();
-
   let startedText = false;
-  let sentMetadata = false;
   let usage: SidecarUsage = toUsage(undefined);
-  let finishReason = toFinishReason(undefined);
+  let finishReason: SidecarFinishReason = toFinishReason("other");
 
   controller.enqueue({
     type: "stream-start",
@@ -278,96 +256,57 @@ async function pumpOpenAiStream(
   });
 
   try {
-    for await (const chunk of chunks) {
-      if (!sentMetadata && (chunk.id || chunk.model || chunk.created)) {
-        controller.enqueue({
-          type: "response-metadata",
-          id: chunk.id,
-          modelId: chunk.model,
-          timestamp: chunk.created
-            ? new Date(chunk.created * 1_000)
-            : undefined,
-        });
-        sentMetadata = true;
-      }
-
-      if (chunk.usage) {
-        usage = toUsage(chunk.usage);
-      }
-
-      const choice = chunk.choices[0];
-      if (!choice) {
-        continue;
-      }
-
-      const textDelta = choice.delta?.content;
-      if (textDelta) {
-        if (!startedText) {
+    for await (const event of events) {
+      switch (event.type) {
+        case "text-delta": {
+          if (!startedText) {
+            controller.enqueue({ type: "text-start", id: textId });
+            startedText = true;
+          }
           controller.enqueue({
-            type: "text-start",
+            type: "text-delta",
             id: textId,
+            delta: event.text,
           });
-          startedText = true;
+          break;
         }
-
-        controller.enqueue({
-          type: "text-delta",
-          id: textId,
-          delta: textDelta,
-        });
-      }
-
-      for (const toolCallDelta of choice.delta?.tool_calls || []) {
-        const index = toolCallDelta.index ?? toolCalls.size;
-        const current = toolCalls.get(index) || {
-          id: toolCallDelta.id || randomUUID(),
-          name: toolCallDelta.function?.name || `tool-${index}`,
-          input: "",
-        };
-
-        if (toolCallDelta.id) {
-          current.id = toolCallDelta.id;
+        case "tool-call": {
+          controller.enqueue({
+            type: "tool-call",
+            toolCallId: event.id,
+            toolName: event.name,
+            input: event.arguments,
+          });
+          break;
         }
-
-        if (toolCallDelta.function?.name) {
-          current.name = toolCallDelta.function.name;
+        case "finish": {
+          finishReason = toFinishReason(event.finishReason);
+          usage = toUsage(event.usage);
+          if (event.modelId) {
+            controller.enqueue({
+              type: "response-metadata",
+              id: undefined,
+              modelId: event.modelId,
+              timestamp: undefined,
+            });
+          }
+          break;
         }
-
-        if (toolCallDelta.function?.arguments) {
-          current.input += toolCallDelta.function.arguments;
+        case "error": {
+          controller.enqueue({
+            type: "error",
+            error: event.error,
+          });
+          break;
         }
-
-        toolCalls.set(index, current);
-      }
-
-      if (choice.finish_reason) {
-        finishReason = toFinishReason(choice.finish_reason);
       }
     }
 
     if (startedText) {
-      controller.enqueue({
-        type: "text-end",
-        id: textId,
-      });
+      controller.enqueue({ type: "text-end", id: textId });
     }
 
-    for (const [, toolCall] of [...toolCalls.entries()].sort(
-      ([leftIndex], [rightIndex]) => leftIndex - rightIndex,
-    )) {
-      controller.enqueue({
-        type: "tool-call",
-        toolCallId: toolCall.id,
-        toolName: toolCall.name,
-        input: toolCall.input,
-      });
-    }
-
-    controller.enqueue({
-      type: "finish",
-      finishReason,
-      usage,
-    });
+    controller.enqueue({ type: "finish", finishReason, usage });
     controller.close();
   } catch (error) {
     controller.enqueue({
@@ -384,10 +323,10 @@ function toFinishReason(raw: string | null | undefined): SidecarFinishReason {
       return { unified: "stop", raw };
     case "length":
       return { unified: "length", raw };
-    case "content_filter":
-      return { unified: "content-filter", raw };
-    case "tool_calls":
-      return { unified: "tool-calls", raw };
+    case "content-filter":
+      return { unified: "content-filter", raw: "content_filter" };
+    case "tool-calls":
+      return { unified: "tool-calls", raw: "tool_calls" };
     case "error":
       return { unified: "error", raw };
     default:
@@ -395,24 +334,25 @@ function toFinishReason(raw: string | null | undefined): SidecarFinishReason {
   }
 }
 
-function toUsage(usage: OpenAiChatCompletion["usage"]): SidecarUsage {
+function toUsage(
+  usage: { promptTokens?: number; completionTokens?: number } | undefined,
+): SidecarUsage {
   return {
     inputTokens: {
-      total: usage?.prompt_tokens,
+      total: usage?.promptTokens,
       noCache: undefined,
       cacheRead: undefined,
       cacheWrite: undefined,
     },
     outputTokens: {
-      total: usage?.completion_tokens,
-      text: usage?.completion_tokens,
+      total: usage?.completionTokens,
+      text: usage?.completionTokens,
       reasoning: undefined,
     },
     raw: usage
       ? {
-          prompt_tokens: usage.prompt_tokens,
-          completion_tokens: usage.completion_tokens,
-          total_tokens: usage.total_tokens,
+          prompt_tokens: usage.promptTokens,
+          completion_tokens: usage.completionTokens,
         }
       : undefined,
   };

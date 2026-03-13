@@ -1,11 +1,14 @@
 import OpenAI from "openai";
 import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse } from "@repo/types";
 import type {
+  JsonResponse,
+  LlmChatInput,
+  LlmStreamEvent,
   OpenRouterModel,
   OpenRouterProvider,
   OpenRouterProviderRouting,
 } from "@repo/types";
+import { openaiCompatibleStreamChat } from "./openai.utils";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export const OPENROUTER_APP_NAME = "Voquill";
@@ -249,3 +252,24 @@ export const openrouterTestIntegration = async ({
   const content = response.choices[0]?.message?.content ?? "";
   return content.toLowerCase().includes("hello");
 };
+
+// ============================================================================
+// Streaming Chat
+// ============================================================================
+
+export type OpenRouterStreamChatArgs = {
+  apiKey: string;
+  model: string;
+  input: LlmChatInput;
+  customFetch?: typeof globalThis.fetch;
+};
+
+export async function* openrouterStreamChat({
+  apiKey,
+  model,
+  input,
+  customFetch,
+}: OpenRouterStreamChatArgs): AsyncGenerator<LlmStreamEvent> {
+  const client = createClient(apiKey, customFetch);
+  yield* openaiCompatibleStreamChat(client, model, input);
+}

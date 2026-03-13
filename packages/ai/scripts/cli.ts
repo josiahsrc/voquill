@@ -5,8 +5,11 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { loadPackageEnv } from "../src/env";
 import type {
+  LlmChatInput,
   LlmChatRequest,
-  OpenAiChatCompletion,
+  LlmFinishReason,
+  LlmMessage,
+  LlmStreamEvent,
   SidecarMessage,
   SidecarReadyEvent,
   SidecarRequest,
@@ -341,6 +344,78 @@ function handleToolExecute(
   });
 }
 
+// ============================================================================
+// LLM Chat — translate LlmChatInput ↔ OpenAI HTTP format
+// ============================================================================
+
+function llmInputToOpenAIBody(input: LlmChatInput, model: string) {
+  return {
+    model,
+    messages: input.messages.map((msg: LlmMessage) => {
+      switch (msg.role) {
+        case "system":
+          return { role: "system", content: msg.content };
+        case "user":
+          return { role: "user", content: msg.content };
+        case "assistant":
+          return {
+            role: "assistant",
+            content: msg.content ?? null,
+            tool_calls: msg.toolCalls?.map((tc) => ({
+              id: tc.id,
+              type: "function",
+              function: { name: tc.name, arguments: tc.arguments },
+            })),
+          };
+        case "tool":
+          return {
+            role: "tool",
+            tool_call_id: msg.toolCallId,
+            content: msg.content,
+          };
+      }
+    }),
+    stream: true,
+    stream_options: { include_usage: true },
+    tools: input.tools?.map((t) => ({
+      type: "function",
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters,
+      },
+    })),
+    tool_choice:
+      input.toolChoice == null
+        ? undefined
+        : typeof input.toolChoice === "string"
+          ? input.toolChoice
+          : { type: "function", function: { name: input.toolChoice.name } },
+    max_tokens: input.maxTokens,
+    temperature: input.temperature,
+    stop: input.stopSequences,
+    top_p: input.topP,
+    frequency_penalty: input.frequencyPenalty,
+    presence_penalty: input.presencePenalty,
+    seed: input.seed,
+  };
+}
+
+function openaiFinishReasonToLlm(raw: string | null | undefined): LlmFinishReason {
+  switch (raw) {
+    case "stop":
+      return "stop";
+    case "length":
+      return "length";
+    case "content_filter":
+      return "content-filter";
+    case "tool_calls":
+      return "tool-calls";
+    default:
+      return "other";
+  }
+}
+
 async function handleLlmChat(request: LlmChatRequest) {
   if (!upstreamApiKey) {
     return respond({
@@ -350,17 +425,7 @@ async function handleLlmChat(request: LlmChatRequest) {
     });
   }
 
-  const body = {
-    ...request.request,
-    model:
-      !request.request.model || request.request.model === "default"
-        ? upstreamModel
-        : request.request.model,
-    stream: request.request.stream,
-    stream_options: request.request.stream
-      ? { include_usage: true }
-      : undefined,
-  };
+  const body = llmInputToOpenAIBody(request.input, upstreamModel);
 
   const upstream = await fetch(`${upstreamBaseUrl}/chat/completions`, {
     method: "POST",
@@ -379,14 +444,6 @@ async function handleLlmChat(request: LlmChatRequest) {
     });
   }
 
-  if (!request.request.stream) {
-    return respond({
-      id: request.id,
-      status: "ok",
-      result: (await upstream.json()) as OpenAiChatCompletion,
-    });
-  }
-
   if (!upstream.body) {
     return respond({
       id: request.id,
@@ -395,20 +452,29 @@ async function handleLlmChat(request: LlmChatRequest) {
     });
   }
 
-  await forwardSseChunks(request.id, upstream.body);
+  await forwardSseAsLlmEvents(request.id, upstream.body);
   return respond({
     id: request.id,
     status: "done",
   });
 }
 
-async function forwardSseChunks(
+async function forwardSseAsLlmEvents(
   id: string,
   stream: ReadableStream<Uint8Array>,
 ) {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+
+  const toolCalls = new Map<
+    number,
+    { id: string; name: string; arguments: string }
+  >();
+  let finishReason: LlmFinishReason = "other";
+  let promptTokens: number | undefined;
+  let completionTokens: number | undefined;
+  let modelId: string | undefined;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -433,16 +499,95 @@ async function forwardSseChunks(
 
       const payload = dataLines.join("\n");
       if (payload === "[DONE]") {
-        return;
+        break;
       }
 
-      respond({
-        id,
-        status: "chunk",
-        data: JSON.parse(payload) as OpenAiChatCompletion,
-      });
+      const chunk = JSON.parse(payload) as {
+        id?: string;
+        model?: string;
+        choices: Array<{
+          delta?: {
+            content?: string | null;
+            tool_calls?: Array<{
+              index?: number;
+              id?: string;
+              function?: { name?: string; arguments?: string };
+            }>;
+          };
+          finish_reason?: string | null;
+        }>;
+        usage?: {
+          prompt_tokens?: number;
+          completion_tokens?: number;
+        };
+      };
+
+      if (chunk.model) modelId = chunk.model;
+      if (chunk.usage) {
+        promptTokens = chunk.usage.prompt_tokens;
+        completionTokens = chunk.usage.completion_tokens;
+      }
+
+      const choice = chunk.choices[0];
+      if (!choice) continue;
+
+      if (choice.delta?.content) {
+        respond({
+          id,
+          status: "chunk",
+          data: {
+            type: "text-delta",
+            text: choice.delta.content,
+          } satisfies LlmStreamEvent,
+        });
+      }
+
+      for (const tc of choice.delta?.tool_calls ?? []) {
+        const index = tc.index ?? toolCalls.size;
+        const current = toolCalls.get(index) ?? {
+          id: "",
+          name: "",
+          arguments: "",
+        };
+        if (tc.id) current.id = tc.id;
+        if (tc.function?.name) current.name = tc.function.name;
+        if (tc.function?.arguments)
+          current.arguments += tc.function.arguments;
+        toolCalls.set(index, current);
+      }
+
+      if (choice.finish_reason) {
+        finishReason = openaiFinishReasonToLlm(choice.finish_reason);
+      }
     }
   }
+
+  for (const [, tc] of [...toolCalls.entries()].sort(([a], [b]) => a - b)) {
+    respond({
+      id,
+      status: "chunk",
+      data: {
+        type: "tool-call",
+        id: tc.id,
+        name: tc.name,
+        arguments: tc.arguments,
+      } satisfies LlmStreamEvent,
+    });
+  }
+
+  respond({
+    id,
+    status: "chunk",
+    data: {
+      type: "finish",
+      finishReason,
+      usage:
+        promptTokens != null || completionTokens != null
+          ? { promptTokens, completionTokens }
+          : undefined,
+      modelId,
+    } satisfies LlmStreamEvent,
+  });
 }
 
 function executeTool(toolId: string, params: Record<string, unknown>) {

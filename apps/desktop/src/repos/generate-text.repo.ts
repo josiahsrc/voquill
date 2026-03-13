@@ -1,19 +1,32 @@
 import { invokeHandler, type CloudModel } from "@repo/functions";
-import { JsonResponse, Nullable, OpenRouterProviderRouting } from "@repo/types";
+import type {
+  JsonResponse,
+  LlmChatInput,
+  LlmStreamEvent,
+  Nullable,
+  OpenRouterProviderRouting,
+} from "@repo/types";
 import {
   azureOpenAIGenerateText,
+  azureOpenaiStreamChat,
   claudeGenerateTextResponse,
+  claudeStreamChat,
   ClaudeModel,
   deepseekGenerateTextResponse,
+  deepseekStreamChat,
   DeepseekModel,
   GeminiGenerateTextModel,
   geminiGenerateTextResponse,
+  geminiStreamChat,
   GenerateTextModel,
   groqGenerateTextResponse,
+  groqStreamChat,
   OpenAIGenerateTextModel,
   openaiGenerateTextResponse,
+  openaiStreamChat,
   OPENROUTER_DEFAULT_MODEL,
   openrouterGenerateTextResponse,
+  openrouterStreamChat,
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
@@ -38,6 +51,7 @@ export type GenerateTextOutput = {
 
 export abstract class BaseGenerateTextRepo extends BaseRepo {
   abstract generateText(input: GenerateTextInput): Promise<GenerateTextOutput>;
+  abstract streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent>;
 }
 
 export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
@@ -62,6 +76,20 @@ export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
         postProcessingMode: "cloud",
       },
     };
+  }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    const lastUserMsg = [...input.messages]
+      .reverse()
+      .find((m) => m.role === "user");
+    const systemMsg = input.messages.find((m) => m.role === "system");
+    const response = await invokeHandler("ai/generateText", {
+      system: systemMsg?.content,
+      prompt: lastUserMsg?.content ?? "",
+      model: this.model,
+    });
+    yield { type: "text-delta", text: response.text };
+    yield { type: "finish", finishReason: "stop" };
   }
 }
 
@@ -94,6 +122,14 @@ export class GroqGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* groqStreamChat({
+      apiKey: this.groqApiKey,
+      model: this.model,
+      input,
+    });
+  }
 }
 
 export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
@@ -122,6 +158,14 @@ export class OpenAIGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • OpenAI",
       },
     };
+  }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* openaiStreamChat({
+      apiKey: this.openaiApiKey,
+      model: this.model,
+      input,
+    });
   }
 }
 
@@ -156,6 +200,16 @@ export class OllamaGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* openaiStreamChat({
+      apiKey: this.apiKey,
+      baseUrl: this.ollamaUrl,
+      model: this.model,
+      input,
+      customFetch: tauriFetch,
+    });
+  }
 }
 
 export class OpenAICompatibleGenerateTextRepo extends BaseGenerateTextRepo {
@@ -188,6 +242,16 @@ export class OpenAICompatibleGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • OpenAI Compatible",
       },
     };
+  }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* openaiStreamChat({
+      apiKey: this.apiKey,
+      baseUrl: this.baseUrl,
+      model: this.model,
+      input,
+      customFetch: tauriFetch,
+    });
   }
 }
 
@@ -225,6 +289,14 @@ export class OpenRouterGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* openrouterStreamChat({
+      apiKey: this.apiKey,
+      model: this.model,
+      input,
+    });
+  }
 }
 
 export class AzureOpenAIGenerateTextRepo extends BaseGenerateTextRepo {
@@ -257,6 +329,15 @@ export class AzureOpenAIGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* azureOpenaiStreamChat({
+      apiKey: this.apiKey,
+      endpoint: this.endpoint,
+      deploymentName: this.deploymentName,
+      input,
+    });
+  }
 }
 
 export class DeepseekGenerateTextRepo extends BaseGenerateTextRepo {
@@ -285,6 +366,14 @@ export class DeepseekGenerateTextRepo extends BaseGenerateTextRepo {
         inferenceDevice: "API • DeepSeek",
       },
     };
+  }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* deepseekStreamChat({
+      apiKey: this.apiKey,
+      model: this.model,
+      input,
+    });
   }
 }
 
@@ -315,6 +404,14 @@ export class GeminiGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* geminiStreamChat({
+      apiKey: this.apiKey,
+      model: this.model,
+      input,
+    });
+  }
 }
 
 export class ClaudeGenerateTextRepo extends BaseGenerateTextRepo {
@@ -344,6 +441,14 @@ export class ClaudeGenerateTextRepo extends BaseGenerateTextRepo {
       },
     };
   }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    yield* claudeStreamChat({
+      apiKey: this.apiKey,
+      model: this.model,
+      input,
+    });
+  }
 }
 
 export class EnterpriseGenerateTextRepo extends BaseGenerateTextRepo {
@@ -368,5 +473,19 @@ export class EnterpriseGenerateTextRepo extends BaseGenerateTextRepo {
         postProcessingMode: "cloud",
       },
     };
+  }
+
+  async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
+    const lastUserMsg = [...input.messages]
+      .reverse()
+      .find((m) => m.role === "user");
+    const systemMsg = input.messages.find((m) => m.role === "system");
+    const response = await invokeEnterprise("ai/generateText", {
+      system: systemMsg?.content,
+      prompt: lastUserMsg?.content ?? "",
+      model: this.model,
+    });
+    yield { type: "text-delta", text: response.text };
+    yield { type: "finish", finishReason: "stop" };
   }
 }

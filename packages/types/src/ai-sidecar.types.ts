@@ -1,5 +1,5 @@
 import type { ToolInfo, ToolPermissionStatus } from "./ai-tool.types";
-import type { OpenAiChatRequest } from "./ai-openai.types";
+import type { LlmChatInput } from "./ai-llm.types";
 
 export interface SidecarReadyEvent {
   type: "ready";
@@ -34,7 +34,7 @@ export interface ToolsExecuteRequest {
 export interface LlmChatRequest {
   id: string;
   type: "llm/chat";
-  request: OpenAiChatRequest;
+  input: LlmChatInput;
 }
 
 export type SidecarRequest =
