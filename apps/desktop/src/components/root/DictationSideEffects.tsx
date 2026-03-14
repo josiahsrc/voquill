@@ -10,6 +10,7 @@ import {
   switchWritingStyleBackward,
   switchWritingStyleForward,
 } from "../../actions/tone.actions";
+import { resolveToolPermission } from "../../actions/tool.actions";
 import { storeTranscription } from "../../actions/transcribe.actions";
 import { recordStreak } from "../../actions/user.actions";
 import {
@@ -26,6 +27,7 @@ import { AgentStrategy } from "../../strategies/agent.strategy";
 import { BaseStrategy } from "../../strategies/base.strategy";
 import { DictationStrategy } from "../../strategies/dictation.strategy";
 import { TextFieldInfo } from "../../types/accessibility.types";
+import type { OverlayResolvePermissionPayload } from "../../types/overlay.types";
 import {
   StopRecordingResponse,
   TranscriptionSession,
@@ -637,6 +639,13 @@ export const DictationSideEffects = () => {
   useTauriListen<void>("tone-switch-backward", () => {
     switchWritingStyleBackward();
   });
+
+  useTauriListen<OverlayResolvePermissionPayload>(
+    "overlay-resolve-permission",
+    (payload) => {
+      resolveToolPermission(payload.permissionId, payload.status);
+    },
+  );
 
   useEffect(() => {
     invoke("set_pill_hover_enabled", { enabled: pillHoverEnabled }).catch(

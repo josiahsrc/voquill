@@ -8,6 +8,11 @@ export interface ToolInfo {
 
 export type ToolPermissionStatus = "pending" | "allowed" | "denied";
 
+export type ToolPermissionResolution = Extract<
+  ToolPermissionStatus,
+  "allowed" | "denied"
+>;
+
 export interface ToolPermission {
   id: string;
   toolId: string;

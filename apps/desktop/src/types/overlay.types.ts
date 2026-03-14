@@ -1,6 +1,12 @@
+import type { ToolPermissionResolution } from "@repo/types";
 import type { AppState } from "../state/app.state";
 
 export type OverlayPhase = "idle" | "recording" | "loading";
+
+export type OverlayResolvePermissionPayload = {
+  permissionId: string;
+  status: ToolPermissionResolution;
+};
 
 export type OverlaySyncPayload = Partial<
   Pick<
@@ -17,5 +23,8 @@ export type OverlaySyncPayload = Partial<
     | "onboarding"
     | "toneById"
     | "enterpriseConfig"
+    | "toolPermissionById"
+    | "toolInfoById"
+    | "streamingMessageById"
   >
 >;

@@ -1,12 +1,23 @@
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseIcon from "@mui/icons-material/Close";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import { Box, IconButton, Typography } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
-import type { ChatMessage } from "@repo/types";
+import type {
+  ChatMessage,
+  ToolPermission,
+  ToolPermissionResolution,
+} from "@repo/types";
 import { emitTo } from "@tauri-apps/api/event";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import type { OverlayPhase } from "../../types/overlay.types";
+import type { StreamingMessageState } from "../../state/app.state";
+import { useAppStore } from "../../store";
+import type {
+  OverlayPhase,
+  OverlayResolvePermissionPayload,
+} from "../../types/overlay.types";
 
 export const ASSISTANT_PANEL_OVERLAY_WIDTH = 600;
 export const ASSISTANT_PANEL_OVERLAY_HEIGHT = 272;
@@ -97,13 +108,7 @@ const formatUserPromptPreview = (text: string): UserPromptPreview | null => {
   };
 };
 
-const AnimatedText = ({
-  text,
-  color,
-}: {
-  text: string;
-  color: string;
-}) => {
+const AnimatedText = ({ text, color }: { text: string; color: string }) => {
   const segments = text.split(/(\s+)/);
 
   return (
@@ -197,6 +202,187 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
   );
 };
 
+const OverlayAgentActivity = ({
+  streaming,
+}: {
+  streaming: StreamingMessageState;
+}) => {
+  const theme = useTheme();
+  const [reasoningOpen, setReasoningOpen] = useState(false);
+  const { toolCalls, reasoning, isStreaming } = streaming;
+  const hasActivity = toolCalls.length > 0 || reasoning.length > 0;
+  if (!hasActivity) return null;
+
+  const dimColor = alpha(theme.palette.common.white, 0.5);
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25, mb: 0.5 }}>
+      {toolCalls.map((tc) => (
+        <Typography
+          key={tc.toolCallId}
+          sx={{ fontSize: 12, fontStyle: "italic", color: dimColor }}
+        >
+          {tc.done ? (
+            <FormattedMessage
+              defaultMessage="Used {toolName}"
+              values={{ toolName: tc.toolName }}
+            />
+          ) : (
+            <FormattedMessage
+              defaultMessage="Using {toolName}…"
+              values={{ toolName: tc.toolName }}
+            />
+          )}
+        </Typography>
+      ))}
+      {reasoning.length > 0 && (
+        <Box>
+          <Typography
+            sx={{
+              fontSize: 12,
+              color: dimColor,
+              cursor: "pointer",
+              userSelect: "none",
+              "&:hover": { textDecoration: "underline" },
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setReasoningOpen((o) => !o);
+            }}
+          >
+            {isStreaming ? (
+              <FormattedMessage defaultMessage="Thinking…" />
+            ) : (
+              <FormattedMessage defaultMessage="Thought process" />
+            )}
+          </Typography>
+          {reasoningOpen && (
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: dimColor,
+                whiteSpace: "pre-wrap",
+                mt: 0.25,
+                pl: 1,
+                borderLeft: `2px solid ${alpha(theme.palette.common.white, 0.2)}`,
+                maxHeight: 80,
+                overflow: "auto",
+                scrollbarWidth: "thin",
+              }}
+            >
+              {reasoning}
+            </Typography>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+const OverlayToolPermissionCard = ({
+  permission,
+}: {
+  permission: ToolPermission;
+}) => {
+  const theme = useTheme();
+  const toolInfo = useAppStore((s) => s.toolInfoById[permission.toolId]);
+  const isPending = permission.status === "pending";
+  const whiteHigh = alpha(theme.palette.common.white, 0.92);
+  const whiteMid = alpha(theme.palette.common.white, 0.5);
+
+  const handleResolve = (status: ToolPermissionResolution) => {
+    emitTo<OverlayResolvePermissionPayload>(
+      "main",
+      "overlay-resolve-permission",
+      {
+        permissionId: permission.id,
+        status,
+      },
+    ).catch(console.error);
+  };
+
+  return (
+    <Box
+      sx={{
+        px: 1.5,
+        py: 1,
+        borderRadius: 2,
+        border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+        backgroundColor: alpha(theme.palette.common.white, 0.06),
+      }}
+    >
+      <Typography sx={{ fontSize: 13, fontWeight: 600, color: whiteHigh }}>
+        {toolInfo?.description ?? permission.toolId}
+      </Typography>
+      {isPending && (
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            justifyContent: "flex-end",
+            mt: 0.75,
+          }}
+        >
+          <Box
+            component="button"
+            onMouseDown={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleResolve("denied");
+            }}
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              px: 1,
+              py: 0.25,
+              fontSize: 12,
+              fontWeight: 500,
+              color: whiteMid,
+              backgroundColor: "transparent",
+              border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+              borderRadius: 1,
+              cursor: "pointer",
+              "&:hover": {
+                backgroundColor: alpha(theme.palette.common.white, 0.08),
+              },
+            }}
+          >
+            <CloseRoundedIcon sx={{ fontSize: 14 }} />
+            <FormattedMessage defaultMessage="Deny" />
+          </Box>
+          <Box
+            component="button"
+            onMouseDown={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleResolve("allowed");
+            }}
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              px: 1,
+              py: 0.25,
+              fontSize: 12,
+              fontWeight: 500,
+              color: whiteHigh,
+              backgroundColor: alpha(theme.palette.common.white, 0.12),
+              border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
+              borderRadius: 1,
+              cursor: "pointer",
+              "&:hover": {
+                backgroundColor: alpha(theme.palette.common.white, 0.2),
+              },
+            }}
+          >
+            <CheckRoundedIcon sx={{ fontSize: 14 }} />
+            <FormattedMessage defaultMessage="Allow" />
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 export const AssistantModePanel = ({
   phase,
   messages,
@@ -213,11 +399,25 @@ export const AssistantModePanel = ({
   const assistantMessages = messages.filter(
     (message) => message.role === "assistant" || message.role === "system",
   );
-  const isCompact = messages.length === 0;
-  const latestAssistantMessage = assistantMessages[assistantMessages.length - 1];
+  const pillConversationId = useAppStore((s) => s.pillConversationId);
+  const streamingMessageById = useAppStore((s) => s.streamingMessageById);
+  const toolPermissions = useAppStore((s) => s.toolPermissionById);
+  const pendingPermissions = useMemo(
+    () =>
+      pillConversationId
+        ? Object.values(toolPermissions).filter(
+            (p) =>
+              p.conversationId === pillConversationId && p.status === "pending",
+          )
+        : [],
+    [toolPermissions, pillConversationId],
+  );
+  const isCompact = messages.length === 0 && pendingPermissions.length === 0;
+  const latestAssistantMessage =
+    assistantMessages[assistantMessages.length - 1];
   const latestAssistantAutoScrollKey = latestAssistantMessage
-    ? `${assistantMessages.length}:${latestAssistantMessage.content}`
-    : "none";
+    ? `${assistantMessages.length}:${latestAssistantMessage.content}:${pendingPermissions.length}`
+    : `none:${pendingPermissions.length}`;
 
   useEffect(() => {
     if (!open) {
@@ -416,36 +616,47 @@ export const AssistantModePanel = ({
                 scrollbarWidth: "thin",
               }}
             >
-              {assistantMessages.map((message, index) => (
-                <Box
-                  key={message.id}
-                  ref={
-                    index === assistantMessages.length - 1
-                      ? latestAssistantMessageRef
-                      : undefined
-                  }
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 0.5,
-                  }}
-                >
-                  {index > 0 ? (
-                    <Box
-                      sx={{
-                        alignSelf: "flex-start",
-                        width: 36,
-                        borderTop: `1px solid ${alpha(
-                          theme.palette.common.white,
-                          0.45,
-                        )}`,
-                        mt: 2,
-                        mb: 1,
-                        flexShrink: 0,
-                      }}
-                    />
-                  ) : null}
-                  <TranscriptEntry message={message} />
+              {assistantMessages.map((message, index) => {
+                const streaming = streamingMessageById[message.id];
+                return (
+                  <Box
+                    key={message.id}
+                    ref={
+                      index === assistantMessages.length - 1
+                        ? latestAssistantMessageRef
+                        : undefined
+                    }
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.5,
+                    }}
+                  >
+                    {index > 0 ? (
+                      <Box
+                        sx={{
+                          alignSelf: "flex-start",
+                          width: 36,
+                          borderTop: `1px solid ${alpha(
+                            theme.palette.common.white,
+                            0.45,
+                          )}`,
+                          mt: 2,
+                          mb: 1,
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : null}
+                    {streaming ? (
+                      <OverlayAgentActivity streaming={streaming} />
+                    ) : null}
+                    <TranscriptEntry message={message} />
+                  </Box>
+                );
+              })}
+              {pendingPermissions.map((p) => (
+                <Box key={p.id} sx={{ mt: 1.5 }}>
+                  <OverlayToolPermissionCard permission={p} />
                 </Box>
               ))}
             </Box>

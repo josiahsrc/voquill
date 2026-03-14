@@ -1,4 +1,8 @@
-import type { ToolPermission, ToolPermissionStatus } from "@repo/types";
+import type {
+  ToolPermission,
+  ToolPermissionResolution,
+  ToolPermissionStatus,
+} from "@repo/types";
 import { getToolRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { createTool } from "../tools";
@@ -31,7 +35,7 @@ export const requestToolPermission = (
 
 export const resolveToolPermission = (
   permissionId: string,
-  status: Extract<ToolPermissionStatus, "allowed" | "denied">,
+  status: ToolPermissionResolution,
 ): void => {
   produceAppState((draft) => {
     const permission = draft.toolPermissionById[permissionId];

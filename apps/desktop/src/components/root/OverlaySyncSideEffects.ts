@@ -25,6 +25,9 @@ const buildFullSyncPayload = (state: AppState): OverlaySyncPayload => ({
   onboarding: state.onboarding,
   toneById: state.toneById,
   enterpriseConfig: state.enterpriseConfig,
+  toolPermissionById: state.toolPermissionById,
+  toolInfoById: state.toolInfoById,
+  streamingMessageById: state.streamingMessageById,
 });
 
 const useOverlaySync = <T>(
@@ -122,6 +125,21 @@ export const OverlaySyncSideEffects = () => {
     OVERLAY_TARGETS,
     (s) => s.enterpriseConfig,
     (enterpriseConfig) => ({ enterpriseConfig }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.toolPermissionById,
+    (toolPermissionById) => ({ toolPermissionById }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.toolInfoById,
+    (toolInfoById) => ({ toolInfoById }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.streamingMessageById,
+    (streamingMessageById) => ({ streamingMessageById }),
   );
 
   return null;
