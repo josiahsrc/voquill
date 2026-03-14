@@ -56,7 +56,9 @@ async function callTool(
 }
 
 export async function fetchTools(conversationId: string) {
-  const { tools } = await ipc.request<ToolsListResult>("tools/list", {});
+  const { tools } = await ipc.request<ToolsListResult>("tools/list", {
+    conversationId,
+  });
 
   return Object.fromEntries(
     tools.map(

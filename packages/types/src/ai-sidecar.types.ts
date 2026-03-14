@@ -9,6 +9,7 @@ export interface SidecarReadyEvent {
 export interface ToolsListRequest {
   id: string;
   type: "tools/list";
+  conversationId: string;
 }
 
 export interface ToolsPermissionRequest {

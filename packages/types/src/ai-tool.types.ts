@@ -1,9 +1,12 @@
 import type { JSONSchema } from "./json-schema.types";
 
+export type ToolScope = "pill" | "chat";
+
 export interface ToolInfo {
   id: string;
   description: string;
   schema: JSONSchema;
+  scope?: ToolScope;
 }
 
 export type ToolPermissionStatus = "pending" | "allowed" | "denied";

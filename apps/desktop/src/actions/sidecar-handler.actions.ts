@@ -26,7 +26,15 @@ export async function handleSidecarRequest(
     switch (request.type) {
       case "tools/list": {
         const state = getAppState();
-        const tools = Object.values(state.toolInfoById);
+        const isPill = request.conversationId === state.pillConversationId;
+
+        const tools = Object.values(state.toolInfoById).filter((t) => {
+          if (!t.scope) return true;
+          if (t.scope === "pill") return isPill;
+          if (t.scope === "chat") return !isPill;
+          return true;
+        });
+
         return await respond({
           id: request.id,
           status: "ok",

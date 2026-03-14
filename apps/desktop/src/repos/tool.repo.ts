@@ -32,6 +32,7 @@ export class ToolRepo extends BaseRepo {
           type: "object",
           properties: {},
         },
+        scope: "pill",
       },
     ];
   }
