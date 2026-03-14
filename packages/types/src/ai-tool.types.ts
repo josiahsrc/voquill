@@ -24,4 +24,5 @@ export interface ToolPermission {
   status: ToolPermissionStatus;
   token?: string;
   conversationId: string;
+  createdAt: number;
 }

@@ -307,7 +307,7 @@ const OverlayToolPermissionCard = ({
       sx={{
         px: 1.5,
         py: 1,
-        borderRadius: 2,
+        borderRadius: 1,
         border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
         backgroundColor: alpha(theme.palette.common.white, 0.06),
       }}
@@ -365,13 +365,13 @@ const OverlayToolPermissionCard = ({
               py: 0.25,
               fontSize: 12,
               fontWeight: 500,
-              color: whiteHigh,
-              backgroundColor: alpha(theme.palette.common.white, 0.12),
-              border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
+              color: theme.palette.common.black,
+              backgroundColor: theme.palette.common.white,
+              border: `1px solid ${theme.palette.common.white}`,
               borderRadius: 1,
               cursor: "pointer",
               "&:hover": {
-                backgroundColor: alpha(theme.palette.common.white, 0.2),
+                backgroundColor: alpha(theme.palette.common.white, 0.85),
               },
             }}
           >

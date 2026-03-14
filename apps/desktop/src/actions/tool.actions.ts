@@ -26,6 +26,7 @@ export const requestToolPermission = (
     params,
     status: "pending",
     conversationId,
+    createdAt: Date.now(),
   };
   produceAppState((draft) => {
     registerToolPermission(draft, permission);
@@ -47,12 +48,23 @@ export const resolveToolPermission = (
   });
 };
 
+const PERMISSION_TIMEOUT_MS = 60_000;
+
 export const getToolPermissionStatus = (
   permissionId: string,
 ): { status: ToolPermissionStatus; token?: string } | undefined => {
   const state = getAppState();
   const permission = state.toolPermissionById[permissionId];
   if (!permission) return undefined;
+
+  if (
+    permission.status === "pending" &&
+    Date.now() - permission.createdAt >= PERMISSION_TIMEOUT_MS
+  ) {
+    resolveToolPermission(permissionId, "denied");
+    return { status: "denied" };
+  }
+
   return { status: permission.status, token: permission.token };
 };
 

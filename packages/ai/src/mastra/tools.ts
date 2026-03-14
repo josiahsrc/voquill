@@ -8,7 +8,6 @@ import type {
 import { getSidecarIpcClient } from "../sidecar/client";
 
 const PERMISSION_POLL_INTERVAL_MS = 500;
-const PERMISSION_MAX_POLLS = 120;
 
 const ipc = getSidecarIpcClient();
 
@@ -26,8 +25,8 @@ async function callTool(
     },
   );
 
-  // Poll for approval
-  for (let i = 0; i < PERMISSION_MAX_POLLS; i++) {
+  // Poll until the desktop side resolves or auto-denies the permission
+  while (true) {
     const result = await ipc.request<ToolsPermissionStatusResult>(
       "tools/permission-status",
       {
@@ -46,13 +45,10 @@ async function callTool(
       });
     }
 
-    // Still pending — wait before polling again
     await new Promise((resolve) =>
       setTimeout(resolve, PERMISSION_POLL_INTERVAL_MS),
     );
   }
-
-  return { error: `Permission timed out for ${toolId}` };
 }
 
 export async function fetchTools(conversationId: string) {
