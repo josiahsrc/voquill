@@ -30,13 +30,16 @@ const upstreamModel = process.env.LLM_MODEL || "gpt-5.4";
 const tools: ToolInfo[] = [
   {
     id: "get-selected-text",
-    description:
+    description: "Get selected text",
+    instructions:
       "Returns the currently selected text from the active application.",
     schema: { type: "object", properties: {}, required: [] },
   },
   {
     id: "paste",
-    description: "Writes text to the clipboard and triggers a paste action.",
+    description: "Paste text",
+    instructions:
+      "Writes text to the clipboard and triggers a paste action.",
     schema: {
       type: "object",
       properties: {
@@ -47,7 +50,9 @@ const tools: ToolInfo[] = [
   },
   {
     id: "type",
-    description: "Types text via keyboard input into the active application.",
+    description: "Type text",
+    instructions:
+      "Types text via keyboard input into the active application.",
     schema: {
       type: "object",
       properties: {
@@ -58,7 +63,8 @@ const tools: ToolInfo[] = [
   },
   {
     id: "web-search",
-    description: "Searches the web and returns results.",
+    description: "Web search",
+    instructions: "Searches the web and returns results.",
     schema: {
       type: "object",
       properties: {

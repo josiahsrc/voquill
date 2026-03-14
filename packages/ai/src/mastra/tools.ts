@@ -67,7 +67,7 @@ export async function fetchTools(conversationId: string) {
           tool.id,
           createTool({
             id: tool.id,
-            description: tool.description,
+            description: tool.instructions,
             inputSchema: jsonSchema(tool.schema),
             execute: async (input) => {
               return callTool(

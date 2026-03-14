@@ -5,6 +5,7 @@ export type ToolScope = "pill" | "chat";
 export interface ToolInfo {
   id: string;
   description: string;
+  instructions: string;
   schema: JSONSchema;
   scope?: ToolScope;
 }
