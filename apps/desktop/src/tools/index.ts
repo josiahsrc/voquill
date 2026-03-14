@@ -1,5 +1,6 @@
 import type { ToolInfo } from "@repo/types";
 import type { BaseTool } from "./base.tool";
+import { EndConversationTool } from "./end-conversation.tool";
 import { GetAccessibilityInfoTool } from "./get-accessibility-info.tool";
 import { PasteTool } from "./paste.tool";
 
@@ -9,6 +10,9 @@ export function createTool(info: ToolInfo): BaseTool {
   }
   if (info.id === "get_accessibility_info") {
     return new GetAccessibilityInfoTool(info);
+  }
+  if (info.id === "end_conversation") {
+    return new EndConversationTool(info);
   }
 
   throw new Error(`No tool implementation for: ${info.id}`);

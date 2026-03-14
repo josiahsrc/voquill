@@ -24,6 +24,15 @@ export class ToolRepo extends BaseRepo {
           properties: {},
         },
       },
+      {
+        id: "end_conversation",
+        description:
+          "End the current conversation and close the assistant. ALWAYS use this when your primary task is complete.",
+        schema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ];
   }
 }
