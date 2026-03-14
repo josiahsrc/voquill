@@ -11,8 +11,10 @@ import {
   executeTool,
   getToolPermissionStatus,
   requestToolPermission,
+  resolveToolPermission,
 } from "./tool.actions";
 import { getLogger } from "../utils/log.utils";
+import { createTool } from "../tools";
 
 export type SidecarResponder = (response: SidecarResponse) => Promise<void>;
 
@@ -43,18 +45,26 @@ export async function handleSidecarRequest(
       }
       case "tools/permission": {
         const state = getAppState();
-        if (!state.toolInfoById[request.tool]) {
+        const toolInfo = state.toolInfoById[request.tool];
+        if (!toolInfo) {
           return await respond({
             id: request.id,
             status: "error",
             error: `Unknown tool: ${request.tool}`,
           });
         }
+
         const permissionId = requestToolPermission(
           request.tool,
           request.params,
           request.conversationId,
         );
+
+        const tool = createTool(toolInfo);
+        if (tool.getAlwaysAllow(request.params)) {
+          resolveToolPermission(permissionId, "allowed");
+        }
+
         return await respond({
           id: request.id,
           status: "ok",

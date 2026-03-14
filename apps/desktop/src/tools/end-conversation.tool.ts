@@ -6,4 +6,10 @@ export class EndConversationTool extends BaseTool {
     await emitTo("main", "assistant-mode-close", {});
     return {};
   }
+
+  getAlwaysAllow(): boolean {
+    return true;
+  }
+
+  setAlwaysAllow(): void {}
 }

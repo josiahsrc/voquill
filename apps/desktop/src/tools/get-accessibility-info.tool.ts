@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { ToolInfo } from "@repo/types";
 import { BaseTool, type ToolResult } from "./base.tool";
+import {
+  getToolAlwaysAllow,
+  setToolAlwaysAllow,
+} from "../utils/tool-permission.utils";
 
 export class GetAccessibilityInfoTool extends BaseTool {
   constructor(info: ToolInfo) {
@@ -18,5 +22,13 @@ export class GetAccessibilityInfoTool extends BaseTool {
     ]);
 
     return { ...textFieldInfo, ...screenContext };
+  }
+
+  getAlwaysAllow(): boolean {
+    return getToolAlwaysAllow(this.info.id);
+  }
+
+  setAlwaysAllow(_params: Record<string, unknown>, allowed: boolean): void {
+    setToolAlwaysAllow(this.info.id, allowed);
   }
 }

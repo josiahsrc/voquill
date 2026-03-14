@@ -85,3 +85,15 @@ export const executeTool = async (
   const tool = createTool(toolInfo);
   return await tool.execute(params);
 };
+
+export const setToolAlwaysAllow = (opts: {
+  toolId: string;
+  params: Record<string, unknown>;
+  allowed: boolean;
+}): void => {
+  const state = getAppState();
+  const toolInfo = state.toolInfoById[opts.toolId];
+  if (!toolInfo) return;
+  const tool = createTool(toolInfo);
+  tool.setAlwaysAllow(opts.params, opts.allowed);
+};

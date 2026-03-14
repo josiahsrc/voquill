@@ -6,6 +6,7 @@ export type OverlayPhase = "idle" | "recording" | "loading";
 export type OverlayResolvePermissionPayload = {
   permissionId: string;
   status: ToolPermissionResolution;
+  alwaysAllow?: boolean;
 };
 
 export type OverlaySyncPayload = Partial<

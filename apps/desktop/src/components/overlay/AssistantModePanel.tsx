@@ -1,6 +1,7 @@
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseIcon from "@mui/icons-material/Close";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import { Box, IconButton, Typography } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
@@ -376,6 +377,41 @@ const OverlayToolPermissionCard = ({
           >
             <CheckRoundedIcon sx={{ fontSize: 14 }} />
             <FormattedMessage defaultMessage="Allow" />
+          </Box>
+          <Box
+            component="button"
+            onMouseDown={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              emitTo<OverlayResolvePermissionPayload>(
+                "main",
+                "overlay-resolve-permission",
+                {
+                  permissionId: permission.id,
+                  status: "allowed",
+                  alwaysAllow: true,
+                },
+              ).catch(console.error);
+            }}
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              px: 1,
+              py: 0.25,
+              fontSize: 12,
+              fontWeight: 500,
+              color: whiteMid,
+              backgroundColor: "transparent",
+              border: "none",
+              borderRadius: 1,
+              cursor: "pointer",
+              "&:hover": {
+                backgroundColor: alpha(theme.palette.common.white, 0.08),
+              },
+            }}
+          >
+            <DoneAllRoundedIcon sx={{ fontSize: 14 }} />
+            <FormattedMessage defaultMessage="Always allow" />
           </Box>
         </Box>
       )}

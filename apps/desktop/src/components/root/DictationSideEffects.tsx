@@ -10,7 +10,10 @@ import {
   switchWritingStyleBackward,
   switchWritingStyleForward,
 } from "../../actions/tone.actions";
-import { resolveToolPermission } from "../../actions/tool.actions";
+import {
+  resolveToolPermission,
+  setToolAlwaysAllow,
+} from "../../actions/tool.actions";
 import { storeTranscription } from "../../actions/transcribe.actions";
 import { recordStreak } from "../../actions/user.actions";
 import {
@@ -643,6 +646,17 @@ export const DictationSideEffects = () => {
   useTauriListen<OverlayResolvePermissionPayload>(
     "overlay-resolve-permission",
     (payload) => {
+      if (payload.alwaysAllow) {
+        const permission =
+          getAppState().toolPermissionById[payload.permissionId];
+        if (permission) {
+          setToolAlwaysAllow({
+            toolId: permission.toolId,
+            params: permission.params,
+            allowed: true,
+          });
+        }
+      }
       resolveToolPermission(payload.permissionId, payload.status);
     },
   );

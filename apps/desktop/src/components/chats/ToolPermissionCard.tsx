@@ -1,8 +1,16 @@
-import { CheckRounded, CloseRounded, InfoOutlined } from "@mui/icons-material";
+import {
+  CheckRounded,
+  CloseRounded,
+  DoneAllRounded,
+  InfoOutlined,
+} from "@mui/icons-material";
 import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import type { ToolPermission } from "@repo/types";
 import { FormattedMessage } from "react-intl";
-import { resolveToolPermission } from "../../actions/tool.actions";
+import {
+  resolveToolPermission,
+  setToolAlwaysAllow,
+} from "../../actions/tool.actions";
 import { useAppStore } from "../../store";
 
 type ToolPermissionCardProps = {
@@ -72,6 +80,21 @@ export const ToolPermissionCard = ({ permission }: ToolPermissionCardProps) => {
                 label={<FormattedMessage defaultMessage="Allow" />}
                 icon={<CheckRounded />}
                 onClick={() => resolveToolPermission(permission.id, "allowed")}
+              />
+              <Chip
+                size="small"
+                variant="outlined"
+                label={<FormattedMessage defaultMessage="Always allow" />}
+                icon={<DoneAllRounded />}
+                sx={{ border: "none" }}
+                onClick={() => {
+                  setToolAlwaysAllow({
+                    toolId: permission.toolId,
+                    params: permission.params,
+                    allowed: true,
+                  });
+                  resolveToolPermission(permission.id, "allowed");
+                }}
               />
             </Stack>
           )}
