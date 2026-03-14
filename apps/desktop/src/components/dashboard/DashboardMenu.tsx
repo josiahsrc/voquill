@@ -1,20 +1,20 @@
 import {
-  ChatOutlined,
+  ChatBubbleOutline,
   ClassOutlined,
+  HelpOutline,
   HistoryOutlined,
   HomeOutlined,
   PaletteOutlined,
   SettingsOutlined,
-  HelpOutline,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { FormattedMessage } from "react-intl";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAppStore } from "../../store";
 import { ListTile } from "../common/ListTile";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { DiscordListTile } from "./DiscordListTile";
 import { UpdateListTile } from "./UpdateListTile";
-import { useAppStore } from "../../store";
 
 const settingsPath = "/dashboard/settings";
 
@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
   {
     label: <FormattedMessage defaultMessage="Chats" />,
     path: "/dashboard/chats",
-    icon: <ChatOutlined />,
+    icon: <ChatBubbleOutline />,
   },
 ];
 
