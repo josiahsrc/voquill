@@ -1,4 +1,4 @@
-import { ArrowOutwardRounded, KeyboardArrowDownRounded } from "@mui/icons-material";
+import { ArrowOutwardRounded, SouthWestRounded } from "@mui/icons-material";
 import { Chip, Stack, Tooltip, Typography, type StackProps } from "@mui/material";
 import { useIntl } from "react-intl";
 import { useAppStore } from "../../store";
@@ -66,7 +66,7 @@ export const LogoWithText = ({ sx, ...rest }: LogoWithTextProps) => {
             <Chip
               size="small"
               variant="outlined"
-              icon={<KeyboardArrowDownRounded />}
+              icon={<SouthWestRounded />}
               label={intl.formatMessage({ defaultMessage: "Receiver" })}
               sx={{ height: 22, display: { xs: "none", sm: "inline-flex" } }}
             />
