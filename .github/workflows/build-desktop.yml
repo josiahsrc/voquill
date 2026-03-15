@@ -116,6 +116,7 @@ jobs:
           VOQUILL_REQUIRE_GPU_SIDECAR: ${{ matrix.require_gpu_sidecar && 'true' || 'false' }}
           MACOSX_DEPLOYMENT_TARGET: "13.3"
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
           # Throwaway signing key for CI build validation only.
           # Real releases use secrets in release-desktop.yml.
           TAURI_SIGNING_PRIVATE_KEY: "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5OVRKZlAyVDN3dlF1Wm5mbWh1MXYwV3VjRlR2SVhUY2JqdmZUUGdtM1JOMEFBQkFBQUFBQUFBQUFBQUlBQUFBQXp4N2IwQXBxS3lTQnFWeXJuMmpaeGpKdkd5VUhTeit1cklsd3dQVTJvSnkzUktQMVlrQklPQ0duQkVZSStiMEdqTDFaSWJXZW96eTdab0VyaTZMUVNuWlpjSTZTY3NpVXA0bUZVVjh3TldRNHF1Qk1CUFBqcTduS3RMQ3FwMDFQM0VjYTlWdTZQZTQ9Cg=="

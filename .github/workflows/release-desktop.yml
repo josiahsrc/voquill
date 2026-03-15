@@ -619,6 +619,7 @@ jobs:
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
           MACOSX_DEPLOYMENT_TARGET: "13.3"
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
           APPLE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
           APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
           APPLE_API_KEY: ${{ env.APPLE_API_KEY_ID }}
