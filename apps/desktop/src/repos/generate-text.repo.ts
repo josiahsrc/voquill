@@ -84,7 +84,7 @@ export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
 
   async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
     yield* invokeHandlerStream("ai/streamChat", {
-      messages: input.messages,
+      ...input,
       model: this.model,
     });
   }
@@ -474,7 +474,7 @@ export class EnterpriseGenerateTextRepo extends BaseGenerateTextRepo {
 
   async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
     yield* invokeEnterpriseStream("ai/streamChat", {
-      messages: input.messages,
+      ...input,
       model: this.model,
     });
   }

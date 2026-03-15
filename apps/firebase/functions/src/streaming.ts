@@ -50,6 +50,15 @@ async function* handleStreamChat(
 	const { provider, modelId } = resolveStreamModel(parsed.model);
 	const chatInput: LlmChatInput = {
 		messages: parsed.messages as LlmChatInput["messages"],
+		tools: parsed.tools as LlmChatInput["tools"],
+		toolChoice: parsed.toolChoice as LlmChatInput["toolChoice"],
+		maxTokens: parsed.maxTokens ?? undefined,
+		temperature: parsed.temperature ?? undefined,
+		stopSequences: parsed.stopSequences,
+		topP: parsed.topP ?? undefined,
+		frequencyPenalty: parsed.frequencyPenalty ?? undefined,
+		presencePenalty: parsed.presencePenalty ?? undefined,
+		seed: parsed.seed ?? undefined,
 	};
 
 	if (parsed.simulate) {
