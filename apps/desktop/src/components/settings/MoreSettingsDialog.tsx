@@ -188,7 +188,10 @@ export const MoreSettingsDialog = () => {
   const handleApplyRemoteReceiverPort = async () => {
     const raw = receiverPortDraft.trim();
     const nextValue = raw === "" ? null : Number(raw);
-    if (raw !== "" && (!Number.isInteger(nextValue) || nextValue <= 0)) {
+    if (
+      raw !== "" &&
+      (nextValue == null || !Number.isInteger(nextValue) || nextValue <= 0)
+    ) {
       showErrorSnackbar("Receiver port must be a positive integer.");
       return;
     }
@@ -733,10 +736,14 @@ export const MoreSettingsDialog = () => {
           <SettingSection
             title={<FormattedMessage defaultMessage="Trusted remote devices" />}
             description={
-              <FormattedMessage defaultMessage="Add a trusted receiver manually while the automated pairing flow is under construction." />
+              <FormattedMessage defaultMessage="Add a trusted remote device manually while the automated pairing flow is under construction. Sender machines add receivers; receiver machines add senders." />
             }
             action={
-              <Button size="small" variant="outlined" onClick={openPairDialog}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => openPairDialog()}
+              >
                 <FormattedMessage defaultMessage="Add device" />
               </Button>
             }
@@ -882,6 +889,17 @@ type PairedDeviceRowProps = {
 };
 
 const PairedDeviceRow = ({ device, onEdit }: PairedDeviceRowProps) => {
+  const intl = useIntl();
+
+  const handleCopy = async (value: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      showSnackbar(successMessage, { mode: "success" });
+    } catch (error) {
+      showErrorSnackbar(error);
+    }
+  };
+
   return (
     <Stack
       spacing={0.25}
@@ -928,7 +946,37 @@ const PairedDeviceRow = ({ device, onEdit }: PairedDeviceRowProps) => {
           values={{ role: device.role, platform: device.platform }}
         />
       </Typography>
-      <Stack direction="row" justifyContent="flex-end" sx={{ pt: 0.5 }}>
+      <Stack
+        direction="row"
+        justifyContent="flex-end"
+        sx={{ pt: 0.5, flexWrap: "wrap", gap: 0.5 }}
+      >
+        <Button
+          size="small"
+          onClick={() =>
+            void handleCopy(
+              device.id,
+              intl.formatMessage({ defaultMessage: "Device ID copied" }),
+            )
+          }
+        >
+          <FormattedMessage defaultMessage="Copy ID" />
+        </Button>
+        {device.lastKnownAddress && (
+          <Button
+            size="small"
+            onClick={() =>
+              void handleCopy(
+                device.lastKnownAddress ?? "",
+                intl.formatMessage({
+                  defaultMessage: "Receiver address copied",
+                }),
+              )
+            }
+          >
+            <FormattedMessage defaultMessage="Copy address" />
+          </Button>
+        )}
         <Button size="small" onClick={onEdit}>
           <FormattedMessage defaultMessage="Edit" />
         </Button>
