@@ -252,6 +252,7 @@ export const DictationSideEffects = () => {
     );
 
     if (!audio) {
+      getLogger().warning("stopRecordingRaw: no audio data received");
       return {
         shouldContinue: false,
         abortMessage: "No audio data received",
@@ -273,6 +274,7 @@ export const DictationSideEffects = () => {
       `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${appTarget?.name ?? "unknown"}`,
     );
     if (!rawTranscript) {
+      getLogger().warning("stopRecordingRaw: no rawTranscript from finalize");
       return {
         shouldContinue: false,
       };
@@ -281,6 +283,9 @@ export const DictationSideEffects = () => {
     const session = sessionRef.current;
     const strategy = strategyRef.current;
     if (!session || !strategy) {
+      getLogger().warning(
+        `stopRecordingRaw: refs cleared (session=${!!session}, strategy=${!!strategy})`,
+      );
       return {
         shouldContinue: false,
       };
@@ -327,9 +332,11 @@ export const DictationSideEffects = () => {
 
   const stopRecording = useCallback(async () => {
     if (isStoppingRef.current) {
+      getLogger().info("stopRecording skipped (already stopping)");
       return;
     }
 
+    getLogger().info("stopRecording entered");
     isStoppingRef.current = true;
     setIsStopping(true);
     try {
@@ -343,6 +350,9 @@ export const DictationSideEffects = () => {
         };
       });
 
+      getLogger().info(
+        `stopRecording result: shouldContinue=${res.shouldContinue}, abortMessage=${res.abortMessage ?? "none"}`,
+      );
       if (!res.shouldContinue) {
         await abortRecording(
           res.abortMessage ? { body: res.abortMessage } : undefined,
