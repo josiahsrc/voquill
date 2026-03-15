@@ -88,6 +88,7 @@ export const DictationSideEffects = () => {
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastStyleSwitchRef = useRef(0);
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isStoppingRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
 
   const isManualStyling = useAppStore(
@@ -325,6 +326,11 @@ export const DictationSideEffects = () => {
   }, []);
 
   const stopRecording = useCallback(async () => {
+    if (isStoppingRef.current) {
+      return;
+    }
+
+    isStoppingRef.current = true;
     setIsStopping(true);
     try {
       const res = await stopRecordingRaw().catch((error) => {
@@ -343,6 +349,7 @@ export const DictationSideEffects = () => {
         );
       }
     } finally {
+      isStoppingRef.current = false;
       setIsStopping(false);
     }
   }, [stopRecordingRaw, setIsStopping]);
