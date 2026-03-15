@@ -1,6 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
-import { normalizeSamples } from "./audio.utils";
-
 export const formatDuration = (durationMs?: number | null): string => {
   if (!durationMs || !Number.isFinite(durationMs)) {
     return "0:00";
@@ -34,151 +31,110 @@ export const WAVEFORM_BAR_GAP = 2;
 
 export type PlaybackStopReason = "ended" | "stopped" | "replaced";
 
-export type PlaybackAudioData = {
-  samples: number[];
-  sampleRate: number;
-};
-
-export type ActiveAudioPlayback = {
-  id: string;
+export type ActiveWebAudioPlayback = {
+  transcriptionId: string;
+  context: AudioContext;
+  source: AudioBufferSourceNode;
   rafId: number | null;
-  startedAtMs: number;
-  pausedAtMs: number | null;
-  pausedDurationMs: number;
-  durationMs: number;
-  onProgress: (progress: number) => void;
+  startTime: number;
+  durationSeconds: number;
   onStop: (reason: PlaybackStopReason) => void;
 };
 
-export let activePlayback: ActiveAudioPlayback | null = null;
+export let activePlayback: ActiveWebAudioPlayback | null = null;
 
-const clearPlaybackFrame = (playback: ActiveAudioPlayback) => {
-  if (playback.rafId !== null) {
-    window.cancelAnimationFrame(playback.rafId);
-    playback.rafId = null;
-  }
-};
-
-const getElapsedMs = (playback: ActiveAudioPlayback): number => {
-  const now =
-    playback.pausedAtMs === null
-      ? window.performance.now()
-      : playback.pausedAtMs;
-  return Math.max(0, now - playback.startedAtMs - playback.pausedDurationMs);
-};
-
-const finishPlayback = async (
-  playback: ActiveAudioPlayback,
-  reason: PlaybackStopReason,
-  stopNativePlayback: boolean,
-) => {
-  if (activePlayback === playback) {
-    activePlayback = null;
-  }
-
-  clearPlaybackFrame(playback);
-
-  if (stopNativePlayback) {
-    await invoke<void>("stop_audio_playback").catch(console.error);
-  }
-
-  playback.onStop(reason);
-};
-
-const tickPlayback = (playback: ActiveAudioPlayback) => {
-  if (activePlayback !== playback || playback.pausedAtMs !== null) {
-    return;
-  }
-
-  const ratio =
-    playback.durationMs > 0
-      ? Math.min(Math.max(getElapsedMs(playback) / playback.durationMs, 0), 1)
-      : 0;
-
-  playback.onProgress(ratio);
-
-  if (ratio >= 1) {
-    void finishPlayback(playback, "ended", false);
-    return;
-  }
-
-  playback.rafId = window.requestAnimationFrame(() => tickPlayback(playback));
-};
-
-export const stopActivePlayback = async (
-  reason: PlaybackStopReason,
-): Promise<void> => {
+export const stopActivePlayback = (reason: PlaybackStopReason): void => {
   const current = activePlayback;
   if (!current) {
     return;
   }
 
-  await finishPlayback(current, reason, reason !== "ended");
-};
+  activePlayback = null;
 
-export const pauseActivePlayback = async (id: string): Promise<boolean> => {
-  const current = activePlayback;
-  if (!current || current.id !== id || current.pausedAtMs !== null) {
-    return false;
+  if (current.rafId !== null) {
+    window.cancelAnimationFrame(current.rafId);
   }
 
-  await invoke<void>("pause_audio_playback");
-  current.pausedAtMs = window.performance.now();
-  clearPlaybackFrame(current);
-  return true;
-};
-
-export const resumeActivePlayback = async (id: string): Promise<boolean> => {
-  const current = activePlayback;
-  if (!current || current.id !== id || current.pausedAtMs === null) {
-    return false;
+  try {
+    current.source.onended = null;
+  } catch {
+    // no-op
   }
 
-  await invoke<void>("resume_audio_playback");
-  current.pausedDurationMs += window.performance.now() - current.pausedAtMs;
-  current.pausedAtMs = null;
-  tickPlayback(current);
-  return true;
+  try {
+    current.source.stop();
+  } catch {
+    // no-op
+  }
+
+  current.context.close().catch(() => undefined);
+  current.onStop(reason);
 };
 
-export const playManagedAudio = async (
-  id: string,
-  data: PlaybackAudioData,
+export const playWebAudio = async (
+  transcriptionId: string,
+  data: { samples: number[]; sampleRate: number },
   onProgress: (progress: number) => void,
   onStop: (reason: PlaybackStopReason) => void,
 ): Promise<void> => {
-  await stopActivePlayback("replaced");
+  stopActivePlayback("replaced");
 
-  const samples = normalizeSamples(data.samples);
-  if (
-    !samples.length ||
-    !Number.isFinite(data.sampleRate) ||
-    data.sampleRate <= 0
-  ) {
-    throw new Error("Audio playback requires samples and a valid sample rate");
+  const context = new AudioContext({ sampleRate: data.sampleRate });
+  if (context.state === "suspended") {
+    await context.resume();
   }
 
-  await invoke<void>("play_audio_samples", {
-    args: {
-      samples,
-      sampleRate: data.sampleRate,
-    },
-  });
+  const channelCount = 1;
+  const floatSamples = Float32Array.from(data.samples ?? []);
+  const buffer = context.createBuffer(
+    channelCount,
+    floatSamples.length,
+    data.sampleRate,
+  );
+  buffer.getChannelData(0).set(floatSamples);
 
-  const playback: ActiveAudioPlayback = {
-    id,
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(context.destination);
+
+  const playback: ActiveWebAudioPlayback = {
+    transcriptionId,
+    context,
+    source,
     rafId: null,
-    startedAtMs: window.performance.now(),
-    pausedAtMs: null,
-    pausedDurationMs: 0,
-    durationMs: (samples.length / data.sampleRate) * 1000,
-    onProgress,
+    startTime: context.currentTime,
+    durationSeconds: buffer.duration,
     onStop,
   };
-
   activePlayback = playback;
-  playback.onProgress(0);
-  tickPlayback(playback);
+
+  const tick = () => {
+    if (activePlayback !== playback) {
+      return;
+    }
+
+    const elapsed = playback.context.currentTime - playback.startTime;
+    const ratio =
+      playback.durationSeconds > 0
+        ? Math.min(Math.max(elapsed / playback.durationSeconds, 0), 1)
+        : 0;
+    onProgress(ratio);
+
+    if (ratio >= 1) {
+      return;
+    }
+
+    playback.rafId = window.requestAnimationFrame(tick);
+  };
+
+  source.onended = () => {
+    stopActivePlayback("ended");
+  };
+
+  onProgress(0);
+  playback.startTime = context.currentTime;
+  source.start();
+  playback.rafId = window.requestAnimationFrame(tick);
 };
 
 export const buildWaveformOutline = (

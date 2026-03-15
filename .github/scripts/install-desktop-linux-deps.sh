@@ -18,6 +18,12 @@ sudo apt-get install -y \
   libayatana-appindicator3-dev \
   librsvg2-dev \
   libasound2-dev \
+  libunwind-dev \
   libxdo-dev \
   patchelf \
+  libgstreamer1.0-dev \
+  libgstreamer-plugins-base1.0-dev \
+  gstreamer1.0-plugins-base \
+  gstreamer1.0-plugins-good \
+  gstreamer1.0-plugins-bad \
   libfuse2

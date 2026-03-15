@@ -54,6 +54,11 @@
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       }
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      }
     }
   },
   "plugins": {

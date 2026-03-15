@@ -1,5 +1,4 @@
 pub mod audio_feedback;
-pub mod audio_playback;
 pub mod audio_store;
 pub mod crypto;
 pub mod diagnostics;

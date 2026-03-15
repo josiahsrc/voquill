@@ -13,7 +13,7 @@ import {
   MAX_COMPUTED_BAR_COUNT,
   MIN_COMPUTED_BAR_COUNT,
   MIN_WAVEFORM_BAR_VALUE,
-  playManagedAudio,
+  playWebAudio,
   stopActivePlayback,
   WAVEFORM_BAR_GAP,
   WAVEFORM_BAR_MAX_WIDTH,
@@ -108,8 +108,8 @@ export const AudioPlayerPill = ({
 
   useEffect(() => {
     return () => {
-      if (activePlayback?.id === transcriptionIdRef.current) {
-        void stopActivePlayback("stopped");
+      if (activePlayback?.transcriptionId === transcriptionIdRef.current) {
+        stopActivePlayback("stopped");
       }
       setPlaybackProgress(0);
     };
@@ -152,7 +152,7 @@ export const AudioPlayerPill = ({
 
     try {
       if (isPlayingRef.current) {
-        await stopActivePlayback("stopped");
+        stopActivePlayback("stopped");
         return;
       }
 
@@ -164,7 +164,7 @@ export const AudioPlayerPill = ({
       }
 
       setIsPlaying(true);
-      await playManagedAudio(
+      await playWebAudio(
         transcriptionId,
         audioData,
         (progress) => {
