@@ -27,6 +27,7 @@
 		8A85E6682F41FCD500A6698B /* DictationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A85E6642F41FCB300A6698B /* DictationService.swift */; };
 		8A85E6692F41FCD500A6698B /* DictationAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A85E6622F41FCAB00A6698B /* DictationAttributes.swift */; };
 		8A85E66A2F41FD3B00A6698B /* DictationAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A85E6622F41FCAB00A6698B /* DictationAttributes.swift */; };
+		8AE398A92F6305B900127B97 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8AE398A82F6305B900127B97 /* Settings.bundle */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
@@ -117,6 +118,7 @@
 		8A85E6622F41FCAB00A6698B /* DictationAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationAttributes.swift; sourceTree = "<group>"; };
 		8A85E6642F41FCB300A6698B /* DictationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationService.swift; sourceTree = "<group>"; };
 		8A85E66B2F41FDB800A6698B /* VoquillWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VoquillWidgetsExtension.entitlements; sourceTree = "<group>"; };
+		8AE398A82F6305B900127B97 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		8D2B33304791827E47223260 /* Pods-RunnerTests.profile-emulators.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile-emulators.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile-emulators.xcconfig"; sourceTree = "<group>"; };
 		8EF11A4791195B961C7F95C9 /* Pods-keyboard.release-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-keyboard.release-dev.xcconfig"; path = "Target Support Files/Pods-keyboard/Pods-keyboard.release-dev.xcconfig"; sourceTree = "<group>"; };
 		9700710CB24ADD0FB25DB04D /* Pods-keyboard.debug-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-keyboard.debug-dev.xcconfig"; path = "Target Support Files/Pods-keyboard/Pods-keyboard.debug-dev.xcconfig"; sourceTree = "<group>"; };
@@ -286,6 +288,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				8AE398A82F6305B900127B97 /* Settings.bundle */,
 				8A85E6642F41FCB300A6698B /* DictationService.swift */,
 				8A85E6622F41FCAB00A6698B /* DictationAttributes.swift */,
 				8A85E6602F41FC9F00A6698B /* DarwinNotificationManager.swift */,
@@ -509,6 +512,7 @@
 			files = (
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
+				8AE398A92F6305B900127B97 /* Settings.bundle in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 			);
@@ -994,7 +998,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1138,7 +1142,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1276,7 +1280,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1411,7 +1415,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1544,7 +1548,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1677,7 +1681,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1718,7 +1722,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1762,7 +1766,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1803,7 +1807,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = keyboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = keyboard;
+				INFOPLIST_KEY_CFBundleDisplayName = Voquill;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (

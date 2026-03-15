@@ -390,7 +390,8 @@ fn pump_stream(stream: TcpStream, emitter: Arc<KeyEventEmitter>) -> Result<(), S
                     if debug_keys_enabled() {
                         log::debug!(
                             "Ignoring injected event (scan_code=0): {:?} {}",
-                            payload.kind, payload.key_label
+                            payload.kind,
+                            payload.key_label
                         );
                     }
                     continue;

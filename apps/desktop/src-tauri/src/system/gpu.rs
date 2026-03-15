@@ -145,10 +145,7 @@ fn enumerate_gpus_in_child_process() -> Vec<GpuAdapterInfo> {
     match child.wait() {
         Ok(status) => {
             if !status.success() {
-                log::warn!(
-                    "GPU enumerator process exited with status: {}",
-                    status
-                );
+                log::warn!("GPU enumerator process exited with status: {}", status);
                 return Vec::new();
             }
         }

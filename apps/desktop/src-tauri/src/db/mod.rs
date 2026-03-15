@@ -72,12 +72,6 @@ pub const API_KEY_BASE_URL_MIGRATION_SQL: &str =
     include_str!("migrations/035_api_key_base_url.sql");
 pub const API_KEY_AZURE_REGION_MIGRATION_SQL: &str =
     include_str!("migrations/036_api_key_azure_region.sql");
-pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
-    include_str!("migrations/056_api_key_include_v1_path.sql");
-pub const REALTIME_OUTPUT_MIGRATION_SQL: &str =
-    include_str!("migrations/057_realtime_output.sql");
-pub const CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL: &str =
-    include_str!("migrations/058_conversations_and_chat_messages.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");
@@ -109,6 +103,12 @@ pub const OPENCLAW_PREFERENCES_MIGRATION_SQL: &str =
 pub const USER_STREAK_MIGRATION_SQL: &str = include_str!("migrations/054_user_streak.sql");
 pub const USER_REFERRAL_SOURCE_MIGRATION_SQL: &str =
     include_str!("migrations/055_user_referral_source.sql");
+pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
+    include_str!("migrations/056_api_key_include_v1_path.sql");
+pub const REALTIME_OUTPUT_MIGRATION_SQL: &str =
+    include_str!("migrations/057_realtime_output.sql");
+pub const CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL: &str =
+    include_str!("migrations/058_conversations_and_chat_messages.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![

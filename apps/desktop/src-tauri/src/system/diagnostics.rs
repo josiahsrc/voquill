@@ -85,10 +85,7 @@ pub fn write_startup_diagnostics(app: &tauri::AppHandle) {
             if let Err(err) = file.write_all(log_content.as_bytes()) {
                 log::error!("Failed to write to diagnostics log: {err}");
             } else {
-                log::info!(
-                    "Startup diagnostics written to: {}",
-                    log_path.display()
-                );
+                log::info!("Startup diagnostics written to: {}", log_path.display());
             }
         }
         Err(err) => {

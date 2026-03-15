@@ -475,10 +475,7 @@ pub async fn export_transcription(
 }
 
 #[tauri::command]
-pub async fn export_diagnostics(
-    app: AppHandle,
-    diagnostics_info: String,
-) -> Result<bool, String> {
+pub async fn export_diagnostics(app: AppHandle, diagnostics_info: String) -> Result<bool, String> {
     let dialog = rfd::AsyncFileDialog::new()
         .set_file_name("voquill-diagnostics.zip")
         .add_filter("ZIP Archive", &["zip"])
@@ -522,7 +519,9 @@ pub async fn export_diagnostics(
                 let raw =
                     std::fs::read(&path).map_err(|err| format!("Failed to read log: {err}"))?;
                 let content = match std::str::from_utf8(&raw) {
-                    Ok(text) => crate::utils::log_sanitizer::sanitize_log_content(text).into_bytes(),
+                    Ok(text) => {
+                        crate::utils::log_sanitizer::sanitize_log_content(text).into_bytes()
+                    }
                     Err(_) => raw,
                 };
                 zip.start_file(format!("logs/{filename}"), options)
