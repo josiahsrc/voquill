@@ -5,7 +5,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
-import { buildWaveFile, ensureFloat32Array } from "../../utils/audio.utils";
+import {
+  activePlayback,
+  pauseActivePlayback,
+  playManagedAudio,
+  resumeActivePlayback,
+  stopActivePlayback,
+  type PlaybackAudioData,
+} from "../../utils/audio-playback.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
 
 type StopRecordingResponse = {
@@ -13,24 +20,7 @@ type StopRecordingResponse = {
   sampleRate?: number;
 };
 
-const createPreviewUrl = (
-  rawSamples: number[] | Float32Array,
-  sampleRate: number,
-): string | null => {
-  if (!sampleRate || !Number.isFinite(sampleRate) || sampleRate <= 0) {
-    return null;
-  }
-
-  const samples = ensureFloat32Array(rawSamples ?? []);
-
-  if (!samples || samples.length === 0) {
-    return null;
-  }
-
-  const wavBuffer = buildWaveFile(samples, sampleRate);
-  const blob = new Blob([wavBuffer], { type: "audio/wav" });
-  return URL.createObjectURL(blob);
-};
+const PREVIEW_PLAYBACK_ID = "microphone-tester-preview";
 
 export type MicrophoneTesterProps = {
   preferredMicrophone: Nullable<string>;
@@ -61,79 +51,29 @@ export const MicrophoneTester = ({
     "idle" | "starting" | "recording" | "stopping"
   >("idle");
   const [testError, setTestError] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-  const previewUrlRef = useRef<string | null>(null);
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [previewAudio, setPreviewAudio] = useState<PlaybackAudioData | null>(
+    null,
+  );
+  const [previewPlaybackStatus, setPreviewPlaybackStatus] = useState<
+    "idle" | "playing" | "paused"
+  >("idle");
 
   const isGlobalRecording =
     overlayPhase === "recording" || overlayPhase === "loading";
   const isTestRunning = testState === "recording";
   const isTestLoading = testState === "starting";
   const isTestStopping = testState === "stopping";
+  const isPreviewPlaying = previewPlaybackStatus === "playing";
 
-  const releasePreviewAudio = useCallback(() => {
-    const audio = previewAudioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.src = "";
-      previewAudioRef.current = null;
+  const clearPreviewAudio = useCallback(() => {
+    if (activePlayback?.id === PREVIEW_PLAYBACK_ID) {
+      void stopActivePlayback("stopped");
     }
-    setIsPreviewPlaying(false);
+    setPreviewPlaybackStatus("idle");
+    setPreviewAudio(null);
   }, []);
 
-  const clearPreviewUrl = useCallback(() => {
-    releasePreviewAudio();
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = null;
-    }
-    setPreviewUrl(null);
-  }, [releasePreviewAudio]);
-
-  const updatePreviewUrl = useCallback(
-    (url: string | null) => {
-      releasePreviewAudio();
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current);
-      }
-      previewUrlRef.current = url;
-      setPreviewUrl(url);
-    },
-    [releasePreviewAudio],
-  );
-
-  useEffect(() => () => clearPreviewUrl(), [clearPreviewUrl]);
-
-  useEffect(() => {
-    if (!previewUrl) {
-      setIsPreviewPlaying(false);
-      return;
-    }
-
-    const audio = new Audio(previewUrl);
-    audio.preload = "auto";
-
-    const handlePlay = () => setIsPreviewPlaying(true);
-    const handlePause = () => setIsPreviewPlaying(false);
-    const handleEnded = () => setIsPreviewPlaying(false);
-
-    audio.addEventListener("play", handlePlay);
-    audio.addEventListener("pause", handlePause);
-    audio.addEventListener("ended", handleEnded);
-
-    previewAudioRef.current = audio;
-
-    return () => {
-      audio.removeEventListener("play", handlePlay);
-      audio.removeEventListener("pause", handlePause);
-      audio.removeEventListener("ended", handleEnded);
-      audio.pause();
-      if (previewAudioRef.current === audio) {
-        previewAudioRef.current = null;
-      }
-    };
-  }, [previewUrl]);
+  useEffect(() => () => clearPreviewAudio(), [clearPreviewAudio]);
 
   const handleStartTest = useCallback(async () => {
     if (isTestRunning || isTestLoading || isGlobalRecording || disabled) {
@@ -141,7 +81,7 @@ export const MicrophoneTester = ({
     }
 
     setTestError(null);
-    clearPreviewUrl();
+    clearPreviewAudio();
     setTestState("starting");
 
     try {
@@ -155,7 +95,7 @@ export const MicrophoneTester = ({
       setTestState("idle");
     }
   }, [
-    clearPreviewUrl,
+    clearPreviewAudio,
     disabled,
     isGlobalRecording,
     isTestLoading,
@@ -180,17 +120,22 @@ export const MicrophoneTester = ({
             : response.samples;
 
         if (!opts?.silent) {
-          const url = createPreviewUrl(samplesArray ?? [], rate);
-          if (url) {
-            updatePreviewUrl(url);
+          if ((samplesArray?.length ?? 0) > 0 && rate > 0) {
+            setPreviewAudio({
+              samples: samplesArray ?? [],
+              sampleRate: rate,
+            });
+            setPreviewPlaybackStatus("idle");
           } else {
-            updatePreviewUrl(null);
+            setPreviewAudio(null);
+            setPreviewPlaybackStatus("idle");
             setTestError(
               "We didn't detect any audio. Try speaking while the test is running.",
             );
           }
         } else {
-          updatePreviewUrl(null);
+          setPreviewAudio(null);
+          setPreviewPlaybackStatus("idle");
         }
       } catch (error) {
         console.error("Failed to stop microphone test", error);
@@ -204,32 +149,49 @@ export const MicrophoneTester = ({
         });
       }
     },
-    [testState, updatePreviewUrl],
+    [testState],
   );
 
-  const handleTogglePreview = useCallback(() => {
-    const audio = previewAudioRef.current;
-    if (!audio) {
+  const handleTogglePreview = useCallback(async () => {
+    if (!previewAudio) {
       return;
     }
 
-    if (!audio.paused && !audio.ended) {
-      audio.pause();
-      return;
-    }
+    try {
+      if (activePlayback?.id === PREVIEW_PLAYBACK_ID) {
+        if (activePlayback.pausedAtMs === null) {
+          const paused = await pauseActivePlayback(PREVIEW_PLAYBACK_ID);
+          if (paused) {
+            setPreviewPlaybackStatus("paused");
+          }
+          return;
+        }
 
-    audio
-      .play()
-      .then(() => {
-        setTestError(null);
-        setIsPreviewPlaying(true);
-      })
-      .catch((error) => {
-        console.error("Failed to play recorded preview", error);
-        setTestError("Unable to play the recorded preview.");
-        setIsPreviewPlaying(false);
-      });
-  }, []);
+        const resumed = await resumeActivePlayback(PREVIEW_PLAYBACK_ID);
+        if (resumed) {
+          setPreviewPlaybackStatus("playing");
+          setTestError(null);
+        }
+        return;
+      }
+
+      setPreviewPlaybackStatus("playing");
+      await playManagedAudio(
+        PREVIEW_PLAYBACK_ID,
+        previewAudio,
+        () => undefined,
+        () => {
+          setPreviewPlaybackStatus("idle");
+        },
+      );
+      setPreviewPlaybackStatus("playing");
+      setTestError(null);
+    } catch (error) {
+      console.error("Failed to play recorded preview", error);
+      setTestError("Unable to play the recorded preview.");
+      setPreviewPlaybackStatus("idle");
+    }
+  }, [previewAudio]);
 
   useEffect(() => {
     if (
@@ -248,9 +210,9 @@ export const MicrophoneTester = ({
   useEffect(() => {
     return () => {
       void handleStopTestRef.current({ silent: true });
-      clearPreviewUrl();
+      clearPreviewAudio();
     };
-  }, [clearPreviewUrl]);
+  }, [clearPreviewAudio]);
 
   const disableStartButton =
     disabled || isGlobalRecording || isTestLoading || isTestRunning;
@@ -309,8 +271,8 @@ export const MicrophoneTester = ({
         </LoadingButton>
         <Button
           variant="outlined"
-          disabled={previewUrl == null || disabled}
-          onClick={handleTogglePreview}
+          disabled={previewAudio == null || disabled}
+          onClick={() => void handleTogglePreview()}
           fullWidth={buttonLayout === "column"}
         >
           {isPreviewPlaying ? (

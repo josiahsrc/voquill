@@ -101,6 +101,13 @@ pub struct TranscriptionAudioData {
     pub sample_rate: u32,
 }
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioPlaybackArgs {
+    pub samples: Vec<f32>,
+    pub sample_rate: u32,
+}
+
 async fn delete_audio_entries(
     app: AppHandle,
     entries: Vec<(String, String)>,
@@ -864,6 +871,26 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn play_audio_samples(args: AudioPlaybackArgs) -> Result<(), String> {
+    crate::system::audio_playback::play_samples(args.samples, args.sample_rate)
+}
+
+#[tauri::command]
+pub fn stop_audio_playback() -> Result<(), String> {
+    crate::system::audio_playback::stop_playback()
+}
+
+#[tauri::command]
+pub fn pause_audio_playback() -> Result<(), String> {
+    crate::system::audio_playback::pause_playback()
+}
+
+#[tauri::command]
+pub fn resume_audio_playback() -> Result<(), String> {
+    crate::system::audio_playback::resume_playback()
+}
+
+#[tauri::command]
 pub async fn start_recording(
     app: AppHandle,
     recorder: State<'_, Arc<dyn crate::platform::Recorder>>,
@@ -1096,7 +1123,10 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 }
 
 #[tauri::command]
-pub fn set_pill_assistant_mode(assistant_mode: bool, overlay_state: State<'_, crate::state::OverlayState>) {
+pub fn set_pill_assistant_mode(
+    assistant_mode: bool,
+    overlay_state: State<'_, crate::state::OverlayState>,
+) {
     overlay_state.set_pill_assistant_mode(assistant_mode);
 }
 
