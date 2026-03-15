@@ -1,5 +1,6 @@
 import {
   AiGenerateTextInputZod,
+  AiStreamChatInputZod,
   AiTranscribeAudioInputZod,
   AuthDeleteUserInputZod,
   AuthLoginInputZod,
@@ -24,11 +25,14 @@ import {
   UpsertTermInputZod,
   UpsertToneInputZod,
   type HandlerName,
+  type StreamHandlerName,
 } from "@repo/functions";
+import type { LlmStreamEvent } from "@repo/types";
 import cors from "cors";
 import type { Request, Response } from "express";
 import express from "express";
 import { runMigrations } from "./db/migrate";
+import { insertMetric } from "./repo/metrics.repo";
 import { generateText, transcribeAudio } from "./services/ai.service";
 import { getMetricsSummaryHandler } from "./services/metrics.service";
 import {
@@ -86,7 +90,7 @@ import {
   setMyUser,
 } from "./services/user.service";
 import oidcRoutes from "./routes/oidc.routes";
-import { extractAuth } from "./utils/auth.utils";
+import { extractAuth, requireAuth } from "./utils/auth.utils";
 import { getGatewayVersion } from "./utils/env.utils";
 import {
   ClientError,
@@ -306,6 +310,101 @@ app.post("/handler", async (req: Request, res: Response) => {
     } else {
       console.error("Unexpected error:", error);
       res.status(500).json({ success: false, error: "Internal server error" });
+    }
+  }
+});
+
+type StreamHandlerRequest = {
+  name: StreamHandlerName;
+  input: unknown;
+};
+
+// TODO: Clean up once have more handlers
+app.post("/stream-handler", async (req: Request, res: Response) => {
+  try {
+    validateLicense(new Date());
+
+    const { name, input } = req.body as StreamHandlerRequest;
+    const auth = extractAuth(req.headers.authorization);
+
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Cache-Control", "no-cache");
+
+    if (name === "ai/streamChat") {
+      const parsed = validateData(AiStreamChatInputZod, input);
+      const reqAuth = requireAuth(auth);
+
+      if (parsed.simulate) {
+        const events: LlmStreamEvent[] = [
+          { type: "text-delta", text: "Simulated stream response." },
+          { type: "finish", finishReason: "stop" },
+        ];
+        for (const event of events) {
+          res.write(JSON.stringify(event) + "\n");
+        }
+        res.end();
+        return;
+      }
+
+      const systemMsg = parsed.messages.find(
+        (m: { role: string }) => m.role === "system",
+      ) as { content: string } | undefined;
+      const userMsg = [...parsed.messages]
+        .reverse()
+        .find((m: { role: string }) => m.role === "user") as
+        | { content: string }
+        | undefined;
+
+      const result = await generateText({
+        auth,
+        input: {
+          system: systemMsg?.content,
+          prompt: userMsg?.content ?? "",
+          model: parsed.model,
+        },
+      });
+
+      const events: LlmStreamEvent[] = [
+        { type: "text-delta", text: result.text },
+        { type: "finish", finishReason: "stop" },
+      ];
+      for (const event of events) {
+        res.write(JSON.stringify(event) + "\n");
+      }
+
+      insertMetric({
+        userId: reqAuth.userId,
+        operation: "stream-chat",
+        providerName: "llm",
+        status: "success",
+        latencyMs: 0,
+        wordCount: result.text.split(/\s+/).filter(Boolean).length,
+      }).catch(() => {});
+    } else {
+      res.status(404).json({ success: false, error: `Unknown stream handler: ${name}` });
+      return;
+    }
+
+    res.end();
+  } catch (error) {
+    if (!res.headersSent) {
+      if (error instanceof NotFoundError) {
+        res.status(404).json({ success: false, error: error.message });
+      } else if (error instanceof UnauthorizedError) {
+        res.status(401).json({ success: false, error: error.message });
+      } else if (error instanceof ClientError) {
+        res.status(400).json({ success: false, error: error.message });
+      } else {
+        console.error("Unexpected error:", error);
+        res.status(500).json({ success: false, error: "Internal server error" });
+      }
+    } else {
+      const errorEvent: LlmStreamEvent = {
+        type: "error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+      res.write(JSON.stringify(errorEvent) + "\n");
+      res.end();
     }
   }
 });

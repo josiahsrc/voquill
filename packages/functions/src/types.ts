@@ -24,6 +24,7 @@ import {
   type MetricsPerUser,
   type MetricsRange,
   type MetricsSummary,
+  type LlmMessage,
   type Nullable,
   type OidcProvider,
   type OidcProviderInput,
@@ -665,3 +666,31 @@ export const GetMetricsSummaryInputZod = z
     range: MetricsRangeZod,
   })
   .strict() satisfies z.ZodType<HandlerInput<"metrics/getSummary">>;
+
+type StreamHandlerDefinitions = {
+  "ai/streamChat": {
+    input: {
+      messages: LlmMessage[];
+      model?: Nullable<CloudModel>;
+      simulate?: Nullable<boolean>;
+    };
+  };
+};
+
+export type StreamHandlerName = keyof StreamHandlerDefinitions;
+export type StreamHandlerInput<N extends StreamHandlerName> =
+  StreamHandlerDefinitions[N]["input"];
+
+export const AiStreamChatInputZod = z.object({
+  messages: z
+    .array(
+      z
+        .object({
+          role: z.enum(["system", "user", "assistant", "tool"]),
+        })
+        .passthrough(),
+    )
+    .min(1),
+  model: CloudModelZod.nullable().optional(),
+  simulate: z.boolean().nullable().optional(),
+});

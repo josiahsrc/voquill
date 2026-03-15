@@ -30,10 +30,8 @@ import {
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
-import { getEffectiveAuth } from "../utils/auth.utils";
-import { formatMessagesAsPrompt } from "../utils/ai.utils";
-import { invokeEnterprise } from "../utils/enterprise.utils";
-import { getFunctionUrl } from "../utils/firebase.utils";
+import { invokeEnterprise, invokeEnterpriseStream } from "../utils/enterprise.utils";
+import { invokeHandlerStream } from "../utils/firebase.utils";
 import { BaseRepo } from "./base.repo";
 
 export type GenerateTextInput = {
@@ -55,51 +53,6 @@ export type GenerateTextOutput = {
 export abstract class BaseGenerateTextRepo extends BaseRepo {
   abstract generateText(input: GenerateTextInput): Promise<GenerateTextOutput>;
   abstract streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent>;
-}
-
-async function* streamFromCloud(
-  url: string,
-  body: Record<string, unknown>,
-): AsyncGenerator<LlmStreamEvent> {
-  const user = getEffectiveAuth().currentUser;
-  if (!user) throw new Error("Not authenticated");
-  const idToken = await user.getIdToken();
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Stream chat failed: ${response.status} ${response.statusText}`);
-  }
-
-  const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop()!;
-
-    for (const line of lines) {
-      if (line.trim()) {
-        yield JSON.parse(line) as LlmStreamEvent;
-      }
-    }
-  }
-
-  if (buffer.trim()) {
-    yield JSON.parse(buffer) as LlmStreamEvent;
-  }
 }
 
 export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
@@ -127,7 +80,7 @@ export class CloudGenerateTextRepo extends BaseGenerateTextRepo {
   }
 
   async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
-    yield* streamFromCloud(getFunctionUrl("ai-streamChat"), {
+    yield* invokeHandlerStream("ai/streamChat", {
       messages: input.messages,
       model: this.model,
     });
@@ -517,13 +470,9 @@ export class EnterpriseGenerateTextRepo extends BaseGenerateTextRepo {
   }
 
   async *streamChat(input: LlmChatInput): AsyncGenerator<LlmStreamEvent> {
-    const { system, prompt } = formatMessagesAsPrompt(input.messages);
-    const response = await invokeEnterprise("ai/generateText", {
-      system,
-      prompt,
+    yield* invokeEnterpriseStream("ai/streamChat", {
+      messages: input.messages,
       model: this.model,
     });
-    yield { type: "text-delta", text: response.text };
-    yield { type: "finish", finishReason: "stop" };
   }
 }

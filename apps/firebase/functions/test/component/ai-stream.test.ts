@@ -28,20 +28,21 @@ const createMember = async () => {
 };
 
 async function streamChat(
-	body: Record<string, unknown>,
+	name: string,
+	input: Record<string, unknown>,
 ): Promise<LlmStreamEvent[]> {
 	const user = getAuth().currentUser;
 	if (!user) throw new Error("Not authenticated");
 	const idToken = await user.getIdToken();
 
-	const url = `${getFirebaseFunctionsEndpoint()}/ai-streamChat`;
+	const url = `${getFirebaseFunctionsEndpoint()}/streamHandler`;
 	const res = await fetch(url, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${idToken}`,
 		},
-		body: JSON.stringify(body),
+		body: JSON.stringify({ name, input }),
 	});
 
 	if (!res.ok) {
@@ -71,7 +72,7 @@ describe("ai/streamChat", () => {
 			),
 		});
 
-		const events = await streamChat({
+		const events = await streamChat("ai/streamChat", {
 			messages: [{ role: "user", content: "Hello" }],
 			simulate: true,
 		});
@@ -93,13 +94,16 @@ describe("ai/streamChat", () => {
 	});
 
 	it("rejects unauthenticated requests", async () => {
-		const url = `${getFirebaseFunctionsEndpoint()}/ai-streamChat`;
+		const url = `${getFirebaseFunctionsEndpoint()}/streamHandler`;
 		const res = await fetch(url, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				messages: [{ role: "user", content: "Hello" }],
-				simulate: true,
+				name: "ai/streamChat",
+				input: {
+					messages: [{ role: "user", content: "Hello" }],
+					simulate: true,
+				},
 			}),
 		});
 
@@ -113,14 +117,14 @@ describe("ai/streamChat", () => {
 		if (!user) throw new Error("Not authenticated");
 		const idToken = await user.getIdToken();
 
-		const url = `${getFirebaseFunctionsEndpoint()}/ai-streamChat`;
+		const url = `${getFirebaseFunctionsEndpoint()}/streamHandler`;
 		const res = await fetch(url, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				Authorization: `Bearer ${idToken}`,
 			},
-			body: JSON.stringify({ messages: [] }),
+			body: JSON.stringify({ name: "ai/streamChat", input: { messages: [] } }),
 		});
 
 		expect(res.status).toBe(400);
@@ -138,7 +142,7 @@ describe("ai/streamChat", () => {
 		});
 
 		await expect(
-			streamChat({
+			streamChat("ai/streamChat", {
 				messages: [{ role: "user", content: "Hello" }],
 				simulate: true,
 			}),

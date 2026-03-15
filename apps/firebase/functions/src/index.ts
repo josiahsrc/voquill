@@ -74,13 +74,13 @@ initializeApp({
 
 getFirestore().settings({ ignoreUndefinedProperties: true });
 
-export * as ai from "./functions/ai.functions";
 export * as auth from "./functions/auth.functions";
 export * as member from "./functions/member.functions";
 export * as rateLimit from "./functions/rateLimit.functions";
 export * as revenuecat from "./functions/revenuecat.functions";
 export * as stripe from "./functions/stripe.functions";
 export * as user from "./functions/user.functions";
+export { streamHandler } from "./streaming";
 
 export type HandlerRequest = {
 	name: HandlerName;
