@@ -57,6 +57,7 @@ import { SettingSection } from "../common/SettingSection";
 export const MoreSettingsDialog = () => {
   const intl = useIntl();
   const [receiverBusy, setReceiverBusy] = useState(false);
+  const [receiverPortDraft, setReceiverPortDraft] = useState("");
   const [pairDialogOpen, setPairDialogOpen] = useState(false);
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [pairName, setPairName] = useState("");
@@ -181,13 +182,42 @@ export const MoreSettingsDialog = () => {
   const handleRemoteReceiverPortChange = (
     event: ChangeEvent<HTMLInputElement>,
   ) => {
-    const raw = event.target.value.trim();
+    setReceiverPortDraft(event.target.value);
+  };
+
+  const handleApplyRemoteReceiverPort = async () => {
+    const raw = receiverPortDraft.trim();
     const nextValue = raw === "" ? null : Number(raw);
     if (raw !== "" && (!Number.isInteger(nextValue) || nextValue <= 0)) {
       showErrorSnackbar("Receiver port must be a positive integer.");
       return;
     }
-    void setRemoteReceiverPort(nextValue);
+    if (nextValue === (remoteReceiverPort ?? null)) {
+      showSnackbar("Receiver port is already up to date.");
+      return;
+    }
+    if (receiverBusy) {
+      return;
+    }
+
+    setReceiverBusy(true);
+    try {
+      await setRemoteReceiverPort(nextValue);
+      setReceiverPortDraft(nextValue == null ? "" : String(nextValue));
+      if (receiverStatus?.enabled) {
+        await stopRemoteReceiver();
+        await startRemoteReceiver(nextValue);
+        showSnackbar("Receiver port updated and receiver restarted.", {
+          mode: "success",
+        });
+      } else {
+        showSnackbar("Receiver port saved.", { mode: "success" });
+      }
+    } catch (error) {
+      showErrorSnackbar(error);
+    } finally {
+      setReceiverBusy(false);
+    }
   };
 
   const handleRemoteReceiverAutoStartChange = (
@@ -334,6 +364,11 @@ export const MoreSettingsDialog = () => {
           defaultMessage:
             "No paired remote devices yet. Pair a receiver before enabling remote output.",
         });
+  const selectedRemoteTarget =
+    pairedDevices.find((device) => device.id === remoteTargetDeviceId) ?? null;
+  const hasPendingReceiverPortChange =
+    receiverPortDraft.trim() !==
+    (remoteReceiverPort == null ? "" : String(remoteReceiverPort));
 
   useEffect(() => {
     if (!open) {
@@ -349,6 +384,12 @@ export const MoreSettingsDialog = () => {
       window.clearInterval(intervalId);
     };
   }, [open]);
+
+  useEffect(() => {
+    setReceiverPortDraft(
+      remoteReceiverPort == null ? "" : String(remoteReceiverPort),
+    );
+  }, [remoteReceiverPort, open]);
 
   return (
     <>
@@ -463,18 +504,28 @@ export const MoreSettingsDialog = () => {
           <SettingSection
             title={<FormattedMessage defaultMessage="Receiver port" />}
             description={
-              <FormattedMessage defaultMessage="Leave blank to auto-assign a port, or set a fixed port and restart the receiver after changing it." />
+              <FormattedMessage defaultMessage="Leave blank to auto-assign a port, or set a fixed port and apply it immediately. If the receiver is running, Voquill will restart it for you." />
             }
             action={
-              <TextField
-                size="small"
-                value={remoteReceiverPort ?? ""}
-                onChange={handleRemoteReceiverPortChange}
-                placeholder={intl.formatMessage({
-                  defaultMessage: "Auto",
-                })}
-                sx={{ width: 120 }}
-              />
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField
+                  size="small"
+                  value={receiverPortDraft}
+                  onChange={handleRemoteReceiverPortChange}
+                  placeholder={intl.formatMessage({
+                    defaultMessage: "Auto",
+                  })}
+                  sx={{ width: 120 }}
+                />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={handleApplyRemoteReceiverPort}
+                  disabled={!hasPendingReceiverPortChange || receiverBusy}
+                >
+                  <FormattedMessage defaultMessage="Apply" />
+                </Button>
+              </Stack>
             }
           />
 
@@ -610,7 +661,7 @@ export const MoreSettingsDialog = () => {
           <SettingSection
             title={<FormattedMessage defaultMessage="Remote target device" />}
             description={
-              <FormattedMessage defaultMessage="Choose which paired desktop should receive finalized dictation." />
+              <FormattedMessage defaultMessage="Choose which paired desktop should receive finalized dictation. Only the selected receiver will be used." />
             }
             action={
               <Select<string>
@@ -630,6 +681,37 @@ export const MoreSettingsDialog = () => {
               </Select>
             }
           />
+
+          {selectedRemoteTarget && (
+            <Stack spacing={0.5} sx={{ mt: -1 }}>
+              <Typography variant="caption" color="text.secondary">
+                <FormattedMessage
+                  defaultMessage="Selected receiver: {name}"
+                  values={{ name: selectedRemoteTarget.name }}
+                />
+              </Typography>
+              {selectedRemoteTarget.lastKnownAddress && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ wordBreak: "break-word" }}
+                >
+                  <FormattedMessage
+                    defaultMessage="Receiver address: {address}"
+                    values={{
+                      address: selectedRemoteTarget.lastKnownAddress,
+                    }}
+                  />
+                </Typography>
+              )}
+              <Typography variant="caption" color="text.secondary">
+                <FormattedMessage
+                  defaultMessage="Receiver device ID: {deviceId}"
+                  values={{ deviceId: selectedRemoteTarget.id }}
+                />
+              </Typography>
+            </Stack>
+          )}
 
           <SettingSection
             title={<FormattedMessage defaultMessage="Remote transport test" />}
