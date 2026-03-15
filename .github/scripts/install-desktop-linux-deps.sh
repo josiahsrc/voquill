@@ -18,6 +18,7 @@ sudo apt-get install -y \
   libayatana-appindicator3-dev \
   librsvg2-dev \
   libasound2-dev \
+  libunwind-dev \
   libxdo-dev \
   patchelf \
   libgstreamer1.0-dev \
