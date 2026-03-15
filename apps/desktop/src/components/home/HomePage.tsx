@@ -135,7 +135,6 @@ export default function HomePage() {
               </Card>
             </Tooltip>
           )}
-
         </Stack>
 
         <GettingStartedList />

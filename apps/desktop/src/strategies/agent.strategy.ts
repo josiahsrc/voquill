@@ -101,9 +101,7 @@ export class AgentStrategy extends BaseStrategy {
     }
 
     try {
-      getLogger().info(
-        `Sending chat message (${rawTranscript.length} chars)`,
-      );
+      getLogger().info(`Sending chat message (${rawTranscript.length} chars)`);
       await sendChatMessage(this.conversationId, rawTranscript);
 
       return {

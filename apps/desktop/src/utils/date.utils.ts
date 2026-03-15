@@ -4,7 +4,10 @@ export const nowIso = (): string => {
   return new Date().toISOString();
 };
 
-export const formatRelativeTime = (intl: IntlShape, isoDate: string): string => {
+export const formatRelativeTime = (
+  intl: IntlShape,
+  isoDate: string,
+): string => {
   const now = Date.now();
   const then = new Date(isoDate).getTime();
   const diffMs = now - then;

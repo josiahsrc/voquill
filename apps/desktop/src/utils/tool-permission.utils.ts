@@ -8,10 +8,7 @@ export const getToolAlwaysAllow = (toolId: string): boolean => {
   return storage.getItem(`${TOOL_ALWAYS_ALLOW_PREFIX}${toolId}`) === "true";
 };
 
-export const setToolAlwaysAllow = (
-  toolId: string,
-  allowed: boolean,
-): void => {
+export const setToolAlwaysAllow = (toolId: string, allowed: boolean): void => {
   const storage = getLocalStorage();
   if (!storage) return;
   if (allowed) {

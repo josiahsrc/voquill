@@ -1,5 +1,12 @@
 import { AddRounded } from "@mui/icons-material";
-import { Box, IconButton, List, Stack, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  List,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
 import { FadingScrollArea } from "../common/FadingScrollArea";

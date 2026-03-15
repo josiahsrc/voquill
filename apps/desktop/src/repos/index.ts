@@ -15,10 +15,7 @@ import {
 } from "../utils/user.utils";
 import { BaseApiKeyRepo, LocalApiKeyRepo } from "./api-key.repo";
 import { BaseAppTargetRepo, LocalAppTargetRepo } from "./app-target.repo";
-import {
-  BaseChatMessageRepo,
-  LocalChatMessageRepo,
-} from "./chat-message.repo";
+import { BaseChatMessageRepo, LocalChatMessageRepo } from "./chat-message.repo";
 import {
   BaseConversationRepo,
   LocalConversationRepo,

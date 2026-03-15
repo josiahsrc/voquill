@@ -1,7 +1,12 @@
 import type { ShellChildProcess } from "../utils/tauri-shell.utils";
 import { spawnShellSidecar } from "../utils/tauri-shell.utils";
 import { getLogger } from "../utils/log.utils";
-import { createDeferred, fetchWithTimeout, sleep, toErrorMessage } from "./sidecar.utils";
+import {
+  createDeferred,
+  fetchWithTimeout,
+  sleep,
+  toErrorMessage,
+} from "./sidecar.utils";
 
 export type SidecarConfig = {
   binaryName: string;
@@ -37,7 +42,9 @@ export abstract class BaseSidecar {
     this.startupPromise = this.startInternal()
       .catch((error) => {
         const message = toErrorMessage(error);
-        getLogger().error(`[${this.config.logPrefix}] Failed to start: ${message}`);
+        getLogger().error(
+          `[${this.config.logPrefix}] Failed to start: ${message}`,
+        );
         this.onError(message);
         throw error;
       })
@@ -89,7 +96,10 @@ export abstract class BaseSidecar {
 
   protected abstract buildSpawnEnv(): Promise<Record<string, string>>;
   protected abstract parsePortFromLine(line: string): number | null;
-  protected abstract handleStdoutLine(line: string, child: ShellChildProcess): void;
+  protected abstract handleStdoutLine(
+    line: string,
+    child: ShellChildProcess,
+  ): void;
   protected abstract onStarted(runtime: SidecarRuntime): void;
   protected abstract onStopped(): void;
   protected abstract onError(message: string): void;
@@ -127,7 +137,9 @@ export abstract class BaseSidecar {
         }
       },
       onStderr: (chunk) => {
-        getLogger().warning(`[${this.config.logPrefix}:${childPid}] ${chunk.trimEnd()}`);
+        getLogger().warning(
+          `[${this.config.logPrefix}:${childPid}] ${chunk.trimEnd()}`,
+        );
       },
       onClose: (payload) => {
         if (this.stoppingPid === childPid) {
@@ -202,7 +214,9 @@ export abstract class BaseSidecar {
   private async waitForPort(portPromise: Promise<number>): Promise<number> {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error(`Timed out waiting for ${this.config.logPrefix} readiness`));
+        reject(
+          new Error(`Timed out waiting for ${this.config.logPrefix} readiness`),
+        );
       }, this.config.startupTimeoutMs);
     });
 

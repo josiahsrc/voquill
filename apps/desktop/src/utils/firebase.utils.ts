@@ -1,15 +1,11 @@
-import type {
-  StreamHandlerInput,
-  StreamHandlerName,
-} from "@repo/functions";
+import type { StreamHandlerInput, StreamHandlerName } from "@repo/functions";
 import type { LlmStreamEvent } from "@repo/types";
 import { getEffectiveAuth } from "./auth.utils";
 import { getIsEmulators } from "./env.utils";
 import { readNdjsonStream } from "./stream.utils";
 
 export function getFunctionUrl(functionName: string): string {
-  const projectId =
-    import.meta.env.VITE_FIREBASE_PROJECT_ID || "voquill-dev";
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || "voquill-dev";
   if (getIsEmulators()) {
     return `http://localhost:5001/${projectId}/us-central1/${functionName}`;
   }

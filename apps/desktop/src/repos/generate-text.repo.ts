@@ -30,7 +30,10 @@ import {
 } from "@repo/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
-import { invokeEnterprise, invokeEnterpriseStream } from "../utils/enterprise.utils";
+import {
+  invokeEnterprise,
+  invokeEnterpriseStream,
+} from "../utils/enterprise.utils";
 import { invokeHandlerStream } from "../utils/firebase.utils";
 import { BaseRepo } from "./base.repo";
 

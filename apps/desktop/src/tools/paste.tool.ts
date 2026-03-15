@@ -11,7 +11,9 @@ export class PasteTool extends BaseTool {
     super(info);
   }
 
-  async execute(params: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async execute(
+    params: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     await invoke("paste", { text: params.text, keybind: null });
     return {};
   }

@@ -17,7 +17,9 @@ const fromLocalConversation = (local: LocalConversation): Conversation => ({
   updatedAt: dayjs(local.updatedAt).toISOString(),
 });
 
-const toLocalConversation = (conversation: Conversation): LocalConversation => ({
+const toLocalConversation = (
+  conversation: Conversation,
+): LocalConversation => ({
   id: conversation.id,
   title: conversation.title,
   createdAt: dayjs(conversation.createdAt).valueOf(),
@@ -26,8 +28,12 @@ const toLocalConversation = (conversation: Conversation): LocalConversation => (
 
 export abstract class BaseConversationRepo extends BaseRepo {
   abstract listConversations(): Promise<Conversation[]>;
-  abstract createConversation(conversation: Conversation): Promise<Conversation>;
-  abstract updateConversation(conversation: Conversation): Promise<Conversation>;
+  abstract createConversation(
+    conversation: Conversation,
+  ): Promise<Conversation>;
+  abstract updateConversation(
+    conversation: Conversation,
+  ): Promise<Conversation>;
   abstract deleteConversation(id: string): Promise<void>;
 }
 

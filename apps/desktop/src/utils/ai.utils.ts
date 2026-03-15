@@ -96,9 +96,9 @@ export function formatMessagesAsPrompt(messages: LlmMessage[]): {
       prompt:
         lastMsg?.role === "user"
           ? lastMsg.content
-          : (lastMsg?.role === "assistant"
+          : lastMsg?.role === "assistant"
             ? (lastMsg.content ?? "")
-            : ""),
+            : "",
     };
   }
 

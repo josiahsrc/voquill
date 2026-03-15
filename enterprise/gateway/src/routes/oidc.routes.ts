@@ -11,7 +11,7 @@ import {
 } from "../utils/oidc.utils";
 import { createOidcState, consumeOidcState } from "../utils/oidc-state.utils";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/auth/oidc/authorize", async (req: Request, res: Response) => {
   try {
