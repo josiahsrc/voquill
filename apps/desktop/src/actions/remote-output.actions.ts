@@ -4,13 +4,12 @@ import { showSnackbar } from "./app.actions";
 export const sendRemoteTestOutput = async (
   targetDeviceId: string,
 ): Promise<void> => {
-  const timestamp = new Date().toLocaleTimeString();
   await invoke<void>("remote_sender_deliver_final_text", {
     args: {
       targetDeviceId,
-      text: `Voquill remote tunnel test at ${timestamp}`,
-      mode: "dictation",
+      text: "remote-transport-test",
+      mode: "test",
     },
   });
-  showSnackbar("Remote delivery acknowledged.");
+  showSnackbar("Remote test acknowledged.");
 };

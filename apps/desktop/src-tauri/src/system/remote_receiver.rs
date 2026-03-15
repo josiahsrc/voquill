@@ -253,6 +253,29 @@ async fn handle_connection(
                     continue;
                 };
 
+                if mode == "test" {
+                    let delivered_at = chrono::Utc::now().to_rfc3339();
+                    state.record_delivery(
+                        Some(sender_device_id),
+                        Some(event_id.clone()),
+                        Some(delivered_at.clone()),
+                        None,
+                        None,
+                        None,
+                    );
+                    write_message(
+                        &mut writer,
+                        &OutgoingEnvelope::DeliveryAck {
+                            session_id,
+                            event_id,
+                            sequence,
+                            delivered_at,
+                        },
+                    )
+                    .await?;
+                    continue;
+                }
+
                 let target_info = current_target_info();
                 let target_editable = current_target_editable_status();
                 let payload = RemoteFinalTextReceivedPayload {

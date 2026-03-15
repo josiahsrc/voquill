@@ -92,7 +92,7 @@ export type FinalTextEvent = {
   eventId: string;
   sequence: number;
   text: string;
-  mode: "dictation";
+  mode: "dictation" | "test";
   createdAt: string;
 };
 
