@@ -19,6 +19,7 @@ export abstract class BasePairedRemoteDeviceRepo extends BaseRepo {
   abstract upsertPairedRemoteDevice(
     params: PairedRemoteDeviceUpsertParams,
   ): Promise<PairedRemoteDevice>;
+  abstract deletePairedRemoteDevice(id: string): Promise<void>;
 }
 
 export class LocalPairedRemoteDeviceRepo extends BasePairedRemoteDeviceRepo {
@@ -31,6 +32,12 @@ export class LocalPairedRemoteDeviceRepo extends BasePairedRemoteDeviceRepo {
   ): Promise<PairedRemoteDevice> {
     return invoke<PairedRemoteDevice>("paired_remote_device_upsert", {
       args: params,
+    });
+  }
+
+  async deletePairedRemoteDevice(id: string): Promise<void> {
+    return invoke<void>("paired_remote_device_delete", {
+      args: { id },
     });
   }
 }

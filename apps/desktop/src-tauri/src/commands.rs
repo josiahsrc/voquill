@@ -81,6 +81,12 @@ pub struct PairedRemoteDeviceUpsertArgs {
     pub trusted: bool,
 }
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairedRemoteDeviceDeleteArgs {
+    pub id: String,
+}
+
 #[derive(serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct StartRemoteReceiverArgs {
@@ -352,6 +358,16 @@ pub async fn paired_remote_device_list(
     database: State<'_, crate::state::OptionKeyDatabase>,
 ) -> Result<Vec<crate::domain::PairedRemoteDevice>, String> {
     crate::db::paired_remote_device_queries::fetch_paired_remote_devices(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn paired_remote_device_delete(
+    args: PairedRemoteDeviceDeleteArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::paired_remote_device_queries::delete_paired_remote_device(database.pool(), &args.id)
         .await
         .map_err(|err| err.to_string())
 }

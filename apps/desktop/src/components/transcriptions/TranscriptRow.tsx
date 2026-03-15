@@ -4,7 +4,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import { Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { Chip, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
@@ -44,6 +44,13 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   );
 
   const audioSnapshot = transcription?.audio;
+  const isRemoteTranscript = useMemo(
+    () =>
+      transcription?.warnings?.some((warning) =>
+        warning.startsWith("Remote transcript received from"),
+      ) ?? false,
+    [transcription?.warnings],
+  );
 
   const handleDetailsOpen = useCallback(() => {
     openTranscriptionDetailsDialog(id);
@@ -109,9 +116,18 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         mt={1.5}
         spacing={1}
       >
-        <Typography variant="subtitle2" color="text.secondary">
-          {dayjs(transcription?.createdAt).format("MMM D, YYYY h:mm A")}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+          <Typography variant="subtitle2" color="text.secondary">
+            {dayjs(transcription?.createdAt).format("MMM D, YYYY h:mm A")}
+          </Typography>
+          {isRemoteTranscript && (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={intl.formatMessage({ defaultMessage: "Remote" })}
+            />
+          )}
+        </Stack>
         <Stack direction="row" spacing={1}>
           <Tooltip
             title={intl.formatMessage({

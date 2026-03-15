@@ -123,3 +123,12 @@ pub async fn fetch_paired_remote_device_by_id(
             .unwrap_or(true),
     }))
 }
+
+pub async fn delete_paired_remote_device(pool: SqlitePool, id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM paired_remote_devices WHERE id = ?1")
+        .bind(id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}

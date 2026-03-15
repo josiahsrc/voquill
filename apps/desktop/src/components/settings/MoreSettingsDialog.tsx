@@ -23,7 +23,10 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { sendRemoteTestOutput } from "../../actions/remote-output.actions";
-import { upsertPairedRemoteDevice } from "../../actions/paired-remote-device.actions";
+import {
+  deletePairedRemoteDevice,
+  upsertPairedRemoteDevice,
+} from "../../actions/paired-remote-device.actions";
 import {
   startRemoteReceiver,
   refreshRemoteReceiverStatus,
@@ -689,7 +692,7 @@ export const MoreSettingsDialog = () => {
             <Stack spacing={0.5} sx={{ mt: -1 }}>
               <Typography variant="caption" color="text.secondary">
                 <FormattedMessage
-                  defaultMessage="Selected receiver: {name}"
+                  defaultMessage="Active remote receiver: {name}"
                   values={{ name: selectedRemoteTarget.name }}
                 />
               </Typography>
@@ -900,6 +903,18 @@ const PairedDeviceRow = ({ device, onEdit }: PairedDeviceRowProps) => {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await deletePairedRemoteDevice(device.id);
+      showSnackbar(
+        intl.formatMessage({ defaultMessage: "Trusted device deleted" }),
+        { mode: "success" },
+      );
+    } catch (error) {
+      showErrorSnackbar(error);
+    }
+  };
+
   return (
     <Stack
       spacing={0.25}
@@ -977,8 +992,22 @@ const PairedDeviceRow = ({ device, onEdit }: PairedDeviceRowProps) => {
             <FormattedMessage defaultMessage="Copy address" />
           </Button>
         )}
+        <Button
+          size="small"
+          onClick={() =>
+            void handleCopy(
+              device.sharedSecret,
+              intl.formatMessage({ defaultMessage: "Shared secret copied" }),
+            )
+          }
+        >
+          <FormattedMessage defaultMessage="Copy secret" />
+        </Button>
         <Button size="small" onClick={onEdit}>
           <FormattedMessage defaultMessage="Edit" />
+        </Button>
+        <Button size="small" color="error" onClick={() => void handleDelete()}>
+          <FormattedMessage defaultMessage="Delete" />
         </Button>
       </Stack>
     </Stack>

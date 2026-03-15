@@ -190,6 +190,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::app_target_list,
             crate::commands::paired_remote_device_upsert,
             crate::commands::paired_remote_device_list,
+            crate::commands::paired_remote_device_delete,
             crate::commands::remote_receiver_start,
             crate::commands::remote_receiver_stop,
             crate::commands::remote_receiver_status,

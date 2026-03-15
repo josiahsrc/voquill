@@ -8,6 +8,8 @@ import { getMyEffectiveUserId, getMyUserPreferences } from "../utils/user.utils"
 import { insertLocalTranscriptOutput } from "../remote/output-router";
 import { showSnackbar } from "./app.actions";
 
+const REMOTE_TRANSCRIPT_WARNING_PREFIX = "Remote transcript received from";
+
 export type RemoteFinalTextReceivedPayload = {
   senderDeviceId: string;
   eventId: string;
@@ -17,9 +19,11 @@ export type RemoteFinalTextReceivedPayload = {
 };
 
 const storeRemoteTranscription = async ({
+  senderDeviceId,
   rawTranscript,
   transcript,
 }: {
+  senderDeviceId: string;
   rawTranscript: string;
   transcript: string;
 }): Promise<void> => {
@@ -47,7 +51,7 @@ const storeRemoteTranscription = async ({
     postProcessDevice: null,
     transcriptionDurationMs: null,
     postprocessDurationMs: null,
-    warnings: null,
+    warnings: [`${REMOTE_TRANSCRIPT_WARNING_PREFIX} ${senderDeviceId}.`],
   };
 
   const stored = await getTranscriptionRepo().createTranscription(transcription);
@@ -74,6 +78,7 @@ export const handleRemoteFinalTextReceived = async (
     null,
   );
   await storeRemoteTranscription({
+    senderDeviceId: payload.senderDeviceId,
     rawTranscript: finalText,
     transcript: finalText,
   }).catch((error) => {
