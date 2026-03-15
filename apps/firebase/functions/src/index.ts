@@ -74,6 +74,7 @@ initializeApp({
 
 getFirestore().settings({ ignoreUndefinedProperties: true });
 
+export * as ai from "./functions/ai.functions";
 export * as auth from "./functions/auth.functions";
 export * as member from "./functions/member.functions";
 export * as rateLimit from "./functions/rateLimit.functions";

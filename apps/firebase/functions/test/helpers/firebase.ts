@@ -38,6 +38,7 @@ export async function initializeFirebase() {
 	if (firebaseInitialized) {
 		return;
 	}
+	firebaseInitialized = true;
 	process.env.FIRESTORE_EMULATOR_HOST = getFirestoreEmulatorHost();
 	process.env.FIREBASE_AUTH_EMULATOR_HOST = getFirebaseAuthEmulatorHost();
 	process.env.GCLOUD_PROJECT = getGcloudProject();
@@ -100,15 +101,17 @@ export async function initializeFirebase() {
 		parseInt(storageParts[1] ?? ""),
 	);
 
-	const rtdb = getDatabase(app);
-	const rtdbParts = getRealtimeDatabaseEmulatorHost().split(":");
-	connectDatabaseEmulator(
-		rtdb,
-		rtdbParts[0] ?? "",
-		parseInt(rtdbParts[1] ?? ""),
-	);
-
-	firebaseInitialized = true;
+	try {
+		const rtdb = getDatabase(app);
+		const rtdbParts = getRealtimeDatabaseEmulatorHost().split(":");
+		connectDatabaseEmulator(
+			rtdb,
+			rtdbParts[0] ?? "",
+			parseInt(rtdbParts[1] ?? ""),
+		);
+	} catch {
+		// RTDB may not be available in all test environments
+	}
 }
 
 export async function closeFirebase() {
