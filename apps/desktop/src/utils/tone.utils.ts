@@ -33,6 +33,7 @@ export const getDefaultSystemTones = (): Tone[] => {
 - FORMATTING: Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
 - CODE: Put backticks around code terms like filenames, function names, and code snippets
 - CORRECTIONS: Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
+- **CRITICAL**: Do NOT use em-dashes in your response
       `.trim(),
       isSystem: true,
       createdAt: 0,
