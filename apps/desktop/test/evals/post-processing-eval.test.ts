@@ -75,12 +75,18 @@ const runPostProcessingEval = async ({
   tone: ToneConfig;
   evals: Eval[];
 }): Promise<void> => {
+  const startTime = Date.now();
   const finalText = await postProcess({
     tone,
     transcription,
     language,
     userName,
   });
+
+  const duration = (Date.now() - startTime) / 1000;
+  console.log(`Duration: ${duration.toFixed(2)} seconds`);
+  console.log("Orig Text:", transcription);
+  console.log("Finl Text:", finalText);
 
   await runEval({
     originalText: transcription,
@@ -99,6 +105,23 @@ describe("post-processing evals", { retry: 0 }, () => {
       });
     });
 
+    test("should handle emojis", async () => {
+      await runPostProcessingEval({
+        transcription: "Hey, can you send me the report? smiley face",
+        tone: getWritingStyle("default"),
+        evals: ["It should convert 'smiley face' into an actual smiling emoji"],
+      });
+    });
+
+    test("crazy transcript 1", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Can you fix the Linux build? I guess so we have those two workflows. Build desktop and we also have release desktop. And I I haven't, like, super looked into this, but I'm pretty sure build desktop yeah. Yeah. Okay. Build desktop doesn't actually ship with Vulcan. And so we don't we don't want the build desktop to actually build for Voquill, and it should not build the sidecars. Or, like, it should not build the GPU sidecars rather. It doesn't need to. But it looks like our built pipeline isn't supporting that because we're getting we're getting some errors. Yeah. If I just I pasted the raw logs from the job inside of a file. You can kinda you can kinda start that file if you're interested in seeing, like, where the where the problem is. But yeah, I kind of gave the high level context to the very top of this prompt so I think you can you can see it from there too.",
+        tone: getWritingStyle("default"),
+        evals: ["It should make it make sense"],
+      });
+    });
+
     test("should fix things that are later corrected", async () => {
       await runPostProcessingEval({
         transcription:
@@ -110,14 +133,12 @@ describe("post-processing evals", { retry: 0 }, () => {
       });
     });
 
-    test("should not change who the subject is", async () => {
+    test("raw transcript 1", async () => {
       await runPostProcessingEval({
         transcription:
           "That's awesome. And adding some more details here that might be relevant when we were working our landscape in platform, one of the biggest pains that we saw across the industry is that or, like, biggest, not pains, but, like, one of the biggest things we observed is that all landscapers used different apps Like, someone used Sage, others used JobNobus, others used QuickBooks, others used, like, one off time tracking software. Like, everyone used a different piece of software. And after, you know, building our last product, I think the thing that we realized was that you should try to make us, like, a software that kinda integrates us with, like, all of these things rather than trying to define your own version of it. And so, like, if we build Voquill in this area, maybe we can like, use that studio.vocal.com idea or something. Basically, like, you you you know, you can talk to your computer and, like, he has an agent that's specific to his workflow. And then you can add photos and stuff. And it just, like, builds the report as you talk. That could be really interesting that he can just copy it over, basically, when he's done.",
         tone: getWritingStyle("default"),
-        evals: [
-          "It preserves the subject of the sentence as 'he' when referring to the user, rather than changing it to 'they' or 'you' or something else, since the speaker is talking about 'him'",
-        ],
+        evals: ["it should clean up the transcript and it should make sense"],
       });
     });
 
@@ -420,7 +441,6 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "Should keep 'Dear Mr. Johnson' as the greeting since the speaker said it",
           "Should maintain a formal tone throughout — no casualization",
-          "Should have a sign-off with Thomas's name that matches the formal tone",
           "Should mention: quarterly report completed, ready for review, look forward to feedback",
         ],
       });

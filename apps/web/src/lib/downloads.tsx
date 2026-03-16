@@ -143,15 +143,15 @@ const ASSET_KEY_MAPPINGS: Array<{
   keys: string[];
 }> = [
   {
-    match: (name) => /^Voquill[._](?!GPU).*\.AppImage$/i.test(name),
+    match: (name) => /^voquill[-._](?!gpu).*\.appimage$/i.test(name),
     keys: ["linux-x86_64", "linux-x86_64-appimage"],
   },
   {
-    match: (name) => /^Voquill[._](?!GPU).*\.deb$/i.test(name),
+    match: (name) => /^voquill[-._](?!gpu).*\.deb$/i.test(name),
     keys: ["linux-x86_64-deb"],
   },
   {
-    match: (name) => /^Voquill[._](?!GPU).*\.rpm$/i.test(name),
+    match: (name) => /^voquill[-._](?!gpu).*\.rpm$/i.test(name),
     keys: ["linux-x86_64-rpm"],
   },
   {

@@ -135,7 +135,9 @@ pub fn get_screen_context() -> ScreenContextInfo {
         Ok(info) => info,
         Err(e) => {
             log::error!("Error getting screen context: {:?}", e);
-            ScreenContextInfo { screen_context: None }
+            ScreenContextInfo {
+                screen_context: None,
+            }
         }
     }
 }

@@ -43,7 +43,10 @@ static RULES: Lazy<Vec<SanitizeRule>> = Lazy::new(|| {
 pub fn sanitize_log_content(input: &str) -> String {
     let mut result = input.to_string();
     for rule in RULES.iter() {
-        result = rule.pattern.replace_all(&result, rule.replacement).into_owned();
+        result = rule
+            .pattern
+            .replace_all(&result, rule.replacement)
+            .into_owned();
     }
     result
 }

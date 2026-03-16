@@ -4,6 +4,7 @@ import 'package:app/store/store.dart';
 import 'package:app/utils/channel_utils.dart';
 import 'package:app/widgets/common/asset_video_player.dart';
 import 'package:app/widgets/onboarding/onboarding_widgets.dart';
+import 'package:app/widgets/permissions/permission_granted_banner.dart';
 import 'package:flutter/material.dart';
 
 class KeyboardPermissions extends StatefulWidget {
@@ -68,7 +69,11 @@ class _KeyboardPermissionsState extends State<KeyboardPermissions>
 
     return OnboardingFormLayout(
       backButton: widget.backButton,
-      actions: [button],
+      actions: [
+        if (isEnabled)
+          const PermissionGrantedBanner(text: 'Keyboard access granted'),
+        button,
+      ],
       child: OnboardingBody(
         title: const Text('Keyboard access'),
         description: const Text(

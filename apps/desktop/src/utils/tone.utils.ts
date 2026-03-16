@@ -21,16 +21,20 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Polished",
       }),
       promptTemplate: `
-- Rewrite the transcript into clean, readable text that the speaker would reasonably have written.
-- Keep the speaker's original meaning, tone, phrasing, formality, and point of view.
-- Do not make it more polite, formal, or professional than the original.
-- Preserve grammatical person and referents. Do not change who is doing the action or who is being described unless the speaker clearly corrected themselves.
-- Remove filler, false starts, repeated words, stutters, and obvious transcription mistakes.
-- When the speaker corrects themselves, keep the corrected version and remove the earlier one.
-- Smooth out awkward sentence breaks and punctuation when they come from transcription rather than intent.
-- Keep wording that feels characteristic of the speaker, even if it is a little informal or imperfect.
-- Format the result naturally as written text, including paragraphs, line breaks, bullet points when appropriate, punctuation, emojis, and special forms like code terms, file names, emails, links, hashtags, newlines, and parentheses when clearly intended.
-- Output only the cleaned transcription.
+- GRAMMAR: Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally 
+- WORD CHOICE: Keep the speaker's vocabulary, sentence patterns, and tone intact
+- STYLE: The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it.
+- STRUCTURE: The refined transcript should be fluid, not choppy, without removing tone or meaning. Single word sentences are choppy and should be combined with surrounding sentences where possible.
+- CLEAN UP: Remove filler words and speech disfluencies that carry no meaning — words that could be deleted without changing what the speaker is saying or how they're saying it
+- SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- LISTS: Format bulletted lists when the user speaks items in a list format
+- SELF CORRECTIONS: When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
+- SENSE: The resulting transcription should make sense
+- FORMATTING: Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
+- CODE: Put backticks around code terms like filenames, function names, and code snippets
+- CORRECTIONS: Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
+- EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
+- **CRITICAL**: Do NOT use em-dashes in your response
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -54,19 +58,20 @@ export const getDefaultSystemTones = (): Tone[] => {
         defaultMessage: "Email",
       }),
       promptTemplate: `
-- Rewrite the transcript as a clean, natural email body the speaker would reasonably have written.
-- Preserve the speaker’s meaning, tone, phrasing, formality, and point of view.
-- Do not make it more polite, formal, professional, smoother, or more general than the original.
-- Preserve pronouns and referents literally. Do not reinterpret, harmonize, or “clean up” who a pronoun refers to. If the transcript says “you” in one clause and “he” in the next, keep that shift unless the speaker explicitly corrected it.
-- Do not replace specific pronouns or subjects with generic nouns or different pronouns. Never rewrite “he” as “they,” “you,” “users,” “people,” or similar unless the speaker clearly corrected themselves.
-- Remove filler, stutters, false starts, repeated words, and obvious transcription errors.
-- Treat self-corrections as replacements: keep the later corrected wording and remove the abandoned wording.
-- Fix punctuation, sentence breaks, and formatting so it reads naturally as an email, but prefer preserving meaning and referents over making the wording smoother.
-- Keep informal or distinctive wording when it seems intentional.
-- Use email structure only where implied by the transcript, including greeting, paragraph breaks, closing, sign-off, and bullet points when appropriate.
-- Do not generate or include an email subject line.
-- Preserve special written forms like email addresses, links, newlines, emojis, file names, and code terms when intended.
-- Output only the cleaned email body.
+- Sound like the speaker, but written
+- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Fit the speaker's words into an email format but do NOT add new phrasing, ideas, or words that would otherwise change the intent.
+- Preserve the speaker's greeting and sign-off if present
+- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
+- The resulting transcription should make sense
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove and fix content that was later corrected by the speaker
+- Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
+- DO NOT introduce new phrasing
+- DO NOT remove phrasing that would change the speaker's intent except for fixing errors
       `.trim(),
       isSystem: true,
       createdAt: 0,

@@ -108,7 +108,7 @@ export const runGenerateText = async ({
 	} else if (input.model === "medium") {
 		({ text: generatedText, tokensUsed } = await openaiGenerateTextResponse({
 			apiKey: getOpenAIApiKey(),
-			model: "gpt-4o-mini",
+			model: "gpt-5.4",
 			prompt: input.prompt,
 			system: input.system ?? undefined,
 			jsonResponse: input.jsonResponse ?? undefined,

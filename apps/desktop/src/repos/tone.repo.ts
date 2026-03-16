@@ -1,6 +1,8 @@
 import { invokeHandler } from "@repo/functions";
 import { Tone } from "@repo/types";
+import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import { getConfigRepo } from ".";
 import { invokeEnterprise } from "../utils/enterprise.utils";
 import { getDefaultSystemTones } from "../utils/tone.utils";
 import { BaseRepo } from "./base.repo";
@@ -47,7 +49,19 @@ export abstract class BaseToneRepo extends BaseRepo {
 
   async listTones(): Promise<Tone[]> {
     const userTones = await this.listTonesInternal();
-    return mergeSystemTones(userTones);
+    const result = mergeSystemTones(userTones);
+
+    const config = await getConfigRepo().getFullConfig();
+    return result.map((tone) => {
+      const override = getRec(config?.toneOverrides, tone.id);
+      if (override) {
+        return {
+          ...tone,
+          promptTemplate: override,
+        };
+      }
+      return tone;
+    });
   }
 
   async getTone(id: string): Promise<Tone | null> {

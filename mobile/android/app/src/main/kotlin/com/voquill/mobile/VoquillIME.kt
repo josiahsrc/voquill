@@ -125,6 +125,7 @@ class VoquillIME : InputMethodService() {
     private var baseKeyboardHeightPx = 0
     private var baseKeyboardPaddingBottomPx = 0
     private var lastKeyboardCounter = -1
+    private var nightMode = Configuration.UI_MODE_NIGHT_UNDEFINED
 
     private val executor = Executors.newSingleThreadExecutor()
 
@@ -137,6 +138,11 @@ class VoquillIME : InputMethodService() {
 
     private val audioFilePath: String
         get() = File(cacheDir, "voquill_kb.m4a").absolutePath
+
+    override fun onCreate() {
+        super.onCreate()
+        syncNightMode(resources.configuration)
+    }
 
     override fun onCreateInputView(): View {
         val view = layoutInflater.inflate(R.layout.keyboard_view, null)
@@ -235,6 +241,7 @@ class VoquillIME : InputMethodService() {
         applySafeAreaInsets(view, keyboardContent)
 
         waveformView?.startAnimating()
+        syncNightMode(resources.configuration)
         reloadKeyboardConfig()
         startKeyboardCounterPolling()
         startMemberRefreshPolling()
@@ -244,13 +251,34 @@ class VoquillIME : InputMethodService() {
         return view
     }
 
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
+        refreshTheme(resources.configuration)
+    }
+
+    override fun onWindowShown() {
+        super.onWindowShown()
+        refreshTheme(resources.configuration)
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        updateColorsForPhase()
+        refreshTheme(newConfig)
     }
 
     private val isDarkMode: Boolean
-        get() = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        get() = nightMode == Configuration.UI_MODE_NIGHT_YES
+
+    private fun syncNightMode(configuration: Configuration) {
+        nightMode = configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    }
+
+    private fun refreshTheme(configuration: Configuration) {
+        syncNightMode(configuration)
+        if (::keyboardBackground.isInitialized) {
+            updateColorsForPhase()
+        }
+    }
 
     private fun updateColorsForPhase() {
         applyPhase(currentPhase)
@@ -264,9 +292,7 @@ class VoquillIME : InputMethodService() {
         val pillBg = pillButton.background as? GradientDrawable
             ?: (pillButton.background?.mutate() as? GradientDrawable)
 
-        keyboardBackground.setBackgroundResource(
-            if (dark) R.drawable.keyboard_background_dark else R.drawable.keyboard_background_light
-        )
+        keyboardBackground.setBackgroundResource(R.drawable.keyboard_background)
         val labelColor = if (dark) Color.WHITE else Color.BLACK
         val secondaryLabelColor = if (dark) Color.argb(191, 235, 235, 245) else Color.argb(153, 60, 60, 67)
         val tertiaryLabelColor = if (dark) Color.argb(128, 235, 235, 245) else Color.argb(77, 60, 60, 67)
