@@ -395,7 +395,9 @@ export const MultiDeviceDialog = () => {
         <DialogContent dividers sx={{ minWidth: 360 }}>
           <Stack spacing={3}>
             <SettingSection
-              title={<FormattedMessage defaultMessage="Receiver" />}
+              title={
+                <FormattedMessage defaultMessage="Receive transcript from another device" />
+              }
               description={receiverSummary}
               action={
                 <Switch
@@ -575,7 +577,9 @@ export const MultiDeviceDialog = () => {
             )}
 
             <SettingSection
-              title={<FormattedMessage defaultMessage="Send output to another device" />}
+              title={
+                <FormattedMessage defaultMessage="Send transcript to another device" />
+              }
               description={remoteTargetSummary}
               action={
                 <Switch
