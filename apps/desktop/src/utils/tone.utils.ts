@@ -20,6 +20,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Polished",
       }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Natural, well-written text that preserves your voice and word choices.",
+      }),
       promptTemplate: `
 - WORD CHOICE: Preserve the speaker's word choice
 - STRUCTURE: Refine the written transcript to read like naturally written text that flows well, without materially changing anything the speaker said or how they said it
@@ -41,6 +45,9 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Verbatim",
       }),
+      description: intl.formatMessage({
+        defaultMessage: "Exactly what you said with no editing or cleanup.",
+      }),
       shouldDisablePostProcessing: true,
       promptTemplate:
         "Do not apply any post-processing to the transcription. Keep everything exactly as you said it.",
@@ -52,6 +59,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       id: EMAIL_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Email",
+      }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Professional email formatting with a greeting, body, and sign-off.",
       }),
       promptTemplate: `
 - Sound like the speaker, but written
@@ -78,6 +89,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Chat",
       }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "For casual, concise messages: like you're typing in a chat app.",
+      }),
       promptTemplate: `
 - You are formatting spoken words into a chat message. The speaker dictated this out loud — make it sound like them typing.
 - Keep it casual and concise. Do not over-structure or over-punctuate.
@@ -98,6 +113,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       id: FORMAL_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Formal",
+      }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Polished and professional register suitable for documents and correspondence.",
       }),
       promptTemplate: `
 - Rewrite in a polished, professional register
