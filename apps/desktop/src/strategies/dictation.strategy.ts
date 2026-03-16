@@ -147,14 +147,19 @@ export class DictationStrategy extends BaseStrategy {
     try {
       sanitizedTranscript = this.sanitizeTranscript(args.rawTranscript);
       if (sanitizedTranscript) {
-        const result = await postProcessTranscript({
-          rawTranscript: sanitizedTranscript,
-          toneId: args.toneId,
-        });
+        if (args.processedTranscript) {
+          transcript = args.processedTranscript;
+          postProcessMetadata = args.serverPostProcessMetadata ?? {};
+        } else {
+          const result = await postProcessTranscript({
+            rawTranscript: sanitizedTranscript,
+            toneId: args.toneId,
+          });
 
-        transcript = result.transcript;
-        postProcessMetadata = result.metadata;
-        postProcessWarnings = result.warnings;
+          transcript = result.transcript;
+          postProcessMetadata = result.metadata;
+          postProcessWarnings = result.warnings;
+        }
       }
 
       if (transcript) {
