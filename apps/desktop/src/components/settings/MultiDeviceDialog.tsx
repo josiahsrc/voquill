@@ -364,8 +364,6 @@ export const MultiDeviceDialog = () => {
   const hasPendingReceiverPortChange =
     receiverPortDraft.trim() !==
     (remoteReceiverPort == null ? "" : String(remoteReceiverPort));
-  const bothModesEnabled =
-    remoteOutputEnabled && Boolean(receiverStatus?.enabled);
 
   useEffect(() => {
     if (!open) {
@@ -396,12 +394,6 @@ export const MultiDeviceDialog = () => {
         </DialogTitle>
         <DialogContent dividers sx={{ minWidth: 360 }}>
           <Stack spacing={3}>
-            {bothModesEnabled && (
-              <Typography variant="body2" color="text.secondary">
-                <FormattedMessage defaultMessage="This device can both receive transcripts from paired senders and send its own transcripts to the selected receiver." />
-              </Typography>
-            )}
-
             <SettingSection
               title={
                 <FormattedMessage defaultMessage="Receive transcript from another device" />
