@@ -581,7 +581,6 @@ export const MultiDeviceDialog = () => {
                 <Switch
                   edge="end"
                   checked={remoteOutputEnabled}
-                  disabled={!remoteTargetDeviceId}
                   onChange={handleToggleRemoteOutput}
                 />
               }
