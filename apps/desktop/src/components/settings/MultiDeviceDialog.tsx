@@ -95,8 +95,13 @@ export const MultiDeviceDialog = () => {
   const handleToggleRemoteOutput = (event: ChangeEvent<HTMLInputElement>) => {
     const enabled = event.target.checked;
     if (enabled && !remoteTargetDeviceId) {
-      showErrorSnackbar("Select a remote target device first.");
-      return;
+      const firstReceiver =
+        pairedDevices.find((device) => device.role === "receiver") ?? null;
+      if (!firstReceiver) {
+        showErrorSnackbar("Pair a receiver first.");
+        return;
+      }
+      void setRemoteTargetDeviceId(firstReceiver.id);
     }
     void setRemoteOutputEnabled(enabled);
   };
@@ -332,7 +337,7 @@ export const MultiDeviceDialog = () => {
       )
     : intl.formatMessage({
         defaultMessage:
-          "Enable receiver mode on the target machine so paired senders can deliver final transcript text locally.",
+          "Enable receiver mode so paired senders can deliver final transcript text locally.",
       });
 
   const lastDeliveryTimeLabel = receiverStatus?.lastDeliveryAt
@@ -402,49 +407,53 @@ export const MultiDeviceDialog = () => {
               }
             />
 
-            <SettingSection
-              title={<FormattedMessage defaultMessage="Receiver port" />}
-              description={
-                <FormattedMessage defaultMessage="Leave blank to auto-assign a port, or set a fixed port and apply it immediately. If the receiver is running, Voquill will restart it for you." />
-              }
-              action={
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <TextField
-                    size="small"
-                    value={receiverPortDraft}
-                    onChange={handleRemoteReceiverPortChange}
-                    placeholder={intl.formatMessage({
-                      defaultMessage: "Auto",
-                    })}
-                    sx={{ width: 120 }}
-                  />
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={handleApplyRemoteReceiverPort}
-                    disabled={!hasPendingReceiverPortChange || receiverBusy}
-                  >
-                    <FormattedMessage defaultMessage="Apply" />
-                  </Button>
-                </Stack>
-              }
-            />
-
-            <SettingSection
-              title={<FormattedMessage defaultMessage="Start receiver automatically" />}
-              description={
-                <FormattedMessage defaultMessage="When enabled, Voquill will start the multi-device receiver automatically on launch using the saved receiver port." />
-              }
-              action={
-                <Switch
-                  edge="end"
-                  checked={remoteReceiverAutoStart}
-                  onChange={handleRemoteReceiverAutoStartChange}
+            {(receiverStatus?.enabled ?? false) && (
+              <>
+                <SettingSection
+                  title={<FormattedMessage defaultMessage="Receiver port" />}
+                  description={
+                    <FormattedMessage defaultMessage="Leave blank to auto-assign a port, or set a fixed port and apply it immediately. If the receiver is running, Voquill will restart it for you." />
+                  }
+                  action={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <TextField
+                        size="small"
+                        value={receiverPortDraft}
+                        onChange={handleRemoteReceiverPortChange}
+                        placeholder={intl.formatMessage({
+                          defaultMessage: "Auto",
+                        })}
+                        sx={{ width: 120 }}
+                      />
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleApplyRemoteReceiverPort}
+                        disabled={!hasPendingReceiverPortChange || receiverBusy}
+                      >
+                        <FormattedMessage defaultMessage="Apply" />
+                      </Button>
+                    </Stack>
+                  }
                 />
-              }
-            />
 
-            {receiverStatus && (
+                <SettingSection
+                  title={
+                    <FormattedMessage defaultMessage="Start receiver automatically" />
+                  }
+                  description={
+                    <FormattedMessage defaultMessage="When enabled, Voquill will start the multi-device receiver automatically on launch using the saved receiver port." />
+                  }
+                  action={
+                    <Switch
+                      edge="end"
+                      checked={remoteReceiverAutoStart}
+                      onChange={handleRemoteReceiverAutoStartChange}
+                    />
+                  }
+                />
+
+                {receiverStatus && (
               <Stack spacing={0.5} sx={{ mt: -1 }}>
                 <Typography variant="caption" color="text.secondary">
                   <FormattedMessage
@@ -561,6 +570,8 @@ export const MultiDeviceDialog = () => {
                   </Button>
                 </Stack>
               </Stack>
+                )}
+              </>
             )}
 
             <SettingSection
@@ -576,78 +587,80 @@ export const MultiDeviceDialog = () => {
               }
             />
 
-            <SettingSection
-              title={<FormattedMessage defaultMessage="Active receiver" />}
-              description={
-                <FormattedMessage defaultMessage="Choose which paired desktop should receive finalized dictation when sender mode is enabled." />
-              }
-              action={
-                <Select<string>
-                  size="small"
-                  value={remoteTargetDeviceId ?? ""}
-                  onChange={handleRemoteTargetDeviceChange}
-                  sx={{ minWidth: 180 }}
-                >
-                  <MenuItem value="">
-                    {intl.formatMessage({ defaultMessage: "Local device" })}
-                  </MenuItem>
-                  {pairedDevices.map((device) => (
-                    <MenuItem key={device.id} value={device.id}>
-                      {device.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              }
-            />
-
-            {remoteOutputEnabled && selectedRemoteTarget && (
-              <Stack spacing={0.5} sx={{ mt: -1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  <FormattedMessage
-                    defaultMessage="Active receiver: {name}"
-                    values={{ name: selectedRemoteTarget.name }}
-                  />
-                </Typography>
-                {selectedRemoteTarget.lastKnownAddress && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ wordBreak: "break-word" }}
-                  >
-                    <FormattedMessage
-                      defaultMessage="Receiver address: {address}"
-                      values={{
-                        address: selectedRemoteTarget.lastKnownAddress,
-                      }}
-                    />
-                  </Typography>
-                )}
-                <Typography variant="caption" color="text.secondary">
-                  <FormattedMessage
-                    defaultMessage="Receiver device ID: {deviceId}"
-                    values={{ deviceId: selectedRemoteTarget.id }}
-                  />
-                </Typography>
-              </Stack>
-            )}
-
             {remoteOutputEnabled && (
-              <SettingSection
-                title={<FormattedMessage defaultMessage="Transport test" />}
-                description={
-                  <FormattedMessage defaultMessage="Send a fixed test message to the active receiver to verify transport without using dictation." />
-                }
+              <>
+                <SettingSection
+                  title={<FormattedMessage defaultMessage="Active receiver" />}
+                  description={
+                    <FormattedMessage defaultMessage="Choose which paired desktop should receive finalized dictation when sender mode is enabled." />
+                  }
+                  action={
+                    <Select<string>
+                      size="small"
+                      value={remoteTargetDeviceId ?? ""}
+                      onChange={handleRemoteTargetDeviceChange}
+                      sx={{ minWidth: 180 }}
+                    >
+                      <MenuItem value="">
+                        {intl.formatMessage({ defaultMessage: "Local device" })}
+                      </MenuItem>
+                      {pairedDevices.map((device) => (
+                        <MenuItem key={device.id} value={device.id}>
+                          {device.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  }
+                />
+
+                {selectedRemoteTarget && (
+                  <Stack spacing={0.5} sx={{ mt: -1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      <FormattedMessage
+                        defaultMessage="Active receiver: {name}"
+                        values={{ name: selectedRemoteTarget.name }}
+                      />
+                    </Typography>
+                    {selectedRemoteTarget.lastKnownAddress && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ wordBreak: "break-word" }}
+                      >
+                        <FormattedMessage
+                          defaultMessage="Receiver address: {address}"
+                          values={{
+                            address: selectedRemoteTarget.lastKnownAddress,
+                          }}
+                        />
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      <FormattedMessage
+                        defaultMessage="Receiver device ID: {deviceId}"
+                        values={{ deviceId: selectedRemoteTarget.id }}
+                      />
+                    </Typography>
+                  </Stack>
+                )}
+
+                <SettingSection
+                  title={<FormattedMessage defaultMessage="Transport test" />}
+                  description={
+                    <FormattedMessage defaultMessage="Send a fixed test message to the active receiver to verify transport without using dictation." />
+                  }
                 action={
                   <Button
                     size="small"
                     variant="outlined"
                     onClick={handleSendTest}
                     disabled={!remoteTargetDeviceId || testBusy}
-                  >
-                    <FormattedMessage defaultMessage="Send test" />
-                  </Button>
-                }
-              />
+                    >
+                      <FormattedMessage defaultMessage="Send test" />
+                    </Button>
+                  }
+                />
+              </>
             )}
 
             <SettingSection
