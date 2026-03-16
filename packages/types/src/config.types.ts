@@ -7,6 +7,7 @@ export type FullConfig = {
   proWordsPerMonth: number;
   proTokensPerDay: number;
   proTokensPerMonth: number;
+  toneOverrides?: Record<string, string>;
 };
 
 const TOKEN_MULT = 18;
