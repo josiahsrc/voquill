@@ -323,6 +323,19 @@ function resolveGpuBuildState(target) {
     }
   }
 
+  if (target.includes("linux")) {
+    const pkgCheck = spawnSync("pkg-config", ["--exists", "vulkan"], {
+      stdio: "ignore",
+    });
+    if (pkgCheck.status !== 0) {
+      return {
+        canBuildNative: false,
+        reason:
+          "Vulkan development libraries not found (pkg-config --exists vulkan failed)",
+      };
+    }
+  }
+
   return {
     canBuildNative: true,
     reason: null,
