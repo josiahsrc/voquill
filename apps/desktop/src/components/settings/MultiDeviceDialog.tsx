@@ -263,7 +263,6 @@ export const MultiDeviceDialog = () => {
     setTestBusy(true);
     try {
       await sendRemoteTestOutput(remoteTargetDeviceId);
-      showSnackbar("Remote test message sent.");
     } catch (error) {
       showErrorSnackbar(error);
     } finally {
@@ -350,7 +349,7 @@ export const MultiDeviceDialog = () => {
     receiverStatus?.lastDeliveryStatus === "failed";
 
   const remoteTargetSummary =
-    pairedDevices.length > 0
+    pairedDevices.some((device) => device.role === "receiver")
       ? intl.formatMessage({
           defaultMessage:
             "Route finalized dictation to a paired desktop instead of inserting locally.",
@@ -361,6 +360,9 @@ export const MultiDeviceDialog = () => {
         });
   const selectedRemoteTarget =
     pairedDevices.find((device) => device.id === remoteTargetDeviceId) ?? null;
+  const receiverDevices = pairedDevices.filter(
+    (device) => device.role === "receiver",
+  );
   const hasPendingReceiverPortChange =
     receiverPortDraft.trim() !==
     (remoteReceiverPort == null ? "" : String(remoteReceiverPort));
@@ -609,7 +611,7 @@ export const MultiDeviceDialog = () => {
                           defaultMessage: "Select a paired receiver",
                         })}
                       </MenuItem>
-                      {pairedDevices.map((device) => (
+                      {receiverDevices.map((device) => (
                         <MenuItem key={device.id} value={device.id}>
                           {device.name}
                         </MenuItem>
