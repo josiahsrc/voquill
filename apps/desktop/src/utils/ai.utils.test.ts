@@ -273,8 +273,7 @@ Example 2:
     });
 
     it("should skip non-JSON inline code and return raw text", () => {
-      const input =
-        "Some text with `startDictationRecording` and more text";
+      const input = "Some text with `startDictationRecording` and more text";
       expect(extractJsonFromMarkdown(input)).toBe(input.trim());
     });
 
