@@ -4,10 +4,13 @@ import type {
   RemoteReceiverStatus,
 } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { produceAppState } from "../store";
+import { getAppState, produceAppState } from "../store";
 import { registerPairedRemoteDevices } from "../utils/app.utils";
 import { getPlatform } from "../utils/platform.utils";
-import { setRemoteTargetDeviceId } from "./user.actions";
+import {
+  setRemoteOutputEnabled,
+  setRemoteTargetDeviceId,
+} from "./user.actions";
 
 const INVITE_PREFIX = "voquill-pair:";
 
@@ -87,6 +90,8 @@ export const pairWithRemoteInvite = async (
   inviteCode: string,
 ): Promise<PairedRemoteDevice> => {
   const invite = parseRemotePairingInvite(inviteCode);
+  const previousTargetId =
+    getAppState().userPrefs?.remoteTargetDeviceId ?? null;
   const device = await invoke<PairedRemoteDevice>(
     "remote_sender_pair_with_receiver",
     {
@@ -104,5 +109,8 @@ export const pairWithRemoteInvite = async (
     registerPairedRemoteDevices(draft, [device]);
   });
   await setRemoteTargetDeviceId(device.id);
+  if (previousTargetId === invite.receiverDeviceId) {
+    await setRemoteOutputEnabled(true);
+  }
   return device;
 };

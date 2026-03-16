@@ -55,6 +55,13 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
       ) ?? false,
     [transcription?.warnings],
   );
+  const sentToRemoteWarning = useMemo(
+    () =>
+      transcription?.warnings?.find((warning) =>
+        warning.startsWith("Sent to paired device:"),
+      ) ?? null,
+    [transcription?.warnings],
+  );
 
   const handleDetailsOpen = useCallback(() => {
     openTranscriptionDetailsDialog(id);
@@ -138,6 +145,15 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               variant="outlined"
               label={intl.formatMessage({ defaultMessage: "Remote" })}
             />
+          )}
+          {sentToRemoteWarning && (
+            <Tooltip title={sentToRemoteWarning} placement="top">
+              <Chip
+                size="small"
+                variant="outlined"
+                label={intl.formatMessage({ defaultMessage: "Sent" })}
+              />
+            </Tooltip>
           )}
         </Stack>
         <Stack direction="row" spacing={1}>

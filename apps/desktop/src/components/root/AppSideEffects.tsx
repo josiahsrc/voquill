@@ -28,6 +28,8 @@ import {
 import {
   migrateLocalUserToCloud,
   refreshCurrentUser,
+  setRemoteOutputEnabled,
+  setRemoteTargetDeviceId,
 } from "../../actions/user.actions";
 import { useAsyncData, useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
@@ -343,6 +345,13 @@ export const AppSideEffects = () => {
       await loadPairedRemoteDevices();
       await refreshRemoteReceiverStatus();
       const prefs = getMyUserPreferences(getAppState());
+      if (
+        prefs?.remoteTargetDeviceId &&
+        !getAppState().pairedRemoteDeviceById[prefs.remoteTargetDeviceId]
+      ) {
+        await setRemoteTargetDeviceId(null);
+        await setRemoteOutputEnabled(false);
+      }
       const receiverStatus = getAppState().remoteReceiverStatus;
       if (prefs?.remoteReceiverAutoStart && !receiverStatus?.enabled) {
         await startRemoteReceiver(prefs.remoteReceiverPort ?? null);

@@ -25,6 +25,8 @@ import { getToneIdToUse, VERBATIM_TONE_ID } from "../utils/tone.utils";
 import { getMyUserPreferences } from "../utils/user.utils";
 import { BaseStrategy } from "./base.strategy";
 
+const REMOTE_SENT_WARNING_PREFIX = "Sent to paired device:";
+
 export class DictationStrategy extends BaseStrategy {
   private streamedSegmentCount = 0;
   private streamedProcessedText = "";
@@ -36,6 +38,24 @@ export class DictationStrategy extends BaseStrategy {
 
   get hasStreamedSegments(): boolean {
     return this.streamedSegmentCount > 0;
+  }
+
+  private getActiveRemoteTargetName(): string | null {
+    const prefs = getMyUserPreferences(getAppState());
+    if (!prefs?.remoteOutputEnabled || !prefs.remoteTargetDeviceId) {
+      return null;
+    }
+
+    return (
+      getAppState().pairedRemoteDeviceById[prefs.remoteTargetDeviceId]?.name ?? null
+    );
+  }
+
+  private getRemoteSentWarning(): string[] {
+    const targetName = this.getActiveRemoteTargetName();
+    return targetName
+      ? [`${REMOTE_SENT_WARNING_PREFIX} ${targetName}.`]
+      : [];
   }
 
   handleInterimSegment(segment: string): void {
@@ -119,6 +139,7 @@ export class DictationStrategy extends BaseStrategy {
     args: HandleTranscriptParams,
   ): Promise<HandleTranscriptResult> {
     const sanitizedTranscript = this.sanitizeTranscript(args.rawTranscript);
+    const remoteWarnings = this.getRemoteSentWarning();
 
     await this.pasteQueue;
     try {
@@ -144,7 +165,7 @@ export class DictationStrategy extends BaseStrategy {
       transcript: transcript,
       sanitizedTranscript,
       postProcessMetadata: {},
-      postProcessWarnings: [],
+      postProcessWarnings: remoteWarnings,
     };
   }
 
@@ -183,6 +204,7 @@ export class DictationStrategy extends BaseStrategy {
             currentAppId: args.currentApp?.id ?? null,
           });
           if (result.remote && result.delivered) {
+            postProcessWarnings.push(...this.getRemoteSentWarning());
             showSnackbar("Remote dictation delivered.", { mode: "success" });
           }
 
