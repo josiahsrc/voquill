@@ -253,7 +253,7 @@ export const MultiDeviceDialog = () => {
 
   const handleSendTest = async () => {
     if (!remoteTargetDeviceId) {
-      showErrorSnackbar("Select a remote target device first.");
+      showErrorSnackbar("Select a paired receiver first.");
       return;
     }
     if (testBusy) {

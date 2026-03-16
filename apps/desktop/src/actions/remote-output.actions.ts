@@ -23,7 +23,7 @@ export const sendTextToActiveRemoteTarget = async (
   const state = getAppState();
   const target = getActiveRemoteTarget(state);
   if (!target) {
-    showErrorSnackbar("Select a remote target device first.");
+    showErrorSnackbar("Select a paired receiver first.");
     return;
   }
 

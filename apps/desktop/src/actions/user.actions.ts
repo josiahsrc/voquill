@@ -548,7 +548,7 @@ export const setRemoteOutputEnabled = async (
 ): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.remoteOutputEnabled = enabled;
-  }, "Failed to save remote output preference. Please try again.");
+  }, "Failed to save multi-device sender preference. Please try again.");
 };
 
 export const setRemoteTargetDeviceId = async (
@@ -557,7 +557,7 @@ export const setRemoteTargetDeviceId = async (
   await updateUserPreferences((preferences) => {
     preferences.remoteTargetDeviceId = deviceId;
     preferences.remoteOutputEnabled = Boolean(deviceId);
-  }, "Failed to save remote target device. Please try again.");
+  }, "Failed to save paired receiver selection. Please try again.");
 };
 
 export const setRemoteReceiverPort = async (
@@ -573,7 +573,7 @@ export const setRemoteReceiverAutoStart = async (
 ): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.remoteReceiverAutoStart = enabled;
-  }, "Failed to save remote receiver auto-start preference. Please try again.");
+  }, "Failed to save receiver auto-start preference. Please try again.");
 };
 
 export const setStylingMode = async (

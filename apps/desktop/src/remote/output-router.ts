@@ -6,8 +6,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
 import { getMyUserPreferences } from "../utils/user.utils";
 
-// VRT-1 establishes the routing boundary and preference contract.
-// Remote delivery is wired in later slices; this keeps local behavior intact for now.
 export const routeTranscriptOutput = async (
   args: RouteTranscriptOutputArgs,
 ): Promise<RouteTranscriptOutputResult> => {

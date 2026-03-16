@@ -149,7 +149,9 @@ export class DictationStrategy extends BaseStrategy {
         currentAppId: args.currentApp?.id ?? null,
       });
       if (result.remote && result.delivered) {
-        showSnackbar("Remote dictation delivered.", { mode: "success" });
+        showSnackbar("Transcript sent to paired receiver.", {
+          mode: "success",
+        });
       }
     } catch {
       // Non-critical trailing space
@@ -205,7 +207,9 @@ export class DictationStrategy extends BaseStrategy {
           });
           if (result.remote && result.delivered) {
             postProcessWarnings.push(...this.getRemoteSentWarning());
-            showSnackbar("Remote dictation delivered.", { mode: "success" });
+            showSnackbar("Transcript sent to paired receiver.", {
+              mode: "success",
+            });
           }
 
           getLogger().info("Transcript output routed successfully");
