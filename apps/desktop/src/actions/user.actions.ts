@@ -548,9 +548,6 @@ export const setRemoteOutputEnabled = async (
 ): Promise<void> => {
   await updateUserPreferences((preferences) => {
     preferences.remoteOutputEnabled = enabled;
-    if (!enabled) {
-      preferences.remoteTargetDeviceId = null;
-    }
   }, "Failed to save remote output preference. Please try again.");
 };
 
