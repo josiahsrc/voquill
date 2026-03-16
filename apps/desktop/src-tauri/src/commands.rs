@@ -103,6 +103,16 @@ pub struct RemoteSenderDeliverArgs {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteSenderPairArgs {
+    pub receiver_device_id: String,
+    pub receiver_name: String,
+    pub receiver_platform: String,
+    pub receiver_address: String,
+    pub pairing_code: String,
+}
+
+#[derive(serde::Deserialize)]
 pub enum AudioClip {
     #[serde(rename = "start_recording_clip")]
     StartRecordingClip,
@@ -415,6 +425,24 @@ pub async fn remote_sender_deliver_final_text(
         &args.target_device_id,
         &args.text,
         &args.mode,
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn remote_sender_pair_with_receiver(
+    args: RemoteSenderPairArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<crate::domain::PairedRemoteDevice, String> {
+    crate::system::remote_sender::pair_with_receiver(
+        database.pool(),
+        receiver_state.inner().clone(),
+        &args.receiver_device_id,
+        &args.receiver_name,
+        &args.receiver_platform,
+        &args.receiver_address,
+        &args.pairing_code,
     )
     .await
 }

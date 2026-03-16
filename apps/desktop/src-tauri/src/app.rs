@@ -195,6 +195,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::remote_receiver_stop,
             crate::commands::remote_receiver_status,
             crate::commands::remote_sender_deliver_final_text,
+            crate::commands::remote_sender_pair_with_receiver,
             crate::commands::start_recording,
             crate::commands::stop_recording,
             crate::commands::store_transcription_audio,

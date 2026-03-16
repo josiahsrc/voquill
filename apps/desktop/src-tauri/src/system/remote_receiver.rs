@@ -1,3 +1,4 @@
+use rand::{rngs::OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::net::UdpSocket;
@@ -14,6 +15,13 @@ pub const EVT_REMOTE_FINAL_TEXT_RECEIVED: &str = "remote_final_text_received";
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum IncomingEnvelope {
+    PairingRequest {
+        request_id: String,
+        sender_device_id: String,
+        sender_device_name: String,
+        sender_platform: String,
+        pairing_code: String,
+    },
     SessionHello {
         session_id: String,
         sender_device_id: String,
@@ -36,6 +44,13 @@ enum IncomingEnvelope {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum OutgoingEnvelope {
+    PairingAccept {
+        request_id: String,
+        receiver_device_id: String,
+        receiver_device_name: String,
+        receiver_platform: String,
+        shared_secret: String,
+    },
     SessionAck {
         session_id: String,
         receiver_device_id: String,
@@ -134,6 +149,12 @@ pub fn stop(state: RemoteReceiverState) {
     state.stop();
 }
 
+fn generate_shared_secret() -> String {
+    let mut bytes = [0u8; 16];
+    OsRng.fill_bytes(&mut bytes);
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 async fn handle_connection(
     stream: TcpStream,
     pool: SqlitePool,
@@ -153,6 +174,70 @@ async fn handle_connection(
             .map_err(|err| format!("Failed to parse receiver message: {err}"))?;
 
         match envelope {
+            IncomingEnvelope::PairingRequest {
+                request_id,
+                sender_device_id,
+                sender_device_name,
+                sender_platform,
+                pairing_code,
+            } => {
+                if pairing_code != state.status().pairing_code {
+                    state.record_error(
+                        Some(sender_device_id.clone()),
+                        None,
+                        "Pairing code is invalid.".to_string(),
+                        None,
+                        None,
+                        None,
+                    );
+                    write_message(
+                        &mut writer,
+                        &OutgoingEnvelope::DeliveryError {
+                            session_id: String::new(),
+                            event_id: String::new(),
+                            sequence: 0,
+                            code: "invalid_pairing_code".to_string(),
+                            message: "Pairing code is invalid.".to_string(),
+                        },
+                    )
+                    .await?;
+                    continue;
+                }
+
+                let shared_secret = generate_shared_secret();
+                let sender_device = crate::domain::PairedRemoteDevice {
+                    id: sender_device_id.clone(),
+                    name: sender_device_name,
+                    platform: sender_platform,
+                    role: "sender".to_string(),
+                    shared_secret: shared_secret.clone(),
+                    paired_at: chrono::Utc::now().to_rfc3339(),
+                    last_seen_at: None,
+                    last_known_address: None,
+                    trusted: true,
+                };
+
+                crate::db::paired_remote_device_queries::upsert_paired_remote_device(
+                    pool.clone(),
+                    &sender_device,
+                )
+                .await
+                .map_err(|err| format!("Failed to store paired sender: {err}"))?;
+
+                state.rotate_pairing_code();
+                let receiver_status = state.status();
+                write_message(
+                    &mut writer,
+                    &OutgoingEnvelope::PairingAccept {
+                        request_id,
+                        receiver_device_id: receiver_status.device_id,
+                        receiver_device_name: receiver_status.device_name,
+                        receiver_platform: receiver_status.device_platform,
+                        shared_secret,
+                    },
+                )
+                .await?;
+            }
             IncomingEnvelope::SessionHello {
                 session_id,
                 sender_device_id,

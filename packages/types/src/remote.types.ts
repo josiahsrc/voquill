@@ -23,10 +23,20 @@ export type RemoteOutputPreferences = {
   remoteTargetDeviceId: Nullable<string>;
 };
 
+export type RemotePairingInvite = {
+  version: 1;
+  receiverDeviceId: string;
+  receiverDeviceName: string;
+  receiverPlatform: RemoteDevicePlatform;
+  receiverAddress: string;
+  pairingCode: string;
+};
+
 export type RemoteReceiverStatus = {
   enabled: boolean;
   deviceId: string;
   deviceName: string;
+  devicePlatform: RemoteDevicePlatform;
   listenAddress: Nullable<string>;
   port: Nullable<number>;
   pairingCode: string;
@@ -56,6 +66,7 @@ export type PairingRequest = {
   requestId: string;
   senderDeviceId: string;
   senderDeviceName: string;
+  senderPlatform: RemoteDevicePlatform;
   pairingCode: string;
 };
 
@@ -64,6 +75,7 @@ export type PairingAccept = {
   requestId: string;
   receiverDeviceId: string;
   receiverDeviceName: string;
+  receiverPlatform: RemoteDevicePlatform;
   sharedSecret: string;
 };
 

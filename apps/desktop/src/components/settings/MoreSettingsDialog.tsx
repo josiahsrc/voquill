@@ -24,6 +24,10 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
 import { sendRemoteTestOutput } from "../../actions/remote-output.actions";
 import {
+  buildRemotePairingInvite,
+  pairWithRemoteInvite,
+} from "../../actions/remote-pairing.actions";
+import {
   deletePairedRemoteDevice,
   upsertPairedRemoteDevice,
 } from "../../actions/paired-remote-device.actions";
@@ -70,6 +74,9 @@ export const MoreSettingsDialog = () => {
   const [pairPlatform, setPairPlatform] =
     useState<RemoteDevicePlatform>("windows");
   const [pairRole, setPairRole] = useState<RemoteDeviceRole>("receiver");
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [inviteCodeDraft, setInviteCodeDraft] = useState("");
+  const [pairingBusy, setPairingBusy] = useState(false);
   const [testBusy, setTestBusy] = useState(false);
   const [
     open,
@@ -316,6 +323,45 @@ export const MoreSettingsDialog = () => {
       showErrorSnackbar(error);
     } finally {
       setTestBusy(false);
+    }
+  };
+
+  const handleCopyInvite = async () => {
+    if (!receiverStatus) {
+      return;
+    }
+
+    const invite = buildRemotePairingInvite(receiverStatus);
+    if (!invite) {
+      showErrorSnackbar(
+        "Enable the remote receiver first so Voquill can generate an invite.",
+      );
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(invite);
+      showSnackbar("Remote pairing invite copied.", { mode: "success" });
+    } catch (error) {
+      showErrorSnackbar(error);
+    }
+  };
+
+  const handleImportInvite = async () => {
+    if (pairingBusy) {
+      return;
+    }
+
+    setPairingBusy(true);
+    try {
+      const device = await pairWithRemoteInvite(inviteCodeDraft);
+      showSnackbar(`Paired with ${device.name}.`, { mode: "success" });
+      setImportDialogOpen(false);
+      setInviteCodeDraft("");
+    } catch (error) {
+      showErrorSnackbar(error);
+    } finally {
+      setPairingBusy(false);
     }
   };
 
@@ -646,8 +692,25 @@ export const MoreSettingsDialog = () => {
                 </Typography>
               )}
               <Typography variant="caption" color="text.secondary">
-                <FormattedMessage defaultMessage="Automated pairing is still in progress. For now, add trusted devices manually on both machines using the device IDs, receiver address, and a shared secret." />
+                <FormattedMessage defaultMessage="Use Copy invite on the receiver machine, then Import invite on the sender machine. Manual trusted-device entry still works as a fallback." />
               </Typography>
+              <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={handleCopyInvite}
+                  disabled={!receiverStatus.enabled}
+                >
+                  <FormattedMessage defaultMessage="Copy invite" />
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setImportDialogOpen(true)}
+                >
+                  <FormattedMessage defaultMessage="Import invite" />
+                </Button>
+              </Stack>
             </Stack>
           )}
 
@@ -879,6 +942,54 @@ export const MoreSettingsDialog = () => {
           </Button>
           <Button variant="contained" onClick={handleSaveManualPair}>
             <FormattedMessage defaultMessage="Save" />
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => {
+          if (!pairingBusy) {
+            setImportDialogOpen(false);
+          }
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <FormattedMessage defaultMessage="Import remote pairing invite" />
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ pt: 0.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              <FormattedMessage defaultMessage="Paste the invite copied from the receiver machine. Voquill will trust both devices automatically." />
+            </Typography>
+            <TextField
+              label={intl.formatMessage({ defaultMessage: "Pairing invite" })}
+              value={inviteCodeDraft}
+              onChange={(event) => setInviteCodeDraft(event.target.value)}
+              multiline
+              minRows={3}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setImportDialogOpen(false);
+              setInviteCodeDraft("");
+            }}
+            disabled={pairingBusy}
+          >
+            <FormattedMessage defaultMessage="Cancel" />
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleImportInvite}
+            disabled={!inviteCodeDraft.trim() || pairingBusy}
+          >
+            <FormattedMessage defaultMessage="Pair" />
           </Button>
         </DialogActions>
       </Dialog>

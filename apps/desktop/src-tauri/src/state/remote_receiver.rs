@@ -22,6 +22,7 @@ pub struct RemoteReceiverStatus {
     pub last_target_class_name: Option<String>,
     pub last_target_title: Option<String>,
     pub last_target_editable: Option<bool>,
+    pub device_platform: String,
 }
 
 struct RemoteReceiverStateInner {
@@ -70,6 +71,7 @@ impl RemoteReceiverState {
                     last_target_class_name: None,
                     last_target_title: None,
                     last_target_editable: None,
+                    device_platform: std::env::consts::OS.to_string(),
                 },
                 shutdown: None,
             })),
@@ -101,6 +103,11 @@ impl RemoteReceiverState {
         inner.status.enabled = false;
         inner.status.listen_address = None;
         inner.status.port = None;
+    }
+
+    pub fn rotate_pairing_code(&self) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.status.pairing_code = generate_pairing_code();
     }
 
     pub fn record_delivery(
@@ -145,8 +152,7 @@ impl RemoteReceiverState {
 }
 
 fn generate_pairing_code() -> String {
-    let mut bytes = [0u8; 4];
+    let mut bytes = [0u8; 12];
     OsRng.fill_bytes(&mut bytes);
-    let value = u32::from_le_bytes(bytes) % 1_000_000;
-    format!("{value:06}")
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
