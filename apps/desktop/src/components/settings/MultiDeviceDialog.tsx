@@ -600,8 +600,10 @@ export const MultiDeviceDialog = () => {
                       onChange={handleRemoteTargetDeviceChange}
                       sx={{ minWidth: 180 }}
                     >
-                      <MenuItem value="">
-                        {intl.formatMessage({ defaultMessage: "Local device" })}
+                      <MenuItem value="" disabled>
+                        {intl.formatMessage({
+                          defaultMessage: "Select a paired receiver",
+                        })}
                       </MenuItem>
                       {pairedDevices.map((device) => (
                         <MenuItem key={device.id} value={device.id}>
