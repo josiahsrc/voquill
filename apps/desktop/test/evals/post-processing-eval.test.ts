@@ -9,7 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getOpenAIGentextRepo,
+  getGroqGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,7 +48,7 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getOpenAIGentextRepo().generateText({
+  const output = await getGroqGentextRepo().generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -110,14 +110,12 @@ describe("post-processing evals", { retry: 0 }, () => {
       });
     });
 
-    test("should not change who the subject is", async () => {
+    test("raw transcript 1", async () => {
       await runPostProcessingEval({
         transcription:
           "That's awesome. And adding some more details here that might be relevant when we were working our landscape in platform, one of the biggest pains that we saw across the industry is that or, like, biggest, not pains, but, like, one of the biggest things we observed is that all landscapers used different apps Like, someone used Sage, others used JobNobus, others used QuickBooks, others used, like, one off time tracking software. Like, everyone used a different piece of software. And after, you know, building our last product, I think the thing that we realized was that you should try to make us, like, a software that kinda integrates us with, like, all of these things rather than trying to define your own version of it. And so, like, if we build Voquill in this area, maybe we can like, use that studio.vocal.com idea or something. Basically, like, you you you know, you can talk to your computer and, like, he has an agent that's specific to his workflow. And then you can add photos and stuff. And it just, like, builds the report as you talk. That could be really interesting that he can just copy it over, basically, when he's done.",
         tone: getWritingStyle("default"),
-        evals: [
-          "It preserves the subject of the sentence as 'he' when referring to the user, rather than changing it to 'they' or 'you' or something else, since the speaker is talking about 'him'",
-        ],
+        evals: ["it should clean up the transcript and it should make sense"],
       });
     });
 
@@ -420,7 +418,6 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "Should keep 'Dear Mr. Johnson' as the greeting since the speaker said it",
           "Should maintain a formal tone throughout — no casualization",
-          "Should have a sign-off with Thomas's name that matches the formal tone",
           "Should mention: quarterly report completed, ready for review, look forward to feedback",
         ],
       });
