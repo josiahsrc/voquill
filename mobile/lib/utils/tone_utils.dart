@@ -126,7 +126,7 @@ List<Tone> applyToneOverrides(
   return tones.map((tone) {
     final override = overrides[tone.id];
     if (override != null) {
-      return (tone.draft()..name = override).save();
+      return (tone.draft()..promptTemplate = override).save();
     }
     return tone;
   }).toList();
