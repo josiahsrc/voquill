@@ -16,6 +16,7 @@ class FullConfig with EquatableMixin {
   final int proWordsPerMonth;
   final int proTokensPerDay;
   final int proTokensPerMonth;
+  final Map<String, String>? toneOverrides;
 
   const FullConfig({
     required this.freeWordsPerDay,
@@ -26,6 +27,7 @@ class FullConfig with EquatableMixin {
     required this.proWordsPerMonth,
     required this.proTokensPerDay,
     required this.proTokensPerMonth,
+    this.toneOverrides,
   });
 
   factory FullConfig.fromJson(Map<String, dynamic> json) =>
@@ -42,5 +44,6 @@ class FullConfig with EquatableMixin {
     proWordsPerMonth,
     proTokensPerDay,
     proTokensPerMonth,
+    toneOverrides,
   ];
 }

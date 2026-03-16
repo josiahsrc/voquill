@@ -119,6 +119,23 @@ List<Tone> mergeSystemTones(List<Tone> userTones) {
   return [...systemTones, ...userTones];
 }
 
+List<Tone> applyToneOverrides(
+  List<Tone> tones,
+  Map<String, String>? overrides,
+) {
+  if (overrides == null || overrides.isEmpty) {
+    return tones;
+  }
+
+  return tones.map((tone) {
+    final override = overrides[tone.id];
+    if (override != null) {
+      return (tone.draft()..name = override).save();
+    }
+    return tone;
+  }).toList();
+}
+
 List<String> getActiveManualToneIds(AppState state) {
   final toneIds = state.user?.activeToneIds ?? [];
   final validToneIds = toneIds
