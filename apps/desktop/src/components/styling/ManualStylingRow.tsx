@@ -247,7 +247,8 @@ export const ManualStylingRow = ({ id }: ManualStylingRowProps) => {
             overflow: "hidden",
           }}
         >
-          {tone?.description || formatPromptForPreview(tone?.promptTemplate ?? "-")}
+          {tone?.description ||
+            formatPromptForPreview(tone?.promptTemplate ?? "-")}
         </Typography>
       }
       trailing={trailing}
