@@ -197,10 +197,7 @@ const startNewServerStreaming = async (
             `[NewServer WebSocket] Socket not open at finalize, using recovered transcript if available (wsState=${ws?.readyState})`,
           );
           settleFinalize(
-            getRecoveredNewServerTranscriptResult(
-              committedTranscript,
-              warning,
-            ),
+            getRecoveredNewServerTranscriptResult(committedTranscript, warning),
           );
         }
       });
