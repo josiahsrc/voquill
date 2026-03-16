@@ -55,8 +55,6 @@ export async function runEval({
   finalText = finalText.trim();
 
   const repo = getGroqGentextRepo();
-  console.log("Orig Text:", originalText);
-  console.log("Finl Text:", finalText);
 
   // for (const e of evals) {
   const promises = evals.map(async (e) => {

@@ -9,7 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getGroqGentextRepo,
+  getOpenAIGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,7 +48,7 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getGroqGentextRepo().generateText({
+  const output = await getOpenAIGentextRepo().generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -75,12 +75,18 @@ const runPostProcessingEval = async ({
   tone: ToneConfig;
   evals: Eval[];
 }): Promise<void> => {
+  const startTime = Date.now();
   const finalText = await postProcess({
     tone,
     transcription,
     language,
     userName,
   });
+
+  const duration = (Date.now() - startTime) / 1000;
+  console.log(`Duration: ${duration.toFixed(2)} seconds`);
+  console.log("Orig Text:", transcription);
+  console.log("Finl Text:", finalText);
 
   await runEval({
     originalText: transcription,
@@ -96,6 +102,23 @@ describe("post-processing evals", { retry: 0 }, () => {
         transcription: "Hey Michael",
         tone: getWritingStyle("default"),
         evals: ["It shouldn't really change anything"],
+      });
+    });
+
+    test("should handle emojis", async () => {
+      await runPostProcessingEval({
+        transcription: "Hey, can you send me the report? smiley face",
+        tone: getWritingStyle("default"),
+        evals: ["It should convert 'smiley face' into an actual smiling emoji"],
+      });
+    });
+
+    test("crazy transcript 1", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Can you fix the Linux build? I guess so we have those two workflows. Build desktop and we also have release desktop. And I I haven't, like, super looked into this, but I'm pretty sure build desktop yeah. Yeah. Okay. Build desktop doesn't actually ship with Vulcan. And so we don't we don't want the build desktop to actually build for Voquill, and it should not build the sidecars. Or, like, it should not build the GPU sidecars rather. It doesn't need to. But it looks like our built pipeline isn't supporting that because we're getting we're getting some errors. Yeah. If I just I pasted the raw logs from the job inside of a file. You can kinda you can kinda start that file if you're interested in seeing, like, where the where the problem is. But yeah, I kind of gave the high level context to the very top of this prompt so I think you can you can see it from there too.",
+        tone: getWritingStyle("default"),
+        evals: ["It should make it make sense"],
       });
     });
 

@@ -36,6 +36,7 @@ List<Tone> getDefaultSystemTones() => const [
 - FORMATTING: Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
 - CODE: Put backticks around code terms like filenames, function names, and code snippets
 - CORRECTIONS: Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
+- EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
 - **CRITICAL**: Do NOT use em-dashes in your response
     ''',
     isSystem: true,
@@ -116,6 +117,23 @@ List<Tone> getDefaultSystemTones() => const [
 List<Tone> mergeSystemTones(List<Tone> userTones) {
   final systemTones = getDefaultSystemTones();
   return [...systemTones, ...userTones];
+}
+
+List<Tone> applyToneOverrides(
+  List<Tone> tones,
+  Map<String, String>? overrides,
+) {
+  if (overrides == null || overrides.isEmpty) {
+    return tones;
+  }
+
+  return tones.map((tone) {
+    final override = overrides[tone.id];
+    if (override != null) {
+      return (tone.draft()..name = override).save();
+    }
+    return tone;
+  }).toList();
 }
 
 List<String> getActiveManualToneIds(AppState state) {

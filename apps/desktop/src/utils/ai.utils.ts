@@ -37,10 +37,15 @@ export const extractJsonFromMarkdown = (text: string): string => {
     return jsonBlockMatch[1].trim();
   }
 
-  // Try to extract JSON from inline code blocks
-  const inlineJsonMatch = text.match(/`([^`]+)`/);
+  // Try to extract JSON from inline code blocks (only if content looks like JSON)
+  const inlineJsonMatch = text.match(/`([^`]+)`/g);
   if (inlineJsonMatch) {
-    return inlineJsonMatch[1].trim();
+    for (const match of inlineJsonMatch) {
+      const content = match.slice(1, -1).trim();
+      if (content.startsWith("{") || content.startsWith("[")) {
+        return content;
+      }
+    }
   }
 
   // Return original text if no markdown formatting found

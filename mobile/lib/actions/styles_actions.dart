@@ -1,4 +1,5 @@
 import 'package:app/actions/snackbar_actions.dart';
+import 'package:app/api/config_api.dart';
 import 'package:app/api/tone_api.dart';
 import 'package:app/api/user_api.dart';
 import 'package:app/model/common_model.dart';
@@ -29,7 +30,13 @@ Future<void> loadStyles() async {
 
   try {
     final output = await ListMyTonesApi().call(null);
-    final allTones = mergeSystemTones(output.tones);
+    final mergedTones = mergeSystemTones(output.tones);
+
+    final config = await GetFullConfigApi().call(null);
+    final allTones = applyToneOverrides(
+      mergedTones,
+      config.config.toneOverrides,
+    );
 
     produceAppState((draft) {
       registerTones(draft, allTones);

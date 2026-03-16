@@ -1,11 +1,15 @@
 import { HandlerInput, HandlerOutput } from "@repo/functions";
 import { Nullable } from "@repo/types";
 import { countWords } from "@repo/utilities";
-import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
+import {
+	groqGenerateTextResponse,
+	groqTranscribeAudio,
+	openaiGenerateTextResponse,
+} from "@repo/voice-ai";
 import { AuthData } from "firebase-functions/tasks";
 import { mapCloudModelToGroqModel } from "../utils/ai.utils";
 import { checkAccess } from "../utils/check.utils";
-import { getGroqApiKey } from "../utils/env.utils";
+import { getGroqApiKey, getOpenAIApiKey } from "../utils/env.utils";
 import { ClientError } from "../utils/error.utils";
 import {
 	incrementTokenCount,
@@ -101,6 +105,14 @@ export const runGenerateText = async ({
 		console.log("Simulating text generation without actual AI generation");
 		generatedText = "Simulated generated text.";
 		tokensUsed = countWords(generatedText);
+	} else if (input.model === "medium") {
+		({ text: generatedText, tokensUsed } = await openaiGenerateTextResponse({
+			apiKey: getOpenAIApiKey(),
+			model: "gpt-5.4",
+			prompt: input.prompt,
+			system: input.system ?? undefined,
+			jsonResponse: input.jsonResponse ?? undefined,
+		}));
 	} else {
 		const model = mapCloudModelToGroqModel(input.model);
 		({ text: generatedText, tokensUsed } = await groqGenerateTextResponse({
