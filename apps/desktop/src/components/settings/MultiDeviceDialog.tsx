@@ -216,7 +216,7 @@ export const MultiDeviceDialog = () => {
     const deviceId = pairDeviceId.trim();
     const address = pairAddress.trim();
     const secret = pairSecret.trim();
-    const requiresAddress = pairRole === "receiver" || pairRole === "both";
+    const requiresAddress = pairRole === "receiver";
 
     if (!name || !deviceId || !secret || (requiresAddress && !address)) {
       showErrorSnackbar(
@@ -579,7 +579,7 @@ export const MultiDeviceDialog = () => {
             <SettingSection
               title={<FormattedMessage defaultMessage="Active receiver" />}
               description={
-                <FormattedMessage defaultMessage="Choose which paired desktop should receive finalized dictation. Only the selected receiver will be used." />
+                <FormattedMessage defaultMessage="Choose which paired desktop should receive finalized dictation when sender mode is enabled." />
               }
               action={
                 <Select<string>
@@ -600,7 +600,7 @@ export const MultiDeviceDialog = () => {
               }
             />
 
-            {selectedRemoteTarget && (
+            {remoteOutputEnabled && selectedRemoteTarget && (
               <Stack spacing={0.5} sx={{ mt: -1 }}>
                 <Typography variant="caption" color="text.secondary">
                   <FormattedMessage
@@ -631,22 +631,24 @@ export const MultiDeviceDialog = () => {
               </Stack>
             )}
 
-            <SettingSection
-              title={<FormattedMessage defaultMessage="Transport test" />}
-              description={
-                <FormattedMessage defaultMessage="Send a fixed test message to the active receiver to verify transport without using dictation." />
-              }
-              action={
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={handleSendTest}
-                  disabled={!remoteTargetDeviceId || testBusy}
-                >
-                  <FormattedMessage defaultMessage="Send test" />
-                </Button>
-              }
-            />
+            {remoteOutputEnabled && (
+              <SettingSection
+                title={<FormattedMessage defaultMessage="Transport test" />}
+                description={
+                  <FormattedMessage defaultMessage="Send a fixed test message to the active receiver to verify transport without using dictation." />
+                }
+                action={
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={handleSendTest}
+                    disabled={!remoteTargetDeviceId || testBusy}
+                  >
+                    <FormattedMessage defaultMessage="Send test" />
+                  </Button>
+                }
+              />
+            )}
 
             <SettingSection
               title={<FormattedMessage defaultMessage="Trusted devices" />}
@@ -724,9 +726,6 @@ export const MultiDeviceDialog = () => {
               </MenuItem>
               <MenuItem value="sender">
                 {intl.formatMessage({ defaultMessage: "Sender device" })}
-              </MenuItem>
-              <MenuItem value="both">
-                {intl.formatMessage({ defaultMessage: "Both roles" })}
               </MenuItem>
             </Select>
             <Select<RemoteDevicePlatform>
