@@ -24,7 +24,6 @@ import { Vector2 } from "../types/math.types";
 import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
 import { Toast } from "../types/toast.types";
-import { AgentRunState } from "./agent.state";
 import { ChatState, INITIAL_CHAT_STATE } from "./chat.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
@@ -91,7 +90,6 @@ export type AppState = {
   chatMessageIdsByConversationId: Record<string, string[]>;
   toolInfoById: Record<string, ToolInfo>;
   toolPermissionById: Record<string, ToolPermission>;
-  agentStateByConversationId: Record<string, AgentRunState>;
   streamingMessageById: Record<string, StreamingMessageState>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
@@ -148,7 +146,6 @@ export const INITIAL_APP_STATE: AppState = {
   chatMessageIdsByConversationId: {},
   toolInfoById: {},
   toolPermissionById: {},
-  agentStateByConversationId: {},
   streamingMessageById: {},
   overlayPhase: "idle",
   audioLevels: [],
