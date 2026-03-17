@@ -26,7 +26,6 @@ export const ConversationLayout = ({
   const messageIds = useAppStore(
     (s) => s.chatMessageIdsByConversationId[conversationId] ?? [],
   );
-  const sidecarRunning = useAppStore((s) => s.aiSidecar.status === "running");
   const toolPermissions = useAppStore((s) => s.toolPermissionById);
   const conversationPermissions = useMemo(
     () =>
@@ -170,14 +169,13 @@ export const ConversationLayout = ({
                 handleSend();
               }
             }}
-            disabled={!sidecarRunning}
             sx={{ px: 1 }}
           />
           <IconButton
             onClick={handleSend}
             color="primary"
             size="small"
-            disabled={!sidecarRunning || sending}
+            disabled={sending}
           >
             <SendRounded />
           </IconButton>

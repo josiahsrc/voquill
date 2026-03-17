@@ -11,7 +11,6 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { useAppStore } from "../../store";
 import { FadingScrollArea } from "../common/FadingScrollArea";
 import { ConversationListItem } from "./ConversationListItem";
-import { SidecarStatus } from "./SidecarStatus";
 
 type ConversationListLayoutProps = {
   selectedId: string | null;
@@ -46,12 +45,9 @@ export const ConversationListLayout = ({
         justifyContent="space-between"
         sx={{ px: 2, pr: 1, pt: 1.5 }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography variant="subtitle2">
-            <FormattedMessage defaultMessage="Chats" />
-          </Typography>
-          <SidecarStatus />
-        </Stack>
+        <Typography variant="subtitle2">
+          <FormattedMessage defaultMessage="Chats" />
+        </Typography>
         <Tooltip
           title={intl.formatMessage({ defaultMessage: "New chat" })}
           placement="top"

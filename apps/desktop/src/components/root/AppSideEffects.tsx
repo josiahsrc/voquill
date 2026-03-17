@@ -48,7 +48,6 @@ import {
 } from "../../utils/enterprise.utils";
 import { getIsDevMode } from "../../utils/env.utils";
 import { getLogger, initLogging } from "../../utils/log.utils";
-import { getAiSidecarManager } from "../../sidecars";
 import { isPermissionAuthorized } from "../../utils/permission.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
@@ -135,14 +134,6 @@ export const AppSideEffects = () => {
 
   useEffect(() => {
     void initLogging();
-  }, []);
-
-  useEffect(() => {
-    const manager = getAiSidecarManager();
-    void manager.ensureStarted();
-    return () => {
-      void manager.dispose();
-    };
   }, []);
 
   useAsyncEffect(async () => {

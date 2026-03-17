@@ -24,7 +24,9 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$APPDATA/transcription-audio/**"]
+        "scope": [
+          "$APPDATA/transcription-audio/**"
+        ]
       }
     }
   },
@@ -34,8 +36,7 @@
     "createUpdaterArtifacts": true,
     "externalBin": [
       "binaries/rust-transcription-cpu",
-      "binaries/rust-transcription-gpu",
-      "binaries/voquill-ai-sidecar"
+      "binaries/rust-transcription-gpu"
     ],
     "icon": [
       "icons/32x32.png",
@@ -63,7 +64,9 @@
   },
   "plugins": {
     "sql": {
-      "preload": ["sqlite:voquill.db"]
+      "preload": [
+        "sqlite:voquill.db"
+      ]
     },
     "updater": {
       "endpoints": [],

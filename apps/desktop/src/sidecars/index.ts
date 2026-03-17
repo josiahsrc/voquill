@@ -4,7 +4,6 @@ import {
   LOCAL_WHISPER_MODELS,
 } from "../utils/local-transcription.utils";
 import { getLogger } from "../utils/log.utils";
-import { AiSidecar } from "./ai.sidecar";
 import {
   LocalTranscriptionSidecar,
   SidecarRequestError,
@@ -27,13 +26,6 @@ export type {
   LocalSidecarTranscribeInput,
   LocalSidecarTranscribeOutput,
 } from "./local-transcription.sidecar";
-
-let aiSidecar: AiSidecar | null = null;
-
-export const getAiSidecarManager = (): AiSidecar => {
-  aiSidecar ??= new AiSidecar();
-  return aiSidecar;
-};
 
 class LocalTranscriptionSidecarFacade {
   private cpuSidecar = new LocalTranscriptionSidecar("cpu");

@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "core:event:default",
@@ -11,7 +13,14 @@
     "opener:default",
     {
       "identifier": "opener:allow-open-path",
-      "allow": [{ "path": "$APPLOG" }, { "path": "$APPLOG/**" }]
+      "allow": [
+        {
+          "path": "$APPLOG"
+        },
+        {
+          "path": "$APPLOG/**"
+        }
+      ]
     },
     "updater:default",
     "process:default",
@@ -25,11 +34,6 @@
         },
         {
           "name": "binaries/rust-transcription-gpu",
-          "sidecar": true,
-          "args": true
-        },
-        {
-          "name": "binaries/voquill-ai-sidecar",
           "sidecar": true,
           "args": true
         }

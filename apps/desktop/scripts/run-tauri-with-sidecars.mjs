@@ -75,7 +75,6 @@ function composeUniversalMacSidecars() {
   const sidecars = [
     "rust-transcription-cpu",
     "rust-transcription-gpu",
-    "voquill-ai-sidecar",
   ];
 
   for (const sidecarName of sidecars) {

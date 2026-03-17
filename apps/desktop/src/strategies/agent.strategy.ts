@@ -49,19 +49,6 @@ export class AgentStrategy extends BaseStrategy {
       };
     }
 
-    if (state.aiSidecar.status !== "running") {
-      return {
-        title: getIntl().formatMessage({
-          defaultMessage: "AI not available",
-        }),
-        body: getIntl().formatMessage({
-          defaultMessage:
-            "The AI assistant is not running. Please check your settings.",
-        }),
-        action: "open_agent_settings",
-      };
-    }
-
     return null;
   }
 

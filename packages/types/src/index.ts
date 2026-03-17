@@ -1,6 +1,5 @@
 export * from "./ai-llm.types";
 export * from "./ai-tool.types";
-export * from "./ai-sidecar.types";
 export * from "./chat.types";
 export * from "./json-schema.types";
 export * from "./api-refresh-token.types";
