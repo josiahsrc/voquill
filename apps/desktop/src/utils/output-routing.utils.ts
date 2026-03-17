@@ -4,7 +4,7 @@ import type {
 } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
-import { getMyUserPreferences } from "../utils/user.utils";
+import { getMyUserPreferences } from "./user.utils";
 
 export const routeTranscriptOutput = async (
   args: RouteTranscriptOutputArgs,
@@ -12,7 +12,7 @@ export const routeTranscriptOutput = async (
   const state = getAppState();
   const prefs = getMyUserPreferences(state);
   const currentApp = args.currentAppId
-    ? state.appTargetById[args.currentAppId] ?? null
+    ? (state.appTargetById[args.currentAppId] ?? null)
     : null;
 
   if (prefs?.remoteOutputEnabled && prefs.remoteTargetDeviceId) {
@@ -30,13 +30,18 @@ export const routeTranscriptOutput = async (
         mode: args.mode,
       },
     });
+
     return {
       delivered: true,
       remote: true,
     };
   }
 
-  await insertLocalTranscriptOutput(args.text, currentApp?.pasteKeybind ?? null);
+  await insertLocalTranscriptOutput(
+    args.text,
+    currentApp?.pasteKeybind ?? null,
+  );
+
   return {
     delivered: true,
     remote: false,

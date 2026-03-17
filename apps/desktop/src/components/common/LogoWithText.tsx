@@ -2,7 +2,7 @@ import { ArrowOutwardRounded, SouthWestRounded } from "@mui/icons-material";
 import { Chip, Stack, Tooltip, Typography, type StackProps } from "@mui/material";
 import { useIntl } from "react-intl";
 import { useAppStore } from "../../store";
-import { getActiveRemoteTarget, getRemoteReceiverStatus } from "../../remote/device.store";
+import { getActiveRemoteTarget, getRemoteReceiverStatus } from "../../utils/device.utils";
 import { getMyUserPreferences } from "../../utils/user.utils";
 import { Logo } from "./Logo";
 

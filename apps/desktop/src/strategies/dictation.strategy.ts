@@ -7,7 +7,7 @@ import {
   type PostProcessMetadata,
 } from "../actions/transcribe.actions";
 import { getIntl } from "../i18n";
-import { routeTranscriptOutput } from "../remote/output-router";
+import { routeTranscriptOutput } from "../utils/output-routing.utils";
 import { getAppState } from "../store";
 import type { OverlayPhase } from "../types/overlay.types";
 import type {

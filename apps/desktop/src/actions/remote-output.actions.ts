@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getActiveRemoteTarget } from "../remote/device.store";
+import { getActiveRemoteTarget } from "../utils/device.utils";
 import { getAppState } from "../store";
 import { showErrorSnackbar, showSnackbar } from "./app.actions";
 

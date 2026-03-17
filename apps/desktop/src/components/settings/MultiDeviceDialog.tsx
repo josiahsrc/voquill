@@ -43,7 +43,7 @@ import {
 import {
   getRemoteReceiverStatus,
   listPairedRemoteDevices,
-} from "../../remote/device.store";
+} from "../../utils/device.utils";
 import { produceAppState, useAppStore } from "../../store";
 import { getMyUserPreferences } from "../../utils/user.utils";
 import { SettingSection } from "../common/SettingSection";

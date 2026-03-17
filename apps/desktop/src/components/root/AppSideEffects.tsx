@@ -342,6 +342,12 @@ export const AppSideEffects = () => {
   useAsyncEffect(async () => {
     if (authReady) {
       await refreshCurrentUser();
+      setInitReady(true);
+    }
+  }, [authReady, isEnterprise]);
+
+  useAsyncEffect(async () => {
+    if (initReady) {
       await loadPairedRemoteDevices();
       await refreshRemoteReceiverStatus();
       const prefs = getMyUserPreferences(getAppState());
@@ -356,9 +362,8 @@ export const AppSideEffects = () => {
       if (prefs?.remoteReceiverAutoStart && !receiverStatus?.enabled) {
         await startRemoteReceiver(prefs.remoteReceiverPort ?? null);
       }
-      setInitReady(true);
     }
-  }, [authReady, isEnterprise]);
+  }, [initReady]);
 
   useEffect(() => {
     if (streamReady && initReady && !initialized && enterpriseReady) {

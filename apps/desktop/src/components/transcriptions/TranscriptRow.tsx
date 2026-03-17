@@ -19,7 +19,7 @@ import {
   openTranscriptionDetailsDialog,
 } from "../../actions/transcriptions.actions";
 import { getTranscriptionRepo } from "../../repos";
-import { getActiveRemoteTarget } from "../../remote/device.store";
+import { getActiveRemoteTarget } from "../../utils/device.utils";
 import { produceAppState, useAppStore } from "../../store";
 import { getIsVoquillCloudUser } from "../../utils/member.utils";
 import { TypographyWithMore } from "../common/TypographyWithMore";

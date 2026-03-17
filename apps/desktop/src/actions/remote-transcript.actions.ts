@@ -5,7 +5,7 @@ import { getAppState, produceAppState } from "../store";
 import { createId } from "../utils/id.utils";
 import { getLogger } from "../utils/log.utils";
 import { getMyEffectiveUserId, getMyUserPreferences } from "../utils/user.utils";
-import { insertLocalTranscriptOutput } from "../remote/output-router";
+import { insertLocalTranscriptOutput } from "../utils/output-routing.utils";
 import { showSnackbar } from "./app.actions";
 
 const REMOTE_TRANSCRIPT_WARNING_PREFIX = "Remote transcript received from";
