@@ -1,6 +1,6 @@
 import { getLocalStorage } from "./local-storage.utils";
 
-const TOOL_ALWAYS_ALLOW_PREFIX = "tool_always_allow2:";
+const TOOL_ALWAYS_ALLOW_PREFIX = "tool_always_allow:";
 
 export const getToolAlwaysAllow = (toolId: string): boolean => {
   const storage = getLocalStorage();
