@@ -1,7 +1,9 @@
+import { BuildRounded } from "@mui/icons-material";
 import { Box, Stack } from "@mui/material";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAppStore } from "../../store";
+import { OverflowTypography } from "../common/OverflowTypography";
 import { AgentActivity } from "./AgentActivity";
 
 type ChatMessageBubbleProps = {
@@ -10,10 +12,24 @@ type ChatMessageBubbleProps = {
 
 export const ChatMessageBubble = ({ id }: ChatMessageBubbleProps) => {
   const message = useAppStore((s) => s.chatMessageById[id]);
-  const isMe = message.role === "user";
   if (!message) {
     return null;
   }
+
+  const metadata = message.metadata as Record<string, unknown> | null;
+
+  if (metadata?.type === "tool-result") {
+    return (
+      <ToolResultBubble
+        toolName={metadata.toolName as string}
+        reason={metadata.reason as string | undefined}
+      />
+    );
+  }
+
+  if (message.role === "assistant" && !message.content?.trim()) return null;
+
+  const isMe = message.role === "user";
 
   return (
     <Stack>
@@ -62,6 +78,33 @@ export const ChatMessageBubble = ({ id }: ChatMessageBubbleProps) => {
           <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
         </Box>
       </Stack>
+    </Stack>
+  );
+};
+
+const ToolResultBubble = ({
+  toolName,
+  reason,
+}: {
+  toolName: string;
+  reason?: string;
+}) => {
+  const toolInfo = useAppStore((s) => s.toolInfoById[toolName]);
+
+  return (
+    <Stack
+      direction="row"
+      spacing={0.75}
+      alignItems="center"
+      sx={{ px: 0.5, minWidth: 0, overflow: "hidden" }}
+    >
+      <BuildRounded
+        sx={{ fontSize: 14, color: "text.secondary", flexShrink: 0 }}
+      />
+      <OverflowTypography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>
+        {toolInfo?.description ?? toolName}
+        {reason ? ` — ${reason}` : ""}
+      </OverflowTypography>
     </Stack>
   );
 };

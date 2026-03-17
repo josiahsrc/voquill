@@ -36,6 +36,7 @@
     "@mui/lab": "^7.0.0-beta.14",
     "@mui/material": "^7.1.0",
     "@mui/system": "^7.1.0",
+    "@repo/agent": "workspace:*",
     "@repo/functions": "workspace:*",
     "@repo/pricing": "workspace:*",
     "@repo/types": "workspace:*",

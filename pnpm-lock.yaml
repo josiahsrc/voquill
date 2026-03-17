@@ -44,6 +44,9 @@ importers:
       '@mui/system':
         specifier: ^7.1.0
         version: 7.3.9(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react@19.2.4)
+      '@repo/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@repo/functions':
         specifier: workspace:*
         version: link:../../packages/functions

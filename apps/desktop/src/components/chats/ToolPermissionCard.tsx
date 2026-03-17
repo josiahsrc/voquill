@@ -20,6 +20,7 @@ type ToolPermissionCardProps = {
 export const ToolPermissionCard = ({ permission }: ToolPermissionCardProps) => {
   const toolInfo = useAppStore((s) => s.toolInfoById[permission.toolId]);
   const isPending = permission.status === "pending";
+  const reason = permission.params.reason as string | undefined;
 
   return (
     <Stack direction="row" justifyContent="flex-start">
@@ -35,10 +36,11 @@ export const ToolPermissionCard = ({ permission }: ToolPermissionCardProps) => {
         }}
       >
         <Stack spacing={1}>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Typography variant="body2" fontWeight={600}>
-              {toolInfo?.description ?? permission.toolId}
-            </Typography>
+          <Stack spacing={0.25}>
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Typography variant="body2" fontWeight={600}>
+                {toolInfo?.description ?? permission.toolId}
+              </Typography>
             <Tooltip
               title={
                 <Box
@@ -63,10 +65,16 @@ export const ToolPermissionCard = ({ permission }: ToolPermissionCardProps) => {
                 sx={{ ml: "auto" }}
               />
             )}
+            </Stack>
+            {reason && (
+              <Typography variant="caption" color="text.secondary">
+                {reason}
+              </Typography>
+            )}
           </Stack>
 
           {isPending && (
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Stack direction="row" spacing={1} justifyContent="flex-start">
               <Chip
                 size="small"
                 variant="outlined"

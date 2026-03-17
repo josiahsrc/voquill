@@ -1,3 +1,4 @@
+import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseIcon from "@mui/icons-material/Close";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
@@ -203,6 +204,42 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
   );
 };
 
+const OverlayToolResultEntry = ({ message }: { message: ChatMessage }) => {
+  const theme = useTheme();
+  const meta = message.metadata as Record<string, unknown> | null;
+  const toolName = meta?.toolName as string | undefined;
+  const reason = meta?.reason as string | undefined;
+  const toolInfo = useAppStore((s) =>
+    toolName ? s.toolInfoById[toolName] : undefined,
+  );
+  const dimColor = alpha(theme.palette.common.white, 0.5);
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 0.75,
+        minWidth: 0,
+      }}
+    >
+      <BuildRoundedIcon sx={{ fontSize: 12, color: dimColor, flexShrink: 0 }} />
+      <Typography
+        sx={{
+          fontSize: 12,
+          color: dimColor,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {toolInfo?.description ?? toolName}
+        {reason ? ` — ${reason}` : ""}
+      </Typography>
+    </Box>
+  );
+};
+
 const OverlayAgentActivity = ({
   streaming,
 }: {
@@ -288,6 +325,7 @@ const OverlayToolPermissionCard = ({
   const theme = useTheme();
   const toolInfo = useAppStore((s) => s.toolInfoById[permission.toolId]);
   const isPending = permission.status === "pending";
+  const reason = permission.params.reason as string | undefined;
   const whiteHigh = alpha(theme.palette.common.white, 0.92);
   const whiteMid = alpha(theme.palette.common.white, 0.5);
 
@@ -315,6 +353,11 @@ const OverlayToolPermissionCard = ({
       <Typography sx={{ fontSize: 13, fontWeight: 600, color: whiteHigh }}>
         {toolInfo?.description ?? permission.toolId}
       </Typography>
+      {reason && (
+        <Typography sx={{ fontSize: 12, color: whiteMid, mt: 0.25 }}>
+          {reason}
+        </Typography>
+      )}
       {isPending && (
         <Box
           sx={{
@@ -426,15 +469,16 @@ export const AssistantModePanel = ({
 }: AssistantModePanelProps) => {
   const theme = useTheme();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const latestAssistantMessageRef = useRef<HTMLDivElement | null>(null);
   const latestUserMessage = getLatestMessageByRole(messages, "user");
   const userPromptPreview = latestUserMessage?.content
     ? formatUserPromptPreview(latestUserMessage.content)
     : null;
   const userPromptColor = alpha(theme.palette.common.white, 0.5);
-  const assistantMessages = messages.filter(
-    (message) => message.role === "assistant" || message.role === "system",
-  );
+  const assistantMessages = messages.filter((message) => {
+    if (message.role === "user") return false;
+    if (message.role === "assistant" && !message.content?.trim()) return false;
+    return true;
+  });
   const pillConversationId = useAppStore((s) => s.pillConversationId);
   const streamingMessageById = useAppStore((s) => s.streamingMessageById);
   const toolPermissions = useAppStore((s) => s.toolPermissionById);
@@ -449,27 +493,43 @@ export const AssistantModePanel = ({
     [toolPermissions, pillConversationId],
   );
   const isCompact = messages.length === 0 && pendingPermissions.length === 0;
-  const latestAssistantMessage =
-    assistantMessages[assistantMessages.length - 1];
-  const latestAssistantAutoScrollKey = latestAssistantMessage
-    ? `${assistantMessages.length}:${latestAssistantMessage.content}:${pendingPermissions.length}`
-    : `none:${pendingPermissions.length}`;
+  const shouldStickRef = useRef(true);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToBottom = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  };
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const threshold = 32;
+    shouldStickRef.current =
+      container.scrollHeight - container.clientHeight - container.scrollTop <=
+      threshold;
+  };
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
+    if (!open) return;
+    shouldStickRef.current = true;
+    requestAnimationFrame(scrollToBottom);
+  }, [open]);
 
-    const container = scrollContainerRef.current;
-    const latestMessage = latestAssistantMessageRef.current;
-    if (!container || !latestMessage) {
-      return;
-    }
+  useEffect(() => {
+    const node = contentRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
 
-    requestAnimationFrame(() => {
-      container.scrollTop = Math.max(0, latestMessage.offsetTop);
+    const observer = new ResizeObserver(() => {
+      if (shouldStickRef.current) {
+        requestAnimationFrame(scrollToBottom);
+      }
     });
-  }, [latestAssistantAutoScrollKey, open]);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <Box
@@ -641,6 +701,7 @@ export const AssistantModePanel = ({
           >
             <Box
               ref={scrollContainerRef}
+              onScroll={handleScroll}
               sx={{
                 height: "100%",
                 overflowY: "auto",
@@ -652,16 +713,12 @@ export const AssistantModePanel = ({
                 scrollbarWidth: "thin",
               }}
             >
+              <Box ref={contentRef}>
               {assistantMessages.map((message, index) => {
                 const streaming = streamingMessageById[message.id];
                 return (
                   <Box
                     key={message.id}
-                    ref={
-                      index === assistantMessages.length - 1
-                        ? latestAssistantMessageRef
-                        : undefined
-                    }
                     sx={{
                       display: "flex",
                       flexDirection: "column",
@@ -686,7 +743,12 @@ export const AssistantModePanel = ({
                     {streaming ? (
                       <OverlayAgentActivity streaming={streaming} />
                     ) : null}
-                    <TranscriptEntry message={message} />
+                    {(message.metadata as Record<string, unknown> | null)
+                      ?.type === "tool-result" ? (
+                      <OverlayToolResultEntry message={message} />
+                    ) : (
+                      <TranscriptEntry message={message} />
+                    )}
                   </Box>
                 );
               })}
@@ -695,6 +757,7 @@ export const AssistantModePanel = ({
                   <OverlayToolPermissionCard permission={p} />
                 </Box>
               ))}
+              </Box>
             </Box>
 
             <Box
