@@ -46,7 +46,7 @@ export class ToolRepo extends BaseRepo {
         id: "run_terminal_command",
         description: "Run terminal command",
         instructions:
-          "Execute a shell command in the user's terminal and return the output. Use this for file operations, running scripts, checking system state, or any task that requires shell access.",
+          "Execute a shell command in the user's terminal and return the output. Use this for file operations, running scripts, checking system state, or any task that requires shell access. This is your go-to tool. Use this to creatively accomplish user goals with full automation (i.e. sending emails, opening apps, manipulating files, etc).",
         schema: {
           type: "object",
           properties: {
