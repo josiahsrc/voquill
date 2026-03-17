@@ -64,7 +64,12 @@ export abstract class BaseToneRepo extends BaseRepo {
   protected abstract deleteToneInternal(id: string): Promise<void>;
 
   async listTones(): Promise<Tone[]> {
-    const userTones = await this.listTonesInternal();
+    const userTones = await this.listTonesInternal().catch((error) => {
+      getLogger().warning(
+        `Failed to load user-defined styles, falling back to built-in styles: ${error}`,
+      );
+      return [];
+    });
     const result = mergeSystemTones(userTones);
     const config = await getConfigRepo()
       .getFullConfig()
