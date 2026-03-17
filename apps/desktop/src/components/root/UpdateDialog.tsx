@@ -24,7 +24,7 @@ import { useAppStore } from "../../store";
 import { formatSize } from "../../utils/format.utils";
 import { getPlatform } from "../../utils/platform.utils";
 import { isReadOnlyFilesystemInstallError } from "../../utils/updater.utils";
-import { CopyableCommand } from "../CopyableCommand";
+import { CopyableCommand } from "../common/CopyableCommand";
 
 const APT_UPDATE_COMMAND =
   "sudo apt-get update && sudo apt-get upgrade voquill-desktop";
