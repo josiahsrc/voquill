@@ -134,6 +134,16 @@ pub fn sync_combos(combos: Vec<Vec<String>>) {
     }
 }
 
+pub fn reset_pressed_keys() {
+    let state = listener_state()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+    if let Some(handle) = state.as_ref() {
+        handle.emitter.reset();
+    }
+}
+
 pub fn start_key_listener(app: &AppHandle) -> Result<(), String> {
     stop_key_listener()?;
 

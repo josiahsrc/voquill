@@ -174,45 +174,71 @@ export const DictationSideEffects = () => {
     }
   }, []);
 
-  const abortRecording = useCallback(async (message?: AbortMessage) => {
-    getLogger().info(
-      `Aborting recording (hasSession=${!!sessionRef.current}, hasStrategy=${!!strategyRef.current}${message ? `, reason=${String(message.body).slice(0, 120)}` : ""})`,
-    );
-    clearRecordingTimers();
-    clearCancelPromptTimer();
-    invoke<void>("set_phase", { phase: "idle" });
-    invoke("stop_recording").catch((e) =>
-      getLogger().verbose(`stop_recording failed during abort: ${e}`),
-    );
-
-    dictationController.reset();
-    agentController.reset();
-    for (const { controller } of additionalLanguageControllers) {
-      controller.reset();
-    }
-
-    strategyRef.current?.cleanup();
-    strategyRef.current = null;
-    sessionRef.current = null;
-
+  const clearRecordingState = useCallback(() => {
     produceAppState((draft) => {
       draft.activeRecordingMode = null;
+      draft.dictationLanguageOverride = null;
+    });
+  }, []);
+
+  const hardResetHotkeyState = useCallback(() => {
+    dictationController.forceReset();
+    agentController.forceReset();
+    for (const { controller } of additionalLanguageControllers) {
+      controller.forceReset();
+    }
+
+    produceAppState((draft) => {
+      draft.keysHeld = [];
     });
 
-    if (message) {
-      playAlertSound();
-      showToast({
-        title:
-          message.title ||
-          intl.formatMessage({
-            defaultMessage: "Recording stopped",
-          }),
-        message: String(message.body),
-        toastType: "error",
-        duration: 8_000,
-      });
-    }
-  }, []);
+    invoke("reset_key_listener_state").catch((error) =>
+      getLogger().verbose(`Failed to reset key listener state: ${error}`),
+    );
+  }, [additionalLanguageControllers, agentController, dictationController]);
+
+  const abortRecording = useCallback(
+    async (message?: AbortMessage) => {
+      getLogger().info(
+        `Aborting recording (hasSession=${!!sessionRef.current}, hasStrategy=${!!strategyRef.current}${message ? `, reason=${String(message.body).slice(0, 120)}` : ""})`,
+      );
+      clearRecordingTimers();
+      clearCancelPromptTimer();
+      hardResetHotkeyState();
+      invoke<void>("set_phase", { phase: "idle" });
+      invoke("stop_recording").catch((e) =>
+        getLogger().verbose(`stop_recording failed during abort: ${e}`),
+      );
+
+      sessionRef.current?.cleanup();
+      strategyRef.current?.cleanup();
+      strategyRef.current = null;
+      sessionRef.current = null;
+
+      clearRecordingState();
+
+      if (message) {
+        playAlertSound();
+        showToast({
+          title:
+            message.title ||
+            intl.formatMessage({
+              defaultMessage: "Recording stopped",
+            }),
+          message: String(message.body),
+          toastType: "error",
+          duration: 8_000,
+        });
+      }
+    },
+    [
+      clearCancelPromptTimer,
+      clearRecordingState,
+      clearRecordingTimers,
+      hardResetHotkeyState,
+      intl,
+    ],
+  );
 
   const stopRecordingRaw = useCallback(async (): Promise<RawStopResp> => {
     getLogger().info("Stopping recording");
@@ -377,10 +403,11 @@ export const DictationSideEffects = () => {
         );
       }
     } finally {
+      hardResetHotkeyState();
       isStoppingRef.current = false;
       setIsStopping(false);
     }
-  }, [stopRecordingRaw, setIsStopping]);
+  }, [abortRecording, hardResetHotkeyState, stopRecordingRaw, setIsStopping]);
 
   const startRecordingTimers = useCallback(() => {
     clearRecordingTimers();
@@ -491,10 +518,9 @@ export const DictationSideEffects = () => {
         sessionRef.current?.cleanup();
         sessionRef.current = null;
         strategyRef.current = null;
+        clearRecordingState();
 
-        dictationController.reset();
-        agentController.reset();
-
+        hardResetHotkeyState();
         clearRecordingTimers();
         invoke("stop_recording").catch((e) =>
           getLogger().verbose(
@@ -512,7 +538,13 @@ export const DictationSideEffects = () => {
         });
       }
     },
-    [],
+    [
+      abortRecording,
+      clearRecordingState,
+      clearRecordingTimers,
+      hardResetHotkeyState,
+      intl,
+    ],
   );
 
   const startDictationRecording = useCallback(async () => {
@@ -629,16 +661,7 @@ export const DictationSideEffects = () => {
   }, [isActiveSession, isManualStyling]);
 
   useTauriListen<void>("assistant-mode-close", async () => {
-    const strategy = strategyRef.current;
-    if (strategy) {
-      await strategy.cleanup();
-    }
-    if (strategyRef.current) {
-      await abortRecording();
-    }
-    produceAppState((draft) => {
-      draft.activeRecordingMode = null;
-    });
+    await abortRecording();
   });
 
   useTauriListen<void>("cancel-dictation", () => {

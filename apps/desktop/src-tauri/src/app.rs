@@ -222,6 +222,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::sync_hotkey_combos,
+            crate::commands::reset_key_listener_state,
             crate::commands::play_audio,
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
