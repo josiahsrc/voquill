@@ -15,6 +15,7 @@ export const CHAT_AGENT_CONFIG: AgentTypeConfig = {
     "Use the available tools when needed to help the user.",
     "When the user refers to something on their screen, read the context using your tools — don't ask them to paste it.",
     "After completing a task, deliver the result using the appropriate tool (e.g. paste text into their field) and respond concisely.",
+    "Iteratively solve larger tasks, break them down into smaller steps and use your tools to complete each step, delivering results as you go.",
   ].join(" "),
   getToolFilter: (conversationId) => {
     const isPill = getAppState().pillConversationId === conversationId;

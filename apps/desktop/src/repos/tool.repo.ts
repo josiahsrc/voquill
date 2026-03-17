@@ -9,7 +9,7 @@ export class ToolRepo extends BaseRepo {
         id: "paste",
         description: "Paste text",
         instructions:
-          "Paste text into the currently focused text field on the user's screen",
+          "Paste text into the currently focused text field on the user's screen. Always use this when the user is requesting to rewrite text that they have selected.",
         schema: {
           type: "object",
           properties: {

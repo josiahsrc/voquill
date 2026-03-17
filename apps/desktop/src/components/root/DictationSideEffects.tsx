@@ -600,13 +600,16 @@ export const DictationSideEffects = () => {
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    isDisabled: !isDictationInteractable,
+    isDisabled: !isDictationInteractable || activeRecordingMode === "agent",
     controller: dictationController,
   });
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
-    isDisabled: !isDictationInteractable || !assistantModeEnabled,
+    isDisabled:
+      !isDictationInteractable ||
+      !assistantModeEnabled ||
+      activeRecordingMode === "dictate",
     controller: agentController,
   });
 
@@ -617,7 +620,7 @@ export const DictationSideEffects = () => {
   });
 
   useHotkeyHoldMany({
-    isDisabled: !isDictationInteractable,
+    isDisabled: !isDictationInteractable || activeRecordingMode === "agent",
     actions: additionalLanguageControllers,
   });
 
