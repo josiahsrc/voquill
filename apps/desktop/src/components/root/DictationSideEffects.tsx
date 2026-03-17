@@ -21,6 +21,7 @@ import {
   useHotkeyHold,
   useHotkeyHoldMany,
 } from "../../hooks/hotkey.hooks";
+import { useLocalStorage } from "../../hooks/local-storage.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
 import { createTranscriptionSession } from "../../sessions";
@@ -44,6 +45,7 @@ import {
   trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
+import { ASSISTANT_MODE_ENABLED_KEY } from "../../utils/assistant-mode.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
@@ -95,6 +97,10 @@ export const DictationSideEffects = () => {
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
+  const [assistantModeEnabled] = useLocalStorage<boolean>(
+    ASSISTANT_MODE_ENABLED_KEY,
+    false,
+  );
 
   const isManualStyling = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",
@@ -600,7 +606,7 @@ export const DictationSideEffects = () => {
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
-    isDisabled: !isDictationInteractable,
+    isDisabled: !isDictationInteractable || !assistantModeEnabled,
     controller: agentController,
   });
 

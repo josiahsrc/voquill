@@ -1,9 +1,10 @@
 import type { ToolInfo } from "@repo/types";
+import { getIsPowerModeEnabled } from "../utils/assistant-mode.utils";
 import { BaseRepo } from "./base.repo";
 
 export class ToolRepo extends BaseRepo {
   async listToolInfos(): Promise<ToolInfo[]> {
-    return [
+    const tools: ToolInfo[] = [
       {
         id: "paste",
         description: "Paste text",
@@ -28,6 +29,20 @@ export class ToolRepo extends BaseRepo {
         },
       },
       {
+        id: "end_conversation",
+        description: "End conversation",
+        instructions:
+          "End the current conversation and close the assistant. ALWAYS call this after pasting text in.",
+        schema: {
+          type: "object",
+          properties: {},
+        },
+        scope: "pill",
+      },
+    ];
+
+    if (getIsPowerModeEnabled()) {
+      tools.push({
         id: "run_terminal_command",
         description: "Run terminal command",
         instructions:
@@ -42,18 +57,9 @@ export class ToolRepo extends BaseRepo {
           },
           required: ["command"],
         },
-      },
-      {
-        id: "end_conversation",
-        description: "End conversation",
-        instructions:
-          "End the current conversation and close the assistant. ALWAYS call this after pasting text in.",
-        schema: {
-          type: "object",
-          properties: {},
-        },
-        scope: "pill",
-      },
-    ];
+      });
+    }
+
+    return tools;
   }
 }
