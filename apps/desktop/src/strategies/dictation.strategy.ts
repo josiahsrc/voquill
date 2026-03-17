@@ -1,12 +1,13 @@
 import type { Nullable } from "@repo/types";
 import { invoke } from "@tauri-apps/api/core";
-import { showErrorSnackbar } from "../actions/app.actions";
+import { showErrorSnackbar, showSnackbar } from "../actions/app.actions";
 import { showToast } from "../actions/toast.actions";
 import {
   postProcessTranscript,
   type PostProcessMetadata,
 } from "../actions/transcribe.actions";
 import { getIntl } from "../i18n";
+import { routeTranscriptOutput } from "../utils/output-routing.utils";
 import { getAppState } from "../store";
 import type { OverlayPhase } from "../types/overlay.types";
 import type {
@@ -37,6 +38,14 @@ export class DictationStrategy extends BaseStrategy {
     return this.streamedSegmentCount > 0;
   }
 
+  private getActiveRemoteTargetDeviceId(): string | null {
+    const prefs = getMyUserPreferences(getAppState());
+    if (!prefs?.remoteOutputEnabled || !prefs.remoteTargetDeviceId) {
+      return null;
+    }
+    return prefs.remoteTargetDeviceId;
+  }
+
   handleInterimSegment(segment: string): void {
     const state = getAppState();
 
@@ -61,7 +70,11 @@ export class DictationStrategy extends BaseStrategy {
       this.streamedProcessedText += (isFirst ? "" : " ") + text;
 
       try {
-        await invoke<void>("paste", { text: textToPaste, keybind: null });
+        await routeTranscriptOutput({
+          text: textToPaste,
+          mode: "dictation",
+          currentAppId: null,
+        });
       } catch (error) {
         getLogger().error(`Failed to paste interim segment: ${error}`);
       }
@@ -114,10 +127,22 @@ export class DictationStrategy extends BaseStrategy {
     args: HandleTranscriptParams,
   ): Promise<HandleTranscriptResult> {
     const sanitizedTranscript = this.sanitizeTranscript(args.rawTranscript);
+    let remoteStatus: "sent" | null = null;
+    const remoteDeviceId = this.getActiveRemoteTargetDeviceId();
 
     await this.pasteQueue;
     try {
-      await invoke<void>("paste", { text: " ", keybind: null });
+      const result = await routeTranscriptOutput({
+        text: " ",
+        mode: "dictation",
+        currentAppId: args.currentApp?.id ?? null,
+      });
+      if (result.remote && result.delivered) {
+        remoteStatus = "sent";
+        showSnackbar("Transcript sent to paired receiver.", {
+          mode: "success",
+        });
+      }
     } catch {
       // Non-critical trailing space
     }
@@ -133,6 +158,8 @@ export class DictationStrategy extends BaseStrategy {
       sanitizedTranscript,
       postProcessMetadata: {},
       postProcessWarnings: [],
+      remoteStatus,
+      remoteDeviceId: remoteStatus ? remoteDeviceId : null,
     };
   }
 
@@ -143,6 +170,8 @@ export class DictationStrategy extends BaseStrategy {
     let sanitizedTranscript: string | null = null;
     let postProcessMetadata: PostProcessMetadata = {};
     let postProcessWarnings: string[] = [];
+    let remoteStatus: "sent" | null = null;
+    const remoteDeviceId = this.getActiveRemoteTargetDeviceId();
 
     try {
       sanitizedTranscript = this.sanitizeTranscript(args.rawTranscript);
@@ -165,18 +194,27 @@ export class DictationStrategy extends BaseStrategy {
       if (transcript) {
         await new Promise<void>((resolve) => setTimeout(resolve, 20));
         try {
-          const keybind = args.currentApp?.pasteKeybind ?? null;
           getLogger().verbose(
-            `Pasting transcript (${transcript.length} chars, keybind=${keybind ?? "default"})`,
+            `Routing transcript output (${transcript.length} chars, app=${args.currentApp?.id ?? "none"})`,
           );
 
           const textToPaste = transcript.trim() + " ";
-          await invoke<void>("paste", { text: textToPaste, keybind });
+          const result = await routeTranscriptOutput({
+            text: textToPaste,
+            mode: "dictation",
+            currentAppId: args.currentApp?.id ?? null,
+          });
+          if (result.remote && result.delivered) {
+            remoteStatus = "sent";
+            showSnackbar("Transcript sent to paired receiver.", {
+              mode: "success",
+            });
+          }
 
-          getLogger().info("Transcript pasted successfully");
+          getLogger().info("Transcript output routed successfully");
         } catch (error) {
-          getLogger().error(`Failed to paste transcription: ${error}`);
-          showErrorSnackbar("Unable to paste transcription.");
+          getLogger().error(`Failed to route transcription output: ${error}`);
+          showErrorSnackbar("Unable to insert transcription.");
         }
       }
     } catch (error) {
@@ -199,6 +237,8 @@ export class DictationStrategy extends BaseStrategy {
       sanitizedTranscript,
       postProcessMetadata,
       postProcessWarnings,
+      remoteStatus,
+      remoteDeviceId: remoteStatus ? remoteDeviceId : null,
     };
   }
 

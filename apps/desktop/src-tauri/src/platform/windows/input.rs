@@ -6,7 +6,15 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     VK_CONTROL, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_MENU, VK_RCONTROL, VK_RMENU,
     VK_RSHIFT, VK_RWIN, VK_SHIFT, VK_V,
 };
-use windows::Win32::UI::WindowsAndMessaging::{GetClassNameW, GetForegroundWindow};
+use windows::Win32::UI::WindowsAndMessaging::{
+    GetClassNameW, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
+};
+
+#[derive(Clone, Debug)]
+pub struct WindowTargetInfo {
+    pub class_name: Option<String>,
+    pub title: Option<String>,
+}
 
 pub(crate) fn paste_text_into_focused_field(
     text: &str,
@@ -35,22 +43,46 @@ pub(crate) fn paste_text_into_focused_field(
 }
 
 fn is_console_window() -> bool {
+    let target_info = get_foreground_window_target_info();
+    if let Some(class_name) = target_info.class_name {
+        log::debug!("foreground window class: {}", class_name);
+        return class_name == "ConsoleWindowClass";
+    }
+    false
+}
+
+pub(crate) fn get_foreground_window_target_info() -> WindowTargetInfo {
     unsafe {
         let hwnd: HWND = GetForegroundWindow();
         if hwnd.0.is_null() {
-            return false;
+            return WindowTargetInfo {
+                class_name: None,
+                title: None,
+            };
         }
 
         let mut class_name = [0u16; 256];
-        let len = GetClassNameW(hwnd, &mut class_name);
-        if len == 0 {
-            return false;
-        }
+        let class_len = GetClassNameW(hwnd, &mut class_name);
+        let class_name = if class_len > 0 {
+            Some(String::from_utf16_lossy(&class_name[..class_len as usize]))
+        } else {
+            None
+        };
 
-        let class_str = String::from_utf16_lossy(&class_name[..len as usize]);
-        log::debug!("foreground window class: {}", class_str);
+        let title_len = GetWindowTextLengthW(hwnd);
+        let title = if title_len > 0 {
+            let mut title_buf = vec![0u16; title_len as usize + 1];
+            let copied = GetWindowTextW(hwnd, &mut title_buf);
+            if copied > 0 {
+                Some(String::from_utf16_lossy(&title_buf[..copied as usize]))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
-        class_str == "ConsoleWindowClass"
+        WindowTargetInfo { class_name, title }
     }
 }
 

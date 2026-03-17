@@ -32,4 +32,6 @@ export type HandleTranscriptResult = {
   sanitizedTranscript: string | null;
   postProcessMetadata: PostProcessMetadata;
   postProcessWarnings: string[];
+  remoteStatus?: "sent" | "received" | null;
+  remoteDeviceId?: string | null;
 };

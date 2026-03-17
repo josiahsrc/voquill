@@ -18,6 +18,8 @@ fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
         duration_ms: audio_duration.unwrap_or_default(),
     });
     let warnings = warnings_json.and_then(|json| serde_json::from_str::<Vec<String>>(&json).ok());
+    let remote_status: Option<String> = row.try_get("remote_status")?;
+    let remote_device_id: Option<String> = row.try_get("remote_device_id")?;
 
     Ok(Transcription {
         id: row.get::<String, _>("id"),
@@ -38,6 +40,8 @@ fn row_to_transcription(row: SqliteRow) -> Result<Transcription, sqlx::Error> {
         transcription_duration_ms: row.try_get::<Option<i64>, _>("transcription_duration_ms")?,
         postprocess_duration_ms: row.try_get::<Option<i64>, _>("postprocess_duration_ms")?,
         warnings,
+        remote_status,
+        remote_device_id,
     })
 }
 
@@ -65,9 +69,11 @@ pub async fn insert_transcription(
              post_process_device,
              transcription_duration_ms,
              postprocess_duration_ms,
-             warnings_json
+             warnings_json,
+             remote_status,
+             remote_device_id
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
     )
     .bind(&transcription.id)
     .bind(&transcription.transcript)
@@ -93,6 +99,8 @@ pub async fn insert_transcription(
     .bind(transcription.transcription_duration_ms)
     .bind(transcription.postprocess_duration_ms)
     .bind(serialize_warnings(&transcription.warnings))
+    .bind(transcription.remote_status.as_deref())
+    .bind(transcription.remote_device_id.as_deref())
     .execute(&pool)
     .await?;
 
@@ -123,7 +131,9 @@ pub async fn fetch_transcriptions(
                 post_process_device,
                 transcription_duration_ms,
                 postprocess_duration_ms,
-                warnings_json
+                warnings_json,
+                remote_status,
+                remote_device_id
          FROM transcriptions
          ORDER BY timestamp DESC
          LIMIT ?1 OFFSET ?2",
@@ -165,7 +175,9 @@ pub async fn update_transcription(
              post_process_device = ?16,
              transcription_duration_ms = ?17,
              postprocess_duration_ms = ?18,
-             warnings_json = ?19
+             warnings_json = ?19,
+             remote_status = ?20,
+             remote_device_id = ?21
          WHERE id = ?1",
     )
     .bind(&transcription.id)
@@ -192,6 +204,8 @@ pub async fn update_transcription(
     .bind(transcription.transcription_duration_ms)
     .bind(transcription.postprocess_duration_ms)
     .bind(serialize_warnings(&transcription.warnings))
+    .bind(transcription.remote_status.as_deref())
+    .bind(transcription.remote_device_id.as_deref())
     .execute(&pool)
     .await?;
 
@@ -214,7 +228,9 @@ pub async fn update_transcription(
                 post_process_device,
                 transcription_duration_ms,
                 postprocess_duration_ms,
-                warnings_json
+                warnings_json,
+                remote_status,
+                remote_device_id
          FROM transcriptions
          WHERE id = ?1",
     )

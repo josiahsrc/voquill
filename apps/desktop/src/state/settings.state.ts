@@ -78,6 +78,7 @@ export type SettingsState = {
   aiPostProcessingDialogOpen: boolean;
   agentModeDialogOpen: boolean;
   moreSettingsDialogOpen: boolean;
+  multiDeviceDialogOpen: boolean;
   dictationLanguageDialogOpen: boolean;
   appKeybindingsDialogOpen: boolean;
   diagnosticsDialogOpen: boolean;
@@ -129,6 +130,7 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessingDialogOpen: false,
   agentModeDialogOpen: false,
   moreSettingsDialogOpen: false,
+  multiDeviceDialogOpen: false,
   dictationLanguageDialogOpen: false,
   appKeybindingsDialogOpen: false,
   diagnosticsDialogOpen: false,

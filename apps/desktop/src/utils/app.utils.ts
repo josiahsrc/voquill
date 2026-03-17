@@ -5,6 +5,7 @@ import {
   Conversation,
   Hotkey,
   Member,
+  PairedRemoteDevice,
   Term,
   Tone,
   ToolInfo,
@@ -122,4 +123,13 @@ export const registerChatMessages = (
   draft.chatMessageIdsByConversationId[conversationId] = messages
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map((m) => m.id);
+};
+
+export const registerPairedRemoteDevices = (
+  draft: AppState,
+  devices: PairedRemoteDevice[],
+): void => {
+  for (const device of devices) {
+    draft.pairedRemoteDeviceById[device.id] = device;
+  }
 };

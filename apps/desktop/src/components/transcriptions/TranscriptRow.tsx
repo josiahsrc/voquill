@@ -4,13 +4,22 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import { Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import SendRoundedIcon from "@mui/icons-material/SendRounded";
+import {
+  Chip,
+  Divider,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { useCallback, useMemo } from "react";
 import { useIntl } from "react-intl";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { sendTextToActiveRemoteTarget } from "../../actions/remote-output.actions";
 import {
   openFlagTranscriptionDialog,
   openRetranscribeDialog,
@@ -18,6 +27,7 @@ import {
 } from "../../actions/transcriptions.actions";
 import { getTranscriptionRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
+import { getActiveRemoteTarget } from "../../utils/device.utils";
 import { getIsVoquillCloudUser } from "../../utils/member.utils";
 import { TypographyWithMore } from "../common/TypographyWithMore";
 import { AudioPlayerPill } from "./AudioPlayerPill";
@@ -44,6 +54,9 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
   );
 
   const audioSnapshot = transcription?.audio;
+  const activeRemoteTarget = useAppStore(getActiveRemoteTarget);
+  const isRemoteTranscript = transcription?.remoteStatus === "received";
+  const isSentToRemote = transcription?.remoteStatus === "sent";
 
   const handleDetailsOpen = useCallback(() => {
     openTranscriptionDetailsDialog(id);
@@ -100,6 +113,14 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
     }
   }, [id, intl]);
 
+  const handleSendToReceiver = useCallback(async () => {
+    try {
+      await sendTextToActiveRemoteTarget(transcription?.transcript || "");
+    } catch (error) {
+      showErrorSnackbar(error);
+    }
+  }, [transcription?.transcript]);
+
   return (
     <>
       <Stack
@@ -109,9 +130,25 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
         mt={1.5}
         spacing={1}
       >
-        <Typography variant="subtitle2" color="text.secondary">
-          {dayjs(transcription?.createdAt).format("MMM D, YYYY h:mm A")}
-        </Typography>
+        <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+          <Typography variant="subtitle2" color="text.secondary">
+            {dayjs(transcription?.createdAt).format("MMM D, YYYY h:mm A")}
+          </Typography>
+          {isRemoteTranscript && (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={intl.formatMessage({ defaultMessage: "Remote" })}
+            />
+          )}
+          {isSentToRemote && (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={intl.formatMessage({ defaultMessage: "Sent" })}
+            />
+          )}
+        </Stack>
         <Stack direction="row" spacing={1}>
           <Tooltip
             title={intl.formatMessage({
@@ -160,6 +197,26 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               <DeleteOutlineRoundedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+          {!isRemoteTranscript && activeRemoteTarget && (
+            <Tooltip
+              title={intl.formatMessage(
+                { defaultMessage: "Send to {name}" },
+                { name: activeRemoteTarget.name },
+              )}
+              placement="top"
+            >
+              <IconButton
+                aria-label={intl.formatMessage(
+                  { defaultMessage: "Send to {name}" },
+                  { name: activeRemoteTarget.name },
+                )}
+                onClick={handleSendToReceiver}
+                size="small"
+              >
+                <SendRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Stack>
       </Stack>
       <TypographyWithMore

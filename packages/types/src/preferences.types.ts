@@ -30,6 +30,10 @@ export type UserPreferences = {
   incognitoModeIncludeInStats: boolean;
   dictationPillVisibility: DictationPillVisibility;
   realtimeOutputEnabled: boolean;
+  remoteOutputEnabled: boolean;
+  remoteTargetDeviceId: Nullable<string>;
+  remoteReceiverPort: Nullable<number>;
+  remoteReceiverAutoStart: boolean;
 
   // deprecated
   isEnterprise: boolean;

@@ -13,6 +13,7 @@ import {
   LogoutOutlined,
   MicOutlined,
   MoreVertOutlined,
+  RouterOutlined,
   PaymentOutlined,
   PersonRemoveOutlined,
   PrivacyTipOutlined,
@@ -188,6 +189,12 @@ export default function SettingsPage() {
     });
   };
 
+  const openMultiDeviceDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.multiDeviceDialogOpen = true;
+    });
+  };
+
   const openClearLocalDataDialog = () => {
     produceAppState((draft) => {
       draft.settings.clearLocalDataDialogOpen = true;
@@ -267,6 +274,11 @@ export default function SettingsPage() {
           onClick={openAppKeybindingsDialog}
         />
       )}
+      <ListTile
+        title={<FormattedMessage defaultMessage="Multi-device" />}
+        leading={<RouterOutlined />}
+        onClick={openMultiDeviceDialog}
+      />
       <ListTile
         title={<FormattedMessage defaultMessage="More settings" />}
         leading={<MoreVertOutlined />}

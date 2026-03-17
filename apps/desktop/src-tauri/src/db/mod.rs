@@ -3,6 +3,7 @@ pub mod app_target_queries;
 pub mod chat_message_queries;
 pub mod conversation_queries;
 pub mod hotkey_queries;
+pub mod paired_remote_device_queries;
 pub mod preferences_queries;
 pub mod term_queries;
 pub mod tone_queries;
@@ -105,10 +106,19 @@ pub const USER_REFERRAL_SOURCE_MIGRATION_SQL: &str =
     include_str!("migrations/055_user_referral_source.sql");
 pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
     include_str!("migrations/056_api_key_include_v1_path.sql");
-pub const REALTIME_OUTPUT_MIGRATION_SQL: &str =
-    include_str!("migrations/057_realtime_output.sql");
+pub const REALTIME_OUTPUT_MIGRATION_SQL: &str = include_str!("migrations/057_realtime_output.sql");
+pub const REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL: &str =
+    include_str!("migrations/058_remote_output_and_devices.sql");
+pub const REMOTE_OUTPUT_AND_DEVICES_COMPAT_MIGRATION_SQL: &str =
+    include_str!("migrations/059_remote_output_and_devices.sql");
+pub const REMOTE_RECEIVER_PORT_MIGRATION_SQL: &str =
+    include_str!("migrations/060_remote_receiver_port.sql");
+pub const REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL: &str =
+    include_str!("migrations/061_remote_receiver_auto_start.sql");
+pub const TRANSCRIPTION_REMOTE_STATUS_MIGRATION_SQL: &str =
+    include_str!("migrations/062_transcription_remote_status.sql");
 pub const CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL: &str =
-    include_str!("migrations/058_conversations_and_chat_messages.sql");
+    include_str!("migrations/063_conversations_and_chat_messages.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -456,7 +466,37 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
         },
         tauri_plugin_sql::Migration {
             version: 58,
-            description: "create_conversations_and_chat_messages",
+            description: "add_remote_output_and_paired_devices",
+            sql: REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 59,
+            description: "remote_output_and_devices_compatibility_noop",
+            sql: REMOTE_OUTPUT_AND_DEVICES_COMPAT_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 60,
+            description: "add_remote_receiver_port",
+            sql: REMOTE_RECEIVER_PORT_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 61,
+            description: "add_remote_receiver_auto_start",
+            sql: REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 62,
+            description: "add_transcription_remote_status",
+            sql: TRANSCRIPTION_REMOTE_STATUS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 63,
+            description: "create_conversations_and_chat_messages_tables",
             sql: CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
