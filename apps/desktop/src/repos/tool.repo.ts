@@ -28,10 +28,26 @@ export class ToolRepo extends BaseRepo {
         },
       },
       {
+        id: "run_terminal_command",
+        description: "Run terminal command",
+        instructions:
+          "Execute a shell command in the user's terminal and return the output. Use this for file operations, running scripts, checking system state, or any task that requires shell access.",
+        schema: {
+          type: "object",
+          properties: {
+            command: {
+              type: "string",
+              description: "The shell command to execute",
+            },
+          },
+          required: ["command"],
+        },
+      },
+      {
         id: "end_conversation",
         description: "End conversation",
         instructions:
-          "End the current conversation and close the assistant. ALWAYS call this when your primary task is complete.",
+          "End the current conversation and close the assistant. ALWAYS call this after pasting text in.",
         schema: {
           type: "object",
           properties: {},

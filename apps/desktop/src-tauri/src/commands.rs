@@ -1307,6 +1307,33 @@ pub async fn chat_message_delete_many(
 /// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
 ///
 /// Platform paths:
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunTerminalCommandResponse {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+}
+
+#[tauri::command]
+pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandResponse, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let (shell, flag) = if cfg!(target_os = "windows") { ("cmd", "/C") } else { ("sh", "-c") };
+        let output = std::process::Command::new(shell)
+            .args([flag, &command])
+            .output()
+            .map_err(|err| err.to_string())?;
+
+        Ok(RunTerminalCommandResponse {
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            exit_code: output.status.code().unwrap_or(-1),
+        })
+    })
+    .await
+    .map_err(|err| err.to_string())?
+}
+
 ///   - macOS:  ~/Library/Application Support/com.voquill.desktop/enterprise.json
 ///   - Linux:  ~/.config/com.voquill.desktop/enterprise.json
 ///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json

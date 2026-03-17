@@ -227,6 +227,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,
             crate::commands::read_enterprise_target,
+            crate::commands::run_terminal_command,
             crate::commands::get_keyboard_language,
             crate::commands::conversation_create,
             crate::commands::conversation_list,

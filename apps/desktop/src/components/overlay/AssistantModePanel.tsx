@@ -1,8 +1,5 @@
 import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseIcon from "@mui/icons-material/Close";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import { Box, IconButton, Typography } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
@@ -20,6 +17,7 @@ import type {
   OverlayPhase,
   OverlayResolvePermissionPayload,
 } from "../../types/overlay.types";
+import { ToolPermissionPrompt } from "../common/ToolPermissionPrompt";
 
 export const ASSISTANT_PANEL_OVERLAY_WIDTH = 600;
 export const ASSISTANT_PANEL_OVERLAY_HEIGHT = 272;
@@ -322,143 +320,25 @@ const OverlayToolPermissionCard = ({
 }: {
   permission: ToolPermission;
 }) => {
-  const theme = useTheme();
-  const toolInfo = useAppStore((s) => s.toolInfoById[permission.toolId]);
-  const isPending = permission.status === "pending";
-  const reason = permission.params.reason as string | undefined;
-  const whiteHigh = alpha(theme.palette.common.white, 0.92);
-  const whiteMid = alpha(theme.palette.common.white, 0.5);
-
-  const handleResolve = (status: ToolPermissionResolution) => {
+  const handleResolve = (
+    status: ToolPermissionResolution,
+    alwaysAllow?: boolean,
+  ) => {
     emitTo<OverlayResolvePermissionPayload>(
       "main",
       "overlay-resolve-permission",
-      {
-        permissionId: permission.id,
-        status,
-      },
+      { permissionId: permission.id, status, alwaysAllow },
     ).catch(console.error);
   };
 
   return (
-    <Box
-      sx={{
-        px: 1.5,
-        py: 1,
-        borderRadius: 1,
-        border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
-        backgroundColor: alpha(theme.palette.common.white, 0.06),
-      }}
-    >
-      <Typography sx={{ fontSize: 13, fontWeight: 600, color: whiteHigh }}>
-        {toolInfo?.description ?? permission.toolId}
-      </Typography>
-      {reason && (
-        <Typography sx={{ fontSize: 12, color: whiteMid, mt: 0.25 }}>
-          {reason}
-        </Typography>
-      )}
-      {isPending && (
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            justifyContent: "flex-end",
-            mt: 0.75,
-          }}
-        >
-          <Box
-            component="button"
-            onMouseDown={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              handleResolve("denied");
-            }}
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 0.5,
-              px: 1,
-              py: 0.25,
-              fontSize: 12,
-              fontWeight: 500,
-              color: whiteMid,
-              backgroundColor: "transparent",
-              border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
-              borderRadius: 1,
-              cursor: "pointer",
-              "&:hover": {
-                backgroundColor: alpha(theme.palette.common.white, 0.08),
-              },
-            }}
-          >
-            <CloseRoundedIcon sx={{ fontSize: 14 }} />
-            <FormattedMessage defaultMessage="Deny" />
-          </Box>
-          <Box
-            component="button"
-            onMouseDown={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              handleResolve("allowed");
-            }}
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 0.5,
-              px: 1,
-              py: 0.25,
-              fontSize: 12,
-              fontWeight: 500,
-              color: theme.palette.common.black,
-              backgroundColor: theme.palette.common.white,
-              border: `1px solid ${theme.palette.common.white}`,
-              borderRadius: 1,
-              cursor: "pointer",
-              "&:hover": {
-                backgroundColor: alpha(theme.palette.common.white, 0.85),
-              },
-            }}
-          >
-            <CheckRoundedIcon sx={{ fontSize: 14 }} />
-            <FormattedMessage defaultMessage="Allow" />
-          </Box>
-          <Box
-            component="button"
-            onMouseDown={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              emitTo<OverlayResolvePermissionPayload>(
-                "main",
-                "overlay-resolve-permission",
-                {
-                  permissionId: permission.id,
-                  status: "allowed",
-                  alwaysAllow: true,
-                },
-              ).catch(console.error);
-            }}
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 0.5,
-              px: 1,
-              py: 0.25,
-              fontSize: 12,
-              fontWeight: 500,
-              color: whiteMid,
-              backgroundColor: "transparent",
-              border: "none",
-              borderRadius: 1,
-              cursor: "pointer",
-              "&:hover": {
-                backgroundColor: alpha(theme.palette.common.white, 0.08),
-              },
-            }}
-          >
-            <DoneAllRoundedIcon sx={{ fontSize: 14 }} />
-            <FormattedMessage defaultMessage="Always allow" />
-          </Box>
-        </Box>
-      )}
-    </Box>
+    <ToolPermissionPrompt
+      permission={permission}
+      variant="overlay"
+      onAllow={() => handleResolve("allowed")}
+      onDeny={() => handleResolve("denied")}
+      onAlwaysAllow={() => handleResolve("allowed", true)}
+    />
   );
 };
 
