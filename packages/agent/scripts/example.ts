@@ -36,6 +36,24 @@ function confirm(message: string): Promise<boolean> {
   });
 }
 
+const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+function createSpinner(message: string) {
+  let i = 0;
+  const timer = setInterval(() => {
+    process.stdout.write(`\r  ${spinnerFrames[i++ % spinnerFrames.length]} ${message}`);
+  }, 80);
+  return {
+    update(msg: string) {
+      message = msg;
+    },
+    stop() {
+      clearInterval(timer);
+      process.stdout.write("\r" + " ".repeat(message.length + 10) + "\r");
+    },
+  };
+}
+
 // --- Tools ---
 
 const readAccessibilityContext: AgentTool = {
@@ -164,18 +182,24 @@ async function chat(userMessage: string) {
     maxIterations: 20,
   });
 
+  const spinner = createSpinner("Thinking...");
+
   for await (const event of loop.run(conversationHistory)) {
     switch (event.type) {
       case "text-delta":
+        spinner.stop();
         process.stdout.write(event.text);
         break;
+      case "iteration-start":
+        spinner.update(event.iteration === 0 ? "Thinking..." : "Thinking more...");
+        break;
       case "tool-call-start":
-        console.log(
-          `\n  [${event.toolName}]`,
-          JSON.stringify(event.args).substring(0, 120),
-        );
+        spinner.stop();
+        console.log(`\n  [${event.toolName}]`, JSON.stringify(event.args).substring(0, 120));
+        spinner.update(`Running ${event.toolName}...`);
         break;
       case "tool-call-result":
+        spinner.stop();
         if (event.isError) {
           console.log(`  [Error]`, event.result.substring(0, 200));
         } else {
@@ -183,6 +207,7 @@ async function chat(userMessage: string) {
         }
         break;
       case "finish":
+        spinner.stop();
         console.log();
         conversationHistory.length = 0;
         conversationHistory.push(...event.messages);
