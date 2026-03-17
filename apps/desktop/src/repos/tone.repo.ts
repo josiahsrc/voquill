@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getConfigRepo } from ".";
 import { invokeEnterprise } from "../utils/enterprise.utils";
 import { getDefaultSystemTones } from "../utils/tone.utils";
+import { getLogger } from "../utils/log.utils";
 import { BaseRepo } from "./base.repo";
 
 type LocalTone = {
@@ -35,6 +36,21 @@ const toLocalTone = (tone: Tone): LocalTone => ({
 const getSystemToneById = (id: string): Tone | undefined =>
   getDefaultSystemTones().find((tone) => tone.id === id);
 
+const getToneOverrides = (
+  config: unknown,
+): Record<string, string> | undefined => {
+  if (!config || typeof config !== "object") {
+    return undefined;
+  }
+
+  const maybeOverrides = (config as { toneOverrides?: unknown }).toneOverrides;
+  if (!maybeOverrides || typeof maybeOverrides !== "object") {
+    return undefined;
+  }
+
+  return maybeOverrides as Record<string, string>;
+};
+
 const mergeSystemTones = (userTones: Tone[]): Tone[] => {
   const systemTones = getDefaultSystemTones();
   const combined = [...systemTones, ...userTones];
@@ -50,10 +66,17 @@ export abstract class BaseToneRepo extends BaseRepo {
   async listTones(): Promise<Tone[]> {
     const userTones = await this.listTonesInternal();
     const result = mergeSystemTones(userTones);
-
-    const config = await getConfigRepo().getFullConfig();
+    const config = await getConfigRepo()
+      .getFullConfig()
+      .catch((error) => {
+        getLogger().warning(
+          `Failed to load tone overrides, falling back to built-in styles: ${error}`,
+        );
+        return null;
+      });
+    const toneOverrides = getToneOverrides(config);
     return result.map((tone) => {
-      const override = getRec(config?.toneOverrides, tone.id);
+      const override = getRec(toneOverrides, tone.id);
       if (override) {
         return {
           ...tone,
