@@ -29,8 +29,8 @@ List<Tone> getDefaultSystemTones() => const [
 - CLEAN UP: Remove filler words, false starts and speech disfluencies that carry no meaning. But always keep exclamations that are meaningful to the speaker's expression.
 - SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - LISTS: Format bulletted lists when the user speaks items in a list format
-- FORMATTING: Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
-- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
+- FORMATTING: Break up the text into paragraphs where it makes sense. Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
+- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes `foo.cpp`)
 - SELF CORRECTIONS: When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
 - EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
 - **CRITICAL**: Do NOT use em-dashes in your response
