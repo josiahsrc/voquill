@@ -1,6 +1,8 @@
 import type { ChatMessage, Conversation } from "@repo/types";
+import { TestAgent } from "../agents";
 import { getChatMessageRepo, getConversationRepo } from "../repos";
 import { produceAppState } from "../store";
+import { modifyAgentState } from "../utils/agent.utils";
 import {
   registerChatMessages,
   registerConversations,
@@ -125,9 +127,41 @@ export const deleteChatMessages = async (
   });
 };
 
-export const sendChatMessage = async (
-  _conversationId: string,
-  _text: string,
+export const runAgentForConversation = async (
+  conversationId: string,
 ): Promise<void> => {
-  throw new Error("Not implemented");
+  const agent = new TestAgent();
+  try {
+    await agent.run(conversationId);
+  } finally {
+    produceAppState((draft) => {
+      delete draft.agentStateByConversationId[conversationId];
+    });
+  }
+};
+
+export const sendChatMessage = async (
+  conversationId: string,
+  text: string,
+): Promise<void> => {
+  await createChatMessage({
+    id: crypto.randomUUID(),
+    conversationId,
+    role: "user",
+    content: text,
+    createdAt: new Date().toISOString(),
+    metadata: null,
+  });
+
+  await runAgentForConversation(conversationId);
+};
+
+export const abortAgent = (conversationId: string): void => {
+  produceAppState((draft) => {
+    modifyAgentState({
+      draft,
+      conversationId,
+      modify: (s) => { s.aborted = true; },
+    });
+  });
 };
