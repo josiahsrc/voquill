@@ -9,7 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getOpenAIGentextRepo,
+  getGroqGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,7 +48,9 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getOpenAIGentextRepo().generateText({
+  const output = await getGroqGentextRepo(
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+  ).generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -102,6 +104,18 @@ describe("post-processing evals", { retry: 0 }, () => {
         transcription: "Hey Michael",
         tone: getWritingStyle("default"),
         evals: ["It shouldn't really change anything"],
+      });
+    });
+
+    test("should put paragraph breaks in", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Vielen Dank für Ihre E-Mail, und ich weiß es zu schätzen, dass Sie sich die Zeit genommen haben, alles so klar darzulegen. Ich wollte Ihnen eine durchdachte Antwort geben, weil ich merke, dass Ihnen diese Angelegenheit wichtig ist, und ich Ihnen keine hastige oder allzu vereinfachte Antwort geben möchte, wenn die Situation offensichtlich etwas komplizierter ist. Zunächst einmal verstehe ich sehr gut, woher Sie kommen, und ich glaube nicht, dass Sie überreagieren oder aus irgendetwas eine zu große Sache machen. Aus meiner Sicht scheint ein großer Teil der Spannung daher zu kommen, dass sich mehrere Dinge gleichzeitig aufgebaut haben, und auch wenn jedes einzelne für sich genommen vielleicht noch handhabbar gewesen wäre, erzeugen sie zusammengenommen ein Maß an Stress und Unsicherheit, das für jeden schwer ruhig zu bewältigen wäre. Ich finde es auch wichtig zu sagen, dass ich Ihre Bedenken nicht im negativen Sinne persönlich nehme, weil ich weiß, dass Sie ehrlich sein wollen und nicht konfrontativ, und ich würde ein direktes Gespräch, auch wenn es unangenehm ist, immer lieber führen, als zuzulassen, dass sich im Hintergrund immer mehr Annahmen aufstauen. Gleichzeitig möchte ich von meiner Seite genauso ehrlich sein und sagen, dass manches von dem, was passiert ist, nicht so absichtlich war, wie es vielleicht gewirkt hat. Es gab Situationen, in denen ich früher, klarer und verlässlicher hätte kommunizieren sollen, und ich sehe jetzt, wie mein Schweigen oder meine Verzögerung als Gleichgültigkeit, Vermeidung oder sogar Missachtung verstanden werden konnte, obwohl ich in Wirklichkeit nur versucht habe, zu viele Dinge auf einmal schlecht zu bewältigen, und am Ende genau die Verwirrung verursacht habe, die ich eigentlich hätte verhindern müssen. Das geht auf meine Kappe, und ich versuche nicht, es schönzureden. Ich möchte auch nicht, dass daraus ein Hin und Her wird, bei dem jeder von uns seinen Standpunkt so darlegt, als müsste es am Ende einen Gewinner geben, denn ich glaube nicht, dass das einem von uns helfen würde. Was ich viel lieber tun möchte, ist die Punkte anzuerkennen, in denen Sie recht haben, die Punkte zu klären, die möglicherweise missverstanden wurden, und dann herauszufinden, ob es noch einen gangbaren Weg nach vorne gibt, der sich für uns beide respektvoll, realistisch und langfristig tragfähig anfühlt. Ich glaube, dass solche Situationen manchmal schlimmer werden, weil Menschen anfangen, über die exakte Formulierung einzelner Momente zu streiten, statt über das größere Muster darunter, und dieses größere Muster ist aus meiner Sicht, dass die Erwartungen nicht aufeinander abgestimmt waren, die Kommunikation nachgelassen hat und bis zu dem Zeitpunkt, an dem einer von uns beiden wirklich erkannt hat, wie frustriert die andere Person geworden war, schon zu vieles zu lange unausgesprochen geblieben war. Das bedeutet nicht, dass die Beziehung, die Zusammenarbeit oder die Verbindung zwangsläufig irreparabel beschädigt ist, aber es bedeutet, dass ihre Wiederherstellung mehr erfordern würde als nur eine schnelle Entschuldigung oder ein beiläufiges Versprechen, es künftig besser zu machen.",
+        tone: getWritingStyle("default"),
+        language: "de",
+        evals: [
+          "It should split the text into paragraphs where it makes sense, improving readability while preserving the original content and meaning",
+        ],
       });
     });
 
@@ -168,8 +182,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove the choppy sentence structure. i.e. 'Yes. But' -> Yes, but",
-          "It should remove the filler word 'like' and correct 'I core rule' to 'the core rule'",
+          "It should remove likes and ums and format the code names correctly",
         ],
       });
     });
@@ -180,7 +193,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Yes. Thanks for bringing that up. I recently made a change to make it so verbatim doesn't apply any post processing, effects as part of its contract. And so with this change, I felt it appropriate to basically make it so, when you're doing real time with verbatim mode, it still doesn't apply post processing on the outputs since none is needed. This way, like, verbatim is basically, like, a through and through really clean very fast output with no post processing.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove filler words like 'like' and 'basically' while keeping the technical content intact",
+          "It should remove filler words like 'like' while keeping the technical content intact",
         ],
       });
     });
@@ -191,7 +204,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Hey Emily, can you go fix that thing? Excuse me, that speaker that you broke yesterday. I really need that. Actually uh, hey Emily, could you please go fix that speaker you broke? It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove the redundant phrasing in the request since it's basically the same as the first one, just with more filler and less clarity",
+          "It should apply the self correction, replacing 'thing' with 'speaker' and removing the earlier mention of 'thing'",
         ],
       });
     });

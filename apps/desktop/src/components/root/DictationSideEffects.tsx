@@ -294,6 +294,8 @@ export const DictationSideEffects = () => {
     getLogger().info("Post-processing transcript");
     const result = await strategy.handleTranscript({
       rawTranscript,
+      processedTranscript: transcribeResult.processedTranscript,
+      serverPostProcessMetadata: transcribeResult.postProcessMetadata,
       toneId,
       a11yInfo,
       currentApp: appTarget,
