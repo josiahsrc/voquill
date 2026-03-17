@@ -71,17 +71,6 @@ pub const API_KEY_BASE_URL_MIGRATION_SQL: &str =
     include_str!("migrations/035_api_key_base_url.sql");
 pub const API_KEY_AZURE_REGION_MIGRATION_SQL: &str =
     include_str!("migrations/036_api_key_azure_region.sql");
-pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
-    include_str!("migrations/056_api_key_include_v1_path.sql");
-pub const REALTIME_OUTPUT_MIGRATION_SQL: &str = include_str!("migrations/057_realtime_output.sql");
-pub const REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL: &str =
-    include_str!("migrations/058_remote_output_and_devices.sql");
-pub const REMOTE_OUTPUT_AND_DEVICES_COMPAT_MIGRATION_SQL: &str =
-    include_str!("migrations/059_remote_output_and_devices.sql");
-pub const REMOTE_RECEIVER_PORT_MIGRATION_SQL: &str =
-    include_str!("migrations/060_remote_receiver_port.sql");
-pub const REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL: &str =
-    include_str!("migrations/061_remote_receiver_auto_start.sql");
 pub const AGENT_MODE_MIGRATION_SQL: &str = include_str!("migrations/037_agent_mode.sql");
 pub const LAST_SEEN_FEATURE_MIGRATION_SQL: &str =
     include_str!("migrations/038_last_seen_feature.sql");
@@ -113,6 +102,19 @@ pub const OPENCLAW_PREFERENCES_MIGRATION_SQL: &str =
 pub const USER_STREAK_MIGRATION_SQL: &str = include_str!("migrations/054_user_streak.sql");
 pub const USER_REFERRAL_SOURCE_MIGRATION_SQL: &str =
     include_str!("migrations/055_user_referral_source.sql");
+pub const API_KEY_INCLUDE_V1_PATH_MIGRATION_SQL: &str =
+    include_str!("migrations/056_api_key_include_v1_path.sql");
+pub const REALTIME_OUTPUT_MIGRATION_SQL: &str = include_str!("migrations/057_realtime_output.sql");
+pub const REMOTE_OUTPUT_AND_DEVICES_MIGRATION_SQL: &str =
+    include_str!("migrations/058_remote_output_and_devices.sql");
+pub const REMOTE_OUTPUT_AND_DEVICES_COMPAT_MIGRATION_SQL: &str =
+    include_str!("migrations/059_remote_output_and_devices.sql");
+pub const REMOTE_RECEIVER_PORT_MIGRATION_SQL: &str =
+    include_str!("migrations/060_remote_receiver_port.sql");
+pub const REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL: &str =
+    include_str!("migrations/061_remote_receiver_auto_start.sql");
+pub const TRANSCRIPTION_REMOTE_STATUS_MIGRATION_SQL: &str =
+    include_str!("migrations/062_transcription_remote_status.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -480,6 +482,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 61,
             description: "add_remote_receiver_auto_start",
             sql: REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 62,
+            description: "add_transcription_remote_status",
+            sql: TRANSCRIPTION_REMOTE_STATUS_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

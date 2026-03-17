@@ -5,7 +5,14 @@ import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
-import { Chip, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import {
+  Chip,
+  Divider,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
@@ -19,8 +26,8 @@ import {
   openTranscriptionDetailsDialog,
 } from "../../actions/transcriptions.actions";
 import { getTranscriptionRepo } from "../../repos";
-import { getActiveRemoteTarget } from "../../utils/device.utils";
 import { produceAppState, useAppStore } from "../../store";
+import { getActiveRemoteTarget } from "../../utils/device.utils";
 import { getIsVoquillCloudUser } from "../../utils/member.utils";
 import { TypographyWithMore } from "../common/TypographyWithMore";
 import { AudioPlayerPill } from "./AudioPlayerPill";
@@ -48,20 +55,8 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
 
   const audioSnapshot = transcription?.audio;
   const activeRemoteTarget = useAppStore(getActiveRemoteTarget);
-  const isRemoteTranscript = useMemo(
-    () =>
-      transcription?.warnings?.some((warning) =>
-        warning.startsWith("Remote transcript received from"),
-      ) ?? false,
-    [transcription?.warnings],
-  );
-  const sentToRemoteWarning = useMemo(
-    () =>
-      transcription?.warnings?.find((warning) =>
-        warning.startsWith("Sent to paired device:"),
-      ) ?? null,
-    [transcription?.warnings],
-  );
+  const isRemoteTranscript = transcription?.remoteStatus === "received";
+  const isSentToRemote = transcription?.remoteStatus === "sent";
 
   const handleDetailsOpen = useCallback(() => {
     openTranscriptionDetailsDialog(id);
@@ -146,14 +141,12 @@ export const TranscriptionRow = ({ id }: TranscriptionRowProps) => {
               label={intl.formatMessage({ defaultMessage: "Remote" })}
             />
           )}
-          {sentToRemoteWarning && (
-            <Tooltip title={sentToRemoteWarning} placement="top">
-              <Chip
-                size="small"
-                variant="outlined"
-                label={intl.formatMessage({ defaultMessage: "Sent" })}
-              />
-            </Tooltip>
+          {isSentToRemote && (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={intl.formatMessage({ defaultMessage: "Sent" })}
+            />
           )}
         </Stack>
         <Stack direction="row" spacing={1}>

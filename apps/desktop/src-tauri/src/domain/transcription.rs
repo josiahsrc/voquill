@@ -43,4 +43,8 @@ pub struct Transcription {
     pub postprocess_duration_ms: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub warnings: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote_device_id: Option<String>,
 }

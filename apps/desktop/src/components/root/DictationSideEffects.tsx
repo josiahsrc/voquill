@@ -323,6 +323,8 @@ export const DictationSideEffects = () => {
         transcriptionMetadata: transcribeResult.metadata,
         postProcessMetadata,
         warnings: [...transcribeResult.warnings, ...postProcessWarnings],
+        remoteStatus: result.remoteStatus,
+        remoteDeviceId: result.remoteDeviceId,
       });
     }
 
