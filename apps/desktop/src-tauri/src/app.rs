@@ -99,6 +99,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
             app.manage(crate::state::GoogleOAuthState::from_env());
             app.manage(crate::state::OverlayState::new());
+            app.manage(crate::state::RemoteReceiverState::new());
 
             #[cfg(desktop)]
             {
@@ -191,6 +192,14 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_current_app_info,
             crate::commands::app_target_upsert,
             crate::commands::app_target_list,
+            crate::commands::paired_remote_device_upsert,
+            crate::commands::paired_remote_device_list,
+            crate::commands::paired_remote_device_delete,
+            crate::commands::remote_receiver_start,
+            crate::commands::remote_receiver_stop,
+            crate::commands::remote_receiver_status,
+            crate::commands::remote_sender_deliver_final_text,
+            crate::commands::remote_sender_pair_with_receiver,
             crate::commands::start_recording,
             crate::commands::stop_recording,
             crate::commands::store_transcription_audio,

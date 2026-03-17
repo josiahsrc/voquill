@@ -7,6 +7,8 @@ pub mod google_oauth;
 pub mod gpu;
 pub mod models;
 pub mod paths;
+pub mod remote_receiver;
+pub mod remote_sender;
 pub mod storage_repo;
 pub mod tray;
 

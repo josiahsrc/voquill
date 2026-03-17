@@ -13,6 +13,7 @@ export * from "./member.types";
 export * from "./metrics.types";
 export * from "./openrouter.types";
 export * from "./preferences.types";
+export * from "./remote.types";
 export * from "./stt-provider.types";
 export * from "./term.types";
 export * from "./tone.types";

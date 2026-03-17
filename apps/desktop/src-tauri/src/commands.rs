@@ -65,6 +65,54 @@ pub struct AppTargetUpsertArgs {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairedRemoteDeviceUpsertArgs {
+    pub id: String,
+    pub name: String,
+    pub platform: String,
+    pub role: String,
+    pub shared_secret: String,
+    pub paired_at: String,
+    #[serde(default)]
+    pub last_seen_at: Option<String>,
+    #[serde(default)]
+    pub last_known_address: Option<String>,
+    #[serde(default)]
+    pub trusted: bool,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairedRemoteDeviceDeleteArgs {
+    pub id: String,
+}
+
+#[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StartRemoteReceiverArgs {
+    #[serde(default)]
+    pub port: Option<u16>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteSenderDeliverArgs {
+    pub target_device_id: String,
+    pub text: String,
+    pub mode: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteSenderPairArgs {
+    pub receiver_device_id: String,
+    pub receiver_name: String,
+    pub receiver_platform: String,
+    pub receiver_address: String,
+    pub pairing_code: String,
+}
+
+#[derive(serde::Deserialize)]
 pub enum AudioClip {
     #[serde(rename = "start_recording_clip")]
     StartRecordingClip,
@@ -291,6 +339,112 @@ pub async fn app_target_list(
     crate::db::app_target_queries::fetch_app_targets(database.pool())
         .await
         .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn paired_remote_device_upsert(
+    args: PairedRemoteDeviceUpsertArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::PairedRemoteDevice, String> {
+    let device = crate::domain::PairedRemoteDevice {
+        id: args.id,
+        name: args.name,
+        platform: args.platform,
+        role: args.role,
+        shared_secret: args.shared_secret,
+        paired_at: args.paired_at,
+        last_seen_at: args.last_seen_at,
+        last_known_address: args.last_known_address,
+        trusted: args.trusted,
+    };
+
+    crate::db::paired_remote_device_queries::upsert_paired_remote_device(database.pool(), &device)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn paired_remote_device_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::PairedRemoteDevice>, String> {
+    crate::db::paired_remote_device_queries::fetch_paired_remote_devices(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn paired_remote_device_delete(
+    args: PairedRemoteDeviceDeleteArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::paired_remote_device_queries::delete_paired_remote_device(database.pool(), &args.id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn remote_receiver_start(
+    args: StartRemoteReceiverArgs,
+    app: AppHandle,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<crate::state::RemoteReceiverStatus, String> {
+    crate::system::remote_receiver::start(
+        app,
+        receiver_state.inner().clone(),
+        database.pool(),
+        args.port,
+    )
+    .await
+}
+
+#[tauri::command]
+pub fn remote_receiver_stop(
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<(), String> {
+    crate::system::remote_receiver::stop(receiver_state.inner().clone());
+    Ok(())
+}
+
+#[tauri::command]
+pub fn remote_receiver_status(
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<crate::state::RemoteReceiverStatus, String> {
+    Ok(receiver_state.status())
+}
+
+#[tauri::command]
+pub async fn remote_sender_deliver_final_text(
+    args: RemoteSenderDeliverArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<(), String> {
+    crate::system::remote_sender::deliver_final_text(
+        database.pool(),
+        receiver_state.inner().clone(),
+        &args.target_device_id,
+        &args.text,
+        &args.mode,
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn remote_sender_pair_with_receiver(
+    args: RemoteSenderPairArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<crate::domain::PairedRemoteDevice, String> {
+    crate::system::remote_sender::pair_with_receiver(
+        database.pool(),
+        receiver_state.inner().clone(),
+        &args.receiver_device_id,
+        &args.receiver_name,
+        &args.receiver_platform,
+        &args.receiver_address,
+        &args.pairing_code,
+    )
+    .await
 }
 
 #[tauri::command]

@@ -308,6 +308,8 @@ export type StoreTranscriptionInput = {
   transcriptionMetadata: TranscribeAudioMetadata;
   postProcessMetadata: PostProcessMetadata;
   warnings: string[];
+  remoteStatus?: "sent" | "received" | null;
+  remoteDeviceId?: string | null;
 };
 
 export type StoreTranscriptionOutput = {
@@ -426,6 +428,8 @@ export const storeTranscription = async (
     postprocessDurationMs:
       input.postProcessMetadata.postprocessDurationMs ?? null,
     warnings: input.warnings.length > 0 ? input.warnings : null,
+    remoteStatus: input.remoteStatus ?? null,
+    remoteDeviceId: input.remoteDeviceId ?? null,
   };
 
   let storedTranscription: Transcription;

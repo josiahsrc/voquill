@@ -9,6 +9,8 @@ import {
   Member,
   Nullable,
   OidcProvider,
+  PairedRemoteDevice,
+  RemoteReceiverStatus,
   Term,
   Tone,
   Transcription,
@@ -65,6 +67,8 @@ export type AppState = {
   userById: Record<string, User>;
   termById: Record<string, Term>;
   appTargetById: Record<string, AppTarget>;
+  pairedRemoteDeviceById: Record<string, PairedRemoteDevice>;
+  remoteReceiverStatus: Nullable<RemoteReceiverStatus>;
   transcriptionById: Record<string, Transcription>;
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
@@ -114,6 +118,8 @@ export const INITIAL_APP_STATE: AppState = {
   userById: {},
   termById: {},
   appTargetById: {},
+  pairedRemoteDeviceById: {},
+  remoteReceiverStatus: null,
   transcriptionById: {},
   priceValueByKey: {},
   apiKeyById: {},
