@@ -72,13 +72,12 @@ pub async fn pair_with_receiver(
 ) -> Result<crate::domain::PairedRemoteDevice, String> {
     let sender = sender_state.status();
     let request_id = generate_id("pair");
-    let stream =
-        tokio::time::timeout(Duration::from_secs(5), TcpStream::connect(receiver_address))
-            .await
-            .map_err(|_| format!("Timed out connecting to remote receiver at {receiver_address}"))?
-            .map_err(|err| {
-                format!("Failed to connect to remote receiver at {receiver_address}: {err}")
-            })?;
+    let stream = tokio::time::timeout(Duration::from_secs(5), TcpStream::connect(receiver_address))
+        .await
+        .map_err(|_| format!("Timed out connecting to remote receiver at {receiver_address}"))?
+        .map_err(|err| {
+            format!("Failed to connect to remote receiver at {receiver_address}: {err}")
+        })?;
     let (reader, mut writer) = stream.into_split();
     let mut lines = BufReader::new(reader).lines();
 
@@ -106,7 +105,9 @@ pub async fn pair_with_receiver(
                 return Err("Remote receiver acknowledged the wrong pairing request.".to_string());
             }
             if ack_receiver_device_id != receiver_device_id {
-                return Err("Connected receiver does not match the imported pairing code.".to_string());
+                return Err(
+                    "Connected receiver does not match the imported pairing code.".to_string(),
+                );
             }
 
             let paired_at = chrono::Utc::now().to_rfc3339();

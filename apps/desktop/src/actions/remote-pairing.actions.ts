@@ -29,7 +29,10 @@ const encodeBase64Url = (value: string): string => {
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
   }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 };
 
 const decodeBase64Url = (value: string): string => {
@@ -64,7 +67,9 @@ export const buildRemotePairingInvite = (
   return `${INVITE_PREFIX}${encodeBase64Url(JSON.stringify(invite))}`;
 };
 
-export const parseRemotePairingInvite = (value: string): RemotePairingInvite => {
+export const parseRemotePairingInvite = (
+  value: string,
+): RemotePairingInvite => {
   const trimmed = value.trim();
   if (!trimmed.startsWith(INVITE_PREFIX)) {
     throw new Error("Pair code is not a valid Voquill remote invite.");

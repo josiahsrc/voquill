@@ -4,7 +4,10 @@ import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { createId } from "../utils/id.utils";
 import { getLogger } from "../utils/log.utils";
-import { getMyEffectiveUserId, getMyUserPreferences } from "../utils/user.utils";
+import {
+  getMyEffectiveUserId,
+  getMyUserPreferences,
+} from "../utils/user.utils";
 import { insertLocalTranscriptOutput } from "../utils/output-routing.utils";
 import { showSnackbar } from "./app.actions";
 
@@ -53,7 +56,8 @@ const storeRemoteTranscription = async ({
     remoteDeviceId: senderDeviceId,
   };
 
-  const stored = await getTranscriptionRepo().createTranscription(transcription);
+  const stored =
+    await getTranscriptionRepo().createTranscription(transcription);
   produceAppState((draft) => {
     draft.transcriptionById[stored.id] = stored;
     draft.transcriptions.transcriptionIds = [
@@ -72,10 +76,7 @@ export const handleRemoteFinalTextReceived = async (
   }
 
   await new Promise<void>((resolve) => setTimeout(resolve, 20));
-  await insertLocalTranscriptOutput(
-    `${finalText} `,
-    null,
-  );
+  await insertLocalTranscriptOutput(`${finalText} `, null);
   await storeRemoteTranscription({
     senderDeviceId: payload.senderDeviceId,
     rawTranscript: finalText,

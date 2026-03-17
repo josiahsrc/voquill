@@ -17,9 +17,8 @@ export const loadPairedRemoteDevices = async (): Promise<void> => {
 export const upsertPairedRemoteDevice = async (
   params: PairedRemoteDeviceUpsertParams,
 ): Promise<PairedRemoteDevice> => {
-  const device = await getPairedRemoteDeviceRepo().upsertPairedRemoteDevice(
-    params,
-  );
+  const device =
+    await getPairedRemoteDeviceRepo().upsertPairedRemoteDevice(params);
 
   produceAppState((draft) => {
     registerPairedRemoteDevices(draft, [device]);

@@ -394,8 +394,7 @@ async fn handle_connection(
                         .await?;
                     }
                     Err(err) => {
-                        let message =
-                            format!("Failed to emit remote transcript event: {err}");
+                        let message = format!("Failed to emit remote transcript event: {err}");
                         state.record_error(
                             Some(sender_device_id),
                             Some(event_id.clone()),
@@ -418,7 +417,10 @@ async fn handle_connection(
                     }
                 }
             }
-            IncomingEnvelope::Heartbeat { session_id, sent_at: _sent_at } => {
+            IncomingEnvelope::Heartbeat {
+                session_id,
+                sent_at: _sent_at,
+            } => {
                 write_message(
                     &mut writer,
                     &OutgoingEnvelope::SessionAck {

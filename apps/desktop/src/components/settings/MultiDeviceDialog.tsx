@@ -106,16 +106,12 @@ export const MultiDeviceDialog = () => {
     void setRemoteOutputEnabled(enabled);
   };
 
-  const handleRemoteTargetDeviceChange = (
-    event: SelectChangeEvent<string>,
-  ) => {
+  const handleRemoteTargetDeviceChange = (event: SelectChangeEvent<string>) => {
     const deviceId = event.target.value || null;
     void setRemoteTargetDeviceId(deviceId);
   };
 
-  const handleToggleReceiver = async (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleToggleReceiver = async (event: ChangeEvent<HTMLInputElement>) => {
     if (receiverBusy) {
       return;
     }
@@ -327,7 +323,8 @@ export const MultiDeviceDialog = () => {
   const receiverSummary = receiverStatus?.enabled
     ? intl.formatMessage(
         {
-          defaultMessage: "Listening on {address}:{port}. Invite code is ready.",
+          defaultMessage:
+            "Listening on {address}:{port}. Invite code is ready.",
         },
         {
           address: receiverStatus.listenAddress ?? "0.0.0.0",
@@ -348,16 +345,17 @@ export const MultiDeviceDialog = () => {
     receiverStatus?.lastTargetEditable === false &&
     receiverStatus?.lastDeliveryStatus === "failed";
 
-  const remoteTargetSummary =
-    pairedDevices.some((device) => device.role === "receiver")
-      ? intl.formatMessage({
-          defaultMessage:
-            "Route finalized dictation to a paired desktop instead of inserting locally.",
-        })
-      : intl.formatMessage({
-          defaultMessage:
-            "No paired multi-device targets yet. Pair a receiver before enabling cross-device output.",
-        });
+  const remoteTargetSummary = pairedDevices.some(
+    (device) => device.role === "receiver",
+  )
+    ? intl.formatMessage({
+        defaultMessage:
+          "Route finalized dictation to a paired desktop instead of inserting locally.",
+      })
+    : intl.formatMessage({
+        defaultMessage:
+          "No paired multi-device targets yet. Pair a receiver before enabling cross-device output.",
+      });
   const selectedRemoteTarget =
     pairedDevices.find((device) => device.id === remoteTargetDeviceId) ?? null;
   const receiverDevices = pairedDevices.filter(
@@ -458,122 +456,126 @@ export const MultiDeviceDialog = () => {
                 />
 
                 {receiverStatus && (
-              <Stack spacing={0.5} sx={{ mt: -1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  <FormattedMessage
-                    defaultMessage="Device ID: {deviceId}"
-                    values={{ deviceId: receiverStatus.deviceId }}
-                  />
-                </Typography>
-                {receiverStatus.enabled && (
-                  <Typography variant="caption" color="text.secondary">
-                    <FormattedMessage
-                      defaultMessage="Connect address: {address}:{port}"
-                      values={{
-                        address: receiverStatus.listenAddress ?? "127.0.0.1",
-                        port: receiverStatus.port ?? "unknown",
-                      }}
-                    />
-                  </Typography>
-                )}
-                {receiverStatus.lastSenderDeviceId && (
-                  <Typography variant="caption" color="text.secondary">
-                    <FormattedMessage
-                      defaultMessage="Last sender: {senderId}"
-                      values={{ senderId: receiverStatus.lastSenderDeviceId }}
-                    />
-                  </Typography>
-                )}
-                {receiverStatus.lastDeliveryStatus && (
-                  <Typography variant="caption" color="text.secondary">
-                    {lastDeliveryTimeLabel ? (
+                  <Stack spacing={0.5} sx={{ mt: -1 }}>
+                    <Typography variant="caption" color="text.secondary">
                       <FormattedMessage
-                        defaultMessage="Last delivery: {status} at {timestamp}"
-                        values={{
-                          status: receiverStatus.lastDeliveryStatus,
-                          timestamp: lastDeliveryTimeLabel,
-                        }}
+                        defaultMessage="Device ID: {deviceId}"
+                        values={{ deviceId: receiverStatus.deviceId }}
                       />
-                    ) : (
-                      <FormattedMessage
-                        defaultMessage="Last delivery: {status}"
-                        values={{
-                          status: receiverStatus.lastDeliveryStatus,
-                        }}
-                      />
+                    </Typography>
+                    {receiverStatus.enabled && (
+                      <Typography variant="caption" color="text.secondary">
+                        <FormattedMessage
+                          defaultMessage="Connect address: {address}:{port}"
+                          values={{
+                            address:
+                              receiverStatus.listenAddress ?? "127.0.0.1",
+                            port: receiverStatus.port ?? "unknown",
+                          }}
+                        />
+                      </Typography>
                     )}
-                  </Typography>
-                )}
-                {receiverStatus.lastError && (
-                  <Typography
-                    variant="caption"
-                    color="error.main"
-                    sx={{ wordBreak: "break-word" }}
-                  >
-                    <FormattedMessage
-                      defaultMessage="Last error: {message}"
-                      values={{ message: receiverStatus.lastError }}
-                    />
-                  </Typography>
-                )}
-                {(receiverStatus.lastTargetClassName ||
-                  receiverStatus.lastTargetTitle) && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ wordBreak: "break-word" }}
-                  >
-                    <FormattedMessage
-                      defaultMessage="Last target: {className}{title}"
-                      values={{
-                        className:
-                          receiverStatus.lastTargetClassName ?? "unknown class",
-                        title: receiverStatus.lastTargetTitle
-                          ? ` (${receiverStatus.lastTargetTitle})`
-                          : "",
-                      }}
-                    />
-                  </Typography>
-                )}
-                {lastTargetLooksLikeVoquill && (
-                  <Typography
-                    variant="caption"
-                    color="warning.main"
-                    sx={{ wordBreak: "break-word" }}
-                  >
-                    <FormattedMessage defaultMessage="The last delivery targeted the Voquill window itself. Focus the destination app on the receiver machine before sending text." />
-                  </Typography>
-                )}
-                {lastTargetMissingEditableField && (
-                  <Typography
-                    variant="caption"
-                    color="warning.main"
-                    sx={{ wordBreak: "break-word" }}
-                  >
-                    <FormattedMessage defaultMessage="The last target window was active, but no editable text field was focused. Click back into the destination text field on the receiver machine before sending text." />
-                  </Typography>
-                )}
-                <Typography variant="caption" color="text.secondary">
-                  <FormattedMessage defaultMessage="Use Copy invite on the receiver machine, then Import invite on the sender machine. Manual trusted-device entry still works as a fallback." />
-                </Typography>
-                <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={handleCopyInvite}
-                    disabled={!receiverStatus.enabled}
-                  >
-                    <FormattedMessage defaultMessage="Copy invite" />
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => setImportDialogOpen(true)}
-                  >
-                    <FormattedMessage defaultMessage="Import invite" />
-                  </Button>
-                </Stack>
-              </Stack>
+                    {receiverStatus.lastSenderDeviceId && (
+                      <Typography variant="caption" color="text.secondary">
+                        <FormattedMessage
+                          defaultMessage="Last sender: {senderId}"
+                          values={{
+                            senderId: receiverStatus.lastSenderDeviceId,
+                          }}
+                        />
+                      </Typography>
+                    )}
+                    {receiverStatus.lastDeliveryStatus && (
+                      <Typography variant="caption" color="text.secondary">
+                        {lastDeliveryTimeLabel ? (
+                          <FormattedMessage
+                            defaultMessage="Last delivery: {status} at {timestamp}"
+                            values={{
+                              status: receiverStatus.lastDeliveryStatus,
+                              timestamp: lastDeliveryTimeLabel,
+                            }}
+                          />
+                        ) : (
+                          <FormattedMessage
+                            defaultMessage="Last delivery: {status}"
+                            values={{
+                              status: receiverStatus.lastDeliveryStatus,
+                            }}
+                          />
+                        )}
+                      </Typography>
+                    )}
+                    {receiverStatus.lastError && (
+                      <Typography
+                        variant="caption"
+                        color="error.main"
+                        sx={{ wordBreak: "break-word" }}
+                      >
+                        <FormattedMessage
+                          defaultMessage="Last error: {message}"
+                          values={{ message: receiverStatus.lastError }}
+                        />
+                      </Typography>
+                    )}
+                    {(receiverStatus.lastTargetClassName ||
+                      receiverStatus.lastTargetTitle) && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ wordBreak: "break-word" }}
+                      >
+                        <FormattedMessage
+                          defaultMessage="Last target: {className}{title}"
+                          values={{
+                            className:
+                              receiverStatus.lastTargetClassName ??
+                              "unknown class",
+                            title: receiverStatus.lastTargetTitle
+                              ? ` (${receiverStatus.lastTargetTitle})`
+                              : "",
+                          }}
+                        />
+                      </Typography>
+                    )}
+                    {lastTargetLooksLikeVoquill && (
+                      <Typography
+                        variant="caption"
+                        color="warning.main"
+                        sx={{ wordBreak: "break-word" }}
+                      >
+                        <FormattedMessage defaultMessage="The last delivery targeted the Voquill window itself. Focus the destination app on the receiver machine before sending text." />
+                      </Typography>
+                    )}
+                    {lastTargetMissingEditableField && (
+                      <Typography
+                        variant="caption"
+                        color="warning.main"
+                        sx={{ wordBreak: "break-word" }}
+                      >
+                        <FormattedMessage defaultMessage="The last target window was active, but no editable text field was focused. Click back into the destination text field on the receiver machine before sending text." />
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      <FormattedMessage defaultMessage="Use Copy invite on the receiver machine, then Import invite on the sender machine. Manual trusted-device entry still works as a fallback." />
+                    </Typography>
+                    <Stack direction="row" spacing={1} sx={{ pt: 0.5 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleCopyInvite}
+                        disabled={!receiverStatus.enabled}
+                      >
+                        <FormattedMessage defaultMessage="Copy invite" />
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setImportDialogOpen(true)}
+                      >
+                        <FormattedMessage defaultMessage="Import invite" />
+                      </Button>
+                    </Stack>
+                  </Stack>
                 )}
               </>
             )}
@@ -656,12 +658,12 @@ export const MultiDeviceDialog = () => {
                   description={
                     <FormattedMessage defaultMessage="Send a fixed test message to the active receiver to verify transport without using dictation." />
                   }
-                action={
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={handleSendTest}
-                    disabled={!remoteTargetDeviceId || testBusy}
+                  action={
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleSendTest}
+                      disabled={!remoteTargetDeviceId || testBusy}
                     >
                       <FormattedMessage defaultMessage="Send test" />
                     </Button>
