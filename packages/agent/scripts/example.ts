@@ -26,14 +26,11 @@ const provider: AgentLlmProvider = {
 
 // --- Helpers ---
 
+let rl: readline.Interface;
+
 function confirm(message: string): Promise<boolean> {
-  const promptRl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
   return new Promise((resolve) => {
-    promptRl.question(`  ${message} [y/n] `, (answer) => {
-      promptRl.close();
+    rl.question(`  ${message} [y/n] `, (answer) => {
       resolve(answer.trim().toLowerCase() !== "n");
     });
   });
@@ -150,7 +147,7 @@ Rules:
 
 // --- Interactive REPL ---
 
-const rl = readline.createInterface({
+rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
