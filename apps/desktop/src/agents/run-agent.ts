@@ -23,7 +23,10 @@ export async function runAgent(
   conversationId: string,
   config: AgentTypeConfig,
 ): Promise<void> {
-  const agentState = createAgentRunState(config.agentType, config.maxIterations);
+  const agentState = createAgentRunState(
+    config.agentType,
+    config.maxIterations,
+  );
   produceAppState((draft) => {
     draft.agentStateByConversationId[conversationId] = agentState;
   });
@@ -328,7 +331,11 @@ async function executeWithPermission(
   }
 
   const permissionParams = { ...params, reason };
-  const permissionId = requestToolPermission(info.id, permissionParams, conversationId);
+  const permissionId = requestToolPermission(
+    info.id,
+    permissionParams,
+    conversationId,
+  );
 
   produceAppState((draft) => {
     modifyAgentState({
@@ -378,8 +385,7 @@ async function pollForPermission(
 
 function buildConversationMessages(conversationId: string): LlmMessage[] {
   const state = getAppState();
-  const messageIds =
-    state.chatMessageIdsByConversationId[conversationId] ?? [];
+  const messageIds = state.chatMessageIdsByConversationId[conversationId] ?? [];
   const messages: LlmMessage[] = [];
 
   for (const id of messageIds) {

@@ -101,7 +101,11 @@ const ToolResultBubble = ({
       <BuildRounded
         sx={{ fontSize: 14, color: "text.secondary", flexShrink: 0 }}
       />
-      <OverflowTypography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>
+      <OverflowTypography
+        variant="caption"
+        color="text.secondary"
+        sx={{ minWidth: 0 }}
+      >
         {toolInfo?.description ?? toolName}
         {reason ? ` — ${reason}` : ""}
       </OverflowTypography>

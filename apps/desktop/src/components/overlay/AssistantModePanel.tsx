@@ -714,49 +714,49 @@ export const AssistantModePanel = ({
               }}
             >
               <Box ref={contentRef}>
-              {assistantMessages.map((message, index) => {
-                const streaming = streamingMessageById[message.id];
-                return (
-                  <Box
-                    key={message.id}
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 0.5,
-                    }}
-                  >
-                    {index > 0 ? (
-                      <Box
-                        sx={{
-                          alignSelf: "flex-start",
-                          width: 36,
-                          borderTop: `1px solid ${alpha(
-                            theme.palette.common.white,
-                            0.45,
-                          )}`,
-                          mt: 2,
-                          mb: 1,
-                          flexShrink: 0,
-                        }}
-                      />
-                    ) : null}
-                    {streaming ? (
-                      <OverlayAgentActivity streaming={streaming} />
-                    ) : null}
-                    {(message.metadata as Record<string, unknown> | null)
-                      ?.type === "tool-result" ? (
-                      <OverlayToolResultEntry message={message} />
-                    ) : (
-                      <TranscriptEntry message={message} />
-                    )}
+                {assistantMessages.map((message, index) => {
+                  const streaming = streamingMessageById[message.id];
+                  return (
+                    <Box
+                      key={message.id}
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      {index > 0 ? (
+                        <Box
+                          sx={{
+                            alignSelf: "flex-start",
+                            width: 36,
+                            borderTop: `1px solid ${alpha(
+                              theme.palette.common.white,
+                              0.45,
+                            )}`,
+                            mt: 2,
+                            mb: 1,
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : null}
+                      {streaming ? (
+                        <OverlayAgentActivity streaming={streaming} />
+                      ) : null}
+                      {(message.metadata as Record<string, unknown> | null)
+                        ?.type === "tool-result" ? (
+                        <OverlayToolResultEntry message={message} />
+                      ) : (
+                        <TranscriptEntry message={message} />
+                      )}
+                    </Box>
+                  );
+                })}
+                {pendingPermissions.map((p) => (
+                  <Box key={p.id} sx={{ mt: 1.5 }}>
+                    <OverlayToolPermissionCard permission={p} />
                   </Box>
-                );
-              })}
-              {pendingPermissions.map((p) => (
-                <Box key={p.id} sx={{ mt: 1.5 }}>
-                  <OverlayToolPermissionCard permission={p} />
-                </Box>
-              ))}
+                ))}
               </Box>
             </Box>
 

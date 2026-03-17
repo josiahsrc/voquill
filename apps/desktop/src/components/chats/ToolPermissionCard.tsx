@@ -41,30 +41,30 @@ export const ToolPermissionCard = ({ permission }: ToolPermissionCardProps) => {
               <Typography variant="body2" fontWeight={600}>
                 {toolInfo?.description ?? permission.toolId}
               </Typography>
-            <Tooltip
-              title={
-                <Box
-                  component="pre"
-                  sx={{ m: 0, fontSize: "0.75rem", whiteSpace: "pre-wrap" }}
-                >
-                  {JSON.stringify(permission.params, null, 2)}
-                </Box>
-              }
-              arrow
-              placement="top"
-            >
-              <InfoOutlined
-                sx={{ fontSize: 16, color: "text.secondary", cursor: "help" }}
-              />
-            </Tooltip>
-            {!isPending && (
-              <Chip
-                size="small"
-                label={permission.status}
-                color={permission.status === "allowed" ? "success" : "error"}
-                sx={{ ml: "auto" }}
-              />
-            )}
+              <Tooltip
+                title={
+                  <Box
+                    component="pre"
+                    sx={{ m: 0, fontSize: "0.75rem", whiteSpace: "pre-wrap" }}
+                  >
+                    {JSON.stringify(permission.params, null, 2)}
+                  </Box>
+                }
+                arrow
+                placement="top"
+              >
+                <InfoOutlined
+                  sx={{ fontSize: 16, color: "text.secondary", cursor: "help" }}
+                />
+              </Tooltip>
+              {!isPending && (
+                <Chip
+                  size="small"
+                  label={permission.status}
+                  color={permission.status === "allowed" ? "success" : "error"}
+                  sx={{ ml: "auto" }}
+                />
+              )}
             </Stack>
             {reason && (
               <Typography variant="caption" color="text.secondary">
