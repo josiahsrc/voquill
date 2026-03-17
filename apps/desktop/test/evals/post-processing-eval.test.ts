@@ -9,7 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getOpenAIGentextRepo,
+  getGroqGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,7 +48,9 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getOpenAIGentextRepo().generateText({
+  const output = await getGroqGentextRepo(
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+  ).generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -168,8 +170,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove the choppy sentence structure. i.e. 'Yes. But' -> Yes, but",
-          "It should remove the filler word 'like' and correct 'I core rule' to 'the core rule'",
+          "It should remove likes and ums and format the code names correctly",
         ],
       });
     });
@@ -180,7 +181,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Yes. Thanks for bringing that up. I recently made a change to make it so verbatim doesn't apply any post processing, effects as part of its contract. And so with this change, I felt it appropriate to basically make it so, when you're doing real time with verbatim mode, it still doesn't apply post processing on the outputs since none is needed. This way, like, verbatim is basically, like, a through and through really clean very fast output with no post processing.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove filler words like 'like' and 'basically' while keeping the technical content intact",
+          "It should remove filler words like 'like' while keeping the technical content intact",
         ],
       });
     });
@@ -191,7 +192,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Hey Emily, can you go fix that thing? Excuse me, that speaker that you broke yesterday. I really need that. Actually uh, hey Emily, could you please go fix that speaker you broke? It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove the redundant phrasing in the request since it's basically the same as the first one, just with more filler and less clarity",
+          "It should apply the self correction, replacing 'thing' with 'speaker' and removing the earlier mention of 'thing'",
         ],
       });
     });

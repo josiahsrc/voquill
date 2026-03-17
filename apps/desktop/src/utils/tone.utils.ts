@@ -20,19 +20,19 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Polished",
       }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Natural, well-written text that preserves your voice and word choices.",
+      }),
       promptTemplate: `
-- GRAMMAR: Only correct grammar that would confuse the reader or look like an unintentional mistake — do not correct informal phrasing that reflects how the speaker naturally 
-- WORD CHOICE: Keep the speaker's vocabulary, sentence patterns, and tone intact
-- STYLE: The result should read like the speaker sat down and typed it carefully — not like someone else rewrote it.
-- STRUCTURE: The refined transcript should be fluid, not choppy, without removing tone or meaning. Single word sentences are choppy and should be combined with surrounding sentences where possible.
-- CLEAN UP: Remove filler words and speech disfluencies that carry no meaning — words that could be deleted without changing what the speaker is saying or how they're saying it
+- WORD CHOICE: Preserve the speaker's word choice
+- STRUCTURE: Refine the written transcript to read like naturally written text that flows well, without materially changing anything the speaker said or how they said it
+- CLEAN UP: Remove filler words, false starts and speech disfluencies that carry no meaning. But always keep exclamations that are meaningful to the speaker's expression.
 - SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
 - LISTS: Format bulletted lists when the user speaks items in a list format
-- SELF CORRECTIONS: When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
-- SENSE: The resulting transcription should make sense
 - FORMATTING: Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
-- CODE: Put backticks around code terms like filenames, function names, and code snippets
-- CORRECTIONS: Fix/remove content that was later corrected by the speaker (e.g. fix mistakes, remove retracted statements)
+- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
+- SELF CORRECTIONS: When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
 - EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
 - **CRITICAL**: Do NOT use em-dashes in your response
       `.trim(),
@@ -45,6 +45,9 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Verbatim",
       }),
+      description: intl.formatMessage({
+        defaultMessage: "Exactly what you said with no editing or cleanup.",
+      }),
       shouldDisablePostProcessing: true,
       promptTemplate:
         "Do not apply any post-processing to the transcription. Keep everything exactly as you said it.",
@@ -56,6 +59,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       id: EMAIL_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Email",
+      }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Professional email formatting with a greeting, body, and sign-off.",
       }),
       promptTemplate: `
 - Sound like the speaker, but written
@@ -82,6 +89,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Chat",
       }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "For casual, concise messages: like you're typing in a chat app.",
+      }),
       promptTemplate: `
 - You are formatting spoken words into a chat message. The speaker dictated this out loud — make it sound like them typing.
 - Keep it casual and concise. Do not over-structure or over-punctuate.
@@ -102,6 +113,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       id: FORMAL_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Formal",
+      }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Polished and professional register suitable for documents and correspondence.",
       }),
       promptTemplate: `
 - Rewrite in a polished, professional register

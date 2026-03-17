@@ -9,18 +9,35 @@ import {
 import { getEffectiveAuth } from "../utils/auth.utils";
 import { getLogger } from "../utils/log.utils";
 import { NEW_SERVER_URL } from "../utils/new-server.utils";
-import { collectDictionaryEntries } from "../utils/prompt.utils";
-import { loadMyEffectiveDictationLanguage } from "../utils/user.utils";
+import {
+  buildPostProcessingPrompt,
+  buildSystemPostProcessingTonePrompt,
+  collectDictionaryEntries,
+} from "../utils/prompt.utils";
+import { getToneById, getToneConfig } from "../utils/tone.utils";
+import {
+  getMyUserName,
+  loadMyEffectiveDictationLanguage,
+} from "../utils/user.utils";
 
 type TranscriptResult = {
   text: string;
   source: string;
   durationMs?: number;
+  processed?: {
+    text: string;
+    durationMs?: number;
+  };
   warnings: string[];
 };
 
+type FinalizeOptions = {
+  prompt?: string;
+  systemPrompt?: string;
+};
+
 type NewServerStreamingSession = {
-  finalize: () => Promise<TranscriptResult>;
+  finalize: (options?: FinalizeOptions) => Promise<TranscriptResult>;
   cleanup: () => void;
 };
 
@@ -153,7 +170,7 @@ const startNewServerStreaming = async (
       resolver?.(result);
     };
 
-    const finalize = (): Promise<TranscriptResult> => {
+    const finalize = (options?: FinalizeOptions): Promise<TranscriptResult> => {
       return new Promise((resolveFinalize, rejectFinalize) => {
         getLogger().info(
           `[NewServer WebSocket] Finalize called (wsState=${ws?.readyState}, sent=${sentChunkCount}, dropped=${droppedChunkCount})`,
@@ -174,13 +191,24 @@ const startNewServerStreaming = async (
         finalizeRejecter = rejectFinalize;
 
         if (ws && ws.readyState === WebSocket.OPEN) {
-          getLogger().info("[NewServer WebSocket] Sending finalize message...");
-          ws.send(JSON.stringify({ type: "finalize" }));
+          const finalizeMsg: Record<string, unknown> = { type: "finalize" };
+          if (options?.prompt) {
+            finalizeMsg.prompt = options.prompt;
+          }
+          if (options?.systemPrompt) {
+            finalizeMsg.systemPrompt = options.systemPrompt;
+          }
+          getLogger().info(
+            `[NewServer WebSocket] Sending finalize message (hasPrompt=${!!options?.prompt})...`,
+          );
+          ws.send(JSON.stringify(finalizeMsg));
 
+          const timeoutMs = options?.prompt ? 30000 : 15000;
           finalizeTimeout = setTimeout(() => {
-            const warning =
-              "Server did not respond within 15 seconds; using recovered stream transcript if available";
-            getLogger().warning("[NewServer WebSocket] Finalize timeout (15s)");
+            const warning = `Server did not respond within ${timeoutMs / 1000} seconds; using recovered stream transcript if available`;
+            getLogger().warning(
+              `[NewServer WebSocket] Finalize timeout (${timeoutMs / 1000}s)`,
+            );
             if (finalizeRejecter) {
               settleFinalize(
                 getRecoveredNewServerTranscriptResult(
@@ -189,7 +217,7 @@ const startNewServerStreaming = async (
                 ),
               );
             }
-          }, 15000);
+          }, timeoutMs);
         } else {
           const warning =
             "Streaming connection closed before final transcript was received; using recovered stream transcript if available";
@@ -203,7 +231,7 @@ const startNewServerStreaming = async (
       });
     };
 
-    const wsUrl = NEW_SERVER_URL.replace(/^http/, "ws") + "/v1/transcribe-raw";
+    const wsUrl = NEW_SERVER_URL.replace(/^http/, "ws") + "/v1/dictation";
     console.log("[NewServer WebSocket] Connecting to:", wsUrl);
     ws = new WebSocket(wsUrl);
 
@@ -313,6 +341,8 @@ const startNewServerStreaming = async (
             msg.text?.length ?? 0,
             "source:",
             msg.source,
+            "hasProcessed:",
+            !!msg.processed,
           );
           if (finalizeTimeout) {
             clearTimeout(finalizeTimeout);
@@ -323,6 +353,12 @@ const startNewServerStreaming = async (
               text: msg.text || "",
               source: msg.source || "",
               durationMs: msg.durationMs,
+              processed: msg.processed
+                ? {
+                    text: msg.processed.text,
+                    durationMs: msg.processed.durationMs,
+                  }
+                : undefined,
               warnings: [],
             });
           }
@@ -391,7 +427,7 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
 
   async finalize(
     _audio: StopRecordingResponse,
-    _options?: TranscriptionSessionFinalizeOptions,
+    options?: TranscriptionSessionFinalizeOptions,
   ): Promise<TranscriptionSessionResult> {
     if (!this.session) {
       const reason = this.startError
@@ -408,21 +444,33 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
     }
 
     try {
-      getLogger().info("[NewServer] Finalizing streaming session...");
-      const result = await this.session.finalize();
+      const finalizeOptions = await this.buildFinalizeOptions(options);
+      getLogger().info(
+        `[NewServer] Finalizing streaming session (hasPrompt=${!!finalizeOptions?.prompt})...`,
+      );
+      const result = await this.session.finalize(finalizeOptions);
       getLogger().info("[NewServer] Transcript received:", {
         length: result.text?.length ?? 0,
         source: result.source,
         durationMs: result.durationMs,
+        hasProcessed: !!result.processed,
       });
 
       return {
         rawTranscript: result.text || null,
+        processedTranscript: result.processed?.text || null,
         metadata: {
           inferenceDevice: `Cloud • ${result.source || "New Server"}`,
           transcriptionMode: "cloud",
           transcriptionDurationMs: result.durationMs ?? null,
         },
+        postProcessMetadata: result.processed
+          ? {
+              postProcessMode: "cloud",
+              postProcessDevice: "Cloud • Dictation Server",
+              postprocessDurationMs: result.processed.durationMs ?? null,
+            }
+          : undefined,
         warnings: result.warnings,
       };
     } catch (error) {
@@ -438,6 +486,35 @@ export class NewServerTranscriptionSession implements TranscriptionSession {
         ],
       };
     }
+  }
+
+  private async buildFinalizeOptions(
+    options?: TranscriptionSessionFinalizeOptions,
+  ): Promise<FinalizeOptions | undefined> {
+    const state = getAppState();
+    if (state.activeRecordingMode !== "dictate") {
+      return undefined;
+    }
+
+    const toneId = options?.toneId ?? null;
+    const tone = getToneById(state, toneId);
+    if (tone?.shouldDisablePostProcessing) {
+      return undefined;
+    }
+
+    const toneConfig = getToneConfig(state, toneId);
+    const dictationLanguage = await loadMyEffectiveDictationLanguage(state);
+    const promptInput = {
+      transcript: "{{transcript}}",
+      userName: getMyUserName(state),
+      dictationLanguage,
+      tone: toneConfig,
+    };
+
+    return {
+      prompt: buildPostProcessingPrompt(promptInput),
+      systemPrompt: buildSystemPostProcessingTonePrompt(promptInput),
+    };
   }
 
   cleanup(): void {

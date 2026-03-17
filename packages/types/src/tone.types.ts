@@ -5,6 +5,7 @@ import { Replace } from "./common.types";
 export type DatabaseTone = {
   id: string;
   name: string;
+  description?: string;
   promptTemplate: string;
   isSystem: boolean;
   createdAt: FiremixTimestamp;
@@ -28,6 +29,7 @@ export const ToneZod = z
   .object({
     id: z.string(),
     name: z.string(),
+    description: z.string().optional(),
     promptTemplate: z.string(),
     isSystem: z.boolean(),
     createdAt: z.number(),
