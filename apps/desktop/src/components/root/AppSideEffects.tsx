@@ -139,6 +139,10 @@ export const AppSideEffects = () => {
   );
 
   useAsyncEffect(async () => {
+    if (getPlatform() === "linux") {
+      return;
+    }
+
     if (keyPermAuthorized) {
       getLogger().info(
         "Accessibility permission authorized, starting key listener",
