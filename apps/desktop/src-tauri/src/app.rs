@@ -5,6 +5,8 @@ use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
 
 fn handle_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
+    let _ = (&app_handle, &event);
+    #[cfg(target_os = "macos")]
     if let RunEvent::Reopen {
         has_visible_windows,
         ..
