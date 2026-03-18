@@ -80,6 +80,7 @@ export * as rateLimit from "./functions/rateLimit.functions";
 export * as revenuecat from "./functions/revenuecat.functions";
 export * as stripe from "./functions/stripe.functions";
 export * as user from "./functions/user.functions";
+export { streamHandler } from "./streaming";
 
 export type HandlerRequest = {
 	name: HandlerName;

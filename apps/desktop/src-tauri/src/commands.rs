@@ -971,7 +971,9 @@ pub async fn clear_local_data(
     let pool = database.pool();
     let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
 
-    const TABLES_TO_CLEAR: [&str; 6] = [
+    const TABLES_TO_CLEAR: [&str; 8] = [
+        "chat_messages",
+        "conversations",
         "user_profiles",
         "transcriptions",
         "terms",
@@ -1248,12 +1250,8 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 }
 
 #[tauri::command]
-pub fn set_agent_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
-    let window = app
-        .get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
-        .ok_or_else(|| "agent-overlay window not found".to_string())?;
-
-    crate::platform::window::set_overlay_click_through(&window, click_through)
+pub fn set_pill_window_size(size: crate::domain::PillWindowSize, overlay_state: State<'_, crate::state::OverlayState>) {
+    overlay_state.set_pill_window_size(size);
 }
 
 #[tauri::command]
@@ -1327,6 +1325,11 @@ pub fn sync_hotkey_combos(combos: Vec<Vec<String>>) {
 }
 
 #[tauri::command]
+pub fn reset_key_listener_state() {
+    crate::platform::keyboard::reset_pressed_keys();
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
@@ -1378,9 +1381,118 @@ pub fn get_keyboard_language() -> Result<String, String> {
     crate::platform::keyboard_language::get_keyboard_language()
 }
 
+#[tauri::command]
+pub async fn conversation_create(
+    conversation: crate::domain::Conversation,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Conversation, String> {
+    crate::db::conversation_queries::insert_conversation(database.pool(), &conversation)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Conversation>, String> {
+    crate::db::conversation_queries::fetch_conversations(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_update(
+    conversation: crate::domain::Conversation,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Conversation, String> {
+    crate::db::conversation_queries::update_conversation(database.pool(), &conversation)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::conversation_queries::delete_conversation(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_create(
+    message: crate::domain::ChatMessage,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::ChatMessage, String> {
+    crate::db::chat_message_queries::insert_chat_message(database.pool(), &message)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_list(
+    conversation_id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::ChatMessage>, String> {
+    crate::db::chat_message_queries::fetch_chat_messages_by_conversation(
+        database.pool(),
+        &conversation_id,
+    )
+    .await
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_update(
+    message: crate::domain::ChatMessage,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::ChatMessage, String> {
+    crate::db::chat_message_queries::update_chat_message(database.pool(), &message)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_delete_many(
+    ids: Vec<String>,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::chat_message_queries::delete_chat_messages(database.pool(), &ids)
+        .await
+        .map_err(|err| err.to_string())
+}
+
 /// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
 ///
 /// Platform paths:
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunTerminalCommandResponse {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+}
+
+#[tauri::command]
+pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandResponse, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let (shell, flag) = if cfg!(target_os = "windows") { ("cmd", "/C") } else { ("sh", "-c") };
+        let output = std::process::Command::new(shell)
+            .args([flag, &command])
+            .output()
+            .map_err(|err| err.to_string())?;
+
+        Ok(RunTerminalCommandResponse {
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            exit_code: output.status.code().unwrap_or(-1),
+        })
+    })
+    .await
+    .map_err(|err| err.to_string())?
+}
+
 ///   - macOS:  ~/Library/Application Support/com.voquill.desktop/enterprise.json
 ///   - Linux:  ~/.config/com.voquill.desktop/enterprise.json
 ///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json

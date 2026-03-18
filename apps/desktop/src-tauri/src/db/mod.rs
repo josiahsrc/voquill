@@ -1,5 +1,7 @@
 pub mod api_key_queries;
 pub mod app_target_queries;
+pub mod chat_message_queries;
+pub mod conversation_queries;
 pub mod hotkey_queries;
 pub mod paired_remote_device_queries;
 pub mod preferences_queries;
@@ -115,6 +117,8 @@ pub const REMOTE_RECEIVER_AUTO_START_MIGRATION_SQL: &str =
     include_str!("migrations/061_remote_receiver_auto_start.sql");
 pub const TRANSCRIPTION_REMOTE_STATUS_MIGRATION_SQL: &str =
     include_str!("migrations/062_transcription_remote_status.sql");
+pub const CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL: &str =
+    include_str!("migrations/063_conversations_and_chat_messages.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -488,6 +492,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 62,
             description: "add_transcription_remote_status",
             sql: TRANSCRIPTION_REMOTE_STATUS_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 63,
+            description: "create_conversations_and_chat_messages_tables",
+            sql: CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

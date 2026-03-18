@@ -1,0 +1,40 @@
+import { invoke } from "@tauri-apps/api/core";
+import type { ToolInfo } from "@repo/types";
+import { BaseTool, type ToolResult } from "./base.tool";
+import {
+  getToolAlwaysAllow,
+  setToolAlwaysAllow,
+} from "../utils/tool-permission.utils";
+
+type RunTerminalCommandResponse = {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+};
+
+export class RunTerminalCommandTool extends BaseTool {
+  constructor(info: ToolInfo) {
+    super(info);
+  }
+
+  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+    const command = params.command as string;
+    const result = await invoke<RunTerminalCommandResponse>(
+      "run_terminal_command",
+      { command },
+    );
+    return {
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.exitCode,
+    };
+  }
+
+  getAlwaysAllow(): boolean {
+    return getToolAlwaysAllow(this.info.id);
+  }
+
+  setAlwaysAllow(_params: Record<string, unknown>, allowed: boolean): void {
+    setToolAlwaysAllow(this.info.id, allowed);
+  }
+}

@@ -1,12 +1,22 @@
+import type { ToolPermissionResolution } from "@repo/types";
 import type { AppState } from "../state/app.state";
 
 export type OverlayPhase = "idle" | "recording" | "loading";
 
+export type OverlayResolvePermissionPayload = {
+  permissionId: string;
+  status: ToolPermissionResolution;
+  alwaysAllow?: boolean;
+};
+
 export type OverlaySyncPayload = Partial<
   Pick<
     AppState,
+    | "activeRecordingMode"
     | "hotkeyById"
-    | "agent"
+    | "pillConversationId"
+    | "chatMessageById"
+    | "chatMessageIdsByConversationId"
     | "userPrefs"
     | "userById"
     | "auth"
@@ -14,5 +24,8 @@ export type OverlaySyncPayload = Partial<
     | "onboarding"
     | "toneById"
     | "enterpriseConfig"
+    | "toolPermissionById"
+    | "toolInfoById"
+    | "streamingMessageById"
   >
 >;

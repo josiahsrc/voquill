@@ -25,6 +25,7 @@ import {
 } from "../../utils/user.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
 import { HotkeyBadge } from "../common/HotkeyBadge";
+import { AssistantModePanel } from "./AssistantModePanel";
 
 export const PILL_OVERLAY_WIDTH = 256;
 export const PILL_OVERLAY_HEIGHT = 96;
@@ -33,6 +34,9 @@ export const MIN_PILL_HEIGHT = 6;
 export const MIN_PILL_HOVER_PADDING = 4;
 export const EXPANDED_PILL_WIDTH = 120;
 export const EXPANDED_PILL_HEIGHT = 32;
+const ASSISTANT_PILL_LIFT = -8;
+const ASSISTANT_MOTION_TRANSITION =
+  "transform 340ms cubic-bezier(0.22, 1, 0.36, 1)";
 
 type PillExpandedPayload = {
   expanded: boolean;
@@ -58,7 +62,16 @@ export const PillOverlayRoot = () => {
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const theme = useTheme();
   const phase = useAppStore((state) => state.overlayPhase);
+  const activeRecordingMode = useAppStore((state) => state.activeRecordingMode);
   const levels = useAppStore((state) => state.audioLevels);
+  const pillMessages = useAppStore((state) => {
+    if (!state.pillConversationId) return [];
+    const ids =
+      state.chatMessageIdsByConversationId[state.pillConversationId] ?? [];
+    return ids
+      .map((id) => state.chatMessageById[id])
+      .filter((m): m is NonNullable<typeof m> => !!m);
+  });
   const isManualMode = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",
   );
@@ -75,9 +88,16 @@ export const PillOverlayRoot = () => {
   const isIdle = phase === "idle";
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
+  const isAssistantSessionActive = activeRecordingMode === "agent";
+  const assistantMessages = pillMessages;
+  const showIdlePrompt = isExpanded && isIdle;
   const overlayShown =
-    (isHovered && isIdle) || isFlashingTooltip || (isManualMode && isListening);
-  const showStyleSwitchers = isHovered || (isManualMode && isListening);
+    !isAssistantSessionActive &&
+    ((isHovered && isIdle) ||
+      isFlashingTooltip ||
+      (isManualMode && isListening));
+  const showStyleSwitchers =
+    !isAssistantSessionActive && (isHovered || (isManualMode && isListening));
   const flashingInfo = isFlashingTooltip && !showStyleSwitchers;
 
   useEffect(() => {
@@ -139,7 +159,7 @@ export const PillOverlayRoot = () => {
   );
   const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
 
-  const isOverlayActive = !isIdle;
+  const isOverlayActive = !isIdle || isAssistantSessionActive;
   const isVisible =
     isDictationUnlocked &&
     dictationPillVisibility !== "hidden" &&
@@ -149,6 +169,12 @@ export const PillOverlayRoot = () => {
     e.preventDefault();
     invoke("restore_overlay_focus").catch(() => {});
     emitTo("main", "on-click-dictate", {}).catch(console.error);
+  };
+
+  const handleMouseDownAgentTalk = (e: React.MouseEvent) => {
+    e.preventDefault();
+    invoke("restore_overlay_focus").catch(() => {});
+    emitTo("main", "on-click-agent-talk", {}).catch(console.error);
   };
 
   const handleCancelDictation = (e: React.MouseEvent) => {
@@ -183,6 +209,7 @@ export const PillOverlayRoot = () => {
           transition: "all 150ms ease-out",
           marginBottom: theme.spacing(1),
           pointerEvents: isManualMode && overlayShown ? "auto" : "none",
+          ...(isAssistantSessionActive && { display: "none" }),
         }}
       >
         <Box
@@ -292,19 +319,40 @@ export const PillOverlayRoot = () => {
         sx={{
           paddingBottom: `${MIN_PILL_HOVER_PADDING}px`,
           display: "flex",
-          alignItems: "center",
+          alignItems: isAssistantSessionActive ? "stretch" : "center",
           justifyContent: "center",
+          ...(isAssistantSessionActive && { flex: 1, width: "100%" }),
         }}
       >
         <Box
           sx={{
             position: "relative",
+            ...(!isAssistantSessionActive
+              ? { width: "auto", height: "auto" }
+              : { flex: 1 }),
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            transition: ASSISTANT_MOTION_TRANSITION,
           }}
         >
+          <AssistantModePanel
+            open={isAssistantSessionActive}
+            phase={phase}
+            messages={assistantMessages}
+          />
+
           <Box
-            onMouseDown={handleMouseDownDictate}
+            onMouseDown={
+              isAssistantSessionActive
+                ? handleMouseDownAgentTalk
+                : handleMouseDownDictate
+            }
             sx={{
               position: "relative",
+              transform: isAssistantSessionActive
+                ? `translateY(${ASSISTANT_PILL_LIFT}px)`
+                : "translateY(0)",
               width: isExpanded ? EXPANDED_PILL_WIDTH : MIN_PILL_WIDTH,
               height: isExpanded ? EXPANDED_PILL_HEIGHT : MIN_PILL_HEIGHT,
               borderRadius: isExpanded ? theme.spacing(2) : theme.spacing(0.75),
@@ -314,13 +362,15 @@ export const PillOverlayRoot = () => {
               ),
               border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
               backdropFilter: "blur(14px)",
-              transition: "all 200ms ease-out",
               overflow: "hidden",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
               pointerEvents: "auto",
+              zIndex: 1,
+              transition:
+                "all 200ms ease-out, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
             {/* Inner content container */}
@@ -336,7 +386,7 @@ export const PillOverlayRoot = () => {
                 transition: "opacity 150ms ease-out",
               }}
             >
-              {isHovered && (
+              {showIdlePrompt && (
                 <Typography
                   sx={{
                     position: "absolute",
@@ -420,9 +470,16 @@ export const PillOverlayRoot = () => {
               width: 18,
               height: 18,
               backgroundColor: theme.palette.grey[600],
-              opacity: !isIdle && isHovered ? 1 : 0,
-              transform: !isIdle && isHovered ? "scale(1)" : "scale(0)",
-              pointerEvents: !isIdle && isHovered ? "auto" : "none",
+              opacity:
+                !isAssistantSessionActive && !isIdle && isHovered ? 1 : 0,
+              transform:
+                !isAssistantSessionActive && !isIdle && isHovered
+                  ? "scale(1)"
+                  : "scale(0)",
+              pointerEvents:
+                !isAssistantSessionActive && !isIdle && isHovered
+                  ? "auto"
+                  : "none",
               transition: "opacity 200ms ease-out, transform 200ms ease-out",
               color: theme.palette.common.white,
               zIndex: 1,

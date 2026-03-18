@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@types/json-schema": "^7.0.15",
     "typescript": "5.9.2"
   },
   "files": [

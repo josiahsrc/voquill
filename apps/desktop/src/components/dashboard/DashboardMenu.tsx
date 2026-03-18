@@ -1,19 +1,23 @@
 import {
+  ChatBubbleOutline,
   ClassOutlined,
+  HelpOutline,
   HistoryOutlined,
   HomeOutlined,
   PaletteOutlined,
   SettingsOutlined,
-  HelpOutline,
 } from "@mui/icons-material";
 import { Box, List, Stack } from "@mui/material";
-import { FormattedMessage } from "react-intl";
-import { useLocation, useNavigate } from "react-router-dom";
-import { ListTile } from "../common/ListTile";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { FormattedMessage } from "react-intl";
+import { useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useLocalStorage } from "../../hooks/local-storage.hooks";
+import { useAppStore } from "../../store";
+import { ASSISTANT_MODE_ENABLED_KEY } from "../../utils/assistant-mode.utils";
+import { ListTile } from "../common/ListTile";
 import { DiscordListTile } from "./DiscordListTile";
 import { UpdateListTile } from "./UpdateListTile";
-import { useAppStore } from "../../store";
 
 const settingsPath = "/dashboard/settings";
 
@@ -23,29 +27,6 @@ type NavItem = {
   icon: React.ReactNode;
 };
 
-const navItems: NavItem[] = [
-  {
-    label: <FormattedMessage defaultMessage="Home" />,
-    path: "/dashboard",
-    icon: <HomeOutlined />,
-  },
-  {
-    label: <FormattedMessage defaultMessage="History" />,
-    path: "/dashboard/transcriptions",
-    icon: <HistoryOutlined />,
-  },
-  {
-    label: <FormattedMessage defaultMessage="Dictionary" />,
-    path: "/dashboard/dictionary",
-    icon: <ClassOutlined />,
-  },
-  {
-    label: <FormattedMessage defaultMessage="Styles" />,
-    path: "/dashboard/styling",
-    icon: <PaletteOutlined />,
-  },
-];
-
 export type DashboardMenuProps = {
   onChoose?: () => void;
 };
@@ -54,6 +35,45 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
   const location = useLocation();
   const nav = useNavigate();
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const [assistantModeEnabled] = useLocalStorage<boolean>(
+    ASSISTANT_MODE_ENABLED_KEY,
+    false,
+  );
+
+  const navItems = useMemo<NavItem[]>(
+    () => [
+      {
+        label: <FormattedMessage defaultMessage="Home" />,
+        path: "/dashboard",
+        icon: <HomeOutlined />,
+      },
+      {
+        label: <FormattedMessage defaultMessage="History" />,
+        path: "/dashboard/transcriptions",
+        icon: <HistoryOutlined />,
+      },
+      {
+        label: <FormattedMessage defaultMessage="Dictionary" />,
+        path: "/dashboard/dictionary",
+        icon: <ClassOutlined />,
+      },
+      {
+        label: <FormattedMessage defaultMessage="Styles" />,
+        path: "/dashboard/styling",
+        icon: <PaletteOutlined />,
+      },
+      ...(assistantModeEnabled
+        ? [
+            {
+              label: <FormattedMessage defaultMessage="Chats" />,
+              path: "/dashboard/chats",
+              icon: <ChatBubbleOutline />,
+            },
+          ]
+        : []),
+    ],
+    [assistantModeEnabled],
+  );
 
   const onChooseHandler = (path: string) => {
     onChoose?.();

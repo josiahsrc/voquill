@@ -10,11 +10,14 @@ type OverlayReadyPayload = {
   windowLabel: string;
 };
 
-const OVERLAY_TARGETS = ["pill-overlay", "toast-overlay", "agent-overlay"];
+const OVERLAY_TARGETS = ["pill-overlay", "toast-overlay"];
 
 const buildFullSyncPayload = (state: AppState): OverlaySyncPayload => ({
+  activeRecordingMode: state.activeRecordingMode,
   hotkeyById: state.hotkeyById,
-  agent: state.agent,
+  pillConversationId: state.pillConversationId,
+  chatMessageById: state.chatMessageById,
+  chatMessageIdsByConversationId: state.chatMessageIdsByConversationId,
   userPrefs: state.userPrefs,
   userById: state.userById,
   auth: state.auth,
@@ -22,6 +25,9 @@ const buildFullSyncPayload = (state: AppState): OverlaySyncPayload => ({
   onboarding: state.onboarding,
   toneById: state.toneById,
   enterpriseConfig: state.enterpriseConfig,
+  toolPermissionById: state.toolPermissionById,
+  toolInfoById: state.toolInfoById,
+  streamingMessageById: state.streamingMessageById,
 });
 
 const useOverlaySync = <T>(
@@ -62,13 +68,28 @@ export const OverlaySyncSideEffects = () => {
 
   useOverlaySync(
     OVERLAY_TARGETS,
+    (s) => s.activeRecordingMode,
+    (activeRecordingMode) => ({ activeRecordingMode }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
     (s) => s.hotkeyById,
     (hotkeyById) => ({ hotkeyById }),
   );
   useOverlaySync(
     OVERLAY_TARGETS,
-    (s) => s.agent,
-    (agent) => ({ agent }),
+    (s) => s.pillConversationId,
+    (pillConversationId) => ({ pillConversationId }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.chatMessageById,
+    (chatMessageById) => ({ chatMessageById }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.chatMessageIdsByConversationId,
+    (chatMessageIdsByConversationId) => ({ chatMessageIdsByConversationId }),
   );
   useOverlaySync(
     OVERLAY_TARGETS,
@@ -104,6 +125,21 @@ export const OverlaySyncSideEffects = () => {
     OVERLAY_TARGETS,
     (s) => s.enterpriseConfig,
     (enterpriseConfig) => ({ enterpriseConfig }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.toolPermissionById,
+    (toolPermissionById) => ({ toolPermissionById }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.toolInfoById,
+    (toolInfoById) => ({ toolInfoById }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.streamingMessageById,
+    (streamingMessageById) => ({ streamingMessageById }),
   );
 
   return null;

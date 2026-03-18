@@ -56,7 +56,7 @@ export const ShortcutsDialog = () => {
           actionName={DICTATE_HOTKEY}
         />
         <HotkeySetting
-          title={<FormattedMessage defaultMessage="Agent mode" />}
+          title={<FormattedMessage defaultMessage="Assistant mode" />}
           description={
             <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
           }

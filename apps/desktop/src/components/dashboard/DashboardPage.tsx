@@ -17,17 +17,27 @@ export default function DashboardPage() {
       <PermissionsDialog />
       <TranscriptionDetailsDialog />
       <TrialEndedDialog />
-      <Stack direction="row" sx={{ height: "100%", width: "100%" }}>
+      <Stack
+        direction="row"
+        sx={{ height: "100%", width: "100%", overflow: "hidden" }}
+      >
         <Box
           sx={{
             display: { xs: "none", sm: "flex" },
             flexDirection: "column",
             width: 224,
+            minWidth: 224,
+            maxWidth: 224,
+            overflowY: "auto",
           }}
         >
           <DashboardMenu />
         </Box>
-        <Outlet />
+        <Box
+          sx={{ flexGrow: 1, minWidth: 0, height: "100%", overflowY: "auto" }}
+        >
+          <Outlet />
+        </Box>
         <Typography
           variant="caption"
           sx={{

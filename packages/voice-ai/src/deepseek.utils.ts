@@ -4,7 +4,8 @@ import {
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
 import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse } from "@repo/types";
+import type { JsonResponse, LlmChatInput, LlmStreamEvent } from "@repo/types";
+import { openaiCompatibleStreamChat } from "./openai.utils";
 
 export const DEEPSEEK_MODELS = ["deepseek-chat", "deepseek-reasoner"] as const;
 export type DeepseekModel = (typeof DEEPSEEK_MODELS)[number];
@@ -147,3 +148,22 @@ export const deepseekTestIntegration = async ({
 
   return content.toLowerCase().includes("hello");
 };
+
+// ============================================================================
+// Streaming Chat
+// ============================================================================
+
+export type DeepseekStreamChatArgs = {
+  apiKey: string;
+  model: string;
+  input: LlmChatInput;
+};
+
+export async function* deepseekStreamChat({
+  apiKey,
+  model,
+  input,
+}: DeepseekStreamChatArgs): AsyncGenerator<LlmStreamEvent> {
+  const client = createClient(apiKey);
+  yield* openaiCompatibleStreamChat(client, model, input);
+}

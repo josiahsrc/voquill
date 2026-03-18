@@ -57,12 +57,12 @@ export const AIAgentModeConfiguration = ({
           { value: "api", label: "API" },
           { value: "none", label: "Off" },
         ]}
-        ariaLabel="Agent mode"
+        ariaLabel="Assistant mode"
       />
 
       {agentMode.mode === "none" && (
         <Typography variant="body2" color="text.secondary">
-          <FormattedMessage defaultMessage="Agent mode is disabled." />
+          <FormattedMessage defaultMessage="Assistant mode is disabled." />
         </Typography>
       )}
 

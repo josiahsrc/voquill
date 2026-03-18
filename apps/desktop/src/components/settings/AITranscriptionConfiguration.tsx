@@ -33,7 +33,7 @@ import { useAppStore } from "../../store";
 import { CPU_DEVICE_VALUE, type TranscriptionMode } from "../../types/ai.types";
 import { getAllowsChangeTranscription } from "../../utils/enterprise.utils";
 import { formatSize } from "../../utils/format.utils";
-import { type LocalSidecarDownloadSnapshot } from "../../utils/local-transcription-sidecar.utils";
+import { type LocalSidecarDownloadSnapshot } from "../../sidecars";
 import {
   type LocalWhisperModel,
   normalizeLocalWhisperModel,

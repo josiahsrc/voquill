@@ -410,7 +410,7 @@ export default function SettingsPage() {
         <ListTile
           title={
             <Stack direction="row" alignItems="center">
-              <FormattedMessage defaultMessage="Agent mode" />
+              <FormattedMessage defaultMessage="Assistant mode" />
               <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
             </Stack>
           }
