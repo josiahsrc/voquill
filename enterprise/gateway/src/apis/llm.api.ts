@@ -234,6 +234,12 @@ function toFinishReason(raw: string | null | undefined): LlmFinishReason {
   }
 }
 
+export class OpenAILlmApi extends BaseOpenAILlmApi {
+  constructor(opts: { apiKey: string; model: string }) {
+    super({ baseURL: "https://api.openai.com/v1", ...opts });
+  }
+}
+
 export class GroqLlmApi extends BaseOpenAILlmApi {
   constructor(opts: { apiKey: string; model: string }) {
     super({ baseURL: "https://api.groq.com/openai/v1", ...opts });

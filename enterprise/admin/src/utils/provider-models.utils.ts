@@ -36,6 +36,8 @@ const OLLAMA_MODELS = [
   "mistral:7b",
 ];
 
+const OPENAI_LLM_MODELS = ["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano"];
+
 const GROQ_LLM_MODELS = [
   "openai/gpt-oss-120b",
   "openai/gpt-oss-20b",
@@ -62,6 +64,8 @@ export function getLlmProviderModels(provider: string): string[] | null {
   switch (provider) {
     case "ollama":
       return OLLAMA_MODELS;
+    case "openai":
+      return OPENAI_LLM_MODELS;
     case "groq":
       return GROQ_LLM_MODELS;
     case "synthetic-ai":
