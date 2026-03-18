@@ -1,8 +1,22 @@
 use sqlx::sqlite::SqlitePoolOptions;
-use tauri::{Manager, WindowEvent};
+use tauri::{Manager, RunEvent, WindowEvent};
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 
 const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
+
+fn handle_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
+    if let RunEvent::Reopen {
+        has_visible_windows,
+        ..
+    } = event
+    {
+        if !has_visible_windows {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = crate::platform::window::surface_main_window(&window);
+            }
+        }
+    }
+}
 
 pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
@@ -250,4 +264,10 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::check_app_location_writable,
             crate::commands::download_and_open_mac_installer,
         ])
+}
+
+pub fn run(context: tauri::Context) -> Result<(), tauri::Error> {
+    let app = build().build(context)?;
+    app.run(handle_run_event);
+    Ok(())
 }

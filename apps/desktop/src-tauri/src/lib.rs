@@ -10,7 +10,5 @@ pub mod system;
 pub mod utils;
 
 pub fn run() {
-    app::build()
-        .run(tauri::generate_context!())
-        .expect("tauri runtime failure");
+    app::run(tauri::generate_context!()).expect("tauri runtime failure");
 }
