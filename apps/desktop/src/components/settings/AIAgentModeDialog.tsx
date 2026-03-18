@@ -21,6 +21,7 @@ import {
   ASSISTANT_MODE_ENABLED_KEY,
   POWER_MODE_ENABLED_KEY,
 } from "../../utils/assistant-mode.utils";
+import { getAllowsChangeAgentMode } from "../../utils/enterprise.utils";
 import { AGENT_DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { AIAgentModeConfiguration } from "./AIAgentModeConfiguration";
 import { HotkeySetting } from "./HotkeySetting";
@@ -34,6 +35,7 @@ export const AIAgentModeDialog = () => {
     false,
   );
   const isEnterprise = useAppStore((state) => state.isEnterprise);
+  const allowChangeAgentMode = useAppStore(getAllowsChangeAgentMode);
 
   const handleClose = () => {
     produceAppState((draft) => {
@@ -119,9 +121,12 @@ export const AIAgentModeDialog = () => {
               <FormattedMessage defaultMessage="Assistant mode follows commands you dictate instead of just cleaning up text." />
             </Typography>
 
-            <AIAgentModeConfiguration />
-
-            <Divider flexItem />
+            {allowChangeAgentMode && (
+              <>
+                <AIAgentModeConfiguration />
+                <Divider flexItem />
+              </>
+            )}
 
             <HotkeySetting
               title={<FormattedMessage defaultMessage="Assistant hotkey" />}
