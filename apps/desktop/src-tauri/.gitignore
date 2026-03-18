@@ -7,5 +7,6 @@
 /gen/schemas
 /binaries/
 
-# CI-downloaded resources (VC++ Redistributable)
-/resources/
+# CI-downloaded resources (VC++ Redistributable, etc.)
+/resources/*
+!/resources/trigger-hotkey.sh

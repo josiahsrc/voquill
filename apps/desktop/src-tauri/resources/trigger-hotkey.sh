@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ACTION="${1:?Usage: trigger-hotkey.sh <action-name>}"
 CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 read_port_from_file() {
@@ -14,7 +15,7 @@ read_port_from_file() {
 try_trigger() {
   local port="$1"
   curl --silent --show-error --fail --max-time 1 \
-    -X POST "http://127.0.0.1:${port}/hotkey/dictation" >/dev/null
+    -X POST "http://127.0.0.1:${port}/hotkey/${ACTION}" >/dev/null
 }
 
 LOCAL_INFO_FILE="$CONFIG_ROOT/com.voquill.desktop.local/bridge-server.json"
@@ -27,5 +28,4 @@ for info_file in "$LOCAL_INFO_FILE" "$PROD_INFO_FILE"; do
   fi
 done
 
-echo "Voquill bridge server unavailable. Start Voquill first." >&2
 exit 1

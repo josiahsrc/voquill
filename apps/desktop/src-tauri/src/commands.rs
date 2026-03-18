@@ -1330,6 +1330,14 @@ pub fn reset_key_listener_state() {
 }
 
 #[tauri::command]
+pub fn sync_compositor_hotkeys(
+    app: AppHandle,
+    bindings: Vec<crate::domain::CompositorBinding>,
+) -> Result<(), String> {
+    crate::platform::compositor::sync_compositor_hotkeys(&app, &bindings)
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {

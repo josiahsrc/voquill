@@ -3,24 +3,14 @@ import { getAppState, useAppStore } from "../store";
 import type { ActivationController } from "../utils/activation.utils";
 import { getHotkeyCombosForAction } from "../utils/keyboard.utils";
 
-type HoldAction = {
-  actionName: string;
-  controller: ActivationController;
-  trigger?: string;
-};
+type HoldAction = { actionName: string; controller: ActivationController };
 
 type HotkeyHoldArgs = HoldAction & { isDisabled?: boolean };
 
 export const useHotkeyHold = (args: HotkeyHoldArgs) => {
   const actions = useMemo(
-    () => [
-      {
-        actionName: args.actionName,
-        controller: args.controller,
-        trigger: args.trigger,
-      },
-    ],
-    [args.actionName, args.controller, args.trigger],
+    () => [{ actionName: args.actionName, controller: args.controller }],
+    [args.actionName, args.controller],
   );
   useHotkeyHoldMany({ actions, isDisabled: args.isDisabled });
 };
@@ -123,9 +113,8 @@ export const useHotkeyHoldMany = (args: {
   useEffect(() => {
     if (!isDisabled) {
       for (const action of args.actions) {
-        if (!action.trigger) continue;
-        const prev = prevTriggerCountsRef.current[action.trigger] ?? 0;
-        const curr = triggerCounts[action.trigger] ?? 0;
+        const prev = prevTriggerCountsRef.current[action.actionName] ?? 0;
+        const curr = triggerCounts[action.actionName] ?? 0;
         if (curr > prev) {
           action.controller.toggle();
         }
@@ -139,7 +128,6 @@ export const useHotkeyFire = (args: {
   actionName: string;
   isDisabled?: boolean;
   onFire?: () => void;
-  trigger?: string;
 }) => {
   const keysHeld = useAppStore((state) => state.keysHeld);
   const isRecordingHotkey = useAppStore((state) => state.isRecordingHotkey);
@@ -249,8 +237,8 @@ export const useHotkeyFire = (args: {
     previousKeysHeldRef.current = keysHeld;
   }, [keysHeld, availableCombos, isDisabled, args.onFire]);
 
-  const triggerCount = useAppStore((s) =>
-    args.trigger ? (s.hotkeyTriggers[args.trigger] ?? 0) : 0,
+  const triggerCount = useAppStore(
+    (s) => s.hotkeyTriggers[args.actionName] ?? 0,
   );
   const prevTriggerCountRef = useRef(triggerCount);
 

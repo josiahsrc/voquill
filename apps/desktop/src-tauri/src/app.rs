@@ -172,6 +172,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
             crate::system::bridge_server::start(app.handle().clone());
 
+            crate::platform::compositor::deploy_trigger_script(app.handle());
+
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
             if std::env::var("VOQUILL_ENABLE_DEVTOOLS").is_ok() {
                 log::info!("VOQUILL_ENABLE_DEVTOOLS detected, opening dev tools...");
@@ -249,6 +251,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::sync_hotkey_combos,
+            crate::commands::sync_compositor_hotkeys,
             crate::commands::reset_key_listener_state,
             crate::commands::play_audio,
             crate::commands::get_text_field_info,

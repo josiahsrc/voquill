@@ -1,4 +1,5 @@
 pub mod accessibility;
+pub mod compositor;
 pub mod dock;
 pub mod input;
 pub mod keyboard;

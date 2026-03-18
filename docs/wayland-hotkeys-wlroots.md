@@ -1,100 +1,78 @@
 # Wayland Hotkeys
 
 Wayland compositors block app-level global key capture by design.
-Use compositor bindings to call Voquill's local hotkey REST endpoint via the helper script.
+Voquill handles this with a bridge server and compositor-level keybindings.
 
-## Trigger command
+## How it works
 
-```bash
-<repo>/scripts/trigger-dictation.sh
+1. Voquill starts a local HTTP bridge server on a random port at launch.
+2. The port is written to `<app_config_dir>/bridge-server.json`.
+3. A bundled trigger script (`trigger-hotkey.sh`) is deployed to the config dir.
+4. Compositor keybindings call the trigger script, which POSTs to the bridge server.
+5. The bridge server emits a Tauri event that the TypeScript layer handles.
+
+## Automatic sync
+
+When you configure hotkeys in Voquill's settings on Linux, the app automatically registers them with your compositor:
+
+- **GNOME**: Registers via `gsettings` custom keybindings (dconf paths prefixed `voquill-`).
+- **Sway**: Writes `~/.config/sway/voquill-hotkeys` and reloads.
+- **Hyprland**: Writes `~/.config/hypr/voquill-hotkeys.conf` and reloads.
+
+Old bindings are cleaned up automatically on each sync.
+
+## One-time setup for Sway/Hyprland
+
+Voquill manages a dedicated include file for your hotkeys, but you need to source it once.
+
+### Sway
+
+Add to `~/.config/sway/config`:
+
+```
+include ~/.config/sway/voquill-hotkeys
 ```
 
-This script reads the server port from:
+Then reload: `swaymsg reload`
 
-- `$XDG_CONFIG_HOME/com.voquill.desktop.local/bridge-server.json`
-- or `~/.config/com.voquill.desktop.local/bridge-server.json`
+### Hyprland
 
-Then it calls:
+Add to `~/.config/hypr/hyprland.conf`:
 
-`POST http://127.0.0.1:<port>/hotkey/dictation`
-
-If Voquill is not running, the script exits with an error.
-
-## Detect your compositor
-
-```bash
-echo $XDG_CURRENT_DESKTOP
+```
+source = ~/.config/hypr/voquill-hotkeys.conf
 ```
 
-Or check running processes:
+Then reload: `hyprctl reload`
+
+### GNOME
+
+No manual setup needed. Hotkeys are registered automatically via `gsettings`.
+
+## Manual trigger (development/debugging)
+
+The standalone script at `scripts/trigger-dictation.sh` can be used for testing:
 
 ```bash
-ps -e -o comm= | grep -iE 'sway|hyprland|gnome-shell|kwin|mutter'
+./scripts/trigger-dictation.sh
 ```
 
-Then follow the section below that matches your environment.
-
-## GNOME
-
-**Register:**
+For other actions, use the deployed trigger script directly:
 
 ```bash
-gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings \
-  "['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/voquill-dictation/']"
-
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:\
-/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/voquill-dictation/ \
-  name 'Voquill Dictation'
-
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:\
-/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/voquill-dictation/ \
-  command '<repo>/scripts/trigger-dictation.sh'
-
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:\
-/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/voquill-dictation/ \
-  binding '<Alt>d'
+~/.config/com.voquill.desktop/trigger-hotkey.sh dictate
+~/.config/com.voquill.desktop/trigger-hotkey.sh agent-dictate
+~/.config/com.voquill.desktop/trigger-hotkey.sh cancel-transcription
 ```
 
-If you already have custom keybindings, append the path to the existing list rather than replacing it.
+## Bridge server details
 
-**Unregister:**
+The bridge server accepts `POST /hotkey/<action-name>` on `127.0.0.1`.
 
-Remove the `/voquill-dictation/` entry from the `custom-keybindings` list:
+- `200 OK` — hotkey triggered successfully
+- `404 Not Found` — unknown path
+- `405 Method Not Allowed` — non-POST request
 
-```bash
-gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "[]"
-```
-
-Or use **Settings > Keyboard > Custom Shortcuts** to manage bindings via the GUI.
-
-## Sway
-
-**Register** — add to `~/.config/sway/config`:
-
-```bash
-bindsym $mod+d exec <repo>/scripts/trigger-dictation.sh
-```
-
-Then reload:
-
-```bash
-swaymsg reload
-```
-
-**Unregister** — remove the `bindsym` line, then `swaymsg reload`.
-
-## Hyprland
-
-**Register** — add to `~/.config/hypr/hyprland.conf`:
-
-```bash
-bind = SUPER, D, exec, <repo>/scripts/trigger-dictation.sh
-```
-
-Then reload:
-
-```bash
-hyprctl reload
-```
-
-**Unregister** — remove the `bind` line, then `hyprctl reload`.
+The port file is at:
+- Dev: `$XDG_CONFIG_HOME/com.voquill.desktop.local/bridge-server.json`
+- Prod: `$XDG_CONFIG_HOME/com.voquill.desktop/bridge-server.json`

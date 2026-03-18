@@ -11,6 +11,18 @@ export const SWITCH_WRITING_STYLE_HOTKEY = "switch-writing-style";
 export const CANCEL_TRANSCRIPTION_HOTKEY = "cancel-transcription";
 export const ADDITIONAL_LANGUAGE_HOTKEY_PREFIX = "additional-language:";
 
+type CompositorBinding = {
+  actionName: string;
+  keys: string[];
+};
+
+const COMPOSITOR_TRIGGER_ACTIONS = [
+  DICTATE_HOTKEY,
+  AGENT_DICTATE_HOTKEY,
+  SWITCH_WRITING_STYLE_HOTKEY,
+  CANCEL_TRANSCRIPTION_HOTKEY,
+];
+
 export const getAdditionalLanguageActionName = (language: string): string =>
   `${ADDITIONAL_LANGUAGE_HOTKEY_PREFIX}${language}`;
 
@@ -196,20 +208,34 @@ export const syncHotkeyCombosToNative = async (): Promise<void> => {
   }
 
   const combos: string[][] = [];
-  for (const actionName of actionNames) {
-    if (!isActionGrabbable(state, actionName)) {
-      continue;
-    }
-    for (const combo of getHotkeyCombosForAction(state, actionName)) {
-      if (combo.length > 0) {
-        // Modifier-only fire hotkeys (e.g. Cmd) must not be natively grabbed:
-        // they need key-up handling so supersets like Cmd+Z still pass through.
-        if (!isHoldActionHotkey(actionName) && isModifierOnlyCombo(combo)) {
-          continue;
-        }
+  const compositorBindings: CompositorBinding[] = [];
 
-        combos.push(combo);
+  for (const actionName of actionNames) {
+    const actionCombos = getHotkeyCombosForAction(state, actionName);
+
+    if (isActionGrabbable(state, actionName)) {
+      for (const combo of actionCombos) {
+        if (combo.length > 0) {
+          // Modifier-only fire hotkeys (e.g. Cmd) must not be natively grabbed:
+          // they need key-up handling so supersets like Cmd+Z still pass through.
+          if (!isHoldActionHotkey(actionName) && isModifierOnlyCombo(combo)) {
+            continue;
+          }
+
+          combos.push(combo);
+        }
       }
+    }
+
+    if (
+      COMPOSITOR_TRIGGER_ACTIONS.includes(actionName) &&
+      actionCombos.length > 0 &&
+      actionCombos[0].length > 0
+    ) {
+      compositorBindings.push({
+        actionName,
+        keys: actionCombos[0],
+      });
     }
   }
 
@@ -217,5 +243,13 @@ export const syncHotkeyCombosToNative = async (): Promise<void> => {
     await invoke("sync_hotkey_combos", { combos });
   } catch (err) {
     console.error("Failed to sync hotkey combos to native", err);
+  }
+
+  if (getPlatform() === "linux") {
+    try {
+      await invoke("sync_compositor_hotkeys", { bindings: compositorBindings });
+    } catch (err) {
+      console.error("Failed to sync compositor hotkeys", err);
+    }
   }
 };
