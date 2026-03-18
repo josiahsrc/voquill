@@ -22,7 +22,27 @@ fn init_x11_threads() {
 #[cfg(not(target_os = "linux"))]
 fn init_x11_threads() {}
 
+/// Configure the display backend for GTK on Linux.
+///
+/// On Wayland sessions, GTK may try X11 first and fail if Xwayland auth
+/// isn't available. Explicitly selecting the Wayland backend prevents this.
+#[cfg(target_os = "linux")]
+fn configure_display_backend() {
+    if std::env::var("GDK_BACKEND").is_ok() {
+        return;
+    }
+    if std::env::var("WAYLAND_DISPLAY").is_ok() {
+        std::env::set_var("GDK_BACKEND", "wayland");
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn configure_display_backend() {}
+
 fn main() {
+    // CRITICAL: Configure display backend before GTK initialization
+    configure_display_backend();
+
     // CRITICAL: Initialize X11 threading before ANY other operations
     init_x11_threads();
 
