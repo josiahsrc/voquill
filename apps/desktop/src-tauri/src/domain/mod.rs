@@ -23,7 +23,8 @@ pub use hotkey::Hotkey;
 pub use keyboard::{KeysHeldPayload, EVT_KEYS_HELD};
 pub use monitor::{MonitorAtCursor, OverlayAnchor, ScreenVisibleArea};
 pub use overlay::{
-    OverlayPhase, OverlayPhasePayload, PillExpandedPayload, EVT_OVERLAY_PHASE, EVT_PILL_EXPANDED,
+    OverlayPhase, OverlayPhasePayload, PillExpandedPayload, PillWindowSize, EVT_OVERLAY_PHASE,
+    EVT_PILL_EXPANDED,
 };
 pub use paired_remote_device::PairedRemoteDevice;
 pub use permissions::{PermissionKind, PermissionState, PermissionStatus};

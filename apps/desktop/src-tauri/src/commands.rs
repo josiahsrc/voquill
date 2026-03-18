@@ -1250,8 +1250,8 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 }
 
 #[tauri::command]
-pub fn set_pill_assistant_mode(assistant_mode: bool, overlay_state: State<'_, crate::state::OverlayState>) {
-    overlay_state.set_pill_assistant_mode(assistant_mode);
+pub fn set_pill_window_size(size: crate::domain::PillWindowSize, overlay_state: State<'_, crate::state::OverlayState>) {
+    overlay_state.set_pill_window_size(size);
 }
 
 #[tauri::command]

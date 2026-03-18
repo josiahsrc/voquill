@@ -720,11 +720,26 @@ export const DictationSideEffects = () => {
     );
   }, [pillHoverEnabled]);
 
+  const pillHasContent = useAppStore((state) => {
+    if (!state.pillConversationId) return false;
+    const ids =
+      state.chatMessageIdsByConversationId[state.pillConversationId] ?? [];
+    if (ids.length > 0) return true;
+    return Object.values(state.toolPermissionById).some(
+      (p) =>
+        p.conversationId === state.pillConversationId && p.status === "pending",
+    );
+  });
+
   useEffect(() => {
-    invoke("set_pill_assistant_mode", {
-      assistantMode: activeRecordingMode === "agent",
-    }).catch(console.error);
-  }, [activeRecordingMode]);
+    const size =
+      activeRecordingMode !== "agent"
+        ? "dictation"
+        : pillHasContent
+          ? "assistant_expanded"
+          : "assistant_compact";
+    invoke("set_pill_window_size", { size }).catch(console.error);
+  }, [activeRecordingMode, pillHasContent]);
 
   return null;
 };

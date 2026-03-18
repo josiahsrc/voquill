@@ -1,15 +1,19 @@
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU8, Ordering};
 
-use crate::domain::OverlayPhase;
+use crate::domain::{OverlayPhase, PillWindowSize};
 
 const PHASE_IDLE: u8 = 0;
 const PHASE_RECORDING: u8 = 1;
 const PHASE_LOADING: u8 = 2;
 
+const SIZE_DICTATION: u8 = 0;
+const SIZE_ASSISTANT_COMPACT: u8 = 1;
+const SIZE_ASSISTANT_EXPANDED: u8 = 2;
+
 pub struct OverlayState {
     phase: AtomicU8,
-    pill_hover_enabled: AtomicBool,
-    pill_assistant_mode: AtomicBool,
+    pill_hover_enabled: AtomicU8,
+    pill_window_size: AtomicU8,
 }
 
 impl Default for OverlayState {
@@ -22,8 +26,8 @@ impl OverlayState {
     pub fn new() -> Self {
         Self {
             phase: AtomicU8::new(PHASE_IDLE),
-            pill_hover_enabled: AtomicBool::new(false),
-            pill_assistant_mode: AtomicBool::new(false),
+            pill_hover_enabled: AtomicU8::new(0),
+            pill_window_size: AtomicU8::new(SIZE_DICTATION),
         }
     }
 
@@ -49,18 +53,32 @@ impl OverlayState {
     }
 
     pub fn set_pill_hover_enabled(&self, enabled: bool) {
-        self.pill_hover_enabled.store(enabled, Ordering::Relaxed);
+        self.pill_hover_enabled
+            .store(if enabled { 1 } else { 0 }, Ordering::Relaxed);
     }
 
     pub fn is_pill_hover_enabled(&self) -> bool {
-        self.pill_hover_enabled.load(Ordering::Relaxed)
+        self.pill_hover_enabled.load(Ordering::Relaxed) != 0
     }
 
-    pub fn set_pill_assistant_mode(&self, enabled: bool) {
-        self.pill_assistant_mode.store(enabled, Ordering::Relaxed);
+    pub fn set_pill_window_size(&self, size: PillWindowSize) {
+        let value = match size {
+            PillWindowSize::Dictation => SIZE_DICTATION,
+            PillWindowSize::AssistantCompact => SIZE_ASSISTANT_COMPACT,
+            PillWindowSize::AssistantExpanded => SIZE_ASSISTANT_EXPANDED,
+        };
+        self.pill_window_size.store(value, Ordering::Relaxed);
     }
 
-    pub fn is_pill_assistant_mode(&self) -> bool {
-        self.pill_assistant_mode.load(Ordering::Relaxed)
+    pub fn get_pill_window_size(&self) -> PillWindowSize {
+        match self.pill_window_size.load(Ordering::Relaxed) {
+            SIZE_ASSISTANT_COMPACT => PillWindowSize::AssistantCompact,
+            SIZE_ASSISTANT_EXPANDED => PillWindowSize::AssistantExpanded,
+            _ => PillWindowSize::Dictation,
+        }
+    }
+
+    pub fn is_assistant_mode(&self) -> bool {
+        self.pill_window_size.load(Ordering::Relaxed) != SIZE_DICTATION
     }
 }

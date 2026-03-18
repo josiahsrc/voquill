@@ -197,7 +197,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::storage_get_download_url,
             crate::commands::surface_main_window,
             crate::commands::set_toast_overlay_click_through,
-            crate::commands::set_pill_assistant_mode,
+            crate::commands::set_pill_window_size,
             crate::commands::restore_overlay_focus,
             crate::commands::paste,
             crate::commands::transcription_create,

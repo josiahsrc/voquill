@@ -25,11 +25,7 @@ import {
 } from "../../utils/user.utils";
 import { AudioWaveform } from "../common/AudioWaveform";
 import { HotkeyBadge } from "../common/HotkeyBadge";
-import {
-  ASSISTANT_PANEL_OVERLAY_HEIGHT,
-  ASSISTANT_PANEL_OVERLAY_WIDTH,
-  AssistantModePanel,
-} from "./AssistantModePanel";
+import { AssistantModePanel } from "./AssistantModePanel";
 
 export const PILL_OVERLAY_WIDTH = 256;
 export const PILL_OVERLAY_HEIGHT = 96;
@@ -213,6 +209,7 @@ export const PillOverlayRoot = () => {
           transition: "all 150ms ease-out",
           marginBottom: theme.spacing(1),
           pointerEvents: isManualMode && overlayShown ? "auto" : "none",
+          ...(isAssistantSessionActive && { display: "none" }),
         }}
       >
         <Box
@@ -322,19 +319,17 @@ export const PillOverlayRoot = () => {
         sx={{
           paddingBottom: `${MIN_PILL_HOVER_PADDING}px`,
           display: "flex",
-          alignItems: "center",
+          alignItems: isAssistantSessionActive ? "stretch" : "center",
           justifyContent: "center",
+          ...(isAssistantSessionActive && { flex: 1, width: "100%" }),
         }}
       >
         <Box
           sx={{
             position: "relative",
-            width: isAssistantSessionActive
-              ? `${ASSISTANT_PANEL_OVERLAY_WIDTH}px`
-              : "auto",
-            height: isAssistantSessionActive
-              ? `${ASSISTANT_PANEL_OVERLAY_HEIGHT}px`
-              : "auto",
+            ...(!isAssistantSessionActive
+              ? { width: "auto", height: "auto" }
+              : { flex: 1 }),
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "center",
