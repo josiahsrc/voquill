@@ -1511,3 +1511,70 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
         decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
     Ok((path_str, Some(content)))
 }
+
+/// Returns `true` when the running app bundle can be updated in-place.
+/// On macOS this checks whether the process can write to the directory that
+/// contains the `.app` bundle (typically `/Applications`).
+/// Non-macOS platforms always return `true`.
+#[tauri::command]
+pub fn check_app_location_writable() -> Result<bool, String> {
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(true)
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+
+        // macOS layout: <dir>/Voquill.app/Contents/MacOS/voquill-desktop
+        let app_parent = exe
+            .parent() // MacOS/
+            .and_then(|p| p.parent()) // Contents/
+            .and_then(|p| p.parent()) // Voquill.app/
+            .and_then(|p| p.parent()) // containing directory
+            .ok_or("Could not determine app parent directory")?;
+
+        let probe = app_parent.join(".voquill_write_probe");
+        match std::fs::File::create(&probe) {
+            Ok(_) => {
+                let _ = std::fs::remove_file(&probe);
+                Ok(true)
+            }
+            Err(_) => Ok(false),
+        }
+    }
+}
+
+/// Downloads a `.pkg` installer to a temp directory and opens it with
+/// macOS Installer.app. This is used as a fallback when the normal in-place
+/// updater cannot write to the app's install location.
+#[tauri::command]
+pub async fn download_and_open_mac_installer(url: String) -> Result<(), String> {
+    let file_name = url
+        .rsplit('/')
+        .next()
+        .unwrap_or("VoquillUpdate.pkg")
+        .to_string();
+    let dest = std::env::temp_dir().join(&file_name);
+
+    // Remove any stale previous download
+    let _ = std::fs::remove_file(&dest);
+
+    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "Download failed with status {}",
+            response.status()
+        ));
+    }
+    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+    std::fs::write(&dest, &bytes).map_err(|e| e.to_string())?;
+
+    std::process::Command::new("open")
+        .arg(&dest)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

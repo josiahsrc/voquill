@@ -64,9 +64,15 @@ export const UpdateDialog = () => {
   const downloadedBytes = useAppStore((state) => state.updater.downloadedBytes);
   const totalBytes = useAppStore((state) => state.updater.totalBytes);
   const errorMessage = useAppStore((state) => state.updater.errorMessage);
+  const requiresManualInstall = useAppStore(
+    (state) => state.updater.requiresManualInstall,
+  );
 
   const isLinux = getPlatform() === "linux";
-  const isUpdating = status === "downloading" || status === "installing";
+  const pkgInstallerOpened = requiresManualInstall && status === "installing";
+  const isUpdating =
+    (status === "downloading" || status === "installing") &&
+    !pkgInstallerOpened;
   const showProgress =
     !isLinux && (status === "downloading" || status === "installing");
   const showManualInstallerAction =
@@ -244,7 +250,11 @@ export const UpdateDialog = () => {
               <Stack direction="row" spacing={1} justifyContent="space-between">
                 <Typography variant="caption" color="text.secondary">
                   {status === "installing" ? (
-                    <FormattedMessage defaultMessage="Installing update..." />
+                    requiresManualInstall ? (
+                      <FormattedMessage defaultMessage="Opening installer..." />
+                    ) : (
+                      <FormattedMessage defaultMessage="Installing update..." />
+                    )
                   ) : (
                     <FormattedMessage defaultMessage="Downloading update..." />
                   )}
@@ -259,11 +269,17 @@ export const UpdateDialog = () => {
             </Stack>
           )}
 
-          {!isLinux && status === "installing" && (
-            <Alert severity="info" variant="outlined">
-              <FormattedMessage defaultMessage="Installation in progress. Voquill may restart automatically when finished." />
-            </Alert>
-          )}
+          {!isLinux &&
+            status === "installing" &&
+            (requiresManualInstall ? (
+              <Alert severity="success" variant="outlined">
+                <FormattedMessage defaultMessage="The installer has been opened. Follow the prompts to complete the update, then relaunch Voquill." />
+              </Alert>
+            ) : (
+              <Alert severity="info" variant="outlined">
+                <FormattedMessage defaultMessage="Installation in progress. Voquill may restart automatically when finished." />
+              </Alert>
+            ))}
 
           {!isLinux && status === "error" && errorMessage && (
             <Alert
@@ -295,6 +311,10 @@ export const UpdateDialog = () => {
       </DialogContent>
       <DialogActions>
         {isLinux ? (
+          <Button onClick={handleClose}>
+            <FormattedMessage defaultMessage="Close" />
+          </Button>
+        ) : requiresManualInstall && status === "installing" ? (
           <Button onClick={handleClose}>
             <FormattedMessage defaultMessage="Close" />
           </Button>
