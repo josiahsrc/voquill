@@ -127,6 +127,7 @@ export type AppState = {
   currentToast: Toast | null;
 
   overlayCursor: Nullable<Vector2>;
+  hotkeyTriggers: Record<string, number>;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -175,6 +176,7 @@ export const INITIAL_APP_STATE: AppState = {
   toastQueue: [],
   currentToast: null,
   overlayCursor: null,
+  hotkeyTriggers: {},
   pillConversationId: null,
   chat: INITIAL_CHAT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,

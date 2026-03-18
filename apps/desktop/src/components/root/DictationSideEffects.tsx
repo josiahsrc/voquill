@@ -636,6 +636,7 @@ export const DictationSideEffects = () => {
     actionName: DICTATE_HOTKEY,
     isDisabled: !isDictationInteractable || activeRecordingMode === "agent",
     controller: dictationController,
+    trigger: "dictation",
   });
 
   useHotkeyHold({
@@ -645,12 +646,14 @@ export const DictationSideEffects = () => {
       !assistantModeEnabled ||
       activeRecordingMode === "dictate",
     controller: agentController,
+    trigger: "agent-dictate",
   });
 
   useHotkeyFire({
     actionName: CANCEL_TRANSCRIPTION_HOTKEY,
     isDisabled: !isActiveSession,
     onFire: promptCancelTranscription,
+    trigger: "cancel-transcription",
   });
 
   useHotkeyHoldMany({

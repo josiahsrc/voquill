@@ -170,6 +170,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 crate::overlay::start_cursor_follower(app_handle.clone());
             }
 
+            crate::system::bridge_server::start(app.handle().clone());
+
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
             if std::env::var("VOQUILL_ENABLE_DEVTOOLS").is_ok() {
                 log::info!("VOQUILL_ENABLE_DEVTOOLS detected, opening dev tools...");

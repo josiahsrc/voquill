@@ -83,6 +83,10 @@ type RecordingLevelPayload = {
   levels?: number[];
 };
 
+type BridgeHotkeyTriggerPayload = {
+  hotkey: string;
+};
+
 type RemoteFinalTextReceivedPayload = {
   senderDeviceId: string;
   eventId: string;
@@ -185,6 +189,13 @@ export const AppSideEffects = () => {
 
     produceAppState((draft) => {
       draft.audioLevels = sanitized;
+    });
+  });
+
+  useTauriListen<BridgeHotkeyTriggerPayload>("bridge_hotkey_trigger", (payload) => {
+    produceAppState((draft) => {
+      draft.hotkeyTriggers[payload.hotkey] =
+        (draft.hotkeyTriggers[payload.hotkey] ?? 0) + 1;
     });
   });
 
