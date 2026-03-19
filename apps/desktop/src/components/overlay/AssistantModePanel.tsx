@@ -352,13 +352,15 @@ export const AssistantModePanel = ({
     ? formatUserPromptPreview(latestUserMessage.content)
     : null;
   const userPromptColor = alpha(theme.palette.common.white, 0.5);
-  const assistantMessages = messages.filter((message) => {
-    if (message.role === "user") return false;
-    if (message.role === "assistant" && !message.content?.trim()) return false;
-    return true;
-  });
   const pillConversationId = useAppStore((s) => s.pillConversationId);
   const streamingMessageById = useAppStore((s) => s.streamingMessageById);
+  const assistantMessages = messages.filter((message) => {
+    if (message.role === "user") return false;
+    if (message.role === "assistant" && !message.content?.trim()) {
+      return !!streamingMessageById[message.id];
+    }
+    return true;
+  });
   const toolPermissions = useAppStore((s) => s.toolPermissionById);
   const pendingPermissions = useMemo(
     () =>
