@@ -990,7 +990,7 @@ jobs:
             version "${VERSION}"
             sha256 "${DMG_SHA256}"
 
-            url "https://github.com/voquill/voquill/releases/download/${tag_prefix}#{version}/${dmg_name}"
+            url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag_prefix}#{version}/${dmg_name}"
             name "${app_name}"
             desc "AI-powered dictation desktop application"
             homepage "https://voquill.com"
