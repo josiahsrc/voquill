@@ -168,6 +168,8 @@ Future<void> setPostProcessingMode(PostProcessingMode mode) async {
 
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kPostProcessingMode, mode.name);
+
+  await _syncSelectedPostProcessingKeyToKeyboard();
 }
 
 Future<void> selectTranscriptionApiKey(String? id) async {
@@ -196,6 +198,8 @@ Future<void> selectPostProcessingApiKey(String? id) async {
   } else {
     await prefs.remove(_kSelectedPostProcessingApiKeyId);
   }
+
+  await _syncSelectedPostProcessingKeyToKeyboard();
 }
 
 Future<void> loadApiKeyPreferences() async {
@@ -230,6 +234,7 @@ Future<void> loadApiKeyPreferences() async {
     });
 
     await _syncSelectedTranscriptionKeyToKeyboard();
+    await _syncSelectedPostProcessingKeyToKeyboard();
   } catch (e) {
     _logger.w('Failed to load API key preferences', e);
   }
@@ -259,6 +264,37 @@ Future<void> _syncSelectedTranscriptionKeyToKeyboard() async {
 
   final apiKeyValue = await revealTranscriptionApiKey(selectedId);
   await syncByokConfigToKeyboard(
+    provider: key.provider,
+    apiKey: apiKeyValue,
+    baseUrl: key.baseUrl,
+    model: key.model,
+  );
+}
+
+Future<void> _syncSelectedPostProcessingKeyToKeyboard() async {
+  final state = getAppState();
+  final selectedId = state.apiKeys.selectedPostProcessingApiKeyId;
+
+  if (state.apiKeys.postProcessingMode != PostProcessingMode.api ||
+      selectedId == null) {
+    await clearByokPostProcessingConfig();
+    return;
+  }
+
+  ApiKeyEntry? key;
+  for (final k in state.apiKeys.postProcessingApiKeys) {
+    if (k.id == selectedId) {
+      key = k;
+      break;
+    }
+  }
+  if (key == null) {
+    await clearByokPostProcessingConfig();
+    return;
+  }
+
+  final apiKeyValue = await revealPostProcessingApiKey(selectedId);
+  await syncByokPostProcessingConfigToKeyboard(
     provider: key.provider,
     apiKey: apiKeyValue,
     baseUrl: key.baseUrl,

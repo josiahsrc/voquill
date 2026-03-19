@@ -219,6 +219,34 @@ Future<void> clearByokConfig() async {
   }
 }
 
+Future<void> syncByokPostProcessingConfigToKeyboard({
+  required String provider,
+  required String apiKey,
+  String? baseUrl,
+  String? model,
+}) async {
+  if (!_canSync) return;
+  try {
+    await _sharedChannel.invokeMethod('setByokPostProcessingConfig', {
+      'provider': provider,
+      'apiKey': apiKey,
+      'baseUrl': baseUrl,
+      'model': model,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync BYOK post-processing config to keyboard', e);
+  }
+}
+
+Future<void> clearByokPostProcessingConfig() async {
+  if (!_canSync) return;
+  try {
+    await _sharedChannel.invokeMethod('clearByokPostProcessingConfig');
+  } catch (e) {
+    _logger.w('Failed to clear BYOK post-processing config', e);
+  }
+}
+
 Future<void> syncKeyboardDictationLanguages({
   required List<String> languages,
   required String activeLanguage,

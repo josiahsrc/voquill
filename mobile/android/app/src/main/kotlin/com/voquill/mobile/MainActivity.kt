@@ -80,6 +80,44 @@ class MainActivity : FlutterFragmentActivity() {
 
                         result.success(null)
                     }
+                    "setByokPostProcessingConfig" -> {
+                        val provider = call.argument<String>("provider")
+                        val apiKey = call.argument<String>("apiKey")
+                        val baseUrl = call.argument<String>("baseUrl")
+                        val model = call.argument<String>("model")
+
+                        if (provider == null || apiKey == null) {
+                            result.error("INVALID_ARGS", "Missing provider or apiKey", null)
+                            return@setMethodCallHandler
+                        }
+
+                        getSharedPreferences(VoquillIME.PREFS_NAME, Context.MODE_PRIVATE)
+                            .edit()
+                            .putString(VoquillIME.KEY_BYOK_PP_PROVIDER, provider)
+                            .putString(VoquillIME.KEY_BYOK_PP_API_KEY, apiKey)
+                            .apply {
+                                if (baseUrl != null) putString(VoquillIME.KEY_BYOK_PP_BASE_URL, baseUrl)
+                                else remove(VoquillIME.KEY_BYOK_PP_BASE_URL)
+                            }
+                            .apply {
+                                if (model != null) putString(VoquillIME.KEY_BYOK_PP_MODEL, model)
+                                else remove(VoquillIME.KEY_BYOK_PP_MODEL)
+                            }
+                            .apply()
+
+                        result.success(null)
+                    }
+                    "clearByokPostProcessingConfig" -> {
+                        getSharedPreferences(VoquillIME.PREFS_NAME, Context.MODE_PRIVATE)
+                            .edit()
+                            .remove(VoquillIME.KEY_BYOK_PP_PROVIDER)
+                            .remove(VoquillIME.KEY_BYOK_PP_API_KEY)
+                            .remove(VoquillIME.KEY_BYOK_PP_BASE_URL)
+                            .remove(VoquillIME.KEY_BYOK_PP_MODEL)
+                            .apply()
+
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }
