@@ -8,6 +8,17 @@ import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/settings/api_key_list_widget.dart';
 import 'package:flutter/material.dart';
 
+const _postProcessingProviders = [
+  ('groq', 'Groq'),
+  ('openai', 'OpenAI'),
+  ('gemini', 'Gemini'),
+  ('deepseek', 'Deepseek'),
+  ('claude', 'Claude'),
+  ('openrouter', 'OpenRouter'),
+  ('ollama', 'Ollama'),
+  ('openai-compatible', 'OpenAI Compatible'),
+];
+
 class PostProcessingSettingsPage extends StatelessWidget {
   const PostProcessingSettingsPage({super.key});
 
@@ -90,11 +101,13 @@ class PostProcessingSettingsPage extends StatelessWidget {
           apiKeys: apiKeyState.postProcessingApiKeys,
           selectedApiKeyId: apiKeyState.selectedPostProcessingApiKeyId,
           status: apiKeyState.postProcessingApiKeysStatus,
+          providers: _postProcessingProviders,
           onSelect: (id) => selectPostProcessingApiKey(id),
           onDelete: (id) => deletePostProcessingApiKey(id),
           onAdd: (result) => createPostProcessingApiKey(
             name: result.name,
             apiKey: result.apiKey,
+            provider: result.provider,
             baseUrl: result.baseUrl,
             model: result.model,
           ),

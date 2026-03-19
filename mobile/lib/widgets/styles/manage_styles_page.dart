@@ -46,12 +46,10 @@ class ManageStylesPage extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                secondary: tone.isSystem
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _showEditDialog(context, tone),
-                      ),
+                secondary: IconButton(
+                  icon: Icon(tone.isSystem ? Icons.visibility : Icons.edit),
+                  onPressed: () => _showEditDialog(context, tone),
+                ),
               );
             },
           ),

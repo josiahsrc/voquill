@@ -14,6 +14,7 @@ class ApiKeyListWidget extends StatelessWidget {
     required this.onSelect,
     required this.onDelete,
     required this.onAdd,
+    this.providers,
   });
 
   final List<ApiKeyEntry> apiKeys;
@@ -22,6 +23,7 @@ class ApiKeyListWidget extends StatelessWidget {
   final void Function(String id) onSelect;
   final void Function(String id) onDelete;
   final void Function(ApiKeyDialogResult result) onAdd;
+  final List<(String, String)>? providers;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +84,7 @@ class ApiKeyListWidget extends StatelessWidget {
   Future<void> _showAddDialog(BuildContext context) async {
     final result = await showDialog<ApiKeyDialogResult>(
       context: context,
-      builder: (_) => const ApiKeyDialog(),
+      builder: (_) => ApiKeyDialog(providers: providers),
     );
     if (result != null) {
       onAdd(result);

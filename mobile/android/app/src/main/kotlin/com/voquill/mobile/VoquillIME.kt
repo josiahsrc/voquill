@@ -26,10 +26,14 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.math.min
@@ -198,6 +202,30 @@ class VoquillIME : InputMethodService() {
 
     private fun handleTranscription() {
         executor.execute {
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val byokProvider = prefs.getString(KEY_BYOK_PROVIDER, null)
+            val byokApiKey = prefs.getString(KEY_BYOK_API_KEY, null)
+
+            if (!byokProvider.isNullOrEmpty() && (!byokApiKey.isNullOrEmpty() || byokProvider == "speaches")) {
+                dbg("BYOK transcription via $byokProvider")
+                var text = transcribeAudioByokSync()
+                if (!text.isNullOrEmpty()) {
+                    val processed = postProcessByokSync(text)
+                    if (!processed.isNullOrEmpty()) {
+                        text = processed
+                    }
+                }
+                handler.post {
+                    if (!text.isNullOrEmpty()) {
+                        currentInputConnection?.commitText("$text ", 1)
+                    } else {
+                        currentInputConnection?.commitText("[BYOK transcribe failed: $lastDebugLog]", 1)
+                    }
+                    applyPhase(Phase.IDLE)
+                }
+                return@execute
+            }
+
             val idToken = fetchIdTokenSync()
             if (idToken == null) {
                 handler.post {
@@ -364,6 +392,551 @@ class VoquillIME : InputMethodService() {
         }
     }
 
+    private fun transcribeAudioByokSync(): String? {
+        val audioFile = File(audioFilePath)
+        if (!audioFile.exists() || audioFile.length() == 0L) {
+            dbg("BYOK: no audio data at $audioFilePath")
+            return null
+        }
+
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val provider = prefs.getString(KEY_BYOK_PROVIDER, null) ?: return null
+        val apiKey = prefs.getString(KEY_BYOK_API_KEY, null) ?: ""
+        val baseUrl = prefs.getString(KEY_BYOK_BASE_URL, null) ?: ""
+        val model = prefs.getString(KEY_BYOK_MODEL, null) ?: ""
+        val language = Locale.getDefault().language
+
+        dbg("BYOK: provider=$provider, audioSize=${audioFile.length()}")
+
+        return try {
+            when (provider) {
+                "groq" -> transcribeMultipartWhisperSync(
+                    url = "https://api.groq.com/openai/v1/audio/transcriptions",
+                    apiKey = apiKey,
+                    model = model.ifEmpty { "whisper-large-v3-turbo" },
+                    language = language,
+                    audioFile = audioFile,
+                )
+                "openai" -> transcribeMultipartWhisperSync(
+                    url = "https://api.openai.com/v1/audio/transcriptions",
+                    apiKey = apiKey,
+                    model = model.ifEmpty { "whisper-1" },
+                    language = language,
+                    audioFile = audioFile,
+                )
+                "deepgram" -> transcribeDeepgramSync(apiKey, model, language, audioFile)
+                "assemblyai" -> transcribeAssemblyAiSync(apiKey, audioFile)
+                "elevenlabs" -> transcribeElevenLabsSync(apiKey, model, audioFile)
+                "gemini" -> transcribeGeminiSync(apiKey, model, audioFile)
+                "azure" -> transcribeAzureSync(apiKey, baseUrl, language, audioFile)
+                "openai-compatible" -> transcribeMultipartWhisperSync(
+                    url = "${baseUrl.trimEnd('/')}/v1/audio/transcriptions",
+                    apiKey = apiKey,
+                    model = model.ifEmpty { "whisper-1" },
+                    language = language,
+                    audioFile = audioFile,
+                )
+                "speaches" -> transcribeMultipartWhisperSync(
+                    url = "${baseUrl.trimEnd('/')}/v1/audio/transcriptions",
+                    apiKey = "",
+                    model = model.ifEmpty { "whisper-1" },
+                    language = language,
+                    audioFile = audioFile,
+                )
+                else -> {
+                    dbg("BYOK: unknown provider '$provider'")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            dbg("BYOK: ${e.message}")
+            null
+        }
+    }
+
+    private fun transcribeMultipartWhisperSync(
+        url: String,
+        apiKey: String,
+        model: String,
+        language: String,
+        audioFile: File,
+    ): String? {
+        val fields = mutableMapOf(
+            "model" to model,
+            "language" to language,
+        )
+        val body = postMultipartSync(
+            url = url,
+            headers = if (apiKey.isNotEmpty()) mapOf("Authorization" to "Bearer $apiKey") else emptyMap(),
+            audioFile = audioFile,
+            audioFieldName = "file",
+            audioMimeType = "audio/mp4",
+            audioFileName = "audio.m4a",
+            textFields = fields,
+        ) ?: return null
+
+        val json = JSONObject(body)
+        return json.getString("text")
+    }
+
+    private fun transcribeDeepgramSync(
+        apiKey: String,
+        model: String,
+        language: String,
+        audioFile: File,
+    ): String? {
+        val dgModel = model.ifEmpty { "nova-3" }
+        val urlStr = "https://api.deepgram.com/v1/listen?model=$dgModel&smart_format=true&language=$language"
+        val conn = URL(urlStr).openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Authorization", "Token $apiKey")
+        conn.setRequestProperty("Content-Type", "audio/mp4")
+        conn.doOutput = true
+
+        conn.outputStream.use { it.write(audioFile.readBytes()) }
+
+        val status = conn.responseCode
+        val body = (if (status in 200..299) conn.inputStream else conn.errorStream)
+            .bufferedReader().readText()
+
+        if (status !in 200..299) {
+            dbg("BYOK deepgram: HTTP $status — $body")
+            return null
+        }
+
+        val json = JSONObject(body)
+        return json.getJSONObject("results")
+            .getJSONArray("channels").getJSONObject(0)
+            .getJSONArray("alternatives").getJSONObject(0)
+            .getString("transcript")
+    }
+
+    private fun transcribeAssemblyAiSync(apiKey: String, audioFile: File): String? {
+        val uploadConn = URL("https://api.assemblyai.com/v2/upload").openConnection() as HttpURLConnection
+        uploadConn.requestMethod = "POST"
+        uploadConn.setRequestProperty("Authorization", apiKey)
+        uploadConn.setRequestProperty("Content-Type", "application/octet-stream")
+        uploadConn.doOutput = true
+        uploadConn.outputStream.use { it.write(audioFile.readBytes()) }
+
+        val uploadStatus = uploadConn.responseCode
+        val uploadBody = (if (uploadStatus in 200..299) uploadConn.inputStream else uploadConn.errorStream)
+            .bufferedReader().readText()
+        if (uploadStatus !in 200..299) {
+            dbg("BYOK assemblyai upload: HTTP $uploadStatus — $uploadBody")
+            return null
+        }
+        val uploadUrl = JSONObject(uploadBody).getString("upload_url")
+
+        val createConn = URL("https://api.assemblyai.com/v2/transcript").openConnection() as HttpURLConnection
+        createConn.requestMethod = "POST"
+        createConn.setRequestProperty("Authorization", apiKey)
+        createConn.setRequestProperty("Content-Type", "application/json")
+        createConn.doOutput = true
+        val payload = JSONObject().apply { put("audio_url", uploadUrl) }
+        createConn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+        val createStatus = createConn.responseCode
+        val createBody = (if (createStatus in 200..299) createConn.inputStream else createConn.errorStream)
+            .bufferedReader().readText()
+        if (createStatus !in 200..299) {
+            dbg("BYOK assemblyai create: HTTP $createStatus — $createBody")
+            return null
+        }
+        val transcriptId = JSONObject(createBody).getString("id")
+
+        for (i in 0 until 60) {
+            Thread.sleep(2000)
+            val pollConn = URL("https://api.assemblyai.com/v2/transcript/$transcriptId")
+                .openConnection() as HttpURLConnection
+            pollConn.setRequestProperty("Authorization", apiKey)
+            val pollStatus = pollConn.responseCode
+            val pollBody = (if (pollStatus in 200..299) pollConn.inputStream else pollConn.errorStream)
+                .bufferedReader().readText()
+            val pollJson = JSONObject(pollBody)
+            val status = pollJson.getString("status")
+            if (status == "completed") return pollJson.getString("text")
+            if (status == "error") {
+                dbg("BYOK assemblyai: transcription error — ${pollJson.optString("error")}")
+                return null
+            }
+        }
+        dbg("BYOK assemblyai: polling timed out")
+        return null
+    }
+
+    private fun transcribeElevenLabsSync(
+        apiKey: String,
+        model: String,
+        audioFile: File,
+    ): String? {
+        val fields = mutableMapOf(
+            "model_id" to model.ifEmpty { "scribe_v1" },
+        )
+        val body = postMultipartSync(
+            url = "https://api.elevenlabs.io/v1/speech-to-text",
+            headers = mapOf("xi-api-key" to apiKey),
+            audioFile = audioFile,
+            audioFieldName = "file",
+            audioMimeType = "audio/mp4",
+            audioFileName = "audio.m4a",
+            textFields = fields,
+        ) ?: return null
+
+        return JSONObject(body).getString("text")
+    }
+
+    private fun transcribeGeminiSync(
+        apiKey: String,
+        model: String,
+        audioFile: File,
+    ): String? {
+        val geminiModel = model.ifEmpty { "gemini-2.5-flash" }
+        val urlStr = "https://generativelanguage.googleapis.com/v1beta/models/$geminiModel:generateContent?key=$apiKey"
+
+        val audioBase64 = Base64.encodeToString(audioFile.readBytes(), Base64.NO_WRAP)
+
+        val payload = JSONObject().apply {
+            put("contents", JSONArray().put(JSONObject().apply {
+                put("parts", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("inline_data", JSONObject().apply {
+                            put("mime_type", "audio/mp4")
+                            put("data", audioBase64)
+                        })
+                    })
+                    put(JSONObject().apply {
+                        put("text", "Transcribe this audio exactly as spoken. Output only the transcription text, nothing else.")
+                    })
+                })
+            }))
+        }
+
+        val conn = URL(urlStr).openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.doOutput = true
+        conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+        val status = conn.responseCode
+        val body = (if (status in 200..299) conn.inputStream else conn.errorStream)
+            .bufferedReader().readText()
+
+        if (status !in 200..299) {
+            dbg("BYOK gemini: HTTP $status — $body")
+            return null
+        }
+
+        val json = JSONObject(body)
+        return json.getJSONArray("candidates")
+            .getJSONObject(0)
+            .getJSONObject("content")
+            .getJSONArray("parts")
+            .getJSONObject(0)
+            .getString("text")
+    }
+
+    private fun transcribeAzureSync(
+        apiKey: String,
+        region: String,
+        language: String,
+        audioFile: File,
+    ): String? {
+        val azureRegion = region.ifEmpty { "eastus" }
+        val azureLang = if (language.length == 2) "$language-${language.uppercase()}" else language
+        val urlStr = "https://$azureRegion.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=$azureLang"
+
+        val conn = URL(urlStr).openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Ocp-Apim-Subscription-Key", apiKey)
+        conn.setRequestProperty("Content-Type", "audio/mp4")
+        conn.doOutput = true
+        conn.outputStream.use { it.write(audioFile.readBytes()) }
+
+        val status = conn.responseCode
+        val body = (if (status in 200..299) conn.inputStream else conn.errorStream)
+            .bufferedReader().readText()
+
+        if (status !in 200..299) {
+            dbg("BYOK azure: HTTP $status — $body")
+            return null
+        }
+
+        val json = JSONObject(body)
+        return json.getString("DisplayText")
+    }
+
+    private fun postMultipartSync(
+        url: String,
+        headers: Map<String, String>,
+        audioFile: File,
+        audioFieldName: String,
+        audioMimeType: String,
+        audioFileName: String,
+        textFields: Map<String, String>,
+    ): String? {
+        val boundary = "----VoquillBoundary${UUID.randomUUID()}"
+        val crlf = "\r\n"
+
+        val bodyStream = ByteArrayOutputStream()
+
+        for ((key, value) in textFields) {
+            bodyStream.write("--$boundary$crlf".toByteArray())
+            bodyStream.write("Content-Disposition: form-data; name=\"$key\"$crlf$crlf".toByteArray())
+            bodyStream.write("$value$crlf".toByteArray())
+        }
+
+        bodyStream.write("--$boundary$crlf".toByteArray())
+        bodyStream.write("Content-Disposition: form-data; name=\"$audioFieldName\"; filename=\"$audioFileName\"$crlf".toByteArray())
+        bodyStream.write("Content-Type: $audioMimeType$crlf$crlf".toByteArray())
+        bodyStream.write(audioFile.readBytes())
+        bodyStream.write(crlf.toByteArray())
+        bodyStream.write("--$boundary--$crlf".toByteArray())
+
+        val requestBody = bodyStream.toByteArray()
+
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+        for ((key, value) in headers) {
+            conn.setRequestProperty(key, value)
+        }
+        conn.doOutput = true
+        conn.outputStream.use { it.write(requestBody) }
+
+        val status = conn.responseCode
+        val responseBody = (if (status in 200..299) conn.inputStream else conn.errorStream)
+            .bufferedReader().readText()
+
+        if (status !in 200..299) {
+            dbg("BYOK multipart $url: HTTP $status — $responseBody")
+            return null
+        }
+
+        return responseBody
+    }
+
+    private fun postProcessByokSync(rawTranscript: String): String? {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val ppProvider = prefs.getString(KEY_BYOK_PP_PROVIDER, null)
+        val ppApiKey = prefs.getString(KEY_BYOK_PP_API_KEY, null)
+
+        if (ppProvider.isNullOrEmpty() || ppApiKey.isNullOrEmpty()) return null
+
+        val ppModel = prefs.getString(KEY_BYOK_PP_MODEL, null)
+        val ppBaseUrl = prefs.getString(KEY_BYOK_PP_BASE_URL, null)
+
+        return try {
+            val systemPrompt = "You are a transcript rewriting assistant. Clean up the transcript for grammar, punctuation, and clarity while keeping the meaning identical. Return only the cleaned text, nothing else."
+            val userPrompt = "Clean up this transcript:\n\n$rawTranscript"
+
+            when (ppProvider) {
+                "groq" -> chatCompletionSync(
+                    url = "https://api.groq.com/openai/v1/chat/completions",
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "llama-3.3-70b-versatile",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                "openai" -> chatCompletionSync(
+                    url = "https://api.openai.com/v1/chat/completions",
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "gpt-4o-mini",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                "gemini" -> geminiGenerateSync(
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "gemini-2.5-flash",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                "deepseek" -> chatCompletionSync(
+                    url = "https://api.deepseek.com/v1/chat/completions",
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "deepseek-chat",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                "claude" -> claudeGenerateSync(
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "claude-sonnet-4-5-20250514",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                "openrouter" -> chatCompletionSync(
+                    url = "https://openrouter.ai/api/v1/chat/completions",
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "meta-llama/llama-3.3-70b-instruct",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                "ollama" -> chatCompletionSync(
+                    url = "${ppBaseUrl ?: "http://localhost:11434"}/v1/chat/completions",
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "llama3",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                "openai-compatible" -> chatCompletionSync(
+                    url = "${ppBaseUrl ?: "https://api.openai.com"}/v1/chat/completions",
+                    apiKey = ppApiKey,
+                    model = ppModel ?: "gpt-4o-mini",
+                    systemPrompt = systemPrompt,
+                    userPrompt = userPrompt,
+                )
+                else -> null
+            }
+        } catch (e: Exception) {
+            dbg("postProcess: ${e.message}")
+            null
+        }
+    }
+
+    private fun chatCompletionSync(
+        url: String,
+        apiKey: String,
+        model: String,
+        systemPrompt: String,
+        userPrompt: String,
+    ): String? {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.setRequestProperty("Authorization", "Bearer $apiKey")
+        conn.doOutput = true
+        conn.connectTimeout = 30000
+        conn.readTimeout = 60000
+
+        val payload = JSONObject().apply {
+            put("model", model)
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "system")
+                    put("content", systemPrompt)
+                })
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", userPrompt)
+                })
+            })
+        }
+        conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+        val status = conn.responseCode
+        val body = (if (status in 200..299) conn.inputStream else conn.errorStream)
+            .bufferedReader().readText()
+        conn.disconnect()
+
+        if (status !in 200..299) {
+            dbg("chatCompletion: HTTP $status")
+            return null
+        }
+
+        val json = JSONObject(body)
+        return json.getJSONArray("choices")
+            .getJSONObject(0)
+            .getJSONObject("message")
+            .getString("content")
+            .trim()
+    }
+
+    private fun geminiGenerateSync(
+        apiKey: String,
+        model: String,
+        systemPrompt: String,
+        userPrompt: String,
+    ): String? {
+        val url = URL("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey")
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.doOutput = true
+        conn.connectTimeout = 30000
+        conn.readTimeout = 60000
+
+        val payload = JSONObject().apply {
+            put("system_instruction", JSONObject().apply {
+                put("parts", JSONArray().apply {
+                    put(JSONObject().apply { put("text", systemPrompt) })
+                })
+            })
+            put("contents", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("parts", JSONArray().apply {
+                        put(JSONObject().apply { put("text", userPrompt) })
+                    })
+                })
+            })
+        }
+        conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+        val status = conn.responseCode
+        val body = (if (status in 200..299) conn.inputStream else conn.errorStream)
+            .bufferedReader().readText()
+        conn.disconnect()
+
+        if (status !in 200..299) {
+            dbg("geminiGenerate: HTTP $status")
+            return null
+        }
+
+        val json = JSONObject(body)
+        return json.getJSONArray("candidates")
+            .getJSONObject(0)
+            .getJSONObject("content")
+            .getJSONArray("parts")
+            .getJSONObject(0)
+            .getString("text")
+            .trim()
+    }
+
+    private fun claudeGenerateSync(
+        apiKey: String,
+        model: String,
+        systemPrompt: String,
+        userPrompt: String,
+    ): String? {
+        val url = URL("https://api.anthropic.com/v1/messages")
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.setRequestProperty("x-api-key", apiKey)
+        conn.setRequestProperty("anthropic-version", "2023-06-01")
+        conn.doOutput = true
+        conn.connectTimeout = 30000
+        conn.readTimeout = 60000
+
+        val payload = JSONObject().apply {
+            put("model", model)
+            put("max_tokens", 4096)
+            put("system", systemPrompt)
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", userPrompt)
+                })
+            })
+        }
+        conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+        val status = conn.responseCode
+        val body = (if (status in 200..299) conn.inputStream else conn.errorStream)
+            .bufferedReader().readText()
+        conn.disconnect()
+
+        if (status !in 200..299) {
+            dbg("claudeGenerate: HTTP $status")
+            return null
+        }
+
+        val json = JSONObject(body)
+        return json.getJSONArray("content")
+            .getJSONObject(0)
+            .getString("text")
+            .trim()
+    }
+
     private fun startAudioCapture() {
         smoothedLevel = 0f
         try {
@@ -434,6 +1007,16 @@ class VoquillIME : InputMethodService() {
         const val KEY_API_KEY = "voquill_api_key"
         const val KEY_FUNCTION_URL = "voquill_function_url"
         const val KEY_AUTH_URL = "voquill_auth_url"
+
+        const val KEY_BYOK_PROVIDER = "voquill_byok_provider"
+        const val KEY_BYOK_API_KEY = "voquill_byok_api_key"
+        const val KEY_BYOK_BASE_URL = "voquill_byok_base_url"
+        const val KEY_BYOK_MODEL = "voquill_byok_model"
+
+        const val KEY_BYOK_PP_PROVIDER = "voquill_byok_pp_provider"
+        const val KEY_BYOK_PP_API_KEY = "voquill_byok_pp_api_key"
+        const val KEY_BYOK_PP_BASE_URL = "voquill_byok_pp_base_url"
+        const val KEY_BYOK_PP_MODEL = "voquill_byok_pp_model"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()
         const val COLOR_RED = 0xFFFF3B30.toInt()

@@ -19,13 +19,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 final _logger = createNamedLogger('app_actions');
 
 Future<void> refreshMainData() async {
+  final isLoggedIn = getAppState().isLoggedIn;
+
   await Future.wait([
-    loadTranscriptions(),
-    loadCurrentUser(),
-    loadCurrentMember(),
-    loadConfig(),
+    if (isLoggedIn) loadTranscriptions(),
+    if (isLoggedIn) loadCurrentUser(),
+    if (isLoggedIn) loadCurrentMember(),
+    if (isLoggedIn) loadConfig(),
     loadStyles(),
-    loadDictationLanguages(),
+    if (isLoggedIn) loadDictationLanguages(),
     loadApiKeyPreferences(),
     loadTranscriptionApiKeys(),
     loadPostProcessingApiKeys(),
@@ -59,6 +61,13 @@ StreamSubscription<User?> listenToAuthChanges() {
         });
       }
       clearKeyboardAuth();
+
+      // Load BYOK-related data even without auth
+      await Future.wait([
+        loadApiKeyPreferences(),
+        loadTranscriptionApiKeys(),
+        loadPostProcessingApiKeys(),
+      ]);
     }
 
     if (isInitial) {

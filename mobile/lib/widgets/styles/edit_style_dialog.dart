@@ -48,43 +48,70 @@ class _EditStyleDialogState extends State<EditStyleDialog> {
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: Text(widget.isEditing ? 'Edit Style' : 'New Style'),
+      title: Text(widget.isSystem ? 'View Style' : (widget.isEditing ? 'Edit Style' : 'New Style')),
       content: Padding(
         padding: Theming.padding.onlyVertical(),
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           spacing: Theming.paddingValue,
           children: [
-            Padding(
-              padding: Theming.padding.onlyHorizontal(),
-              child: TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
+            if (widget.isSystem) ...[
+              Padding(
+                padding: Theming.padding.onlyHorizontal(),
+                child: Text(
+                  widget.initialName ?? '',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                maxLength: 120,
-                readOnly: widget.isSystem,
-                onChanged: (_) => setState(() {}),
               ),
-            ),
-            Padding(
-              padding: Theming.padding.onlyHorizontal(),
-              child: TextField(
-                controller: _promptController,
-                decoration: const InputDecoration(
-                  labelText: 'Prompt template',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
+              Padding(
+                padding: Theming.padding.onlyHorizontal(),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: SelectableText(
+                    widget.initialPrompt ?? '',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
-                maxLines: 5,
-                minLines: 3,
-                maxLength: 1000,
-                readOnly: widget.isSystem,
-                onChanged: (_) => setState(() {}),
               ),
-            ),
+            ] else ...[
+              Padding(
+                padding: Theming.padding.onlyHorizontal(),
+                child: TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 120,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              Padding(
+                padding: Theming.padding.onlyHorizontal(),
+                child: TextField(
+                  controller: _promptController,
+                  decoration: const InputDecoration(
+                    labelText: 'Prompt template',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  maxLines: 5,
+                  minLines: 3,
+                  maxLength: 1000,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+            ],
           ],
+        ),
         ),
       ),
       actions: [
@@ -100,7 +127,7 @@ class _EditStyleDialogState extends State<EditStyleDialog> {
             const Spacer(),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(widget.isSystem ? 'Close' : 'Cancel'),
             ),
             const SizedBox(width: 8),
             if (!widget.isSystem)

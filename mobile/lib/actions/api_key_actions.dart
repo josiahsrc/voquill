@@ -1,7 +1,9 @@
 import 'package:app/db/api_key_db.dart';
+import 'package:app/model/api_key_model.dart';
 import 'package:app/model/common_model.dart';
 import 'package:app/state/api_key_state.dart';
 import 'package:app/store/store.dart';
+import 'package:app/utils/channel_utils.dart';
 import 'package:app/utils/log_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -61,13 +63,14 @@ Future<void> loadPostProcessingApiKeys() async {
 Future<void> createTranscriptionApiKey({
   required String name,
   required String apiKey,
+  String provider = 'openai-compatible',
   String? baseUrl,
   String? model,
 }) async {
   final entry = await _transcriptionDb.create(
     id: _uuid.v4(),
     name: name,
-    provider: 'openai-compatible',
+    provider: provider,
     apiKey: apiKey,
     baseUrl: baseUrl,
     model: model,
@@ -84,13 +87,14 @@ Future<void> createTranscriptionApiKey({
 Future<void> createPostProcessingApiKey({
   required String name,
   required String apiKey,
+  String provider = 'openai-compatible',
   String? baseUrl,
   String? model,
 }) async {
   final entry = await _postProcessingDb.create(
     id: _uuid.v4(),
     name: name,
-    provider: 'openai-compatible',
+    provider: provider,
     apiKey: apiKey,
     baseUrl: baseUrl,
     model: model,
@@ -153,6 +157,8 @@ Future<void> setTranscriptionMode(TranscriptionMode mode) async {
 
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kTranscriptionMode, mode.name);
+
+  await _syncSelectedTranscriptionKeyToKeyboard();
 }
 
 Future<void> setPostProcessingMode(PostProcessingMode mode) async {
@@ -162,6 +168,8 @@ Future<void> setPostProcessingMode(PostProcessingMode mode) async {
 
   final prefs = await SharedPreferences.getInstance();
   await prefs.setString(_kPostProcessingMode, mode.name);
+
+  await _syncSelectedPostProcessingKeyToKeyboard();
 }
 
 Future<void> selectTranscriptionApiKey(String? id) async {
@@ -175,6 +183,8 @@ Future<void> selectTranscriptionApiKey(String? id) async {
   } else {
     await prefs.remove(_kSelectedTranscriptionApiKeyId);
   }
+
+  await _syncSelectedTranscriptionKeyToKeyboard();
 }
 
 Future<void> selectPostProcessingApiKey(String? id) async {
@@ -188,6 +198,8 @@ Future<void> selectPostProcessingApiKey(String? id) async {
   } else {
     await prefs.remove(_kSelectedPostProcessingApiKeyId);
   }
+
+  await _syncSelectedPostProcessingKeyToKeyboard();
 }
 
 Future<void> loadApiKeyPreferences() async {
@@ -220,9 +232,74 @@ Future<void> loadApiKeyPreferences() async {
       draft.apiKeys.selectedTranscriptionApiKeyId = selectedTranscriptionId;
       draft.apiKeys.selectedPostProcessingApiKeyId = selectedPostProcessingId;
     });
+
+    await _syncSelectedTranscriptionKeyToKeyboard();
+    await _syncSelectedPostProcessingKeyToKeyboard();
   } catch (e) {
     _logger.w('Failed to load API key preferences', e);
   }
+}
+
+Future<void> _syncSelectedTranscriptionKeyToKeyboard() async {
+  final state = getAppState();
+  final selectedId = state.apiKeys.selectedTranscriptionApiKeyId;
+
+  if (state.apiKeys.transcriptionMode != TranscriptionMode.api ||
+      selectedId == null) {
+    await clearByokConfig();
+    return;
+  }
+
+  ApiKeyEntry? key;
+  for (final k in state.apiKeys.transcriptionApiKeys) {
+    if (k.id == selectedId) {
+      key = k;
+      break;
+    }
+  }
+  if (key == null) {
+    await clearByokConfig();
+    return;
+  }
+
+  final apiKeyValue = await revealTranscriptionApiKey(selectedId);
+  await syncByokConfigToKeyboard(
+    provider: key.provider,
+    apiKey: apiKeyValue,
+    baseUrl: key.baseUrl,
+    model: key.model,
+  );
+}
+
+Future<void> _syncSelectedPostProcessingKeyToKeyboard() async {
+  final state = getAppState();
+  final selectedId = state.apiKeys.selectedPostProcessingApiKeyId;
+
+  if (state.apiKeys.postProcessingMode != PostProcessingMode.api ||
+      selectedId == null) {
+    await clearByokPostProcessingConfig();
+    return;
+  }
+
+  ApiKeyEntry? key;
+  for (final k in state.apiKeys.postProcessingApiKeys) {
+    if (k.id == selectedId) {
+      key = k;
+      break;
+    }
+  }
+  if (key == null) {
+    await clearByokPostProcessingConfig();
+    return;
+  }
+
+  final apiKeyValue = await revealPostProcessingApiKey(selectedId);
+  await syncByokPostProcessingConfigToKeyboard(
+    provider: key.provider,
+    apiKey: apiKeyValue,
+    baseUrl: key.baseUrl,
+    model: key.model,
+  );
 }
 
 Future<String> revealTranscriptionApiKey(String id) async {

@@ -58,6 +58,11 @@ GoRouter buildRouter({required Listenable? refreshListenable}) {
         name: 'setup',
       ),
       GoRoute(
+        path: '/byok-setup',
+        builder: (context, state) => const TranscriptionSettingsPage(),
+        name: 'byok-setup',
+      ),
+      GoRoute(
         path: '/dashboard',
         builder: (context, state) => const DashboardPage(),
         name: 'dashboard',

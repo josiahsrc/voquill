@@ -68,6 +68,9 @@ class AppState with EquatableMixin {
   bool get isLoggedIn => auth != null;
   bool get isOnboarded => user?.onboarded ?? false;
   bool get hasPermissions => hasMicrophonePermission && hasKeyboardPermission;
+  bool get isByokConfigured =>
+      apiKeys.transcriptionMode == TranscriptionMode.api &&
+      apiKeys.selectedTranscriptionApiKeyId != null;
 
   @override
   List<Object?> get props => [

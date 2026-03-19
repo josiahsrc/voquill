@@ -28,6 +28,7 @@ class SettingsPage extends StatelessWidget {
       (s) => s.dictationLanguages,
     );
     final apiKeys = useAppStore().select(context, (s) => s.apiKeys);
+    final isLoggedIn = useAppStore().select(context, (s) => s.isLoggedIn);
     final theme = Theme.of(context);
 
     return CustomScrollView(
@@ -124,12 +125,13 @@ class SettingsPage extends StatelessWidget {
             child: ListTileSection(
               title: const Text('Advanced'),
               children: [
-                AppListTile(
-                  leading: const Icon(Icons.payment_outlined),
-                  title: const Text('Manage subscription'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => presentCustomerCenter(),
-                ),
+                if (isLoggedIn)
+                  AppListTile(
+                    leading: const Icon(Icons.payment_outlined),
+                    title: const Text('Manage subscription'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => presentCustomerCenter(),
+                  ),
                 AppListTile(
                   leading: const Icon(Icons.description_outlined),
                   title: const Text('Terms & conditions'),
@@ -142,11 +144,12 @@ class SettingsPage extends StatelessWidget {
                   trailing: const Icon(Icons.open_in_new, size: 18),
                   onTap: () => openUrl('https://voquill.com/privacy'),
                 ),
-                AppListTile(
-                  leading: const Icon(Icons.logout_outlined),
-                  title: const Text('Sign out'),
-                  onTap: () => signOut(),
-                ),
+                if (isLoggedIn)
+                  AppListTile(
+                    leading: const Icon(Icons.logout_outlined),
+                    title: const Text('Sign out'),
+                    onTap: () => signOut(),
+                  ),
               ],
             ),
           ),
