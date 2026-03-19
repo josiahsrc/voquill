@@ -56,6 +56,7 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
 
   late String _selectedProvider;
   bool _testing = false;
+  bool? _testResult;
 
   List<(String, String)> get _providers => widget.providers ?? defaultProviders;
 
@@ -183,6 +184,7 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
     if (!_isValid || _testing) return;
     setState(() {
       _testing = true;
+      _testResult = null;
     });
 
     final valid = await _testApiKey();
@@ -192,20 +194,19 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
     if (!valid) {
       setState(() {
         _testing = false;
+        _testResult = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'API key validation failed. Check your key and try again.',
-          ),
-        ),
-      );
       return;
     }
 
     setState(() {
       _testing = false;
+      _testResult = true;
     });
+
+    // Brief pause to show success before closing
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
 
     final baseUrl = _baseUrlController.text.trim();
     final model = _modelController.text.trim();
@@ -309,6 +310,30 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
         ),
       ),
       actions: [
+        if (_testResult == false)
+          Expanded(
+            child: Text(
+              'Validation failed. Check your key.',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        if (_testResult == true)
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  'Key verified',
+                  style: TextStyle(color: Colors.green, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
         TextButton(
           onPressed: _testing ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),

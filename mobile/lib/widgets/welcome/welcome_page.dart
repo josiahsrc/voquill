@@ -131,6 +131,6 @@ class WelcomePage extends StatelessWidget {
   }
 
   void _handleByok(BuildContext context) {
-    context.push('/dashboard/transcription-settings');
+    context.push('/byok-setup');
   }
 }

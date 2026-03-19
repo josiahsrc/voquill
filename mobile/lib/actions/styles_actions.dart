@@ -15,21 +15,47 @@ import 'package:uuid/uuid.dart';
 final _logger = createNamedLogger('styles_actions');
 
 Future<void> _saveUser(User user) async {
+  if (!getAppState().isLoggedIn) return;
   await SetMyUserApi().call(SetMyUserInput(value: user));
 }
 
-User _currentUser() => getAppState().user!;
+User _currentUser() {
+  final user = getAppState().user;
+  if (user != null) return user;
+  // BYOK users have no Firebase user — create a local placeholder
+  return User(
+    id: 'local',
+    createdAt: _now(),
+    updatedAt: _now(),
+    name: 'User',
+    onboarded: false,
+    hasFinishedTutorial: false,
+    playInteractionChime: true,
+    wordsThisMonth: 0,
+    wordsTotal: 0,
+    hasMigratedPreferredMicrophone: false,
+    shouldShowUpgradeDialog: false,
+  );
+}
 
 String _now() => DateTime.now().toUtc().toIso8601String();
 
 Future<void> loadStyles() async {
+  final isLoggedIn = getAppState().isLoggedIn;
+
   produceAppState((draft) {
     draft.styles.status = ActionStatus.loading;
   });
 
   try {
-    final output = await ListMyTonesApi().call(null);
-    final allTones = mergeSystemTones(output.tones);
+    final List<Tone> userTones;
+    if (isLoggedIn) {
+      final output = await ListMyTonesApi().call(null);
+      userTones = output.tones;
+    } else {
+      userTones = [];
+    }
+    final allTones = mergeSystemTones(userTones);
 
     produceAppState((draft) {
       registerTones(draft, allTones);

@@ -11,6 +11,13 @@ import 'package:uuid/uuid.dart';
 final _logger = createNamedLogger('dictionary_actions');
 
 Future<void> loadDictionary() async {
+  if (!getAppState().isLoggedIn) {
+    produceAppState((draft) {
+      draft.dictionary.status = ActionStatus.success;
+    });
+    return;
+  }
+
   produceAppState((draft) {
     draft.dictionary.status = ActionStatus.loading;
   });

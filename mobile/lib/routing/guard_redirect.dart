@@ -65,6 +65,16 @@ final _graph = NavigationGraph([
     targetRoute: '/onboarding',
   ),
 
+  // BYOK setup page guards
+  // If already configured -> dashboard
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/byok-setup'),
+      IsByokConfiguredCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
+
   // Onboarding page guards
   // If BYOK configured -> dashboard
   NavigationRule(
@@ -85,11 +95,9 @@ final _graph = NavigationGraph([
 
   // Dashboard page guards
   // If not onboarded AND not BYOK configured -> welcome
-  // Exception: allow /dashboard/transcription-settings for initial BYOK setup
   NavigationRule(
     condition: AndCondition([
       MatchesLocationRegex(RegExp(r'^/dashboard')),
-      NotCondition(IsAtLocationCondition('/dashboard/transcription-settings')),
       NotCondition(IsOnboardedCondition()),
       NotCondition(IsByokConfiguredCondition()),
     ]),
