@@ -22,16 +22,8 @@ pub(crate) fn paste_text_into_focused_field(
         log::info!("Wayland session detected");
         return wayland::wayland_paste_via_clipboard(target, keybind)
             .or_else(|err| {
-                log::warn!("Wayland paste failed ({err}), trying X11 fallback");
-                paste_via_clipboard(target, keybind)
-            })
-            .or_else(|err| {
-                log::warn!("X11 paste failed ({err}), trying wtype text fallback");
+                log::warn!("Wayland paste failed ({err}), trying wtype text fallback");
                 wayland::wtype_text(target)
-            })
-            .or_else(|err| {
-                log::warn!("wtype text failed ({err}), trying enigo typing fallback");
-                enigo_type_text(target)
             });
     }
 

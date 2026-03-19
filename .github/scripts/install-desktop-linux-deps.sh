@@ -26,4 +26,13 @@ sudo apt-get install -y \
   gstreamer1.0-plugins-base \
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
-  libfuse2
+  libfuse2 \
+  wtype
+
+# Bundle wtype binary for Tauri resources
+WTYPE_BIN="$(which wtype)"
+RESOURCES_DIR="$(dirname "$0")/../../apps/desktop/src-tauri/resources/linux"
+mkdir -p "$RESOURCES_DIR"
+cp "$WTYPE_BIN" "$RESOURCES_DIR/wtype"
+chmod +x "$RESOURCES_DIR/wtype"
+echo "Bundled wtype from ${WTYPE_BIN} to ${RESOURCES_DIR}/wtype"

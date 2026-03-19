@@ -1,9 +1,16 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
 use tauri::Manager;
 
 use crate::domain::CompositorBinding;
+
+static WTYPE_PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
+
+pub fn wtype_path() -> Option<&'static PathBuf> {
+    WTYPE_PATH.get().and_then(|p| p.as_ref())
+}
 
 enum Compositor {
     Gnome,
@@ -16,6 +23,7 @@ pub fn deploy_trigger_script(app: &tauri::AppHandle) {
     if let Err(err) = deploy_trigger_script_inner(app) {
         log::error!("Failed to deploy trigger script: {err}");
     }
+    deploy_wtype(app);
 }
 
 fn deploy_trigger_script_inner(app: &tauri::AppHandle) -> Result<(), String> {
@@ -48,6 +56,46 @@ fn deploy_trigger_script_inner(app: &tauri::AppHandle) -> Result<(), String> {
 
     log::info!("Deployed trigger script to {}", dest.display());
     Ok(())
+}
+
+fn deploy_wtype(app: &tauri::AppHandle) {
+    let resolved = (|| -> Option<PathBuf> {
+        let resource_path = app
+            .path()
+            .resolve("resources/linux/wtype", tauri::path::BaseDirectory::Resource)
+            .ok()?;
+
+        if !resource_path.exists() {
+            log::info!("Bundled wtype not found, falling back to system PATH");
+            return which_wtype();
+        }
+
+        let config_dir = app.path().app_config_dir().ok()?;
+        fs::create_dir_all(&config_dir).ok()?;
+        let dest = config_dir.join("wtype");
+        fs::copy(&resource_path, &dest).ok()?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = fs::set_permissions(&dest, fs::Permissions::from_mode(0o755));
+        }
+
+        log::info!("Deployed wtype to {}", dest.display());
+        Some(dest)
+    })();
+
+    let _ = WTYPE_PATH.set(resolved);
+}
+
+fn which_wtype() -> Option<PathBuf> {
+    Command::new("which")
+        .arg("wtype")
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| PathBuf::from(String::from_utf8_lossy(&o.stdout).trim().to_string()))
+        .filter(|p| p.exists())
 }
 
 fn trigger_script_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
