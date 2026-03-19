@@ -5,16 +5,36 @@ import 'package:flutter/material.dart';
 class ApiKeyDialogResult {
   const ApiKeyDialogResult({
     required this.name,
+    required this.provider,
     required this.apiKey,
     this.baseUrl,
     this.model,
   });
 
   final String name;
+  final String provider;
   final String apiKey;
   final String? baseUrl;
   final String? model;
 }
+
+const _providers = [
+  ('groq', 'Groq'),
+  ('openai', 'OpenAI'),
+  ('deepgram', 'Deepgram'),
+  ('assemblyai', 'AssemblyAI'),
+  ('elevenlabs', 'ElevenLabs'),
+  ('gemini', 'Gemini'),
+  ('azure', 'Azure'),
+  ('openai-compatible', 'OpenAI Compatible'),
+  ('speaches', 'Speaches'),
+];
+
+bool _providerNeedsBaseUrl(String provider) =>
+    provider == 'openai-compatible' || provider == 'speaches';
+
+bool _providerSupportsModel(String provider) =>
+    provider != 'deepgram' && provider != 'assemblyai';
 
 class ApiKeyDialog extends StatefulWidget {
   const ApiKeyDialog({super.key});
@@ -28,6 +48,8 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
   final _baseUrlController = TextEditingController();
   final _apiKeyController = TextEditingController();
   final _modelController = TextEditingController();
+
+  String _selectedProvider = 'groq';
 
   @override
   void dispose() {
@@ -51,6 +73,7 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
     Navigator.of(context).pop(
       ApiKeyDialogResult(
         name: _nameController.text.trim(),
+        provider: _selectedProvider,
         apiKey: _apiKeyController.text.trim(),
         baseUrl: baseUrl.isEmpty ? null : baseUrl,
         model: model.isEmpty ? null : model,
@@ -60,6 +83,9 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final showBaseUrl = _providerNeedsBaseUrl(_selectedProvider);
+    final showModel = _providerSupportsModel(_selectedProvider);
+
     return AppDialog(
       title: const Text('Add API Key'),
       content: Padding(
@@ -81,24 +107,40 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
-              TextField(
-                enabled: false,
+              DropdownButtonFormField<String>(
+                value: _selectedProvider,
                 decoration: const InputDecoration(
                   labelText: 'Provider',
                   border: OutlineInputBorder(),
                 ),
-                controller: TextEditingController(text: 'OpenAI Compatible'),
+                items: _providers
+                    .map(
+                      (p) => DropdownMenuItem(
+                        value: p.$1,
+                        child: Text(p.$2),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedProvider = value;
+                    });
+                  }
+                },
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _baseUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Base URL (optional)',
-                  hintText: 'http://127.0.0.1:8080',
-                  border: OutlineInputBorder(),
+              if (showBaseUrl) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _baseUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Base URL',
+                    hintText: 'http://127.0.0.1:8080',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.url,
                 ),
-                keyboardType: TextInputType.url,
-              ),
+              ],
               const SizedBox(height: 16),
               TextField(
                 controller: _apiKeyController,
@@ -109,15 +151,17 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
                 obscureText: true,
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _modelController,
-                decoration: const InputDecoration(
-                  labelText: 'Model (optional)',
-                  hintText: 'gpt-4o',
-                  border: OutlineInputBorder(),
+              if (showModel) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _modelController,
+                  decoration: const InputDecoration(
+                    labelText: 'Model (optional)',
+                    hintText: 'whisper-large-v3-turbo',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

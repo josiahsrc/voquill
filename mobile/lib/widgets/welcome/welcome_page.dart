@@ -101,6 +101,15 @@ class WelcomePage extends StatelessWidget {
                           ),
                           child: const Text('I already have an account'),
                         ),
+                        TextButton(
+                          onPressed: () => _handleByok(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            foregroundColor:
+                                theme.colorScheme.onSurfaceVariant,
+                          ),
+                          child: const Text('Use your own API key'),
+                        ),
                       ],
                     ),
                   ),
@@ -119,5 +128,9 @@ class WelcomePage extends StatelessWidget {
 
   void _handleLogin(BuildContext context) {
     context.push('/login');
+  }
+
+  void _handleByok(BuildContext context) {
+    context.push('/dashboard/transcription-settings');
   }
 }

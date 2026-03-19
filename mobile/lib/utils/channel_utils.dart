@@ -191,6 +191,34 @@ void syncMixpanelToken() {
   });
 }
 
+Future<void> syncByokConfigToKeyboard({
+  required String provider,
+  required String apiKey,
+  String? baseUrl,
+  String? model,
+}) async {
+  if (!_canSync) return;
+  try {
+    await _sharedChannel.invokeMethod('setByokConfig', {
+      'provider': provider,
+      'apiKey': apiKey,
+      'baseUrl': baseUrl,
+      'model': model,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync BYOK config to keyboard', e);
+  }
+}
+
+Future<void> clearByokConfig() async {
+  if (!_canSync) return;
+  try {
+    await _sharedChannel.invokeMethod('clearByokConfig');
+  } catch (e) {
+    _logger.w('Failed to clear BYOK config', e);
+  }
+}
+
 Future<void> syncKeyboardDictationLanguages({
   required List<String> languages,
   required String activeLanguage,

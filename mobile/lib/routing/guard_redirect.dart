@@ -14,6 +14,14 @@ final _graph = NavigationGraph([
   ),
 
   // Welcome page guards (matching desktop Guard.tsx)
+  // If BYOK configured -> dashboard (skip login entirely)
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/welcome'),
+      IsByokConfiguredCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
   // If onboarded -> dashboard
   NavigationRule(
     condition: AndCondition([
@@ -33,6 +41,14 @@ final _graph = NavigationGraph([
   ),
 
   // Login page guards (same as welcome)
+  // If BYOK configured -> dashboard
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/login'),
+      IsByokConfiguredCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
   NavigationRule(
     condition: AndCondition([
       IsAtLocationCondition('/login'),
@@ -50,6 +66,14 @@ final _graph = NavigationGraph([
   ),
 
   // Onboarding page guards
+  // If BYOK configured -> dashboard
+  NavigationRule(
+    condition: AndCondition([
+      IsAtLocationCondition('/onboarding'),
+      IsByokConfiguredCondition(),
+    ]),
+    targetRoute: '/dashboard',
+  ),
   // If onboarded -> dashboard
   NavigationRule(
     condition: AndCondition([
@@ -60,11 +84,14 @@ final _graph = NavigationGraph([
   ),
 
   // Dashboard page guards
-  // If not onboarded -> welcome
+  // If not onboarded AND not BYOK configured -> welcome
+  // Exception: allow /dashboard/transcription-settings for initial BYOK setup
   NavigationRule(
     condition: AndCondition([
       MatchesLocationRegex(RegExp(r'^/dashboard')),
+      NotCondition(IsAtLocationCondition('/dashboard/transcription-settings')),
       NotCondition(IsOnboardedCondition()),
+      NotCondition(IsByokConfiguredCondition()),
     ]),
     targetRoute: '/welcome',
   ),
@@ -87,11 +114,12 @@ final _graph = NavigationGraph([
     ]),
     targetRoute: '/dashboard',
   ),
-  // If not onboarded -> welcome
+  // If not onboarded and not BYOK -> welcome
   NavigationRule(
     condition: AndCondition([
       IsAtLocationCondition('/setup'),
       NotCondition(IsOnboardedCondition()),
+      NotCondition(IsByokConfiguredCondition()),
     ]),
     targetRoute: '/welcome',
   ),

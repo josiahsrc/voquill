@@ -95,6 +95,7 @@ class PostProcessingSettingsPage extends StatelessWidget {
           onAdd: (result) => createPostProcessingApiKey(
             name: result.name,
             apiKey: result.apiKey,
+            provider: result.provider,
             baseUrl: result.baseUrl,
             model: result.model,
           ),

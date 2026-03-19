@@ -165,6 +165,15 @@ class NavigationGraph {
   }
 }
 
+class IsByokConfiguredCondition extends NavigationCondition {
+  const IsByokConfiguredCondition();
+
+  @override
+  bool evaluate(AppState state, String currentLocation) {
+    return state.isByokConfigured;
+  }
+}
+
 /// Internal condition that never matches (used as a fallback)
 class _NeverCondition extends NavigationCondition {
   const _NeverCondition();

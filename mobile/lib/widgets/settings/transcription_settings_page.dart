@@ -91,6 +91,7 @@ class TranscriptionSettingsPage extends StatelessWidget {
       onAdd: (result) => createTranscriptionApiKey(
         name: result.name,
         apiKey: result.apiKey,
+        provider: result.provider,
         baseUrl: result.baseUrl,
         model: result.model,
       ),
