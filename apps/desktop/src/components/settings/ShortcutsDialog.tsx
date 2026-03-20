@@ -15,6 +15,7 @@ import {
   AGENT_DICTATE_HOTKEY,
   CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
+  OPEN_CHAT_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
 } from "../../utils/keyboard.utils";
 import { HotkeySetting } from "./HotkeySetting";
@@ -56,7 +57,7 @@ export const ShortcutsDialog = () => {
           actionName={DICTATE_HOTKEY}
         />
         <HotkeySetting
-          title={<FormattedMessage defaultMessage="Agent mode" />}
+          title={<FormattedMessage defaultMessage="Assistant mode" />}
           description={
             <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
           }
@@ -68,6 +69,13 @@ export const ShortcutsDialog = () => {
             <FormattedMessage defaultMessage="Cancel the current dictation or agent session." />
           }
           actionName={CANCEL_TRANSCRIPTION_HOTKEY}
+        />
+        <HotkeySetting
+          title={<FormattedMessage defaultMessage="Open chat" />}
+          description={
+            <FormattedMessage defaultMessage="Open the current assistant conversation in the main window." />
+          }
+          actionName={OPEN_CHAT_HOTKEY}
         />
         {isManualStyling && (
           <HotkeySetting

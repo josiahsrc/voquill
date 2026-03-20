@@ -73,7 +73,7 @@ class _EditStyleDialogState extends State<EditStyleDialog> {
               child: TextField(
                 controller: _promptController,
                 decoration: const InputDecoration(
-                  labelText: 'Prompt template',
+                  labelText: 'Style prompt',
                   border: OutlineInputBorder(),
                   alignLabelWithHint: true,
                 ),

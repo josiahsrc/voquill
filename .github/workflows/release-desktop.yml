@@ -293,7 +293,7 @@ jobs:
             tauri_platform: macos
             node_platform: darwin
             artifact_name: desktop-macos
-            require_gpu_sidecar: false
+            require_gpu_sidecar: true
 
           - label: Windows
             os: windows-latest
@@ -348,6 +348,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.6"
+
       - name: Sync Tauri release configuration
         run: node scripts/ci/set-tauri-release-config.mjs
 
@@ -379,21 +384,7 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
-          set -euo pipefail
-          sudo apt-get update
-
-          # Choose the right WebKitGTK dev package for the runner.
-          if apt-cache show libwebkit2gtk-4.1-dev >/dev/null 2>&1; then
-            WEBKIT_PKG=libwebkit2gtk-4.1-dev
-          else
-            WEBKIT_PKG=libwebkit2gtk-4.0-dev
-          fi
-
-          sudo apt-get install -y \
-            build-essential pkg-config cmake \
-            libgtk-3-dev "$WEBKIT_PKG" \
-            libayatana-appindicator3-dev librsvg2-dev libasound2-dev libxdo-dev patchelf \
-            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
+          ./.github/scripts/install-desktop-linux-deps.sh
 
       - name: Install Vulkan SDK (Linux)
         if: matrix.os == 'ubuntu-22.04'
@@ -613,6 +604,7 @@ jobs:
           VOQUILL_DESKTOP_PLATFORM: ${{ matrix.node_platform }}
           MACOSX_DEPLOYMENT_TARGET: "13.3"
           CMAKE_OSX_DEPLOYMENT_TARGET: "13.3"
+          APPIMAGE_EXTRACT_AND_RUN: "1"
           APPLE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
           APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
           APPLE_API_KEY: ${{ env.APPLE_API_KEY_ID }}
@@ -941,4 +933,90 @@ jobs:
           git add -A
           git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
           git commit -m "Update packages from ${RELEASE_TAG}"
+          git push
+
+  publish-brew:
+    name: Publish to Homebrew tap
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      VERSION: ${{ needs.metadata.outputs.version }}
+    steps:
+      - name: Download macOS DMG from release
+        run: |
+          set -euo pipefail
+          mkdir -p dmgs
+          gh release download "$RELEASE_TAG" --pattern "*_universal.dmg" --dir dmgs --repo "$GITHUB_REPOSITORY"
+          dmg_file="$(ls dmgs/*_universal.dmg | head -n 1)"
+          if [[ -z "${dmg_file}" ]]; then
+            echo "No universal .dmg file found in release ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          echo "Found DMG: ${dmg_file}"
+          sha256="$(sha256sum "${dmg_file}" | awk '{print $1}')"
+          echo "SHA256: ${sha256}"
+          echo "DMG_SHA256=${sha256}" >> "$GITHUB_ENV"
+
+      - name: Clone Homebrew tap repository
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${{ secrets.BREW_REPO_TOKEN }}@github.com/voquill/homebrew-voquill-desktop.git" brew-tap
+
+      - name: Update cask
+        run: |
+          set -euo pipefail
+          cd brew-tap
+          mkdir -p Casks
+
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            cask_name="voquill"
+            app_name="Voquill"
+            tag_prefix="desktop-v"
+            dmg_name="Voquill_#{version}_universal.dmg"
+          else
+            cask_name="voquill-dev"
+            app_name="Voquill (dev)"
+            tag_prefix="desktop-dev-v"
+            dmg_name="Voquill.dev._#{version}_universal.dmg"
+          fi
+
+          cat > "Casks/${cask_name}.rb" <<CASK
+          cask "${cask_name}" do
+            version "${VERSION}"
+            sha256 "${DMG_SHA256}"
+
+            url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag_prefix}#{version}/${dmg_name}"
+            name "${app_name}"
+            desc "AI-powered dictation desktop application"
+            homepage "https://voquill.com"
+
+            depends_on macos: ">= :ventura"
+
+            app "${app_name}.app"
+
+            zap trash: [
+              "~/Library/Application Support/com.voquill.desktop",
+              "~/Library/Caches/com.voquill.desktop",
+              "~/Library/Preferences/com.voquill.desktop.plist",
+              "~/Library/Saved Application State/com.voquill.desktop.savedState",
+            ]
+          end
+          CASK
+
+          echo "CASK_NAME=${cask_name}" >> "$GITHUB_ENV"
+
+      - name: Push updated tap
+        run: |
+          set -euo pipefail
+          cd brew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update ${CASK_NAME} to ${VERSION} from ${RELEASE_TAG}"
           git push

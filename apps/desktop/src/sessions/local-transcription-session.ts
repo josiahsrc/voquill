@@ -12,9 +12,9 @@ import {
   normalizeLocalWhisperModel,
 } from "../utils/local-transcription.utils";
 import {
-  LocalSidecarStreamingSession,
+  type LocalSidecarStreamingSession,
   getLocalTranscriptionSidecarManager,
-} from "../utils/local-transcription-sidecar.utils";
+} from "../sidecars";
 import { getLogger } from "../utils/log.utils";
 import {
   buildLocalizedTranscriptionPrompt,

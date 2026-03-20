@@ -31,6 +31,8 @@ type LocalTranscription = {
   transcriptionDurationMs?: number | null;
   postprocessDurationMs?: number | null;
   warnings?: string[] | null;
+  remoteStatus?: string | null;
+  remoteDeviceId?: string | null;
 };
 
 export type TranscriptionAudioData = {
@@ -69,6 +71,8 @@ const toLocalTranscription = (
   transcriptionDurationMs: transcription.transcriptionDurationMs ?? null,
   postprocessDurationMs: transcription.postprocessDurationMs ?? null,
   warnings: transcription.warnings ?? null,
+  remoteStatus: transcription.remoteStatus ?? null,
+  remoteDeviceId: transcription.remoteDeviceId ?? null,
 });
 
 const fromLocalTranscription = (
@@ -99,6 +103,9 @@ const fromLocalTranscription = (
   transcriptionDurationMs: transcription.transcriptionDurationMs ?? undefined,
   postprocessDurationMs: transcription.postprocessDurationMs ?? undefined,
   warnings: transcription.warnings ?? undefined,
+  remoteStatus:
+    (transcription.remoteStatus as "sent" | "received") ?? undefined,
+  remoteDeviceId: transcription.remoteDeviceId ?? undefined,
 });
 
 export abstract class BaseTranscriptionRepo extends BaseRepo {

@@ -192,6 +192,7 @@ Future<void> finishOnboarding() async {
     });
 
     await clearOnboardingProgress();
+    await loadCurrentMember();
   } catch (e) {
     _logger.e('Failed to finish onboarding', e);
     produceAppState((draft) {

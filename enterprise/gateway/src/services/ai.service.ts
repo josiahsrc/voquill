@@ -1,5 +1,10 @@
-import type { CloudModel, HandlerInput, HandlerOutput } from "@repo/functions";
-import type { AuthContext, Nullable } from "@repo/types";
+import type {
+  CloudModel,
+  HandlerInput,
+  HandlerOutput,
+  StreamHandlerInput,
+} from "@repo/functions";
+import type { AuthContext, LlmStreamEvent, Nullable } from "@repo/types";
 import { retry } from "@repo/utilities";
 import { listActiveLlmProvidersWithKeys } from "../repo/llm-provider.repo";
 import { insertMetric } from "../repo/metrics.repo";
@@ -187,6 +192,70 @@ export async function generateText(opts: {
     insertMetric({
       userId: auth.userId,
       operation: "generate",
+      providerName: provider.name,
+      status: "error",
+      latencyMs: Date.now() - startTime,
+      wordCount: 0,
+    }).catch(() => {});
+    throw error;
+  }
+}
+
+export async function* streamChat(opts: {
+  auth: Nullable<AuthContext>;
+  input: StreamHandlerInput<"ai/streamChat">;
+}): AsyncGenerator<LlmStreamEvent> {
+  const auth = requireAuth(opts.auth);
+  const { input } = opts;
+
+  if (input.simulate) {
+    yield { type: "text-delta", text: "Simulated stream response." };
+    yield { type: "finish", finishReason: "stop" };
+    return;
+  }
+
+  const allProviders = await listActiveLlmProvidersWithKeys();
+  const model: CloudModel = input.model ?? "medium";
+  const provider = selectLlmProvider(allProviders, model, llmIndex);
+  llmIndex++;
+
+  const startTime = Date.now();
+  const llmApi = createLlmApi(provider);
+  let wordCount = 0;
+
+  try {
+    let fullText = "";
+    for await (const event of llmApi.streamChat({
+      messages: input.messages,
+      tools: input.tools ?? undefined,
+      toolChoice: input.toolChoice ?? undefined,
+      maxTokens: input.maxTokens ?? undefined,
+      temperature: input.temperature ?? undefined,
+      stopSequences: input.stopSequences,
+      topP: input.topP ?? undefined,
+      frequencyPenalty: input.frequencyPenalty ?? undefined,
+      presencePenalty: input.presencePenalty ?? undefined,
+      seed: input.seed ?? undefined,
+    })) {
+      if (event.type === "text-delta") {
+        fullText += event.text;
+      }
+      yield event;
+    }
+    wordCount = fullText.split(/\s+/).filter(Boolean).length;
+
+    insertMetric({
+      userId: auth.userId,
+      operation: "stream-chat",
+      providerName: provider.name,
+      status: "success",
+      latencyMs: Date.now() - startTime,
+      wordCount,
+    }).catch(() => {});
+  } catch (error) {
+    insertMetric({
+      userId: auth.userId,
+      operation: "stream-chat",
       providerName: provider.name,
       status: "error",
       latencyMs: Date.now() - startTime,

@@ -38,6 +38,10 @@ type LocalUserPreferences = {
   incognitoModeIncludeInStats: boolean;
   dictationPillVisibility: DictationPillVisibility;
   realtimeOutputEnabled: boolean;
+  remoteOutputEnabled: boolean;
+  remoteTargetDeviceId: Nullable<string>;
+  remoteReceiverPort: Nullable<number>;
+  remoteReceiverAutoStart: boolean;
   useNewBackend: boolean;
 };
 
@@ -85,6 +89,10 @@ const fromLocalPreferences = (
     preferences.dictationPillVisibility,
   ),
   realtimeOutputEnabled: preferences.realtimeOutputEnabled ?? false,
+  remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
+  remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
+  remoteReceiverPort: preferences.remoteReceiverPort ?? null,
+  remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
 });
 
 const toLocalPreferences = (
@@ -119,6 +127,10 @@ const toLocalPreferences = (
     preferences.dictationPillVisibility,
   ),
   realtimeOutputEnabled: preferences.realtimeOutputEnabled ?? false,
+  remoteOutputEnabled: preferences.remoteOutputEnabled ?? false,
+  remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
+  remoteReceiverPort: preferences.remoteReceiverPort ?? null,
+  remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
   useNewBackend: true,
 });
 

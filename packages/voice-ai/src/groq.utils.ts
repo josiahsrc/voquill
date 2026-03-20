@@ -4,7 +4,9 @@ import {
   ChatCompletionMessageParam,
 } from "groq-sdk/resources/chat/completions";
 import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse } from "@repo/types";
+import type { JsonResponse, LlmChatInput, LlmStreamEvent } from "@repo/types";
+import OpenAI from "openai";
+import { openaiCompatibleStreamChat } from "./openai.utils";
 
 export const GENERATE_TEXT_MODELS = [
   "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -208,3 +210,26 @@ export const groqTestIntegration = async ({
 
   return content.toLowerCase().includes("hello");
 };
+
+// ============================================================================
+// Streaming Chat
+// ============================================================================
+
+export type GroqStreamChatArgs = {
+  apiKey: string;
+  model: string;
+  input: LlmChatInput;
+};
+
+export async function* groqStreamChat({
+  apiKey,
+  model,
+  input,
+}: GroqStreamChatArgs): AsyncGenerator<LlmStreamEvent> {
+  const client = new OpenAI({
+    apiKey: apiKey.trim(),
+    baseURL: "https://api.groq.com/openai/v1",
+    dangerouslyAllowBrowser: true,
+  });
+  yield* openaiCompatibleStreamChat(client, model, input);
+}

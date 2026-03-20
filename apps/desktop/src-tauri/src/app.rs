@@ -1,18 +1,38 @@
 use sqlx::sqlite::SqlitePoolOptions;
-use tauri::{Manager, WindowEvent};
+use tauri::{Manager, RunEvent, WindowEvent};
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 
 const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
+
+fn handle_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
+    let _ = (&app_handle, &event);
+    #[cfg(target_os = "macos")]
+    if let RunEvent::Reopen {
+        has_visible_windows,
+        ..
+    } = event
+    {
+        if !has_visible_windows {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let _ = crate::platform::window::surface_main_window(&window);
+            }
+        }
+    }
+}
 
 pub fn build() -> tauri::Builder<tauri::Wry> {
     let updater_builder = tauri_plugin_updater::Builder::new();
 
     tauri::Builder::default()
         .plugin({
-            let file_name = chrono::Local::now().format("voquill_%Y-%m-%d_%H%M%S").to_string();
+            let file_name = chrono::Local::now()
+                .format("voquill_%Y-%m-%d_%H%M%S")
+                .to_string();
             tauri_plugin_log::Builder::new()
                 .targets([
-                    Target::new(TargetKind::LogDir { file_name: Some(file_name) }),
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some(file_name),
+                    }),
                     Target::new(TargetKind::Stdout),
                     Target::new(TargetKind::Webview),
                 ])
@@ -95,6 +115,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             app.manage(crate::state::OptionKeyDatabase::new(pool.clone()));
             app.manage(crate::state::GoogleOAuthState::from_env());
             app.manage(crate::state::OverlayState::new());
+            app.manage(crate::state::RemoteReceiverState::new());
 
             #[cfg(desktop)]
             {
@@ -132,9 +153,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 crate::overlay::ensure_toast_overlay_window(app_handle)
                     .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-                crate::overlay::ensure_agent_overlay_window(app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-
                 if let Some(pill_window) =
                     app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
                 {
@@ -147,13 +165,6 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 {
                     let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
                     let _ = crate::platform::window::set_overlay_click_through(&toast_window, true);
-                }
-
-                if let Some(agent_window) =
-                    app_handle.get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
-                {
-                    let _ = crate::platform::window::show_overlay_no_focus(&agent_window);
-                    let _ = crate::platform::window::set_overlay_click_through(&agent_window, true);
                 }
 
                 crate::overlay::start_cursor_follower(app_handle.clone());
@@ -187,6 +198,14 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_current_app_info,
             crate::commands::app_target_upsert,
             crate::commands::app_target_list,
+            crate::commands::paired_remote_device_upsert,
+            crate::commands::paired_remote_device_list,
+            crate::commands::paired_remote_device_delete,
+            crate::commands::remote_receiver_start,
+            crate::commands::remote_receiver_stop,
+            crate::commands::remote_receiver_status,
+            crate::commands::remote_sender_deliver_final_text,
+            crate::commands::remote_sender_pair_with_receiver,
             crate::commands::start_recording,
             crate::commands::stop_recording,
             crate::commands::store_transcription_audio,
@@ -194,8 +213,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::storage_get_download_url,
             crate::commands::surface_main_window,
             crate::commands::set_toast_overlay_click_through,
-            crate::commands::set_agent_overlay_click_through,
+            crate::commands::set_pill_window_size,
             crate::commands::restore_overlay_focus,
+            crate::commands::set_overlay_focusable,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,
@@ -228,11 +248,29 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::sync_hotkey_combos,
+            crate::commands::reset_key_listener_state,
             crate::commands::play_audio,
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,
             crate::commands::read_enterprise_target,
+            crate::commands::run_terminal_command,
             crate::commands::get_keyboard_language,
+            crate::commands::conversation_create,
+            crate::commands::conversation_list,
+            crate::commands::conversation_update,
+            crate::commands::conversation_delete,
+            crate::commands::chat_message_create,
+            crate::commands::chat_message_list,
+            crate::commands::chat_message_update,
+            crate::commands::chat_message_delete_many,
+            crate::commands::check_app_location_writable,
+            crate::commands::download_and_open_mac_installer,
         ])
+}
+
+pub fn run(context: tauri::Context) -> Result<(), tauri::Error> {
+    let app = build().build(context)?;
+    app.run(handle_run_event);
+    Ok(())
 }

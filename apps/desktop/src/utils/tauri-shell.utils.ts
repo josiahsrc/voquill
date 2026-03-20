@@ -19,6 +19,7 @@ export type ShellSpawnOptions = {
 
 export type ShellChildProcess = {
   pid: number;
+  write: (buffer: string | Uint8Array | number[]) => Promise<void>;
   kill: () => Promise<void>;
 };
 
@@ -71,6 +72,9 @@ export const spawnShellSidecar = async ({
 
   return {
     pid,
+    async write(buffer) {
+      await invoke("plugin:shell|stdin_write", { pid, buffer });
+    },
     async kill() {
       await invoke("plugin:shell|kill", { pid });
     },

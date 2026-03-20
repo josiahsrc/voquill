@@ -17,6 +17,7 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
+  RouterOutlined,
   TroubleshootOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
@@ -45,9 +46,9 @@ import { setPreferredLanguage } from "../../actions/user.actions";
 import { getAuthRepo, getStripeRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import {
-  getAllowsChangeAgentMode,
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
+  getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
 import { isMacOS } from "../../utils/env.utils";
 import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
@@ -74,7 +75,7 @@ export default function SettingsPage() {
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
   const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
-  const allowChangeAgentMode = useAppStore(getAllowsChangeAgentMode);
+  const allowMultiDevice = useAppStore(getAllowsMultiDeviceMode);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -188,6 +189,12 @@ export default function SettingsPage() {
     });
   };
 
+  const openMultiDeviceDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.multiDeviceDialogOpen = true;
+    });
+  };
+
   const openClearLocalDataDialog = () => {
     produceAppState((draft) => {
       draft.settings.clearLocalDataDialogOpen = true;
@@ -265,6 +272,13 @@ export default function SettingsPage() {
           title={<FormattedMessage defaultMessage="App paste bindings" />}
           leading={<AppsOutlined />}
           onClick={openAppKeybindingsDialog}
+        />
+      )}
+      {allowMultiDevice && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Multi-device" />}
+          leading={<RouterOutlined />}
+          onClick={openMultiDeviceDialog}
         />
       )}
       <ListTile
@@ -394,11 +408,11 @@ export default function SettingsPage() {
           onClick={openPostProcessingDialog}
         />
       )}
-      {allowChangeAgentMode && (
+      {!isEnterprise && (
         <ListTile
           title={
             <Stack direction="row" alignItems="center">
-              <FormattedMessage defaultMessage="Agent mode" />
+              <FormattedMessage defaultMessage="Assistant mode" />
               <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
             </Stack>
           }

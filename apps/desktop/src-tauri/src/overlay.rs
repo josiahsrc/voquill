@@ -1,8 +1,10 @@
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU8, Ordering},
     Mutex,
 };
 use tauri::{Emitter, Manager, WebviewWindowBuilder};
+
+use crate::domain::PillWindowSize;
 
 pub const PILL_OVERLAY_LABEL: &str = "pill-overlay";
 pub const PILL_OVERLAY_WIDTH: f64 = 256.0;
@@ -14,18 +16,18 @@ pub const EXPANDED_PILL_WIDTH: f64 = 120.0;
 pub const EXPANDED_PILL_HEIGHT: f64 = 32.0;
 pub const EXPANDED_PILL_HOVERABLE_WIDTH: f64 = EXPANDED_PILL_WIDTH + 24.0;
 pub const EXPANDED_PILL_HOVERABLE_HEIGHT: f64 = EXPANDED_PILL_HEIGHT + 56.0;
+pub const ASSISTANT_COMPACT_WIDTH: f64 = 452.0;
+pub const ASSISTANT_COMPACT_HEIGHT: f64 = 138.0;
+pub const ASSISTANT_EXPANDED_WIDTH: f64 = 600.0;
+pub const ASSISTANT_EXPANDED_HEIGHT: f64 = 276.0;
+pub const ASSISTANT_TYPING_WIDTH: f64 = 600.0;
+pub const ASSISTANT_TYPING_HEIGHT: f64 = 360.0;
 
 pub const TOAST_OVERLAY_LABEL: &str = "toast-overlay";
 pub const TOAST_OVERLAY_WIDTH: f64 = 380.0;
 pub const TOAST_OVERLAY_HEIGHT: f64 = 164.0;
 pub const TOAST_OVERLAY_TOP_OFFSET: f64 = 0.0;
 pub const TOAST_OVERLAY_RIGHT_OFFSET: f64 = 0.0;
-
-pub const AGENT_OVERLAY_LABEL: &str = "agent-overlay";
-pub const AGENT_OVERLAY_WIDTH: f64 = 332.0;
-pub const AGENT_OVERLAY_HEIGHT: f64 = 632.0;
-pub const AGENT_OVERLAY_LEFT_OFFSET: f64 = 16.0;
-pub const AGENT_OVERLAY_TOP_OFFSET: f64 = 16.0;
 
 const CURSOR_POLL_INTERVAL_MS: u64 = 60;
 const DEFAULT_SCREEN_WIDTH: f64 = 1920.0;
@@ -68,6 +70,7 @@ fn create_overlay_window(
     width: f64,
     height: f64,
     url: tauri::WebviewUrl,
+    focusable: bool,
 ) -> tauri::Result<()> {
     let (screen_width, screen_height) = get_primary_screen_size(app);
 
@@ -82,7 +85,7 @@ fn create_overlay_window(
             .skip_taskbar(true)
             .resizable(false)
             .shadow(false)
-            .focusable(false)
+            .focusable(focusable)
             .inner_size(width, height)
             .position(x, y);
 
@@ -117,6 +120,7 @@ pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         PILL_OVERLAY_WIDTH,
         PILL_OVERLAY_HEIGHT,
         url,
+        false,
     )?;
 
     Ok(())
@@ -154,52 +158,23 @@ pub fn ensure_toast_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> 
     Ok(())
 }
 
-pub fn ensure_agent_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
-    if app.get_webview_window(AGENT_OVERLAY_LABEL).is_some() {
-        return Ok(());
-    }
-
-    let url = build_overlay_webview_url(app, "agent-overlay")?;
-
-    let x = AGENT_OVERLAY_LEFT_OFFSET;
-    let y = AGENT_OVERLAY_TOP_OFFSET;
-
-    let builder = {
-        let builder = WebviewWindowBuilder::new(app, AGENT_OVERLAY_LABEL, url)
-            .decorations(false)
-            .always_on_top(true)
-            .transparent(true)
-            .skip_taskbar(true)
-            .resizable(false)
-            .shadow(false)
-            .focusable(false)
-            .inner_size(AGENT_OVERLAY_WIDTH, AGENT_OVERLAY_HEIGHT)
-            .position(x, y);
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            builder.visible(false)
-        }
-        #[cfg(target_os = "linux")]
-        {
-            builder
-        }
-    };
-
-    let window = builder.build()?;
-
-    if let Err(err) = crate::platform::window::configure_overlay_non_activating(&window) {
-        log::error!("Failed to configure {AGENT_OVERLAY_LABEL} as non-activating: {err}");
-    }
-
-    Ok(())
+struct PillAnimState {
+    current_width: f64,
+    current_height: f64,
+    shrink_deadline: Option<std::time::Instant>,
+    shrink_width: f64,
+    shrink_height: f64,
 }
 
 struct CursorFollowerState {
     pill_hovered: AtomicBool,
     pill_expanded: AtomicBool,
+    pill_window_size: AtomicU8,
     last_monitor: Mutex<Option<MonitorSnapshot>>,
+    pill_anim: Mutex<PillAnimState>,
 }
+
+const PILL_SHRINK_DELAY_MS: u64 = 380;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct MonitorSnapshot {
@@ -226,6 +201,24 @@ impl MonitorSnapshot {
     }
 }
 
+fn get_pill_window_size(size: PillWindowSize) -> (f64, f64) {
+    match size {
+        PillWindowSize::Dictation => (PILL_OVERLAY_WIDTH, PILL_OVERLAY_HEIGHT),
+        PillWindowSize::AssistantCompact => (ASSISTANT_COMPACT_WIDTH, ASSISTANT_COMPACT_HEIGHT),
+        PillWindowSize::AssistantExpanded => (ASSISTANT_EXPANDED_WIDTH, ASSISTANT_EXPANDED_HEIGHT),
+        PillWindowSize::AssistantTyping => (ASSISTANT_TYPING_WIDTH, ASSISTANT_TYPING_HEIGHT),
+    }
+}
+
+fn pill_window_size_to_u8(size: PillWindowSize) -> u8 {
+    match size {
+        PillWindowSize::Dictation => 0,
+        PillWindowSize::AssistantCompact => 1,
+        PillWindowSize::AssistantExpanded => 2,
+        PillWindowSize::AssistantTyping => 3,
+    }
+}
+
 fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
     use crate::domain::OverlayAnchor;
 
@@ -234,6 +227,15 @@ fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
     };
 
     let bottom_offset = crate::platform::monitor::get_bottom_pill_offset();
+    let overlay_state = app.state::<crate::state::OverlayState>();
+    let window_size = overlay_state.get_pill_window_size();
+    let is_assistant_mode = overlay_state.is_assistant_mode();
+    let size_tag = pill_window_size_to_u8(window_size);
+    let previous_size = state.pill_window_size.load(Ordering::Relaxed);
+    let size_changed = previous_size != size_tag;
+    if size_changed {
+        state.pill_window_size.store(size_tag, Ordering::Relaxed);
+    }
 
     let monitor_snapshot = MonitorSnapshot::from_monitor(&monitor);
     let monitor_changed = {
@@ -248,18 +250,62 @@ fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
         changed
     };
 
-    if monitor_changed {
+    let (target_w, target_h) = get_pill_window_size(window_size);
+    let (needs_resize, pill_w, pill_h) = {
+        let mut anim = state.pill_anim.lock().unwrap_or_else(|e| e.into_inner());
+        let mut changed = false;
+
+        if size_changed {
+            let growing = target_w > anim.current_width || target_h > anim.current_height;
+            let shrinking = target_w < anim.current_width || target_h < anim.current_height;
+            if growing {
+                anim.current_width = target_w;
+                anim.current_height = target_h;
+                anim.shrink_deadline = None;
+                changed = true;
+            } else if shrinking {
+                anim.shrink_deadline = Some(
+                    std::time::Instant::now()
+                        + std::time::Duration::from_millis(PILL_SHRINK_DELAY_MS),
+                );
+                anim.shrink_width = target_w;
+                anim.shrink_height = target_h;
+            } else {
+                anim.shrink_deadline = None;
+            }
+        }
+
+        if let Some(deadline) = anim.shrink_deadline {
+            if std::time::Instant::now() >= deadline {
+                anim.current_width = anim.shrink_width;
+                anim.current_height = anim.shrink_height;
+                anim.shrink_deadline = None;
+                changed = true;
+            }
+        }
+
+        (changed, anim.current_width, anim.current_height)
+    };
+
+    if needs_resize || monitor_changed {
         if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
+            if needs_resize {
+                let _ = pill_window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(
+                    pill_w, pill_h,
+                )));
+            }
             crate::platform::position::set_overlay_position(
                 &pill_window,
                 &monitor,
                 OverlayAnchor::BottomCenter,
-                PILL_OVERLAY_WIDTH,
-                PILL_OVERLAY_HEIGHT,
+                pill_w,
+                pill_h,
                 bottom_offset,
             );
         }
+    }
 
+    if monitor_changed {
         if let Some(toast_window) = app.get_webview_window(TOAST_OVERLAY_LABEL) {
             crate::platform::position::set_overlay_position(
                 &toast_window,
@@ -270,21 +316,9 @@ fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
                 TOAST_OVERLAY_RIGHT_OFFSET,
             );
         }
-
-        if let Some(agent_window) = app.get_webview_window(AGENT_OVERLAY_LABEL) {
-            crate::platform::position::set_overlay_position(
-                &agent_window,
-                &monitor,
-                OverlayAnchor::TopLeft,
-                AGENT_OVERLAY_WIDTH,
-                AGENT_OVERLAY_HEIGHT,
-                AGENT_OVERLAY_LEFT_OFFSET,
-            );
-        }
     }
 
     if let Some(pill_window) = app.get_webview_window(PILL_OVERLAY_LABEL) {
-        let overlay_state = app.state::<crate::state::OverlayState>();
         let hover_enabled = overlay_state.is_pill_hover_enabled();
         let was_expanded = state.pill_expanded.load(Ordering::Relaxed);
 
@@ -319,7 +353,7 @@ fn update_cursor_follower(app: &tauri::AppHandle, state: &CursorFollowerState) {
         }
 
         let is_active = !overlay_state.is_idle();
-        let new_expanded = new_hovered || is_active;
+        let new_expanded = new_hovered || is_active || is_assistant_mode;
 
         let was_expanded = state.pill_expanded.load(Ordering::Relaxed);
         let expanded_changed = new_expanded != was_expanded;
@@ -347,7 +381,15 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
     let state = Arc::new(CursorFollowerState {
         pill_hovered: AtomicBool::new(false),
         pill_expanded: AtomicBool::new(false),
+        pill_window_size: AtomicU8::new(0),
         last_monitor: Mutex::new(None),
+        pill_anim: Mutex::new(PillAnimState {
+            current_width: PILL_OVERLAY_WIDTH,
+            current_height: PILL_OVERLAY_HEIGHT,
+            shrink_deadline: None,
+            shrink_width: 0.0,
+            shrink_height: 0.0,
+        }),
     });
 
     glib::timeout_add_local(Duration::from_millis(CURSOR_POLL_INTERVAL_MS), move || {
@@ -364,7 +406,15 @@ pub fn start_cursor_follower(app: tauri::AppHandle) {
         let state = CursorFollowerState {
             pill_hovered: AtomicBool::new(false),
             pill_expanded: AtomicBool::new(false),
+            pill_window_size: AtomicU8::new(0),
             last_monitor: Mutex::new(None),
+            pill_anim: Mutex::new(PillAnimState {
+                current_width: PILL_OVERLAY_WIDTH,
+                current_height: PILL_OVERLAY_HEIGHT,
+                shrink_deadline: None,
+                shrink_width: 0.0,
+                shrink_height: 0.0,
+            }),
         };
 
         loop {

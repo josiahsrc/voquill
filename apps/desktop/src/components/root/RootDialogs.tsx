@@ -1,3 +1,4 @@
+import { MobileAppDialog } from "../dashboard/MobileAppDialog";
 import { PaymentDialog } from "../payment/PaymentDialog";
 import { UpgradePlanDialog } from "../pricing/UpgradePlanDialog";
 import { AIAgentModeDialog } from "../settings/AIAgentModeDialog";
@@ -10,6 +11,7 @@ import { DeleteAccountDialog } from "../settings/DeleteAccountDialog";
 import { DictationLanguageDialog } from "../settings/DictationLanguageDialog";
 import { DiagnosticsDialog } from "../settings/DiagnosticsDialog";
 import { MicrophoneDialog } from "../settings/MicrophoneDialog";
+import { MultiDeviceDialog } from "../settings/MultiDeviceDialog";
 import { MoreSettingsDialog } from "../settings/MoreSettingsDialog";
 import { ProfileDialog } from "../settings/ProfileDialog";
 import { ShortcutsDialog } from "../settings/ShortcutsDialog";
@@ -35,9 +37,11 @@ export const RootDialogs = () => {
       <PaymentDialog />
       <DeleteAccountDialog />
       <MoreSettingsDialog />
+      <MultiDeviceDialog />
       <DictationLanguageDialog />
       <AppKeybindingsDialog />
       <DiagnosticsDialog />
+      <MobileAppDialog />
     </>
   );
 };

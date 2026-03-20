@@ -50,7 +50,7 @@ url = "2"
 jsonwebtoken = "9"
 dotenvy = "0.15"
 chrono = "0.4"
-tokio = { version = "1", features = ["time"] }
+tokio = { version = "1", features = ["time", "net", "io-util", "sync"] }
 hostname = "0.4"
 rfd = "0.15"
 zip = { version = "2", default-features = false, features = ["deflate"] }

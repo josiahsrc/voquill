@@ -24,6 +24,9 @@ import {
   type MetricsPerUser,
   type MetricsRange,
   type MetricsSummary,
+  type LlmMessage,
+  type LlmTool,
+  type LlmToolChoice,
   type Nullable,
   type OidcProvider,
   type OidcProviderInput,
@@ -665,3 +668,60 @@ export const GetMetricsSummaryInputZod = z
     range: MetricsRangeZod,
   })
   .strict() satisfies z.ZodType<HandlerInput<"metrics/getSummary">>;
+
+type StreamHandlerDefinitions = {
+  "ai/streamChat": {
+    input: {
+      messages: LlmMessage[];
+      tools?: LlmTool[];
+      toolChoice?: LlmToolChoice;
+      maxTokens?: Nullable<number>;
+      temperature?: Nullable<number>;
+      stopSequences?: string[];
+      topP?: Nullable<number>;
+      frequencyPenalty?: Nullable<number>;
+      presencePenalty?: Nullable<number>;
+      seed?: Nullable<number>;
+      model?: Nullable<CloudModel>;
+      simulate?: Nullable<boolean>;
+    };
+  };
+};
+
+export type StreamHandlerName = keyof StreamHandlerDefinitions;
+export type StreamHandlerInput<N extends StreamHandlerName> =
+  StreamHandlerDefinitions[N]["input"];
+
+const LlmToolZod = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  parameters: z.record(z.unknown()).optional(),
+});
+
+const LlmToolChoiceZod = z.union([
+  z.enum(["auto", "none", "required"]),
+  z.object({ name: z.string() }),
+]);
+
+export const AiStreamChatInputZod = z.object({
+  messages: z
+    .array(
+      z
+        .object({
+          role: z.enum(["system", "user", "assistant", "tool"]),
+        })
+        .passthrough(),
+    )
+    .min(1),
+  tools: z.array(LlmToolZod).optional(),
+  toolChoice: LlmToolChoiceZod.optional(),
+  maxTokens: z.number().nullable().optional(),
+  temperature: z.number().nullable().optional(),
+  stopSequences: z.array(z.string()).optional(),
+  topP: z.number().nullable().optional(),
+  frequencyPenalty: z.number().nullable().optional(),
+  presencePenalty: z.number().nullable().optional(),
+  seed: z.number().nullable().optional(),
+  model: CloudModelZod.nullable().optional(),
+  simulate: z.boolean().nullable().optional(),
+});

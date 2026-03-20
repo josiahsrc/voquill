@@ -8,7 +8,7 @@ import type {
   LocalSidecarDevice,
   LocalSidecarDownloadSnapshot,
   LocalSidecarModelStatus,
-} from "../utils/local-transcription-sidecar.utils";
+} from "../sidecars";
 import {
   LOCAL_WHISPER_MODELS,
   type LocalWhisperModel,
@@ -78,9 +78,11 @@ export type SettingsState = {
   aiPostProcessingDialogOpen: boolean;
   agentModeDialogOpen: boolean;
   moreSettingsDialogOpen: boolean;
+  multiDeviceDialogOpen: boolean;
   dictationLanguageDialogOpen: boolean;
   appKeybindingsDialogOpen: boolean;
   diagnosticsDialogOpen: boolean;
+  mobileAppDialogOpen: boolean;
   aiTranscription: SettingsTranscriptionState;
   aiPostProcessing: SettingsGenerativeState;
   agentMode: SettingsAgentModeState;
@@ -129,9 +131,11 @@ export const INITIAL_SETTINGS_STATE: SettingsState = {
   aiPostProcessingDialogOpen: false,
   agentModeDialogOpen: false,
   moreSettingsDialogOpen: false,
+  multiDeviceDialogOpen: false,
   dictationLanguageDialogOpen: false,
   appKeybindingsDialogOpen: false,
   diagnosticsDialogOpen: false,
+  mobileAppDialogOpen: false,
   aiTranscription: {
     mode: DEFAULT_TRANSCRIPTION_MODE,
     modelSize: DEFAULT_MODEL_SIZE,

@@ -134,6 +134,16 @@ pub fn sync_combos(combos: Vec<Vec<String>>) {
     }
 }
 
+pub fn reset_pressed_keys() {
+    let state = listener_state()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+    if let Some(handle) = state.as_ref() {
+        handle.emitter.reset();
+    }
+}
+
 pub fn start_key_listener(app: &AppHandle) -> Result<(), String> {
     stop_key_listener()?;
 
@@ -390,7 +400,8 @@ fn pump_stream(stream: TcpStream, emitter: Arc<KeyEventEmitter>) -> Result<(), S
                     if debug_keys_enabled() {
                         log::debug!(
                             "Ignoring injected event (scan_code=0): {:?} {}",
-                            payload.kind, payload.key_label
+                            payload.kind,
+                            payload.key_label
                         );
                     }
                     continue;

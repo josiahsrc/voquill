@@ -1,7 +1,10 @@
 import { invokeHandler } from "@repo/functions";
 import { Tone } from "@repo/types";
+import { getRec } from "@repo/utilities";
 import { invoke } from "@tauri-apps/api/core";
+import { getConfigRepo } from ".";
 import { invokeEnterprise } from "../utils/enterprise.utils";
+import { getLogger } from "../utils/log.utils";
 import { getDefaultSystemTones } from "../utils/tone.utils";
 import { BaseRepo } from "./base.repo";
 
@@ -46,8 +49,33 @@ export abstract class BaseToneRepo extends BaseRepo {
   protected abstract deleteToneInternal(id: string): Promise<void>;
 
   async listTones(): Promise<Tone[]> {
-    const userTones = await this.listTonesInternal();
-    return mergeSystemTones(userTones);
+    const userTones = await this.listTonesInternal().catch((error) => {
+      getLogger().warning(
+        `Failed to load user-defined styles, falling back to built-in styles: ${error}`,
+      );
+      return [];
+    });
+
+    const result = mergeSystemTones(userTones);
+    const config = await getConfigRepo()
+      .getFullConfig()
+      .catch((error) => {
+        getLogger().warning(
+          `Failed to load tone overrides, falling back to built-in styles: ${error}`,
+        );
+        return null;
+      });
+
+    return result.map((tone) => {
+      const override = getRec(config?.toneOverrides, tone.id);
+      if (override) {
+        return {
+          ...tone,
+          promptTemplate: override,
+        };
+      }
+      return tone;
+    });
   }
 
   async getTone(id: string): Promise<Tone | null> {

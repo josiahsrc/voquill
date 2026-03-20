@@ -1,5 +1,6 @@
 import {
   AiGenerateTextInputZod,
+  AiStreamChatInputZod,
   AiTranscribeAudioInputZod,
   AuthDeleteUserInputZod,
   AuthLoginInputZod,
@@ -24,12 +25,19 @@ import {
   UpsertTermInputZod,
   UpsertToneInputZod,
   type HandlerName,
+  type StreamHandlerInput,
+  type StreamHandlerName,
 } from "@repo/functions";
+import type { LlmStreamEvent } from "@repo/types";
 import cors from "cors";
 import type { Request, Response } from "express";
 import express from "express";
 import { runMigrations } from "./db/migrate";
-import { generateText, transcribeAudio } from "./services/ai.service";
+import {
+  generateText,
+  streamChat,
+  transcribeAudio,
+} from "./services/ai.service";
 import { getMetricsSummaryHandler } from "./services/metrics.service";
 import {
   deleteUser,
@@ -306,6 +314,60 @@ app.post("/handler", async (req: Request, res: Response) => {
     } else {
       console.error("Unexpected error:", error);
       res.status(500).json({ success: false, error: "Internal server error" });
+    }
+  }
+});
+
+type StreamHandlerRequest = {
+  name: StreamHandlerName;
+  input: unknown;
+};
+
+// TODO: Clean up once have more handlers
+app.post("/stream-handler", async (req: Request, res: Response) => {
+  try {
+    validateLicense(new Date());
+
+    const { name, input } = req.body as StreamHandlerRequest;
+    const auth = extractAuth(req.headers.authorization);
+
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Cache-Control", "no-cache");
+
+    if (name === "ai/streamChat") {
+      const parsed = validateData(AiStreamChatInputZod, input);
+
+      for await (const event of streamChat({
+        auth,
+        input: parsed as StreamHandlerInput<"ai/streamChat">,
+      })) {
+        res.write(JSON.stringify(event) + "\n");
+      }
+    } else {
+      res.status(404).json({ success: false, error: `Unknown stream handler: ${name}` });
+      return;
+    }
+
+    res.end();
+  } catch (error) {
+    if (!res.headersSent) {
+      if (error instanceof NotFoundError) {
+        res.status(404).json({ success: false, error: error.message });
+      } else if (error instanceof UnauthorizedError) {
+        res.status(401).json({ success: false, error: error.message });
+      } else if (error instanceof ClientError) {
+        res.status(400).json({ success: false, error: error.message });
+      } else {
+        console.error("Unexpected error:", error);
+        res.status(500).json({ success: false, error: "Internal server error" });
+      }
+    } else {
+      const errorEvent: LlmStreamEvent = {
+        type: "error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+      res.write(JSON.stringify(errorEvent) + "\n");
+      res.end();
     }
   }
 });

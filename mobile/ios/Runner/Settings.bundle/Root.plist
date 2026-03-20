@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>StringsTable</key>
+	<string>Root</string>
+	<key>PreferenceSpecifiers</key>
+	<array>
+		<dict>
+			<key>Type</key>
+			<string>PSTitleValueSpecifier</string>
+			<key>Title</key>
+			<string>Version</string>
+			<key>Key</key>
+			<string>version_preference</string>
+			<key>DefaultValue</key>
+			<string>1.0</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>⌨️ Enable Voquill Keyboard</string>
+			<key>FooterText</key>
+			<string>1. Tap "Keyboards"
+2. Enable "Voquill"
+3. Tap "Allow Full Access"
+4. Tap "Allow" again to confirm</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>🤔 Don't see "Keyboards"?</string>
+			<key>FooterText</key>
+			<string>Close the Settings app completely and reopen it.</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>🔒 Privacy and security</string>
+			<key>FooterText</key>
+			<string>Your voice data is processed securely. Your audio and transcriptions are never stored anywhere except on your own device.</string>
+		</dict>
+	</array>
+</dict>
+</plist>

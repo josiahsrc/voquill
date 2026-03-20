@@ -15,6 +15,8 @@ export type StrategyValidationError = {
 
 export type HandleTranscriptParams = {
   rawTranscript: string;
+  processedTranscript?: string | null;
+  serverPostProcessMetadata?: PostProcessMetadata;
   toneId: string | null;
   a11yInfo: TextFieldInfo | null;
   currentApp: AppTarget | null;
@@ -30,4 +32,6 @@ export type HandleTranscriptResult = {
   sanitizedTranscript: string | null;
   postProcessMetadata: PostProcessMetadata;
   postProcessWarnings: string[];
+  remoteStatus?: "sent" | "received" | null;
+  remoteDeviceId?: string | null;
 };

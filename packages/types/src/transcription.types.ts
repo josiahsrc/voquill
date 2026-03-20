@@ -21,6 +21,8 @@ export type Transcription = {
   transcriptionDurationMs?: number | null;
   postprocessDurationMs?: number | null;
   warnings?: string[] | null;
+  remoteStatus?: "sent" | "received" | null;
+  remoteDeviceId?: string | null;
 };
 
 export type TranscriptionAudioSnapshot = {

@@ -97,6 +97,10 @@ export const createDefaultPreferences = (): UserPreferences => ({
   incognitoModeIncludeInStats: false,
   dictationPillVisibility: "while_active",
   realtimeOutputEnabled: false,
+  remoteOutputEnabled: false,
+  remoteTargetDeviceId: null,
+  remoteReceiverPort: null,
+  remoteReceiverAutoStart: false,
 });
 
 export const updateUserPreferences = async (
@@ -537,6 +541,39 @@ export const setRealtimeOutputEnabled = async (
   await updateUserPreferences((preferences) => {
     preferences.realtimeOutputEnabled = enabled;
   }, "Failed to save real-time output preference. Please try again.");
+};
+
+export const setRemoteOutputEnabled = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteOutputEnabled = enabled;
+  }, "Failed to save multi-device sender preference. Please try again.");
+};
+
+export const setRemoteTargetDeviceId = async (
+  deviceId: Nullable<string>,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteTargetDeviceId = deviceId;
+    preferences.remoteOutputEnabled = Boolean(deviceId);
+  }, "Failed to save paired receiver selection. Please try again.");
+};
+
+export const setRemoteReceiverPort = async (
+  port: Nullable<number>,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteReceiverPort = port;
+  }, "Failed to save remote receiver port. Please try again.");
+};
+
+export const setRemoteReceiverAutoStart = async (
+  enabled: boolean,
+): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.remoteReceiverAutoStart = enabled;
+  }, "Failed to save receiver auto-start preference. Please try again.");
 };
 
 export const setStylingMode = async (

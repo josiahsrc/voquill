@@ -10,16 +10,17 @@ use windows::Win32::UI::Accessibility::{
     UIA_AppBarControlTypeId, UIA_ButtonControlTypeId, UIA_CalendarControlTypeId,
     UIA_CheckBoxControlTypeId, UIA_ComboBoxControlTypeId, UIA_ControlTypePropertyId,
     UIA_CustomControlTypeId, UIA_DataGridControlTypeId, UIA_DataItemControlTypeId,
-    UIA_DocumentControlTypeId, UIA_GroupControlTypeId, UIA_HeaderControlTypeId,
-    UIA_HeaderItemControlTypeId, UIA_HelpTextPropertyId, UIA_HyperlinkControlTypeId,
-    UIA_ImageControlTypeId, UIA_ListControlTypeId, UIA_ListItemControlTypeId,
-    UIA_MenuBarControlTypeId, UIA_MenuControlTypeId, UIA_MenuItemControlTypeId, UIA_NamePropertyId,
-    UIA_PaneControlTypeId, UIA_ProgressBarControlTypeId, UIA_RadioButtonControlTypeId,
-    UIA_SemanticZoomControlTypeId, UIA_SliderControlTypeId, UIA_SpinnerControlTypeId,
-    UIA_SplitButtonControlTypeId, UIA_StatusBarControlTypeId, UIA_TabControlTypeId,
-    UIA_TabItemControlTypeId, UIA_TableControlTypeId, UIA_TextControlTypeId, UIA_TextPatternId,
-    UIA_ThumbControlTypeId, UIA_TitleBarControlTypeId, UIA_ToolBarControlTypeId,
-    UIA_TreeControlTypeId, UIA_TreeItemControlTypeId, UIA_ValuePatternId, UIA_WindowControlTypeId,
+    UIA_DocumentControlTypeId, UIA_EditControlTypeId, UIA_GroupControlTypeId,
+    UIA_HeaderControlTypeId, UIA_HeaderItemControlTypeId, UIA_HelpTextPropertyId,
+    UIA_HyperlinkControlTypeId, UIA_ImageControlTypeId, UIA_ListControlTypeId,
+    UIA_ListItemControlTypeId, UIA_MenuBarControlTypeId, UIA_MenuControlTypeId,
+    UIA_MenuItemControlTypeId, UIA_NamePropertyId, UIA_PaneControlTypeId,
+    UIA_ProgressBarControlTypeId, UIA_RadioButtonControlTypeId, UIA_SemanticZoomControlTypeId,
+    UIA_SliderControlTypeId, UIA_SpinnerControlTypeId, UIA_SplitButtonControlTypeId,
+    UIA_StatusBarControlTypeId, UIA_TabControlTypeId, UIA_TabItemControlTypeId,
+    UIA_TableControlTypeId, UIA_TextControlTypeId, UIA_TextPatternId, UIA_ThumbControlTypeId,
+    UIA_TitleBarControlTypeId, UIA_ToolBarControlTypeId, UIA_TreeControlTypeId,
+    UIA_TreeItemControlTypeId, UIA_ValuePatternId, UIA_WindowControlTypeId,
 };
 
 fn empty_text_field_info() -> TextFieldInfo {
@@ -38,6 +39,10 @@ pub fn get_text_field_info() -> TextFieldInfo {
             empty_text_field_info()
         }
     }
+}
+
+pub fn is_text_input_focused() -> bool {
+    try_is_text_input_focused().unwrap_or(false)
 }
 
 fn try_get_text_field_info() -> Result<TextFieldInfo, windows::core::Error> {
@@ -95,12 +100,45 @@ fn try_get_text_field_info() -> Result<TextFieldInfo, windows::core::Error> {
     }
 }
 
+fn try_is_text_input_focused() -> Result<bool, windows::core::Error> {
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+        let automation: IUIAutomation =
+            CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER)?;
+
+        let focused = automation.GetFocusedElement()?;
+        let control_type = get_control_type(&focused);
+
+        if matches!(
+            control_type,
+            value if value == UIA_EditControlTypeId.0 || value == UIA_DocumentControlTypeId.0
+        ) {
+            return Ok(true);
+        }
+
+        let text_pattern = focused.GetCurrentPattern(UIA_TextPatternId)?;
+        if !text_pattern.as_raw().is_null() {
+            return Ok(true);
+        }
+
+        let value_pattern = focused.GetCurrentPattern(UIA_ValuePatternId)?;
+        if !value_pattern.as_raw().is_null() {
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+}
+
 pub fn get_screen_context() -> ScreenContextInfo {
     match try_get_screen_context() {
         Ok(info) => info,
         Err(e) => {
             log::error!("Error getting screen context: {:?}", e);
-            ScreenContextInfo { screen_context: None }
+            ScreenContextInfo {
+                screen_context: None,
+            }
         }
     }
 }

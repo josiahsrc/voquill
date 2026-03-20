@@ -12,6 +12,7 @@ import {
 import { refreshMember } from "../../actions/member.actions";
 import { syncAutoLaunchSetting } from "../../actions/settings.actions";
 import { loadTones } from "../../actions/tone.actions";
+import { loadTools } from "../../actions/tool.actions";
 import {
   migratePreferredMicrophoneToPreferences,
   refreshCurrentUser,
@@ -44,6 +45,7 @@ export const RootSideEffects = () => {
       loadDictionary(),
       loadTones(),
       loadAppTargets(),
+      loadTools(),
       migratePreferredMicrophoneToPreferences(),
     ];
     await Promise.allSettled(loaders);

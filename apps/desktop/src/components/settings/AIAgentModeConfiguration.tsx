@@ -7,8 +7,6 @@ import {
 } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { type AgentMode } from "../../types/ai.types";
-import { getAllowsChangeAgentMode } from "../../utils/enterprise.utils";
-import { ManagedByOrgNotice } from "../common/ManagedByOrgNotice";
 import {
   SegmentedControl,
   SegmentedControlOption,
@@ -25,7 +23,6 @@ export const AIAgentModeConfiguration = ({
   hideCloudOption,
 }: AIAgentModeConfigurationProps) => {
   const agentMode = useAppStore((state) => state.settings.agentMode);
-  const allowChange = useAppStore(getAllowsChangeAgentMode);
 
   const handleModeChange = useCallback((mode: AgentMode) => {
     void setPreferredAgentMode(mode);
@@ -34,10 +31,6 @@ export const AIAgentModeConfiguration = ({
   const handleApiKeyChange = useCallback((id: string | null) => {
     void setPreferredAgentModeApiKeyId(id);
   }, []);
-
-  if (!allowChange) {
-    return <ManagedByOrgNotice />;
-  }
 
   return (
     <Stack spacing={3} alignItems="flex-start" sx={{ width: "100%" }}>
@@ -57,12 +50,12 @@ export const AIAgentModeConfiguration = ({
           { value: "api", label: "API" },
           { value: "none", label: "Off" },
         ]}
-        ariaLabel="Agent mode"
+        ariaLabel="Assistant mode"
       />
 
       {agentMode.mode === "none" && (
         <Typography variant="body2" color="text.secondary">
-          <FormattedMessage defaultMessage="Agent mode is disabled." />
+          <FormattedMessage defaultMessage="Assistant mode is disabled." />
         </Typography>
       )}
 

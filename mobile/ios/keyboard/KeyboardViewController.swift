@@ -270,6 +270,8 @@ class KeyboardViewController: UIInputViewController {
     private var languageChip: UIButton!
 
     private var toneContainer: UIScrollView!
+    private var toneContainerLeadingToGlobe: NSLayoutConstraint!
+    private var toneContainerLeadingToView: NSLayoutConstraint!
     private var selectedToneId: String?
     private var activeToneIds: [String] = []
     private var toneById: [String: SharedTone] = [:]
@@ -611,6 +613,11 @@ class KeyboardViewController: UIInputViewController {
             pillLabel.centerYAnchor.constraint(equalTo: pillButton.centerYAnchor),
         ])
 
+        toneContainer = UIScrollView()
+        toneContainer.translatesAutoresizingMaskIntoConstraints = false
+        toneContainer.showsHorizontalScrollIndicator = false
+        view.addSubview(toneContainer)
+
         let nkb = UIButton(type: .system)
         nkb.setImage(UIImage(systemName: "globe", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18)), for: .normal)
         nkb.tintColor = .label
@@ -618,11 +625,6 @@ class KeyboardViewController: UIInputViewController {
         nkb.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
         view.addSubview(nkb)
         nextKeyboardButton = nkb
-
-        toneContainer = UIScrollView()
-        toneContainer.translatesAutoresizingMaskIntoConstraints = false
-        toneContainer.showsHorizontalScrollIndicator = false
-        view.addSubview(toneContainer)
 
         let topSpacer = UIView()
         topSpacer.translatesAutoresizingMaskIntoConstraints = false
@@ -633,6 +635,9 @@ class KeyboardViewController: UIInputViewController {
         bottomSpacer.translatesAutoresizingMaskIntoConstraints = false
         bottomSpacer.isHidden = true
         view.addSubview(bottomSpacer)
+
+        toneContainerLeadingToGlobe = toneContainer.leadingAnchor.constraint(equalTo: nkb.trailingAnchor, constant: 4)
+        toneContainerLeadingToView = toneContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16)
 
         NSLayoutConstraint.activate([
             logoButton.topAnchor.constraint(equalTo: view.topAnchor, constant: 8),
@@ -664,7 +669,6 @@ class KeyboardViewController: UIInputViewController {
             pillButton.widthAnchor.constraint(equalToConstant: 220),
             pillButton.heightAnchor.constraint(equalToConstant: 56),
 
-            toneContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             toneContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             toneContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
             toneContainer.heightAnchor.constraint(equalToConstant: 32),
@@ -1386,7 +1390,10 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
-        nextKeyboardButton?.isHidden = !needsInputModeSwitchKey
+        let showGlobe = needsInputModeSwitchKey
+        nextKeyboardButton?.isHidden = !showGlobe
+        toneContainerLeadingToGlobe.isActive = showGlobe
+        toneContainerLeadingToView.isActive = !showGlobe
     }
 
     override func viewDidLayoutSubviews() {

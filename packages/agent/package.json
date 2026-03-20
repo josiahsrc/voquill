@@ -1,0 +1,25 @@
+{
+  "name": "@repo/agent",
+  "version": "0.1.0",
+  "description": "Provider-agnostic agentic loop with tool support",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "example": "tsx scripts/example.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@repo/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@repo/voice-ai": "workspace:*",
+    "tsx": "^4.19.4",
+    "typescript": "5.9.2"
+  }
+}

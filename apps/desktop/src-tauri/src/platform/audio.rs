@@ -245,15 +245,13 @@ impl RecordingManager {
             Ok(active) => {
                 log::info!(
                     "using cached device '{}' via host {:?}",
-                    cached.device_name, cached.host_id
+                    cached.device_name,
+                    cached.host_id
                 );
                 Some((active, cached.host_id, cached.device_name))
             }
             Err(err) => {
-                log::warn!(
-                    "cached device '{}' failed: {err}",
-                    cached.device_name
-                );
+                log::warn!("cached device '{}' failed: {err}", cached.device_name);
                 None
             }
         }
@@ -332,9 +330,7 @@ impl RecordingManager {
                     return Ok(());
                 }
                 Err(err) => {
-                    log::warn!(
-                        "host {host_id:?} did not yield a usable input device: {err}"
-                    );
+                    log::warn!("host {host_id:?} did not yield a usable input device: {err}");
                     last_err = Some(err);
                 }
             }
@@ -665,9 +661,7 @@ fn start_recording_on_host(
         let fallback_preferred = preferred_label.or(preferred_normalized);
 
         if let Some(reason) = avoid_reason {
-            log::debug!(
-                "deprioritising device '{label}' ({reason}); will try if others fail"
-            );
+            log::debug!("deprioritising device '{label}' ({reason}); will try if others fail");
         }
 
         let config = match device.default_input_config() {
@@ -739,10 +733,7 @@ fn start_recording_on_host(
                 host.id()
             );
         } else {
-            log::info!(
-                "using input device '{label}' via host {:?}",
-                host.id()
-            );
+            log::info!("using input device '{label}' via host {:?}", host.id());
         }
 
         let device_name_for_cache = name.clone().unwrap_or_else(|| label.to_string());

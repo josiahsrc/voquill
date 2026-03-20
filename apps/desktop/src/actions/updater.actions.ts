@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { relaunch } from "@tauri-apps/plugin-process";
 import {
   check,
@@ -72,6 +73,7 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
         draft.updater.releaseDate = null;
         draft.updater.releaseNotes = null;
         draft.updater.manualInstallerUrl = null;
+        draft.updater.requiresManualInstall = false;
         draft.updater.errorMessage = null;
         draft.updater.downloadProgress = null;
         draft.updater.downloadedBytes = null;
@@ -99,6 +101,16 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
       !dialogOpen &&
       (!dismissedUntil || Date.now() >= dismissedUntil);
 
+    let requiresManualInstall = false;
+    if (isMacOS()) {
+      try {
+        const writable = await invoke<boolean>("check_app_location_writable");
+        requiresManualInstall = !writable;
+      } catch (error) {
+        console.error("Failed to check app location writability", error);
+      }
+    }
+
     produceAppState((draft) => {
       draft.updater.status = "ready";
       draft.updater.currentVersion = update.currentVersion;
@@ -108,6 +120,7 @@ export const checkForAppUpdates = async (): Promise<boolean> => {
       draft.updater.manualInstallerUrl = isMacOS()
         ? buildManualMacInstallerUrl(update.version, update.rawJson)
         : null;
+      draft.updater.requiresManualInstall = requiresManualInstall;
       draft.updater.errorMessage = null;
       draft.updater.downloadProgress = null;
       draft.updater.downloadedBytes = null;
@@ -172,105 +185,172 @@ export const dismissUpdateDialog = (duration = THREE_DAYS_MS): void => {
   });
 };
 
+const installViaPkgInstaller = async (): Promise<boolean> => {
+  const { manualInstallerUrl } = getAppState().updater;
+  if (!manualInstallerUrl) {
+    showErrorSnackbar("No installer package available for this version.");
+    return false;
+  }
+
+  produceAppState((draft) => {
+    draft.updater.status = "downloading";
+    draft.updater.errorMessage = null;
+    draft.updater.dialogOpen = true;
+    draft.updater.downloadProgress = null;
+    draft.updater.downloadedBytes = null;
+    draft.updater.totalBytes = null;
+  });
+
+  try {
+    await invoke("download_and_open_mac_installer", {
+      url: manualInstallerUrl,
+    });
+  } catch (error) {
+    console.error("Failed to download or open pkg installer", error);
+    produceAppState((draft) => {
+      draft.updater.status = "error";
+      draft.updater.errorMessage = String(error);
+      draft.updater.dialogOpen = true;
+      draft.updater.downloadProgress = null;
+      draft.updater.downloadedBytes = null;
+      draft.updater.totalBytes = null;
+    });
+    showErrorSnackbar("Failed to download the installer. Please try again.");
+    return false;
+  }
+
+  produceAppState((draft) => {
+    draft.updater.status = "installing";
+  });
+
+  return true;
+};
+
+const installViaBuiltInUpdater = async (): Promise<boolean> => {
+  const update = availableUpdate;
+  if (!update) {
+    return false;
+  }
+
+  let downloadedBytes = 0;
+  let totalBytes: number | null = null;
+
+  produceAppState((draft) => {
+    draft.updater.status = "downloading";
+    draft.updater.errorMessage = null;
+    draft.updater.dialogOpen = true;
+    draft.updater.downloadProgress = null;
+    draft.updater.downloadedBytes = 0;
+    draft.updater.totalBytes = null;
+  });
+
+  const handleDownloadEvent = (event: DownloadEvent) => {
+    switch (event.event) {
+      case "Started": {
+        totalBytes = event.data.contentLength ?? null;
+        produceAppState((draft) => {
+          draft.updater.status = "downloading";
+          draft.updater.totalBytes = totalBytes;
+          draft.updater.downloadedBytes = 0;
+          draft.updater.downloadProgress =
+            totalBytes && totalBytes > 0 ? 0 : null;
+        });
+        break;
+      }
+      case "Progress": {
+        downloadedBytes += event.data.chunkLength;
+        const progress =
+          totalBytes != null && totalBytes > 0
+            ? Math.max(0, Math.min(1, downloadedBytes / totalBytes))
+            : null;
+        produceAppState((draft) => {
+          draft.updater.downloadedBytes = downloadedBytes;
+          draft.updater.downloadProgress = progress;
+        });
+        break;
+      }
+      case "Finished": {
+        produceAppState((draft) => {
+          draft.updater.status = "installing";
+          draft.updater.downloadedBytes = totalBytes ?? downloadedBytes;
+          draft.updater.downloadProgress =
+            totalBytes != null ? 1 : draft.updater.downloadProgress;
+        });
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
+  try {
+    await update.downloadAndInstall(handleDownloadEvent);
+  } catch (error) {
+    const errorMessage = String(error);
+    const shouldUseManualInstaller =
+      isMacOS() && isReadOnlyFilesystemInstallError(errorMessage);
+    console.error("Failed to download or install update", error);
+
+    if (shouldUseManualInstaller) {
+      produceAppState((draft) => {
+        draft.updater.requiresManualInstall = true;
+      });
+      return installViaPkgInstaller();
+    }
+
+    produceAppState((draft) => {
+      draft.updater.status = "error";
+      draft.updater.errorMessage = errorMessage;
+      draft.updater.dialogOpen = true;
+      draft.updater.downloadProgress = null;
+      draft.updater.downloadedBytes = null;
+      draft.updater.totalBytes = null;
+    });
+    showErrorSnackbar("Failed to install update. Please try again.");
+    return false;
+  }
+
+  produceAppState((draft) => {
+    draft.updater.status = "installing";
+  });
+
+  return true;
+};
+
 export const installAvailableUpdate = async (): Promise<void> => {
   if (installingPromise) {
     return installingPromise;
   }
 
-  const update = availableUpdate;
-  if (!update) {
+  if (!availableUpdate) {
     return;
   }
 
-  const run = async (): Promise<boolean> => {
-    let downloadedBytes = 0;
-    let totalBytes: number | null = null;
-    let succeeded = false;
+  const { requiresManualInstall } = getAppState().updater;
 
-    produceAppState((draft) => {
-      draft.updater.status = "downloading";
-      draft.updater.errorMessage = null;
-      draft.updater.dialogOpen = true;
-      draft.updater.downloadProgress = null;
-      draft.updater.downloadedBytes = 0;
-      draft.updater.totalBytes = null;
-    });
-
-    const handleDownloadEvent = (event: DownloadEvent) => {
-      switch (event.event) {
-        case "Started": {
-          totalBytes = event.data.contentLength ?? null;
-          produceAppState((draft) => {
-            draft.updater.status = "downloading";
-            draft.updater.totalBytes = totalBytes;
-            draft.updater.downloadedBytes = 0;
-            draft.updater.downloadProgress =
-              totalBytes && totalBytes > 0 ? 0 : null;
-          });
-          break;
-        }
-        case "Progress": {
-          downloadedBytes += event.data.chunkLength;
-          const progress =
-            totalBytes != null && totalBytes > 0
-              ? Math.max(0, Math.min(1, downloadedBytes / totalBytes))
-              : null;
-          produceAppState((draft) => {
-            draft.updater.downloadedBytes = downloadedBytes;
-            draft.updater.downloadProgress = progress;
-          });
-          break;
-        }
-        case "Finished": {
-          produceAppState((draft) => {
-            draft.updater.status = "installing";
-            draft.updater.downloadedBytes = totalBytes ?? downloadedBytes;
-            draft.updater.downloadProgress =
-              totalBytes != null ? 1 : draft.updater.downloadProgress;
-          });
-          break;
-        }
-        default:
-          break;
-      }
-    };
-
-    try {
-      await update.downloadAndInstall(handleDownloadEvent);
-      succeeded = true;
-    } catch (error) {
-      const errorMessage = String(error);
-      const shouldUseManualInstaller =
-        isMacOS() && isReadOnlyFilesystemInstallError(errorMessage);
-      console.error("Failed to download or install update", error);
-      produceAppState((draft) => {
-        draft.updater.status = "error";
-        draft.updater.errorMessage = errorMessage;
-        draft.updater.dialogOpen = true;
-        draft.updater.downloadProgress = null;
-        draft.updater.downloadedBytes = null;
-        draft.updater.totalBytes = null;
-      });
-      showErrorSnackbar(
-        shouldUseManualInstaller
-          ? "Automatic install failed from this location. Download the installer package to complete the update."
-          : "Failed to install update. Please try again.",
-      );
-      return false;
-    }
-
-    produceAppState((draft) => {
-      draft.updater.status = "installing";
-    });
-
-    return succeeded;
-  };
+  const run = requiresManualInstall
+    ? installViaPkgInstaller
+    : installViaBuiltInUpdater;
 
   installingPromise = run()
     .then(async (succeeded) => {
       if (!succeeded) {
         return;
       }
+
+      if (requiresManualInstall) {
+        // The .pkg installer will replace the app externally; no relaunch
+        // needed from here. Just close the update resource.
+        try {
+          await availableUpdate?.close();
+        } catch (error) {
+          console.error("Failed to close update resource", error);
+        } finally {
+          availableUpdate = null;
+        }
+        return;
+      }
+
       markSurfaceWindowForNextLaunch();
       try {
         await availableUpdate?.close();

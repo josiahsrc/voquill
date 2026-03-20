@@ -1,10 +1,15 @@
 import {
   ApiKey,
   AppTarget,
+  ChatMessage,
+  Conversation,
   Hotkey,
   Member,
+  PairedRemoteDevice,
   Term,
   Tone,
+  ToolInfo,
+  ToolPermission,
   Transcription,
   User,
 } from "@repo/types";
@@ -79,5 +84,52 @@ export const registerAppTargets = (
 ): void => {
   for (const appTarget of appTargets) {
     draft.appTargetById[appTarget.id] = appTarget;
+  }
+};
+
+export const registerConversations = (
+  draft: AppState,
+  conversations: Conversation[],
+): void => {
+  for (const conversation of conversations) {
+    draft.conversationById[conversation.id] = conversation;
+  }
+};
+
+export const registerToolInfos = (
+  draft: AppState,
+  toolInfos: ToolInfo[],
+): void => {
+  for (const toolInfo of toolInfos) {
+    draft.toolInfoById[toolInfo.id] = toolInfo;
+  }
+};
+
+export const registerToolPermission = (
+  draft: AppState,
+  permission: ToolPermission,
+): void => {
+  draft.toolPermissionById[permission.id] = permission;
+};
+
+export const registerChatMessages = (
+  draft: AppState,
+  conversationId: string,
+  messages: ChatMessage[],
+): void => {
+  for (const message of messages) {
+    draft.chatMessageById[message.id] = message;
+  }
+  draft.chatMessageIdsByConversationId[conversationId] = messages
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((m) => m.id);
+};
+
+export const registerPairedRemoteDevices = (
+  draft: AppState,
+  devices: PairedRemoteDevice[],
+): void => {
+  for (const device of devices) {
+    draft.pairedRemoteDeviceById[device.id] = device;
   }
 };

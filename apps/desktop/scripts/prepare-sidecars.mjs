@@ -16,9 +16,9 @@ const sidecarManifestPath = join(
 );
 const cargoTargetDirOverride = process.env.CARGO_TARGET_DIR?.trim() || null;
 const rustTargetDir = cargoTargetDirOverride
-  ? (isAbsolute(cargoTargetDirOverride)
-      ? cargoTargetDirOverride
-      : resolve(repoRoot, cargoTargetDirOverride))
+  ? isAbsolute(cargoTargetDirOverride)
+    ? cargoTargetDirOverride
+    : resolve(repoRoot, cargoTargetDirOverride)
   : join(repoRoot, "packages", "rust_transcription", "target");
 const tauriBinariesDir = join(desktopDir, "src-tauri", "binaries");
 
@@ -27,8 +27,10 @@ const buildTarget =
   process.env.TAURI_ENV_TARGET_TRIPLE?.trim() ||
   null;
 const targetTriple = buildTarget || resolveHostTargetTriple();
-const buildProfile = process.env.VOQUILL_SIDECAR_PROFILE === "release" ? "release" : "debug";
-const requireNativeGpuSidecar = process.env.VOQUILL_REQUIRE_GPU_SIDECAR === "true";
+const buildProfile =
+  process.env.VOQUILL_SIDECAR_PROFILE === "release" ? "release" : "debug";
+const requireNativeGpuSidecar =
+  process.env.VOQUILL_REQUIRE_GPU_SIDECAR === "true";
 const executableSuffix = isWindowsTarget(targetTriple) ? ".exe" : "";
 
 if (!existsSync(sidecarManifestPath)) {
@@ -80,7 +82,10 @@ function buildAndCopy(binaryName, gpuEnabled, options = {}) {
   }
 
   if (gpuEnabled) {
-    cargoArgs.push("--features", "gpu");
+    cargoArgs.push(
+      "--features",
+      resolveGpuCargoFeatures(targetTriple).join(","),
+    );
   }
 
   const buildOk = run("cargo", cargoArgs, repoRoot, { allowFailure });
@@ -100,9 +105,7 @@ function buildAndCopy(binaryName, gpuEnabled, options = {}) {
   );
 
   if (!existsSync(sourceBinaryPath)) {
-    fail(
-      `Expected sidecar binary was not produced: ${sourceBinaryPath}`,
-    );
+    fail(`Expected sidecar binary was not produced: ${sourceBinaryPath}`);
   }
 
   copyFileSync(sourceBinaryPath, destinationBinaryPath);
@@ -209,8 +212,28 @@ function isWindowsTarget(target) {
   return target.includes("windows");
 }
 
+function isAppleTarget(target) {
+  return target.includes("apple-darwin");
+}
+
 function supportsNativeGpuSidecar(target) {
-  return target.includes("windows") || target.includes("linux");
+  return (
+    isAppleTarget(target) ||
+    target.includes("windows") ||
+    target.includes("linux")
+  );
+}
+
+function resolveGpuCargoFeatures(target) {
+  if (isAppleTarget(target)) {
+    return ["gpu", "gpu-metal"];
+  }
+
+  if (target.includes("windows") || target.includes("linux")) {
+    return ["gpu", "gpu-vulkan"];
+  }
+
+  fail(`No GPU cargo feature mapping exists for ${target}`);
 }
 
 function resolveGpuBuildState(target) {
@@ -227,6 +250,19 @@ function resolveGpuBuildState(target) {
       return {
         canBuildNative: false,
         reason: "VULKAN_SDK is not set to an existing directory",
+      };
+    }
+  }
+
+  if (target.includes("linux")) {
+    const pkgCheck = spawnSync("pkg-config", ["--exists", "vulkan"], {
+      stdio: "ignore",
+    });
+    if (pkgCheck.status !== 0) {
+      return {
+        canBuildNative: false,
+        reason:
+          "Vulkan development libraries not found (pkg-config --exists vulkan failed)",
       };
     }
   }

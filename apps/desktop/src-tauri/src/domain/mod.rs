@@ -1,9 +1,12 @@
 pub mod api_key;
 pub mod app_target;
+pub mod chat_message;
+pub mod conversation;
 pub mod hotkey;
 pub mod keyboard;
 pub mod monitor;
 pub mod overlay;
+pub mod paired_remote_device;
 pub mod permissions;
 pub mod preferences;
 pub mod recording;
@@ -14,12 +17,16 @@ pub mod user;
 
 pub use api_key::{ApiKey, ApiKeyCreateRequest, ApiKeyUpdateRequest, ApiKeyView};
 pub use app_target::{AppTarget, EVT_REGISTER_CURRENT_APP};
+pub use chat_message::ChatMessage;
+pub use conversation::Conversation;
 pub use hotkey::Hotkey;
 pub use keyboard::{KeysHeldPayload, EVT_KEYS_HELD};
 pub use monitor::{MonitorAtCursor, OverlayAnchor, ScreenVisibleArea};
 pub use overlay::{
-    OverlayPhase, OverlayPhasePayload, PillExpandedPayload, EVT_OVERLAY_PHASE, EVT_PILL_EXPANDED,
+    OverlayPhase, OverlayPhasePayload, PillExpandedPayload, PillWindowSize, EVT_OVERLAY_PHASE,
+    EVT_PILL_EXPANDED,
 };
+pub use paired_remote_device::PairedRemoteDevice;
 pub use permissions::{PermissionKind, PermissionState, PermissionStatus};
 pub use preferences::UserPreferences;
 pub use recording::{

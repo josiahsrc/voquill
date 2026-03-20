@@ -14,8 +14,12 @@
     {
       "identifier": "opener:allow-open-path",
       "allow": [
-        { "path": "$APPLOG" },
-        { "path": "$APPLOG/**" }
+        {
+          "path": "$APPLOG"
+        },
+        {
+          "path": "$APPLOG/**"
+        }
       ]
     },
     "updater:default",
@@ -36,6 +40,7 @@
       ]
     },
     "shell:allow-kill",
+    "shell:allow-stdin-write",
     {
       "identifier": "http:default",
       "allow": [

@@ -267,9 +267,14 @@ Example 2:
       expect(extractJsonFromMarkdown(input)).toBe('{"data": "value"}');
     });
 
-    it("should handle backticks without code block", () => {
-      const input = "Text with ` single backticks ` but no code";
-      expect(extractJsonFromMarkdown(input)).toBe("single backticks");
+    it("should skip inline code that doesn't look like JSON", () => {
+      const input = "Text with `single backticks` but no code";
+      expect(extractJsonFromMarkdown(input)).toBe(input.trim());
+    });
+
+    it("should skip non-JSON inline code and return raw text", () => {
+      const input = "Some text with `startDictationRecording` and more text";
+      expect(extractJsonFromMarkdown(input)).toBe(input.trim());
     });
 
     it("should extract array format", () => {

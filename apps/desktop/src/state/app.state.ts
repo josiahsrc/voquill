@@ -2,6 +2,8 @@ import { HandlerOutput } from "@repo/functions";
 import {
   ApiKey,
   AppTarget,
+  ChatMessage,
+  Conversation,
   EnterpriseConfig,
   EnterpriseLicense,
   FullConfig,
@@ -9,8 +11,12 @@ import {
   Member,
   Nullable,
   OidcProvider,
+  PairedRemoteDevice,
+  RemoteReceiverStatus,
   Term,
   Tone,
+  ToolInfo,
+  ToolPermission,
   Transcription,
   User,
   UserPreferences,
@@ -20,7 +26,8 @@ import { Vector2 } from "../types/math.types";
 import { OverlayPhase } from "../types/overlay.types";
 import { PermissionMap } from "../types/permission.types";
 import { Toast } from "../types/toast.types";
-import { AgentState, INITIAL_AGENT_STATE } from "./agent.state";
+import { AgentRunState } from "./agent.state";
+import { ChatState, INITIAL_CHAT_STATE } from "./chat.state";
 import { DictionaryState, INITIAL_DICTIONARY_STATE } from "./dictionary.state";
 import { INITIAL_LOGIN_STATE, LoginState } from "./login.state";
 import {
@@ -43,7 +50,21 @@ import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 
+export type StreamingToolCall = {
+  toolCallId: string;
+  toolName: string;
+  done: boolean;
+};
+
+export type StreamingMessageState = {
+  toolCalls: StreamingToolCall[];
+  reasoning: string;
+  isStreaming: boolean;
+};
+
 export type RecordingMode = "dictate" | "agent";
+
+export type AssistantInputMode = "voice" | "type";
 
 export type PriceValue = HandlerOutput<"stripe/getPrices">["prices"];
 
@@ -65,10 +86,19 @@ export type AppState = {
   userById: Record<string, User>;
   termById: Record<string, Term>;
   appTargetById: Record<string, AppTarget>;
+  pairedRemoteDeviceById: Record<string, PairedRemoteDevice>;
+  remoteReceiverStatus: Nullable<RemoteReceiverStatus>;
   transcriptionById: Record<string, Transcription>;
   hotkeyById: Record<string, Hotkey>;
   apiKeyById: Record<string, ApiKey>;
   toneById: Record<string, Tone>;
+  conversationById: Record<string, Conversation>;
+  chatMessageById: Record<string, ChatMessage>;
+  chatMessageIdsByConversationId: Record<string, string[]>;
+  toolInfoById: Record<string, ToolInfo>;
+  toolPermissionById: Record<string, ToolPermission>;
+  agentStateByConversationId: Record<string, AgentRunState>;
+  streamingMessageById: Record<string, StreamingMessageState>;
   config: Nullable<FullConfig>;
   priceValueByKey: Record<string, PriceValue>;
   enterpriseConfig: Nullable<EnterpriseConfig>;
@@ -86,7 +116,9 @@ export type AppState = {
   payment: PaymentState;
   pricing: PricingState;
   login: LoginState;
-  agent: AgentState;
+  pillConversationId: Nullable<string>;
+  assistantInputMode: AssistantInputMode;
+  chat: ChatState;
 
   snackbarMessage?: string;
   snackbarCounter: number;
@@ -114,10 +146,19 @@ export const INITIAL_APP_STATE: AppState = {
   userById: {},
   termById: {},
   appTargetById: {},
+  pairedRemoteDeviceById: {},
+  remoteReceiverStatus: null,
   transcriptionById: {},
   priceValueByKey: {},
   apiKeyById: {},
   toneById: {},
+  conversationById: {},
+  chatMessageById: {},
+  chatMessageIdsByConversationId: {},
+  toolInfoById: {},
+  toolPermissionById: {},
+  agentStateByConversationId: {},
+  streamingMessageById: {},
   overlayPhase: "idle",
   audioLevels: [],
   permissions: {
@@ -137,7 +178,9 @@ export const INITIAL_APP_STATE: AppState = {
   toastQueue: [],
   currentToast: null,
   overlayCursor: null,
-  agent: INITIAL_AGENT_STATE,
+  pillConversationId: null,
+  assistantInputMode: "voice",
+  chat: INITIAL_CHAT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
   dictionary: INITIAL_DICTIONARY_STATE,

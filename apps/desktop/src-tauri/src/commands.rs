@@ -65,6 +65,54 @@ pub struct AppTargetUpsertArgs {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairedRemoteDeviceUpsertArgs {
+    pub id: String,
+    pub name: String,
+    pub platform: String,
+    pub role: String,
+    pub shared_secret: String,
+    pub paired_at: String,
+    #[serde(default)]
+    pub last_seen_at: Option<String>,
+    #[serde(default)]
+    pub last_known_address: Option<String>,
+    #[serde(default)]
+    pub trusted: bool,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairedRemoteDeviceDeleteArgs {
+    pub id: String,
+}
+
+#[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StartRemoteReceiverArgs {
+    #[serde(default)]
+    pub port: Option<u16>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteSenderDeliverArgs {
+    pub target_device_id: String,
+    pub text: String,
+    pub mode: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteSenderPairArgs {
+    pub receiver_device_id: String,
+    pub receiver_name: String,
+    pub receiver_platform: String,
+    pub receiver_address: String,
+    pub pairing_code: String,
+}
+
+#[derive(serde::Deserialize)]
 pub enum AudioClip {
     #[serde(rename = "start_recording_clip")]
     StartRecordingClip,
@@ -294,6 +342,112 @@ pub async fn app_target_list(
 }
 
 #[tauri::command]
+pub async fn paired_remote_device_upsert(
+    args: PairedRemoteDeviceUpsertArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::PairedRemoteDevice, String> {
+    let device = crate::domain::PairedRemoteDevice {
+        id: args.id,
+        name: args.name,
+        platform: args.platform,
+        role: args.role,
+        shared_secret: args.shared_secret,
+        paired_at: args.paired_at,
+        last_seen_at: args.last_seen_at,
+        last_known_address: args.last_known_address,
+        trusted: args.trusted,
+    };
+
+    crate::db::paired_remote_device_queries::upsert_paired_remote_device(database.pool(), &device)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn paired_remote_device_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::PairedRemoteDevice>, String> {
+    crate::db::paired_remote_device_queries::fetch_paired_remote_devices(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn paired_remote_device_delete(
+    args: PairedRemoteDeviceDeleteArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::paired_remote_device_queries::delete_paired_remote_device(database.pool(), &args.id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn remote_receiver_start(
+    args: StartRemoteReceiverArgs,
+    app: AppHandle,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<crate::state::RemoteReceiverStatus, String> {
+    crate::system::remote_receiver::start(
+        app,
+        receiver_state.inner().clone(),
+        database.pool(),
+        args.port,
+    )
+    .await
+}
+
+#[tauri::command]
+pub fn remote_receiver_stop(
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<(), String> {
+    crate::system::remote_receiver::stop(receiver_state.inner().clone());
+    Ok(())
+}
+
+#[tauri::command]
+pub fn remote_receiver_status(
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<crate::state::RemoteReceiverStatus, String> {
+    Ok(receiver_state.status())
+}
+
+#[tauri::command]
+pub async fn remote_sender_deliver_final_text(
+    args: RemoteSenderDeliverArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<(), String> {
+    crate::system::remote_sender::deliver_final_text(
+        database.pool(),
+        receiver_state.inner().clone(),
+        &args.target_device_id,
+        &args.text,
+        &args.mode,
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn remote_sender_pair_with_receiver(
+    args: RemoteSenderPairArgs,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+    receiver_state: State<'_, crate::state::RemoteReceiverState>,
+) -> Result<crate::domain::PairedRemoteDevice, String> {
+    crate::system::remote_sender::pair_with_receiver(
+        database.pool(),
+        receiver_state.inner().clone(),
+        &args.receiver_device_id,
+        &args.receiver_name,
+        &args.receiver_platform,
+        &args.receiver_address,
+        &args.pairing_code,
+    )
+    .await
+}
+
+#[tauri::command]
 pub async fn transcription_create(
     transcription: crate::domain::Transcription,
     database: State<'_, crate::state::OptionKeyDatabase>,
@@ -475,10 +629,7 @@ pub async fn export_transcription(
 }
 
 #[tauri::command]
-pub async fn export_diagnostics(
-    app: AppHandle,
-    diagnostics_info: String,
-) -> Result<bool, String> {
+pub async fn export_diagnostics(app: AppHandle, diagnostics_info: String) -> Result<bool, String> {
     let dialog = rfd::AsyncFileDialog::new()
         .set_file_name("voquill-diagnostics.zip")
         .add_filter("ZIP Archive", &["zip"])
@@ -522,7 +673,9 @@ pub async fn export_diagnostics(
                 let raw =
                     std::fs::read(&path).map_err(|err| format!("Failed to read log: {err}"))?;
                 let content = match std::str::from_utf8(&raw) {
-                    Ok(text) => crate::utils::log_sanitizer::sanitize_log_content(text).into_bytes(),
+                    Ok(text) => {
+                        crate::utils::log_sanitizer::sanitize_log_content(text).into_bytes()
+                    }
                     Err(_) => raw,
                 };
                 zip.start_file(format!("logs/{filename}"), options)
@@ -818,7 +971,9 @@ pub async fn clear_local_data(
     let pool = database.pool();
     let mut transaction = pool.begin().await.map_err(|err| err.to_string())?;
 
-    const TABLES_TO_CLEAR: [&str; 6] = [
+    const TABLES_TO_CLEAR: [&str; 8] = [
+        "chat_messages",
+        "conversations",
         "user_profiles",
         "transcriptions",
         "terms",
@@ -1095,12 +1250,17 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 }
 
 #[tauri::command]
-pub fn set_agent_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
-    let window = app
-        .get_webview_window(crate::overlay::AGENT_OVERLAY_LABEL)
-        .ok_or_else(|| "agent-overlay window not found".to_string())?;
+pub fn set_pill_window_size(size: crate::domain::PillWindowSize, overlay_state: State<'_, crate::state::OverlayState>) {
+    overlay_state.set_pill_window_size(size);
+}
 
-    crate::platform::window::set_overlay_click_through(&window, click_through)
+#[tauri::command]
+pub fn set_overlay_focusable(app: AppHandle, focusable: bool) -> Result<(), String> {
+    let window = app
+        .get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
+        .ok_or_else(|| "pill-overlay window not found".to_string())?;
+
+    crate::platform::window::set_overlay_focusable(&window, focusable)
 }
 
 #[tauri::command]
@@ -1174,6 +1334,11 @@ pub fn sync_hotkey_combos(combos: Vec<Vec<String>>) {
 }
 
 #[tauri::command]
+pub fn reset_key_listener_state() {
+    crate::platform::keyboard::reset_pressed_keys();
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
@@ -1225,9 +1390,118 @@ pub fn get_keyboard_language() -> Result<String, String> {
     crate::platform::keyboard_language::get_keyboard_language()
 }
 
+#[tauri::command]
+pub async fn conversation_create(
+    conversation: crate::domain::Conversation,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Conversation, String> {
+    crate::db::conversation_queries::insert_conversation(database.pool(), &conversation)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_list(
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::Conversation>, String> {
+    crate::db::conversation_queries::fetch_conversations(database.pool())
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_update(
+    conversation: crate::domain::Conversation,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::Conversation, String> {
+    crate::db::conversation_queries::update_conversation(database.pool(), &conversation)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn conversation_delete(
+    id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::conversation_queries::delete_conversation(database.pool(), &id)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_create(
+    message: crate::domain::ChatMessage,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::ChatMessage, String> {
+    crate::db::chat_message_queries::insert_chat_message(database.pool(), &message)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_list(
+    conversation_id: String,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<Vec<crate::domain::ChatMessage>, String> {
+    crate::db::chat_message_queries::fetch_chat_messages_by_conversation(
+        database.pool(),
+        &conversation_id,
+    )
+    .await
+    .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_update(
+    message: crate::domain::ChatMessage,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<crate::domain::ChatMessage, String> {
+    crate::db::chat_message_queries::update_chat_message(database.pool(), &message)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn chat_message_delete_many(
+    ids: Vec<String>,
+    database: State<'_, crate::state::OptionKeyDatabase>,
+) -> Result<(), String> {
+    crate::db::chat_message_queries::delete_chat_messages(database.pool(), &ids)
+        .await
+        .map_err(|err| err.to_string())
+}
+
 /// Reads `enterprise.json` from the app config directory. Returns `None` if the file does not exist.
 ///
 /// Platform paths:
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunTerminalCommandResponse {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+}
+
+#[tauri::command]
+pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandResponse, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let (shell, flag) = if cfg!(target_os = "windows") { ("cmd", "/C") } else { ("sh", "-c") };
+        let output = std::process::Command::new(shell)
+            .args([flag, &command])
+            .output()
+            .map_err(|err| err.to_string())?;
+
+        Ok(RunTerminalCommandResponse {
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            exit_code: output.status.code().unwrap_or(-1),
+        })
+    })
+    .await
+    .map_err(|err| err.to_string())?
+}
+
 ///   - macOS:  ~/Library/Application Support/com.voquill.desktop/enterprise.json
 ///   - Linux:  ~/.config/com.voquill.desktop/enterprise.json
 ///   - Windows: C:\Users\<User>\AppData\Roaming\com.voquill.desktop\enterprise.json
@@ -1245,4 +1519,71 @@ pub fn read_enterprise_target(app: AppHandle) -> Result<(String, Option<String>)
     let content =
         decode_to_utf8(&bytes).map_err(|err| format!("Failed to decode enterprise.json: {err}"))?;
     Ok((path_str, Some(content)))
+}
+
+/// Returns `true` when the running app bundle can be updated in-place.
+/// On macOS this checks whether the process can write to the directory that
+/// contains the `.app` bundle (typically `/Applications`).
+/// Non-macOS platforms always return `true`.
+#[tauri::command]
+pub fn check_app_location_writable() -> Result<bool, String> {
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(true)
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+
+        // macOS layout: <dir>/Voquill.app/Contents/MacOS/voquill-desktop
+        let app_parent = exe
+            .parent() // MacOS/
+            .and_then(|p| p.parent()) // Contents/
+            .and_then(|p| p.parent()) // Voquill.app/
+            .and_then(|p| p.parent()) // containing directory
+            .ok_or("Could not determine app parent directory")?;
+
+        let probe = app_parent.join(".voquill_write_probe");
+        match std::fs::File::create(&probe) {
+            Ok(_) => {
+                let _ = std::fs::remove_file(&probe);
+                Ok(true)
+            }
+            Err(_) => Ok(false),
+        }
+    }
+}
+
+/// Downloads a `.pkg` installer to a temp directory and opens it with
+/// macOS Installer.app. This is used as a fallback when the normal in-place
+/// updater cannot write to the app's install location.
+#[tauri::command]
+pub async fn download_and_open_mac_installer(url: String) -> Result<(), String> {
+    let file_name = url
+        .rsplit('/')
+        .next()
+        .unwrap_or("VoquillUpdate.pkg")
+        .to_string();
+    let dest = std::env::temp_dir().join(&file_name);
+
+    // Remove any stale previous download
+    let _ = std::fs::remove_file(&dest);
+
+    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "Download failed with status {}",
+            response.status()
+        ));
+    }
+    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+    std::fs::write(&dest, &bytes).map_err(|e| e.to_string())?;
+
+    std::process::Command::new("open")
+        .arg(&dest)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

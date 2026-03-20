@@ -30,19 +30,16 @@ const EVAL_RESULT_SCHEMA = z.object({
 const EVAL_RESULT_JSON_SCHEMA =
   zodToJsonSchema(EVAL_RESULT_SCHEMA, "Schema").definitions?.Schema ?? {};
 
-export function getOpenAIGentextRepo(): BaseGenerateTextRepo {
+export function getOpenAIGentextRepo(model = "gpt-5.4"): BaseGenerateTextRepo {
   const apiKey = getOpenAIApiKey();
-  return new OpenAIGenerateTextRepo(apiKey, "gpt-4o-mini");
+  return new OpenAIGenerateTextRepo(apiKey, model);
 }
 
-export function getGroqGentextRepo(): BaseGenerateTextRepo {
+export function getGroqGentextRepo(
+  model = "openai/gpt-oss-120b",
+): BaseGenerateTextRepo {
   const apiKey = getGroqApiKey();
-  return new GroqGenerateTextRepo(apiKey, null);
-}
-
-export function getEvalRepo(): BaseGenerateTextRepo {
-  const apiKey = getOpenAIApiKey();
-  return new OpenAIGenerateTextRepo(apiKey, "gpt-4o-mini");
+  return new GroqGenerateTextRepo(apiKey, model);
 }
 
 export async function runEval({
@@ -57,9 +54,7 @@ export async function runEval({
   originalText = originalText.trim();
   finalText = finalText.trim();
 
-  const repo = getEvalRepo();
-  console.log("Orig Text:", originalText);
-  console.log("Finl Text:", finalText);
+  const repo = getGroqGentextRepo();
 
   // for (const e of evals) {
   const promises = evals.map(async (e) => {
@@ -118,7 +113,7 @@ export const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await (repo ?? getOpenAIGentextRepo()).generateText({
+  const output = await (repo ?? getGroqGentextRepo()).generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {

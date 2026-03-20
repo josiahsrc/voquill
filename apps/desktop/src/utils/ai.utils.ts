@@ -1,4 +1,4 @@
-import { UserPreferences } from "@repo/types";
+import type { LlmMessage, UserPreferences } from "@repo/types";
 import { AppState } from "../state/app.state";
 import {
   CPU_DEVICE_VALUE,
@@ -37,10 +37,15 @@ export const extractJsonFromMarkdown = (text: string): string => {
     return jsonBlockMatch[1].trim();
   }
 
-  // Try to extract JSON from inline code blocks
-  const inlineJsonMatch = text.match(/`([^`]+)`/);
+  // Try to extract JSON from inline code blocks (only if content looks like JSON)
+  const inlineJsonMatch = text.match(/`([^`]+)`/g);
   if (inlineJsonMatch) {
-    return inlineJsonMatch[1].trim();
+    for (const match of inlineJsonMatch) {
+      const content = match.slice(1, -1).trim();
+      if (content.startsWith("{") || content.startsWith("[")) {
+        return content;
+      }
+    }
   }
 
   // Return original text if no markdown formatting found
@@ -74,10 +79,45 @@ export const applyAiPreferences = (
     preferences.postProcessingApiKeyId ?? null;
 
   const agentMode = preferences.agentMode ?? DEFAULT_AGENT_MODE;
-  draft.settings.agentMode.mode = agentMode as any;
+  draft.settings.agentMode.mode = agentMode;
   draft.settings.agentMode.selectedApiKeyId =
     preferences.agentModeApiKeyId ?? null;
   draft.settings.agentMode.openclawGatewayUrl =
     preferences.openclawGatewayUrl ?? null;
   draft.settings.agentMode.openclawToken = preferences.openclawToken ?? null;
 };
+
+export function formatMessagesAsPrompt(messages: LlmMessage[]): {
+  system: string | undefined;
+  prompt: string;
+} {
+  const systemMsg = messages.find((m) => m.role === "system");
+  const nonSystemMessages = messages.filter((m) => m.role !== "system");
+
+  if (nonSystemMessages.length <= 1) {
+    const lastMsg = nonSystemMessages[0];
+    return {
+      system: systemMsg?.content,
+      prompt:
+        lastMsg?.role === "user"
+          ? lastMsg.content
+          : lastMsg?.role === "assistant"
+            ? (lastMsg.content ?? "")
+            : "",
+    };
+  }
+
+  const formatted = nonSystemMessages
+    .map((m) => {
+      if (m.role === "user") return `User: ${m.content}`;
+      if (m.role === "assistant") return `Assistant: ${m.content ?? ""}`;
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+
+  return {
+    system: systemMsg?.content,
+    prompt: formatted,
+  };
+}

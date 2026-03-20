@@ -1,6 +1,18 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import {
+  GoogleGenAI,
+  Type,
+  type Content,
+  type FunctionDeclaration,
+  type Part,
+} from "@google/genai";
 import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse } from "@repo/types";
+import type {
+  JsonResponse,
+  LlmChatInput,
+  LlmFinishReason,
+  LlmMessage,
+  LlmStreamEvent,
+} from "@repo/types";
 
 export const GEMINI_GENERATE_TEXT_MODELS = [
   "gemini-2.5-flash",
@@ -217,3 +229,177 @@ export const geminiTestIntegration = async ({
 
   return text.toLowerCase().includes("hello");
 };
+
+// ============================================================================
+// Streaming Chat
+// ============================================================================
+
+function llmMessagesToGemini(messages: LlmMessage[]): {
+  systemInstruction: string | undefined;
+  contents: Content[];
+} {
+  let systemInstruction: string | undefined;
+  const contents: Content[] = [];
+
+  for (const msg of messages) {
+    if (msg.role === "system") {
+      systemInstruction = msg.content;
+      continue;
+    }
+
+    if (msg.role === "user") {
+      contents.push({ role: "user", parts: [{ text: msg.content }] });
+      continue;
+    }
+
+    if (msg.role === "assistant") {
+      const parts: Part[] = [];
+      if (msg.content) {
+        parts.push({ text: msg.content });
+      }
+      for (const tc of msg.toolCalls ?? []) {
+        let parsedArgs: Record<string, unknown>;
+        try {
+          parsedArgs = JSON.parse(tc.arguments) as Record<string, unknown>;
+        } catch {
+          parsedArgs = {};
+        }
+        parts.push({
+          functionCall: { name: tc.name, args: parsedArgs },
+        });
+      }
+      if (parts.length > 0) {
+        contents.push({ role: "model", parts });
+      }
+      continue;
+    }
+
+    if (msg.role === "tool") {
+      contents.push({
+        role: "user",
+        parts: [
+          {
+            functionResponse: {
+              name: msg.toolCallId,
+              response: { result: msg.content },
+            },
+          },
+        ],
+      });
+    }
+  }
+
+  return { systemInstruction, contents };
+}
+
+function geminiFinishReason(raw: string | undefined): LlmFinishReason {
+  switch (raw) {
+    case "STOP":
+      return "stop";
+    case "MAX_TOKENS":
+      return "length";
+    case "SAFETY":
+      return "content-filter";
+    default:
+      return "other";
+  }
+}
+
+export type GeminiStreamChatArgs = {
+  apiKey: string;
+  model: string;
+  input: LlmChatInput;
+};
+
+export async function* geminiStreamChat({
+  apiKey,
+  model,
+  input,
+}: GeminiStreamChatArgs): AsyncGenerator<LlmStreamEvent> {
+  const client = createClient(apiKey);
+  const { systemInstruction, contents } = llmMessagesToGemini(input.messages);
+
+  const tools: FunctionDeclaration[] | undefined =
+    input.tools && input.tools.length > 0
+      ? input.tools.map((t) => ({
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters
+            ? convertJsonSchemaToGeminiSchema(
+                t.parameters as Record<string, unknown>,
+              )
+            : undefined,
+        }))
+      : undefined;
+
+  const stream = await client.models.generateContentStream({
+    model,
+    contents,
+    config: {
+      systemInstruction: systemInstruction
+        ? { parts: [{ text: systemInstruction }] }
+        : undefined,
+      maxOutputTokens: input.maxTokens,
+      temperature: input.temperature,
+      topP: input.topP,
+      stopSequences: input.stopSequences,
+      tools: tools ? [{ functionDeclarations: tools }] : undefined,
+    },
+  });
+
+  const pendingToolCalls: Array<{
+    id: string;
+    name: string;
+    arguments: string;
+  }> = [];
+  let finishReason: LlmFinishReason = "other";
+  let promptTokens: number | undefined;
+  let completionTokens: number | undefined;
+  let toolCallCounter = 0;
+
+  for await (const chunk of stream) {
+    const candidate = chunk.candidates?.[0];
+    if (!candidate) continue;
+
+    for (const part of candidate.content?.parts ?? []) {
+      if (part.text) {
+        yield { type: "text-delta", text: part.text };
+      }
+
+      if (part.functionCall) {
+        pendingToolCalls.push({
+          id: `gemini-tc-${toolCallCounter++}`,
+          name: part.functionCall.name ?? "",
+          arguments: JSON.stringify(part.functionCall.args ?? {}),
+        });
+      }
+    }
+
+    if (candidate.finishReason) {
+      finishReason = geminiFinishReason(candidate.finishReason as string);
+    }
+
+    if (chunk.usageMetadata) {
+      promptTokens = chunk.usageMetadata.promptTokenCount ?? undefined;
+      completionTokens = chunk.usageMetadata.candidatesTokenCount ?? undefined;
+    }
+  }
+
+  for (const tc of pendingToolCalls) {
+    yield {
+      type: "tool-call",
+      id: tc.id,
+      name: tc.name,
+      arguments: tc.arguments,
+    };
+  }
+
+  yield {
+    type: "finish",
+    finishReason,
+    usage:
+      promptTokens != null || completionTokens != null
+        ? { promptTokens, completionTokens }
+        : undefined,
+  };
+}

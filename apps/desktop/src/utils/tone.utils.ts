@@ -20,16 +20,21 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Polished",
       }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Natural, well-written text that preserves your voice and word choices.",
+      }),
       promptTemplate: `
-- Rewrite the transcript into clean, readable text that the speaker would reasonably have written.
-- Keep the speaker's original meaning, tone, phrasing, and level of formality.
-- Do not make it more polite, more formal, or more professional than the original.
-- Remove filler, false starts, repeated words, stutters, and obvious transcription mistakes.
-- When the speaker corrects themselves, keep the corrected version and remove the earlier one.
-- Smooth out awkward sentence breaks and punctuation when they come from transcription rather than intent.
-- Keep wording that feels characteristic of the speaker, even if it is a little informal or imperfect.
-- Format the result naturally as written text, including paragraphs, line breaks, bullet points when the content is clearly list-like or reads more naturally as a list, punctuation, emojis, and special forms like code terms, file names, emails, links, hashtags, newlines, and parentheses when clearly intended.
-- Output only the cleaned transcription.
+- WORD CHOICE: Preserve the speaker's word choice
+- STRUCTURE: Refine the written transcript to read like naturally written text that flows well, without materially changing anything the speaker said or how they said it
+- CLEAN UP: Remove filler words, false starts and speech disfluencies that carry no meaning. But always keep exclamations that are meaningful to the speaker's expression.
+- SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- LISTS: Format bulletted lists when the user speaks items in a list format
+- PARAGRAPHS: Split up the text into paragraphs where appropriate based on natural breaks in the speaker's thoughts and where they would naturally break when writing.
+- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
+- SELF CORRECTIONS: When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
+- EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
+- **CRITICAL**: Do NOT use em-dashes in your response
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -39,6 +44,9 @@ export const getDefaultSystemTones = (): Tone[] => {
       id: VERBATIM_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Verbatim",
+      }),
+      description: intl.formatMessage({
+        defaultMessage: "Exactly what you said with no editing or cleanup.",
       }),
       shouldDisablePostProcessing: true,
       promptTemplate:
@@ -52,18 +60,26 @@ export const getDefaultSystemTones = (): Tone[] => {
       name: intl.formatMessage({
         defaultMessage: "Email",
       }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Professional email formatting with a greeting, body, and sign-off.",
+      }),
       promptTemplate: `
-- Rewrite the transcript as a clean, natural email body the speaker would reasonably have written.
-- Preserve the speaker's meaning, tone, phrasing, and formality.
-- Do not make it more polite, formal, or professional than the original.
-- Remove filler, stutters, false starts, repeated words, and obvious transcription errors.
-- Treat self-corrections as replacements: keep the later corrected wording, not the abandoned wording.
-- Fix punctuation, sentence breaks, and formatting so it reads naturally as an email.
-- Keep informal or distinctive wording when it seems intentional.
-- Use email structure only where implied by the transcript, including greeting, paragraph breaks, closing, sign-off, and bullet points when the content is clearly list-like or reads more naturally as a list.
-- Do not generate or include an email subject line.
-- Preserve special written forms like email addresses, links, newlines, emojis, file names, and code terms when intended.
-- Output only the cleaned email body.
+- Sound like the speaker, but written
+- Fix grammar, remove filler and disfluencies, and lightly restructure for readability
+- Fit the speaker's words into an email format but do NOT add new phrasing, ideas, or words that would otherwise change the intent.
+- Preserve the speaker's greeting and sign-off if present
+- Remove filler words (um, uh, like, you know, so, basically, actually, I mean) and speech disfluencies (stutters, false starts, repeated words)
+- Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- Format bulletted lists when the user speaks items in a list format
+- Split up paragraphs where appropriate.
+- Convert newlines and other intents into actual formatting where applicable (e.g. actual new lines for line breaks, etc.) and remove the word
+- The resulting transcription should make sense
+- Put backticks around code terms like filenames, function names, and code snippets
+- It should remove and fix content that was later corrected by the speaker
+- Format the transcription as a professional email, including a greeting, body, and sign-off; all while preserving the speaker's tone
+- DO NOT introduce new phrasing
+- DO NOT remove phrasing that would change the speaker's intent except for fixing errors
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -73,6 +89,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       id: CHAT_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Chat",
+      }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "For casual, concise messages: like you're typing in a chat app.",
       }),
       promptTemplate: `
 - You are formatting spoken words into a chat message. The speaker dictated this out loud — make it sound like them typing.
@@ -94,6 +114,10 @@ export const getDefaultSystemTones = (): Tone[] => {
       id: FORMAL_TONE_ID,
       name: intl.formatMessage({
         defaultMessage: "Formal",
+      }),
+      description: intl.formatMessage({
+        defaultMessage:
+          "Polished and professional register suitable for documents and correspondence.",
       }),
       promptTemplate: `
 - Rewrite in a polished, professional register

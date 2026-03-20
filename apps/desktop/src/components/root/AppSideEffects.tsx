@@ -13,7 +13,13 @@ import { isEqual } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { combineLatest, from, Observable, of } from "rxjs";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";
+import { loadPairedRemoteDevices } from "../../actions/paired-remote-device.actions";
 import { openUpgradePlanDialog } from "../../actions/pricing.actions";
+import {
+  refreshRemoteReceiverStatus,
+  startRemoteReceiver,
+} from "../../actions/remote-receiver.actions";
+import { handleRemoteFinalTextReceived } from "../../actions/remote-transcript.actions";
 import {
   checkForAppUpdates,
   dismissUpdateDialog,
@@ -22,6 +28,8 @@ import {
 import {
   migrateLocalUserToCloud,
   refreshCurrentUser,
+  setRemoteOutputEnabled,
+  setRemoteTargetDeviceId,
 } from "../../actions/user.actions";
 import { useAsyncData, useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync, useKeyDownHandler } from "../../hooks/helper.hooks";
@@ -73,6 +81,14 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
+};
+
+type RemoteFinalTextReceivedPayload = {
+  senderDeviceId: string;
+  eventId: string;
+  text: string;
+  mode: string;
+  createdAt: string;
 };
 
 // Timeout for Firebase Auth initialization (handles cases where IndexedDB hangs on some Linux systems)
@@ -182,6 +198,14 @@ export const AppSideEffects = () => {
       draft.keysHeld = payload.keys;
     });
   });
+
+  useTauriListen<RemoteFinalTextReceivedPayload>(
+    "remote_final_text_received",
+    async (payload) => {
+      await handleRemoteFinalTextReceived(payload);
+      await refreshRemoteReceiverStatus().catch(() => undefined);
+    },
+  );
 
   useEffect(() => {
     if (allowDevTools) {
@@ -321,6 +345,25 @@ export const AppSideEffects = () => {
       setInitReady(true);
     }
   }, [authReady, isEnterprise]);
+
+  useAsyncEffect(async () => {
+    if (initReady) {
+      await loadPairedRemoteDevices();
+      await refreshRemoteReceiverStatus();
+      const prefs = getMyUserPreferences(getAppState());
+      if (
+        prefs?.remoteTargetDeviceId &&
+        !getAppState().pairedRemoteDeviceById[prefs.remoteTargetDeviceId]
+      ) {
+        await setRemoteTargetDeviceId(null);
+        await setRemoteOutputEnabled(false);
+      }
+      const receiverStatus = getAppState().remoteReceiverStatus;
+      if (prefs?.remoteReceiverAutoStart && !receiverStatus?.enabled) {
+        await startRemoteReceiver(prefs.remoteReceiverPort ?? null);
+      }
+    }
+  }, [initReady]);
 
   useEffect(() => {
     if (streamReady && initReady && !initialized && enterpriseReady) {

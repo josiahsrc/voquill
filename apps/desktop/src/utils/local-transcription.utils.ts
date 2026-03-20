@@ -1,5 +1,4 @@
 import { CPU_DEVICE_VALUE } from "../types/ai.types";
-import { isMacOS } from "./env.utils";
 
 export type LocalWhisperModel =
   | "tiny"
@@ -59,10 +58,6 @@ export const normalizeLocalWhisperModel = (
 export const isGpuPreferredTranscriptionDevice = (
   device: string | null | undefined,
 ): boolean => {
-  if (isMacOS()) {
-    return false;
-  }
-
   const normalized = device?.trim().toLowerCase();
   if (!normalized) {
     return false;
@@ -75,7 +70,7 @@ export const isGpuPreferredTranscriptionDevice = (
   );
 };
 
-export const supportsGpuTranscriptionDevice = (): boolean => !isMacOS();
+export const supportsGpuTranscriptionDevice = (): boolean => true;
 
 export const normalizeTranscriptionDevice = (
   device: string | null | undefined,
@@ -96,10 +91,6 @@ export const normalizeTranscriptionDevice = (
     normalizedLegacyCpu.startsWith("cpu:")
   ) {
     return normalizedLegacyCpu;
-  }
-
-  if (!supportsGpuTranscriptionDevice()) {
-    return CPU_DEVICE_VALUE;
   }
 
   if (normalizedLegacyCpu === "gpu" || normalizedLegacyCpu.startsWith("gpu:")) {

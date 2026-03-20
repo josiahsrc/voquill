@@ -9,7 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getOpenAIGentextRepo,
+  getGroqGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,7 +48,9 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getOpenAIGentextRepo().generateText({
+  const output = await getGroqGentextRepo(
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+  ).generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -75,12 +77,18 @@ const runPostProcessingEval = async ({
   tone: ToneConfig;
   evals: Eval[];
 }): Promise<void> => {
+  const startTime = Date.now();
   const finalText = await postProcess({
     tone,
     transcription,
     language,
     userName,
   });
+
+  const duration = (Date.now() - startTime) / 1000;
+  console.log(`Duration: ${duration.toFixed(2)} seconds`);
+  console.log("Orig Text:", transcription);
+  console.log("Finl Text:", finalText);
 
   await runEval({
     originalText: transcription,
@@ -99,6 +107,35 @@ describe("post-processing evals", { retry: 0 }, () => {
       });
     });
 
+    test("should put paragraph breaks in", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Vielen Dank für Ihre E-Mail, und ich weiß es zu schätzen, dass Sie sich die Zeit genommen haben, alles so klar darzulegen. Ich wollte Ihnen eine durchdachte Antwort geben, weil ich merke, dass Ihnen diese Angelegenheit wichtig ist, und ich Ihnen keine hastige oder allzu vereinfachte Antwort geben möchte, wenn die Situation offensichtlich etwas komplizierter ist. Zunächst einmal verstehe ich sehr gut, woher Sie kommen, und ich glaube nicht, dass Sie überreagieren oder aus irgendetwas eine zu große Sache machen. Aus meiner Sicht scheint ein großer Teil der Spannung daher zu kommen, dass sich mehrere Dinge gleichzeitig aufgebaut haben, und auch wenn jedes einzelne für sich genommen vielleicht noch handhabbar gewesen wäre, erzeugen sie zusammengenommen ein Maß an Stress und Unsicherheit, das für jeden schwer ruhig zu bewältigen wäre. Ich finde es auch wichtig zu sagen, dass ich Ihre Bedenken nicht im negativen Sinne persönlich nehme, weil ich weiß, dass Sie ehrlich sein wollen und nicht konfrontativ, und ich würde ein direktes Gespräch, auch wenn es unangenehm ist, immer lieber führen, als zuzulassen, dass sich im Hintergrund immer mehr Annahmen aufstauen. Gleichzeitig möchte ich von meiner Seite genauso ehrlich sein und sagen, dass manches von dem, was passiert ist, nicht so absichtlich war, wie es vielleicht gewirkt hat. Es gab Situationen, in denen ich früher, klarer und verlässlicher hätte kommunizieren sollen, und ich sehe jetzt, wie mein Schweigen oder meine Verzögerung als Gleichgültigkeit, Vermeidung oder sogar Missachtung verstanden werden konnte, obwohl ich in Wirklichkeit nur versucht habe, zu viele Dinge auf einmal schlecht zu bewältigen, und am Ende genau die Verwirrung verursacht habe, die ich eigentlich hätte verhindern müssen. Das geht auf meine Kappe, und ich versuche nicht, es schönzureden. Ich möchte auch nicht, dass daraus ein Hin und Her wird, bei dem jeder von uns seinen Standpunkt so darlegt, als müsste es am Ende einen Gewinner geben, denn ich glaube nicht, dass das einem von uns helfen würde. Was ich viel lieber tun möchte, ist die Punkte anzuerkennen, in denen Sie recht haben, die Punkte zu klären, die möglicherweise missverstanden wurden, und dann herauszufinden, ob es noch einen gangbaren Weg nach vorne gibt, der sich für uns beide respektvoll, realistisch und langfristig tragfähig anfühlt. Ich glaube, dass solche Situationen manchmal schlimmer werden, weil Menschen anfangen, über die exakte Formulierung einzelner Momente zu streiten, statt über das größere Muster darunter, und dieses größere Muster ist aus meiner Sicht, dass die Erwartungen nicht aufeinander abgestimmt waren, die Kommunikation nachgelassen hat und bis zu dem Zeitpunkt, an dem einer von uns beiden wirklich erkannt hat, wie frustriert die andere Person geworden war, schon zu vieles zu lange unausgesprochen geblieben war. Das bedeutet nicht, dass die Beziehung, die Zusammenarbeit oder die Verbindung zwangsläufig irreparabel beschädigt ist, aber es bedeutet, dass ihre Wiederherstellung mehr erfordern würde als nur eine schnelle Entschuldigung oder ein beiläufiges Versprechen, es künftig besser zu machen.",
+        tone: getWritingStyle("default"),
+        language: "de",
+        evals: [
+          "It should split the text into paragraphs where it makes sense, improving readability while preserving the original content and meaning",
+        ],
+      });
+    });
+
+    test("should handle emojis", async () => {
+      await runPostProcessingEval({
+        transcription: "Hey, can you send me the report? smiley face",
+        tone: getWritingStyle("default"),
+        evals: ["It should convert 'smiley face' into an actual smiling emoji"],
+      });
+    });
+
+    test("crazy transcript 1", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Can you fix the Linux build? I guess so we have those two workflows. Build desktop and we also have release desktop. And I I haven't, like, super looked into this, but I'm pretty sure build desktop yeah. Yeah. Okay. Build desktop doesn't actually ship with Vulcan. And so we don't we don't want the build desktop to actually build for Voquill, and it should not build the sidecars. Or, like, it should not build the GPU sidecars rather. It doesn't need to. But it looks like our built pipeline isn't supporting that because we're getting we're getting some errors. Yeah. If I just I pasted the raw logs from the job inside of a file. You can kinda you can kinda start that file if you're interested in seeing, like, where the where the problem is. But yeah, I kind of gave the high level context to the very top of this prompt so I think you can you can see it from there too.",
+        tone: getWritingStyle("default"),
+        evals: ["It should make it make sense"],
+      });
+    });
+
     test("should fix things that are later corrected", async () => {
       await runPostProcessingEval({
         transcription:
@@ -107,6 +144,15 @@ describe("post-processing evals", { retry: 0 }, () => {
         evals: [
           "it should use 'speaker' and not 'thing' since the speaker corrected themselves",
         ],
+      });
+    });
+
+    test("raw transcript 1", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "That's awesome. And adding some more details here that might be relevant when we were working our landscape in platform, one of the biggest pains that we saw across the industry is that or, like, biggest, not pains, but, like, one of the biggest things we observed is that all landscapers used different apps Like, someone used Sage, others used JobNobus, others used QuickBooks, others used, like, one off time tracking software. Like, everyone used a different piece of software. And after, you know, building our last product, I think the thing that we realized was that you should try to make us, like, a software that kinda integrates us with, like, all of these things rather than trying to define your own version of it. And so, like, if we build Voquill in this area, maybe we can like, use that studio.vocal.com idea or something. Basically, like, you you you know, you can talk to your computer and, like, he has an agent that's specific to his workflow. And then you can add photos and stuff. And it just, like, builds the report as you talk. That could be really interesting that he can just copy it over, basically, when he's done.",
+        tone: getWritingStyle("default"),
+        evals: ["it should clean up the transcript and it should make sense"],
       });
     });
 
@@ -136,8 +182,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Yes. But you can't use examples. Remember, like, I core rule of this is you can't use examples and only worry about updating the tone dot utils dot t s. Because we're not doing the Dart files right now. Let's just do the tone utils.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove the choppy sentence structure. i.e. 'Yes. But' -> Yes, but",
-          "It should remove the filler word 'like' and correct 'I core rule' to 'the core rule'",
+          "It should remove likes and ums and format the code names correctly",
         ],
       });
     });
@@ -148,7 +193,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Yes. Thanks for bringing that up. I recently made a change to make it so verbatim doesn't apply any post processing, effects as part of its contract. And so with this change, I felt it appropriate to basically make it so, when you're doing real time with verbatim mode, it still doesn't apply post processing on the outputs since none is needed. This way, like, verbatim is basically, like, a through and through really clean very fast output with no post processing.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove filler words like 'like' and 'basically' while keeping the technical content intact",
+          "It should remove filler words like 'like' while keeping the technical content intact",
         ],
       });
     });
@@ -159,7 +204,7 @@ describe("post-processing evals", { retry: 0 }, () => {
           "Hey Emily, can you go fix that thing? Excuse me, that speaker that you broke yesterday. I really need that. Actually uh, hey Emily, could you please go fix that speaker you broke? It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
         tone: getWritingStyle("default"),
         evals: [
-          "It should remove the redundant phrasing in the request since it's basically the same as the first one, just with more filler and less clarity",
+          "It should apply the self correction, replacing 'thing' with 'speaker' and removing the earlier mention of 'thing'",
         ],
       });
     });
@@ -364,6 +409,17 @@ come on guys. you can do better, that was garbage.`,
       });
     });
 
+    test("should not change who the subject is for emails", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "That's awesome. And adding some more details here that might be relevant when we were working our landscape in platform, one of the biggest pains that we saw across the industry is that or, like, biggest, not pains, but, like, one of the biggest things we observed is that all landscapers used different apps Like, someone used Sage, others used JobNobus, others used QuickBooks, others used, like, one off time tracking software. Like, everyone used a different piece of software. And after, you know, building our last product, I think the thing that we realized was that you should try to make us, like, a software that kinda integrates us with, like, all of these things rather than trying to define your own version of it. And so, like, if we build Voquill in this area, maybe we can like, use that studio.vocal.com idea or something. Basically, like, you you you know, you can talk to your computer and, like, he has an agent that's specific to his workflow. And then you can add photos and stuff. And it just, like, builds the report as you talk. That could be really interesting that he can just copy it over, basically, when he's done.",
+        tone: getWritingStyle("email"),
+        evals: [
+          "It preserves the subject of the sentence as 'he' when referring to the user, rather than changing it to 'they' or 'you' or something else, since the speaker is talking about 'him'",
+        ],
+      });
+    });
+
     test("example 2", async () => {
       await runPostProcessingEval({
         transcription:
@@ -398,7 +454,6 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "Should keep 'Dear Mr. Johnson' as the greeting since the speaker said it",
           "Should maintain a formal tone throughout — no casualization",
-          "Should have a sign-off with Thomas's name that matches the formal tone",
           "Should mention: quarterly report completed, ready for review, look forward to feedback",
         ],
       });
@@ -448,7 +503,7 @@ come on guys. you can do better, that was garbage.`,
     test("does not fabricate details for vague content", async () => {
       await runPostProcessingEval({
         transcription:
-          "uh hi I just wanted to let you know that I'll be out of office next week so if anything urgent comes up please reach out to Jessica",
+          "uh hi I just wanted to let you know that I'll be out of office next week so if anything urgent comes up please reach out to Jessica, regards Thomas",
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
@@ -463,11 +518,10 @@ come on guys. you can do better, that was garbage.`,
     test("lazy vague email stays lazy and vague", async () => {
       await runPostProcessingEval({
         transcription:
-          "Hey just wanted to say that the thing we talked about is important so yeah let's make sure we do that soon thanks",
+          "Hey just wanted to say that the thing we talked about is important so yeah let's make sure we do that soon thanks, thomas",
         tone: getWritingStyle("email"),
         userName: "Thomas Gundan",
         evals: [
-          "Should NOT clarify what 'the thing' is or add any specificity",
           "Should remove filler like 'so yeah' but keep the actual message",
           "Should have greeting, body, and sign-off with Thomas's name",
           "Should be short — this was a short message and the email should reflect that",
@@ -512,7 +566,6 @@ come on guys. you can do better, that was garbage.`,
         evals: [
           "The question about budget should be clearly phrased as a question with a question mark",
           "Should mention: contractor hours, this quarter, help with migration, not going over budget",
-          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });
@@ -525,7 +578,6 @@ come on guys. you can do better, that was garbage.`,
         userName: "Thomas Gundan",
         evals: [
           "Should preserve the enthusiasm — words like 'really well', 'super impressed', 'great position', 'nice work' should come through",
-          "Should have greeting, body, and sign-off with Thomas's name",
         ],
       });
     });

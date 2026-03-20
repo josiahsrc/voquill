@@ -4,12 +4,21 @@ import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
+import {
+  createConversation,
+  loadChatMessages,
+  sendChatMessage,
+} from "../../actions/chat.actions";
 import { refreshMember } from "../../actions/member.actions";
 import { dismissToast, showToast } from "../../actions/toast.actions";
 import {
   switchWritingStyleBackward,
   switchWritingStyleForward,
 } from "../../actions/tone.actions";
+import {
+  resolveToolPermission,
+  setToolAlwaysAllow,
+} from "../../actions/tool.actions";
 import { storeTranscription } from "../../actions/transcribe.actions";
 import { recordStreak } from "../../actions/user.actions";
 import {
@@ -17,8 +26,10 @@ import {
   useHotkeyHold,
   useHotkeyHoldMany,
 } from "../../hooks/hotkey.hooks";
+import { useLocalStorage } from "../../hooks/local-storage.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
+import { browserRouter } from "../../router";
 import { createTranscriptionSession } from "../../sessions";
 import { RecordingMode } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
@@ -26,6 +37,7 @@ import { AgentStrategy } from "../../strategies/agent.strategy";
 import { BaseStrategy } from "../../strategies/base.strategy";
 import { DictationStrategy } from "../../strategies/dictation.strategy";
 import { TextFieldInfo } from "../../types/accessibility.types";
+import type { OverlayResolvePermissionPayload } from "../../types/overlay.types";
 import {
   StopRecordingResponse,
   TranscriptionSession,
@@ -39,6 +51,7 @@ import {
   trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
+import { ASSISTANT_MODE_ENABLED_KEY } from "../../utils/assistant-mode.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
@@ -46,9 +59,11 @@ import {
   CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
   getAdditionalLanguageEntries,
+  OPEN_CHAT_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
+import { createId } from "../../utils/id.utils";
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
@@ -60,6 +75,7 @@ import {
   getMyPrimaryDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
+import { surfaceMainWindow } from "../../utils/window.utils";
 
 // These limits are here to help prevent people from accidentally leaving their mic on
 const RECORDING_WARNING_DURATION_MS = minutesToMilliseconds(4);
@@ -88,7 +104,12 @@ export const DictationSideEffects = () => {
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastStyleSwitchRef = useRef(0);
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isStoppingRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
+  const [assistantModeEnabled] = useLocalStorage<boolean>(
+    ASSISTANT_MODE_ENABLED_KEY,
+    false,
+  );
 
   const isManualStyling = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",
@@ -96,6 +117,8 @@ export const DictationSideEffects = () => {
   const isActiveSession = useAppStore(
     (state) => state.activeRecordingMode !== null,
   );
+  const activeRecordingMode = useAppStore((state) => state.activeRecordingMode);
+  const assistantInputMode = useAppStore((state) => state.assistantInputMode);
   const additionalLanguageEntries = useAppStore(getAdditionalLanguageEntries);
   const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
   const isDictationInteractable = isDictationUnlocked && !isStopping;
@@ -161,45 +184,73 @@ export const DictationSideEffects = () => {
     }
   }, []);
 
-  const abortRecording = useCallback(async (message?: AbortMessage) => {
-    getLogger().info(
-      `Aborting recording (hasSession=${!!sessionRef.current}, hasStrategy=${!!strategyRef.current}${message ? `, reason=${String(message.body).slice(0, 120)}` : ""})`,
-    );
-    clearRecordingTimers();
-    clearCancelPromptTimer();
-    invoke<void>("set_phase", { phase: "idle" });
-    invoke("stop_recording").catch((e) =>
-      getLogger().verbose(`stop_recording failed during abort: ${e}`),
-    );
-
-    dictationController.reset();
-    agentController.reset();
-    for (const { controller } of additionalLanguageControllers) {
-      controller.reset();
-    }
-
-    strategyRef.current?.cleanup();
-    strategyRef.current = null;
-    sessionRef.current = null;
-
+  const clearRecordingState = useCallback(() => {
     produceAppState((draft) => {
       draft.activeRecordingMode = null;
+      draft.dictationLanguageOverride = null;
+      draft.assistantInputMode = "voice";
+    });
+    invoke("set_overlay_focusable", { focusable: false }).catch(console.error);
+  }, []);
+
+  const hardResetHotkeyState = useCallback(() => {
+    dictationController.forceReset();
+    agentController.forceReset();
+    for (const { controller } of additionalLanguageControllers) {
+      controller.forceReset();
+    }
+
+    produceAppState((draft) => {
+      draft.keysHeld = [];
     });
 
-    if (message) {
-      playAlertSound();
-      showToast({
-        title:
-          message.title ||
-          intl.formatMessage({
-            defaultMessage: "Recording stopped",
-          }),
-        message: String(message.body),
-        toastType: "error",
-        duration: 8_000,
-      });
-    }
-  }, []);
+    invoke("reset_key_listener_state").catch((error) =>
+      getLogger().verbose(`Failed to reset key listener state: ${error}`),
+    );
+  }, [additionalLanguageControllers, agentController, dictationController]);
+
+  const abortRecording = useCallback(
+    async (message?: AbortMessage) => {
+      getLogger().info(
+        `Aborting recording (hasSession=${!!sessionRef.current}, hasStrategy=${!!strategyRef.current}${message ? `, reason=${String(message.body).slice(0, 120)}` : ""})`,
+      );
+      clearRecordingTimers();
+      clearCancelPromptTimer();
+      hardResetHotkeyState();
+      invoke<void>("set_phase", { phase: "idle" });
+      invoke("stop_recording").catch((e) =>
+        getLogger().verbose(`stop_recording failed during abort: ${e}`),
+      );
+
+      sessionRef.current?.cleanup();
+      strategyRef.current?.cleanup();
+      strategyRef.current = null;
+      sessionRef.current = null;
+
+      clearRecordingState();
+
+      if (message) {
+        playAlertSound();
+        showToast({
+          title:
+            message.title ||
+            intl.formatMessage({
+              defaultMessage: "Recording stopped",
+            }),
+          message: String(message.body),
+          toastType: "error",
+          duration: 8_000,
+        });
+      }
+    },
+    [
+      clearCancelPromptTimer,
+      clearRecordingState,
+      clearRecordingTimers,
+      hardResetHotkeyState,
+      intl,
+    ],
+  );
 
   const stopRecordingRaw = useCallback(async (): Promise<RawStopResp> => {
     getLogger().info("Stopping recording");
@@ -251,6 +302,7 @@ export const DictationSideEffects = () => {
     );
 
     if (!audio) {
+      getLogger().warning("stopRecordingRaw: no audio data received");
       return {
         shouldContinue: false,
         abortMessage: "No audio data received",
@@ -272,6 +324,7 @@ export const DictationSideEffects = () => {
       `Transcription result: rawTranscript=${rawTranscript ? `${rawTranscript.length} chars` : "empty"}, toneId=${toneId ?? "none"}, app=${appTarget?.name ?? "unknown"}`,
     );
     if (!rawTranscript) {
+      getLogger().warning("stopRecordingRaw: no rawTranscript from finalize");
       return {
         shouldContinue: false,
       };
@@ -280,14 +333,23 @@ export const DictationSideEffects = () => {
     const session = sessionRef.current;
     const strategy = strategyRef.current;
     if (!session || !strategy) {
+      getLogger().warning(
+        `stopRecordingRaw: refs cleared (session=${!!session}, strategy=${!!strategy})`,
+      );
       return {
         shouldContinue: false,
       };
     }
 
+    if (getAppState().activeRecordingMode === "agent") {
+      await strategy.setPhase("idle");
+    }
+
     getLogger().info("Post-processing transcript");
     const result = await strategy.handleTranscript({
       rawTranscript,
+      processedTranscript: transcribeResult.processedTranscript,
+      serverPostProcessMetadata: transcribeResult.postProcessMetadata,
       toneId,
       a11yInfo,
       currentApp: appTarget,
@@ -315,6 +377,8 @@ export const DictationSideEffects = () => {
         transcriptionMetadata: transcribeResult.metadata,
         postProcessMetadata,
         warnings: [...transcribeResult.warnings, ...postProcessWarnings],
+        remoteStatus: result.remoteStatus,
+        remoteDeviceId: result.remoteDeviceId,
       });
     }
 
@@ -325,6 +389,13 @@ export const DictationSideEffects = () => {
   }, []);
 
   const stopRecording = useCallback(async () => {
+    if (isStoppingRef.current) {
+      getLogger().info("stopRecording skipped (already stopping)");
+      return;
+    }
+
+    getLogger().info("stopRecording entered");
+    isStoppingRef.current = true;
     setIsStopping(true);
     try {
       const res = await stopRecordingRaw().catch((error) => {
@@ -337,15 +408,20 @@ export const DictationSideEffects = () => {
         };
       });
 
+      getLogger().info(
+        `stopRecording result: shouldContinue=${res.shouldContinue}, abortMessage=${res.abortMessage ?? "none"}`,
+      );
       if (!res.shouldContinue) {
         await abortRecording(
           res.abortMessage ? { body: res.abortMessage } : undefined,
         );
       }
     } finally {
+      hardResetHotkeyState();
+      isStoppingRef.current = false;
       setIsStopping(false);
     }
-  }, [stopRecordingRaw, setIsStopping]);
+  }, [abortRecording, hardResetHotkeyState, stopRecordingRaw, setIsStopping]);
 
   const startRecordingTimers = useCallback(() => {
     clearRecordingTimers();
@@ -456,10 +532,9 @@ export const DictationSideEffects = () => {
         sessionRef.current?.cleanup();
         sessionRef.current = null;
         strategyRef.current = null;
+        clearRecordingState();
 
-        dictationController.reset();
-        agentController.reset();
-
+        hardResetHotkeyState();
         clearRecordingTimers();
         invoke("stop_recording").catch((e) =>
           getLogger().verbose(
@@ -477,7 +552,13 @@ export const DictationSideEffects = () => {
         });
       }
     },
-    [],
+    [
+      abortRecording,
+      clearRecordingState,
+      clearRecordingTimers,
+      hardResetHotkeyState,
+      intl,
+    ],
   );
 
   const startDictationRecording = useCallback(async () => {
@@ -503,6 +584,16 @@ export const DictationSideEffects = () => {
     if (!getIsDictationUnlocked(state)) {
       getLogger().verbose("Dictation not unlocked, ignoring agent start");
       return;
+    }
+
+    if (state.assistantInputMode === "type") {
+      getLogger().info("Switching from type mode back to voice mode");
+      produceAppState((draft) => {
+        draft.assistantInputMode = "voice";
+      });
+      invoke("set_overlay_focusable", { focusable: false }).catch(
+        console.error,
+      );
     }
 
     recordStreak();
@@ -565,13 +656,16 @@ export const DictationSideEffects = () => {
 
   useHotkeyHold({
     actionName: DICTATE_HOTKEY,
-    isDisabled: !isDictationInteractable,
+    isDisabled: !isDictationInteractable || activeRecordingMode === "agent",
     controller: dictationController,
   });
 
   useHotkeyHold({
     actionName: AGENT_DICTATE_HOTKEY,
-    isDisabled: !isDictationInteractable,
+    isDisabled:
+      !isDictationInteractable ||
+      !assistantModeEnabled ||
+      activeRecordingMode === "dictate",
     controller: agentController,
   });
 
@@ -582,7 +676,7 @@ export const DictationSideEffects = () => {
   });
 
   useHotkeyHoldMany({
-    isDisabled: !isDictationInteractable,
+    isDisabled: !isDictationInteractable || activeRecordingMode === "agent",
     actions: additionalLanguageControllers,
   });
 
@@ -590,17 +684,83 @@ export const DictationSideEffects = () => {
     syncHotkeyCombosToNative();
   }, [isActiveSession, isManualStyling]);
 
-  useTauriListen<void>("agent-overlay-close", async () => {
-    const strategy = strategyRef.current;
-    if (strategy) {
-      await strategy.cleanup();
-    }
-    if (strategyRef.current) {
+  const openPillConversation = useCallback(
+    async (conversationId?: string) => {
+      const id = conversationId ?? getAppState().pillConversationId;
+      if (id) {
+        void loadChatMessages(id);
+        browserRouter.navigate(`/dashboard/chats?id=${encodeURIComponent(id)}`);
+      }
+      await surfaceMainWindow();
       await abortRecording();
-    }
+    },
+    [abortRecording],
+  );
+
+  useTauriListen<void>("assistant-mode-close", async () => {
+    await abortRecording();
+  });
+
+  useTauriListen<void>("assistant-enable-type-mode", async () => {
+    getLogger().info("Switching to type mode");
+
+    // Stop the microphone/transcription without tearing down the assistant panel
+    clearRecordingTimers();
+    hardResetHotkeyState();
+    invoke<void>("set_phase", { phase: "idle" }).catch(console.error);
+    invoke("stop_recording").catch((e) =>
+      getLogger().verbose(
+        `stop_recording failed during type mode switch: ${e}`,
+      ),
+    );
+    sessionRef.current?.cleanup();
+    sessionRef.current = null;
+
     produceAppState((draft) => {
-      draft.activeRecordingMode = null;
+      draft.assistantInputMode = "type";
     });
+    await invoke("set_overlay_focusable", { focusable: true });
+  });
+
+  useTauriListen<{ text: string }>(
+    "assistant-typed-message",
+    async (payload) => {
+      const { text } = payload;
+      if (!text.trim()) return;
+
+      let conversationId = getAppState().pillConversationId;
+      if (!conversationId) {
+        const now = new Date().toISOString();
+        const conversation = await createConversation({
+          id: createId(),
+          title: intl.formatMessage({
+            defaultMessage: "New conversation",
+          }),
+          createdAt: now,
+          updatedAt: now,
+        });
+        conversationId = conversation.id;
+        produceAppState((draft) => {
+          draft.pillConversationId = conversation.id;
+        });
+      }
+
+      getLogger().info(`Sending typed message (${text.length} chars)`);
+      sendChatMessage(conversationId, text).catch((error) => {
+        getLogger().error(`Failed to send typed message: ${error}`);
+      });
+    },
+  );
+
+  useTauriListen<{ conversationId: string }>(
+    "open-pill-conversation",
+    (payload) => openPillConversation(payload.conversationId),
+  );
+
+  useHotkeyFire({
+    actionName: OPEN_CHAT_HOTKEY,
+    isDisabled: !isActiveSession,
+    onFire: openPillConversation,
   });
 
   useTauriListen<void>("cancel-dictation", () => {
@@ -619,6 +779,12 @@ export const DictationSideEffects = () => {
     }
   });
 
+  useTauriListen<void>("on-click-agent-talk", () => {
+    if (isDictationInteractable) {
+      debouncedToggle("agent", agentController);
+    }
+  });
+
   useTauriListen<void>("tone-switch-forward", () => {
     switchWritingStyleForward();
   });
@@ -627,11 +793,54 @@ export const DictationSideEffects = () => {
     switchWritingStyleBackward();
   });
 
+  useTauriListen<OverlayResolvePermissionPayload>(
+    "overlay-resolve-permission",
+    (payload) => {
+      if (payload.alwaysAllow) {
+        const permission =
+          getAppState().toolPermissionById[payload.permissionId];
+        if (permission) {
+          setToolAlwaysAllow({
+            toolId: permission.toolId,
+            params: permission.params,
+            allowed: true,
+          });
+        }
+      }
+      resolveToolPermission(payload.permissionId, payload.status);
+    },
+  );
+
   useEffect(() => {
     invoke("set_pill_hover_enabled", { enabled: pillHoverEnabled }).catch(
       console.error,
     );
   }, [pillHoverEnabled]);
+
+  const pillHasContent = useAppStore((state) => {
+    if (!state.pillConversationId) return false;
+    const ids =
+      state.chatMessageIdsByConversationId[state.pillConversationId] ?? [];
+    if (ids.length > 0) return true;
+    return Object.values(state.toolPermissionById).some(
+      (p) =>
+        p.conversationId === state.pillConversationId && p.status === "pending",
+    );
+  });
+
+  useEffect(() => {
+    let size: string;
+    if (activeRecordingMode !== "agent") {
+      size = "dictation";
+    } else if (assistantInputMode === "type") {
+      size = "assistant_typing";
+    } else if (pillHasContent) {
+      size = "assistant_expanded";
+    } else {
+      size = "assistant_compact";
+    }
+    invoke("set_pill_window_size", { size }).catch(console.error);
+  }, [activeRecordingMode, pillHasContent, assistantInputMode]);
 
   return null;
 };
