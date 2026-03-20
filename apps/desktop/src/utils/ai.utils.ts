@@ -79,7 +79,7 @@ export const applyAiPreferences = (
     preferences.postProcessingApiKeyId ?? null;
 
   const agentMode = preferences.agentMode ?? DEFAULT_AGENT_MODE;
-  draft.settings.agentMode.mode = agentMode as any;
+  draft.settings.agentMode.mode = agentMode;
   draft.settings.agentMode.selectedApiKeyId =
     preferences.agentModeApiKeyId ?? null;
   draft.settings.agentMode.openclawGatewayUrl =

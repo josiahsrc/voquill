@@ -79,6 +79,35 @@ pub fn show_overlay_no_focus(window: &WebviewWindow) -> Result<(), String> {
         .map_err(|_| "failed to show overlay on main thread".to_string())?
 }
 
+pub fn set_overlay_focusable(window: &WebviewWindow, focusable: bool) -> Result<(), String> {
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let gtk_window = window_for_handle
+                    .gtk_window()
+                    .map_err(|err| err.to_string())?;
+
+                gtk_window.set_accept_focus(focusable);
+                gtk_window.set_focus_on_map(focusable);
+
+                if focusable {
+                    gtk_window.present();
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    rx.recv()
+        .map_err(|_| "failed to set overlay focusable on main thread".to_string())?
+}
+
 pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
     let (tx, rx) = mpsc::channel();

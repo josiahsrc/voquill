@@ -10,9 +10,11 @@ import type {
   HandleTranscriptResult,
   StrategyValidationError,
 } from "../types/strategy.types";
+import { getIsAssistantModeEnabled } from "../utils/assistant-mode.utils";
 import { createId } from "../utils/id.utils";
 import { getLogger } from "../utils/log.utils";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
+import { getAgentModePrefs } from "../utils/user.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class AgentStrategy extends BaseStrategy {
@@ -24,8 +26,9 @@ export class AgentStrategy extends BaseStrategy {
 
   validateAvailability(): Nullable<StrategyValidationError> {
     const state = getAppState();
-    const agentMode = state.settings.agentMode.mode;
-    if (agentMode === "none") {
+
+    const assistantModeEnabled = getIsAssistantModeEnabled();
+    if (!assistantModeEnabled) {
       return {
         title: getIntl().formatMessage({
           defaultMessage: "Agent mode disabled",
@@ -37,7 +40,8 @@ export class AgentStrategy extends BaseStrategy {
       };
     }
 
-    if (agentMode === "cloud" && getMemberExceedsLimitByState(state)) {
+    const prefs = getAgentModePrefs(getAppState());
+    if (prefs.mode === "cloud" && getMemberExceedsLimitByState(state)) {
       return {
         title: getIntl().formatMessage({
           defaultMessage: "Word limit reached",

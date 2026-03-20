@@ -15,10 +15,8 @@ import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import {
-  getAllowsChangeAgentMode,
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
-  getIsEnterpriseEnabled,
 } from "./enterprise.utils";
 import {
   coerceToDictationLanguage,
@@ -350,27 +348,11 @@ export type AgentModePrefs = GenerativePrefs | OpenClawGenerativePrefs;
 export const getAgentModePrefs = (state: AppState): AgentModePrefs => {
   const agentMode = state.settings.agentMode;
 
-  if (agentMode.mode === "openclaw" && !getIsEnterpriseEnabled()) {
-    const warnings: string[] = [];
-    if (!agentMode.openclawGatewayUrl) {
-      warnings.push("OpenClaw gateway URL is not configured.");
-    }
-    if (!agentMode.openclawToken) {
-      warnings.push("OpenClaw token is not configured.");
-    }
-    return {
-      mode: "openclaw",
-      gatewayUrl: agentMode.openclawGatewayUrl ?? "",
-      token: agentMode.openclawToken ?? "",
-      warnings,
-    };
-  }
-
   return getGenPrefsInternal({
     state,
     config: agentMode as GenerativeConfigInput,
     context: "agent mode",
-    allowChange: getAllowsChangeAgentMode(state),
+    allowChange: !state.isEnterprise,
   });
 };
 

@@ -4,6 +4,11 @@ import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
+import {
+  createConversation,
+  loadChatMessages,
+  sendChatMessage,
+} from "../../actions/chat.actions";
 import { refreshMember } from "../../actions/member.actions";
 import { dismissToast, showToast } from "../../actions/toast.actions";
 import {
@@ -24,6 +29,7 @@ import {
 import { useLocalStorage } from "../../hooks/local-storage.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
+import { browserRouter } from "../../router";
 import { createTranscriptionSession } from "../../sessions";
 import { RecordingMode } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
@@ -53,9 +59,11 @@ import {
   CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
   getAdditionalLanguageEntries,
+  OPEN_CHAT_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
+import { createId } from "../../utils/id.utils";
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
@@ -67,6 +75,7 @@ import {
   getMyPrimaryDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
+import { surfaceMainWindow } from "../../utils/window.utils";
 
 // These limits are here to help prevent people from accidentally leaving their mic on
 const RECORDING_WARNING_DURATION_MS = minutesToMilliseconds(4);
@@ -109,6 +118,7 @@ export const DictationSideEffects = () => {
     (state) => state.activeRecordingMode !== null,
   );
   const activeRecordingMode = useAppStore((state) => state.activeRecordingMode);
+  const assistantInputMode = useAppStore((state) => state.assistantInputMode);
   const additionalLanguageEntries = useAppStore(getAdditionalLanguageEntries);
   const isDictationUnlocked = useAppStore(getIsDictationUnlocked);
   const isDictationInteractable = isDictationUnlocked && !isStopping;
@@ -178,7 +188,9 @@ export const DictationSideEffects = () => {
     produceAppState((draft) => {
       draft.activeRecordingMode = null;
       draft.dictationLanguageOverride = null;
+      draft.assistantInputMode = "voice";
     });
+    invoke("set_overlay_focusable", { focusable: false }).catch(console.error);
   }, []);
 
   const hardResetHotkeyState = useCallback(() => {
@@ -574,6 +586,16 @@ export const DictationSideEffects = () => {
       return;
     }
 
+    if (state.assistantInputMode === "type") {
+      getLogger().info("Switching from type mode back to voice mode");
+      produceAppState((draft) => {
+        draft.assistantInputMode = "voice";
+      });
+      invoke("set_overlay_focusable", { focusable: false }).catch(
+        console.error,
+      );
+    }
+
     recordStreak();
     getLogger().info("Starting agent recording");
     trackAgentStart();
@@ -662,8 +684,83 @@ export const DictationSideEffects = () => {
     syncHotkeyCombosToNative();
   }, [isActiveSession, isManualStyling]);
 
+  const openPillConversation = useCallback(
+    async (conversationId?: string) => {
+      const id = conversationId ?? getAppState().pillConversationId;
+      if (id) {
+        void loadChatMessages(id);
+        browserRouter.navigate(`/dashboard/chats?id=${encodeURIComponent(id)}`);
+      }
+      await surfaceMainWindow();
+      await abortRecording();
+    },
+    [abortRecording],
+  );
+
   useTauriListen<void>("assistant-mode-close", async () => {
     await abortRecording();
+  });
+
+  useTauriListen<void>("assistant-enable-type-mode", async () => {
+    getLogger().info("Switching to type mode");
+
+    // Stop the microphone/transcription without tearing down the assistant panel
+    clearRecordingTimers();
+    hardResetHotkeyState();
+    invoke<void>("set_phase", { phase: "idle" }).catch(console.error);
+    invoke("stop_recording").catch((e) =>
+      getLogger().verbose(
+        `stop_recording failed during type mode switch: ${e}`,
+      ),
+    );
+    sessionRef.current?.cleanup();
+    sessionRef.current = null;
+
+    produceAppState((draft) => {
+      draft.assistantInputMode = "type";
+    });
+    await invoke("set_overlay_focusable", { focusable: true });
+  });
+
+  useTauriListen<{ text: string }>(
+    "assistant-typed-message",
+    async (payload) => {
+      const { text } = payload;
+      if (!text.trim()) return;
+
+      let conversationId = getAppState().pillConversationId;
+      if (!conversationId) {
+        const now = new Date().toISOString();
+        const conversation = await createConversation({
+          id: createId(),
+          title: intl.formatMessage({
+            defaultMessage: "New conversation",
+          }),
+          createdAt: now,
+          updatedAt: now,
+        });
+        conversationId = conversation.id;
+        produceAppState((draft) => {
+          draft.pillConversationId = conversation.id;
+        });
+      }
+
+      getLogger().info(`Sending typed message (${text.length} chars)`);
+      sendChatMessage(conversationId, text).catch((error) => {
+        getLogger().error(`Failed to send typed message: ${error}`);
+      });
+    },
+  );
+
+  useTauriListen<{ conversationId: string }>(
+    "open-pill-conversation",
+    (payload) => openPillConversation(payload.conversationId),
+  );
+
+  useHotkeyFire({
+    actionName: OPEN_CHAT_HOTKEY,
+    isDisabled: !isActiveSession,
+    onFire: openPillConversation,
   });
 
   useTauriListen<void>("cancel-dictation", () => {
@@ -732,14 +829,18 @@ export const DictationSideEffects = () => {
   });
 
   useEffect(() => {
-    const size =
-      activeRecordingMode !== "agent"
-        ? "dictation"
-        : pillHasContent
-          ? "assistant_expanded"
-          : "assistant_compact";
+    let size: string;
+    if (activeRecordingMode !== "agent") {
+      size = "dictation";
+    } else if (assistantInputMode === "type") {
+      size = "assistant_typing";
+    } else if (pillHasContent) {
+      size = "assistant_expanded";
+    } else {
+      size = "assistant_compact";
+    }
     invoke("set_pill_window_size", { size }).catch(console.error);
-  }, [activeRecordingMode, pillHasContent]);
+  }, [activeRecordingMode, pillHasContent, assistantInputMode]);
 
   return null;
 };

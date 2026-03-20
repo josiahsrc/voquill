@@ -15,6 +15,7 @@ export type OverlaySyncPayload = Partial<
     | "activeRecordingMode"
     | "hotkeyById"
     | "pillConversationId"
+    | "assistantInputMode"
     | "chatMessageById"
     | "chatMessageIdsByConversationId"
     | "userPrefs"

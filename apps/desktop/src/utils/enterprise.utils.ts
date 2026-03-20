@@ -126,8 +126,16 @@ export const getAllowsChangeTranscription = (state: AppState): boolean => {
   return state.enterpriseConfig?.allowChangeTranscriptionMethod ?? true;
 };
 
-export const getAllowsChangeAgentMode = (state: AppState): boolean => {
-  return state.enterpriseConfig?.allowChangeAgentMode ?? true;
+export const getEnterpriseAssistantModeEnabled = (state: AppState): boolean => {
+  return state.enterpriseConfig?.assistantModeEnabled ?? false;
+};
+
+export const getEnterprisePowerModeEnabled = (state: AppState): boolean => {
+  return state.enterpriseConfig?.powerModeEnabled ?? false;
+};
+
+export const getAllowsMultiDeviceMode = (state: AppState): boolean => {
+  return state.enterpriseConfig?.allowMultiDeviceMode ?? true;
 };
 
 export const getAllowChangeStylingMode = (state: AppState): boolean => {

@@ -1,21 +1,21 @@
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
-import SettingsPage from "./components/settings/SettingsPage.tsx";
+import AppsPage from "./components/apps/AppsPage.tsx";
+import ChatsPage from "./components/chats/ChatsPage.tsx";
 import { PageLayout } from "./components/common/PageLayout.tsx";
+import DashboardPage from "./components/dashboard/DashboardPage.tsx";
+import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
 import HomePage from "./components/home/HomePage.tsx";
+import LoginPage from "./components/login/LoginPage.tsx";
 import OnboardingPage from "./components/onboarding/OnboardingPage.tsx";
 import ErrorBoundary from "./components/root/ErrorBoundary.tsx";
 import { AppHeader } from "./components/root/Header.tsx";
 import Root from "./components/root/Root.tsx";
 import { Guard } from "./components/routing/Guard.tsx";
 import { Redirect } from "./components/routing/Redirectors.tsx";
-import DashboardPage from "./components/dashboard/DashboardPage.tsx";
-import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.tsx";
-import DictionaryPage from "./components/dictionary/DictionaryPage.tsx";
+import SettingsPage from "./components/settings/SettingsPage.tsx";
 import StylingPage from "./components/styling/StylingPage.tsx";
-import ChatsPage from "./components/chats/ChatsPage.tsx";
-import AppsPage from "./components/apps/AppsPage.tsx";
+import TranscriptionsPage from "./components/transcriptions/TranscriptionsPage.tsx";
 import WelcomePage from "./components/welcome/WelcomePage.tsx";
-import LoginPage from "./components/login/LoginPage.tsx";
 
 const AppWrapper = () => {
   return (
@@ -25,7 +25,7 @@ const AppWrapper = () => {
   );
 };
 
-const router = createBrowserRouter([
+export const browserRouter = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
@@ -122,5 +122,5 @@ const router = createBrowserRouter([
 ]);
 
 export default function Router() {
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={browserRouter} />;
 }

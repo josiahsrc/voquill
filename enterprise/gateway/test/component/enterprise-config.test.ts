@@ -32,7 +32,9 @@ describe("enterprise config", () => {
     expect(data.config.allowPostProcessing).toBe(true);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
-    expect(data.config.allowChangeAgentMode).toBe(false);
+    expect(data.config.assistantModeEnabled).toBe(false);
+    expect(data.config.powerModeEnabled).toBe(false);
+    expect(data.config.allowMultiDeviceMode).toBe(false);
     expect(data.config.allowEmailSignIn).toBe(true);
     expect(data.config.allowDevTools).toBe(false);
     expect(data.config.stylingMode).toBe("manual");
@@ -56,7 +58,9 @@ describe("enterprise config", () => {
           allowPostProcessing: true,
           allowChangePostProcessing: true,
           allowChangeTranscriptionMethod: true,
-          allowChangeAgentMode: true,
+          assistantModeEnabled: true,
+          powerModeEnabled: true,
+          allowMultiDeviceMode: true,
           allowEmailSignIn: false,
           allowDevTools: true,
           stylingMode: "manual",
@@ -69,7 +73,9 @@ describe("enterprise config", () => {
     expect(data.config.allowPostProcessing).toBe(true);
     expect(data.config.allowChangePostProcessing).toBe(true);
     expect(data.config.allowChangeTranscriptionMethod).toBe(true);
-    expect(data.config.allowChangeAgentMode).toBe(true);
+    expect(data.config.assistantModeEnabled).toBe(true);
+    expect(data.config.powerModeEnabled).toBe(true);
+    expect(data.config.allowMultiDeviceMode).toBe(true);
     expect(data.config.allowEmailSignIn).toBe(false);
     expect(data.config.allowDevTools).toBe(true);
     expect(data.config.stylingMode).toBe("manual");
@@ -83,7 +89,9 @@ describe("enterprise config", () => {
           allowPostProcessing: false,
           allowChangePostProcessing: false,
           allowChangeTranscriptionMethod: false,
-          allowChangeAgentMode: false,
+          assistantModeEnabled: false,
+          powerModeEnabled: false,
+          allowMultiDeviceMode: false,
           allowEmailSignIn: true,
           allowDevTools: false,
           stylingMode: "app",
@@ -96,7 +104,9 @@ describe("enterprise config", () => {
     expect(data.config.allowPostProcessing).toBe(false);
     expect(data.config.allowChangePostProcessing).toBe(false);
     expect(data.config.allowChangeTranscriptionMethod).toBe(false);
-    expect(data.config.allowChangeAgentMode).toBe(false);
+    expect(data.config.assistantModeEnabled).toBe(false);
+    expect(data.config.powerModeEnabled).toBe(false);
+    expect(data.config.allowMultiDeviceMode).toBe(false);
     expect(data.config.allowEmailSignIn).toBe(true);
     expect(data.config.allowDevTools).toBe(false);
     expect(data.config.stylingMode).toBe("app");
@@ -110,7 +120,9 @@ describe("enterprise config", () => {
           allowPostProcessing: true,
           allowChangePostProcessing: false,
           allowChangeTranscriptionMethod: false,
-          allowChangeAgentMode: false,
+          assistantModeEnabled: false,
+          powerModeEnabled: false,
+          allowMultiDeviceMode: false,
           allowEmailSignIn: true,
           allowDevTools: true,
           stylingMode: "manual",
@@ -146,7 +158,9 @@ describe("enterprise config", () => {
             allowPostProcessing: true,
             allowChangePostProcessing: true,
             allowChangeTranscriptionMethod: true,
-            allowChangeAgentMode: true,
+            assistantModeEnabled: true,
+            powerModeEnabled: false,
+            allowMultiDeviceMode: false,
             allowEmailSignIn: true,
             allowDevTools: false,
             stylingMode: "manual",

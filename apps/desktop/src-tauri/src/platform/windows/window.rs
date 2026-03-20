@@ -166,6 +166,53 @@ pub fn set_overlay_click_through(
         .map_err(|_| "failed to set overlay click through on main thread".to_string())?
 }
 
+pub fn set_overlay_focusable(window: &WebviewWindow, focusable: bool) -> Result<(), String> {
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let hwnd: HWND = window_for_handle.hwnd().map_err(|err| err.to_string())?;
+
+                unsafe {
+                    let current_style = GetWindowLongW(hwnd, GWL_EXSTYLE);
+
+                    let new_style = if focusable {
+                        current_style & !(WS_EX_NOACTIVATE.0 as i32)
+                    } else {
+                        current_style | WS_EX_NOACTIVATE.0 as i32
+                    };
+
+                    if new_style != current_style {
+                        SetWindowLongW(hwnd, GWL_EXSTYLE, new_style);
+                        let _ = SetWindowPos(
+                            hwnd,
+                            Some(HWND_TOPMOST),
+                            0,
+                            0,
+                            0,
+                            0,
+                            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED,
+                        );
+                    }
+
+                    if focusable {
+                        let _ = SetForegroundWindow(hwnd);
+                    }
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    rx.recv()
+        .map_err(|_| "failed to set overlay focusable on main thread".to_string())?
+}
+
 pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
     let (tx, rx) = mpsc::channel();
