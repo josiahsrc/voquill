@@ -3,19 +3,36 @@ use cocoa::appkit::{
     NSApp, NSApplication, NSMainMenuWindowLevel, NSWindow, NSWindowCollectionBehavior,
 };
 use cocoa::base::{id, nil, BOOL, NO as COCOA_NO, YES};
-use objc::runtime::{class_getInstanceMethod, method_setImplementation, Object, Sel};
-use std::sync::atomic::{AtomicBool, Ordering};
+use objc::runtime::{
+    class_getInstanceMethod, method_getImplementation, method_setImplementation, Imp, Object, Sel,
+};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
 
 static OVERLAY_KEY_WINDOW_ENABLED: AtomicBool = AtomicBool::new(false);
+static OVERLAY_WINDOW_PTR: AtomicUsize = AtomicUsize::new(0);
 static SWIZZLED: AtomicBool = AtomicBool::new(false);
+static mut ORIGINAL_CAN_BECOME_KEY: Option<Imp> = None;
 
-unsafe extern "C" fn overlay_can_become_key(_self: &Object, _sel: Sel) -> BOOL {
-    if OVERLAY_KEY_WINDOW_ENABLED.load(Ordering::Relaxed) {
-        YES
+unsafe extern "C" fn overlay_can_become_key(self_: &Object, sel: Sel) -> BOOL {
+    let self_ptr = self_ as *const Object as usize;
+    if self_ptr == OVERLAY_WINDOW_PTR.load(Ordering::Relaxed) {
+        // This is the overlay window — use our toggle
+        if OVERLAY_KEY_WINDOW_ENABLED.load(Ordering::Relaxed) {
+            YES
+        } else {
+            COCOA_NO
+        }
     } else {
-        COCOA_NO
+        // Any other window — call the original implementation
+        match ORIGINAL_CAN_BECOME_KEY {
+            Some(original) => {
+                let f: unsafe extern "C" fn(&Object, Sel) -> BOOL = std::mem::transmute(original);
+                f(self_, sel)
+            }
+            None => YES,
+        }
     }
 }
 
@@ -158,15 +175,23 @@ pub fn set_overlay_focusable(window: &WebviewWindow, focusable: bool) -> Result<
 
                     let ns_window = ns_window_ptr as id;
 
-                    // On first call, swizzle canBecomeKeyWindow on the window's class
-                    // so we can toggle it at runtime via the atomic flag.
+                    // Store the overlay window pointer so the swizzled method
+                    // can distinguish it from other windows (e.g. the main window).
+                    OVERLAY_WINDOW_PTR
+                        .store(ns_window as *const _ as usize, Ordering::Relaxed);
+
+                    // On first call, swizzle canBecomeKeyWindow on the window's class.
+                    // The replacement checks the window identity so only the overlay
+                    // is affected; all other windows call the original implementation.
                     if !SWIZZLED.swap(true, Ordering::SeqCst) {
                         let cls: *const objc::runtime::Class =
                             msg_send![ns_window, class];
                         let sel = sel!(canBecomeKeyWindow);
                         let method = class_getInstanceMethod(cls, sel);
                         if !method.is_null() {
-                            let imp: objc::runtime::Imp = std::mem::transmute(
+                            ORIGINAL_CAN_BECOME_KEY =
+                                Some(method_getImplementation(method));
+                            let imp: Imp = std::mem::transmute(
                                 overlay_can_become_key
                                     as unsafe extern "C" fn(&Object, Sel) -> BOOL,
                             );
