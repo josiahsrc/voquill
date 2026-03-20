@@ -147,27 +147,34 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
-                crate::overlay::ensure_pill_overlay_window(app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+                let use_native_overlays = crate::overlay::should_use_native_overlays();
+                if use_native_overlays {
+                    crate::overlay::try_create_native_overlays(app_handle);
+                } else {
+                    crate::overlay::ensure_pill_overlay_window(app_handle)
+                        .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-                crate::overlay::ensure_toast_overlay_window(app_handle)
-                    .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+                    crate::overlay::ensure_toast_overlay_window(app_handle)
+                        .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
 
-                if let Some(pill_window) =
-                    app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
-                {
-                    let _ = crate::platform::window::show_overlay_no_focus(&pill_window);
-                    let _ = crate::platform::window::set_overlay_click_through(&pill_window, true);
+                    if let Some(pill_window) =
+                        app_handle.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
+                    {
+                        let _ = crate::platform::window::show_overlay_no_focus(&pill_window);
+                        let _ =
+                            crate::platform::window::set_overlay_click_through(&pill_window, true);
+                    }
+
+                    if let Some(toast_window) =
+                        app_handle.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
+                    {
+                        let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
+                        let _ =
+                            crate::platform::window::set_overlay_click_through(&toast_window, true);
+                    }
+
+                    crate::overlay::start_cursor_follower(app_handle.clone());
                 }
-
-                if let Some(toast_window) =
-                    app_handle.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
-                {
-                    let _ = crate::platform::window::show_overlay_no_focus(&toast_window);
-                    let _ = crate::platform::window::set_overlay_click_through(&toast_window, true);
-                }
-
-                crate::overlay::start_cursor_follower(app_handle.clone());
             }
 
             if crate::platform::get_hotkey_strategy() == "bridge" {

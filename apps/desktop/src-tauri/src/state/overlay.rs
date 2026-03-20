@@ -1,4 +1,5 @@
 use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::Mutex;
 
 use crate::domain::{OverlayPhase, PillWindowSize};
 
@@ -15,6 +16,7 @@ pub struct OverlayState {
     phase: AtomicU8,
     pill_hover_enabled: AtomicU8,
     pill_window_size: AtomicU8,
+    audio_levels: Mutex<Vec<f32>>,
 }
 
 impl Default for OverlayState {
@@ -29,6 +31,21 @@ impl OverlayState {
             phase: AtomicU8::new(PHASE_IDLE),
             pill_hover_enabled: AtomicU8::new(0),
             pill_window_size: AtomicU8::new(SIZE_DICTATION),
+            audio_levels: Mutex::new(Vec::new()),
+        }
+    }
+
+    pub fn set_audio_levels(&self, levels: Vec<f32>) {
+        if let Ok(mut guard) = self.audio_levels.lock() {
+            *guard = levels;
+        }
+    }
+
+    pub fn take_audio_levels(&self) -> Vec<f32> {
+        if let Ok(mut guard) = self.audio_levels.lock() {
+            std::mem::take(&mut *guard)
+        } else {
+            Vec::new()
         }
     }
 

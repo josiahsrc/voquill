@@ -71,6 +71,13 @@ pub use macos::get_hotkey_strategy;
 #[cfg(target_os = "windows")]
 pub use windows::get_hotkey_strategy;
 
+#[cfg(target_os = "linux")]
+pub use linux::overlay;
+#[cfg(target_os = "macos")]
+pub use macos::overlay;
+#[cfg(target_os = "windows")]
+pub use windows::overlay;
+
 pub mod app_info;
 
 pub mod audio;

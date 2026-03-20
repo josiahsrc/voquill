@@ -20,6 +20,7 @@ sudo apt-get install -y \
   libasound2-dev \
   libunwind-dev \
   libxdo-dev \
+  libgtk-layer-shell-dev \
   patchelf \
   libgstreamer1.0-dev \
   libgstreamer-plugins-base1.0-dev \
