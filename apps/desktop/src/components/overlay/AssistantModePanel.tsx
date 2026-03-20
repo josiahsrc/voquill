@@ -13,6 +13,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { StreamingMessageState } from "../../state/app.state";
 import { useAppStore } from "../../store";
 import type {
@@ -63,17 +65,6 @@ const thinkingShimmer = keyframes`
   }
 `;
 
-const textFadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(0.2em);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
-
 const getLatestMessageByRole = (
   messages: ChatMessage[],
   role: ChatMessage["role"],
@@ -108,41 +99,57 @@ const formatUserPromptPreview = (text: string): UserPromptPreview | null => {
   };
 };
 
-const AnimatedText = ({ text, color }: { text: string; color: string }) => {
-  const segments = text.split(/(\s+)/);
-
+const MarkdownContent = ({ text, color }: { text: string; color: string }) => {
   return (
-    <Typography
-      component="div"
+    <Box
       sx={{
         color,
         fontSize: 14,
         lineHeight: 1.45,
-        whiteSpace: "pre-wrap",
         wordBreak: "break-word",
+        "& p": { m: 0 },
+        "& p + p": { mt: 1 },
+        "& pre": {
+          my: 1,
+          p: 1,
+          borderRadius: 0.5,
+          bgcolor: "rgba(255,255,255,0.06)",
+          overflow: "auto",
+        },
+        "& code": {
+          fontSize: "0.85em",
+        },
+        "& ul, & ol": { my: 0.5, pl: 2.5 },
+        "& table": {
+          borderCollapse: "collapse",
+          my: 1,
+          width: "100%",
+        },
+        "& th, & td": {
+          border: "1px solid rgba(255,255,255,0.15)",
+          px: 1,
+          py: 0.5,
+          textAlign: "left",
+        },
+        "& th": {
+          bgcolor: "rgba(255,255,255,0.06)",
+          fontWeight: 600,
+        },
+        "& a": {
+          color: "inherit",
+          textDecoration: "underline",
+        },
+        "& blockquote": {
+          my: 0.5,
+          mx: 0,
+          pl: 1.5,
+          borderLeft: "2px solid rgba(255,255,255,0.25)",
+          opacity: 0.8,
+        },
       }}
     >
-      {segments.map((segment, index) =>
-        /\s+/.test(segment) ? (
-          <Box component="span" key={`space-${index}`}>
-            {segment}
-          </Box>
-        ) : (
-          <Box
-            component="span"
-            key={`word-${index}-${segment}`}
-            sx={{
-              display: "inline-block",
-              opacity: 0,
-              animation: `${textFadeIn} 380ms ease-out forwards`,
-              animationDelay: `${Math.min(index, 18) * 26}ms`,
-            }}
-          >
-            {segment}
-          </Box>
-        ),
-      )}
-    </Typography>
+      <Markdown remarkPlugins={[remarkGfm]}>{text}</Markdown>
+    </Box>
   );
 };
 
@@ -189,7 +196,7 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
       ) : null}
 
       {message.content ? (
-        <AnimatedText
+        <MarkdownContent
           text={message.content}
           color={
             isError

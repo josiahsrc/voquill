@@ -4,6 +4,7 @@ import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
+import { loadChatMessages } from "../../actions/chat.actions";
 import { refreshMember } from "../../actions/member.actions";
 import { dismissToast, showToast } from "../../actions/toast.actions";
 import {
@@ -24,6 +25,7 @@ import {
 import { useLocalStorage } from "../../hooks/local-storage.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
+import { browserRouter } from "../../router";
 import { createTranscriptionSession } from "../../sessions";
 import { RecordingMode } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
@@ -53,6 +55,7 @@ import {
   CANCEL_TRANSCRIPTION_HOTKEY,
   DICTATE_HOTKEY,
   getAdditionalLanguageEntries,
+  OPEN_CHAT_HOTKEY,
   SWITCH_WRITING_STYLE_HOTKEY,
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
@@ -67,6 +70,7 @@ import {
   getMyPrimaryDictationLanguage,
   getTranscriptionPrefs,
 } from "../../utils/user.utils";
+import { surfaceMainWindow } from "../../utils/window.utils";
 
 // These limits are here to help prevent people from accidentally leaving their mic on
 const RECORDING_WARNING_DURATION_MS = minutesToMilliseconds(4);
@@ -662,8 +666,32 @@ export const DictationSideEffects = () => {
     syncHotkeyCombosToNative();
   }, [isActiveSession, isManualStyling]);
 
+  const openPillConversation = useCallback(
+    async (conversationId?: string) => {
+      const id = conversationId ?? getAppState().pillConversationId;
+      if (id) {
+        void loadChatMessages(id);
+        browserRouter.navigate(`/dashboard/chats?id=${encodeURIComponent(id)}`);
+      }
+      await surfaceMainWindow();
+      await abortRecording();
+    },
+    [abortRecording],
+  );
+
   useTauriListen<void>("assistant-mode-close", async () => {
     await abortRecording();
+  });
+
+  useTauriListen<{ conversationId: string }>(
+    "open-pill-conversation",
+    (payload) => openPillConversation(payload.conversationId),
+  );
+
+  useHotkeyFire({
+    actionName: OPEN_CHAT_HOTKEY,
+    isDisabled: !isActiveSession,
+    onFire: openPillConversation,
   });
 
   useTauriListen<void>("cancel-dictation", () => {
