@@ -85,6 +85,9 @@ export const PillOverlayRoot = () => {
     return getToneById(state, toneId)?.name ?? "-";
   });
 
+  const assistantInputMode = useAppStore((state) => state.assistantInputMode);
+  const isTypingMode = assistantInputMode === "type";
+
   const isIdle = phase === "idle";
   const isListening = phase === "recording";
   const isProcessing = phase === "loading";
@@ -340,6 +343,7 @@ export const PillOverlayRoot = () => {
             open={isAssistantSessionActive}
             phase={phase}
             messages={assistantMessages}
+            isTyping={isAssistantSessionActive && isTypingMode}
           />
 
           <Box
@@ -355,6 +359,12 @@ export const PillOverlayRoot = () => {
                 : "translateY(0)",
               width: isExpanded ? EXPANDED_PILL_WIDTH : MIN_PILL_WIDTH,
               height: isExpanded ? EXPANDED_PILL_HEIGHT : MIN_PILL_HEIGHT,
+              ...(isTypingMode && {
+                opacity: 0,
+                pointerEvents: "none",
+                height: 0,
+                overflow: "hidden",
+              }),
               borderRadius: isExpanded ? theme.spacing(2) : theme.spacing(0.75),
               backgroundColor: alpha(
                 theme.palette.common.black,

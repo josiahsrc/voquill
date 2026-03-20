@@ -9,6 +9,7 @@ pub enum PillWindowSize {
     Dictation,
     AssistantCompact,
     AssistantExpanded,
+    AssistantTyping,
 }
 
 #[derive(Clone, Debug, Serialize)]

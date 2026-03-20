@@ -2,9 +2,22 @@ use crate::platform::macos::dock;
 use cocoa::appkit::{
     NSApp, NSApplication, NSMainMenuWindowLevel, NSWindow, NSWindowCollectionBehavior,
 };
-use cocoa::base::{id, nil, NO as COCOA_NO, YES};
+use cocoa::base::{id, nil, BOOL, NO as COCOA_NO, YES};
+use objc::runtime::{class_getInstanceMethod, method_setImplementation, Object, Sel};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use tauri::WebviewWindow;
+
+static OVERLAY_KEY_WINDOW_ENABLED: AtomicBool = AtomicBool::new(false);
+static SWIZZLED: AtomicBool = AtomicBool::new(false);
+
+unsafe extern "C" fn overlay_can_become_key(_self: &Object, _sel: Sel) -> BOOL {
+    if OVERLAY_KEY_WINDOW_ENABLED.load(Ordering::Relaxed) {
+        YES
+    } else {
+        COCOA_NO
+    }
+}
 
 pub fn surface_main_window(window: &WebviewWindow) -> Result<(), String> {
     let window_for_handle = window.clone();
@@ -127,6 +140,64 @@ pub fn configure_overlay_non_activating(window: &WebviewWindow) -> Result<(), St
 
     rx.recv()
         .map_err(|_| "failed to configure overlay on main thread".to_string())?
+}
+
+pub fn set_overlay_focusable(window: &WebviewWindow, focusable: bool) -> Result<(), String> {
+    let window_for_handle = window.clone();
+    let (tx, rx) = mpsc::channel();
+
+    window
+        .run_on_main_thread(move || {
+            let result = (|| -> Result<(), String> {
+                let ns_window_ptr = window_for_handle
+                    .ns_window()
+                    .map_err(|err| err.to_string())?;
+
+                unsafe {
+                    use objc::{msg_send, sel, sel_impl};
+
+                    let ns_window = ns_window_ptr as id;
+
+                    // On first call, swizzle canBecomeKeyWindow on the window's class
+                    // so we can toggle it at runtime via the atomic flag.
+                    if !SWIZZLED.swap(true, Ordering::SeqCst) {
+                        let cls: *const objc::runtime::Class =
+                            msg_send![ns_window, class];
+                        let sel = sel!(canBecomeKeyWindow);
+                        let method = class_getInstanceMethod(cls, sel);
+                        if !method.is_null() {
+                            let imp: objc::runtime::Imp = std::mem::transmute(
+                                overlay_can_become_key
+                                    as unsafe extern "C" fn(&Object, Sel) -> BOOL,
+                            );
+                            method_setImplementation(method as *mut _, imp);
+                        }
+                    }
+
+                    OVERLAY_KEY_WINDOW_ENABLED.store(focusable, Ordering::Relaxed);
+
+                    if focusable {
+                        let _: () = msg_send![ns_window, _setPreventsActivation: COCOA_NO];
+
+                        let ns_app = NSApp();
+                        if ns_app != nil {
+                            NSApplication::activateIgnoringOtherApps_(ns_app, YES);
+                        }
+                        ns_window.makeKeyWindow();
+                    } else {
+                        let _: () = msg_send![ns_window, _setPreventsActivation: YES];
+                    }
+                }
+
+                Ok(())
+            })();
+
+            let _ = tx.send(result);
+        })
+        .map_err(|err| err.to_string())?;
+
+    rx.recv()
+        .map_err(|_| "failed to set overlay focusable on main thread".to_string())?
 }
 
 pub fn set_overlay_click_through(
