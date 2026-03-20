@@ -703,6 +703,19 @@ export const DictationSideEffects = () => {
 
   useTauriListen<void>("assistant-enable-type-mode", async () => {
     getLogger().info("Switching to type mode");
+
+    // Stop the microphone/transcription without tearing down the assistant panel
+    clearRecordingTimers();
+    hardResetHotkeyState();
+    invoke<void>("set_phase", { phase: "idle" }).catch(console.error);
+    invoke("stop_recording").catch((e) =>
+      getLogger().verbose(
+        `stop_recording failed during type mode switch: ${e}`,
+      ),
+    );
+    sessionRef.current?.cleanup();
+    sessionRef.current = null;
+
     produceAppState((draft) => {
       draft.assistantInputMode = "type";
     });
