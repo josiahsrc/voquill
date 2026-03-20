@@ -33,8 +33,6 @@ export const AIAgentModeDialog = () => {
     POWER_MODE_ENABLED_KEY,
     false,
   );
-  const isEnterprise = useAppStore((state) => state.isEnterprise);
-
   const handleClose = () => {
     produceAppState((draft) => {
       draft.settings.agentModeDialogOpen = false;
@@ -120,7 +118,6 @@ export const AIAgentModeDialog = () => {
             </Typography>
 
             <AIAgentModeConfiguration />
-
             <Divider flexItem />
 
             <HotkeySetting
@@ -153,27 +150,25 @@ export const AIAgentModeDialog = () => {
               />
             </Stack>
 
-            {!isEnterprise && (
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="flex-start"
-                sx={{ width: "100%" }}
-              >
-                <Stack spacing={0.5} flex={1}>
-                  <Typography variant="body1" fontWeight="bold">
-                    <FormattedMessage defaultMessage="Power mode" />
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    <FormattedMessage defaultMessage="Allow the assistant to run terminal commands on your behalf. This is a temporary guardrail that will be removed in a future update. Restart Voquill to apply changes." />
-                  </Typography>
-                </Stack>
-                <Switch
-                  checked={powerModeEnabled}
-                  onChange={handlePowerModeToggle}
-                />
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="flex-start"
+              sx={{ width: "100%" }}
+            >
+              <Stack spacing={0.5} flex={1}>
+                <Typography variant="body1" fontWeight="bold">
+                  <FormattedMessage defaultMessage="Power mode" />
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <FormattedMessage defaultMessage="Allow the assistant to run terminal commands on your behalf. This is a temporary guardrail that will be removed in a future update. Restart Voquill to apply changes." />
+                </Typography>
               </Stack>
-            )}
+              <Switch
+                checked={powerModeEnabled}
+                onChange={handlePowerModeToggle}
+              />
+            </Stack>
           </Stack>
         </DialogContent>
         <DialogActions>

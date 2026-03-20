@@ -11,7 +11,9 @@ export type EnterpriseConfig = {
   allowPostProcessing: boolean;
   allowChangePostProcessing: boolean;
   allowChangeTranscriptionMethod: boolean;
-  allowChangeAgentMode: boolean;
+  assistantModeEnabled: boolean;
+  powerModeEnabled: boolean;
+  allowMultiDeviceMode: boolean;
   allowEmailSignIn: boolean;
   allowDevTools: boolean;
   stylingMode: EnterpriseStylingMode;
@@ -29,7 +31,9 @@ export const EnterpriseConfigZod = z
     allowPostProcessing: z.boolean(),
     allowChangePostProcessing: z.boolean(),
     allowChangeTranscriptionMethod: z.boolean(),
-    allowChangeAgentMode: z.boolean(),
+    assistantModeEnabled: z.boolean(),
+    powerModeEnabled: z.boolean(),
+    allowMultiDeviceMode: z.boolean(),
     allowEmailSignIn: z.boolean(),
     allowDevTools: z.boolean(),
     stylingMode: EnterpriseStylingModeZod,

@@ -1,17 +1,26 @@
 import { BuildRounded } from "@mui/icons-material";
-import { Box, Stack } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
+import { keyframes, useTheme } from "@mui/material/styles";
 import Markdown from "react-markdown";
+import { FormattedMessage } from "react-intl";
 import remarkGfm from "remark-gfm";
 import { useAppStore } from "../../store";
 import { OverflowTypography } from "../common/OverflowTypography";
 import { AgentActivity } from "./AgentActivity";
+
+const thinkingShimmer = keyframes`
+  0% { background-position: 200% 50%; }
+  100% { background-position: -200% 50%; }
+`;
 
 type ChatMessageBubbleProps = {
   id: string;
 };
 
 export const ChatMessageBubble = ({ id }: ChatMessageBubbleProps) => {
+  const theme = useTheme();
   const message = useAppStore((s) => s.chatMessageById[id]);
+  const isStreaming = useAppStore((s) => !!s.streamingMessageById[id]);
   if (!message) {
     return null;
   }
@@ -27,7 +36,8 @@ export const ChatMessageBubble = ({ id }: ChatMessageBubbleProps) => {
     );
   }
 
-  if (message.role === "assistant" && !message.content?.trim()) return null;
+  const isEmpty = !message.content?.trim();
+  if (message.role === "assistant" && isEmpty && !isStreaming) return null;
 
   const isMe = message.role === "user";
 
@@ -75,7 +85,25 @@ export const ChatMessageBubble = ({ id }: ChatMessageBubbleProps) => {
             fontSize: "0.875rem",
           }}
         >
-          <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+          {isEmpty ? (
+            <Typography
+              variant="body2"
+              sx={{
+                width: "fit-content",
+                fontWeight: 500,
+                color: "transparent",
+                backgroundImage: `linear-gradient(90deg, rgb(${theme.vars?.palette.text.primaryChannel} / 0.35) 0%, rgb(${theme.vars?.palette.text.primaryChannel} / 0.9) 50%, rgb(${theme.vars?.palette.text.primaryChannel} / 0.35) 100%)`,
+                backgroundSize: "200% 100%",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                animation: `${thinkingShimmer} 1.6s linear infinite`,
+              }}
+            >
+              <FormattedMessage defaultMessage="Thinking" />
+            </Typography>
+          ) : (
+            <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+          )}
         </Box>
       </Stack>
     </Stack>

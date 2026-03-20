@@ -18,6 +18,7 @@ import { ModelAutocomplete } from "../common/ModelAutocomplete";
 
 const PROVIDER_OPTIONS = [
   { value: "ollama", label: "Ollama" },
+  { value: "openai", label: "OpenAI" },
   { value: "groq", label: "Groq" },
   { value: "synthetic-ai", label: "Synthetic AI" },
   { value: "open-router", label: "OpenRouter" },

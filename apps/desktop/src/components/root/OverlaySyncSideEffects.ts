@@ -16,6 +16,7 @@ const buildFullSyncPayload = (state: AppState): OverlaySyncPayload => ({
   activeRecordingMode: state.activeRecordingMode,
   hotkeyById: state.hotkeyById,
   pillConversationId: state.pillConversationId,
+  assistantInputMode: state.assistantInputMode,
   chatMessageById: state.chatMessageById,
   chatMessageIdsByConversationId: state.chatMessageIdsByConversationId,
   userPrefs: state.userPrefs,
@@ -80,6 +81,11 @@ export const OverlaySyncSideEffects = () => {
     OVERLAY_TARGETS,
     (s) => s.pillConversationId,
     (pillConversationId) => ({ pillConversationId }),
+  );
+  useOverlaySync(
+    OVERLAY_TARGETS,
+    (s) => s.assistantInputMode,
+    (assistantInputMode) => ({ assistantInputMode }),
   );
   useOverlaySync(
     OVERLAY_TARGETS,

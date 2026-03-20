@@ -219,6 +219,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::set_toast_overlay_click_through,
             crate::commands::set_pill_window_size,
             crate::commands::restore_overlay_focus,
+            crate::commands::set_overlay_focusable,
             crate::commands::paste,
             crate::commands::transcription_create,
             crate::commands::transcription_list,

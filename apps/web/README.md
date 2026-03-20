@@ -1,6 +1,6 @@
 ## Voquill Web
 
-Static marketing site for Voquill built with Vite, React, and TypeScript.
+Static marketing site for Voquill built with Vite, React, and TypeScript
 
 ### Available scripts
 

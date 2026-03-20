@@ -9,6 +9,7 @@ export const DICTATE_HOTKEY = "dictate";
 export const AGENT_DICTATE_HOTKEY = "agent-dictate";
 export const SWITCH_WRITING_STYLE_HOTKEY = "switch-writing-style";
 export const CANCEL_TRANSCRIPTION_HOTKEY = "cancel-transcription";
+export const OPEN_CHAT_HOTKEY = "open-chat";
 export const ADDITIONAL_LANGUAGE_HOTKEY_PREFIX = "additional-language:";
 
 type CompositorBinding = {

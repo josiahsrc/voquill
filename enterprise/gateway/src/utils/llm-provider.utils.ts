@@ -2,6 +2,7 @@ import type { BaseLlmApi } from "../apis/llm.api";
 import {
   GroqLlmApi,
   OllamaLlmApi,
+  OpenAILlmApi,
   OpenRouterLlmApi,
   SyntheticAiLlmApi,
 } from "../apis/llm.api";
@@ -15,6 +16,8 @@ export function createLlmApi(row: LlmProviderRow): BaseLlmApi {
     : "";
 
   switch (row.provider) {
+    case "openai":
+      return new OpenAILlmApi({ apiKey, model: row.model });
     case "groq":
       return new GroqLlmApi({ apiKey, model: row.model });
     case "synthetic-ai":

@@ -1,16 +1,21 @@
 import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
 import CloseIcon from "@mui/icons-material/Close";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
-import { Box, IconButton, Typography } from "@mui/material";
+import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
+import SendRoundedIcon from "@mui/icons-material/SendRounded";
+import { Box, IconButton, InputBase, Typography } from "@mui/material";
 import { alpha, keyframes, useTheme } from "@mui/material/styles";
 import type {
   ChatMessage,
   ToolPermission,
   ToolPermissionResolution,
 } from "@repo/types";
+import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FormattedMessage } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { StreamingMessageState } from "../../state/app.state";
 import { useAppStore } from "../../store";
 import type {
@@ -23,6 +28,8 @@ const ASSISTANT_PANEL_COMPACT_WIDTH = 424;
 const ASSISTANT_PANEL_COMPACT_HEIGHT = 120;
 const ASSISTANT_PANEL_EXPANDED_WIDTH = 572;
 const ASSISTANT_PANEL_EXPANDED_HEIGHT = 258;
+const ASSISTANT_PANEL_TYPING_HEIGHT = 338;
+const ASSISTANT_PANEL_INPUT_HEIGHT = 48;
 const ASSISTANT_PANEL_HORIZONTAL_INSET = 14;
 const ASSISTANT_PANEL_TOP_INSET = 14;
 const ASSISTANT_PANEL_BOTTOM_INSET = 0;
@@ -41,6 +48,7 @@ type AssistantModePanelProps = {
   phase: OverlayPhase;
   messages: ChatMessage[];
   open: boolean;
+  isTyping: boolean;
 };
 
 const USER_PROMPT_MAX_WIDTH = "66%";
@@ -58,17 +66,6 @@ const thinkingShimmer = keyframes`
   }
   100% {
     background-position: -200% 50%;
-  }
-`;
-
-const textFadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(0.2em);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 `;
 
@@ -106,41 +103,57 @@ const formatUserPromptPreview = (text: string): UserPromptPreview | null => {
   };
 };
 
-const AnimatedText = ({ text, color }: { text: string; color: string }) => {
-  const segments = text.split(/(\s+)/);
-
+const MarkdownContent = ({ text, color }: { text: string; color: string }) => {
   return (
-    <Typography
-      component="div"
+    <Box
       sx={{
         color,
         fontSize: 14,
         lineHeight: 1.45,
-        whiteSpace: "pre-wrap",
         wordBreak: "break-word",
+        "& p": { m: 0 },
+        "& p + p": { mt: 1 },
+        "& pre": {
+          my: 1,
+          p: 1,
+          borderRadius: 0.5,
+          bgcolor: "rgba(255,255,255,0.06)",
+          overflow: "auto",
+        },
+        "& code": {
+          fontSize: "0.85em",
+        },
+        "& ul, & ol": { my: 0.5, pl: 2.5 },
+        "& table": {
+          borderCollapse: "collapse",
+          my: 1,
+          width: "100%",
+        },
+        "& th, & td": {
+          border: "1px solid rgba(255,255,255,0.15)",
+          px: 1,
+          py: 0.5,
+          textAlign: "left",
+        },
+        "& th": {
+          bgcolor: "rgba(255,255,255,0.06)",
+          fontWeight: 600,
+        },
+        "& a": {
+          color: "inherit",
+          textDecoration: "underline",
+        },
+        "& blockquote": {
+          my: 0.5,
+          mx: 0,
+          pl: 1.5,
+          borderLeft: "2px solid rgba(255,255,255,0.25)",
+          opacity: 0.8,
+        },
       }}
     >
-      {segments.map((segment, index) =>
-        /\s+/.test(segment) ? (
-          <Box component="span" key={`space-${index}`}>
-            {segment}
-          </Box>
-        ) : (
-          <Box
-            component="span"
-            key={`word-${index}-${segment}`}
-            sx={{
-              display: "inline-block",
-              opacity: 0,
-              animation: `${textFadeIn} 380ms ease-out forwards`,
-              animationDelay: `${Math.min(index, 18) * 26}ms`,
-            }}
-          >
-            {segment}
-          </Box>
-        ),
-      )}
-    </Typography>
+      <Markdown remarkPlugins={[remarkGfm]}>{text}</Markdown>
+    </Box>
   );
 };
 
@@ -187,7 +200,7 @@ const TranscriptEntry = ({ message }: TranscriptEntryProps) => {
       ) : null}
 
       {message.content ? (
-        <AnimatedText
+        <MarkdownContent
           text={message.content}
           color={
             isError
@@ -344,21 +357,27 @@ export const AssistantModePanel = ({
   phase,
   messages,
   open,
+  isTyping,
 }: AssistantModePanelProps) => {
   const theme = useTheme();
+  const intl = useIntl();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [inputValue, setInputValue] = useState("");
   const latestUserMessage = getLatestMessageByRole(messages, "user");
   const userPromptPreview = latestUserMessage?.content
     ? formatUserPromptPreview(latestUserMessage.content)
     : null;
   const userPromptColor = alpha(theme.palette.common.white, 0.5);
-  const assistantMessages = messages.filter((message) => {
-    if (message.role === "user") return false;
-    if (message.role === "assistant" && !message.content?.trim()) return false;
-    return true;
-  });
   const pillConversationId = useAppStore((s) => s.pillConversationId);
   const streamingMessageById = useAppStore((s) => s.streamingMessageById);
+  const assistantMessages = messages.filter((message) => {
+    if (message.role === "user") return false;
+    if (message.role === "assistant" && !message.content?.trim()) {
+      return !!streamingMessageById[message.id];
+    }
+    return true;
+  });
   const toolPermissions = useAppStore((s) => s.toolPermissionById);
   const pendingPermissions = useMemo(
     () =>
@@ -370,9 +389,25 @@ export const AssistantModePanel = ({
         : [],
     [toolPermissions, pillConversationId],
   );
-  const isCompact = messages.length === 0 && pendingPermissions.length === 0;
+  const isCompact =
+    !isTyping && messages.length === 0 && pendingPermissions.length === 0;
   const shouldStickRef = useRef(true);
   const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSendTypedMessage = () => {
+    const text = inputValue.trim();
+    if (!text) return;
+    setInputValue("");
+    emitTo("main", "assistant-typed-message", { text }).catch(console.error);
+  };
+
+  useEffect(() => {
+    if (isTyping && open) {
+      // Brief delay to ensure the window has become focusable via the Rust call
+      const timer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isTyping, open]);
 
   const scrollToBottom = () => {
     const container = scrollContainerRef.current;
@@ -429,7 +464,9 @@ export const AssistantModePanel = ({
             : `${ASSISTANT_PANEL_EXPANDED_WIDTH}px`,
           height: isCompact
             ? `${ASSISTANT_PANEL_COMPACT_HEIGHT}px`
-            : `${ASSISTANT_PANEL_EXPANDED_HEIGHT}px`,
+            : isTyping
+              ? `${ASSISTANT_PANEL_TYPING_HEIGHT}px`
+              : `${ASSISTANT_PANEL_EXPANDED_HEIGHT}px`,
           borderRadius: `${ASSISTANT_PANEL_RADIUS}px`,
           backgroundColor: alpha(theme.palette.common.black, 0.96),
           border: `1px solid ${alpha(theme.palette.common.white, 0.12)}`,
@@ -469,6 +506,42 @@ export const AssistantModePanel = ({
         >
           <CloseIcon sx={{ fontSize: 16 }} />
         </IconButton>
+
+        {!isCompact && (
+          <IconButton
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              if (pillConversationId) {
+                emitTo("main", "open-pill-conversation", {
+                  conversationId: pillConversationId,
+                }).catch(console.error);
+              }
+              invoke("surface_main_window").catch(console.error);
+              emitTo("main", "assistant-mode-close", {}).catch(console.error);
+            }}
+            size="small"
+            sx={{
+              position: "absolute",
+              top: 10,
+              left: 42,
+              width: 28,
+              height: 28,
+              color: alpha(theme.palette.common.white, 0.82),
+              backgroundColor: alpha(theme.palette.common.white, 0.06),
+              zIndex: 3,
+              opacity: open ? 1 : 0,
+              transform: open ? "translateY(0)" : "translateY(6px)",
+              transition:
+                "opacity 140ms ease-out 80ms, transform 220ms cubic-bezier(0.22, 1, 0.36, 1) 80ms",
+              "&:hover": {
+                backgroundColor: alpha(theme.palette.common.white, 0.12),
+              },
+            }}
+          >
+            <OpenInNewRoundedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        )}
 
         <Box
           sx={{
@@ -567,13 +640,15 @@ export const AssistantModePanel = ({
           <Box
             sx={{
               position: "relative",
-              height: "100%",
+              height: isTyping
+                ? `calc(100% - ${ASSISTANT_PANEL_INPUT_HEIGHT}px)`
+                : "100%",
               minWidth: 0,
               overflow: "hidden",
               zIndex: 0,
               opacity: isCompact ? 0 : 1,
               transition:
-                "opacity 220ms ease-out, transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+                "opacity 220ms ease-out, transform 260ms cubic-bezier(0.22, 1, 0.36, 1), height 340ms cubic-bezier(0.22, 1, 0.36, 1)",
               transform: isCompact ? "translateY(8px)" : "translateY(0)",
             }}
           >
@@ -675,6 +750,64 @@ export const AssistantModePanel = ({
               }}
             />
           </Box>
+
+          {isTyping && (
+            <Box
+              sx={{
+                height: `${ASSISTANT_PANEL_INPUT_HEIGHT}px`,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1.5,
+                borderTop: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+              }}
+            >
+              <InputBase
+                inputRef={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendTypedMessage();
+                  }
+                }}
+                placeholder={intl.formatMessage({
+                  defaultMessage: "Type a message...",
+                })}
+                fullWidth
+                sx={{
+                  color: alpha(theme.palette.common.white, 0.92),
+                  fontSize: 14,
+                  "& input::placeholder": {
+                    color: alpha(theme.palette.common.white, 0.4),
+                    opacity: 1,
+                  },
+                }}
+              />
+              <IconButton
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSendTypedMessage();
+                }}
+                size="small"
+                disabled={!inputValue.trim()}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  flexShrink: 0,
+                  color: inputValue.trim()
+                    ? alpha(theme.palette.common.white, 0.82)
+                    : alpha(theme.palette.common.white, 0.2),
+                  "&:hover": {
+                    backgroundColor: alpha(theme.palette.common.white, 0.12),
+                  },
+                }}
+              >
+                <SendRoundedIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>

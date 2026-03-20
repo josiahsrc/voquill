@@ -31,7 +31,7 @@ fn paste_via_clipboard(text: &str) -> Result<(), String> {
     if !trimmed_text.is_empty() {
         let mut clipboard =
             arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
-        let previous = clipboard.get_text().ok();
+        let previous = crate::platform::SavedClipboard::save(&mut clipboard);
         clipboard
             .set_text(trimmed_text.to_string())
             .map_err(|err| format!("failed to store clipboard text: {err}"))?;
@@ -39,14 +39,10 @@ fn paste_via_clipboard(text: &str) -> Result<(), String> {
         thread::sleep(Duration::from_millis(50));
         simulate_cmd_v()?;
 
-        if let Some(old) = previous {
-            thread::spawn(move || {
-                thread::sleep(Duration::from_millis(800));
-                if let Ok(mut clipboard) = arboard::Clipboard::new() {
-                    let _ = clipboard.set_text(old);
-                }
-            });
-        }
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(800));
+            previous.restore();
+        });
     }
 
     for _ in 0..trailing_spaces {

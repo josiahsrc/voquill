@@ -25,6 +25,7 @@ import {
   UpsertTermInputZod,
   UpsertToneInputZod,
   type HandlerName,
+  type StreamHandlerInput,
   type StreamHandlerName,
 } from "@repo/functions";
 import type { LlmStreamEvent } from "@repo/types";
@@ -32,8 +33,11 @@ import cors from "cors";
 import type { Request, Response } from "express";
 import express from "express";
 import { runMigrations } from "./db/migrate";
-import { insertMetric } from "./repo/metrics.repo";
-import { generateText, transcribeAudio } from "./services/ai.service";
+import {
+  generateText,
+  streamChat,
+  transcribeAudio,
+} from "./services/ai.service";
 import { getMetricsSummaryHandler } from "./services/metrics.service";
 import {
   deleteUser,
@@ -90,7 +94,7 @@ import {
   setMyUser,
 } from "./services/user.service";
 import oidcRoutes from "./routes/oidc.routes";
-import { extractAuth, requireAuth } from "./utils/auth.utils";
+import { extractAuth } from "./utils/auth.utils";
 import { getGatewayVersion } from "./utils/env.utils";
 import {
   ClientError,
@@ -332,54 +336,13 @@ app.post("/stream-handler", async (req: Request, res: Response) => {
 
     if (name === "ai/streamChat") {
       const parsed = validateData(AiStreamChatInputZod, input);
-      const reqAuth = requireAuth(auth);
 
-      if (parsed.simulate) {
-        const events: LlmStreamEvent[] = [
-          { type: "text-delta", text: "Simulated stream response." },
-          { type: "finish", finishReason: "stop" },
-        ];
-        for (const event of events) {
-          res.write(JSON.stringify(event) + "\n");
-        }
-        res.end();
-        return;
-      }
-
-      const systemMsg = parsed.messages.find(
-        (m: { role: string }) => m.role === "system",
-      ) as { content: string } | undefined;
-      const userMsg = [...parsed.messages]
-        .reverse()
-        .find((m: { role: string }) => m.role === "user") as
-        | { content: string }
-        | undefined;
-
-      const result = await generateText({
+      for await (const event of streamChat({
         auth,
-        input: {
-          system: systemMsg?.content,
-          prompt: userMsg?.content ?? "",
-          model: parsed.model,
-        },
-      });
-
-      const events: LlmStreamEvent[] = [
-        { type: "text-delta", text: result.text },
-        { type: "finish", finishReason: "stop" },
-      ];
-      for (const event of events) {
+        input: parsed as StreamHandlerInput<"ai/streamChat">,
+      })) {
         res.write(JSON.stringify(event) + "\n");
       }
-
-      insertMetric({
-        userId: reqAuth.userId,
-        operation: "stream-chat",
-        providerName: "llm",
-        status: "success",
-        latencyMs: 0,
-        wordCount: result.text.split(/\s+/).filter(Boolean).length,
-      }).catch(() => {});
     } else {
       res.status(404).json({ success: false, error: `Unknown stream handler: ${name}` });
       return;

@@ -1,7 +1,8 @@
 import { AddRounded } from "@mui/icons-material";
 import { Box, Chip, Divider, Stack, Typography } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { useSearchParams } from "react-router-dom";
 import {
   createConversation,
   deleteConversation,
@@ -14,20 +15,26 @@ import { ConversationLayout } from "./ConversationLayout";
 import { ConversationListLayout } from "./ConversationListLayout";
 
 export default function ChatsPage() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = searchParams.get("id");
   const conversationIds = useAppStore((s) => s.chat.conversationIds);
 
   useEffect(() => {
     if (!selectedId && conversationIds.length > 0) {
       const firstId = conversationIds[0];
-      setSelectedId(firstId);
+      setSearchParams({ id: firstId }, { replace: true });
       void loadChatMessages(firstId);
     }
-  }, [selectedId, conversationIds]);
+  }, [selectedId, conversationIds, setSearchParams]);
 
-  const handleSelect = async (id: string) => {
-    setSelectedId(id);
-    await loadChatMessages(id);
+  useEffect(() => {
+    if (selectedId) {
+      void loadChatMessages(selectedId);
+    }
+  }, [selectedId]);
+
+  const handleSelect = (id: string) => {
+    setSearchParams({ id }, { replace: true });
   };
 
   const intl = useIntl();
@@ -40,13 +47,13 @@ export default function ChatsPage() {
       createdAt: now,
       updatedAt: now,
     });
-    setSelectedId(saved.id);
+    setSearchParams({ id: saved.id }, { replace: true });
   };
 
   const handleDelete = async (id: string) => {
     await deleteConversation(id);
     if (selectedId === id) {
-      setSelectedId(null);
+      setSearchParams({}, { replace: true });
     }
   };
 

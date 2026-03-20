@@ -65,6 +65,38 @@ pub mod audio;
 #[cfg(desktop)]
 pub mod keyboard;
 
+pub enum SavedClipboard {
+    Text(String),
+    Image(arboard::ImageData<'static>),
+    Empty,
+}
+
+impl SavedClipboard {
+    pub fn save(clipboard: &mut arboard::Clipboard) -> Self {
+        if let Ok(text) = clipboard.get_text() {
+            return Self::Text(text);
+        }
+        if let Ok(image) = clipboard.get_image() {
+            return Self::Image(image);
+        }
+        Self::Empty
+    }
+
+    pub fn restore(self) {
+        if let Ok(mut cb) = arboard::Clipboard::new() {
+            match self {
+                Self::Text(text) => {
+                    let _ = cb.set_text(text);
+                }
+                Self::Image(image) => {
+                    let _ = cb.set_image(image);
+                }
+                Self::Empty => {}
+            }
+        }
+    }
+}
+
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
 pub type ChunkCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync>;
 

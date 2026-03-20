@@ -1255,6 +1255,15 @@ pub fn set_pill_window_size(size: crate::domain::PillWindowSize, overlay_state: 
 }
 
 #[tauri::command]
+pub fn set_overlay_focusable(app: AppHandle, focusable: bool) -> Result<(), String> {
+    let window = app
+        .get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
+        .ok_or_else(|| "pill-overlay window not found".to_string())?;
+
+    crate::platform::window::set_overlay_focusable(&window, focusable)
+}
+
+#[tauri::command]
 pub fn restore_overlay_focus() {
     #[cfg(target_os = "windows")]
     {

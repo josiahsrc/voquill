@@ -1,18 +1,9 @@
 import { ArrowUpwardOutlined } from "@mui/icons-material";
 import { FormattedMessage } from "react-intl";
 import { openUpdateDialog } from "../../actions/updater.actions";
-import { useAppStore } from "../../store";
 import { ListTile } from "../common/ListTile";
 
 export const UpdateListTile = () => {
-  const isUpdateAvailable = useAppStore(
-    (state) => state.updater.status === "ready",
-  );
-
-  if (!isUpdateAvailable) {
-    return null;
-  }
-
   return (
     <ListTile
       onClick={() => openUpdateDialog()}

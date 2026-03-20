@@ -934,3 +934,89 @@ jobs:
           git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
           git commit -m "Update packages from ${RELEASE_TAG}"
           git push
+
+  publish-brew:
+    name: Publish to Homebrew tap
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+      VERSION: ${{ needs.metadata.outputs.version }}
+    steps:
+      - name: Download macOS DMG from release
+        run: |
+          set -euo pipefail
+          mkdir -p dmgs
+          gh release download "$RELEASE_TAG" --pattern "*_universal.dmg" --dir dmgs --repo "$GITHUB_REPOSITORY"
+          dmg_file="$(ls dmgs/*_universal.dmg | head -n 1)"
+          if [[ -z "${dmg_file}" ]]; then
+            echo "No universal .dmg file found in release ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          echo "Found DMG: ${dmg_file}"
+          sha256="$(sha256sum "${dmg_file}" | awk '{print $1}')"
+          echo "SHA256: ${sha256}"
+          echo "DMG_SHA256=${sha256}" >> "$GITHUB_ENV"
+
+      - name: Clone Homebrew tap repository
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${{ secrets.BREW_REPO_TOKEN }}@github.com/voquill/homebrew-voquill-desktop.git" brew-tap
+
+      - name: Update cask
+        run: |
+          set -euo pipefail
+          cd brew-tap
+          mkdir -p Casks
+
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            cask_name="voquill"
+            app_name="Voquill"
+            tag_prefix="desktop-v"
+            dmg_name="Voquill_#{version}_universal.dmg"
+          else
+            cask_name="voquill-dev"
+            app_name="Voquill (dev)"
+            tag_prefix="desktop-dev-v"
+            dmg_name="Voquill.dev._#{version}_universal.dmg"
+          fi
+
+          cat > "Casks/${cask_name}.rb" <<CASK
+          cask "${cask_name}" do
+            version "${VERSION}"
+            sha256 "${DMG_SHA256}"
+
+            url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag_prefix}#{version}/${dmg_name}"
+            name "${app_name}"
+            desc "AI-powered dictation desktop application"
+            homepage "https://voquill.com"
+
+            depends_on macos: ">= :ventura"
+
+            app "${app_name}.app"
+
+            zap trash: [
+              "~/Library/Application Support/com.voquill.desktop",
+              "~/Library/Caches/com.voquill.desktop",
+              "~/Library/Preferences/com.voquill.desktop.plist",
+              "~/Library/Saved Application State/com.voquill.desktop.savedState",
+            ]
+          end
+          CASK
+
+          echo "CASK_NAME=${cask_name}" >> "$GITHUB_ENV"
+
+      - name: Push updated tap
+        run: |
+          set -euo pipefail
+          cd brew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update ${CASK_NAME} to ${VERSION} from ${RELEASE_TAG}"
+          git push
