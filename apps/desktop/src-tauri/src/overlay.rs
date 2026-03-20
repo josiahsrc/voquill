@@ -20,6 +20,8 @@ pub const ASSISTANT_COMPACT_WIDTH: f64 = 452.0;
 pub const ASSISTANT_COMPACT_HEIGHT: f64 = 138.0;
 pub const ASSISTANT_EXPANDED_WIDTH: f64 = 600.0;
 pub const ASSISTANT_EXPANDED_HEIGHT: f64 = 276.0;
+pub const ASSISTANT_TYPING_WIDTH: f64 = 600.0;
+pub const ASSISTANT_TYPING_HEIGHT: f64 = 360.0;
 
 pub const TOAST_OVERLAY_LABEL: &str = "toast-overlay";
 pub const TOAST_OVERLAY_WIDTH: f64 = 380.0;
@@ -68,6 +70,7 @@ fn create_overlay_window(
     width: f64,
     height: f64,
     url: tauri::WebviewUrl,
+    focusable: bool,
 ) -> tauri::Result<()> {
     let (screen_width, screen_height) = get_primary_screen_size(app);
 
@@ -82,7 +85,7 @@ fn create_overlay_window(
             .skip_taskbar(true)
             .resizable(false)
             .shadow(false)
-            .focusable(false)
+            .focusable(focusable)
             .inner_size(width, height)
             .position(x, y);
 
@@ -117,6 +120,7 @@ pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
         PILL_OVERLAY_WIDTH,
         PILL_OVERLAY_HEIGHT,
         url,
+        false,
     )?;
 
     Ok(())
@@ -202,6 +206,7 @@ fn get_pill_window_size(size: PillWindowSize) -> (f64, f64) {
         PillWindowSize::Dictation => (PILL_OVERLAY_WIDTH, PILL_OVERLAY_HEIGHT),
         PillWindowSize::AssistantCompact => (ASSISTANT_COMPACT_WIDTH, ASSISTANT_COMPACT_HEIGHT),
         PillWindowSize::AssistantExpanded => (ASSISTANT_EXPANDED_WIDTH, ASSISTANT_EXPANDED_HEIGHT),
+        PillWindowSize::AssistantTyping => (ASSISTANT_TYPING_WIDTH, ASSISTANT_TYPING_HEIGHT),
     }
 }
 
@@ -210,6 +215,7 @@ fn pill_window_size_to_u8(size: PillWindowSize) -> u8 {
         PillWindowSize::Dictation => 0,
         PillWindowSize::AssistantCompact => 1,
         PillWindowSize::AssistantExpanded => 2,
+        PillWindowSize::AssistantTyping => 3,
     }
 }
 

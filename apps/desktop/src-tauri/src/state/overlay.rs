@@ -9,6 +9,7 @@ const PHASE_LOADING: u8 = 2;
 const SIZE_DICTATION: u8 = 0;
 const SIZE_ASSISTANT_COMPACT: u8 = 1;
 const SIZE_ASSISTANT_EXPANDED: u8 = 2;
+const SIZE_ASSISTANT_TYPING: u8 = 3;
 
 pub struct OverlayState {
     phase: AtomicU8,
@@ -66,6 +67,7 @@ impl OverlayState {
             PillWindowSize::Dictation => SIZE_DICTATION,
             PillWindowSize::AssistantCompact => SIZE_ASSISTANT_COMPACT,
             PillWindowSize::AssistantExpanded => SIZE_ASSISTANT_EXPANDED,
+            PillWindowSize::AssistantTyping => SIZE_ASSISTANT_TYPING,
         };
         self.pill_window_size.store(value, Ordering::Relaxed);
     }
@@ -74,6 +76,7 @@ impl OverlayState {
         match self.pill_window_size.load(Ordering::Relaxed) {
             SIZE_ASSISTANT_COMPACT => PillWindowSize::AssistantCompact,
             SIZE_ASSISTANT_EXPANDED => PillWindowSize::AssistantExpanded,
+            SIZE_ASSISTANT_TYPING => PillWindowSize::AssistantTyping,
             _ => PillWindowSize::Dictation,
         }
     }

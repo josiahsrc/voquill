@@ -64,6 +64,8 @@ export type StreamingMessageState = {
 
 export type RecordingMode = "dictate" | "agent";
 
+export type AssistantInputMode = "voice" | "type";
+
 export type PriceValue = HandlerOutput<"stripe/getPrices">["prices"];
 
 export type AppState = {
@@ -115,6 +117,7 @@ export type AppState = {
   pricing: PricingState;
   login: LoginState;
   pillConversationId: Nullable<string>;
+  assistantInputMode: AssistantInputMode;
   chat: ChatState;
 
   snackbarMessage?: string;
@@ -176,6 +179,7 @@ export const INITIAL_APP_STATE: AppState = {
   currentToast: null,
   overlayCursor: null,
   pillConversationId: null,
+  assistantInputMode: "voice",
   chat: INITIAL_CHAT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,
