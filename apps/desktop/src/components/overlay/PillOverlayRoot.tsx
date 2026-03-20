@@ -1,6 +1,7 @@
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
+import KeyboardRoundedIcon from "@mui/icons-material/KeyboardRounded";
 import { Box, IconButton, LinearProgress, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { invoke } from "@tauri-apps/api/core";
@@ -467,6 +468,53 @@ export const PillOverlayRoot = () => {
                 }}
               />
             </Box>
+          </Box>
+
+          {/* Keyboard / type mode button — slides out from behind the pill */}
+          <Box
+            onMouseDown={(e: React.MouseEvent) => {
+              e.preventDefault();
+              e.stopPropagation();
+              invoke("restore_overlay_focus").catch(() => {});
+              emitTo("main", "assistant-enable-type-mode", {}).catch(
+                console.error,
+              );
+            }}
+            sx={{
+              position: "absolute",
+              left:
+                isAssistantSessionActive && !isTypingMode
+                  ? `calc(50% + ${EXPANDED_PILL_WIDTH / 2 + 8}px)`
+                  : `calc(50% - ${EXPANDED_PILL_HEIGHT / 2}px)`,
+              bottom: 0,
+              width: EXPANDED_PILL_HEIGHT,
+              height: EXPANDED_PILL_HEIGHT,
+              borderRadius: "50%",
+              backgroundColor: alpha(theme.palette.common.black, 0.92),
+              border: `1px solid ${alpha(theme.palette.common.white, 0.3)}`,
+              backdropFilter: "blur(14px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              pointerEvents:
+                isAssistantSessionActive && !isTypingMode ? "auto" : "none",
+              opacity: isAssistantSessionActive && !isTypingMode ? 1 : 0,
+              transform:
+                isAssistantSessionActive && !isTypingMode
+                  ? `translateY(${ASSISTANT_PILL_LIFT}px) scale(1)`
+                  : `translateY(${ASSISTANT_PILL_LIFT}px) scale(0.5)`,
+              transition:
+                "left 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 280ms ease-out, transform 380ms cubic-bezier(0.22, 1, 0.36, 1)",
+              zIndex: 0,
+              color: alpha(theme.palette.common.white, 0.7),
+              "&:hover": {
+                backgroundColor: alpha(theme.palette.common.black, 0.98),
+                color: alpha(theme.palette.common.white, 0.92),
+              },
+            }}
+          >
+            <KeyboardRoundedIcon sx={{ fontSize: 16 }} />
           </Box>
 
           {/* Cancel button */}

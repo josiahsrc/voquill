@@ -1,7 +1,6 @@
 import BuildRoundedIcon from "@mui/icons-material/BuildRounded";
 import CloseIcon from "@mui/icons-material/Close";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
-import KeyboardRoundedIcon from "@mui/icons-material/KeyboardRounded";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import { Box, IconButton, InputBase, Typography } from "@mui/material";
@@ -541,38 +540,6 @@ export const AssistantModePanel = ({
             }}
           >
             <OpenInNewRoundedIcon sx={{ fontSize: 16 }} />
-          </IconButton>
-        )}
-
-        {!isCompact && !isTyping && (
-          <IconButton
-            onMouseDown={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              emitTo("main", "assistant-enable-type-mode", {}).catch(
-                console.error,
-              );
-            }}
-            size="small"
-            sx={{
-              position: "absolute",
-              top: 10,
-              left: 74,
-              width: 28,
-              height: 28,
-              color: alpha(theme.palette.common.white, 0.82),
-              backgroundColor: alpha(theme.palette.common.white, 0.06),
-              zIndex: 3,
-              opacity: open ? 1 : 0,
-              transform: open ? "translateY(0)" : "translateY(6px)",
-              transition:
-                "opacity 140ms ease-out 80ms, transform 220ms cubic-bezier(0.22, 1, 0.36, 1) 80ms",
-              "&:hover": {
-                backgroundColor: alpha(theme.palette.common.white, 0.12),
-              },
-            }}
-          >
-            <KeyboardRoundedIcon sx={{ fontSize: 16 }} />
           </IconButton>
         )}
 
