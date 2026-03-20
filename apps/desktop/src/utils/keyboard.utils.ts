@@ -246,7 +246,7 @@ export const syncHotkeyCombosToNative = async (): Promise<void> => {
     console.error("Failed to sync hotkey combos to native", err);
   }
 
-  if (getPlatform() === "linux") {
+  if (state.hotkeyStrategy === "bridge") {
     try {
       await invoke("sync_compositor_hotkeys", { bindings: compositorBindings });
     } catch (err) {

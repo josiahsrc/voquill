@@ -2,26 +2,19 @@ use std::process::Command;
 use std::sync::Mutex;
 use std::{thread, time::Duration};
 
-pub fn is_wayland() -> bool {
-    std::env::var("WAYLAND_DISPLAY").is_ok()
-}
-
 static CLIPBOARD_HOLD: Mutex<Option<arboard::Clipboard>> = Mutex::new(None);
 
-fn clipboard_get() -> Result<String, String> {
+pub(crate) fn clipboard_get() -> Result<String, String> {
     arboard::Clipboard::new()
         .and_then(|mut cb| cb.get_text())
         .map_err(|err| format!("clipboard get failed: {err}"))
 }
 
-fn clipboard_set(text: &str) -> Result<(), String> {
+pub(crate) fn clipboard_set(text: &str) -> Result<(), String> {
     let mut cb = arboard::Clipboard::new()
         .map_err(|err| format!("clipboard create failed: {err}"))?;
     cb.set_text(text.to_string())
         .map_err(|err| format!("clipboard set failed: {err}"))?;
-    // Keep the Clipboard alive so other apps can read from it.
-    // On Linux, dropping the Clipboard before the target app reads
-    // causes the content to vanish.
     let mut guard = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());
     *guard = Some(cb);
     Ok(())
@@ -102,16 +95,14 @@ pub fn wtype_text(text: &str) -> Result<(), String> {
     }
 }
 
-// --- Simulate paste keystroke (Ctrl+V or Ctrl+Shift+V) ---
+// --- Simulate paste/copy keystrokes ---
 
 fn simulate_paste_keystroke(use_shift: bool) -> Result<(), String> {
-    // Try ydotool first (works on all compositors including GNOME)
     if ydotool_available() {
         log::info!("Using ydotool for paste keystroke");
         return ydotool_paste(use_shift);
     }
 
-    // Fall back to wtype (works on Sway/Hyprland)
     log::info!("ydotool not available, trying wtype for paste keystroke");
     if use_shift {
         wtype_key(&["ctrl", "shift"], "v")
@@ -120,7 +111,7 @@ fn simulate_paste_keystroke(use_shift: bool) -> Result<(), String> {
     }
 }
 
-fn simulate_copy_keystroke() -> Result<(), String> {
+pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
     if ydotool_available() {
         return ydotool_copy();
     }
@@ -129,7 +120,14 @@ fn simulate_copy_keystroke() -> Result<(), String> {
 
 // --- Public API ---
 
-pub fn wayland_paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    paste_via_clipboard(text, keybind).or_else(|err| {
+        log::warn!("Wayland paste failed ({err}), trying wtype text fallback");
+        wtype_text(text)
+    })
+}
+
+fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
     let previous = clipboard_get().ok();
 
     clipboard_set(text)?;
@@ -150,22 +148,4 @@ pub fn wayland_paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<
     }
 
     Ok(())
-}
-
-pub fn wayland_get_selected_text() -> Option<String> {
-    let previous = clipboard_get().ok();
-
-    simulate_copy_keystroke().ok()?;
-    thread::sleep(Duration::from_millis(50));
-
-    let selected = clipboard_get().ok();
-
-    if let Some(old) = previous {
-        thread::spawn(move || {
-            thread::sleep(Duration::from_millis(100));
-            let _ = clipboard_set(&old);
-        });
-    }
-
-    selected.filter(|s| !s.is_empty())
 }

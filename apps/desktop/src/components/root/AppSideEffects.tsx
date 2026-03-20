@@ -138,8 +138,17 @@ export const AppSideEffects = () => {
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
 
+  const hotkeyStrategy = useAppStore((state) => state.hotkeyStrategy);
+
   useAsyncEffect(async () => {
-    if (getPlatform() === "linux") {
+    const strategy = await invoke<string>("get_hotkey_strategy");
+    produceAppState((draft) => {
+      draft.hotkeyStrategy = strategy;
+    });
+  }, []);
+
+  useAsyncEffect(async () => {
+    if (hotkeyStrategy !== "listener") {
       return;
     }
 
@@ -154,7 +163,7 @@ export const AppSideEffects = () => {
       );
       await invoke("stop_key_listener");
     }
-  }, [keyPermAuthorized]);
+  }, [keyPermAuthorized, hotkeyStrategy]);
 
   useEffect(() => {
     void initLogging();

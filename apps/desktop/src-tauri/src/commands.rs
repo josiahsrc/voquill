@@ -1347,6 +1347,11 @@ pub fn sync_compositor_hotkeys(
 }
 
 #[tauri::command]
+pub fn get_hotkey_strategy() -> String {
+    crate::platform::get_hotkey_strategy().to_string()
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {

@@ -9,3 +9,7 @@ pub mod monitor;
 pub mod permissions;
 pub mod position;
 pub mod window;
+
+pub fn get_hotkey_strategy() -> &'static str {
+    "listener"
+}

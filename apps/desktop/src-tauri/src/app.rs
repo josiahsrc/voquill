@@ -170,9 +170,10 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 crate::overlay::start_cursor_follower(app_handle.clone());
             }
 
-            crate::system::bridge_server::start(app.handle().clone());
-
-            crate::platform::compositor::deploy_trigger_script(app.handle());
+            if crate::platform::get_hotkey_strategy() == "bridge" {
+                crate::system::bridge_server::start(app.handle().clone());
+                crate::platform::compositor::deploy_trigger_script(app.handle());
+            }
 
             // Open dev tools if VOQUILL_ENABLE_DEVTOOLS is set
             if std::env::var("VOQUILL_ENABLE_DEVTOOLS").is_ok() {
@@ -260,6 +261,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_selected_text,
             crate::commands::read_enterprise_target,
             crate::commands::run_terminal_command,
+            crate::commands::get_hotkey_strategy,
             crate::commands::get_keyboard_language,
             crate::commands::conversation_create,
             crate::commands::conversation_list,

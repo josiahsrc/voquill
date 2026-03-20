@@ -64,6 +64,13 @@ pub use windows::init;
 #[cfg(target_os = "windows")]
 pub use windows::keyboard_language;
 
+#[cfg(target_os = "linux")]
+pub use linux::get_hotkey_strategy;
+#[cfg(target_os = "macos")]
+pub use macos::get_hotkey_strategy;
+#[cfg(target_os = "windows")]
+pub use windows::get_hotkey_strategy;
+
 pub mod app_info;
 
 pub mod audio;

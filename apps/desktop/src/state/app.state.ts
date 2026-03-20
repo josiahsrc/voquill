@@ -131,6 +131,7 @@ export type AppState = {
 
   overlayCursor: Nullable<Vector2>;
   hotkeyTriggers: Record<string, number>;
+  hotkeyStrategy: Nullable<string>;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -180,6 +181,7 @@ export const INITIAL_APP_STATE: AppState = {
   currentToast: null,
   overlayCursor: null,
   hotkeyTriggers: {},
+  hotkeyStrategy: null,
   pillConversationId: null,
   assistantInputMode: "voice",
   chat: INITIAL_CHAT_STATE,
