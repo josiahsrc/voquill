@@ -6,7 +6,9 @@ interface EnterpriseConfigRow {
   allow_post_processing: boolean;
   allow_change_post_processing: boolean;
   allow_change_transcription_method: boolean;
-  allow_change_agent_mode: boolean;
+  assistant_mode_enabled: boolean;
+  power_mode_enabled: boolean;
+  allow_multi_device_mode: boolean;
   allow_email_sign_in: boolean;
   allow_dev_tools: boolean;
   styling_mode: string;
@@ -17,7 +19,9 @@ function rowToEnterpriseConfig(row: EnterpriseConfigRow): EnterpriseConfig {
     allowPostProcessing: row.allow_post_processing,
     allowChangePostProcessing: row.allow_change_post_processing,
     allowChangeTranscriptionMethod: row.allow_change_transcription_method,
-    allowChangeAgentMode: row.allow_change_agent_mode,
+    assistantModeEnabled: row.assistant_mode_enabled,
+    powerModeEnabled: row.power_mode_enabled,
+    allowMultiDeviceMode: row.allow_multi_device_mode,
     allowEmailSignIn: row.allow_email_sign_in,
     allowDevTools: row.allow_dev_tools,
     stylingMode: row.styling_mode as EnterpriseConfig["stylingMode"],
@@ -34,7 +38,9 @@ export async function getEnterpriseConfig(): Promise<EnterpriseConfig> {
       allowPostProcessing: true,
       allowChangePostProcessing: false,
       allowChangeTranscriptionMethod: false,
-      allowChangeAgentMode: false,
+      assistantModeEnabled: false,
+      powerModeEnabled: false,
+      allowMultiDeviceMode: false,
       allowEmailSignIn: true,
       allowDevTools: false,
       stylingMode: "manual",
@@ -48,16 +54,18 @@ export async function upsertEnterpriseConfig(
 ): Promise<void> {
   const pool = getPool();
   await pool.query(
-    `INSERT INTO enterprise_config (id, allow_post_processing, allow_change_post_processing, allow_change_transcription_method, allow_change_agent_mode, allow_email_sign_in, allow_dev_tools, styling_mode)
-     VALUES ('default', $1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO enterprise_config (id, allow_post_processing, allow_change_post_processing, allow_change_transcription_method, assistant_mode_enabled, power_mode_enabled, allow_multi_device_mode, allow_email_sign_in, allow_dev_tools, styling_mode)
+     VALUES ('default', $1, $2, $3, $4, $5, $6, $7, $8, $9)
      ON CONFLICT (id) DO UPDATE SET
        allow_post_processing = $1,
        allow_change_post_processing = $2,
        allow_change_transcription_method = $3,
-       allow_change_agent_mode = $4,
-       allow_email_sign_in = $5,
-       allow_dev_tools = $6,
-       styling_mode = $7`,
-    [config.allowPostProcessing, config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.allowChangeAgentMode, config.allowEmailSignIn, config.allowDevTools, config.stylingMode],
+       assistant_mode_enabled = $4,
+       power_mode_enabled = $5,
+       allow_multi_device_mode = $6,
+       allow_email_sign_in = $7,
+       allow_dev_tools = $8,
+       styling_mode = $9`,
+    [config.allowPostProcessing, config.allowChangePostProcessing, config.allowChangeTranscriptionMethod, config.assistantModeEnabled, config.powerModeEnabled, config.allowMultiDeviceMode, config.allowEmailSignIn, config.allowDevTools, config.stylingMode],
   );
 }

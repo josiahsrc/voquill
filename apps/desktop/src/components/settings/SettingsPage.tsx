@@ -48,6 +48,7 @@ import { produceAppState, useAppStore } from "../../store";
 import {
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
+  getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
 import { isMacOS } from "../../utils/env.utils";
 import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
@@ -74,6 +75,7 @@ export default function SettingsPage() {
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
   const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
+  const allowMultiDevice = useAppStore(getAllowsMultiDeviceMode);
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -272,11 +274,13 @@ export default function SettingsPage() {
           onClick={openAppKeybindingsDialog}
         />
       )}
-      <ListTile
-        title={<FormattedMessage defaultMessage="Multi-device" />}
-        leading={<RouterOutlined />}
-        onClick={openMultiDeviceDialog}
-      />
+      {allowMultiDevice && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Multi-device" />}
+          leading={<RouterOutlined />}
+          onClick={openMultiDeviceDialog}
+        />
+      )}
       <ListTile
         title={<FormattedMessage defaultMessage="More settings" />}
         leading={<MoreVertOutlined />}
@@ -404,16 +408,18 @@ export default function SettingsPage() {
           onClick={openPostProcessingDialog}
         />
       )}
-      <ListTile
-        title={
-          <Stack direction="row" alignItems="center">
-            <FormattedMessage defaultMessage="Assistant mode" />
-            <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
-          </Stack>
-        }
-        leading={<AutoAwesomeOutlined />}
-        onClick={openAgentModeDialog}
-      />
+      {!isEnterprise && (
+        <ListTile
+          title={
+            <Stack direction="row" alignItems="center">
+              <FormattedMessage defaultMessage="Assistant mode" />
+              <Chip label="Beta" size="small" color="primary" sx={{ ml: 1 }} />
+            </Stack>
+          }
+          leading={<AutoAwesomeOutlined />}
+          onClick={openAgentModeDialog}
+        />
+      )}
     </Section>
   );
 

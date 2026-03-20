@@ -7,7 +7,7 @@ import {
   deleteConversation,
   loadChatMessages,
 } from "../../actions/chat.actions";
-import { useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
 import { ChatsSideEffects } from "./ChatsSideEffects";
 import { ConversationLayout } from "./ConversationLayout";
@@ -16,6 +16,19 @@ import { ConversationListLayout } from "./ConversationListLayout";
 export default function ChatsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const conversationIds = useAppStore((s) => s.chat.conversationIds);
+  const pendingConversationId = useAppStore(
+    (s) => s.chat.pendingConversationId,
+  );
+
+  useEffect(() => {
+    if (pendingConversationId) {
+      setSelectedId(pendingConversationId);
+      void loadChatMessages(pendingConversationId);
+      produceAppState((draft) => {
+        draft.chat.pendingConversationId = null;
+      });
+    }
+  }, [pendingConversationId]);
 
   useEffect(() => {
     if (!selectedId && conversationIds.length > 0) {

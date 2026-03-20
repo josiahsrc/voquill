@@ -15,7 +15,6 @@ import type { AppState } from "../state/app.state";
 import { applyAiPreferences } from "./ai.utils";
 import { registerUsers } from "./app.utils";
 import {
-  getAllowsChangeAgentMode,
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
   getIsEnterpriseEnabled,
@@ -370,7 +369,7 @@ export const getAgentModePrefs = (state: AppState): AgentModePrefs => {
     state,
     config: agentMode as GenerativeConfigInput,
     context: "agent mode",
-    allowChange: getAllowsChangeAgentMode(state),
+    allowChange: !state.isEnterprise,
   });
 };
 

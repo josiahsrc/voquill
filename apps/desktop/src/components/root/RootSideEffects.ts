@@ -20,17 +20,24 @@ import {
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useIntervalAsync } from "../../hooks/helper.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
-import { useAppStore } from "../../store";
+import { produceAppState, useAppStore } from "../../store";
 import { REGISTER_CURRENT_APP_EVENT } from "../../types/app-target.types";
 import type { EnterpriseOidcPayload } from "../../types/enterprise-oidc.types";
 import { ENTERPRISE_OIDC_EVENT } from "../../types/enterprise-oidc.types";
 import type { GoogleAuthPayload } from "../../types/google-auth.types";
 import { GOOGLE_AUTH_EVENT } from "../../types/google-auth.types";
+import { useNavigate } from "react-router-dom";
+import { loadChatMessages } from "../../actions/chat.actions";
 import { getLogger } from "../../utils/log.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
 
+type OpenPillConversationPayload = {
+  conversationId: string;
+};
+
 export const RootSideEffects = () => {
   const userId = useAppStore((state) => state.auth?.uid);
+  const navigate = useNavigate();
 
   useAsyncEffect(async () => {
     getLogger().info(`Loading user data (userId=${userId ?? "none"})`);
@@ -74,6 +81,17 @@ export const RootSideEffects = () => {
 
   useTauriListen<EnterpriseOidcPayload>(ENTERPRISE_OIDC_EVENT, (payload) =>
     handleEnterpriseOidcPayload(payload),
+  );
+
+  useTauriListen<OpenPillConversationPayload>(
+    "open-pill-conversation",
+    async (payload) => {
+      produceAppState((draft) => {
+        draft.chat.pendingConversationId = payload.conversationId;
+      });
+      await loadChatMessages(payload.conversationId);
+      navigate("/dashboard/chats");
+    },
   );
 
   return null;

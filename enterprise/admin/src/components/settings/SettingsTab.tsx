@@ -133,14 +133,41 @@ export default function SettingsTab() {
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={enterpriseConfig.allowChangeAgentMode}
+                      checked={enterpriseConfig.assistantModeEnabled}
                       onChange={(_, checked) =>
-                        handleToggle("allowChangeAgentMode", checked)
+                        handleToggle("assistantModeEnabled", checked)
                       }
                     />
                   }
                   label={
-                    <FormattedMessage defaultMessage="Allow users to change agent mode" />
+                    <FormattedMessage defaultMessage="Enable assistant mode" />
+                  }
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={enterpriseConfig.powerModeEnabled}
+                      disabled={!enterpriseConfig.assistantModeEnabled}
+                      onChange={(_, checked) =>
+                        handleToggle("powerModeEnabled", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Enable power mode" />
+                  }
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={enterpriseConfig.allowMultiDeviceMode}
+                      onChange={(_, checked) =>
+                        handleToggle("allowMultiDeviceMode", checked)
+                      }
+                    />
+                  }
+                  label={
+                    <FormattedMessage defaultMessage="Allow multi-device mode" />
                   }
                 />
                 <FormControlLabel
