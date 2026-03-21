@@ -58,44 +58,22 @@ fn deploy_trigger_script_inner(app: &tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-fn deploy_wtype(app: &tauri::AppHandle) {
-    let resolved = (|| -> Option<PathBuf> {
-        let resource_path = app
-            .path()
-            .resolve("resources/linux/wtype", tauri::path::BaseDirectory::Resource)
-            .ok()?;
-
-        if !resource_path.exists() {
-            log::info!("Bundled wtype not found, falling back to system PATH");
-            return which_wtype();
-        }
-
-        let config_dir = app.path().app_config_dir().ok()?;
-        fs::create_dir_all(&config_dir).ok()?;
-        let dest = config_dir.join("wtype");
-        fs::copy(&resource_path, &dest).ok()?;
-
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = fs::set_permissions(&dest, fs::Permissions::from_mode(0o755));
-        }
-
-        log::info!("Deployed wtype to {}", dest.display());
-        Some(dest)
-    })();
-
-    let _ = WTYPE_PATH.set(resolved);
-}
-
-fn which_wtype() -> Option<PathBuf> {
-    Command::new("which")
+fn deploy_wtype(_app: &tauri::AppHandle) {
+    let resolved = Command::new("which")
         .arg("wtype")
         .output()
         .ok()
         .filter(|o| o.status.success())
         .map(|o| PathBuf::from(String::from_utf8_lossy(&o.stdout).trim().to_string()))
-        .filter(|p| p.exists())
+        .filter(|p| p.exists());
+
+    if let Some(ref path) = resolved {
+        log::info!("Found wtype at {}", path.display());
+    } else {
+        log::warn!("wtype not found in PATH — install it for Sway/Hyprland input simulation");
+    }
+
+    let _ = WTYPE_PATH.set(resolved);
 }
 
 fn trigger_script_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {

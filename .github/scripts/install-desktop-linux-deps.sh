@@ -44,11 +44,3 @@ sudo ldconfig
 cd -
 rm -rf "$GTK4_LAYER_SHELL_DIR"
 echo "Built and installed gtk4-layer-shell from source"
-
-# Bundle wtype binary for Tauri resources
-WTYPE_BIN="$(which wtype)"
-RESOURCES_DIR="$(dirname "$0")/../../apps/desktop/src-tauri/resources/linux"
-mkdir -p "$RESOURCES_DIR"
-cp "$WTYPE_BIN" "$RESOURCES_DIR/wtype"
-chmod +x "$RESOURCES_DIR/wtype"
-echo "Bundled wtype from ${WTYPE_BIN} to ${RESOURCES_DIR}/wtype"
