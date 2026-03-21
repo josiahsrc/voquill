@@ -58,7 +58,7 @@ const isModifierLikeKey = (key: string): boolean => {
   );
 };
 
-const isModifierOnlyCombo = (combo: string[]): boolean => {
+export const isModifierOnlyCombo = (combo: string[]): boolean => {
   return combo.length > 0 && combo.every((key) => isModifierLikeKey(key));
 };
 
