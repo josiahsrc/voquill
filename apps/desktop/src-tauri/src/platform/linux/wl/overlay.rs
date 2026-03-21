@@ -1,7 +1,7 @@
-use std::io::Write;
-use std::process::{Child, ChildStdin, Command, Stdio};
+use std::io::{BufRead, Write};
+use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 pub struct PillProcess {
     _child: Child,
@@ -51,19 +51,22 @@ pub fn try_create_pill_overlay(app: &tauri::AppHandle) -> bool {
         }
     };
 
-    let stdout = child.stdout.take();
-
-    let ready = if let Some(stdout) = stdout {
-        wait_for_ready(stdout)
-    } else {
-        false
+    let stdout = match child.stdout.take() {
+        Some(stdout) => stdout,
+        None => {
+            log::warn!("Pill overlay process has no stdout");
+            return false;
+        }
     };
 
-    if !ready {
-        log::warn!("Pill overlay did not report ready");
-        let _ = child.kill();
-        return false;
-    }
+    let reader = match wait_for_ready(stdout) {
+        Some(reader) => reader,
+        None => {
+            log::warn!("Pill overlay did not report ready");
+            let _ = child.kill();
+            return false;
+        }
+    };
 
     let process = std::sync::Arc::new(PillProcess {
         _child: child,
@@ -72,28 +75,58 @@ pub fn try_create_pill_overlay(app: &tauri::AppHandle) -> bool {
 
     app.manage(process);
 
+    start_stdout_reader(app.clone(), reader);
+
     log::info!("Native GTK4 Wayland pill overlay is active");
     true
 }
 
-fn wait_for_ready(stdout: std::process::ChildStdout) -> bool {
-    use std::io::BufRead;
-
+fn wait_for_ready(
+    stdout: ChildStdout,
+) -> Option<std::io::BufReader<ChildStdout>> {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let reader = std::io::BufReader::new(stdout);
-        for line in reader.lines() {
-            let Ok(line) = line else { break };
-            if line.contains("\"ready\"") {
-                let _ = tx.send(true);
-                return;
+        let mut reader = std::io::BufReader::new(stdout);
+        let mut line = String::new();
+        loop {
+            line.clear();
+            match reader.read_line(&mut line) {
+                Ok(0) | Err(_) => {
+                    let _ = tx.send(None);
+                    return;
+                }
+                Ok(_) => {
+                    if line.contains("\"ready\"") {
+                        let _ = tx.send(Some(reader));
+                        return;
+                    }
+                }
             }
         }
-        let _ = tx.send(false);
     });
 
     rx.recv_timeout(std::time::Duration::from_secs(5))
-        .unwrap_or(false)
+        .ok()
+        .flatten()
+}
+
+fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildStdout>) {
+    std::thread::spawn(move || {
+        let mut reader = reader;
+        let mut line = String::new();
+        loop {
+            line.clear();
+            match reader.read_line(&mut line) {
+                Ok(0) | Err(_) => break,
+                Ok(_) => {
+                    if line.contains("\"click\"") {
+                        let _ = app.emit_to("main", "on-click-dictate", ());
+                    }
+                }
+            }
+        }
+        log::info!("Pill overlay process stdout closed");
+    });
 }
 
 fn resolve_pill_binary_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {

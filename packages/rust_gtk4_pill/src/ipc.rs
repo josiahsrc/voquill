@@ -24,6 +24,7 @@ pub enum Phase {
 pub enum OutMessage {
     Ready,
     Hover { hovered: bool },
+    Click,
 }
 
 pub fn send(msg: &OutMessage) {
