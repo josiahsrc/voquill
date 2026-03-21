@@ -1031,6 +1031,7 @@ pub async fn start_recording(
     let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
         let overlay_state = level_emit_handle.state::<crate::state::OverlayState>();
         overlay_state.set_audio_levels(levels.clone());
+        crate::platform::overlay::notify_audio_levels(&level_emit_handle, &levels);
 
         let payload = RecordingLevelPayload { levels };
         if let Err(err) = level_emit_handle.emit_to(EventTarget::any(), EVT_REC_LEVEL, payload) {
@@ -1307,6 +1308,7 @@ pub fn set_phase(
         OverlayPhase::parse(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
 
     overlay_state.set_phase(&resolved);
+    crate::platform::overlay::notify_phase(&app, &resolved);
 
     let payload = OverlayPhasePayload {
         phase: resolved.clone(),
