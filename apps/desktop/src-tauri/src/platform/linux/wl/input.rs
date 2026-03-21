@@ -45,14 +45,6 @@ fn ydotool_key(combo: &str) -> Result<(), String> {
     }
 }
 
-fn ydotool_paste(use_shift: bool) -> Result<(), String> {
-    if use_shift {
-        ydotool_key("ctrl+shift+v")
-    } else {
-        ydotool_key("ctrl+v")
-    }
-}
-
 fn ydotool_copy() -> Result<(), String> {
     ydotool_key("ctrl+c")
 }
@@ -97,18 +89,14 @@ pub fn wtype_text(text: &str) -> Result<(), String> {
 
 // --- Simulate paste/copy keystrokes ---
 
-fn simulate_paste_keystroke(use_shift: bool) -> Result<(), String> {
+fn simulate_paste_keystroke() -> Result<(), String> {
     if ydotool_available() {
         log::info!("Using ydotool for paste keystroke");
-        return ydotool_paste(use_shift);
+        return ydotool_key("ctrl+shift+v");
     }
 
     log::info!("ydotool not available, trying wtype for paste keystroke");
-    if use_shift {
-        wtype_key(&["ctrl", "shift"], "v")
-    } else {
-        wtype_key(&["ctrl"], "v")
-    }
+    wtype_key(&["ctrl", "shift"], "v")
 }
 
 pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
@@ -120,25 +108,20 @@ pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
 
 // --- Public API ---
 
-pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
-    paste_via_clipboard(text, keybind).or_else(|err| {
+pub fn paste_text(text: &str, _keybind: Option<&str>) -> Result<(), String> {
+    paste_via_clipboard(text).or_else(|err| {
         log::warn!("Wayland paste failed ({err}), trying wtype text fallback");
         wtype_text(text)
     })
 }
 
-fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+fn paste_via_clipboard(text: &str) -> Result<(), String> {
     let previous = clipboard_get().ok();
 
     clipboard_set(text)?;
     thread::sleep(Duration::from_millis(40));
 
-    let use_shift = match keybind {
-        Some(kb) => kb == "ctrl+shift+v",
-        None => false,
-    };
-
-    simulate_paste_keystroke(use_shift)?;
+    simulate_paste_keystroke()?;
 
     if let Some(old) = previous {
         thread::spawn(move || {
