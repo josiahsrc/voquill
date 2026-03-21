@@ -4,7 +4,11 @@ import { keyframes } from "@mui/material/styles";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
-import { getPrettyKeyName } from "../../utils/keyboard.utils";
+import { setSnackbar } from "../../utils/app.utils";
+import {
+  getPrettyKeyName,
+  isModifierOnlyCombo,
+} from "../../utils/keyboard.utils";
 
 type HotKeyProps = {
   value?: string[];
@@ -26,8 +30,11 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
   const [focused, setFocused] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const keysHeld = useAppStore((s) => s.keysHeld);
+  const hotkeyStrategy = useAppStore((s) => s.hotkeyStrategy);
+  const requireNonModifier = hotkeyStrategy === "bridge";
 
   const lastEmittedRef = useRef<string[]>(value);
+  const valueBeforeRecordingRef = useRef<string[] | undefined>(value);
   useEffect(() => {
     lastEmittedRef.current = value;
   }, [value]);
@@ -67,6 +74,30 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
       previousHeld.length > 0 &&
       held.length < previousHeld.length
     ) {
+      if (requireNonModifier && isModifierOnlyCombo(previousHeld)) {
+        produceAppState((draft) => {
+          setSnackbar(
+            draft,
+            intl.formatMessage({
+              defaultMessage:
+                "Hotkey must include a non-modifier key (e.g. a letter or number)",
+            }),
+            { mode: "error" },
+          );
+        });
+        onChange?.(valueBeforeRecordingRef.current ?? []);
+        lastEmittedRef.current = valueBeforeRecordingRef.current;
+      } else if (requireNonModifier) {
+        produceAppState((draft) => {
+          setSnackbar(
+            draft,
+            intl.formatMessage({
+              defaultMessage:
+                "You may need to reload your compositor for changes to take effect.",
+            }),
+          );
+        });
+      }
       boxRef.current?.blur();
       previousKeysHeldRef.current = [];
       return;
@@ -91,7 +122,7 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
       lastEmittedRef.current = held;
       onChange?.(held);
     }
-  }, [keysHeld, focused, onChange, hasInteracted]);
+  }, [keysHeld, focused, onChange, hasInteracted, requireNonModifier, intl]);
 
   const [empty, label] = useMemo(() => {
     if (focused && !hasInteracted) {
@@ -111,7 +142,10 @@ export const HotKey = ({ value, onChange }: HotKeyProps) => {
       ref={boxRef}
       tabIndex={0}
       onClick={() => boxRef.current?.focus()}
-      onFocus={() => setFocused(true)}
+      onFocus={() => {
+        valueBeforeRecordingRef.current = value;
+        setFocused(true);
+      }}
       onBlur={() => {
         setFocused(false);
         setHasInteracted(false);

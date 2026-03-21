@@ -44,6 +44,7 @@ import {
   getMemberRepo,
   getUserRepo,
 } from "../../repos";
+import { HotkeyStrategy } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { OverlayPhase } from "../../types/overlay.types";
@@ -141,7 +142,7 @@ export const AppSideEffects = () => {
   const hotkeyStrategy = useAppStore((state) => state.hotkeyStrategy);
 
   useAsyncEffect(async () => {
-    const strategy = await invoke<string>("get_hotkey_strategy");
+    const strategy = await invoke<HotkeyStrategy>("get_hotkey_strategy");
     produceAppState((draft) => {
       draft.hotkeyStrategy = strategy;
     });
