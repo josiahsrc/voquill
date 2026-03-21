@@ -14,7 +14,14 @@ to `/dev/uinput` at the kernel level, bypassing Wayland's input restrictions.
 **Install:**
 
 ```bash
+# Debian / Ubuntu
 sudo apt install ydotool
+
+# Fedora / RHEL
+sudo dnf install ydotool
+
+# openSUSE
+sudo zypper install ydotool
 ```
 
 **Grant your user access to /dev/uinput:**
@@ -54,7 +61,7 @@ sudo systemctl enable --now ydotoold
 # If you want lower latency: sudo ydotoold &
 ```
 
-To check your version: `dpkg -l ydotool`
+To check your version: `dpkg -l ydotool` (deb) or `rpm -q ydotool` (rpm)
 
 **Verify it works:**
 
@@ -79,7 +86,14 @@ On Sway and Hyprland, `wtype` is an alternative that uses the `virtual-keyboard-
 Wayland protocol. Voquill bundles wtype in production builds. For development, install it separately:
 
 ```bash
+# Debian / Ubuntu
 sudo apt install wtype
+
+# Fedora / RHEL
+sudo dnf install wtype
+
+# openSUSE
+sudo zypper install wtype
 ```
 
 Note: wtype does **not** work on GNOME. GNOME does not implement the virtual-keyboard

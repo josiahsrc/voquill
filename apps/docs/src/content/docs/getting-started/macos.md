@@ -17,7 +17,7 @@ Download the latest release from [voquill.com/download](https://voquill.com/down
 You can also install Voquill via [Homebrew](https://brew.sh):
 
 ```bash
-brew tap voquill/voquill-desktop
+brew tap voquill/voquill
 brew install --cask voquill
 ```
 

@@ -20,8 +20,7 @@ export default defineConfig({
 						{ label: 'Introduction', slug: 'getting-started/introduction' },
 						{ label: 'macOS', slug: 'getting-started/macos' },
 						{ label: 'Windows', slug: 'getting-started/windows' },
-						{ label: 'Linux (X11)', slug: 'getting-started/linux-x11' },
-						{ label: 'Linux (Wayland)', slug: 'getting-started/linux-wayland' },
+						{ label: 'Linux', slug: 'getting-started/linux' },
 					],
 				},
 				{

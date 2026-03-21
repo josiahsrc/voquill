@@ -31,7 +31,8 @@ sudo apt-get install -y \
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
   libfuse2 \
-  wtype
+  wtype \
+  rpm
 
 # Build gtk4-layer-shell from source (not packaged on Ubuntu 22.04/24.04)
 GTK4_LAYER_SHELL_DIR="$(mktemp -d)"

@@ -11,8 +11,7 @@ Choose the guide for your platform:
 
 - [macOS](/getting-started/macos)
 - [Windows](/getting-started/windows)
-- [Linux (X11)](/getting-started/linux-x11)
-- [Linux (Wayland)](/getting-started/linux-wayland)
+- [Linux](/getting-started/linux)
 
 ## First Launch
 
