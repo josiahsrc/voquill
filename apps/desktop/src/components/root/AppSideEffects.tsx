@@ -206,12 +206,15 @@ export const AppSideEffects = () => {
     });
   });
 
-  useTauriListen<BridgeHotkeyTriggerPayload>("bridge_hotkey_trigger", (payload) => {
-    produceAppState((draft) => {
-      draft.hotkeyTriggers[payload.hotkey] =
-        (draft.hotkeyTriggers[payload.hotkey] ?? 0) + 1;
-    });
-  });
+  useTauriListen<BridgeHotkeyTriggerPayload>(
+    "bridge_hotkey_trigger",
+    (payload) => {
+      produceAppState((draft) => {
+        draft.hotkeyTriggers[payload.hotkey] =
+          (draft.hotkeyTriggers[payload.hotkey] ?? 0) + 1;
+      });
+    },
+  );
 
   useTauriListen<KeysHeldPayload>("keys_held", (payload) => {
     const existing = getAppState().keysHeld;
