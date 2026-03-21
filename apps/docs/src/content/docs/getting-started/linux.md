@@ -37,6 +37,22 @@ To install the development channel instead:
 curl -fsSL https://voquill.github.io/apt/install.sh | bash -s -- --dev
 ```
 
+Or set up the dev repository manually:
+
+```bash
+# Add GPG key
+curl -fsSL https://voquill.github.io/apt/gpg-key.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/voquill.gpg
+
+# Add dev repository
+echo "deb [signed-by=/usr/share/keyrings/voquill.gpg arch=amd64] https://voquill.github.io/apt dev main" \
+  | sudo tee /etc/apt/sources.list.d/voquill.list
+
+# Install
+sudo apt-get update
+sudo apt-get install voquill-desktop
+```
+
 Upgrade with:
 
 ```bash
@@ -72,6 +88,37 @@ sudo dnf install voquill-desktop
 
 ```bash
 sudo zypper addrepo --gpgcheck https://voquill.github.io/rpm/packages/stable voquill-stable
+sudo rpm --import https://voquill.github.io/rpm/gpg-key.asc
+sudo zypper install voquill-desktop
+```
+
+To install the development channel instead:
+
+```bash
+curl -fsSL https://voquill.github.io/rpm/install.sh | bash -s -- --dev
+```
+
+Or set up the dev repository manually:
+
+**Fedora / RHEL:**
+
+```bash
+sudo tee /etc/yum.repos.d/voquill.repo << 'EOF'
+[voquill-dev]
+name=Voquill Desktop (dev)
+baseurl=https://voquill.github.io/rpm/packages/dev
+enabled=1
+gpgcheck=1
+gpgkey=https://voquill.github.io/rpm/gpg-key.asc
+EOF
+
+sudo dnf install voquill-desktop
+```
+
+**openSUSE:**
+
+```bash
+sudo zypper addrepo --gpgcheck https://voquill.github.io/rpm/packages/dev voquill-dev
 sudo rpm --import https://voquill.github.io/rpm/gpg-key.asc
 sudo zypper install voquill-desktop
 ```
