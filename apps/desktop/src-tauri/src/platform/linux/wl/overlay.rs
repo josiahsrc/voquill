@@ -131,7 +131,7 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
 
 fn resolve_pill_binary_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let path = resource_dir.join("resources/linux/voquill-gtk4-pill");
+        let path = resource_dir.join("resources/voquill-gtk4-pill");
         if path.exists() {
             return Some(path);
         }

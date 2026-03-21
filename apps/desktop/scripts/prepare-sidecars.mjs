@@ -329,7 +329,7 @@ function buildPillOverlay() {
     "voquill-gtk4-pill",
   );
 
-  const resourcesDir = join(desktopDir, "src-tauri", "resources", "linux");
+  const resourcesDir = join(desktopDir, "src-tauri", "resources");
   mkdirSync(resourcesDir, { recursive: true });
   const pillDestPath = join(resourcesDir, "voquill-gtk4-pill");
 

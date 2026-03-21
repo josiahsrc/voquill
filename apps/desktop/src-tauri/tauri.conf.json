@@ -45,7 +45,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["resources/trigger-hotkey.sh", "resources/linux/*"],
+    "resources": [
+      "resources/*"
+    ],
     "macOS": {
       "hardenedRuntime": true,
       "minimumSystemVersion": "13.3",
