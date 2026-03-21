@@ -99,7 +99,7 @@ async fn handle_connection(
         }
     }
 
-    let parts: Vec<&str> = request_line.trim().split_whitespace().collect();
+    let parts: Vec<&str> = request_line.split_whitespace().collect();
     if parts.len() < 2 {
         return write_response(&mut writer, 400, "Bad Request").await;
     }
