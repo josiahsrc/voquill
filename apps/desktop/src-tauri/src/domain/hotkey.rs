@@ -7,3 +7,10 @@ pub struct Hotkey {
     pub action_name: String,
     pub keys: Vec<String>,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompositorBinding {
+    pub action_name: String,
+    pub keys: Vec<String>,
+}

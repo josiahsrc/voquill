@@ -1029,6 +1029,10 @@ pub async fn start_recording(
 
     let level_emit_handle = app.clone();
     let level_emitter: LevelCallback = Arc::new(move |levels: Vec<f32>| {
+        let overlay_state = level_emit_handle.state::<crate::state::OverlayState>();
+        overlay_state.set_audio_levels(levels.clone());
+        crate::platform::overlay::notify_audio_levels(&level_emit_handle, &levels);
+
         let payload = RecordingLevelPayload { levels };
         if let Err(err) = level_emit_handle.emit_to(EventTarget::any(), EVT_REC_LEVEL, payload) {
             log::error!("Failed to emit recording_level event: {err}");
@@ -1242,9 +1246,9 @@ pub fn surface_main_window(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> Result<(), String> {
-    let window = app
-        .get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL)
-        .ok_or_else(|| "toast-overlay window not found".to_string())?;
+    let Some(window) = app.get_webview_window(crate::overlay::TOAST_OVERLAY_LABEL) else {
+        return Ok(());
+    };
 
     crate::platform::window::set_overlay_click_through(&window, click_through)
 }
@@ -1256,9 +1260,9 @@ pub fn set_pill_window_size(size: crate::domain::PillWindowSize, overlay_state: 
 
 #[tauri::command]
 pub fn set_overlay_focusable(app: AppHandle, focusable: bool) -> Result<(), String> {
-    let window = app
-        .get_webview_window(crate::overlay::PILL_OVERLAY_LABEL)
-        .ok_or_else(|| "pill-overlay window not found".to_string())?;
+    let Some(window) = app.get_webview_window(crate::overlay::PILL_OVERLAY_LABEL) else {
+        return Ok(());
+    };
 
     crate::platform::window::set_overlay_focusable(&window, focusable)
 }
@@ -1304,6 +1308,7 @@ pub fn set_phase(
         OverlayPhase::parse(phase.as_str()).ok_or_else(|| format!("invalid phase: {phase}"))?;
 
     overlay_state.set_phase(&resolved);
+    crate::platform::overlay::notify_phase(&app, &resolved);
 
     let payload = OverlayPhasePayload {
         phase: resolved.clone(),
@@ -1336,6 +1341,19 @@ pub fn sync_hotkey_combos(combos: Vec<Vec<String>>) {
 #[tauri::command]
 pub fn reset_key_listener_state() {
     crate::platform::keyboard::reset_pressed_keys();
+}
+
+#[tauri::command]
+pub fn sync_compositor_hotkeys(
+    app: AppHandle,
+    bindings: Vec<crate::domain::CompositorBinding>,
+) -> Result<(), String> {
+    crate::platform::compositor::sync_compositor_hotkeys(&app, &bindings)
+}
+
+#[tauri::command]
+pub fn get_hotkey_strategy() -> String {
+    crate::platform::get_hotkey_strategy().to_string()
 }
 
 #[tauri::command]

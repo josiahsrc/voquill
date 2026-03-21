@@ -19,7 +19,7 @@ pub use api_key::{ApiKey, ApiKeyCreateRequest, ApiKeyUpdateRequest, ApiKeyView};
 pub use app_target::{AppTarget, EVT_REGISTER_CURRENT_APP};
 pub use chat_message::ChatMessage;
 pub use conversation::Conversation;
-pub use hotkey::Hotkey;
+pub use hotkey::{CompositorBinding, Hotkey};
 pub use keyboard::{KeysHeldPayload, EVT_KEYS_HELD};
 pub use monitor::{MonitorAtCursor, OverlayAnchor, ScreenVisibleArea};
 pub use overlay::{

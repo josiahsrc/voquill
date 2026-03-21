@@ -44,6 +44,7 @@ import {
   getMemberRepo,
   getUserRepo,
 } from "../../repos";
+import { HotkeyStrategy } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { OverlayPhase } from "../../types/overlay.types";
@@ -81,6 +82,10 @@ type OverlayPhasePayload = {
 
 type RecordingLevelPayload = {
   levels?: number[];
+};
+
+type BridgeHotkeyTriggerPayload = {
+  hotkey: string;
 };
 
 type RemoteFinalTextReceivedPayload = {
@@ -134,7 +139,20 @@ export const AppSideEffects = () => {
     isPermissionAuthorized(getRec(state.permissions, "accessibility")?.state),
   );
 
+  const hotkeyStrategy = useAppStore((state) => state.hotkeyStrategy);
+
   useAsyncEffect(async () => {
+    const strategy = await invoke<HotkeyStrategy>("get_hotkey_strategy");
+    produceAppState((draft) => {
+      draft.hotkeyStrategy = strategy;
+    });
+  }, []);
+
+  useAsyncEffect(async () => {
+    if (hotkeyStrategy !== "listener") {
+      return;
+    }
+
     if (keyPermAuthorized) {
       getLogger().info(
         "Accessibility permission authorized, starting key listener",
@@ -146,7 +164,7 @@ export const AppSideEffects = () => {
       );
       await invoke("stop_key_listener");
     }
-  }, [keyPermAuthorized]);
+  }, [keyPermAuthorized, hotkeyStrategy]);
 
   useEffect(() => {
     void initLogging();
@@ -187,6 +205,16 @@ export const AppSideEffects = () => {
       draft.audioLevels = sanitized;
     });
   });
+
+  useTauriListen<BridgeHotkeyTriggerPayload>(
+    "bridge_hotkey_trigger",
+    (payload) => {
+      produceAppState((draft) => {
+        draft.hotkeyTriggers[payload.hotkey] =
+          (draft.hotkeyTriggers[payload.hotkey] ?? 0) + 1;
+      });
+    },
+  );
 
   useTauriListen<KeysHeldPayload>("keys_held", (payload) => {
     const existing = getAppState().keysHeld;
