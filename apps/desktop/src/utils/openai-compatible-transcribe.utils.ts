@@ -41,7 +41,7 @@ export const openaiCompatibleTranscribeAudio = async ({
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 
-  const response = await fetch(`${url}/v1/audio/transcriptions`, {
+  const response = await fetch(`${url}/audio/transcriptions`, {
     method: "POST",
     body: formData,
     headers,
