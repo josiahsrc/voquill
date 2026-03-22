@@ -106,6 +106,22 @@ export const useHotkeyHoldMany = (args: {
       wasPressedRef.current.set(action.actionName, isPressed);
     }
   }, [keysHeld, combosByAction, args.actions, isDisabled]);
+
+  const triggerCounts = useAppStore((s) => s.hotkeyTriggers);
+  const prevTriggerCountsRef = useRef(triggerCounts);
+
+  useEffect(() => {
+    if (!isDisabled) {
+      for (const action of args.actions) {
+        const prev = prevTriggerCountsRef.current[action.actionName] ?? 0;
+        const curr = triggerCounts[action.actionName] ?? 0;
+        if (curr > prev) {
+          action.controller.toggle();
+        }
+      }
+    }
+    prevTriggerCountsRef.current = triggerCounts;
+  }, [triggerCounts, isDisabled, args.actions]);
 };
 
 export const useHotkeyFire = (args: {
@@ -220,4 +236,16 @@ export const useHotkeyFire = (args: {
 
     previousKeysHeldRef.current = keysHeld;
   }, [keysHeld, availableCombos, isDisabled, args.onFire]);
+
+  const triggerCount = useAppStore(
+    (s) => s.hotkeyTriggers[args.actionName] ?? 0,
+  );
+  const prevTriggerCountRef = useRef(triggerCount);
+
+  useEffect(() => {
+    if (!isDisabled && triggerCount > prevTriggerCountRef.current) {
+      args.onFire?.();
+    }
+    prevTriggerCountRef.current = triggerCount;
+  }, [triggerCount, isDisabled, args.onFire]);
 };

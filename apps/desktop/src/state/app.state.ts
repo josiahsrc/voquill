@@ -49,6 +49,7 @@ import {
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
+export type HotkeyStrategy = "listener" | "bridge";
 
 export type StreamingToolCall = {
   toolCallId: string;
@@ -130,6 +131,8 @@ export type AppState = {
   currentToast: Toast | null;
 
   overlayCursor: Nullable<Vector2>;
+  hotkeyTriggers: Record<string, number>;
+  hotkeyStrategy: Nullable<HotkeyStrategy>;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -178,6 +181,8 @@ export const INITIAL_APP_STATE: AppState = {
   toastQueue: [],
   currentToast: null,
   overlayCursor: null,
+  hotkeyTriggers: {},
+  hotkeyStrategy: null,
   pillConversationId: null,
   assistantInputMode: "voice",
   chat: INITIAL_CHAT_STATE,

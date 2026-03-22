@@ -1,10 +1,13 @@
 import { convertFloat32ToPCM16 } from "@repo/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { getAppState } from "../store";
 import {
   StopRecordingResponse,
   TranscriptionSession,
   TranscriptionSessionResult,
 } from "../types/transcription-session.types";
+import { buildDeepgramWebSocketUrl } from "../utils/deepgram.utils";
+import { loadMyEffectiveDictationLanguage } from "../utils/user.utils";
 
 type DeepgramStreamingSession = {
   finalize: () => Promise<string>;
@@ -14,6 +17,7 @@ type DeepgramStreamingSession = {
 const startDeepgramStreaming = async (
   apiKey: string,
   sampleRate: number,
+  language: string,
   onInterimResult?: (segment: string) => void,
 ): Promise<DeepgramStreamingSession> => {
   console.log("[Deepgram WebSocket] Starting with sample rate:", sampleRate);
@@ -227,7 +231,10 @@ const startDeepgramStreaming = async (
   console.log("[Deepgram WebSocket] Audio listener attached, connecting...");
 
   return new Promise((resolve, reject) => {
-    const wsUrl = `wss://api.deepgram.com/v1/listen?encoding=linear16&sample_rate=${sampleRate}&model=nova-3&punctuate=true&smart_format=true&interim_results=true&endpointing=300`;
+    const wsUrl = buildDeepgramWebSocketUrl({
+      sampleRate,
+      language,
+    });
     console.log("[Deepgram WebSocket] Connecting to:", wsUrl);
     ws = new WebSocket(wsUrl, ["token", apiKey]);
 
@@ -319,10 +326,14 @@ export class DeepgramTranscriptionSession implements TranscriptionSession {
   async onRecordingStart(sampleRate: number): Promise<void> {
     this.startupPromise = (async () => {
       try {
+        const state = getAppState();
+        const deepgramLanguage = await loadMyEffectiveDictationLanguage(state);
+
         console.log("[Deepgram] Starting streaming session...");
         this.session = await startDeepgramStreaming(
           this.apiKey,
           sampleRate,
+          deepgramLanguage,
           this.interimCallback ?? undefined,
         );
         console.log("[Deepgram] Streaming session started successfully");

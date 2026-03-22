@@ -14,7 +14,15 @@ export default defineConfig({
 			},
 			customCss: ['./src/styles/custom.css'],
 			sidebar: [
-				{ label: 'Getting Started', slug: 'getting-started' },
+				{
+					label: 'Getting Started',
+					items: [
+						{ label: 'Introduction', slug: 'getting-started/introduction' },
+						{ label: 'macOS', slug: 'getting-started/macos' },
+						{ label: 'Windows', slug: 'getting-started/windows' },
+						{ label: 'Linux', slug: 'getting-started/linux' },
+					],
+				},
 				{
 					label: 'Guides',
 					autogenerate: { directory: 'guides' },

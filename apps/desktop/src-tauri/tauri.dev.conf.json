@@ -7,6 +7,10 @@
       "deb": {
         "conflicts": ["voquill-gpu-dev"],
         "replaces": ["voquill-gpu-dev"]
+      },
+      "rpm": {
+        "conflicts": ["voquill-gpu-dev"],
+        "obsoletes": ["voquill-gpu-dev"]
       }
     }
   },

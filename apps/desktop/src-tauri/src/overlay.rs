@@ -108,6 +108,14 @@ fn create_overlay_window(
     Ok(())
 }
 
+pub fn should_use_native_overlays() -> bool {
+    crate::platform::overlay::should_use_native_overlays()
+}
+
+pub fn try_create_native_overlays(app: &tauri::AppHandle) -> bool {
+    crate::platform::overlay::try_create_native_overlays(app)
+}
+
 pub fn ensure_pill_overlay_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     if app.get_webview_window(PILL_OVERLAY_LABEL).is_some() {
         return Ok(());

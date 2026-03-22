@@ -898,14 +898,14 @@ jobs:
       - name: Clone APT repository
         run: |
           set -euo pipefail
-          git clone "https://x-access-token:${{ secrets.APT_REPO_TOKEN }}@github.com/voquill/apt.git" apt-repo
+          git clone "https://x-access-token:${{ secrets.PACKAGE_REPO_TOKEN }}@github.com/voquill/apt.git" apt-repo
 
       - name: Import GPG key
         env:
-          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          PACKAGE_GPG_PRIVATE_KEY: ${{ secrets.PACKAGE_GPG_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          echo "${APT_GPG_PRIVATE_KEY}" | gpg --batch --import
+          echo "${PACKAGE_GPG_PRIVATE_KEY}" | gpg --batch --import
 
       - name: Install reprepro
         run: sudo apt-get update && sudo apt-get install -y reprepro
@@ -928,6 +928,81 @@ jobs:
         run: |
           set -euo pipefail
           cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "Update packages from ${RELEASE_TAG}"
+          git push
+
+  publish-rpm:
+    name: Publish to RPM repository
+    needs: [metadata, build]
+    runs-on: ubuntu-latest
+    if: contains(fromJSON('["desktop-linux"]'), 'desktop-linux')
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+      RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+    steps:
+      - name: Download .rpm from release
+        run: |
+          set -euo pipefail
+          mkdir -p rpms
+          gh release download "$RELEASE_TAG" --pattern "*.rpm" --dir rpms --repo "$GITHUB_REPOSITORY"
+          rpm_file="$(ls rpms/*.rpm | head -n 1)"
+          if [[ -z "${rpm_file}" ]]; then
+            echo "No .rpm file found in release ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          echo "Found .rpm: ${rpm_file}"
+          echo "RPM_FILE=${rpm_file}" >> "$GITHUB_ENV"
+
+      - name: Clone RPM repository
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${{ secrets.PACKAGE_REPO_TOKEN }}@github.com/voquill/rpm.git" rpm-repo
+
+      - name: Import GPG key
+        env:
+          PACKAGE_GPG_PRIVATE_KEY: ${{ secrets.PACKAGE_GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          echo "${PACKAGE_GPG_PRIVATE_KEY}" | gpg --batch --import
+
+      - name: Install createrepo
+        run: sudo apt-get update && sudo apt-get install -y createrepo-c
+
+      - name: Add package to repository
+        run: |
+          set -euo pipefail
+          cd rpm-repo
+
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            channel="stable"
+          else
+            channel="dev"
+          fi
+
+          mkdir -p "packages/${channel}/x86_64"
+          cp "../${RPM_FILE}" "packages/${channel}/x86_64/"
+
+          # Sign the RPM
+          RPM_COPIED="packages/${channel}/x86_64/$(basename "${RPM_FILE}")"
+          rpmsign --addsign "${RPM_COPIED}" || echo "Warning: rpmsign not available, skipping RPM signing"
+
+          # Generate/update repository metadata
+          createrepo_c --update "packages/${channel}"
+
+          # Sign the repository metadata
+          gpg --batch --yes --detach-sign --armor "packages/${channel}/repodata/repomd.xml"
+
+      - name: Push updated repository
+        run: |
+          set -euo pipefail
+          cd rpm-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -965,7 +1040,7 @@ jobs:
       - name: Clone Homebrew tap repository
         run: |
           set -euo pipefail
-          git clone "https://x-access-token:${{ secrets.BREW_REPO_TOKEN }}@github.com/voquill/homebrew-voquill-desktop.git" brew-tap
+          git clone "https://x-access-token:${{ secrets.PACKAGE_REPO_TOKEN }}@github.com/voquill/homebrew-voquill.git" brew-tap
 
       - name: Update cask
         run: |

@@ -1,5 +1,6 @@
 pub mod audio_feedback;
 pub mod audio_store;
+pub mod bridge_server;
 pub mod crypto;
 pub mod diagnostics;
 pub mod enterprise_oidc;

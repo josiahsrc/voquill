@@ -8,6 +8,14 @@
         "depends": ["libxdo3", "libvulkan1"],
         "conflicts": ["voquill-gpu"],
         "replaces": ["voquill-gpu"]
+      },
+      "rpm": {
+        "depends": {
+          "xdotool": "",
+          "vulkan-loader": ""
+        },
+        "conflicts": ["voquill-gpu"],
+        "obsoletes": ["voquill-gpu"]
       }
     }
   },

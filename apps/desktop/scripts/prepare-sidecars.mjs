@@ -273,6 +273,81 @@ function resolveGpuBuildState(target) {
   };
 }
 
+// --- GTK4 pill overlay (Linux only) ---
+if (isLinuxTarget(targetTriple)) {
+  buildPillOverlay();
+}
+
+function buildPillOverlay() {
+  const pillManifestPath = join(
+    repoRoot,
+    "packages",
+    "rust_gtk4_pill",
+    "Cargo.toml",
+  );
+
+  if (!existsSync(pillManifestPath)) {
+    console.warn("[sidecar] GTK4 pill manifest not found, skipping");
+    return;
+  }
+
+  const pillTargetDir = cargoTargetDirOverride
+    ? isAbsolute(cargoTargetDirOverride)
+      ? cargoTargetDirOverride
+      : resolve(repoRoot, cargoTargetDirOverride)
+    : join(repoRoot, "packages", "rust_gtk4_pill", "target");
+
+  const pillCargoArgs = [
+    "build",
+    "--manifest-path",
+    pillManifestPath,
+    "--bin",
+    "voquill-gtk4-pill",
+  ];
+
+  if (buildTarget) {
+    pillCargoArgs.push("--target", buildTarget);
+  }
+
+  if (buildProfile === "release") {
+    pillCargoArgs.push("--release");
+  }
+
+  const buildOk = run("cargo", pillCargoArgs, repoRoot, {
+    allowFailure: true,
+  });
+
+  if (!buildOk) {
+    console.warn("[sidecar] GTK4 pill build failed, skipping");
+    return;
+  }
+
+  const pillSourcePath = join(
+    pillTargetDir,
+    ...(buildTarget ? [buildTarget] : []),
+    buildProfile,
+    "voquill-gtk4-pill",
+  );
+
+  const resourcesDir = join(desktopDir, "src-tauri", "resources");
+  mkdirSync(resourcesDir, { recursive: true });
+  const pillDestPath = join(resourcesDir, "voquill-gtk4-pill");
+
+  if (existsSync(pillSourcePath)) {
+    copyFileSync(pillSourcePath, pillDestPath);
+    chmodSync(pillDestPath, 0o755);
+    console.log(`[sidecar] Prepared voquill-gtk4-pill: ${pillDestPath}`);
+  } else {
+    console.warn(
+      `[sidecar] Expected pill binary not produced: ${pillSourcePath}`,
+    );
+  }
+}
+
+function isLinuxTarget(target) {
+  return target.includes("linux");
+}
+
 function fail(message) {
   console.error(`[sidecar] ${message}`);
   process.exit(1);

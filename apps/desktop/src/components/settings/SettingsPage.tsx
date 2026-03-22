@@ -50,7 +50,7 @@ import {
   getAllowsChangeTranscription,
   getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
-import { isMacOS } from "../../utils/env.utils";
+import { isWindows } from "../../utils/env.utils";
 import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
 import {
   DICTATION_LANGUAGE_OPTIONS,
@@ -267,7 +267,7 @@ export default function SettingsPage() {
         leading={<TroubleshootOutlined />}
         onClick={openDiagnosticsDialog}
       />
-      {!isMacOS() && (
+      {isWindows() && (
         <ListTile
           title={<FormattedMessage defaultMessage="App paste bindings" />}
           leading={<AppsOutlined />}

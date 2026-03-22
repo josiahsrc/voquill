@@ -9,6 +9,13 @@
     "GCLOUD_PROJECT",
     "REALTIME_DATABASE_EMULATOR_HOST"
   ],
+  "globalPassThroughEnv": [
+    "DISPLAY",
+    "WAYLAND_DISPLAY",
+    "XDG_RUNTIME_DIR",
+    "XAUTHORITY",
+    "GDK_BACKEND"
+  ],
   "concurrency": "15",
   "tasks": {
     "build": {
