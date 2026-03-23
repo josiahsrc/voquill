@@ -5,14 +5,16 @@
   "bundle": {
     "linux": {
       "deb": {
-        "depends": ["libxdo3", "libvulkan1"],
+        "depends": ["libxdo3", "xdotool", "libvulkan1", "libgtk-layer-shell0", "wtype"],
         "conflicts": ["voquill-gpu"],
         "replaces": ["voquill-gpu"]
       },
       "rpm": {
         "depends": {
           "xdotool": "",
-          "vulkan-loader": ""
+          "vulkan-loader": "",
+          "gtk-layer-shell": "",
+          "wtype": ""
         },
         "conflicts": ["voquill-gpu"],
         "obsoletes": ["voquill-gpu"]
