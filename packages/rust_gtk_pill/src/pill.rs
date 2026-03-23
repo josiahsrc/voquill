@@ -117,7 +117,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         window.set_exclusive_zone(-1);
         window.set_namespace("voquill-pill");
     } else {
-        window.connect_realize(|w| setup_x11_window(w));
+        window.connect_realize(setup_x11_window);
     }
 
     let css = gtk::CssProvider::new();

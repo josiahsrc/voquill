@@ -63,12 +63,7 @@
         "depends": ["libxdo3", "xdotool", "libvulkan1", "libgtk-layer-shell0", "wtype"]
       },
       "rpm": {
-        "depends": {
-          "xdotool": "",
-          "vulkan-loader": "",
-          "gtk-layer-shell": "",
-          "wtype": ""
-        }
+        "depends": ["xdotool", "vulkan-loader", "gtk-layer-shell", "wtype"]
       },
       "appimage": {
         "bundleMediaFramework": false
