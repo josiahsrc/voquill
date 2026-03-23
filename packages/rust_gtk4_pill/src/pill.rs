@@ -73,22 +73,30 @@ struct PillState {
 }
 
 pub fn run(receiver: Receiver<InMessage>) {
-    if !gtk4_layer_shell::is_supported() {
-        eprintln!("[pill] layer-shell not supported by compositor");
-        std::process::exit(1);
+    let use_layer_shell = gtk4_layer_shell::is_supported();
+    if !use_layer_shell {
+        let display = gdk::Display::default().expect("display");
+        if display.type_().name() != "GdkX11Display" {
+            eprintln!("[pill] neither layer-shell nor X11 available");
+            std::process::exit(1);
+        }
     }
 
     let window = gtk4::Window::new();
     window.set_default_size(WINDOW_WIDTH, WINDOW_HEIGHT);
     window.set_decorated(false);
 
-    window.init_layer_shell();
-    window.set_layer(gtk4_layer_shell::Layer::Overlay);
-    window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
-    window.set_margin(gtk4_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
-    window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None);
-    window.set_exclusive_zone(-1);
-    window.set_namespace(Some("voquill-pill"));
+    if use_layer_shell {
+        window.init_layer_shell();
+        window.set_layer(gtk4_layer_shell::Layer::Overlay);
+        window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
+        window.set_margin(gtk4_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
+        window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None);
+        window.set_exclusive_zone(-1);
+        window.set_namespace(Some("voquill-pill"));
+    } else {
+        window.connect_realize(|w| setup_x11_window(w));
+    }
 
     let css = gtk4::CssProvider::new();
     css.load_from_data("window { background: transparent; }");
@@ -455,4 +463,81 @@ fn rounded_rect(cr: &cairo::Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
 
 fn lerp(a: f64, b: f64, t: f64) -> f64 {
     a + (b - a) * t
+}
+
+fn setup_x11_window(window: &gtk4::Window) {
+    use std::ffi::{c_char, c_int, c_uchar, c_ulong, c_void};
+
+    type XDisplay = c_void;
+    type XWindow = c_ulong;
+    type XAtom = c_ulong;
+
+    const XA_ATOM: XAtom = 4;
+
+    extern "C" {
+        fn gdk_x11_display_get_xdisplay(display: *mut c_void) -> *mut XDisplay;
+        fn gdk_x11_surface_get_xid(surface: *mut c_void) -> XWindow;
+    }
+
+    #[link(name = "X11")]
+    extern "C" {
+        fn XInternAtom(
+            display: *mut XDisplay, name: *const c_char, only_if_exists: c_int,
+        ) -> XAtom;
+        fn XChangeProperty(
+            display: *mut XDisplay, w: XWindow, property: XAtom, type_: XAtom,
+            format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int,
+        ) -> c_int;
+        fn XMoveWindow(display: *mut XDisplay, w: XWindow, x: c_int, y: c_int) -> c_int;
+        fn XDefaultScreen(display: *mut XDisplay) -> c_int;
+        fn XDisplayWidth(display: *mut XDisplay, screen: c_int) -> c_int;
+        fn XDisplayHeight(display: *mut XDisplay, screen: c_int) -> c_int;
+        fn XFlush(display: *mut XDisplay) -> c_int;
+    }
+
+    let display = gtk4::prelude::WidgetExt::display(window);
+    let surface = window.surface().expect("surface after realize");
+
+    unsafe {
+        let xdisplay = gdk_x11_display_get_xdisplay(
+            glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkDisplay>::to_glib_none(&display).0
+                as *mut c_void,
+        );
+        let xwindow = gdk_x11_surface_get_xid(
+            glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkSurface>::to_glib_none(&surface).0
+                as *mut c_void,
+        );
+
+        let intern = |name: &[u8]| -> XAtom {
+            XInternAtom(xdisplay, name.as_ptr() as *const c_char, 0)
+        };
+
+        let wm_window_type = intern(b"_NET_WM_WINDOW_TYPE\0");
+        let type_dock = intern(b"_NET_WM_WINDOW_TYPE_DOCK\0");
+        XChangeProperty(
+            xdisplay, xwindow, wm_window_type, XA_ATOM, 32, 0,
+            &type_dock as *const XAtom as *const c_uchar, 1,
+        );
+
+        let wm_state = intern(b"_NET_WM_STATE\0");
+        let states = [
+            intern(b"_NET_WM_STATE_ABOVE\0"),
+            intern(b"_NET_WM_STATE_STICKY\0"),
+            intern(b"_NET_WM_STATE_SKIP_TASKBAR\0"),
+            intern(b"_NET_WM_STATE_SKIP_PAGER\0"),
+        ];
+        XChangeProperty(
+            xdisplay, xwindow, wm_state, XA_ATOM, 32, 0,
+            states.as_ptr() as *const c_uchar, states.len() as c_int,
+        );
+
+        let screen = XDefaultScreen(xdisplay);
+        let screen_w = XDisplayWidth(xdisplay, screen);
+        let screen_h = XDisplayHeight(xdisplay, screen);
+        let x = (screen_w - WINDOW_WIDTH) / 2;
+        let y = screen_h - WINDOW_HEIGHT - MARGIN_BOTTOM;
+        XMoveWindow(xdisplay, xwindow, x, y);
+
+        XFlush(xdisplay);
+    }
 }

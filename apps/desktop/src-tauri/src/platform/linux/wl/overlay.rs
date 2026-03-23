@@ -33,7 +33,6 @@ pub fn try_create_pill_overlay(app: &tauri::AppHandle) -> bool {
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
-        .env("GDK_BACKEND", "wayland")
         .spawn()
     {
         Ok(child) => child,
@@ -77,7 +76,7 @@ pub fn try_create_pill_overlay(app: &tauri::AppHandle) -> bool {
 
     start_stdout_reader(app.clone(), reader);
 
-    log::info!("Native GTK4 Wayland pill overlay is active");
+    log::info!("Native GTK4 pill overlay is active");
     true
 }
 
