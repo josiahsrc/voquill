@@ -30,7 +30,7 @@ pub fn should_use_native_overlays() -> bool {
 
 pub fn try_create_native_overlays(app: &tauri::AppHandle) -> bool {
     if try_create_pill_overlay(app) {
-        log::info!("Using native overlays via GTK4 layer-shell");
+        log::info!("Using native overlays via GTK layer-shell");
         true
     } else {
         log::warn!("Native overlay not available, falling back to Tauri overlays");
@@ -73,11 +73,11 @@ pub fn notify_style_info(app: &tauri::AppHandle, count: u32, name: &str) {
 
 fn try_create_pill_overlay(app: &tauri::AppHandle) -> bool {
     let Some(pill_path) = resolve_pill_binary_path(app) else {
-        log::warn!("GTK4 pill binary not found");
+        log::warn!("GTK pill binary not found");
         return false;
     };
 
-    log::info!("Spawning GTK4 pill overlay from: {}", pill_path.display());
+    log::info!("Spawning GTK pill overlay from: {}", pill_path.display());
 
     let mut child = match Command::new(&pill_path)
         .stdin(Stdio::piped())
@@ -126,7 +126,7 @@ fn try_create_pill_overlay(app: &tauri::AppHandle) -> bool {
 
     start_stdout_reader(app.clone(), reader);
 
-    log::info!("Native GTK4 pill overlay is active");
+    log::info!("Native GTK pill overlay is active");
     true
 }
 
@@ -184,7 +184,7 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
 
 fn resolve_pill_binary_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let path = resource_dir.join("resources/voquill-gtk4-pill");
+        let path = resource_dir.join("resources/voquill-gtk-pill");
         if path.exists() {
             return Some(path);
         }
@@ -194,7 +194,7 @@ fn resolve_pill_binary_path(app: &tauri::AppHandle) -> Option<std::path::PathBuf
         if let Ok(exe) = std::env::current_exe() {
             let mut dir = exe.parent();
             while let Some(d) = dir {
-                let dev_path = d.join("packages/rust_gtk4_pill/target/debug/voquill-gtk4-pill");
+                let dev_path = d.join("packages/rust_gtk_pill/target/debug/voquill-gtk-pill");
                 if dev_path.exists() {
                     return Some(dev_path);
                 }
