@@ -271,6 +271,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::read_enterprise_target,
             crate::commands::run_terminal_command,
             crate::commands::get_hotkey_strategy,
+            crate::commands::supports_app_detection,
+            crate::commands::supports_paste_keybinds,
             crate::commands::get_keyboard_language,
             crate::commands::conversation_create,
             crate::commands::conversation_list,

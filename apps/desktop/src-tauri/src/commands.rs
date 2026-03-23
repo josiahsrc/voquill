@@ -1357,6 +1357,16 @@ pub fn get_hotkey_strategy() -> String {
 }
 
 #[tauri::command]
+pub fn supports_app_detection() -> bool {
+    crate::platform::supports_app_detection()
+}
+
+#[tauri::command]
+pub fn supports_paste_keybinds() -> bool {
+    crate::platform::supports_paste_keybinds()
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {

@@ -110,6 +110,9 @@ export function GettingStartedList() {
     "voquill:checklist-writing-style",
     false,
   );
+  const supportsAppDetection = useAppStore(
+    (state) => state.supportsAppDetection,
+  );
   const appTargetById = useAppStore((state) => state.appTargetById);
 
   const appTargetEntries = useMemo(
@@ -167,7 +170,7 @@ export function GettingStartedList() {
     [onboardedAt],
   );
 
-  if (isDismissed || allDone || onboardedBeforeCutoff) {
+  if (!supportsAppDetection || isDismissed || allDone || onboardedBeforeCutoff) {
     return null;
   }
 

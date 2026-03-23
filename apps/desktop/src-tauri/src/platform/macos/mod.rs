@@ -14,3 +14,11 @@ pub mod window;
 pub fn get_hotkey_strategy() -> &'static str {
     "listener"
 }
+
+pub fn supports_app_detection() -> bool {
+    true
+}
+
+pub fn supports_paste_keybinds() -> bool {
+    false
+}

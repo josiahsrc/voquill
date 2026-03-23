@@ -142,9 +142,15 @@ export const AppSideEffects = () => {
   const hotkeyStrategy = useAppStore((state) => state.hotkeyStrategy);
 
   useAsyncEffect(async () => {
-    const strategy = await invoke<HotkeyStrategy>("get_hotkey_strategy");
+    const [strategy, appDetection, pasteKeybinds] = await Promise.all([
+      invoke<HotkeyStrategy>("get_hotkey_strategy"),
+      invoke<boolean>("supports_app_detection"),
+      invoke<boolean>("supports_paste_keybinds"),
+    ]);
     produceAppState((draft) => {
       draft.hotkeyStrategy = strategy;
+      draft.supportsAppDetection = appDetection;
+      draft.supportsPasteKeybinds = pasteKeybinds;
     });
   }, []);
 
