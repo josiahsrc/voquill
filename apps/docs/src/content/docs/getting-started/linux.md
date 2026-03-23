@@ -152,7 +152,20 @@ echo $XDG_SESSION_TYPE
 
 ### X11
 
-No additional setup is required. Hotkeys and text pasting work out of the box on X11.
+Voquill uses `xdotool` to simulate paste keystrokes after placing transcribed text on the clipboard. Most X11 desktops have it pre-installed, but if not:
+
+```bash
+# Debian / Ubuntu
+sudo apt install xdotool
+
+# Fedora / RHEL
+sudo dnf install xdotool
+
+# openSUSE
+sudo zypper install xdotool
+```
+
+No other setup is required — hotkeys work out of the box on X11.
 
 ### Wayland
 
