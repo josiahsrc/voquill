@@ -55,22 +55,17 @@ pub async fn update_chat_message(
     pool: SqlitePool,
     message: &ChatMessage,
 ) -> Result<ChatMessage, sqlx::Error> {
-    sqlx::query(
-        "UPDATE chat_messages SET content = ?2, metadata = ?3 WHERE id = ?1",
-    )
-    .bind(&message.id)
-    .bind(&message.content)
-    .bind(&message.metadata)
-    .execute(&pool)
-    .await?;
+    sqlx::query("UPDATE chat_messages SET content = ?2, metadata = ?3 WHERE id = ?1")
+        .bind(&message.id)
+        .bind(&message.content)
+        .bind(&message.metadata)
+        .execute(&pool)
+        .await?;
 
     Ok(message.clone())
 }
 
-pub async fn delete_chat_messages(
-    pool: SqlitePool,
-    ids: &[String],
-) -> Result<(), sqlx::Error> {
+pub async fn delete_chat_messages(pool: SqlitePool, ids: &[String]) -> Result<(), sqlx::Error> {
     for id in ids {
         sqlx::query("DELETE FROM chat_messages WHERE id = ?1")
             .bind(id)

@@ -133,6 +133,8 @@ export type AppState = {
   overlayCursor: Nullable<Vector2>;
   hotkeyTriggers: Record<string, number>;
   hotkeyStrategy: Nullable<HotkeyStrategy>;
+  supportsAppDetection: boolean;
+  supportsPasteKeybinds: boolean;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -183,6 +185,8 @@ export const INITIAL_APP_STATE: AppState = {
   overlayCursor: null,
   hotkeyTriggers: {},
   hotkeyStrategy: null,
+  supportsAppDetection: true,
+  supportsPasteKeybinds: true,
   pillConversationId: null,
   assistantInputMode: "voice",
   chat: INITIAL_CHAT_STATE,

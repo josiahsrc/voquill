@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub enum InMessage {
     Phase { phase: Phase },
     Levels { levels: Vec<f32> },
+    StyleInfo { count: u32, name: String },
     Quit,
 }
 
@@ -25,6 +26,7 @@ pub enum OutMessage {
     Ready,
     Hover { hovered: bool },
     Click,
+    StyleSwitch { direction: String },
 }
 
 pub fn send(msg: &OutMessage) {

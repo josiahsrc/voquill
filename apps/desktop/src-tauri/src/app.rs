@@ -147,6 +147,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
+                // Important: Even if native overlays fail, do not fall back to using the Tauri windows
+                // overlay. Systems that use native overlays to NOT take well to Tauri driven overlays.
                 let use_native_overlays = crate::overlay::should_use_native_overlays();
                 if use_native_overlays {
                     crate::overlay::try_create_native_overlays(app_handle);
@@ -257,6 +259,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::clear_local_data,
             crate::commands::set_phase,
             crate::commands::set_pill_hover_enabled,
+            crate::commands::notify_pill_style_info,
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::sync_hotkey_combos,
@@ -269,6 +272,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::read_enterprise_target,
             crate::commands::run_terminal_command,
             crate::commands::get_hotkey_strategy,
+            crate::commands::supports_app_detection,
+            crate::commands::supports_paste_keybinds,
             crate::commands::get_keyboard_language,
             crate::commands::conversation_create,
             crate::commands::conversation_list,

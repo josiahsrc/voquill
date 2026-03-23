@@ -1,4 +1,4 @@
-mod detect;
+pub(crate) mod detect;
 mod wl;
 mod x11;
 
@@ -22,4 +22,12 @@ pub fn get_hotkey_strategy() -> &'static str {
     } else {
         "listener"
     }
+}
+
+pub fn supports_app_detection() -> bool {
+    !detect::is_wayland()
+}
+
+pub fn supports_paste_keybinds() -> bool {
+    false
 }

@@ -101,7 +101,7 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
   [DICTATE_HOTKEY]: {
     macos: [["Function"]],
     windows: [["MetaLeft", "ControlLeft"]],
-    linux: [["MetaLeft", "ControlLeft"]],
+    linux: [["Alt", "ControlLeft", "KeyA"]],
   },
   [CANCEL_TRANSCRIPTION_HOTKEY]: {
     macos: [["Escape"]],
@@ -230,8 +230,10 @@ export const syncHotkeyCombosToNative = async (): Promise<void> => {
 
     if (
       COMPOSITOR_TRIGGER_ACTIONS.includes(actionName) &&
+      isActionGrabbable(state, actionName) &&
       actionCombos.length > 0 &&
-      actionCombos[0].length > 0
+      actionCombos[0].length > 0 &&
+      !isModifierOnlyCombo(actionCombos[0])
     ) {
       compositorBindings.push({
         actionName,

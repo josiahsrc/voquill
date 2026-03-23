@@ -69,7 +69,7 @@ arboard = "3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 enigo = "0.1"
-arboard = "3"
+arboard = { version = "3", features = ["wayland-data-control"] }
 gtk = { version = "0.18", package = "gtk" }
 x11 = "2.21"
 
