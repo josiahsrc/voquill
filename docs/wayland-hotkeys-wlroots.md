@@ -48,20 +48,19 @@ sudo udevadm trigger
 
 Log out and back in for the group change to take effect.
 
-**Enable the daemon (optional):**
+**Daemon startup:**
 
-ydotool works without the daemon on versions < 1.0 (with a "ydotoold backend unavailable" warning
-and slightly higher latency). On >= 1.0, the daemon is recommended:
+Voquill now tries to start `ydotoold` automatically on Wayland when `ydotoold` is installed but
+its socket is missing. You should not need to run `ydotoold &` manually.
 
-```bash
-# ydotool >= 1.0
-sudo systemctl enable --now ydotoold
+Some distros package a systemd unit for `ydotoold`, but Voquill does not rely on it. If automatic
+startup fails, the remaining causes are usually outside the app:
 
-# ydotool < 1.0 (no systemd service — daemon is optional)
-# If you want lower latency: sudo ydotoold &
-```
+- your user still cannot open `/dev/uinput`
+- `XDG_RUNTIME_DIR` is missing or invalid
+- another stale `.ydotool_socket` is blocking startup
 
-To check your version: `dpkg -l ydotool` (deb) or `rpm -q ydotool` (rpm)
+To check your version: `ydotoold --version` or your distro package manager.
 
 **Verify it works:**
 
@@ -79,6 +78,8 @@ If "hello" appears in the editor, ydotool is working.
   Voquill prefers raw keycodes for known paste/copy combos so it works across both styles.
 - Without `/dev/uinput` access, ydotool will fail with `failed to open uinput device`.
   Make sure the permissions are set as described above.
+- If Voquill logs that it could not start `ydotoold` automatically, remove any stale
+  `$XDG_RUNTIME_DIR/.ydotool_socket` file and re-check your `/dev/uinput` permissions.
 
 ### wtype (fallback for Sway/Hyprland)
 
@@ -156,6 +157,9 @@ The keystroke simulation tries these tools in order:
 1. **ydotool** — works on all compositors via `/dev/uinput` (recommended)
 2. **wtype** — works on Sway/Hyprland via virtual-keyboard protocol (bundled in production)
 3. **wtype text** — types the text directly as a last resort (no clipboard)
+
+If `ydotool` is installed but its daemon is not ready, Voquill first tries to launch `ydotoold`
+automatically and then falls back to `wtype` where the compositor supports it.
 
 If no keystroke simulation tool is available, pasting will fail. Install ydotool as described above.
 

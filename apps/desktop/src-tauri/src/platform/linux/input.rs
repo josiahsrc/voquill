@@ -20,3 +20,9 @@ pub(crate) fn paste_text_into_focused_field(
         super::x11::input::paste_text(target, keybind)
     }
 }
+
+pub(crate) fn warm_runtime_helpers() {
+    if super::detect::is_wayland() {
+        super::wl::input::warm_runtime_helpers();
+    }
+}

@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::{Child, Command, Output, Stdio};
 use std::sync::Mutex;
 use std::time::Instant;
@@ -6,7 +7,9 @@ use std::{thread, time::Duration};
 
 static CLIPBOARD_HOLD: Mutex<Option<arboard::Clipboard>> = Mutex::new(None);
 static WL_COPY_HOLD: Mutex<Option<Child>> = Mutex::new(None);
+static YDOTOOLD_CHILD: Mutex<Option<Child>> = Mutex::new(None);
 const WL_CLIPBOARD_TIMEOUT_MS: u64 = 150;
+const YDOTOOLD_START_TIMEOUT_MS: u64 = 1500;
 
 enum ClipboardSnapshot {
     Text(String),
@@ -221,7 +224,178 @@ fn ydotool_available() -> bool {
         .is_ok()
 }
 
+fn ydotoold_available() -> bool {
+    Command::new("ydotoold")
+        .arg("--help")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok()
+}
+
+fn ydotool_socket_path() -> Option<PathBuf> {
+    std::env::var_os("YDOTOOL_SOCKET")
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("XDG_RUNTIME_DIR")
+                .map(PathBuf::from)
+                .map(|dir| dir.join(".ydotool_socket"))
+        })
+}
+
+fn ydotool_socket_present() -> bool {
+    let Some(path) = ydotool_socket_path() else {
+        return false;
+    };
+
+    path.exists()
+}
+
+fn remove_ydotool_socket() {
+    let Some(path) = ydotool_socket_path() else {
+        return;
+    };
+
+    if path.exists() {
+        match std::fs::remove_file(&path) {
+            Ok(()) => log::warn!("Removed ydotool socket at {}", path.display()),
+            Err(err) => log::warn!(
+                "Failed to remove ydotool socket at {}: {err}",
+                path.display()
+            ),
+        }
+    }
+}
+
+fn wait_for_ydotoold_socket(child: &mut Child, timeout: Duration) -> Result<(), String> {
+    let started = Instant::now();
+
+    loop {
+        if ydotool_socket_present() {
+            return Ok(());
+        }
+
+        match child.try_wait() {
+            Ok(Some(_status)) => {
+                return Err("ydotoold exited before creating its socket".to_string());
+            }
+            Ok(None) => {}
+            Err(err) => return Err(format!("failed while waiting for ydotoold: {err}")),
+        }
+
+        if started.elapsed() >= timeout {
+            return Err(format!(
+                "ydotoold did not create its socket within {}ms",
+                timeout.as_millis()
+            ));
+        }
+
+        thread::sleep(Duration::from_millis(25));
+    }
+}
+
+fn ensure_ydotoold_running() -> Result<(), String> {
+    if !ydotoold_available() {
+        return Ok(());
+    }
+
+    if ydotool_socket_present() {
+        return Ok(());
+    }
+
+    let mut guard = YDOTOOLD_CHILD.lock().unwrap_or_else(|p| p.into_inner());
+    if let Some(child) = guard.as_mut() {
+        if ydotool_socket_present() {
+            return Ok(());
+        }
+
+        match child.try_wait() {
+            Ok(Some(_)) => {
+                let _ = guard.take();
+            }
+            Ok(None) => {
+                return wait_for_ydotoold_socket(
+                    child,
+                    Duration::from_millis(YDOTOOLD_START_TIMEOUT_MS),
+                );
+            }
+            Err(err) => {
+                let _ = guard.take();
+                return Err(format!("failed to inspect existing ydotoold process: {err}"));
+            }
+        }
+    }
+
+    spawn_ydotoold(&mut guard)
+}
+
+fn spawn_ydotoold(guard: &mut Option<Child>) -> Result<(), String> {
+    remove_ydotool_socket();
+
+    let mut command = Command::new("ydotoold");
+    command.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::piped());
+
+    if let Some(path) = ydotool_socket_path() {
+        command.arg("--socket-path").arg(path);
+    }
+
+    let mut child = command
+        .spawn()
+        .map_err(|err| format!("failed to start ydotoold automatically: {err}"))?;
+
+    wait_for_ydotoold_socket(&mut child, Duration::from_millis(YDOTOOLD_START_TIMEOUT_MS))?;
+    log::info!("Started ydotoold automatically for Wayland input simulation");
+    *guard = Some(child);
+    Ok(())
+}
+
+fn restart_ydotoold() -> Result<(), String> {
+    if !ydotoold_available() {
+        return Ok(());
+    }
+
+    let mut guard = YDOTOOLD_CHILD.lock().unwrap_or_else(|p| p.into_inner());
+    if let Some(mut child) = guard.take() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+
+    spawn_ydotoold(&mut guard)
+}
+
+pub(crate) fn warm_runtime_helpers() {
+    if ydotool_available() {
+        if let Err(err) = ensure_ydotoold_running() {
+            log::warn!("Failed to warm ydotoold automatically: {err}");
+        }
+    }
+}
+
 fn ydotool_key(combo: &str) -> Result<(), String> {
+    ensure_ydotoold_running()?;
+
+    match ydotool_key_once(combo) {
+        Ok(()) => Ok(()),
+        Err(first_err) => {
+            if !ydotoold_available() {
+                return Err(first_err);
+            }
+
+            log::warn!(
+                "ydotool command failed, restarting ydotoold and retrying: {first_err}"
+            );
+            restart_ydotoold()?;
+            ydotool_key_once(combo).map_err(|retry_err| {
+                format!(
+                    "{first_err}; retry after restarting ydotoold also failed: {retry_err}"
+                )
+            })
+        }
+    }
+}
+
+fn ydotool_key_once(combo: &str) -> Result<(), String> {
+
     if let Some(sequence) = ydotool_keycode_fallback(combo) {
         let keycode_output = Command::new("ydotool")
             .arg("key")
@@ -324,7 +498,12 @@ fn simulate_paste_keystroke(keybind: Option<&str>) -> Result<(), String> {
 
     if ydotool_available() {
         log::info!("Using ydotool for paste keystroke: {combo}");
-        return ydotool_key(combo);
+        match ydotool_key(combo) {
+            Ok(()) => return Ok(()),
+            Err(err) => log::warn!(
+                "ydotool paste keystroke failed ({err}), trying wtype fallback"
+            ),
+        }
     }
 
     log::info!("ydotool not available, trying wtype for paste keystroke: {combo}");
@@ -337,7 +516,10 @@ fn simulate_paste_keystroke(keybind: Option<&str>) -> Result<(), String> {
 
 pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
     if ydotool_available() {
-        return ydotool_copy();
+        match ydotool_copy() {
+            Ok(()) => return Ok(()),
+            Err(err) => log::warn!("ydotool copy keystroke failed ({err}), trying wtype"),
+        }
     }
     wtype_key(&["ctrl"], "c")
 }
