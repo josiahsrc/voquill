@@ -89,14 +89,19 @@ pub fn wtype_text(text: &str) -> Result<(), String> {
 
 // --- Simulate paste/copy keystrokes ---
 
-fn simulate_paste_keystroke() -> Result<(), String> {
+fn simulate_paste_keystroke(use_shift: bool) -> Result<(), String> {
     if ydotool_available() {
         log::info!("Using ydotool for paste keystroke");
-        return ydotool_key("ctrl+shift+v");
+        let combo = if use_shift { "ctrl+shift+v" } else { "ctrl+v" };
+        return ydotool_key(combo);
     }
 
     log::info!("ydotool not available, trying wtype for paste keystroke");
-    wtype_key(&["ctrl", "shift"], "v")
+    if use_shift {
+        wtype_key(&["ctrl", "shift"], "v")
+    } else {
+        wtype_key(&["ctrl"], "v")
+    }
 }
 
 pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
@@ -108,20 +113,21 @@ pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
 
 // --- Public API ---
 
-pub fn paste_text(text: &str, _keybind: Option<&str>) -> Result<(), String> {
-    paste_via_clipboard(text).or_else(|err| {
+pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    paste_via_clipboard(text, keybind).or_else(|err| {
         log::warn!("Wayland paste failed ({err}), trying wtype text fallback");
         wtype_text(text)
     })
 }
 
-fn paste_via_clipboard(text: &str) -> Result<(), String> {
+fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
     let previous = clipboard_get().ok();
 
     clipboard_set(text)?;
     thread::sleep(Duration::from_millis(40));
 
-    simulate_paste_keystroke()?;
+    let use_shift = keybind == Some("ctrl+shift+v");
+    simulate_paste_keystroke(use_shift)?;
 
     if let Some(old) = previous {
         thread::spawn(move || {
