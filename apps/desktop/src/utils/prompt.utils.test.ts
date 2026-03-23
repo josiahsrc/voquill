@@ -91,9 +91,7 @@ describe("buildPostProcessingPrompt", () => {
     const result = buildPostProcessingPrompt(
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
-    expect(result).toContain(
-      "Your task is to REWRITE an audio transcription",
-    );
+    expect(result).toContain("Your task is to REWRITE an audio transcription");
     expect(result).toContain("Be formal");
     expect(result).toContain("Hello world");
     expect(result).toContain("Alice");
