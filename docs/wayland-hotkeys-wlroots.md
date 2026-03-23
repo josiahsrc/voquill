@@ -74,9 +74,9 @@ If "hello" appears in the editor, ydotool is working.
 
 **Known issues:**
 
-- ydotool 0.1.x uses `modifier+key` syntax (e.g. `ctrl+v`). Version 1.0+ uses keycode
-  press/release syntax (e.g. `29:1 47:1 47:0 29:0`). Voquill uses the 0.1.x syntax which
-  is supported across both versions.
+- ydotool 0.1.x accepts `modifier+key` syntax (for example `ctrl+v`). Version 1.0+
+  documents raw keycode press/release syntax instead (for example `29:1 47:1 47:0 29:0`).
+  Voquill prefers raw keycodes for known paste/copy combos so it works across both styles.
 - Without `/dev/uinput` access, ydotool will fail with `failed to open uinput device`.
   Make sure the permissions are set as described above.
 
@@ -106,7 +106,7 @@ Use ydotool on GNOME instead.
 
 1. Voquill starts a local HTTP bridge server on a random port at launch.
 2. The port is written to `<app_config_dir>/bridge-server.json`.
-3. A bundled trigger script (`trigger-hotkey.sh`) is deployed to the config dir.
+3. A trigger script (`trigger-hotkey.sh`) is deployed to the config dir. If the packaged resource is unavailable, Voquill falls back to an embedded copy.
 4. Compositor keybindings call the trigger script, which POSTs to the bridge server.
 5. The bridge server emits a Tauri event that the TypeScript layer handles.
 
@@ -147,7 +147,7 @@ Then reload: `hyprctl reload`
 Voquill pastes transcribed text by:
 
 1. Saving the current clipboard contents
-2. Setting the clipboard to the transcribed text (via `arboard`, no external tools needed)
+2. Setting the clipboard to the transcribed text (prefer `wl-copy`, fall back to `arboard`)
 3. Simulating a paste keystroke (Ctrl+V or Ctrl+Shift+V for terminals)
 4. Restoring the previous clipboard contents after a short delay
 
@@ -169,6 +169,8 @@ Use the deployed trigger script directly:
 ~/.config/com.voquill.desktop/trigger-hotkey.sh cancel-transcription
 ```
 
+The script first checks `bridge-server.json` next to itself, then falls back to scanning matching `~/.config/com.voquill.desktop*` directories. This lets production, development, and GPU flavors share the same trigger logic.
+
 ## Bridge server details
 
 The bridge server accepts `POST /hotkey/<action-name>` on `127.0.0.1`.
@@ -177,6 +179,8 @@ The bridge server accepts `POST /hotkey/<action-name>` on `127.0.0.1`.
 - `404 Not Found` — unknown path
 - `405 Method Not Allowed` — non-POST request
 
-The port file is at:
-- Dev: `$XDG_CONFIG_HOME/com.voquill.desktop.local/bridge-server.json`
+The port file is written to the app's config directory, for example:
+- Local/dev: `$XDG_CONFIG_HOME/com.voquill.desktop.local/bridge-server.json`
+- Dev: `$XDG_CONFIG_HOME/com.voquill.desktop.dev/bridge-server.json`
 - Prod: `$XDG_CONFIG_HOME/com.voquill.desktop/bridge-server.json`
+- GPU variants: matching `$XDG_CONFIG_HOME/com.voquill.desktop.gpu*` directories

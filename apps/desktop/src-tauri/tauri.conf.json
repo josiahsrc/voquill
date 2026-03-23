@@ -60,7 +60,7 @@
     },
     "linux": {
       "appimage": {
-        "bundleMediaFramework": true
+        "bundleMediaFramework": false
       }
     }
   },

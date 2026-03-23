@@ -3,6 +3,7 @@ set -euo pipefail
 
 ACTION="${1:?Usage: trigger-hotkey.sh <action-name>}"
 CONFIG_ROOT="${XDG_CONFIG_HOME:-$HOME/.config}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 read_port_from_file() {
   local info_file="$1"
@@ -18,13 +19,25 @@ try_trigger() {
     -X POST "http://127.0.0.1:${port}/hotkey/${ACTION}" >/dev/null
 }
 
-LOCAL_INFO_FILE="$CONFIG_ROOT/com.voquill.desktop.local/bridge-server.json"
-PROD_INFO_FILE="$CONFIG_ROOT/com.voquill.desktop/bridge-server.json"
+try_info_file() {
+  local info_file="$1"
+  local port
 
-for info_file in "$LOCAL_INFO_FILE" "$PROD_INFO_FILE"; do
   port="$(read_port_from_file "$info_file" || true)"
-  if [[ -n "${port:-}" ]] && try_trigger "$port"; then
-    exit 0
+  [[ -n "${port:-}" ]] || return 1
+
+  try_trigger "$port"
+}
+
+if try_info_file "$SCRIPT_DIR/bridge-server.json"; then
+  exit 0
+fi
+
+for config_dir in "$CONFIG_ROOT"/com.voquill.desktop*; do
+  if [[ -d "$config_dir" ]] && [[ "$config_dir" != "$SCRIPT_DIR" ]]; then
+    if try_info_file "$config_dir/bridge-server.json"; then
+      exit 0
+    fi
   fi
 done
 

@@ -7,6 +7,8 @@ use tauri::Manager;
 use crate::domain::CompositorBinding;
 
 static WTYPE_PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
+const EMBEDDED_TRIGGER_SCRIPT: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/trigger-hotkey.sh"));
 
 pub fn wtype_path() -> Option<&'static PathBuf> {
     WTYPE_PATH.get().and_then(|p| p.as_ref())
@@ -27,25 +29,55 @@ pub fn deploy_trigger_script(app: &tauri::AppHandle) {
 }
 
 fn deploy_trigger_script_inner(app: &tauri::AppHandle) -> Result<(), String> {
-    let resource_path = app
-        .path()
-        .resolve("resources/trigger-hotkey.sh", tauri::path::BaseDirectory::Resource)
-        .map_err(|err| format!("Failed to resolve trigger-hotkey.sh resource: {err}"))?;
-
-    if !resource_path.exists() {
-        return Err(format!(
-            "Bundled trigger-hotkey.sh not found at {}",
-            resource_path.display()
-        ));
-    }
-
     let dest = trigger_script_path(app)?;
     let config_dir = dest.parent().ok_or("Invalid script dest path")?;
     fs::create_dir_all(config_dir)
         .map_err(|err| format!("Failed to create config dir: {err}"))?;
 
-    fs::copy(&resource_path, &dest)
-        .map_err(|err| format!("Failed to copy trigger script: {err}"))?;
+    let resource_path = match app
+        .path()
+        .resolve("resources/trigger-hotkey.sh", tauri::path::BaseDirectory::Resource)
+    {
+        Ok(path) => {
+            log::info!(
+                "Resolved bundled trigger-hotkey.sh to {}",
+                path.display()
+            );
+            Some(path)
+        }
+        Err(err) => {
+            log::warn!(
+                "Failed to resolve bundled trigger-hotkey.sh resource path: {err}. Using embedded fallback."
+            );
+            None
+        }
+    };
+
+    if let Some(resource_path) = resource_path.as_ref().filter(|path| path.exists()) {
+        fs::copy(resource_path, &dest)
+            .map_err(|err| format!("Failed to copy trigger script: {err}"))?;
+        log::info!(
+            "Copied trigger script from {} to {}",
+            resource_path.display(),
+            dest.display()
+        );
+    } else {
+        if let Some(resource_path) = resource_path.as_ref() {
+            log::warn!(
+                "Bundled trigger-hotkey.sh not found at {}. Writing embedded fallback to {}.",
+                resource_path.display(),
+                dest.display()
+            );
+        } else {
+            log::warn!(
+                "Bundled trigger-hotkey.sh unavailable. Writing embedded fallback to {}.",
+                dest.display()
+            );
+        }
+
+        fs::write(&dest, EMBEDDED_TRIGGER_SCRIPT)
+            .map_err(|err| format!("Failed to write embedded trigger script: {err}"))?;
+    }
 
     #[cfg(unix)]
     {

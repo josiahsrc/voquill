@@ -109,17 +109,32 @@ export const useHotkeyHoldMany = (args: {
 
   const triggerCounts = useAppStore((s) => s.hotkeyTriggers);
   const prevTriggerCountsRef = useRef(triggerCounts);
+  const pendingBridgeToggleRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!isDisabled) {
-      for (const action of args.actions) {
-        const prev = prevTriggerCountsRef.current[action.actionName] ?? 0;
-        const curr = triggerCounts[action.actionName] ?? 0;
-        if (curr > prev) {
+    for (const action of args.actions) {
+      const prev = prevTriggerCountsRef.current[action.actionName] ?? 0;
+      const curr = triggerCounts[action.actionName] ?? 0;
+      const hasPendingToggle = pendingBridgeToggleRef.current.has(
+        action.actionName,
+      );
+
+      if (curr > prev) {
+        if (isDisabled) {
+          pendingBridgeToggleRef.current.add(action.actionName);
+        } else {
+          pendingBridgeToggleRef.current.delete(action.actionName);
           action.controller.toggle();
         }
+        continue;
+      }
+
+      if (!isDisabled && hasPendingToggle) {
+        pendingBridgeToggleRef.current.delete(action.actionName);
+        action.controller.toggle();
       }
     }
+
     prevTriggerCountsRef.current = triggerCounts;
   }, [triggerCounts, isDisabled, args.actions]);
 };

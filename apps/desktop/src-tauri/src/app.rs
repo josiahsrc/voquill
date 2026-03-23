@@ -263,6 +263,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::sync_compositor_hotkeys,
             crate::commands::reset_key_listener_state,
             crate::commands::play_audio,
+            crate::commands::play_audio_samples,
+            crate::commands::stop_audio_playback,
             crate::commands::get_text_field_info,
             crate::commands::get_screen_context,
             crate::commands::get_selected_text,

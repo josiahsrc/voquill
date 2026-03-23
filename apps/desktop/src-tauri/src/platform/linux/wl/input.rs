@@ -1,23 +1,214 @@
-use std::process::Command;
+use std::io::Write;
+use std::process::{Child, Command, Output, Stdio};
 use std::sync::Mutex;
+use std::time::Instant;
 use std::{thread, time::Duration};
 
 static CLIPBOARD_HOLD: Mutex<Option<arboard::Clipboard>> = Mutex::new(None);
+static WL_COPY_HOLD: Mutex<Option<Child>> = Mutex::new(None);
+const WL_CLIPBOARD_TIMEOUT_MS: u64 = 150;
+
+enum ClipboardSnapshot {
+    Text(String),
+    Image(arboard::ImageData<'static>),
+    Empty,
+}
 
 pub(crate) fn clipboard_get() -> Result<String, String> {
+    if wl_paste_available() {
+        let output = run_command_with_timeout(
+            Command::new("wl-paste")
+                .arg("--no-newline")
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped()),
+            Duration::from_millis(WL_CLIPBOARD_TIMEOUT_MS),
+            "wl-paste",
+        )?;
+
+        if output.status.success() {
+            return String::from_utf8(output.stdout)
+                .map_err(|err| format!("wl-paste returned invalid UTF-8: {err}"));
+        }
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("wl-paste exited with non-zero status: {stderr}"));
+    }
+
     arboard::Clipboard::new()
         .and_then(|mut cb| cb.get_text())
         .map_err(|err| format!("clipboard get failed: {err}"))
 }
 
 pub(crate) fn clipboard_set(text: &str) -> Result<(), String> {
+    if wl_copy_available() {
+        return clipboard_set_with_wl_copy(text);
+    }
+
+    log::info!("wl-copy not available, falling back to arboard clipboard backend");
+    clipboard_set_with_arboard(text)
+}
+
+fn clipboard_set_with_arboard(text: &str) -> Result<(), String> {
+    clear_wl_copy_hold();
+
     let mut cb = arboard::Clipboard::new()
         .map_err(|err| format!("clipboard create failed: {err}"))?;
     cb.set_text(text.to_string())
         .map_err(|err| format!("clipboard set failed: {err}"))?;
     let mut guard = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());
     *guard = Some(cb);
+    log::info!("Stored clipboard text via arboard");
     Ok(())
+}
+
+fn clipboard_set_with_wl_copy(text: &str) -> Result<(), String> {
+    clear_wl_copy_hold();
+
+    let mut child = Command::new("wl-copy")
+        .arg("--foreground")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|err| format!("failed to start wl-copy: {err}"))?;
+
+    {
+        let stdin = child
+            .stdin
+            .as_mut()
+            .ok_or("wl-copy stdin was unavailable")?;
+        stdin
+            .write_all(text.as_bytes())
+            .map_err(|err| format!("failed to write clipboard text to wl-copy: {err}"))?;
+    }
+
+    let _ = child.stdin.take();
+
+    thread::sleep(Duration::from_millis(20));
+
+    match child.try_wait() {
+        Ok(Some(status)) => {
+            let output = child
+                .wait_with_output()
+                .map_err(|err| format!("failed to read wl-copy output: {err}"))?;
+
+            if status.success() {
+                log::info!("Stored clipboard text via wl-copy");
+                return Ok(());
+            }
+
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("wl-copy exited with non-zero status: {stderr}"));
+        }
+        Ok(None) => {
+            let mut guard = WL_COPY_HOLD.lock().unwrap_or_else(|p| p.into_inner());
+            *guard = Some(child);
+            log::info!("Stored clipboard text via wl-copy");
+            return Ok(());
+        }
+        Err(err) => return Err(format!("failed to check wl-copy status: {err}")),
+    }
+}
+
+fn clear_wl_copy_hold() {
+    let mut guard = WL_COPY_HOLD.lock().unwrap_or_else(|p| p.into_inner());
+    if let Some(mut child) = guard.take() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+}
+
+fn run_command_with_timeout(
+    command: &mut Command,
+    timeout: Duration,
+    label: &str,
+) -> Result<Output, String> {
+    let mut child = command
+        .spawn()
+        .map_err(|err| format!("{label} failed to start: {err}"))?;
+    let started = Instant::now();
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => {
+                return child
+                    .wait_with_output()
+                    .map_err(|err| format!("{label} failed to collect output: {err}"));
+            }
+            Ok(None) => {
+                if started.elapsed() >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(format!(
+                        "{label} timed out after {}ms",
+                        timeout.as_millis()
+                    ));
+                }
+                thread::sleep(Duration::from_millis(10));
+            }
+            Err(err) => return Err(format!("{label} failed while waiting: {err}")),
+        }
+    }
+}
+
+fn wl_copy_available() -> bool {
+    Command::new("wl-copy")
+        .arg("--help")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok()
+}
+
+fn wl_paste_available() -> bool {
+    Command::new("wl-paste")
+        .arg("--help")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok()
+}
+
+fn save_clipboard() -> ClipboardSnapshot {
+    if let Ok(text) = clipboard_get() {
+        return ClipboardSnapshot::Text(text);
+    }
+
+    log::warn!("Skipping clipboard snapshot because the current clipboard could not be read quickly");
+
+    if let Ok(mut cb) = arboard::Clipboard::new() {
+        if let Ok(image) = cb.get_image() {
+            return ClipboardSnapshot::Image(image);
+        }
+    }
+
+    ClipboardSnapshot::Empty
+}
+
+fn restore_clipboard(snapshot: ClipboardSnapshot) {
+    match snapshot {
+        ClipboardSnapshot::Text(text) => {
+            if let Err(err) = clipboard_set(&text) {
+                log::warn!("failed to restore clipboard text: {err}");
+            }
+        }
+        ClipboardSnapshot::Image(image) => {
+            if let Ok(mut cb) = arboard::Clipboard::new() {
+                if let Err(err) = cb.set_image(image) {
+                    log::warn!("failed to restore clipboard image: {err}");
+                }
+            }
+        }
+        ClipboardSnapshot::Empty => {}
+    }
+}
+
+fn paste_combo(keybind: Option<&str>) -> &'static str {
+    if keybind == Some("ctrl+shift+v") {
+        "ctrl+shift+v"
+    } else {
+        "ctrl+v"
+    }
 }
 
 // --- ydotool (works on all Wayland compositors via /dev/uinput) ---
@@ -31,6 +222,36 @@ fn ydotool_available() -> bool {
 }
 
 fn ydotool_key(combo: &str) -> Result<(), String> {
+    if let Some(sequence) = ydotool_keycode_fallback(combo) {
+        let keycode_output = Command::new("ydotool")
+            .arg("key")
+            .args(sequence.split_whitespace())
+            .output()
+            .map_err(|err| format!("ydotool keycode sequence failed: {err}"))?;
+
+        if keycode_output.status.success() {
+            log::info!("Used ydotool keycode sequence for {combo}");
+            return Ok(());
+        }
+
+        let keycode_stderr = String::from_utf8_lossy(&keycode_output.stderr);
+        let symbolic_output = Command::new("ydotool")
+            .arg("key")
+            .arg(combo)
+            .output()
+            .map_err(|err| format!("ydotool symbolic combo failed: {err}"))?;
+
+        if symbolic_output.status.success() {
+            log::info!("Used symbolic ydotool combo for {combo} after keycode failure");
+            return Ok(());
+        }
+
+        let symbolic_stderr = String::from_utf8_lossy(&symbolic_output.stderr);
+        return Err(format!(
+            "ydotool keycode sequence failed: {keycode_stderr}; symbolic combo also failed: {symbolic_stderr}"
+        ));
+    }
+
     let output = Command::new("ydotool")
         .arg("key")
         .arg(combo)
@@ -42,6 +263,15 @@ fn ydotool_key(combo: &str) -> Result<(), String> {
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("ydotool exited with non-zero status: {stderr}"))
+    }
+}
+
+fn ydotool_keycode_fallback(combo: &str) -> Option<&'static str> {
+    match combo {
+        "ctrl+c" => Some("29:1 46:1 46:0 29:0"),
+        "ctrl+v" => Some("29:1 47:1 47:0 29:0"),
+        "ctrl+shift+v" => Some("29:1 42:1 47:1 47:0 42:0 29:0"),
+        _ => None,
     }
 }
 
@@ -89,14 +319,20 @@ pub fn wtype_text(text: &str) -> Result<(), String> {
 
 // --- Simulate paste/copy keystrokes ---
 
-fn simulate_paste_keystroke() -> Result<(), String> {
+fn simulate_paste_keystroke(keybind: Option<&str>) -> Result<(), String> {
+    let combo = paste_combo(keybind);
+
     if ydotool_available() {
-        log::info!("Using ydotool for paste keystroke");
-        return ydotool_key("ctrl+shift+v");
+        log::info!("Using ydotool for paste keystroke: {combo}");
+        return ydotool_key(combo);
     }
 
-    log::info!("ydotool not available, trying wtype for paste keystroke");
-    wtype_key(&["ctrl", "shift"], "v")
+    log::info!("ydotool not available, trying wtype for paste keystroke: {combo}");
+    if combo == "ctrl+shift+v" {
+        wtype_key(&["ctrl", "shift"], "v")
+    } else {
+        wtype_key(&["ctrl"], "v")
+    }
 }
 
 pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
@@ -108,27 +344,30 @@ pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
 
 // --- Public API ---
 
-pub fn paste_text(text: &str, _keybind: Option<&str>) -> Result<(), String> {
-    paste_via_clipboard(text).or_else(|err| {
+pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    paste_via_clipboard(text, keybind).or_else(|err| {
         log::warn!("Wayland paste failed ({err}), trying wtype text fallback");
-        wtype_text(text)
+        wtype_text(text).map_err(|_fallback_err| {
+            format!(
+                "Transcript copied to clipboard. Automatic paste failed on Wayland; paste manually and verify ydotool or wtype setup."
+            )
+        })
     })
 }
 
-fn paste_via_clipboard(text: &str) -> Result<(), String> {
-    let previous = clipboard_get().ok();
+fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    let previous = save_clipboard();
 
     clipboard_set(text)?;
+    log::info!("Clipboard updated with transcript text ({} chars)", text.chars().count());
     thread::sleep(Duration::from_millis(40));
 
-    simulate_paste_keystroke()?;
+    simulate_paste_keystroke(keybind)?;
 
-    if let Some(old) = previous {
-        thread::spawn(move || {
-            thread::sleep(Duration::from_millis(800));
-            let _ = clipboard_set(&old);
-        });
-    }
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(800));
+        restore_clipboard(previous);
+    });
 
     Ok(())
 }
