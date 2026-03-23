@@ -1,5 +1,9 @@
 use enigo::{Enigo, Key, KeyboardControllable};
+use std::process::Command;
+use std::sync::Mutex;
 use std::{thread, time::Duration};
+
+static CLIPBOARD_HOLD: Mutex<Option<arboard::Clipboard>> = Mutex::new(None);
 
 pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
     paste_via_clipboard(text, keybind).or_else(|err| {
@@ -18,7 +22,61 @@ fn enigo_type_text(text: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+fn xdotool_available() -> bool {
+    Command::new("xdotool")
+        .arg("version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+fn xdotool_key(combo: &str) -> Result<(), String> {
+    let output = Command::new("xdotool")
+        .arg("key")
+        .arg("--clearmodifiers")
+        .arg(combo)
+        .output()
+        .map_err(|err| format!("xdotool failed: {err}"))?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "xdotool exited {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    }
+}
+
+fn simulate_paste_keystroke() -> Result<(), String> {
+    if xdotool_available() {
+        log::info!("Using xdotool for paste keystroke");
+        return xdotool_key("ctrl+shift+v");
+    }
+
+    log::info!("xdotool not available, falling back to enigo");
+    enigo_paste_keystroke()
+}
+
+fn enigo_paste_keystroke() -> Result<(), String> {
+    let mut enigo = Enigo::new();
+    enigo.key_up(Key::Shift);
+    enigo.key_up(Key::Control);
+    enigo.key_up(Key::Alt);
+    thread::sleep(Duration::from_millis(30));
+
+    enigo.key_down(Key::Control);
+    enigo.key_down(Key::Shift);
+    enigo.key_down(Key::Layout('v'));
+    thread::sleep(Duration::from_millis(15));
+    enigo.key_up(Key::Layout('v'));
+    enigo.key_up(Key::Shift);
+    enigo.key_up(Key::Control);
+    Ok(())
+}
+
+fn paste_via_clipboard(text: &str, _keybind: Option<&str>) -> Result<(), String> {
     let mut clipboard =
         arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
     let previous = crate::platform::SavedClipboard::save(&mut clipboard);
@@ -26,30 +84,19 @@ fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> 
         .set_text(text.to_string())
         .map_err(|err| format!("failed to store clipboard text: {err}"))?;
 
+    {
+        let mut hold = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());
+        *hold = Some(clipboard);
+    }
+
     thread::sleep(Duration::from_millis(40));
 
-    let mut enigo = Enigo::new();
-    enigo.key_up(Key::Shift);
-    enigo.key_up(Key::Control);
-    enigo.key_up(Key::Alt);
-    thread::sleep(Duration::from_millis(30));
-
-    let use_shift = keybind == Some("ctrl+shift+v");
-
-    enigo.key_down(Key::Control);
-    if use_shift {
-        enigo.key_down(Key::Shift);
-    }
-    enigo.key_down(Key::Layout('v'));
-    thread::sleep(Duration::from_millis(15));
-    enigo.key_up(Key::Layout('v'));
-    if use_shift {
-        enigo.key_up(Key::Shift);
-    }
-    enigo.key_up(Key::Control);
+    simulate_paste_keystroke()?;
 
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(800));
+        let mut hold = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());
+        *hold = None;
         previous.restore();
     });
 

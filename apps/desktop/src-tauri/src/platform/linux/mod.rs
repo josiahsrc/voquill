@@ -29,5 +29,5 @@ pub fn supports_app_detection() -> bool {
 }
 
 pub fn supports_paste_keybinds() -> bool {
-    !detect::is_wayland()
+    false
 }
