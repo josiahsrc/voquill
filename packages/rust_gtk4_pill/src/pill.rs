@@ -466,7 +466,7 @@ fn lerp(a: f64, b: f64, t: f64) -> f64 {
 }
 
 fn setup_x11_window(window: &gtk4::Window) {
-    use std::ffi::{c_char, c_int, c_uchar, c_ulong, c_void};
+    use std::ffi::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 
     type XDisplay = c_void;
     type XWindow = c_ulong;
@@ -489,25 +489,35 @@ fn setup_x11_window(window: &gtk4::Window) {
             format: c_int, mode: c_int, data: *const c_uchar, nelements: c_int,
         ) -> c_int;
         fn XMoveWindow(display: *mut XDisplay, w: XWindow, x: c_int, y: c_int) -> c_int;
-        fn XDefaultScreen(display: *mut XDisplay) -> c_int;
-        fn XDisplayWidth(display: *mut XDisplay, screen: c_int) -> c_int;
-        fn XDisplayHeight(display: *mut XDisplay, screen: c_int) -> c_int;
         fn XFlush(display: *mut XDisplay) -> c_int;
+        fn XDefaultRootWindow(display: *mut XDisplay) -> XWindow;
+        fn XQueryPointer(
+            display: *mut XDisplay, w: XWindow,
+            root_return: *mut XWindow, child_return: *mut XWindow,
+            root_x_return: *mut c_int, root_y_return: *mut c_int,
+            win_x_return: *mut c_int, win_y_return: *mut c_int,
+            mask_return: *mut c_uint,
+        ) -> c_int;
     }
 
     let display = gtk4::prelude::WidgetExt::display(window);
     let surface = window.surface().expect("surface after realize");
 
-    unsafe {
-        let xdisplay = gdk_x11_display_get_xdisplay(
+    let xdisplay = unsafe {
+        gdk_x11_display_get_xdisplay(
             glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkDisplay>::to_glib_none(&display).0
                 as *mut c_void,
-        );
-        let xwindow = gdk_x11_surface_get_xid(
+        )
+    };
+    let xwindow = unsafe {
+        gdk_x11_surface_get_xid(
             glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkSurface>::to_glib_none(&surface).0
                 as *mut c_void,
-        );
+        )
+    };
 
+    // Set window type and state
+    unsafe {
         let intern = |name: &[u8]| -> XAtom {
             XInternAtom(xdisplay, name.as_ptr() as *const c_char, 0)
         };
@@ -531,13 +541,64 @@ fn setup_x11_window(window: &gtk4::Window) {
             states.as_ptr() as *const c_uchar, states.len() as c_int,
         );
 
-        let screen = XDefaultScreen(xdisplay);
-        let screen_w = XDisplayWidth(xdisplay, screen);
-        let screen_h = XDisplayHeight(xdisplay, screen);
-        let x = (screen_w - WINDOW_WIDTH) / 2;
-        let y = screen_h - WINDOW_HEIGHT - MARGIN_BOTTOM;
-        XMoveWindow(xdisplay, xwindow, x, y);
-
         XFlush(xdisplay);
     }
+
+    // Find pill position for the monitor containing the cursor
+    let cursor_pos = move || -> (c_int, c_int) {
+        unsafe {
+            let root = XDefaultRootWindow(xdisplay);
+            let (mut rx, mut ry) = (0 as c_int, 0 as c_int);
+            let (mut dw1, mut dw2) = (0 as XWindow, 0 as XWindow);
+            let (mut dx, mut dy) = (0 as c_int, 0 as c_int);
+            let mut dm: c_uint = 0;
+            XQueryPointer(
+                xdisplay, root, &mut dw1, &mut dw2,
+                &mut rx, &mut ry, &mut dx, &mut dy, &mut dm,
+            );
+            (rx, ry)
+        }
+    };
+
+    let pill_pos_on_monitor =
+        |cx: c_int, cy: c_int, disp: &gdk::Display| -> Option<(c_int, c_int)> {
+            let monitors = disp.monitors();
+            for i in 0..monitors.n_items() {
+                let monitor = monitors.item(i)?.downcast::<gdk::Monitor>().ok()?;
+                let g = monitor.geometry();
+                if cx >= g.x() && cx < g.x() + g.width()
+                    && cy >= g.y() && cy < g.y() + g.height()
+                {
+                    return Some((
+                        g.x() + (g.width() - WINDOW_WIDTH) / 2,
+                        g.y() + g.height() - WINDOW_HEIGHT - MARGIN_BOTTOM,
+                    ));
+                }
+            }
+            None
+        };
+
+    let (cx, cy) = cursor_pos();
+    let init_pos = pill_pos_on_monitor(cx, cy, &display).unwrap_or((0, 0));
+    unsafe {
+        XMoveWindow(xdisplay, xwindow, init_pos.0, init_pos.1);
+        XFlush(xdisplay);
+    }
+
+    // Track cursor and reposition when it moves to a different monitor
+    let last_pos = Rc::new(Cell::new(init_pos));
+    glib::timeout_add_local(Duration::from_millis(100), move || {
+        let (cx, cy) = cursor_pos();
+        if let Some((new_x, new_y)) = pill_pos_on_monitor(cx, cy, &display) {
+            let prev = last_pos.get();
+            if new_x != prev.0 || new_y != prev.1 {
+                last_pos.set((new_x, new_y));
+                unsafe {
+                    XMoveWindow(xdisplay, xwindow, new_x, new_y);
+                    XFlush(xdisplay);
+                }
+            }
+        }
+        ControlFlow::Continue
+    });
 }
