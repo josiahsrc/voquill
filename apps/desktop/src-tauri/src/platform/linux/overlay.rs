@@ -4,19 +4,15 @@ use crate::domain::OverlayPhase;
 use tauri::Manager;
 
 pub fn should_use_native_overlays() -> bool {
-    super::detect::is_wayland()
+    true
 }
 
 pub fn try_create_native_overlays(app: &tauri::AppHandle) -> bool {
-    if !super::detect::is_wayland() {
-        return false;
-    }
-
     if super::wl::overlay::try_create_pill_overlay(app) {
-        log::info!("Using native Wayland overlays via GTK4 layer-shell");
+        log::info!("Using native overlays via GTK4 layer-shell");
         true
     } else {
-        log::warn!("Native Wayland overlay not available, falling back to Tauri overlays");
+        log::warn!("Native overlay not available, falling back to Tauri overlays");
         false
     }
 }
