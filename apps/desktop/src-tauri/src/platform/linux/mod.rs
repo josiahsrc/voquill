@@ -1,4 +1,4 @@
-mod detect;
+pub(crate) mod detect;
 mod wl;
 mod x11;
 

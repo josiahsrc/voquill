@@ -167,19 +167,112 @@ pub fn get_current_app_info() -> Result<CurrentAppInfo, AppInfoError> {
     let stop_signal = AtomicBool::new(false);
     let mut captured: Option<FocusedWindow> = None;
 
-    tracker
-        .track_focus_with_stop(
-            |window| {
-                captured = Some(window);
-                stop_signal.store(true, Ordering::Relaxed);
-                Ok(())
-            },
-            &stop_signal,
-        )
-        .map_err(map_focus_error)?;
+    let ferrous_result = tracker.track_focus_with_stop(
+        |window| {
+            captured = Some(window);
+            stop_signal.store(true, Ordering::Relaxed);
+            Ok(())
+        },
+        &stop_signal,
+    );
 
-    let window = captured.ok_or(AppInfoError::NotAvailable)?;
-    build_app_info(window, icon_size)
+    match ferrous_result {
+        Ok(()) => {
+            let window = captured.ok_or(AppInfoError::NotAvailable)?;
+            build_app_info(window, icon_size)
+        }
+        Err(ref err) if is_unsupported_error(err) => {
+            // ferrous-focus doesn't support this configuration.
+            // On Wayland, try GNOME Shell Introspect D-Bus as a fallback.
+            #[cfg(target_os = "linux")]
+            if crate::platform::linux::detect::is_wayland() {
+                if let Some(info) = try_gnome_introspect_focused_app() {
+                    return Ok(info);
+                }
+                return Err(AppInfoError::Focus(
+                    "Focused window detection is not available on this Wayland compositor. \
+                     Please use the app name field to register apps manually."
+                        .into(),
+                ));
+            }
+
+            Err(AppInfoError::Unsupported)
+        }
+        Err(err) => Err(map_focus_error(err)),
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn is_unsupported_error(err: &ferrous_focus::FerrousFocusError) -> bool {
+    matches!(err, ferrous_focus::FerrousFocusError::Unsupported)
+}
+
+#[cfg(target_os = "linux")]
+fn try_gnome_introspect_focused_app() -> Option<CurrentAppInfo> {
+    let output = std::process::Command::new("gdbus")
+        .args([
+            "call",
+            "--session",
+            "--dest",
+            "org.gnome.Shell.Introspect",
+            "--object-path",
+            "/org/gnome/Shell/Introspect",
+            "--method",
+            "org.gnome.Shell.Introspect.GetWindows",
+        ])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let raw = String::from_utf8_lossy(&output.stdout);
+    parse_gnome_introspect_focused(&raw)
+}
+
+#[cfg(target_os = "linux")]
+fn parse_gnome_introspect_focused(raw: &str) -> Option<CurrentAppInfo> {
+    // Find the window entry with 'focus': <true>
+    // The output looks like: {..., 'title': <'Firefox'>, 'app-id': <'firefox.desktop'>, ..., 'focus': <true>, ...}
+    let focus_idx = raw.find("'focus': <true>")?;
+
+    // Walk backwards from the focus marker to find the enclosing window block's opening '{'
+    let block_start = raw[..focus_idx].rfind('{')?;
+    let block_end = raw[focus_idx..].find('}').map(|i| focus_idx + i)?;
+    let block = &raw[block_start..=block_end];
+
+    let app_name = extract_dbus_string_value(block, "'title': <'")
+        .or_else(|| extract_dbus_string_value(block, "'app-id': <'"))
+        .map(|s| {
+            // Strip .desktop suffix from app-id
+            s.strip_suffix(".desktop")
+                .unwrap_or(&s)
+                .to_string()
+        })?;
+
+    let icon_base64 = match encode_icon_as_png(&fallback_icon(DEFAULT_ICON_SIZE)) {
+        Ok(png) => general_purpose::STANDARD.encode(png),
+        Err(_) => String::new(),
+    };
+
+    Some(CurrentAppInfo {
+        app_name,
+        icon_base64,
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn extract_dbus_string_value(block: &str, prefix: &str) -> Option<String> {
+    let start = block.find(prefix)? + prefix.len();
+    let rest = &block[start..];
+    let end = rest.find('\'')?;
+    let value = rest[..end].trim().to_string();
+    if value.is_empty() {
+        None
+    } else {
+        Some(value)
+    }
 }
 
 #[cfg(not(target_os = "macos"))]
