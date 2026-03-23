@@ -67,7 +67,12 @@ import { createId } from "../../utils/id.utils";
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
-import { getToneIdToUse } from "../../utils/tone.utils";
+import {
+  getActiveManualToneIds,
+  getManuallySelectedToneId,
+  getToneById,
+  getToneIdToUse,
+} from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
@@ -841,6 +846,23 @@ export const DictationSideEffects = () => {
     }
     invoke("set_pill_window_size", { size }).catch(console.error);
   }, [activeRecordingMode, pillHasContent, assistantInputMode]);
+
+  // Sync style info to native GTK4 pill
+  const pillStyleCount = useAppStore((state) => {
+    if (getEffectiveStylingMode(state) !== "manual") return 0;
+    return getActiveManualToneIds(state).length;
+  });
+  const pillStyleName = useAppStore((state) => {
+    const toneId = getManuallySelectedToneId(state);
+    return getToneById(state, toneId)?.name ?? "-";
+  });
+
+  useEffect(() => {
+    invoke("notify_pill_style_info", {
+      count: pillStyleCount,
+      name: pillStyleName,
+    }).catch(console.error);
+  }, [pillStyleCount, pillStyleName]);
 
   return null;
 };

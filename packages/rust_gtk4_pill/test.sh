@@ -6,6 +6,7 @@ cargo build --quiet 2>&1
 
 (
   sleep 0.5
+  echo '{"type":"style_info","count":3,"name":"Professional"}'
   echo '{"type":"phase","phase":"recording"}'
 
   # Simulate audio levels for 6 seconds
@@ -23,7 +24,11 @@ cargo build --quiet 2>&1
 
   # Back to idle for 4 seconds
   echo '{"type":"phase","phase":"idle"}'
-  sleep 4
+  sleep 2
+
+  # Switch style while idle (hover to see it)
+  echo '{"type":"style_info","count":3,"name":"Casual"}'
+  sleep 2
 
   # Second burst of recording for 4 seconds
   echo '{"type":"phase","phase":"recording"}'

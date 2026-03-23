@@ -35,3 +35,15 @@ pub fn notify_audio_levels(app: &tauri::AppHandle, levels: &[f32]) {
         }
     }
 }
+
+pub fn notify_style_info(app: &tauri::AppHandle, count: u32, name: &str) {
+    if let Some(pill) = app.try_state::<std::sync::Arc<PillProcess>>() {
+        if let Ok(json) = serde_json::to_string(&serde_json::json!({
+            "type": "style_info",
+            "count": count,
+            "name": name,
+        })) {
+            pill.send(&json);
+        }
+    }
+}

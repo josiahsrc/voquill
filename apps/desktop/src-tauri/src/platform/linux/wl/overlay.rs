@@ -120,6 +120,12 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
                 Ok(_) => {
                     if line.contains("\"click\"") {
                         let _ = app.emit_to("main", "on-click-dictate", ());
+                    } else if line.contains("\"style_switch\"") {
+                        if line.contains("\"forward\"") {
+                            let _ = app.emit_to("main", "tone-switch-forward", ());
+                        } else if line.contains("\"backward\"") {
+                            let _ = app.emit_to("main", "tone-switch-backward", ());
+                        }
                     }
                 }
             }

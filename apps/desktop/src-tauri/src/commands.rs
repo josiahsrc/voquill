@@ -1324,6 +1324,11 @@ pub fn set_pill_hover_enabled(enabled: bool, overlay_state: State<'_, crate::sta
 }
 
 #[tauri::command]
+pub fn notify_pill_style_info(app: AppHandle, count: u32, name: String) {
+    crate::platform::overlay::notify_style_info(&app, count, &name);
+}
+
+#[tauri::command]
 pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
     crate::platform::keyboard::start_key_listener(&app)
 }

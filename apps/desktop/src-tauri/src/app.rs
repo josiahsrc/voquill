@@ -259,6 +259,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::clear_local_data,
             crate::commands::set_phase,
             crate::commands::set_pill_hover_enabled,
+            crate::commands::notify_pill_style_info,
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::sync_hotkey_combos,

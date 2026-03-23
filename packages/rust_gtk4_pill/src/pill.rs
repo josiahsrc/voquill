@@ -14,9 +14,17 @@ use crate::ipc::{self, InMessage, OutMessage, Phase};
 
 const TAU: f64 = PI * 2.0;
 
-const WINDOW_WIDTH: i32 = 120;
-const WINDOW_HEIGHT: i32 = 32;
+const WINDOW_WIDTH: i32 = 200;
+const WINDOW_HEIGHT: i32 = 72;
 const MARGIN_BOTTOM: i32 = 8;
+
+// The pill draws in the bottom portion of the window; the tooltip floats above.
+const PILL_AREA_TOP: f64 = 40.0;
+const TOOLTIP_HEIGHT: f64 = 24.0;
+const TOOLTIP_GAP: f64 = 6.0;
+const TOOLTIP_RADIUS: f64 = 8.0;
+const TOOLTIP_EXPAND_SPEED: f64 = 0.15;
+const TOOLTIP_COLLAPSE_SPEED: f64 = 0.12;
 
 const MIN_PILL_WIDTH: f64 = 48.0;
 const MIN_PILL_HEIGHT: f64 = 6.0;
@@ -70,6 +78,11 @@ struct PillState {
     // Loading animation
     loading_offset: Cell<f64>,
     pending_levels: RefCell<Vec<f32>>,
+    // Style selector
+    style_count: Cell<u32>,
+    style_name: RefCell<String>,
+    tooltip_t: Cell<f64>,
+    tooltip_width: Cell<f64>,
 }
 
 pub fn run(receiver: Receiver<InMessage>) {
@@ -120,6 +133,10 @@ pub fn run(receiver: Receiver<InMessage>) {
         target_level: Cell::new(0.0),
         loading_offset: Cell::new(0.0),
         pending_levels: RefCell::new(Vec::new()),
+        style_count: Cell::new(0),
+        style_name: RefCell::new(String::new()),
+        tooltip_t: Cell::new(0.0),
+        tooltip_width: Cell::new(0.0),
     });
 
     let motion = gtk4::EventControllerMotion::new();
@@ -135,15 +152,16 @@ pub fn run(receiver: Receiver<InMessage>) {
     });
     window.add_controller(motion);
 
+    let state_click = state.clone();
     let click = gtk4::GestureClick::new();
-    click.connect_released(move |_, _, _, _| {
-        ipc::send(&OutMessage::Click);
+    click.connect_released(move |_, _, x, y| {
+        handle_click(&state_click, x, y);
     });
     window.add_controller(click);
 
     let state_draw = state.clone();
     drawing_area.set_draw_func(move |_area, cr, _w, _h| {
-        draw_pill(cr, &state_draw);
+        draw_all(cr, &state_draw);
     });
 
     let receiver = Rc::new(RefCell::new(receiver));
@@ -167,6 +185,10 @@ pub fn run(receiver: Receiver<InMessage>) {
                 InMessage::Levels { levels } => {
                     *state_tick.pending_levels.borrow_mut() = levels;
                 }
+                InMessage::StyleInfo { count, name } => {
+                    state_tick.style_count.set(count);
+                    *state_tick.style_name.borrow_mut() = name;
+                }
                 InMessage::Quit => {
                     quit_tick.set(true);
                 }
@@ -178,7 +200,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
 
         tick(&state_tick);
-        update_input_region(&da, state_tick.expand_t.get());
+        update_input_region(&da, &state_tick);
         da.queue_draw();
         ControlFlow::Continue
     });
@@ -257,32 +279,65 @@ fn tick(state: &PillState) {
     if is_loading {
         state.loading_offset.set((state.loading_offset.get() + LOADING_SPEED) % 1.0);
     }
+
+    // Tooltip animation
+    let show_tooltip = state.style_count.get() > 1
+        && (hovered || phase == Phase::Recording)
+        && state.expand_t.get() > 0.3;
+    let tooltip_target = if show_tooltip { 1.0 } else { 0.0 };
+    let tooltip_current = state.tooltip_t.get();
+    let tooltip_speed = if tooltip_target > tooltip_current {
+        TOOLTIP_EXPAND_SPEED
+    } else {
+        TOOLTIP_COLLAPSE_SPEED
+    };
+    let new_tt = (tooltip_current + (tooltip_target - tooltip_current) * tooltip_speed).clamp(0.0, 1.0);
+    let snapped_tt = if (new_tt - tooltip_target).abs() < 0.005 { tooltip_target } else { new_tt };
+    state.tooltip_t.set(snapped_tt);
 }
 
-fn update_input_region(da: &gtk4::DrawingArea, expand_t: f64) {
+fn update_input_region(da: &gtk4::DrawingArea, state: &PillState) {
     let Some(native) = da.native() else { return };
     let Some(surface) = native.surface() else { return };
 
+    let expand_t = state.expand_t.get();
     let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
     let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
-    let rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
-    let ry = ((WINDOW_HEIGHT as f64 - pill_h) / 2.0) as i32;
+    let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
+    let pill_ry = (PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0) as i32;
 
-    let rect = cairo::RectangleInt::new(rx, ry, pill_w as i32, pill_h as i32);
-    let region = cairo::Region::create_rectangle(&rect);
-    surface.set_input_region(&region);
+    let tooltip_t = state.tooltip_t.get();
+    let tooltip_w = state.tooltip_width.get();
+
+    if tooltip_t > 0.1 && tooltip_w > 0.0 {
+        // Single region spanning from tooltip top down through the pill (no gap flicker)
+        let tooltip_top = (PILL_AREA_TOP - TOOLTIP_GAP - TOOLTIP_HEIGHT) as i32;
+        let region_w = (tooltip_w.ceil() as i32).max(pill_w.ceil() as i32);
+        let region_rx = ((WINDOW_WIDTH as f64 - region_w as f64) / 2.0) as i32;
+        let region_h = pill_ry + pill_h.ceil() as i32 - tooltip_top;
+        let rect = cairo::RectangleInt::new(region_rx, tooltip_top, region_w, region_h);
+        let region = cairo::Region::create_rectangle(&rect);
+        surface.set_input_region(&region);
+    } else {
+        let rect = cairo::RectangleInt::new(pill_rx, pill_ry, pill_w.ceil() as i32, pill_h.ceil() as i32);
+        let region = cairo::Region::create_rectangle(&rect);
+        surface.set_input_region(&region);
+    }
 }
 
-fn draw_pill(cr: &cairo::Context, state: &PillState) {
-    let w = WINDOW_WIDTH as f64;
-    let h = WINDOW_HEIGHT as f64;
-    let expand_t = state.expand_t.get();
-
-    // Clear to transparent
+fn draw_all(cr: &cairo::Context, state: &PillState) {
     cr.set_operator(cairo::Operator::Source);
     cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
     let _ = cr.paint();
     cr.set_operator(cairo::Operator::Over);
+
+    draw_tooltip(cr, state);
+    draw_pill(cr, state);
+}
+
+fn draw_pill(cr: &cairo::Context, state: &PillState) {
+    let w = WINDOW_WIDTH as f64;
+    let expand_t = state.expand_t.get();
 
     let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
     let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
@@ -290,7 +345,7 @@ fn draw_pill(cr: &cairo::Context, state: &PillState) {
     let radius = lerp(COLLAPSED_RADIUS, EXPANDED_RADIUS, expand_t);
 
     let rx = (w - pill_w) / 2.0;
-    let ry = (h - pill_h) / 2.0;
+    let ry = PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0;
 
     // Background fill
     rounded_rect(cr, rx, ry, pill_w, pill_h, radius);
@@ -449,6 +504,133 @@ fn draw_idle_label(
     let ty = ry + (pill_h - extents.height()) / 2.0 - extents.y_bearing();
     cr.move_to(tx, ty);
     let _ = cr.show_text(text);
+}
+
+fn draw_tooltip(cr: &cairo::Context, state: &PillState) {
+    let tooltip_t = state.tooltip_t.get();
+    if tooltip_t < 0.01 {
+        return;
+    }
+
+    let style_name = state.style_name.borrow();
+    if state.style_count.get() <= 1 || style_name.is_empty() {
+        return;
+    }
+
+    cr.select_font_face("sans-serif", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.set_font_size(11.0);
+    let text_extents = cr.text_extents(&style_name).unwrap();
+    let text_w = text_extents.width().clamp(20.0, 100.0);
+
+    let chevron_area = 20.0;
+    let padding_h = 10.0;
+    let tooltip_w = padding_h * 2.0 + chevron_area * 2.0 + text_w;
+    state.tooltip_width.set(tooltip_w);
+
+    let w = WINDOW_WIDTH as f64;
+    let tooltip_rx = (w - tooltip_w) / 2.0;
+    let y_offset = (1.0 - tooltip_t) * 4.0;
+    let tooltip_ry = PILL_AREA_TOP - TOOLTIP_GAP - TOOLTIP_HEIGHT + y_offset;
+    let alpha = tooltip_t;
+
+    // Background
+    rounded_rect(cr, tooltip_rx, tooltip_ry, tooltip_w, TOOLTIP_HEIGHT, TOOLTIP_RADIUS);
+    cr.set_source_rgba(0.0, 0.0, 0.0, 0.92 * alpha);
+    let _ = cr.fill();
+
+    // Border
+    rounded_rect(
+        cr,
+        tooltip_rx + 0.5,
+        tooltip_ry + 0.5,
+        tooltip_w - 1.0,
+        TOOLTIP_HEIGHT - 1.0,
+        TOOLTIP_RADIUS - 0.5,
+    );
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.2 * alpha);
+    cr.set_line_width(1.0);
+    let _ = cr.stroke();
+
+    let center_y = tooltip_ry + TOOLTIP_HEIGHT / 2.0;
+
+    // Left chevron
+    let left_cx = tooltip_rx + padding_h + 5.0;
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.8 * alpha);
+    cr.set_line_width(1.5);
+    cr.set_line_cap(cairo::LineCap::Round);
+    cr.set_line_join(cairo::LineJoin::Round);
+    cr.move_to(left_cx + 3.0, center_y - 4.0);
+    cr.line_to(left_cx - 3.0, center_y);
+    cr.line_to(left_cx + 3.0, center_y + 4.0);
+    let _ = cr.stroke();
+
+    // Right chevron
+    let right_cx = tooltip_rx + tooltip_w - padding_h - 5.0;
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.8 * alpha);
+    cr.set_line_width(1.5);
+    cr.set_line_cap(cairo::LineCap::Round);
+    cr.set_line_join(cairo::LineJoin::Round);
+    cr.move_to(right_cx - 3.0, center_y - 4.0);
+    cr.line_to(right_cx + 3.0, center_y);
+    cr.line_to(right_cx - 3.0, center_y + 4.0);
+    let _ = cr.stroke();
+
+    // Style name text (centered between chevrons)
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.9 * alpha);
+    cr.select_font_face("sans-serif", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.set_font_size(11.0);
+    let text_area_left = tooltip_rx + padding_h + chevron_area;
+    let text_area_right = tooltip_rx + tooltip_w - padding_h - chevron_area;
+    let text_area_center = (text_area_left + text_area_right) / 2.0;
+    let tx = text_area_center - text_extents.width() / 2.0 - text_extents.x_bearing();
+    let ty = center_y - text_extents.height() / 2.0 - text_extents.y_bearing();
+
+    // Clip text to available area
+    cr.save().ok();
+    cr.rectangle(text_area_left, tooltip_ry, text_area_right - text_area_left, TOOLTIP_HEIGHT);
+    cr.clip();
+    cr.move_to(tx, ty);
+    let _ = cr.show_text(&style_name);
+    cr.restore().ok();
+}
+
+fn handle_click(state: &PillState, x: f64, y: f64) {
+    let tooltip_t = state.tooltip_t.get();
+    let tooltip_w = state.tooltip_width.get();
+    let tooltip_ry = PILL_AREA_TOP - TOOLTIP_GAP - TOOLTIP_HEIGHT;
+
+    // Check tooltip area first
+    if tooltip_t > 0.5 && state.style_count.get() > 1 && tooltip_w > 0.0 {
+        let w = WINDOW_WIDTH as f64;
+        let tooltip_rx = (w - tooltip_w) / 2.0;
+
+        if y >= tooltip_ry && y <= tooltip_ry + TOOLTIP_HEIGHT
+            && x >= tooltip_rx && x <= tooltip_rx + tooltip_w
+        {
+            let mid_x = tooltip_rx + tooltip_w / 2.0;
+            if x < mid_x {
+                ipc::send(&OutMessage::StyleSwitch {
+                    direction: "backward".to_string(),
+                });
+            } else {
+                ipc::send(&OutMessage::StyleSwitch {
+                    direction: "forward".to_string(),
+                });
+            }
+            return;
+        }
+    }
+
+    // Check pill area
+    let expand_t = state.expand_t.get();
+    let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
+    let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
+    let pill_rx = (WINDOW_WIDTH as f64 - pill_w) / 2.0;
+    let pill_ry = PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0;
+
+    if x >= pill_rx && x <= pill_rx + pill_w && y >= pill_ry && y <= pill_ry + pill_h {
+        ipc::send(&OutMessage::Click);
+    }
 }
 
 fn rounded_rect(cr: &cairo::Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
