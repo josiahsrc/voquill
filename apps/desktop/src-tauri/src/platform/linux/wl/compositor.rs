@@ -317,6 +317,10 @@ fn gsettings_set_custom_keybinding(
     Ok(())
 }
 
+fn has_non_modifier_key(keys: &[String]) -> bool {
+    keys.iter().any(|k| classify_key(k).is_none())
+}
+
 fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), String> {
     let existing_list = read_gsettings_string_list(GNOME_KEYBINDING_BASE, "custom-keybindings")?;
 
@@ -326,8 +330,16 @@ fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), 
         .collect();
 
     let mut new_paths = user_paths;
+    let mut synced = 0;
     for binding in bindings {
         if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping GNOME binding for '{}': modifier-only combos are not supported by compositor shortcuts",
+                binding.action_name
+            );
             continue;
         }
         let dconf_path = format!(
@@ -344,10 +356,11 @@ fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), 
         if !new_paths.contains(&dconf_path) {
             new_paths.push(dconf_path);
         }
+        synced += 1;
     }
 
     write_gsettings_string_list(GNOME_KEYBINDING_BASE, "custom-keybindings", &new_paths)?;
-    log::info!("Synced {} GNOME compositor hotkeys", bindings.len());
+    log::info!("Synced {synced} GNOME compositor hotkeys");
     Ok(())
 }
 
@@ -365,6 +378,13 @@ fn sync_sway(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), S
 
     for binding in bindings {
         if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping Sway binding for '{}': modifier-only combos are not supported",
+                binding.action_name
+            );
             continue;
         }
         let sway_keys = keys_to_sway_binding(&binding.keys);
@@ -398,6 +418,13 @@ fn sync_hyprland(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(
 
     for binding in bindings {
         if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping Hyprland binding for '{}': modifier-only combos are not supported",
+                binding.action_name
+            );
             continue;
         }
         let (mods, key) = keys_to_hyprland_binding(&binding.keys);
