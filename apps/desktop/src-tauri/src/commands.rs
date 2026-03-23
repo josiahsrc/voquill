@@ -1254,7 +1254,10 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 }
 
 #[tauri::command]
-pub fn set_pill_window_size(size: crate::domain::PillWindowSize, overlay_state: State<'_, crate::state::OverlayState>) {
+pub fn set_pill_window_size(
+    size: crate::domain::PillWindowSize,
+    overlay_state: State<'_, crate::state::OverlayState>,
+) {
     overlay_state.set_pill_window_size(size);
 }
 
@@ -1519,7 +1522,11 @@ pub struct RunTerminalCommandResponse {
 #[tauri::command]
 pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandResponse, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let (shell, flag) = if cfg!(target_os = "windows") { ("cmd", "/C") } else { ("sh", "-c") };
+        let (shell, flag) = if cfg!(target_os = "windows") {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        };
         let output = std::process::Command::new(shell)
             .args([flag, &command])
             .output()
@@ -1605,10 +1612,7 @@ pub async fn download_and_open_mac_installer(url: String) -> Result<(), String> 
 
     let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
     if !response.status().is_success() {
-        return Err(format!(
-            "Download failed with status {}",
-            response.status()
-        ));
+        return Err(format!("Download failed with status {}", response.status()));
     }
     let bytes = response.bytes().await.map_err(|e| e.to_string())?;
     std::fs::write(&dest, &bytes).map_err(|e| e.to_string())?;

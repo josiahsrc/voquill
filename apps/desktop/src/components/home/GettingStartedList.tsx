@@ -170,7 +170,12 @@ export function GettingStartedList() {
     [onboardedAt],
   );
 
-  if (!supportsAppDetection || isDismissed || allDone || onboardedBeforeCutoff) {
+  if (
+    !supportsAppDetection ||
+    isDismissed ||
+    allDone ||
+    onboardedBeforeCutoff
+  ) {
     return null;
   }
 

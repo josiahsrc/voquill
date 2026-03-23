@@ -1,7 +1,7 @@
 pub mod accessibility;
-pub mod init;
 pub mod compositor;
 pub mod dock;
+pub mod init;
 pub mod input;
 pub mod keyboard;
 pub mod keyboard_language;

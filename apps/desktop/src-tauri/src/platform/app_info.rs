@@ -246,9 +246,7 @@ fn parse_gnome_introspect_focused(raw: &str) -> Option<CurrentAppInfo> {
         .or_else(|| extract_dbus_string_value(block, "'app-id': <'"))
         .map(|s| {
             // Strip .desktop suffix from app-id
-            s.strip_suffix(".desktop")
-                .unwrap_or(&s)
-                .to_string()
+            s.strip_suffix(".desktop").unwrap_or(&s).to_string()
         })?;
 
     let icon_base64 = match encode_icon_as_png(&fallback_icon(DEFAULT_ICON_SIZE)) {

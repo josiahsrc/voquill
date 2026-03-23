@@ -13,7 +13,8 @@ pub struct PillProcess {
 impl PillProcess {
     pub fn send(&self, msg: &str) {
         if let Ok(mut stdin) = self.stdin.lock() {
-            if let Err(e) = stdin.write_all(msg.as_bytes())
+            if let Err(e) = stdin
+                .write_all(msg.as_bytes())
                 .and_then(|_| stdin.write_all(b"\n"))
                 .and_then(|_| stdin.flush())
             {
@@ -50,7 +51,9 @@ pub fn notify_phase(app: &tauri::AppHandle, phase: &OverlayPhase) {
 
 pub fn notify_audio_levels(app: &tauri::AppHandle, levels: &[f32]) {
     if let Some(pill) = app.try_state::<std::sync::Arc<PillProcess>>() {
-        if let Ok(json) = serde_json::to_string(&serde_json::json!({"type": "levels", "levels": levels})) {
+        if let Ok(json) =
+            serde_json::to_string(&serde_json::json!({"type": "levels", "levels": levels}))
+        {
             pill.send(&json);
         }
     }
@@ -127,9 +130,7 @@ fn try_create_pill_overlay(app: &tauri::AppHandle) -> bool {
     true
 }
 
-fn wait_for_ready(
-    stdout: ChildStdout,
-) -> Option<std::io::BufReader<ChildStdout>> {
+fn wait_for_ready(stdout: ChildStdout) -> Option<std::io::BufReader<ChildStdout>> {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let mut reader = std::io::BufReader::new(stdout);

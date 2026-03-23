@@ -11,8 +11,8 @@ pub(crate) fn clipboard_get() -> Result<String, String> {
 }
 
 pub(crate) fn clipboard_set(text: &str) -> Result<(), String> {
-    let mut cb = arboard::Clipboard::new()
-        .map_err(|err| format!("clipboard create failed: {err}"))?;
+    let mut cb =
+        arboard::Clipboard::new().map_err(|err| format!("clipboard create failed: {err}"))?;
     cb.set_text(text.to_string())
         .map_err(|err| format!("clipboard set failed: {err}"))?;
     let mut guard = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());

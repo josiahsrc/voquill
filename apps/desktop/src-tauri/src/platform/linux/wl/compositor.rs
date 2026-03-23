@@ -29,7 +29,10 @@ pub fn deploy_trigger_script(app: &tauri::AppHandle) {
 fn deploy_trigger_script_inner(app: &tauri::AppHandle) -> Result<(), String> {
     let resource_path = app
         .path()
-        .resolve("resources/trigger-hotkey.sh", tauri::path::BaseDirectory::Resource)
+        .resolve(
+            "resources/trigger-hotkey.sh",
+            tauri::path::BaseDirectory::Resource,
+        )
         .map_err(|err| format!("Failed to resolve trigger-hotkey.sh resource: {err}"))?;
 
     if !resource_path.exists() {
@@ -41,8 +44,7 @@ fn deploy_trigger_script_inner(app: &tauri::AppHandle) -> Result<(), String> {
 
     let dest = trigger_script_path(app)?;
     let config_dir = dest.parent().ok_or("Invalid script dest path")?;
-    fs::create_dir_all(config_dir)
-        .map_err(|err| format!("Failed to create config dir: {err}"))?;
+    fs::create_dir_all(config_dir).map_err(|err| format!("Failed to create config dir: {err}"))?;
 
     fs::copy(&resource_path, &dest)
         .map_err(|err| format!("Failed to copy trigger script: {err}"))?;
@@ -241,8 +243,7 @@ fn keys_to_hyprland_binding(keys: &[String]) -> (String, String) {
 // --- GNOME ---
 
 const GNOME_KEYBINDING_BASE: &str = "org.gnome.settings-daemon.plugins.media-keys";
-const GNOME_CUSTOM_SCHEMA: &str =
-    "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding";
+const GNOME_CUSTOM_SCHEMA: &str = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding";
 const GNOME_CUSTOM_PREFIX: &str =
     "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings";
 const VOQUILL_KEYBINDING_TAG: &str = "voquill-";
@@ -273,11 +274,7 @@ fn read_gsettings_string_list(schema: &str, key: &str) -> Result<Vec<String>, St
         .collect())
 }
 
-fn write_gsettings_string_list(
-    schema: &str,
-    key: &str,
-    values: &[String],
-) -> Result<(), String> {
+fn write_gsettings_string_list(schema: &str, key: &str, values: &[String]) -> Result<(), String> {
     let formatted: Vec<String> = values.iter().map(|v| format!("'{v}'")).collect();
     let list = format!("[{}]", formatted.join(", "));
 
@@ -349,7 +346,11 @@ fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), 
         let gnome_binding = keys_to_gnome_binding(&binding.keys);
         let command = format!("{} {}", script_path.display(), binding.action_name);
 
-        gsettings_set_custom_keybinding(&dconf_path, "name", &format!("Voquill {}", binding.action_name))?;
+        gsettings_set_custom_keybinding(
+            &dconf_path,
+            "name",
+            &format!("Voquill {}", binding.action_name),
+        )?;
         gsettings_set_custom_keybinding(&dconf_path, "command", &command)?;
         gsettings_set_custom_keybinding(&dconf_path, "binding", &gnome_binding)?;
 

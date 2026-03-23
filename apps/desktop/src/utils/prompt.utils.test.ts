@@ -22,7 +22,7 @@ describe("buildSystemPostProcessingTonePrompt", () => {
     const result = buildSystemPostProcessingTonePrompt(
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
-    expect(result).toContain("transcript rewriting assistant");
+    expect(result).toContain("text editor that reformats transcripts");
   });
 
   it("returns custom system prompt for template config", () => {
@@ -58,7 +58,7 @@ describe("buildSystemPostProcessingTonePrompt", () => {
         promptTemplate: "Process: <transcript/>",
       }),
     );
-    expect(result).toContain("transcript rewriting assistant");
+    expect(result).toContain("text editor that reformats transcripts");
   });
 });
 
@@ -92,7 +92,7 @@ describe("buildPostProcessingPrompt", () => {
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
     expect(result).toContain(
-      "Your task is to post-process an audio transcription",
+      "Your task is to REWRITE an audio transcription",
     );
     expect(result).toContain("Be formal");
     expect(result).toContain("Hello world");

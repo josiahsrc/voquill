@@ -177,20 +177,17 @@ pub fn set_overlay_focusable(window: &WebviewWindow, focusable: bool) -> Result<
 
                     // Store the overlay window pointer so the swizzled method
                     // can distinguish it from other windows (e.g. the main window).
-                    OVERLAY_WINDOW_PTR
-                        .store(ns_window as *const _ as usize, Ordering::Relaxed);
+                    OVERLAY_WINDOW_PTR.store(ns_window as *const _ as usize, Ordering::Relaxed);
 
                     // On first call, swizzle canBecomeKeyWindow on the window's class.
                     // The replacement checks the window identity so only the overlay
                     // is affected; all other windows call the original implementation.
                     if !SWIZZLED.swap(true, Ordering::SeqCst) {
-                        let cls: *const objc::runtime::Class =
-                            msg_send![ns_window, class];
+                        let cls: *const objc::runtime::Class = msg_send![ns_window, class];
                         let sel = sel!(canBecomeKeyWindow);
                         let method = class_getInstanceMethod(cls, sel);
                         if !method.is_null() {
-                            ORIGINAL_CAN_BECOME_KEY =
-                                Some(method_getImplementation(method));
+                            ORIGINAL_CAN_BECOME_KEY = Some(method_getImplementation(method));
                             let imp: Imp = std::mem::transmute(
                                 overlay_can_become_key
                                     as unsafe extern "C" fn(&Object, Sel) -> BOOL,
