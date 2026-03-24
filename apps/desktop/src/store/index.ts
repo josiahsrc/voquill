@@ -1,10 +1,14 @@
 import { produce } from "immer";
 import { isEqual } from "lodash-es";
+import { persist } from "zustand/middleware";
 import { createWithEqualityFn } from "zustand/traditional";
 import { INITIAL_APP_STATE, type AppState } from "../state/app.state";
 
-export const useAppStore = createWithEqualityFn<AppState>(
-  () => INITIAL_APP_STATE,
+export const useAppStore = createWithEqualityFn<AppState>()(
+  persist(() => INITIAL_APP_STATE, {
+    name: "voquill-local-state",
+    partialize: (state) => ({ local: state.local }),
+  }),
   isEqual,
 );
 

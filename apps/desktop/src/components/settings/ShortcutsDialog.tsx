@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { FormattedMessage } from "react-intl";
 import { produceAppState, useAppStore } from "../../store";
+import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
@@ -21,6 +22,7 @@ import {
 import { HotkeySetting } from "./HotkeySetting";
 
 export const ShortcutsDialog = () => {
+  const isAssistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
   const { open, hotkeysStatus, isManualStyling } = useAppStore((state) => ({
     open: state.settings.shortcutsDialogOpen,
     hotkeysStatus: state.settings.hotkeysStatus,
@@ -56,13 +58,15 @@ export const ShortcutsDialog = () => {
           }
           actionName={DICTATE_HOTKEY}
         />
-        <HotkeySetting
-          title={<FormattedMessage defaultMessage="Assistant mode" />}
-          description={
-            <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
-          }
-          actionName={AGENT_DICTATE_HOTKEY}
-        />
+        {isAssistantModeEnabled && (
+          <HotkeySetting
+            title={<FormattedMessage defaultMessage="Assistant mode" />}
+            description={
+              <FormattedMessage defaultMessage="Dictate commands for the AI to follow instead of just cleaning up text." />
+            }
+            actionName={AGENT_DICTATE_HOTKEY}
+          />
+        )}
         <HotkeySetting
           title={<FormattedMessage defaultMessage="Cancel transcription" />}
           description={

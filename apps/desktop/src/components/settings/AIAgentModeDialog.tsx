@@ -15,11 +15,10 @@ import {
 } from "@mui/material";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import { useLocalStorage } from "../../hooks/local-storage.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import {
-  ASSISTANT_MODE_ENABLED_KEY,
-  POWER_MODE_ENABLED_KEY,
+  getIsAssistantModeEnabled,
+  getIsPowerModeEnabled,
 } from "../../utils/assistant-mode.utils";
 import { AGENT_DICTATE_HOTKEY } from "../../utils/keyboard.utils";
 import { AIAgentModeConfiguration } from "./AIAgentModeConfiguration";
@@ -27,12 +26,8 @@ import { HotkeySetting } from "./HotkeySetting";
 
 export const AIAgentModeDialog = () => {
   const open = useAppStore((state) => state.settings.agentModeDialogOpen);
-  const [assistantModeEnabled, setAssistantModeEnabled] =
-    useLocalStorage<boolean>(ASSISTANT_MODE_ENABLED_KEY, false);
-  const [powerModeEnabled, setPowerModeEnabled] = useLocalStorage<boolean>(
-    POWER_MODE_ENABLED_KEY,
-    false,
-  );
+  const assistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
+  const powerModeEnabled = useAppStore(getIsPowerModeEnabled);
   const handleClose = () => {
     produceAppState((draft) => {
       draft.settings.agentModeDialogOpen = false;
@@ -40,7 +35,9 @@ export const AIAgentModeDialog = () => {
   };
 
   const handleAssistantModeToggle = (event: ChangeEvent<HTMLInputElement>) => {
-    setAssistantModeEnabled(event.target.checked);
+    produceAppState((draft) => {
+      draft.local.assistantModeEnabled = event.target.checked;
+    });
   };
 
   const [powerModeWarningOpen, setPowerModeWarningOpen] = useState(false);
@@ -49,12 +46,16 @@ export const AIAgentModeDialog = () => {
     if (event.target.checked) {
       setPowerModeWarningOpen(true);
     } else {
-      setPowerModeEnabled(false);
+      produceAppState((draft) => {
+        draft.local.powerModeEnabled = false;
+      });
     }
   };
 
   const handleConfirmPowerMode = () => {
-    setPowerModeEnabled(true);
+    produceAppState((draft) => {
+      draft.local.powerModeEnabled = true;
+    });
     setPowerModeWarningOpen(false);
   };
 
