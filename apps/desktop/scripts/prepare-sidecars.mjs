@@ -273,7 +273,7 @@ function resolveGpuBuildState(target) {
   };
 }
 
-// --- GTK4 pill overlay (Linux only) ---
+// --- GTK pill overlay (Linux only) ---
 if (isLinuxTarget(targetTriple)) {
   buildPillOverlay();
 }
@@ -282,12 +282,12 @@ function buildPillOverlay() {
   const pillManifestPath = join(
     repoRoot,
     "packages",
-    "rust_gtk4_pill",
+    "rust_gtk_pill",
     "Cargo.toml",
   );
 
   if (!existsSync(pillManifestPath)) {
-    console.warn("[sidecar] GTK4 pill manifest not found, skipping");
+    console.warn("[sidecar] GTK pill manifest not found, skipping");
     return;
   }
 
@@ -295,14 +295,14 @@ function buildPillOverlay() {
     ? isAbsolute(cargoTargetDirOverride)
       ? cargoTargetDirOverride
       : resolve(repoRoot, cargoTargetDirOverride)
-    : join(repoRoot, "packages", "rust_gtk4_pill", "target");
+    : join(repoRoot, "packages", "rust_gtk_pill", "target");
 
   const pillCargoArgs = [
     "build",
     "--manifest-path",
     pillManifestPath,
     "--bin",
-    "voquill-gtk4-pill",
+    "voquill-gtk-pill",
   ];
 
   if (buildTarget) {
@@ -318,7 +318,7 @@ function buildPillOverlay() {
   });
 
   if (!buildOk) {
-    console.warn("[sidecar] GTK4 pill build failed, skipping");
+    console.warn("[sidecar] GTK pill build failed, skipping");
     return;
   }
 
@@ -326,17 +326,17 @@ function buildPillOverlay() {
     pillTargetDir,
     ...(buildTarget ? [buildTarget] : []),
     buildProfile,
-    "voquill-gtk4-pill",
+    "voquill-gtk-pill",
   );
 
   const resourcesDir = join(desktopDir, "src-tauri", "resources");
   mkdirSync(resourcesDir, { recursive: true });
-  const pillDestPath = join(resourcesDir, "voquill-gtk4-pill");
+  const pillDestPath = join(resourcesDir, "voquill-gtk-pill");
 
   if (existsSync(pillSourcePath)) {
     copyFileSync(pillSourcePath, pillDestPath);
     chmodSync(pillDestPath, 0o755);
-    console.log(`[sidecar] Prepared voquill-gtk4-pill: ${pillDestPath}`);
+    console.log(`[sidecar] Prepared voquill-gtk-pill: ${pillDestPath}`);
   } else {
     console.warn(
       `[sidecar] Expected pill binary not produced: ${pillSourcePath}`,

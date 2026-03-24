@@ -4,11 +4,11 @@ use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
-use gtk4::cairo;
-use gtk4::gdk;
-use gtk4::glib::{self, ControlFlow};
-use gtk4::prelude::*;
-use gtk4_layer_shell::LayerShell;
+use gtk::cairo;
+use gtk::gdk;
+use gtk::glib::{self, ControlFlow};
+use gtk::prelude::*;
+use gtk_layer_shell::LayerShell;
 
 use crate::ipc::{self, InMessage, OutMessage, Phase};
 
@@ -86,7 +86,7 @@ struct PillState {
 }
 
 pub fn run(receiver: Receiver<InMessage>) {
-    let use_layer_shell = gtk4_layer_shell::is_supported();
+    let use_layer_shell = gtk_layer_shell::is_supported();
     if !use_layer_shell {
         let display = gdk::Display::default().expect("display");
         if display.type_().name() != "GdkX11Display" {
@@ -95,34 +95,44 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
     }
 
-    let window = gtk4::Window::new();
+    let window = gtk::Window::new(gtk::WindowType::Toplevel);
     window.set_default_size(WINDOW_WIDTH, WINDOW_HEIGHT);
     window.set_decorated(false);
+    window.set_app_paintable(true);
+
+    // Set RGBA visual for transparency
+    {
+        let screen: gdk::Screen = gtk::prelude::WidgetExt::screen(&window).expect("screen");
+        if let Some(visual) = screen.rgba_visual() {
+            window.set_visual(Some(&visual));
+        }
+    }
 
     if use_layer_shell {
         window.init_layer_shell();
-        window.set_layer(gtk4_layer_shell::Layer::Overlay);
-        window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
-        window.set_margin(gtk4_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
-        window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::None);
+        window.set_layer(gtk_layer_shell::Layer::Overlay);
+        window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
+        window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
+        window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
         window.set_exclusive_zone(-1);
-        window.set_namespace(Some("voquill-pill"));
+        window.set_namespace("voquill-pill");
     } else {
-        window.connect_realize(|w| setup_x11_window(w));
+        window.connect_realize(setup_x11_window);
     }
 
-    let css = gtk4::CssProvider::new();
-    css.load_from_data("window { background: transparent; }");
-    gtk4::style_context_add_provider_for_display(
-        &gdk::Display::default().expect("display"),
-        &css,
-        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
-    );
+    let css = gtk::CssProvider::new();
+    let _ = css.load_from_data(b"window { background: transparent; }");
+    if let Some(screen) = gdk::Screen::default() {
+        gtk::StyleContext::add_provider_for_screen(
+            &screen,
+            &css,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
 
-    let drawing_area = gtk4::DrawingArea::new();
-    drawing_area.set_content_width(WINDOW_WIDTH);
-    drawing_area.set_content_height(WINDOW_HEIGHT);
-    window.set_child(Some(&drawing_area));
+    let drawing_area = gtk::DrawingArea::new();
+    drawing_area.set_size_request(WINDOW_WIDTH, WINDOW_HEIGHT);
+    window.add(&drawing_area);
 
     let state = Rc::new(PillState {
         phase: Cell::new(Phase::Idle),
@@ -139,34 +149,49 @@ pub fn run(receiver: Receiver<InMessage>) {
         tooltip_width: Cell::new(0.0),
     });
 
-    let motion = gtk4::EventControllerMotion::new();
+    window.add_events(
+        gdk::EventMask::ENTER_NOTIFY_MASK
+            | gdk::EventMask::LEAVE_NOTIFY_MASK
+            | gdk::EventMask::BUTTON_RELEASE_MASK,
+    );
+
     let state_enter = state.clone();
-    motion.connect_enter(move |_, _, _| {
+    window.connect_enter_notify_event(move |win, _| {
         state_enter.hovered.set(true);
         ipc::send(&OutMessage::Hover { hovered: true });
+        // Immediately widen the input region to the expanded pill bounds
+        // so the cursor doesn't leave the tiny collapsed region before
+        // the next tick can update it.
+        if let Some(gdk_win) = win.window() {
+            set_expanded_input_region(&gdk_win, &state_enter);
+        }
+        glib::Propagation::Proceed
     });
+
     let state_leave = state.clone();
-    motion.connect_leave(move |_| {
+    window.connect_leave_notify_event(move |_, _| {
         state_leave.hovered.set(false);
         ipc::send(&OutMessage::Hover { hovered: false });
+        glib::Propagation::Proceed
     });
-    window.add_controller(motion);
 
     let state_click = state.clone();
-    let click = gtk4::GestureClick::new();
-    click.connect_released(move |_, _, x, y| {
+    window.connect_button_release_event(move |_, event| {
+        let (x, y) = event.position();
         handle_click(&state_click, x, y);
+        glib::Propagation::Proceed
     });
-    window.add_controller(click);
 
     let state_draw = state.clone();
-    drawing_area.set_draw_func(move |_area, cr, _w, _h| {
+    drawing_area.connect_draw(move |_area, cr| {
         draw_all(cr, &state_draw);
+        glib::Propagation::Proceed
     });
 
     let receiver = Rc::new(RefCell::new(receiver));
     let state_tick = state.clone();
     let da = drawing_area.clone();
+    let win_tick = window.clone();
     let quit_flag = Rc::new(Cell::new(false));
     let quit_tick = quit_flag.clone();
     glib::timeout_add_local(Duration::from_millis(16), move || {
@@ -200,13 +225,48 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
 
         tick(&state_tick);
-        update_input_region(&da, &state_tick);
+        if let Some(gdk_win) = win_tick.window() {
+            update_input_region(&gdk_win, &state_tick);
+        }
         da.queue_draw();
         ControlFlow::Continue
     });
 
-    window.present();
+    window.show_all();
     ipc::send(&OutMessage::Ready);
+
+    if use_layer_shell {
+        let window_ref = window.clone();
+        let quit_monitor = quit_flag.clone();
+        let last_geom: Rc<Cell<(i32, i32, i32, i32)>> = Rc::new(Cell::new((0, 0, 0, 0)));
+        glib::timeout_add_local(Duration::from_millis(100), move || {
+            if quit_monitor.get() {
+                return ControlFlow::Break;
+            }
+            let display = match gdk::Display::default() {
+                Some(d) => d,
+                None => return ControlFlow::Continue,
+            };
+            let seat = match display.default_seat() {
+                Some(s) => s,
+                None => return ControlFlow::Continue,
+            };
+            let pointer = match seat.pointer() {
+                Some(p) => p,
+                None => return ControlFlow::Continue,
+            };
+            let (_, x, y) = pointer.position();
+            if let Some(monitor) = display.monitor_at_point(x, y) {
+                let g = monitor.geometry();
+                let new_geom = (g.x(), g.y(), g.width(), g.height());
+                if new_geom != last_geom.get() {
+                    last_geom.set(new_geom);
+                    window_ref.set_monitor(&monitor);
+                }
+            }
+            ControlFlow::Continue
+        });
+    }
 
     let main_loop = glib::MainLoop::new(None, false);
     let ml = main_loop.clone();
@@ -296,32 +356,47 @@ fn tick(state: &PillState) {
     state.tooltip_t.set(snapped_tt);
 }
 
-fn update_input_region(da: &gtk4::DrawingArea, state: &PillState) {
-    let Some(native) = da.native() else { return };
-    let Some(surface) = native.surface() else { return };
-
-    let expand_t = state.expand_t.get();
-    let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
-    let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
+fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillState) {
+    let pill_w = EXPANDED_PILL_WIDTH;
+    let pill_h = EXPANDED_PILL_HEIGHT;
     let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
-    let pill_ry = (PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0) as i32;
+    let pill_ry = PILL_AREA_TOP as i32;
 
     let tooltip_t = state.tooltip_t.get();
     let tooltip_w = state.tooltip_width.get();
 
     if tooltip_t > 0.1 && tooltip_w > 0.0 {
-        // Single region spanning from tooltip top down through the pill (no gap flicker)
         let tooltip_top = (PILL_AREA_TOP - TOOLTIP_GAP - TOOLTIP_HEIGHT) as i32;
         let region_w = (tooltip_w.ceil() as i32).max(pill_w.ceil() as i32);
         let region_rx = ((WINDOW_WIDTH as f64 - region_w as f64) / 2.0) as i32;
         let region_h = pill_ry + pill_h.ceil() as i32 - tooltip_top;
         let rect = cairo::RectangleInt::new(region_rx, tooltip_top, region_w, region_h);
         let region = cairo::Region::create_rectangle(&rect);
-        surface.set_input_region(&region);
+        gdk_window.input_shape_combine_region(&region, 0, 0);
     } else {
         let rect = cairo::RectangleInt::new(pill_rx, pill_ry, pill_w.ceil() as i32, pill_h.ceil() as i32);
         let region = cairo::Region::create_rectangle(&rect);
-        surface.set_input_region(&region);
+        gdk_window.input_shape_combine_region(&region, 0, 0);
+    }
+}
+
+fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {
+    let hovered = state.hovered.get();
+    let is_active = state.phase.get() != Phase::Idle;
+
+    if hovered || is_active {
+        // Keep expanded bounds while hovered/active so cursor stays inside
+        set_expanded_input_region(gdk_window, state);
+    } else {
+        // Shrink to the animated pill size — collapsed pill triggers the next hover
+        let expand_t = state.expand_t.get();
+        let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
+        let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
+        let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
+        let pill_ry = (PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0) as i32;
+        let rect = cairo::RectangleInt::new(pill_rx, pill_ry, pill_w.ceil() as i32, pill_h.ceil() as i32);
+        let region = cairo::Region::create_rectangle(&rect);
+        gdk_window.input_shape_combine_region(&region, 0, 0);
     }
 }
 
@@ -647,7 +722,7 @@ fn lerp(a: f64, b: f64, t: f64) -> f64 {
     a + (b - a) * t
 }
 
-fn setup_x11_window(window: &gtk4::Window) {
+fn setup_x11_window(window: &gtk::Window) {
     use std::ffi::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 
     type XDisplay = c_void;
@@ -658,7 +733,7 @@ fn setup_x11_window(window: &gtk4::Window) {
 
     extern "C" {
         fn gdk_x11_display_get_xdisplay(display: *mut c_void) -> *mut XDisplay;
-        fn gdk_x11_surface_get_xid(surface: *mut c_void) -> XWindow;
+        fn gdk_x11_window_get_xid(window: *mut c_void) -> XWindow;
     }
 
     #[link(name = "X11")]
@@ -682,8 +757,8 @@ fn setup_x11_window(window: &gtk4::Window) {
         ) -> c_int;
     }
 
-    let display = gtk4::prelude::WidgetExt::display(window);
-    let surface = window.surface().expect("surface after realize");
+    let display = window.display();
+    let gdk_window = window.window().expect("window after realize");
 
     let xdisplay = unsafe {
         gdk_x11_display_get_xdisplay(
@@ -692,8 +767,8 @@ fn setup_x11_window(window: &gtk4::Window) {
         )
     };
     let xwindow = unsafe {
-        gdk_x11_surface_get_xid(
-            glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkSurface>::to_glib_none(&surface).0
+        gdk_x11_window_get_xid(
+            glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkWindow>::to_glib_none(&gdk_window).0
                 as *mut c_void,
         )
     };
@@ -744,16 +819,25 @@ fn setup_x11_window(window: &gtk4::Window) {
 
     let pill_pos_on_monitor =
         |cx: c_int, cy: c_int, disp: &gdk::Display| -> Option<(c_int, c_int)> {
-            let monitors = disp.monitors();
-            for i in 0..monitors.n_items() {
-                let monitor = monitors.item(i)?.downcast::<gdk::Monitor>().ok()?;
+            let n = disp.n_monitors();
+            for i in 0..n {
+                let monitor = disp.monitor(i)?;
                 let g = monitor.geometry();
-                if cx >= g.x() && cx < g.x() + g.width()
-                    && cy >= g.y() && cy < g.y() + g.height()
+                let scale = monitor.scale_factor();
+                // GDK geometry is in logical pixels; X11 cursor coords are physical.
+                let phys_x = g.x() * scale;
+                let phys_y = g.y() * scale;
+                let phys_w = g.width() * scale;
+                let phys_h = g.height() * scale;
+                if cx >= phys_x && cx < phys_x + phys_w
+                    && cy >= phys_y && cy < phys_y + phys_h
                 {
+                    let win_w = WINDOW_WIDTH * scale;
+                    let win_h = WINDOW_HEIGHT * scale;
+                    let margin = MARGIN_BOTTOM * scale;
                     return Some((
-                        g.x() + (g.width() - WINDOW_WIDTH) / 2,
-                        g.y() + g.height() - WINDOW_HEIGHT - MARGIN_BOTTOM,
+                        phys_x + (phys_w - win_w) / 2,
+                        phys_y + phys_h - win_h - margin,
                     ));
                 }
             }
