@@ -490,6 +490,9 @@ fn is_builtin_microphone_name(name: &str) -> bool {
         || lower.contains("mac mini")
         || lower.contains("imac")
         || lower.contains("mac studio")
+        || lower.contains("dmic")
+        || lower.contains("internal mic")
+        || lower.contains("int mic")
 }
 
 fn name_has_low_quality_keyword(name: &str) -> bool {
