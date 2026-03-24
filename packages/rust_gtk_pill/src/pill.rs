@@ -114,7 +114,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
         window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
         window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
-        window.set_exclusive_zone(-1);
+        window.set_exclusive_zone(0);
         window.set_namespace("voquill-pill");
     } else {
         window.connect_realize(setup_x11_window);
@@ -832,12 +832,18 @@ fn setup_x11_window(window: &gtk::Window) {
                 if cx >= phys_x && cx < phys_x + phys_w
                     && cy >= phys_y && cy < phys_y + phys_h
                 {
+                    // Use workarea (excludes taskbars/panels) for positioning
+                    let wa = monitor.workarea();
+                    let wa_x = wa.x() * scale;
+                    let wa_y = wa.y() * scale;
+                    let wa_w = wa.width() * scale;
+                    let wa_h = wa.height() * scale;
                     let win_w = WINDOW_WIDTH * scale;
                     let win_h = WINDOW_HEIGHT * scale;
                     let margin = MARGIN_BOTTOM * scale;
                     return Some((
-                        phys_x + (phys_w - win_w) / 2,
-                        phys_y + phys_h - win_h - margin,
+                        wa_x + (wa_w - win_w) / 2,
+                        wa_y + wa_h - win_h - margin,
                     ));
                 }
             }
