@@ -179,7 +179,7 @@ fn record_loop(
         fragsize: (READ_CHUNK_FRAMES * std::mem::size_of::<f32>()) as u32,
     };
 
-    let source_cstr = source_name.map(|s| std::ffi::CString::new(s).ok()).flatten();
+    let source_cstr = source_name.and_then(|s| std::ffi::CString::new(s).ok());
     let source_ref = source_cstr.as_ref().map(|c| c.as_c_str().to_str().unwrap_or_default());
 
     let simple = match psimple::Simple::new(
