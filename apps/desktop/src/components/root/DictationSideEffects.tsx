@@ -26,7 +26,7 @@ import {
   useHotkeyHold,
   useHotkeyHoldMany,
 } from "../../hooks/hotkey.hooks";
-import { useLocalStorage } from "../../hooks/local-storage.hooks";
+import { useIsAssistantModeEnabled } from "../../hooks/assistant-mode.hooks";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
 import { browserRouter } from "../../router";
@@ -51,7 +51,6 @@ import {
   trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
-import { ASSISTANT_MODE_ENABLED_KEY } from "../../utils/assistant-mode.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
@@ -111,10 +110,7 @@ export const DictationSideEffects = () => {
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
-  const [assistantModeEnabled] = useLocalStorage<boolean>(
-    ASSISTANT_MODE_ENABLED_KEY,
-    false,
-  );
+  const assistantModeEnabled = useIsAssistantModeEnabled();
 
   const isManualStyling = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",

@@ -15,6 +15,10 @@ import {
 } from "@mui/material";
 import { ChangeEvent, useState } from "react";
 import { FormattedMessage } from "react-intl";
+import {
+  useIsAssistantModeEnabled,
+  useIsPowerModeEnabled,
+} from "../../hooks/assistant-mode.hooks";
 import { useLocalStorage } from "../../hooks/local-storage.hooks";
 import { produceAppState, useAppStore } from "../../store";
 import {
@@ -27,9 +31,13 @@ import { HotkeySetting } from "./HotkeySetting";
 
 export const AIAgentModeDialog = () => {
   const open = useAppStore((state) => state.settings.agentModeDialogOpen);
-  const [assistantModeEnabled, setAssistantModeEnabled] =
-    useLocalStorage<boolean>(ASSISTANT_MODE_ENABLED_KEY, false);
-  const [powerModeEnabled, setPowerModeEnabled] = useLocalStorage<boolean>(
+  const assistantModeEnabled = useIsAssistantModeEnabled();
+  const [, setAssistantModeEnabled] = useLocalStorage<boolean>(
+    ASSISTANT_MODE_ENABLED_KEY,
+    false,
+  );
+  const powerModeEnabled = useIsPowerModeEnabled();
+  const [, setPowerModeEnabled] = useLocalStorage<boolean>(
     POWER_MODE_ENABLED_KEY,
     false,
   );
