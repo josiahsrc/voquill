@@ -47,6 +47,40 @@ fn parse_alsa_cards() -> HashMap<String, String> {
     map
 }
 
+/// Read the PCM "id" field from /proc/asound/<card>/pcm<dev>c/info.
+/// This gives us the actual device purpose (e.g., "DMIC", "HDA Analog")
+/// rather than just the card name + device number.
+fn get_alsa_pcm_capture_id(card_id: &str, dev_num: u32) -> Option<String> {
+    let info_path = format!("/proc/asound/{card_id}/pcm{dev_num}c/info");
+    let contents = fs::read_to_string(info_path).ok()?;
+    for line in contents.lines() {
+        if let Some(id) = line.strip_prefix("id: ") {
+            let id = id.trim();
+            if !id.is_empty() {
+                return Some(id.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Extract the device number from an ALSA device name.
+/// "hw:CARD=Audio,DEV=6" -> 6, "plughw:Audio,3" -> 3, "hw:CARD=Audio" -> 0
+fn extract_device_number(device_name: &str) -> u32 {
+    if let Some(dev_start) = device_name.find("DEV=") {
+        let after_dev = &device_name[dev_start + 4..];
+        after_dev
+            .split(|c: char| !c.is_ascii_digit())
+            .next()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(0)
+    } else if let Some(comma_pos) = device_name.rfind(',') {
+        device_name[comma_pos + 1..].trim().parse().unwrap_or(0)
+    } else {
+        0
+    }
+}
+
 /// Extract the ALSA card ID from a device name string.
 /// Handles various ALSA device formats:
 ///   - "hw:CARD=Audio,DEV=0" -> Some("Audio")
@@ -104,27 +138,21 @@ pub fn get_friendly_device_name(device_name: &str) -> String {
 
     // Try to extract the ALSA card ID from various formats
     if let Some(card_id) = extract_alsa_card_id(device_name) {
+        let dev_num = extract_device_number(device_name);
         let card_map = parse_alsa_cards();
-        if let Some(friendly_name) = card_map.get(&card_id) {
-            // Check if there's a device number to append
-            if device_name.contains("DEV=") {
-                if let Some(dev_start) = device_name.find("DEV=") {
-                    let after_dev = &device_name[dev_start + 4..];
-                    let dev_num = after_dev.split(',').next().unwrap_or("0");
-                    if dev_num != "0" {
-                        return format!("{} (Device {})", friendly_name, dev_num);
-                    }
-                }
-            } else if device_name.contains(',') {
-                // Handle plughw:CardID,DeviceNum format
-                if let Some(comma_pos) = device_name.find(',') {
-                    let after_comma = &device_name[comma_pos + 1..];
-                    if let Ok(dev_num) = after_comma.trim().parse::<u32>() {
-                        if dev_num != 0 {
-                            return format!("{} (Device {})", friendly_name, dev_num);
-                        }
-                    }
-                }
+        let card_name = card_map.get(&card_id);
+
+        // Try to get the PCM-specific name (e.g., "DMIC", "HDA Analog")
+        // from /proc/asound — this is much more descriptive than
+        // "sof-hda-dsp (Device 6)".
+        if let Some(pcm_id) = get_alsa_pcm_capture_id(&card_id, dev_num) {
+            return pcm_id;
+        }
+
+        // Fall back to card name + device number
+        if let Some(friendly_name) = card_name {
+            if dev_num != 0 {
+                return format!("{} (Device {})", friendly_name, dev_num);
             }
             return friendly_name.clone();
         }
@@ -177,6 +205,15 @@ mod tests {
     }
 
     #[test]
+    fn test_extract_device_number() {
+        assert_eq!(extract_device_number("hw:CARD=Audio,DEV=6"), 6);
+        assert_eq!(extract_device_number("hw:CARD=Audio,DEV=0"), 0);
+        assert_eq!(extract_device_number("plughw:Audio,3"), 3);
+        assert_eq!(extract_device_number("plughw:Audio"), 0);
+        assert_eq!(extract_device_number("sysdefault:CARD=PCH"), 0);
+    }
+
+    #[test]
     fn test_parse_alsa_cards() {
         // This test will only pass on systems with /proc/asound/cards
         // On other systems, it should return an empty map without crashing
@@ -184,5 +221,11 @@ mod tests {
         // We can't assert specific values since it depends on the system
         // Just ensure it doesn't panic
         println!("Found {} ALSA cards", map.len());
+    }
+
+    #[test]
+    fn test_get_alsa_pcm_capture_id() {
+        // System-dependent — just ensure it doesn't panic
+        let _ = get_alsa_pcm_capture_id("nonexistent", 0);
     }
 }

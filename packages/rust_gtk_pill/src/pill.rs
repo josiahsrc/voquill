@@ -83,6 +83,8 @@ struct PillState {
     style_name: RefCell<String>,
     tooltip_t: Cell<f64>,
     tooltip_width: Cell<f64>,
+    // Fractional DPI scale (X11 only; 1.0 on Wayland)
+    ui_scale: f64,
 }
 
 pub fn run(receiver: Receiver<InMessage>) {
@@ -95,8 +97,30 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
     }
 
+    // On X11, GTK3 doesn't handle fractional DPI scaling for widgets.
+    // Read Xft.dpi (exposed via GDK screen resolution) and compute the
+    // extra scale factor we need to apply ourselves.
+    let ui_scale = if !use_layer_shell {
+        let dpi = gdk::Screen::default().map(|s| s.resolution()).unwrap_or(-1.0);
+        let gdk_scale = std::env::var("GDK_SCALE")
+            .ok()
+            .and_then(|s| s.parse::<f64>().ok())
+            .unwrap_or(1.0);
+        if dpi > 96.0 {
+            (dpi / 96.0 / gdk_scale).max(1.0)
+        } else {
+            1.0
+        }
+    } else {
+        1.0
+    };
+
+    let scaled_width = (WINDOW_WIDTH as f64 * ui_scale).ceil() as i32;
+    let scaled_height = (WINDOW_HEIGHT as f64 * ui_scale).ceil() as i32;
+    let scaled_margin = (MARGIN_BOTTOM as f64 * ui_scale).ceil() as i32;
+
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
-    window.set_default_size(WINDOW_WIDTH, WINDOW_HEIGHT);
+    window.set_default_size(scaled_width, scaled_height);
     window.set_decorated(false);
     window.set_app_paintable(true);
 
@@ -112,12 +136,13 @@ pub fn run(receiver: Receiver<InMessage>) {
         window.init_layer_shell();
         window.set_layer(gtk_layer_shell::Layer::Overlay);
         window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
-        window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
+        window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, scaled_margin);
         window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
-        window.set_exclusive_zone(-1);
+        window.set_exclusive_zone(0);
         window.set_namespace("voquill-pill");
     } else {
-        window.connect_realize(setup_x11_window);
+        let x11_ui_scale = ui_scale;
+        window.connect_realize(move |window| setup_x11_window(window, x11_ui_scale));
     }
 
     let css = gtk::CssProvider::new();
@@ -131,7 +156,7 @@ pub fn run(receiver: Receiver<InMessage>) {
     }
 
     let drawing_area = gtk::DrawingArea::new();
-    drawing_area.set_size_request(WINDOW_WIDTH, WINDOW_HEIGHT);
+    drawing_area.set_size_request(scaled_width, scaled_height);
     window.add(&drawing_area);
 
     let state = Rc::new(PillState {
@@ -147,6 +172,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         style_name: RefCell::new(String::new()),
         tooltip_t: Cell::new(0.0),
         tooltip_width: Cell::new(0.0),
+        ui_scale,
     });
 
     window.add_events(
@@ -357,24 +383,29 @@ fn tick(state: &PillState) {
 }
 
 fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillState) {
+    let s = state.ui_scale;
     let pill_w = EXPANDED_PILL_WIDTH;
     let pill_h = EXPANDED_PILL_HEIGHT;
-    let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
-    let pill_ry = PILL_AREA_TOP as i32;
+    let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0 * s) as i32;
+    let pill_ry = (PILL_AREA_TOP * s) as i32;
 
     let tooltip_t = state.tooltip_t.get();
     let tooltip_w = state.tooltip_width.get();
 
     if tooltip_t > 0.1 && tooltip_w > 0.0 {
-        let tooltip_top = (PILL_AREA_TOP - TOOLTIP_GAP - TOOLTIP_HEIGHT) as i32;
-        let region_w = (tooltip_w.ceil() as i32).max(pill_w.ceil() as i32);
-        let region_rx = ((WINDOW_WIDTH as f64 - region_w as f64) / 2.0) as i32;
-        let region_h = pill_ry + pill_h.ceil() as i32 - tooltip_top;
+        let tooltip_top = ((PILL_AREA_TOP - TOOLTIP_GAP - TOOLTIP_HEIGHT) * s) as i32;
+        let region_w = ((tooltip_w.ceil().max(pill_w)) * s).ceil() as i32;
+        let region_rx = ((WINDOW_WIDTH as f64 - region_w as f64 / s) / 2.0 * s) as i32;
+        let region_h = pill_ry + (pill_h * s).ceil() as i32 - tooltip_top;
         let rect = cairo::RectangleInt::new(region_rx, tooltip_top, region_w, region_h);
         let region = cairo::Region::create_rectangle(&rect);
         gdk_window.input_shape_combine_region(&region, 0, 0);
     } else {
-        let rect = cairo::RectangleInt::new(pill_rx, pill_ry, pill_w.ceil() as i32, pill_h.ceil() as i32);
+        let rect = cairo::RectangleInt::new(
+            pill_rx, pill_ry,
+            (pill_w * s).ceil() as i32,
+            (pill_h * s).ceil() as i32,
+        );
         let region = cairo::Region::create_rectangle(&rect);
         gdk_window.input_shape_combine_region(&region, 0, 0);
     }
@@ -389,12 +420,17 @@ fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {
         set_expanded_input_region(gdk_window, state);
     } else {
         // Shrink to the animated pill size — collapsed pill triggers the next hover
+        let s = state.ui_scale;
         let expand_t = state.expand_t.get();
         let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
         let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
-        let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
-        let pill_ry = (PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0) as i32;
-        let rect = cairo::RectangleInt::new(pill_rx, pill_ry, pill_w.ceil() as i32, pill_h.ceil() as i32);
+        let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0 * s) as i32;
+        let pill_ry = ((PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0) * s) as i32;
+        let rect = cairo::RectangleInt::new(
+            pill_rx, pill_ry,
+            (pill_w * s).ceil() as i32,
+            (pill_h * s).ceil() as i32,
+        );
         let region = cairo::Region::create_rectangle(&rect);
         gdk_window.input_shape_combine_region(&region, 0, 0);
     }
@@ -405,6 +441,11 @@ fn draw_all(cr: &cairo::Context, state: &PillState) {
     cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
     let _ = cr.paint();
     cr.set_operator(cairo::Operator::Over);
+
+    let s = state.ui_scale;
+    if s != 1.0 {
+        cr.scale(s, s);
+    }
 
     draw_tooltip(cr, state);
     draw_pill(cr, state);
@@ -670,6 +711,9 @@ fn draw_tooltip(cr: &cairo::Context, state: &PillState) {
 }
 
 fn handle_click(state: &PillState, x: f64, y: f64) {
+    let s = state.ui_scale;
+    let x = x / s;
+    let y = y / s;
     let tooltip_t = state.tooltip_t.get();
     let tooltip_w = state.tooltip_width.get();
     let tooltip_ry = PILL_AREA_TOP - TOOLTIP_GAP - TOOLTIP_HEIGHT;
@@ -722,7 +766,7 @@ fn lerp(a: f64, b: f64, t: f64) -> f64 {
     a + (b - a) * t
 }
 
-fn setup_x11_window(window: &gtk::Window) {
+fn setup_x11_window(window: &gtk::Window, ui_scale: f64) {
     use std::ffi::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 
     type XDisplay = c_void;
@@ -818,26 +862,33 @@ fn setup_x11_window(window: &gtk::Window) {
     };
 
     let pill_pos_on_monitor =
-        |cx: c_int, cy: c_int, disp: &gdk::Display| -> Option<(c_int, c_int)> {
+        move |cx: c_int, cy: c_int, disp: &gdk::Display| -> Option<(c_int, c_int)> {
             let n = disp.n_monitors();
             for i in 0..n {
                 let monitor = disp.monitor(i)?;
                 let g = monitor.geometry();
-                let scale = monitor.scale_factor();
+                let scale = monitor.scale_factor() as f64;
                 // GDK geometry is in logical pixels; X11 cursor coords are physical.
-                let phys_x = g.x() * scale;
-                let phys_y = g.y() * scale;
-                let phys_w = g.width() * scale;
-                let phys_h = g.height() * scale;
-                if cx >= phys_x && cx < phys_x + phys_w
-                    && cy >= phys_y && cy < phys_y + phys_h
+                let phys_x = g.x() as f64 * scale;
+                let phys_y = g.y() as f64 * scale;
+                let phys_w = g.width() as f64 * scale;
+                let phys_h = g.height() as f64 * scale;
+                if (cx as f64) >= phys_x && (cx as f64) < phys_x + phys_w
+                    && (cy as f64) >= phys_y && (cy as f64) < phys_y + phys_h
                 {
-                    let win_w = WINDOW_WIDTH * scale;
-                    let win_h = WINDOW_HEIGHT * scale;
-                    let margin = MARGIN_BOTTOM * scale;
+                    // Use workarea (excludes taskbars/panels) for positioning
+                    let wa = monitor.workarea();
+                    let wa_x = wa.x() as f64 * scale;
+                    let wa_y = wa.y() as f64 * scale;
+                    let wa_w = wa.width() as f64 * scale;
+                    let wa_h = wa.height() as f64 * scale;
+                    // Window logical size is scaled by ui_scale; physical = logical * gdk_scale
+                    let win_w = WINDOW_WIDTH as f64 * ui_scale * scale;
+                    let win_h = WINDOW_HEIGHT as f64 * ui_scale * scale;
+                    let margin = MARGIN_BOTTOM as f64 * ui_scale * scale;
                     return Some((
-                        phys_x + (phys_w - win_w) / 2,
-                        phys_y + phys_h - win_h - margin,
+                        (wa_x + (wa_w - win_w) / 2.0) as c_int,
+                        (wa_y + wa_h - win_h - margin) as c_int,
                     ));
                 }
             }
