@@ -27,8 +27,7 @@ export class AgentStrategy extends BaseStrategy {
   validateAvailability(): Nullable<StrategyValidationError> {
     const state = getAppState();
 
-    const assistantModeEnabled = getIsAssistantModeEnabled();
-    if (!assistantModeEnabled) {
+    if (!getIsAssistantModeEnabled(state)) {
       return {
         title: getIntl().formatMessage({
           defaultMessage: "Agent mode disabled",

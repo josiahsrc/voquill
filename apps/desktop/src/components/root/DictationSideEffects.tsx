@@ -26,7 +26,7 @@ import {
   useHotkeyHold,
   useHotkeyHoldMany,
 } from "../../hooks/hotkey.hooks";
-import { useIsAssistantModeEnabled } from "../../hooks/assistant-mode.hooks";
+import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
 import { browserRouter } from "../../router";
@@ -110,7 +110,7 @@ export const DictationSideEffects = () => {
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
-  const assistantModeEnabled = useIsAssistantModeEnabled();
+  const assistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
 
   const isManualStyling = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",

@@ -1,37 +1,18 @@
-import { getAppState } from "../store";
-import { getIsEnterpriseEnabled } from "./enterprise.utils";
-import { getLocalStorageBool } from "./local-storage.utils";
+import { AppState } from "../state/app.state";
 
 export const ASSISTANT_MODE_ENABLED_KEY = "voquill:assistant-mode-enabled";
 export const POWER_MODE_ENABLED_KEY = "voquill:power-mode-enabled";
 
-type ModeEnabledArgs = {
-  isEnterprise: boolean;
-  enterpriseEnabled: boolean;
-  localEnabled: boolean;
-};
-
-export const resolveModeEnabled = (args: ModeEnabledArgs): boolean => {
-  if (args.isEnterprise) {
-    return args.enterpriseEnabled;
+export const getIsAssistantModeEnabled = (state: AppState): boolean => {
+  if (state.isEnterprise) {
+    return state.enterpriseConfig?.assistantModeEnabled ?? false;
   }
-  return args.localEnabled;
+  return state.local.assistantModeEnabled;
 };
 
-export const getIsAssistantModeEnabled = (): boolean => {
-  const state = getAppState();
-  return resolveModeEnabled({
-    isEnterprise: getIsEnterpriseEnabled(),
-    enterpriseEnabled: state.enterpriseConfig?.assistantModeEnabled ?? false,
-    localEnabled: getLocalStorageBool(ASSISTANT_MODE_ENABLED_KEY),
-  });
-};
-
-export const getIsPowerModeEnabled = (): boolean => {
-  const state = getAppState();
-  return resolveModeEnabled({
-    isEnterprise: getIsEnterpriseEnabled(),
-    enterpriseEnabled: state.enterpriseConfig?.powerModeEnabled ?? false,
-    localEnabled: getLocalStorageBool(POWER_MODE_ENABLED_KEY),
-  });
+export const getIsPowerModeEnabled = (state: AppState): boolean => {
+  if (state.isEnterprise) {
+    return state.enterpriseConfig?.powerModeEnabled ?? false;
+  }
+  return state.local.powerModeEnabled;
 };

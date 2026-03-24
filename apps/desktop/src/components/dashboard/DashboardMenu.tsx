@@ -12,8 +12,8 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { FormattedMessage } from "react-intl";
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useIsAssistantModeEnabled } from "../../hooks/assistant-mode.hooks";
 import { useAppStore } from "../../store";
+import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { ListTile } from "../common/ListTile";
 import { DiscordListTile } from "./DiscordListTile";
 import { MobileAppListTile } from "./MobileAppListTile";
@@ -38,7 +38,7 @@ export const DashboardMenu = ({ onChoose }: DashboardMenuProps) => {
   const isUpdateAvailable = useAppStore(
     (state) => state.updater.status === "ready",
   );
-  const assistantModeEnabled = useIsAssistantModeEnabled();
+  const assistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
 
   const navItems = useMemo<NavItem[]>(
     () => [
