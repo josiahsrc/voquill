@@ -136,11 +136,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 let app_handle = app.handle();
 
-                use crate::platform::Recorder;
-                use std::sync::Arc;
-
-                let recorder: Arc<dyn Recorder> =
-                    Arc::new(crate::platform::audio::RecordingManager::new());
+                let recorder = crate::platform::audio::new_recorder();
 
                 app.manage(recorder);
 
