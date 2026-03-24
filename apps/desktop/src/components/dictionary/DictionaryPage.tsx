@@ -11,7 +11,7 @@ import { useAsyncEffect } from "../../hooks/async.hooks";
 import { getTermRepo } from "../../repos";
 import { produceAppState, useAppStore } from "../../store";
 import { createId } from "../../utils/id.utils";
-import { VirtualizedListPage } from "../common/VirtualizedListPage";
+import { ScrollListPage } from "../common/ScrollListPage";
 import { AddTermDialog } from "./AddTermDialog";
 import { DictionaryRow } from "./DictionaryRow";
 
@@ -79,7 +79,7 @@ export default function DictionaryPage() {
 
   return (
     <>
-      <VirtualizedListPage
+      <ScrollListPage
         title={<FormattedMessage defaultMessage="Dictionary" />}
         subtitle={
           <FormattedMessage defaultMessage="Voquill may misunderstand you on occasion. If you see certain words being missed frequently, you can define a replacement rule here to fix the spelling automatically." />
@@ -95,7 +95,6 @@ export default function DictionaryPage() {
         }
         items={termIds}
         computeItemKey={(id) => id}
-        heightMult={10}
         renderItem={(id) => <DictionaryRow key={id} id={id} />}
       />
       <AddTermDialog
