@@ -226,6 +226,39 @@ pub fn run(receiver: Receiver<InMessage>) {
     window.show_all();
     ipc::send(&OutMessage::Ready);
 
+    if use_layer_shell {
+        let window_ref = window.clone();
+        let quit_monitor = quit_flag.clone();
+        let last_geom: Rc<Cell<(i32, i32, i32, i32)>> = Rc::new(Cell::new((0, 0, 0, 0)));
+        glib::timeout_add_local(Duration::from_millis(100), move || {
+            if quit_monitor.get() {
+                return ControlFlow::Break;
+            }
+            let display = match gdk::Display::default() {
+                Some(d) => d,
+                None => return ControlFlow::Continue,
+            };
+            let seat = match display.default_seat() {
+                Some(s) => s,
+                None => return ControlFlow::Continue,
+            };
+            let pointer = match seat.pointer() {
+                Some(p) => p,
+                None => return ControlFlow::Continue,
+            };
+            let (_, x, y) = pointer.position();
+            if let Some(monitor) = display.monitor_at_point(x, y) {
+                let g = monitor.geometry();
+                let new_geom = (g.x(), g.y(), g.width(), g.height());
+                if new_geom != last_geom.get() {
+                    last_geom.set(new_geom);
+                    window_ref.set_monitor(&monitor);
+                }
+            }
+            ControlFlow::Continue
+        });
+    }
+
     let main_loop = glib::MainLoop::new(None, false);
     let ml = main_loop.clone();
     let _quit_watch = glib::timeout_add_local(Duration::from_millis(100), move || {
@@ -764,12 +797,21 @@ fn setup_x11_window(window: &gtk::Window) {
             for i in 0..n {
                 let monitor = disp.monitor(i)?;
                 let g = monitor.geometry();
-                if cx >= g.x() && cx < g.x() + g.width()
-                    && cy >= g.y() && cy < g.y() + g.height()
+                let scale = monitor.scale_factor();
+                // GDK geometry is in logical pixels; X11 cursor coords are physical.
+                let phys_x = g.x() * scale;
+                let phys_y = g.y() * scale;
+                let phys_w = g.width() * scale;
+                let phys_h = g.height() * scale;
+                if cx >= phys_x && cx < phys_x + phys_w
+                    && cy >= phys_y && cy < phys_y + phys_h
                 {
+                    let win_w = WINDOW_WIDTH * scale;
+                    let win_h = WINDOW_HEIGHT * scale;
+                    let margin = MARGIN_BOTTOM * scale;
                     return Some((
-                        g.x() + (g.width() - WINDOW_WIDTH) / 2,
-                        g.y() + g.height() - WINDOW_HEIGHT - MARGIN_BOTTOM,
+                        phys_x + (phys_w - win_w) / 2,
+                        phys_y + phys_h - win_h - margin,
                     ));
                 }
             }
