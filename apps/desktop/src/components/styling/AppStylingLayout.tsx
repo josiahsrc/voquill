@@ -5,7 +5,7 @@ import { loadTones, setActiveTone } from "../../actions/tone.actions";
 import { useAsyncEffect } from "../../hooks/async.hooks";
 import { useAppStore } from "../../store";
 import { getGenerativePrefs } from "../../utils/user.utils";
-import { VirtualizedListPage } from "../common/VirtualizedListPage";
+import { ScrollListPage } from "../common/ScrollListPage";
 import { ToneSelect } from "../tones/ToneSelect";
 import { PostProcessingDisabledTooltip } from "./PostProcessingDisabledTooltip";
 import { AppStylingRow } from "./AppStylingRow";
@@ -36,7 +36,7 @@ export function AppStylingLayout() {
   );
 
   return (
-    <VirtualizedListPage
+    <ScrollListPage
       title={<FormattedMessage defaultMessage="Writing Styles" />}
       subtitle={
         <FormattedMessage defaultMessage="Choose how you want to sound based on what app you're using." />
