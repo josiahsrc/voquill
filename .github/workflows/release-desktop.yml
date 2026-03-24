@@ -372,13 +372,13 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri -> ${{ matrix.os == 'windows-latest' && 'D:\cargo' || 'target' }}
-          key: ${{ matrix.os }}-native-off
+          key: ${{ matrix.os }}-native-off-v2
 
       - name: Set Windows sidecar build environment
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          echo "WHISPER_CMAKE_ARGS=-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w" >> $env:GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=$env:GITHUB_WORKSPACE\packages\rust_transcription\cmake\windows-ci-toolchain.cmake" >> $env:GITHUB_ENV
 
       - name: Install system dependencies (Linux)
         if: matrix.os == 'ubuntu-22.04'
@@ -403,8 +403,10 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
-          # Disable -march=native for broader compatibility and enable Vulkan for GPU sidecar builds.
-          echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
+          # Use a cmake toolchain file to disable -march=native for broad CPU compatibility.
+          # NOTE: WHISPER_CMAKE_ARGS is NOT parsed correctly by whisper-rs-sys; individual
+          # CMAKE_* env vars are required (the build.rs passes them as -D flags to cmake).
+          echo "CMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/packages/rust_transcription/cmake/linux-ci-toolchain.cmake" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -451,6 +453,11 @@ jobs:
           $config | ConvertTo-Json -Depth 20 | Set-Content $configPath -Encoding UTF8
 
           Write-Host "Updated tauri.conf.json with bundle.resources"
+
+      - name: Set macOS sidecar build environment
+        if: matrix.os == 'macos-14'
+        run: |
+          echo "CMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/packages/rust_transcription/cmake/macos-ci-toolchain.cmake" >> "$GITHUB_ENV"
 
       - name: Import Apple signing certificate
         if: matrix.os == 'macos-14'
