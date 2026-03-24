@@ -59,6 +59,14 @@ pub fn notify_audio_levels(app: &tauri::AppHandle, levels: &[f32]) {
     }
 }
 
+pub fn notify_visibility(app: &tauri::AppHandle, visibility: &str) {
+    if let Some(pill) = app.try_state::<std::sync::Arc<PillProcess>>() {
+        pill.send(&format!(
+            r#"{{"type":"visibility","visibility":"{visibility}"}}"#
+        ));
+    }
+}
+
 pub fn notify_style_info(app: &tauri::AppHandle, count: u32, name: &str) {
     if let Some(pill) = app.try_state::<std::sync::Arc<PillProcess>>() {
         if let Ok(json) = serde_json::to_string(&serde_json::json!({

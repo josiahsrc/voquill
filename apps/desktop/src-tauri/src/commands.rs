@@ -1327,6 +1327,11 @@ pub fn set_pill_hover_enabled(enabled: bool, overlay_state: State<'_, crate::sta
 }
 
 #[tauri::command]
+pub fn set_pill_visibility(app: AppHandle, visibility: String) {
+    crate::platform::overlay::notify_visibility(&app, &visibility);
+}
+
+#[tauri::command]
 pub fn notify_pill_style_info(app: AppHandle, count: u32, name: String) {
     crate::platform::overlay::notify_style_info(&app, count, &name);
 }

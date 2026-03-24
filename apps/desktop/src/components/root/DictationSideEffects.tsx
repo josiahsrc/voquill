@@ -132,6 +132,9 @@ export const DictationSideEffects = () => {
     );
     return visibility === "persistent";
   });
+  const pillVisibility = useAppStore((state) =>
+    getEffectivePillVisibility(state.userPrefs?.dictationPillVisibility),
+  );
 
   const dictationController = useMemo(
     () =>
@@ -817,6 +820,12 @@ export const DictationSideEffects = () => {
       console.error,
     );
   }, [pillHoverEnabled]);
+
+  useEffect(() => {
+    invoke("set_pill_visibility", { visibility: pillVisibility }).catch(
+      console.error,
+    );
+  }, [pillVisibility]);
 
   const pillHasContent = useAppStore((state) => {
     if (!state.pillConversationId) return false;

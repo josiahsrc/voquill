@@ -10,4 +10,6 @@ pub fn notify_phase(_app: &tauri::AppHandle, _phase: &crate::domain::OverlayPhas
 
 pub fn notify_audio_levels(_app: &tauri::AppHandle, _levels: &[f32]) {}
 
+pub fn notify_visibility(_app: &tauri::AppHandle, _visibility: &str) {}
+
 pub fn notify_style_info(_app: &tauri::AppHandle, _count: u32, _name: &str) {}

@@ -10,7 +10,7 @@ use gtk::glib::{self, ControlFlow};
 use gtk::prelude::*;
 use gtk_layer_shell::LayerShell;
 
-use crate::ipc::{self, InMessage, OutMessage, Phase};
+use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
 
 const TAU: f64 = PI * 2.0;
 
@@ -69,6 +69,7 @@ const LOADING_SPEED: f64 = 0.015;
 
 struct PillState {
     phase: Cell<Phase>,
+    visibility: Cell<Visibility>,
     expand_t: Cell<f64>,
     hovered: Cell<bool>,
     // Waveform animation state (matching AudioWaveform.tsx AnimationState)
@@ -161,6 +162,7 @@ pub fn run(receiver: Receiver<InMessage>) {
 
     let state = Rc::new(PillState {
         phase: Cell::new(Phase::Idle),
+        visibility: Cell::new(Visibility::WhileActive),
         expand_t: Cell::new(0.0),
         hovered: Cell::new(false),
         wave_phase: Cell::new(0.0),
@@ -240,6 +242,9 @@ pub fn run(receiver: Receiver<InMessage>) {
                     state_tick.style_count.set(count);
                     *state_tick.style_name.borrow_mut() = name;
                 }
+                InMessage::Visibility { visibility } => {
+                    state_tick.visibility.set(visibility);
+                }
                 InMessage::Quit => {
                     quit_tick.set(true);
                 }
@@ -251,6 +256,20 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
 
         tick(&state_tick);
+
+        let visibility = state_tick.visibility.get();
+        let is_active = state_tick.phase.get() != Phase::Idle;
+        let should_show = match visibility {
+            Visibility::Hidden => false,
+            Visibility::WhileActive => is_active,
+            Visibility::Persistent => true,
+        };
+        if should_show {
+            win_tick.show();
+        } else {
+            win_tick.hide();
+        }
+
         if let Some(gdk_win) = win_tick.window() {
             update_input_region(&gdk_win, &state_tick);
         }
