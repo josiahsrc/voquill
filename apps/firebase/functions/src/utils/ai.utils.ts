@@ -5,11 +5,11 @@ import type { GenerateTextModel } from "@repo/voice-ai";
 const CLOUD_MODEL_TO_GROQ_MODEL: Record<CloudModel, GenerateTextModel> = {
 	low: "meta-llama/llama-4-scout-17b-16e-instruct",
 	medium: "meta-llama/llama-4-scout-17b-16e-instruct",
-	large: "openai/gpt-oss-120b",
+	large: "moonshotai/kimi-k2-instruct-0905",
 };
 
 export const mapCloudModelToGroqModel = (
 	model: CloudModel | null | undefined,
 ): GenerateTextModel => {
-	return getRec(CLOUD_MODEL_TO_GROQ_MODEL, model) ?? "openai/gpt-oss-120b";
+	return getRec(CLOUD_MODEL_TO_GROQ_MODEL, model) ?? "moonshotai/kimi-k2-instruct-0905";
 };
