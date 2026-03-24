@@ -156,9 +156,15 @@ pub fn run(receiver: Receiver<InMessage>) {
     );
 
     let state_enter = state.clone();
-    window.connect_enter_notify_event(move |_, _| {
+    window.connect_enter_notify_event(move |win, _| {
         state_enter.hovered.set(true);
         ipc::send(&OutMessage::Hover { hovered: true });
+        // Immediately widen the input region to the expanded pill bounds
+        // so the cursor doesn't leave the tiny collapsed region before
+        // the next tick can update it.
+        if let Some(gdk_win) = win.window() {
+            set_expanded_input_region(&gdk_win, &state_enter);
+        }
         glib::Propagation::Proceed
     });
 
@@ -185,6 +191,7 @@ pub fn run(receiver: Receiver<InMessage>) {
     let receiver = Rc::new(RefCell::new(receiver));
     let state_tick = state.clone();
     let da = drawing_area.clone();
+    let win_tick = window.clone();
     let quit_flag = Rc::new(Cell::new(false));
     let quit_tick = quit_flag.clone();
     glib::timeout_add_local(Duration::from_millis(16), move || {
@@ -218,13 +225,48 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
 
         tick(&state_tick);
-        update_input_region(&da, &state_tick);
+        if let Some(gdk_win) = win_tick.window() {
+            update_input_region(&gdk_win, &state_tick);
+        }
         da.queue_draw();
         ControlFlow::Continue
     });
 
     window.show_all();
     ipc::send(&OutMessage::Ready);
+
+    if use_layer_shell {
+        let window_ref = window.clone();
+        let quit_monitor = quit_flag.clone();
+        let last_geom: Rc<Cell<(i32, i32, i32, i32)>> = Rc::new(Cell::new((0, 0, 0, 0)));
+        glib::timeout_add_local(Duration::from_millis(100), move || {
+            if quit_monitor.get() {
+                return ControlFlow::Break;
+            }
+            let display = match gdk::Display::default() {
+                Some(d) => d,
+                None => return ControlFlow::Continue,
+            };
+            let seat = match display.default_seat() {
+                Some(s) => s,
+                None => return ControlFlow::Continue,
+            };
+            let pointer = match seat.pointer() {
+                Some(p) => p,
+                None => return ControlFlow::Continue,
+            };
+            let (_, x, y) = pointer.position();
+            if let Some(monitor) = display.monitor_at_point(x, y) {
+                let g = monitor.geometry();
+                let new_geom = (g.x(), g.y(), g.width(), g.height());
+                if new_geom != last_geom.get() {
+                    last_geom.set(new_geom);
+                    window_ref.set_monitor(&monitor);
+                }
+            }
+            ControlFlow::Continue
+        });
+    }
 
     let main_loop = glib::MainLoop::new(None, false);
     let ml = main_loop.clone();
@@ -314,14 +356,11 @@ fn tick(state: &PillState) {
     state.tooltip_t.set(snapped_tt);
 }
 
-fn update_input_region(da: &gtk::DrawingArea, state: &PillState) {
-    let Some(gdk_window) = da.window() else { return };
-
-    let expand_t = state.expand_t.get();
-    let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
-    let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
+fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillState) {
+    let pill_w = EXPANDED_PILL_WIDTH;
+    let pill_h = EXPANDED_PILL_HEIGHT;
     let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
-    let pill_ry = (PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0) as i32;
+    let pill_ry = PILL_AREA_TOP as i32;
 
     let tooltip_t = state.tooltip_t.get();
     let tooltip_w = state.tooltip_width.get();
@@ -335,6 +374,26 @@ fn update_input_region(da: &gtk::DrawingArea, state: &PillState) {
         let region = cairo::Region::create_rectangle(&rect);
         gdk_window.input_shape_combine_region(&region, 0, 0);
     } else {
+        let rect = cairo::RectangleInt::new(pill_rx, pill_ry, pill_w.ceil() as i32, pill_h.ceil() as i32);
+        let region = cairo::Region::create_rectangle(&rect);
+        gdk_window.input_shape_combine_region(&region, 0, 0);
+    }
+}
+
+fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {
+    let hovered = state.hovered.get();
+    let is_active = state.phase.get() != Phase::Idle;
+
+    if hovered || is_active {
+        // Keep expanded bounds while hovered/active so cursor stays inside
+        set_expanded_input_region(gdk_window, state);
+    } else {
+        // Shrink to the animated pill size — collapsed pill triggers the next hover
+        let expand_t = state.expand_t.get();
+        let pill_w = lerp(MIN_PILL_WIDTH, EXPANDED_PILL_WIDTH, expand_t);
+        let pill_h = lerp(MIN_PILL_HEIGHT, EXPANDED_PILL_HEIGHT, expand_t);
+        let pill_rx = ((WINDOW_WIDTH as f64 - pill_w) / 2.0) as i32;
+        let pill_ry = (PILL_AREA_TOP + (EXPANDED_PILL_HEIGHT - pill_h) / 2.0) as i32;
         let rect = cairo::RectangleInt::new(pill_rx, pill_ry, pill_w.ceil() as i32, pill_h.ceil() as i32);
         let region = cairo::Region::create_rectangle(&rect);
         gdk_window.input_shape_combine_region(&region, 0, 0);
@@ -764,12 +823,21 @@ fn setup_x11_window(window: &gtk::Window) {
             for i in 0..n {
                 let monitor = disp.monitor(i)?;
                 let g = monitor.geometry();
-                if cx >= g.x() && cx < g.x() + g.width()
-                    && cy >= g.y() && cy < g.y() + g.height()
+                let scale = monitor.scale_factor();
+                // GDK geometry is in logical pixels; X11 cursor coords are physical.
+                let phys_x = g.x() * scale;
+                let phys_y = g.y() * scale;
+                let phys_w = g.width() * scale;
+                let phys_h = g.height() * scale;
+                if cx >= phys_x && cx < phys_x + phys_w
+                    && cy >= phys_y && cy < phys_y + phys_h
                 {
+                    let win_w = WINDOW_WIDTH * scale;
+                    let win_h = WINDOW_HEIGHT * scale;
+                    let margin = MARGIN_BOTTOM * scale;
                     return Some((
-                        g.x() + (g.width() - WINDOW_WIDTH) / 2,
-                        g.y() + g.height() - WINDOW_HEIGHT - MARGIN_BOTTOM,
+                        phys_x + (phys_w - win_w) / 2,
+                        phys_y + phys_h - win_h - margin,
                     ));
                 }
             }
