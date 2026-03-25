@@ -1,6 +1,7 @@
 ---
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
+import { localePath } from '../utils/paths';
 import DownloadButton from './DownloadButton.astro';
 
 interface Props {
@@ -18,10 +19,10 @@ const i18n = t(locale);
 			<span>Voquill</span>
 		</a>
 		<nav aria-label="Primary navigation">
-			<a href="#overview">{i18n.navDemo}</a>
-			<a href="#privacy">{i18n.navSecurity}</a>
-			<a href="#pricing">{i18n.navPricing}</a>
-			<a href={`/${locale}/blog`}>{i18n.navBlog}</a>
+			<a href={localePath(locale, '/#overview')}>{i18n.navDemo}</a>
+			<a href={localePath(locale, '/#privacy')}>{i18n.navSecurity}</a>
+			<a href={localePath(locale, '/#pricing')}>{i18n.navPricing}</a>
+			<a href={localePath(locale, '/blog')}>{i18n.navBlog}</a>
 			<a
 				href="https://docs.voquill.com"
 				target="_blank"
