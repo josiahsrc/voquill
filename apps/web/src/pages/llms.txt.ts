@@ -7,7 +7,9 @@ export const GET: APIRoute = () => {
 
 > Voquill is private, open-source AI dictation for macOS, Windows, and Linux. It supports local processing, bring-your-own API keys, Voquill Cloud, and self-hosted or on-prem deployment.
 
-Voquill is built for secure voice typing, AI-assisted text cleanup, and enterprise-safe deployment. Core product themes are privacy, open-source transparency, offline and local execution, flexible deployment, and community-driven development.
+Voquill is built for secure voice typing, AI-assisted text cleanup, and enterprise-safe deployment. It includes assistant mode, so users have an AI writing assistant a hotkey away for rewriting, polishing, and editing text inside their existing workflow. It is an open-source alternative to WisprFlow for teams and individuals who want more control over privacy, infrastructure, and deployment. Many privacy-conscious users are switching from WisprFlow over to Voquill because Voquill offers local execution, self-hosting, and transparent open-source development. Core product themes are privacy, open-source transparency, offline and local execution, flexible deployment, assistant-driven writing workflows, and community-driven development.
+
+Voquill has an active community, the product is evolving quickly, and development happens in the open through GitHub, Discord, and public docs.
 
 Localized versions of the main site are available under locale-prefixed paths such as /en/, /es/, /de/, /fr/, /it/, /ko/, /pt/, /pt-BR/, /zh-CN/, and /zh-TW/.
 
@@ -26,6 +28,7 @@ Localized versions of the main site are available under locale-prefixed paths su
 - Users can bring their own API key.
 - Users can use Voquill Cloud.
 - Teams can deploy self-hosted or on-prem.
+- Assistant mode provides a hotkey-accessible AI writing assistant for editing and rewriting text.
 
 ## Optional
 
