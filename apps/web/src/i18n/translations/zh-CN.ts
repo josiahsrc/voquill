@@ -1,9 +1,9 @@
 import type { TranslationMessages } from '../../types/locale';
 
 export const zhCNTranslations = {
-    siteTitle: "Voquill | 你的键盘正在拖你后腿",
+    siteTitle: "Voquill | 私有 AI 语音听写",
     siteDescription:
-      "用语音打字，速度提升四倍。Wispr Flow 的开源替代方案。",
+      "适用于 MacOS、Windows 和 Linux 的私有开源 AI 语音听写。可本地运行、自带 API Key、使用我们的云端或进行本地/私有化部署。",
     navDemo: "演示",
     navSecurity: "安全",
     navPricing: "定价",
@@ -14,13 +14,13 @@ export const zhCNTranslations = {
     download: "下载",
     heroHeading: "你的键盘正在拖你后腿。",
     heroSubtitle:
-      "让语音成为你的新键盘。用语音打字，速度提升四倍。Voquill 是 WisprFlow 的开源替代方案。",
+      "让语音成为你的新键盘。使用私有、开源 AI 听写，打字速度提升 4 倍。可本地运行、自带 API Key、使用我们的云端或进行本地/私有化部署。",
     downloadForFree: "免费下载",
     openSource: "开源",
     freeToUse: "免费使用，无需信用卡。",
     moreDownloads: "更多下载选项",
     productHuntAlt:
-      "Voquill - WisprFlow 的开源替代方案 | Product Hunt",
+      "Voquill - 安全 AI 语音听写 | Product Hunt",
     whatIsVoquill: "什么是 Voquill？",
     voquillDemo: "Voquill 演示",
     universalCompatibility: "全平台兼容",

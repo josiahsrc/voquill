@@ -1,9 +1,9 @@
 import type { TranslationMessages } from '../../types/locale';
 
 export const ptBRTranslations = {
-    siteTitle: "Voquill | Seu teclado está te segurando",
+    siteTitle: "Voquill | Ditado por voz com IA privado",
     siteDescription:
-      "Digite quatro vezes mais rápido com sua voz. Alternativa de código aberto ao Wispr Flow.",
+      "Ditado por voz com IA privado e de código aberto para MacOS, Windows e Linux. Execute localmente, use sua própria chave de API, nossa nuvem ou implante on-prem.",
     navDemo: "Demo",
     navSecurity: "Segurança",
     navPricing: "Preços",
@@ -14,13 +14,13 @@ export const ptBRTranslations = {
     download: "Baixar",
     heroHeading: "Seu teclado está te segurando.",
     heroSubtitle:
-      "Faça da sua voz o seu novo teclado. Digite quatro vezes mais rápido usando sua voz. Voquill é a alternativa de código aberto ao WisprFlow.",
+      "Faça da sua voz o seu novo teclado. Digite 4x mais rápido com ditado por IA privado, de código aberto. Execute localmente, use sua própria chave de API, nossa Cloud ou implante on-prem.",
     downloadForFree: "Baixar grátis",
     openSource: "Código aberto",
     freeToUse: "Grátis. Não precisa de cartão de crédito.",
     moreDownloads: "Mais opções de download",
     productHuntAlt:
-      "Voquill - A alternativa de código aberto ao WisprFlow | Product Hunt",
+      "Voquill - Ditado por voz com IA seguro | Product Hunt",
     whatIsVoquill: "O que é o Voquill?",
     voquillDemo: "Demo do Voquill",
     universalCompatibility: "Compatibilidade universal",

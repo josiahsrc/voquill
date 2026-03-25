@@ -1,9 +1,9 @@
 import type { TranslationMessages } from '../../types/locale';
 
 export const koTranslations = {
-    siteTitle: "Voquill | 키보드가 당신을 붙잡고 있습니다",
+    siteTitle: "Voquill | 비공개 AI 음성 받아쓰기",
     siteDescription:
-      "음성으로 네 배 더 빠르게 타이핑하세요. Wispr Flow의 오픈소스 대안.",
+      "MacOS, Windows, Linux용 비공개 오픈 소스 AI 음성 받아쓰기. 로컬 실행, 자체 API 키 사용, 클라우드 이용 또는 온프레미스 배포.",
     navDemo: "데모",
     navSecurity: "보안",
     navPricing: "요금제",
@@ -14,13 +14,13 @@ export const koTranslations = {
     download: "다운로드",
     heroHeading: "키보드가 당신을 붙잡고 있습니다.",
     heroSubtitle:
-      "음성을 새로운 키보드로 만드세요. 음성을 사용하면 네 배 더 빠르게 입력할 수 있습니다. Voquill은 WisprFlow의 오픈소스 대안입니다.",
+      "음성을 새로운 키보드로 만드세요. 비공개, 오픈 소스 AI 받아쓰기로 4배 빠르게 타이핑하세요. 로컬 실행, 자체 API 키 사용, 클라우드 이용 또는 온프레미스 배포.",
     downloadForFree: "무료 다운로드",
     openSource: "오픈소스",
     freeToUse: "무료로 사용 가능. 신용카드 불필요.",
     moreDownloads: "추가 다운로드 옵션",
     productHuntAlt:
-      "Voquill - 오픈소스 WisprFlow 대안 | Product Hunt",
+      "Voquill - 보안 AI 음성 받아쓰기 | Product Hunt",
     whatIsVoquill: "Voquill이란?",
     voquillDemo: "Voquill 데모",
     universalCompatibility: "범용 호환성",

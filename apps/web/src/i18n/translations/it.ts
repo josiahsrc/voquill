@@ -1,9 +1,9 @@
 import type { TranslationMessages } from '../../types/locale';
 
 export const itTranslations = {
-    siteTitle: "Voquill | La tua tastiera ti sta rallentando",
+    siteTitle: "Voquill | Dettatura vocale IA privata",
     siteDescription:
-      "Scrivi quattro volte più veloce con la tua voce. Alternativa open source a Wispr Flow.",
+      "Dettatura vocale IA privata e open source per MacOS, Windows e Linux. Esegui in locale, usa la tua chiave API, il nostro cloud o distribuisci on-prem.",
     navDemo: "Demo",
     navSecurity: "Sicurezza",
     navPricing: "Prezzi",
@@ -14,13 +14,13 @@ export const itTranslations = {
     download: "Scarica",
     heroHeading: "La tua tastiera ti sta rallentando.",
     heroSubtitle:
-      "Trasforma la tua voce nella nuova tastiera. Scrivi quattro volte più veloce usando la tua voce. Voquill è l'alternativa open source a WisprFlow.",
+      "Trasforma la tua voce nella nuova tastiera. Scrivi 4x più veloce con la dettatura IA privata, open source. Esegui in locale, usa la tua chiave API, il nostro Cloud o distribuisci on-prem.",
     downloadForFree: "Scarica gratis",
     openSource: "Open source",
     freeToUse: "Gratuito. Nessuna carta di credito richiesta.",
     moreDownloads: "Altre opzioni di download",
     productHuntAlt:
-      "Voquill - L'alternativa open source a WisprFlow | Product Hunt",
+      "Voquill - Dettatura vocale IA sicura | Product Hunt",
     whatIsVoquill: "Cos'è Voquill?",
     voquillDemo: "Demo di Voquill",
     universalCompatibility: "Compatibilità universale",

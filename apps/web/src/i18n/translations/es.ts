@@ -1,9 +1,9 @@
 import type { TranslationMessages } from '../../types/locale';
 
 export const esTranslations = {
-    siteTitle: "Voquill | Tu teclado te está frenando",
+    siteTitle: "Voquill | Dictado por voz con IA privado",
     siteDescription:
-      "Escribe cuatro veces más rápido con tu voz. Alternativa de código abierto a Wispr Flow.",
+      "Dictado por voz con IA privado y de código abierto para MacOS, Windows y Linux. Ejecútalo localmente, usa tu propia clave API, nuestra nube o despliega on-prem.",
     navDemo: "Demo",
     navSecurity: "Seguridad",
     navPricing: "Precios",
@@ -14,13 +14,13 @@ export const esTranslations = {
     download: "Descargar",
     heroHeading: "Tu teclado te está frenando.",
     heroSubtitle:
-      "Haz de tu voz tu nuevo teclado. Escribe cuatro veces más rápido usando tu voz. Voquill es la alternativa de código abierto a WisprFlow.",
+      "Haz de tu voz tu nuevo teclado. Escribe 4x más rápido con dictado por IA privado, de código abierto. Ejecútalo localmente, usa tu propia clave API, nuestra Cloud o despliega on-prem.",
     downloadForFree: "Descargar gratis",
     openSource: "Código abierto",
     freeToUse: "Gratis. No se requiere tarjeta de crédito.",
     moreDownloads: "Más opciones de descarga",
     productHuntAlt:
-      "Voquill - La alternativa de código abierto a WisprFlow | Product Hunt",
+      "Voquill - Dictado por voz con IA seguro | Product Hunt",
     whatIsVoquill: "¿Qué es Voquill?",
     voquillDemo: "Demo de Voquill",
     universalCompatibility: "Compatibilidad universal",

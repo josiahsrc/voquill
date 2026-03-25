@@ -1,9 +1,9 @@
 import type { TranslationMessages } from '../../types/locale';
 
 export const deTranslations = {
-    siteTitle: "Voquill | Deine Tastatur bremst dich aus",
+    siteTitle: "Voquill | Private KI-Sprachdiktierung",
     siteDescription:
-      "Tippe viermal schneller mit deiner Stimme. Open-Source-Alternative zu Wispr Flow.",
+      "Private, quelloffene KI-Sprachdiktierung für MacOS, Windows und Linux. Lokal ausführen, eigenen API-Schlüssel nutzen, unsere Cloud verwenden oder On-Prem bereitstellen.",
     navDemo: "Demo",
     navSecurity: "Sicherheit",
     navPricing: "Preise",
@@ -14,13 +14,13 @@ export const deTranslations = {
     download: "Herunterladen",
     heroHeading: "Deine Tastatur bremst dich aus.",
     heroSubtitle:
-      "Mach deine Stimme zur neuen Tastatur. Tippe viermal schneller mit deiner Stimme. Voquill ist die Open-Source-Alternative zu WisprFlow.",
+      "Mach deine Stimme zur neuen Tastatur. Tippe 4x schneller mit privater, quelloffener KI-Diktierung. Lokal ausführen, eigenen API-Schlüssel nutzen, unsere Cloud verwenden oder On-Prem bereitstellen.",
     downloadForFree: "Kostenlos herunterladen",
     openSource: "Open Source",
     freeToUse: "Kostenlos. Keine Kreditkarte erforderlich.",
     moreDownloads: "Weitere Download-Optionen",
     productHuntAlt:
-      "Voquill - Die Open-Source-Alternative zu WisprFlow | Product Hunt",
+      "Voquill - Sichere KI-Sprachdiktierung | Product Hunt",
     whatIsVoquill: "Was ist Voquill?",
     voquillDemo: "Voquill Demo",
     universalCompatibility: "Universelle Kompatibilität",
