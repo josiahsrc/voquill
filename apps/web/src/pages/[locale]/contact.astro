@@ -1,8 +1,6 @@
 ---
-import { marked } from 'marked';
-import fs from 'node:fs';
-import path from 'node:path';
 import LegalLayout from '../../layouts/LegalLayout.astro';
+import { renderLocalizedMarkdownFile } from '../../lib/markdown';
 import { locales, type Locale } from '../../types/locale';
 
 export function getStaticPaths() {
@@ -10,12 +8,7 @@ export function getStaticPaths() {
 }
 
 const locale = Astro.params.locale as Locale;
-
-const mdPath = path.resolve('content/contact.md');
-const mdContent = fs.readFileSync(mdPath, 'utf-8');
-
-marked.setOptions({ gfm: true, breaks: true });
-const html = await marked.parse(mdContent);
+const html = await renderLocalizedMarkdownFile('content/contact.md', locale);
 ---
 
 <LegalLayout title="Contact | Voquill" description="Get in touch with the Voquill team for support, enterprise inquiries, or general questions." locale={locale}>
