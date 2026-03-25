@@ -1,23 +1,34 @@
 ---
+import type { Locale } from '../types/locale';
+import { localePath } from '../utils/paths';
+
 interface Props {
 	href?: string;
 	class?: string;
 	label: string;
+	locale?: Locale;
 }
 
-const { href = '/download', class: className = '', label } = Astro.props;
+const {
+	href,
+	class: className = '',
+	label,
+	locale,
+} = Astro.props;
+const downloadPageHref = locale ? localePath(locale, '/download') : '/download';
+const linkHref = href ?? downloadPageHref;
 ---
 
-<a href={href} class:list={['download-button', className]}>{label}</a>
+<a href={linkHref} class:list={['download-button', className]}>{label}</a>
 
-<script>
+<script define:vars={{ downloadPageHref }}>
 	const RELEASES_API_URL =
 		'https://api.github.com/repos/josiahsrc/voquill/releases';
 	const RELEASE_TAG_PATTERN = /^desktop-v\d/;
 	const LINUX_INSTALL_COMMAND =
 		'curl -fsSL https://voquill.github.io/apt/install.sh | bash';
 
-	const PLATFORM_META: Record<string, { name: string; icon: string }> = {
+	var PLATFORM_META = {
 		mac: { name: 'macOS', icon: '/apple.svg' },
 		windows: { name: 'Windows', icon: '/windows.svg' },
 		linux: { name: 'Linux', icon: '/ubuntu.svg' },
@@ -25,49 +36,47 @@ const { href = '/download', class: className = '', label } = Astro.props;
 
 	const ASSET_KEY_MAPPINGS = [
 		{
-			match: (n: string) => /^Voquill[._](?!GPU).*\.AppImage$/i.test(n),
+			match: function (n) { return /^Voquill[._](?!GPU).*\.AppImage$/i.test(n); },
 			keys: ['linux-x86_64', 'linux-x86_64-appimage'],
 		},
 		{
-			match: (n: string) => /^Voquill[._](?!GPU).*\.deb$/i.test(n),
+			match: function (n) { return /^Voquill[._](?!GPU).*\.deb$/i.test(n); },
 			keys: ['linux-x86_64-deb'],
 		},
 		{
-			match: (n: string) => /^Voquill[._](?!GPU).*\.rpm$/i.test(n),
+			match: function (n) { return /^Voquill[._](?!GPU).*\.rpm$/i.test(n); },
 			keys: ['linux-x86_64-rpm'],
 		},
 		{
-			match: (n: string) => /\.app\.tar\.gz$/i.test(n),
+			match: function (n) { return /\.app\.tar\.gz$/i.test(n); },
 			keys: ['darwin-universal'],
 		},
 		{
-			match: (n: string) => /\.dmg$/i.test(n),
+			match: function (n) { return /\.dmg$/i.test(n); },
 			keys: ['darwin-universal'],
 		},
 		{
-			match: (n: string) => /darwin.*\.app\.tar\.gz$/i.test(n),
+			match: function (n) { return /darwin.*\.app\.tar\.gz$/i.test(n); },
 			keys: ['darwin-aarch64', 'darwin-x86_64'],
 		},
 		{
-			match: (n: string) =>
-				/^Voquill[._]Portable[._]Installer\.exe$/i.test(n),
+			match: function (n) { return /^Voquill[._]Portable[._]Installer\.exe$/i.test(n); },
 			keys: ['windows-x86_64-portable'],
 		},
 		{
-			match: (n: string) => /^Voquill[._](?!GPU).*\.msi$/i.test(n),
+			match: function (n) { return /^Voquill[._](?!GPU).*\.msi$/i.test(n); },
 			keys: ['windows-x86_64', 'windows-x86_64-msi'],
 		},
 		{
-			match: (n: string) =>
-				/^Voquill[._](?!GPU).*setup.*\.exe$/i.test(n),
+			match: function (n) { return /^Voquill[._](?!GPU).*setup.*\.exe$/i.test(n); },
 			keys: ['windows-x86_64-nsis'],
 		},
 	];
 
 	function detectPlatform() {
 		var nav = window.navigator;
-		var hint = (nav as any).userAgentData
-			? ((nav as any).userAgentData.platform || '')
+		var hint = nav.userAgentData
+			? (nav.userAgentData.platform || '')
 			: '';
 		var ua = [nav.userAgent || '', hint, nav.platform || '']
 			.join(' ')
@@ -80,8 +89,8 @@ const { href = '/download', class: className = '', label } = Astro.props;
 
 	function isMobileDevice() {
 		var nav = window.navigator;
-		var hint = (nav as any).userAgentData
-			? ((nav as any).userAgentData.platform || '')
+		var hint = nav.userAgentData
+			? (nav.userAgentData.platform || '')
 			: '';
 		var ua = [nav.userAgent || '', hint, nav.platform || '']
 			.join(' ')
@@ -93,8 +102,8 @@ const { href = '/download', class: className = '', label } = Astro.props;
 		var nav = window.navigator;
 		var ua = [
 			nav.userAgent || '',
-			(nav as any).userAgentData
-				? ((nav as any).userAgentData.platform || '')
+			nav.userAgentData
+				? (nav.userAgentData.platform || '')
 				: '',
 			nav.platform || '',
 		]
@@ -108,13 +117,11 @@ const { href = '/download', class: className = '', label } = Astro.props;
 			return 'darwin-aarch64';
 
 		if (
-			(nav as any).userAgentData &&
-			(nav as any).userAgentData.getHighEntropyValues
+			nav.userAgentData &&
+			nav.userAgentData.getHighEntropyValues
 		) {
 			try {
-				var data = await (
-					nav as any
-				).userAgentData.getHighEntropyValues(['architecture']);
+				var data = await nav.userAgentData.getHighEntropyValues(['architecture']);
 				var arch = (data.architecture || '').toLowerCase();
 				if (arch.includes('arm') || arch.includes('aarch'))
 					return 'darwin-aarch64';
@@ -127,7 +134,7 @@ const { href = '/download', class: className = '', label } = Astro.props;
 		return undefined;
 	}
 
-	async function buildPlatformPreference(platform: string) {
+	async function buildPlatformPreference(platform) {
 		switch (platform) {
 			case 'mac': {
 				var key = await detectMacManifestKey();
@@ -160,7 +167,7 @@ const { href = '/download', class: className = '', label } = Astro.props;
 		}
 	}
 
-	function resolveManifestKeys(asset: { name: string }) {
+	function resolveManifestKeys(asset) {
 		var name = asset.name.toLowerCase();
 		if (name.includes('gpu')) return undefined;
 		for (var i = 0; i < ASSET_KEY_MAPPINGS.length; i++) {
@@ -176,14 +183,9 @@ const { href = '/download', class: className = '', label } = Astro.props;
 		return undefined;
 	}
 
-	function transformGithubRelease(release: {
-		assets: Array<{
-			name: string;
-			browser_download_url: string;
-		}>;
-	}) {
+	function transformGithubRelease(release) {
 		var assets = release.assets || [];
-		var platforms: Record<string, { url: string; signature: string }> = {};
+		var platforms = {};
 		for (var i = 0; i < assets.length; i++) {
 			var keys = resolveManifestKeys(assets[i]);
 			if (!keys) continue;
@@ -209,7 +211,7 @@ const { href = '/download', class: className = '', label } = Astro.props;
 			});
 			if (!response.ok) return undefined;
 			var allReleases = await response.json();
-			var releases = allReleases.filter(function (r: any) {
+			var releases = allReleases.filter(function (r) {
 				return r.tag_name && RELEASE_TAG_PATTERN.test(r.tag_name);
 			});
 			var latest = releases[0];
@@ -233,12 +235,7 @@ const { href = '/download', class: className = '', label } = Astro.props;
 		}
 	}
 
-	async function selectPlatformUrl(
-		manifest: {
-			platforms: Record<string, { url: string; signature: string }>;
-		},
-		platform: string,
-	) {
+	async function selectPlatformUrl(manifest, platform) {
 		var pref = await buildPlatformPreference(platform);
 		for (var i = 0; i < pref.length; i++) {
 			var entry = manifest.platforms[pref[i]];
@@ -268,13 +265,15 @@ const { href = '/download', class: className = '', label } = Astro.props;
 			'<button type="button" class="linux-copy-btn">Copy</button></div>' +
 			'<p class="dialog-hint">Supports Debian, Ubuntu, and other APT-based distributions. After installing, upgrade anytime with:</p>' +
 			'<div class="linux-code-block"><code>sudo apt-get update && sudo apt-get upgrade voquill-desktop</code></div>' +
-			'<p class="dialog-hint">Looking for other options? Visit the <a href="/download" class="inline-link">downloads page</a> for AppImage and other downloads.</p>' +
+			'<p class="dialog-hint">Looking for other options? Visit the <a href="' +
+			downloadPageHref +
+			'" class="inline-link">downloads page</a> for AppImage and other downloads.</p>' +
 			'<button type="button" class="btn-ghost dialog-close-btn">Close</button>';
 
 		overlay.appendChild(dialog);
 		document.body.appendChild(overlay);
 
-		var copyBtn = dialog.querySelector('.linux-copy-btn')!;
+		var copyBtn = dialog.querySelector('.linux-copy-btn');
 		copyBtn.addEventListener('click', function () {
 			navigator.clipboard.writeText(LINUX_INSTALL_COMMAND);
 			copyBtn.textContent = 'Copied!';
@@ -290,18 +289,16 @@ const { href = '/download', class: className = '', label } = Astro.props;
 			if (e.target === overlay) close();
 		});
 		dialog
-			.querySelector('.dialog-close-btn')!
+			.querySelector('.dialog-close-btn')
 			.addEventListener('click', close);
 	}
 
-	async function upgradeButton(el: HTMLAnchorElement) {
+	async function upgradeButton(el) {
 		var mobile = isMobileDevice();
 		var platform = detectPlatform();
 		var meta = PLATFORM_META[platform];
 
-		var iconSpan = el.querySelector(
-			'.download-button-icon',
-		) as HTMLElement;
+		var iconSpan = el.querySelector('.download-button-icon');
 		if (!iconSpan) {
 			iconSpan = document.createElement('span');
 			iconSpan.className = 'download-button-icon';
@@ -321,7 +318,7 @@ const { href = '/download', class: className = '', label } = Astro.props;
 
 		var label = el.querySelector('.download-button-label');
 		if (!label) {
-			var text = el.textContent!.trim();
+			var text = (el.textContent || '').trim();
 			el.textContent = '';
 			el.appendChild(iconSpan);
 			label = document.createElement('span');
@@ -351,7 +348,7 @@ const { href = '/download', class: className = '', label } = Astro.props;
 	document.addEventListener('DOMContentLoaded', function () {
 		var buttons = document.querySelectorAll('.download-button');
 		buttons.forEach(function (btn) {
-			upgradeButton(btn as HTMLAnchorElement);
+			upgradeButton(btn);
 		});
 	});
 </script>

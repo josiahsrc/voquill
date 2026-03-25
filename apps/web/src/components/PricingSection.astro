@@ -39,7 +39,7 @@ const i18n = t(locale);
 					<span class="price">{i18n.pricingFree}</span>
 					<div class="billing-note">{i18n.pricingNoCreditCard}</div>
 				</div>
-				<DownloadButton class="cta-button-outline" label={i18n.pricingDownloadFree} />
+				<DownloadButton class="cta-button-outline" label={i18n.pricingDownloadFree} locale={locale} />
 				<div class="features-section">
 					<p class="features-title">{i18n.pricingWhatsIncluded}</p>
 					<ul class="features-list">
@@ -67,7 +67,7 @@ const i18n = t(locale);
 					</div>
 					<div class="billing-note" data-billing-note-pro>{i18n.pricingBilledAnnually}</div>
 				</div>
-				<DownloadButton class="cta-button" label={i18n.pricingDownloadFree} />
+				<DownloadButton class="cta-button" label={i18n.pricingDownloadFree} locale={locale} />
 				<div class="features-section">
 					<p class="features-title">{i18n.pricingWhatsIncluded}</p>
 					<ul class="features-list">
