@@ -1,0 +1,669 @@
+---
+import type { Locale } from '../types/locale';
+import { t } from '../i18n/translations';
+import DownloadButton from './DownloadButton.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+---
+
+<section class="cleanup-section" id="demo">
+	<div class="cleanup-media">
+		<div class="cleanup-container" data-cleanup-animation>
+			<div class="transcript-box">
+				<div class="transcript" data-transcript></div>
+			</div>
+			<div class="arrow">
+				<svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<polyline points="19 12 12 19 5 12" />
+				</svg>
+			</div>
+			<div class="result-box result-box-pending" data-result-box>
+				<div class="result-text" data-result-text></div>
+			</div>
+		</div>
+	</div>
+	<div class="cleanup-content">
+		<span class="badge">{i18n.cleanupBadge}</span>
+		<h2>{i18n.cleanupHeading}</h2>
+		<p>{i18n.cleanupDescription}</p>
+		<DownloadButton class="btn-primary" label={i18n.downloadForFree} locale={locale} />
+	</div>
+</section>
+
+<script>
+	(function () {
+		var TOKENS = [
+			{ id: 1, text: 'I was...', cleanup: { type: 'filler', label: 'False start' } },
+			{ id: 2, text: 'I' },
+			{ id: 3, text: 'was' },
+			{ id: 4, text: 'thinking,' },
+			{ id: 5, text: 'um,', cleanup: { type: 'hesitation', label: 'Hesitation' } },
+			{ id: 6, text: 'we' },
+			{ id: 7, text: 'should' },
+			{ id: 8, text: 'meet' },
+			{ id: 9, text: 'with' },
+			{ id: 10, text: 'Tomas', cleanup: { type: 'typo', label: 'Spelling', replacement: 'Thomas' } },
+			{ id: 11, text: 'at' },
+			{ id: 12, text: '3pm.' },
+		];
+
+		var CHAR_DELAY = 50;
+		var WORD_PAUSE = 200;
+		var FLAG_DELAY = 500;
+		var CLEAN_DELAY = 700;
+		var RESTART_DELAY = 3000;
+
+		var root = document.querySelector('[data-cleanup-animation]');
+		if (!root) return;
+		var transcriptEl = root.querySelector('[data-transcript]')!;
+		var resultBox = root.querySelector('[data-result-box]')!;
+		var resultText = root.querySelector('[data-result-text]')!;
+
+		var CLEANED_TEXT = 'I was thinking we should meet with Thomas at 3pm.';
+
+		var phases: string[] = [];
+		var charIndices: number[] = [];
+		var wordIndex = 0;
+		var timer: ReturnType<typeof setTimeout> | null = null;
+
+		// Stable DOM refs per word
+		var containers: HTMLSpanElement[] = [];
+		var wordSpans: HTMLSpanElement[] = [];
+		var labelSpans: (HTMLSpanElement | null)[] = [];
+		var replacementSpans: (HTMLSpanElement | null)[] = [];
+
+		function escapeHtml(str: string) {
+			return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		}
+
+		function reset() {
+			phases = TOKENS.map(function () { return 'hidden'; });
+			charIndices = TOKENS.map(function () { return 0; });
+			containers = [];
+			wordSpans = [];
+			labelSpans = [];
+			replacementSpans = [];
+			wordIndex = 0;
+			transcriptEl.innerHTML = '';
+			resultBox.className = 'result-box result-box-pending';
+			resultText.className = 'result-text';
+			resultText.textContent = '';
+
+			for (var i = 0; i < TOKENS.length; i++) {
+				var container = document.createElement('span');
+				container.className = 'cleanup-word-container';
+				container.style.display = 'none';
+
+				var ws = document.createElement('span');
+				ws.className = 'cleanup-word';
+				container.appendChild(ws);
+				wordSpans.push(ws);
+
+				labelSpans.push(null);
+				replacementSpans.push(null);
+
+				var space = document.createElement('span');
+				space.className = 'cleanup-space';
+				space.textContent = ' ';
+				container.appendChild(space);
+
+				transcriptEl.appendChild(container);
+				containers.push(container);
+			}
+		}
+
+		function updateWord(idx: number) {
+			var token = TOKENS[idx]!;
+			var phase = phases[idx]!;
+			var charIndex = charIndices[idx]!;
+			var el = containers[idx]!;
+			var ws = wordSpans[idx]!;
+
+			if (phase === 'hidden') {
+				el.style.display = 'none';
+				return;
+			}
+
+			el.style.display = 'inline';
+			var displayText = phase === 'typing' ? token.text.slice(0, charIndex) : token.text;
+			ws.textContent = displayText;
+
+			var isRemoval = token.cleanup && !token.cleanup.replacement;
+			var hasReplacement = !!token.cleanup?.replacement;
+
+			// Update word classes
+			var wc = 'cleanup-word';
+			if (phase === 'flagged') wc += ' cleanup-word-flagged';
+			if (phase === 'cleaned' && isRemoval) wc += ' cleanup-word-removed';
+			if (phase === 'cleaned' && hasReplacement) wc += ' cleanup-word-replaced';
+			ws.className = wc;
+
+			// Add label once when flagged (never rebuild)
+			if (token.cleanup && phase === 'flagged' && !labelSpans[idx]) {
+				var label = document.createElement('span');
+				label.className = 'cleanup-label';
+				label.setAttribute('data-type', token.cleanup.type);
+				label.textContent = token.cleanup.label;
+				el.insertBefore(label, ws.nextSibling);
+				labelSpans[idx] = label;
+			}
+
+			// Fade label when cleaned
+			if (phase === 'cleaned' && labelSpans[idx]) {
+				labelSpans[idx]!.className = 'cleanup-label cleanup-label-done';
+			}
+
+			// Add replacement once when cleaned
+			if (hasReplacement && phase === 'cleaned' && !replacementSpans[idx]) {
+				var rep = document.createElement('span');
+				rep.className = 'cleanup-replacement';
+				rep.textContent = token.cleanup!.replacement!;
+				var spaceEl = el.querySelector('.cleanup-space');
+				el.insertBefore(rep, spaceEl);
+				replacementSpans[idx] = rep;
+			}
+		}
+
+		function schedule(fn: () => void, delay: number) {
+			if (timer) clearTimeout(timer);
+			timer = setTimeout(fn, delay);
+		}
+
+		function tick() {
+			if (wordIndex >= TOKENS.length) {
+				// Complete
+				resultBox.className = 'result-box result-box-complete';
+				resultText.className = 'result-text result-text-visible';
+				resultText.textContent = CLEANED_TEXT;
+				schedule(function () {
+					reset();
+					schedule(tick, 100);
+				}, RESTART_DELAY);
+				return;
+			}
+
+			var token = TOKENS[wordIndex]!;
+			var phase = phases[wordIndex]!;
+			var charIndex = charIndices[wordIndex]!;
+
+			switch (phase) {
+				case 'hidden':
+					phases[wordIndex] = 'typing';
+					charIndices[wordIndex] = 1;
+					updateWord(wordIndex);
+					schedule(tick, CHAR_DELAY);
+					break;
+
+				case 'typing':
+					if (charIndex < token.text.length) {
+						charIndices[wordIndex] = charIndex + 1;
+						updateWord(wordIndex);
+						schedule(tick, CHAR_DELAY);
+					} else {
+						phases[wordIndex] = 'visible';
+						updateWord(wordIndex);
+						if (token.cleanup) {
+							schedule(tick, FLAG_DELAY);
+						} else {
+							wordIndex++;
+							schedule(tick, WORD_PAUSE);
+						}
+					}
+					break;
+
+				case 'visible':
+					if (token.cleanup) {
+						phases[wordIndex] = 'flagged';
+						updateWord(wordIndex);
+						schedule(tick, CLEAN_DELAY);
+					}
+					break;
+
+				case 'flagged':
+					phases[wordIndex] = 'cleaned';
+					updateWord(wordIndex);
+					wordIndex++;
+					schedule(tick, WORD_PAUSE);
+					break;
+
+				case 'cleaned':
+					wordIndex++;
+					schedule(tick, WORD_PAUSE);
+					break;
+			}
+		}
+
+		reset();
+		schedule(tick, 500);
+	})();
+</script>
+
+<style>
+	.cleanup-section {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 56px;
+		align-items: center;
+		max-width: min(1120px, 100%);
+		margin: 120px auto 0;
+	}
+
+	.cleanup-content {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		max-width: 58ch;
+	}
+
+	.cleanup-content h2 {
+		font-size: clamp(1.8rem, 2.5vw, 2.2rem);
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+	}
+
+	.cleanup-content p {
+		font-size: 1.05rem;
+		line-height: 1.75;
+		color: var(--text-muted);
+	}
+
+	.cleanup-content :global(a) {
+		align-self: flex-start;
+	}
+
+	.badge {
+		align-self: flex-start;
+		padding: 6px 18px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: var(--level1);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-strong);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.badge {
+			background: rgba(255, 255, 255, 0.12);
+			border-color: rgba(255, 255, 255, 0.24);
+			color: rgba(255, 255, 255, 0.92);
+		}
+	}
+
+	.cleanup-media {
+		position: relative;
+		border-radius: 32px;
+		overflow: hidden;
+		box-shadow: var(--shadow);
+		min-height: 420px;
+		border: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+	}
+
+	.cleanup-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		width: 100%;
+		flex: 1;
+		padding: 24px;
+		gap: 0;
+	}
+
+	:global(.transcript-box) {
+		background: var(--level1);
+		border: 1px solid var(--border);
+		border-radius: 16px;
+		padding: 32px 40px;
+		max-width: 600px;
+		width: 100%;
+		box-shadow: var(--shadow-soft);
+	}
+
+	:global(.transcript) {
+		font-size: 1.35rem;
+		line-height: 2.4;
+		color: var(--text-strong);
+		font-weight: 450;
+		min-height: 4.8em;
+	}
+
+	:global(.cleanup-word-container) {
+		position: relative;
+		display: inline;
+	}
+
+	:global(.cleanup-word) {
+		position: relative;
+		display: inline;
+		transition:
+			opacity 0.3s ease,
+			color 0.2s ease;
+	}
+
+	:global(.cleanup-word-flagged) {
+		color: #e67700;
+		background: linear-gradient(
+			to bottom,
+			transparent 60%,
+			rgba(230, 119, 0, 0.15) 60%
+		);
+	}
+
+	:global(.cleanup-word-removed) {
+		text-decoration: line-through;
+		text-decoration-color: #dc3545;
+		text-decoration-thickness: 2px;
+		opacity: 0.35;
+		color: var(--text-muted);
+		animation: strikeAndFade 0.4s ease forwards;
+	}
+
+	:global(.cleanup-word-replaced) {
+		text-decoration: line-through;
+		text-decoration-color: #3b82f6;
+		text-decoration-thickness: 2px;
+		opacity: 0.5;
+		color: var(--text-muted);
+		animation: strikeThrough 0.3s ease forwards;
+	}
+
+	:global(.cleanup-replacement) {
+		display: inline;
+		color: #28a745;
+		font-weight: 500;
+		margin-left: 4px;
+		animation: slideIn 0.35s ease forwards;
+	}
+
+	:global(.cleanup-label) {
+		position: absolute;
+		top: -36px;
+		left: 50%;
+		transform: translateX(-50%) scale(0.8);
+		background: var(--level2);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 3px 8px;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		white-space: nowrap;
+		opacity: 0;
+		animation: popIn 0.25s ease forwards;
+		box-shadow: var(--shadow-soft);
+		z-index: 10;
+	}
+
+	:global(.cleanup-label::after) {
+		content: '';
+		position: absolute;
+		bottom: -5px;
+		left: 50%;
+		transform: translateX(-50%);
+		border-left: 5px solid transparent;
+		border-right: 5px solid transparent;
+		border-top: 5px solid var(--border);
+	}
+
+	:global(.cleanup-label[data-type='filler']),
+	:global(.cleanup-label[data-type='hesitation']) {
+		color: #dc3545;
+		border-color: rgba(220, 53, 69, 0.3);
+	}
+
+	:global(.cleanup-label[data-type='typo']) {
+		color: #3b82f6;
+		border-color: rgba(59, 130, 246, 0.3);
+	}
+
+	:global(.cleanup-label-done) {
+		opacity: 0.7;
+	}
+
+	:global(.cleanup-space) {
+		display: inline;
+	}
+
+	.arrow {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 16px 0;
+		color: var(--text-muted);
+	}
+
+	.arrow-icon {
+		width: 32px;
+		height: 32px;
+		opacity: 0.6;
+	}
+
+	:global(.result-box) {
+		border-radius: 16px;
+		padding: 24px 40px;
+		max-width: 600px;
+		width: 100%;
+		flex: 1;
+		display: flex;
+		align-items: center;
+		transition: all 0.4s ease;
+	}
+
+	:global(.result-box-pending) {
+		background: transparent;
+		border: 2px dashed var(--border);
+		position: relative;
+		overflow: visible;
+	}
+
+	:global(.result-box-pending::before) {
+		content: '';
+		position: absolute;
+		inset: -4px;
+		border-radius: 20px;
+		background: conic-gradient(
+			from var(--angle, 0deg),
+			transparent 0deg,
+			rgba(59, 130, 246, 0.5) 40deg,
+			rgba(59, 130, 246, 0.8) 50deg,
+			rgba(59, 130, 246, 0.5) 60deg,
+			transparent 100deg
+		);
+		-webkit-mask:
+			linear-gradient(#fff 0 0) content-box,
+			linear-gradient(#fff 0 0);
+		mask:
+			linear-gradient(#fff 0 0) content-box,
+			linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		padding: 3px;
+		animation: rotate 2.5s linear infinite;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:global(.result-box-pending::before) {
+			background: conic-gradient(
+				from var(--angle, 0deg),
+				transparent 0deg,
+				rgba(96, 165, 250, 0.4) 40deg,
+				rgba(96, 165, 250, 0.7) 50deg,
+				rgba(96, 165, 250, 0.4) 60deg,
+				transparent 100deg
+			);
+		}
+	}
+
+	@property --angle {
+		syntax: '<angle>';
+		initial-value: 0deg;
+		inherits: false;
+	}
+
+	:global(.result-box-complete) {
+		background: var(--level1);
+		border: 2px solid #3b82f6;
+		box-shadow:
+			0 0 20px rgba(59, 130, 246, 0.15),
+			var(--shadow-soft);
+		animation: boxPopIn 0.4s ease forwards;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:global(.result-box-complete) {
+			border-color: #60a5fa;
+			box-shadow:
+				0 0 24px rgba(96, 165, 250, 0.2),
+				var(--shadow-soft);
+		}
+	}
+
+	:global(.result-text) {
+		font-size: 1.35rem;
+		line-height: 1.6;
+		color: var(--text-strong);
+		font-weight: 450;
+		opacity: 0;
+	}
+
+	:global(.result-text-visible) {
+		animation: textPopIn 0.5s ease 0.1s forwards;
+	}
+
+	@keyframes strikeAndFade {
+		0% {
+			text-decoration-color: transparent;
+			opacity: 1;
+		}
+		40% {
+			text-decoration-color: #dc3545;
+			opacity: 1;
+		}
+		100% {
+			text-decoration-color: #dc3545;
+			opacity: 0.35;
+		}
+	}
+
+	@keyframes strikeThrough {
+		0% {
+			text-decoration-color: transparent;
+		}
+		100% {
+			text-decoration-color: #3b82f6;
+		}
+	}
+
+	@keyframes slideIn {
+		0% {
+			opacity: 0;
+			transform: translateX(-8px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
+	@keyframes popIn {
+		0% {
+			opacity: 0;
+			transform: translateX(-50%) scale(0.6) translateY(4px);
+		}
+		70% {
+			transform: translateX(-50%) scale(1.05) translateY(0);
+		}
+		100% {
+			opacity: 1;
+			transform: translateX(-50%) scale(1) translateY(0);
+		}
+	}
+
+	@keyframes rotate {
+		to {
+			--angle: 360deg;
+		}
+	}
+
+	@keyframes boxPopIn {
+		0% {
+			transform: scale(0.95);
+			opacity: 0.5;
+		}
+		50% {
+			transform: scale(1.02);
+		}
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+
+	@keyframes textPopIn {
+		0% {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (max-width: 960px) {
+		.cleanup-section {
+			grid-template-columns: 1fr;
+		}
+
+		.cleanup-media {
+			min-height: 360px;
+		}
+	}
+
+	@media (max-width: 640px) {
+		:global(.transcript-box) {
+			padding: 24px;
+		}
+
+		:global(.transcript) {
+			font-size: 1.1rem;
+			line-height: 2.2;
+		}
+
+		:global(.cleanup-label) {
+			font-size: 0.6rem;
+			padding: 2px 6px;
+			top: -32px;
+		}
+
+		:global(.result-box) {
+			padding: 20px 24px;
+		}
+
+		:global(.result-text) {
+			font-size: 1.1rem;
+		}
+
+		.arrow-icon {
+			width: 24px;
+			height: 24px;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.cleanup-media {
+			min-height: 300px;
+		}
+	}
+</style>

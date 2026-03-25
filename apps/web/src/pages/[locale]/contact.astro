@@ -1,0 +1,16 @@
+---
+import LegalLayout from '../../layouts/LegalLayout.astro';
+import { renderLocalizedMarkdownFile } from '../../lib/markdown';
+import { locales, type Locale } from '../../types/locale';
+
+export function getStaticPaths() {
+	return locales.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const html = await renderLocalizedMarkdownFile('content/contact.md', locale);
+---
+
+<LegalLayout title="Contact | Voquill" description="Get in touch with the Voquill team for support, enterprise inquiries, or general questions." locale={locale}>
+	<Fragment set:html={html} />
+</LegalLayout>

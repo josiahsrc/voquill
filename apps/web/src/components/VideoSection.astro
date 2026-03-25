@@ -1,0 +1,77 @@
+---
+import type { Locale } from '../types/locale';
+import { t } from '../i18n/translations';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+---
+
+<section class="video-section" id="what-is-voquill">
+	<h2>{i18n.whatIsVoquill}</h2>
+	<div class="video-wrapper">
+		<iframe
+			src="https://www.youtube.com/embed/LOiiocR1xTQ"
+			title={i18n.voquillDemo}
+			allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+			allowfullscreen></iframe>
+	</div>
+</section>
+
+<style>
+	.video-section {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 32px;
+		padding: 0 24px;
+		margin-top: 120px;
+		width: min(1120px, 100%);
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.video-section h2 {
+		font-size: clamp(2.2rem, 3.2vw, 3rem);
+		line-height: 1.15;
+		letter-spacing: -0.03em;
+		text-align: center;
+	}
+
+	.video-wrapper {
+		width: 100%;
+		max-width: 960px;
+		aspect-ratio: 16 / 9;
+		border-radius: 24px;
+		overflow: hidden;
+		box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
+		border: 1px solid rgba(0, 0, 0, 0.08);
+		background: #000;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.video-wrapper {
+			box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		}
+	}
+
+	.video-wrapper iframe {
+		width: 100%;
+		height: 100%;
+		border: none;
+	}
+
+	@media (max-width: 720px) {
+		.video-section {
+			padding: 0 18px;
+		}
+
+		.video-wrapper {
+			border-radius: 16px;
+		}
+	}
+</style>

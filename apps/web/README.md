@@ -1,34 +1,46 @@
-## Voquill Web
+# Astro Starter Kit: Basics
 
-Static marketing site for Voquill built with Vite, React, and TypeScript
+```sh
+npm create astro@latest -- --template basics
+```
 
-### Available scripts
+> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
 
-- `npm run dev` – start the development server on port 3000
-- `npm run build` – type-check and produce a production build in `dist`
-- `npm run preview` – preview the production build locally
-- `npm run lint` – run ESLint using the shared workspace config
-- `npm run check-types` – run TypeScript without emitting files
+## 🚀 Project Structure
 
-### Key directories
+Inside of your Astro project, you'll see the following folders and files:
 
-- `src/components` – reusable presentational components
-- `src/layouts` – layout wrappers for pages and metadata management
-- `src/pages` – top-level route components rendered by React Router
-- `src/lib` – shared utilities (download manifests, markdown rendering)
-- `content` – Markdown sources for privacy policy and terms of service
-- `public` – static assets copied verbatim to the build output
+```text
+/
+├── public/
+│   └── favicon.svg
+├── src
+│   ├── assets
+│   │   └── astro.svg
+│   ├── components
+│   │   └── Welcome.astro
+│   ├── layouts
+│   │   └── Layout.astro
+│   └── pages
+│       └── index.astro
+└── package.json
+```
 
-### Deployment notes
+To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
 
-The build output in `dist` is static and compatible with Firebase Hosting. The SPA uses React Router to handle client-side navigation; ensure your hosting rewrites unknown paths back to `index.html` (see `firebase.json`).
+## 🧞 Commands
 
-### Internationalization
+All commands are run from the root of the project, from a terminal:
 
-The marketing site uses `react-intl` with hashed IDs derived from each `defaultMessage`.
+| Command                   | Action                                           |
+| :------------------------ | :----------------------------------------------- |
+| `npm install`             | Installs dependencies                            |
+| `npm run dev`             | Starts local dev server at `localhost:4321`      |
+| `npm run build`           | Build your production site to `./dist/`          |
+| `npm run preview`         | Preview your build locally, before deploying     |
+| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
+| `npm run astro -- --help` | Get help using the Astro CLI                     |
 
-1. Wrap UI text with `<FormattedMessage>` or call `intl.formatMessage` using only `defaultMessage` (+ optional `description`). The Babel plugin (`babel-plugin-formatjs`) converts default text like `"Your keyboard is holding you back."` to an ID such as `your_keyboard_is_holding_you_back`.
-2. Run `npm run i18n:extract` (from `apps/web`) to regenerate `src/i18n/locales/en.json`.
-3. Run `npm run i18n:sync` to propagate keys into the other locale files (`src/i18n/locales/es.json`, `fr.json`). Pass `-- --locale=es` to update individual locales.
+## 👀 Want to learn more?
 
-Add new locales by editing `src/i18n/manifest.json`, creating the locale JSON file, then executing the extract + sync workflow.
+Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).

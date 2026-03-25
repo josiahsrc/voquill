@@ -1,0 +1,575 @@
+---
+import type { Locale } from '../types/locale';
+import { t } from '../i18n/translations';
+import DownloadButton from './DownloadButton.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+---
+
+<section class="pricing-section" id="pricing">
+	<div class="pricing-content">
+		<div class="pricing-header">
+			<span class="badge">{i18n.pricingBadge}</span>
+			<h2>{i18n.pricingHeading}</h2>
+			<p>{i18n.pricingSubheading}</p>
+		</div>
+
+		<div class="billing-toggle" data-billing-toggle>
+			<span class="billing-label" data-label="monthly">{i18n.pricingMonthly}</span>
+			<button class="toggle-button" data-toggle-btn aria-label={i18n.pricingToggleLabel}>
+				<span class="toggle-knob active" data-toggle-knob></span>
+			</button>
+			<span class="billing-label active" data-label="yearly">{i18n.pricingYearly}</span>
+			<span class="save-badge">{i18n.pricingSave}</span>
+		</div>
+
+		<div class="cards-grid">
+			<!-- Personal / Free -->
+			<div class="card">
+				<div class="card-header">
+					<h3 class="plan-name">{i18n.pricingPersonal}</h3>
+					<p class="plan-description">{i18n.pricingPersonalDesc}</p>
+				</div>
+				<div class="price-container">
+					<span class="price">{i18n.pricingFree}</span>
+					<div class="billing-note">{i18n.pricingNoCreditCard}</div>
+				</div>
+				<DownloadButton class="cta-button-outline" label={i18n.pricingDownloadFree} locale={locale} />
+				<div class="features-section">
+					<p class="features-title">{i18n.pricingWhatsIncluded}</p>
+					<ul class="features-list">
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureAiDictation}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureBYOK}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureOffline}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureAutocorrect}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureCommunity}</span></li>
+						<li class="feature-item deemphasized"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureBasicAgent}</span></li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Pro -->
+			<div class="card popular">
+				<span class="popular-badge">{i18n.pricingBestValue}</span>
+				<div class="card-header">
+					<h3 class="plan-name">{i18n.pricingPro}</h3>
+					<p class="plan-description">{i18n.pricingProDesc}</p>
+				</div>
+				<div class="price-container">
+					<div class="price-row">
+						<span class="price" data-price-pro>$8</span>
+						<span class="price-period">{i18n.pricingPerMonth}</span>
+					</div>
+					<div class="billing-note" data-billing-note-pro>{i18n.pricingBilledAnnually}</div>
+				</div>
+				<DownloadButton class="cta-button" label={i18n.pricingDownloadFree} locale={locale} />
+				<div class="features-section">
+					<p class="features-title">{i18n.pricingWhatsIncluded}</p>
+					<ul class="features-list">
+						<li class="feature-item deemphasized"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureEverythingPersonal}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureAiDictation}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureSync}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureUnlimited}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeaturePriority}</span></li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Enterprise -->
+			<div class="card">
+				<div class="card-header">
+					<h3 class="plan-name">{i18n.pricingEnterprise}</h3>
+					<p class="plan-description">{i18n.pricingEnterpriseDesc}</p>
+				</div>
+				<div class="price-container">
+					<span class="price">{i18n.pricingCustom}</span>
+					<div class="billing-note" data-billing-note-enterprise>{i18n.pricingBilledAnnually}</div>
+				</div>
+				<a href="mailto:hello@voquill.com" class="cta-button-outline">{i18n.pricingContactUs}</a>
+				<div class="features-section">
+					<p class="features-title">{i18n.pricingWhatsIncluded}</p>
+					<ul class="features-list">
+						<li class="feature-item deemphasized"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureEverythingPro}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureOnPremise}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureCustomIntegrations}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureCompliance}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureDedicated}</span></li>
+						<li class="feature-item"><svg class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>{i18n.pricingFeatureBYOC}</span></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<div class="trust-signal">
+			<svg class="shield-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+			</svg>
+			<span class="trust-text">
+				<strong>{i18n.pricingNoHiddenFees}</strong>
+				{' · '}
+				{i18n.pricingCancelAnytime}
+			</span>
+		</div>
+	</div>
+</section>
+
+<script>
+	(function () {
+		var YEARLY_PRICE = '$8';
+		var MONTHLY_PRICE = '$12';
+		var YEARLY_TOTAL = 96;
+
+		document.addEventListener('DOMContentLoaded', function () {
+			var toggle = document.querySelector('[data-billing-toggle]');
+			if (!toggle) return;
+
+			var btn = toggle.querySelector('[data-toggle-btn]') as HTMLElement;
+			var knob = toggle.querySelector('[data-toggle-knob]') as HTMLElement;
+			var monthlyLabel = toggle.querySelector('[data-label="monthly"]') as HTMLElement;
+			var yearlyLabel = toggle.querySelector('[data-label="yearly"]') as HTMLElement;
+			var priceEl = document.querySelector('[data-price-pro]') as HTMLElement;
+			var billingNotePro = document.querySelector('[data-billing-note-pro]') as HTMLElement;
+			var billingNoteEnterprise = document.querySelector('[data-billing-note-enterprise]') as HTMLElement;
+
+			var isYearly = true;
+
+			btn.addEventListener('click', function () {
+				isYearly = !isYearly;
+
+				if (isYearly) {
+					knob.classList.add('active');
+					yearlyLabel.classList.add('active');
+					monthlyLabel.classList.remove('active');
+				} else {
+					knob.classList.remove('active');
+					yearlyLabel.classList.remove('active');
+					monthlyLabel.classList.add('active');
+				}
+
+				if (priceEl) {
+					priceEl.textContent = isYearly ? YEARLY_PRICE : MONTHLY_PRICE;
+				}
+
+				if (billingNotePro) {
+					billingNotePro.textContent = isYearly
+						? 'Billed annually ($' + YEARLY_TOTAL + '/year)'
+						: 'Billed monthly';
+				}
+
+				if (billingNoteEnterprise) {
+					billingNoteEnterprise.textContent = isYearly
+						? 'Billed annually'
+						: 'Billed monthly';
+				}
+			});
+		});
+	})();
+</script>
+
+<style>
+	.pricing-section {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 48px;
+		padding: 80px 0;
+	}
+
+	.pricing-content {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 48px;
+		width: 100%;
+		max-width: 1120px;
+		padding: 0 24px;
+	}
+
+	.pricing-header {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+		text-align: center;
+		max-width: 600px;
+	}
+
+	.badge {
+		align-self: center;
+		padding: 6px 18px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: var(--level1);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-strong);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.badge {
+			background: rgba(255, 255, 255, 0.12);
+			border-color: rgba(255, 255, 255, 0.24);
+			color: rgba(255, 255, 255, 0.92);
+		}
+	}
+
+	.pricing-header h2 {
+		font-size: clamp(2rem, 3.5vw, 2.8rem);
+		line-height: 1.15;
+		letter-spacing: -0.03em;
+	}
+
+	.pricing-header p {
+		font-size: 1.05rem;
+		line-height: 1.7;
+		color: var(--text-muted);
+	}
+
+	/* Billing Toggle */
+	.billing-toggle {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.billing-label {
+		font-size: 0.95rem;
+		font-weight: 500;
+		color: var(--text-muted);
+		transition: color 0.2s ease;
+	}
+
+	.billing-label:global(.active) {
+		color: var(--text-strong);
+	}
+
+	.toggle-button {
+		position: relative;
+		width: 56px;
+		height: 28px;
+		border-radius: 999px;
+		background: var(--level2);
+		border: 1px solid var(--border);
+		cursor: pointer;
+		transition: background 0.2s ease;
+	}
+
+	.toggle-button:hover {
+		background: var(--level3);
+	}
+
+	.toggle-knob {
+		position: absolute;
+		top: 3px;
+		left: 3px;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: var(--text-strong);
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.toggle-knob:global(.active) {
+		transform: translateX(28px);
+	}
+
+	.save-badge {
+		padding: 4px 12px;
+		border-radius: 999px;
+		background: rgba(34, 197, 94, 0.12);
+		border: 1px solid rgba(34, 197, 94, 0.2);
+		color: #22c55e;
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.save-badge {
+			background: rgba(34, 197, 94, 0.15);
+			border: 1px solid rgba(34, 197, 94, 0.25);
+			color: #4ade80;
+		}
+	}
+
+	/* Cards Grid */
+	.cards-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 24px;
+		width: 100%;
+	}
+
+	.card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		padding: 28px;
+		border-radius: 24px;
+		background: var(--level0);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow-soft);
+		transition: transform 0.3s ease, box-shadow 0.3s ease;
+	}
+
+	.card:hover {
+		box-shadow: var(--shadow);
+	}
+
+	.card.popular {
+		background: var(--level1);
+		border-color: var(--border);
+		transform: scale(1.01);
+		box-shadow: var(--shadow);
+	}
+
+	/* Popular Badge */
+	.popular-badge {
+		position: absolute;
+		top: -12px;
+		left: 50%;
+		transform: translateX(-50%);
+		padding: 6px 16px;
+		border-radius: 999px;
+		background: #3b82f6;
+		color: white;
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		white-space: nowrap;
+	}
+
+	/* Card Content */
+	.card-header {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-bottom: 20px;
+	}
+
+	.plan-name {
+		font-size: 1.25rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		color: var(--text-strong);
+	}
+
+	.plan-description {
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+
+	/* Price */
+	.price-container {
+		margin-bottom: 24px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.price-row {
+		display: flex;
+		align-items: baseline;
+	}
+
+	.price {
+		font-size: 2.5rem;
+		font-weight: 700;
+		letter-spacing: -0.03em;
+		color: var(--text-strong);
+	}
+
+	.price-period {
+		font-size: 1rem;
+		font-weight: 400;
+		color: var(--text-muted);
+		margin-left: 4px;
+	}
+
+	.billing-note {
+		margin-top: 4px;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+
+	/* CTA Buttons */
+	.card :global(.cta-button) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 14px 24px;
+		border-radius: 999px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		border: none;
+		cursor: pointer;
+		transition: background 0.2s ease, transform 0.2s ease;
+		text-decoration: none;
+		background: var(--primary-button-bg);
+		color: var(--primary-button-fg);
+	}
+
+	.card :global(.cta-button):hover {
+		background: var(--primary-button-hover);
+		transform: translateY(-1px);
+	}
+
+	.card :global(.cta-button):active {
+		transform: translateY(1px);
+	}
+
+	.cta-button-outline,
+	.card :global(.cta-button-outline) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 14px 24px;
+		border-radius: 999px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+		text-decoration: none;
+		background: transparent;
+		color: var(--text-strong);
+		border: 1px solid var(--border);
+		box-shadow: none;
+	}
+
+	.cta-button-outline:hover,
+	.card :global(.cta-button-outline):hover {
+		background: var(--level1);
+		border-color: var(--text-muted);
+		transform: translateY(-1px);
+	}
+
+	.cta-button-outline:active,
+	.card :global(.cta-button-outline):active {
+		transform: translateY(1px);
+	}
+
+	/* Features */
+	.features-section {
+		margin-top: 24px;
+	}
+
+	.features-title {
+		font-size: 0.85rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-muted);
+		margin-bottom: 16px;
+	}
+
+	.features-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.feature-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+
+	.check-icon {
+		flex-shrink: 0;
+		width: 18px;
+		height: 18px;
+		color: #3b82f6;
+	}
+
+	.feature-item.deemphasized {
+		opacity: 0.5;
+	}
+
+	.feature-item.deemphasized .check-icon {
+		color: var(--text-muted);
+	}
+
+	/* Trust Signal */
+	.trust-signal {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 16px 24px;
+		border-radius: 999px;
+		background: var(--level0);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.shield-icon {
+		width: 24px;
+		height: 24px;
+		color: #22c55e;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.shield-icon {
+			color: #4ade80;
+		}
+	}
+
+	.trust-text {
+		font-size: 0.95rem;
+		color: var(--text-muted);
+	}
+
+	.trust-text strong {
+		color: var(--text-strong);
+	}
+
+	/* Responsive */
+	@media (max-width: 960px) {
+		.cards-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.card.popular {
+			transform: scale(1);
+		}
+	}
+
+	@media (max-width: 720px) {
+		.pricing-section {
+			padding: 56px 0;
+		}
+
+		.cards-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.card {
+			padding: 24px;
+		}
+
+		.billing-toggle {
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 12px;
+		}
+	}
+</style>
