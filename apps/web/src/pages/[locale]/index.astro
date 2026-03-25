@@ -11,7 +11,8 @@ import OfflineShowcase from '../../components/OfflineShowcase.astro';
 import PricingSection from '../../components/PricingSection.astro';
 import DiscordSection from '../../components/DiscordSection.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
-import { type Locale, t } from '../../i18n/translations';
+import type { Locale } from '../../types/locale';
+import { t } from '../../i18n/translations';
 
 export function getStaticPaths() {
 	return [{ params: { locale: 'en' } }, { params: { locale: 'es' } }];

@@ -1,12 +1,22 @@
 ---
+import { locales, defaultLocale } from '../types/locale';
+import { stripLocalePrefix } from '../utils/locale.utils';
+
 interface Props {
 	title: string;
 	description: string;
 	lang?: string;
 }
 
-const { title, description, lang = 'en' } = Astro.props;
-const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://voquill.com');
+const { title, description, lang = defaultLocale } = Astro.props;
+const siteBase = Astro.site ?? 'https://voquill.com';
+const canonicalUrl = new URL(Astro.url.pathname, siteBase);
+
+const pathWithoutLocale = stripLocalePrefix(Astro.url.pathname);
+const hreflangUrls = locales.map((locale) => ({
+	locale,
+	href: new URL(`/${locale}${pathWithoutLocale}`, siteBase).href,
+}));
 ---
 
 <!doctype html>
@@ -18,6 +28,11 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://voquill.
 		<meta name="description" content={description} />
 		<meta name="theme-color" content="#121212" />
 		<link rel="canonical" href={canonicalUrl.href} />
+
+		{hreflangUrls.map(({ locale, href }) => (
+			<link rel="alternate" hreflang={locale} href={href} />
+		))}
+		<link rel="alternate" hreflang="x-default" href={hreflangUrls.find((h) => h.locale === 'en')!.href} />
 
 		<!-- Open Graph -->
 		<meta property="og:type" content="website" />

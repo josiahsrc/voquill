@@ -3,7 +3,7 @@ import { marked } from 'marked';
 import fs from 'node:fs';
 import path from 'node:path';
 import LegalLayout from '../../layouts/LegalLayout.astro';
-import type { Locale } from '../../i18n/translations';
+import type { Locale } from '../../types/locale';
 
 export function getStaticPaths() {
 	return [{ params: { locale: 'en' } }, { params: { locale: 'es' } }];

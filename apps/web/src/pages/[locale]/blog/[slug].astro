@@ -3,7 +3,7 @@ import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
 import SiteFooter from '../../../components/SiteFooter.astro';
 import { getAllBlogPosts, getBlogPost, formatBlogDate } from '../../../lib/blog';
-import type { Locale } from '../../../i18n/translations';
+import type { Locale } from '../../../types/locale';
 import { t } from '../../../i18n/translations';
 
 export function getStaticPaths() {
