@@ -1,0 +1,22 @@
+{
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "index,follow"
+          }
+        ]
+      }
+    ],
+    "cleanUrls": true
+  }
+}
