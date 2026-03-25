@@ -88,8 +88,10 @@ pub(crate) fn handle_scroll(state: &PillState, event: &gdk::EventScroll) {
     };
 
     let current = state.scroll_offset.get();
-    let max_scroll = (state.content_height.get() - 100.0).max(0.0);
-    state.scroll_offset.set((current + dy).clamp(0.0, max_scroll));
+    let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
+    let new_offset = (current + dy).clamp(0.0, max_scroll);
+    state.scroll_offset.set(new_offset);
+    state.should_stick.set(max_scroll - new_offset <= 32.0);
 }
 
 pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillState) {

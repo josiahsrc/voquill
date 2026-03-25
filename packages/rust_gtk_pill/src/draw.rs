@@ -331,32 +331,6 @@ fn draw_assistant_panel(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64
 
     let py = panel_y + y_shift;
 
-    // Close button (top-left)
-    draw_panel_button(cr, panel_x + PANEL_HEADER_OFFSET_LEFT, py + PANEL_HEADER_OFFSET_TOP,
-        HEADER_BUTTON_SIZE, alpha, ButtonIcon::Close);
-    state.click_regions.borrow_mut().push(ClickRegion {
-        x: panel_x + PANEL_HEADER_OFFSET_LEFT,
-        y: py + PANEL_HEADER_OFFSET_TOP,
-        w: HEADER_BUTTON_SIZE, h: HEADER_BUTTON_SIZE,
-        action: ClickAction::AssistantClose,
-    });
-
-    // Open in new window button (next to close, only when not compact)
-    if !is_compact {
-        let open_x = panel_x + PANEL_HEADER_OFFSET_LEFT + HEADER_BUTTON_SIZE + 4.0;
-        draw_panel_button(cr, open_x, py + PANEL_HEADER_OFFSET_TOP,
-            HEADER_BUTTON_SIZE, alpha, ButtonIcon::OpenInNew);
-        state.click_regions.borrow_mut().push(ClickRegion {
-            x: open_x, y: py + PANEL_HEADER_OFFSET_TOP,
-            w: HEADER_BUTTON_SIZE, h: HEADER_BUTTON_SIZE,
-            action: ClickAction::OpenInNew,
-        });
-
-        if let Some(ref prompt) = *state.assistant_user_prompt.borrow() {
-            draw_user_prompt_preview(cr, panel_x, py, panel_w, prompt, alpha);
-        }
-    }
-
     let pill_top_in_panel = panel_h - PILL_BOTTOM_INSET - EXPANDED_PILL_HEIGHT;
 
     if is_compact {
@@ -368,17 +342,28 @@ fn draw_assistant_panel(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64
 
         let content_x = panel_x + PANEL_CONTENT_SIDE_INSET;
         let content_w = panel_w - PANEL_CONTENT_SIDE_INSET * 2.0;
-        let content_top = py + PANEL_TRANSCRIPT_TOP_OFFSET;
-        let content_bottom = if is_typing {
+
+        // Scroll view spans the full panel height (minus input bar if typing).
+        // Header, pill, and input are layered on top.
+        let scroll_bottom = if is_typing {
             py + panel_h - PANEL_INPUT_HEIGHT
         } else {
-            py + pill_top_in_panel - 8.0
+            py + panel_h
         };
-        let content_h = (content_bottom - content_top).max(0.0);
+        let scroll_h = (scroll_bottom - py).max(0.0);
+        state.viewport_height.set(scroll_h);
 
-        draw_transcript(cr, state, content_x, content_top, content_w, content_h, alpha);
+        // Content padding clears the header area at top and pill/input at bottom
+        let top_pad = PANEL_TRANSCRIPT_TOP_OFFSET + SCROLL_TOP_PAD;
+        let bottom_pad = if is_typing {
+            SCROLL_BOTTOM_PAD
+        } else {
+            PILL_BOTTOM_INSET + EXPANDED_PILL_HEIGHT + SCROLL_BOTTOM_PAD
+        };
 
-        // Top gradient fade
+        draw_transcript(cr, state, content_x, py, content_w, scroll_h, alpha, top_pad, bottom_pad);
+
+        // Top gradient: opaque over header area, fades into content
         let grad_h = PANEL_TRANSCRIPT_TOP_OFFSET + 16.0;
         let top_grad = cairo::LinearGradient::new(0.0, py, 0.0, py + grad_h);
         top_grad.add_color_stop_rgba(0.0, 0.0, 0.0, 0.0, 0.98 * alpha);
@@ -388,12 +373,13 @@ fn draw_assistant_panel(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64
         cr.rectangle(panel_x, py, panel_w, grad_h);
         let _ = cr.fill();
 
-        // Bottom gradient fade
-        let bot_grad_h = 48.0;
-        let bot_y = content_bottom - bot_grad_h;
-        let bot_grad = cairo::LinearGradient::new(0.0, bot_y, 0.0, content_bottom);
+        // Bottom gradient: opaque over pill/bottom area, fades into content
+        let bot_area = if is_typing { 0.0 } else { PILL_BOTTOM_INSET + EXPANDED_PILL_HEIGHT };
+        let bot_grad_h = bot_area + 16.0;
+        let bot_y = scroll_bottom - bot_grad_h;
+        let bot_grad = cairo::LinearGradient::new(0.0, bot_y, 0.0, scroll_bottom);
         bot_grad.add_color_stop_rgba(0.0, 0.0, 0.0, 0.0, 0.0);
-        bot_grad.add_color_stop_rgba(0.62, 0.0, 0.0, 0.0, 0.82 * alpha);
+        bot_grad.add_color_stop_rgba(0.28, 0.0, 0.0, 0.0, 0.82 * alpha);
         bot_grad.add_color_stop_rgba(1.0, 0.0, 0.0, 0.0, 0.98 * alpha);
         cr.set_source(&bot_grad).ok();
         cr.rectangle(panel_x, bot_y, panel_w, bot_grad_h);
@@ -401,6 +387,21 @@ fn draw_assistant_panel(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64
 
         cr.restore().ok();
 
+        // Header elements drawn on top of gradients (matching React zIndex: 3)
+        if let Some(ref prompt) = *state.assistant_user_prompt.borrow() {
+            draw_user_prompt_preview(cr, panel_x, py, panel_w, prompt, alpha);
+        }
+
+        let open_x = panel_x + PANEL_HEADER_OFFSET_LEFT + HEADER_BUTTON_SIZE + 4.0;
+        draw_panel_button(cr, open_x, py + PANEL_HEADER_OFFSET_TOP,
+            HEADER_BUTTON_SIZE, alpha, ButtonIcon::OpenInNew);
+        state.click_regions.borrow_mut().push(ClickRegion {
+            x: open_x, y: py + PANEL_HEADER_OFFSET_TOP,
+            w: HEADER_BUTTON_SIZE, h: HEADER_BUTTON_SIZE,
+            action: ClickAction::OpenInNew,
+        });
+
+        // Input bar drawn on top of scroll view + gradients
         if is_typing {
             let input_y = py + panel_h - PANEL_INPUT_HEIGHT;
             cr.set_source_rgba(1.0, 1.0, 1.0, 0.1 * alpha);
@@ -438,6 +439,16 @@ fn draw_assistant_panel(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64
             }
         }
     }
+
+    // Close button drawn last so it's always on top of gradients
+    draw_panel_button(cr, panel_x + PANEL_HEADER_OFFSET_LEFT, py + PANEL_HEADER_OFFSET_TOP,
+        HEADER_BUTTON_SIZE, alpha, ButtonIcon::Close);
+    state.click_regions.borrow_mut().push(ClickRegion {
+        x: panel_x + PANEL_HEADER_OFFSET_LEFT,
+        y: py + PANEL_HEADER_OFFSET_TOP,
+        w: HEADER_BUTTON_SIZE, h: HEADER_BUTTON_SIZE,
+        action: ClickAction::AssistantClose,
+    });
 }
 
 fn draw_compact_content(
@@ -459,6 +470,7 @@ fn draw_compact_content(
 fn draw_transcript(
     cr: &cairo::Context, state: &PillState,
     area_x: f64, area_y: f64, area_w: f64, area_h: f64, alpha: f64,
+    top_pad: f64, bottom_pad: f64,
 ) {
     let messages = state.assistant_messages.borrow();
     let streaming = state.assistant_streaming.borrow();
@@ -473,7 +485,7 @@ fn draw_transcript(
     cr.clip();
 
     let scroll = state.scroll_offset.get();
-    let mut y = area_y - scroll;
+    let mut y = area_y + top_pad - scroll;
 
     cr.select_font_face("sans-serif", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
     cr.set_font_size(14.0);
@@ -541,7 +553,7 @@ fn draw_transcript(
         y = draw_permission_card(cr, state, perm, area_x, y, area_w, alpha);
     }
 
-    let total_height = y + scroll - area_y;
+    let total_height = y + scroll - area_y + bottom_pad;
     state.content_height.set(total_height);
 
     cr.restore().ok();

@@ -101,6 +101,8 @@ pub(crate) struct PillState {
     // Scroll
     pub(crate) scroll_offset: Cell<f64>,
     pub(crate) content_height: Cell<f64>,
+    pub(crate) viewport_height: Cell<f64>,
+    pub(crate) should_stick: Cell<bool>,
 
     // Click regions (rebuilt each frame)
     pub(crate) click_regions: RefCell<Vec<ClickRegion>>,

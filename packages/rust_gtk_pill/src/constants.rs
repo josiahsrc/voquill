@@ -79,6 +79,8 @@ pub(crate) const PANEL_HEADER_OFFSET_RIGHT: f64 = 24.0;
 pub(crate) const PANEL_CONTENT_SIDE_INSET: f64 = 24.0;
 pub(crate) const PANEL_TRANSCRIPT_TOP_OFFSET: f64 = 56.0;
 pub(crate) const HEADER_BUTTON_SIZE: f64 = 28.0;
+pub(crate) const SCROLL_TOP_PAD: f64 = 12.0;
+pub(crate) const SCROLL_BOTTOM_PAD: f64 = 12.0;
 pub(crate) const PANEL_OPEN_SPEED: f64 = 0.14;
 pub(crate) const PANEL_CLOSE_SPEED: f64 = 0.10;
 

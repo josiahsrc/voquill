@@ -128,6 +128,8 @@ pub fn run(receiver: Receiver<InMessage>) {
         shimmer_phase: Cell::new(0.0),
         scroll_offset: Cell::new(0.0),
         content_height: Cell::new(0.0),
+        viewport_height: Cell::new(0.0),
+        should_stick: Cell::new(true),
         click_regions: RefCell::new(Vec::new()),
         entry_text: RefCell::new(String::new()),
     });
@@ -237,6 +239,7 @@ pub fn run(receiver: Receiver<InMessage>) {
                     streaming,
                     permissions,
                 } => {
+                    let was_active = state_tick.assistant_active.get();
                     state_tick.assistant_active.set(active);
                     *state_tick.assistant_input_mode.borrow_mut() = input_mode;
                     state_tick.assistant_compact.set(compact);
@@ -245,6 +248,11 @@ pub fn run(receiver: Receiver<InMessage>) {
                     *state_tick.assistant_messages.borrow_mut() = messages;
                     *state_tick.assistant_streaming.borrow_mut() = streaming;
                     *state_tick.assistant_permissions.borrow_mut() = permissions;
+
+                    if active && !was_active {
+                        state_tick.should_stick.set(true);
+                        state_tick.scroll_offset.set(0.0);
+                    }
                 }
                 InMessage::Quit => {
                     quit_tick.set(true);
@@ -465,4 +473,10 @@ fn tick(state: &PillState) {
 
     // Shimmer phase for thinking animation
     state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED) % 1.0);
+
+    // Auto-scroll to bottom when new content arrives
+    if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
+        let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
+        state.scroll_offset.set(max_scroll);
+    }
 }
