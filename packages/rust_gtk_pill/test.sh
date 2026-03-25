@@ -119,6 +119,15 @@ run_assistant() {
   sleep 1
 }
 
+run_keyboard() {
+  echo '--- Keyboard: typing mode (Ctrl-C to quit) ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  echo '{"type":"window_size","size":"assistant_typing"}'
+  echo '{"type":"assistant_state","active":true,"input_mode":"type","compact":false,"conversation_id":"conv_1","user_prompt":"Tell me about the weather ... in San Francisco today please","messages":[{"id":"m1","content":"It'\''s currently **62°F** (17°C) in San Francisco with partly cloudy skies.","is_error":false,"is_tool_result":false,"tool_name":null,"tool_description":null,"reason":null}],"streaming":null,"permissions":[]}'
+  # Hold open until killed
+  while true; do sleep 60; done
+}
+
 (
   sleep 0.5
 
@@ -128,6 +137,9 @@ run_assistant() {
       ;;
     assistant)
       run_assistant
+      ;;
+    keyboard)
+      run_keyboard
       ;;
     both|*)
       run_dictation
