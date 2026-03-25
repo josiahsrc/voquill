@@ -8,14 +8,15 @@ import {
   type SxProps,
   type Theme,
 } from "@mui/material";
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { FormattedMessage } from "react-intl";
-
-const COLLAPSE_DISTANCE_PX = 96;
-const TITLE_FONT_SIZE_EXPANDED = 34;
-const TITLE_FONT_SIZE_COLLAPSED = 22;
-const TITLE_SCALE_RANGE =
-  TITLE_FONT_SIZE_EXPANDED / TITLE_FONT_SIZE_COLLAPSED - 1;
 
 export type ScrollListPageProps<Item> = {
   title: ReactNode;
@@ -49,6 +50,120 @@ export function ScrollListPage<Item>({
   onLoadMore,
 }: ScrollListPageProps<Item>) {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const expandedHeaderMeasureRef = useRef<HTMLDivElement>(null);
+  const collapsedHeaderMeasureRef = useRef<HTMLDivElement>(null);
+  const expandedTitleMeasureRef = useRef<HTMLSpanElement>(null);
+  const collapsedTitleMeasureRef = useRef<HTMLSpanElement>(null);
+  const collapseDistanceRef = useRef(0);
+  const [headerMetrics, setHeaderMetrics] = useState({
+    collapsedHeight: 0,
+    collapseDistance: 0,
+    collapsedTitleHeight: 0,
+    titleHeightDelta: 0,
+    titleScale: 1,
+  });
+
+  useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
+    const expandedHeader = expandedHeaderMeasureRef.current;
+    const collapsedHeader = collapsedHeaderMeasureRef.current;
+    const expandedTitle = expandedTitleMeasureRef.current;
+    const collapsedTitle = collapsedTitleMeasureRef.current;
+    if (
+      !scroller ||
+      !expandedHeader ||
+      !collapsedHeader ||
+      !expandedTitle ||
+      !collapsedTitle
+    ) {
+      return;
+    }
+
+    let frameId: number | null = null;
+
+    const updateLayout = () => {
+      frameId = null;
+
+      const expandedHeaderHeight =
+        expandedHeader.getBoundingClientRect().height;
+      const collapsedHeaderHeight =
+        collapsedHeader.getBoundingClientRect().height;
+      const expandedTitleHeight = expandedTitle.getBoundingClientRect().height;
+      const collapsedTitleHeight =
+        collapsedTitle.getBoundingClientRect().height;
+      const collapseDistance = Math.max(
+        expandedHeaderHeight - collapsedHeaderHeight,
+        0,
+      );
+      const titleScale =
+        collapsedTitleHeight > 0
+          ? expandedTitleHeight / collapsedTitleHeight
+          : 1;
+      const titleHeightDelta = Math.max(
+        expandedTitleHeight - collapsedTitleHeight,
+        0,
+      );
+      const progress =
+        collapseDistance > 0
+          ? Math.min(scroller.scrollTop / collapseDistance, 1)
+          : 1;
+
+      collapseDistanceRef.current = collapseDistance;
+      scroller.style.setProperty("--p", `${progress}`);
+
+      setHeaderMetrics((current) => {
+        if (
+          current.collapsedHeight === collapsedHeaderHeight &&
+          current.collapseDistance === collapseDistance &&
+          current.collapsedTitleHeight === collapsedTitleHeight &&
+          current.titleHeightDelta === titleHeightDelta &&
+          current.titleScale === titleScale
+        ) {
+          return current;
+        }
+
+        return {
+          collapsedHeight: collapsedHeaderHeight,
+          collapseDistance,
+          collapsedTitleHeight,
+          titleHeightDelta,
+          titleScale,
+        };
+      });
+    };
+
+    const scheduleUpdate = () => {
+      if (frameId !== null) {
+        return;
+      }
+
+      frameId = requestAnimationFrame(updateLayout);
+    };
+
+    scheduleUpdate();
+
+    if (typeof ResizeObserver === "undefined") {
+      return () => {
+        if (frameId !== null) {
+          cancelAnimationFrame(frameId);
+        }
+      };
+    }
+
+    const observer = new ResizeObserver(scheduleUpdate);
+    observer.observe(scroller);
+    observer.observe(expandedHeader);
+    observer.observe(collapsedHeader);
+    observer.observe(expandedTitle);
+    observer.observe(collapsedTitle);
+
+    return () => {
+      observer.disconnect();
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
+    };
+  }, [action, headerMaxWidth, items.length, subtitle, title]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -59,28 +174,47 @@ export function ScrollListPage<Item>({
     const handleScroll = () => {
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
-        const p = Math.min(scroller.scrollTop / COLLAPSE_DISTANCE_PX, 1);
+        const collapseDistance = collapseDistanceRef.current;
+        const p =
+          collapseDistance > 0
+            ? Math.min(scroller.scrollTop / collapseDistance, 1)
+            : 1;
         scroller.style.setProperty("--p", `${p}`);
         rafId = null;
       });
     };
 
-    scroller.style.setProperty("--p", "0");
+    const collapseDistance = collapseDistanceRef.current;
+    const progress =
+      collapseDistance > 0
+        ? Math.min(scroller.scrollTop / collapseDistance, 1)
+        : 1;
+    scroller.style.setProperty("--p", `${progress}`);
     scroller.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       scroller.removeEventListener("scroll", handleScroll);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [items.length]);
 
   const handleLoadMore = useCallback(() => {
     onLoadMore?.();
   }, [onLoadMore]);
+  const titleScaleRange = Math.max(headerMetrics.titleScale - 1, 0);
+  const headerHeight =
+    headerMetrics.collapseDistance > 0 || headerMetrics.collapsedHeight > 0
+      ? `calc(${headerMetrics.collapsedHeight}px + ${headerMetrics.collapseDistance}px * (1 - var(--p, 0)))`
+      : undefined;
+  const titleHeight =
+    headerMetrics.titleHeightDelta > 0 || headerMetrics.collapsedTitleHeight > 0
+      ? `calc(${headerMetrics.collapsedTitleHeight}px + ${headerMetrics.titleHeightDelta}px * (1 - var(--p, 0)))`
+      : undefined;
 
   return (
     <Box
       sx={{
+        position: "relative",
         flexGrow: 1,
         display: "flex",
         flexDirection: "column",
@@ -93,49 +227,29 @@ export function ScrollListPage<Item>({
           <Box
             sx={(theme) => ({
               pr: 2,
-              backdropFilter: "blur(8px)",
+              backgroundColor:
+                theme.vars?.palette.background.default ??
+                theme.palette.background.default,
               position: "sticky",
               top: 0,
               zIndex: theme.zIndex.appBar,
             })}
           >
-            <Container
-              maxWidth={headerMaxWidth}
-              sx={{ pt: 1, pb: 4, position: "relative" }}
-            >
-              <Stack spacing={2}>
+            <Container maxWidth={headerMaxWidth} sx={{ pt: 1, pb: 4 }}>
+              <Stack spacing={1.5}>
                 <Stack
                   direction="row"
                   spacing={2}
                   alignItems="flex-start"
                   justifyContent="space-between"
                 >
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                    sx={(theme) => ({
-                      fontSize: theme.typography.pxToRem(
-                        TITLE_FONT_SIZE_EXPANDED,
-                      ),
-                      lineHeight: theme.typography.pxToRem(
-                        TITLE_FONT_SIZE_EXPANDED * 1.15,
-                      ),
-                    })}
-                  >
+                  <Typography variant="h4" fontWeight={700}>
                     {title}
                   </Typography>
                   {action}
                 </Stack>
                 {subtitle ? (
-                  <Typography
-                    variant="subtitle1"
-                    color="text.secondary"
-                    sx={{
-                      position: "absolute",
-                      bottom: 0,
-                      transform: "translateY(4px)",
-                    }}
-                  >
+                  <Typography variant="subtitle1" color="text.secondary">
                     {subtitle}
                   </Typography>
                 ) : null}
@@ -169,6 +283,7 @@ export function ScrollListPage<Item>({
         <Box
           ref={scrollerRef}
           sx={{
+            "--p": 0,
             flex: 1,
             overflowY: "auto",
             overflowX: "hidden",
@@ -178,57 +293,59 @@ export function ScrollListPage<Item>({
           <Box
             sx={(theme) => ({
               pr: 2,
-              backdropFilter: "blur(8px)",
+              backgroundColor:
+                theme.vars?.palette.background.default ??
+                theme.palette.background.default,
               position: "sticky",
               top: 0,
               zIndex: theme.zIndex.appBar,
-              overflow: "visible",
+              height: headerHeight,
+              overflow: "hidden",
             })}
           >
-            <Container
-              maxWidth={headerMaxWidth}
-              sx={{ pt: 1, pb: 1, position: "relative" }}
-            >
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="flex-start"
-                justifyContent="space-between"
-              >
-                <Typography
-                  variant="h4"
-                  fontWeight={700}
-                  sx={{
-                    fontSize: TITLE_FONT_SIZE_COLLAPSED,
-                    lineHeight: `${TITLE_FONT_SIZE_COLLAPSED * 1.15}px`,
-                    transformOrigin: "top left",
-                    transform: `scale(calc(1 + ${TITLE_SCALE_RANGE} * (1 - var(--p, 0))))`,
-                    willChange: "transform",
-                  }}
+            <Container maxWidth={headerMaxWidth} sx={{ pt: 1, pb: 4 }}>
+              <Stack spacing={1.5}>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="flex-start"
+                  justifyContent="space-between"
                 >
-                  {title}
-                </Typography>
-                {action}
-              </Stack>
-              {subtitle ? (
-                <Box sx={{ height: 0, overflow: "visible" }}>
+                  <Box sx={{ height: titleHeight, flex: 1, minWidth: 0 }}>
+                    <Typography
+                      component="span"
+                      variant="h5"
+                      fontWeight={700}
+                      sx={{
+                        display: "block",
+                        transformOrigin: "top left",
+                        transform: `scale(calc(1 + ${titleScaleRange} * (1 - var(--p, 0))))`,
+                        willChange: "transform",
+                      }}
+                    >
+                      {title}
+                    </Typography>
+                  </Box>
+                  {action}
+                </Stack>
+                {subtitle ? (
                   <Typography
                     variant="subtitle1"
                     color="text.secondary"
                     sx={{
                       opacity: "clamp(0, calc(1 - var(--p, 0) * 2), 1)",
+                      transformOrigin: "top left",
                       transform:
-                        "translateY(calc(4px * clamp(0, calc(1 - var(--p, 0) * 2), 1)))",
+                        "scale(calc(1 - 0.1 * var(--p, 0))) translateY(calc(-4px * var(--p, 0)))",
                       willChange: "opacity, transform",
                     }}
                   >
                     {subtitle}
                   </Typography>
-                </Box>
-              ) : null}
+                ) : null}
+              </Stack>
             </Container>
           </Box>
-          <Box sx={{ height: COLLAPSE_DISTANCE_PX }} />
           {items.map((item, index) => (
             <Container
               key={computeItemKey ? computeItemKey(item, index) : index}
@@ -250,6 +367,74 @@ export function ScrollListPage<Item>({
           <Box sx={{ height: 32 }} />
         </Box>
       )}
+      {items.length > 0 ? (
+        <Box
+          aria-hidden
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            visibility: "hidden",
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        >
+          <Container
+            maxWidth={headerMaxWidth}
+            ref={expandedHeaderMeasureRef}
+            sx={{ pt: 1, pb: 4 }}
+          >
+            <Stack spacing={1.5}>
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="flex-start"
+                justifyContent="space-between"
+              >
+                <Typography
+                  component="span"
+                  ref={expandedTitleMeasureRef}
+                  variant="h4"
+                  fontWeight={700}
+                  sx={{ display: "block" }}
+                >
+                  {title}
+                </Typography>
+                {action}
+              </Stack>
+              {subtitle ? (
+                <Typography variant="subtitle1" color="text.secondary">
+                  {subtitle}
+                </Typography>
+              ) : null}
+            </Stack>
+          </Container>
+          <Container
+            maxWidth={headerMaxWidth}
+            ref={collapsedHeaderMeasureRef}
+            sx={{ pt: 1, pb: 1 }}
+          >
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="flex-start"
+              justifyContent="space-between"
+            >
+              <Typography
+                component="span"
+                ref={collapsedTitleMeasureRef}
+                variant="h5"
+                fontWeight={700}
+                sx={{ display: "block" }}
+              >
+                {title}
+              </Typography>
+              {action}
+            </Stack>
+          </Container>
+        </Box>
+      ) : null}
     </Box>
   );
 }
