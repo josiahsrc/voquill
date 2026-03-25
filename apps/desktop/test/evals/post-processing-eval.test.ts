@@ -107,6 +107,16 @@ describe("post-processing evals", { retry: 0 }, () => {
       });
     });
 
+    test("don't answer the question", async () => {
+      await runPostProcessingEval({
+        transcription: "Explain what impulse is",
+        tone: getWritingStyle("default"),
+        evals: [
+          "It should NOT answer the question, it keep it roughly the same",
+        ],
+      });
+    });
+
     test("should put paragraph breaks in", async () => {
       await runPostProcessingEval({
         transcription:

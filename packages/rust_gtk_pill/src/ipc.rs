@@ -3,11 +3,21 @@ use std::sync::mpsc::Sender;
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Visibility {
+    Hidden,
+    WhileActive,
+    Persistent,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum InMessage {
     Phase { phase: Phase },
     Levels { levels: Vec<f32> },
+    StyleInfo { count: u32, name: String },
+    Visibility { visibility: Visibility },
     Quit,
 }
 
@@ -25,6 +35,7 @@ pub enum OutMessage {
     Ready,
     Hover { hovered: bool },
     Click,
+    StyleSwitch { direction: String },
 }
 
 pub fn send(msg: &OutMessage) {

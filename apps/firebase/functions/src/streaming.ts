@@ -2,7 +2,7 @@ import type { CloudModel, StreamHandlerName } from "@repo/functions";
 import { AiStreamChatInputZod } from "@repo/functions";
 import { z } from "zod";
 import type { LlmChatInput, LlmStreamEvent } from "@repo/types";
-import { groqStreamChat, openaiStreamChat } from "@repo/voice-ai";
+import { groqStreamChat } from "@repo/voice-ai";
 import * as admin from "firebase-admin";
 import type { AuthData } from "firebase-functions/tasks";
 import { onRequest } from "firebase-functions/v2/https";
@@ -10,9 +10,7 @@ import { mapCloudModelToGroqModel } from "./utils/ai.utils";
 import { checkAccess } from "./utils/check.utils";
 import {
 	getGroqApiKey,
-	getOpenAIApiKey,
 	GROQ_API_KEY_VAR,
-	OPENAI_API_KEY_VAR,
 } from "./utils/env.utils";
 import { ClientError } from "./utils/error.utils";
 import {
@@ -26,13 +24,13 @@ type StreamHandlerRequest = {
 };
 
 function resolveStreamModel(model: CloudModel | null | undefined): {
-	provider: "openai" | "groq";
+	provider: "groq";
 	modelId: string;
 } {
 	if (model === "medium") {
-		return { provider: "openai", modelId: "gpt-4o-mini" };
+		return { provider: "groq", modelId: "meta-llama/llama-4-scout-17b-16e-instruct" };
 	} else if (model === "large") {
-		return { provider: "openai", modelId: "gpt-5.4" };
+		return { provider: "groq", modelId: "moonshotai/kimi-k2-instruct-0905" };
 	}
 	return { provider: "groq", modelId: mapCloudModelToGroqModel(model) };
 }
@@ -47,7 +45,7 @@ async function* handleStreamChat(
 	await checkAccess(auth);
 	await validateMemberWithinTokenLimits({ auth });
 
-	const { provider, modelId } = resolveStreamModel(parsed.model);
+	const { modelId } = resolveStreamModel(parsed.model);
 	const chatInput: LlmChatInput = {
 		messages: parsed.messages as LlmChatInput["messages"],
 		tools: parsed.tools as LlmChatInput["tools"],
@@ -68,18 +66,11 @@ async function* handleStreamChat(
 		return;
 	}
 
-	const generator =
-		provider === "openai"
-			? openaiStreamChat({
-					apiKey: getOpenAIApiKey(),
-					model: modelId,
-					input: chatInput,
-				})
-			: groqStreamChat({
-					apiKey: getGroqApiKey(),
-					model: modelId,
-					input: chatInput,
-				});
+	const generator = groqStreamChat({
+		apiKey: getGroqApiKey(),
+		model: modelId,
+		input: chatInput,
+	});
 
 	let tokensUsed = 0;
 	for await (const event of generator) {
@@ -99,7 +90,7 @@ async function* handleStreamChat(
 // TODO: Clean up once have more handlers
 export const streamHandler = onRequest(
 	{
-		secrets: [GROQ_API_KEY_VAR, OPENAI_API_KEY_VAR],
+		secrets: [GROQ_API_KEY_VAR],
 		memory: "1GiB",
 		maxInstances: 16,
 		cors: true,

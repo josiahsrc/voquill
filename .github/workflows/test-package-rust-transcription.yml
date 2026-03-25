@@ -65,10 +65,21 @@ jobs:
           "CLANG_PATH=C:\Program Files\LLVM\bin\clang.exe" >> $env:GITHUB_ENV
           "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
+      - name: Configure whisper build flags (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "CMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/packages/rust_transcription/cmake/linux-ci-toolchain.cmake" >> "$GITHUB_ENV"
+
       - name: Configure whisper build flags (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           echo "CMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/packages/rust_transcription/cmake/macos-ci-toolchain.cmake" >> "$GITHUB_ENV"
+
+      - name: Configure whisper build flags (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          echo "CMAKE_TOOLCHAIN_FILE=$env:GITHUB_WORKSPACE\packages\rust_transcription\cmake\windows-ci-toolchain.cmake" >> $env:GITHUB_ENV
 
       - name: Run non-ignored integration tests
         run: cargo test --manifest-path packages/rust_transcription/Cargo.toml --test sidecar_integration -- --nocapture

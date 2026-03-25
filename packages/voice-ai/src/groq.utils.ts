@@ -10,6 +10,7 @@ import { openaiCompatibleStreamChat } from "./openai.utils";
 
 export const GENERATE_TEXT_MODELS = [
   "meta-llama/llama-4-scout-17b-16e-instruct",
+  "moonshotai/kimi-k2-instruct-0905",
   "openai/gpt-oss-20b",
   "openai/gpt-oss-120b",
 ] as const;

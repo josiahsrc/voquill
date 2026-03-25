@@ -72,6 +72,20 @@ pub use macos::get_hotkey_strategy;
 pub use windows::get_hotkey_strategy;
 
 #[cfg(target_os = "linux")]
+pub use linux::supports_app_detection;
+#[cfg(target_os = "macos")]
+pub use macos::supports_app_detection;
+#[cfg(target_os = "windows")]
+pub use windows::supports_app_detection;
+
+#[cfg(target_os = "linux")]
+pub use linux::supports_paste_keybinds;
+#[cfg(target_os = "macos")]
+pub use macos::supports_paste_keybinds;
+#[cfg(target_os = "windows")]
+pub use windows::supports_paste_keybinds;
+
+#[cfg(target_os = "linux")]
 pub use linux::overlay;
 #[cfg(target_os = "macos")]
 pub use macos::overlay;

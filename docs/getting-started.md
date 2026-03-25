@@ -83,9 +83,6 @@ During local development you can override platform detection by exporting `VOQUI
 # (Skip this if you're already in "Developer PowerShell for VS 2022")
 & "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 
-# 2) Required for whisper.cpp / ggml Vulkan builds
-$env:WHISPER_CMAKE_ARGS = '-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w'
-
 # (Optional but recommended) shorten build paths on Windows
 $env:CARGO_TARGET_DIR = 'C:\cargo'
 

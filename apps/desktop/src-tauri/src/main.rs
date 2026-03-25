@@ -38,8 +38,7 @@ fn main() {
 
     eprintln!("[startup] Building Tauri application...");
 
-    let app_result =
-        std::panic::catch_unwind(|| desktop_lib::app::run(tauri::generate_context!()));
+    let app_result = std::panic::catch_unwind(|| desktop_lib::app::run(tauri::generate_context!()));
 
     match app_result {
         Ok(result) => {
