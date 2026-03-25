@@ -219,9 +219,18 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
                         let _ = app.emit_to("main", "assistant-mode-close", ());
                     } else if line.contains("\"resolve_permission\"") {
                         if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
-                            let permission_id = val.get("permission_id").and_then(|v| v.as_str()).unwrap_or("");
-                            let status = val.get("status").and_then(|v| v.as_str()).unwrap_or("denied");
-                            let always_allow = val.get("always_allow").and_then(|v| v.as_bool()).unwrap_or(false);
+                            let permission_id = val
+                                .get("permission_id")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("");
+                            let status = val
+                                .get("status")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("denied");
+                            let always_allow = val
+                                .get("always_allow")
+                                .and_then(|v| v.as_bool())
+                                .unwrap_or(false);
                             let payload = serde_json::json!({
                                 "permissionId": permission_id,
                                 "status": status,
