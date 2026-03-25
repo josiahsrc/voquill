@@ -5,6 +5,12 @@ import DownloadButton from '../../components/DownloadButton.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import { locales, type Locale } from '../../types/locale';
 import { t } from '../../i18n/translations';
+import {
+	buildBreadcrumbStructuredData,
+	buildSoftwareApplicationStructuredData,
+	toAbsoluteUrl,
+} from '../../utils/seo';
+import { localePath } from '../../utils/paths';
 
 export function getStaticPaths() {
 	return locales.map((locale) => ({ params: { locale } }));
@@ -12,9 +18,24 @@ export function getStaticPaths() {
 
 const locale = Astro.params.locale as Locale;
 const i18n = t(locale);
+const structuredData = [
+	buildSoftwareApplicationStructuredData(locale),
+	buildBreadcrumbStructuredData([
+		{ name: i18n.blogHome, item: toAbsoluteUrl(localePath(locale, '/')) },
+		{
+			name: i18n.download,
+			item: toAbsoluteUrl(localePath(locale, '/download')),
+		},
+	]),
+];
 ---
 
-<Layout title={i18n.downloadPageTitle} description={i18n.downloadPageSubtitle} lang={locale}>
+<Layout
+	title={i18n.downloadPageTitle}
+	description={i18n.downloadPageSubtitle}
+	lang={locale}
+	structuredData={structuredData}
+>
 	<Header locale={locale} />
 
 	<section class="download-main">
@@ -22,7 +43,7 @@ const i18n = t(locale);
 			<h1>{i18n.downloadPageHeading}</h1>
 			<p>{i18n.downloadPageSubtitle}</p>
 			<div class="download-primary">
-				<DownloadButton class="btn-primary download-primary-button" label={i18n.downloadForFree} href="#download-options" />
+				<DownloadButton class="btn-primary download-primary-button" label={i18n.downloadForFree} href="#download-options" locale={locale} />
 				<span class="download-recommendation" data-i18n-recommended={i18n.downloadRecommended} data-i18n-fallback={i18n.downloadFallback}></span>
 			</div>
 		</header>

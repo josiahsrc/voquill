@@ -5,6 +5,11 @@ import { locales, type Locale } from '../../../types/locale';
 import { t } from '../../../i18n/translations';
 import Layout from '../../../layouts/Layout.astro';
 import { formatBlogDate, getAllBlogPosts } from '../../../lib/blog';
+import {
+	buildBreadcrumbStructuredData,
+	toAbsoluteUrl,
+} from '../../../utils/seo';
+import { localePath } from '../../../utils/paths';
 
 export function getStaticPaths() {
 	return locales.map((locale) => ({ params: { locale } }));
@@ -13,9 +18,28 @@ export function getStaticPaths() {
 const locale = Astro.params.locale as Locale;
 const i18n = t(locale);
 const posts = getAllBlogPosts();
+const pageTitle =
+	locale === 'en'
+		? 'Voquill Blog | Private Dictation, Voice Typing, and Local AI'
+		: `${i18n.blogTitle} | Voquill`;
+const pageDescription =
+	locale === 'en'
+		? 'Guides on private dictation, local speech-to-text, on-prem deployment, and AI-assisted writing workflows.'
+		: i18n.blogSubtitle;
+const structuredData = [
+	buildBreadcrumbStructuredData([
+		{ name: i18n.blogHome, item: toAbsoluteUrl(localePath(locale, '/')) },
+		{ name: i18n.blogTitle, item: toAbsoluteUrl(localePath(locale, '/blog')) },
+	]),
+];
 ---
 
-<Layout title="Blog | Voquill" description="Guides, tips, and insights on voice typing and productivity." lang={locale}>
+<Layout
+	title={pageTitle}
+	description={pageDescription}
+	lang={locale}
+	structuredData={structuredData}
+>
 	<Header locale={locale} />
 	<main class="blog-main">
 		<header class="blog-header">
@@ -24,10 +48,10 @@ const posts = getAllBlogPosts();
 		</header>
 		<div class="blog-grid">
 			{posts.map((post) => (
-				<a href={`/${locale}/blog/${post.slug}`} class="blog-card">
+				<a href={localePath(locale, `/blog/${post.slug}`)} class="blog-card">
 					{post.image && (
 						<div class="card-image-wrapper">
-							<img src={post.image} alt="" class="card-image" width="680" height="383" loading="lazy" decoding="async" />
+							<img src={post.image} alt={post.title} class="card-image" width="680" height="383" loading="lazy" decoding="async" />
 						</div>
 					)}
 					<div class="card-body">

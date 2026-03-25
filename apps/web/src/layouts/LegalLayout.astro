@@ -8,12 +8,20 @@ interface Props {
 	title: string;
 	description: string;
 	locale: Locale;
+	robots?: string;
+	structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
-const { title, description, locale } = Astro.props;
+const { title, description, locale, robots, structuredData } = Astro.props;
 ---
 
-<Layout title={title} description={description} lang={locale}>
+<Layout
+	title={title}
+	description={description}
+	lang={locale}
+	robots={robots}
+	structuredData={structuredData}
+>
 	<Header locale={locale} />
 	<main class="legal-main">
 		<article class="legal-content">

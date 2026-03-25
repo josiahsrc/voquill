@@ -13,6 +13,7 @@ import DiscordSection from '../../components/DiscordSection.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import { locales, type Locale } from '../../types/locale';
 import { t } from '../../i18n/translations';
+import { buildSoftwareApplicationStructuredData } from '../../utils/seo';
 
 export function getStaticPaths() {
 	return locales.map((locale) => ({ params: { locale } }));
@@ -20,9 +21,15 @@ export function getStaticPaths() {
 
 const locale = Astro.params.locale as Locale;
 const i18n = t(locale);
+const structuredData = [buildSoftwareApplicationStructuredData(locale)];
 ---
 
-<Layout title={i18n.siteTitle} description={i18n.siteDescription} lang={locale}>
+<Layout
+	title={i18n.siteTitle}
+	description={i18n.siteDescription}
+	lang={locale}
+	structuredData={structuredData}
+>
 	<Header locale={locale} />
 	<Hero locale={locale} />
 	<VideoSection locale={locale} />

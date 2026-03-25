@@ -1,22 +1,63 @@
 ---
-import { locales, defaultLocale } from '../types/locale';
+import { locales, defaultLocale, type Locale } from '../types/locale';
 import { stripLocalePrefix } from '../utils/locale.utils';
+import {
+	DEFAULT_SOCIAL_IMAGE,
+	DEFAULT_SOCIAL_IMAGE_ALT,
+	SITE_URL,
+	buildOrganizationStructuredData,
+	buildWebsiteStructuredData,
+	getOgLocale,
+	toAbsoluteImageUrl,
+} from '../utils/seo';
 
 interface Props {
 	title: string;
 	description: string;
-	lang?: string;
+	lang?: Locale;
+	robots?: string;
+	ogType?: 'website' | 'article';
+	ogImage?: string;
+	ogImageAlt?: string;
+	article?: {
+		publishedTime?: string;
+		modifiedTime?: string;
+		author?: string;
+		tags?: string[];
+	};
+	structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
-const { title, description, lang = defaultLocale } = Astro.props;
-const siteBase = Astro.site ?? 'https://voquill.com';
+const {
+	title,
+	description,
+	lang = defaultLocale,
+	robots = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+	ogType = 'website',
+	ogImage = DEFAULT_SOCIAL_IMAGE,
+	ogImageAlt = DEFAULT_SOCIAL_IMAGE_ALT,
+	article,
+	structuredData = [],
+} = Astro.props;
+const siteBase = Astro.site ?? SITE_URL;
 const canonicalUrl = new URL(Astro.url.pathname, siteBase);
+const absoluteOgImage = toAbsoluteImageUrl(ogImage);
+const ogLocale = getOgLocale(lang);
 
 const pathWithoutLocale = stripLocalePrefix(Astro.url.pathname);
 const hreflangUrls = locales.map((locale) => ({
 	locale,
 	href: new URL(`/${locale}${pathWithoutLocale}`, siteBase).href,
 }));
+const structuredDataItems = [
+	buildOrganizationStructuredData(),
+	buildWebsiteStructuredData(),
+	...(Array.isArray(structuredData) ? structuredData : [structuredData]),
+].filter(Boolean);
+const alternateOgLocales = locales
+	.filter((locale) => locale !== lang)
+	.map(getOgLocale)
+	.filter((locale, index, values) => values.indexOf(locale) === index);
 ---
 
 <!doctype html>
@@ -26,8 +67,11 @@ const hreflangUrls = locales.map((locale) => ({
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<meta name="robots" content={robots} />
 		<meta name="theme-color" content="#121212" />
+		<meta name="application-name" content="Voquill" />
 		<link rel="canonical" href={canonicalUrl.href} />
+		<link rel="sitemap" type="application/xml" href={new URL('/sitemap.xml', siteBase).href} />
 
 		{hreflangUrls.map(({ locale, href }) => (
 			<link rel="alternate" hreflang={locale} href={href} />
@@ -35,23 +79,41 @@ const hreflangUrls = locales.map((locale) => ({
 		<link rel="alternate" hreflang="x-default" href={hreflangUrls.find((h) => h.locale === 'en')!.href} />
 
 		<!-- Open Graph -->
-		<meta property="og:type" content="website" />
+		<meta property="og:type" content={ogType} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
-		<meta property="og:image" content="/social.jpg" />
+		<meta property="og:image" content={absoluteOgImage} />
+		<meta property="og:image:alt" content={ogImageAlt} />
 		<meta property="og:url" content={canonicalUrl.href} />
 		<meta property="og:site_name" content="Voquill" />
-		<meta property="og:locale" content={lang} />
+		<meta property="og:locale" content={ogLocale} />
+		{alternateOgLocales.map((locale) => (
+			<meta property="og:locale:alternate" content={locale} />
+		))}
+		{article?.publishedTime && <meta property="article:published_time" content={article.publishedTime} />}
+		{article?.modifiedTime && <meta property="article:modified_time" content={article.modifiedTime} />}
+		{article?.author && <meta property="article:author" content={article.author} />}
+		{article?.tags?.map((tag) => (
+			<meta property="article:tag" content={tag} />
+		))}
 
 		<!-- Twitter Card -->
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />
-		<meta name="twitter:image" content="/social.jpg" />
+		<meta name="twitter:image" content={absoluteOgImage} />
+		<meta name="twitter:image:alt" content={ogImageAlt} />
+		{article?.author && <meta name="author" content={article.author} />}
 
 		<link rel="icon" href="/favicon.ico" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+		{structuredDataItems.map((item) => (
+			<script type="application/ld+json" set:html={JSON.stringify(item)} />
+		))}
 
 		<link
 			rel="stylesheet"

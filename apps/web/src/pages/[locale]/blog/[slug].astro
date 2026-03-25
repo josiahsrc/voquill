@@ -5,6 +5,14 @@ import SiteFooter from '../../../components/SiteFooter.astro';
 import { getAllBlogPosts, getBlogPost, formatBlogDate } from '../../../lib/blog';
 import { locales, type Locale } from '../../../types/locale';
 import { t } from '../../../i18n/translations';
+import { localizeHtmlInternalLinks } from '../../../utils/internal-links';
+import { localePath } from '../../../utils/paths';
+import {
+	buildBlogPostingStructuredData,
+	buildBreadcrumbStructuredData,
+	toAbsoluteUrl,
+	toIsoDateFromDateOnly,
+} from '../../../utils/seo';
 
 export function getStaticPaths() {
 	const posts = getAllBlogPosts();
@@ -20,18 +28,55 @@ const i18n = t(locale);
 const post = getBlogPost(Astro.params.slug);
 
 if (!post) {
-	return Astro.redirect(`/${locale}/blog`);
+	return Astro.redirect(localePath(locale, '/blog'));
 }
+
+const postContent = localizeHtmlInternalLinks(post.content, locale);
+const articlePublishedTime = toIsoDateFromDateOnly(post.date);
+const structuredData = [
+	buildBlogPostingStructuredData({
+		locale,
+		slug: post.slug,
+		title: post.title,
+		description: post.description,
+		datePublished: post.date,
+		author: post.author,
+		tags: post.tags,
+		image: post.image,
+	}),
+	buildBreadcrumbStructuredData([
+		{ name: i18n.blogHome, item: toAbsoluteUrl(localePath(locale, '/')) },
+		{ name: i18n.blogTitle, item: toAbsoluteUrl(localePath(locale, '/blog')) },
+		{
+			name: post.title,
+			item: toAbsoluteUrl(localePath(locale, `/blog/${post.slug}`)),
+		},
+	]),
+];
 ---
 
-<Layout title={`${post.title} | Voquill Blog`} description={post.description} lang={locale}>
+<Layout
+	title={`${post.title} | Voquill Blog`}
+	description={post.description}
+	lang={locale}
+	ogType="article"
+	ogImage={post.image}
+	ogImageAlt={post.title}
+	article={{
+		publishedTime: articlePublishedTime,
+		modifiedTime: articlePublishedTime,
+		author: post.author,
+		tags: post.tags,
+	}}
+	structuredData={structuredData}
+>
 	<Header locale={locale} />
 	<main class="post-main">
 		<header class="post-header">
 			<nav class="post-breadcrumb" aria-label="Breadcrumb">
-				<a href={`/${locale}`}>{i18n.blogHome}</a>
+				<a href={localePath(locale, '/')}>{i18n.blogHome}</a>
 				<span>/</span>
-				<a href={`/${locale}/blog`}>{i18n.blogTitle}</a>
+				<a href={localePath(locale, '/blog')}>{i18n.blogTitle}</a>
 				<span>/</span>
 				<span>{post.title}</span>
 			</nav>
@@ -46,10 +91,10 @@ if (!post) {
 		</header>
 		{post.image && (
 			<div class="post-hero-wrapper">
-				<img src={post.image} alt="" class="post-hero-image" width="780" height="439" />
+				<img src={post.image} alt={post.title} class="post-hero-image" width="780" height="439" />
 			</div>
 		)}
-		<article class="post-content" data-post-content set:html={post.content} />
+		<article class="post-content" data-post-content set:html={postContent} />
 	</main>
 	<SiteFooter locale={locale} />
 </Layout>
