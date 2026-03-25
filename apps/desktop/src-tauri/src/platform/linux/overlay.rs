@@ -3,7 +3,7 @@ use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 
-use crate::domain::OverlayPhase;
+use crate::domain::{OverlayPhase, PillWindowSize};
 
 pub struct PillProcess {
     _child: Child,
@@ -76,6 +76,24 @@ pub fn notify_style_info(app: &tauri::AppHandle, count: u32, name: &str) {
         })) {
             pill.send(&json);
         }
+    }
+}
+
+pub fn notify_pill_window_size(app: &tauri::AppHandle, size: &PillWindowSize) {
+    if let Some(pill) = app.try_state::<std::sync::Arc<PillProcess>>() {
+        let size_str = match size {
+            PillWindowSize::Dictation => "dictation",
+            PillWindowSize::AssistantCompact => "assistant_compact",
+            PillWindowSize::AssistantExpanded => "assistant_expanded",
+            PillWindowSize::AssistantTyping => "assistant_typing",
+        };
+        pill.send(&format!(r#"{{"type":"window_size","size":"{size_str}"}}"#));
+    }
+}
+
+pub fn notify_assistant_state(app: &tauri::AppHandle, payload: &str) {
+    if let Some(pill) = app.try_state::<std::sync::Arc<PillProcess>>() {
+        pill.send(payload);
     }
 }
 
@@ -176,6 +194,41 @@ fn start_stdout_reader(app: tauri::AppHandle, reader: std::io::BufReader<ChildSt
                 Ok(_) => {
                     if line.contains("\"click\"") {
                         let _ = app.emit_to("main", "on-click-dictate", ());
+                    } else if line.contains("\"agent_talk\"") {
+                        let _ = app.emit_to("main", "on-click-agent-talk", ());
+                    } else if line.contains("\"assistant_close\"") {
+                        let _ = app.emit_to("main", "assistant-mode-close", ());
+                    } else if line.contains("\"enable_type_mode\"") {
+                        let _ = app.emit_to("main", "assistant-enable-type-mode", ());
+                    } else if line.contains("\"cancel_dictation\"") {
+                        let _ = app.emit_to("main", "cancel-dictation", ());
+                    } else if line.contains("\"typed_message\"") {
+                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
+                            if let Some(text) = val.get("text").and_then(|v| v.as_str()) {
+                                let payload = serde_json::json!({ "text": text });
+                                let _ = app.emit_to("main", "assistant-typed-message", payload);
+                            }
+                        }
+                    } else if line.contains("\"open_conversation\"") {
+                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
+                            if let Some(id) = val.get("conversation_id").and_then(|v| v.as_str()) {
+                                let payload = serde_json::json!({ "conversationId": id });
+                                let _ = app.emit_to("main", "open-pill-conversation", payload);
+                            }
+                        }
+                        let _ = app.emit_to("main", "assistant-mode-close", ());
+                    } else if line.contains("\"resolve_permission\"") {
+                        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
+                            let permission_id = val.get("permission_id").and_then(|v| v.as_str()).unwrap_or("");
+                            let status = val.get("status").and_then(|v| v.as_str()).unwrap_or("denied");
+                            let always_allow = val.get("always_allow").and_then(|v| v.as_bool()).unwrap_or(false);
+                            let payload = serde_json::json!({
+                                "permissionId": permission_id,
+                                "status": status,
+                                "alwaysAllow": always_allow,
+                            });
+                            let _ = app.emit_to("main", "overlay-resolve-permission", payload);
+                        }
                     } else if line.contains("\"style_switch\"") {
                         if line.contains("\"forward\"") {
                             let _ = app.emit_to("main", "tone-switch-forward", ());
