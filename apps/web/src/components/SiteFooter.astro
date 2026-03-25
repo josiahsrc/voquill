@@ -1,6 +1,7 @@
 ---
 import type { Locale } from '../i18n/translations';
 import { t } from '../i18n/translations';
+import { localePath } from '../utils/paths';
 import DownloadButton from './DownloadButton.astro';
 
 interface Props {
@@ -23,9 +24,9 @@ const currentYear = new Date().getFullYear();
 <div class="page-meta">
 	<span>&copy; {currentYear} Handaptive LLC</span>
 	<div class="page-links">
-		<a href={`/${locale}/privacy`}>{i18n.footerPrivacy}</a>
-		<a href={`/${locale}/terms`}>{i18n.footerTerms}</a>
-		<a href={`/${locale}/contact`}>{i18n.footerContact}</a>
+		<a href={localePath(locale, '/privacy')}>{i18n.footerPrivacy}</a>
+		<a href={localePath(locale, '/terms')}>{i18n.footerTerms}</a>
+		<a href={localePath(locale, '/contact')}>{i18n.footerContact}</a>
 	</div>
 </div>
 
