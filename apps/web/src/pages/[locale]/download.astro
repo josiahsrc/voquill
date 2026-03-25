@@ -3,11 +3,11 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import DownloadButton from '../../components/DownloadButton.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
-import type { Locale } from '../../types/locale';
+import { locales, type Locale } from '../../types/locale';
 import { t } from '../../i18n/translations';
 
 export function getStaticPaths() {
-	return [{ params: { locale: 'en' } }, { params: { locale: 'es' } }];
+	return locales.map((locale) => ({ params: { locale } }));
 }
 
 const locale = Astro.params.locale as Locale;

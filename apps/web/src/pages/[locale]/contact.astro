@@ -3,10 +3,10 @@ import { marked } from 'marked';
 import fs from 'node:fs';
 import path from 'node:path';
 import LegalLayout from '../../layouts/LegalLayout.astro';
-import type { Locale } from '../../types/locale';
+import { locales, type Locale } from '../../types/locale';
 
 export function getStaticPaths() {
-	return [{ params: { locale: 'en' } }, { params: { locale: 'es' } }];
+	return locales.map((locale) => ({ params: { locale } }));
 }
 
 const locale = Astro.params.locale as Locale;

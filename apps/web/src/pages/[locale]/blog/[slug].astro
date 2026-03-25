@@ -3,11 +3,10 @@ import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
 import SiteFooter from '../../../components/SiteFooter.astro';
 import { getAllBlogPosts, getBlogPost, formatBlogDate } from '../../../lib/blog';
-import type { Locale } from '../../../types/locale';
+import { locales, type Locale } from '../../../types/locale';
 import { t } from '../../../i18n/translations';
 
 export function getStaticPaths() {
-	const locales = ['en', 'es'] as const;
 	const posts = getAllBlogPosts();
 	return locales.flatMap((locale) =>
 		posts.map((post) => ({
