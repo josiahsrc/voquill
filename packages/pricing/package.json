@@ -1,6 +1,6 @@
 {
   "name": "@voquill/pricing",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shared pricing utilities",
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
   ],
   "peerDependencies": {},
   "devDependencies": {
-    "@voquill/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "^0.1.3",
     "typescript": "5.9.2"
   },
   "publishConfig": {

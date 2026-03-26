@@ -1,6 +1,6 @@
 {
   "name": "@voquill/utilities",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shared utility functions",
   "repository": {
     "type": "git",
@@ -20,10 +20,10 @@
     "dist"
   ],
   "dependencies": {
-    "@voquill/types": "workspace:*"
+    "@voquill/types": "^0.1.3"
   },
   "devDependencies": {
-    "@voquill/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "^0.1.3",
     "typescript": "5.9.2",
     "vite": "^7.1.12",
     "vitest": "^4.0.6"

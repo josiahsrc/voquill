@@ -1,6 +1,6 @@
 {
   "name": "@voquill/functions",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shared callable function helpers for Voquill apps.",
   "repository": {
     "type": "git",
@@ -18,14 +18,14 @@
     "dist"
   ],
   "dependencies": {
-    "@voquill/types": "workspace:*",
+    "@voquill/types": "^0.1.3",
     "zod": "^3.25.76"
   },
   "peerDependencies": {
     "firebase": "^11.1.0"
   },
   "devDependencies": {
-    "@voquill/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "^0.1.3",
     "firebase": "^11.1.0",
     "typescript": "5.9.2"
   },
