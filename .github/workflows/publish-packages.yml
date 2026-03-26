@@ -68,7 +68,7 @@ jobs:
             else
               echo "Publishing ${name}@${version}..."
               cd "packages/${dir}"
-              npm publish --access public
+              npm publish --access public --provenance
               cd ../..
             fi
           }
