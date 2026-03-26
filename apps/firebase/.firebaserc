@@ -1,7 +1,0 @@
-{
-  "projects": {
-    "prod": "voquill-prod",
-    "dev": "voquill-dev",
-    "default": "voquill-dev"
-  }
-}
