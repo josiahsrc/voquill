@@ -5,7 +5,7 @@ import {
   PostProcessingMode,
   TranscriptionMode,
   UserPreferences,
-} from "@repo/types";
+} from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getEffectivePillVisibility, LOCAL_USER_ID } from "../utils/user.utils";
 import { BaseRepo } from "./base.repo";

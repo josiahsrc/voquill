@@ -10,7 +10,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { getRec } from "@repo/utilities";
+import { getRec } from "@voquill/utilities";
 import { FormattedMessage } from "react-intl";
 import { openToneEditorDialog } from "../../actions/tone.actions";
 import { produceAppState, useAppStore } from "../../store";

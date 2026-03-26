@@ -1,4 +1,4 @@
-import { HandlerOutput } from "@repo/functions";
+import { HandlerOutput } from "@voquill/functions";
 import {
   ApiKey,
   AppTarget,
@@ -20,7 +20,7 @@ import {
   Transcription,
   User,
   UserPreferences,
-} from "@repo/types";
+} from "@voquill/types";
 import { AuthUser } from "../types/auth.types";
 import { Vector2 } from "../types/math.types";
 import { OverlayPhase } from "../types/overlay.types";

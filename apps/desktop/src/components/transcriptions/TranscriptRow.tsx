@@ -13,7 +13,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { getRec } from "@repo/utilities";
+import { getRec } from "@voquill/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { useCallback, useMemo } from "react";

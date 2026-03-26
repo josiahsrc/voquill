@@ -1,4 +1,4 @@
-import type { ToolInfo } from "@repo/types";
+import type { ToolInfo } from "@voquill/types";
 import type { BaseTool } from "./base.tool";
 import { EndConversationTool } from "./end-conversation.tool";
 import { GetAccessibilityInfoTool } from "./get-accessibility-info.tool";

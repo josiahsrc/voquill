@@ -1,6 +1,6 @@
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { Button } from "@mui/material";
-import { Term } from "@repo/types";
+import { Term } from "@voquill/types";
 import dayjs from "dayjs";
 import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";

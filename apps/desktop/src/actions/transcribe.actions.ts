@@ -2,8 +2,8 @@ import {
   Nullable,
   Transcription,
   TranscriptionAudioSnapshot,
-} from "@repo/types";
-import { countWords, dedup } from "@repo/utilities";
+} from "@voquill/types";
+import { countWords, dedup } from "@voquill/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import {

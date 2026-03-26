@@ -2,7 +2,7 @@ import { DeleteOutlineRounded, MoreVertRounded } from "@mui/icons-material";
 import { Box, IconButton, ListItemButton, Typography } from "@mui/material";
 import { useState } from "react";
 import { useIntl } from "react-intl";
-import { Conversation } from "@repo/types";
+import { Conversation } from "@voquill/types";
 import { formatRelativeTime } from "../../utils/date.utils";
 import {
   MenuPopoverBuilder,

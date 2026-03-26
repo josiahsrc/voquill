@@ -1,4 +1,4 @@
-import { Nullable } from "@repo/types";
+import { Nullable } from "@voquill/types";
 import { ActionStatus } from "../types/state.types";
 
 export type TranscriptionsState = {

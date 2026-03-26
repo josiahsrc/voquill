@@ -1,4 +1,4 @@
-import { Nullable } from "@repo/types";
+import { Nullable } from "@voquill/types";
 import { getIsDevMode } from "../utils/env.utils";
 import { PricingPlan } from "../utils/price.utils";
 

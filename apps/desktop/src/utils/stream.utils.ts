@@ -1,4 +1,4 @@
-import type { LlmStreamEvent } from "@repo/types";
+import type { LlmStreamEvent } from "@voquill/types";
 
 export async function* readNdjsonStream(
   response: Response,

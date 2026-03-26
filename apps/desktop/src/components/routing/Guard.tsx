@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useIsOnboarded } from "../../hooks/user.hooks";
 import { Redirect } from "./Redirectors";
-import { getRec } from "@repo/utilities";
+import { getRec } from "@voquill/utilities";
 import { useAppStore } from "../../store";
 import { getIsLoggedIn } from "../../utils/user.utils";
 

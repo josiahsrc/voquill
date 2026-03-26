@@ -1,5 +1,5 @@
-import type { HandlerInput, HandlerOutput } from "@repo/functions";
-import type { AuthContext, Nullable } from "@repo/types";
+import type { HandlerInput, HandlerOutput } from "@voquill/functions";
+import type { AuthContext, Nullable } from "@voquill/types";
 import { v4 as uuid } from "uuid";
 import {
   listOidcProviders,

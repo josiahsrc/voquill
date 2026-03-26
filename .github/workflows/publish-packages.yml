@@ -1,0 +1,84 @@
+name: Publish Packages
+
+on:
+  push:
+    branches:
+      - main
+      - refactor-core
+    paths:
+      - "packages/types/**"
+      - "packages/utilities/**"
+      - "packages/functions/**"
+      - "packages/firemix/**"
+      - "packages/pricing/**"
+      - "packages/voice-ai/**"
+      - "packages/typescript-config/**"
+      - "packages/eslint-config/**"
+      - ".github/workflows/publish-packages.yml"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build and publish packages
+    runs-on: ubuntu-latest
+    environment: packages
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm exec turbo run build \
+            --filter='@voquill/types...' \
+            --filter='@voquill/utilities...' \
+            --filter='@voquill/functions...' \
+            --filter='@voquill/firemix...' \
+            --filter='@voquill/pricing...' \
+            --filter='@voquill/voice-ai...'
+
+      - name: Publish packages
+        run: |
+          set -euo pipefail
+
+          publish_pkg() {
+            local dir=$1
+            local name=$2
+            local version
+            version=$(node -p "require('./packages/${dir}/package.json').version")
+
+            if npm view "${name}@${version}" version 2>/dev/null; then
+              echo "${name}@${version} already published, skipping."
+            else
+              echo "Publishing ${name}@${version}..."
+              cd "packages/${dir}"
+              pnpm publish --access public --provenance --no-git-checks
+              cd ../..
+            fi
+          }
+
+          # Publish in dependency order (config packages first, then leaf → composite)
+          publish_pkg typescript-config "@voquill/typescript-config"
+          publish_pkg eslint-config     "@voquill/eslint-config"
+          publish_pkg types             "@voquill/types"
+          publish_pkg pricing           "@voquill/pricing"
+          publish_pkg utilities         "@voquill/utilities"
+          publish_pkg functions         "@voquill/functions"
+          publish_pkg voice-ai          "@voquill/voice-ai"
+          publish_pkg firemix           "@voquill/firemix"

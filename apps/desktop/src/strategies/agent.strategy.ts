@@ -1,4 +1,4 @@
-import type { Nullable } from "@repo/types";
+import type { Nullable } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { createConversation, sendChatMessage } from "../actions/chat.actions";
 import { showToast } from "../actions/toast.actions";

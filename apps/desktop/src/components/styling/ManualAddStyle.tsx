@@ -3,7 +3,7 @@ import Add from "@mui/icons-material/Add";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import { Button, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import type { Tone } from "@repo/types";
+import type { Tone } from "@voquill/types";
 import { useCallback, useMemo } from "react";
 import { FormattedMessage } from "react-intl";
 import { openToneEditorDialog } from "../../actions/tone.actions";

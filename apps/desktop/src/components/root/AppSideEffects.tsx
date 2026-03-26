@@ -4,8 +4,8 @@ import {
   Member,
   Nullable,
   User,
-} from "@repo/types";
-import { getRec, listify } from "@repo/utilities";
+} from "@voquill/types";
+import { getRec, listify } from "@voquill/utilities";
 import { getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";

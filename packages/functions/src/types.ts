@@ -34,7 +34,7 @@ import {
   type SttProviderInput,
   type User,
   type UserWithAuth,
-} from "@repo/types";
+} from "@voquill/types";
 import { z } from "zod";
 
 export const CLOUD_MODELS = ["low", "medium", "large"] as const;

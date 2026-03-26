@@ -5,7 +5,7 @@ import {
   StylingMode,
   User,
   UserPreferences,
-} from "@repo/types";
+} from "@voquill/types";
 import dayjs from "dayjs";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";

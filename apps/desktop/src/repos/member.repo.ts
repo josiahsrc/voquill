@@ -1,5 +1,5 @@
-import { invokeHandler } from "@repo/functions";
-import { Member, Nullable } from "@repo/types";
+import { invokeHandler } from "@voquill/functions";
+import { Member, Nullable } from "@voquill/types";
 import { invokeEnterprise } from "../utils/enterprise.utils";
 import { BaseRepo } from "./base.repo";
 

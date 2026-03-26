@@ -1,4 +1,4 @@
-import type { MetricsRange } from "@repo/types";
+import type { MetricsRange } from "@voquill/types";
 import { produceAppState } from "../store";
 import { invoke } from "../utils/api.utils";
 import { showErrorSnackbar } from "./app.actions";

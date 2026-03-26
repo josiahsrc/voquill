@@ -1,7 +1,7 @@
 import { CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { FormattedMessage } from "react-intl";
-import { isDefined } from "@repo/utilities";
+import { isDefined } from "@voquill/utilities";
 
 type SectionProps = {
   title: React.ReactNode;

@@ -1,4 +1,4 @@
-import { convertFloat32ToPCM16 } from "@repo/voice-ai";
+import { convertFloat32ToPCM16 } from "@voquill/voice-ai";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { getAppState } from "../store";
 import {

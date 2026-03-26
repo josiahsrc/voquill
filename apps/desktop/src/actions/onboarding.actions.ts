@@ -1,4 +1,4 @@
-import { User, UserPreferences } from "@repo/types";
+import { User, UserPreferences } from "@voquill/types";
 import { detectLocale } from "../i18n/intl";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import {

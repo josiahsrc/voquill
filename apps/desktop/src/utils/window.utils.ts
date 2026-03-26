@@ -1,4 +1,4 @@
-import { Nullable } from "@repo/types";
+import { Nullable } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 
 const SURFACE_WINDOW_FLAG_KEY = "voquill:surface-main-window-on-launch";

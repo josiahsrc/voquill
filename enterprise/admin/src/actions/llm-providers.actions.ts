@@ -1,4 +1,4 @@
-import type { LlmProviderInput } from "@repo/types";
+import type { LlmProviderInput } from "@voquill/types";
 import { produceAppState } from "../store";
 import { invoke } from "../utils/api.utils";
 import { registerLlmProviders } from "../utils/app.utils";

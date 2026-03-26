@@ -4,7 +4,7 @@ import type {
   MetricsPerUser,
   MetricsRange,
   MetricsSummary,
-} from "@repo/types";
+} from "@voquill/types";
 import type { ActionStatus } from "./login.state";
 
 export type MetricsState = {

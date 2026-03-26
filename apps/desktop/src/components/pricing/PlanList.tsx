@@ -8,7 +8,7 @@ import {
   Typography,
   type SxProps,
 } from "@mui/material";
-import { MemberPlan } from "@repo/types";
+import { MemberPlan } from "@voquill/types";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { loadPrices } from "../../actions/pricing.actions";

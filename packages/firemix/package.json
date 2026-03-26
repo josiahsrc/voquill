@@ -1,7 +1,12 @@
 {
-  "name": "@repo/firemix",
-  "version": "0.1.0",
+  "name": "@voquill/firemix",
+  "version": "0.1.3",
   "description": "Shared firemix utilities",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voquill/voquill.git",
+    "directory": "packages/firemix"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -16,13 +21,16 @@
     "firebase": "^11.1.0"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "workspace:*",
     "firebase": "^11.1.0",
     "typescript": "5.9.2"
   },
   "dependencies": {
     "@firemix/core": "^0.1.7",
-    "@repo/types": "workspace:*",
-    "@repo/utilities": "workspace:*"
+    "@voquill/types": "workspace:*",
+    "@voquill/utilities": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

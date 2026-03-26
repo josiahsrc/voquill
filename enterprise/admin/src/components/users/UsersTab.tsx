@@ -14,7 +14,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import type { UserWithAuth } from "@repo/types";
+import type { UserWithAuth } from "@voquill/types";
 import { useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { loadUsers, setUserAdmin } from "../../actions/users.actions";

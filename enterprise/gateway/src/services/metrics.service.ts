@@ -1,5 +1,5 @@
-import type { HandlerInput, HandlerOutput } from "@repo/functions";
-import type { AuthContext, Nullable } from "@repo/types";
+import type { HandlerInput, HandlerOutput } from "@voquill/functions";
+import type { AuthContext, Nullable } from "@voquill/types";
 import { getMetricsSummary } from "../repo/metrics.repo";
 import { listAllUsers } from "../repo/user.repo";
 import { requireAuth } from "../utils/auth.utils";

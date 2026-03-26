@@ -2,7 +2,7 @@ import type {
   PairedRemoteDevice,
   RemoteDevicePlatform,
   RemoteReceiverStatus,
-} from "@repo/types";
+} from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState, produceAppState } from "../store";
 import { registerPairedRemoteDevices } from "../utils/app.utils";

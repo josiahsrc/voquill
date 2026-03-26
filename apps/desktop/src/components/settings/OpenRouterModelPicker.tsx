@@ -14,8 +14,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { OpenRouterModel } from "@repo/types";
-import { OPENROUTER_FAVORITE_MODELS } from "@repo/voice-ai";
+import { OpenRouterModel } from "@voquill/types";
+import { OPENROUTER_FAVORITE_MODELS } from "@voquill/voice-ai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { Virtuoso } from "react-virtuoso";

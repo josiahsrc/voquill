@@ -10,7 +10,7 @@ import {
   Stack,
   Switch,
 } from "@mui/material";
-import type { DictationPillVisibility, StylingMode } from "@repo/types";
+import type { DictationPillVisibility, StylingMode } from "@voquill/types";
 import { ChangeEvent } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {

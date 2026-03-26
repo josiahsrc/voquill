@@ -1,4 +1,4 @@
-import type { HandlerOutput } from "@repo/functions";
+import type { HandlerOutput } from "@voquill/functions";
 
 // These limits aren't necessary for enterprise, but are kept here to implement the schema for enterprise.
 const WORD_LIMIT = 5_000_000;
