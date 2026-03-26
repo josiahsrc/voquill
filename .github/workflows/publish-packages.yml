@@ -38,6 +38,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -67,7 +68,7 @@ jobs:
             else
               echo "Publishing ${name}@${version}..."
               cd "packages/${dir}"
-              npm publish --access public --provenance
+              npm publish --access public
               cd ../..
             fi
           }
