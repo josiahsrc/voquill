@@ -186,15 +186,7 @@ export const AudioPlayerPill = ({
       console.error("Failed to toggle audio playback", error);
       setIsPlaying(false);
       setPlaybackProgress(0);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-            ? error
-            : intl.formatMessage({
-                defaultMessage: "Unable to play audio snippet.",
-              });
-      showErrorSnackbar(errorMessage);
+      showErrorSnackbar(String(error));
     }
   }, [transcriptionId, intl]);
 

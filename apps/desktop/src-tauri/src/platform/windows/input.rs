@@ -10,6 +10,8 @@ use windows::Win32::UI::WindowsAndMessaging::{
     GetClassNameW, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
 };
 
+pub(crate) fn warm_runtime_helpers() {}
+
 #[derive(Clone, Debug)]
 pub struct WindowTargetInfo {
     pub class_name: Option<String>,
