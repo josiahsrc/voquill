@@ -1,7 +1,7 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { DatabaseTone, Nullable } from "@repo/types";
+import { mixpath } from "@voquill/firemix";
+import { HandlerInput, HandlerOutput } from "@voquill/functions";
+import { DatabaseTone, Nullable } from "@voquill/types";
 import { AuthData } from "firebase-functions/tasks";
 import { checkAccess } from "../utils/check.utils";
 import { toneFromDatabase, toneToDatabase } from "../utils/type.utils";

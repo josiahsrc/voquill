@@ -1,4 +1,4 @@
-import type { Nullable, User, UserWithAuth } from "@repo/types";
+import type { Nullable, User, UserWithAuth } from "@voquill/types";
 import type { UserRow } from "../types/user.types";
 import { getPool } from "../utils/db.utils";
 

@@ -1,4 +1,4 @@
-import type { AppTarget, Nullable } from "@repo/types";
+import type { AppTarget, Nullable } from "@voquill/types";
 import type {
   PostProcessMetadata,
   TranscribeAudioMetadata,

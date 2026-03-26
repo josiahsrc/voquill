@@ -8,8 +8,8 @@ import {
   TermDoc,
   ToneDoc,
   Transcription,
-} from "@repo/types";
-import { listify } from "@repo/utilities";
+} from "@voquill/types";
+import { listify } from "@voquill/utilities";
 
 export const members = (
   memberId?: Nullable<string>,

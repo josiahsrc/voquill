@@ -3,8 +3,8 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "groq-sdk/resources/chat/completions";
-import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse, LlmChatInput, LlmStreamEvent } from "@repo/types";
+import { retry, countWords } from "@voquill/utilities";
+import type { JsonResponse, LlmChatInput, LlmStreamEvent } from "@voquill/types";
 import OpenAI from "openai";
 import { openaiCompatibleStreamChat } from "./openai.utils";
 

@@ -1,6 +1,6 @@
-import type { CloudModel } from "@repo/functions";
-import { Nullable } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import type { CloudModel } from "@voquill/functions";
+import { Nullable } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { getAppState } from "../store";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { getIsEmulators } from "../utils/env.utils";

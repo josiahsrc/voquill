@@ -1,5 +1,5 @@
 {
-  "name": "@repo/utilities",
+  "name": "@voquill/utilities",
   "version": "0.1.0",
   "description": "Shared utility functions",
   "main": "dist/index.js",
@@ -15,12 +15,15 @@
     "dist"
   ],
   "dependencies": {
-    "@repo/types": "workspace:*"
+    "@voquill/types": "workspace:*"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "workspace:*",
     "typescript": "5.9.2",
     "vite": "^7.1.12",
     "vitest": "^4.0.6"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

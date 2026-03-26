@@ -1,4 +1,4 @@
-import { FullConfig, Member, MemberPlan } from "@repo/types";
+import { FullConfig, Member, MemberPlan } from "@voquill/types";
 
 export const TRIAL_DURATION_DAYS = 7;
 

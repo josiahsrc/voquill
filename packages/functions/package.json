@@ -1,5 +1,5 @@
 {
-  "name": "@repo/functions",
+  "name": "@voquill/functions",
   "version": "0.1.0",
   "description": "Shared callable function helpers for Voquill apps.",
   "main": "dist/index.js",
@@ -13,15 +13,18 @@
     "dist"
   ],
   "dependencies": {
-    "@repo/types": "workspace:*",
+    "@voquill/types": "workspace:*",
     "zod": "^3.25.76"
   },
   "peerDependencies": {
     "firebase": "^11.1.0"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "workspace:*",
     "firebase": "^11.1.0",
     "typescript": "5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

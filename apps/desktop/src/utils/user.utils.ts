@@ -4,8 +4,8 @@ import {
   Nullable,
   User,
   UserPreferences,
-} from "@repo/types";
-import { countWords, getRec } from "@repo/utilities";
+} from "@voquill/types";
+import { countWords, getRec } from "@voquill/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { detectLocale, matchSupportedLocale } from "../i18n";

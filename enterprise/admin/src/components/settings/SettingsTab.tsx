@@ -12,7 +12,7 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
-import type { EnterpriseConfig, EnterpriseStylingMode } from "@repo/types";
+import type { EnterpriseConfig, EnterpriseStylingMode } from "@voquill/types";
 import { FormattedMessage, useIntl } from "react-intl";
 import { signOut } from "../../actions/login.actions";
 import { updateEnterpriseConfig } from "../../actions/settings.actions";

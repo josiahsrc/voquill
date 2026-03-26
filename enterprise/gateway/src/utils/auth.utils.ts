@@ -1,4 +1,4 @@
-import type { Auth, AuthContext, Nullable } from "@repo/types";
+import type { Auth, AuthContext, Nullable } from "@voquill/types";
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "./env.utils";
 import { UnauthorizedError } from "./error.utils";

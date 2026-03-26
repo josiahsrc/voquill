@@ -19,7 +19,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { OpenRouterProviderRouting as ProviderRoutingType } from "@repo/types";
+import { OpenRouterProviderRouting as ProviderRoutingType } from "@voquill/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {

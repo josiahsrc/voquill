@@ -1,6 +1,6 @@
 import { firemix, Nullable } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { Contact } from "@repo/types";
+import { mixpath } from "@voquill/firemix";
+import { Contact } from "@voquill/types";
 import * as admin from "firebase-admin";
 import { ContactProperties, EventProperties, LoopsClient } from "loops";
 import { getLoopsApiKey, isNotEmulated } from "./env.utils";

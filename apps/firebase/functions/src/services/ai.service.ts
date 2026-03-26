@@ -1,7 +1,7 @@
-import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { Nullable } from "@repo/types";
-import { countWords } from "@repo/utilities";
-import { groqGenerateTextResponse, groqTranscribeAudio } from "@repo/voice-ai";
+import { HandlerInput, HandlerOutput } from "@voquill/functions";
+import { Nullable } from "@voquill/types";
+import { countWords } from "@voquill/utilities";
+import { groqGenerateTextResponse, groqTranscribeAudio } from "@voquill/voice-ai";
 import { AuthData } from "firebase-functions/tasks";
 import { mapCloudModelToGroqModel } from "../utils/ai.utils";
 import { checkAccess } from "../utils/check.utils";

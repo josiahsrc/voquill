@@ -1,4 +1,4 @@
-import type { Term } from "@repo/types";
+import type { Term } from "@voquill/types";
 import { invoke } from "../utils/api.utils";
 import { produceAppState } from "../store";
 import { registerTerms } from "../utils/app.utils";

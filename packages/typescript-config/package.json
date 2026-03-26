@@ -1,8 +1,10 @@
 {
-  "name": "@repo/typescript-config",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@voquill/typescript-config",
+  "version": "0.1.0",
   "license": "MIT",
+  "files": [
+    "*.json"
+  ],
   "publishConfig": {
     "access": "public"
   }

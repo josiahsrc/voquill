@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ToolInfo } from "@repo/types";
+import type { ToolInfo } from "@voquill/types";
 import { BaseTool } from "./base.tool";
 import {
   getToolAlwaysAllow,

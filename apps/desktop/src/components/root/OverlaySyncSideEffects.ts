@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
-import type { ChatMessage, ToolPermission } from "@repo/types";
+import type { ChatMessage, ToolPermission } from "@voquill/types";
 import { isEqual } from "lodash-es";
 import { useEffect, useRef } from "react";
 import { useTauriListen } from "../../hooks/tauri.hooks";

@@ -14,7 +14,7 @@ import {
 	UpsertFlaggedAudioInputZod,
 	UpsertTermInputZod,
 	UpsertToneInputZod,
-} from "@repo/functions";
+} from "@voquill/functions";
 import * as admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";

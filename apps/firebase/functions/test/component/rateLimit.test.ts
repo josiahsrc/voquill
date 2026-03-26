@@ -1,4 +1,4 @@
-import { invokeHandler } from "@repo/functions";
+import { invokeHandler } from "@voquill/functions";
 import * as admin from "firebase-admin";
 import { buildTerm, buildUser } from "../helpers/entities";
 import {

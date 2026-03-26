@@ -1,8 +1,8 @@
-import type { CloudModel, StreamHandlerName } from "@repo/functions";
-import { AiStreamChatInputZod } from "@repo/functions";
+import type { CloudModel, StreamHandlerName } from "@voquill/functions";
+import { AiStreamChatInputZod } from "@voquill/functions";
 import { z } from "zod";
-import type { LlmChatInput, LlmStreamEvent } from "@repo/types";
-import { groqStreamChat } from "@repo/voice-ai";
+import type { LlmChatInput, LlmStreamEvent } from "@voquill/types";
+import { groqStreamChat } from "@voquill/voice-ai";
 import * as admin from "firebase-admin";
 import type { AuthData } from "firebase-functions/tasks";
 import { onRequest } from "firebase-functions/v2/https";

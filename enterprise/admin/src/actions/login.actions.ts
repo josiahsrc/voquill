@@ -1,4 +1,4 @@
-import type { AuthContext } from "@repo/types";
+import type { AuthContext } from "@voquill/types";
 import { jwtDecode } from "jwt-decode";
 import { getIntl } from "../i18n/intl";
 import { INITIAL_LOGIN_STATE, type LoginMode } from "../state/login.state";

@@ -1,7 +1,7 @@
-import type { HandlerOutput } from "@repo/functions";
-import { PRICE_KEYS, Prices, type PriceKey } from "@repo/pricing";
-import { MemberPlan } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import type { HandlerOutput } from "@voquill/functions";
+import { PRICE_KEYS, Prices, type PriceKey } from "@voquill/pricing";
+import { MemberPlan } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { getStripeRepo } from "../repos";
 import type { AppState } from "../state/app.state";
 import { isDev, isEmulators, isProd } from "./env.utils";

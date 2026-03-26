@@ -1,4 +1,4 @@
-import { invokeHandler } from "@repo/functions";
+import { invokeHandler } from "@voquill/functions";
 import { signOutUser } from "../helpers/firebase";
 import { setUp, tearDown } from "../helpers/setup";
 

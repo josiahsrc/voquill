@@ -9,7 +9,7 @@ import {
   Switch,
   TextField,
 } from "@mui/material";
-import type { OidcProvider } from "@repo/types";
+import type { OidcProvider } from "@voquill/types";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { upsertOidcProvider } from "../../actions/oidc-providers.actions";

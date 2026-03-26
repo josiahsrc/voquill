@@ -8,7 +8,7 @@ import {
 	tryUpdateMemberLoopsContact,
 } from "../services/member.service";
 import { LOOPS_API_KEY_VAR } from "../utils/env.utils";
-import { Member, Nullable } from "@repo/types";
+import { Member, Nullable } from "@voquill/types";
 
 // Every hour
 export const resetWordsTodayCron = onSchedule("0 * * * *", async () => {

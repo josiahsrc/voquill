@@ -1,10 +1,10 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { FULL_CONFIG, Member } from "@repo/types";
+import { mixpath } from "@voquill/firemix";
+import { FULL_CONFIG, Member } from "@voquill/types";
 import {
 	getMemberExceedsTokenLimit,
 	getMemberExceedsWordLimit,
-} from "@repo/utilities";
+} from "@voquill/utilities";
 import { AuthData } from "firebase-functions/tasks";
 import { ClientError } from "./error.utils";
 import { memberFromDatabase } from "./type.utils";

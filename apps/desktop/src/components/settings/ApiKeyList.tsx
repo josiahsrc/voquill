@@ -43,7 +43,7 @@ import {
   OPENROUTER_FAVORITE_MODELS,
   openrouterTestIntegration,
   TRANSCRIPTION_MODELS,
-} from "@repo/voice-ai";
+} from "@voquill/voice-ai";
 import { speachesTestIntegration } from "../../utils/speaches.utils";
 import { OPENAI_COMPATIBLE_DEFAULT_URL } from "../../utils/openai-compatible.utils";
 import { useCallback, useEffect, useState } from "react";

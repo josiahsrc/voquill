@@ -6,8 +6,8 @@ import type {
   LlmStreamEvent,
   LlmTool,
   LlmToolChoice,
-} from "@repo/types";
-import { countWords, retry } from "@repo/utilities";
+} from "@voquill/types";
+import { countWords, retry } from "@voquill/utilities";
 import OpenAI, { toFile } from "openai";
 import type {
   ChatCompletionContentPart,

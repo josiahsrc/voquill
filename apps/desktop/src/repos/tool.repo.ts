@@ -1,4 +1,4 @@
-import type { ToolInfo } from "@repo/types";
+import type { ToolInfo } from "@voquill/types";
 import { getAppState } from "../store";
 import { getIsPowerModeEnabled } from "../utils/assistant-mode.utils";
 import { BaseRepo } from "./base.repo";

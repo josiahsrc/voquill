@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useMemo } from "react";
-import { AppTarget } from "@repo/types";
+import { AppTarget } from "@voquill/types";
 import { FormattedMessage, useIntl } from "react-intl";
 import { setAppTargetPasteKeybind } from "../../actions/app-target.actions";
 import { produceAppState, useAppStore } from "../../store";

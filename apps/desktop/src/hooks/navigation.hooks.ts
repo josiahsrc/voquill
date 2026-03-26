@@ -1,4 +1,4 @@
-import { Nullable } from "@repo/types";
+import { Nullable } from "@voquill/types";
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { AppState } from "../state/app.state";

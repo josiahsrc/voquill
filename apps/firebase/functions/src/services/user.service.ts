@@ -1,11 +1,11 @@
-import { Nullable, User } from "@repo/types";
+import { Nullable, User } from "@voquill/types";
 import { sendLoopsEvent, updateLoopsContact } from "../utils/loops.utils";
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
+import { mixpath } from "@voquill/firemix";
 import { AuthData } from "firebase-functions/tasks";
 import { checkAccess } from "../utils/check.utils";
 import { userFromDatabase, userToDatabase } from "../utils/type.utils";
-import { HandlerInput, HandlerOutput } from "@repo/functions";
+import { HandlerInput, HandlerOutput } from "@voquill/functions";
 import { dayjsForTimezone } from "../utils/date.utils";
 
 export const tryUpdateUserLoopsContact = async (args: {

@@ -9,7 +9,7 @@ import type {
   ChatMessage,
   ToolPermission,
   ToolPermissionResolution,
-} from "@repo/types";
+} from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { emitTo } from "@tauri-apps/api/event";
 import { useEffect, useMemo, useRef, useState } from "react";

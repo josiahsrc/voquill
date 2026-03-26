@@ -8,7 +8,7 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import type { SttProvider } from "@repo/types";
+import type { SttProvider } from "@voquill/types";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { upsertSttProvider } from "../../actions/stt-providers.actions";

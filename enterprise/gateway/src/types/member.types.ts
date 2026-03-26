@@ -1,4 +1,4 @@
-import type { Nullable, MemberPlan } from "@repo/types";
+import type { Nullable, MemberPlan } from "@voquill/types";
 
 export type MemberRow = {
   id: string;

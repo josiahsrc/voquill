@@ -1,5 +1,5 @@
 {
-  "name": "@repo/firemix",
+  "name": "@voquill/firemix",
   "version": "0.1.0",
   "description": "Shared firemix utilities",
   "main": "dist/index.js",
@@ -16,13 +16,16 @@
     "firebase": "^11.1.0"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "workspace:*",
     "firebase": "^11.1.0",
     "typescript": "5.9.2"
   },
   "dependencies": {
     "@firemix/core": "^0.1.7",
-    "@repo/types": "workspace:*",
-    "@repo/utilities": "workspace:*"
+    "@voquill/types": "workspace:*",
+    "@voquill/utilities": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

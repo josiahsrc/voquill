@@ -1,6 +1,6 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { retry } from "@repo/utilities";
+import { mixpath } from "@voquill/firemix";
+import { retry } from "@voquill/utilities";
 import {
 	createUserCreds,
 	deleteMyUser,

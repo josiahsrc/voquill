@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Tone } from "@repo/types";
+import { Tone } from "@voquill/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { setAppTargetTone } from "../../actions/app-target.actions";

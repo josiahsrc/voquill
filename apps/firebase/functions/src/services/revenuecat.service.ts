@@ -1,5 +1,5 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
+import { mixpath } from "@voquill/firemix";
 import * as admin from "firebase-admin";
 import { tryInitializeMember } from "../utils/member.utils";
 

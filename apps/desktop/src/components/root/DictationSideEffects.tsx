@@ -1,4 +1,4 @@
-import { AppTarget } from "@repo/types";
+import { AppTarget } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

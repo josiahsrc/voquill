@@ -1,6 +1,6 @@
-import type { CloudModel } from "@repo/functions";
-import { getRec } from "@repo/utilities";
-import type { GenerateTextModel } from "@repo/voice-ai";
+import type { CloudModel } from "@voquill/functions";
+import { getRec } from "@voquill/utilities";
+import type { GenerateTextModel } from "@voquill/voice-ai";
 
 const CLOUD_MODEL_TO_GROQ_MODEL: Record<CloudModel, GenerateTextModel> = {
 	low: "meta-llama/llama-4-scout-17b-16e-instruct",

@@ -1,4 +1,4 @@
-import type { OidcProvider } from "@repo/types";
+import type { OidcProvider } from "@voquill/types";
 import { isDev } from "../utils/env.utils";
 
 export type ActionStatus = "loading" | "success" | "error" | "idle";

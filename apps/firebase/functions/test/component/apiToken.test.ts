@@ -1,6 +1,6 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { invokeHandler } from "@repo/functions";
+import { mixpath } from "@voquill/firemix";
+import { invokeHandler } from "@voquill/functions";
 import { signInWithCustomToken, getAuth } from "firebase/auth";
 import { buildSilenceWavBase64 } from "../helpers/audio";
 import { getFirebaseFunctionsEndpoint } from "../helpers/env";

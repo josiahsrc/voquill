@@ -4,7 +4,7 @@ import {
 	tryUpdateUserLoopsContact,
 } from "../services/user.service";
 import { LOOPS_API_KEY_VAR } from "../utils/env.utils";
-import { Nullable, User } from "@repo/types";
+import { Nullable, User } from "@voquill/types";
 
 export const onWrite = onDocumentWritten(
 	{

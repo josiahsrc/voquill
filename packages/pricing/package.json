@@ -1,5 +1,5 @@
 {
-  "name": "@repo/pricing",
+  "name": "@voquill/pricing",
   "version": "0.1.0",
   "description": "Shared pricing utilities",
   "main": "dist/index.js",
@@ -14,7 +14,10 @@
   ],
   "peerDependencies": {},
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "workspace:*",
     "typescript": "5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

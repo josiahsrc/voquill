@@ -16,7 +16,7 @@ import type {
   PairedRemoteDevice,
   RemoteDevicePlatform,
   RemoteDeviceRole,
-} from "@repo/types";
+} from "@voquill/types";
 import { ChangeEvent, useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar, showSnackbar } from "../../actions/app.actions";

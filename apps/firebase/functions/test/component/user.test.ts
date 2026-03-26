@@ -1,4 +1,4 @@
-import { invokeHandler } from "@repo/functions";
+import { invokeHandler } from "@voquill/functions";
 import { buildUser } from "../helpers/entities";
 import {
 	createUserCreds,

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { retry, countWords } from "@repo/utilities";
+import { retry, countWords } from "@voquill/utilities";
 import type {
   JsonResponse,
   LlmChatInput,
@@ -7,7 +7,7 @@ import type {
   OpenRouterModel,
   OpenRouterProvider,
   OpenRouterProviderRouting,
-} from "@repo/types";
+} from "@voquill/types";
 import { openaiCompatibleStreamChat } from "./openai.utils";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";

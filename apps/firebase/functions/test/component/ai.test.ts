@@ -1,8 +1,8 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { invokeHandler } from "@repo/functions";
-import { FULL_CONFIG } from "@repo/types";
-import { retry } from "@repo/utilities";
+import { mixpath } from "@voquill/firemix";
+import { invokeHandler } from "@voquill/functions";
+import { FULL_CONFIG } from "@voquill/types";
+import { retry } from "@voquill/utilities";
 import dayjs from "dayjs";
 import { buildSilenceWavBase64 } from "../helpers/audio";
 import {

@@ -1,4 +1,4 @@
-import type { SttProvider } from "@repo/types";
+import type { SttProvider } from "@voquill/types";
 import type { SttProviderRow } from "../types/stt-provider.types";
 import { getPool } from "../utils/db.utils";
 

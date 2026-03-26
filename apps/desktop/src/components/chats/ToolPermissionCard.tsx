@@ -1,4 +1,4 @@
-import type { ToolPermission } from "@repo/types";
+import type { ToolPermission } from "@voquill/types";
 import {
   resolveToolPermission,
   setToolAlwaysAllow,

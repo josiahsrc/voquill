@@ -1,7 +1,7 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { invokeHandler } from "@repo/functions";
-import { FULL_CONFIG, type LlmStreamEvent } from "@repo/types";
+import { mixpath } from "@voquill/firemix";
+import { invokeHandler } from "@voquill/functions";
+import { FULL_CONFIG, type LlmStreamEvent } from "@voquill/types";
 import dayjs from "dayjs";
 import { getAuth } from "firebase/auth";
 import { getFirebaseFunctionsEndpoint } from "../helpers/env";

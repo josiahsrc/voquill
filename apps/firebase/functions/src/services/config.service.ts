@@ -1,5 +1,5 @@
-import { HandlerOutput } from "@repo/functions";
-import { FULL_CONFIG } from "@repo/types";
+import { HandlerOutput } from "@voquill/functions";
+import { FULL_CONFIG } from "@voquill/types";
 
 const polishedTone = `
 - WORD CHOICE: Preserve the speaker's word choice

@@ -1,7 +1,7 @@
 import { firemix, FiremixBatchDelegate, FiremixResult } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { DatabaseUser, Member, Nullable } from "@repo/types";
+import { mixpath } from "@voquill/firemix";
+import { HandlerInput, HandlerOutput } from "@voquill/functions";
+import { DatabaseUser, Member, Nullable } from "@voquill/types";
 import dayjs from "dayjs";
 import { AuthData } from "firebase-functions/tasks";
 import { whereNotNull } from "../utils/array.utils";

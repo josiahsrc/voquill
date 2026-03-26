@@ -47,21 +47,6 @@ importers:
       '@repo/agent':
         specifier: workspace:*
         version: link:../../packages/agent
-      '@repo/functions':
-        specifier: workspace:*
-        version: link:../../packages/functions
-      '@repo/pricing':
-        specifier: workspace:*
-        version: link:../../packages/pricing
-      '@repo/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      '@repo/utilities':
-        specifier: workspace:*
-        version: link:../../packages/utilities
-      '@repo/voice-ai':
-        specifier: workspace:*
-        version: link:../../packages/voice-ai
       '@stripe/react-stripe-js':
         specifier: ^3.7.0
         version: 3.10.0(@stripe/stripe-js@7.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -95,6 +80,21 @@ importers:
       '@tauri-apps/plugin-updater':
         specifier: ~2.9.0
         version: 2.9.0
+      '@voquill/functions':
+        specifier: workspace:*
+        version: link:../../packages/functions
+      '@voquill/pricing':
+        specifier: workspace:*
+        version: link:../../packages/pricing
+      '@voquill/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@voquill/utilities':
+        specifier: workspace:*
+        version: link:../../packages/utilities
+      '@voquill/voice-ai':
+        specifier: workspace:*
+        version: link:../../packages/voice-ai
       chroma-js:
         specifier: ^3.2.0
         version: 3.2.0
@@ -255,22 +255,22 @@ importers:
       '@firemix/mixed':
         specifier: ^0.1.7
         version: 0.1.16(firebase-admin@13.7.0)(firebase@12.10.0)
-      '@repo/firemix':
+      '@voquill/firemix':
         specifier: workspace:*
         version: link:../../../packages/firemix
-      '@repo/functions':
+      '@voquill/functions':
         specifier: workspace:*
         version: link:../../../packages/functions
-      '@repo/pricing':
+      '@voquill/pricing':
         specifier: workspace:*
         version: link:../../../packages/pricing
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../../../packages/types
-      '@repo/utilities':
+      '@voquill/utilities':
         specifier: workspace:*
         version: link:../../../packages/utilities
-      '@repo/voice-ai':
+      '@voquill/voice-ai':
         specifier: workspace:*
         version: link:../../../packages/voice-ai
       dayjs:
@@ -328,12 +328,6 @@ importers:
         specifier: ^3.24.6
         version: 3.25.1(zod@3.25.76)
     devDependencies:
-      '@repo/eslint-config':
-        specifier: workspace:*
-        version: link:../../../packages/eslint-config
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../../../packages/typescript-config
       '@types/node':
         specifier: ^22.15.3
         version: 22.19.15
@@ -346,6 +340,12 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
+      '@voquill/eslint-config':
+        specifier: workspace:*
+        version: link:../../../packages/eslint-config
+      '@voquill/typescript-config':
+        specifier: workspace:*
+        version: link:../../../packages/typescript-config
       concurrently:
         specifier: ^9.1.2
         version: 9.2.1
@@ -416,10 +416,10 @@ importers:
       '@mui/x-charts':
         specifier: ^8.27.0
         version: 8.27.4(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react@19.2.4))(@mui/material@7.3.9(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@mui/system@7.3.9(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react@19.2.4))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@repo/functions':
+      '@voquill/functions':
         specifier: workspace:*
         version: link:../../packages/functions
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../../packages/types
       immer:
@@ -507,13 +507,13 @@ importers:
 
   enterprise/gateway:
     dependencies:
-      '@repo/functions':
+      '@voquill/functions':
         specifier: workspace:*
         version: link:../../packages/functions
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@repo/utilities':
+      '@voquill/utilities':
         specifier: workspace:*
         version: link:../../packages/utilities
       bcrypt:
@@ -544,9 +544,6 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/typescript-config
       '@types/bcrypt':
         specifier: ^6.0.0
         version: 6.0.0
@@ -565,6 +562,9 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
+      '@voquill/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
       esbuild:
         specifier: ^0.25.11
         version: 0.25.12
@@ -580,14 +580,14 @@ importers:
 
   packages/agent:
     dependencies:
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
-      '@repo/typescript-config':
+      '@voquill/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
-      '@repo/voice-ai':
+      '@voquill/voice-ai':
         specifier: workspace:*
         version: link:../voice-ai
       tsx:
@@ -638,14 +638,14 @@ importers:
       '@firemix/core':
         specifier: ^0.1.7
         version: 0.1.16
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../types
-      '@repo/utilities':
+      '@voquill/utilities':
         specifier: workspace:*
         version: link:../utilities
     devDependencies:
-      '@repo/typescript-config':
+      '@voquill/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       firebase:
@@ -657,14 +657,14 @@ importers:
 
   packages/functions:
     dependencies:
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../types
       zod:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
-      '@repo/typescript-config':
+      '@voquill/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       firebase:
@@ -676,7 +676,7 @@ importers:
 
   packages/pricing:
     devDependencies:
-      '@repo/typescript-config':
+      '@voquill/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       typescript:
@@ -692,12 +692,12 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../typescript-config
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
+      '@voquill/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       typescript:
         specifier: 5.9.2
         version: 5.9.2
@@ -713,12 +713,6 @@ importers:
         specifier: ^19.1.0
         version: 19.2.4(react@19.2.4)
     devDependencies:
-      '@repo/eslint-config':
-        specifier: workspace:*
-        version: link:../eslint-config
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../typescript-config
       '@types/node':
         specifier: ^22.15.3
         version: 22.19.15
@@ -728,6 +722,12 @@ importers:
       '@types/react-dom':
         specifier: 19.1.1
         version: 19.1.1(@types/react@19.2.10)
+      '@voquill/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@voquill/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       eslint:
         specifier: ^9.34.0
         version: 9.39.3(jiti@2.6.1)
@@ -737,11 +737,11 @@ importers:
 
   packages/utilities:
     dependencies:
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../types
     devDependencies:
-      '@repo/typescript-config':
+      '@voquill/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       typescript:
@@ -765,10 +765,10 @@ importers:
       '@google/genai':
         specifier: ^1.37.0
         version: 1.44.0(@modelcontextprotocol/sdk@1.27.1(zod@3.25.76))
-      '@repo/types':
+      '@voquill/types':
         specifier: workspace:*
         version: link:../types
-      '@repo/utilities':
+      '@voquill/utilities':
         specifier: workspace:*
         version: link:../utilities
       groq-sdk:
@@ -790,7 +790,7 @@ importers:
         specifier: ^3.24.6
         version: 3.25.1(zod@3.25.76)
     devDependencies:
-      '@repo/typescript-config':
+      '@voquill/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       typescript:

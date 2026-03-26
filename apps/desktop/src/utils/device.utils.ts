@@ -1,4 +1,4 @@
-import type { PairedRemoteDevice, RemoteOutputPreferences } from "@repo/types";
+import type { PairedRemoteDevice, RemoteOutputPreferences } from "@voquill/types";
 import type { AppState } from "../state/app.state";
 
 export const getPairedRemoteDeviceById = (

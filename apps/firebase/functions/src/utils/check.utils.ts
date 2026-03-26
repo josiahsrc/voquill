@@ -1,4 +1,4 @@
-import { Nullable } from "@repo/types";
+import { Nullable } from "@voquill/types";
 import { AuthData } from "firebase-functions/tasks";
 import { UnauthenticatedError } from "./error.utils";
 import { consumeRateLimit } from "./rateLimit.utils";

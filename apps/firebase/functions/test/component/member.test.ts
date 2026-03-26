@@ -1,7 +1,7 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { invokeHandler } from "@repo/functions";
-import { retry } from "@repo/utilities";
+import { mixpath } from "@voquill/firemix";
+import { invokeHandler } from "@voquill/functions";
+import { retry } from "@voquill/utilities";
 import dayjs from "dayjs";
 import { memberToDatabase, userToDatabase } from "../../src/utils/type.utils";
 import { buildMember, buildUser } from "../helpers/entities";

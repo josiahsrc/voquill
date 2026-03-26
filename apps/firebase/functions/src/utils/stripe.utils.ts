@@ -1,4 +1,4 @@
-import { DatabaseMember, Nullable } from "@repo/types";
+import { DatabaseMember, Nullable } from "@voquill/types";
 import stripe from "stripe";
 import { getStripeSecretKey } from "./env.utils";
 import { ClientError } from "./error.utils";

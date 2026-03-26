@@ -1,5 +1,5 @@
-import { Nullable, Tone } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import { Nullable, Tone } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { getIntl } from "../i18n/intl";
 import { AppState } from "../state/app.state";
 import { getEffectiveStylingMode } from "./feature.utils";

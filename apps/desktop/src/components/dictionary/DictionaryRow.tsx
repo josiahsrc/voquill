@@ -2,7 +2,7 @@ import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { PublicOutlined } from "@mui/icons-material";
 import { IconButton, Stack, TextField, Tooltip } from "@mui/material";
-import { getRec } from "@repo/utilities";
+import { getRec } from "@voquill/utilities";
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { showErrorSnackbar } from "../../actions/app.actions";

@@ -1,9 +1,9 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { HandlerInput, HandlerOutput } from "@repo/functions";
-import { priceKeyById } from "@repo/pricing";
-import { Nullable } from "@repo/types";
-import { dedup, getRec } from "@repo/utilities";
+import { mixpath } from "@voquill/firemix";
+import { HandlerInput, HandlerOutput } from "@voquill/functions";
+import { priceKeyById } from "@voquill/pricing";
+import { Nullable } from "@voquill/types";
+import { dedup, getRec } from "@voquill/utilities";
 import * as admin from "firebase-admin";
 import { AuthData } from "firebase-functions/tasks";
 import stripe from "stripe";

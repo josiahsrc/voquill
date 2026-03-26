@@ -1,4 +1,4 @@
-import type { EnterpriseConfig } from "@repo/types";
+import type { EnterpriseConfig } from "@voquill/types";
 import { getPool } from "../utils/db.utils";
 
 interface EnterpriseConfigRow {

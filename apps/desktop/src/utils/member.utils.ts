@@ -1,9 +1,9 @@
-import { Member, Nullable } from "@repo/types";
+import { Member, Nullable } from "@voquill/types";
 import {
   getMemberExceedsLimits,
   getRec,
   TRIAL_DURATION_DAYS,
-} from "@repo/utilities";
+} from "@voquill/utilities";
 import { getIntl } from "../i18n";
 import type { AppState } from "../state/app.state";
 import { EffectivePlan } from "../types/member.types";

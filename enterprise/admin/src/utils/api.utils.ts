@@ -1,4 +1,4 @@
-import type { HandlerInput, HandlerName, HandlerOutput } from "@repo/functions";
+import type { HandlerInput, HandlerName, HandlerOutput } from "@voquill/functions";
 import { getAppState } from "../store";
 import { getGatewayUrl } from "./env.utils";
 

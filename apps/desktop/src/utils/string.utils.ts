@@ -1,4 +1,4 @@
-import { Nullable } from "@repo/types";
+import { Nullable } from "@voquill/types";
 
 /**
  * Calculates the Levenshtein edit distance between two strings.

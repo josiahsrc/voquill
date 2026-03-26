@@ -1,4 +1,4 @@
-import { config as baseConfig } from "@repo/eslint-config/base";
+import { config as baseConfig } from "@voquill/eslint-config/base";
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [

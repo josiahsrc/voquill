@@ -5,14 +5,14 @@ import { fileURLToPath } from "node:url";
 
 const SCOPES = [
   "functions",
-  "@repo/functions",
-  "@repo/firemix",
-  "@repo/pricing",
-  "@repo/types",
-  "@repo/utilities",
-  "@repo/voice-ai",
-  "@repo/eslint-config",
-  "@repo/typescript-config",
+  "@voquill/functions",
+  "@voquill/firemix",
+  "@voquill/pricing",
+  "@voquill/types",
+  "@voquill/utilities",
+  "@voquill/voice-ai",
+  "@voquill/eslint-config",
+  "@voquill/typescript-config",
 ];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -110,11 +110,11 @@ function stageLocalPackages() {
   mkdirSync(localPackagesDir, { recursive: true });
 
   for (const scope of SCOPES) {
-    if (!scope.startsWith("@repo/")) {
+    if (!scope.startsWith("@voquill/")) {
       continue;
     }
 
-    const packageName = scope.replace("@repo/", "");
+    const packageName = scope.replace("@voquill/", "");
     const sourcePath = path.join(repoRoot, "packages", packageName);
 
     if (existsSync(sourcePath)) {
@@ -128,11 +128,11 @@ function stageLocalPackages() {
 
 function copyBuiltPackages() {
   for (const scope of SCOPES) {
-    if (!scope.startsWith("@repo/")) {
+    if (!scope.startsWith("@voquill/")) {
       continue;
     }
 
-    const packageName = scope.replace("@repo/", "");
+    const packageName = scope.replace("@voquill/", "");
     const builtDist = path.join(repoRoot, "packages", packageName, "dist");
     const prunedDist = path.join(packagesDir, packageName, "dist");
 
@@ -149,11 +149,11 @@ function rewriteRepoDependencies(pkg, resolveRepoDependencySpecifier) {
     }
 
     for (const depName of Object.keys(pkg[section])) {
-      if (!depName.startsWith("@repo/")) {
+      if (!depName.startsWith("@voquill/")) {
         continue;
       }
 
-      const localName = depName.replace("@repo/", "");
+      const localName = depName.replace("@voquill/", "");
       pkg[section][depName] = resolveRepoDependencySpecifier({ section, localName });
     }
   }
@@ -174,11 +174,11 @@ function rewriteFunctionsPackageJson() {
 
 function rewriteLocalPackageJsons() {
   for (const scope of SCOPES) {
-    if (!scope.startsWith("@repo/")) {
+    if (!scope.startsWith("@voquill/")) {
       continue;
     }
 
-    const localName = scope.replace("@repo/", "");
+    const localName = scope.replace("@voquill/", "");
     const packageJsonPath = path.join(localPackagesDir, localName, "package.json");
 
     if (!existsSync(packageJsonPath)) {

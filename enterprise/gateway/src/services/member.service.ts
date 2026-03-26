@@ -1,5 +1,5 @@
-import type { HandlerOutput } from "@repo/functions";
-import type { AuthContext, Nullable } from "@repo/types";
+import type { HandlerOutput } from "@voquill/functions";
+import type { AuthContext, Nullable } from "@voquill/types";
 import { requireAuth } from "../utils/auth.utils";
 import { createMember, findMemberById } from "../repo/member.repo";
 

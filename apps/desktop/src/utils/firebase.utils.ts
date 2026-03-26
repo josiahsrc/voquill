@@ -1,5 +1,5 @@
-import type { StreamHandlerInput, StreamHandlerName } from "@repo/functions";
-import type { LlmStreamEvent } from "@repo/types";
+import type { StreamHandlerInput, StreamHandlerName } from "@voquill/functions";
+import type { LlmStreamEvent } from "@voquill/types";
 import { getEffectiveAuth } from "./auth.utils";
 import { getIsEmulators } from "./env.utils";
 import { readNdjsonStream } from "./stream.utils";

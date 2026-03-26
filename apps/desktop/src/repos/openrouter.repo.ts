@@ -2,8 +2,8 @@ import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import {
   openrouterFetchModels,
   openrouterTestIntegration,
-} from "@repo/voice-ai";
-import type { OpenRouterModel } from "@repo/types";
+} from "@voquill/voice-ai";
+import type { OpenRouterModel } from "@voquill/types";
 import { BaseRepo } from "./base.repo";
 
 export abstract class BaseOpenRouterRepo extends BaseRepo {

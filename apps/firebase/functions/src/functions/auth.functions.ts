@@ -3,7 +3,7 @@ import { cancelUserSubscriptions } from "../services/stripe.service";
 import { LOOPS_API_KEY_VAR } from "../utils/env.utils";
 import { createLoopsContact, deleteLoopsContact } from "../utils/loops.utils";
 import { tryInitializeMember } from "../utils/member.utils";
-import { mixpath } from "@repo/firemix";
+import { mixpath } from "@voquill/firemix";
 import { firemix } from "@firemix/mixed";
 
 export const onCreate = v1

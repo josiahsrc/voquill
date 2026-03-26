@@ -1,5 +1,5 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
+import { mixpath } from "@voquill/firemix";
 import dayjs from "dayjs";
 import stripe from "stripe";
 import {

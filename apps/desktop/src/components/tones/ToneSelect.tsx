@@ -11,8 +11,8 @@ import {
   type SxProps,
   type Theme,
 } from "@mui/material";
-import type { Tone } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import type { Tone } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { useCallback, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { setLocalStorageValue } from "../../actions/local-storage.actions";

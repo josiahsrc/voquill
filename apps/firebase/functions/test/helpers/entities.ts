@@ -1,4 +1,4 @@
-import { DatabaseApiRefreshToken, Member, Term, Tone, User } from "@repo/types";
+import { DatabaseApiRefreshToken, Member, Term, Tone, User } from "@voquill/types";
 
 export const buildMember = (overrides?: Partial<Member>): Member => ({
 	id: "defaultMemberId",

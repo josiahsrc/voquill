@@ -8,7 +8,7 @@ import {
 	Term,
 	Tone,
 	User,
-} from "@repo/types";
+} from "@voquill/types";
 
 export const userToDatabase = (user: User): DatabaseUser => ({
 	...user,

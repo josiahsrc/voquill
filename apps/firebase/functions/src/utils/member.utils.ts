@@ -1,7 +1,7 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { DatabaseMember } from "@repo/types";
-import { TRIAL_DURATION_DAYS } from "@repo/utilities";
+import { mixpath } from "@voquill/firemix";
+import { DatabaseMember } from "@voquill/types";
+import { TRIAL_DURATION_DAYS } from "@voquill/utilities";
 import dayjs from "dayjs";
 
 /** Transactional so that anyone can call this whenever they want */

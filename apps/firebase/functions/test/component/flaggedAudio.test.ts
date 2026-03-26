@@ -1,7 +1,7 @@
 import { firemix } from "@firemix/mixed";
-import { mixpath } from "@repo/firemix";
-import { HandlerInput, invokeHandler } from "@repo/functions";
-import type { FlaggedAudio } from "@repo/types";
+import { mixpath } from "@voquill/firemix";
+import { HandlerInput, invokeHandler } from "@voquill/functions";
+import type { FlaggedAudio } from "@voquill/types";
 import {
 	deleteObject,
 	getBytes,

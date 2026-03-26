@@ -10,7 +10,7 @@ import type {
   Tone,
   User,
   UserWithAuth,
-} from "@repo/types";
+} from "@voquill/types";
 import {
   INITIAL_LLM_PROVIDERS_STATE,
   type LlmProvidersState,

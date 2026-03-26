@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 import { firemix } from "@firemix/mixed";
-import { invokeHandler } from "@repo/functions";
-import { mixpath } from "@repo/firemix";
-import { FULL_CONFIG } from "@repo/types";
-import { retry } from "@repo/utilities";
+import { invokeHandler } from "@voquill/functions";
+import { mixpath } from "@voquill/firemix";
+import { FULL_CONFIG } from "@voquill/types";
+import { retry } from "@voquill/utilities";
 import {
 	createUserCreds,
 	markUserAsSubscribed,

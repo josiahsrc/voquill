@@ -1,5 +1,5 @@
-import type { Tone } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import type { Tone } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { useCallback, useMemo } from "react";
 import { useAppStore } from "../../store";
 import { getSortedToneIds } from "../../utils/tone.utils";

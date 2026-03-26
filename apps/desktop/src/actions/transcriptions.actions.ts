@@ -1,5 +1,5 @@
-import { Transcription } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import { Transcription } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import {
