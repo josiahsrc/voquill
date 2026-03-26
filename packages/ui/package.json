@@ -1,6 +1,6 @@
 {
   "name": "@repo/ui",
-  "version": "0.0.0",
+  "version": "0.1.2",
   "private": true,
   "exports": {
     "./*": "./src/*.tsx"
