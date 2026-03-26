@@ -4,7 +4,7 @@ pub(crate) const TAU: f64 = PI * 2.0;
 
 // ── Dictation pill layout ──────────────────────────────────────────
 pub(crate) const DICTATION_WINDOW_WIDTH: i32 = 200;
-pub(crate) const DICTATION_WINDOW_HEIGHT: i32 = 72;
+pub(crate) const DICTATION_WINDOW_HEIGHT: i32 = 86;
 pub(crate) const MARGIN_BOTTOM: i32 = 8;
 
 pub(crate) const PILL_AREA_HEIGHT: f64 = 48.0;
@@ -20,15 +20,13 @@ pub(crate) const IDLE_BG_ALPHA: f64 = 0.6;
 pub(crate) const ACTIVE_BG_ALPHA: f64 = 0.92;
 pub(crate) const BORDER_ALPHA: f64 = 0.3;
 
-pub(crate) const EXPAND_SPEED: f64 = 0.12;
-pub(crate) const COLLAPSE_SPEED: f64 = 0.08;
+pub(crate) const SPRING_STIFFNESS: f64 = 200.0;
+pub(crate) const SPRING_DT: f64 = 0.016;
 
 // ── Tooltip (style selector) ──────────────────────────────────────
 pub(crate) const TOOLTIP_HEIGHT: f64 = 24.0;
 pub(crate) const TOOLTIP_GAP: f64 = 6.0;
 pub(crate) const TOOLTIP_RADIUS: f64 = 8.0;
-pub(crate) const TOOLTIP_EXPAND_SPEED: f64 = 0.15;
-pub(crate) const TOOLTIP_COLLAPSE_SPEED: f64 = 0.12;
 
 // ── Waveform — ported from AudioWaveform.tsx ──────────────────────
 pub(crate) const LEVEL_SMOOTHING: f64 = 0.18;
@@ -81,8 +79,6 @@ pub(crate) const PANEL_TRANSCRIPT_TOP_OFFSET: f64 = 56.0;
 pub(crate) const HEADER_BUTTON_SIZE: f64 = 28.0;
 pub(crate) const SCROLL_TOP_PAD: f64 = 12.0;
 pub(crate) const SCROLL_BOTTOM_PAD: f64 = 12.0;
-pub(crate) const PANEL_OPEN_SPEED: f64 = 0.14;
-pub(crate) const PANEL_CLOSE_SPEED: f64 = 0.10;
 
 // The pill sits inside the panel, this many px above the panel bottom.
 pub(crate) const PILL_BOTTOM_INSET: f64 = 8.0;
@@ -94,7 +90,6 @@ pub(crate) const PANEL_BOTTOM_MARGIN: f64 = 10.0;
 // Keyboard button (to the right of pill in assistant voice mode)
 pub(crate) const KB_BUTTON_SIZE: f64 = 32.0;
 pub(crate) const KB_BUTTON_GAP: f64 = 8.0;
-pub(crate) const KB_BUTTON_SPEED: f64 = 0.14;
 
 // Cancel button (top-right of pill in dictation mode)
 pub(crate) const CANCEL_BUTTON_SIZE: f64 = 18.0;

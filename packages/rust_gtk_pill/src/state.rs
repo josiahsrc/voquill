@@ -66,6 +66,7 @@ pub(crate) struct PillState {
     pub(crate) phase: Cell<Phase>,
     pub(crate) visibility: Cell<Visibility>,
     pub(crate) expand_t: Cell<f64>,
+    pub(crate) expand_velocity: Cell<f64>,
     pub(crate) hovered: Cell<bool>,
     pub(crate) wave_phase: Cell<f64>,
     pub(crate) current_level: Cell<f64>,
@@ -75,13 +76,16 @@ pub(crate) struct PillState {
     pub(crate) style_count: Cell<u32>,
     pub(crate) style_name: RefCell<String>,
     pub(crate) tooltip_t: Cell<f64>,
+    pub(crate) tooltip_velocity: Cell<f64>,
     pub(crate) tooltip_width: Cell<f64>,
     pub(crate) ui_scale: f64,
 
     // Window sizing
     pub(crate) window_mode: Cell<WindowMode>,
-    pub(crate) window_width: Cell<i32>,
-    pub(crate) window_height: Cell<i32>,
+    pub(crate) draw_width: Cell<f64>,
+    pub(crate) draw_height: Cell<f64>,
+    pub(crate) draw_w_velocity: Cell<f64>,
+    pub(crate) draw_h_velocity: Cell<f64>,
 
     // Assistant state
     pub(crate) assistant_active: Cell<bool>,
@@ -95,7 +99,9 @@ pub(crate) struct PillState {
 
     // Assistant UI animation
     pub(crate) panel_open_t: Cell<f64>,
+    pub(crate) panel_open_velocity: Cell<f64>,
     pub(crate) kb_button_t: Cell<f64>,
+    pub(crate) kb_button_velocity: Cell<f64>,
     pub(crate) shimmer_phase: Cell<f64>,
 
     // Scroll
@@ -109,4 +115,12 @@ pub(crate) struct PillState {
 
     // Entry text (for typing mode)
     pub(crate) entry_text: RefCell<String>,
+}
+
+impl PillState {
+    pub(crate) fn content_offset(&self) -> (f64, f64) {
+        let dw = self.draw_width.get();
+        let dh = self.draw_height.get();
+        ((WINDOW_W_TYPING as f64 - dw) / 2.0, WINDOW_H_TYPING as f64 - dh)
+    }
 }

@@ -38,8 +38,8 @@ pub fn run(receiver: Receiver<InMessage>) {
         1.0
     };
 
-    let scaled_width = (DICTATION_WINDOW_WIDTH as f64 * ui_scale).ceil() as i32;
-    let scaled_height = (DICTATION_WINDOW_HEIGHT as f64 * ui_scale).ceil() as i32;
+    let scaled_width = (WINDOW_W_TYPING as f64 * ui_scale).ceil() as i32;
+    let scaled_height = (WINDOW_H_TYPING as f64 * ui_scale).ceil() as i32;
     let scaled_margin = (MARGIN_BOTTOM as f64 * ui_scale).ceil() as i32;
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -101,6 +101,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         phase: Cell::new(Phase::Idle),
         visibility: Cell::new(Visibility::WhileActive),
         expand_t: Cell::new(0.0),
+        expand_velocity: Cell::new(0.0),
         hovered: Cell::new(false),
         wave_phase: Cell::new(0.0),
         current_level: Cell::new(0.0),
@@ -110,11 +111,14 @@ pub fn run(receiver: Receiver<InMessage>) {
         style_count: Cell::new(0),
         style_name: RefCell::new(String::new()),
         tooltip_t: Cell::new(0.0),
+        tooltip_velocity: Cell::new(0.0),
         tooltip_width: Cell::new(0.0),
         ui_scale,
         window_mode: Cell::new(WindowMode::Dictation),
-        window_width: Cell::new(DICTATION_WINDOW_WIDTH),
-        window_height: Cell::new(DICTATION_WINDOW_HEIGHT),
+        draw_width: Cell::new(DICTATION_WINDOW_WIDTH as f64),
+        draw_height: Cell::new(DICTATION_WINDOW_HEIGHT as f64),
+        draw_w_velocity: Cell::new(0.0),
+        draw_h_velocity: Cell::new(0.0),
         assistant_active: Cell::new(false),
         assistant_input_mode: RefCell::new("voice".to_string()),
         assistant_compact: Cell::new(true),
@@ -124,7 +128,9 @@ pub fn run(receiver: Receiver<InMessage>) {
         assistant_streaming: RefCell::new(None),
         assistant_permissions: RefCell::new(Vec::new()),
         panel_open_t: Cell::new(0.0),
+        panel_open_velocity: Cell::new(0.0),
         kb_button_t: Cell::new(0.0),
+        kb_button_velocity: Cell::new(0.0),
         shimmer_phase: Cell::new(0.0),
         scroll_offset: Cell::new(0.0),
         content_height: Cell::new(0.0),
@@ -318,29 +324,15 @@ pub fn run(receiver: Receiver<InMessage>) {
 
         tick(&state_tick);
 
-        // Window resize
-        let mode = state_tick.window_mode.get();
-        let (tw, th) = mode.dimensions();
-        let cw = state_tick.window_width.get();
-        let ch = state_tick.window_height.get();
-        if tw != cw || th != ch {
-            state_tick.window_width.set(tw);
-            state_tick.window_height.set(th);
-            let sw = (tw as f64 * ui_scale).ceil() as i32;
-            let sh = (th as f64 * ui_scale).ceil() as i32;
-            win_tick.resize(sw, sh);
-            da.set_size_request(sw, sh);
-        }
-
         // Show/hide entry for typing mode
         let is_typing = state_tick.assistant_active.get()
             && *state_tick.assistant_input_mode.borrow() == "type";
         if is_typing && !gtk::prelude::WidgetExt::is_visible(&entry_tick) {
             let panel_w = PANEL_EXPANDED_WIDTH;
-            let ww = state_tick.window_width.get() as f64;
-            let panel_x = (ww - panel_w) / 2.0;
+            let max_w = WINDOW_W_TYPING as f64;
+            let panel_x = (max_w - panel_w) / 2.0;
             let margin_start = ((panel_x + PANEL_CONTENT_SIDE_INSET) * ui_scale) as i32;
-            let margin_end = ((ww - panel_x - panel_w + PANEL_CONTENT_SIDE_INSET) * ui_scale) as i32;
+            let margin_end = ((max_w - panel_x - panel_w + PANEL_CONTENT_SIDE_INSET) * ui_scale) as i32;
             let margin_bottom = (PANEL_BOTTOM_MARGIN * ui_scale) as i32;
             entry_tick.set_margin_start(margin_start);
             entry_tick.set_margin_end(margin_end);
@@ -491,51 +483,37 @@ fn tick(state: &PillState) {
     let advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * effective_level;
     state.wave_phase.set((state.wave_phase.get() + advance) % TAU);
 
-    // Pill expand/collapse
+    // Pill expand/collapse (spring)
     let expand_target = if is_active || hovered || state.assistant_active.get() { 1.0 } else { 0.0 };
-    let expand_current = state.expand_t.get();
-    let speed = if expand_target > expand_current { EXPAND_SPEED } else { COLLAPSE_SPEED };
-    let new_t = (expand_current + (expand_target - expand_current) * speed).clamp(0.0, 1.0);
-    let snapped = if (new_t - expand_target).abs() < 0.005 { expand_target } else { new_t };
-    state.expand_t.set(snapped);
+    spring_anim(&state.expand_t, &state.expand_velocity, expand_target, SPRING_STIFFNESS);
 
     // Loading offset
     if is_loading {
         state.loading_offset.set((state.loading_offset.get() + LOADING_SPEED) % 1.0);
     }
 
-    // Tooltip animation (only in dictation mode)
+    // Tooltip animation (spring)
     let show_tooltip = !state.assistant_active.get()
         && state.style_count.get() > 1
         && (hovered || phase == Phase::Recording)
         && state.expand_t.get() > 0.3;
     let tooltip_target = if show_tooltip { 1.0 } else { 0.0 };
-    let tooltip_current = state.tooltip_t.get();
-    let tooltip_speed = if tooltip_target > tooltip_current {
-        TOOLTIP_EXPAND_SPEED
-    } else {
-        TOOLTIP_COLLAPSE_SPEED
-    };
-    let new_tt = (tooltip_current + (tooltip_target - tooltip_current) * tooltip_speed).clamp(0.0, 1.0);
-    let snapped_tt = if (new_tt - tooltip_target).abs() < 0.005 { tooltip_target } else { new_tt };
-    state.tooltip_t.set(snapped_tt);
+    spring_anim(&state.tooltip_t, &state.tooltip_velocity, tooltip_target, SPRING_STIFFNESS);
 
-    // Panel open/close animation
+    // Panel open/close (spring)
     let panel_target = if state.assistant_active.get() { 1.0 } else { 0.0 };
-    let panel_current = state.panel_open_t.get();
-    let panel_speed = if panel_target > panel_current { PANEL_OPEN_SPEED } else { PANEL_CLOSE_SPEED };
-    let new_pt = (panel_current + (panel_target - panel_current) * panel_speed).clamp(0.0, 1.0);
-    let snapped_pt = if (new_pt - panel_target).abs() < 0.005 { panel_target } else { new_pt };
-    state.panel_open_t.set(snapped_pt);
+    spring_anim(&state.panel_open_t, &state.panel_open_velocity, panel_target, SPRING_STIFFNESS);
 
-    // Keyboard button animation
+    // Keyboard button (spring)
     let is_voice = *state.assistant_input_mode.borrow() == "voice";
     let kb_target = if state.assistant_active.get() && is_voice { 1.0 } else { 0.0 };
-    let kb_current = state.kb_button_t.get();
-    let kb_speed = KB_BUTTON_SPEED;
-    let new_kb = (kb_current + (kb_target - kb_current) * kb_speed).clamp(0.0, 1.0);
-    let snapped_kb = if (new_kb - kb_target).abs() < 0.005 { kb_target } else { new_kb };
-    state.kb_button_t.set(snapped_kb);
+    spring_anim(&state.kb_button_t, &state.kb_button_velocity, kb_target, SPRING_STIFFNESS);
+
+    // Animate content dimensions toward target mode
+    let mode = state.window_mode.get();
+    let (tw, th) = mode.dimensions();
+    spring_px(&state.draw_width, &state.draw_w_velocity, tw as f64, SPRING_STIFFNESS);
+    spring_px(&state.draw_height, &state.draw_h_velocity, th as f64, SPRING_STIFFNESS);
 
     // Shimmer phase for thinking animation
     state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED) % 1.0);
@@ -544,5 +522,39 @@ fn tick(state: &PillState) {
     if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
         let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
         state.scroll_offset.set(max_scroll);
+    }
+}
+
+fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+    let v = value.get();
+    let vel = velocity.get();
+    if v == target && vel == 0.0 { return; }
+    let damping = 2.0 * stiffness.sqrt();
+    let force = stiffness * (target - v) - damping * vel;
+    let new_vel = vel + force * SPRING_DT;
+    let new_v = v + new_vel * SPRING_DT;
+    if (new_v - target).abs() < 0.002 && new_vel.abs() < 0.5 {
+        value.set(target);
+        velocity.set(0.0);
+    } else {
+        value.set(new_v.clamp(0.0, 1.0));
+        velocity.set(if new_v < 0.0 || new_v > 1.0 { 0.0 } else { new_vel });
+    }
+}
+
+fn spring_px(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+    let v = value.get();
+    let vel = velocity.get();
+    if v == target && vel == 0.0 { return; }
+    let damping = 2.0 * stiffness.sqrt();
+    let force = stiffness * (target - v) - damping * vel;
+    let new_vel = vel + force * SPRING_DT;
+    let new_v = v + new_vel * SPRING_DT;
+    if (new_v - target).abs() < 0.5 && (new_vel * SPRING_DT).abs() < 0.5 {
+        value.set(target);
+        velocity.set(0.0);
+    } else {
+        value.set(new_v);
+        velocity.set(new_vel);
     }
 }

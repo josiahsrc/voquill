@@ -9,8 +9,9 @@ use crate::state::{ClickAction, PillState};
 
 pub(crate) fn handle_click(state: &PillState, x: f64, y: f64) {
     let s = state.ui_scale;
-    let x = x / s;
-    let y = y / s;
+    let (ox, oy) = state.content_offset();
+    let x = x / s - ox;
+    let y = y / s - oy;
 
     let regions = state.click_regions.borrow();
     for region in regions.iter().rev() {
@@ -96,27 +97,31 @@ pub(crate) fn handle_scroll(state: &PillState, event: &gdk::EventScroll) {
 
 pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillState) {
     let s = state.ui_scale;
-    let ww = state.window_width.get() as f64;
-    let wh = state.window_height.get() as f64;
+    let dw = state.draw_width.get();
+    let dh = state.draw_height.get();
+    let (ox, oy) = state.content_offset();
 
     if state.assistant_active.get() {
-        let rect = cairo::RectangleInt::new(0, 0, (ww * s).ceil() as i32, (wh * s).ceil() as i32);
+        let rect = cairo::RectangleInt::new(
+            (ox * s) as i32, (oy * s) as i32,
+            (dw * s).ceil() as i32, (dh * s).ceil() as i32,
+        );
         let region = cairo::Region::create_rectangle(&rect);
         gdk_window.input_shape_combine_region(&region, 0, 0);
     } else {
         let pill_w = EXPANDED_PILL_WIDTH;
         let pill_h = EXPANDED_PILL_HEIGHT;
-        let pill_rx = ((ww - pill_w) / 2.0 * s) as i32;
-        let pill_area_top = wh - PILL_AREA_HEIGHT;
-        let pill_ry = (pill_area_top * s) as i32;
+        let pill_rx = ((ox + (dw - pill_w) / 2.0) * s) as i32;
+        let pill_area_top = dh - PILL_AREA_HEIGHT;
+        let pill_ry = ((oy + pill_area_top) * s) as i32;
 
         let tooltip_t = state.tooltip_t.get();
         let tooltip_w = state.tooltip_width.get();
 
         if tooltip_t > 0.1 && tooltip_w > 0.0 {
-            let tooltip_top = ((pill_area_top - TOOLTIP_GAP - TOOLTIP_HEIGHT) * s) as i32;
+            let tooltip_top = ((oy + pill_area_top - TOOLTIP_GAP - TOOLTIP_HEIGHT) * s) as i32;
             let region_w = ((tooltip_w.ceil().max(pill_w)) * s).ceil() as i32;
-            let region_rx = ((ww - region_w as f64 / s) / 2.0 * s) as i32;
+            let region_rx = ((ox + (dw - region_w as f64 / s) / 2.0) * s) as i32;
             let region_h = pill_ry + (pill_h * s).ceil() as i32 + ((PILL_AREA_HEIGHT - EXPANDED_PILL_HEIGHT) / 2.0 * s).ceil() as i32 - tooltip_top;
             let rect = cairo::RectangleInt::new(region_rx, tooltip_top, region_w, region_h);
             let region = cairo::Region::create_rectangle(&rect);
@@ -144,11 +149,12 @@ pub(crate) fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {
         set_expanded_input_region(gdk_window, state);
     } else {
         let s = state.ui_scale;
-        let ww = state.window_width.get() as f64;
-        let wh = state.window_height.get() as f64;
-        let (pill_x, pill_y, pill_w, pill_h) = pill_position(state, ww, wh);
-        let pill_rx = (pill_x * s) as i32;
-        let pill_ry = (pill_y * s) as i32;
+        let dw = state.draw_width.get();
+        let dh = state.draw_height.get();
+        let (ox, oy) = state.content_offset();
+        let (pill_x, pill_y, pill_w, pill_h) = pill_position(state, dw, dh);
+        let pill_rx = ((ox + pill_x) * s) as i32;
+        let pill_ry = ((oy + pill_y) * s) as i32;
         let rect = cairo::RectangleInt::new(
             pill_rx, pill_ry,
             (pill_w * s).ceil() as i32,

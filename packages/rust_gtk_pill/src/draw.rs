@@ -20,8 +20,12 @@ pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
 
     state.click_regions.borrow_mut().clear();
 
-    let ww = state.window_width.get() as f64;
-    let wh = state.window_height.get() as f64;
+    let ww = state.draw_width.get();
+    let wh = state.draw_height.get();
+    let (ox, oy) = state.content_offset();
+
+    cr.save().ok();
+    cr.translate(ox, oy);
 
     if state.assistant_active.get() || state.panel_open_t.get() > 0.01 {
         draw_assistant_panel(cr, state, ww, wh);
@@ -39,6 +43,8 @@ pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
     if !state.assistant_active.get() {
         draw_cancel_button(cr, state, ww, wh);
     }
+
+    cr.restore().ok();
 }
 
 pub(crate) fn pill_position(state: &PillState, ww: f64, wh: f64) -> (f64, f64, f64, f64) {
@@ -88,7 +94,7 @@ fn draw_pill(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64) {
         Phase::Loading if expand_t > 0.1 => {
             draw_loading(cr, rx, ry, pill_w, pill_h, radius, expand_t, state);
         }
-        Phase::Idle if expand_t > 0.5 && state.hovered.get() && !state.assistant_active.get() => {
+        Phase::Idle if expand_t > 0.5 && (state.hovered.get() || state.assistant_active.get()) => {
             draw_idle_label(cr, rx, ry, pill_w, pill_h, expand_t);
         }
         _ => {}
