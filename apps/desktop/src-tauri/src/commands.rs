@@ -1271,8 +1271,18 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 }
 
 #[tauri::command]
-pub fn set_pill_window_size(size: crate::domain::PillWindowSize, overlay_state: State<'_, crate::state::OverlayState>) {
+pub fn set_pill_window_size(
+    app: AppHandle,
+    size: crate::domain::PillWindowSize,
+    overlay_state: State<'_, crate::state::OverlayState>,
+) {
     overlay_state.set_pill_window_size(size);
+    crate::platform::overlay::notify_pill_window_size(&app, &size);
+}
+
+#[tauri::command]
+pub fn sync_native_pill_assistant(app: AppHandle, payload: String) {
+    crate::platform::overlay::notify_assistant_state(&app, &payload);
 }
 
 #[tauri::command]
@@ -1341,6 +1351,16 @@ pub fn set_pill_hover_enabled(enabled: bool, overlay_state: State<'_, crate::sta
 }
 
 #[tauri::command]
+pub fn set_pill_visibility(app: AppHandle, visibility: String) {
+    crate::platform::overlay::notify_visibility(&app, &visibility);
+}
+
+#[tauri::command]
+pub fn notify_pill_style_info(app: AppHandle, count: u32, name: String) {
+    crate::platform::overlay::notify_style_info(&app, count, &name);
+}
+
+#[tauri::command]
 pub fn start_key_listener(app: AppHandle) -> Result<(), String> {
     crate::platform::keyboard::start_key_listener(&app)
 }
@@ -1371,6 +1391,16 @@ pub fn sync_compositor_hotkeys(
 #[tauri::command]
 pub fn get_hotkey_strategy() -> String {
     crate::platform::get_hotkey_strategy().to_string()
+}
+
+#[tauri::command]
+pub fn supports_app_detection() -> bool {
+    crate::platform::supports_app_detection()
+}
+
+#[tauri::command]
+pub fn supports_paste_keybinds() -> bool {
+    crate::platform::supports_paste_keybinds()
 }
 
 #[tauri::command]
@@ -1521,7 +1551,11 @@ pub struct RunTerminalCommandResponse {
 #[tauri::command]
 pub async fn run_terminal_command(command: String) -> Result<RunTerminalCommandResponse, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let (shell, flag) = if cfg!(target_os = "windows") { ("cmd", "/C") } else { ("sh", "-c") };
+        let (shell, flag) = if cfg!(target_os = "windows") {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        };
         let output = std::process::Command::new(shell)
             .args([flag, &command])
             .output()
@@ -1607,10 +1641,7 @@ pub async fn download_and_open_mac_installer(url: String) -> Result<(), String> 
 
     let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
     if !response.status().is_success() {
-        return Err(format!(
-            "Download failed with status {}",
-            response.status()
-        ));
+        return Err(format!("Download failed with status {}", response.status()));
     }
     let bytes = response.bytes().await.map_err(|e| e.to_string())?;
     std::fs::write(&dest, &bytes).map_err(|e| e.to_string())?;

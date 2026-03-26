@@ -1,5 +1,5 @@
 import { User, UserPreferences } from "@repo/types";
-import { DEFAULT_LOCALE } from "../i18n/config";
+import { detectLocale } from "../i18n/intl";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import {
   INITIAL_ONBOARDING_STATE,
@@ -132,7 +132,7 @@ export const submitOnboarding = async () => {
       onboardedAt: null,
       timezone: null,
       preferredMicrophone: null,
-      preferredLanguage: DEFAULT_LOCALE,
+      preferredLanguage: detectLocale(),
       wordsThisMonth: 0,
       wordsThisMonthMonth: null,
       wordsTotal: 0,

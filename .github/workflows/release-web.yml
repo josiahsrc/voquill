@@ -61,7 +61,6 @@ jobs:
         working-directory: apps/web
         env:
           FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
         run: |
           set -euo pipefail
           echo "Deploying hosting for project: ${FIREBASE_PROJECT_ID}"

@@ -1,0 +1,739 @@
+---
+import type { Locale } from '../types/locale';
+import { t } from '../i18n/translations';
+import DownloadButton from './DownloadButton.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+
+const keyLabels = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'delete'];
+const voiceWords = i18n.speedDisplaySentence.split(' ');
+---
+
+<section class="speed-showcase" id="speed" data-speed-showcase>
+	<div class="section-intro">
+		<span class="badge">{i18n.speedBadge}</span>
+		<h2>{i18n.speedHeading}</h2>
+		<p>{i18n.speedDescription}</p>
+		<DownloadButton class="btn-primary" label={i18n.downloadForFree} locale={locale} />
+	</div>
+	<div class="showcase-grid">
+		<article class="keyboard-pane">
+			<header class="pane-header">
+				<span>{i18n.speedKeyboard}</span>
+				<span class="pane-metric">{i18n.speedKeyboardWpm}</span>
+			</header>
+			<div class="keyboard-visual">
+				<div class="key-deck">
+					{keyLabels.map((label, index) => (
+						<span
+							class:list={['key', { 'key-backspace': index === keyLabels.length - 1 }]}
+							data-key-index={index}
+						>
+							{label}
+						</span>
+					))}
+				</div>
+				<div class="typing-output" aria-label={i18n.speedDisplaySentence}>
+					<span class="typing-line" aria-hidden="true">
+						<span class="typing-text" data-typing-text></span><span class="typing-caret">|</span>
+					</span>
+				</div>
+			</div>
+			<p class="keyboard-footer">{i18n.speedKeyboardFooter}</p>
+		</article>
+
+		<article class="voice-pane">
+			<header class="pane-header">
+				<span>{i18n.speedVoice}</span>
+				<span class="pane-metric-hot">{i18n.speedVoiceWpm}</span>
+			</header>
+			<div class="voice-visual">
+				<div class="waveform">
+					<svg class="wave-svg" viewBox="0 0 336 80" aria-hidden="true">
+						<g class="wave-group-1">
+							<path
+								class="wave-path"
+								d="M0 40 C21 15, 42 15, 63 40 S105 65, 126 40 S168 15, 189 40 S231 65, 252 40 S294 15, 315 40 S357 65, 378 40 S420 15, 441 40 S483 65, 504 40 S546 15, 567 40"
+							/>
+						</g>
+						<g class="wave-group-2">
+							<path
+								class="wave-path"
+								d="M0 40 C16 20, 32 20, 48 40 S80 60, 96 40 S128 20, 144 40 S176 60, 192 40 S224 20, 240 40 S272 60, 288 40 S320 20, 336 40 S368 60, 384 40 S416 20, 432 40 S464 60, 480 40 S512 20, 528 40"
+							/>
+						</g>
+						<g class="wave-group-3">
+							<path
+								class="wave-path"
+								d="M0 40 C11 25, 21 25, 32 40 S53 55, 64 40 S85 25, 96 40 S117 55, 128 40 S149 25, 160 40 S181 55, 192 40 S213 25, 224 40 S245 55, 256 40 S277 25, 288 40 S309 55, 320 40 S341 25, 352 40 S373 55, 384 40 S405 25, 416 40 S437 55, 448 40 S469 25, 480 40"
+							/>
+						</g>
+					</svg>
+					<div class="wave-glow"></div>
+				</div>
+				<div class="voice-output">
+					<span class="voice-line" aria-label={i18n.speedDisplaySentence}>
+						{voiceWords.map((word, index) => (
+							<span
+								class="voice-word"
+								style={`--delay: ${index * 0.1}s`}
+							>
+								{word}
+							</span>
+						))}
+					</span>
+				</div>
+			</div>
+			<p class="voice-footer">{i18n.speedVoiceFooter}</p>
+		</article>
+	</div>
+</section>
+
+<script>
+	(function () {
+		// Perlin noise
+		var PERM = [
+			151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225,
+			140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247,
+			120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177,
+			33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165,
+			71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83, 111, 229, 122, 60, 211,
+			133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63,
+			161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135,
+			130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226,
+			250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59,
+			227, 47, 16, 58, 17, 182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152,
+			2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9, 129, 22, 39, 253,
+			19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228,
+			251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235,
+			249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176,
+			115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29,
+			24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180,
+		];
+		var p = PERM.concat(PERM);
+
+		function fade(t: number) {
+			return t * t * t * (t * (t * 6 - 15) + 10);
+		}
+		function lerp(t: number, a: number, b: number) {
+			return a + t * (b - a);
+		}
+		function noise1d(x: number) {
+			var xi = Math.floor(x) & 255;
+			var xf = x - Math.floor(x);
+			var u = fade(xf);
+			return lerp(
+				u,
+				(p[xi]! & 1) === 0 ? xf : -xf,
+				(p[xi + 1]! & 1) === 0 ? xf - 1 : -(xf - 1),
+			);
+		}
+		function fractalNoise1d(x: number, octaves: number, persistence: number) {
+			var total = 0,
+				freq = 1,
+				amp = 1,
+				maxVal = 0;
+			for (var i = 0; i < octaves; i++) {
+				total += noise1d(x * freq) * amp;
+				maxVal += amp;
+				amp *= persistence;
+				freq *= 2;
+			}
+			return total / maxVal;
+		}
+
+		// Typing animation
+		var TYPING_SCRIPT =
+			"Here's a reakkt:4ally long sentance:4ence that I have to type out and it jsut:3ust goes on forever.";
+		var BACKSPACE_INDEX = 10;
+		var STEP_DURATION = 135;
+		var HOLD_AT_END = 18;
+
+		var root = document.querySelector('[data-speed-showcase]');
+		if (!root) return;
+		var textEl = root.querySelector('[data-typing-text]');
+		var keys = root.querySelectorAll('[data-key-index]');
+		if (!textEl || !keys.length) return;
+
+		var displayedText = '';
+		var scriptIndex = 0;
+		var holdTicks = 0;
+		var backspacesRemaining = 0;
+		var backspaceRelease = false;
+
+		function clearPressed() {
+			keys.forEach(function (k) {
+				k.classList.remove('key-pressed');
+			});
+		}
+
+		setInterval(function () {
+			if (scriptIndex >= TYPING_SCRIPT.length && backspacesRemaining === 0) {
+				if (holdTicks < HOLD_AT_END) {
+					holdTicks++;
+					clearPressed();
+					return;
+				}
+				holdTicks = 0;
+				scriptIndex = 0;
+				displayedText = '';
+				textEl!.textContent = '';
+				clearPressed();
+				return;
+			}
+
+			if (backspacesRemaining > 0) {
+				if (backspaceRelease) {
+					clearPressed();
+					backspaceRelease = false;
+				} else {
+					clearPressed();
+					keys[BACKSPACE_INDEX]?.classList.add('key-pressed');
+					displayedText = displayedText.slice(0, -1);
+					textEl!.textContent = displayedText;
+					backspacesRemaining--;
+					backspaceRelease = true;
+				}
+				return;
+			}
+
+			var ch = TYPING_SCRIPT[scriptIndex];
+			if (ch === ':') {
+				var next = TYPING_SCRIPT[scriptIndex + 1] ?? '';
+				var count = parseInt(next, 10);
+				if (!isNaN(count)) {
+					backspacesRemaining = count;
+					scriptIndex += 2;
+					return;
+				}
+			}
+
+			displayedText += ch;
+			textEl!.textContent = displayedText;
+			scriptIndex++;
+			clearPressed();
+			var rIdx = Math.floor(Math.random() * BACKSPACE_INDEX);
+			keys[rIdx]?.classList.add('key-pressed');
+		}, STEP_DURATION);
+
+		// Wave animation (Perlin noise)
+		var wave1 = root.querySelector('.wave-group-1 .wave-path') as SVGPathElement | null;
+		var wave2 = root.querySelector('.wave-group-2 .wave-path') as SVGPathElement | null;
+		var wave3 = root.querySelector('.wave-group-3 .wave-path') as SVGPathElement | null;
+
+		var startTime = Date.now();
+		function animateWaves() {
+			var rawElapsed = (Date.now() - startTime) / 1000;
+			var timeNoise = fractalNoise1d(rawElapsed * 0.3, 1, 0.5);
+			var elapsed = rawElapsed + timeNoise * 2;
+
+			if (wave1) {
+				var n1 = fractalNoise1d(elapsed * 1.5, 1, 0.5);
+				wave1.style.transform = 'scaleY(' + (0.2 + (n1 + 1) * 0.5) + ')';
+			}
+			if (wave2) {
+				var n2 = fractalNoise1d(elapsed * 1.1 + 50, 3, 0.5);
+				wave2.style.transform = 'scaleY(' + (0.15 + (n2 + 1) * 0.4) + ')';
+			}
+			if (wave3) {
+				var n3 = fractalNoise1d(elapsed * 1.4 + 150, 3, 0.5);
+				wave3.style.transform = 'scaleY(' + (0.2 + (n3 + 1) * 0.3) + ')';
+			}
+			requestAnimationFrame(animateWaves);
+		}
+		requestAnimationFrame(animateWaves);
+	})();
+</script>
+
+<style>
+	.speed-showcase {
+		display: flex;
+		flex-direction: column;
+		gap: 48px;
+		max-width: min(1120px, 100%);
+		margin: 120px auto 0;
+	}
+
+	.section-intro {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		max-width: 58ch;
+	}
+
+	.section-intro h2 {
+		font-size: clamp(2.2rem, 3.2vw, 3rem);
+		line-height: 1.15;
+		letter-spacing: -0.03em;
+	}
+
+	.section-intro p {
+		font-size: 1.05rem;
+		line-height: 1.75;
+		color: var(--text-muted);
+	}
+
+	.section-intro :global(a) {
+		align-self: flex-start;
+	}
+
+	.badge {
+		align-self: flex-start;
+		padding: 6px 18px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: var(--level1);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-strong);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.badge {
+			background: rgba(255, 255, 255, 0.12);
+			border-color: rgba(255, 255, 255, 0.24);
+			color: rgba(255, 255, 255, 0.92);
+		}
+	}
+
+	.showcase-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 40px;
+	}
+
+	.keyboard-pane,
+	.voice-pane {
+		border-radius: 32px;
+		border: 1px solid rgba(18, 21, 28, 0.12);
+		background: var(--level1);
+		box-shadow: var(--shadow-soft);
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+		padding: 36px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.keyboard-pane,
+		.voice-pane {
+			border-color: rgba(255, 255, 255, 0.12);
+		}
+	}
+
+	.voice-pane {
+		background: linear-gradient(
+			135deg,
+			rgba(191, 219, 254, 0.5),
+			rgba(147, 197, 253, 0.3)
+		);
+		color: #1e293b;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.voice-pane {
+			background: linear-gradient(
+				135deg,
+				rgba(37, 99, 235, 0.18),
+				rgba(8, 14, 40, 0.78)
+			);
+			color: #ffffff;
+		}
+	}
+
+	.pane-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		font-size: 0.95rem;
+		text-transform: uppercase;
+		letter-spacing: 0.16em;
+		font-weight: 700;
+		opacity: 0.75;
+	}
+
+	.pane-metric {
+		font-size: 0.85rem;
+		letter-spacing: 0.06em;
+		opacity: 0.7;
+	}
+
+	.pane-metric-hot {
+		font-size: 0.95rem;
+		letter-spacing: 0.08em;
+		font-weight: 700;
+		color: #1e40af;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.pane-metric-hot {
+			color: #dbeafe;
+		}
+	}
+
+	.keyboard-visual {
+		display: flex;
+		flex-direction: column;
+		gap: 28px;
+	}
+
+	.key-deck {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 14px;
+	}
+
+	.key {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 44px;
+		border-radius: 8px;
+		background: linear-gradient(to bottom, var(--level1), var(--level2));
+		border: 2px solid rgba(18, 21, 28, 0.25);
+		border-bottom: 5px solid rgba(18, 21, 28, 0.3);
+		font-size: 0.85rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		box-shadow:
+			0 4px 0 rgba(18, 21, 28, 0.2),
+			0 6px 12px rgba(18, 21, 28, 0.12);
+		transition:
+			transform 0.03s ease-out,
+			box-shadow 0.03s ease-out,
+			border-bottom-width 0.03s ease-out;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.key {
+			border-color: rgba(255, 255, 255, 0.15);
+			border-bottom-color: rgba(255, 255, 255, 0.1);
+			box-shadow:
+				0 4px 0 rgba(255, 255, 255, 0.08),
+				0 6px 12px rgba(0, 0, 0, 0.3);
+		}
+	}
+
+	.key:global(.key-pressed) {
+		transform: translateY(4px);
+		background: var(--level2);
+		color: var(--text-strong);
+		border-bottom-width: 1px;
+		box-shadow:
+			0 0 0 rgba(18, 21, 28, 0),
+			0 1px 3px rgba(18, 21, 28, 0.1);
+	}
+
+	.key-backspace {
+		grid-column: span 2;
+		font-size: 0.7rem;
+	}
+
+	.typing-output {
+		position: relative;
+		padding: 24px;
+		border-radius: 20px;
+		background: linear-gradient(
+			135deg,
+			rgba(18, 21, 28, 0.04),
+			rgba(18, 21, 28, 0)
+		);
+		border: 1px solid rgba(18, 21, 28, 0.12);
+		font-family: 'SFMono-Regular', ui-monospace, SFMono-Regular, Menlo, Monaco,
+			Consolas, 'Liberation Mono', 'Courier New', monospace;
+		min-height: 110px;
+	}
+
+	.typing-line {
+		display: block;
+		white-space: normal;
+		letter-spacing: 0.04em;
+		font-size: 1rem;
+		line-height: 1.6;
+		word-break: break-word;
+		color: var(--text-strong);
+		min-height: 3.4em;
+	}
+
+	.typing-caret {
+		display: inline-block;
+		margin-left: 2px;
+		font-weight: 300;
+		color: var(--text-strong);
+		animation: typingCaretBlink 1s ease-in-out infinite;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.typing-caret {
+			color: rgba(255, 255, 255, 0.82);
+		}
+	}
+
+	.voice-visual {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 28px;
+		min-height: 260px;
+	}
+
+	.waveform {
+		position: relative;
+		height: 140px;
+		border-radius: 24px;
+		border: 1px solid rgba(59, 130, 246, 0.3);
+		background: rgba(191, 219, 254, 0.4);
+		overflow: hidden;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.waveform {
+			border: 1px solid rgba(115, 176, 255, 0.45);
+			background: rgba(37, 99, 235, 0.12);
+		}
+	}
+
+	.voice-output {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 24px 26px;
+		border-radius: 22px;
+		border: 1px solid rgba(59, 130, 246, 0.35);
+		background: rgba(191, 219, 254, 0.5);
+		box-shadow: 0 18px 46px rgba(37, 99, 235, 0.15);
+		font-family: 'SFMono-Regular', ui-monospace, SFMono-Regular, Menlo, Monaco,
+			Consolas, 'Liberation Mono', 'Courier New', monospace;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.voice-output {
+			border: 1px solid rgba(115, 176, 255, 0.42);
+			background: rgba(37, 99, 235, 0.2);
+			box-shadow: 0 18px 46px rgba(37, 99, 235, 0.22);
+		}
+	}
+
+	.wave-svg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.wave-path {
+		fill: none;
+		stroke: rgba(59, 130, 246, 0.85);
+		stroke-width: 2.5;
+		stroke-linecap: round;
+		transform-origin: center 40px;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.wave-path {
+			stroke: rgba(96, 165, 250, 0.85);
+		}
+	}
+
+	.wave-group-1 {
+		animation: waveScroll1 3s linear infinite;
+		opacity: 0.9;
+	}
+
+	.wave-group-2 {
+		animation: waveScroll2 1.2s linear infinite;
+		opacity: 0.6;
+	}
+
+	.wave-group-3 {
+		animation: waveScroll3 0.6s linear infinite;
+		opacity: 0.35;
+	}
+
+	.wave-glow {
+		position: absolute;
+		inset: auto 12px 16px 12px;
+		height: 48px;
+		border-radius: 999px;
+		background: radial-gradient(
+			circle,
+			rgba(59, 130, 246, 0.4),
+			transparent 70%
+		);
+		filter: blur(18px);
+		opacity: 0.5;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.wave-glow {
+			background: radial-gradient(
+				circle,
+				rgba(115, 176, 255, 0.5),
+				transparent 70%
+			);
+			opacity: 0.65;
+		}
+	}
+
+	.voice-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25em;
+		font-size: 1.05rem;
+		line-height: 1.6;
+		color: #1e293b;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.voice-line {
+			color: rgba(255, 255, 255, 0.92);
+		}
+	}
+
+	.voice-word {
+		display: inline-flex;
+		opacity: 0;
+		transform: translateY(6px);
+		filter: blur(6px);
+		animation: voiceWordReveal 2.6s ease-out infinite;
+		animation-delay: var(--delay, 0s);
+		animation-fill-mode: forwards;
+	}
+
+	.voice-footer {
+		font-size: 1rem;
+		line-height: 1.65;
+		color: #334155;
+		margin-top: 12px;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.voice-footer {
+			color: rgba(221, 235, 255, 0.88);
+		}
+	}
+
+	.keyboard-footer {
+		font-size: 0.88rem;
+		letter-spacing: 0.08em;
+		color: var(--text-muted);
+		opacity: 0.72;
+		margin-top: auto;
+	}
+
+	@keyframes waveScroll1 {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-126px);
+		}
+	}
+
+	@keyframes waveScroll2 {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-96px);
+		}
+	}
+
+	@keyframes waveScroll3 {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-64px);
+		}
+	}
+
+	@keyframes voiceWordReveal {
+		0% {
+			opacity: 0;
+			transform: translateY(10px);
+			filter: blur(8px);
+		}
+		20% {
+			opacity: 1;
+			transform: translateY(0);
+			filter: blur(0);
+		}
+		75% {
+			opacity: 1;
+			transform: translateY(0);
+			filter: blur(0);
+		}
+		100% {
+			opacity: 0;
+			transform: translateY(-6px);
+			filter: blur(6px);
+		}
+	}
+
+	@keyframes typingCaretBlink {
+		0%,
+		100% {
+			opacity: 0.2;
+		}
+		50% {
+			opacity: 1;
+		}
+	}
+
+	@media (max-width: 960px) {
+		.showcase-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 720px) {
+		.keyboard-pane,
+		.voice-pane {
+			padding: 28px 24px;
+		}
+
+		.key-deck {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+
+		.voice-word {
+			animation-duration: 2.2s;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.section-intro h2 {
+			font-size: clamp(2rem, 8vw, 2.5rem);
+		}
+
+		.key-deck {
+			gap: 10px;
+		}
+
+		.key {
+			height: 40px;
+			border-radius: 12px;
+		}
+
+		.voice-output {
+			padding: 22px 20px;
+		}
+
+		.waveform {
+			height: 120px;
+		}
+	}
+</style>

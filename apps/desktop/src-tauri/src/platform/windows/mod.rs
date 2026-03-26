@@ -1,6 +1,6 @@
 pub mod accessibility;
-pub mod init;
 pub mod compositor;
+pub mod init;
 pub mod input;
 pub mod keyboard;
 pub mod keyboard_language;
@@ -12,4 +12,12 @@ pub mod window;
 
 pub fn get_hotkey_strategy() -> &'static str {
     "listener"
+}
+
+pub fn supports_app_detection() -> bool {
+    true
+}
+
+pub fn supports_paste_keybinds() -> bool {
+    true
 }

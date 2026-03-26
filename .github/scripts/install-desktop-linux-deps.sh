@@ -20,10 +20,7 @@ sudo apt-get install -y \
   libasound2-dev \
   libunwind-dev \
   libxdo-dev \
-  libgtk-4-dev \
-  libgraphene-1.0-dev \
-  meson \
-  ninja-build \
+  libgtk-layer-shell-dev \
   patchelf \
   libgstreamer1.0-dev \
   libgstreamer-plugins-base1.0-dev \
@@ -33,15 +30,3 @@ sudo apt-get install -y \
   libfuse2 \
   wtype \
   rpm
-
-# Build gtk4-layer-shell from source (not packaged on Ubuntu 22.04/24.04)
-GTK4_LAYER_SHELL_DIR="$(mktemp -d)"
-git clone --depth 1 https://github.com/wmww/gtk4-layer-shell.git "$GTK4_LAYER_SHELL_DIR"
-cd "$GTK4_LAYER_SHELL_DIR"
-meson setup build -Dvapi=false -Dtests=false -Dexamples=false -Ddocs=false -Dintrospection=false
-ninja -C build
-sudo ninja -C build install
-sudo ldconfig
-cd -
-rm -rf "$GTK4_LAYER_SHELL_DIR"
-echo "Built and installed gtk4-layer-shell from source"

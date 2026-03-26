@@ -46,14 +46,12 @@ pub async fn update_conversation(
     pool: SqlitePool,
     conversation: &Conversation,
 ) -> Result<Conversation, sqlx::Error> {
-    sqlx::query(
-        "UPDATE conversations SET title = ?2, updated_at = ?3 WHERE id = ?1",
-    )
-    .bind(&conversation.id)
-    .bind(&conversation.title)
-    .bind(conversation.updated_at)
-    .execute(&pool)
-    .await?;
+    sqlx::query("UPDATE conversations SET title = ?2, updated_at = ?3 WHERE id = ?1")
+        .bind(&conversation.id)
+        .bind(&conversation.title)
+        .bind(conversation.updated_at)
+        .execute(&pool)
+        .await?;
 
     Ok(conversation.clone())
 }

@@ -31,8 +31,7 @@ pub fn deploy_trigger_script(app: &tauri::AppHandle) {
 fn deploy_trigger_script_inner(app: &tauri::AppHandle) -> Result<(), String> {
     let dest = trigger_script_path(app)?;
     let config_dir = dest.parent().ok_or("Invalid script dest path")?;
-    fs::create_dir_all(config_dir)
-        .map_err(|err| format!("Failed to create config dir: {err}"))?;
+    fs::create_dir_all(config_dir).map_err(|err| format!("Failed to create config dir: {err}"))?;
 
     let resource_path = match app
         .path()
@@ -273,8 +272,7 @@ fn keys_to_hyprland_binding(keys: &[String]) -> (String, String) {
 // --- GNOME ---
 
 const GNOME_KEYBINDING_BASE: &str = "org.gnome.settings-daemon.plugins.media-keys";
-const GNOME_CUSTOM_SCHEMA: &str =
-    "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding";
+const GNOME_CUSTOM_SCHEMA: &str = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding";
 const GNOME_CUSTOM_PREFIX: &str =
     "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings";
 const VOQUILL_KEYBINDING_TAG: &str = "voquill-";
@@ -305,11 +303,7 @@ fn read_gsettings_string_list(schema: &str, key: &str) -> Result<Vec<String>, St
         .collect())
 }
 
-fn write_gsettings_string_list(
-    schema: &str,
-    key: &str,
-    values: &[String],
-) -> Result<(), String> {
+fn write_gsettings_string_list(schema: &str, key: &str, values: &[String]) -> Result<(), String> {
     let formatted: Vec<String> = values.iter().map(|v| format!("'{v}'")).collect();
     let list = format!("[{}]", formatted.join(", "));
 
@@ -349,6 +343,10 @@ fn gsettings_set_custom_keybinding(
     Ok(())
 }
 
+fn has_non_modifier_key(keys: &[String]) -> bool {
+    keys.iter().any(|k| classify_key(k).is_none())
+}
+
 fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), String> {
     let existing_list = read_gsettings_string_list(GNOME_KEYBINDING_BASE, "custom-keybindings")?;
 
@@ -358,8 +356,16 @@ fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), 
         .collect();
 
     let mut new_paths = user_paths;
+    let mut synced = 0;
     for binding in bindings {
         if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping GNOME binding for '{}': modifier-only combos are not supported by compositor shortcuts",
+                binding.action_name
+            );
             continue;
         }
         let dconf_path = format!(
@@ -369,17 +375,22 @@ fn sync_gnome(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), 
         let gnome_binding = keys_to_gnome_binding(&binding.keys);
         let command = format!("{} {}", script_path.display(), binding.action_name);
 
-        gsettings_set_custom_keybinding(&dconf_path, "name", &format!("Voquill {}", binding.action_name))?;
+        gsettings_set_custom_keybinding(
+            &dconf_path,
+            "name",
+            &format!("Voquill {}", binding.action_name),
+        )?;
         gsettings_set_custom_keybinding(&dconf_path, "command", &command)?;
         gsettings_set_custom_keybinding(&dconf_path, "binding", &gnome_binding)?;
 
         if !new_paths.contains(&dconf_path) {
             new_paths.push(dconf_path);
         }
+        synced += 1;
     }
 
     write_gsettings_string_list(GNOME_KEYBINDING_BASE, "custom-keybindings", &new_paths)?;
-    log::info!("Synced {} GNOME compositor hotkeys", bindings.len());
+    log::info!("Synced {synced} GNOME compositor hotkeys");
     Ok(())
 }
 
@@ -397,6 +408,13 @@ fn sync_sway(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), S
 
     for binding in bindings {
         if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping Sway binding for '{}': modifier-only combos are not supported",
+                binding.action_name
+            );
             continue;
         }
         let sway_keys = keys_to_sway_binding(&binding.keys);
@@ -430,6 +448,13 @@ fn sync_hyprland(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(
 
     for binding in bindings {
         if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping Hyprland binding for '{}': modifier-only combos are not supported",
+                binding.action_name
+            );
             continue;
         }
         let (mods, key) = keys_to_hyprland_binding(&binding.keys);

@@ -3,8 +3,7 @@
 Translation script for Voquill locale files.
 
 Usage:
-    python translate.py desktop
-    python translate.py web
+    python translate.py desktop|admin
 
 Requires a .env file in the scripts directory with:
     GROQ_API_KEY=your_api_key_here
@@ -28,11 +27,6 @@ APP_CONFIGS = {
         "app_dir": SCRIPT_DIR.parent / "apps" / "desktop",
         "locales_dir": SCRIPT_DIR.parent / "apps" / "desktop" / "src" / "i18n" / "locales",
         "i18n_command": ["pnpm", "run", "i18n"],
-    },
-    "web": {
-        "app_dir": SCRIPT_DIR.parent / "apps" / "web",
-        "locales_dir": SCRIPT_DIR.parent / "apps" / "web" / "src" / "i18n" / "locales",
-        "i18n_command": ["pnpm", "run", "i18n:extract", "&&", "pnpm", "run", "i18n:sync"],
     },
     "admin": {
         "app_dir": SCRIPT_DIR.parent / "enterprise" / "admin",
@@ -143,7 +137,7 @@ Text to translate:
 
 def main():
     parser = argparse.ArgumentParser(description="Translate locale files for Voquill apps")
-    parser.add_argument("app", choices=["desktop", "web", "admin"], help="The app to translate (desktop, web, or admin)")
+    parser.add_argument("app", choices=["desktop", "admin"], help="The app to translate (desktop, or admin)")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be translated without making changes")
     args = parser.parse_args()
 
@@ -165,11 +159,7 @@ def main():
     print(f"  Found {len(old_locales)} locale files (excluding en.json)")
 
     print(f"\nRunning i18n command in {app_dir}...")
-    if args.app == "web":
-        subprocess.run(["pnpm", "run", "i18n:extract"], cwd=app_dir, check=True)
-        subprocess.run(["pnpm", "run", "i18n:sync"], cwd=app_dir, check=True)
-    else:
-        subprocess.run(config["i18n_command"], cwd=app_dir, check=True)
+    subprocess.run(config["i18n_command"], cwd=app_dir, check=True)
 
     print("\nReading updated locale files...")
     new_locales = read_locale_files(locales_dir)

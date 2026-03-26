@@ -1,6 +1,6 @@
 import { FormattedMessage } from "react-intl";
 import { useAppStore } from "../../store";
-import { VirtualizedListPage } from "../common/VirtualizedListPage";
+import { ScrollListPage } from "../common/ScrollListPage";
 import { TranscriptionsSideEffects } from "./TranscriptionsSideEffects";
 import { TranscriptionRow } from "./TranscriptRow";
 
@@ -12,7 +12,7 @@ export default function TranscriptionsPage() {
   return (
     <>
       <TranscriptionsSideEffects />
-      <VirtualizedListPage
+      <ScrollListPage
         title={<FormattedMessage defaultMessage="History" />}
         subtitle={
           <FormattedMessage

@@ -61,8 +61,7 @@ fn write_port_file(app: &AppHandle, port: u16) -> Result<(), String> {
         .app_config_dir()
         .map_err(|err| format!("Failed to get config dir: {err}"))?;
 
-    fs::create_dir_all(&config_dir)
-        .map_err(|err| format!("Failed to create config dir: {err}"))?;
+    fs::create_dir_all(&config_dir).map_err(|err| format!("Failed to create config dir: {err}"))?;
 
     let file_path = config_dir.join("bridge-server.json");
     let content = serde_json::json!({ "port": port }).to_string();
@@ -73,10 +72,7 @@ fn write_port_file(app: &AppHandle, port: u16) -> Result<(), String> {
     Ok(())
 }
 
-async fn handle_connection(
-    stream: tokio::net::TcpStream,
-    app: AppHandle,
-) -> Result<(), String> {
+async fn handle_connection(stream: tokio::net::TcpStream, app: AppHandle) -> Result<(), String> {
     let (reader, mut writer) = stream.into_split();
     let mut buf_reader = BufReader::new(reader);
 

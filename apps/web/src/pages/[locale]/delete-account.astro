@@ -1,0 +1,24 @@
+---
+import LegalLayout from '../../layouts/LegalLayout.astro';
+import { renderLocalizedMarkdownFile } from '../../lib/markdown';
+import { locales, type Locale } from '../../types/locale';
+
+export function getStaticPaths() {
+	return locales.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const html = await renderLocalizedMarkdownFile(
+	'content/delete-account.md',
+	locale,
+);
+---
+
+<LegalLayout
+	title="Delete Account | Voquill"
+	description="Learn how to delete your Voquill account."
+	locale={locale}
+	robots="noindex, nofollow, noarchive"
+>
+	<Fragment set:html={html} />
+</LegalLayout>

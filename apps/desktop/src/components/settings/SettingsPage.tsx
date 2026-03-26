@@ -50,7 +50,6 @@ import {
   getAllowsChangeTranscription,
   getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
-import { isWindows } from "../../utils/env.utils";
 import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
 import {
   DICTATION_LANGUAGE_OPTIONS,
@@ -76,6 +75,9 @@ export default function SettingsPage() {
   const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
   const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
   const allowMultiDevice = useAppStore(getAllowsMultiDeviceMode);
+  const supportsPasteKeybinds = useAppStore(
+    (state) => state.supportsPasteKeybinds,
+  );
   const [manageSubscriptionLoading, setManageSubscriptionLoading] =
     useState(false);
   const isSignedIn = useAppStore(getIsSignedIn);
@@ -267,7 +269,7 @@ export default function SettingsPage() {
         leading={<TroubleshootOutlined />}
         onClick={openDiagnosticsDialog}
       />
-      {isWindows() && (
+      {supportsPasteKeybinds && (
         <ListTile
           title={<FormattedMessage defaultMessage="App paste bindings" />}
           leading={<AppsOutlined />}
