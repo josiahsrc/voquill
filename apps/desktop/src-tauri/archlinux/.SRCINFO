@@ -2,7 +2,7 @@ pkgbase = voquill-bin
 	pkgdesc = Open source voice dictation tool - the WisprFlow alternative
 	pkgver = 0.0.293
 	pkgrel = 1
-	url = https://github.com/josiahsrc/voquill
+	url = https://github.com/voquill/voquill
 	arch = x86_64
 	license = AGPL-3.0-only
 	depends = alsa-lib
@@ -28,7 +28,7 @@ pkgbase = voquill-bin
 	conflicts = voquill
 	options = !strip
 	options = !debug
-	source = voquill-bin-0.0.293.deb::https://github.com/josiahsrc/voquill/releases/download/desktop-v0.0.293/Voquill_0.0.293_amd64.deb
+	source = voquill-bin-0.0.293.deb::https://github.com/voquill/voquill/releases/download/desktop-v0.0.293/Voquill_0.0.293_amd64.deb
 	sha256sums = 80d97b09fecc14213d94202a0cd67afd16f97832a93e7d9b29e8ee476ff838a3
 
 pkgname = voquill-bin

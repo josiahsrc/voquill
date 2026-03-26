@@ -7,7 +7,7 @@ We'd love to hear from you. Whether you need help, want to report a bug, or are 
 If you're having trouble with Voquill or have a question about how something works:
 
 - **Email:** [support@voquill.com](mailto:support@voquill.com)
-- **GitHub Issues:** [github.com/josiahsrc/voquill/issues](https://github.com/josiahsrc/voquill/issues)
+- **GitHub Issues:** [github.com/voquill/voquill/issues](https://github.com/voquill/voquill/issues)
 
 We aim to respond to support requests within a few business days.
 

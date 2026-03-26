@@ -17,7 +17,7 @@ Create a `docker-compose.yml` on your host machine. Make sure to set `JWT_SECRET
 ```yaml
 services:
   admin:
-    image: ghcr.io/josiahsrc/voquill/enterprise-admin:latest
+    image: ghcr.io/voquill/voquill/enterprise-admin:latest
     platform: linux/amd64
     ports:
       - "5100:5173"
@@ -27,7 +27,7 @@ services:
       - voquill
 
   gateway:
-    image: ghcr.io/josiahsrc/voquill/enterprise-gateway:latest
+    image: ghcr.io/voquill/voquill/enterprise-gateway:latest
     platform: linux/amd64
     ports:
       - "4630:4630"

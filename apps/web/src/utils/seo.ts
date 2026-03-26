@@ -69,7 +69,7 @@ export function buildOrganizationStructuredData(): JsonLd {
 			url: toAbsoluteImageUrl('/app-icon.svg'),
 		},
 		sameAs: [
-			'https://github.com/josiahsrc/voquill',
+			'https://github.com/voquill/voquill',
 			'https://docs.voquill.com',
 			'https://discord.gg/5jXkDvdVdt',
 		],

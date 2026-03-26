@@ -61,6 +61,6 @@ See [docs/getting-started.md](docs/getting-started.md) for setup instructions an
 
 We love our community! Thank you to everyone who has contributed to Voquill!
 
-<a href="https://github.com/josiahsrc/voquill/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=josiahsrc/voquill" />
+<a href="https://github.com/voquill/voquill/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=voquill/voquill" />
 </a>

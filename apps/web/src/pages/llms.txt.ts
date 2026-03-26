@@ -20,7 +20,7 @@ Localized versions of the main site are available under locale-prefixed paths su
 - [Blog](${toAbsoluteUrl(localePath("en", "/blog"))}): Product articles and implementation guides.
 - [Why We're Building Voquill](${toAbsoluteUrl(localePath("en", "/blog/why-were-building-voquill"))}): Background on privacy-first voice dictation, local processing, and enterprise deployment.
 - [Docs](https://docs.voquill.com): Product and enterprise documentation.
-- [GitHub](${"https://github.com/josiahsrc/voquill"}): Source code and open-source project activity.
+- [GitHub](${"https://github.com/voquill/voquill"}): Source code and open-source project activity.
 
 ## Deployment
 

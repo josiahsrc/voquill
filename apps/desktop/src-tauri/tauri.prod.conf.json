@@ -19,7 +19,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/josiahsrc/voquill/releases/download/desktop-prod/latest.json"
+        "https://github.com/voquill/voquill/releases/download/desktop-prod/latest.json"
       ]
     }
   }
