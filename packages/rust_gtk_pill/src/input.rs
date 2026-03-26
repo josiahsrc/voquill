@@ -125,6 +125,9 @@ pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillSt
             let region_h = pill_ry + (pill_h * s).ceil() as i32 + ((PILL_AREA_HEIGHT - EXPANDED_PILL_HEIGHT) / 2.0 * s).ceil() as i32 - tooltip_top;
             let rect = cairo::RectangleInt::new(region_rx, tooltip_top, region_w, region_h);
             let region = cairo::Region::create_rectangle(&rect);
+            if state.phase.get() != Phase::Idle {
+                union_cancel_button(&region, state, s, ox, oy, dw, dh);
+            }
             gdk_window.input_shape_combine_region(&region, 0, 0);
         } else {
             let rect = cairo::RectangleInt::new(
@@ -133,9 +136,30 @@ pub(crate) fn set_expanded_input_region(gdk_window: &gdk::Window, state: &PillSt
                 ((PILL_AREA_HEIGHT) * s).ceil() as i32,
             );
             let region = cairo::Region::create_rectangle(&rect);
+            if state.phase.get() != Phase::Idle {
+                union_cancel_button(&region, state, s, ox, oy, dw, dh);
+            }
             gdk_window.input_shape_combine_region(&region, 0, 0);
         }
     }
+}
+
+fn union_cancel_button(
+    region: &cairo::Region, _state: &PillState,
+    s: f64, ox: f64, oy: f64, dw: f64, dh: f64,
+) {
+    let pill_area_top = dh - PILL_AREA_HEIGHT;
+    let pill_y = pill_area_top + (PILL_AREA_HEIGHT - EXPANDED_PILL_HEIGHT) / 2.0;
+    let pill_x = (dw - EXPANDED_PILL_WIDTH) / 2.0;
+    let btn_x = pill_x + EXPANDED_PILL_WIDTH - CANCEL_BUTTON_SIZE / 2.0 + 2.0;
+    let btn_y = pill_y - CANCEL_BUTTON_SIZE / 2.0 - 2.0;
+    let btn_rect = cairo::RectangleInt::new(
+        ((ox + btn_x) * s) as i32,
+        ((oy + btn_y) * s) as i32,
+        (CANCEL_BUTTON_SIZE * s).ceil() as i32,
+        (CANCEL_BUTTON_SIZE * s).ceil() as i32,
+    );
+    let _ = region.union_rectangle(&btn_rect);
 }
 
 pub(crate) fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {

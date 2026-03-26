@@ -161,9 +161,11 @@ pub fn run(receiver: Receiver<InMessage>) {
     });
 
     let state_leave = state.clone();
-    window.connect_leave_notify_event(move |_, _| {
-        state_leave.hovered.set(false);
-        ipc::send(&OutMessage::Hover { hovered: false });
+    window.connect_leave_notify_event(move |_, event| {
+        if event.mode() == gdk::CrossingMode::Normal {
+            state_leave.hovered.set(false);
+            ipc::send(&OutMessage::Hover { hovered: false });
+        }
         glib::Propagation::Proceed
     });
 
