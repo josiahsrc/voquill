@@ -138,7 +138,9 @@ export const OpenAICompatibleModelPicker = ({
           {...params}
           label={<FormattedMessage defaultMessage="Model" />}
           placeholder="Select or type a model"
-          slotProps={{ inputLabel: { ...params.InputLabelProps, shrink: true } }}
+          slotProps={{
+            inputLabel: { ...params.InputLabelProps, shrink: true },
+          }}
         />
       )}
     />
