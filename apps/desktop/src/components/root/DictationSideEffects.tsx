@@ -104,6 +104,7 @@ export const DictationSideEffects = () => {
 
   const strategyRef = useRef<BaseStrategy | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
+  const preDictationVolumeRef = useRef<number | null>(null);
   const recordingWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastStyleSwitchRef = useRef(0);
@@ -170,6 +171,30 @@ export const DictationSideEffects = () => {
     [additionalLanguageEntries],
   );
 
+  const restoreSystemVolume = useCallback(() => {
+    const savedVolume = preDictationVolumeRef.current;
+    preDictationVolumeRef.current = null;
+    if (savedVolume !== null) {
+      invoke("set_system_volume", { volume: savedVolume }).catch((e) =>
+        getLogger().verbose(`Failed to restore system volume: ${e}`),
+      );
+    }
+  }, []);
+
+  const dimSystemVolume = useCallback(async () => {
+    const dimLevel = getAppState().userPrefs?.dictationAudioDim ?? 1.0;
+    if (dimLevel >= 1.0) return;
+
+    try {
+      const currentVolume = await invoke<number>("get_system_volume");
+      preDictationVolumeRef.current = currentVolume;
+      const dimmedVolume = currentVolume * dimLevel;
+      await invoke("set_system_volume", { volume: dimmedVolume });
+    } catch (e) {
+      getLogger().verbose(`Failed to dim system volume: ${e}`);
+    }
+  }, []);
+
   const clearRecordingTimers = useCallback(() => {
     if (recordingWarningTimerRef.current) {
       clearTimeout(recordingWarningTimerRef.current);
@@ -221,6 +246,7 @@ export const DictationSideEffects = () => {
       clearRecordingTimers();
       clearCancelPromptTimer();
       hardResetHotkeyState();
+      restoreSystemVolume();
       invoke<void>("set_phase", { phase: "idle" });
       invoke("stop_recording").catch((e) =>
         getLogger().verbose(`stop_recording failed during abort: ${e}`),
@@ -252,6 +278,7 @@ export const DictationSideEffects = () => {
       clearRecordingState,
       clearRecordingTimers,
       hardResetHotkeyState,
+      restoreSystemVolume,
       intl,
     ],
   );
@@ -259,6 +286,7 @@ export const DictationSideEffects = () => {
   const stopRecordingRaw = useCallback(async (): Promise<RawStopResp> => {
     getLogger().info("Stopping recording");
     clearRecordingTimers();
+    restoreSystemVolume();
 
     const [audio, a11yInfo, appTarget] = await getLogger().stopwatch(
       "stopRecording",
@@ -390,7 +418,7 @@ export const DictationSideEffects = () => {
     return {
       shouldContinue: result.shouldContinue,
     };
-  }, []);
+  }, [restoreSystemVolume]);
 
   const stopRecording = useCallback(async () => {
     if (isStoppingRef.current) {
@@ -530,6 +558,7 @@ export const DictationSideEffects = () => {
         }
 
         startRecordingTimers();
+        dimSystemVolume();
       } catch (error) {
         getLogger().error(`Failed to start recording: ${error}`);
 
@@ -560,6 +589,7 @@ export const DictationSideEffects = () => {
       abortRecording,
       clearRecordingState,
       clearRecordingTimers,
+      dimSystemVolume,
       hardResetHotkeyState,
       intl,
     ],

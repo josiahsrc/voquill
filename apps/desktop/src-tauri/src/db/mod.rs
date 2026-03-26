@@ -119,6 +119,8 @@ pub const TRANSCRIPTION_REMOTE_STATUS_MIGRATION_SQL: &str =
     include_str!("migrations/062_transcription_remote_status.sql");
 pub const CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL: &str =
     include_str!("migrations/063_conversations_and_chat_messages.sql");
+pub const DICTATION_AUDIO_DIM_MIGRATION_SQL: &str =
+    include_str!("migrations/064_dictation_audio_dim.sql");
 
 pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
@@ -498,6 +500,12 @@ pub fn migrations() -> Vec<tauri_plugin_sql::Migration> {
             version: 63,
             description: "create_conversations_and_chat_messages_tables",
             sql: CONVERSATIONS_AND_CHAT_MESSAGES_MIGRATION_SQL,
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 64,
+            description: "add_dictation_audio_dim",
+            sql: DICTATION_AUDIO_DIM_MIGRATION_SQL,
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
     ]

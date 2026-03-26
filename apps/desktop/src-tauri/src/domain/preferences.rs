@@ -70,8 +70,14 @@ pub struct UserPreferences {
     pub remote_receiver_port: Option<i64>,
     #[serde(default)]
     pub remote_receiver_auto_start: bool,
+    #[serde(default = "default_dictation_audio_dim")]
+    pub dictation_audio_dim: f64,
 }
 
 fn default_dictation_pill_visibility() -> String {
     "while_active".to_string()
+}
+
+fn default_dictation_audio_dim() -> f64 {
+    1.0
 }

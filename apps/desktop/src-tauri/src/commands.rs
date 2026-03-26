@@ -1629,3 +1629,14 @@ pub async fn download_and_open_mac_installer(url: String) -> Result<(), String> 
 
     Ok(())
 }
+
+#[tauri::command]
+pub fn get_system_volume() -> Result<f64, String> {
+    crate::platform::volume::get_system_volume()
+}
+
+#[tauri::command]
+pub fn set_system_volume(volume: f64) -> Result<(), String> {
+    let clamped = volume.clamp(0.0, 1.0);
+    crate::platform::volume::set_system_volume(clamped)
+}
