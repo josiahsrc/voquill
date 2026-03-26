@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - refactor-core
     paths:
       - "packages/types/**"
       - "packages/utilities/**"
