@@ -4,7 +4,7 @@
   "description": "Shared utility functions",
   "repository": {
     "type": "git",
-    "url": "https://github.com/voquill/voquill.git",
+    "url": "git+https://github.com/voquill/voquill.git",
     "directory": "packages/utilities"
   },
   "main": "dist/index.js",

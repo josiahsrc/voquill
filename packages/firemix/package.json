@@ -4,7 +4,7 @@
   "description": "Shared firemix utilities",
   "repository": {
     "type": "git",
-    "url": "https://github.com/voquill/voquill.git",
+    "url": "git+https://github.com/voquill/voquill.git",
     "directory": "packages/firemix"
   },
   "main": "dist/index.js",

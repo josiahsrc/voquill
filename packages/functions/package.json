@@ -4,7 +4,7 @@
   "description": "Shared callable function helpers for Voquill apps.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/voquill/voquill.git",
+    "url": "git+https://github.com/voquill/voquill.git",
     "directory": "packages/functions"
   },
   "main": "dist/index.js",
