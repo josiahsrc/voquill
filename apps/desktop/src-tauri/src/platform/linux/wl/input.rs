@@ -206,12 +206,8 @@ fn restore_clipboard(snapshot: ClipboardSnapshot) {
     }
 }
 
-fn paste_combo(keybind: Option<&str>) -> &'static str {
-    if keybind == Some("ctrl+shift+v") {
-        "ctrl+shift+v"
-    } else {
-        "ctrl+v"
-    }
+fn paste_combo(_keybind: Option<&str>) -> &'static str {
+    "ctrl+shift+v"
 }
 
 // --- ydotool (works on all Wayland compositors via /dev/uinput) ---
@@ -349,20 +345,6 @@ fn spawn_ydotoold(guard: &mut Option<Child>) -> Result<(), String> {
     Ok(())
 }
 
-fn restart_ydotoold() -> Result<(), String> {
-    if !ydotoold_available() {
-        return Ok(());
-    }
-
-    let mut guard = YDOTOOLD_CHILD.lock().unwrap_or_else(|p| p.into_inner());
-    if let Some(mut child) = guard.take() {
-        let _ = child.kill();
-        let _ = child.wait();
-    }
-
-    spawn_ydotoold(&mut guard)
-}
-
 pub(crate) fn warm_runtime_helpers() {
     if ydotool_available() {
         if let Err(err) = ensure_ydotoold_running() {
@@ -372,60 +354,6 @@ pub(crate) fn warm_runtime_helpers() {
 }
 
 fn ydotool_key(combo: &str) -> Result<(), String> {
-    ensure_ydotoold_running()?;
-
-    match ydotool_key_once(combo) {
-        Ok(()) => Ok(()),
-        Err(first_err) => {
-            if !ydotoold_available() {
-                return Err(first_err);
-            }
-
-            log::warn!(
-                "ydotool command failed, restarting ydotoold and retrying: {first_err}"
-            );
-            restart_ydotoold()?;
-            ydotool_key_once(combo).map_err(|retry_err| {
-                format!(
-                    "{first_err}; retry after restarting ydotoold also failed: {retry_err}"
-                )
-            })
-        }
-    }
-}
-
-fn ydotool_key_once(combo: &str) -> Result<(), String> {
-
-    if let Some(sequence) = ydotool_keycode_fallback(combo) {
-        let keycode_output = Command::new("ydotool")
-            .arg("key")
-            .args(sequence.split_whitespace())
-            .output()
-            .map_err(|err| format!("ydotool keycode sequence failed: {err}"))?;
-
-        if keycode_output.status.success() {
-            log::info!("Used ydotool keycode sequence for {combo}");
-            return Ok(());
-        }
-
-        let keycode_stderr = String::from_utf8_lossy(&keycode_output.stderr);
-        let symbolic_output = Command::new("ydotool")
-            .arg("key")
-            .arg(combo)
-            .output()
-            .map_err(|err| format!("ydotool symbolic combo failed: {err}"))?;
-
-        if symbolic_output.status.success() {
-            log::info!("Used symbolic ydotool combo for {combo} after keycode failure");
-            return Ok(());
-        }
-
-        let symbolic_stderr = String::from_utf8_lossy(&symbolic_output.stderr);
-        return Err(format!(
-            "ydotool keycode sequence failed: {keycode_stderr}; symbolic combo also failed: {symbolic_stderr}"
-        ));
-    }
-
     let output = Command::new("ydotool")
         .arg("key")
         .arg(combo)
@@ -437,15 +365,6 @@ fn ydotool_key_once(combo: &str) -> Result<(), String> {
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("ydotool exited with non-zero status: {stderr}"))
-    }
-}
-
-fn ydotool_keycode_fallback(combo: &str) -> Option<&'static str> {
-    match combo {
-        "ctrl+c" => Some("29:1 46:1 46:0 29:0"),
-        "ctrl+v" => Some("29:1 47:1 47:0 29:0"),
-        "ctrl+shift+v" => Some("29:1 42:1 47:1 47:0 42:0 29:0"),
-        _ => None,
     }
 }
 
@@ -493,20 +412,7 @@ pub fn wtype_text(text: &str) -> Result<(), String> {
 
 // --- Simulate paste/copy keystrokes ---
 
-fn simulate_paste_keystroke(keybind: Option<&str>) -> Result<(), String> {
-    let combo = paste_combo(keybind);
-
-    if ydotool_available() {
-        log::info!("Using ydotool for paste keystroke: {combo}");
-        match ydotool_key(combo) {
-            Ok(()) => return Ok(()),
-            Err(err) => log::warn!(
-                "ydotool paste keystroke failed ({err}), trying wtype fallback"
-            ),
-        }
-    }
-
-    log::info!("ydotool not available, trying wtype for paste keystroke: {combo}");
+fn wtype_paste_keystroke(combo: &str) -> Result<(), String> {
     if combo == "ctrl+shift+v" {
         wtype_key(&["ctrl", "shift"], "v")
     } else {
@@ -514,14 +420,41 @@ fn simulate_paste_keystroke(keybind: Option<&str>) -> Result<(), String> {
     }
 }
 
-pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
-    if ydotool_available() {
-        match ydotool_copy() {
-            Ok(()) => return Ok(()),
-            Err(err) => log::warn!("ydotool copy keystroke failed ({err}), trying wtype"),
+fn simulate_paste_keystroke(keybind: Option<&str>) -> Result<(), String> {
+    let combo = paste_combo(keybind);
+
+    match wtype_paste_keystroke(combo) {
+        Ok(()) => {
+            log::info!("Used wtype for paste keystroke: {combo}");
+            return Ok(());
         }
+        Err(err) => log::info!(
+            "wtype paste keystroke unavailable ({err}), trying ydotool"
+        ),
     }
-    wtype_key(&["ctrl"], "c")
+
+    if ydotool_available() {
+        log::info!("Using ydotool for paste keystroke: {combo}");
+        return ydotool_key(combo);
+    }
+
+    Err("No Wayland input method available for paste keystroke".into())
+}
+
+pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
+    match wtype_key(&["ctrl"], "c") {
+        Ok(()) => {
+            log::info!("Used wtype for copy keystroke");
+            return Ok(());
+        }
+        Err(err) => log::info!("wtype copy keystroke unavailable ({err}), trying ydotool"),
+    }
+
+    if ydotool_available() {
+        return ydotool_copy();
+    }
+
+    Err("No Wayland input method available for copy keystroke".into())
 }
 
 // --- Public API ---
