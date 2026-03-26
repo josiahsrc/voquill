@@ -49,7 +49,7 @@ az postgres flexible-server firewall-rule create \
 az container create \
   --resource-group voquill \
   --name voquill-gateway \
-  --image ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
+  --image ghcr.io/voquill/voquill/enterprise-gateway:latest \
   --ports 4630 \
   --ip-address Public \
   --environment-variables \
@@ -69,7 +69,7 @@ Set `VOQUILL_GATEWAY_URL` to the public URL of the gateway container you deploye
 az container create \
   --resource-group voquill \
   --name voquill-admin \
-  --image ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
+  --image ghcr.io/voquill/voquill/enterprise-admin:latest \
   --ports 5173 \
   --ip-address Public \
   --environment-variables \
@@ -88,7 +88,7 @@ az container delete --resource-group voquill --name voquill-gateway --yes
 az container create \
   --resource-group voquill \
   --name voquill-gateway \
-  --image ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
+  --image ghcr.io/voquill/voquill/enterprise-gateway:latest \
   --ports 4630 \
   --ip-address Public \
   --environment-variables \

@@ -13,7 +13,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/josiahsrc/voquill/releases/download/desktop-gpu-dev/latest.json"
+        "https://github.com/voquill/voquill/releases/download/desktop-gpu-dev/latest.json"
       ]
     }
   }

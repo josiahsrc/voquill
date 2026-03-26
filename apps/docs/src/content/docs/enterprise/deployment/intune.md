@@ -15,7 +15,7 @@ This guide walks you through deploying Voquill to Windows devices in your organi
 
 ### 1. Download the Latest MSI
 
-Download the latest Voquill Windows MSI from the [GitHub releases page](https://github.com/josiahsrc/voquill/releases). Look for a file named `Voquill_x.x.x_x64_en-US.msi`.
+Download the latest Voquill Windows MSI from the [GitHub releases page](https://github.com/voquill/voquill/releases). Look for a file named `Voquill_x.x.x_x64_en-US.msi`.
 
 Create a folder for your Intune package:
 

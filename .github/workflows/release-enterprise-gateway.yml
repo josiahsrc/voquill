@@ -25,7 +25,7 @@ on:
         type: string
 
 env:
-  IMAGE_NAME: ghcr.io/josiahsrc/voquill/enterprise-gateway
+  IMAGE_NAME: ghcr.io/voquill/voquill/enterprise-gateway
 
 jobs:
   metadata:

@@ -16,7 +16,7 @@ Join the [Voquill Discord server](https://discord.gg/5jXkDvdVdt) to chat with ot
 
 ## GitHub
 
-Voquill's source code lives on [GitHub](https://github.com/josiahsrc/voquill). You can:
+Voquill's source code lives on [GitHub](https://github.com/voquill/voquill). You can:
 
 - Browse the code
 - Report bugs and request features via issues

@@ -1,6 +1,6 @@
 const RELEASE_TAG_REGEX = /\/releases\/download\/([^/]+)\//;
 const GITHUB_RELEASE_DOWNLOAD_BASE =
-  "https://github.com/josiahsrc/voquill/releases/download";
+  "https://github.com/voquill/voquill/releases/download";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;

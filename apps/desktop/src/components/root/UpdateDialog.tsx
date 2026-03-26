@@ -169,23 +169,6 @@ export const UpdateDialog = () => {
     >
       <DialogTitle>
         <FormattedMessage defaultMessage="Update available" />
-        <Typography variant="caption" color="text.secondary" component="p">
-          <FormattedMessage
-            defaultMessage="Release notes are AI-generated and may contain errors. Visit the {discord} for a more accurate discussion on what's being developed."
-            values={{
-              discord: (
-                <Link
-                  component="button"
-                  variant="caption"
-                  onClick={() => openUrl("https://discord.gg/5jXkDvdVdt")}
-                  sx={{ verticalAlign: "baseline" }}
-                >
-                  Discord
-                </Link>
-              ),
-            }}
-          />
-        </Typography>
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
