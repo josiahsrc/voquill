@@ -2,6 +2,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
+  Autocomplete,
   Box,
   Button,
   CircularProgress,
@@ -9,12 +10,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
   IconButton,
-  InputLabel,
   MenuItem,
   Paper,
-  Select,
   Stack,
   Switch,
   TextField,
@@ -1096,28 +1094,31 @@ const ApiKeyCard = ({
           />
         </Box>
       ) : models.length > 0 ? (
-        <FormControl fullWidth size="small">
-          <InputLabel id={`model-select-label-${apiKey.id}`}>
-            <FormattedMessage defaultMessage="Model" />
-          </InputLabel>
-          <Select
-            labelId={`model-select-label-${apiKey.id}`}
+        <Box onClick={(e) => e.stopPropagation()}>
+          <Autocomplete
+            freeSolo
+            options={[...models]}
             value={currentModel ?? ""}
-            label={<FormattedMessage defaultMessage="Model" />}
-            onClick={(event) => event.stopPropagation()}
-            onChange={(event) => {
-              const value = event.target.value || null;
-              onModelChange(value);
+            onChange={(_event, newValue) => {
+              onModelChange(newValue || null);
+            }}
+            onInputChange={(_event, newInputValue, reason) => {
+              if (reason === "input") {
+                onModelChange(newInputValue || null);
+              }
             }}
             disabled={testing || deleting}
-          >
-            {models.map((model) => (
-              <MenuItem key={model} value={model}>
-                {model}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            size="small"
+            fullWidth
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={<FormattedMessage defaultMessage="Model" />}
+                placeholder="Select or type a model"
+              />
+            )}
+          />
+        </Box>
       ) : null}
     </Paper>
   );
