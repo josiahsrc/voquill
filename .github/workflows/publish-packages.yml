@@ -21,6 +21,7 @@ jobs:
   publish:
     name: Build and publish packages
     runs-on: ubuntu-latest
+    environment: packages
     permissions:
       contents: read
       id-token: write
