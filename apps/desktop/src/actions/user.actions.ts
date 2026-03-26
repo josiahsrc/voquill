@@ -106,6 +106,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   remoteTargetDeviceId: null,
   remoteReceiverPort: null,
   remoteReceiverAutoStart: false,
+  dictationAudioDim: 1.0,
 });
 
 export const updateUserPreferences = async (
@@ -581,6 +582,12 @@ export const setRemoteReceiverAutoStart = async (
   await updateUserPreferences((preferences) => {
     preferences.remoteReceiverAutoStart = enabled;
   }, "Failed to save receiver auto-start preference. Please try again.");
+};
+
+export const setDictationAudioDim = async (value: number): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.dictationAudioDim = Math.max(0, Math.min(1, value));
+  }, "Failed to save audio dim preference. Please try again.");
 };
 
 export const setStylingMode = async (

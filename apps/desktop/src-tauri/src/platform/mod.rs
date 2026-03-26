@@ -92,6 +92,13 @@ pub use macos::overlay;
 #[cfg(target_os = "windows")]
 pub use windows::overlay;
 
+#[cfg(target_os = "linux")]
+pub use linux::volume;
+#[cfg(target_os = "macos")]
+pub use macos::volume;
+#[cfg(target_os = "windows")]
+pub use windows::volume;
+
 pub mod app_info;
 
 pub mod audio;
