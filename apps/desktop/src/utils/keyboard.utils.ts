@@ -101,7 +101,7 @@ export const DEFAULT_HOTKEY_COMBOS: Record<string, PlatformHotkeyCombos> = {
   [DICTATE_HOTKEY]: {
     macos: [["Function"]],
     windows: [["MetaLeft", "ControlLeft"]],
-    linux: [["Alt", "ControlLeft", "KeyA"]],
+    linux: [["ControlLeft", "Space"]],
   },
   [CANCEL_TRANSCRIPTION_HOTKEY]: {
     macos: [["Escape"]],

@@ -257,6 +257,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::set_pill_hover_enabled,
             crate::commands::set_pill_visibility,
             crate::commands::notify_pill_style_info,
+            crate::commands::sync_native_pill_assistant,
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::sync_hotkey_combos,
