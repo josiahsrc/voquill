@@ -9,6 +9,7 @@ pub mod monitor;
 pub mod overlay;
 pub mod permissions;
 pub mod position;
+pub mod volume;
 pub mod window;
 
 pub fn get_hotkey_strategy() -> &'static str {

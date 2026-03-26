@@ -283,6 +283,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::chat_message_delete_many,
             crate::commands::check_app_location_writable,
             crate::commands::download_and_open_mac_installer,
+            crate::commands::get_system_volume,
+            crate::commands::set_system_volume,
         ])
 }
 

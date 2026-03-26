@@ -1,26 +1,36 @@
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Slider,
   Switch,
+  Typography,
 } from "@mui/material";
 import { ChangeEvent } from "react";
-import { FormattedMessage } from "react-intl";
-import { setInteractionChimeEnabled } from "../../actions/user.actions";
+import { FormattedMessage, useIntl } from "react-intl";
+import {
+  setDictationAudioDim,
+  setInteractionChimeEnabled,
+} from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
 import { getMyUser } from "../../utils/user.utils";
 import { SettingSection } from "../common/SettingSection";
 
 export const AudioDialog = () => {
-  const [open, playInteractionChime] = useAppStore((state) => {
-    const user = getMyUser(state);
-    return [
-      state.settings.audioDialogOpen,
-      user?.playInteractionChime ?? true,
-    ] as const;
-  });
+  const intl = useIntl();
+  const [open, playInteractionChime, dictationAudioDim] = useAppStore(
+    (state) => {
+      const user = getMyUser(state);
+      return [
+        state.settings.audioDialogOpen,
+        user?.playInteractionChime ?? true,
+        state.userPrefs?.dictationAudioDim ?? 1.0,
+      ] as const;
+    },
+  );
 
   const handleClose = () => {
     produceAppState((draft) => {
@@ -31,6 +41,11 @@ export const AudioDialog = () => {
   const handleToggle = (event: ChangeEvent<HTMLInputElement>) => {
     const enabled = event.target.checked;
     void setInteractionChimeEnabled(enabled);
+  };
+
+  const handleAudioDimChange = (_event: Event, value: number | number[]) => {
+    const v = typeof value === "number" ? value : value[0];
+    void setDictationAudioDim(v);
   };
 
   return (
@@ -52,6 +67,33 @@ export const AudioDialog = () => {
             />
           }
         />
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <FormattedMessage defaultMessage="Dim audio while dictating" />
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <FormattedMessage defaultMessage="Lower system volume while recording, then restore it when done." />
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Slider
+              value={dictationAudioDim}
+              onChange={handleAudioDimChange}
+              min={0}
+              max={1}
+              step={0.05}
+              aria-label={intl.formatMessage({
+                defaultMessage: "Dictation audio dim level",
+              })}
+              sx={{ flex: 1 }}
+            />
+            <Typography
+              variant="body2"
+              sx={{ minWidth: 40, textAlign: "right" }}
+            >
+              {Math.round(dictationAudioDim * 100)}%
+            </Typography>
+          </Box>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>
