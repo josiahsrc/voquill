@@ -20,10 +20,10 @@
     "dist"
   ],
   "dependencies": {
-    "@voquill/types": "^0.1.3"
+    "@voquill/types": "workspace:*"
   },
   "devDependencies": {
-    "@voquill/typescript-config": "^0.1.3",
+    "@voquill/typescript-config": "workspace:*",
     "typescript": "5.9.2",
     "vite": "^7.1.12",
     "vitest": "^4.0.6"

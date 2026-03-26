@@ -41,8 +41,7 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        run: pnpm install
-        #  --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build packages
         run: |
@@ -69,7 +68,7 @@ jobs:
             else
               echo "Publishing ${name}@${version}..."
               cd "packages/${dir}"
-              npm publish --access public --provenance
+              pnpm publish --access public --provenance --no-git-checks
               cd ../..
             fi
           }

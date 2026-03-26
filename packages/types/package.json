@@ -15,7 +15,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@voquill/typescript-config": "^0.1.3",
+    "@voquill/typescript-config": "workspace:*",
     "@types/json-schema": "^7.0.15",
     "typescript": "5.9.2"
   },
