@@ -28,9 +28,11 @@ describe("member", () => {
     expect(data.member.type).toBe("user");
     expect(data.member.plan).toBe("pro");
     expect(data.member.wordsToday).toBe(0);
+    expect(data.member.wordsThisWeek).toBe(0);
     expect(data.member.wordsThisMonth).toBe(0);
     expect(data.member.wordsTotal).toBe(0);
     expect(data.member.tokensToday).toBe(0);
+    expect(data.member.tokensThisWeek).toBe(0);
     expect(data.member.tokensThisMonth).toBe(0);
     expect(data.member.tokensTotal).toBe(0);
     expect(data.member.createdAt).toBeDefined();

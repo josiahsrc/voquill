@@ -9,23 +9,31 @@ part 'config_model.draft.dart';
 @draft
 class FullConfig with EquatableMixin {
   final int freeWordsPerDay;
+  final int freeWordsPerWeek;
   final int freeWordsPerMonth;
   final int freeTokensPerDay;
+  final int freeTokensPerWeek;
   final int freeTokensPerMonth;
   final int proWordsPerDay;
+  final int proWordsPerWeek;
   final int proWordsPerMonth;
   final int proTokensPerDay;
+  final int proTokensPerWeek;
   final int proTokensPerMonth;
   final Map<String, String>? toneOverrides;
 
   const FullConfig({
     required this.freeWordsPerDay,
+    required this.freeWordsPerWeek,
     required this.freeWordsPerMonth,
     required this.freeTokensPerDay,
+    required this.freeTokensPerWeek,
     required this.freeTokensPerMonth,
     required this.proWordsPerDay,
+    required this.proWordsPerWeek,
     required this.proWordsPerMonth,
     required this.proTokensPerDay,
+    required this.proTokensPerWeek,
     required this.proTokensPerMonth,
     this.toneOverrides,
   });
@@ -37,12 +45,16 @@ class FullConfig with EquatableMixin {
   @override
   List<Object?> get props => [
     freeWordsPerDay,
+    freeWordsPerWeek,
     freeWordsPerMonth,
     freeTokensPerDay,
+    freeTokensPerWeek,
     freeTokensPerMonth,
     proWordsPerDay,
+    proWordsPerWeek,
     proWordsPerMonth,
     proTokensPerDay,
+    proTokensPerWeek,
     proTokensPerMonth,
     toneOverrides,
   ];
