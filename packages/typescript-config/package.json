@@ -2,6 +2,11 @@
   "name": "@voquill/typescript-config",
   "version": "0.1.1",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voquill/voquill.git",
+    "directory": "packages/typescript-config"
+  },
   "files": [
     "*.json"
   ],

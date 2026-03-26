@@ -2,6 +2,11 @@
   "name": "@voquill/types",
   "version": "0.1.0",
   "description": "Shared types for the monorepo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voquill/voquill.git",
+    "directory": "packages/types"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
