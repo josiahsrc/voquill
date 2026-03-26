@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -52,8 +53,6 @@ jobs:
             --filter='@voquill/voice-ai...'
 
       - name: Publish packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -68,7 +67,7 @@ jobs:
             else
               echo "Publishing ${name}@${version}..."
               cd "packages/${dir}"
-              pnpm publish --no-git-checks --access public
+              pnpm publish --no-git-checks --access public --provenance
               cd ../..
             fi
           }
