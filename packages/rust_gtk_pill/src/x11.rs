@@ -1,4 +1,5 @@
 use std::cell::Cell;
+use std::ffi::{c_int, c_ulong, c_void};
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -156,4 +157,41 @@ pub(crate) fn setup_x11_window(window: &gtk::Window, ui_scale: f64) {
         }
         ControlFlow::Continue
     });
+}
+
+pub(crate) fn force_keyboard_focus(window: &gtk::Window) {
+    type XDisplay = c_void;
+    type XWindow = c_ulong;
+
+    extern "C" {
+        fn gdk_x11_display_get_xdisplay(display: *mut c_void) -> *mut XDisplay;
+        fn gdk_x11_window_get_xid(window: *mut c_void) -> XWindow;
+    }
+
+    #[link(name = "X11")]
+    extern "C" {
+        fn XSetInputFocus(
+            display: *mut XDisplay, focus: XWindow, revert_to: c_int, time: c_ulong,
+        ) -> c_int;
+        fn XFlush(display: *mut XDisplay) -> c_int;
+    }
+
+    let gdk_window = match window.window() {
+        Some(w) if w.is_visible() => w,
+        _ => return,
+    };
+    let display = window.display();
+
+    unsafe {
+        let xdisplay = gdk_x11_display_get_xdisplay(
+            glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkDisplay>::to_glib_none(&display).0
+                as *mut c_void,
+        );
+        let xwindow = gdk_x11_window_get_xid(
+            glib::translate::ToGlibPtr::<*mut gdk::ffi::GdkWindow>::to_glib_none(&gdk_window).0
+                as *mut c_void,
+        );
+        XSetInputFocus(xdisplay, xwindow, 1, 0);
+        XFlush(xdisplay);
+    }
 }

@@ -137,7 +137,9 @@ pub fn run(receiver: Receiver<InMessage>) {
     window.add_events(
         gdk::EventMask::ENTER_NOTIFY_MASK
             | gdk::EventMask::LEAVE_NOTIFY_MASK
+            | gdk::EventMask::BUTTON_PRESS_MASK
             | gdk::EventMask::BUTTON_RELEASE_MASK
+            | gdk::EventMask::FOCUS_CHANGE_MASK
             | gdk::EventMask::SCROLL_MASK
             | gdk::EventMask::SMOOTH_SCROLL_MASK,
     );
@@ -159,6 +161,34 @@ pub fn run(receiver: Receiver<InMessage>) {
         glib::Propagation::Proceed
     });
 
+    let state_press = state.clone();
+    let entry_press = entry.clone();
+    let win_press = window.clone();
+    let use_ls_press = use_layer_shell;
+    window.connect_button_press_event(move |_, _| {
+        let is_typing = state_press.assistant_active.get()
+            && *state_press.assistant_input_mode.borrow() == "type";
+        if is_typing {
+            if !use_ls_press {
+                x11::force_keyboard_focus(&win_press);
+            }
+            entry_press.grab_focus();
+        }
+        glib::Propagation::Proceed
+    });
+
+    {
+        let win_ep = window.clone();
+        let use_ls_ep = use_layer_shell;
+        entry.connect_button_press_event(move |e, _| {
+            if !use_ls_ep {
+                x11::force_keyboard_focus(&win_ep);
+            }
+            e.grab_focus();
+            glib::Propagation::Proceed
+        });
+    }
+
     let state_click = state.clone();
     window.connect_button_release_event(move |_, event| {
         let (x, y) = event.position();
@@ -169,6 +199,28 @@ pub fn run(receiver: Receiver<InMessage>) {
     let state_scroll = state.clone();
     window.connect_scroll_event(move |_, event| {
         input::handle_scroll(&state_scroll, event);
+        glib::Propagation::Proceed
+    });
+
+    let state_focus_in = state.clone();
+    let entry_focus_in = entry.clone();
+    window.connect_focus_in_event(move |_, _| {
+        let is_typing = state_focus_in.assistant_active.get()
+            && *state_focus_in.assistant_input_mode.borrow() == "type";
+        if is_typing {
+            entry_focus_in.grab_focus();
+        }
+        glib::Propagation::Proceed
+    });
+
+    let state_focus_out = state.clone();
+    let entry_focus_out = entry.clone();
+    window.connect_focus_out_event(move |_, _| {
+        let is_typing = state_focus_out.assistant_active.get()
+            && *state_focus_out.assistant_input_mode.borrow() == "type";
+        if is_typing {
+            entry_focus_out.select_region(0, 0);
+        }
         glib::Propagation::Proceed
     });
 
@@ -298,16 +350,30 @@ pub fn run(receiver: Receiver<InMessage>) {
             entry_tick.show();
             if use_ls {
                 win_tick.set_keyboard_mode(gtk_layer_shell::KeyboardMode::OnDemand);
+                glib::idle_add_local_once({
+                    let e = entry_tick.clone();
+                    move || { e.grab_focus(); }
+                });
+            } else {
+                win_tick.set_accept_focus(true);
+                glib::timeout_add_local(Duration::from_millis(100), {
+                    let e = entry_tick.clone();
+                    let w = win_tick.clone();
+                    move || {
+                        x11::force_keyboard_focus(&w);
+                        e.grab_focus();
+                        ControlFlow::Break
+                    }
+                });
             }
-            glib::idle_add_local_once({
-                let e = entry_tick.clone();
-                move || { e.grab_focus(); }
-            });
         } else if !is_typing && gtk::prelude::WidgetExt::is_visible(&entry_tick) {
+            entry_tick.select_region(0, 0);
             entry_tick.set_visible(false);
             entry_tick.hide();
             if use_ls {
                 win_tick.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
+            } else {
+                win_tick.set_accept_focus(false);
             }
         }
 
