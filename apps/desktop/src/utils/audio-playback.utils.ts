@@ -144,7 +144,10 @@ const playNativeAudio = async (
       return;
     }
 
-    const elapsedMs = Math.max(0, window.performance.now() - playback.startedAtMs);
+    const elapsedMs = Math.max(
+      0,
+      window.performance.now() - playback.startedAtMs,
+    );
     const ratio =
       playback.durationMs > 0
         ? Math.min(Math.max(elapsedMs / playback.durationMs, 0), 1)
