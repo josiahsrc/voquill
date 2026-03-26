@@ -1255,10 +1255,17 @@ pub fn set_toast_overlay_click_through(app: AppHandle, click_through: bool) -> R
 
 #[tauri::command]
 pub fn set_pill_window_size(
+    app: AppHandle,
     size: crate::domain::PillWindowSize,
     overlay_state: State<'_, crate::state::OverlayState>,
 ) {
     overlay_state.set_pill_window_size(size);
+    crate::platform::overlay::notify_pill_window_size(&app, &size);
+}
+
+#[tauri::command]
+pub fn sync_native_pill_assistant(app: AppHandle, payload: String) {
+    crate::platform::overlay::notify_assistant_state(&app, &payload);
 }
 
 #[tauri::command]
