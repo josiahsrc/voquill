@@ -547,13 +547,55 @@ jobs:
         with:
           projectPath: apps/desktop
           tauriScript: pnpm --filter desktop run tauri
-          args: ${{ steps.tauri-cli-args.outputs.args }}
+          args: ${{ matrix.os == 'macos-14' && format('{0} --bundles app', steps.tauri-cli-args.outputs.args) || steps.tauri-cli-args.outputs.args }}
           tagName: ${{ needs.metadata.outputs.tag_name }}
           releaseName: ${{ format('desktop{0} v{1}', needs.metadata.outputs.release_suffix, needs.metadata.outputs.version) }}
           releaseBody: ${{ needs.metadata.outputs.release_body }}
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
+
+      - name: Build and upload macOS DMG
+        if: matrix.os == 'macos-14'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+        run: |
+          set -euo pipefail
+
+          bundle_dir="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos"
+          app_bundle_path="$(find "${bundle_dir}" -maxdepth 1 -type d -name '*.app' | head -n 1)"
+          if [[ -z "${app_bundle_path}" ]]; then
+            echo "No .app bundle found under ${bundle_dir}" >&2
+            ls -la "${bundle_dir}" || true
+            exit 1
+          fi
+
+          app_bundle_name="$(basename "${app_bundle_path}")"
+          app_name="${app_bundle_name%.app}"
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            dmg_name="${app_name}_${RELEASE_VERSION}_universal.dmg"
+          else
+            dmg_name="VoquillDev_${RELEASE_VERSION}_universal.dmg"
+          fi
+          dmg_path="$(pwd)/${dmg_name}"
+          staging_dir="$(mktemp -d)"
+          trap 'rm -rf "${staging_dir}"' EXIT
+
+          cp -R "${app_bundle_path}" "${staging_dir}/${app_bundle_name}"
+          ln -s /Applications "${staging_dir}/Applications"
+
+          hdiutil create \
+            -volname "${app_name}" \
+            -srcfolder "${staging_dir}" \
+            -ov \
+            -format UDZO \
+            "${dmg_path}"
+
+          gh release upload "${RELEASE_TAG}" "${dmg_path}" --clobber
 
       - name: Build, sign, notarize, and upload macOS PKG
         if: matrix.os == 'macos-14'
@@ -987,7 +1029,7 @@ jobs:
             cask_name="voquill-dev"
             app_name="Voquill (dev)"
             tag_prefix="desktop-dev-v"
-            dmg_name="Voquill.dev._#{version}_universal.dmg"
+            dmg_name="VoquillDev_#{version}_universal.dmg"
           fi
 
           cat > "Casks/${cask_name}.rb" <<CASK
