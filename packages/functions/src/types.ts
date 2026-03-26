@@ -120,6 +120,10 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: EmptyObject;
   };
+  "emulator/resetWordsThisWeek": {
+    input: EmptyObject;
+    output: EmptyObject;
+  };
   "emulator/resetWordsThisMonth": {
     input: EmptyObject;
     output: EmptyObject;
