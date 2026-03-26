@@ -22,11 +22,6 @@
 - Database migrations go in `src-tauri/src/db/migrations/` as `NNN_description.sql`, registered in `db/mod.rs`.
 - New Tauri commands: define in `commands.rs`, register in `app.rs` invoke_handler, create a repo, use in actions.
 
-** `apps/firebase/functions` — Firebase Cloud Functions **
-
-- Single `handler()` dispatches by `name` field, with Zod validation and `HandlerInput<"handler/name">` typing.
-- Scripts: `pnpm run build`, `pnpm run test`.
-
 ** `enterprise/gateway` — Enterprise API gateway **
 
 - Handler pattern: if-else chain in `src/index.ts`.
