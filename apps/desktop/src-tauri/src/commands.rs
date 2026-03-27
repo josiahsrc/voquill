@@ -128,6 +128,13 @@ pub enum AudioClip {
     AlertWindows11Clip,
 }
 
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioPlaybackArgs {
+    pub samples: Vec<f32>,
+    pub sample_rate: u32,
+}
+
 #[derive(serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct StartRecordingArgs {
@@ -1015,6 +1022,16 @@ pub fn play_audio(clip: AudioClip) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn play_audio_samples(args: AudioPlaybackArgs) -> Result<(), String> {
+    crate::system::audio_playback::play_samples(args.samples, args.sample_rate)
+}
+
+#[tauri::command]
+pub fn stop_audio_playback() -> Result<(), String> {
+    crate::system::audio_playback::stop_playback()
 }
 
 #[tauri::command]

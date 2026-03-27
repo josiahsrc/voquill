@@ -48,20 +48,19 @@ sudo udevadm trigger
 
 Log out and back in for the group change to take effect.
 
-**Enable the daemon (optional):**
+**Daemon startup:**
 
-ydotool works without the daemon on versions < 1.0 (with a "ydotoold backend unavailable" warning
-and slightly higher latency). On >= 1.0, the daemon is recommended:
+Voquill now tries to start `ydotoold` automatically on Wayland when `ydotoold` is installed but
+its socket is missing. You should not need to run `ydotoold &` manually.
 
-```bash
-# ydotool >= 1.0
-sudo systemctl enable --now ydotoold
+Some distros package a systemd unit for `ydotoold`, but Voquill does not rely on it. If automatic
+startup fails, the remaining causes are usually outside the app:
 
-# ydotool < 1.0 (no systemd service — daemon is optional)
-# If you want lower latency: sudo ydotoold &
-```
+- your user still cannot open `/dev/uinput`
+- `XDG_RUNTIME_DIR` is missing or invalid
+- another stale `.ydotool_socket` is blocking startup
 
-To check your version: `dpkg -l ydotool` (deb) or `rpm -q ydotool` (rpm)
+To check your version: `ydotoold --version` or your distro package manager.
 
 **Verify it works:**
 
@@ -74,11 +73,13 @@ If "hello" appears in the editor, ydotool is working.
 
 **Known issues:**
 
-- ydotool 0.1.x uses `modifier+key` syntax (e.g. `ctrl+v`). Version 1.0+ uses keycode
-  press/release syntax (e.g. `29:1 47:1 47:0 29:0`). Voquill uses the 0.1.x syntax which
-  is supported across both versions.
+- ydotool 0.1.x accepts `modifier+key` syntax (for example `ctrl+v`). Version 1.0+
+  documents raw keycode press/release syntax instead (for example `29:1 47:1 47:0 29:0`).
+  Voquill prefers raw keycodes for known paste/copy combos so it works across both styles.
 - Without `/dev/uinput` access, ydotool will fail with `failed to open uinput device`.
   Make sure the permissions are set as described above.
+- If Voquill logs that it could not start `ydotoold` automatically, remove any stale
+  `$XDG_RUNTIME_DIR/.ydotool_socket` file and re-check your `/dev/uinput` permissions.
 
 ### wtype (fallback for Sway/Hyprland)
 
@@ -106,7 +107,7 @@ Use ydotool on GNOME instead.
 
 1. Voquill starts a local HTTP bridge server on a random port at launch.
 2. The port is written to `<app_config_dir>/bridge-server.json`.
-3. A bundled trigger script (`trigger-hotkey.sh`) is deployed to the config dir.
+3. A trigger script (`trigger-hotkey.sh`) is deployed to the config dir. If the packaged resource is unavailable, Voquill falls back to an embedded copy.
 4. Compositor keybindings call the trigger script, which POSTs to the bridge server.
 5. The bridge server emits a Tauri event that the TypeScript layer handles.
 
@@ -147,7 +148,7 @@ Then reload: `hyprctl reload`
 Voquill pastes transcribed text by:
 
 1. Saving the current clipboard contents
-2. Setting the clipboard to the transcribed text (via `arboard`, no external tools needed)
+2. Setting the clipboard to the transcribed text (prefer `wl-copy`, fall back to `arboard`)
 3. Simulating a paste keystroke (Ctrl+V or Ctrl+Shift+V for terminals)
 4. Restoring the previous clipboard contents after a short delay
 
@@ -156,6 +157,9 @@ The keystroke simulation tries these tools in order:
 1. **ydotool** — works on all compositors via `/dev/uinput` (recommended)
 2. **wtype** — works on Sway/Hyprland via virtual-keyboard protocol (bundled in production)
 3. **wtype text** — types the text directly as a last resort (no clipboard)
+
+If `ydotool` is installed but its daemon is not ready, Voquill first tries to launch `ydotoold`
+automatically and then falls back to `wtype` where the compositor supports it.
 
 If no keystroke simulation tool is available, pasting will fail. Install ydotool as described above.
 
@@ -169,6 +173,8 @@ Use the deployed trigger script directly:
 ~/.config/com.voquill.desktop/trigger-hotkey.sh cancel-transcription
 ```
 
+The script first checks `bridge-server.json` next to itself, then falls back to scanning matching `~/.config/com.voquill.desktop*` directories. This lets production, development, and GPU flavors share the same trigger logic.
+
 ## Bridge server details
 
 The bridge server accepts `POST /hotkey/<action-name>` on `127.0.0.1`.
@@ -177,6 +183,8 @@ The bridge server accepts `POST /hotkey/<action-name>` on `127.0.0.1`.
 - `404 Not Found` — unknown path
 - `405 Method Not Allowed` — non-POST request
 
-The port file is at:
-- Dev: `$XDG_CONFIG_HOME/com.voquill.desktop.local/bridge-server.json`
+The port file is written to the app's config directory, for example:
+- Local/dev: `$XDG_CONFIG_HOME/com.voquill.desktop.local/bridge-server.json`
+- Dev: `$XDG_CONFIG_HOME/com.voquill.desktop.dev/bridge-server.json`
 - Prod: `$XDG_CONFIG_HOME/com.voquill.desktop/bridge-server.json`
+- GPU variants: matching `$XDG_CONFIG_HOME/com.voquill.desktop.gpu*` directories

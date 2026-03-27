@@ -4,6 +4,8 @@ use std::{thread, time::Duration};
 
 use super::accessibility;
 
+pub(crate) fn warm_runtime_helpers() {}
+
 const KEY_SPACE: CGKeyCode = 49;
 const KEY_V: CGKeyCode = 9;
 

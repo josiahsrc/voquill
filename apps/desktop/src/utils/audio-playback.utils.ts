@@ -1,3 +1,7 @@
+import { invoke } from "@tauri-apps/api/core";
+import { normalizeSamples } from "./audio.utils";
+import { isLinux } from "./env.utils";
+
 export const formatDuration = (durationMs?: number | null): string => {
   if (!durationMs || !Number.isFinite(durationMs)) {
     return "0:00";
@@ -31,53 +35,145 @@ export const WAVEFORM_BAR_GAP = 2;
 
 export type PlaybackStopReason = "ended" | "stopped" | "replaced";
 
-export type ActiveWebAudioPlayback = {
+export type PlaybackAudioData = {
+  samples: number[];
+  sampleRate: number;
+};
+
+export type ActiveManagedPlayback = {
   transcriptionId: string;
-  context: AudioContext;
-  source: AudioBufferSourceNode;
+  mode: "native" | "web";
   rafId: number | null;
-  startTime: number;
-  durationSeconds: number;
+  startedAtMs: number;
+  durationMs: number;
+  context?: AudioContext;
+  source?: AudioBufferSourceNode;
   onStop: (reason: PlaybackStopReason) => void;
 };
 
-export let activePlayback: ActiveWebAudioPlayback | null = null;
+export let activePlayback: ActiveManagedPlayback | null = null;
 
-export const stopActivePlayback = (reason: PlaybackStopReason): void => {
+const stopNativePlayback = async (): Promise<void> => {
+  await invoke<void>("stop_audio_playback");
+};
+
+const finishPlayback = async (
+  playback: ActiveManagedPlayback,
+  reason: PlaybackStopReason,
+): Promise<void> => {
+  if (activePlayback === playback) {
+    activePlayback = null;
+  }
+
+  if (playback.rafId !== null) {
+    window.cancelAnimationFrame(playback.rafId);
+  }
+
+  if (playback.mode === "web") {
+    const source = playback.source;
+
+    if (source) {
+      try {
+        source.onended = null;
+      } catch {
+        // no-op
+      }
+
+      try {
+        source.stop();
+      } catch {
+        // no-op
+      }
+    }
+
+    playback.context?.close().catch(() => undefined);
+  } else if (reason !== "ended") {
+    await stopNativePlayback().catch(() => undefined);
+  }
+
+  playback.onStop(reason);
+};
+
+export const stopActivePlayback = async (
+  reason: PlaybackStopReason,
+): Promise<void> => {
   const current = activePlayback;
   if (!current) {
     return;
   }
 
-  activePlayback = null;
-
-  if (current.rafId !== null) {
-    window.cancelAnimationFrame(current.rafId);
-  }
-
-  try {
-    current.source.onended = null;
-  } catch {
-    // no-op
-  }
-
-  try {
-    current.source.stop();
-  } catch {
-    // no-op
-  }
-
-  current.context.close().catch(() => undefined);
-  current.onStop(reason);
+  await finishPlayback(current, reason);
 };
 
-export const playWebAudio = async (
+const playNativeAudio = async (
   transcriptionId: string,
-  data: { samples: number[]; sampleRate: number },
+  data: PlaybackAudioData,
   onProgress: (progress: number) => void,
   onStop: (reason: PlaybackStopReason) => void,
 ): Promise<void> => {
-  stopActivePlayback("replaced");
+  await stopActivePlayback("replaced");
+
+  const samples = normalizeSamples(data.samples);
+  if (
+    !samples.length ||
+    !Number.isFinite(data.sampleRate) ||
+    data.sampleRate <= 0
+  ) {
+    throw new Error("Audio playback requires samples and a valid sample rate");
+  }
+
+  await invoke<void>("play_audio_samples", {
+    args: {
+      samples,
+      sampleRate: data.sampleRate,
+    },
+  });
+
+  const playback: ActiveManagedPlayback = {
+    transcriptionId,
+    mode: "native",
+    rafId: null,
+    startedAtMs: window.performance.now(),
+    durationMs: (samples.length / data.sampleRate) * 1000,
+    onStop,
+  };
+  activePlayback = playback;
+
+  const tick = () => {
+    if (activePlayback !== playback) {
+      return;
+    }
+
+    const elapsedMs = Math.max(
+      0,
+      window.performance.now() - playback.startedAtMs,
+    );
+    const ratio =
+      playback.durationMs > 0
+        ? Math.min(Math.max(elapsedMs / playback.durationMs, 0), 1)
+        : 0;
+
+    onProgress(ratio);
+
+    if (ratio >= 1) {
+      void finishPlayback(playback, "ended");
+      return;
+    }
+
+    playback.rafId = window.requestAnimationFrame(tick);
+  };
+
+  onProgress(0);
+  playback.rafId = window.requestAnimationFrame(tick);
+};
+
+const playWebAudio = async (
+  transcriptionId: string,
+  data: PlaybackAudioData,
+  onProgress: (progress: number) => void,
+  onStop: (reason: PlaybackStopReason) => void,
+): Promise<void> => {
+  await stopActivePlayback("replaced");
 
   const context = new AudioContext({ sampleRate: data.sampleRate });
   if (context.state === "suspended") {
@@ -97,13 +193,14 @@ export const playWebAudio = async (
   source.buffer = buffer;
   source.connect(context.destination);
 
-  const playback: ActiveWebAudioPlayback = {
+  const playback: ActiveManagedPlayback = {
     transcriptionId,
+    mode: "web",
+    rafId: null,
+    startedAtMs: window.performance.now(),
+    durationMs: buffer.duration * 1000,
     context,
     source,
-    rafId: null,
-    startTime: context.currentTime,
-    durationSeconds: buffer.duration,
     onStop,
   };
   activePlayback = playback;
@@ -113,10 +210,16 @@ export const playWebAudio = async (
       return;
     }
 
-    const elapsed = playback.context.currentTime - playback.startTime;
     const ratio =
-      playback.durationSeconds > 0
-        ? Math.min(Math.max(elapsed / playback.durationSeconds, 0), 1)
+      playback.durationMs > 0
+        ? Math.min(
+            Math.max(
+              (window.performance.now() - playback.startedAtMs) /
+                playback.durationMs,
+              0,
+            ),
+            1,
+          )
         : 0;
     onProgress(ratio);
 
@@ -128,13 +231,25 @@ export const playWebAudio = async (
   };
 
   source.onended = () => {
-    stopActivePlayback("ended");
+    void finishPlayback(playback, "ended");
   };
 
   onProgress(0);
-  playback.startTime = context.currentTime;
   source.start();
   playback.rafId = window.requestAnimationFrame(tick);
+};
+
+export const playManagedAudio = async (
+  transcriptionId: string,
+  data: PlaybackAudioData,
+  onProgress: (progress: number) => void,
+  onStop: (reason: PlaybackStopReason) => void,
+): Promise<void> => {
+  if (isLinux()) {
+    return playNativeAudio(transcriptionId, data, onProgress, onStop);
+  }
+
+  return playWebAudio(transcriptionId, data, onProgress, onStop);
 };
 
 export const buildWaveformOutline = (

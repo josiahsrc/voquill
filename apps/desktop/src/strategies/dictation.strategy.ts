@@ -1,6 +1,6 @@
 import type { Nullable } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
-import { showErrorSnackbar, showSnackbar } from "../actions/app.actions";
+import { showSnackbar } from "../actions/app.actions";
 import { showToast } from "../actions/toast.actions";
 import {
   postProcessTranscript,
@@ -214,16 +214,17 @@ export class DictationStrategy extends BaseStrategy {
           getLogger().info("Transcript output routed successfully");
         } catch (error) {
           getLogger().error(`Failed to route transcription output: ${error}`);
-          showErrorSnackbar("Unable to insert transcription.");
+          await showToast({
+            title: "Transcription failed",
+            message: String(error),
+            toastType: "error",
+          });
         }
       }
     } catch (error) {
       getLogger().error(`Failed to process transcription: ${error}`);
-
-      const errorMessage =
-        error instanceof Error ? error.message : "An error occurred.";
+      const errorMessage = String(error);
       postProcessWarnings.push(errorMessage);
-
       await showToast({
         title: "Transcription failed",
         message: errorMessage,
