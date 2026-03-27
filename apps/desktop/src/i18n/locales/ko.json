@@ -664,7 +664,7 @@
   "words_total": "총 단어 수",
   "words_words_dictated": "{words} 단어 받아쓰기됨",
   "words_words_left": "{words} 단어 남음",
-  "words_words_remaining_today": "{words} 단어가 오늘 남았습니다",
+  "words_words_remaining_this_week": "이번 주에 남은 단어 {words}개",
   "wpm_wpm": "{wpm} WPM",
   "writing_style_not_changed": "작성 스타일이 변경되지 않았습니다",
   "writing_styles": "글쓰기 스타일",
@@ -681,6 +681,6 @@
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "Azure OpenAI 리소스 엔드포인트 URL",
   "your_free_words_refresh_on_date_upgrade_now_to_skip_the_wait": "무료 단어가 {date}에 새로 고침됩니다. 지금 업그레이드하여 대기 시간을 건너뛰고 무제한 받아쓰기를 이용하세요.",
-  "your_free_words_refresh_tomorrow_upgrade_now_to_skip_the_wai": "무료 단어가 내일 새로 고쳐집니다. 지금 업그레이드하여 대기 시간을 건너뛰고 무제한 받아쓰기를 이용하세요.",
+  "your_free_words_reset_next_week_upgrade_now_to_skip_the_wait": "무료 단어가 다음 주에 초기화됩니다. 지금 업그레이드하여 대기 시간을 건너뛰고 무제한 받아쓰기를 이용하세요.",
   "your_operating_system_is_preventing_voquill_from_modifying_f": "운영 체제가 현재 설치 위치에서 Voquill이 파일을 수정하는 것을 방지하고 있습니다. 다운로드 버튼을 사용하여 최신 설치 프로그램을 받은 뒤, 실행하여 수동으로 업데이트를 완료하십시오."
 }

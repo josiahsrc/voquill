@@ -664,7 +664,7 @@
   "words_total": "Total des mots",
   "words_words_dictated": "{words} mots dictés",
   "words_words_left": "{words} mots restants",
-  "words_words_remaining_today": "{words} mots restants aujourd'hui",
+  "words_words_remaining_this_week": "{words} mots restants cette semaine",
   "wpm_wpm": "{wpm} MMP",
   "writing_style_not_changed": "Style d'écriture non modifié",
   "writing_styles": "Styles d'écriture",
@@ -681,6 +681,6 @@
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "URL du point de terminaison de votre ressource Azure OpenAI",
   "your_free_words_refresh_on_date_upgrade_now_to_skip_the_wait": "Votre quota de mots gratuits se renouvelle le {date}. Mettez à niveau maintenant pour éviter l'attente et obtenir une dictée illimitée.",
-  "your_free_words_refresh_tomorrow_upgrade_now_to_skip_the_wai": "Vos mots gratuits se renouvellent demain. Passez à la version supérieure maintenant pour éviter l'attente et obtenir une dictée illimitée.",
+  "your_free_words_reset_next_week_upgrade_now_to_skip_the_wait": "Vos mots gratuits se réinitialisent la semaine prochaine. Passez à la version supérieure maintenant pour éviter l'attente et obtenir une dictée illimitée.",
   "your_operating_system_is_preventing_voquill_from_modifying_f": "Votre système d'exploitation empêche Voquill de modifier les fichiers à son emplacement d'installation actuel. Utilisez le bouton de téléchargement pour obtenir le dernier installateur, puis exécutez‑le pour terminer la mise à jour manuellement."
 }

@@ -664,7 +664,7 @@
   "words_total": "Wörter gesamt",
   "words_words_dictated": "{words} Wörter diktiert",
   "words_words_left": "{words} Wörter übrig",
-  "words_words_remaining_today": "{words} Wörter heute übrig",
+  "words_words_remaining_this_week": "{words} Wörter verbleiben diese Woche",
   "wpm_wpm": "{wpm} WPM",
   "writing_style_not_changed": "Schreibstil nicht geändert",
   "writing_styles": "Schreibstile",
@@ -681,6 +681,6 @@
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "URL des Azure OpenAI-Ressourcenendpunkts",
   "your_free_words_refresh_on_date_upgrade_now_to_skip_the_wait": "Ihre kostenlosen Wörter werden am {date} erneuert. Jetzt upgraden, um die Wartezeit zu überspringen und unbegrenzte Diktation zu erhalten.",
-  "your_free_words_refresh_tomorrow_upgrade_now_to_skip_the_wai": "Deine kostenlosen Wörter werden morgen erneuert. Jetzt upgraden, um die Wartezeit zu überspringen und unbegrenzte Diktate zu erhalten.",
+  "your_free_words_reset_next_week_upgrade_now_to_skip_the_wait": "Deine kostenlosen Wörter werden nächste Woche zurückgesetzt. Jetzt upgraden, um die Wartezeit zu überspringen und unbegrenzte Diktate zu erhalten.",
   "your_operating_system_is_preventing_voquill_from_modifying_f": "Ihr Betriebssystem verhindert, dass Voquill Dateien an seinem aktuellen Installationsort ändert. Verwenden Sie die Download-Schaltfläche, um den neuesten Installer zu erhalten, und führen Sie ihn dann aus, um das Update manuell abzuschließen."
 }

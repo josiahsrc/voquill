@@ -664,7 +664,7 @@
   "words_total": "Palabras totales",
   "words_words_dictated": "{words} palabras dictadas",
   "words_words_left": "{words} palabras restantes",
-  "words_words_remaining_today": "{words} palabras restantes hoy",
+  "words_words_remaining_this_week": "{words} palabras restantes esta semana",
   "wpm_wpm": "{wpm} PPM",
   "writing_style_not_changed": "Estilo de escritura no cambiado",
   "writing_styles": "Estilos de escritura",
@@ -681,6 +681,6 @@
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "URL del endpoint de tu recurso Azure OpenAI",
   "your_free_words_refresh_on_date_upgrade_now_to_skip_the_wait": "Tus palabras gratuitas se renovarán el {date}. Actualiza ahora para omitir la espera y obtener dictado ilimitado.",
-  "your_free_words_refresh_tomorrow_upgrade_now_to_skip_the_wai": "Tus palabras gratuitas se renovarán mañana. Actualiza ahora para omitir la espera y obtener dictado ilimitado.",
+  "your_free_words_reset_next_week_upgrade_now_to_skip_the_wait": "Tus palabras gratuitas se restablecen la próxima semana. Actualiza ahora para omitir la espera y obtener dictado ilimitado.",
   "your_operating_system_is_preventing_voquill_from_modifying_f": "Su sistema operativo está impidiendo que Voquill modifique los archivos en su ubicación de instalación actual. Use el botón de descarga para obtener el instalador más reciente y, a continuación, ejecútelo para completar la actualización manualmente."
 }

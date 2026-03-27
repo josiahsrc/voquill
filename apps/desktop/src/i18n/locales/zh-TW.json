@@ -664,7 +664,7 @@
   "words_total": "總字數",
   "words_words_dictated": "{words} 個字已口述",
   "words_words_left": "剩餘 {words} 個字",
-  "words_words_remaining_today": "今天剩餘 {words} 個字",
+  "words_words_remaining_this_week": "本週剩餘 {words} 個字",
   "wpm_wpm": "{wpm} 字/分鐘",
   "writing_style_not_changed": "寫作風格未更改",
   "writing_styles": "寫作樣式",
@@ -681,6 +681,6 @@
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "您的 Azure OpenAI 資源端點網址",
   "your_free_words_refresh_on_date_upgrade_now_to_skip_the_wait": "您的免費字數將於 {date} 重新刷新。立即升級以跳過等待，並獲得無限制的口述。",
-  "your_free_words_refresh_tomorrow_upgrade_now_to_skip_the_wai": "您的免費字數將於明天刷新。立即升級以跳過等待，獲得無限制的口述。",
+  "your_free_words_reset_next_week_upgrade_now_to_skip_the_wait": "您的免費字數將於下週重置。立即升級以跳過等待，獲得無限制的口述。",
   "your_operating_system_is_preventing_voquill_from_modifying_f": "您的作業系統正阻止 Voquill 修改其目前安裝位置的檔案。請使用下載按鈕取得最新的安裝程式，然後執行它以手動完成更新。"
 }

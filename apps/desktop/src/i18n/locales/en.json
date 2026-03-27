@@ -664,7 +664,7 @@
   "words_total": "Words total",
   "words_words_dictated": "{words} words dictated",
   "words_words_left": "{words} words left",
-  "words_words_remaining_today": "{words} words remaining today",
+  "words_words_remaining_this_week": "{words} words remaining this week",
   "wpm_wpm": "{wpm} WPM",
   "writing_style_not_changed": "Writing style not changed",
   "writing_styles": "Writing Styles",
@@ -681,6 +681,6 @@
   "you_ve_used_all_your_free_words_for_today": "You've used all your free words for today.",
   "your_azure_openai_resource_endpoint_url": "Your Azure OpenAI resource endpoint URL",
   "your_free_words_refresh_on_date_upgrade_now_to_skip_the_wait": "Your free words refresh on {date}. Upgrade now to skip the wait and get unlimited dictation.",
-  "your_free_words_refresh_tomorrow_upgrade_now_to_skip_the_wai": "Your free words refresh tomorrow. Upgrade now to skip the wait and get unlimited dictation.",
+  "your_free_words_reset_next_week_upgrade_now_to_skip_the_wait": "Your free words reset next week. Upgrade now to skip the wait and get unlimited dictation.",
   "your_operating_system_is_preventing_voquill_from_modifying_f": "Your operating system is preventing Voquill from modifying files in its current install location. Use the download button to get the latest installer, then run it to complete the update manually."
 }
