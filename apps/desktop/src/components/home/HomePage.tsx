@@ -62,10 +62,13 @@ export default function HomePage() {
   const freeWordsRemaining = useAppStore((state) => {
     const member = getMyMember(state);
     if (!member || member.plan !== "free" || !state.config) return null;
-    return Math.max(0, state.config.freeWordsPerDay - member.wordsToday);
+    return Math.max(
+      0,
+      state.config.freeWordsPerWeek - (member.wordsThisWeek ?? 0),
+    );
   });
   const showUpgradeCard =
-    freeWordsRemaining != null && freeWordsRemaining < 200;
+    freeWordsRemaining != null && freeWordsRemaining < 250;
   const wordsThisMonth = user?.wordsThisMonth ?? 0;
   const wordsTotal = user?.wordsTotal ?? 0;
   const navigate = useNavigate();

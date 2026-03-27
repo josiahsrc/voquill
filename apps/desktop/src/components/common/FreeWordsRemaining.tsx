@@ -7,18 +7,18 @@ import { trackButtonClick } from "../../utils/analytics.utils";
 import { getMyMember } from "../../utils/member.utils";
 
 export const FreeWordsRemaining = () => {
-  const wordsToday = useAppStore(
-    (state) => getMyMember(state)?.wordsToday ?? 0,
+  const wordsThisWeek = useAppStore(
+    (state) => getMyMember(state)?.wordsThisWeek ?? 0,
   );
-  const freeWordsPerDay = useAppStore(
-    (state) => state.config?.freeWordsPerDay ?? 1_000,
+  const freeWordsPerWeek = useAppStore(
+    (state) => state.config?.freeWordsPerWeek ?? 1_000,
   );
   const [hovered, setHovered] = useState(false);
 
-  const wordsRemaining = Math.max(0, freeWordsPerDay - wordsToday);
+  const wordsRemaining = Math.max(0, freeWordsPerWeek - wordsThisWeek);
   const remainingPercent = Math.max(
     0,
-    Math.min(100, (wordsRemaining / freeWordsPerDay) * 100),
+    Math.min(100, (wordsRemaining / freeWordsPerWeek) * 100),
   );
 
   const handleClick = () => {
@@ -62,11 +62,7 @@ export const FreeWordsRemaining = () => {
         py: 0.75,
         transition: "border-color 0.2s",
         "&:hover": {
-          borderColor: urgent
-            ? "blue"
-            : warning
-              ? "warning.dark"
-              : "primary.main",
+          borderColor: "blue",
         },
       }}
     >

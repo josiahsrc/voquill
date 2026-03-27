@@ -6,7 +6,7 @@ import { useAppStore } from "../../store";
 import { trackButtonClick } from "../../utils/analytics.utils";
 import { getMyMember } from "../../utils/member.utils";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export const OutOfWordsCard = ({
   wordsRemaining,
@@ -14,8 +14,8 @@ export const OutOfWordsCard = ({
   wordsRemaining: number;
 }) => {
   const intl = useIntl();
-  const todayResetAt = useAppStore(
-    (state) => getMyMember(state)?.todayResetAt ?? null,
+  const thisWeekResetAt = useAppStore(
+    (state) => getMyMember(state)?.thisWeekResetAt ?? null,
   );
 
   const handleUpgrade = () => {
@@ -24,8 +24,10 @@ export const OutOfWordsCard = ({
   };
 
   let refreshDate: string | null = null;
-  if (todayResetAt) {
-    const nextReset = new Date(new Date(todayResetAt).getTime() + MS_PER_DAY);
+  if (thisWeekResetAt) {
+    const nextReset = new Date(
+      new Date(thisWeekResetAt).getTime() + MS_PER_WEEK,
+    );
     refreshDate = intl.formatDate(nextReset, {
       weekday: "long",
       hour: "numeric",
@@ -50,7 +52,7 @@ export const OutOfWordsCard = ({
             <FormattedMessage defaultMessage="You're out of words" />
           ) : (
             <FormattedMessage
-              defaultMessage="{words} words remaining today"
+              defaultMessage="{words} words remaining this week"
               values={{ words: wordsRemaining.toLocaleString() }}
             />
           )}
@@ -62,7 +64,7 @@ export const OutOfWordsCard = ({
               values={{ date: refreshDate }}
             />
           ) : (
-            <FormattedMessage defaultMessage="Your free words refresh tomorrow. Upgrade now to skip the wait and get unlimited dictation." />
+            <FormattedMessage defaultMessage="Your free words reset next week. Upgrade now to skip the wait and get unlimited dictation." />
           )}
         </Typography>
         <Button
