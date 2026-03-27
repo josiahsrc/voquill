@@ -7,15 +7,9 @@ const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
 fn handle_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
     let _ = (&app_handle, &event);
     #[cfg(target_os = "macos")]
-    if let RunEvent::Reopen {
-        has_visible_windows,
-        ..
-    } = event
-    {
-        if !has_visible_windows {
-            if let Some(window) = app_handle.get_webview_window("main") {
-                let _ = crate::platform::window::surface_main_window(&window);
-            }
+    if let RunEvent::Reopen { .. } = event {
+        if let Some(window) = app_handle.get_webview_window("main") {
+            let _ = crate::platform::window::surface_main_window(&window);
         }
     }
 }
