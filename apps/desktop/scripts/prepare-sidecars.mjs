@@ -273,21 +273,23 @@ function resolveGpuBuildState(target) {
   };
 }
 
-// --- GTK pill overlay (Linux only) ---
+// --- Native pill overlays (platform-specific) ---
 if (isLinuxTarget(targetTriple)) {
-  buildPillOverlay();
+  buildNativePill("rust_gtk_pill", "voquill-gtk-pill");
+} else if (isAppleTarget(targetTriple)) {
+  buildNativePill("rust_macos_pill", "voquill-macos-pill");
 }
 
-function buildPillOverlay() {
+function buildNativePill(packageDir, binaryName) {
   const pillManifestPath = join(
     repoRoot,
     "packages",
-    "rust_gtk_pill",
+    packageDir,
     "Cargo.toml",
   );
 
   if (!existsSync(pillManifestPath)) {
-    console.warn("[sidecar] GTK pill manifest not found, skipping");
+    console.warn(`[sidecar] ${binaryName} manifest not found, skipping`);
     return;
   }
 
@@ -295,14 +297,14 @@ function buildPillOverlay() {
     ? isAbsolute(cargoTargetDirOverride)
       ? cargoTargetDirOverride
       : resolve(repoRoot, cargoTargetDirOverride)
-    : join(repoRoot, "packages", "rust_gtk_pill", "target");
+    : join(repoRoot, "packages", packageDir, "target");
 
   const pillCargoArgs = [
     "build",
     "--manifest-path",
     pillManifestPath,
     "--bin",
-    "voquill-gtk-pill",
+    binaryName,
   ];
 
   if (buildTarget) {
@@ -318,7 +320,7 @@ function buildPillOverlay() {
   });
 
   if (!buildOk) {
-    console.warn("[sidecar] GTK pill build failed, skipping");
+    console.warn(`[sidecar] ${binaryName} build failed, skipping`);
     return;
   }
 
@@ -326,17 +328,17 @@ function buildPillOverlay() {
     pillTargetDir,
     ...(buildTarget ? [buildTarget] : []),
     buildProfile,
-    "voquill-gtk-pill",
+    binaryName,
   );
 
   const resourcesDir = join(desktopDir, "src-tauri", "resources");
   mkdirSync(resourcesDir, { recursive: true });
-  const pillDestPath = join(resourcesDir, "voquill-gtk-pill");
+  const pillDestPath = join(resourcesDir, binaryName);
 
   if (existsSync(pillSourcePath)) {
     copyFileSync(pillSourcePath, pillDestPath);
     chmodSync(pillDestPath, 0o755);
-    console.log(`[sidecar] Prepared voquill-gtk-pill: ${pillDestPath}`);
+    console.log(`[sidecar] Prepared ${binaryName}: ${pillDestPath}`);
   } else {
     console.warn(
       `[sidecar] Expected pill binary not produced: ${pillSourcePath}`,
