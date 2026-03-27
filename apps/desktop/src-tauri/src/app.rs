@@ -37,6 +37,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     Target::new(TargetKind::Webview),
                 ])
                 .level(log::LevelFilter::Debug)
+                .level_for("hyper_util", log::LevelFilter::Info)
+                .level_for("reqwest", log::LevelFilter::Info)
                 .timezone_strategy(TimezoneStrategy::UseLocal)
                 .format(|out, message, record| {
                     let now = chrono::Local::now();
