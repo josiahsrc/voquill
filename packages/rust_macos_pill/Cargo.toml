@@ -1,0 +1,14 @@
+[package]
+name = "rust_macos_pill"
+version = "0.1.0"
+edition = "2021"
+description = "Voquill macOS pill overlay"
+
+[[bin]]
+name = "voquill-macos-pill"
+path = "src/main.rs"
+
+[dependencies]
+cocoa = "0.26"
+objc = "0.2"
+core-graphics = "0.24"
