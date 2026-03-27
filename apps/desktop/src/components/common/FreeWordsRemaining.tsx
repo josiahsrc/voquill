@@ -28,9 +28,8 @@ export const FreeWordsRemaining = () => {
     });
   };
 
-  const urgent = wordsRemaining === 0;
-  const warning = remainingPercent <= 20;
-  const barColor = urgent ? "error" : warning ? "warning" : "primary";
+  const urgent = wordsRemaining < 500;
+  const barColor = urgent ? "primary" : "info";
 
   const defaultText =
     wordsRemaining === 0 ? (
@@ -55,7 +54,7 @@ export const FreeWordsRemaining = () => {
       sx={{
         cursor: "pointer",
         border: 1,
-        borderColor: urgent ? "divider" : warning ? "warning.main" : "divider",
+        borderColor: "divider",
         borderRadius: 2,
         pl: 2,
         pr: 1,
@@ -92,11 +91,7 @@ export const FreeWordsRemaining = () => {
             lineHeight={1.2}
             noWrap
             sx={{
-              color: urgent
-                ? "text.secondary"
-                : warning
-                  ? "warning.main"
-                  : "text.primary",
+              color: urgent ? "text.secondary" : "text.primary",
             }}
           >
             {defaultText}
