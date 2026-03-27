@@ -3,9 +3,13 @@ use std::cell::Cell;
 use std::ffi::c_void;
 
 use cocoa::base::{id, nil};
-use cocoa::foundation::{NSPoint, NSSize, NSString};
+use cocoa::foundation::{NSPoint, NSRect, NSSize, NSString};
 #[allow(unused_imports)]
 use objc::runtime::Object;
+
+extern "C" {
+    fn NSRectFillUsingOperation(rect: NSRect, op: usize);
+}
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -289,6 +293,63 @@ impl Ctx {
             let top_y = self.pos_y.get() - ascent;
             let point = NSPoint::new(self.pos_x.get(), top_y);
             let _: () = msg_send![ns_text, drawAtPoint:point withAttributes:attrs];
+        }
+    }
+
+    // ── SF Symbols ─────────────────────────────────────────────────
+
+    pub fn draw_symbol(&self, name: &str, cx: f64, cy: f64, size: f64) {
+        unsafe {
+            let sym_name = NSString::alloc(nil).init_str(name);
+            let image: id = msg_send![class!(NSImage),
+                imageWithSystemSymbolName:sym_name
+                accessibilityDescription:nil
+            ];
+            if image == nil { return; }
+
+            let config: id = msg_send![class!(NSImageSymbolConfiguration),
+                configurationWithPointSize:size
+                weight:0.0_f64
+                scale:2i64
+            ];
+            let configured: id = msg_send![image, imageWithSymbolConfiguration:config];
+            let img_size: NSSize = msg_send![configured, size];
+
+            // Create tinted copy via lockFocus + SourceIn compositing
+            let tinted: id = msg_send![class!(NSImage), alloc];
+            let tinted: id = msg_send![tinted, initWithSize:img_size];
+            let _: () = msg_send![tinted, lockFocus];
+
+            let bounds = NSRect::new(NSPoint::new(0.0, 0.0), img_size);
+            let zero = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(0.0, 0.0));
+            let _: () = msg_send![configured,
+                drawInRect:bounds fromRect:zero operation:2usize fraction:1.0_f64
+            ];
+
+            let color: id = msg_send![class!(NSColor),
+                colorWithSRGBRed:self.r.get()
+                green:self.g.get()
+                blue:self.b.get()
+                alpha:self.a.get()
+            ];
+            let _: () = msg_send![color, setFill];
+            NSRectFillUsingOperation(bounds, 3); // NSCompositingOperationSourceIn
+
+            let _: () = msg_send![tinted, unlockFocus];
+
+            let draw_x = cx - img_size.width / 2.0;
+            let draw_y = cy - img_size.height / 2.0;
+            let dest = NSRect::new(NSPoint::new(draw_x, draw_y), img_size);
+            let _: () = msg_send![tinted,
+                drawInRect:dest
+                fromRect:zero
+                operation:2usize
+                fraction:1.0_f64
+                respectFlipped:cocoa::base::YES
+                hints:nil
+            ];
+
+            let _: () = msg_send![tinted, release];
         }
     }
 

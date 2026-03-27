@@ -24,9 +24,10 @@ pub(crate) const SPRING_STIFFNESS: f64 = 200.0;
 pub(crate) const SPRING_DT: f64 = 0.016;
 
 // ── Tooltip (style selector) ──────────────────────────────────────
-pub(crate) const TOOLTIP_HEIGHT: f64 = 24.0;
+pub(crate) const TOOLTIP_HEIGHT: f64 = 32.0;
 pub(crate) const TOOLTIP_GAP: f64 = 6.0;
-pub(crate) const TOOLTIP_RADIUS: f64 = 8.0;
+pub(crate) const TOOLTIP_RADIUS: f64 = 12.0;
+pub(crate) const TOOLTIP_FIXED_WIDTH: f64 = 172.0;
 
 // ── Waveform — ported from AudioWaveform.tsx ──────────────────────
 pub(crate) const LEVEL_SMOOTHING: f64 = 0.18;

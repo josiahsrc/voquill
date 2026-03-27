@@ -53,8 +53,11 @@ pub(crate) fn pill_position(state: &PillState, ww: f64, wh: f64) -> (f64, f64, f
         let panel_bottom = wh - PANEL_BOTTOM_MARGIN;
         panel_bottom - PILL_BOTTOM_INSET - pill_h
     } else {
-        let pill_area_top = wh - PILL_AREA_HEIGHT;
-        pill_area_top + (PILL_AREA_HEIGHT - pill_h) / 2.0
+        // Collapsed: sit closer to the bottom; expanded: rise up to centered position
+        let collapsed_bottom = 4.0;
+        let expanded_bottom = (PILL_AREA_HEIGHT - EXPANDED_PILL_HEIGHT) / 2.0;
+        let bottom_offset = gfx::lerp(collapsed_bottom, expanded_bottom, expand_t);
+        wh - bottom_offset - pill_h
     };
 
     (pill_x, pill_y, pill_w, pill_h)
@@ -231,14 +234,7 @@ fn draw_tooltip(ctx: &Ctx, state: &PillState, ww: f64, pill_area_top: f64) {
         return;
     }
 
-    ctx.select_font_face("sans-serif", false, true);
-    ctx.set_font_size(11.0);
-    let text_extents = ctx.text_extents(&style_name);
-    let text_w = text_extents.width.clamp(20.0, 100.0);
-
-    let chevron_area = 20.0;
-    let padding_h = 10.0;
-    let tooltip_w = padding_h * 2.0 + chevron_area * 2.0 + text_w;
+    let tooltip_w = TOOLTIP_FIXED_WIDTH;
     state.tooltip_width.set(tooltip_w);
 
     let tooltip_rx = (ww - tooltip_w) / 2.0;
@@ -250,39 +246,25 @@ fn draw_tooltip(ctx: &Ctx, state: &PillState, ww: f64, pill_area_top: f64) {
     ctx.set_source_rgba(0.0, 0.0, 0.0, 0.92 * alpha);
     ctx.fill();
 
-    gfx::rounded_rect(ctx, tooltip_rx + 0.5, tooltip_ry + 0.5, tooltip_w - 1.0, TOOLTIP_HEIGHT - 1.0, TOOLTIP_RADIUS - 0.5);
-    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.2 * alpha);
-    ctx.set_line_width(1.0);
-    ctx.stroke();
-
     let center_y = tooltip_ry + TOOLTIP_HEIGHT / 2.0;
+    let chevron_area = 28.0;
+    let padding_h = 12.0;
 
-    // Left chevron
-    let left_cx = tooltip_rx + padding_h + 5.0;
-    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.8 * alpha);
-    ctx.set_line_width(1.5);
-    ctx.set_line_cap_round();
-    ctx.set_line_join_round();
-    ctx.move_to(left_cx + 3.0, center_y - 4.0);
-    ctx.line_to(left_cx - 3.0, center_y);
-    ctx.line_to(left_cx + 3.0, center_y + 4.0);
-    ctx.stroke();
+    // Left chevron (SF Symbol)
+    let left_cx = tooltip_rx + padding_h + 6.0;
+    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.7 * alpha);
+    ctx.draw_symbol("chevron.left", left_cx, center_y, 10.0);
 
-    // Right chevron
-    let right_cx = tooltip_rx + tooltip_w - padding_h - 5.0;
-    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.8 * alpha);
-    ctx.set_line_width(1.5);
-    ctx.set_line_cap_round();
-    ctx.set_line_join_round();
-    ctx.move_to(right_cx - 3.0, center_y - 4.0);
-    ctx.line_to(right_cx + 3.0, center_y);
-    ctx.line_to(right_cx - 3.0, center_y + 4.0);
-    ctx.stroke();
+    // Right chevron (SF Symbol)
+    let right_cx = tooltip_rx + tooltip_w - padding_h - 6.0;
+    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.7 * alpha);
+    ctx.draw_symbol("chevron.right", right_cx, center_y, 10.0);
 
     // Style name text
     ctx.set_source_rgba(1.0, 1.0, 1.0, 0.9 * alpha);
     ctx.select_font_face("sans-serif", false, true);
-    ctx.set_font_size(11.0);
+    ctx.set_font_size(12.0);
+    let text_extents = ctx.text_extents(&style_name);
     let text_area_left = tooltip_rx + padding_h + chevron_area;
     let text_area_right = tooltip_rx + tooltip_w - padding_h - chevron_area;
     let text_area_center = (text_area_left + text_area_right) / 2.0;
@@ -431,16 +413,7 @@ fn draw_assistant_panel(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
             ctx.set_source_rgba(1.0, 1.0, 1.0, text_alpha * alpha);
             let cx = send_x + send_btn_size / 2.0;
             let cy = send_y + send_btn_size / 2.0;
-            ctx.set_line_width(1.5);
-            ctx.set_line_cap_round();
-            ctx.set_line_join_round();
-            ctx.move_to(cx - 5.0, cy + 5.0);
-            ctx.line_to(cx + 5.0, cy);
-            ctx.line_to(cx - 5.0, cy - 5.0);
-            ctx.stroke();
-            ctx.move_to(cx - 5.0, cy);
-            ctx.line_to(cx + 5.0, cy);
-            ctx.stroke();
+            ctx.draw_symbol("arrow.up.circle.fill", cx, cy, 18.0);
 
             if has_text {
                 state.click_regions.borrow_mut().push(ClickRegion {
@@ -744,36 +717,13 @@ fn draw_panel_button(
 
     let cx = x + size / 2.0;
     let cy = y + size / 2.0;
-    let icon_size = 7.0;
 
     ctx.set_source_rgba(1.0, 1.0, 1.0, 0.82 * alpha);
-    ctx.set_line_width(1.5);
-    ctx.set_line_cap_round();
-
-    match icon {
-        ButtonIcon::Close => {
-            ctx.move_to(cx - icon_size / 2.0, cy - icon_size / 2.0);
-            ctx.line_to(cx + icon_size / 2.0, cy + icon_size / 2.0);
-            ctx.stroke();
-            ctx.move_to(cx + icon_size / 2.0, cy - icon_size / 2.0);
-            ctx.line_to(cx - icon_size / 2.0, cy + icon_size / 2.0);
-            ctx.stroke();
-        }
-        ButtonIcon::OpenInNew => {
-            let s = icon_size * 0.5;
-            ctx.move_to(cx - s, cy + s);
-            ctx.line_to(cx + s, cy - s);
-            ctx.stroke();
-            ctx.move_to(cx, cy - s);
-            ctx.line_to(cx + s, cy - s);
-            ctx.line_to(cx + s, cy);
-            ctx.stroke();
-            ctx.move_to(cx - s, cy - s * 0.3);
-            ctx.line_to(cx - s, cy + s);
-            ctx.line_to(cx + s * 0.3, cy + s);
-            ctx.stroke();
-        }
-    }
+    let sym = match icon {
+        ButtonIcon::Close => "xmark",
+        ButtonIcon::OpenInNew => "arrow.up.forward.app",
+    };
+    ctx.draw_symbol(sym, cx, cy, 11.0);
 }
 
 fn draw_keyboard_button(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
@@ -806,29 +756,8 @@ fn draw_keyboard_button(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     ctx.set_line_width(1.0);
     ctx.stroke();
 
-    let cx = KB_BUTTON_SIZE / 2.0;
-    let cy = KB_BUTTON_SIZE / 2.0;
-    let kw = 12.0;
-    let kh = 8.0;
-    let kx = cx - kw / 2.0;
-    let ky = cy - kh / 2.0;
-
-    gfx::rounded_rect(ctx, kx, ky, kw, kh, 1.5);
     ctx.set_source_rgba(1.0, 1.0, 1.0, 0.7 * alpha);
-    ctx.set_line_width(1.0);
-    ctx.stroke();
-
-    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.7 * alpha);
-    for row in 0..2 {
-        let dots = if row == 0 { 3 } else { 2 };
-        let row_y = ky + 2.5 + row as f64 * 3.5;
-        let total_w = (dots - 1) as f64 * 3.0;
-        let start_x = cx - total_w / 2.0;
-        for d in 0..dots {
-            let dx = start_x + d as f64 * 3.0;
-            ctx.fill_rect(dx - 0.5, row_y - 0.5, 1.0, 1.0);
-        }
-    }
+    ctx.draw_symbol("keyboard", KB_BUTTON_SIZE / 2.0, KB_BUTTON_SIZE / 2.0, 13.0);
 
     ctx.restore();
 
@@ -851,28 +780,11 @@ fn draw_cancel_button(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     let (pill_x, pill_y, pill_w, _) = pill_position(state, ww, wh);
     let btn_x = pill_x + pill_w - CANCEL_BUTTON_SIZE / 2.0 + 2.0;
     let btn_y = pill_y - CANCEL_BUTTON_SIZE / 2.0 - 2.0;
-
-    ctx.arc(
-        btn_x + CANCEL_BUTTON_SIZE / 2.0,
-        btn_y + CANCEL_BUTTON_SIZE / 2.0,
-        CANCEL_BUTTON_SIZE / 2.0,
-        0.0, TAU,
-    );
-    ctx.set_source_rgba(0.46, 0.46, 0.46, 1.0);
-    ctx.fill();
-
     let cx = btn_x + CANCEL_BUTTON_SIZE / 2.0;
     let cy = btn_y + CANCEL_BUTTON_SIZE / 2.0;
-    let s = 3.5;
-    ctx.set_source_rgba(1.0, 1.0, 1.0, 1.0);
-    ctx.set_line_width(1.5);
-    ctx.set_line_cap_round();
-    ctx.move_to(cx - s, cy - s);
-    ctx.line_to(cx + s, cy + s);
-    ctx.stroke();
-    ctx.move_to(cx + s, cy - s);
-    ctx.line_to(cx - s, cy + s);
-    ctx.stroke();
+
+    ctx.set_source_rgba(0.46, 0.46, 0.46, 1.0);
+    ctx.draw_symbol("xmark.circle.fill", cx, cy, CANCEL_BUTTON_SIZE - 2.0);
 
     state.click_regions.borrow_mut().push(ClickRegion {
         x: btn_x, y: btn_y, w: CANCEL_BUTTON_SIZE, h: CANCEL_BUTTON_SIZE,
@@ -882,16 +794,7 @@ fn draw_cancel_button(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
 
 fn draw_wrench_icon(ctx: &Ctx, x: f64, y: f64, size: f64, alpha: f64) {
     ctx.set_source_rgba(1.0, 1.0, 1.0, alpha);
-    ctx.set_line_width(1.0);
-    ctx.set_line_cap_round();
-    let cx = x + size / 2.0;
-    let cy = y + size / 2.0;
-    let r = size * 0.35;
-    ctx.arc(cx, cy, r, 0.0, TAU);
-    ctx.stroke();
-    ctx.move_to(cx + r * 0.7, cy + r * 0.7);
-    ctx.line_to(cx + size * 0.4, cy + size * 0.4);
-    ctx.stroke();
+    ctx.draw_symbol("wrench", x + size / 2.0, y + size / 2.0, size * 0.85);
 }
 
 // ── Text wrapping ─────────────────────────────────────────────────

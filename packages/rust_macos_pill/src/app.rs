@@ -517,10 +517,12 @@ pub fn run(receiver: Receiver<InMessage>) {
         let panel_x = (window_w - panel_w) / 2.0;
         let entry_x = panel_x + PANEL_CONTENT_SIDE_INSET;
         let entry_w = panel_w - PANEL_CONTENT_SIDE_INSET * 2.0 - 36.0;
-        let entry_y = window_h - PANEL_BOTTOM_MARGIN - PANEL_INPUT_HEIGHT;
+        let entry_top_pad = 12.0;
+        let entry_y = window_h - PANEL_BOTTOM_MARGIN - PANEL_INPUT_HEIGHT + entry_top_pad;
+        let entry_h = PANEL_INPUT_HEIGHT - entry_top_pad;
         let entry_frame = NSRect::new(
             NSPoint::new(entry_x, entry_y),
-            NSSize::new(entry_w, PANEL_INPUT_HEIGHT),
+            NSSize::new(entry_w, entry_h),
         );
         let entry: id = msg_send![class!(NSTextField), alloc];
         let entry: id = msg_send![entry, initWithFrame:entry_frame];
