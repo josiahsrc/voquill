@@ -12,12 +12,15 @@ export type DatabaseMember = {
   stripeCustomerId?: Nullable<string>;
   priceId?: Nullable<string>;
   wordsToday: number;
+  wordsThisWeek?: number;
   wordsThisMonth: number;
   wordsTotal: number;
   tokensToday: number;
+  tokensThisWeek?: number;
   tokensThisMonth: number;
   tokensTotal: number;
   todayResetAt: FiremixTimestamp;
+  thisWeekResetAt?: FiremixTimestamp;
   thisMonthResetAt: FiremixTimestamp;
   isOnTrial?: Nullable<boolean>;
   trialEndsAt?: Nullable<FiremixTimestamp>;

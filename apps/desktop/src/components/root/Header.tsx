@@ -20,6 +20,7 @@ import {
 } from "../../utils/member.utils";
 import { getInitials } from "../../utils/string.utils";
 import { getMyUser } from "../../utils/user.utils";
+import { FreeWordsRemaining } from "../common/FreeWordsRemaining";
 import { LogoWithText } from "../common/LogoWithText";
 import {
   MenuPopoverBuilder,
@@ -132,24 +133,7 @@ export const AppHeader = () => {
             <FormattedMessage defaultMessage="GPU App Deprecation | Upgrade Now" />
           </Button>
         )}
-        {plan === "free" && (
-          <Button
-            onClick={() => openUpgradePlanDialog()}
-            startIcon={<RocketLaunchOutlined />}
-            variant="blue"
-            sx={{
-              fontWeight: 600,
-              fontSize: 13,
-              px: 2,
-              py: 0.75,
-              "& .MuiSvgIcon-root": {
-                fontSize: 18,
-              },
-            }}
-          >
-            <FormattedMessage defaultMessage="Upgrade" />
-          </Button>
-        )}
+        {plan === "free" && <FreeWordsRemaining />}
         {isOnTrial && <TrialCountdown />}
         <MenuPopoverBuilder
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}

@@ -23,12 +23,15 @@ class Member with EquatableMixin {
   final String? stripeCustomerId;
   final String? priceId;
   final int wordsToday;
+  final int? wordsThisWeek;
   final int wordsThisMonth;
   final int wordsTotal;
   final int tokensToday;
+  final int? tokensThisWeek;
   final int tokensThisMonth;
   final int tokensTotal;
   final String todayResetAt;
+  final String? thisWeekResetAt;
   final String thisMonthResetAt;
   final bool? isOnTrial;
   final String? trialEndsAt;
@@ -42,12 +45,15 @@ class Member with EquatableMixin {
     this.stripeCustomerId,
     this.priceId,
     required this.wordsToday,
+    this.wordsThisWeek,
     required this.wordsThisMonth,
     required this.wordsTotal,
     required this.tokensToday,
+    this.tokensThisWeek,
     required this.tokensThisMonth,
     required this.tokensTotal,
     required this.todayResetAt,
+    this.thisWeekResetAt,
     required this.thisMonthResetAt,
     this.isOnTrial,
     this.trialEndsAt,
@@ -66,12 +72,15 @@ class Member with EquatableMixin {
     stripeCustomerId,
     priceId,
     wordsToday,
+    wordsThisWeek,
     wordsThisMonth,
     wordsTotal,
     tokensToday,
+    tokensThisWeek,
     tokensThisMonth,
     tokensTotal,
     todayResetAt,
+    thisWeekResetAt,
     thisMonthResetAt,
     isOnTrial,
     trialEndsAt,

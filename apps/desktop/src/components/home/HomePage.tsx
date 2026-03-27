@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "../../store";
+import { getMyMember } from "../../utils/member.utils";
 import {
   getDictationSpeed,
   getEffectiveStreak,
@@ -23,6 +24,7 @@ import { DashboardEntryLayout } from "../dashboard/DashboardEntryLayout";
 import { TranscriptionRow } from "../transcriptions/TranscriptRow";
 import { GettingStartedList } from "./GettingStartedList";
 import { HomeSideEffects } from "./HomeSideEffects";
+import { OutOfWordsCard } from "./OutOfWordsCard";
 
 function StatCard({
   value,
@@ -57,6 +59,16 @@ export default function HomePage() {
   const intl = useIntl();
 
   const dictationSpeed = useAppStore(getDictationSpeed);
+  const freeWordsRemaining = useAppStore((state) => {
+    const member = getMyMember(state);
+    if (!member || member.plan !== "free" || !state.config) return null;
+    return Math.max(
+      0,
+      state.config.freeWordsPerWeek - (member.wordsThisWeek ?? 0),
+    );
+  });
+  const showUpgradeCard =
+    freeWordsRemaining != null && freeWordsRemaining < 250;
   const wordsThisMonth = user?.wordsThisMonth ?? 0;
   const wordsTotal = user?.wordsTotal ?? 0;
   const navigate = useNavigate();
@@ -79,6 +91,10 @@ export default function HomePage() {
           </Typography>
           <DictationInstruction />
         </Box>
+
+        {showUpgradeCard && (
+          <OutOfWordsCard wordsRemaining={freeWordsRemaining} />
+        )}
 
         <Stack spacing={1.5}>
           <Stack direction="row" spacing={1.5}>
