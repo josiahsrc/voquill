@@ -97,17 +97,14 @@ extern "C" fn draw_rect(this: &Object, _sel: Sel, _dirty: NSRect) {
     });
 }
 
-extern "C" fn mouse_entered(_this: &Object, _sel: Sel, _event: id) {
-    with_ctx(|ctx| {
-        ctx.state.hovered.set(true);
-        ipc::send(&OutMessage::Hover { hovered: true });
-    });
-}
+extern "C" fn mouse_entered(_this: &Object, _sel: Sel, _event: id) {}
 
 extern "C" fn mouse_exited(_this: &Object, _sel: Sel, _event: id) {
     with_ctx(|ctx| {
-        ctx.state.hovered.set(false);
-        ipc::send(&OutMessage::Hover { hovered: false });
+        if ctx.state.hovered.get() {
+            ctx.state.hovered.set(false);
+            ipc::send(&OutMessage::Hover { hovered: false });
+        }
     });
 }
 
@@ -260,6 +257,9 @@ extern "C" fn tick_callback(this: &Object, _sel: Sel, _timer: id) {
             return;
         }
 
+        // Compute hover from actual mouse position over pill area
+        update_hover(this, ctx);
+
         tick(&ctx.state);
 
         // Show/hide entry for typing mode
@@ -309,6 +309,24 @@ extern "C" fn tick_callback(this: &Object, _sel: Sel, _timer: id) {
             let _: () = msg_send![this, setNeedsDisplay:YES];
         }
     });
+}
+
+// ── Hover detection ──────────────────────────────────────────────
+
+fn update_hover(view: &Object, ctx: &AppContext) {
+    let new_hovered = unsafe {
+        let window: id = msg_send![view, window];
+        let mouse_screen: NSPoint = msg_send![class!(NSEvent), mouseLocation];
+        let mouse_win: NSPoint = msg_send![window, convertPointFromScreen:mouse_screen];
+        let mouse_view: NSPoint = msg_send![view, convertPoint:mouse_win fromView:nil];
+        input::is_in_hover_zone(&ctx.state, mouse_view.x, mouse_view.y)
+    };
+
+    let was_hovered = ctx.state.hovered.get();
+    if new_hovered != was_hovered {
+        ctx.state.hovered.set(new_hovered);
+        ipc::send(&OutMessage::Hover { hovered: new_hovered });
+    }
 }
 
 // ── Animation tick ────────────────────────────────────────────────

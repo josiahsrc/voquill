@@ -84,6 +84,64 @@ pub(crate) fn handle_scroll(state: &PillState, delta_y: f64) {
     state.should_stick.set(max_scroll - new_offset <= 32.0);
 }
 
+const HOVER_ENTRY_PAD_X: f64 = 8.0;
+const HOVER_ENTRY_PAD_Y: f64 = 8.0;
+const HOVER_EXIT_PAD_X: f64 = 24.0;
+const HOVER_EXIT_PAD_Y: f64 = 28.0;
+
+pub(crate) fn is_in_hover_zone(state: &PillState, x: f64, y: f64) -> bool {
+    let s = state.ui_scale;
+    let (ox, oy) = state.content_offset();
+    let x = x / s - ox;
+    let y = y / s - oy;
+    let dw = state.draw_width.get();
+    let dh = state.draw_height.get();
+
+    if state.assistant_active.get() || state.panel_open_t.get() > 0.1 {
+        return x >= 0.0 && x <= dw && y >= 0.0 && y <= dh;
+    }
+
+    let currently_hovered = state.hovered.get();
+    let (pad_x, pad_y) = if currently_hovered {
+        (HOVER_EXIT_PAD_X, HOVER_EXIT_PAD_Y)
+    } else {
+        (HOVER_ENTRY_PAD_X, HOVER_ENTRY_PAD_Y)
+    };
+
+    let (pill_x, pill_y, pill_w, pill_h) = pill_position(state, dw, dh);
+    if x >= pill_x - pad_x && x <= pill_x + pill_w + pad_x
+        && y >= pill_y - pad_y && y <= pill_y + pill_h + pad_y
+    {
+        return true;
+    }
+
+    if currently_hovered {
+        if state.tooltip_t.get() > 0.1 {
+            let tooltip_w = state.tooltip_width.get();
+            let tooltip_x = (dw - tooltip_w) / 2.0;
+            let pill_area_top = dh - PILL_AREA_HEIGHT;
+            let tooltip_y = pill_area_top - TOOLTIP_GAP - TOOLTIP_HEIGHT;
+            if x >= tooltip_x && x <= tooltip_x + tooltip_w
+                && y >= tooltip_y && y <= tooltip_y + TOOLTIP_HEIGHT
+            {
+                return true;
+            }
+        }
+
+        if state.phase.get() != Phase::Idle {
+            let cancel_x = pill_x + pill_w - CANCEL_BUTTON_SIZE / 2.0 + 2.0;
+            let cancel_y = pill_y - CANCEL_BUTTON_SIZE / 2.0 - 2.0;
+            if x >= cancel_x && x <= cancel_x + CANCEL_BUTTON_SIZE
+                && y >= cancel_y && y <= cancel_y + CANCEL_BUTTON_SIZE
+            {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
 pub(crate) fn is_interactive_at(state: &PillState, x: f64, y: f64) -> bool {
     let s = state.ui_scale;
     let (ox, oy) = state.content_offset();
