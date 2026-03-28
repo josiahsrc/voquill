@@ -11,6 +11,11 @@
         "source": "/",
         "destination": "/en/",
         "type": 301
+      },
+      {
+        "source": "/download",
+        "destination": "/en/download/",
+        "type": 301
       }
     ],
     "headers": [
