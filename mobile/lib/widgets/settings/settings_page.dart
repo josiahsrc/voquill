@@ -11,6 +11,7 @@ import 'package:app/utils/url_utils.dart';
 import 'package:app/widgets/common/app_list_tile.dart';
 import 'package:app/widgets/common/app_sliver_app_bar.dart';
 import 'package:app/widgets/common/list_tile_section.dart';
+import 'package:app/widgets/settings/ai_configuration_sheet.dart';
 import 'package:app/widgets/settings/edit_profile_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -91,6 +92,24 @@ class SettingsPage extends StatelessWidget {
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/dashboard/dictation-language'),
+                ),
+                AppListTile(
+                  leading: const Icon(Icons.mic_outlined),
+                  title: const Text('AI Transcription'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => AiConfigurationSheet.show(
+                    context,
+                    AiConfigContext.transcription,
+                  ),
+                ),
+                AppListTile(
+                  leading: const Icon(Icons.auto_fix_high_outlined),
+                  title: const Text('AI Post Processing'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => AiConfigurationSheet.show(
+                    context,
+                    AiConfigContext.postProcessing,
+                  ),
                 ),
               ],
             ),
