@@ -47,6 +47,8 @@ fn register_pill_view_class() -> &'static Class {
         decl.add_method(sel!(drawRect:), draw_rect as extern "C" fn(&Object, Sel, NSRect));
         decl.add_method(sel!(isFlipped), is_flipped as extern "C" fn(&Object, Sel) -> BOOL);
         decl.add_method(sel!(acceptsFirstResponder), accepts_first_responder as extern "C" fn(&Object, Sel) -> BOOL);
+        decl.add_method(sel!(acceptsFirstMouse:), accepts_first_mouse as extern "C" fn(&Object, Sel, id) -> BOOL);
+        decl.add_method(sel!(mouseDown:), mouse_down as extern "C" fn(&Object, Sel, id));
         decl.add_method(sel!(mouseEntered:), mouse_entered as extern "C" fn(&Object, Sel, id));
         decl.add_method(sel!(mouseExited:), mouse_exited as extern "C" fn(&Object, Sel, id));
         decl.add_method(sel!(mouseUp:), mouse_up as extern "C" fn(&Object, Sel, id));
@@ -61,7 +63,7 @@ fn register_pill_view_class() -> &'static Class {
 }
 
 fn register_pill_window_class() -> &'static Class {
-    let superclass = Class::get("NSWindow").unwrap();
+    let superclass = Class::get("NSPanel").unwrap();
     let mut decl = ClassDecl::new("VoquillPillWindow", superclass).unwrap();
 
     unsafe {
@@ -82,7 +84,19 @@ extern "C" fn accepts_first_responder(_this: &Object, _sel: Sel) -> BOOL {
 }
 
 extern "C" fn can_become_key_window(_this: &Object, _sel: Sel) -> BOOL {
+    let is_typing = with_ctx(|ctx| {
+        ctx.state.assistant_active.get()
+            && *ctx.state.assistant_input_mode.borrow() == "type"
+    });
+    if is_typing.unwrap_or(false) { YES } else { NO }
+}
+
+extern "C" fn accepts_first_mouse(_this: &Object, _sel: Sel, _event: id) -> BOOL {
     YES
+}
+
+extern "C" fn mouse_down(_this: &Object, _sel: Sel, _event: id) {
+    // Don't call super — prevents the window from stealing focus on click
 }
 
 extern "C" fn draw_rect(this: &Object, _sel: Sel, _dirty: NSRect) {
@@ -270,9 +284,11 @@ extern "C" fn tick_callback(this: &Object, _sel: Sel, _timer: id) {
             let entry_hidden: BOOL = msg_send![entry, isHidden];
             if is_typing && entry_hidden != NO {
                 let _: () = msg_send![entry, setHidden:NO];
+                let _: () = msg_send![ctx.window, makeKeyWindow];
                 let _: () = msg_send![ctx.window, makeFirstResponder:entry];
             } else if !is_typing && entry_hidden == NO {
                 let _: () = msg_send![entry, setHidden:YES];
+                let _: () = msg_send![ctx.window, resignKeyWindow];
             }
 
             // Sync entry text to state
@@ -503,16 +519,18 @@ pub fn run(receiver: Receiver<InMessage>) {
         let window_w = WINDOW_W_TYPING as f64;
         let window_h = WINDOW_H_TYPING as f64;
 
-        // Create window
+        // Create window (NSPanel with non-activating mask so clicks don't steal focus)
         let rect = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(window_w, window_h));
+        let non_activating_mask: u64 = 1 << 7; // NSWindowStyleMaskNonactivatingPanel
         let window: id = msg_send![window_class, alloc];
         let window: id = msg_send![window,
             initWithContentRect:rect
-            styleMask:NSWindowStyleMask::NSBorderlessWindowMask
+            styleMask:non_activating_mask
             backing:NSBackingStoreBuffered
             defer:NO
         ];
 
+        let _: () = msg_send![window, setBecomesKeyOnlyIfNeeded:YES];
         window.setLevel_(1000); // NSScreenSaverWindowLevel
         window.setOpaque_(NO);
         let clear_color: id = msg_send![class!(NSColor), clearColor];
@@ -631,9 +649,9 @@ pub fn run(receiver: Receiver<InMessage>) {
             repeats:YES
         ];
 
-        // Position and show
+        // Position and show (orderFront only — don't steal focus from other apps)
         reposition_window(window);
-        window.makeKeyAndOrderFront_(nil);
+        let _: () = msg_send![window, orderFront:nil];
 
         ipc::send(&OutMessage::Ready);
         app.run();
