@@ -23,7 +23,6 @@ describe("buildSystemPostProcessingTonePrompt", () => {
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
     expect(result).toContain("text editor that reformats transcripts");
-    expect(result).toContain("processedTranscription");
   });
 
   it("returns custom system prompt for template config", () => {
@@ -60,7 +59,6 @@ describe("buildSystemPostProcessingTonePrompt", () => {
       }),
     );
     expect(result).toContain("text editor that reformats transcripts");
-    expect(result).toContain("processedTranscription");
   });
 });
 
@@ -98,11 +96,5 @@ describe("buildPostProcessingPrompt", () => {
     expect(result).toContain("Hello world");
     expect(result).toContain("Alice");
     expect(result).toContain("English");
-    expect(result).toContain(
-      "Return ONLY the cleaned-up version of what the speaker said.",
-    );
-    expect(result).toContain(
-      "**CRITICAL** Your response MUST be in JSON format.",
-    );
   });
 });

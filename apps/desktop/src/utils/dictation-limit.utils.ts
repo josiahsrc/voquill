@@ -1,9 +1,14 @@
 import type { UserPreferences } from "@voquill/types";
+import type { TranscriptionMode } from "../types/ai.types";
 import { minutesToMilliseconds } from "./time.utils";
 
-export const DEFAULT_DICTATION_LIMIT_MINUTES = 5;
+export const DEFAULT_DICTATION_LIMIT_MINUTES = 0;
 const MAX_TIMEOUT_MS = 2_147_483_647;
 export const MAX_DICTATION_LIMIT_MINUTES = Math.floor(MAX_TIMEOUT_MS / 60_000);
+
+export const shouldEnableDictationLimit = (
+  mode: TranscriptionMode | null | undefined,
+): boolean => mode === "api" || mode === "local";
 
 export const normalizeDictationLimitMinutes = (
   value: number | null | undefined,

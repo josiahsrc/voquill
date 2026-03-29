@@ -28,6 +28,7 @@ import {
   getEffectiveDictationLimitMinutes,
   MAX_DICTATION_LIMIT_MINUTES,
   normalizeDictationLimitMinutes,
+  shouldEnableDictationLimit,
 } from "../../utils/dictation-limit.utils";
 import { getAllowChangeStylingMode } from "../../utils/enterprise.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
@@ -63,7 +64,7 @@ export const MoreSettingsDialog = () => {
       prefs?.realtimeOutputEnabled ?? false,
       getEffectiveStylingMode(state),
       getAllowChangeStylingMode(state),
-      transcriptionPrefs.mode === "api" || transcriptionPrefs.mode === "local",
+      shouldEnableDictationLimit(transcriptionPrefs.mode),
       getEffectiveDictationLimitMinutes(prefs),
     ] as const;
   });
@@ -77,7 +78,31 @@ export const MoreSettingsDialog = () => {
     }
   }, [dictationLimitMinutes, open]);
 
+  const commitDictationLimitInput = () => {
+    if (!showDictationLimitSetting) {
+      return;
+    }
+
+    if (dictationLimitInput === "") {
+      setDictationLimitInput(String(dictationLimitMinutes));
+      return;
+    }
+
+    const parsed = Number(dictationLimitInput);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      setDictationLimitInput(String(dictationLimitMinutes));
+      return;
+    }
+
+    const normalized = normalizeDictationLimitMinutes(parsed);
+    setDictationLimitInput(String(normalized));
+    if (normalized !== dictationLimitMinutes) {
+      void setDictationLimitMinutes(normalized);
+    }
+  };
+
   const handleClose = () => {
+    commitDictationLimitInput();
     produceAppState((draft) => {
       draft.settings.moreSettingsDialogOpen = false;
     });
@@ -114,36 +139,10 @@ export const MoreSettingsDialog = () => {
   const handleDictationLimitChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setDictationLimitInput(value);
-
-    if (value === "") {
-      return;
-    }
-
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 0) {
-      return;
-    }
-
-    void setDictationLimitMinutes(parsed);
   };
 
   const handleDictationLimitBlur = () => {
-    if (dictationLimitInput === "") {
-      setDictationLimitInput(String(dictationLimitMinutes));
-      return;
-    }
-
-    const parsed = Number(dictationLimitInput);
-    if (!Number.isInteger(parsed) || parsed < 0) {
-      setDictationLimitInput(String(dictationLimitMinutes));
-      return;
-    }
-
-    const normalized = normalizeDictationLimitMinutes(parsed);
-    setDictationLimitInput(String(normalized));
-    if (normalized !== dictationLimitMinutes) {
-      void setDictationLimitMinutes(normalized);
-    }
+    commitDictationLimitInput();
   };
 
   const handleStylingModeChange = (event: SelectChangeEvent<string>) => {

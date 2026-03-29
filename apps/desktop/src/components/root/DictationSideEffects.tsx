@@ -66,6 +66,7 @@ import { createId } from "../../utils/id.utils";
 import {
   getDictationRecordingTimerDurations,
   getEffectiveDictationLimitMinutes,
+  shouldEnableDictationLimit,
 } from "../../utils/dictation-limit.utils";
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
@@ -458,7 +459,13 @@ export const DictationSideEffects = () => {
   const startRecordingTimers = useCallback(() => {
     clearRecordingTimers();
 
-    const preferences = getMyUserPreferences(getAppState());
+    const state = getAppState();
+    const preferences = getMyUserPreferences(state);
+    const transcriptionPrefs = getTranscriptionPrefs(state);
+    if (!shouldEnableDictationLimit(transcriptionPrefs.mode)) {
+      return;
+    }
+
     const dictationLimitMinutes =
       getEffectiveDictationLimitMinutes(preferences);
     const { warningDurationMs, autoStopDurationMs } =

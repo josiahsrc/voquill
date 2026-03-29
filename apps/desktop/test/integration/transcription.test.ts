@@ -175,8 +175,12 @@ describeWithGroqApiKey("Groq Transcription Integration", () => {
 
     const normalizedResult = normalize(result.text);
     const normalizedExpected = normalize(expectedText);
-    console.log(`Normalized Expected (${normalizedExpected.length} chars):\n${normalizedExpected}\n`);
-    console.log(`Normalized Result (${normalizedResult.length} chars):\n${normalizedResult}\n`);
+    console.log(
+      `Normalized Expected (${normalizedExpected.length} chars):\n${normalizedExpected}\n`,
+    );
+    console.log(
+      `Normalized Result (${normalizedResult.length} chars):\n${normalizedResult}\n`,
+    );
 
     // Calculate similarity (0-1 ratio)
     const similarity = getStringSimilarity(

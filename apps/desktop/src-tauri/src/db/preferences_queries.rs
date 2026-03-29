@@ -1,6 +1,6 @@
 use sqlx::{Row, SqlitePool};
 
-use crate::domain::UserPreferences;
+use crate::domain::{preferences::DEFAULT_DICTATION_LIMIT_MINUTES, UserPreferences};
 const SEP: &str = "::";
 
 fn serialize_additional_languages(languages: &Option<Vec<String>>) -> Option<String> {
@@ -279,7 +279,7 @@ pub async fn fetch_user_preferences(
             .unwrap_or(false),
         dictation_limit_minutes: row
             .try_get::<i64, _>("dictation_limit_minutes")
-            .unwrap_or(5),
+            .unwrap_or(DEFAULT_DICTATION_LIMIT_MINUTES),
         dictation_pill_visibility: row
             .try_get::<String, _>("dictation_pill_visibility")
             .unwrap_or_else(|_| "while_active".to_string()),

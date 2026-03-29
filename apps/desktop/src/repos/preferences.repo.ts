@@ -40,7 +40,7 @@ type LocalUserPreferences = {
   ignoreUpdateDialog: boolean;
   incognitoModeEnabled: boolean;
   incognitoModeIncludeInStats: boolean;
-  dictationLimitMinutes: number;
+  dictationLimitMinutes?: Nullable<number>;
   dictationPillVisibility: DictationPillVisibility;
   realtimeOutputEnabled: boolean;
   remoteOutputEnabled: boolean;

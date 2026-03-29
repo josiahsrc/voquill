@@ -1,13 +1,14 @@
 function getEnvOrThrow(key: string): string {
   const value = process.env[key];
-  if (!value) {
+  if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
-  return value;
+  return value.trim();
 }
 
 export function hasGroqApiKey(): boolean {
-  return Boolean(process.env.GROQ_API_KEY);
+  const value = process.env.GROQ_API_KEY;
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 export function getGroqApiKey(): string {
