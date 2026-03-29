@@ -27,10 +27,7 @@ class HomePage extends StatelessWidget {
       context,
       (s) => s.sortedTranscriptionIds,
     );
-    final sessions = useAppStore().select(
-      context,
-      (s) => s.desktopSessionById,
-    );
+    final sessions = useAppStore().select(context, (s) => s.desktopSessionById);
     final theme = Theme.of(context);
     final colors = context.colors;
     final recentIds = sortedIds.take(3).toList();
@@ -127,9 +124,7 @@ class HomePage extends StatelessWidget {
                       (session) => AppListTile(
                         leading: const Icon(Icons.computer_rounded),
                         title: Text(session.name),
-                        subtitle: const Text('Active'),
-                        trailing:
-                            const Icon(Icons.chevron_right, size: 20),
+                        trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: () => context.push(
                           '/dashboard/remote-dictation/${session.id}',
                         ),
