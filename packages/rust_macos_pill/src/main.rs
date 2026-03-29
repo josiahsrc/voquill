@@ -1,3 +1,5 @@
+#![allow(deprecated, unexpected_cfgs)]
+
 #[macro_use]
 extern crate objc;
 

@@ -176,11 +176,6 @@ impl Ctx {
         }
     }
 
-    pub fn fill_rect(&self, x: f64, y: f64, w: f64, h: f64) {
-        self.rectangle(x, y, w, h);
-        self.fill();
-    }
-
     pub fn set_line_width(&self, w: f64) {
         unsafe { CGContextSetLineWidth(self.cg, w); }
     }
@@ -388,6 +383,7 @@ impl Ctx {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn draw_linear_gradient_in_rect(
         &self,
         clip_x: f64, clip_y: f64, clip_w: f64, clip_h: f64,

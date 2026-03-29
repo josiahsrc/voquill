@@ -1,11 +1,10 @@
 use std::cell::{Cell, RefCell};
-use std::ffi::c_void;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
 use cocoa::appkit::{
     NSApp, NSApplication, NSApplicationActivationPolicyAccessory, NSBackingStoreBuffered,
-    NSWindow, NSWindowCollectionBehavior, NSWindowStyleMask,
+    NSWindow, NSWindowCollectionBehavior,
 };
 use cocoa::base::{id, nil, NO, YES};
 use cocoa::foundation::{NSAutoreleasePool, NSPoint, NSRect, NSSize, NSString};
@@ -30,7 +29,7 @@ struct AppContext {
 }
 
 thread_local! {
-    static APP_CTX: RefCell<Option<AppContext>> = RefCell::new(None);
+    static APP_CTX: RefCell<Option<AppContext>> = const { RefCell::new(None) };
 }
 
 fn with_ctx<R>(f: impl FnOnce(&AppContext) -> R) -> Option<R> {
@@ -446,7 +445,7 @@ fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: 
         velocity.set(0.0);
     } else {
         value.set(new_v.clamp(0.0, 1.0));
-        velocity.set(if new_v < 0.0 || new_v > 1.0 { 0.0 } else { new_vel });
+        velocity.set(if !(0.0..=1.0).contains(&new_v) { 0.0 } else { new_vel });
     }
 }
 

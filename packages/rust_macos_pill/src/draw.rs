@@ -1,5 +1,3 @@
-use std::f64::consts::PI;
-
 use crate::gfx::{self, Ctx};
 use crate::ipc::{Phase, PillPermission, PillStreaming};
 
@@ -181,6 +179,7 @@ fn draw_edge_gradient(
     ctx.restore();
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_loading(
     ctx: &Ctx, rx: f64, ry: f64, pill_w: f64, pill_h: f64,
     radius: f64, expand_t: f64, state: &PillState,
@@ -451,6 +450,7 @@ fn draw_compact_content(
     ctx.show_text(text);
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_transcript(
     ctx: &Ctx, state: &PillState,
     area_x: f64, area_y: f64, area_w: f64, area_h: f64, alpha: f64,
@@ -691,7 +691,7 @@ fn draw_user_prompt_preview(
             break;
         }
         display.truncate(display.len() - 4);
-        display.push_str("…");
+        display.push('…');
     }
 
     let ext = ctx.text_extents(&display);
