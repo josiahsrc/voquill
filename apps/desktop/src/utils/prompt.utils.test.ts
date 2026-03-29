@@ -22,9 +22,7 @@ describe("buildSystemPostProcessingTonePrompt", () => {
     const result = buildSystemPostProcessingTonePrompt(
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
-    expect(result).toContain(
-      "You are a text editor that reformats transcripts",
-    );
+    expect(result).toContain("text editor that reformats transcripts");
     expect(result).toContain("processedTranscription");
   });
 
@@ -61,9 +59,7 @@ describe("buildSystemPostProcessingTonePrompt", () => {
         promptTemplate: "Process: <transcript/>",
       }),
     );
-    expect(result).toContain(
-      "You are a text editor that reformats transcripts",
-    );
+    expect(result).toContain("text editor that reformats transcripts");
     expect(result).toContain("processedTranscription");
   });
 });

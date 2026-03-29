@@ -1,4 +1,4 @@
-import type { LlmMessage, UserPreferences } from "@repo/types";
+import type { LlmMessage, UserPreferences } from "@voquill/types";
 import { AppState } from "../state/app.state";
 import {
   CPU_DEVICE_VALUE,

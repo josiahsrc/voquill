@@ -1,10 +1,22 @@
 {
   "hosting": {
-    "public": "out",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "/en/",
+        "type": 301
+      },
+      {
+        "source": "/download",
+        "destination": "/en/download/",
+        "type": 301
+      }
     ],
     "headers": [
       {
@@ -15,12 +27,6 @@
             "value": "index,follow"
           }
         ]
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
       }
     ],
     "cleanUrls": true

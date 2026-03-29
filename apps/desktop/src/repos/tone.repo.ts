@@ -1,6 +1,6 @@
-import { invokeHandler } from "@repo/functions";
-import { Tone } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import { invokeHandler } from "@voquill/functions";
+import { Tone } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { getConfigRepo } from ".";
 import { invokeEnterprise } from "../utils/enterprise.utils";

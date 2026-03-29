@@ -1,4 +1,4 @@
-import type { Transcription } from "@repo/types";
+import type { Transcription } from "@voquill/types";
 import dayjs from "dayjs";
 import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";

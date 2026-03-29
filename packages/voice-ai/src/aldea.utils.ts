@@ -1,4 +1,4 @@
-import { retry, countWords } from "@repo/utilities";
+import { retry, countWords } from "@voquill/utilities";
 
 const ALDEA_API_URL = "https://api.aldea.ai/v1/listen";
 

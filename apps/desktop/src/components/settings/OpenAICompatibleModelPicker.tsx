@@ -1,11 +1,8 @@
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import {
+  Autocomplete,
   Box,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   TextField,
   Typography,
 } from "@mui/material";
@@ -121,32 +118,31 @@ export const OpenAICompatibleModelPicker = ({
   }
 
   return (
-    <FormControl fullWidth size="small">
-      <InputLabel id="openai-compatible-model-label" shrink>
-        <FormattedMessage defaultMessage="Model" />
-      </InputLabel>
-      <Select
-        labelId="openai-compatible-model-label"
-        label={<FormattedMessage defaultMessage="Model" />}
-        value={selectedModel ?? ""}
-        onChange={(event) =>
-          onModelSelect(event.target.value ? String(event.target.value) : null)
+    <Autocomplete
+      freeSolo
+      options={models}
+      value={selectedModel ?? ""}
+      onChange={(_event, newValue) => {
+        onModelSelect(newValue || null);
+      }}
+      onInputChange={(_event, newInputValue, reason) => {
+        if (reason === "input") {
+          onModelSelect(newInputValue || null);
         }
-        displayEmpty
-        notched
-        disabled={disabled || !isAvailable}
-      >
-        <MenuItem value="">
-          <em>
-            <FormattedMessage defaultMessage="Select a model" />
-          </em>
-        </MenuItem>
-        {models.map((model) => (
-          <MenuItem key={model} value={model}>
-            {model}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+      }}
+      disabled={disabled || !isAvailable}
+      size="small"
+      fullWidth
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={<FormattedMessage defaultMessage="Model" />}
+          placeholder="Select or type a model"
+          slotProps={{
+            inputLabel: { ...params.InputLabelProps, shrink: true },
+          }}
+        />
+      )}
+    />
   );
 };

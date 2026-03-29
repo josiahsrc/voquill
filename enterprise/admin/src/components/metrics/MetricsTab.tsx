@@ -13,7 +13,7 @@ import type {
   MetricsPerProvider,
   MetricsPerUser,
   MetricsRange,
-} from "@repo/types";
+} from "@voquill/types";
 import { useMemo } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { loadMetrics } from "../../actions/metrics.actions";

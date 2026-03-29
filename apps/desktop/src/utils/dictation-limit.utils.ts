@@ -1,4 +1,4 @@
-import type { UserPreferences } from "@repo/types";
+import type { UserPreferences } from "@voquill/types";
 import { minutesToMilliseconds } from "./time.utils";
 
 export const DEFAULT_DICTATION_LIMIT_MINUTES = 5;

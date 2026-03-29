@@ -1,4 +1,4 @@
-import type { PairedRemoteDevice } from "@repo/types";
+import type { PairedRemoteDevice } from "@voquill/types";
 import { getPairedRemoteDeviceRepo } from "../repos";
 import type { PairedRemoteDeviceUpsertParams } from "../repos/paired-remote-device.repo";
 import { getAppState, produceAppState } from "../store";

@@ -7,14 +7,14 @@ import type {
   ToolChoiceTool,
   Tool,
 } from "@anthropic-ai/sdk/resources/messages";
-import { retry, countWords } from "@repo/utilities";
+import { retry, countWords } from "@voquill/utilities";
 import type {
   JsonResponse,
   LlmChatInput,
   LlmFinishReason,
   LlmMessage,
   LlmStreamEvent,
-} from "@repo/types";
+} from "@voquill/types";
 
 export const CLAUDE_MODELS = [
   "claude-opus-4-5-20251101",

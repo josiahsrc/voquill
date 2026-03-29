@@ -1,5 +1,5 @@
-import type { HandlerInput, HandlerOutput } from "@repo/functions";
-import type { AuthContext, Nullable } from "@repo/types";
+import type { HandlerInput, HandlerOutput } from "@voquill/functions";
+import type { AuthContext, Nullable } from "@voquill/types";
 import { requireAuth } from "../utils/auth.utils";
 import { listTonesByUserId, upsertTone, deleteTone, listGlobalTones, upsertGlobalTone, deleteGlobalTone } from "../repo/tone.repo";
 import { requireAdmin } from "../utils/validation.utils";

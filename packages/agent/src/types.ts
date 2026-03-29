@@ -3,7 +3,7 @@ import type {
   LlmChatInput,
   LlmMessage,
   LlmStreamEvent,
-} from "@repo/types";
+} from "@voquill/types";
 
 export interface AgentToolInput {
   params: Record<string, unknown>;

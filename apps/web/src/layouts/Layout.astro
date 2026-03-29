@@ -1,0 +1,423 @@
+---
+import { locales, defaultLocale, type Locale } from '../types/locale';
+import { stripLocalePrefix } from '../utils/locale.utils';
+import {
+	DEFAULT_SOCIAL_IMAGE,
+	DEFAULT_SOCIAL_IMAGE_ALT,
+	SITE_URL,
+	buildOrganizationStructuredData,
+	buildWebsiteStructuredData,
+	getOgLocale,
+	toAbsoluteImageUrl,
+} from '../utils/seo';
+
+interface Props {
+	title: string;
+	description: string;
+	lang?: Locale;
+	robots?: string;
+	ogType?: 'website' | 'article';
+	ogImage?: string;
+	ogImageAlt?: string;
+	article?: {
+		publishedTime?: string;
+		modifiedTime?: string;
+		author?: string;
+		tags?: string[];
+	};
+	structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
+}
+
+const {
+	title,
+	description,
+	lang = defaultLocale,
+	robots = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+	ogType = 'website',
+	ogImage = DEFAULT_SOCIAL_IMAGE,
+	ogImageAlt = DEFAULT_SOCIAL_IMAGE_ALT,
+	article,
+	structuredData = [],
+} = Astro.props;
+const siteBase = Astro.site ?? SITE_URL;
+const canonicalUrl = new URL(Astro.url.pathname, siteBase);
+const absoluteOgImage = toAbsoluteImageUrl(ogImage);
+const ogLocale = getOgLocale(lang);
+
+const pathWithoutLocale = stripLocalePrefix(Astro.url.pathname);
+const hreflangUrls = locales.map((locale) => ({
+	locale,
+	href: new URL(`/${locale}${pathWithoutLocale}`, siteBase).href,
+}));
+const structuredDataItems = [
+	buildOrganizationStructuredData(),
+	buildWebsiteStructuredData(),
+	...(Array.isArray(structuredData) ? structuredData : [structuredData]),
+].filter(Boolean);
+const alternateOgLocales = locales
+	.filter((locale) => locale !== lang)
+	.map(getOgLocale)
+	.filter((locale, index, values) => values.indexOf(locale) === index);
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta name="robots" content={robots} />
+		<meta name="theme-color" content="#121212" />
+		<meta name="application-name" content="Voquill" />
+		<link rel="canonical" href={canonicalUrl.href} />
+		<link rel="sitemap" type="application/xml" href={new URL('/sitemap.xml', siteBase).href} />
+
+		{hreflangUrls.map(({ locale, href }) => (
+			<link rel="alternate" hreflang={locale} href={href} />
+		))}
+		<link rel="alternate" hreflang="x-default" href={hreflangUrls.find((h) => h.locale === 'en')!.href} />
+
+		<!-- Open Graph -->
+		<meta property="og:type" content={ogType} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={absoluteOgImage} />
+		<meta property="og:image:alt" content={ogImageAlt} />
+		<meta property="og:url" content={canonicalUrl.href} />
+		<meta property="og:site_name" content="Voquill" />
+		<meta property="og:locale" content={ogLocale} />
+		{alternateOgLocales.map((locale) => (
+			<meta property="og:locale:alternate" content={locale} />
+		))}
+		{article?.publishedTime && <meta property="article:published_time" content={article.publishedTime} />}
+		{article?.modifiedTime && <meta property="article:modified_time" content={article.modifiedTime} />}
+		{article?.author && <meta property="article:author" content={article.author} />}
+		{article?.tags?.map((tag) => (
+			<meta property="article:tag" content={tag} />
+		))}
+
+		<!-- Twitter Card -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={absoluteOgImage} />
+		<meta name="twitter:image:alt" content={ogImageAlt} />
+		{article?.author && <meta name="author" content={article.author} />}
+
+		<link rel="icon" href="/favicon.ico" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+		{structuredDataItems.map((item) => (
+			<script type="application/ld+json" set:html={JSON.stringify(item)} />
+		))}
+
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
+		/>
+	</head>
+	<body>
+		<slot />
+		<script>
+			import '../analytics/mixpanel';
+		</script>
+	</body>
+</html>
+
+<style is:global>
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+
+	:root {
+		--level0: #ffffff;
+		--level1: #f5f5f5;
+		--level2: #e0e0e0;
+		--border: rgba(18, 21, 28, 0.1);
+		--shadow: 0 16px 48px rgba(18, 21, 28, 0.08);
+		--shadow-soft: 0 12px 32px rgba(18, 21, 28, 0.06);
+		--text-strong: #12151c;
+		--text-muted: #808080;
+		--primary-button-bg: #111111;
+		--primary-button-hover: #000000;
+		--primary-button-fg: #ffffff;
+		--primary-button-border: rgba(0, 0, 0, 0.6);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--level0: #121212;
+			--level1: #1c1c1c;
+			--level2: #2d2d2d;
+			--border: rgba(255, 255, 255, 0.12);
+			--shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+			--shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.45);
+			--text-strong: #ffffff;
+			--text-muted: #8c8c8c;
+			--primary-button-bg: #ffffff;
+			--primary-button-hover: #e8e8e8;
+			--primary-button-fg: #000000;
+			--primary-button-border: rgba(0, 0, 0, 0.6);
+		}
+
+		html {
+			color-scheme: dark;
+		}
+	}
+
+	html,
+	body {
+		max-width: 100vw;
+		overflow-x: hidden;
+	}
+
+	body {
+		color: var(--text-strong);
+		background: var(--level0);
+		font-family:
+			'Roboto',
+			system-ui,
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			sans-serif;
+		font-weight: 400;
+		min-height: 100vh;
+		padding: 16px 24px 72px;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	/* ── Buttons ── */
+
+	.btn-primary,
+	.btn-secondary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		border-radius: 999px;
+		padding: 12px 22px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		border: 1px solid var(--border);
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease,
+			background-color 0.2s ease,
+			border-color 0.2s ease,
+			color 0.2s ease;
+		cursor: pointer;
+		gap: 10px;
+	}
+
+	.btn-primary {
+		background: var(--primary-button-bg);
+		color: var(--primary-button-fg);
+		border-color: var(--primary-button-border);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.btn-primary:hover {
+		background: var(--primary-button-hover);
+		border-color: var(--text-strong);
+		box-shadow: var(--shadow);
+	}
+
+	.btn-primary:active {
+		transform: translateY(1px);
+		box-shadow: none;
+	}
+
+	.btn-secondary {
+		border-color: var(--border);
+		background: var(--level1);
+		color: var(--text-strong);
+	}
+
+	.btn-secondary:hover {
+		border-color: var(--text-muted);
+		transform: translateY(-1px);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.btn-secondary {
+			background: var(--level2);
+			border-color: var(--border);
+		}
+
+		.btn-secondary:hover {
+			border-color: var(--text-muted);
+		}
+	}
+
+	.btn-small {
+		padding: 10px 20px;
+	}
+
+	.btn-disabled {
+		cursor: not-allowed;
+		opacity: 0.65;
+		box-shadow: none;
+		pointer-events: none;
+	}
+
+	.btn-ghost {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 999px;
+		padding: 12px 22px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-strong);
+		cursor: pointer;
+		transition:
+			transform 0.2s ease,
+			border-color 0.2s ease;
+	}
+
+	.btn-ghost:hover {
+		transform: translateY(-1px);
+		border-color: var(--text-muted);
+	}
+
+	/* ── Shared icons ── */
+
+	.github-icon {
+		display: inline-block;
+		width: 18px;
+		height: 18px;
+		background-color: currentColor;
+		mask: url('/github.svg') center/contain no-repeat;
+		-webkit-mask: url('/github.svg') center/contain no-repeat;
+		flex-shrink: 0;
+	}
+
+	.download-button-icon {
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		background-color: currentColor;
+		mask-size: contain;
+		mask-repeat: no-repeat;
+		mask-position: center;
+		-webkit-mask-size: contain;
+		-webkit-mask-repeat: no-repeat;
+		-webkit-mask-position: center;
+		flex-shrink: 0;
+	}
+
+	.inline-link {
+		font-weight: 600;
+		color: var(--text-strong);
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+	}
+
+	/* ── Linux install dialog ── */
+
+	.dialog-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+	}
+
+	.dialog {
+		background: var(--level0);
+		border: 1px solid var(--border);
+		border-radius: 24px;
+		padding: 32px;
+		max-width: 520px;
+		width: calc(100% - 48px);
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		box-shadow: var(--shadow);
+	}
+
+	.dialog-title {
+		font-size: 1.25rem;
+		font-weight: 700;
+		letter-spacing: -0.015em;
+	}
+
+	.dialog-description {
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		line-height: 1.5;
+	}
+
+	.dialog-hint {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		line-height: 1.5;
+	}
+
+	.linux-code-block {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 14px 16px;
+		border-radius: 12px;
+		background: var(--level1);
+		border: 1px solid var(--border);
+		font-family: monospace;
+		font-size: 0.85rem;
+		overflow-x: auto;
+	}
+
+	.linux-code-block code {
+		flex: 1;
+		white-space: nowrap;
+	}
+
+	.linux-copy-btn {
+		flex-shrink: 0;
+		padding: 6px 14px;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--level0);
+		color: var(--text-strong);
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			background-color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.linux-copy-btn:hover {
+		border-color: var(--text-muted);
+	}
+
+	.dialog-close-btn {
+		align-self: flex-end;
+	}
+
+	@media (max-width: 720px) {
+		body {
+			padding: 24px 18px 56px;
+		}
+	}
+</style>

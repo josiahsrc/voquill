@@ -5,7 +5,7 @@ import {
   PostProcessingMode,
   TranscriptionMode,
   UserPreferences,
-} from "@repo/types";
+} from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import {
   DEFAULT_DICTATION_LIMIT_MINUTES,
@@ -47,6 +47,7 @@ type LocalUserPreferences = {
   remoteTargetDeviceId: Nullable<string>;
   remoteReceiverPort: Nullable<number>;
   remoteReceiverAutoStart: boolean;
+  dictationAudioDim: number;
   useNewBackend: boolean;
 };
 
@@ -101,6 +102,7 @@ const fromLocalPreferences = (
   remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
   remoteReceiverPort: preferences.remoteReceiverPort ?? null,
   remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
+  dictationAudioDim: preferences.dictationAudioDim ?? 1.0,
 });
 
 const toLocalPreferences = (
@@ -142,6 +144,7 @@ const toLocalPreferences = (
   remoteTargetDeviceId: preferences.remoteTargetDeviceId ?? null,
   remoteReceiverPort: preferences.remoteReceiverPort ?? null,
   remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
+  dictationAudioDim: preferences.dictationAudioDim ?? 1.0,
   useNewBackend: true,
 });
 

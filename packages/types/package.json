@@ -1,7 +1,12 @@
 {
-  "name": "@repo/types",
-  "version": "0.1.0",
+  "name": "@voquill/types",
+  "version": "0.1.4",
   "description": "Shared types for the monorepo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voquill/voquill.git",
+    "directory": "packages/types"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -10,7 +15,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
+    "@voquill/typescript-config": "workspace:*",
     "@types/json-schema": "^7.0.15",
     "typescript": "5.9.2"
   },
@@ -20,5 +25,8 @@
   "dependencies": {
     "@firemix/core": "^0.1.7",
     "zod": "^3.25.76"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

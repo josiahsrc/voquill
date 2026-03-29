@@ -1,4 +1,4 @@
-import type { Auth, AuthContext } from "@repo/types";
+import type { Auth, AuthContext } from "@voquill/types";
 import jwt from "jsonwebtoken";
 import { describe, expect, it } from "vitest";
 import {

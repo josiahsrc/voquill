@@ -1,4 +1,4 @@
-import { HandlerOutput } from "@repo/functions";
+import { HandlerOutput } from "@voquill/functions";
 import {
   ApiKey,
   AppTarget,
@@ -20,7 +20,7 @@ import {
   Transcription,
   User,
   UserPreferences,
-} from "@repo/types";
+} from "@voquill/types";
 import { AuthUser } from "../types/auth.types";
 import { Vector2 } from "../types/math.types";
 import { OverlayPhase } from "../types/overlay.types";
@@ -46,6 +46,7 @@ import {
   INITIAL_TRANSCRIPTIONS_STATE,
   TranscriptionsState,
 } from "./transcriptions.state";
+import { INITIAL_LOCAL_STATE, LocalState } from "./local.state";
 import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
@@ -107,6 +108,7 @@ export type AppState = {
   isEnterprise: boolean;
   oidcProviders: OidcProvider[];
 
+  local: LocalState;
   onboarding: OnboardingState;
   transcriptions: TranscriptionsState;
   dictionary: DictionaryState;
@@ -133,6 +135,8 @@ export type AppState = {
   overlayCursor: Nullable<Vector2>;
   hotkeyTriggers: Record<string, number>;
   hotkeyStrategy: Nullable<HotkeyStrategy>;
+  supportsAppDetection: boolean;
+  supportsPasteKeybinds: boolean;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -183,8 +187,11 @@ export const INITIAL_APP_STATE: AppState = {
   overlayCursor: null,
   hotkeyTriggers: {},
   hotkeyStrategy: null,
+  supportsAppDetection: true,
+  supportsPasteKeybinds: true,
   pillConversationId: null,
   assistantInputMode: "voice",
+  local: INITIAL_LOCAL_STATE,
   chat: INITIAL_CHAT_STATE,
   onboarding: INITIAL_ONBOARDING_STATE,
   transcriptions: INITIAL_TRANSCRIPTIONS_STATE,

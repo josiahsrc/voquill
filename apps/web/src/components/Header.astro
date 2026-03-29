@@ -1,0 +1,174 @@
+---
+import type { Locale } from '../types/locale';
+import { t } from '../i18n/translations';
+import { localePath } from '../utils/paths';
+import DownloadButton from './DownloadButton.astro';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+---
+
+<div class="site-header-wrapper">
+	<header class="site-header">
+		<a href={`/${locale}/`} class="logo">
+			<span class="logo-mark" aria-hidden="true"></span>
+			<span>Voquill</span>
+		</a>
+		<nav aria-label="Primary navigation">
+			<a href={localePath(locale, '/#overview')}>{i18n.navDemo}</a>
+			<a href={localePath(locale, '/#privacy')}>{i18n.navSecurity}</a>
+			<a href={localePath(locale, '/#pricing')}>{i18n.navPricing}</a>
+			<a href={localePath(locale, '/blog')}>{i18n.navBlog}</a>
+			<a
+				href="https://docs.voquill.com"
+				target="_blank"
+				rel="noopener noreferrer">{i18n.navDocs}</a
+			>
+			<a
+				href="https://docs.voquill.com/enterprise/overview"
+				target="_blank"
+				rel="noopener noreferrer">{i18n.navEnterprise}</a
+			>
+		</nav>
+		<div class="header-actions">
+			<a
+				href="https://github.com/voquill/voquill"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="btn-secondary btn-small"
+				data-track="GitHub"
+				><span class="github-icon" aria-hidden="true"></span>{i18n.github}</a
+			>
+			<DownloadButton class="btn-primary btn-small" label={i18n.download} locale={locale} />
+		</div>
+		<button class="mobile-menu-btn" aria-label="Open menu">
+			<svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M4 6h16M4 12h16M4 18h16"></path>
+			</svg>
+		</button>
+	</header>
+</div>
+
+<div class="header-spacer"></div>
+
+<style>
+	.site-header-wrapper {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 50;
+		padding: 12px 24px;
+	}
+
+	.site-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
+		padding: 16px 24px;
+		border-radius: 24px;
+		background: rgba(255, 255, 255, 0.7);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+		width: min(1120px, 100%);
+		margin: 0 auto;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.site-header {
+			background: rgba(28, 28, 28, 0.7);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		}
+	}
+
+	.site-header .logo {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 1.125rem;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+
+	.logo-mark {
+		width: 28px;
+		height: 28px;
+		display: block;
+		color: var(--text-strong);
+		background-color: currentColor;
+		mask: url('/app-logo.svg') center/contain no-repeat;
+		-webkit-mask: url('/app-logo.svg') center/contain no-repeat;
+	}
+
+	.site-header nav {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+	}
+
+	.site-header nav a {
+		font-size: 0.95rem;
+		font-weight: 500;
+		opacity: 0.7;
+		transition: opacity 0.2s ease;
+	}
+
+	.site-header nav a:hover {
+		opacity: 1;
+	}
+
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.header-spacer {
+		height: 128px;
+	}
+
+	.mobile-menu-btn {
+		display: none;
+		padding: 8px;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		color: var(--text-strong);
+	}
+
+	.mobile-menu-btn svg {
+		width: 24px;
+		height: 24px;
+	}
+
+	@media (max-width: 960px) {
+		.mobile-menu-btn {
+			display: block;
+		}
+
+		.site-header nav {
+			display: none;
+		}
+
+		.header-actions {
+			display: none;
+		}
+	}
+
+	@media (max-width: 720px) {
+		.site-header {
+			padding: 14px 18px;
+		}
+	}
+</style>

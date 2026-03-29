@@ -14,9 +14,9 @@ COPY enterprise/gateway ./enterprise/gateway
 COPY enterprise/LICENCE ./enterprise/LICENCE
 
 RUN pnpm install
-RUN pnpm --filter @repo/types run build
-RUN pnpm --filter @repo/utilities run build
-RUN pnpm --filter @repo/functions run build
+RUN pnpm --filter @voquill/types run build
+RUN pnpm --filter @voquill/utilities run build
+RUN pnpm --filter @voquill/functions run build
 RUN pnpm --filter @repo/enterprise-gateway run build
 
 FROM node:20-alpine AS dev

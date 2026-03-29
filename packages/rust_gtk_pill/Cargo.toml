@@ -1,0 +1,15 @@
+[package]
+name = "rust_gtk_pill"
+version = "0.1.0"
+edition = "2021"
+description = "Voquill GTK pill overlay for Wayland (layer-shell)"
+
+[[bin]]
+name = "voquill-gtk-pill"
+path = "src/main.rs"
+
+[dependencies]
+gtk = "0.18"
+gtk-layer-shell = { version = "0.8", features = ["v0_5", "v0_6"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

@@ -32,7 +32,7 @@ Note the instance connection name (shown in `gcloud sql instances describe voqui
 
 ```bash
 gcloud run deploy voquill-gateway \
-  --image=ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
+  --image=ghcr.io/voquill/voquill/enterprise-gateway:latest \
   --port=4630 \
   --allow-unauthenticated \
   --add-cloudsql-instances=your-project:us-central1:voquill-db \
@@ -51,7 +51,7 @@ Set `VOQUILL_GATEWAY_URL` to the public URL of the gateway service you deployed 
 
 ```bash
 gcloud run deploy voquill-admin \
-  --image=ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
+  --image=ghcr.io/voquill/voquill/enterprise-admin:latest \
   --port=5173 \
   --allow-unauthenticated \
   --set-env-vars="VOQUILL_GATEWAY_URL=https://voquill-gateway-xxxxx-uc.a.run.app" \
@@ -66,11 +66,11 @@ To deploy a new version, redeploy the service with the latest image:
 
 ```bash
 gcloud run deploy voquill-gateway \
-  --image=ghcr.io/josiahsrc/voquill/enterprise-gateway:latest \
+  --image=ghcr.io/voquill/voquill/enterprise-gateway:latest \
   --region=us-central1
 
 gcloud run deploy voquill-admin \
-  --image=ghcr.io/josiahsrc/voquill/enterprise-admin:latest \
+  --image=ghcr.io/voquill/voquill/enterprise-admin:latest \
   --region=us-central1
 ```
 

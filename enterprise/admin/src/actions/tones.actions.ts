@@ -1,4 +1,4 @@
-import type { Tone } from "@repo/types";
+import type { Tone } from "@voquill/types";
 import { invoke } from "../utils/api.utils";
 import { produceAppState } from "../store";
 import { registerTones } from "../utils/app.utils";

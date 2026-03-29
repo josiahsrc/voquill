@@ -1,4 +1,4 @@
-import { AppTarget } from "@repo/types";
+import { AppTarget } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -26,7 +26,7 @@ import {
   useHotkeyHold,
   useHotkeyHoldMany,
 } from "../../hooks/hotkey.hooks";
-import { useLocalStorage } from "../../hooks/local-storage.hooks";
+import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
 import { browserRouter } from "../../router";
@@ -51,7 +51,6 @@ import {
   trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
-import { ASSISTANT_MODE_ENABLED_KEY } from "../../utils/assistant-mode.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
@@ -70,7 +69,12 @@ import {
 } from "../../utils/dictation-limit.utils";
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
-import { getToneIdToUse } from "../../utils/tone.utils";
+import {
+  getActiveManualToneIds,
+  getManuallySelectedToneId,
+  getToneById,
+  getToneIdToUse,
+} from "../../utils/tone.utils";
 import {
   getEffectivePillVisibility,
   getIsDictationUnlocked,
@@ -100,16 +104,14 @@ export const DictationSideEffects = () => {
 
   const strategyRef = useRef<BaseStrategy | null>(null);
   const sessionRef = useRef<TranscriptionSession | null>(null);
+  const preDictationVolumeRef = useRef<number | null>(null);
   const recordingWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const recordingAutoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastStyleSwitchRef = useRef(0);
   const cancelPromptTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isStoppingRef = useRef(false);
   const [isStopping, setIsStopping] = useState(false);
-  const [assistantModeEnabled] = useLocalStorage<boolean>(
-    ASSISTANT_MODE_ENABLED_KEY,
-    false,
-  );
+  const assistantModeEnabled = useAppStore(getIsAssistantModeEnabled);
 
   const isManualStyling = useAppStore(
     (state) => getEffectiveStylingMode(state) === "manual",
@@ -131,6 +133,9 @@ export const DictationSideEffects = () => {
     );
     return visibility === "persistent";
   });
+  const pillVisibility = useAppStore((state) =>
+    getEffectivePillVisibility(state.userPrefs?.dictationPillVisibility),
+  );
 
   const dictationController = useMemo(
     () =>
@@ -165,6 +170,30 @@ export const DictationSideEffects = () => {
       })),
     [additionalLanguageEntries],
   );
+
+  const restoreSystemVolume = useCallback(() => {
+    const savedVolume = preDictationVolumeRef.current;
+    preDictationVolumeRef.current = null;
+    if (savedVolume !== null) {
+      invoke("set_system_volume", { volume: savedVolume }).catch((e) =>
+        getLogger().verbose(`Failed to restore system volume: ${e}`),
+      );
+    }
+  }, []);
+
+  const dimSystemVolume = useCallback(async () => {
+    const dimLevel = getAppState().userPrefs?.dictationAudioDim ?? 1.0;
+    if (dimLevel >= 1.0) return;
+
+    try {
+      const currentVolume = await invoke<number>("get_system_volume");
+      preDictationVolumeRef.current = currentVolume;
+      const dimmedVolume = currentVolume * dimLevel;
+      await invoke("set_system_volume", { volume: dimmedVolume });
+    } catch (e) {
+      getLogger().verbose(`Failed to dim system volume: ${e}`);
+    }
+  }, []);
 
   const clearRecordingTimers = useCallback(() => {
     if (recordingWarningTimerRef.current) {
@@ -217,6 +246,7 @@ export const DictationSideEffects = () => {
       clearRecordingTimers();
       clearCancelPromptTimer();
       hardResetHotkeyState();
+      restoreSystemVolume();
       invoke<void>("set_phase", { phase: "idle" });
       invoke("stop_recording").catch((e) =>
         getLogger().verbose(`stop_recording failed during abort: ${e}`),
@@ -248,6 +278,7 @@ export const DictationSideEffects = () => {
       clearRecordingState,
       clearRecordingTimers,
       hardResetHotkeyState,
+      restoreSystemVolume,
       intl,
     ],
   );
@@ -255,6 +286,7 @@ export const DictationSideEffects = () => {
   const stopRecordingRaw = useCallback(async (): Promise<RawStopResp> => {
     getLogger().info("Stopping recording");
     clearRecordingTimers();
+    restoreSystemVolume();
 
     const [audio, a11yInfo, appTarget] = await getLogger().stopwatch(
       "stopRecording",
@@ -386,7 +418,7 @@ export const DictationSideEffects = () => {
     return {
       shouldContinue: result.shouldContinue,
     };
-  }, []);
+  }, [restoreSystemVolume]);
 
   const stopRecording = useCallback(async () => {
     if (isStoppingRef.current) {
@@ -540,6 +572,7 @@ export const DictationSideEffects = () => {
         }
 
         startRecordingTimers();
+        dimSystemVolume();
       } catch (error) {
         getLogger().error(`Failed to start recording: ${error}`);
 
@@ -570,6 +603,7 @@ export const DictationSideEffects = () => {
       abortRecording,
       clearRecordingState,
       clearRecordingTimers,
+      dimSystemVolume,
       hardResetHotkeyState,
       intl,
     ],
@@ -831,6 +865,12 @@ export const DictationSideEffects = () => {
     );
   }, [pillHoverEnabled]);
 
+  useEffect(() => {
+    invoke("set_pill_visibility", { visibility: pillVisibility }).catch(
+      console.error,
+    );
+  }, [pillVisibility]);
+
   const pillHasContent = useAppStore((state) => {
     if (!state.pillConversationId) return false;
     const ids =
@@ -855,6 +895,23 @@ export const DictationSideEffects = () => {
     }
     invoke("set_pill_window_size", { size }).catch(console.error);
   }, [activeRecordingMode, pillHasContent, assistantInputMode]);
+
+  // Sync style info to native GTK4 pill
+  const pillStyleCount = useAppStore((state) => {
+    if (getEffectiveStylingMode(state) !== "manual") return 0;
+    return getActiveManualToneIds(state).length;
+  });
+  const pillStyleName = useAppStore((state) => {
+    const toneId = getManuallySelectedToneId(state);
+    return getToneById(state, toneId)?.name ?? "-";
+  });
+
+  useEffect(() => {
+    invoke("notify_pill_style_info", {
+      count: pillStyleCount,
+      name: pillStyleName,
+    }).catch(console.error);
+  }, [pillStyleCount, pillStyleName]);
 
   return null;
 };

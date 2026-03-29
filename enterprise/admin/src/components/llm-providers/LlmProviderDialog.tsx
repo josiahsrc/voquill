@@ -8,7 +8,7 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import type { LlmProvider } from "@repo/types";
+import type { LlmProvider } from "@voquill/types";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { upsertLlmProvider } from "../../actions/llm-providers.actions";

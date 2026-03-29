@@ -16,6 +16,7 @@ import {
   showUpgradePlanList,
 } from "../../actions/pricing.actions";
 import { useAppStore } from "../../store";
+import { trackButtonClick } from "../../utils/analytics.utils";
 import {
   getEffectivePlan,
   getIsPaidSubscriber,
@@ -24,7 +25,6 @@ import { PricingPlan } from "../../utils/price.utils";
 import { LoginForm } from "../login/LoginForm";
 import { FormContainer } from "../onboarding/OnboardingShared";
 import { PlanList } from "./PlanList";
-import { trackButtonClick } from "../../utils/analytics.utils";
 
 export const UpgradePlanDialog = () => {
   const intl = useIntl();
@@ -44,10 +44,16 @@ export const UpgradePlanDialog = () => {
     } else if (isTargPlanPro && isPaidSubscriber) {
       closeUpgradePlanDialog();
     } else if (isTargPlanPro && !isPaidSubscriber && currLoggedIn) {
-      closeUpgradePlanDialog();
       tryOpenPaymentDialogForPricingPlan(targPlan);
+      showUpgradePlanList();
     }
   }, [currLoggedIn, currPlan, isPaidSubscriber, targPlan]);
+
+  useEffect(() => {
+    if (open && isPaidSubscriber) {
+      closeUpgradePlanDialog();
+    }
+  }, [open, isPaidSubscriber]);
 
   const handleClose = () => {
     trackButtonClick("close_upgrade_plan_dialog");

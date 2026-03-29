@@ -1,9 +1,9 @@
 import { FormattedMessage } from "react-intl";
-import { VirtualizedListPage } from "../common/VirtualizedListPage";
+import { ScrollListPage } from "../common/ScrollListPage";
 
 export default function AppsPage() {
   return (
-    <VirtualizedListPage
+    <ScrollListPage
       title={<FormattedMessage defaultMessage="Apps" />}
       subtitle={
         <FormattedMessage defaultMessage="Configure MCP servers and integrations." />

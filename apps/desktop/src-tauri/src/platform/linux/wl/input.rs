@@ -11,8 +11,8 @@ pub(crate) fn clipboard_get() -> Result<String, String> {
 }
 
 pub(crate) fn clipboard_set(text: &str) -> Result<(), String> {
-    let mut cb = arboard::Clipboard::new()
-        .map_err(|err| format!("clipboard create failed: {err}"))?;
+    let mut cb =
+        arboard::Clipboard::new().map_err(|err| format!("clipboard create failed: {err}"))?;
     cb.set_text(text.to_string())
         .map_err(|err| format!("clipboard set failed: {err}"))?;
     let mut guard = CLIPBOARD_HOLD.lock().unwrap_or_else(|p| p.into_inner());
@@ -108,14 +108,14 @@ pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
 
 // --- Public API ---
 
-pub fn paste_text(text: &str, _keybind: Option<&str>) -> Result<(), String> {
-    paste_via_clipboard(text).or_else(|err| {
+pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    paste_via_clipboard(text, keybind).or_else(|err| {
         log::warn!("Wayland paste failed ({err}), trying wtype text fallback");
         wtype_text(text)
     })
 }
 
-fn paste_via_clipboard(text: &str) -> Result<(), String> {
+fn paste_via_clipboard(text: &str, _keybind: Option<&str>) -> Result<(), String> {
     let previous = clipboard_get().ok();
 
     clipboard_set(text)?;

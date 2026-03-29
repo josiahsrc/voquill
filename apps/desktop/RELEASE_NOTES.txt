@@ -1,0 +1,4 @@
+- Linux now supports assistant mode
+- You can now auto dim your audio while you dictate (Settings > Audio > Auto dim)
+- MacOS now opens the window if you focus Voquill when the app was previously minimized.
+- Various improvements and bug fixes.

@@ -1,4 +1,4 @@
-import type { Nullable } from "@repo/types";
+import type { Nullable } from "@voquill/types";
 import type { OverlayPhase } from "../types/overlay.types";
 import type {
   HandleTranscriptParams,

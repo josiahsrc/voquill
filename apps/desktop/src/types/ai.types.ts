@@ -2,7 +2,7 @@ import type {
   AgentMode,
   PostProcessingMode,
   TranscriptionMode,
-} from "@repo/types";
+} from "@voquill/types";
 
 export type { AgentMode, PostProcessingMode, TranscriptionMode };
 

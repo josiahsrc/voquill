@@ -1,11 +1,11 @@
-import { invokeHandler, type CloudModel } from "@repo/functions";
+import { invokeHandler, type CloudModel } from "@voquill/functions";
 import type {
   JsonResponse,
   LlmChatInput,
   LlmStreamEvent,
   Nullable,
   OpenRouterProviderRouting,
-} from "@repo/types";
+} from "@voquill/types";
 import {
   azureOpenAIGenerateText,
   azureOpenaiStreamChat,
@@ -27,7 +27,7 @@ import {
   OPENROUTER_DEFAULT_MODEL,
   openrouterGenerateTextResponse,
   openrouterStreamChat,
-} from "@repo/voice-ai";
+} from "@voquill/voice-ai";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { PostProcessingMode } from "../types/ai.types";
 import {

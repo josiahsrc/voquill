@@ -1,22 +1,19 @@
-import fs from "fs";
-import path from "path";
-import { marked } from "marked";
+import fs from 'node:fs';
+import path from 'node:path';
+import { marked } from 'marked';
+import type { Locale } from '../types/locale';
+import { localizeHtmlInternalLinks } from '../utils/internal-links';
 
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-});
+marked.setOptions({ gfm: true, breaks: true });
 
-export type LegalSlug = "terms" | "privacy" | "contact" | "delete-account";
+export async function renderLocalizedMarkdownFile(
+	relativePath: string,
+	locale: Locale,
+): Promise<string> {
+	const absolutePath = path.resolve(relativePath);
+	const markdown = fs.readFileSync(absolutePath, 'utf-8');
+	const rendered = await marked.parse(markdown);
+	const html = typeof rendered === 'string' ? rendered : String(rendered);
 
-export function renderMarkdown(slug: LegalSlug): string {
-  const filePath = path.join(process.cwd(), "content", `${slug}.md`);
-  const raw = fs.readFileSync(filePath, "utf-8");
-  const rendered = marked.parse(raw);
-
-  if (typeof rendered !== "string") {
-    throw new Error(`Failed to render markdown for ${slug}`);
-  }
-
-  return rendered;
+	return localizeHtmlInternalLinks(html, locale);
 }

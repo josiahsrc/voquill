@@ -32,6 +32,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web workspace
+        env:
+          PUBLIC_MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN_PROD }}
         run: pnpm exec turbo run build --filter=web...
 
       - name: Configure Firebase credentials
@@ -61,7 +63,6 @@ jobs:
         working-directory: apps/web
         env:
           FIREBASE_PROJECT_ID: ${{ env.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
         run: |
           set -euo pipefail
           echo "Deploying hosting for project: ${FIREBASE_PROJECT_ID}"

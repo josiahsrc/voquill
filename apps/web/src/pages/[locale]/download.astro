@@ -1,0 +1,636 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import DownloadButton from '../../components/DownloadButton.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import { locales, type Locale } from '../../types/locale';
+import { t } from '../../i18n/translations';
+import {
+	buildBreadcrumbStructuredData,
+	buildSoftwareApplicationStructuredData,
+	toAbsoluteUrl,
+} from '../../utils/seo';
+import { localePath } from '../../utils/paths';
+
+export function getStaticPaths() {
+	return locales.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const i18n = t(locale);
+const structuredData = [
+	buildSoftwareApplicationStructuredData(locale),
+	buildBreadcrumbStructuredData([
+		{ name: i18n.blogHome, item: toAbsoluteUrl(localePath(locale, '/')) },
+		{
+			name: i18n.download,
+			item: toAbsoluteUrl(localePath(locale, '/download')),
+		},
+	]),
+];
+---
+
+<Layout
+	title={i18n.downloadPageTitle}
+	description={i18n.downloadPageSubtitle}
+	lang={locale}
+	structuredData={structuredData}
+>
+	<Header locale={locale} />
+
+	<section class="download-main">
+		<header class="download-hero">
+			<h1>{i18n.downloadPageHeading}</h1>
+			<p>{i18n.downloadPageSubtitle}</p>
+			<div class="download-primary">
+				<DownloadButton class="btn-primary download-primary-button" label={i18n.downloadForFree} href="#download-options" locale={locale} />
+				<span class="download-recommendation" data-i18n-recommended={i18n.downloadRecommended} data-i18n-fallback={i18n.downloadFallback}></span>
+			</div>
+		</header>
+
+		<section
+		id="download-options"
+		class="download-options"
+		aria-label={i18n.downloadAllOptions}
+		data-i18n-direct={i18n.downloadDirectInstallers}
+		data-i18n-unavailable={i18n.downloadUnavailable}
+		data-i18n-no-options={i18n.downloadNoOptions}
+	>
+			<article class="download-card" data-platform="mac">
+				<div class="download-card-header">
+					<span class="download-card-badge">
+						<span class="download-card-icon" style="mask-image: url(/apple.svg); -webkit-mask-image: url(/apple.svg);"></span>
+					</span>
+					<div>
+						<h3 class="download-card-title">macOS</h3>
+						<p class="download-version-meta">{i18n.downloadLoading}</p>
+					</div>
+				</div>
+				<span class="download-empty">{i18n.downloadLoadingOptions}</span>
+			</article>
+
+			<article class="download-card" data-platform="windows">
+				<div class="download-card-header">
+					<span class="download-card-badge">
+						<span class="download-card-icon" style="mask-image: url(/windows.svg); -webkit-mask-image: url(/windows.svg);"></span>
+					</span>
+					<div>
+						<h3 class="download-card-title">Windows</h3>
+						<p class="download-version-meta">{i18n.downloadLoading}</p>
+					</div>
+				</div>
+				<span class="download-empty">{i18n.downloadLoadingOptions}</span>
+			</article>
+
+			<article class="download-card" data-platform="linux">
+				<div class="download-card-header">
+					<span class="download-card-badge">
+						<span class="download-card-icon" style="mask-image: url(/ubuntu.svg); -webkit-mask-image: url(/ubuntu.svg);"></span>
+					</span>
+					<div>
+						<h3 class="download-card-title">Linux</h3>
+						<p class="download-version-meta">{i18n.downloadLoading}</p>
+					</div>
+				</div>
+				<span class="download-empty">{i18n.downloadLoadingOptions}</span>
+			</article>
+		</section>
+	</section>
+
+	<SiteFooter locale={locale} />
+
+	<script>
+		const RELEASES_API_URL =
+			'https://api.github.com/repos/voquill/voquill/releases';
+		const RELEASE_TAG_PATTERN = /^desktop-v\d/;
+
+		const MANIFEST_KEY_DETAILS: Record<
+			string,
+			{ platform: string; label: string; description?: string }
+		> = {
+			'darwin-aarch64': {
+				platform: 'mac',
+				label: 'macOS (Apple silicon)',
+				description: 'Universal .app bundle',
+			},
+			'darwin-x86_64': {
+				platform: 'mac',
+				label: 'macOS (Intel)',
+				description: 'Universal .app bundle',
+			},
+			'darwin-universal': {
+				platform: 'mac',
+				label: 'macOS (Universal)',
+				description: 'Installer for all macOS architectures',
+			},
+			'windows-x86_64-portable': {
+				platform: 'windows',
+				label: 'Windows (x64)',
+				description: 'Portable installer',
+			},
+			'windows-x86_64': {
+				platform: 'windows',
+				label: 'Windows (x64)',
+				description: '.msi installer',
+			},
+			'linux-x86_64': {
+				platform: 'linux',
+				label: 'Linux (x86_64)',
+				description: 'AppImage',
+			},
+		};
+
+		const PLATFORM_ORDER = ['mac', 'windows', 'linux'];
+		const PLATFORM_NAMES: Record<string, string> = {
+			mac: 'macOS',
+			windows: 'Windows',
+			linux: 'Linux',
+		};
+
+		const ASSET_KEY_MAPPINGS = [
+			{
+				match: (n: string) => /^voquill[-._](?!gpu).*\.appimage$/i.test(n),
+				keys: ['linux-x86_64', 'linux-x86_64-appimage'],
+			},
+			{
+				match: (n: string) => /^voquill[-._](?!gpu).*\.deb$/i.test(n),
+				keys: ['linux-x86_64-deb'],
+			},
+			{
+				match: (n: string) => /^voquill[-._](?!gpu).*\.rpm$/i.test(n),
+				keys: ['linux-x86_64-rpm'],
+			},
+			{
+				match: (n: string) => /\.app\.tar\.gz$/i.test(n),
+				keys: ['darwin-universal'],
+			},
+			{
+				match: (n: string) => /\.dmg$/i.test(n),
+				keys: ['darwin-universal'],
+			},
+			{
+				match: (n: string) => /darwin.*\.app\.tar\.gz$/i.test(n),
+				keys: ['darwin-aarch64', 'darwin-x86_64'],
+			},
+			{
+				match: (n: string) =>
+					/^Voquill[._]Portable[._]Installer\.exe$/i.test(n),
+				keys: ['windows-x86_64-portable'],
+			},
+			{
+				match: (n: string) => /^Voquill[._](?!GPU).*\.msi$/i.test(n),
+				keys: ['windows-x86_64', 'windows-x86_64-msi'],
+			},
+			{
+				match: (n: string) =>
+					/^Voquill[._](?!GPU).*setup.*\.exe$/i.test(n),
+				keys: ['windows-x86_64-nsis'],
+			},
+		];
+
+		type PlatformDownload = {
+			platform: string;
+			key: string;
+			label: string;
+			description?: string;
+			url: string;
+		};
+
+		function detectPlatform() {
+			var nav = window.navigator;
+			var hint = (nav as any).userAgentData
+				? ((nav as any).userAgentData.platform || '')
+				: '';
+			var ua = [nav.userAgent || '', hint, nav.platform || '']
+				.join(' ')
+				.toLowerCase();
+			if (ua.includes('win')) return 'windows';
+			if (ua.includes('mac') || ua.includes('darwin')) return 'mac';
+			if (ua.includes('linux') && !ua.includes('android')) return 'linux';
+			return 'mac';
+		}
+
+		function resolveManifestKeys(asset: { name: string }) {
+			var name = asset.name.toLowerCase();
+			if (name.includes('gpu')) return undefined;
+			for (var i = 0; i < ASSET_KEY_MAPPINGS.length; i++) {
+				if (ASSET_KEY_MAPPINGS[i].match(name))
+					return ASSET_KEY_MAPPINGS[i].keys;
+			}
+			if (name.endsWith('.json')) return undefined;
+			if (name.includes('darwin') || name.includes('mac'))
+				return ['darwin-aarch64', 'darwin-x86_64'];
+			if (name.includes('windows') || name.includes('win'))
+				return ['windows-x86_64'];
+			if (name.includes('linux')) return ['linux-x86_64'];
+			return undefined;
+		}
+
+		function normalizeVersion(tag?: string) {
+			if (!tag) return 'latest';
+			var trimmed = tag.trim();
+			if (!trimmed) return 'latest';
+			if (/^desktop[-v]/i.test(trimmed))
+				return trimmed.replace(/^desktop[-v]*/i, '');
+			if (/^v\d/i.test(trimmed)) return trimmed.replace(/^v/i, '');
+			return trimmed;
+		}
+
+		function transformGithubRelease(release: any) {
+			var assets = release.assets || [];
+			var platforms: Record<string, { url: string; signature: string }> =
+				{};
+			for (var i = 0; i < assets.length; i++) {
+				var keys = resolveManifestKeys(assets[i]);
+				if (!keys) continue;
+				for (var j = 0; j < keys.length; j++) {
+					if (!platforms[keys[j]]) {
+						platforms[keys[j]] = {
+							url: assets[i].browser_download_url,
+							signature: '',
+						};
+					}
+				}
+			}
+			if (Object.keys(platforms).length === 0) return undefined;
+			return {
+				version: normalizeVersion(
+					release.tag_name ?? release.name,
+				),
+				platforms,
+			};
+		}
+
+		async function fetchReleaseManifest() {
+			try {
+				var response = await fetch(RELEASES_API_URL, {
+					headers: { Accept: 'application/vnd.github+json' },
+				});
+				if (!response.ok) return undefined;
+				var allReleases = await response.json();
+				var releases = allReleases.filter(function (r: any) {
+					return (
+						r.tag_name && RELEASE_TAG_PATTERN.test(r.tag_name)
+					);
+				});
+				var latest = releases[0];
+				if (!latest) return undefined;
+				var manifest = transformGithubRelease(latest);
+				if (!manifest) return undefined;
+				var fallback = releases[1];
+				if (fallback) {
+					var fallbackManifest = transformGithubRelease(fallback);
+					if (fallbackManifest) {
+						for (var key in fallbackManifest.platforms) {
+							if (!manifest.platforms[key])
+								manifest.platforms[key] =
+									fallbackManifest.platforms[key];
+						}
+					}
+				}
+				return manifest;
+			} catch (_e) {
+				return undefined;
+			}
+		}
+
+		function extractDownloads(manifest: {
+			platforms: Record<string, { url: string }>;
+		}): PlatformDownload[] {
+			return Object.entries(manifest.platforms)
+				.flatMap(function ([key, details]) {
+					if (!details?.url) return [];
+					var meta = MANIFEST_KEY_DETAILS[key];
+					if (meta) {
+						return [
+							{
+								platform: meta.platform,
+								key: key,
+								label: meta.label,
+								description: meta.description,
+								url: details.url,
+							},
+						];
+					}
+					var seg = key.toLowerCase().split(/[-_]/)[0] || '';
+					var fallbackPlatform =
+						seg === 'darwin' || seg === 'mac' || seg === 'macos'
+							? 'mac'
+							: seg === 'win' || seg === 'windows'
+								? 'windows'
+								: seg === 'linux'
+									? 'linux'
+									: 'mac';
+					return [
+						{
+							platform: fallbackPlatform,
+							key: key,
+							label: key
+								.replace(/[-_]/g, ' ')
+								.replace(/\b\w/g, function (c) {
+									return c.toUpperCase();
+								}),
+							url: details.url,
+						},
+					];
+				})
+				.sort(function (a, b) {
+					var po =
+						PLATFORM_ORDER.indexOf(a.platform) -
+						PLATFORM_ORDER.indexOf(b.platform);
+					if (po !== 0) return po;
+					return a.label.localeCompare(b.label);
+				});
+		}
+
+		function renderCard(
+			card: HTMLElement,
+			downloads: PlatformDownload[],
+			i18nDirectInstallers: string,
+			i18nUnavailable: string,
+			i18nNoOptions: string,
+		) {
+			var meta = card.querySelector('.download-version-meta')!;
+			var empty = card.querySelector('.download-empty');
+
+			if (downloads.length > 0) {
+				meta.textContent = i18nDirectInstallers;
+				if (empty) empty.remove();
+
+				var list = document.createElement('ul');
+				list.className = 'download-link-list';
+
+				downloads.forEach(function (dl) {
+					var li = document.createElement('li');
+					li.className = 'download-link-item';
+					var a = document.createElement('a');
+					a.href = dl.url;
+					a.className = 'download-link';
+					a.target = '_blank';
+					a.rel = 'noopener noreferrer';
+
+					var labelSpan = document.createElement('span');
+					labelSpan.textContent = dl.label;
+					a.appendChild(labelSpan);
+
+					if (dl.description) {
+						var descSpan = document.createElement('span');
+						descSpan.className = 'download-link-description';
+						descSpan.textContent = dl.description;
+						a.appendChild(descSpan);
+					}
+
+					li.appendChild(a);
+					list.appendChild(li);
+				});
+
+				card.appendChild(list);
+			} else {
+				meta.textContent = i18nUnavailable;
+				if (empty) empty.textContent = i18nNoOptions;
+			}
+		}
+
+		document.addEventListener('DOMContentLoaded', async function () {
+			var recEl = document.querySelector(
+				'.download-recommendation',
+			) as HTMLElement;
+			var i18nRecommended =
+				recEl?.dataset.i18nRecommended || '{displayName} {version} (recommended)';
+			var i18nFallback =
+				recEl?.dataset.i18nFallback || '{displayName} download';
+
+			var optionsSection = document.getElementById('download-options') as HTMLElement;
+			var i18nDirectInstallers = optionsSection?.dataset.i18nDirect || 'Direct installers';
+			var i18nUnavailable = optionsSection?.dataset.i18nUnavailable || 'Currently unavailable';
+			var i18nNoOptions = optionsSection?.dataset.i18nNoOptions || 'No downloads available yet.';
+
+			var cards = document.querySelectorAll(
+				'.download-card',
+			) as NodeListOf<HTMLElement>;
+
+			var platform = detectPlatform();
+			var displayName = PLATFORM_NAMES[platform] || 'macOS';
+			var manifest = await fetchReleaseManifest();
+
+			if (recEl) {
+				if (manifest) {
+					recEl.textContent = i18nRecommended
+						.replace('{displayName}', displayName)
+						.replace('{version}', manifest.version);
+				} else {
+					recEl.textContent = i18nFallback.replace(
+						'{displayName}',
+						displayName,
+					);
+				}
+			}
+
+			if (!manifest) {
+				cards.forEach(function (card) {
+					var meta = card.querySelector('.download-version-meta');
+					var empty = card.querySelector('.download-empty');
+					if (meta) meta.textContent = i18nUnavailable;
+					if (empty) empty.textContent = i18nNoOptions;
+				});
+				return;
+			}
+
+			var downloads = extractDownloads(manifest);
+			var grouped: Record<string, PlatformDownload[]> = {
+				mac: [],
+				windows: [],
+				linux: [],
+			};
+			downloads.forEach(function (dl) {
+				if (grouped[dl.platform]) grouped[dl.platform].push(dl);
+			});
+
+			cards.forEach(function (card) {
+				var p = card.dataset.platform || '';
+				renderCard(
+					card,
+					grouped[p] || [],
+					i18nDirectInstallers,
+					i18nUnavailable,
+					i18nNoOptions,
+				);
+			});
+		});
+	</script>
+</Layout>
+
+<style>
+	.download-main {
+		width: min(960px, 100%);
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 64px;
+	}
+
+	.download-hero {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+		align-items: center;
+		text-align: center;
+	}
+
+	.download-hero h1 {
+		font-size: clamp(2.4rem, 5vw, 3.2rem);
+		letter-spacing: -0.035em;
+		line-height: 1.05;
+	}
+
+	.download-hero p {
+		max-width: 72ch;
+		font-size: 1.05rem;
+		line-height: 1.7;
+		color: var(--text-muted);
+	}
+
+	.download-primary {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		align-items: center;
+	}
+
+	:global(.download-primary-button) {
+		padding: 14px 28px;
+		font-size: 1rem;
+	}
+
+	.download-recommendation {
+		font-size: 0.95rem;
+		color: var(--text-muted);
+	}
+
+	.download-options {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 24px;
+	}
+
+	.download-card {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 24px;
+		border-radius: 24px;
+		background: var(--level1);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow-soft);
+		min-height: 220px;
+	}
+
+	.download-card-header {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.download-card-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		border-radius: 14px;
+		border: 1px solid var(--border);
+		background: var(--level0);
+		color: var(--text-strong);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.download-card-icon {
+		display: inline-block;
+		width: 24px;
+		height: 24px;
+		background-color: currentColor;
+		mask-size: contain;
+		mask-repeat: no-repeat;
+		mask-position: center;
+		-webkit-mask-size: contain;
+		-webkit-mask-repeat: no-repeat;
+		-webkit-mask-position: center;
+	}
+
+	.download-card-title {
+		font-size: 1.2rem;
+		font-weight: 600;
+		letter-spacing: -0.015em;
+	}
+
+	:global(.download-version-meta) {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+
+	:global(.download-link-list) {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding-left: 0;
+		margin: 0;
+	}
+
+	:global(.download-link-item) {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	:global(.download-link) {
+		display: inline-flex;
+		flex-direction: column;
+		gap: 4px;
+		font-weight: 600;
+		color: var(--text-strong);
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+		line-height: 1.3;
+	}
+
+	:global(.download-link-description) {
+		font-size: 0.85rem;
+		color: var(--text-muted);
+		font-weight: 400;
+	}
+
+	:global(.download-empty) {
+		font-size: 0.9rem;
+		color: var(--text-muted);
+	}
+
+	@media (max-width: 960px) {
+		.download-options {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 720px) {
+		.download-options {
+			grid-template-columns: 1fr;
+		}
+
+		.download-card {
+			padding: 20px;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.download-card-badge {
+			width: 44px;
+			height: 44px;
+		}
+
+		.download-card-icon {
+			width: 22px;
+			height: 22px;
+		}
+	}
+</style>

@@ -8,7 +8,7 @@ import {
   DialogTitle,
   TextField,
 } from "@mui/material";
-import type { UserWithAuth } from "@repo/types";
+import type { UserWithAuth } from "@voquill/types";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { resetPassword } from "../../actions/users.actions";

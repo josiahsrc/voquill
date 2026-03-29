@@ -9,7 +9,7 @@ import {
 } from "../../utils/keyboard.utils";
 import { getActiveManualToneIds } from "../../utils/tone.utils";
 import { HotkeyBadge } from "../common/HotkeyBadge";
-import { VirtualizedListPage } from "../common/VirtualizedListPage";
+import { ScrollListPage } from "../common/ScrollListPage";
 import { ManualAddStyle } from "./ManualAddStyle";
 import { ManualStylingRow } from "./ManualStylingRow";
 
@@ -62,9 +62,8 @@ export function ManualStylingLayout() {
   const toneIds = useAppStore((state) => getActiveManualToneIds(state));
 
   return (
-    <VirtualizedListPage
+    <ScrollListPage
       title={<FormattedMessage defaultMessage="Writing Styles" />}
-      heightMult={7}
       subtitle={<StylingSubtitle />}
       action={<ManualAddStyle />}
       items={toneIds}

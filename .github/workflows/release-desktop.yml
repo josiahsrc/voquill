@@ -25,10 +25,6 @@ on:
         description: "Semver version to promote (prod only, defaults to latest dev tag)"
         required: false
         type: string
-      release_context:
-        description: "Optional extra context to include in the release notes prompt"
-        required: false
-        type: string
 
 jobs:
   metadata:
@@ -36,7 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      models: read
     outputs:
       version: ${{ steps.meta.outputs.version }}
       tag_name: ${{ steps.meta.outputs.tag_name }}
@@ -151,27 +146,6 @@ jobs:
           else
             PREVIOUS_TAG="${LAST_PROD_TAG}"
           fi
-          RELEASE_NOTES_FROM_REF=""
-          if [[ -n "${PREVIOUS_TAG}" ]]; then
-            RELEASE_NOTES_FROM_REF="${PREVIOUS_TAG}"
-            mapfile -t COMMITS_AFTER_PREVIOUS < <(git rev-list --ancestry-path --reverse "${PREVIOUS_TAG}..${COMMIT_SHA}")
-            FIRST_AFTER_PREVIOUS="${COMMITS_AFTER_PREVIOUS[0]:-}"
-            if [[ -n "${FIRST_AFTER_PREVIOUS}" ]]; then
-              RELEASE_NOTES_FROM="${FIRST_AFTER_PREVIOUS}"
-            else
-              RELEASE_NOTES_FROM="${COMMIT_SHA}"
-            fi
-          else
-            mapfile -t ROOT_COMMITS < <(git rev-list --max-parents=0 "${COMMIT_SHA}")
-            ROOT_COUNT=${#ROOT_COMMITS[@]}
-            if (( ROOT_COUNT > 0 )); then
-              ROOT_INDEX=$((ROOT_COUNT - 1))
-              RELEASE_NOTES_FROM="${ROOT_COMMITS[ROOT_INDEX]}"
-            else
-              RELEASE_NOTES_FROM="${COMMIT_SHA}"
-            fi
-          fi
-          RELEASE_NOTES_TO="${COMMIT_SHA}"
 
           if [[ "${RELEASE_ENV}" == "dev" ]]; then
             CHANNEL_RELEASE_TAG="desktop-dev"
@@ -193,64 +167,13 @@ jobs:
             echo "version_path=${VERSION_PATH}"
             echo "channel_release_tag=${CHANNEL_RELEASE_TAG}"
             echo "release_flavor=${RELEASE_FLAVOR}"
-            echo "release_notes_from=${RELEASE_NOTES_FROM}"
-            echo "release_notes_to=${RELEASE_NOTES_TO}"
-            echo "release_notes_from_ref=${RELEASE_NOTES_FROM_REF}"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Generate release notes
-        id: release_notes
-        uses: josiahsrc/ai-release-notes-builder@v3
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          RELEASE_CONTEXT: ${{ github.event.inputs.release_context || '' }}
-        with:
-          content_scope: commit_messages
-          prompt: |
-            Generate high-level, user-facing release notes based on the diff below.
-            This is for an AI dictation desktop software application
-            Follow these rules:
-            • Focus strictly on user-visible improvements and overall product value.
-            • Never mention file names, code components, technologies, or internal systems.
-            • Never describe what changed in the code; describe only the outcome or benefit.
-            • Use broad, non-technical language.
-            • Combine related changes into a small number of themes.
-            • Output no more than 1-4 bullet points.
-            • Each bullet should be one sentence and written from the user's perspective.
-            • Avoid technical terms, implementation details, or references to specific subsystems.
-            • If a change has no user-visible effect, omit it.
-            • If you're not sure what changed, just say "Various improvements and bug fixes." as a single bullet point.
-            • Never repeat yourself.
-            • Your release notes should sound authentic and natural.
-            • Use direct, factual language. Never be sycophantic or overly enthusiastic.
-            • Do not start bullets with phrases like "Enjoy", "Experience", "Discover", or similar marketing language.
-            • State improvements plainly without embellishment (e.g., "Improved performance" not "Enjoy blazing-fast performance").
-            ${{ github.event.inputs.release_context && format('
-
-            Additional notes from the release author, PAY SPECIAL ATTENTION TO THESE NOTES. 
-            ONLY MENTION RELEASE NOTES THAT ARE DIRECTLY REFERENCED IN THE FOLLOWING CONTEXT:
-            {0}', github.event.inputs.release_context) || 'None' }}
-          from: ${{ steps.meta.outputs.release_notes_from }}
-          to: ${{ steps.meta.outputs.release_notes_to }}
-          paths: |
-            apps/desktop/**
-            packages/**
-
-      - name: Compose release body
+      - name: Read release notes
         id: release_body
-        env:
-          RELEASE_NOTES: ${{ steps.release_notes.outputs['release-notes'] }}
-          RELEASE_ENV: ${{ steps.meta.outputs.release_env }}
-          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
-          default_body="Automated ${RELEASE_ENV} channel build for version ${VERSION}."
-          notes="${RELEASE_NOTES}"
-          if [[ -n "${notes}" ]]; then
-            body="${notes}"
-          else
-            body="${default_body}"
-          fi
+          body="$(cat apps/desktop/RELEASE_NOTES.txt)"
           printf 'release_body<<EOF\n%s\nEOF\n' "$body" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag
@@ -372,13 +295,13 @@ jobs:
         with:
           workspaces: |
             apps/desktop/src-tauri -> ${{ matrix.os == 'windows-latest' && 'D:\cargo' || 'target' }}
-          key: ${{ matrix.os }}-native-off
+          key: ${{ matrix.os }}-native-off-v2
 
       - name: Set Windows sidecar build environment
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          echo "WHISPER_CMAKE_ARGS=-DGGML_VULKAN=ON -DCMAKE_INSTALL_PREFIX=C:/w" >> $env:GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=$env:GITHUB_WORKSPACE\packages\rust_transcription\cmake\windows-ci-toolchain.cmake" >> $env:GITHUB_ENV
 
       - name: Install system dependencies (Linux)
         if: matrix.os == 'ubuntu-22.04'
@@ -403,8 +326,10 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
-          # Disable -march=native for broader compatibility and enable Vulkan for GPU sidecar builds.
-          echo "WHISPER_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_VULKAN=ON" >> "$GITHUB_ENV"
+          # Use a cmake toolchain file to disable -march=native for broad CPU compatibility.
+          # NOTE: WHISPER_CMAKE_ARGS is NOT parsed correctly by whisper-rs-sys; individual
+          # CMAKE_* env vars are required (the build.rs passes them as -D flags to cmake).
+          echo "CMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/packages/rust_transcription/cmake/linux-ci-toolchain.cmake" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -451,6 +376,11 @@ jobs:
           $config | ConvertTo-Json -Depth 20 | Set-Content $configPath -Encoding UTF8
 
           Write-Host "Updated tauri.conf.json with bundle.resources"
+
+      - name: Set macOS sidecar build environment
+        if: matrix.os == 'macos-14'
+        run: |
+          echo "CMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/packages/rust_transcription/cmake/macos-ci-toolchain.cmake" >> "$GITHUB_ENV"
 
       - name: Import Apple signing certificate
         if: matrix.os == 'macos-14'
@@ -617,13 +547,55 @@ jobs:
         with:
           projectPath: apps/desktop
           tauriScript: pnpm --filter desktop run tauri
-          args: ${{ steps.tauri-cli-args.outputs.args }}
+          args: ${{ matrix.os == 'macos-14' && format('{0} --bundles app', steps.tauri-cli-args.outputs.args) || steps.tauri-cli-args.outputs.args }}
           tagName: ${{ needs.metadata.outputs.tag_name }}
           releaseName: ${{ format('desktop{0} v{1}', needs.metadata.outputs.release_suffix, needs.metadata.outputs.version) }}
           releaseBody: ${{ needs.metadata.outputs.release_body }}
           releaseDraft: false
           prerelease: ${{ needs.metadata.outputs.release_env != 'prod' }}
           includeUpdaterJson: true
+
+      - name: Build and upload macOS DMG
+        if: matrix.os == 'macos-14'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag_name }}
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+          RELEASE_ENV: ${{ needs.metadata.outputs.release_env }}
+        run: |
+          set -euo pipefail
+
+          bundle_dir="apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos"
+          app_bundle_path="$(find "${bundle_dir}" -maxdepth 1 -type d -name '*.app' | head -n 1)"
+          if [[ -z "${app_bundle_path}" ]]; then
+            echo "No .app bundle found under ${bundle_dir}" >&2
+            ls -la "${bundle_dir}" || true
+            exit 1
+          fi
+
+          app_bundle_name="$(basename "${app_bundle_path}")"
+          app_name="${app_bundle_name%.app}"
+          if [[ "${RELEASE_ENV}" == "prod" ]]; then
+            dmg_name="${app_name}_${RELEASE_VERSION}_universal.dmg"
+          else
+            dmg_name="VoquillDev_${RELEASE_VERSION}_universal.dmg"
+          fi
+          dmg_path="$(pwd)/${dmg_name}"
+          staging_dir="$(mktemp -d)"
+          trap 'rm -rf "${staging_dir}"' EXIT
+
+          cp -R "${app_bundle_path}" "${staging_dir}/${app_bundle_name}"
+          ln -s /Applications "${staging_dir}/Applications"
+
+          hdiutil create \
+            -volname "${app_name}" \
+            -srcfolder "${staging_dir}" \
+            -ov \
+            -format UDZO \
+            "${dmg_path}"
+
+          gh release upload "${RELEASE_TAG}" "${dmg_path}" --clobber
 
       - name: Build, sign, notarize, and upload macOS PKG
         if: matrix.os == 'macos-14'
@@ -1057,7 +1029,7 @@ jobs:
             cask_name="voquill-dev"
             app_name="Voquill (dev)"
             tag_prefix="desktop-dev-v"
-            dmg_name="Voquill.dev._#{version}_universal.dmg"
+            dmg_name="VoquillDev_#{version}_universal.dmg"
           fi
 
           cat > "Casks/${cask_name}.rb" <<CASK

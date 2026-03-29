@@ -12,7 +12,7 @@ import {
   ToolPermission,
   Transcription,
   User,
-} from "@repo/types";
+} from "@voquill/types";
 import type { AppState, SnackbarMode } from "../state/app.state";
 
 export type ShowSnackbarOpts = {

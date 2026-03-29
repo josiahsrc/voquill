@@ -3,7 +3,7 @@ import type {
   LlmChatInput,
   LlmMessage,
   LlmToolCall,
-} from "@repo/types";
+} from "@voquill/types";
 import type { AgentConfig, AgentEvent } from "./types";
 
 export class AgentLoop {

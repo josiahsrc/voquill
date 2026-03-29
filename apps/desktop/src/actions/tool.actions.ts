@@ -2,7 +2,7 @@ import type {
   ToolPermission,
   ToolPermissionResolution,
   ToolPermissionStatus,
-} from "@repo/types";
+} from "@voquill/types";
 import { getToolRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { createTool } from "../tools";

@@ -1,5 +1,5 @@
-import { AppTarget, Nullable } from "@repo/types";
-import { getRec } from "@repo/utilities";
+import { AppTarget, Nullable } from "@voquill/types";
+import { getRec } from "@voquill/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppTargetRepo, getStorageRepo } from "../repos";
 import { AppTargetUpsertParams } from "../repos/app-target.repo";

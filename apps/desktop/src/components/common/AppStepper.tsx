@@ -6,7 +6,7 @@ import {
   useTheme,
   type SxProps,
 } from "@mui/material";
-import { isDefined } from "@repo/utilities";
+import { isDefined } from "@voquill/utilities";
 
 export type AppStepperStep = {
   label: string;

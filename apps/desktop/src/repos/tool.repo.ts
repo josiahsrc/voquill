@@ -1,4 +1,5 @@
-import type { ToolInfo } from "@repo/types";
+import type { ToolInfo } from "@voquill/types";
+import { getAppState } from "../store";
 import { getIsPowerModeEnabled } from "../utils/assistant-mode.utils";
 import { BaseRepo } from "./base.repo";
 
@@ -41,7 +42,7 @@ export class ToolRepo extends BaseRepo {
       },
     ];
 
-    if (getIsPowerModeEnabled()) {
+    if (getIsPowerModeEnabled(getAppState())) {
       tools.push({
         id: "run_terminal_command",
         description: "Run terminal command",

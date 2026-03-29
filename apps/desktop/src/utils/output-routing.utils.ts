@@ -1,7 +1,7 @@
 import type {
   RouteTranscriptOutputArgs,
   RouteTranscriptOutputResult,
-} from "@repo/types";
+} from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getAppState } from "../store";
 import { getMyUserPreferences } from "./user.utils";

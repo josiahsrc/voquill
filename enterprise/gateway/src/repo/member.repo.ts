@@ -1,4 +1,4 @@
-import type { Member, Nullable } from "@repo/types";
+import type { Member, Nullable } from "@voquill/types";
 import type { MemberRow } from "../types/member.types";
 import { getPool } from "../utils/db.utils";
 
@@ -12,12 +12,15 @@ function rowToMember(row: MemberRow): Member {
     stripeCustomerId: row.stripe_customer_id,
     priceId: row.price_id,
     wordsToday: row.words_today,
+    wordsThisWeek: row.words_this_week ?? undefined,
     wordsThisMonth: row.words_this_month,
     wordsTotal: row.words_total,
     tokensToday: row.tokens_today,
+    tokensThisWeek: row.tokens_this_week ?? undefined,
     tokensThisMonth: row.tokens_this_month,
     tokensTotal: row.tokens_total,
     todayResetAt: row.today_reset_at.toISOString(),
+    thisWeekResetAt: row.this_week_reset_at?.toISOString(),
     thisMonthResetAt: row.this_month_reset_at.toISOString(),
     isOnTrial: row.is_on_trial,
     trialEndsAt: row.trial_ends_at?.toISOString() ?? null,

@@ -1,4 +1,4 @@
-import type { Nullable } from "@repo/types";
+import type { Nullable } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import { createConversation, sendChatMessage } from "../actions/chat.actions";
 import { showToast } from "../actions/toast.actions";
@@ -27,8 +27,7 @@ export class AgentStrategy extends BaseStrategy {
   validateAvailability(): Nullable<StrategyValidationError> {
     const state = getAppState();
 
-    const assistantModeEnabled = getIsAssistantModeEnabled();
-    if (!assistantModeEnabled) {
+    if (!getIsAssistantModeEnabled(state)) {
       return {
         title: getIntl().formatMessage({
           defaultMessage: "Agent mode disabled",

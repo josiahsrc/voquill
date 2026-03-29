@@ -35,6 +35,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web workspace
+        env:
+          PUBLIC_MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN_DEV }}
         run: pnpm exec turbo run build --filter=web...
 
       - name: Deploy preview channel

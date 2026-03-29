@@ -1,6 +1,6 @@
 {
   "name": "@repo/agent",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Provider-agnostic agentic loop with tool support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,11 +14,11 @@
     "dist"
   ],
   "dependencies": {
-    "@repo/types": "workspace:*"
+    "@voquill/types": "workspace:*"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
-    "@repo/voice-ai": "workspace:*",
+    "@voquill/typescript-config": "workspace:*",
+    "@voquill/voice-ai": "workspace:*",
     "tsx": "^4.19.4",
     "typescript": "5.9.2"
   }

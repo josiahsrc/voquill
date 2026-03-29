@@ -5,7 +5,7 @@ import {
   StylingMode,
   User,
   UserPreferences,
-} from "@repo/types";
+} from "@voquill/types";
 import dayjs from "dayjs";
 import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
@@ -37,6 +37,9 @@ import {
 } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { setLocalStorageValue } from "./local-storage.actions";
+import { AsyncLock } from "../utils/async-lock.utils";
+
+const userSaveLock = new AsyncLock();
 
 const updateUser = async (
   updateCallback: (user: User) => void,
@@ -62,18 +65,20 @@ const updateUser = async (
     setCurrentUser(draft, payload);
   });
 
-  try {
-    getLogger().verbose(`Saving user (id=${payload.id})`);
-    await repo.setMyUser(payload);
-    getLogger().verbose("User saved successfully");
-  } catch (error) {
-    getLogger().error(`Failed to update user: ${error}`);
-    produceAppState((draft) => {
-      setCurrentUser(draft, existing);
-    });
-    showErrorSnackbar(saveErrorMessage);
-    throw error;
-  }
+  await userSaveLock.run(async () => {
+    try {
+      getLogger().verbose(`Saving user (id=${payload.id})`);
+      await repo.setMyUser(payload);
+      getLogger().verbose("User saved successfully");
+    } catch (error) {
+      getLogger().error(`Failed to update user: ${error}`);
+      produceAppState((draft) => {
+        setCurrentUser(draft, existing);
+      });
+      showErrorSnackbar(saveErrorMessage);
+      throw error;
+    }
+  });
 };
 
 export const createDefaultPreferences = (): UserPreferences => ({
@@ -106,6 +111,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   remoteTargetDeviceId: null,
   remoteReceiverPort: null,
   remoteReceiverAutoStart: false,
+  dictationAudioDim: 1.0,
 });
 
 export const updateUserPreferences = async (
@@ -207,6 +213,8 @@ export const addWordsToCurrentUser = async (
 };
 
 export const refreshCurrentUser = async (): Promise<void> => {
+  await userSaveLock.wait();
+
   try {
     getLogger().verbose("Refreshing current user and preferences");
     const [userResult, preferencesResult] = await Promise.allSettled([
@@ -587,6 +595,12 @@ export const setRemoteReceiverAutoStart = async (
   await updateUserPreferences((preferences) => {
     preferences.remoteReceiverAutoStart = enabled;
   }, "Failed to save receiver auto-start preference. Please try again.");
+};
+
+export const setDictationAudioDim = async (value: number): Promise<void> => {
+  await updateUserPreferences((preferences) => {
+    preferences.dictationAudioDim = Math.max(0, Math.min(1, value));
+  }, "Failed to save audio dim preference. Please try again.");
 };
 
 export const setStylingMode = async (

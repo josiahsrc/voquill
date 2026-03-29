@@ -1,4 +1,4 @@
-import { ChatMessage, ChatMessageRole, Nullable } from "@repo/types";
+import { ChatMessage, ChatMessageRole, Nullable } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { BaseRepo } from "./base.repo";

@@ -1,4 +1,4 @@
-import type { Auth } from "@repo/types";
+import type { Auth } from "@voquill/types";
 import {
   countAll,
   createAuth,

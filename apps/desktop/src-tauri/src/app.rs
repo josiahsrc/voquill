@@ -7,15 +7,9 @@ const AUTOSTART_HIDDEN_ARG: &str = "--voquill-autostart-hidden";
 fn handle_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
     let _ = (&app_handle, &event);
     #[cfg(target_os = "macos")]
-    if let RunEvent::Reopen {
-        has_visible_windows,
-        ..
-    } = event
-    {
-        if !has_visible_windows {
-            if let Some(window) = app_handle.get_webview_window("main") {
-                let _ = crate::platform::window::surface_main_window(&window);
-            }
+    if let RunEvent::Reopen { .. } = event {
+        if let Some(window) = app_handle.get_webview_window("main") {
+            let _ = crate::platform::window::surface_main_window(&window);
         }
     }
 }
@@ -37,6 +31,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                     Target::new(TargetKind::Webview),
                 ])
                 .level(log::LevelFilter::Debug)
+                .level_for("hyper_util", log::LevelFilter::Info)
+                .level_for("reqwest", log::LevelFilter::Info)
                 .timezone_strategy(TimezoneStrategy::UseLocal)
                 .format(|out, message, record| {
                     let now = chrono::Local::now();
@@ -136,17 +132,15 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
 
                 let app_handle = app.handle();
 
-                use crate::platform::Recorder;
-                use std::sync::Arc;
-
-                let recorder: Arc<dyn Recorder> =
-                    Arc::new(crate::platform::audio::RecordingManager::new());
+                let recorder = crate::platform::audio::new_recorder();
 
                 app.manage(recorder);
 
                 // Pre-warm audio output for instant chime playback
                 crate::system::audio_feedback::warm_audio_output();
 
+                // Important: Even if native overlays fail, do not fall back to using the Tauri windows
+                // overlay. Systems that use native overlays to NOT take well to Tauri driven overlays.
                 let use_native_overlays = crate::overlay::should_use_native_overlays();
                 if use_native_overlays {
                     crate::overlay::try_create_native_overlays(app_handle);
@@ -257,6 +251,9 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::clear_local_data,
             crate::commands::set_phase,
             crate::commands::set_pill_hover_enabled,
+            crate::commands::set_pill_visibility,
+            crate::commands::notify_pill_style_info,
+            crate::commands::sync_native_pill_assistant,
             crate::commands::start_key_listener,
             crate::commands::stop_key_listener,
             crate::commands::sync_hotkey_combos,
@@ -269,6 +266,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::read_enterprise_target,
             crate::commands::run_terminal_command,
             crate::commands::get_hotkey_strategy,
+            crate::commands::supports_app_detection,
+            crate::commands::supports_paste_keybinds,
             crate::commands::get_keyboard_language,
             crate::commands::conversation_create,
             crate::commands::conversation_list,
@@ -280,6 +279,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::chat_message_delete_many,
             crate::commands::check_app_location_writable,
             crate::commands::download_and_open_mac_installer,
+            crate::commands::get_system_volume,
+            crate::commands::set_system_volume,
         ])
 }
 

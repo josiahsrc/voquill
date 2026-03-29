@@ -1,4 +1,4 @@
-import { StylingMode } from "@repo/types";
+import { StylingMode } from "@voquill/types";
 import { AppState } from "../state/app.state";
 import { getMyUser } from "./user.utils";
 

@@ -1,4 +1,4 @@
-import { listify } from "@repo/utilities";
+import { listify } from "@voquill/utilities";
 import { invoke } from "@tauri-apps/api/core";
 import { getAuthRepo, getMemberRepo } from "../repos";
 import type { LoginMode } from "../state/login.state";

@@ -1,188 +1,501 @@
-use std::collections::HashMap;
-use std::fs;
+use crate::domain::{RecordedAudio, RecordingMetrics, RecordingResult};
+use crate::errors::RecordingError;
+use crate::platform::audio::InputDeviceDescriptor;
+use crate::platform::{ChunkCallback, LevelCallback, Recorder};
+use std::cmp;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
-/// Parse /proc/asound/cards to build a map of ALSA card IDs to friendly names.
-/// Format of /proc/asound/cards:
-///  0 [PCH            ]: HDA-Intel - HDA Intel PCH
-///                       HDA Intel PCH at 0xf7f30000 irq 131
-///  1 [Audio          ]: USB-Audio - USB Audio
-///                       Generic USB Audio at usb-0000:00:14.0-2, full speed
-///
-/// Returns a map like: {"PCH" => "HDA Intel PCH", "Audio" => "USB Audio"}
-fn parse_alsa_cards() -> HashMap<String, String> {
-    let mut map = HashMap::new();
+use libpulse_binding as pulse;
+use libpulse_binding::mainloop::standard::Mainloop;
+use libpulse_simple_binding as psimple;
 
-    let contents = match fs::read_to_string("/proc/asound/cards") {
-        Ok(contents) => contents,
+const SAMPLE_RATE: u32 = 44_100;
+const LEVEL_BIN_COUNT: usize = 12;
+const LEVEL_DISPATCH_INTERVAL: Duration = Duration::from_millis(48);
+const CHUNK_DISPATCH_INTERVAL: Duration = Duration::from_millis(100);
+const READ_CHUNK_FRAMES: usize = 1024;
+
+pub struct PulseRecorder {
+    inner: Arc<Mutex<Option<ActiveRecording>>>,
+    preferred_source: Arc<Mutex<Option<String>>>,
+}
+
+struct ActiveRecording {
+    stop_signal: Arc<Mutex<bool>>,
+    thread: Option<std::thread::JoinHandle<RecordingResult>>,
+    sample_rate: u32,
+}
+
+unsafe impl Send for PulseRecorder {}
+unsafe impl Sync for PulseRecorder {}
+
+impl Default for PulseRecorder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PulseRecorder {
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(None)),
+            preferred_source: Arc::new(Mutex::new(None)),
+        }
+    }
+}
+
+impl Recorder for PulseRecorder {
+    fn start(
+        &self,
+        level_callback: Option<LevelCallback>,
+        chunk_callback: Option<ChunkCallback>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut guard = self
+            .inner
+            .lock()
+            .map_err(|_| RecordingError::AlreadyRecording)?;
+
+        if guard.is_some() {
+            return Err(Box::new(RecordingError::AlreadyRecording));
+        }
+
+        let preferred = {
+            let pref_guard = self.preferred_source.lock().unwrap_or_else(|p| p.into_inner());
+            pref_guard.clone()
+        };
+
+        // Resolve the PulseAudio source name to record from.
+        // If the user picked a device by its display label, map it back
+        // to the underlying PulseAudio source name.
+        let source_name = resolve_source_name(preferred.as_deref());
+
+        let stop_signal = Arc::new(Mutex::new(false));
+        let stop_signal_clone = Arc::clone(&stop_signal);
+
+        let thread = std::thread::Builder::new()
+            .name("pulse-recorder".into())
+            .spawn(move || {
+                record_loop(source_name.as_deref(), stop_signal_clone, level_callback, chunk_callback)
+            })
+            .map_err(|err| RecordingError::StreamBuild(err.to_string()))?;
+
+        *guard = Some(ActiveRecording {
+            stop_signal,
+            thread: Some(thread),
+            sample_rate: SAMPLE_RATE,
+        });
+
+        Ok(())
+    }
+
+    fn stop(&self) -> Result<RecordingResult, Box<dyn std::error::Error>> {
+        let mut guard = self
+            .inner
+            .lock()
+            .map_err(|_| RecordingError::NotRecording)?;
+        let mut recording = guard.take().ok_or(RecordingError::NotRecording)?;
+
+        // Signal the recording thread to stop
+        if let Ok(mut flag) = recording.stop_signal.lock() {
+            *flag = true;
+        }
+
+        let thread = recording.thread.take().ok_or(RecordingError::NotRecording)?;
+        let result = thread
+            .join()
+            .map_err(|_| RecordingError::StreamBuild("recording thread panicked".into()))?;
+
+        Ok(result)
+    }
+
+    fn set_preferred_input_device(&self, name: Option<String>) {
+        let sanitized = name
+            .map(|v| v.trim().to_string())
+            .filter(|v| !v.is_empty());
+        match self.preferred_source.lock() {
+            Ok(mut guard) => *guard = sanitized,
+            Err(poisoned) => *poisoned.into_inner() = sanitized,
+        }
+    }
+
+    fn clear_device_cache(&self) {
+        // No caching needed — PulseAudio handles device routing
+    }
+
+    fn current_sample_rate(&self) -> Option<u32> {
+        let guard = match self.inner.lock() {
+            Ok(g) => g,
+            Err(p) => p.into_inner(),
+        };
+        guard.as_ref().map(|r| r.sample_rate)
+    }
+}
+
+/// Given the user's preferred device label (the display name shown in the UI),
+/// look up the PulseAudio source name that corresponds to it. Returns None
+/// to use the server default.
+fn resolve_source_name(preferred_label: Option<&str>) -> Option<String> {
+    let label = preferred_label?;
+    if label.is_empty() {
+        return None;
+    }
+
+    // If the label is already a PulseAudio source name (e.g. "alsa_input.usb-..."),
+    // use it directly.
+    if label.starts_with("alsa_input.") || label.starts_with("alsa_output.") {
+        return Some(label.to_string());
+    }
+
+    // Otherwise, enumerate sources and find the one whose description matches.
+    let sources = enumerate_pulse_sources();
+    let label_lower = label.to_ascii_lowercase();
+
+    sources
+        .into_iter()
+        .find(|s| s.description.to_ascii_lowercase() == label_lower)
+        .map(|s| s.name)
+}
+
+/// The actual blocking recording loop. Runs on a dedicated thread.
+fn record_loop(
+    source_name: Option<&str>,
+    stop_signal: Arc<Mutex<bool>>,
+    level_callback: Option<LevelCallback>,
+    chunk_callback: Option<ChunkCallback>,
+) -> RecordingResult {
+    let spec = pulse::sample::Spec {
+        format: pulse::sample::Format::F32le,
+        channels: 1,
+        rate: SAMPLE_RATE,
+    };
+
+    let attr = pulse::def::BufferAttr {
+        maxlength: u32::MAX,
+        tlength: u32::MAX,
+        prebuf: u32::MAX,
+        minreq: u32::MAX,
+        // Keep the fragment size small for low-latency level/chunk callbacks
+        fragsize: (READ_CHUNK_FRAMES * std::mem::size_of::<f32>()) as u32,
+    };
+
+    let source_cstr = source_name.and_then(|s| std::ffi::CString::new(s).ok());
+    let source_ref = source_cstr.as_ref().map(|c| c.as_c_str().to_str().unwrap_or_default());
+
+    let simple = match psimple::Simple::new(
+        None,                          // server (default)
+        "Voquill",                     // app name
+        pulse::stream::Direction::Record,
+        source_ref,                    // source (None = default)
+        "Recording",                   // stream description
+        &spec,
+        None,                          // channel map (default)
+        Some(&attr),
+    ) {
+        Ok(s) => s,
         Err(err) => {
-            log::error!("failed to read /proc/asound/cards: {err}");
-            return map;
+            log::error!("failed to open PulseAudio recording stream: {err}");
+            return empty_result();
         }
     };
 
-    for line in contents.lines() {
-        // Look for lines like: " 0 [PCH            ]: HDA-Intel - HDA Intel PCH"
-        let trimmed = line.trim_start();
+    log::info!(
+        "PulseAudio recording started (source: {})",
+        source_name.unwrap_or("default")
+    );
 
-        // Skip empty lines and description lines (they start with whitespace or are continuations)
-        if trimmed.is_empty() || !trimmed.chars().next().unwrap_or(' ').is_ascii_digit() {
-            continue;
+    let start = Instant::now();
+    let mut all_samples: Vec<f32> = Vec::new();
+    let mut last_level_emit = Instant::now();
+    let mut last_chunk_emit = Instant::now();
+    let mut chunk_buffer: Vec<f32> = Vec::new();
+
+    let mut read_buf = vec![0u8; READ_CHUNK_FRAMES * std::mem::size_of::<f32>()];
+
+    loop {
+        // Check stop signal
+        if let Ok(flag) = stop_signal.lock() {
+            if *flag {
+                break;
+            }
         }
 
-        // Parse the format: "NUMBER [CARD_ID]: DRIVER - FRIENDLY_NAME"
-        if let Some(bracket_start) = line.find('[') {
-            if let Some(bracket_end) = line.find(']') {
-                if let Some(dash_pos) = line.find(" - ") {
-                    let card_id = line[bracket_start + 1..bracket_end].trim().to_string();
-                    let friendly_name = line[dash_pos + 3..].trim().to_string();
+        // Read audio data (blocking)
+        if let Err(err) = simple.read(&mut read_buf) {
+            log::error!("PulseAudio read error: {err}");
+            break;
+        }
 
-                    if !card_id.is_empty() && !friendly_name.is_empty() {
-                        map.insert(card_id, friendly_name);
-                    }
+        // Convert bytes to f32 samples (F32LE format)
+        let samples: Vec<f32> = read_buf
+            .chunks_exact(4)
+            .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+            .collect();
+
+        // Accumulate for final result
+        all_samples.extend_from_slice(&samples);
+
+        // Emit level bins
+        if let Some(ref cb) = level_callback {
+            let now = Instant::now();
+            if now.duration_since(last_level_emit) >= LEVEL_DISPATCH_INTERVAL {
+                last_level_emit = now;
+                let levels = compute_level_bins(&samples);
+                cb(levels);
+            }
+        }
+
+        // Emit audio chunks
+        if let Some(ref cb) = chunk_callback {
+            chunk_buffer.extend_from_slice(&samples);
+            let now = Instant::now();
+            if now.duration_since(last_chunk_emit) >= CHUNK_DISPATCH_INTERVAL {
+                last_chunk_emit = now;
+                if !chunk_buffer.is_empty() {
+                    cb(chunk_buffer.clone());
+                    chunk_buffer.clear();
                 }
             }
         }
     }
 
-    map
-}
-
-/// Extract the ALSA card ID from a device name string.
-/// Handles various ALSA device formats:
-///   - "hw:CARD=Audio,DEV=0" -> Some("Audio")
-///   - "plughw:Audio,0" -> Some("Audio")
-///   - "sysdefault:CARD=J710" -> Some("J710")
-///   - "front:CARD=PCH" -> Some("PCH")
-///   - etc.
-fn extract_alsa_card_id(device_name: &str) -> Option<String> {
-    // Handle CARD= format (hw:CARD=X, sysdefault:CARD=X, front:CARD=X, etc.)
-    if let Some(card_start) = device_name.find("CARD=") {
-        let after_card = &device_name[card_start + 5..];
-        let card_id = if let Some(comma_pos) = after_card.find(',') {
-            &after_card[..comma_pos]
-        } else {
-            after_card
-        };
-        return Some(card_id.trim().to_string());
-    }
-
-    // Handle plughw:CardID,DeviceNum format
-    if let Some(colon_pos) = device_name.find(':') {
-        let after_colon = &device_name[colon_pos + 1..];
-        let card_id = if let Some(comma_pos) = after_colon.find(',') {
-            &after_colon[..comma_pos]
-        } else {
-            after_colon
-        };
-        // Only return if it's not empty and doesn't start with CARD=
-        if !card_id.is_empty() && !card_id.starts_with("CARD=") {
-            return Some(card_id.trim().to_string());
+    // Flush remaining chunk buffer
+    if let Some(ref cb) = chunk_callback {
+        if !chunk_buffer.is_empty() {
+            cb(chunk_buffer);
         }
     }
 
-    None
+    let duration = if !all_samples.is_empty() {
+        Duration::from_secs_f64(all_samples.len() as f64 / f64::from(SAMPLE_RATE))
+    } else {
+        start.elapsed()
+    };
+    let size_bytes = all_samples.len() as u64 * std::mem::size_of::<f32>() as u64;
+
+    RecordingResult {
+        metrics: RecordingMetrics {
+            duration,
+            size_bytes,
+        },
+        audio: RecordedAudio {
+            samples: all_samples,
+            sample_rate: SAMPLE_RATE,
+        },
+    }
 }
 
-/// Convert a Linux audio device name to a friendly name.
-/// Examples:
-///   "hw:CARD=Audio,DEV=0" -> "USB Audio"
-///   "sysdefault:CARD=J710" -> "Jabra Speak 710"
-///   "pulse" -> "PulseAudio"
-///   "pipewire" -> "PipeWire"
-///   "default" -> "Default"
-pub fn get_friendly_device_name(device_name: &str) -> String {
-    // Handle special PulseAudio/PipeWire device names
-    if device_name.eq_ignore_ascii_case("pulse") {
-        return "PulseAudio".to_string();
+fn empty_result() -> RecordingResult {
+    RecordingResult {
+        metrics: RecordingMetrics {
+            duration: Duration::ZERO,
+            size_bytes: 0,
+        },
+        audio: RecordedAudio {
+            samples: Vec::new(),
+            sample_rate: SAMPLE_RATE,
+        },
     }
-    if device_name.eq_ignore_ascii_case("pipewire") {
-        return "PipeWire".to_string();
-    }
-    if device_name.eq_ignore_ascii_case("default") {
-        return "Default".to_string();
+}
+
+fn compute_level_bins(samples: &[f32]) -> Vec<f32> {
+    if samples.is_empty() {
+        return vec![0.0; LEVEL_BIN_COUNT];
     }
 
-    // Try to extract the ALSA card ID from various formats
-    if let Some(card_id) = extract_alsa_card_id(device_name) {
-        let card_map = parse_alsa_cards();
-        if let Some(friendly_name) = card_map.get(&card_id) {
-            // Check if there's a device number to append
-            if device_name.contains("DEV=") {
-                if let Some(dev_start) = device_name.find("DEV=") {
-                    let after_dev = &device_name[dev_start + 4..];
-                    let dev_num = after_dev.split(',').next().unwrap_or("0");
-                    if dev_num != "0" {
-                        return format!("{} (Device {})", friendly_name, dev_num);
-                    }
-                }
-            } else if device_name.contains(',') {
-                // Handle plughw:CardID,DeviceNum format
-                if let Some(comma_pos) = device_name.find(',') {
-                    let after_comma = &device_name[comma_pos + 1..];
-                    if let Ok(dev_num) = after_comma.trim().parse::<u32>() {
-                        if dev_num != 0 {
-                            return format!("{} (Device {})", friendly_name, dev_num);
-                        }
-                    }
+    let frames_per_bin = cmp::max(1, samples.len() / LEVEL_BIN_COUNT);
+    let mut bins = vec![0.0f32; LEVEL_BIN_COUNT];
+    let mut counts = vec![0u32; LEVEL_BIN_COUNT];
+
+    for (index, sample) in samples.iter().enumerate() {
+        let bin_index = cmp::min(index / frames_per_bin, LEVEL_BIN_COUNT - 1);
+        bins[bin_index] += sample.abs();
+        counts[bin_index] += 1;
+    }
+
+    for (value, count) in bins.iter_mut().zip(counts.into_iter()) {
+        if count > 0 {
+            *value = (*value / count as f32).clamp(0.0, 1.0);
+        }
+    }
+
+    bins
+}
+
+// ── PulseAudio source enumeration ──────────────────────────────────────
+
+#[derive(Clone)]
+struct PulseSource {
+    name: String,
+    description: String,
+    is_monitor: bool,
+    is_default: bool,
+}
+
+fn enumerate_pulse_sources() -> Vec<PulseSource> {
+    let mut ml = match Mainloop::new() {
+        Some(ml) => ml,
+        None => {
+            log::error!("failed to create PulseAudio mainloop");
+            return Vec::new();
+        }
+    };
+
+    let mut ctx = match pulse::context::Context::new(&ml, "Voquill Enumerate") {
+        Some(ctx) => ctx,
+        None => {
+            log::error!("failed to create PulseAudio context");
+            return Vec::new();
+        }
+    };
+
+    if ctx.connect(None, pulse::context::FlagSet::NOFLAGS, None).is_err() {
+        log::error!("failed to connect PulseAudio context");
+        return Vec::new();
+    }
+
+    // Wait for context to be ready
+    loop {
+        match ml.iterate(true) {
+            pulse::mainloop::standard::IterateResult::Quit(_)
+            | pulse::mainloop::standard::IterateResult::Err(_) => {
+                log::error!("PulseAudio mainloop error during connect");
+                return Vec::new();
+            }
+            _ => {}
+        }
+        match ctx.get_state() {
+            pulse::context::State::Ready => break,
+            pulse::context::State::Failed | pulse::context::State::Terminated => {
+                log::error!("PulseAudio context failed to connect");
+                return Vec::new();
+            }
+            _ => {}
+        }
+    }
+
+    // Get the default source name from server info
+    let default_source: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    let default_source_clone = Arc::clone(&default_source);
+    let server_done = Arc::new(Mutex::new(false));
+    let server_done_clone = Arc::clone(&server_done);
+
+    let introspect = ctx.introspect();
+    introspect.get_server_info(move |info| {
+        if let Some(ref name) = info.default_source_name {
+            if let Ok(mut guard) = default_source_clone.lock() {
+                *guard = Some(name.to_string());
+            }
+        }
+        if let Ok(mut done) = server_done_clone.lock() {
+            *done = true;
+        }
+    });
+
+    // Wait for server info callback
+    loop {
+        if let Ok(done) = server_done.lock() {
+            if *done {
+                break;
+            }
+        }
+        match ml.iterate(true) {
+            pulse::mainloop::standard::IterateResult::Quit(_)
+            | pulse::mainloop::standard::IterateResult::Err(_) => break,
+            _ => {}
+        }
+    }
+
+    let default_name = default_source
+        .lock()
+        .ok()
+        .and_then(|g| g.clone())
+        .unwrap_or_default();
+
+    // Enumerate sources
+    let sources: Arc<Mutex<Vec<PulseSource>>> = Arc::new(Mutex::new(Vec::new()));
+    let sources_clone = Arc::clone(&sources);
+    let default_name_clone = default_name.clone();
+    let list_done = Arc::new(Mutex::new(false));
+    let list_done_clone = Arc::clone(&list_done);
+
+    introspect.get_source_info_list(move |result| {
+        match result {
+            pulse::callbacks::ListResult::Item(info) => {
+                let name = info
+                    .name
+                    .as_ref()
+                    .map(|n| n.to_string())
+                    .unwrap_or_default();
+                let description = info
+                    .description
+                    .as_ref()
+                    .map(|d| d.to_string())
+                    .unwrap_or_else(|| name.clone());
+                let is_monitor = info.monitor_of_sink.is_some();
+
+                if let Ok(mut guard) = sources_clone.lock() {
+                    guard.push(PulseSource {
+                        is_default: name == default_name_clone,
+                        name,
+                        description,
+                        is_monitor,
+                    });
                 }
             }
-            return friendly_name.clone();
+            pulse::callbacks::ListResult::End | pulse::callbacks::ListResult::Error => {
+                if let Ok(mut done) = list_done_clone.lock() {
+                    *done = true;
+                }
+            }
+        }
+    });
+
+    // Wait for source list callback
+    loop {
+        if let Ok(done) = list_done.lock() {
+            if *done {
+                break;
+            }
+        }
+        match ml.iterate(true) {
+            pulse::mainloop::standard::IterateResult::Quit(_)
+            | pulse::mainloop::standard::IterateResult::Err(_) => break,
+            _ => {}
         }
     }
 
-    // If we can't parse it, return the original name
-    device_name.to_string()
+    ctx.disconnect();
+
+    match Arc::try_unwrap(sources) {
+        Ok(mutex) => mutex.into_inner().unwrap_or_default(),
+        Err(arc) => arc.lock().unwrap_or_else(|p| p.into_inner()).clone(),
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// List microphone sources via PulseAudio, filtering out monitors.
+/// Returns descriptors compatible with the existing UI.
+pub fn list_pulse_input_devices() -> Vec<InputDeviceDescriptor> {
+    let sources = enumerate_pulse_sources();
 
-    #[test]
-    fn test_special_device_names() {
-        assert_eq!(get_friendly_device_name("pulse"), "PulseAudio");
-        assert_eq!(get_friendly_device_name("pipewire"), "PipeWire");
-        assert_eq!(get_friendly_device_name("default"), "Default");
-    }
+    let mut devices: Vec<InputDeviceDescriptor> = sources
+        .into_iter()
+        .filter(|s| !s.is_monitor)
+        .map(|s| InputDeviceDescriptor {
+            label: s.description,
+            is_default: s.is_default,
+            caution: false,
+        })
+        .collect();
 
-    #[test]
-    fn test_extract_alsa_card_id() {
-        // Test CARD= format
-        assert_eq!(
-            extract_alsa_card_id("hw:CARD=Audio,DEV=0"),
-            Some("Audio".to_string())
-        );
-        assert_eq!(
-            extract_alsa_card_id("sysdefault:CARD=J710"),
-            Some("J710".to_string())
-        );
-        assert_eq!(
-            extract_alsa_card_id("front:CARD=PCH"),
-            Some("PCH".to_string())
-        );
+    // Sort: default first, then alphabetical
+    devices.sort_by(|a, b| {
+        b.is_default.cmp(&a.is_default).then_with(|| {
+            a.label
+                .to_ascii_lowercase()
+                .cmp(&b.label.to_ascii_lowercase())
+        })
+    });
 
-        // Test plughw:CardID format
-        assert_eq!(
-            extract_alsa_card_id("plughw:Audio,0"),
-            Some("Audio".to_string())
-        );
-        assert_eq!(
-            extract_alsa_card_id("plughw:J710"),
-            Some("J710".to_string())
-        );
-
-        // Test invalid formats
-        assert_eq!(extract_alsa_card_id("pulse"), None);
-        assert_eq!(extract_alsa_card_id("default"), None);
-    }
-
-    #[test]
-    fn test_parse_alsa_cards() {
-        // This test will only pass on systems with /proc/asound/cards
-        // On other systems, it should return an empty map without crashing
-        let map = parse_alsa_cards();
-        // We can't assert specific values since it depends on the system
-        // Just ensure it doesn't panic
-        println!("Found {} ALSA cards", map.len());
-    }
+    devices
 }

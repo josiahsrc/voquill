@@ -1,0 +1,323 @@
+---
+import type { Locale } from '../types/locale';
+import { t } from '../i18n/translations';
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const i18n = t(locale);
+---
+
+<section class="privacy-section" id="privacy">
+	<div class="privacy-content">
+		<span class="badge">{i18n.privacyBadge}</span>
+		<h2>{i18n.privacyHeading}</h2>
+		<p>{i18n.privacyDescription}</p>
+		<a
+			href="https://github.com/voquill/voquill"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="inline-link"
+		>
+			{i18n.privacyLink}
+		</a>
+	</div>
+	<div class="privacy-media" aria-hidden="true">
+		<div class="halo"></div>
+		<div class="lock-container">
+			<svg viewBox="0 0 120 150" class="lock-svg" fill="none">
+				<defs>
+					<linearGradient id="shackleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+						<stop offset="0%" class="shackle-light" />
+						<stop offset="35%" class="shackle-mid" />
+						<stop offset="50%" class="shackle-dark" />
+						<stop offset="65%" class="shackle-mid" />
+						<stop offset="100%" class="shackle-light" />
+					</linearGradient>
+					<linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+						<stop offset="0%" class="body-light" />
+						<stop offset="30%" class="body-mid" />
+						<stop offset="100%" class="body-dark" />
+					</linearGradient>
+					<linearGradient id="bodyHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+						<stop offset="0%" stop-color="white" stop-opacity="0.25" />
+						<stop offset="50%" stop-color="white" stop-opacity="0" />
+					</linearGradient>
+					<linearGradient id="keyholeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+						<stop offset="0%" class="keyhole-light" />
+						<stop offset="100%" class="keyhole-dark" />
+					</linearGradient>
+					<radialGradient id="keyholeShadow" cx="50%" cy="0%" r="100%">
+						<stop offset="0%" stop-color="black" stop-opacity="0.3" />
+						<stop offset="100%" stop-color="black" stop-opacity="0" />
+					</radialGradient>
+				</defs>
+
+				<!-- Shackle shadow -->
+				<path
+					d="M25 65 L25 45 C25 22 42 8 60 8 C78 8 95 22 95 45 L95 65"
+					stroke="black"
+					stroke-opacity="0.15"
+					stroke-width="14"
+					stroke-linecap="round"
+					fill="none"
+					transform="translate(2, 3)"
+				/>
+				<!-- Shackle -->
+				<path
+					d="M25 65 L25 45 C25 22 42 8 60 8 C78 8 95 22 95 45 L95 65"
+					stroke="url(#shackleGradient)"
+					stroke-width="12"
+					stroke-linecap="round"
+					fill="none"
+				/>
+				<!-- Shackle inner highlight -->
+				<path
+					d="M31 62 L31 45 C31 26 45 14 60 14 C75 14 89 26 89 45 L89 62"
+					stroke="white"
+					stroke-opacity="0.2"
+					stroke-width="2"
+					stroke-linecap="round"
+					fill="none"
+				/>
+
+				<!-- Body shadow -->
+				<rect x="14" y="61" width="96" height="80" rx="12" fill="black" fill-opacity="0.15" />
+				<!-- Lock body -->
+				<rect x="12" y="58" width="96" height="80" rx="12" fill="url(#bodyGradient)" />
+				<!-- Body top highlight -->
+				<rect x="12" y="58" width="96" height="40" rx="12" fill="url(#bodyHighlight)" />
+				<!-- Body edge highlight -->
+				<path
+					d="M24 58 L96 58 C103 58 108 63 108 70 L108 126 C108 133 103 138 96 138 L24 138 C17 138 12 133 12 126 L12 70 C12 63 17 58 24 58"
+					stroke="white"
+					stroke-opacity="0.15"
+					stroke-width="1"
+					fill="none"
+				/>
+
+				<!-- Keyhole recess/shadow -->
+				<ellipse cx="61" cy="94" rx="14" ry="14" fill="black" fill-opacity="0.25" />
+				<path d="M53 94 L53 119 C53 123 56 126 60 126 C64 126 67 123 67 119 L67 94" fill="black" fill-opacity="0.25" />
+				<!-- Keyhole -->
+				<path
+					d="M60 79 C52.3 79 46 85.3 46 93 C46 98.5 49.5 103.2 54.5 105.2 L54.5 118 C54.5 121 57 124 60 124 C63 124 65.5 121 65.5 118 L65.5 105.2 C70.5 103.2 74 98.5 74 93 C74 85.3 67.7 79 60 79 Z"
+					fill="url(#keyholeGradient)"
+				/>
+				<!-- Keyhole inner shadow -->
+				<path
+					d="M60 79 C52.3 79 46 85.3 46 93 C46 98.5 49.5 103.2 54.5 105.2 L54.5 118 C54.5 121 57 124 60 124 C63 124 65.5 121 65.5 118 L65.5 105.2 C70.5 103.2 74 98.5 74 93 C74 85.3 67.7 79 60 79 Z"
+					fill="url(#keyholeShadow)"
+				/>
+			</svg>
+		</div>
+		<span class="sr-only">{i18n.privacyLockAlt}</span>
+	</div>
+</section>
+
+<style>
+	.privacy-section {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 56px;
+		align-items: center;
+		max-width: min(1120px, 100%);
+		margin: 120px auto 0;
+	}
+
+	.privacy-content {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		max-width: 58ch;
+	}
+
+	.privacy-content h2 {
+		font-size: clamp(1.8rem, 2.5vw, 2.2rem);
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+	}
+
+	.privacy-content p {
+		font-size: 1.05rem;
+		line-height: 1.75;
+		color: var(--text-muted);
+	}
+
+	.badge {
+		align-self: flex-start;
+		padding: 6px 18px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: var(--level1);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-strong);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.badge {
+			background: rgba(255, 255, 255, 0.12);
+			border-color: rgba(255, 255, 255, 0.24);
+			color: rgba(255, 255, 255, 0.92);
+		}
+	}
+
+	.privacy-media {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 420px;
+	}
+
+	.halo {
+		position: absolute;
+		width: 320px;
+		height: 320px;
+		border-radius: 50%;
+		background: radial-gradient(
+			circle,
+			rgba(15, 18, 26, 0.12),
+			transparent 70%
+		);
+		animation: pulse 8s ease-in-out infinite;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.halo {
+			background: radial-gradient(
+				circle,
+				rgba(168, 191, 255, 0.15),
+				transparent 70%
+			);
+		}
+	}
+
+	.lock-container {
+		position: relative;
+		animation: float 6s ease-in-out infinite;
+		filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.2));
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.lock-container {
+			filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.5));
+		}
+	}
+
+	.lock-svg {
+		width: 160px;
+		height: 200px;
+	}
+
+	/* Shackle gradient stops */
+	.shackle-light {
+		stop-color: #5c6370;
+	}
+	.shackle-mid {
+		stop-color: #3a3f4a;
+	}
+	.shackle-dark {
+		stop-color: #1e2128;
+	}
+
+	/* Body gradient stops */
+	.body-light {
+		stop-color: #484d58;
+	}
+	.body-mid {
+		stop-color: #2e323a;
+	}
+	.body-dark {
+		stop-color: #1a1d22;
+	}
+
+	/* Keyhole gradient stops */
+	.keyhole-light {
+		stop-color: #ffffff;
+	}
+	.keyhole-dark {
+		stop-color: #e0e4ec;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.shackle-light {
+			stop-color: #f5f7fb;
+		}
+		.shackle-mid {
+			stop-color: #d8dce6;
+		}
+		.shackle-dark {
+			stop-color: #c0c5d0;
+		}
+		.body-light {
+			stop-color: #f8f9fc;
+		}
+		.body-mid {
+			stop-color: #e8ebf2;
+		}
+		.body-dark {
+			stop-color: #d0d4de;
+		}
+		.keyhole-light {
+			stop-color: #2a2e38;
+		}
+		.keyhole-dark {
+			stop-color: #15171c;
+		}
+	}
+
+	.sr-only {
+		border: 0;
+		clip: rect(0 0 0 0);
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		padding: 0;
+		position: absolute;
+		width: 1px;
+	}
+
+	@keyframes float {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-12px);
+		}
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			transform: scale(0.95);
+			opacity: 0.7;
+		}
+		50% {
+			transform: scale(1.05);
+			opacity: 1;
+		}
+	}
+
+	@media (max-width: 960px) {
+		.privacy-section {
+			grid-template-columns: 1fr;
+		}
+
+		.privacy-media {
+			min-height: 360px;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.privacy-media {
+			min-height: 300px;
+		}
+	}
+</style>

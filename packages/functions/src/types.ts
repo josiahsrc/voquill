@@ -34,7 +34,7 @@ import {
   type SttProviderInput,
   type User,
   type UserWithAuth,
-} from "@repo/types";
+} from "@voquill/types";
 import { z } from "zod";
 
 export const CLOUD_MODELS = ["low", "medium", "large"] as const;
@@ -117,6 +117,10 @@ type HandlerDefinitions = {
 
   // emulator
   "emulator/resetWordsToday": {
+    input: EmptyObject;
+    output: EmptyObject;
+  };
+  "emulator/resetWordsThisWeek": {
     input: EmptyObject;
     output: EmptyObject;
   };

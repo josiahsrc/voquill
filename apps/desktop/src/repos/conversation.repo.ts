@@ -1,4 +1,4 @@
-import { Conversation } from "@repo/types";
+import { Conversation } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import { BaseRepo } from "./base.repo";

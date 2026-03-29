@@ -115,5 +115,5 @@ These Terms, together with the Privacy Policy, constitute the entire agreement b
 
 For questions about these Terms, you can:
 
-- Open an issue on our [GitHub repository](https://github.com/josiahsrc/voquill)
+- Open an issue on our [GitHub repository](https://github.com/voquill/voquill)
 - Contact us at [legal@voquill.com](mailto:legal@voquill.com)

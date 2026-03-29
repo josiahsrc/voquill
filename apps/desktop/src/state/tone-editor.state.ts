@@ -1,4 +1,4 @@
-import type { Nullable } from "@repo/types";
+import type { Nullable } from "@voquill/types";
 
 export type ToneEditorMode = "create" | "edit";
 

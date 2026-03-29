@@ -5,15 +5,12 @@
   "bundle": {
     "linux": {
       "deb": {
-        "depends": ["libxdo3", "libvulkan1"],
+        "depends": ["libxdo3", "xdotool", "libvulkan1", "libgtk-layer-shell0", "wtype"],
         "conflicts": ["voquill-gpu"],
         "replaces": ["voquill-gpu"]
       },
       "rpm": {
-        "depends": {
-          "xdotool": "",
-          "vulkan-loader": ""
-        },
+        "depends": ["xdotool", "vulkan-loader", "gtk-layer-shell", "wtype"],
         "conflicts": ["voquill-gpu"],
         "obsoletes": ["voquill-gpu"]
       }
@@ -22,7 +19,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/josiahsrc/voquill/releases/download/desktop-prod/latest.json"
+        "https://github.com/voquill/voquill/releases/download/desktop-prod/latest.json"
       ]
     }
   }

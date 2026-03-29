@@ -3,13 +3,14 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "groq-sdk/resources/chat/completions";
-import { retry, countWords } from "@repo/utilities";
-import type { JsonResponse, LlmChatInput, LlmStreamEvent } from "@repo/types";
+import { retry, countWords } from "@voquill/utilities";
+import type { JsonResponse, LlmChatInput, LlmStreamEvent } from "@voquill/types";
 import OpenAI from "openai";
 import { openaiCompatibleStreamChat } from "./openai.utils";
 
 export const GENERATE_TEXT_MODELS = [
   "meta-llama/llama-4-scout-17b-16e-instruct",
+  "moonshotai/kimi-k2-instruct-0905",
   "openai/gpt-oss-20b",
   "openai/gpt-oss-120b",
 ] as const;

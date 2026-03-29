@@ -1,4 +1,4 @@
-import type { Nullable, RemoteReceiverStatus } from "@repo/types";
+import type { Nullable, RemoteReceiverStatus } from "@voquill/types";
 import { getRemoteReceiverRepo } from "../repos";
 import { produceAppState } from "../store";
 

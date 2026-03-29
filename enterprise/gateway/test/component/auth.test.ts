@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import type { AuthContext } from "@repo/types";
+import type { AuthContext } from "@voquill/types";
 import { invoke, query, createTestAuth, cleanupTestAuths } from "../helpers";
 
 describe("auth", () => {
