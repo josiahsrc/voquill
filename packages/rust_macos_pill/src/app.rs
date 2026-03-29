@@ -1,5 +1,7 @@
 use std::cell::{Cell, RefCell};
+use std::ffi::c_void;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 
 use cocoa::appkit::{
@@ -18,14 +20,35 @@ use crate::input;
 use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
 use crate::state::{PillState, WindowMode};
 
+// ── CVDisplayLink & timing ───────────────────────────────────────
+
+#[link(name = "CoreVideo", kind = "framework")]
+extern "C" {
+    fn CVDisplayLinkCreateWithActiveCGDisplays(link_out: *mut *mut c_void) -> i32;
+    fn CVDisplayLinkSetOutputCallback(
+        link: *mut c_void,
+        callback: extern "C" fn(*mut c_void, *const c_void, *const c_void, u64, *mut u64, *mut c_void) -> i32,
+        context: *mut c_void,
+    ) -> i32;
+    fn CVDisplayLinkStart(link: *mut c_void) -> i32;
+}
+
+extern "C" {
+    fn dispatch_async_f(queue: *mut c_void, context: *mut c_void, work: extern "C" fn(*mut c_void));
+    static _dispatch_main_q: u8;
+    fn CFAbsoluteTimeGetCurrent() -> f64;
+}
+
 // ── Thread-local shared state ─────────────────────────────────────
 
 struct AppContext {
     state: Rc<PillState>,
     receiver: RefCell<Receiver<InMessage>>,
     window: id,
+    view: id,
     entry: id,
     quit: Cell<bool>,
+    last_tick_time: Cell<f64>,
 }
 
 thread_local! {
@@ -34,6 +57,28 @@ thread_local! {
 
 fn with_ctx<R>(f: impl FnOnce(&AppContext) -> R) -> Option<R> {
     APP_CTX.with(|cell| cell.borrow().as_ref().map(f))
+}
+
+// ── CVDisplayLink vsync callback ─────────────────────────────────
+
+static NEEDS_TICK: AtomicBool = AtomicBool::new(false);
+
+extern "C" fn display_link_callback(
+    _link: *mut c_void, _now: *const c_void, _output_time: *const c_void,
+    _flags_in: u64, _flags_out: *mut u64, _context: *mut c_void,
+) -> i32 {
+    if !NEEDS_TICK.swap(true, Ordering::Release) {
+        unsafe {
+            let main_q = &_dispatch_main_q as *const u8 as *mut c_void;
+            dispatch_async_f(main_q, std::ptr::null_mut(), main_thread_tick);
+        }
+    }
+    0
+}
+
+extern "C" fn main_thread_tick(_context: *mut c_void) {
+    NEEDS_TICK.store(false, Ordering::Release);
+    perform_tick();
 }
 
 // ── Custom NSView ─────────────────────────────────────────────────
@@ -198,10 +243,20 @@ extern "C" fn text_field_action(_this: &Object, _sel: Sel, sender: id) {
     });
 }
 
-extern "C" fn tick_callback(this: &Object, _sel: Sel, _timer: id) {
+extern "C" fn tick_callback(_this: &Object, _sel: Sel, _timer: id) {
+    perform_tick();
+}
+
+fn perform_tick() {
     APP_CTX.with(|cell| {
         let borrow = cell.borrow();
         let Some(ctx) = borrow.as_ref() else { return };
+
+        // Delta time (frame-rate independent animation)
+        let now = unsafe { CFAbsoluteTimeGetCurrent() };
+        let prev = ctx.last_tick_time.get();
+        ctx.last_tick_time.set(now);
+        let dt = if prev == 0.0 { 1.0 / 60.0 } else { (now - prev).clamp(0.001, 0.05) };
 
         // Process IPC messages
         let rx = ctx.receiver.borrow();
@@ -271,9 +326,9 @@ extern "C" fn tick_callback(this: &Object, _sel: Sel, _timer: id) {
         }
 
         // Compute hover from actual mouse position over pill area
-        update_hover(this, ctx);
+        update_hover(ctx.view, ctx);
 
-        tick(&ctx.state);
+        tick(&ctx.state, dt);
 
         // Show/hide entry for typing mode
         let is_typing = ctx.state.assistant_active.get()
@@ -321,14 +376,14 @@ extern "C" fn tick_callback(this: &Object, _sel: Sel, _timer: id) {
 
         // Request redraw
         unsafe {
-            let _: () = msg_send![this, setNeedsDisplay:YES];
+            let _: () = msg_send![ctx.view, setNeedsDisplay:YES];
         }
     });
 }
 
 // ── Hover detection ──────────────────────────────────────────────
 
-fn update_hover(view: &Object, ctx: &AppContext) {
+fn update_hover(view: id, ctx: &AppContext) {
     let new_hovered = unsafe {
         let window: id = msg_send![view, window];
         let mouse_screen: NSPoint = msg_send![class!(NSEvent), mouseLocation];
@@ -346,14 +401,15 @@ fn update_hover(view: &Object, ctx: &AppContext) {
 
 // ── Animation tick ────────────────────────────────────────────────
 
-fn tick(state: &PillState) {
+fn tick(state: &PillState, dt: f64) {
     let phase = state.phase.get();
     let is_active = phase != Phase::Idle;
     let is_recording = phase == Phase::Recording;
     let is_loading = phase == Phase::Loading;
     let hovered = state.hovered.get();
+    let frame_scale = dt * 60.0; // Scale factor relative to 60fps baseline
 
-    // Audio levels
+    // Audio levels (frame-rate independent)
     if is_recording {
         let levels = state.pending_levels.borrow();
         if !levels.is_empty() {
@@ -363,14 +419,15 @@ fn tick(state: &PillState) {
             let combined = (avg * 0.9 + peak * 0.85).min(1.0);
             let boosted = (combined.sqrt() * 1.35).min(1.0);
             let target = state.target_level.get();
-            state.target_level.set((target * 0.25 + boosted * 0.75).min(1.0));
+            let mix = 1.0 - 0.25_f64.powf(frame_scale);
+            state.target_level.set((target * (1.0 - mix) + boosted * mix).min(1.0));
         }
     } else if is_loading {
         let target = state.target_level.get();
         state.target_level.set(target.max(PROCESSING_BASE_LEVEL));
     } else {
         state.target_level.set(0.0);
-        state.current_level.set(state.current_level.get() * 0.4);
+        state.current_level.set(state.current_level.get() * 0.4_f64.powf(frame_scale));
         if state.current_level.get() < 0.0002 {
             state.current_level.set(0.0);
         }
@@ -378,25 +435,27 @@ fn tick(state: &PillState) {
 
     let current = state.current_level.get();
     let target = state.target_level.get();
-    let new_current = current + (target - current) * LEVEL_SMOOTHING;
+    let smoothing = 1.0 - (1.0 - LEVEL_SMOOTHING).powf(frame_scale);
+    let new_current = current + (target - current) * smoothing;
     state.current_level.set(if new_current < 0.0002 { 0.0 } else { new_current });
 
-    let decayed = target * TARGET_DECAY_PER_FRAME;
+    let decay = TARGET_DECAY_PER_FRAME.powf(frame_scale);
+    let decayed = target * decay;
     state.target_level.set(if decayed < 0.0005 { 0.0 } else { decayed });
 
     let level = state.current_level.get();
     let base_level = if is_loading && !is_recording { PROCESSING_BASE_LEVEL } else { 0.0 };
     let effective_level = level.max(base_level);
-    let advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * effective_level;
+    let advance = (WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * effective_level) * frame_scale;
     state.wave_phase.set((state.wave_phase.get() + advance) % TAU);
 
     // Pill expand/collapse (spring)
     let expand_target = if is_active || hovered || state.assistant_active.get() { 1.0 } else { 0.0 };
-    spring_anim(&state.expand_t, &state.expand_velocity, expand_target, SPRING_STIFFNESS);
+    spring_anim(&state.expand_t, &state.expand_velocity, expand_target, SPRING_STIFFNESS, dt);
 
     // Loading offset
     if is_loading {
-        state.loading_offset.set((state.loading_offset.get() + LOADING_SPEED) % 1.0);
+        state.loading_offset.set((state.loading_offset.get() + LOADING_SPEED * frame_scale) % 1.0);
     }
 
     // Tooltip animation (spring)
@@ -405,25 +464,25 @@ fn tick(state: &PillState) {
         && (hovered || phase == Phase::Recording)
         && state.expand_t.get() > 0.3;
     let tooltip_target = if show_tooltip { 1.0 } else { 0.0 };
-    spring_anim(&state.tooltip_t, &state.tooltip_velocity, tooltip_target, SPRING_STIFFNESS);
+    spring_anim(&state.tooltip_t, &state.tooltip_velocity, tooltip_target, SPRING_STIFFNESS, dt);
 
     // Panel open/close (spring)
     let panel_target = if state.assistant_active.get() { 1.0 } else { 0.0 };
-    spring_anim(&state.panel_open_t, &state.panel_open_velocity, panel_target, SPRING_STIFFNESS);
+    spring_anim(&state.panel_open_t, &state.panel_open_velocity, panel_target, SPRING_STIFFNESS, dt);
 
     // Keyboard button (spring)
     let is_voice = *state.assistant_input_mode.borrow() == "voice";
     let kb_target = if state.assistant_active.get() && is_voice { 1.0 } else { 0.0 };
-    spring_anim(&state.kb_button_t, &state.kb_button_velocity, kb_target, SPRING_STIFFNESS);
+    spring_anim(&state.kb_button_t, &state.kb_button_velocity, kb_target, SPRING_STIFFNESS, dt);
 
     // Animate content dimensions toward target mode
     let mode = state.window_mode.get();
     let (tw, th) = mode.dimensions();
-    spring_px(&state.draw_width, &state.draw_w_velocity, tw as f64, SPRING_STIFFNESS);
-    spring_px(&state.draw_height, &state.draw_h_velocity, th as f64, SPRING_STIFFNESS);
+    spring_px(&state.draw_width, &state.draw_w_velocity, tw as f64, SPRING_STIFFNESS, dt);
+    spring_px(&state.draw_height, &state.draw_h_velocity, th as f64, SPRING_STIFFNESS, dt);
 
     // Shimmer phase
-    state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED) % 1.0);
+    state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED * frame_scale) % 1.0);
 
     // Auto-scroll to bottom
     if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
@@ -432,14 +491,14 @@ fn tick(state: &PillState) {
     }
 }
 
-fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64, dt: f64) {
     let v = value.get();
     let vel = velocity.get();
     if v == target && vel == 0.0 { return; }
     let damping = 2.0 * stiffness.sqrt();
     let force = stiffness * (target - v) - damping * vel;
-    let new_vel = vel + force * SPRING_DT;
-    let new_v = v + new_vel * SPRING_DT;
+    let new_vel = vel + force * dt;
+    let new_v = v + new_vel * dt;
     if (new_v - target).abs() < 0.002 && new_vel.abs() < 0.5 {
         value.set(target);
         velocity.set(0.0);
@@ -449,15 +508,15 @@ fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: 
     }
 }
 
-fn spring_px(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+fn spring_px(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64, dt: f64) {
     let v = value.get();
     let vel = velocity.get();
     if v == target && vel == 0.0 { return; }
     let damping = 2.0 * stiffness.sqrt();
     let force = stiffness * (target - v) - damping * vel;
-    let new_vel = vel + force * SPRING_DT;
-    let new_v = v + new_vel * SPRING_DT;
-    if (new_v - target).abs() < 0.5 && (new_vel * SPRING_DT).abs() < 0.5 {
+    let new_vel = vel + force * dt;
+    let new_v = v + new_vel * dt;
+    if (new_v - target).abs() < 0.5 && (new_vel * dt).abs() < 0.5 {
         value.set(target);
         velocity.set(0.0);
     } else {
@@ -542,9 +601,10 @@ pub fn run(receiver: Receiver<InMessage>) {
                 | NSWindowCollectionBehavior::NSWindowCollectionBehaviorIgnoresCycle,
         );
 
-        // Create custom view
+        // Create custom view (layer-backed for GPU-accelerated compositing)
         let view: id = msg_send![view_class, alloc];
         let view: id = msg_send![view, initWithFrame:rect];
+        let _: () = msg_send![view, setWantsLayer:YES];
         window.setContentView_(view);
 
         // Create text field for typing mode
@@ -634,19 +694,27 @@ pub fn run(receiver: Receiver<InMessage>) {
                 state,
                 receiver: RefCell::new(receiver),
                 window,
+                view,
                 entry,
                 quit: Cell::new(false),
+                last_tick_time: Cell::new(0.0),
             });
         });
 
-        // Set up timer (16ms = ~60fps)
-        let _: id = msg_send![class!(NSTimer),
-            scheduledTimerWithTimeInterval:0.016_f64
-            target:view
-            selector:sel!(tick:)
-            userInfo:nil
-            repeats:YES
-        ];
+        // Set up CVDisplayLink for vsync-aligned rendering (falls back to NSTimer)
+        let mut display_link: *mut c_void = std::ptr::null_mut();
+        if CVDisplayLinkCreateWithActiveCGDisplays(&mut display_link) == 0 {
+            CVDisplayLinkSetOutputCallback(display_link, display_link_callback, std::ptr::null_mut());
+            CVDisplayLinkStart(display_link);
+        } else {
+            let _: id = msg_send![class!(NSTimer),
+                scheduledTimerWithTimeInterval:0.016_f64
+                target:view
+                selector:sel!(tick:)
+                userInfo:nil
+                repeats:YES
+            ];
+        }
 
         // Position and show (orderFront only — don't steal focus from other apps)
         reposition_window(window);
