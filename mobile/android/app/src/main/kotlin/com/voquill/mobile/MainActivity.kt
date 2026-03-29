@@ -49,6 +49,7 @@ class MainActivity : FlutterFragmentActivity() {
                         incrementCounter(VoquillIME.KEY_KEYBOARD_UPDATE_COUNTER)
                         result.success(null)
                     }
+                    "setKeyboardAiConfig" -> handleSetKeyboardAiConfig(call.arguments, result)
                     "isKeyboardEnabled" -> result.success(isVoquillKeyboardEnabled())
                     "openKeyboardSettings" -> {
                         val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).apply {
@@ -230,6 +231,36 @@ class MainActivity : FlutterFragmentActivity() {
             return
         }
         keyboardPrefs.edit().putString(VoquillIME.KEY_SELECTED_TONE_ID, toneId).apply()
+        result.success(null)
+    }
+
+    private fun handleSetKeyboardAiConfig(arguments: Any?, result: MethodChannel.Result) {
+        val args = arguments as? Map<*, *>
+        val transcriptionMode = args?.get("transcriptionMode") as? String
+        val postProcessingMode = args?.get("postProcessingMode") as? String
+        if (transcriptionMode.isNullOrBlank() || postProcessingMode.isNullOrBlank()) {
+            result.error("INVALID_ARGS", "Missing required arguments", null)
+            return
+        }
+
+        val editor = keyboardPrefs.edit()
+            .putString(VoquillIME.KEY_AI_TRANSCRIPTION_MODE, transcriptionMode)
+            .putString(VoquillIME.KEY_AI_POST_PROCESSING_MODE, postProcessingMode)
+
+        fun putOrRemove(key: String, argKey: String) {
+            val value = args?.get(argKey) as? String
+            if (value != null) editor.putString(key, value)
+            else editor.remove(key)
+        }
+
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_PROVIDER, "transcriptionProvider")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_API_KEY, "transcriptionApiKey")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_PROVIDER, "postProcessingProvider")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_API_KEY, "postProcessingApiKey")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_BASE_URL, "transcriptionBaseUrl")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_BASE_URL, "postProcessingBaseUrl")
+
+        editor.apply()
         result.success(null)
     }
 
