@@ -1,14 +1,11 @@
 import { expect, test, vi } from "vitest";
 import {
-  getGroqGentextRepo,
-  getWritingStyle,
-  postProcess,
+    getGroqGentextRepo,
+    getWritingStyle,
+    postProcess,
 } from "../helpers/eval.utils";
-import { hasGroqApiKey } from "../helpers/env.utils";
 
 vi.setConfig({ testTimeout: 30000 });
-
-const testWithGroqApiKey = hasGroqApiKey() ? test : test.skip;
 
 vi.mock("../../src/i18n/intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/i18n/intl")>();
@@ -21,7 +18,7 @@ vi.mock("../../src/i18n/intl", async (importOriginal) => {
   };
 });
 
-testWithGroqApiKey(
+test(
   "stability1",
   async () => {
     const repo = getGroqGentextRepo();

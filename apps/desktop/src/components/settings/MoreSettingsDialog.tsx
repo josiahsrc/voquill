@@ -12,7 +12,7 @@ import {
   TextField,
 } from "@mui/material";
 import type { DictationPillVisibility, StylingMode } from "@voquill/types";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import {
   setDictationLimitMinutes,
@@ -71,8 +71,10 @@ export const MoreSettingsDialog = () => {
   const [dictationLimitInput, setDictationLimitInput] = useState(
     String(dictationLimitMinutes),
   );
+  const lastCommittedDictationLimitMinutesRef = useRef(dictationLimitMinutes);
 
   useEffect(() => {
+    lastCommittedDictationLimitMinutesRef.current = dictationLimitMinutes;
     if (open) {
       setDictationLimitInput(String(dictationLimitMinutes));
     }
@@ -96,9 +98,12 @@ export const MoreSettingsDialog = () => {
 
     const normalized = normalizeDictationLimitMinutes(parsed);
     setDictationLimitInput(String(normalized));
-    if (normalized !== dictationLimitMinutes) {
-      void setDictationLimitMinutes(normalized);
+    if (normalized === lastCommittedDictationLimitMinutesRef.current) {
+      return;
     }
+
+    lastCommittedDictationLimitMinutesRef.current = normalized;
+    void setDictationLimitMinutes(normalized);
   };
 
   const handleClose = () => {
