@@ -107,9 +107,7 @@ export const MoreSettingsDialog = () => {
     void setRealtimeOutputEnabled(event.target.checked);
   };
 
-  const handleDictationLimitChange = (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleDictationLimitChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setDictationLimitInput(value);
 

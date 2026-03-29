@@ -427,7 +427,8 @@ export const DictationSideEffects = () => {
     clearRecordingTimers();
 
     const preferences = getMyUserPreferences(getAppState());
-    const dictationLimitMinutes = getEffectiveDictationLimitMinutes(preferences);
+    const dictationLimitMinutes =
+      getEffectiveDictationLimitMinutes(preferences);
     const { warningDurationMs, autoStopDurationMs } =
       getDictationRecordingTimerDurations(dictationLimitMinutes);
 
