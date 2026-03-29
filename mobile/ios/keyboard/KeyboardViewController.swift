@@ -1114,6 +1114,30 @@ class KeyboardViewController: UIInputViewController {
         lastDebugLog = msg
     }
 
+    private func buildTranscribeRepo(defaults: UserDefaults, config: RepoConfig?) -> BaseTranscribeAudioRepo? {
+        let mode = defaults.string(forKey: "voquill_ai_transcription_mode") ?? "cloud"
+        if mode == "api",
+           let providerStr = defaults.string(forKey: "voquill_ai_transcription_provider"),
+           let apiKey = defaults.string(forKey: "voquill_ai_transcription_api_key"),
+           let provider = ByokTranscriptionProvider(rawValue: providerStr) {
+            return ByokTranscribeAudioRepo(apiKey: apiKey, provider: provider)
+        }
+        guard let config = config else { return nil }
+        return CloudTranscribeAudioRepo(config: config)
+    }
+
+    private func buildGenerateTextRepo(defaults: UserDefaults, config: RepoConfig?) -> BaseGenerateTextRepo? {
+        let mode = defaults.string(forKey: "voquill_ai_post_processing_mode") ?? "cloud"
+        if mode == "api",
+           let providerStr = defaults.string(forKey: "voquill_ai_post_processing_provider"),
+           let apiKey = defaults.string(forKey: "voquill_ai_post_processing_api_key"),
+           let provider = ByokGenerationProvider(rawValue: providerStr) {
+            return ByokGenerateTextRepo(apiKey: apiKey, provider: provider)
+        }
+        guard let config = config else { return nil }
+        return CloudGenerateTextRepo(config: config)
+    }
+
     private func handleTranscription() {
         guard hasFullAccess else {
             DispatchQueue.main.async {
@@ -1128,31 +1152,34 @@ class KeyboardViewController: UIInputViewController {
         isProcessing = true
         applyPillVisual(.loading, animated: true)
 
-        fetchIdToken { [weak self] idToken in
+        guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId) else {
+            DispatchQueue.main.async {
+                self.textDocumentProxy.insertText("[Missing app group defaults]")
+                self.isProcessing = false
+                self.applyPillVisual(.idle, animated: true)
+            }
+            return
+        }
+
+        guard let audioUrl = DictationConstants.audioFileURL else {
+            DispatchQueue.main.async {
+                self.textDocumentProxy.insertText("[Missing audio file]")
+                self.isProcessing = false
+                self.applyPillVisual(.idle, animated: true)
+            }
+            return
+        }
+
+        let transcriptionMode = defaults.string(forKey: "voquill_ai_transcription_mode") ?? "cloud"
+        let postProcessingMode = defaults.string(forKey: "voquill_ai_post_processing_mode") ?? "cloud"
+        let needsCloudAuth = transcriptionMode == "cloud" || postProcessingMode == "cloud"
+
+        let continueWithConfig: (RepoConfig?) -> Void = { [weak self] config in
             guard let self = self else { return }
 
-            guard let idToken = idToken else {
+            guard let transcribeRepo = self.buildTranscribeRepo(defaults: defaults, config: config) else {
                 DispatchQueue.main.async {
-                    self.textDocumentProxy.insertText("[Auth failed: \(self.lastDebugLog)]")
-                    self.isProcessing = false
-                    self.applyPillVisual(.idle, animated: true)
-                }
-                return
-            }
-
-            guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId),
-                  let functionUrl = defaults.string(forKey: "voquill_function_url") else {
-                DispatchQueue.main.async {
-                    self.textDocumentProxy.insertText("[Missing function URL]")
-                    self.isProcessing = false
-                    self.applyPillVisual(.idle, animated: true)
-                }
-                return
-            }
-
-            guard let audioUrl = DictationConstants.audioFileURL else {
-                DispatchQueue.main.async {
-                    self.textDocumentProxy.insertText("[Missing audio file]")
+                    self.textDocumentProxy.insertText("[Transcription not configured]")
                     self.isProcessing = false
                     self.applyPillVisual(.idle, animated: true)
                 }
@@ -1170,9 +1197,8 @@ class KeyboardViewController: UIInputViewController {
             let whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
 
             Task {
-                let config = RepoConfig(functionUrl: functionUrl, idToken: idToken)
                 do {
-                    let rawTranscript = try await CloudTranscribeAudioRepo(config: config).transcribe(
+                    let rawTranscript = try await transcribeRepo.transcribe(
                         audioFileURL: audioUrl,
                         prompt: prompt,
                         language: whisperLanguage
@@ -1189,29 +1215,33 @@ class KeyboardViewController: UIInputViewController {
                     var finalText = rawTranscript
                     do {
                         if let tone = capturedToneId.flatMap({ capturedToneById[$0] }) {
-                            let raw = try await CloudGenerateTextRepo(config: config).generate(
-                                system: buildSystemPostProcessingPrompt(),
-                                prompt: buildPostProcessingPrompt(
-                                    transcript: rawTranscript,
-                                    tonePromptTemplate: tone.promptTemplate
-                                ),
-                                jsonResponse: postProcessingJsonResponse
-                            )
-                            if let data = raw.data(using: .utf8),
-                               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                               let processed = json["processedTranscription"] as? String {
-                                finalText = processed.trimmingCharacters(in: .whitespacesAndNewlines)
-                            } else {
-                                self.dbg("Could not parse processedTranscription from JSON, using raw")
-                                finalText = raw
+                            if let generateRepo = self.buildGenerateTextRepo(defaults: defaults, config: config) {
+                                let raw = try await generateRepo.generate(
+                                    system: buildSystemPostProcessingPrompt(),
+                                    prompt: buildPostProcessingPrompt(
+                                        transcript: rawTranscript,
+                                        tonePromptTemplate: tone.promptTemplate
+                                    ),
+                                    jsonResponse: postProcessingJsonResponse
+                                )
+                                if let data = raw.data(using: .utf8),
+                                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                                   let processed = json["processedTranscription"] as? String {
+                                    finalText = processed.trimmingCharacters(in: .whitespacesAndNewlines)
+                                } else {
+                                    self.dbg("Could not parse processedTranscription from JSON, using raw")
+                                    finalText = raw
+                                }
                             }
                         }
                     } catch {
                         self.dbg("Post-processing failed, using raw transcript: \(error.localizedDescription)")
                     }
 
-                    let tz = TimeZone.current.identifier
-                    UserRepo(config: config).incrementWordCount(text: finalText, timezone: tz)
+                    if let config = config {
+                        let tz = TimeZone.current.identifier
+                        UserRepo(config: config).incrementWordCount(text: finalText, timezone: tz)
+                    }
 
                     let trimmed = finalText.trimmingCharacters(in: .whitespacesAndNewlines) + " "
                     await MainActor.run {
@@ -1238,6 +1268,31 @@ class KeyboardViewController: UIInputViewController {
                     }
                 }
             }
+        }
+
+        if needsCloudAuth {
+            fetchIdToken { [weak self] idToken in
+                guard let self = self else { return }
+                guard let idToken = idToken else {
+                    DispatchQueue.main.async {
+                        self.textDocumentProxy.insertText("[Auth failed: \(self.lastDebugLog)]")
+                        self.isProcessing = false
+                        self.applyPillVisual(.idle, animated: true)
+                    }
+                    return
+                }
+                guard let functionUrl = defaults.string(forKey: "voquill_function_url") else {
+                    DispatchQueue.main.async {
+                        self.textDocumentProxy.insertText("[Missing function URL]")
+                        self.isProcessing = false
+                        self.applyPillVisual(.idle, animated: true)
+                    }
+                    return
+                }
+                continueWithConfig(RepoConfig(functionUrl: functionUrl, idToken: idToken))
+            }
+        } else {
+            continueWithConfig(nil)
         }
     }
 

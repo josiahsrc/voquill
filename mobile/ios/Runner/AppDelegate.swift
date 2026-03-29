@@ -180,6 +180,38 @@ import UIKit
         }
         result(nil)
 
+      case "setKeyboardAiConfig":
+        guard let args = call.arguments as? [String: String],
+              let transcriptionMode = args["transcriptionMode"],
+              let postProcessingMode = args["postProcessingMode"],
+              let defaults = UserDefaults(suiteName: AppDelegate.appGroupId) else {
+          result(FlutterError(code: "INVALID_ARGS", message: nil, details: nil))
+          return
+        }
+        defaults.set(transcriptionMode, forKey: "voquill_ai_transcription_mode")
+        defaults.set(postProcessingMode, forKey: "voquill_ai_post_processing_mode")
+        if let provider = args["transcriptionProvider"] {
+          defaults.set(provider, forKey: "voquill_ai_transcription_provider")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_transcription_provider")
+        }
+        if let apiKey = args["transcriptionApiKey"] {
+          defaults.set(apiKey, forKey: "voquill_ai_transcription_api_key")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_transcription_api_key")
+        }
+        if let provider = args["postProcessingProvider"] {
+          defaults.set(provider, forKey: "voquill_ai_post_processing_provider")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_post_processing_provider")
+        }
+        if let apiKey = args["postProcessingApiKey"] {
+          defaults.set(apiKey, forKey: "voquill_ai_post_processing_api_key")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_post_processing_api_key")
+        }
+        result(nil)
+
       case "startDictation":
         DictationService.shared.startDictation()
         result(nil)
