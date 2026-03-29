@@ -1,4 +1,5 @@
 import { describe, test, vi } from "vitest";
+import { hasGroqApiKey } from "../helpers/env.utils";
 import {
   buildPostProcessingPrompt,
   buildSystemPostProcessingTonePrompt,
@@ -16,6 +17,8 @@ import {
 } from "../helpers/eval.utils";
 
 vi.setConfig({ testTimeout: 30000 });
+
+const describeWithGroqApiKey = hasGroqApiKey() ? describe : describe.skip;
 
 vi.mock("../../src/i18n/intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/i18n/intl")>();
@@ -97,7 +100,7 @@ const runPostProcessingEval = async ({
   });
 };
 
-describe("post-processing evals", { retry: 0 }, () => {
+describeWithGroqApiKey("post-processing evals", { retry: 0 }, () => {
   describe("default style", () => {
     test("basic transcription1", async () => {
       await runPostProcessingEval({

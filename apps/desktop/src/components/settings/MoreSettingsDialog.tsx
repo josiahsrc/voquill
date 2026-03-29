@@ -24,7 +24,11 @@ import {
   setStylingMode,
 } from "../../actions/user.actions";
 import { produceAppState, useAppStore } from "../../store";
-import { getEffectiveDictationLimitMinutes } from "../../utils/dictation-limit.utils";
+import {
+  getEffectiveDictationLimitMinutes,
+  MAX_DICTATION_LIMIT_MINUTES,
+  normalizeDictationLimitMinutes,
+} from "../../utils/dictation-limit.utils";
 import { getAllowChangeStylingMode } from "../../utils/enterprise.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
 import {
@@ -135,9 +139,10 @@ export const MoreSettingsDialog = () => {
       return;
     }
 
-    setDictationLimitInput(String(parsed));
-    if (parsed !== dictationLimitMinutes) {
-      void setDictationLimitMinutes(parsed);
+    const normalized = normalizeDictationLimitMinutes(parsed);
+    setDictationLimitInput(String(normalized));
+    if (normalized !== dictationLimitMinutes) {
+      void setDictationLimitMinutes(normalized);
     }
   };
 
@@ -258,7 +263,12 @@ export const MoreSettingsDialog = () => {
                   onChange={handleDictationLimitChange}
                   onBlur={handleDictationLimitBlur}
                   sx={{ width: 104 }}
-                  inputProps={{ min: 0, step: 1, inputMode: "numeric" }}
+                  inputProps={{
+                    min: 0,
+                    max: MAX_DICTATION_LIMIT_MINUTES,
+                    step: 1,
+                    inputMode: "numeric",
+                  }}
                 />
               }
             />

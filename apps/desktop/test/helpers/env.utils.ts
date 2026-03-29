@@ -6,6 +6,10 @@ function getEnvOrThrow(key: string): string {
   return value;
 }
 
+export function hasGroqApiKey(): boolean {
+  return Boolean(process.env.GROQ_API_KEY);
+}
+
 export function getGroqApiKey(): string {
   return getEnvOrThrow("GROQ_API_KEY");
 }

@@ -3,6 +3,7 @@ import {
   DEFAULT_DICTATION_LIMIT_MINUTES,
   getDictationRecordingTimerDurations,
   getEffectiveDictationLimitMinutes,
+  MAX_DICTATION_LIMIT_MINUTES,
   normalizeDictationLimitMinutes,
 } from "./dictation-limit.utils";
 
@@ -19,9 +20,12 @@ describe("normalizeDictationLimitMinutes", () => {
     );
   });
 
-  it("clamps negative values to zero and rounds decimals down", () => {
+  it("clamps negative values to zero, rounds decimals down, and caps excessive values", () => {
     expect(normalizeDictationLimitMinutes(-2)).toBe(0);
     expect(normalizeDictationLimitMinutes(3.8)).toBe(3);
+    expect(
+      normalizeDictationLimitMinutes(MAX_DICTATION_LIMIT_MINUTES + 100),
+    ).toBe(MAX_DICTATION_LIMIT_MINUTES);
   });
 });
 
@@ -58,6 +62,15 @@ describe("getDictationRecordingTimerDurations", () => {
     expect(getDictationRecordingTimerDurations(5)).toEqual({
       warningDurationMs: 240_000,
       autoStopDurationMs: 300_000,
+    });
+  });
+
+  it("caps timer durations at the maximum supported timeout", () => {
+    expect(
+      getDictationRecordingTimerDurations(MAX_DICTATION_LIMIT_MINUTES + 100),
+    ).toEqual({
+      warningDurationMs: (MAX_DICTATION_LIMIT_MINUTES - 1) * 60_000,
+      autoStopDurationMs: MAX_DICTATION_LIMIT_MINUTES * 60_000,
     });
   });
 });

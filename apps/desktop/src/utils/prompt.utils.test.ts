@@ -22,7 +22,10 @@ describe("buildSystemPostProcessingTonePrompt", () => {
     const result = buildSystemPostProcessingTonePrompt(
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
-    expect(result).toContain("transcript rewriting assistant");
+    expect(result).toContain(
+      "You are a text editor that reformats transcripts",
+    );
+    expect(result).toContain("processedTranscription");
   });
 
   it("returns custom system prompt for template config", () => {
@@ -58,7 +61,10 @@ describe("buildSystemPostProcessingTonePrompt", () => {
         promptTemplate: "Process: <transcript/>",
       }),
     );
-    expect(result).toContain("transcript rewriting assistant");
+    expect(result).toContain(
+      "You are a text editor that reformats transcripts",
+    );
+    expect(result).toContain("processedTranscription");
   });
 });
 
@@ -91,12 +97,16 @@ describe("buildPostProcessingPrompt", () => {
     const result = buildPostProcessingPrompt(
       makeInput({ kind: "style", stylePrompt: "Be formal" }),
     );
-    expect(result).toContain(
-      "Your task is to post-process an audio transcription",
-    );
+    expect(result).toContain("Your task is to REWRITE an audio transcription");
     expect(result).toContain("Be formal");
     expect(result).toContain("Hello world");
     expect(result).toContain("Alice");
     expect(result).toContain("English");
+    expect(result).toContain(
+      "Return ONLY the cleaned-up version of what the speaker said.",
+    );
+    expect(result).toContain(
+      "**CRITICAL** Your response MUST be in JSON format.",
+    );
   });
 });

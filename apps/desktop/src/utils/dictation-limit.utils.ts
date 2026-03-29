@@ -2,6 +2,8 @@ import type { UserPreferences } from "@repo/types";
 import { minutesToMilliseconds } from "./time.utils";
 
 export const DEFAULT_DICTATION_LIMIT_MINUTES = 5;
+const MAX_TIMEOUT_MS = 2_147_483_647;
+export const MAX_DICTATION_LIMIT_MINUTES = Math.floor(MAX_TIMEOUT_MS / 60_000);
 
 export const normalizeDictationLimitMinutes = (
   value: number | null | undefined,
@@ -10,7 +12,7 @@ export const normalizeDictationLimitMinutes = (
     return DEFAULT_DICTATION_LIMIT_MINUTES;
   }
 
-  return Math.max(0, Math.floor(value));
+  return Math.min(MAX_DICTATION_LIMIT_MINUTES, Math.max(0, Math.floor(value)));
 };
 
 export const getEffectiveDictationLimitMinutes = (
