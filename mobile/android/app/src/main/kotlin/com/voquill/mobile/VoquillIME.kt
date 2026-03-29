@@ -575,6 +575,7 @@ class VoquillIME : InputMethodService() {
         loadLanguageConfig(prefs)
         loadToneConfig(prefs)
         renderToneChips()
+        updateStatusBanner()
     }
 
     private fun loadLanguageConfig(prefs: android.content.SharedPreferences) {
@@ -773,6 +774,14 @@ class VoquillIME : InputMethodService() {
     }
 
     private fun updateStatusBanner() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val transcriptionMode = prefs.getString(KEY_AI_TRANSCRIPTION_MODE, "cloud") ?: "cloud"
+        val postProcessingMode = prefs.getString(KEY_AI_POST_PROCESSING_MODE, "cloud") ?: "cloud"
+        if (transcriptionMode == "api" && postProcessingMode == "api") {
+            setStatusBannerVisible(false)
+            return
+        }
+
         val member = memberInfo ?: run {
             setStatusBannerVisible(false)
             return

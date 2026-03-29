@@ -817,6 +817,7 @@ class KeyboardViewController: UIInputViewController {
             loadLanguage()
             loadDictionary()
             syncMixpanelUser()
+            updateStatusBanner()
         }
 
         if dictationPhase != .idle {
@@ -983,6 +984,15 @@ class KeyboardViewController: UIInputViewController {
     }
 
     private func updateStatusBanner() {
+        if let defaults = UserDefaults(suiteName: DictationConstants.appGroupId) {
+            let transcriptionMode = defaults.string(forKey: "voquill_ai_transcription_mode") ?? "cloud"
+            let postProcessingMode = defaults.string(forKey: "voquill_ai_post_processing_mode") ?? "cloud"
+            if transcriptionMode == "api" && postProcessingMode == "api" {
+                setStatusBannerVisible(false)
+                return
+            }
+        }
+
         guard let member = memberInfo else {
             setStatusBannerVisible(false)
             return
