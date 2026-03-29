@@ -138,6 +138,7 @@ pub fn run(receiver: Receiver<InMessage>) {
         should_stick: Cell::new(true),
         click_regions: RefCell::new(Vec::new()),
         entry_text: RefCell::new(String::new()),
+        pill_visible: Cell::new(false),
     });
 
     window.add_events(
@@ -379,11 +380,7 @@ pub fn run(receiver: Receiver<InMessage>) {
             Visibility::WhileActive => is_active || is_assistant,
             Visibility::Persistent => true,
         };
-        if should_show {
-            win_tick.show();
-        } else {
-            win_tick.hide();
-        }
+        state_tick.pill_visible.set(should_show);
 
         if let Some(gdk_win) = win_tick.window() {
             input::update_input_region(&gdk_win, &state_tick);

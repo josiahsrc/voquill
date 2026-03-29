@@ -306,6 +306,18 @@ pub async fn fetch_user_preferences(
     Ok(preferences)
 }
 
+pub async fn fetch_pill_visibility(pool: SqlitePool) -> Option<String> {
+    let row = sqlx::query(
+        "SELECT dictation_pill_visibility FROM user_preferences LIMIT 1",
+    )
+    .fetch_optional(&pool)
+    .await
+    .ok()
+    .flatten()?;
+
+    row.try_get::<String, _>("dictation_pill_visibility").ok()
+}
+
 pub async fn clear_missing_active_tones(pool: SqlitePool) -> Result<(), sqlx::Error> {
     sqlx::query(
         "UPDATE user_preferences

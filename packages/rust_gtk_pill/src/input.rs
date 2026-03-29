@@ -163,6 +163,13 @@ fn union_cancel_button(
 }
 
 pub(crate) fn update_input_region(gdk_window: &gdk::Window, state: &PillState) {
+    if !state.pill_visible.get() {
+        let rect = cairo::RectangleInt::new(0, 0, 0, 0);
+        let region = cairo::Region::create_rectangle(&rect);
+        gdk_window.input_shape_combine_region(&region, 0, 0);
+        return;
+    }
+
     let hovered = state.hovered.get();
     let is_active = state.phase.get() != Phase::Idle;
     let is_assistant = state.assistant_active.get();

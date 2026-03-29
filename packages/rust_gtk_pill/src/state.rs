@@ -115,6 +115,9 @@ pub(crate) struct PillState {
 
     // Entry text (for typing mode)
     pub(crate) entry_text: RefCell<String>,
+
+    // Effective visibility (avoids Wayland surface hide/show issues)
+    pub(crate) pill_visible: Cell<bool>,
 }
 
 impl PillState {

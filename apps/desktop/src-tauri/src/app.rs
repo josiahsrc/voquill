@@ -144,6 +144,20 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
                 let use_native_overlays = crate::overlay::should_use_native_overlays();
                 if use_native_overlays {
                     crate::overlay::try_create_native_overlays(app_handle);
+
+                    let pool = app_handle
+                        .try_state::<crate::state::OptionKeyDatabase>()
+                        .map(|db| db.pool());
+                    if let Some(pool) = pool {
+                        let app_clone = app_handle.clone();
+                        tauri::async_runtime::spawn(async move {
+                            if let Some(vis) =
+                                crate::db::preferences_queries::fetch_pill_visibility(pool).await
+                            {
+                                crate::platform::overlay::notify_visibility(&app_clone, &vis);
+                            }
+                        });
+                    }
                 } else {
                     crate::overlay::ensure_pill_overlay_window(app_handle)
                         .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;

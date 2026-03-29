@@ -11,14 +11,19 @@ pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
     cr.set_operator(cairo::Operator::Source);
     cr.set_source_rgba(0.0, 0.0, 0.0, 0.0);
     let _ = cr.paint();
+
+    state.click_regions.borrow_mut().clear();
+
+    if !state.pill_visible.get() {
+        return;
+    }
+
     cr.set_operator(cairo::Operator::Over);
 
     let s = state.ui_scale;
     if s != 1.0 {
         cr.scale(s, s);
     }
-
-    state.click_regions.borrow_mut().clear();
 
     let ww = state.draw_width.get();
     let wh = state.draw_height.get();
