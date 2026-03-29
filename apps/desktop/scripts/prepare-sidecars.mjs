@@ -274,10 +274,10 @@ function resolveGpuBuildState(target) {
 }
 
 // --- Native pill overlays (platform-specific) ---
+// macOS pill is linked directly as a Rust library dependency (no sidecar needed).
+// Linux GTK pill is still built as a separate binary.
 if (isLinuxTarget(targetTriple)) {
   buildNativePill("rust_gtk_pill", "voquill-gtk-pill");
-} else if (isAppleTarget(targetTriple)) {
-  buildNativePill("rust_macos_pill", "voquill-macos-pill");
 }
 
 function buildNativePill(packageDir, binaryName) {

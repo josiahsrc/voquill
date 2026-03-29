@@ -49,6 +49,7 @@ struct AppContext {
     entry: id,
     quit: Cell<bool>,
     last_tick_time: Cell<f64>,
+    embedded: bool,
 }
 
 thread_local! {
@@ -319,8 +320,12 @@ fn perform_tick() {
 
         if ctx.quit.get() {
             unsafe {
-                let app: id = msg_send![class!(NSApplication), sharedApplication];
-                let _: () = msg_send![app, terminate:nil];
+                if ctx.embedded {
+                    let _: () = msg_send![ctx.window, orderOut:nil];
+                } else {
+                    let app: id = msg_send![class!(NSApplication), sharedApplication];
+                    let _: () = msg_send![app, terminate:nil];
+                }
             }
             return;
         }
@@ -561,166 +566,185 @@ fn reposition_window(window: id) {
     }
 }
 
-// ── App entry point ───────────────────────────────────────────────
+// ── Shared setup (used by both standalone and embedded modes) ─────
 
+unsafe fn setup(receiver: Receiver<InMessage>, embedded: bool) {
+    let view_class = register_pill_view_class();
+    let window_class = register_pill_window_class();
+
+    let ui_scale = 1.0; // macOS handles Retina scaling automatically
+
+    let window_w = WINDOW_W_TYPING as f64;
+    let window_h = WINDOW_H_TYPING as f64;
+
+    // Create window (NSPanel with non-activating mask so clicks don't steal focus)
+    let rect = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(window_w, window_h));
+    let non_activating_mask: u64 = 1 << 7; // NSWindowStyleMaskNonactivatingPanel
+    let window: id = msg_send![window_class, alloc];
+    let window: id = msg_send![window,
+        initWithContentRect:rect
+        styleMask:non_activating_mask
+        backing:NSBackingStoreBuffered
+        defer:NO
+    ];
+
+    let _: () = msg_send![window, setBecomesKeyOnlyIfNeeded:YES];
+    window.setLevel_(1000); // NSScreenSaverWindowLevel
+    window.setOpaque_(NO);
+    let clear_color: id = msg_send![class!(NSColor), clearColor];
+    window.setBackgroundColor_(clear_color);
+    window.setHasShadow_(NO);
+    window.setCollectionBehavior_(
+        NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces
+            | NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary
+            | NSWindowCollectionBehavior::NSWindowCollectionBehaviorStationary
+            | NSWindowCollectionBehavior::NSWindowCollectionBehaviorIgnoresCycle,
+    );
+
+    // Create custom view (layer-backed for GPU-accelerated compositing)
+    let view: id = msg_send![view_class, alloc];
+    let view: id = msg_send![view, initWithFrame:rect];
+    let _: () = msg_send![view, setWantsLayer:YES];
+    window.setContentView_(view);
+
+    // Create text field for typing mode
+    let panel_w = PANEL_EXPANDED_WIDTH;
+    let panel_x = (window_w - panel_w) / 2.0;
+    let entry_x = panel_x + PANEL_CONTENT_SIDE_INSET;
+    let entry_w = panel_w - PANEL_CONTENT_SIDE_INSET * 2.0 - 36.0;
+    let entry_top_pad = 12.0;
+    let entry_y = window_h - PANEL_BOTTOM_MARGIN - PANEL_INPUT_HEIGHT + entry_top_pad;
+    let entry_h = PANEL_INPUT_HEIGHT - entry_top_pad;
+    let entry_frame = NSRect::new(
+        NSPoint::new(entry_x, entry_y),
+        NSSize::new(entry_w, entry_h),
+    );
+    let entry: id = msg_send![class!(NSTextField), alloc];
+    let entry: id = msg_send![entry, initWithFrame:entry_frame];
+    let _: () = msg_send![entry, setBordered:NO];
+    let _: () = msg_send![entry, setDrawsBackground:NO];
+    let _: () = msg_send![entry, setFocusRingType:1u64]; // NSFocusRingTypeNone
+
+    let white: id = msg_send![class!(NSColor),
+        colorWithSRGBRed:1.0_f64
+        green:1.0_f64
+        blue:1.0_f64
+        alpha:0.92_f64
+    ];
+    let _: () = msg_send![entry, setTextColor:white];
+
+    let font: id = msg_send![class!(NSFont), systemFontOfSize:14.0_f64];
+    let _: () = msg_send![entry, setFont:font];
+
+    let placeholder = NSString::alloc(nil).init_str("Type a message...");
+    let _: () = msg_send![entry, setPlaceholderString:placeholder];
+
+    let _: () = msg_send![entry, setTarget:view];
+    let _: () = msg_send![entry, setAction:sel!(textFieldAction:)];
+    let _: () = msg_send![entry, setHidden:YES];
+    let _: () = msg_send![view, addSubview:entry];
+
+    // Initialize state
+    let state = Rc::new(PillState {
+        phase: Cell::new(Phase::Idle),
+        visibility: Cell::new(Visibility::WhileActive),
+        expand_t: Cell::new(0.0),
+        expand_velocity: Cell::new(0.0),
+        hovered: Cell::new(false),
+        wave_phase: Cell::new(0.0),
+        current_level: Cell::new(0.0),
+        target_level: Cell::new(0.0),
+        loading_offset: Cell::new(0.0),
+        pending_levels: RefCell::new(Vec::new()),
+        style_count: Cell::new(0),
+        style_name: RefCell::new(String::new()),
+        tooltip_t: Cell::new(0.0),
+        tooltip_velocity: Cell::new(0.0),
+        tooltip_width: Cell::new(0.0),
+        ui_scale,
+        window_mode: Cell::new(WindowMode::Dictation),
+        draw_width: Cell::new(DICTATION_WINDOW_WIDTH as f64),
+        draw_height: Cell::new(DICTATION_WINDOW_HEIGHT as f64),
+        draw_w_velocity: Cell::new(0.0),
+        draw_h_velocity: Cell::new(0.0),
+        assistant_active: Cell::new(false),
+        assistant_input_mode: RefCell::new("voice".to_string()),
+        assistant_compact: Cell::new(true),
+        assistant_conversation_id: RefCell::new(None),
+        assistant_user_prompt: RefCell::new(None),
+        assistant_messages: RefCell::new(Vec::new()),
+        assistant_streaming: RefCell::new(None),
+        assistant_permissions: RefCell::new(Vec::new()),
+        panel_open_t: Cell::new(0.0),
+        panel_open_velocity: Cell::new(0.0),
+        kb_button_t: Cell::new(0.0),
+        kb_button_velocity: Cell::new(0.0),
+        shimmer_phase: Cell::new(0.0),
+        scroll_offset: Cell::new(0.0),
+        content_height: Cell::new(0.0),
+        viewport_height: Cell::new(0.0),
+        should_stick: Cell::new(true),
+        click_regions: RefCell::new(Vec::new()),
+        entry_text: RefCell::new(String::new()),
+    });
+
+    // Store in thread-local
+    APP_CTX.with(|cell| {
+        *cell.borrow_mut() = Some(AppContext {
+            state,
+            receiver: RefCell::new(receiver),
+            window,
+            view,
+            entry,
+            quit: Cell::new(false),
+            last_tick_time: Cell::new(0.0),
+            embedded,
+        });
+    });
+
+    // Set up CVDisplayLink for vsync-aligned rendering (falls back to NSTimer)
+    let mut display_link: *mut c_void = std::ptr::null_mut();
+    if CVDisplayLinkCreateWithActiveCGDisplays(&mut display_link) == 0 {
+        CVDisplayLinkSetOutputCallback(display_link, display_link_callback, std::ptr::null_mut());
+        CVDisplayLinkStart(display_link);
+    } else {
+        let _: id = msg_send![class!(NSTimer),
+            scheduledTimerWithTimeInterval:0.016_f64
+            target:view
+            selector:sel!(tick:)
+            userInfo:nil
+            repeats:YES
+        ];
+    }
+
+    // Position and show (orderFront only — don't steal focus from other apps)
+    reposition_window(window);
+    let _: () = msg_send![window, orderFront:nil];
+
+    ipc::send(&OutMessage::Ready);
+}
+
+// ── Standalone binary entry point ────────────────────────────────
+
+#[allow(dead_code)]
 pub fn run(receiver: Receiver<InMessage>) {
     unsafe {
         let _pool = NSAutoreleasePool::new(nil);
         let app = NSApp();
         app.setActivationPolicy_(NSApplicationActivationPolicyAccessory);
 
-        let view_class = register_pill_view_class();
-        let window_class = register_pill_window_class();
+        setup(receiver, false);
 
-        let ui_scale = 1.0; // macOS handles Retina scaling automatically
-
-        let window_w = WINDOW_W_TYPING as f64;
-        let window_h = WINDOW_H_TYPING as f64;
-
-        // Create window (NSPanel with non-activating mask so clicks don't steal focus)
-        let rect = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(window_w, window_h));
-        let non_activating_mask: u64 = 1 << 7; // NSWindowStyleMaskNonactivatingPanel
-        let window: id = msg_send![window_class, alloc];
-        let window: id = msg_send![window,
-            initWithContentRect:rect
-            styleMask:non_activating_mask
-            backing:NSBackingStoreBuffered
-            defer:NO
-        ];
-
-        let _: () = msg_send![window, setBecomesKeyOnlyIfNeeded:YES];
-        window.setLevel_(1000); // NSScreenSaverWindowLevel
-        window.setOpaque_(NO);
-        let clear_color: id = msg_send![class!(NSColor), clearColor];
-        window.setBackgroundColor_(clear_color);
-        window.setHasShadow_(NO);
-        window.setCollectionBehavior_(
-            NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces
-                | NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary
-                | NSWindowCollectionBehavior::NSWindowCollectionBehaviorStationary
-                | NSWindowCollectionBehavior::NSWindowCollectionBehaviorIgnoresCycle,
-        );
-
-        // Create custom view (layer-backed for GPU-accelerated compositing)
-        let view: id = msg_send![view_class, alloc];
-        let view: id = msg_send![view, initWithFrame:rect];
-        let _: () = msg_send![view, setWantsLayer:YES];
-        window.setContentView_(view);
-
-        // Create text field for typing mode
-        let panel_w = PANEL_EXPANDED_WIDTH;
-        let panel_x = (window_w - panel_w) / 2.0;
-        let entry_x = panel_x + PANEL_CONTENT_SIDE_INSET;
-        let entry_w = panel_w - PANEL_CONTENT_SIDE_INSET * 2.0 - 36.0;
-        let entry_top_pad = 12.0;
-        let entry_y = window_h - PANEL_BOTTOM_MARGIN - PANEL_INPUT_HEIGHT + entry_top_pad;
-        let entry_h = PANEL_INPUT_HEIGHT - entry_top_pad;
-        let entry_frame = NSRect::new(
-            NSPoint::new(entry_x, entry_y),
-            NSSize::new(entry_w, entry_h),
-        );
-        let entry: id = msg_send![class!(NSTextField), alloc];
-        let entry: id = msg_send![entry, initWithFrame:entry_frame];
-        let _: () = msg_send![entry, setBordered:NO];
-        let _: () = msg_send![entry, setDrawsBackground:NO];
-        let _: () = msg_send![entry, setFocusRingType:1u64]; // NSFocusRingTypeNone
-
-        let white: id = msg_send![class!(NSColor),
-            colorWithSRGBRed:1.0_f64
-            green:1.0_f64
-            blue:1.0_f64
-            alpha:0.92_f64
-        ];
-        let _: () = msg_send![entry, setTextColor:white];
-
-        let font: id = msg_send![class!(NSFont), systemFontOfSize:14.0_f64];
-        let _: () = msg_send![entry, setFont:font];
-
-        let placeholder = NSString::alloc(nil).init_str("Type a message...");
-        let _: () = msg_send![entry, setPlaceholderString:placeholder];
-
-        let _: () = msg_send![entry, setTarget:view];
-        let _: () = msg_send![entry, setAction:sel!(textFieldAction:)];
-        let _: () = msg_send![entry, setHidden:YES];
-        let _: () = msg_send![view, addSubview:entry];
-
-        // Initialize state
-        let state = Rc::new(PillState {
-            phase: Cell::new(Phase::Idle),
-            visibility: Cell::new(Visibility::WhileActive),
-            expand_t: Cell::new(0.0),
-            expand_velocity: Cell::new(0.0),
-            hovered: Cell::new(false),
-            wave_phase: Cell::new(0.0),
-            current_level: Cell::new(0.0),
-            target_level: Cell::new(0.0),
-            loading_offset: Cell::new(0.0),
-            pending_levels: RefCell::new(Vec::new()),
-            style_count: Cell::new(0),
-            style_name: RefCell::new(String::new()),
-            tooltip_t: Cell::new(0.0),
-            tooltip_velocity: Cell::new(0.0),
-            tooltip_width: Cell::new(0.0),
-            ui_scale,
-            window_mode: Cell::new(WindowMode::Dictation),
-            draw_width: Cell::new(DICTATION_WINDOW_WIDTH as f64),
-            draw_height: Cell::new(DICTATION_WINDOW_HEIGHT as f64),
-            draw_w_velocity: Cell::new(0.0),
-            draw_h_velocity: Cell::new(0.0),
-            assistant_active: Cell::new(false),
-            assistant_input_mode: RefCell::new("voice".to_string()),
-            assistant_compact: Cell::new(true),
-            assistant_conversation_id: RefCell::new(None),
-            assistant_user_prompt: RefCell::new(None),
-            assistant_messages: RefCell::new(Vec::new()),
-            assistant_streaming: RefCell::new(None),
-            assistant_permissions: RefCell::new(Vec::new()),
-            panel_open_t: Cell::new(0.0),
-            panel_open_velocity: Cell::new(0.0),
-            kb_button_t: Cell::new(0.0),
-            kb_button_velocity: Cell::new(0.0),
-            shimmer_phase: Cell::new(0.0),
-            scroll_offset: Cell::new(0.0),
-            content_height: Cell::new(0.0),
-            viewport_height: Cell::new(0.0),
-            should_stick: Cell::new(true),
-            click_regions: RefCell::new(Vec::new()),
-            entry_text: RefCell::new(String::new()),
-        });
-
-        // Store in thread-local
-        APP_CTX.with(|cell| {
-            *cell.borrow_mut() = Some(AppContext {
-                state,
-                receiver: RefCell::new(receiver),
-                window,
-                view,
-                entry,
-                quit: Cell::new(false),
-                last_tick_time: Cell::new(0.0),
-            });
-        });
-
-        // Set up CVDisplayLink for vsync-aligned rendering (falls back to NSTimer)
-        let mut display_link: *mut c_void = std::ptr::null_mut();
-        if CVDisplayLinkCreateWithActiveCGDisplays(&mut display_link) == 0 {
-            CVDisplayLinkSetOutputCallback(display_link, display_link_callback, std::ptr::null_mut());
-            CVDisplayLinkStart(display_link);
-        } else {
-            let _: id = msg_send![class!(NSTimer),
-                scheduledTimerWithTimeInterval:0.016_f64
-                target:view
-                selector:sel!(tick:)
-                userInfo:nil
-                repeats:YES
-            ];
-        }
-
-        // Position and show (orderFront only — don't steal focus from other apps)
-        reposition_window(window);
-        let _: () = msg_send![window, orderFront:nil];
-
-        ipc::send(&OutMessage::Ready);
         app.run();
+    }
+}
+
+// ── Embedded library entry point ─────────────────────────────────
+// Hooks into the host app's existing NSApplication run loop.
+
+#[allow(dead_code)]
+pub(crate) fn run_embedded(receiver: Receiver<InMessage>) {
+    unsafe {
+        setup(receiver, true);
     }
 }

@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "Voquill macOS pill overlay"
 
+[lib]
+name = "rust_macos_pill"
+path = "src/lib.rs"
+
 [[bin]]
 name = "voquill-macos-pill"
 path = "src/main.rs"
