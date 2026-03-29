@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 const _tau = 2 * pi;
+const _refDt = 1.0 / 60.0;
 const _levelSmoothing = 0.18;
 const _targetDecayPerFrame = 0.985;
+const _inactiveDecayPerFrame = 0.92;
 const _waveBasePhaseStep = 0.11;
 const _wavePhaseGain = 0.32;
 const _minAmplitude = 0.03;
@@ -38,6 +40,7 @@ class AudioWaveform extends StatefulWidget {
 class _AudioWaveformState extends State<AudioWaveform>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
+  Duration _lastElapsed = Duration.zero;
   double _phase = 0;
   double _currentLevel = 0;
   double _targetLevel = 0;
@@ -55,21 +58,28 @@ class _AudioWaveformState extends State<AudioWaveform>
   }
 
   void _onTick(Duration elapsed) {
+    final dt = (elapsed - _lastElapsed).inMicroseconds / 1e6;
+    _lastElapsed = elapsed;
+    final steps = dt / _refDt;
+
     if (widget.active) {
       _targetLevel = min(1, _targetLevel * 0.25 + widget.audioLevel * 0.75);
     } else {
       _targetLevel = 0;
-      _currentLevel *= 0.92;
+      _currentLevel *= pow(_inactiveDecayPerFrame, steps).toDouble();
     }
 
-    _currentLevel += (_targetLevel - _currentLevel) * _levelSmoothing;
-    _targetLevel *= _targetDecayPerFrame;
+    _currentLevel +=
+        (_targetLevel - _currentLevel) * (1 - pow(1 - _levelSmoothing, steps));
+    _targetLevel *= pow(_targetDecayPerFrame, steps).toDouble();
 
     if (_currentLevel < 0.001) _currentLevel = 0;
     if (_targetLevel < 0.001) _targetLevel = 0;
 
     final level = max(0.0, _currentLevel);
-    _phase = (_phase + _waveBasePhaseStep + _wavePhaseGain * level) % _tau;
+    _phase = (_phase +
+            (_waveBasePhaseStep + _wavePhaseGain * level) * steps) %
+        _tau;
 
     setState(() {});
   }
