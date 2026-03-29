@@ -57,23 +57,40 @@ class CloudGenerateTextRepo(
 
 // MARK: - BYOK Implementation
 
-enum class ByokGenerationProvider(val apiUrl: String, val defaultModel: String) {
-    OPENAI("https://api.openai.com/v1/chat/completions", "gpt-4o-mini"),
-    GROQ("https://api.groq.com/openai/v1/chat/completions", "llama-3.3-70b-versatile");
-
-    companion object {
-        fun fromString(value: String): ByokGenerationProvider? = when (value) {
-            "openai" -> OPENAI
-            "groq" -> GROQ
-            else -> null
-        }
-    }
-}
-
 class ByokGenerateTextRepo(
     private val apiKey: String,
-    private val provider: ByokGenerationProvider,
+    provider: String,
+    baseUrl: String?,
 ) : BaseGenerateTextRepo() {
+
+    private val apiUrl: String
+    private val model: String
+
+    init {
+        when (provider) {
+            "groq" -> {
+                apiUrl = "https://api.groq.com/openai/v1/chat/completions"
+                model = "llama-3.3-70b-versatile"
+            }
+            "deepseek" -> {
+                apiUrl = "https://api.deepseek.com/chat/completions"
+                model = "deepseek-chat"
+            }
+            "openRouter" -> {
+                apiUrl = "https://openrouter.ai/api/v1/chat/completions"
+                model = "openai/gpt-4o-mini"
+            }
+            "openaiCompatible" -> {
+                val base = (baseUrl ?: "").trimEnd('/')
+                apiUrl = "$base/chat/completions"
+                model = "gpt-4o-mini"
+            }
+            else -> {
+                apiUrl = "https://api.openai.com/v1/chat/completions"
+                model = "gpt-4o-mini"
+            }
+        }
+    }
 
     override fun generateTextSync(system: String?, prompt: String, jsonResponse: Boolean): String? {
         return try {
@@ -90,7 +107,7 @@ class ByokGenerateTextRepo(
             })
 
             val payload = JSONObject().apply {
-                put("model", provider.defaultModel)
+                put("model", model)
                 put("messages", messages)
                 if (jsonResponse) {
                     put("response_format", JSONObject().apply {
@@ -100,13 +117,13 @@ class ByokGenerateTextRepo(
             }
 
             val response = postJsonSync(
-                urlString = provider.apiUrl,
+                urlString = apiUrl,
                 payload = payload,
                 authorization = "Bearer $apiKey",
             ) ?: return null
 
             if (response.status !in 200..299) {
-                Log.w(TAG, "BYOK generate ($provider): HTTP ${response.status} ${response.body.take(200)}")
+                Log.w(TAG, "BYOK generate: HTTP ${response.status} ${response.body.take(200)}")
                 return null
             }
 

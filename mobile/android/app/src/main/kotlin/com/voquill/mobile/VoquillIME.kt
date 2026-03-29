@@ -897,9 +897,9 @@ class VoquillIME : InputMethodService() {
         val mode = prefs.getString(KEY_AI_TRANSCRIPTION_MODE, "cloud") ?: "cloud"
         if (mode == "api") {
             val apiKey = prefs.getString(KEY_AI_TRANSCRIPTION_API_KEY, null) ?: return null
-            val providerStr = prefs.getString(KEY_AI_TRANSCRIPTION_PROVIDER, "openai") ?: "openai"
-            val provider = ByokTranscriptionProvider.fromString(providerStr) ?: return null
-            return ByokTranscribeAudioRepo(apiKey, provider)
+            val provider = prefs.getString(KEY_AI_TRANSCRIPTION_PROVIDER, "openai") ?: "openai"
+            val baseUrl = prefs.getString(KEY_AI_TRANSCRIPTION_BASE_URL, null)
+            return ByokTranscribeAudioRepo(apiKey, provider, baseUrl)
         }
         config ?: return null
         return CloudTranscribeAudioRepo(config)
@@ -909,9 +909,9 @@ class VoquillIME : InputMethodService() {
         val mode = prefs.getString(KEY_AI_POST_PROCESSING_MODE, "cloud") ?: "cloud"
         if (mode == "api") {
             val apiKey = prefs.getString(KEY_AI_POST_PROCESSING_API_KEY, null) ?: return null
-            val providerStr = prefs.getString(KEY_AI_POST_PROCESSING_PROVIDER, "openai") ?: "openai"
-            val provider = ByokGenerationProvider.fromString(providerStr) ?: return null
-            return ByokGenerateTextRepo(apiKey, provider)
+            val provider = prefs.getString(KEY_AI_POST_PROCESSING_PROVIDER, "openai") ?: "openai"
+            val baseUrl = prefs.getString(KEY_AI_POST_PROCESSING_BASE_URL, null)
+            return ByokGenerateTextRepo(apiKey, provider, baseUrl)
         }
         config ?: return null
         return CloudGenerateTextRepo(config)
@@ -1461,6 +1461,8 @@ class VoquillIME : InputMethodService() {
         const val KEY_AI_TRANSCRIPTION_API_KEY = "voquill_ai_transcription_api_key"
         const val KEY_AI_POST_PROCESSING_PROVIDER = "voquill_ai_post_processing_provider"
         const val KEY_AI_POST_PROCESSING_API_KEY = "voquill_ai_post_processing_api_key"
+        const val KEY_AI_TRANSCRIPTION_BASE_URL = "voquill_ai_transcription_base_url"
+        const val KEY_AI_POST_PROCESSING_BASE_URL = "voquill_ai_post_processing_base_url"
         const val EXTRA_SHOW_PAYWALL = "voquill_show_paywall"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()

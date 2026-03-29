@@ -13,23 +13,29 @@ class AddApiKeyDialog extends StatefulWidget {
 class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
   final _nameController = TextEditingController();
   final _keyController = TextEditingController();
+  final _baseUrlController = TextEditingController();
   ApiKeyProvider _provider = ApiKeyProvider.openai;
   bool _saving = false;
   bool _obscureKey = true;
 
   bool get _canSave =>
       _nameController.text.trim().isNotEmpty &&
-      _keyController.text.trim().isNotEmpty;
+      _keyController.text.trim().isNotEmpty &&
+      (!_provider.needsBaseUrl || _baseUrlController.text.trim().isNotEmpty);
 
   Future<void> _save() async {
     if (!_canSave) return;
     setState(() => _saving = true);
 
     try {
+      final baseUrl = _provider.needsBaseUrl
+          ? _baseUrlController.text.trim()
+          : null;
       final apiKey = await createApiKey(
         name: _nameController.text.trim(),
         provider: _provider,
         keyValue: _keyController.text.trim(),
+        baseUrl: baseUrl,
       );
       if (mounted) Navigator.pop(context, apiKey);
     } catch (e) {
@@ -46,6 +52,7 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
   void dispose() {
     _nameController.dispose();
     _keyController.dispose();
+    _baseUrlController.dispose();
     super.dispose();
   }
 
@@ -56,49 +63,65 @@ class _AddApiKeyDialogState extends State<AddApiKeyDialog> {
       title: const Text('Add API Key'),
       content: SizedBox(
         width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'e.g. My OpenAI Key',
-              ),
-              textCapitalization: TextCapitalization.words,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<ApiKeyProvider>(
-              initialValue: _provider,
-              decoration: const InputDecoration(labelText: 'Provider'),
-              items: ApiKeyProvider.values
-                  .map((p) => DropdownMenuItem(
-                        value: p,
-                        child: Text(p.displayName),
-                      ))
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _provider = v);
-              },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _keyController,
-              decoration: InputDecoration(
-                labelText: 'API Key',
-                hintText: 'sk-...',
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureKey ? Icons.visibility_off : Icons.visibility,
-                  ),
-                  onPressed: () => setState(() => _obscureKey = !_obscureKey),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'e.g. My OpenAI Key',
                 ),
+                textCapitalization: TextCapitalization.words,
+                onChanged: (_) => setState(() {}),
               ),
-              obscureText: _obscureKey,
-              onChanged: (_) => setState(() {}),
-            ),
-          ],
+              const SizedBox(height: 16),
+              DropdownButtonFormField<ApiKeyProvider>(
+                initialValue: _provider,
+                decoration: const InputDecoration(labelText: 'Provider'),
+                items: ApiKeyProvider.values
+                    .map((p) => DropdownMenuItem(
+                          value: p,
+                          child: Text(p.displayName),
+                        ))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _provider = v);
+                },
+              ),
+              if (_provider.needsBaseUrl) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _baseUrlController,
+                  decoration: InputDecoration(
+                    labelText: 'Base URL',
+                    hintText: _provider == ApiKeyProvider.speaches
+                        ? 'http://localhost:8080'
+                        : 'https://your-server.com/v1',
+                  ),
+                  keyboardType: TextInputType.url,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: _keyController,
+                decoration: InputDecoration(
+                  labelText: 'API Key',
+                  hintText: 'sk-...',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureKey ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () => setState(() => _obscureKey = !_obscureKey),
+                  ),
+                ),
+                obscureText: _obscureKey,
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [

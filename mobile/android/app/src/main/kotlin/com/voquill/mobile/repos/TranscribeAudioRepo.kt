@@ -52,23 +52,37 @@ class CloudTranscribeAudioRepo(
 
 // MARK: - BYOK Implementation
 
-enum class ByokTranscriptionProvider(val apiUrl: String, val defaultModel: String) {
-    OPENAI("https://api.openai.com/v1/audio/transcriptions", "whisper-1"),
-    GROQ("https://api.groq.com/openai/v1/audio/transcriptions", "whisper-large-v3");
-
-    companion object {
-        fun fromString(value: String): ByokTranscriptionProvider? = when (value) {
-            "openai" -> OPENAI
-            "groq" -> GROQ
-            else -> null
-        }
-    }
-}
-
 class ByokTranscribeAudioRepo(
     private val apiKey: String,
-    private val provider: ByokTranscriptionProvider,
+    provider: String,
+    baseUrl: String?,
 ) : BaseTranscribeAudioRepo() {
+
+    private val apiUrl: String
+    private val model: String
+
+    init {
+        when (provider) {
+            "groq" -> {
+                apiUrl = "https://api.groq.com/openai/v1/audio/transcriptions"
+                model = "whisper-large-v3"
+            }
+            "speaches" -> {
+                val base = (baseUrl ?: "").trimEnd('/')
+                apiUrl = "$base/v1/audio/transcriptions"
+                model = "whisper-large-v3"
+            }
+            "openaiCompatible" -> {
+                val base = (baseUrl ?: "").trimEnd('/')
+                apiUrl = "$base/audio/transcriptions"
+                model = "whisper-1"
+            }
+            else -> {
+                apiUrl = "https://api.openai.com/v1/audio/transcriptions"
+                model = "whisper-1"
+            }
+        }
+    }
 
     override fun transcribeSync(audioFile: File, prompt: String, language: String): String? {
         return try {
@@ -78,7 +92,7 @@ class ByokTranscribeAudioRepo(
             }
 
             val boundary = UUID.randomUUID().toString()
-            val url = URL(provider.apiUrl)
+            val url = URL(apiUrl)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("Authorization", "Bearer $apiKey")
@@ -98,7 +112,7 @@ class ByokTranscribeAudioRepo(
                 out.write(audioFile.readBytes())
                 out.write("\r\n".toByteArray())
 
-                writeField("model", provider.defaultModel)
+                writeField("model", model)
                 writeField("response_format", "text")
                 if (prompt.isNotBlank()) writeField("prompt", prompt)
                 if (language.isNotBlank()) writeField("language", language)
@@ -112,7 +126,7 @@ class ByokTranscribeAudioRepo(
             conn.disconnect()
 
             if (status !in 200..299) {
-                Log.w(TAG, "BYOK transcribe ($provider): HTTP $status ${body.take(200)}")
+                Log.w(TAG, "BYOK transcribe: HTTP $status ${body.take(200)}")
                 return null
             }
 

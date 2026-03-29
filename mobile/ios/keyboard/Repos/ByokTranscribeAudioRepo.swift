@@ -1,39 +1,32 @@
 import Foundation
 
-enum ByokTranscriptionProvider: String {
-    case openai
-    case groq
-
-    var apiUrl: String {
-        switch self {
-        case .openai:
-            return "https://api.openai.com/v1/audio/transcriptions"
-        case .groq:
-            return "https://api.groq.com/openai/v1/audio/transcriptions"
-        }
-    }
-
-    var defaultModel: String {
-        switch self {
-        case .openai:
-            return "whisper-1"
-        case .groq:
-            return "whisper-large-v3"
-        }
-    }
-}
-
 class ByokTranscribeAudioRepo: BaseTranscribeAudioRepo {
     private let apiKey: String
-    private let provider: ByokTranscriptionProvider
+    private let apiUrl: String
+    private let model: String
 
-    init(apiKey: String, provider: ByokTranscriptionProvider) {
+    init(apiKey: String, provider: String, baseUrl: String?) {
         self.apiKey = apiKey
-        self.provider = provider
+        switch provider {
+        case "groq":
+            self.apiUrl = "https://api.groq.com/openai/v1/audio/transcriptions"
+            self.model = "whisper-large-v3"
+        case "speaches":
+            let base = (baseUrl ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            self.apiUrl = "\(base)/v1/audio/transcriptions"
+            self.model = "whisper-large-v3"
+        case "openaiCompatible":
+            let base = (baseUrl ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            self.apiUrl = "\(base)/audio/transcriptions"
+            self.model = "whisper-1"
+        default:
+            self.apiUrl = "https://api.openai.com/v1/audio/transcriptions"
+            self.model = "whisper-1"
+        }
     }
 
     override func transcribeSegment(audioData: Data, prompt: String?, language: String?) async throws -> String {
-        guard let url = URL(string: provider.apiUrl) else {
+        guard let url = URL(string: apiUrl) else {
             throw ApiError.invalidURL
         }
 
@@ -58,7 +51,7 @@ class ByokTranscribeAudioRepo: BaseTranscribeAudioRepo {
         body.append(audioData)
         body.append(lineBreak.data(using: .utf8)!)
 
-        appendField("model", provider.defaultModel)
+        appendField("model", model)
         appendField("response_format", "text")
 
         if let prompt = prompt {

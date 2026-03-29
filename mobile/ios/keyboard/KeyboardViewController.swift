@@ -1127,10 +1127,10 @@ class KeyboardViewController: UIInputViewController {
     private func buildTranscribeRepo(defaults: UserDefaults, config: RepoConfig?) -> BaseTranscribeAudioRepo? {
         let mode = defaults.string(forKey: "voquill_ai_transcription_mode") ?? "cloud"
         if mode == "api",
-           let providerStr = defaults.string(forKey: "voquill_ai_transcription_provider"),
-           let apiKey = defaults.string(forKey: "voquill_ai_transcription_api_key"),
-           let provider = ByokTranscriptionProvider(rawValue: providerStr) {
-            return ByokTranscribeAudioRepo(apiKey: apiKey, provider: provider)
+           let provider = defaults.string(forKey: "voquill_ai_transcription_provider"),
+           let apiKey = defaults.string(forKey: "voquill_ai_transcription_api_key") {
+            let baseUrl = defaults.string(forKey: "voquill_ai_transcription_base_url")
+            return ByokTranscribeAudioRepo(apiKey: apiKey, provider: provider, baseUrl: baseUrl)
         }
         guard let config = config else { return nil }
         return CloudTranscribeAudioRepo(config: config)
@@ -1139,10 +1139,10 @@ class KeyboardViewController: UIInputViewController {
     private func buildGenerateTextRepo(defaults: UserDefaults, config: RepoConfig?) -> BaseGenerateTextRepo? {
         let mode = defaults.string(forKey: "voquill_ai_post_processing_mode") ?? "cloud"
         if mode == "api",
-           let providerStr = defaults.string(forKey: "voquill_ai_post_processing_provider"),
-           let apiKey = defaults.string(forKey: "voquill_ai_post_processing_api_key"),
-           let provider = ByokGenerationProvider(rawValue: providerStr) {
-            return ByokGenerateTextRepo(apiKey: apiKey, provider: provider)
+           let provider = defaults.string(forKey: "voquill_ai_post_processing_provider"),
+           let apiKey = defaults.string(forKey: "voquill_ai_post_processing_api_key") {
+            let baseUrl = defaults.string(forKey: "voquill_ai_post_processing_base_url")
+            return ByokGenerateTextRepo(apiKey: apiKey, provider: provider, baseUrl: baseUrl)
         }
         guard let config = config else { return nil }
         return CloudGenerateTextRepo(config: config)

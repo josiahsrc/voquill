@@ -1,39 +1,34 @@
 import Foundation
 
-enum ByokGenerationProvider: String {
-    case openai
-    case groq
-
-    var apiUrl: String {
-        switch self {
-        case .openai:
-            return "https://api.openai.com/v1/chat/completions"
-        case .groq:
-            return "https://api.groq.com/openai/v1/chat/completions"
-        }
-    }
-
-    var defaultModel: String {
-        switch self {
-        case .openai:
-            return "gpt-4o-mini"
-        case .groq:
-            return "llama-3.3-70b-versatile"
-        }
-    }
-}
-
 class ByokGenerateTextRepo: BaseGenerateTextRepo {
     private let apiKey: String
-    private let provider: ByokGenerationProvider
+    private let apiUrl: String
+    private let model: String
 
-    init(apiKey: String, provider: ByokGenerationProvider) {
+    init(apiKey: String, provider: String, baseUrl: String?) {
         self.apiKey = apiKey
-        self.provider = provider
+        switch provider {
+        case "groq":
+            self.apiUrl = "https://api.groq.com/openai/v1/chat/completions"
+            self.model = "llama-3.3-70b-versatile"
+        case "deepseek":
+            self.apiUrl = "https://api.deepseek.com/chat/completions"
+            self.model = "deepseek-chat"
+        case "openRouter":
+            self.apiUrl = "https://openrouter.ai/api/v1/chat/completions"
+            self.model = "openai/gpt-4o-mini"
+        case "openaiCompatible":
+            let base = (baseUrl ?? "").trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            self.apiUrl = "\(base)/chat/completions"
+            self.model = "gpt-4o-mini"
+        default:
+            self.apiUrl = "https://api.openai.com/v1/chat/completions"
+            self.model = "gpt-4o-mini"
+        }
     }
 
     override func generateText(system: String?, prompt: String, jsonResponse: [String: Any]? = nil) async throws -> String {
-        guard let url = URL(string: provider.apiUrl) else {
+        guard let url = URL(string: apiUrl) else {
             throw ApiError.invalidURL
         }
 
@@ -49,7 +44,7 @@ class ByokGenerateTextRepo: BaseGenerateTextRepo {
         messages.append(["role": "user", "content": prompt])
 
         var payload: [String: Any] = [
-            "model": provider.defaultModel,
+            "model": model,
             "messages": messages,
         ]
 

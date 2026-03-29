@@ -210,6 +210,16 @@ import UIKit
         } else {
           defaults.removeObject(forKey: "voquill_ai_post_processing_api_key")
         }
+        if let baseUrl = args["transcriptionBaseUrl"] {
+          defaults.set(baseUrl, forKey: "voquill_ai_transcription_base_url")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_transcription_base_url")
+        }
+        if let baseUrl = args["postProcessingBaseUrl"] {
+          defaults.set(baseUrl, forKey: "voquill_ai_post_processing_base_url")
+        } else {
+          defaults.removeObject(forKey: "voquill_ai_post_processing_base_url")
+        }
         result(nil)
 
       case "startDictation":

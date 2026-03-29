@@ -257,6 +257,8 @@ class MainActivity : FlutterFragmentActivity() {
         putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_API_KEY, "transcriptionApiKey")
         putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_PROVIDER, "postProcessingProvider")
         putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_API_KEY, "postProcessingApiKey")
+        putOrRemove(VoquillIME.KEY_AI_TRANSCRIPTION_BASE_URL, "transcriptionBaseUrl")
+        putOrRemove(VoquillIME.KEY_AI_POST_PROCESSING_BASE_URL, "postProcessingBaseUrl")
 
         editor.apply()
         result.success(null)

@@ -68,6 +68,7 @@ Future<ApiKey> createApiKey({
   required String name,
   required ApiKeyProvider provider,
   required String keyValue,
+  String? baseUrl,
 }) async {
   final keys = await loadApiKeys();
   final id = const Uuid().v4();
@@ -80,6 +81,7 @@ Future<ApiKey> createApiKey({
     provider: provider,
     keySuffix: suffix,
     createdAt: now,
+    baseUrl: baseUrl,
   );
 
   await _secureStorage.write(key: '$_secureKeyPrefix$id', value: keyValue);
@@ -145,8 +147,10 @@ Future<void> syncKeyboardAiSettings() async {
 
     String? transcriptionProvider;
     String? transcriptionApiKey;
+    String? transcriptionBaseUrl;
     String? postProcessingProvider;
     String? postProcessingApiKey;
+    String? postProcessingBaseUrl;
 
     if (transcriptionMode == AiMode.api) {
       final keyId = await getSelectedTranscriptionKeyId();
@@ -154,8 +158,9 @@ Future<void> syncKeyboardAiSettings() async {
         final keys = await loadApiKeys();
         final key = keys.where((k) => k.id == keyId).firstOrNull;
         if (key != null) {
-          transcriptionProvider = key.provider.name;
+          transcriptionProvider = key.provider.serializedName;
           transcriptionApiKey = await getApiKeyValue(keyId);
+          transcriptionBaseUrl = key.baseUrl;
         }
       }
     }
@@ -166,8 +171,9 @@ Future<void> syncKeyboardAiSettings() async {
         final keys = await loadApiKeys();
         final key = keys.where((k) => k.id == keyId).firstOrNull;
         if (key != null) {
-          postProcessingProvider = key.provider.name;
+          postProcessingProvider = key.provider.serializedName;
           postProcessingApiKey = await getApiKeyValue(keyId);
+          postProcessingBaseUrl = key.baseUrl;
         }
       }
     }
@@ -177,8 +183,10 @@ Future<void> syncKeyboardAiSettings() async {
       postProcessingMode: postProcessingMode.name,
       transcriptionProvider: transcriptionProvider,
       transcriptionApiKey: transcriptionApiKey,
+      transcriptionBaseUrl: transcriptionBaseUrl,
       postProcessingProvider: postProcessingProvider,
       postProcessingApiKey: postProcessingApiKey,
+      postProcessingBaseUrl: postProcessingBaseUrl,
     );
   } catch (e) {
     _logger.w('Failed to sync AI settings to keyboard', e);
