@@ -26,7 +26,7 @@ pub fn set_system_volume(volume: f64) -> Result<(), String> {
     unsafe {
         let endpoint = get_endpoint_volume().map_err(|e| e.to_string())?;
         endpoint
-            .SetMasterVolumeLevelScalar(volume as f32, None)
+            .SetMasterVolumeLevelScalar(volume as f32, std::ptr::null())
             .map_err(|e| e.to_string())?;
         Ok(())
     }
