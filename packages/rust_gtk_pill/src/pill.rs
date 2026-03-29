@@ -23,24 +23,11 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
     }
 
-    let ui_scale = if !use_layer_shell {
-        let dpi = gdk::Screen::default().map(|s| s.resolution()).unwrap_or(-1.0);
-        let gdk_scale = std::env::var("GDK_SCALE")
-            .ok()
-            .and_then(|s| s.parse::<f64>().ok())
-            .unwrap_or(1.0);
-        if dpi > 96.0 {
-            (dpi / 96.0 / gdk_scale).max(1.0)
-        } else {
-            1.0
-        }
-    } else {
-        1.0
-    };
+    let ui_scale = 1.0;
 
-    let scaled_width = (WINDOW_W_TYPING as f64 * ui_scale).ceil() as i32;
-    let scaled_height = (WINDOW_H_TYPING as f64 * ui_scale).ceil() as i32;
-    let scaled_margin = (MARGIN_BOTTOM as f64 * ui_scale).ceil() as i32;
+    let scaled_width = WINDOW_W_TYPING;
+    let scaled_height = WINDOW_H_TYPING;
+    let scaled_margin = MARGIN_BOTTOM;
 
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
     window.set_default_size(scaled_width, scaled_height);
