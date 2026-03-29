@@ -1,8 +1,8 @@
 import { expect, test, vi } from "vitest";
 import {
-    getGroqGentextRepo,
-    getWritingStyle,
-    postProcess,
+  getGroqGentextRepo,
+  getWritingStyle,
+  postProcess,
 } from "../helpers/eval.utils";
 
 vi.setConfig({ testTimeout: 30000 });
