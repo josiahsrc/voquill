@@ -23,7 +23,9 @@ const SESSION_HEARTBEAT_INTERVAL_MS = 1000 * 60 * 10;
 
 type SessionHandle = {
   sessionRef: DatabaseReference;
+  sessionName: string;
   listenerUnsubscribe: Unsubscribe | null;
+  connectedUnsubscribe: Unsubscribe | null;
   lastConsumedTimestamp: number;
 };
 
@@ -52,9 +54,25 @@ export const SessionSideEffects = () => {
 
     const handle: SessionHandle = {
       sessionRef,
+      sessionName,
       listenerUnsubscribe: null,
+      connectedUnsubscribe: null,
       lastConsumedTimestamp: Date.now(),
     };
+
+    const connectedRef = ref(db, ".info/connected");
+    handle.connectedUnsubscribe = onValue(connectedRef, (snapshot) => {
+      if (snapshot.val() !== true) return;
+      update(sessionRef, { name: sessionName, lastActive: Date.now() }).catch(
+        (error) =>
+          getLogger().warning(`Session reconnect update failed: ${error}`),
+      );
+      onDisconnect(sessionRef)
+        .remove()
+        .catch((error) =>
+          getLogger().warning(`onDisconnect re-register failed: ${error}`),
+        );
+    });
 
     handle.listenerUnsubscribe = onValue(sessionRef, async (snapshot) => {
       const data = snapshot.val();
@@ -83,6 +101,7 @@ export const SessionSideEffects = () => {
     return () => {
       sessionHandleRef.current = null;
       handle.listenerUnsubscribe?.();
+      handle.connectedUnsubscribe?.();
       void remove(sessionRef).catch((error) => {
         getLogger().warning(`Failed to remove session: ${error}`);
       });
@@ -92,7 +111,10 @@ export const SessionSideEffects = () => {
   useIntervalAsync(SESSION_HEARTBEAT_INTERVAL_MS, async () => {
     const handle = sessionHandleRef.current;
     if (!handle) return;
-    await update(handle.sessionRef, { lastActive: Date.now() });
+    await update(handle.sessionRef, {
+      name: handle.sessionName,
+      lastActive: Date.now(),
+    });
   }, [initialized, userId]);
 
   return null;
