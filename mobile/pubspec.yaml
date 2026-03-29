@@ -31,6 +31,7 @@ dependencies:
   http: ^1.6.0
   firebase_core: ^4.4.0
   firebase_auth: ^6.1.4
+  firebase_database: ^12.0.0
   cloud_functions: ^6.0.6
   google_sign_in: ^6.2.2
   flutter_svg: ^2.0.17
@@ -45,6 +46,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   mixpanel_flutter: ^2.5.0
   flutter_secure_storage: ^9.2.4
+  record: ^6.2.0
 
 dev_dependencies:
   flutter_test:

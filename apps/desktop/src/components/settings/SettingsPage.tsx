@@ -17,7 +17,6 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
-  RouterOutlined,
   TroubleshootOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
@@ -48,7 +47,6 @@ import { produceAppState, useAppStore } from "../../store";
 import {
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
-  getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
 import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
 import {
@@ -74,7 +72,6 @@ export default function SettingsPage() {
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
   const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
-  const allowMultiDevice = useAppStore(getAllowsMultiDeviceMode);
   const supportsPasteKeybinds = useAppStore(
     (state) => state.supportsPasteKeybinds,
   );
@@ -191,12 +188,6 @@ export default function SettingsPage() {
     });
   };
 
-  const openMultiDeviceDialog = () => {
-    produceAppState((draft) => {
-      draft.settings.multiDeviceDialogOpen = true;
-    });
-  };
-
   const openClearLocalDataDialog = () => {
     produceAppState((draft) => {
       draft.settings.clearLocalDataDialogOpen = true;
@@ -274,13 +265,6 @@ export default function SettingsPage() {
           title={<FormattedMessage defaultMessage="App paste bindings" />}
           leading={<AppsOutlined />}
           onClick={openAppKeybindingsDialog}
-        />
-      )}
-      {allowMultiDevice && (
-        <ListTile
-          title={<FormattedMessage defaultMessage="Multi-device" />}
-          leading={<RouterOutlined />}
-          onClick={openMultiDeviceDialog}
         />
       )}
       <ListTile

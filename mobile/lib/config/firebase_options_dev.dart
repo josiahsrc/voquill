@@ -27,6 +27,7 @@ class DevFirebaseOptions {
     appId: '1:778214168359:android:44302d780bb11229d77b02',
     messagingSenderId: '778214168359',
     projectId: 'voquill-dev',
+    databaseURL: 'https://voquill-dev-default-rtdb.firebaseio.com',
     storageBucket: 'voquill-dev.firebasestorage.app',
   );
 
@@ -35,6 +36,7 @@ class DevFirebaseOptions {
     appId: '1:778214168359:ios:d4a46b4feabd19dfd77b02',
     messagingSenderId: '778214168359',
     projectId: 'voquill-dev',
+    databaseURL: 'https://voquill-dev-default-rtdb.firebaseio.com',
     storageBucket: 'voquill-dev.firebasestorage.app',
     iosClientId:
         '778214168359-062ds2e4o27utk6q7htloo6re9857lfb.apps.googleusercontent.com',
