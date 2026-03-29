@@ -50,6 +50,7 @@ pub async fn upsert_user_preferences(
              ignore_update_dialog,
              incognito_mode_enabled,
              incognito_mode_include_in_stats,
+             dictation_limit_minutes,
              dictation_pill_visibility,
              use_new_backend,
              realtime_output_enabled,
@@ -58,7 +59,7 @@ pub async fn upsert_user_preferences(
              remote_receiver_port,
              remote_receiver_auto_start
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -86,6 +87,7 @@ pub async fn upsert_user_preferences(
             ignore_update_dialog = excluded.ignore_update_dialog,
             incognito_mode_enabled = excluded.incognito_mode_enabled,
             incognito_mode_include_in_stats = excluded.incognito_mode_include_in_stats,
+            dictation_limit_minutes = excluded.dictation_limit_minutes,
             dictation_pill_visibility = excluded.dictation_pill_visibility,
             use_new_backend = excluded.use_new_backend,
             realtime_output_enabled = excluded.realtime_output_enabled,
@@ -121,6 +123,7 @@ pub async fn upsert_user_preferences(
     .bind(preferences.ignore_update_dialog)
     .bind(preferences.incognito_mode_enabled)
     .bind(preferences.incognito_mode_include_in_stats)
+    .bind(preferences.dictation_limit_minutes)
     .bind(&preferences.dictation_pill_visibility)
     .bind(preferences.use_new_backend)
     .bind(preferences.realtime_output_enabled)
@@ -167,6 +170,7 @@ pub async fn fetch_user_preferences(
             ignore_update_dialog,
             incognito_mode_enabled,
             incognito_mode_include_in_stats,
+            dictation_limit_minutes,
             dictation_pill_visibility,
             use_new_backend,
             realtime_output_enabled,
@@ -269,6 +273,9 @@ pub async fn fetch_user_preferences(
             .try_get::<i64, _>("incognito_mode_include_in_stats")
             .map(|v| v != 0)
             .unwrap_or(false),
+        dictation_limit_minutes: row
+            .try_get::<i64, _>("dictation_limit_minutes")
+            .unwrap_or(5),
         dictation_pill_visibility: row
             .try_get::<String, _>("dictation_pill_visibility")
             .unwrap_or_else(|_| "while_active".to_string()),

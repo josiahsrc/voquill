@@ -9,6 +9,7 @@ import {
 import { getAppState, produceAppState } from "../store";
 import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { CURRENT_COHORT } from "../utils/analytics.utils";
+import { DEFAULT_DICTATION_LIMIT_MINUTES } from "../utils/dictation-limit.utils";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
 import { CURRENT_FEATURE } from "../utils/feature.utils";
 import {
@@ -193,6 +194,7 @@ export const submitOnboarding = async () => {
       ignoreUpdateDialog: false,
       incognitoModeEnabled: false,
       incognitoModeIncludeInStats: false,
+      dictationLimitMinutes: DEFAULT_DICTATION_LIMIT_MINUTES,
       dictationPillVisibility: "persistent",
       realtimeOutputEnabled: false,
       remoteOutputEnabled: false,
