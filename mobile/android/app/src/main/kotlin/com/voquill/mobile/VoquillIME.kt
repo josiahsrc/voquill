@@ -22,7 +22,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.InputType
-import android.util.Base64
 import android.util.Log
 import android.view.Choreographer
 import android.view.Gravity
@@ -46,6 +45,7 @@ import java.util.TimeZone
 import java.util.UUID
 import java.net.HttpURLConnection
 import java.net.URL
+import com.voquill.mobile.repos.*
 import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.math.min
@@ -575,6 +575,7 @@ class VoquillIME : InputMethodService() {
         loadLanguageConfig(prefs)
         loadToneConfig(prefs)
         renderToneChips()
+        updateStatusBanner()
     }
 
     private fun loadLanguageConfig(prefs: android.content.SharedPreferences) {
@@ -721,8 +722,9 @@ class VoquillIME : InputMethodService() {
                 return@execute
             }
 
-            val member = getMyMemberSync(idToken, functionUrl)
-            val config = getFullConfigSync(idToken, functionUrl)
+            val repoConfig = RepoConfig(functionUrl = functionUrl, idToken = idToken)
+            val member = getMyMemberSync(repoConfig)
+            val config = getFullConfigSync(repoConfig)
             handler.post {
                 memberInfo = member
                 if (config != null) {
@@ -733,11 +735,10 @@ class VoquillIME : InputMethodService() {
         }
     }
 
-    private fun getMyMemberSync(idToken: String, functionUrl: String): MemberInfo? {
+    private fun getMyMemberSync(config: RepoConfig): MemberInfo? {
         return try {
             val result = invokeHandlerSync(
-                functionUrl = functionUrl,
-                idToken = idToken,
+                config = config,
                 name = "member/getMyMember",
                 args = JSONObject(),
             ) ?: return null
@@ -755,11 +756,10 @@ class VoquillIME : InputMethodService() {
         }
     }
 
-    private fun getFullConfigSync(idToken: String, functionUrl: String): ConfigInfo? {
+    private fun getFullConfigSync(config: RepoConfig): ConfigInfo? {
         return try {
             val result = invokeHandlerSync(
-                functionUrl = functionUrl,
-                idToken = idToken,
+                config = config,
                 name = "config/getFullConfig",
                 args = JSONObject(),
             ) ?: return null
@@ -774,6 +774,14 @@ class VoquillIME : InputMethodService() {
     }
 
     private fun updateStatusBanner() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val transcriptionMode = prefs.getString(KEY_AI_TRANSCRIPTION_MODE, "cloud") ?: "cloud"
+        val postProcessingMode = prefs.getString(KEY_AI_POST_PROCESSING_MODE, "cloud") ?: "cloud"
+        if (transcriptionMode == "api" && postProcessingMode == "api") {
+            setStatusBannerVisible(false)
+            return
+        }
+
         val member = memberInfo ?: run {
             setStatusBannerVisible(false)
             return
@@ -885,14 +893,36 @@ class VoquillIME : InputMethodService() {
         return null
     }
 
+    private fun buildTranscribeRepo(prefs: android.content.SharedPreferences, config: RepoConfig?): BaseTranscribeAudioRepo? {
+        val mode = prefs.getString(KEY_AI_TRANSCRIPTION_MODE, "cloud") ?: "cloud"
+        if (mode == "api") {
+            val apiKey = prefs.getString(KEY_AI_TRANSCRIPTION_API_KEY, null) ?: return null
+            val provider = prefs.getString(KEY_AI_TRANSCRIPTION_PROVIDER, "openai") ?: "openai"
+            val baseUrl = prefs.getString(KEY_AI_TRANSCRIPTION_BASE_URL, null)
+            return ByokTranscribeAudioRepo(apiKey, provider, baseUrl)
+        }
+        config ?: return null
+        return CloudTranscribeAudioRepo(config)
+    }
+
+    private fun buildGenerateTextRepo(prefs: android.content.SharedPreferences, config: RepoConfig?): BaseGenerateTextRepo? {
+        val mode = prefs.getString(KEY_AI_POST_PROCESSING_MODE, "cloud") ?: "cloud"
+        if (mode == "api") {
+            val apiKey = prefs.getString(KEY_AI_POST_PROCESSING_API_KEY, null) ?: return null
+            val provider = prefs.getString(KEY_AI_POST_PROCESSING_PROVIDER, "openai") ?: "openai"
+            val baseUrl = prefs.getString(KEY_AI_POST_PROCESSING_BASE_URL, null)
+            return ByokGenerateTextRepo(apiKey, provider, baseUrl)
+        }
+        config ?: return null
+        return CloudGenerateTextRepo(config)
+    }
+
     private fun handleTranscription() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val functionUrl = prefs.getString(KEY_FUNCTION_URL, null)
-        if (functionUrl.isNullOrBlank()) {
-            currentInputConnection?.commitText("[Missing function URL]", 1)
-            applyPhase(Phase.IDLE)
-            return
-        }
+
+        val transcriptionMode = prefs.getString(KEY_AI_TRANSCRIPTION_MODE, "cloud") ?: "cloud"
+        val postProcessingMode = prefs.getString(KEY_AI_POST_PROCESSING_MODE, "cloud") ?: "cloud"
+        val needsCloudAuth = transcriptionMode == "cloud" || postProcessingMode == "cloud"
 
         val selectedToneId = prefs.getString(KEY_SELECTED_TONE_ID, null)
         val toneById = loadToneById(prefs)
@@ -909,21 +939,40 @@ class VoquillIME : InputMethodService() {
         val whisperLanguage = mapDictationLanguageToWhisperLanguage(dictationLanguage)
 
         executor.execute {
-            val idToken = fetchIdTokenSync()
-            if (idToken == null) {
+            var config: RepoConfig? = null
+
+            if (needsCloudAuth) {
+                val idToken = fetchIdTokenSync()
+                if (idToken == null) {
+                    handler.post {
+                        currentInputConnection?.commitText("[Auth failed: $lastDebugLog]", 1)
+                        applyPhase(Phase.IDLE)
+                    }
+                    return@execute
+                }
+                val functionUrl = prefs.getString(KEY_FUNCTION_URL, null)
+                if (functionUrl.isNullOrBlank()) {
+                    handler.post {
+                        currentInputConnection?.commitText("[Missing function URL]", 1)
+                        applyPhase(Phase.IDLE)
+                    }
+                    return@execute
+                }
+                config = RepoConfig(functionUrl = functionUrl, idToken = idToken)
+            }
+
+            val transcribeRepo = buildTranscribeRepo(prefs, config)
+            if (transcribeRepo == null) {
                 handler.post {
-                    currentInputConnection?.commitText("[Auth failed: $lastDebugLog]", 1)
+                    currentInputConnection?.commitText("[Transcription not configured]", 1)
                     applyPhase(Phase.IDLE)
                 }
                 return@execute
             }
 
-            val rawTranscript = transcribeAudioSync(
-                idToken = idToken,
-                functionUrl = functionUrl,
-                prompt = prompt,
-                language = whisperLanguage,
-            )
+            val audioFile = File(audioFilePath)
+            val rawTranscript = transcribeRepo.transcribeSync(audioFile, prompt, whisperLanguage)
+
             if (rawTranscript.isNullOrBlank()) {
                 handler.post {
                     currentInputConnection?.commitText("[Transcribe failed: $lastDebugLog]", 1)
@@ -935,16 +984,29 @@ class VoquillIME : InputMethodService() {
             val selectedTone = selectedToneId?.let { toneById[it] }
             var finalText = rawTranscript
             if (selectedTone != null) {
-                val processed = generateProcessedTranscriptionSync(
-                    idToken = idToken,
-                    functionUrl = functionUrl,
-                    transcript = rawTranscript,
-                    tonePromptTemplate = selectedTone.promptTemplate,
-                    userName = userName,
-                    dictationLanguage = dictationLanguage,
-                )
-                if (!processed.isNullOrBlank()) {
-                    finalText = processed
+                val generateRepo = buildGenerateTextRepo(prefs, config)
+                if (generateRepo != null) {
+                    val raw = generateRepo.generateTextSync(
+                        system = buildSystemPostProcessingPrompt(),
+                        prompt = buildPostProcessingPrompt(
+                            transcript = rawTranscript,
+                            tonePromptTemplate = selectedTone.promptTemplate,
+                            userName = userName,
+                            dictationLanguage = dictationLanguage,
+                        ),
+                        jsonResponse = true,
+                    )
+                    if (!raw.isNullOrBlank()) {
+                        val parsed = try {
+                            JSONObject(raw).optString("processedTranscription", "")
+                        } catch (_: Exception) { "" }
+                        if (parsed.isNotBlank()) {
+                            finalText = parsed.trim()
+                        } else {
+                            dbg("Could not parse processedTranscription from JSON, using raw")
+                            finalText = raw.trim()
+                        }
+                    }
                 }
             }
 
@@ -956,11 +1018,9 @@ class VoquillIME : InputMethodService() {
                 return@execute
             }
 
-            incrementWordCountSync(
-                idToken = idToken,
-                functionUrl = functionUrl,
-                text = cleanText,
-            )
+            if (config != null) {
+                incrementWordCountSync(config, cleanText)
+            }
             saveTranscription(
                 prefs = prefs,
                 text = cleanText,
@@ -1076,98 +1136,13 @@ class VoquillIME : InputMethodService() {
         }
     }
 
-    private fun transcribeAudioSync(
-        idToken: String,
-        functionUrl: String,
-        prompt: String,
-        language: String,
-    ): String? {
-        return try {
-            val audioFile = File(audioFilePath)
-            if (!audioFile.exists() || audioFile.length() == 0L) {
-                dbg("transcribeAudio: no audio data at $audioFilePath")
-                return null
-            }
-
-            val audioBase64 = Base64.encodeToString(audioFile.readBytes(), Base64.NO_WRAP)
-
-            dbg("transcribeAudio: ${audioFile.length()} bytes → $functionUrl")
-
-            val result = invokeHandlerSync(
-                functionUrl = functionUrl,
-                idToken = idToken,
-                name = "ai/transcribeAudio",
-                args = JSONObject().apply {
-                    put("audioBase64", audioBase64)
-                    put("audioMimeType", "audio/mp4")
-                    put("prompt", prompt)
-                    put("language", language)
-                },
-            ) ?: return null
-            val text = result.optString("text", "")
-            dbg("transcribeAudio: success")
-            text
-        } catch (e: Exception) {
-            dbg("transcribeAudio: ${e.message}")
-            null
-        }
-    }
-
-    private fun generateProcessedTranscriptionSync(
-        idToken: String,
-        functionUrl: String,
-        transcript: String,
-        tonePromptTemplate: String,
-        userName: String,
-        dictationLanguage: String,
-    ): String? {
-        return try {
-            val result = invokeHandlerSync(
-                functionUrl = functionUrl,
-                idToken = idToken,
-                name = "ai/generateText",
-                args = JSONObject().apply {
-                    put("system", buildSystemPostProcessingPrompt())
-                    put(
-                        "prompt",
-                        buildPostProcessingPrompt(
-                            transcript = transcript,
-                            tonePromptTemplate = tonePromptTemplate,
-                            userName = userName,
-                            dictationLanguage = dictationLanguage,
-                        ),
-                    )
-                    put("jsonResponse", buildPostProcessingJsonResponse())
-                },
-            ) ?: return null
-            val text = result.optString("text", "")
-            val parsed = try {
-                JSONObject(text).optString("processedTranscription", "")
-            } catch (_: Exception) {
-                ""
-            }
-            if (parsed.isNotBlank()) {
-                parsed.trim()
-            } else {
-                dbg("Could not parse processedTranscription from JSON, using raw")
-                text.trim()
-            }
-        } catch (e: Exception) {
-            dbg("Post-processing failed, using raw transcript: ${e.message}")
-            null
-        }
-    }
-
-    private fun incrementWordCountSync(idToken: String, functionUrl: String, text: String) {
+    private fun incrementWordCountSync(config: RepoConfig, text: String) {
         try {
             val wordCount = text.split(Regex("\\s+")).filter { it.isNotBlank() }.size
-            if (wordCount <= 0) {
-                return
-            }
+            if (wordCount <= 0) return
 
             invokeHandlerSync(
-                functionUrl = functionUrl,
-                idToken = idToken,
+                config = config,
                 name = "user/incrementWordCount",
                 args = JSONObject().apply {
                     put("wordCount", wordCount)
@@ -1234,77 +1209,6 @@ class VoquillIME : InputMethodService() {
             .putString(KEY_TRANSCRIPTIONS, merged.toString())
             .putInt(KEY_APP_UPDATE_COUNTER, prefs.getInt(KEY_APP_UPDATE_COUNTER, 0) + 1)
             .apply()
-    }
-
-    private fun invokeHandlerSync(
-        functionUrl: String,
-        idToken: String,
-        name: String,
-        args: JSONObject,
-    ): JSONObject? {
-        return try {
-            val response = postJsonSync(
-                urlString = functionUrl,
-                payload = JSONObject().apply {
-                    put(
-                        "data",
-                        JSONObject().apply {
-                            put("name", name)
-                            put("args", args)
-                        },
-                    )
-                },
-                authorization = "Bearer $idToken",
-            ) ?: return null
-
-            if (response.status !in 200..299) {
-                dbg("$name failed: HTTP ${response.status} ${response.body.take(200)}")
-                return null
-            }
-
-            val json = JSONObject(response.body)
-            val result = json.optJSONObject("result")
-            if (result == null) {
-                dbg("$name failed: invalid response")
-                return null
-            }
-            result
-        } catch (e: Exception) {
-            dbg("$name failed: ${e.message}")
-            null
-        }
-    }
-
-    private data class HttpResponse(
-        val status: Int,
-        val body: String,
-    )
-
-    private fun postJsonSync(
-        urlString: String,
-        payload: JSONObject,
-        authorization: String? = null,
-    ): HttpResponse? {
-        return try {
-            val url = URL(urlString)
-            val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Content-Type", "application/json")
-            if (!authorization.isNullOrBlank()) {
-                conn.setRequestProperty("Authorization", authorization)
-            }
-            conn.doOutput = true
-            conn.outputStream.use { it.write(payload.toString().toByteArray()) }
-
-            val status = conn.responseCode
-            val stream = if (status in 200..299) conn.inputStream else conn.errorStream
-            val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            conn.disconnect()
-            HttpResponse(status, body)
-        } catch (e: Exception) {
-            dbg("HTTP call failed: ${e.message}")
-            null
-        }
     }
 
     private fun loadJsonArray(prefs: android.content.SharedPreferences, key: String): JSONArray {
@@ -1455,36 +1359,6 @@ class VoquillIME : InputMethodService() {
         """.trimIndent()
     }
 
-    private fun buildPostProcessingJsonResponse(): JSONObject {
-        return JSONObject().apply {
-            put("name", "transcription_cleaning")
-            put("description", "JSON response with the processed transcription")
-            put(
-                "schema",
-                JSONObject().apply {
-                    put("type", "object")
-                    put(
-                        "properties",
-                        JSONObject().apply {
-                            put(
-                                "processedTranscription",
-                                JSONObject().apply {
-                                    put("type", "string")
-                                    put(
-                                        "description",
-                                        "The processed version of the transcript. Empty if no transcript.",
-                                    )
-                                },
-                            )
-                        },
-                    )
-                    put("required", JSONArray().put("processedTranscription"))
-                    put("additionalProperties", false)
-                },
-            )
-        }
-    }
-
     private fun startAudioCapture(): Boolean {
         smoothedLevel = 0f
         return try {
@@ -1581,6 +1455,14 @@ class VoquillIME : InputMethodService() {
         const val KEY_MIXPANEL_TOKEN = "voquill_mixpanel_token"
         const val KEY_APP_UPDATE_COUNTER = "voquill_app_update_counter"
         const val KEY_KEYBOARD_UPDATE_COUNTER = "voquill_keyboard_update_counter"
+        const val KEY_AI_TRANSCRIPTION_MODE = "voquill_ai_transcription_mode"
+        const val KEY_AI_POST_PROCESSING_MODE = "voquill_ai_post_processing_mode"
+        const val KEY_AI_TRANSCRIPTION_PROVIDER = "voquill_ai_transcription_provider"
+        const val KEY_AI_TRANSCRIPTION_API_KEY = "voquill_ai_transcription_api_key"
+        const val KEY_AI_POST_PROCESSING_PROVIDER = "voquill_ai_post_processing_provider"
+        const val KEY_AI_POST_PROCESSING_API_KEY = "voquill_ai_post_processing_api_key"
+        const val KEY_AI_TRANSCRIPTION_BASE_URL = "voquill_ai_transcription_base_url"
+        const val KEY_AI_POST_PROCESSING_BASE_URL = "voquill_ai_post_processing_base_url"
         const val EXTRA_SHOW_PAYWALL = "voquill_show_paywall"
 
         const val COLOR_BLUE = 0xFF3380FF.toInt()
