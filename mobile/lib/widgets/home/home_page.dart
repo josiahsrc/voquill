@@ -118,7 +118,20 @@ class HomePage extends StatelessWidget {
             padding: Theming.padding.onlyHorizontal().withTop(28),
             sliver: SliverToBoxAdapter(
               child: ListTileSection(
-                title: const Text('Active sessions'),
+                title: Row(
+                  children: [
+                    const Text('Active sessions'),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
                 children: sessions.values
                     .map(
                       (session) => AppListTile(

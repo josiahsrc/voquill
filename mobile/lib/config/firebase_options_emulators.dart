@@ -29,7 +29,7 @@ class EmulatorFirebaseOptions {
     appId: '1:777461284594:android:9e32e369256288995e5a6b',
     messagingSenderId: '777461284594',
     projectId: 'voquill-dev',
-    databaseURL: 'https://voquill-prod-default-rtdb.firebaseio.com',
+    databaseURL: 'https://voquill-dev-default-rtdb.firebaseio.com',
     storageBucket: 'voquill-prod.firebasestorage.app',
   );
 
@@ -38,7 +38,7 @@ class EmulatorFirebaseOptions {
     appId: '1:777461284594:ios:1ba63f1bf2d9e1465e5a6b',
     messagingSenderId: '777461284594',
     projectId: 'voquill-dev',
-    databaseURL: 'https://voquill-prod-default-rtdb.firebaseio.com',
+    databaseURL: 'https://voquill-dev-default-rtdb.firebaseio.com',
     storageBucket: 'voquill-prod.firebasestorage.app',
     iosClientId:
         '777461284594-dc0e2uabqh68opiheciabv5ivqq43ui0.apps.googleusercontent.com',

@@ -46,6 +46,7 @@ dependencies:
   flutter_dotenv: ^6.0.0
   mixpanel_flutter: ^2.5.0
   flutter_secure_storage: ^9.2.4
+  record: ^6.2.0
 
 dev_dependencies:
   flutter_test:
