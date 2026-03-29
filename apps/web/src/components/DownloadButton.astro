@@ -19,7 +19,7 @@ const downloadPageHref = locale ? localePath(locale, '/download') : '/download';
 const linkHref = href ?? downloadPageHref;
 ---
 
-<a href={linkHref} class:list={['download-button', className]}>{label}</a>
+<a href={linkHref} class:list={['download-button', className]} data-track="Download">{label}</a>
 
 <script define:vars={{ downloadPageHref }}>
 	const RELEASES_API_URL =

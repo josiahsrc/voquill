@@ -258,6 +258,9 @@ importers:
       marked:
         specifier: ^16.4.2
         version: 16.4.2
+      mixpanel-browser:
+        specifier: ^2.75.0
+        version: 2.75.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.3)
 
   apps/windows-installer:
     dependencies:

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "astro": "^5.17.1",
-    "marked": "^16.4.2"
+    "marked": "^16.4.2",
+    "mixpanel-browser": "^2.75.0"
   }
 }
