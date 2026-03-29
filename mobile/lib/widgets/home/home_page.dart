@@ -3,6 +3,8 @@ import 'package:app/theme/app_colors.dart';
 import 'package:app/utils/member_utils.dart';
 import 'package:app/utils/theme_utils.dart';
 import 'package:app/utils/user_utils.dart';
+import 'package:app/widgets/common/app_list_tile.dart';
+import 'package:app/widgets/common/list_tile_section.dart';
 import 'package:app/widgets/history/transcription_detail_dialog.dart';
 import 'package:app/widgets/history/transcription_tile.dart';
 import 'package:app/widgets/home/stat_value.dart';
@@ -24,6 +26,10 @@ class HomePage extends StatelessWidget {
     final sortedIds = useAppStore().select(
       context,
       (s) => s.sortedTranscriptionIds,
+    );
+    final sessions = useAppStore().select(
+      context,
+      (s) => s.desktopSessionById,
     );
     final theme = Theme.of(context);
     final colors = context.colors;
@@ -109,6 +115,29 @@ class HomePage extends StatelessWidget {
           SliverPadding(
             padding: Theming.padding.onlyHorizontal().withTop(16),
             sliver: const SliverToBoxAdapter(child: WordsRemaining()),
+          ),
+        if (sessions.isNotEmpty)
+          SliverPadding(
+            padding: Theming.padding.onlyHorizontal().withTop(28),
+            sliver: SliverToBoxAdapter(
+              child: ListTileSection(
+                title: const Text('Active sessions'),
+                children: sessions.values
+                    .map(
+                      (session) => AppListTile(
+                        leading: const Icon(Icons.computer_rounded),
+                        title: Text(session.name),
+                        subtitle: const Text('Active'),
+                        trailing:
+                            const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => context.push(
+                          '/dashboard/remote-dictation/${session.id}',
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
           ),
         SliverPadding(
           padding: Theming.padding.onlyHorizontal().withTop(28),

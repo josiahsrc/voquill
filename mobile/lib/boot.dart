@@ -8,6 +8,7 @@ import 'package:app/utils/log_utils.dart';
 import 'package:app/version.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -43,6 +44,7 @@ Future<void> boot(Flavor flavor, FirebaseOptions firebaseOptions) async {
         final host = Flavor.current.emulatorHost;
         await FirebaseAuth.instance.useAuthEmulator(host, 9099);
         FirebaseFunctions.instance.useFunctionsEmulator(host, 5001);
+        FirebaseDatabase.instance.useDatabaseEmulator(host, 9000);
         logger.i('Using Firebase emulators at $host');
       }
 

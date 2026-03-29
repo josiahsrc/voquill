@@ -5,6 +5,7 @@ import { AppSideEffects } from "./AppSideEffects";
 import { DictationSideEffects } from "./DictationSideEffects";
 import { KeyPressSideEffects } from "./KeyPressSideEffects";
 import { MigratorSideEffects } from "./MigratorSideEffects";
+import { SessionSideEffects } from "./SessionSideEffects";
 import { LoadingApp } from "./LoadingApp";
 import { UpdateDialog } from "./UpdateDialog";
 
@@ -19,6 +20,7 @@ export const AppWithLoading = () => {
       <UpdateDialog />
       <MigratorSideEffects />
       <DictationSideEffects />
+      <SessionSideEffects />
       <Box sx={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
         {initialized ? <Router /> : <LoadingApp />}
       </Box>
