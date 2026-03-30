@@ -15,7 +15,12 @@ import { FormattedMessage } from "react-intl";
 type NativeSetupResult = "success" | "require-restart" | "failed";
 type NativeSetupStatus = "ready" | "needs-setup" | "needs-restart";
 
-type SetupPhase = "checking" | "idle" | "running" | "require-restart" | "failed";
+type SetupPhase =
+  | "checking"
+  | "idle"
+  | "running"
+  | "require-restart"
+  | "failed";
 
 export const NativeSetupDialog = () => {
   const [phase, setPhase] = useState<SetupPhase>("checking");
