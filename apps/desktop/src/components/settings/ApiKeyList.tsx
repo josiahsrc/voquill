@@ -32,8 +32,8 @@ import {
   deepseekTestIntegration,
   elevenlabsTestIntegration,
   GEMINI_GENERATE_TEXT_MODELS,
-  geminiTestIntegration,
   GEMINI_TRANSCRIPTION_MODELS,
+  geminiTestIntegration,
   GENERATE_TEXT_MODELS,
   groqTestIntegration,
   OPENAI_GENERATE_TEXT_MODELS,
@@ -44,9 +44,7 @@ import {
   openrouterTestIntegration,
   TRANSCRIPTION_MODELS,
 } from "@voquill/voice-ai";
-import { speachesTestIntegration } from "../../utils/speaches.utils";
-import { OPENAI_COMPATIBLE_DEFAULT_URL } from "../../utils/openai-compatible.utils";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {
   createApiKey,
@@ -64,7 +62,9 @@ import {
   OLLAMA_DEFAULT_URL,
   ollamaTestIntegration,
 } from "../../utils/ollama.utils";
-import { GroqModelPicker } from "./GroqModelPicker";
+import { OPENAI_COMPATIBLE_DEFAULT_URL } from "../../utils/openai-compatible.utils";
+import { getModelProviderRepo } from "../../repos";
+import { speachesTestIntegration } from "../../utils/speaches.utils";
 import { OllamaModelPicker } from "./OllamaModelPicker";
 import { OpenAICompatibleModelPicker } from "./OpenAICompatibleModelPicker";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
@@ -928,6 +928,54 @@ const ApiKeyCard = ({
   const models = getModelsForProvider(apiKey.provider, context);
   const currentModel = getModelForContext(apiKey, context) ?? models[0] ?? null;
 
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+
+  const repo = useMemo(
+    () => getModelProviderRepo(apiKey.provider),
+    [apiKey.provider],
+  );
+
+  useEffect(() => {
+    const options = {
+      apiKey: apiKey.keyFull ?? undefined,
+      baseUrl: apiKey.baseUrl ?? undefined,
+    };
+
+    let cancelled = false;
+    setIsFetchingModels(true);
+
+    const fetchFn =
+      context === "transcription"
+        ? repo.getTranscriptionModels(options)
+        : repo.getGenerativeTextModels(options);
+
+    fetchFn
+      .then((result) => {
+        if (!cancelled) setFetchedModels(result);
+      })
+      .catch(() => {
+        if (!cancelled) setFetchedModels([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsFetchingModels(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, apiKey.keyFull, apiKey.baseUrl, context]);
+
+  const allModels = useMemo(() => {
+    if (fetchedModels.length === 0) return [...models];
+    const staticSet = new Set<string>(models);
+    const merged = [...models];
+    for (const m of fetchedModels) {
+      if (!staticSet.has(m)) merged.push(m);
+    }
+    return merged;
+  }, [models, fetchedModels]);
+
   return (
     <Paper
       variant="outlined"
@@ -1084,20 +1132,12 @@ const ApiKeyCard = ({
             <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
           }
         />
-      ) : apiKey.provider === "groq" ? (
-        <Box onClick={(e) => e.stopPropagation()}>
-          <GroqModelPicker
-            apiKey={apiKey.keyFull ?? null}
-            selectedModel={currentModel}
-            onModelSelect={onModelChange}
-            disabled={testing || deleting}
-          />
-        </Box>
-      ) : models.length > 0 ? (
+      ) : allModels.length > 0 || isFetchingModels ? (
         <Box onClick={(e) => e.stopPropagation()}>
           <Autocomplete
             freeSolo
-            options={[...models]}
+            options={allModels}
+            loading={isFetchingModels}
             value={currentModel ?? ""}
             onChange={(_event, newValue) => {
               onModelChange(newValue || null);
@@ -1115,6 +1155,19 @@ const ApiKeyCard = ({
                 {...params}
                 label={<FormattedMessage defaultMessage="Model" />}
                 placeholder="Select or type a model"
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {isFetchingModels ? (
+                          <CircularProgress size={16} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  },
+                }}
               />
             )}
           />
