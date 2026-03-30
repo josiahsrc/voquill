@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use gtk::gdk;
 use gtk::glib::{self, ControlFlow};
@@ -209,7 +209,15 @@ pub fn run(receiver: Receiver<InMessage>) {
     }
 
     let state_click = state.clone();
+    let last_click: Rc<Cell<Option<Instant>>> = Rc::new(Cell::new(None));
     window.connect_button_release_event(move |_, event| {
+        let now = Instant::now();
+        if let Some(prev) = last_click.get() {
+            if now.duration_since(prev) < Duration::from_millis(150) {
+                return glib::Propagation::Proceed;
+            }
+        }
+        last_click.set(Some(now));
         let (x, y) = event.position();
         input::handle_click(&state_click, x, y);
         glib::Propagation::Proceed
