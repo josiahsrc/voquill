@@ -1,4 +1,8 @@
-- Linux now supports assistant mode
-- You can now auto dim your audio while you dictate (Settings > Audio > Auto dim)
-- MacOS now opens the window if you focus Voquill when the app was previously minimized.
+- The macOS pill now renders on top of full screen windows.
+- Wayland support on Linux, including native setup UI and paste fixes.
+- Global paste keybinding on Linux — configure a custom shortcut to paste from Voquill anywhere.
+- Model providers now dynamically show the latest available models.
+- Air Dictation (alpha) — use your phone as a remote mic for desktop dictation.
+- Fixed audio dimming on Windows.
+- Fixed pill style switching and standard pill sizing across platforms.
 - Various improvements and bug fixes.
