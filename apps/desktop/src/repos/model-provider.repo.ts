@@ -76,9 +76,7 @@ export class GroqModelProviderRepo extends BaseModelProviderRepo {
     return fetched.length > 0 ? fetched : [...GROQ_GENERATE_TEXT_MODELS];
   }
 
-  async getTranscriptionModels(
-    options: FetchModelsOptions,
-  ): Promise<string[]> {
+  async getTranscriptionModels(options: FetchModelsOptions): Promise<string[]> {
     const fetched = await this.fetchModels(options);
     return fetched.length > 0 ? fetched : [...GROQ_TRANSCRIPTION_MODELS];
   }
@@ -108,9 +106,7 @@ export class OpenAIModelProviderRepo extends BaseModelProviderRepo {
     return fetched.length > 0 ? fetched : [...OPENAI_GENERATE_TEXT_MODELS];
   }
 
-  async getTranscriptionModels(
-    options: FetchModelsOptions,
-  ): Promise<string[]> {
+  async getTranscriptionModels(options: FetchModelsOptions): Promise<string[]> {
     const fetched = await this.fetchModels(options);
     return fetched.length > 0 ? fetched : [...OPENAI_TRANSCRIPTION_MODELS];
   }
