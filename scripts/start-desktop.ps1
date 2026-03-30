@@ -1,5 +1,5 @@
 param(
-    [string]$Flavor = "emulators"
+    [string]$Flavor = "prod"
 )
 
 $ErrorActionPreference = "Stop"
