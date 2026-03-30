@@ -28,7 +28,7 @@ The average person types at about 40 words per minute but we speak at around 150
 
 The math is simple: if you could type at the speed you speak, three hours of writing becomes 45 minutes. That's over two hours back in your day, every day.
 
-![Keyboard vs Voice](/blog/keyboard-vs-voice.png)
+![Keyboard vs Voice](/blog/keyboard-vs-voice.jpg)
 
 ### Speaking Is Not Just Faster, It's WAY Better
 
@@ -44,7 +44,7 @@ One of the biggest annoyances with voice typing has always been the cleanup: you
 
 We solve this. Voquill uses AI to automatically format your text based on context. Proper punctuation, capitalization, paragraph breaks, bullets, and sentence structure are applied as you speak. If you dictate an email, Voquill formats it as an email.
 
-![Formatted email](/blog/email-formatted.png)
+![Formatted email](/blog/email-formatted.jpg)
 
 ## Principle 2: You Should Be In Full Control
 
@@ -66,7 +66,7 @@ With Voquill, you can choose between:
 - **Bring your own API key** — connect to the transcription provider (OpenAI, Groq, etc.) you already use and trust.
 - **Use our Voquill server** — it's completely open-sourced so you can see what's going on.
 
-![Voquill server options](/blog/voquill-server-options.png)
+![Voquill server options](/blog/voquill-server-options.jpg)
 
 [Enterprises](https://docs.voquill.com/enterprise/overview) also get:
 - **Use a verified service your organization trusts** — plug into the infrastructure your team has already approved.
