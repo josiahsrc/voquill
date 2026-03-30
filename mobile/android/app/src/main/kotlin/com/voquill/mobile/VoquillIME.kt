@@ -71,10 +71,11 @@ class VoquillIME : InputMethodService() {
         val isOnTrial: Boolean,
         val trialEndsAt: String?,
         val wordsToday: Int,
+        val wordsThisWeek: Int,
     )
 
     private data class ConfigInfo(
-        val freeWordsPerDay: Int,
+        val freeWordsPerWeek: Int,
     )
 
     private var currentPhase = Phase.IDLE
@@ -749,6 +750,7 @@ class VoquillIME : InputMethodService() {
                 isOnTrial = memberJson.optBoolean("isOnTrial", false),
                 trialEndsAt = trialEndsAt,
                 wordsToday = memberJson.optInt("wordsToday", 0),
+                wordsThisWeek = memberJson.optInt("wordsThisWeek", 0),
             )
         } catch (e: Exception) {
             dbg("getMyMember failed: ${e.message}")
@@ -765,7 +767,7 @@ class VoquillIME : InputMethodService() {
             ) ?: return null
             val configJson = result.optJSONObject("config") ?: return null
             ConfigInfo(
-                freeWordsPerDay = configJson.optInt("freeWordsPerDay", 0),
+                freeWordsPerWeek = configJson.optInt("freeWordsPerWeek", 0),
             )
         } catch (e: Exception) {
             dbg("getFullConfig failed: ${e.message}")
@@ -808,9 +810,9 @@ class VoquillIME : InputMethodService() {
         if (member.plan == "free") {
             val config = configInfo
             statusLabel.text = if (config != null) {
-                val remaining = max(0, config.freeWordsPerDay - member.wordsToday)
+                val remaining = max(0, config.freeWordsPerWeek - member.wordsThisWeek)
                 val formatted = java.text.NumberFormat.getIntegerInstance().format(remaining)
-                "$formatted words left today"
+                "$formatted words left"
             } else {
                 "Free plan"
             }

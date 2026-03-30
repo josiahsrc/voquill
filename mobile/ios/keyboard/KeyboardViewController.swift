@@ -1018,12 +1018,12 @@ class KeyboardViewController: UIInputViewController {
             }
         } else if member.plan == "free" {
             if let config = configInfo {
-                let remaining = max(0, config.freeWordsPerDay - member.wordsToday)
+                let remaining = max(0, config.freeWordsPerWeek - member.wordsThisWeek)
                 let formatter = NumberFormatter()
                 formatter.numberStyle = .decimal
                 let formatted = formatter.string(from: NSNumber(value: remaining)) ?? "\(remaining)"
                 statusIcon.image = UIImage(systemName: "pencil.line")
-                statusLabel.text = "\(formatted) words left today"
+                statusLabel.text = "\(formatted) words left"
                 setStatusBannerVisible(true)
             } else {
                 statusIcon.image = UIImage(systemName: "pencil.line")
