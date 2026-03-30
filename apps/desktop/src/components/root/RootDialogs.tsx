@@ -6,6 +6,7 @@ import { AIAgentModeDialog } from "../settings/AIAgentModeDialog";
 import { AIPostProcessingDialog } from "../settings/AIPostProcessingDialog";
 import { AITranscriptionDialog } from "../settings/AITranscriptionDialog";
 import { AppKeybindingsDialog } from "../settings/AppKeybindingsDialog";
+import { GlobalPasteKeybindDialog } from "../settings/GlobalPasteKeybindDialog";
 import { AudioDialog } from "../settings/AudioDialog";
 import { ClearLocalDataDialog } from "../settings/ClearLocalDataDialog";
 import { DeleteAccountDialog } from "../settings/DeleteAccountDialog";
@@ -41,6 +42,7 @@ export const RootDialogs = () => {
       <MultiDeviceDialog />
       <DictationLanguageDialog />
       <AppKeybindingsDialog />
+      <GlobalPasteKeybindDialog />
       <DiagnosticsDialog />
       <MobileAppDialog />
       <NativeSetupDialog />

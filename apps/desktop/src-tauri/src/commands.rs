@@ -1382,7 +1382,7 @@ pub fn supports_app_detection() -> bool {
 }
 
 #[tauri::command]
-pub fn supports_paste_keybinds() -> bool {
+pub fn supports_paste_keybinds() -> crate::platform::PasteKeybindSupport {
     crate::platform::supports_paste_keybinds()
 }
 

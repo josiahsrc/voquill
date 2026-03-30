@@ -107,6 +107,7 @@ export const createDefaultPreferences = (): UserPreferences => ({
   remoteReceiverPort: null,
   remoteReceiverAutoStart: false,
   dictationAudioDim: 1.0,
+  pasteKeybind: null,
 });
 
 export const updateUserPreferences = async (

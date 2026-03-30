@@ -16,6 +16,14 @@ pub enum NativeSetupStatus {
     NeedsRestart,
 }
 
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PasteKeybindSupport {
+    Disabled,
+    PerApp,
+    Global,
+}
+
 #[cfg(target_os = "linux")]
 pub mod linux;
 #[cfg(target_os = "linux")]

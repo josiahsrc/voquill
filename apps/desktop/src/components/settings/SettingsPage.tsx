@@ -152,6 +152,12 @@ export default function SettingsPage() {
     });
   };
 
+  const openGlobalPasteKeybindDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.globalPasteKeybindDialogOpen = true;
+    });
+  };
+
   const openAgentModeDialog = () => {
     produceAppState((draft) => {
       draft.settings.agentModeDialogOpen = true;
@@ -260,11 +266,18 @@ export default function SettingsPage() {
         leading={<TroubleshootOutlined />}
         onClick={openDiagnosticsDialog}
       />
-      {supportsPasteKeybinds && (
+      {supportsPasteKeybinds === "per-app" && (
         <ListTile
           title={<FormattedMessage defaultMessage="App paste bindings" />}
           leading={<AppsOutlined />}
           onClick={openAppKeybindingsDialog}
+        />
+      )}
+      {supportsPasteKeybinds === "global" && (
+        <ListTile
+          title={<FormattedMessage defaultMessage="Paste binding" />}
+          leading={<AppsOutlined />}
+          onClick={openGlobalPasteKeybindDialog}
         />
       )}
       <ListTile
