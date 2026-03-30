@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use gtk::gdk;
 use gtk::glib::{self, ControlFlow};
@@ -32,29 +32,9 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
     };
 
-    let ui_scale = match backend {
-        Backend::X11 => {
-            let dpi = gdk::Screen::default().map(|s| s.resolution()).unwrap_or(-1.0);
-            let gdk_scale = std::env::var("GDK_SCALE")
-                .ok()
-                .and_then(|s| s.parse::<f64>().ok())
-                .unwrap_or(1.0);
-            if dpi > 96.0 {
-                (dpi / 96.0 / gdk_scale).max(1.0)
-            } else {
-                1.0
-            }
-        }
-        _ => 1.0,
-    };
-
-    let scaled_width = (WINDOW_W_TYPING as f64 * ui_scale).ceil() as i32;
-    let scaled_height = (WINDOW_H_TYPING as f64 * ui_scale).ceil() as i32;
-    let scaled_margin = (MARGIN_BOTTOM as f64 * ui_scale).ceil() as i32;
-
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
     if backend != Backend::PlainWayland {
-        window.set_default_size(scaled_width, scaled_height);
+        window.set_default_size(WINDOW_W_TYPING, WINDOW_H_TYPING);
     }
     window.set_decorated(false);
     window.set_app_paintable(true);
@@ -71,14 +51,13 @@ pub fn run(receiver: Receiver<InMessage>) {
             window.init_layer_shell();
             window.set_layer(gtk_layer_shell::Layer::Overlay);
             window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
-            window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, scaled_margin);
+            window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
             window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
             window.set_exclusive_zone(0);
             window.set_namespace("voquill-pill");
         }
         Backend::X11 => {
-            let x11_ui_scale = ui_scale;
-            window.connect_realize(move |window| x11::setup_x11_window(window, x11_ui_scale));
+            window.connect_realize(move |window| x11::setup_x11_window(window));
         }
         Backend::PlainWayland => {
             window.set_type_hint(gdk::WindowTypeHint::Dock);
@@ -105,7 +84,7 @@ pub fn run(receiver: Receiver<InMessage>) {
     let overlay_widget = gtk::Overlay::new();
     let drawing_area = gtk::DrawingArea::new();
     if backend != Backend::PlainWayland {
-        drawing_area.set_size_request(scaled_width, scaled_height);
+        drawing_area.set_size_request(WINDOW_W_TYPING, WINDOW_H_TYPING);
     }
     overlay_widget.add(&drawing_area);
 
@@ -136,7 +115,6 @@ pub fn run(receiver: Receiver<InMessage>) {
         tooltip_t: Cell::new(0.0),
         tooltip_velocity: Cell::new(0.0),
         tooltip_width: Cell::new(0.0),
-        ui_scale,
         window_mode: Cell::new(WindowMode::Dictation),
         draw_width: Cell::new(DICTATION_WINDOW_WIDTH as f64),
         draw_height: Cell::new(DICTATION_WINDOW_HEIGHT as f64),
@@ -231,7 +209,15 @@ pub fn run(receiver: Receiver<InMessage>) {
     }
 
     let state_click = state.clone();
+    let last_click: Rc<Cell<Option<Instant>>> = Rc::new(Cell::new(None));
     window.connect_button_release_event(move |_, event| {
+        let now = Instant::now();
+        if let Some(prev) = last_click.get() {
+            if now.duration_since(prev) < Duration::from_millis(150) {
+                return glib::Propagation::Proceed;
+            }
+        }
+        last_click.set(Some(now));
         let (x, y) = event.position();
         input::handle_click(&state_click, x, y);
         glib::Propagation::Proceed
@@ -368,25 +354,25 @@ pub fn run(receiver: Receiver<InMessage>) {
             let dh = state_tick.draw_height.get();
             let panel_w = PANEL_EXPANDED_WIDTH;
             let panel_x = (dw - panel_w) / 2.0;
-            let margin_start = ((ox + panel_x + PANEL_CONTENT_SIDE_INSET) * ui_scale) as i32;
-            let aw = state_tick.alloc_width.get() / ui_scale;
+            let margin_start = (ox + panel_x + PANEL_CONTENT_SIDE_INSET) as i32;
+            let aw = state_tick.alloc_width.get();
             let right_margin = if aw > 0.0 {
                 aw - ox - dw
             } else {
                 WINDOW_W_TYPING as f64 - ox - dw
             };
-            let margin_end = ((right_margin + (dw - panel_x - panel_w) + PANEL_CONTENT_SIDE_INSET) * ui_scale) as i32;
-            let ah = state_tick.alloc_height.get() / ui_scale;
+            let margin_end = (right_margin + (dw - panel_x - panel_w) + PANEL_CONTENT_SIDE_INSET) as i32;
+            let ah = state_tick.alloc_height.get();
             let bottom_margin = if ah > 0.0 {
                 ah - oy - dh
             } else {
                 0.0
             };
-            let margin_bottom = ((bottom_margin + PANEL_BOTTOM_MARGIN) * ui_scale) as i32;
+            let margin_bottom = (bottom_margin + PANEL_BOTTOM_MARGIN) as i32;
             entry_tick.set_margin_start(margin_start);
             entry_tick.set_margin_end(margin_end);
             entry_tick.set_margin_bottom(margin_bottom);
-            entry_tick.set_height_request((PANEL_INPUT_HEIGHT * ui_scale) as i32);
+            entry_tick.set_height_request(PANEL_INPUT_HEIGHT as i32);
             entry_tick.set_visible(true);
             entry_tick.show();
             match backend_tick {
