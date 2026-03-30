@@ -255,7 +255,7 @@ class IndeterminateProgressView: UIView {
 class KeyboardViewController: UIInputViewController {
 
     private enum PillVisual {
-        case idle, recording, loading
+        case idle, recording, loading, error(String)
     }
 
     private var dictationPhase: DictationPhase = .idle
@@ -720,6 +720,21 @@ class KeyboardViewController: UIInputViewController {
                 self.pillButton.isUserInteractionEnabled = false
             }
             progressView.startAnimating()
+
+        case .error(let message):
+            changes = {
+                self.waveformView.alpha = 0
+                self.waveformView.isActive = false
+                self.progressView.alpha = 0
+                self.pillButton.backgroundColor = UIColor.systemRed
+                self.pillLabel.text = message
+                self.pillLabel.alpha = 1
+                self.pillButton.isUserInteractionEnabled = true
+            }
+            progressView.stopAnimating()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                self?.applyPillVisual(.idle, animated: true)
+            }
         }
 
         if animated {
@@ -1151,7 +1166,7 @@ class KeyboardViewController: UIInputViewController {
     private func handleTranscription() {
         guard hasFullAccess else {
             DispatchQueue.main.async {
-                self.textDocumentProxy.insertText("[Enable Full Access in Settings > Voquill Keyboard]")
+                self.applyPillVisual(.error("Enable Full Access in Settings"), animated: true)
             }
             return
         }
@@ -1164,18 +1179,16 @@ class KeyboardViewController: UIInputViewController {
 
         guard let defaults = UserDefaults(suiteName: DictationConstants.appGroupId) else {
             DispatchQueue.main.async {
-                self.textDocumentProxy.insertText("[Missing app group defaults]")
                 self.isProcessing = false
-                self.applyPillVisual(.idle, animated: true)
+                self.applyPillVisual(.error("Setup error — please reinstall"), animated: true)
             }
             return
         }
 
         guard let audioUrl = DictationConstants.audioFileURL else {
             DispatchQueue.main.async {
-                self.textDocumentProxy.insertText("[Missing audio file]")
                 self.isProcessing = false
-                self.applyPillVisual(.idle, animated: true)
+                self.applyPillVisual(.error("Recording error — try again"), animated: true)
             }
             return
         }
@@ -1189,9 +1202,8 @@ class KeyboardViewController: UIInputViewController {
 
             guard let transcribeRepo = self.buildTranscribeRepo(defaults: defaults, config: config) else {
                 DispatchQueue.main.async {
-                    self.textDocumentProxy.insertText("[Transcription not configured]")
                     self.isProcessing = false
-                    self.applyPillVisual(.idle, animated: true)
+                    self.applyPillVisual(.error("Transcription not configured"), animated: true)
                 }
                 return
             }
@@ -1272,9 +1284,8 @@ class KeyboardViewController: UIInputViewController {
                 } catch {
                     self.dbg("Transcription failed: \(error.localizedDescription)")
                     await MainActor.run {
-                        self.textDocumentProxy.insertText("[Transcription failed: \(error.localizedDescription)]")
                         self.isProcessing = false
-                        self.applyPillVisual(.idle, animated: true)
+                        self.applyPillVisual(.error("Transcription failed — try again"), animated: true)
                     }
                 }
             }
@@ -1285,17 +1296,15 @@ class KeyboardViewController: UIInputViewController {
                 guard let self = self else { return }
                 guard let idToken = idToken else {
                     DispatchQueue.main.async {
-                        self.textDocumentProxy.insertText("[Auth failed: \(self.lastDebugLog)]")
                         self.isProcessing = false
-                        self.applyPillVisual(.idle, animated: true)
+                        self.applyPillVisual(.error("Sign in required — open Voquill"), animated: true)
                     }
                     return
                 }
                 guard let functionUrl = defaults.string(forKey: "voquill_function_url") else {
                     DispatchQueue.main.async {
-                        self.textDocumentProxy.insertText("[Missing function URL]")
                         self.isProcessing = false
-                        self.applyPillVisual(.idle, animated: true)
+                        self.applyPillVisual(.error("Setup error — open Voquill"), animated: true)
                     }
                     return
                 }

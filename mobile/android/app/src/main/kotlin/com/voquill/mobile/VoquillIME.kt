@@ -54,7 +54,7 @@ import kotlin.math.sin
 
 class VoquillIME : InputMethodService() {
 
-    enum class Phase { IDLE, RECORDING, LOADING }
+    enum class Phase { IDLE, RECORDING, LOADING, ERROR }
 
     private data class SharedTone(
         val name: String,
@@ -131,10 +131,17 @@ class VoquillIME : InputMethodService() {
     private val executor = Executors.newSingleThreadExecutor()
 
     private var lastDebugLog = ""
+    private var pendingErrorMessage = ""
 
     private fun dbg(msg: String) {
         Log.d("[VoquillKB]", msg)
         lastDebugLog = msg
+    }
+
+    private fun showPillError(message: String) {
+        pendingErrorMessage = message
+        applyPhase(Phase.ERROR)
+        handler.postDelayed({ if (currentPhase == Phase.ERROR) applyPhase(Phase.IDLE) }, 3000)
     }
 
     private val audioFilePath: String
@@ -352,6 +359,17 @@ class VoquillIME : InputMethodService() {
                 pillButton.isClickable = false
                 pillButton.isEnabled = false
             }
+            Phase.ERROR -> {
+                waveformView?.alpha = 0f
+                waveformView?.isActive = false
+                progressView?.alpha = 0f
+                progressView?.stopAnimating()
+                pillBg?.setColor(Color.rgb(0xFF, 0x3B, 0x30))
+                pillLabel.text = pendingErrorMessage
+                pillLabel.alpha = 1f
+                pillButton.isClickable = true
+                pillButton.isEnabled = true
+            }
         }
     }
 
@@ -359,12 +377,11 @@ class VoquillIME : InputMethodService() {
         when (currentPhase) {
             Phase.IDLE -> {
                 if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                    currentInputConnection?.commitText("[Microphone permission not granted — open Voquill app to allow]", 1)
+                    showPillError("Mic permission needed — open Voquill")
                     return
                 }
                 if (!startAudioCapture()) {
-                    currentInputConnection?.commitText("[Failed to start microphone: $lastDebugLog]", 1)
-                    applyPhase(Phase.IDLE)
+                    showPillError("Microphone error — try again")
                     return
                 }
                 applyPhase(Phase.RECORDING)
@@ -375,6 +392,7 @@ class VoquillIME : InputMethodService() {
                 handleTranscription()
             }
             Phase.LOADING -> {}
+            Phase.ERROR -> applyPhase(Phase.IDLE)
         }
     }
 
@@ -947,16 +965,14 @@ class VoquillIME : InputMethodService() {
                 val idToken = fetchIdTokenSync()
                 if (idToken == null) {
                     handler.post {
-                        currentInputConnection?.commitText("[Auth failed: $lastDebugLog]", 1)
-                        applyPhase(Phase.IDLE)
+                        showPillError("Sign in required — open Voquill")
                     }
                     return@execute
                 }
                 val functionUrl = prefs.getString(KEY_FUNCTION_URL, null)
                 if (functionUrl.isNullOrBlank()) {
                     handler.post {
-                        currentInputConnection?.commitText("[Missing function URL]", 1)
-                        applyPhase(Phase.IDLE)
+                        showPillError("Setup error — open Voquill")
                     }
                     return@execute
                 }
@@ -966,8 +982,7 @@ class VoquillIME : InputMethodService() {
             val transcribeRepo = buildTranscribeRepo(prefs, config)
             if (transcribeRepo == null) {
                 handler.post {
-                    currentInputConnection?.commitText("[Transcription not configured]", 1)
-                    applyPhase(Phase.IDLE)
+                    showPillError("Transcription not configured")
                 }
                 return@execute
             }
@@ -977,8 +992,7 @@ class VoquillIME : InputMethodService() {
 
             if (rawTranscript.isNullOrBlank()) {
                 handler.post {
-                    currentInputConnection?.commitText("[Transcribe failed: $lastDebugLog]", 1)
-                    applyPhase(Phase.IDLE)
+                    showPillError("Transcription failed — try again")
                 }
                 return@execute
             }
