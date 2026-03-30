@@ -78,7 +78,6 @@ pub(crate) struct PillState {
     pub(crate) tooltip_t: Cell<f64>,
     pub(crate) tooltip_velocity: Cell<f64>,
     pub(crate) tooltip_width: Cell<f64>,
-    pub(crate) ui_scale: f64,
 
     // Window sizing
     pub(crate) window_mode: Cell<WindowMode>,
@@ -128,8 +127,7 @@ impl PillState {
         let aw = self.alloc_width.get();
         let ah = self.alloc_height.get();
         if aw > 0.0 && ah > 0.0 {
-            let s = self.ui_scale;
-            ((aw / s - dw) / 2.0, ah / s - dh - MARGIN_BOTTOM as f64)
+            ((aw - dw) / 2.0, ah - dh - MARGIN_BOTTOM as f64)
         } else {
             ((WINDOW_W_TYPING as f64 - dw) / 2.0, WINDOW_H_TYPING as f64 - dh)
         }

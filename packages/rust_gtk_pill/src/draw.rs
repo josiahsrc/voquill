@@ -13,11 +13,6 @@ pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
     let _ = cr.paint();
     cr.set_operator(cairo::Operator::Over);
 
-    let s = state.ui_scale;
-    if s != 1.0 {
-        cr.scale(s, s);
-    }
-
     state.click_regions.borrow_mut().clear();
 
     let ww = state.draw_width.get();
