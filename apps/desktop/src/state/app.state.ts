@@ -51,6 +51,7 @@ import { INITIAL_UPDATER_STATE, UpdaterState } from "./updater.state";
 
 export type SnackbarMode = "info" | "success" | "error";
 export type HotkeyStrategy = "listener" | "bridge";
+export type PasteKeybindSupport = "disabled" | "per-app" | "global";
 
 export type StreamingToolCall = {
   toolCallId: string;
@@ -136,7 +137,7 @@ export type AppState = {
   hotkeyTriggers: Record<string, number>;
   hotkeyStrategy: Nullable<HotkeyStrategy>;
   supportsAppDetection: boolean;
-  supportsPasteKeybinds: boolean;
+  supportsPasteKeybinds: PasteKeybindSupport;
 };
 
 export const INITIAL_APP_STATE: AppState = {
@@ -188,7 +189,7 @@ export const INITIAL_APP_STATE: AppState = {
   hotkeyTriggers: {},
   hotkeyStrategy: null,
   supportsAppDetection: true,
-  supportsPasteKeybinds: true,
+  supportsPasteKeybinds: "disabled",
   pillConversationId: null,
   assistantInputMode: "voice",
   local: INITIAL_LOCAL_STATE,

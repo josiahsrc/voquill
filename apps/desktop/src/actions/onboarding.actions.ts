@@ -200,6 +200,7 @@ export const submitOnboarding = async () => {
       remoteReceiverPort: null,
       remoteReceiverAutoStart: false,
       dictationAudioDim: 1.0,
+      pasteKeybind: null,
     };
 
     const [savedUser, savedPreferences] = await Promise.all([

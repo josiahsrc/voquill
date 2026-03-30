@@ -1382,8 +1382,18 @@ pub fn supports_app_detection() -> bool {
 }
 
 #[tauri::command]
-pub fn supports_paste_keybinds() -> bool {
+pub fn supports_paste_keybinds() -> crate::platform::PasteKeybindSupport {
     crate::platform::supports_paste_keybinds()
+}
+
+#[tauri::command]
+pub fn get_native_setup_status() -> crate::platform::NativeSetupStatus {
+    crate::platform::init::get_native_setup_status()
+}
+
+#[tauri::command]
+pub async fn run_native_setup() -> crate::platform::NativeSetupResult {
+    crate::platform::init::run_native_setup().await
 }
 
 #[tauri::command]

@@ -43,6 +43,7 @@ type LocalUserPreferences = {
   remoteReceiverPort: Nullable<number>;
   remoteReceiverAutoStart: boolean;
   dictationAudioDim: number;
+  pasteKeybind: Nullable<string>;
   useNewBackend: boolean;
 };
 
@@ -95,6 +96,7 @@ const fromLocalPreferences = (
   remoteReceiverPort: preferences.remoteReceiverPort ?? null,
   remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
   dictationAudioDim: preferences.dictationAudioDim ?? 1.0,
+  pasteKeybind: preferences.pasteKeybind ?? null,
 });
 
 const toLocalPreferences = (
@@ -134,6 +136,7 @@ const toLocalPreferences = (
   remoteReceiverPort: preferences.remoteReceiverPort ?? null,
   remoteReceiverAutoStart: preferences.remoteReceiverAutoStart ?? false,
   dictationAudioDim: preferences.dictationAudioDim ?? 1.0,
+  pasteKeybind: preferences.pasteKeybind ?? null,
   useNewBackend: true,
 });
 

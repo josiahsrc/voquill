@@ -115,12 +115,23 @@ pub(crate) struct PillState {
 
     // Entry text (for typing mode)
     pub(crate) entry_text: RefCell<String>,
+
+    // Actual window allocation (used by PlainWayland for fullscreen overlay positioning)
+    pub(crate) alloc_width: Cell<f64>,
+    pub(crate) alloc_height: Cell<f64>,
 }
 
 impl PillState {
     pub(crate) fn content_offset(&self) -> (f64, f64) {
         let dw = self.draw_width.get();
         let dh = self.draw_height.get();
-        ((WINDOW_W_TYPING as f64 - dw) / 2.0, WINDOW_H_TYPING as f64 - dh)
+        let aw = self.alloc_width.get();
+        let ah = self.alloc_height.get();
+        if aw > 0.0 && ah > 0.0 {
+            let s = self.ui_scale;
+            ((aw / s - dw) / 2.0, ah / s - dh - MARGIN_BOTTOM as f64)
+        } else {
+            ((WINDOW_W_TYPING as f64 - dw) / 2.0, WINDOW_H_TYPING as f64 - dh)
+        }
     }
 }

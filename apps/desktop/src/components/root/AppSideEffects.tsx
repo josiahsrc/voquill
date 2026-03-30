@@ -44,7 +44,7 @@ import {
   getMemberRepo,
   getUserRepo,
 } from "../../repos";
-import { HotkeyStrategy } from "../../state/app.state";
+import { HotkeyStrategy, PasteKeybindSupport } from "../../state/app.state";
 import { getAppState, produceAppState, useAppStore } from "../../store";
 import { AuthUser } from "../../types/auth.types";
 import { OverlayPhase } from "../../types/overlay.types";
@@ -145,7 +145,7 @@ export const AppSideEffects = () => {
     const [strategy, appDetection, pasteKeybinds] = await Promise.all([
       invoke<HotkeyStrategy>("get_hotkey_strategy"),
       invoke<boolean>("supports_app_detection"),
-      invoke<boolean>("supports_paste_keybinds"),
+      invoke<PasteKeybindSupport>("supports_paste_keybinds"),
     ]);
     produceAppState((draft) => {
       draft.hotkeyStrategy = strategy;

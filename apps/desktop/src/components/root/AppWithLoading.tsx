@@ -22,7 +22,7 @@ export const AppWithLoading = () => {
       <UpdateDialog />
       <MigratorSideEffects />
       <DictationSideEffects />
-      {isCloud && <SessionSideEffects />}∏
+      {isCloud && <SessionSideEffects />}
       <Box sx={{ height: "100vh", width: "100vw", overflow: "hidden" }}>
         {initialized ? <Router /> : <LoadingApp />}
       </Box>

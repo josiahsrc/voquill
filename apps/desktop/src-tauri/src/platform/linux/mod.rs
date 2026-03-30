@@ -29,6 +29,10 @@ pub fn supports_app_detection() -> bool {
     !detect::is_wayland()
 }
 
-pub fn supports_paste_keybinds() -> bool {
-    false
+pub fn supports_paste_keybinds() -> crate::platform::PasteKeybindSupport {
+    if detect::is_wayland() {
+        crate::platform::PasteKeybindSupport::Global
+    } else {
+        crate::platform::PasteKeybindSupport::Disabled
+    }
 }
