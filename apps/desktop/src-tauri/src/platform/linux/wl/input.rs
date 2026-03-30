@@ -87,19 +87,6 @@ pub fn wtype_key(modifiers: &[&str], key: &str) -> Result<(), String> {
     }
 }
 
-pub fn wtype_text(text: &str) -> Result<(), String> {
-    let status = Command::new(wtype_bin()?)
-        .arg("--")
-        .arg(text)
-        .status()
-        .map_err(|err| format!("wtype failed: {err}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err("wtype exited with non-zero status".into())
-    }
-}
-
 // --- Simulate paste/copy keystrokes ---
 
 fn simulate_paste_keystroke(shift: bool) -> Result<(), String> {
