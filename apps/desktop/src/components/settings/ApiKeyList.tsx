@@ -14,36 +14,11 @@ import {
   MenuItem,
   Paper,
   Stack,
-  Switch,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import {
-  aldeaTestIntegration,
-  assemblyaiTestIntegration,
-  AZURE_OPENAI_MODELS,
-  azureOpenAITestIntegration,
-  azureTestIntegration,
-  CLAUDE_MODELS,
-  claudeTestIntegration,
-  deepgramTestIntegration,
-  DEEPSEEK_MODELS,
-  deepseekTestIntegration,
-  elevenlabsTestIntegration,
-  GEMINI_GENERATE_TEXT_MODELS,
-  GEMINI_TRANSCRIPTION_MODELS,
-  geminiTestIntegration,
-  GENERATE_TEXT_MODELS,
-  groqTestIntegration,
-  OPENAI_GENERATE_TEXT_MODELS,
-  OPENAI_TRANSCRIPTION_MODELS,
-  openaiCompatibleTestIntegration,
-  openaiTestIntegration,
-  OPENROUTER_FAVORITE_MODELS,
-  openrouterTestIntegration,
-  TRANSCRIPTION_MODELS,
-} from "@voquill/voice-ai";
+import { API_KEY_PROVIDERS, type ApiKeyProvider } from "@voquill/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import {
@@ -58,17 +33,14 @@ import {
   SettingsApiKeyProvider,
 } from "../../state/settings.state";
 import { useAppStore } from "../../store";
-import {
-  OLLAMA_DEFAULT_URL,
-  ollamaTestIntegration,
-} from "../../utils/ollama.utils";
-import { OPENAI_COMPATIBLE_DEFAULT_URL } from "../../utils/openai-compatible.utils";
 import { getModelProviderRepo } from "../../repos";
-import { speachesTestIntegration } from "../../utils/speaches.utils";
+import type { FetchModelsOptions } from "../../repos/model-provider.repo";
+import { getProviderFormConfig } from "./api-key-provider-config";
 import { OllamaModelPicker } from "./OllamaModelPicker";
 import { OpenAICompatibleModelPicker } from "./OpenAICompatibleModelPicker";
 import { OpenRouterModelPicker } from "./OpenRouterModelPicker";
 import { OpenRouterProviderRouting } from "./OpenRouterProviderRouting";
+import { ProviderFormFields } from "./ProviderFormFields";
 
 export type ApiKeyListContext = "transcription" | "post-processing";
 
@@ -77,6 +49,15 @@ type ApiKeyListProps = {
   onChange: (id: string | null) => void;
   context: ApiKeyListContext;
 };
+
+const getAvailableProviders = (context: ApiKeyListContext): ApiKeyProvider[] =>
+  API_KEY_PROVIDERS.filter((p) => {
+    if (p === "azure") return true;
+    const repo = getModelProviderRepo(p);
+    return context === "transcription"
+      ? repo.supportsTranscriptionModels()
+      : repo.supportsGenerativeTextModels();
+  });
 
 type AddApiKeyCardProps = {
   onSave: (
@@ -95,70 +76,49 @@ type AddApiKeyCardProps = {
 const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
   const [name, setName] = useState("");
   const [provider, setProvider] = useState<SettingsApiKeyProvider>("groq");
-  const [key, setKey] = useState("");
-  const [ollamaUrl, setOllamaUrl] = useState("");
-  const [azureRegion, setAzureRegion] = useState("");
-  const [azureOpenAIEndpoint, setAzureOpenAIEndpoint] = useState("");
-  const [speachesUrl, setSpeachesUrl] = useState("");
-  const [speachesModel, setSpeachesModel] = useState("");
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [includeV1Path, setIncludeV1Path] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const isOllama = provider === "ollama";
-  const isOpenAICompatible = provider === "openai-compatible";
-  const isOllamaLike = isOllama || isOpenAICompatible;
-  const isAzure = provider === "azure";
-  const isAzureOpenAI = isAzure && context === "post-processing";
-  const isAzureSTT = isAzure && context === "transcription";
-  const isSpeaches = provider === "speaches";
+  const config = useMemo(
+    () => getProviderFormConfig(provider, context),
+    [provider, context],
+  );
 
-  const canSave = isOllamaLike
-    ? !!name
-    : isSpeaches
-      ? !!name
-      : isAzureSTT
-        ? !!name && !!key && !!azureRegion
-        : isAzureOpenAI
-          ? !!name && !!key && !!azureOpenAIEndpoint
-          : !!name && !!key;
+  const providers = useMemo(() => getAvailableProviders(context), [context]);
+
+  const canSave =
+    !!name &&
+    config.fields.filter((f) => f.required).every((f) => !!fieldValues[f.key]);
+
+  const handleFieldChange = useCallback((key: string, value: string) => {
+    setFieldValues((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   const handleSave = useCallback(async () => {
-    if (!canSave || saving) {
-      return;
-    }
+    if (!canSave || saving) return;
 
     setSaving(true);
     try {
-      const keyToSave = key || "";
-      const baseUrl = isOllamaLike
-        ? ollamaUrl || OLLAMA_DEFAULT_URL
-        : isSpeaches
-          ? speachesUrl || "http://localhost:8000"
-          : isAzureOpenAI
-            ? azureOpenAIEndpoint
-            : undefined;
-      const azureRegionValue = isAzureSTT ? azureRegion : undefined;
-      const transcriptionModelValue =
-        isSpeaches || (isOpenAICompatible && context === "transcription")
-          ? speachesModel || undefined
-          : undefined;
-      const includeV1PathValue = isOpenAICompatible ? includeV1Path : undefined;
+      const apiKeyValue = fieldValues.apiKey || "";
+      const baseUrl = fieldValues.baseUrl || config.defaultBaseUrl || undefined;
+      const azureRegion = fieldValues.azureRegion || undefined;
+      const transcriptionModel = fieldValues.transcriptionModel || undefined;
+      const includeV1PathValue = config.showIncludeV1Path
+        ? includeV1Path
+        : undefined;
+
       await onSave(
         name,
         provider,
-        keyToSave,
+        apiKeyValue,
         baseUrl,
-        azureRegionValue,
-        transcriptionModelValue,
+        azureRegion,
+        transcriptionModel,
         includeV1PathValue,
       );
       setName("");
-      setKey("");
-      setOllamaUrl("");
-      setAzureRegion("");
-      setAzureOpenAIEndpoint("");
-      setSpeachesUrl("");
-      setSpeachesModel("");
+      setFieldValues({});
       setIncludeV1Path(true);
     } catch (error) {
       console.error("Failed to save API key", error);
@@ -167,21 +127,13 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
     }
   }, [
     canSave,
-    isOllamaLike,
-    isSpeaches,
-    isAzureOpenAI,
-    isAzureSTT,
-    name,
-    key,
-    ollamaUrl,
-    speachesUrl,
-    speachesModel,
-    azureRegion,
-    azureOpenAIEndpoint,
-    provider,
-    includeV1Path,
-    onSave,
     saving,
+    name,
+    provider,
+    fieldValues,
+    includeV1Path,
+    config,
+    onSave,
   ]);
 
   return (
@@ -207,201 +159,29 @@ const AddApiKeyCard = ({ onSave, onCancel, context }: AddApiKeyCardProps) => {
         select
         label={<FormattedMessage defaultMessage="Provider" />}
         value={provider}
-        onChange={(event) =>
-          setProvider(event.target.value as SettingsApiKeyProvider)
-        }
+        onChange={(event) => {
+          setProvider(event.target.value as SettingsApiKeyProvider);
+          setFieldValues({});
+          setIncludeV1Path(true);
+        }}
         size="small"
         fullWidth
         disabled={saving}
       >
-        <MenuItem value="groq">Groq</MenuItem>
-        <MenuItem value="openai">OpenAI</MenuItem>
-        <MenuItem value="gemini">Gemini</MenuItem>
-        {/* OpenRouter, Ollama, DeepSeek, and Azure OpenAI only support LLM, not transcription */}
-        {context === "post-processing" && (
-          <MenuItem value="openrouter">OpenRouter</MenuItem>
-        )}
-        {context === "post-processing" && (
-          <MenuItem value="ollama">Ollama</MenuItem>
-        )}
-        <MenuItem value="openai-compatible">OpenAI Compatible</MenuItem>
-        {context === "post-processing" && (
-          <MenuItem value="deepseek">DeepSeek</MenuItem>
-        )}
-        {context === "post-processing" && (
-          <MenuItem value="claude">Claude</MenuItem>
-        )}
-        {context === "post-processing" && (
-          <MenuItem value="azure">Azure OpenAI</MenuItem>
-        )}
-        {/* Aldea, AssemblyAI, Deepgram, ElevenLabs, and Azure STT only support transcription, not post-processing */}
-        {context === "transcription" && (
-          <MenuItem value="aldea">Aldea</MenuItem>
-        )}
-        {context === "transcription" && (
-          <MenuItem value="assemblyai">AssemblyAI</MenuItem>
-        )}
-        {context === "transcription" && (
-          <MenuItem value="deepgram">Deepgram</MenuItem>
-        )}
-        {context === "transcription" && (
-          <MenuItem value="elevenlabs">ElevenLabs</MenuItem>
-        )}
-        {context === "transcription" && (
-          <MenuItem value="azure">Azure</MenuItem>
-        )}
-        {context === "transcription" && (
-          <MenuItem value="speaches">Speaches</MenuItem>
-        )}
+        {providers.map((p) => (
+          <MenuItem key={p} value={p}>
+            {getProviderFormConfig(p, context).displayName}
+          </MenuItem>
+        ))}
       </TextField>
-      {isAzure ? (
-        context === "transcription" ? (
-          <>
-            <TextField
-              label={<FormattedMessage defaultMessage="Azure Region" />}
-              value={azureRegion}
-              onChange={(event) => setAzureRegion(event.target.value)}
-              placeholder="e.g., eastus, westus, northeurope"
-              size="small"
-              fullWidth
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Azure service region for Speech-to-Text" />
-              }
-            />
-            <TextField
-              label={<FormattedMessage defaultMessage="Subscription Key" />}
-              value={key}
-              onChange={(event) => setKey(event.target.value)}
-              placeholder="Paste your Azure subscription key"
-              size="small"
-              fullWidth
-              type="password"
-              disabled={saving}
-            />
-          </>
-        ) : (
-          <>
-            <TextField
-              label={
-                <FormattedMessage defaultMessage="Azure OpenAI Endpoint" />
-              }
-              value={azureOpenAIEndpoint}
-              onChange={(event) => setAzureOpenAIEndpoint(event.target.value)}
-              placeholder="https://my-resource.openai.azure.com"
-              size="small"
-              fullWidth
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Your Azure OpenAI resource endpoint URL" />
-              }
-            />
-            <TextField
-              label={<FormattedMessage defaultMessage="API Key" />}
-              value={key}
-              onChange={(event) => setKey(event.target.value)}
-              placeholder="Paste your Azure OpenAI API key"
-              size="small"
-              fullWidth
-              type="password"
-              disabled={saving}
-            />
-          </>
-        )
-      ) : isOllamaLike ? (
-        <>
-          <TextField
-            label={<FormattedMessage defaultMessage="Base URL" />}
-            value={ollamaUrl}
-            onChange={(event) => setOllamaUrl(event.target.value)}
-            placeholder={OLLAMA_DEFAULT_URL}
-            size="small"
-            fullWidth
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="Leave empty to use the default URL" />
-            }
-          />
-          <TextField
-            label={<FormattedMessage defaultMessage="API key (optional)" />}
-            value={key}
-            onChange={(event) => setKey(event.target.value)}
-            placeholder="Leave empty if not required"
-            size="small"
-            fullWidth
-            type="password"
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="Only needed if your instance requires authentication" />
-            }
-          />
-          {isOpenAICompatible && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2">
-                <FormattedMessage defaultMessage="Include /v1 path" />
-              </Typography>
-              <Switch
-                checked={includeV1Path}
-                onChange={(event) => setIncludeV1Path(event.target.checked)}
-                disabled={saving}
-                size="small"
-              />
-            </Box>
-          )}
-          {isOpenAICompatible && context === "transcription" && (
-            <TextField
-              label={<FormattedMessage defaultMessage="Model" />}
-              value={speachesModel}
-              onChange={(event) => setSpeachesModel(event.target.value)}
-              placeholder="whisper-1"
-              size="small"
-              fullWidth
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
-              }
-            />
-          )}
-        </>
-      ) : isSpeaches ? (
-        <>
-          <TextField
-            label={<FormattedMessage defaultMessage="Speaches URL" />}
-            value={speachesUrl}
-            onChange={(event) => setSpeachesUrl(event.target.value)}
-            placeholder="http://localhost:8000"
-            size="small"
-            fullWidth
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="URL of your local Speaches Docker instance" />
-            }
-          />
-          <TextField
-            label={<FormattedMessage defaultMessage="Model" />}
-            value={speachesModel}
-            onChange={(event) => setSpeachesModel(event.target.value)}
-            placeholder="Systran/faster-whisper-large-v3"
-            size="small"
-            fullWidth
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
-            }
-          />
-        </>
-      ) : (
-        <TextField
-          label={<FormattedMessage defaultMessage="API key" />}
-          value={key}
-          onChange={(event) => setKey(event.target.value)}
-          placeholder="Paste your API key"
-          size="small"
-          fullWidth
-          type="password"
-          disabled={saving}
-        />
-      )}
+      <ProviderFormFields
+        config={config}
+        values={fieldValues}
+        onChange={handleFieldChange}
+        disabled={saving}
+        includeV1Path={includeV1Path}
+        onIncludeV1PathChange={setIncludeV1Path}
+      />
       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
         <Button
           variant="outlined"
@@ -453,62 +233,61 @@ const EditApiKeyCard = ({
   context,
 }: EditApiKeyCardProps) => {
   const [name, setName] = useState(apiKey.name);
-  const [key, setKey] = useState("");
-  const [baseUrl, setBaseUrl] = useState(apiKey.baseUrl ?? "");
-  const [azureRegion, setAzureRegion] = useState(apiKey.azureRegion ?? "");
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    if (apiKey.baseUrl) initial.baseUrl = apiKey.baseUrl;
+    if (apiKey.azureRegion) initial.azureRegion = apiKey.azureRegion;
+    if (apiKey.transcriptionModel)
+      initial.transcriptionModel = apiKey.transcriptionModel;
+    return initial;
+  });
   const [includeV1Path, setIncludeV1Path] = useState(
     apiKey.includeV1Path ?? true,
   );
-  const [transcriptionModel, setTranscriptionModel] = useState(
-    apiKey.transcriptionModel ?? "",
-  );
   const [saving, setSaving] = useState(false);
 
-  const provider = apiKey.provider;
-  const isOllama = provider === "ollama";
-  const isOpenAICompatible = provider === "openai-compatible";
-  const isOllamaLike = isOllama || isOpenAICompatible;
-  const isAzure = provider === "azure";
-  const isAzureOpenAI = isAzure && context === "post-processing";
-  const isAzureSTT = isAzure && context === "transcription";
-  const isSpeaches = provider === "speaches";
+  const config = useMemo(
+    () => getProviderFormConfig(apiKey.provider, context),
+    [apiKey.provider, context],
+  );
 
-  const canSave = isOllamaLike
-    ? !!name
-    : isSpeaches
-      ? !!name
-      : isAzureSTT
-        ? !!name && !!azureRegion
-        : isAzureOpenAI
-          ? !!name && !!baseUrl
-          : !!name;
+  const canSave =
+    !!name &&
+    config.fields
+      .filter((f) => f.required)
+      .every((f) => {
+        if (f.type === "password") return true;
+        return !!fieldValues[f.key];
+      });
+
+  const handleFieldChange = useCallback((key: string, value: string) => {
+    setFieldValues((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (!canSave || saving) return;
     setSaving(true);
     try {
-      const baseUrlValue = isOllamaLike
-        ? baseUrl || OLLAMA_DEFAULT_URL
-        : isSpeaches
-          ? baseUrl || "http://localhost:8000"
-          : isAzureOpenAI
-            ? baseUrl
-            : apiKey.baseUrl;
-      const azureRegionValue = isAzureSTT ? azureRegion : apiKey.azureRegion;
-      const transcriptionModelValue =
-        isSpeaches || (isOpenAICompatible && context === "transcription")
-          ? transcriptionModel || null
-          : undefined;
-      const includeV1PathValue = isOpenAICompatible
+      const baseUrl =
+        fieldValues.baseUrl || config.defaultBaseUrl || apiKey.baseUrl;
+      const azureRegion = fieldValues.azureRegion || apiKey.azureRegion;
+      const includeV1PathValue = config.showIncludeV1Path
         ? includeV1Path
         : apiKey.includeV1Path;
+      const hasTranscriptionModelField = config.fields.some(
+        (f) => f.key === "transcriptionModel",
+      );
+      const transcriptionModel = hasTranscriptionModelField
+        ? fieldValues.transcriptionModel || null
+        : undefined;
+
       await onSave({
         name,
-        key,
-        baseUrl: baseUrlValue,
-        azureRegion: azureRegionValue,
+        key: fieldValues.apiKey || "",
+        baseUrl,
+        azureRegion,
         includeV1Path: includeV1PathValue,
-        transcriptionModel: transcriptionModelValue,
+        transcriptionModel,
       });
     } catch (error) {
       console.error("Failed to save API key", error);
@@ -518,43 +297,23 @@ const EditApiKeyCard = ({
   }, [
     canSave,
     saving,
-    isOllamaLike,
-    isSpeaches,
-    isAzureOpenAI,
-    isAzureSTT,
-    isOpenAICompatible,
     name,
-    key,
-    baseUrl,
-    azureRegion,
+    fieldValues,
     includeV1Path,
-    transcriptionModel,
+    config,
     apiKey,
-    context,
     onSave,
   ]);
 
   const handleTest = useCallback(() => {
     const overrides: Partial<SettingsApiKey> = { name };
-    if (key) overrides.keyFull = key;
-    if (isOllamaLike) overrides.baseUrl = baseUrl || OLLAMA_DEFAULT_URL;
-    else if (isSpeaches) overrides.baseUrl = baseUrl || "http://localhost:8000";
-    else if (isAzureOpenAI) overrides.baseUrl = baseUrl;
-    if (isAzureSTT) overrides.azureRegion = azureRegion;
+    if (fieldValues.apiKey) overrides.keyFull = fieldValues.apiKey;
+    if (fieldValues.baseUrl || config.defaultBaseUrl)
+      overrides.baseUrl = fieldValues.baseUrl || config.defaultBaseUrl;
+    if (fieldValues.azureRegion)
+      overrides.azureRegion = fieldValues.azureRegion;
     onTest(overrides);
-  }, [
-    name,
-    key,
-    baseUrl,
-    azureRegion,
-    isOllamaLike,
-    isSpeaches,
-    isAzureOpenAI,
-    isAzureSTT,
-    onTest,
-  ]);
-
-  const providerLabel = provider.toUpperCase();
+  }, [name, fieldValues, config.defaultBaseUrl, onTest]);
 
   return (
     <Paper
@@ -571,7 +330,7 @@ const EditApiKeyCard = ({
       <Typography variant="body2" color="text.secondary" fontWeight={500}>
         <FormattedMessage
           defaultMessage="Provider: {provider}"
-          values={{ provider: providerLabel }}
+          values={{ provider: config.displayName }}
         />
       </Typography>
       <TextField
@@ -582,163 +341,15 @@ const EditApiKeyCard = ({
         fullWidth
         disabled={saving}
       />
-      {isAzure ? (
-        context === "transcription" ? (
-          <>
-            <TextField
-              label={<FormattedMessage defaultMessage="Azure Region" />}
-              value={azureRegion}
-              onChange={(e) => setAzureRegion(e.target.value)}
-              placeholder="e.g., eastus, westus, northeurope"
-              size="small"
-              fullWidth
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Azure service region for Speech-to-Text" />
-              }
-            />
-            <TextField
-              label={<FormattedMessage defaultMessage="Subscription Key" />}
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder="Leave blank to keep current key"
-              size="small"
-              fullWidth
-              type="password"
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Leave blank to keep current key" />
-              }
-            />
-          </>
-        ) : (
-          <>
-            <TextField
-              label={
-                <FormattedMessage defaultMessage="Azure OpenAI Endpoint" />
-              }
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://my-resource.openai.azure.com"
-              size="small"
-              fullWidth
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Your Azure OpenAI resource endpoint URL" />
-              }
-            />
-            <TextField
-              label={<FormattedMessage defaultMessage="API Key" />}
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder="Leave blank to keep current key"
-              size="small"
-              fullWidth
-              type="password"
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Leave blank to keep current key" />
-              }
-            />
-          </>
-        )
-      ) : isOllamaLike ? (
-        <>
-          <TextField
-            label={<FormattedMessage defaultMessage="Base URL" />}
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder={OLLAMA_DEFAULT_URL}
-            size="small"
-            fullWidth
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="Leave empty to use the default URL" />
-            }
-          />
-          <TextField
-            label={<FormattedMessage defaultMessage="API key (optional)" />}
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            placeholder="Leave blank to keep current key"
-            size="small"
-            fullWidth
-            type="password"
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="Leave blank to keep current key" />
-            }
-          />
-          {isOpenAICompatible && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2">
-                <FormattedMessage defaultMessage="Include /v1 path" />
-              </Typography>
-              <Switch
-                checked={includeV1Path}
-                onChange={(e) => setIncludeV1Path(e.target.checked)}
-                disabled={saving}
-                size="small"
-              />
-            </Box>
-          )}
-          {isOpenAICompatible && context === "transcription" && (
-            <TextField
-              label={<FormattedMessage defaultMessage="Model" />}
-              value={transcriptionModel}
-              onChange={(e) => setTranscriptionModel(e.target.value)}
-              placeholder="whisper-1"
-              size="small"
-              fullWidth
-              disabled={saving}
-              helperText={
-                <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
-              }
-            />
-          )}
-        </>
-      ) : isSpeaches ? (
-        <>
-          <TextField
-            label={<FormattedMessage defaultMessage="Speaches URL" />}
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="http://localhost:8000"
-            size="small"
-            fullWidth
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="URL of your local Speaches Docker instance" />
-            }
-          />
-          <TextField
-            label={<FormattedMessage defaultMessage="Model" />}
-            value={transcriptionModel}
-            onChange={(e) => setTranscriptionModel(e.target.value)}
-            placeholder="Systran/faster-whisper-large-v3"
-            size="small"
-            fullWidth
-            disabled={saving}
-            helperText={
-              <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
-            }
-          />
-        </>
-      ) : (
-        <TextField
-          label={<FormattedMessage defaultMessage="API key" />}
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          placeholder="Leave blank to keep current key"
-          size="small"
-          fullWidth
-          type="password"
-          disabled={saving}
-          helperText={
-            <FormattedMessage defaultMessage="Leave blank to keep current key" />
-          }
-        />
-      )}
+      <ProviderFormFields
+        config={config}
+        values={fieldValues}
+        onChange={handleFieldChange}
+        disabled={saving}
+        includeV1Path={includeV1Path}
+        onIncludeV1PathChange={setIncludeV1Path}
+        isEditing
+      />
       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
         <Button
           variant="outlined"
@@ -777,122 +388,6 @@ const EditApiKeyCard = ({
   );
 };
 
-const testApiKey = async (
-  apiKey: SettingsApiKey,
-  context: ApiKeyListContext,
-): Promise<boolean> => {
-  if (apiKey.provider === "ollama") {
-    return ollamaTestIntegration({
-      baseUrl: apiKey.baseUrl || OLLAMA_DEFAULT_URL,
-      apiKey: apiKey.keyFull || undefined,
-    });
-  }
-
-  if (apiKey.provider === "openai-compatible") {
-    return openaiCompatibleTestIntegration({
-      baseUrl: apiKey.baseUrl || OPENAI_COMPATIBLE_DEFAULT_URL,
-      apiKey: apiKey.keyFull || undefined,
-    });
-  }
-
-  if (apiKey.provider === "speaches") {
-    return speachesTestIntegration({
-      baseUrl: apiKey.baseUrl || "http://localhost:8000",
-    });
-  }
-
-  if (!apiKey.keyFull) {
-    throw new Error("The stored API key value is unavailable.");
-  }
-
-  switch (apiKey.provider) {
-    case "groq":
-      return groqTestIntegration({ apiKey: apiKey.keyFull });
-    case "openai":
-      return openaiTestIntegration({ apiKey: apiKey.keyFull });
-    case "openrouter":
-      return openrouterTestIntegration({ apiKey: apiKey.keyFull });
-    case "aldea":
-      return aldeaTestIntegration({ apiKey: apiKey.keyFull });
-    case "assemblyai":
-      return assemblyaiTestIntegration({ apiKey: apiKey.keyFull });
-    case "deepgram":
-      return deepgramTestIntegration({ apiKey: apiKey.keyFull });
-    case "elevenlabs":
-      return elevenlabsTestIntegration({ apiKey: apiKey.keyFull });
-    case "deepseek":
-      return deepseekTestIntegration({ apiKey: apiKey.keyFull });
-    case "gemini":
-      return geminiTestIntegration({ apiKey: apiKey.keyFull });
-    case "claude":
-      return claudeTestIntegration({ apiKey: apiKey.keyFull });
-    case "azure":
-      if (context === "post-processing") {
-        if (!apiKey.baseUrl) {
-          throw new Error("Azure OpenAI endpoint is required.");
-        }
-        return azureOpenAITestIntegration({
-          apiKey: apiKey.keyFull,
-          endpoint: apiKey.baseUrl,
-        });
-      } else {
-        if (!apiKey.azureRegion) {
-          throw new Error("Azure region is required.");
-        }
-        return azureTestIntegration({
-          subscriptionKey: apiKey.keyFull,
-          region: apiKey.azureRegion,
-        });
-      }
-    default:
-      throw new Error("Testing is not available for this provider.");
-  }
-};
-
-const getModelsForProvider = (
-  provider: SettingsApiKeyProvider,
-  context: ApiKeyListContext,
-): readonly string[] => {
-  switch (provider) {
-    case "groq":
-      return context === "transcription"
-        ? TRANSCRIPTION_MODELS
-        : GENERATE_TEXT_MODELS;
-    case "openai":
-      return context === "transcription"
-        ? OPENAI_TRANSCRIPTION_MODELS
-        : OPENAI_GENERATE_TEXT_MODELS;
-    case "gemini":
-      return context === "transcription"
-        ? GEMINI_TRANSCRIPTION_MODELS
-        : GEMINI_GENERATE_TEXT_MODELS;
-    case "openrouter":
-      return context === "transcription" ? [] : OPENROUTER_FAVORITE_MODELS;
-    case "ollama":
-      return [];
-    case "openai-compatible":
-      return [];
-    case "deepseek":
-      return context === "transcription" ? [] : DEEPSEEK_MODELS;
-    case "claude":
-      return context === "transcription" ? [] : CLAUDE_MODELS;
-    case "azure":
-      return context === "transcription" ? [] : AZURE_OPENAI_MODELS;
-    case "aldea":
-      return [];
-    case "assemblyai":
-      return [];
-    case "deepgram":
-      return [];
-    case "elevenlabs":
-      return [];
-    case "speaches":
-      return [];
-    default:
-      return [];
-  }
-};
-
 const getModelForContext = (
   apiKey: SettingsApiKey,
   context: ApiKeyListContext,
@@ -900,6 +395,169 @@ const getModelForContext = (
   return context === "transcription"
     ? (apiKey.transcriptionModel ?? null)
     : (apiKey.postProcessingModel ?? null);
+};
+
+const ModelPickerForProvider = ({
+  apiKey,
+  context,
+  currentModel,
+  onModelChange,
+  disabled,
+}: {
+  apiKey: SettingsApiKey;
+  context: ApiKeyListContext;
+  currentModel: string | null;
+  onModelChange: (model: string | null) => void;
+  disabled: boolean;
+}) => {
+  if (apiKey.provider === "openrouter" && context === "post-processing") {
+    return (
+      <Box onClick={(e) => e.stopPropagation()}>
+        <OpenRouterModelPicker
+          apiKeyId={apiKey.id}
+          selectedModel={currentModel}
+          onModelSelect={onModelChange}
+          disabled={disabled}
+        />
+        <OpenRouterProviderRouting apiKeyId={apiKey.id} disabled={disabled} />
+      </Box>
+    );
+  }
+
+  if (apiKey.provider === "ollama" && context === "post-processing") {
+    return (
+      <Box onClick={(e) => e.stopPropagation()}>
+        <OllamaModelPicker
+          baseUrl={apiKey.baseUrl ?? null}
+          apiKey={apiKey.keyFull}
+          selectedModel={currentModel}
+          onModelSelect={onModelChange}
+          disabled={disabled}
+        />
+      </Box>
+    );
+  }
+
+  if (
+    apiKey.provider === "openai-compatible" &&
+    context === "post-processing"
+  ) {
+    return (
+      <Box onClick={(e) => e.stopPropagation()}>
+        <OpenAICompatibleModelPicker
+          baseUrl={apiKey.baseUrl ?? null}
+          apiKey={apiKey.keyFull}
+          selectedModel={currentModel}
+          onModelSelect={onModelChange}
+          disabled={disabled}
+        />
+      </Box>
+    );
+  }
+
+  return (
+    <GenericModelPicker
+      apiKey={apiKey}
+      context={context}
+      currentModel={currentModel}
+      onModelChange={onModelChange}
+      disabled={disabled}
+    />
+  );
+};
+
+const GenericModelPicker = ({
+  apiKey,
+  context,
+  currentModel,
+  onModelChange,
+  disabled,
+}: {
+  apiKey: SettingsApiKey;
+  context: ApiKeyListContext;
+  currentModel: string | null;
+  onModelChange: (model: string | null) => void;
+  disabled: boolean;
+}) => {
+  const [models, setModels] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const repo = useMemo(
+    () => getModelProviderRepo(apiKey.provider),
+    [apiKey.provider],
+  );
+
+  useEffect(() => {
+    const options: FetchModelsOptions = {
+      apiKey: apiKey.keyFull ?? undefined,
+      baseUrl: apiKey.baseUrl ?? undefined,
+    };
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    const fetchFn =
+      context === "transcription"
+        ? repo.getTranscriptionModels(options)
+        : repo.getGenerativeTextModels(options);
+
+    fetchFn
+      .then((result) => {
+        if (!cancelled) setModels(result);
+      })
+      .catch(() => {
+        if (!cancelled) setModels([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, apiKey.keyFull, apiKey.baseUrl, context]);
+
+  if (models.length === 0 && !isLoading) return null;
+
+  return (
+    <Box onClick={(e) => e.stopPropagation()}>
+      <Autocomplete
+        freeSolo
+        options={models}
+        loading={isLoading}
+        value={currentModel ?? ""}
+        onChange={(_event, newValue) => {
+          onModelChange(newValue || null);
+        }}
+        onInputChange={(_event, newInputValue, reason) => {
+          if (reason === "input") {
+            onModelChange(newInputValue || null);
+          }
+        }}
+        disabled={disabled}
+        size="small"
+        fullWidth
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label={<FormattedMessage defaultMessage="Model" />}
+            placeholder="Select or type a model"
+            slotProps={{
+              input: {
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {isLoading ? <CircularProgress size={16} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              },
+            }}
+          />
+        )}
+      />
+    </Box>
+  );
 };
 
 const ApiKeyCard = ({
@@ -925,56 +583,11 @@ const ApiKeyCard = ({
   onModelChange: (model: string | null) => void;
   context: ApiKeyListContext;
 }) => {
-  const models = getModelsForProvider(apiKey.provider, context);
-  const currentModel = getModelForContext(apiKey, context) ?? models[0] ?? null;
-
-  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-
-  const repo = useMemo(
-    () => getModelProviderRepo(apiKey.provider),
-    [apiKey.provider],
+  const config = useMemo(
+    () => getProviderFormConfig(apiKey.provider, context),
+    [apiKey.provider, context],
   );
-
-  useEffect(() => {
-    const options = {
-      apiKey: apiKey.keyFull ?? undefined,
-      baseUrl: apiKey.baseUrl ?? undefined,
-    };
-
-    let cancelled = false;
-    setIsFetchingModels(true);
-
-    const fetchFn =
-      context === "transcription"
-        ? repo.getTranscriptionModels(options)
-        : repo.getGenerativeTextModels(options);
-
-    fetchFn
-      .then((result) => {
-        if (!cancelled) setFetchedModels(result);
-      })
-      .catch(() => {
-        if (!cancelled) setFetchedModels([]);
-      })
-      .finally(() => {
-        if (!cancelled) setIsFetchingModels(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [repo, apiKey.keyFull, apiKey.baseUrl, context]);
-
-  const allModels = useMemo(() => {
-    if (fetchedModels.length === 0) return [...models];
-    const staticSet = new Set<string>(models);
-    const merged = [...models];
-    for (const m of fetchedModels) {
-      if (!staticSet.has(m)) merged.push(m);
-    }
-    return merged;
-  }, [models, fetchedModels]);
+  const currentModel = getModelForContext(apiKey, context);
 
   return (
     <Paper
@@ -1010,7 +623,7 @@ const ApiKeyCard = ({
             {apiKey.name}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {apiKey.provider.toUpperCase()}
+            {config.displayName}
           </Typography>
           {apiKey.keySuffix ? (
             <Typography variant="caption" color="text.secondary">
@@ -1068,111 +681,13 @@ const ApiKeyCard = ({
           </Tooltip>
         </Stack>
       </Stack>
-      {/* OpenRouter gets special model picker and routing UI */}
-      {apiKey.provider === "openrouter" && context === "post-processing" ? (
-        <Box onClick={(e) => e.stopPropagation()}>
-          <OpenRouterModelPicker
-            apiKeyId={apiKey.id}
-            selectedModel={currentModel}
-            onModelSelect={onModelChange}
-            disabled={testing || deleting}
-          />
-          <OpenRouterProviderRouting
-            apiKeyId={apiKey.id}
-            disabled={testing || deleting}
-          />
-        </Box>
-      ) : apiKey.provider === "ollama" && context === "post-processing" ? (
-        <Box onClick={(e) => e.stopPropagation()}>
-          <OllamaModelPicker
-            baseUrl={apiKey.baseUrl ?? null}
-            apiKey={apiKey.keyFull}
-            selectedModel={currentModel}
-            onModelSelect={onModelChange}
-            disabled={testing || deleting}
-          />
-        </Box>
-      ) : apiKey.provider === "openai-compatible" &&
-        context === "post-processing" ? (
-        <Box onClick={(e) => e.stopPropagation()}>
-          <OpenAICompatibleModelPicker
-            baseUrl={apiKey.baseUrl ?? null}
-            apiKey={apiKey.keyFull}
-            selectedModel={currentModel}
-            onModelSelect={onModelChange}
-            disabled={testing || deleting}
-          />
-        </Box>
-      ) : apiKey.provider === "openai-compatible" &&
-        context === "transcription" ? (
-        <TextField
-          label={<FormattedMessage defaultMessage="Model" />}
-          value={currentModel ?? ""}
-          onChange={(event) => onModelChange(event.target.value || null)}
-          onClick={(e) => e.stopPropagation()}
-          placeholder="whisper-1"
-          size="small"
-          fullWidth
-          disabled={testing || deleting}
-          helperText={
-            <FormattedMessage defaultMessage="Transcription model name (e.g. whisper-1)" />
-          }
-        />
-      ) : apiKey.provider === "speaches" ? (
-        <TextField
-          label={<FormattedMessage defaultMessage="Model" />}
-          value={currentModel ?? ""}
-          onChange={(event) => onModelChange(event.target.value || null)}
-          onClick={(e) => e.stopPropagation()}
-          placeholder="Systran/faster-whisper-large-v3"
-          size="small"
-          fullWidth
-          disabled={testing || deleting}
-          helperText={
-            <FormattedMessage defaultMessage="Whisper model ID available in your Speaches instance" />
-          }
-        />
-      ) : allModels.length > 0 || isFetchingModels ? (
-        <Box onClick={(e) => e.stopPropagation()}>
-          <Autocomplete
-            freeSolo
-            options={allModels}
-            loading={isFetchingModels}
-            value={currentModel ?? ""}
-            onChange={(_event, newValue) => {
-              onModelChange(newValue || null);
-            }}
-            onInputChange={(_event, newInputValue, reason) => {
-              if (reason === "input") {
-                onModelChange(newInputValue || null);
-              }
-            }}
-            disabled={testing || deleting}
-            size="small"
-            fullWidth
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label={<FormattedMessage defaultMessage="Model" />}
-                placeholder="Select or type a model"
-                slotProps={{
-                  input: {
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {isFetchingModels ? (
-                          <CircularProgress size={16} />
-                        ) : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  },
-                }}
-              />
-            )}
-          />
-        </Box>
-      ) : null}
+      <ModelPickerForProvider
+        apiKey={apiKey}
+        context={context}
+        currentModel={currentModel}
+        onModelChange={onModelChange}
+        disabled={testing || deleting}
+      />
     </Paper>
   );
 };
@@ -1187,41 +702,16 @@ export const ApiKeyList = ({
 }: ApiKeyListProps) => {
   const allApiKeys = useAppStore((state) => state.settings.apiKeys);
 
-  // Filter API keys based on context
   const apiKeys = allApiKeys.filter((key) => {
-    // OpenRouter, Ollama, DeepSeek, and Claude only support post-processing
-    if (
-      context === "transcription" &&
-      (key.provider === "openrouter" ||
-        key.provider === "ollama" ||
-        key.provider === "deepseek" ||
-        key.provider === "claude")
-    ) {
-      return false;
-    }
-    // Aldea, AssemblyAI, Deepgram, ElevenLabs, and Speaches only support transcription
-    if (
-      context === "post-processing" &&
-      (key.provider === "aldea" ||
-        key.provider === "assemblyai" ||
-        key.provider === "deepgram" ||
-        key.provider === "elevenlabs" ||
-        key.provider === "speaches")
-    ) {
-      return false;
-    }
-    // Azure can be either STT or OpenAI - filter based on stored config
     if (key.provider === "azure") {
-      if (context === "transcription") {
-        // Show only Azure STT keys (those with azureRegion)
-        return !!key.azureRegion;
-      } else {
-        // Show only Azure OpenAI keys (those with baseUrl/endpoint)
-        return !!key.baseUrl;
-      }
+      return context === "transcription" ? !!key.azureRegion : !!key.baseUrl;
     }
-    return true;
+    const repo = getModelProviderRepo(key.provider);
+    return context === "transcription"
+      ? repo.supportsTranscriptionModels()
+      : repo.supportsGenerativeTextModels();
   });
+
   const status = useAppStore((state) => state.settings.apiKeysStatus);
   const [showAddCard, setShowAddCard] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
@@ -1281,7 +771,8 @@ export const ApiKeyList = ({
     async (apiKey: SettingsApiKey) => {
       setTestingApiKeyId(apiKey.id);
       try {
-        const success = await testApiKey(apiKey, context);
+        const config = getProviderFormConfig(apiKey.provider, context);
+        const success = await config.testIntegration(apiKey, context);
         if (success) {
           showSnackbar("Integration successful", { mode: "success" });
         } else {
@@ -1379,7 +870,8 @@ export const ApiKeyList = ({
       const merged = { ...apiKey, ...overrides };
       setTestingApiKeyId(apiKey.id);
       try {
-        const success = await testApiKey(merged, context);
+        const config = getProviderFormConfig(merged.provider, context);
+        const success = await config.testIntegration(merged, context);
         if (success) {
           showSnackbar("Integration successful", { mode: "success" });
         } else {

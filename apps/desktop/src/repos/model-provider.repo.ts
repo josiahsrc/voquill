@@ -61,19 +61,26 @@ export class GroqModelProviderRepo extends BaseModelProviderRepo {
     return true;
   }
 
-  async getGenerativeTextModels(
-    options: FetchModelsOptions,
-  ): Promise<string[]> {
-    if (!options.apiKey) return [...GROQ_GENERATE_TEXT_MODELS];
-    const fetched = await fetchOpenAICompatibleModels(
+  private async fetchModels(options: FetchModelsOptions): Promise<string[]> {
+    if (!options.apiKey) return [];
+    return fetchOpenAICompatibleModels(
       "https://api.groq.com/openai/v1/models",
       options.apiKey,
     );
+  }
+
+  async getGenerativeTextModels(
+    options: FetchModelsOptions,
+  ): Promise<string[]> {
+    const fetched = await this.fetchModels(options);
     return fetched.length > 0 ? fetched : [...GROQ_GENERATE_TEXT_MODELS];
   }
 
-  async getTranscriptionModels(): Promise<string[]> {
-    return [...GROQ_TRANSCRIPTION_MODELS];
+  async getTranscriptionModels(
+    options: FetchModelsOptions,
+  ): Promise<string[]> {
+    const fetched = await this.fetchModels(options);
+    return fetched.length > 0 ? fetched : [...GROQ_TRANSCRIPTION_MODELS];
   }
 }
 
@@ -86,19 +93,26 @@ export class OpenAIModelProviderRepo extends BaseModelProviderRepo {
     return true;
   }
 
-  async getGenerativeTextModels(
-    options: FetchModelsOptions,
-  ): Promise<string[]> {
-    if (!options.apiKey) return [...OPENAI_GENERATE_TEXT_MODELS];
-    const fetched = await fetchOpenAICompatibleModels(
+  private async fetchModels(options: FetchModelsOptions): Promise<string[]> {
+    if (!options.apiKey) return [];
+    return fetchOpenAICompatibleModels(
       "https://api.openai.com/v1/models",
       options.apiKey,
     );
+  }
+
+  async getGenerativeTextModels(
+    options: FetchModelsOptions,
+  ): Promise<string[]> {
+    const fetched = await this.fetchModels(options);
     return fetched.length > 0 ? fetched : [...OPENAI_GENERATE_TEXT_MODELS];
   }
 
-  async getTranscriptionModels(): Promise<string[]> {
-    return [...OPENAI_TRANSCRIPTION_MODELS];
+  async getTranscriptionModels(
+    options: FetchModelsOptions,
+  ): Promise<string[]> {
+    const fetched = await this.fetchModels(options);
+    return fetched.length > 0 ? fetched : [...OPENAI_TRANSCRIPTION_MODELS];
   }
 }
 
@@ -111,10 +125,8 @@ export class ClaudeModelProviderRepo extends BaseModelProviderRepo {
     return false;
   }
 
-  async getGenerativeTextModels(
-    options: FetchModelsOptions,
-  ): Promise<string[]> {
-    if (!options.apiKey) return [...CLAUDE_MODELS];
+  private async fetchModels(options: FetchModelsOptions): Promise<string[]> {
+    if (!options.apiKey) return [];
     const response = await fetch(
       "https://api.anthropic.com/v1/models?limit=100",
       {
@@ -124,12 +136,18 @@ export class ClaudeModelProviderRepo extends BaseModelProviderRepo {
         },
       },
     );
-    if (!response.ok) return [...CLAUDE_MODELS];
+    if (!response.ok) return [];
     const payload = (await response.json()) as OpenAIListResponse;
-    const fetched = (payload.data ?? [])
+    return (payload.data ?? [])
       .map((m) => (m.id ?? "").trim())
       .filter(Boolean)
       .sort();
+  }
+
+  async getGenerativeTextModels(
+    options: FetchModelsOptions,
+  ): Promise<string[]> {
+    const fetched = await this.fetchModels(options);
     return fetched.length > 0 ? fetched : [...CLAUDE_MODELS];
   }
 
@@ -147,14 +165,18 @@ export class DeepSeekModelProviderRepo extends BaseModelProviderRepo {
     return false;
   }
 
-  async getGenerativeTextModels(
-    options: FetchModelsOptions,
-  ): Promise<string[]> {
-    if (!options.apiKey) return [...DEEPSEEK_MODELS];
-    const fetched = await fetchOpenAICompatibleModels(
+  private async fetchModels(options: FetchModelsOptions): Promise<string[]> {
+    if (!options.apiKey) return [];
+    return fetchOpenAICompatibleModels(
       "https://api.deepseek.com/models",
       options.apiKey,
     );
+  }
+
+  async getGenerativeTextModels(
+    options: FetchModelsOptions,
+  ): Promise<string[]> {
+    const fetched = await this.fetchModels(options);
     return fetched.length > 0 ? fetched : [...DEEPSEEK_MODELS];
   }
 
@@ -394,7 +416,7 @@ export class ElevenLabsModelProviderRepo extends BaseModelProviderRepo {
   }
 
   supportsTranscriptionModels(): boolean {
-    return false;
+    return true;
   }
 
   async getGenerativeTextModels(): Promise<string[]> {
