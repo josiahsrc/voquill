@@ -1387,6 +1387,16 @@ pub fn supports_paste_keybinds() -> bool {
 }
 
 #[tauri::command]
+pub fn get_native_setup_status() -> crate::platform::NativeSetupStatus {
+    crate::platform::init::get_native_setup_status()
+}
+
+#[tauri::command]
+pub async fn run_native_setup() -> crate::platform::NativeSetupResult {
+    crate::platform::init::run_native_setup().await
+}
+
+#[tauri::command]
 pub fn set_tray_title(app: AppHandle, title: Option<String>) -> Result<(), String> {
     use tauri::tray::TrayIconId;
     if let Some(tray) = app.tray_by_id(&TrayIconId::new("main")) {
