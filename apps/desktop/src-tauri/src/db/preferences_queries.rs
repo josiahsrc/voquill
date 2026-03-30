@@ -60,7 +60,7 @@ pub async fn upsert_user_preferences(
              remote_receiver_auto_start,
              dictation_audio_dim
          )
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36)
          ON CONFLICT(user_id) DO UPDATE SET
             transcription_mode = excluded.transcription_mode,
             transcription_api_key_id = excluded.transcription_api_key_id,
@@ -337,4 +337,125 @@ pub async fn fetch_transcription_mode(pool: SqlitePool) -> Result<Option<String>
     .await?;
 
     Ok(row.flatten())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    fn sample_preferences() -> UserPreferences {
+        UserPreferences {
+            user_id: "user-1".to_string(),
+            transcription_mode: Some("cloud".to_string()),
+            transcription_api_key_id: Some("transcription-key".to_string()),
+            transcription_device: Some("cpu".to_string()),
+            transcription_model_size: Some("small".to_string()),
+            post_processing_mode: Some("api".to_string()),
+            post_processing_api_key_id: Some("post-key".to_string()),
+            post_processing_ollama_url: Some("http://localhost:11434".to_string()),
+            post_processing_ollama_model: Some("llama3".to_string()),
+            agent_mode: Some("manual".to_string()),
+            agent_mode_api_key_id: Some("agent-key".to_string()),
+            openclaw_gateway_url: Some("http://localhost:8080".to_string()),
+            openclaw_token: Some("token".to_string()),
+            active_tone_id: Some("tone-1".to_string()),
+            got_started_at: Some(123),
+            gpu_enumeration_enabled: true,
+            paste_keybind: Some("cmd+shift+v".to_string()),
+            last_seen_feature: Some("feature".to_string()),
+            is_enterprise: false,
+            language_switch_enabled: true,
+            secondary_dictation_language: Some("fr".to_string()),
+            active_dictation_language: Some("en".to_string()),
+            additional_dictation_languages: Some(vec!["fr".to_string(), "de".to_string()]),
+            preferred_microphone: Some("default".to_string()),
+            ignore_update_dialog: true,
+            incognito_mode_enabled: false,
+            incognito_mode_include_in_stats: false,
+            dictation_limit_minutes: 15,
+            dictation_pill_visibility: "while_active".to_string(),
+            use_new_backend: true,
+            realtime_output_enabled: true,
+            remote_output_enabled: false,
+            remote_target_device_id: Some("device-1".to_string()),
+            remote_receiver_port: Some(4317),
+            remote_receiver_auto_start: true,
+            dictation_audio_dim: 0.8,
+        }
+    }
+
+    #[test]
+    fn upsert_user_preferences_persists_all_columns() {
+        tauri::async_runtime::block_on(async {
+            let pool = SqlitePoolOptions::new()
+                .max_connections(1)
+                .connect("sqlite::memory:")
+                .await
+                .unwrap();
+
+            sqlx::query(
+                "CREATE TABLE user_preferences (
+                    user_id TEXT PRIMARY KEY,
+                    transcription_mode TEXT,
+                    transcription_api_key_id TEXT,
+                    transcription_device TEXT,
+                    transcription_model_size TEXT,
+                    post_processing_mode TEXT,
+                    post_processing_api_key_id TEXT,
+                    post_processing_ollama_url TEXT,
+                    post_processing_ollama_model TEXT,
+                    agent_mode TEXT,
+                    agent_mode_api_key_id TEXT,
+                    openclaw_gateway_url TEXT,
+                    openclaw_token TEXT,
+                    active_tone_id TEXT,
+                    got_started_at INTEGER,
+                    gpu_enumeration_enabled INTEGER NOT NULL DEFAULT 0,
+                    paste_keybind TEXT,
+                    last_seen_feature TEXT,
+                    is_enterprise INTEGER NOT NULL DEFAULT 0,
+                    language_switch_enabled INTEGER NOT NULL DEFAULT 0,
+                    secondary_dictation_language TEXT,
+                    active_dictation_language TEXT,
+                    additional_dictation_languages TEXT,
+                    preferred_microphone TEXT,
+                    ignore_update_dialog INTEGER NOT NULL DEFAULT 0,
+                    incognito_mode_enabled INTEGER NOT NULL DEFAULT 0,
+                    incognito_mode_include_in_stats INTEGER NOT NULL DEFAULT 0,
+                    dictation_limit_minutes INTEGER NOT NULL DEFAULT 0,
+                    dictation_pill_visibility TEXT NOT NULL DEFAULT 'while_active',
+                    use_new_backend INTEGER NOT NULL DEFAULT 0,
+                    realtime_output_enabled INTEGER NOT NULL DEFAULT 0,
+                    remote_output_enabled INTEGER NOT NULL DEFAULT 0,
+                    remote_target_device_id TEXT,
+                    remote_receiver_port INTEGER,
+                    remote_receiver_auto_start INTEGER NOT NULL DEFAULT 0,
+                    dictation_audio_dim REAL DEFAULT 1.0
+                )",
+            )
+            .execute(&pool)
+            .await
+            .unwrap();
+
+            let preferences = sample_preferences();
+            let stored = upsert_user_preferences(pool.clone(), &preferences)
+                .await
+                .unwrap();
+
+            assert_eq!(stored.user_id, preferences.user_id);
+
+            let fetched = fetch_user_preferences(pool, &preferences.user_id)
+                .await
+                .unwrap()
+                .unwrap();
+
+            assert_eq!(fetched.dictation_limit_minutes, preferences.dictation_limit_minutes);
+            assert_eq!(fetched.dictation_audio_dim, preferences.dictation_audio_dim);
+            assert_eq!(
+                fetched.additional_dictation_languages,
+                preferences.additional_dictation_languages,
+            );
+        });
+    }
 }
