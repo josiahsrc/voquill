@@ -5,10 +5,11 @@ struct MemberInfo {
     let isOnTrial: Bool
     let trialEndsAt: String?
     let wordsToday: Int
+    let wordsThisWeek: Int
 }
 
 struct ConfigInfo {
-    let freeWordsPerDay: Int
+    let freeWordsPerWeek: Int
 }
 
 class MemberRepo {
@@ -25,7 +26,8 @@ class MemberRepo {
             plan: member["plan"] as? String ?? "free",
             isOnTrial: member["isOnTrial"] as? Bool ?? false,
             trialEndsAt: member["trialEndsAt"] as? String,
-            wordsToday: member["wordsToday"] as? Int ?? 0
+            wordsToday: member["wordsToday"] as? Int ?? 0,
+            wordsThisWeek: member["wordsThisWeek"] as? Int ?? 0
         )
     }
 
@@ -33,7 +35,7 @@ class MemberRepo {
         let result = try await invokeHandler(config: config, name: "config/getFullConfig", args: [:])
         guard let cfg = result["config"] as? [String: Any] else { return nil }
         return ConfigInfo(
-            freeWordsPerDay: cfg["freeWordsPerDay"] as? Int ?? 0
+            freeWordsPerWeek: cfg["freeWordsPerWeek"] as? Int ?? 0
         )
     }
 }
