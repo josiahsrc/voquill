@@ -944,8 +944,8 @@ jobs:
           set -euo pipefail
           echo "${PACKAGE_GPG_PRIVATE_KEY}" | gpg --batch --import
 
-      - name: Install createrepo
-        run: sudo apt-get update && sudo apt-get install -y createrepo-c
+      - name: Install createrepo and rpm tools
+        run: sudo apt-get update && sudo apt-get install -y createrepo-c rpm
 
       - name: Add package to repository
         run: |
@@ -961,9 +961,12 @@ jobs:
           mkdir -p "packages/${channel}/x86_64"
           cp "../${RPM_FILE}" "packages/${channel}/x86_64/"
 
-          # Sign the RPM
+          # Configure and sign the RPM
           RPM_COPIED="packages/${channel}/x86_64/$(basename "${RPM_FILE}")"
-          rpmsign --addsign "${RPM_COPIED}" || echo "Warning: rpmsign not available, skipping RPM signing"
+          GPG_KEY_ID="$(gpg --list-keys --with-colons 2>/dev/null | awk -F: '/^pub/{print $5}' | head -1)"
+          echo "%_gpg_name ${GPG_KEY_ID}" > ~/.rpmmacros
+          echo "%__gpg /usr/bin/gpg" >> ~/.rpmmacros
+          rpmsign --addsign "${RPM_COPIED}"
 
           # Generate/update repository metadata
           createrepo_c --update "packages/${channel}"
