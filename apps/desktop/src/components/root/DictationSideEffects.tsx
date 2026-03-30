@@ -1,9 +1,13 @@
-import { AppTarget } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
+import { AppTarget } from "@voquill/types";
 import { secondsToMilliseconds } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
-import { tryRegisterCurrentAppTarget } from "../../actions/app-target.actions";
+import {
+  loadManualStyleForCurrentApp,
+  saveManualStyleForApp,
+  tryRegisterCurrentAppTarget,
+} from "../../actions/app-target.actions";
 import {
   createConversation,
   loadChatMessages,
@@ -26,7 +30,6 @@ import {
   useHotkeyHold,
   useHotkeyHoldMany,
 } from "../../hooks/hotkey.hooks";
-import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { useTauriListen } from "../../hooks/tauri.hooks";
 import { useToastAction } from "../../hooks/toast.hooks";
 import { browserRouter } from "../../router";
@@ -51,8 +54,10 @@ import {
   trackAppUsed,
   trackDictationStart,
 } from "../../utils/analytics.utils";
+import { getIsAssistantModeEnabled } from "../../utils/assistant-mode.utils";
 import { playAlertSound, tryPlayAudioChime } from "../../utils/audio.utils";
 import { getEffectiveStylingMode } from "../../utils/feature.utils";
+import { createId } from "../../utils/id.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   CANCEL_TRANSCRIPTION_HOTKEY,
@@ -62,7 +67,6 @@ import {
   SWITCH_WRITING_STYLE_HOTKEY,
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
-import { createId } from "../../utils/id.utils";
 import { getLogger } from "../../utils/log.utils";
 import { flashPillTooltip } from "../../utils/overlay.utils";
 import { minutesToMilliseconds } from "../../utils/time.utils";
@@ -343,6 +347,11 @@ export const DictationSideEffects = () => {
 
     getLogger().info("Finalizing transcription session");
     trackAppUsed(appTarget?.name ?? "Unknown");
+
+    if (appTarget) {
+      saveManualStyleForApp(appTarget);
+    }
+
     const toneId = getToneIdToUse(getAppState(), {
       currentAppToneId: appTarget?.toneId ?? null,
     });
@@ -517,6 +526,10 @@ export const DictationSideEffects = () => {
           body: validationError.body,
         });
         return;
+      }
+
+      if (mode === "dictate") {
+        loadManualStyleForCurrentApp();
       }
 
       const preferredMicrophone = getMyPreferredMicrophone(state);
