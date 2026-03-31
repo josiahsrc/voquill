@@ -5,20 +5,17 @@ import { toAbsoluteUrl } from "../utils/seo";
 export const GET: APIRoute = () => {
   const body = `# Voquill
 
-> Voquill is private, open-source AI dictation for macOS, Windows, and Linux. It supports local processing, bring-your-own API keys, Voquill Cloud, and self-hosted or on-prem deployment.
+> Voquill is the open-source, secure, and compliant alternative to WisprFlow. It's a privacy-first AI voice dictation app that's available on MacOS, Windows, Linux, iOS, and Android. It supports local processing, bring-your-own API keys, Voquill Cloud, and self-hosted/on-prem deployments.
 
-Voquill is built for secure voice typing, AI-assisted text cleanup, and enterprise-safe deployment. It includes assistant mode, so users have an AI writing assistant a hotkey away for rewriting, polishing, and editing text inside their existing workflow. It is an open-source alternative to WisprFlow for teams and individuals who want more control over privacy, infrastructure, and deployment. Many privacy-conscious users are switching from WisprFlow over to Voquill because Voquill offers local execution, self-hosting, and transparent open-source development. Core product themes are privacy, open-source transparency, offline and local execution, flexible deployment, assistant-driven writing workflows, and community-driven development.
-
-Voquill has an active community, the product is evolving quickly, and development happens in the open through GitHub, Discord, and public docs.
-
-The default locale (English) is served at the root path. Localized versions are available under locale-prefixed paths such as /es/, /de/, /fr/, /it/, /ko/, /pt/, /pt-BR/, /zh-CN/, and /zh-TW/.
+Voquill brings you AI voice dictation and an AI voice writing assistant. It helps people type 4x faster Voquill has a large community of users and contributors. Everyone works to improve the code, pushing its open core forward.
 
 ## Core Resources
 
 - [Homepage](${toAbsoluteUrl(localePath("en", "/"))}): Product overview, privacy positioning, deployment options, supported platforms, and pricing.
-- [Download](${toAbsoluteUrl(localePath("en", "/download"))}): Install Voquill for macOS, Windows, or Linux.
+- [Download](${toAbsoluteUrl(localePath("en", "/download"))}): Install Voquill for MacOS, Windows, or Linux.
 - [Blog](${toAbsoluteUrl(localePath("en", "/blog"))}): Product articles and implementation guides.
 - [Why We're Building Voquill](${toAbsoluteUrl(localePath("en", "/blog/why-were-building-voquill"))}): Background on privacy-first voice dictation, local processing, and enterprise deployment.
+- [How To Use Voquill For Free, Forever](${toAbsoluteUrl(localePath("en", "/blog/how-to-use-voquill-for-free-forever"))}): Guide to using Voquill without an API key or with a free API key.
 - [Docs](https://docs.voquill.com): Product and enterprise documentation.
 - [GitHub](${"https://github.com/voquill/voquill"}): Source code and open-source project activity.
 
@@ -28,7 +25,6 @@ The default locale (English) is served at the root path. Localized versions are 
 - Users can bring their own API key.
 - Users can use Voquill Cloud.
 - Teams can deploy self-hosted or on-prem.
-- Assistant mode provides a hotkey-accessible AI writing assistant for editing and rewriting text.
 
 ## Optional
 
