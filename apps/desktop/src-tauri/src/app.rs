@@ -172,6 +172,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             }
 
             if crate::platform::get_hotkey_strategy() == "bridge" {
+                crate::platform::init::ensure_background_services();
                 crate::system::bridge_server::start(app.handle().clone());
                 crate::platform::compositor::deploy_trigger_script(app.handle());
             }
