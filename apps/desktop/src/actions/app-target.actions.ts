@@ -1,14 +1,20 @@
+import { invoke } from "@tauri-apps/api/core";
 import { AppTarget, Nullable } from "@voquill/types";
 import { getRec } from "@voquill/utilities";
-import { invoke } from "@tauri-apps/api/core";
 import { getAppTargetRepo, getStorageRepo } from "../repos";
 import { AppTargetUpsertParams } from "../repos/app-target.repo";
 import { getAppState, produceAppState } from "../store";
 import { registerAppTargets } from "../utils/app.utils";
 import { normalizeAppTargetId } from "../utils/apptarget.utils";
+import { getEffectiveStylingMode } from "../utils/feature.utils";
 import { getLogger } from "../utils/log.utils";
 import { buildAppIconPath, decodeBase64Icon } from "../utils/storage.utils";
+import {
+  getActiveManualToneIds,
+  getManuallySelectedToneId,
+} from "../utils/tone.utils";
 import { showErrorSnackbar } from "./app.actions";
+import { setSelectedToneId } from "./user.actions";
 
 export const loadAppTargets = async (): Promise<void> => {
   const targets = await getAppTargetRepo().listAppTargets();
@@ -136,4 +142,33 @@ export const tryRegisterCurrentAppTarget = async (): Promise<
   }
 
   return getRec(getAppState().appTargetById, appTargetId) ?? null;
+};
+
+export const loadManualStyleForCurrentApp = async (): Promise<void> => {
+  if (getEffectiveStylingMode(getAppState()) !== "manual") return;
+
+  try {
+    const appInfo = await invoke<{ appName: string }>("get_current_app_info");
+    const appTargetId = normalizeAppTargetId(appInfo.appName?.trim() ?? "");
+    const appTarget = getAppState().appTargetById[appTargetId];
+    if (appTarget?.toneId) {
+      const activeIds = getActiveManualToneIds(getAppState());
+      if (activeIds.includes(appTarget.toneId)) {
+        await setSelectedToneId(appTarget.toneId);
+      }
+    }
+  } catch (error) {
+    getLogger().verbose(`Failed to load app style: ${error}`);
+  }
+};
+
+export const saveManualStyleForApp = (appTarget: AppTarget): void => {
+  if (getEffectiveStylingMode(getAppState()) !== "manual") return;
+
+  const manualToneId = getManuallySelectedToneId(getAppState());
+  if (manualToneId !== (appTarget.toneId ?? null)) {
+    setAppTargetTone(appTarget.id, manualToneId).catch((error) =>
+      getLogger().verbose(`Failed to save app style: ${error}`),
+    );
+  }
 };

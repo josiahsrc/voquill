@@ -1,13 +1,10 @@
 ---
 import LegalLayout from '../../layouts/LegalLayout.astro';
 import { renderLocalizedMarkdownFile } from '../../lib/markdown';
-import { locales, type Locale } from '../../types/locale';
+import { defaultLocale, type Locale } from '../../types/locale';
+export { getLocaleStaticPaths as getStaticPaths } from '../../utils/paths';
 
-export function getStaticPaths() {
-	return locales.map((locale) => ({ params: { locale } }));
-}
-
-const locale = Astro.params.locale as Locale;
+const locale = (Astro.params.locale ?? defaultLocale) as Locale;
 const html = await renderLocalizedMarkdownFile('content/privacy.md', locale);
 ---
 

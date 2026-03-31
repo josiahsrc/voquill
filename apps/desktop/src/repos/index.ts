@@ -1,4 +1,5 @@
 import type { CloudModel } from "@voquill/functions";
+import type { ApiKeyProvider } from "@voquill/types";
 import { Nullable } from "@voquill/types";
 import { getRec } from "@voquill/utilities";
 import { getAppState } from "../store";
@@ -47,6 +48,24 @@ import {
   CloudMemberRepo,
   EnterpriseMemberRepo,
 } from "./member.repo";
+import {
+  AldeaModelProviderRepo,
+  AssemblyAIModelProviderRepo,
+  AzureModelProviderRepo,
+  BaseModelProviderRepo,
+  ClaudeModelProviderRepo,
+  DeepgramModelProviderRepo,
+  DeepSeekModelProviderRepo,
+  ElevenLabsModelProviderRepo,
+  GeminiModelProviderRepo,
+  GroqModelProviderRepo,
+  OllamaModelProviderRepo,
+  OpenAICompatibleModelProviderRepo,
+  OpenAIModelProviderRepo,
+  OpenRouterModelProviderRepo,
+  SpeachesModelProviderRepo,
+} from "./model-provider.repo";
+export { BaseModelProviderRepo } from "./model-provider.repo";
 import {
   BasePairedRemoteDeviceRepo,
   LocalPairedRemoteDeviceRepo,
@@ -434,4 +453,39 @@ export const getTranscribeAudioRepo = (): TranscribeAudioRepoOutput => {
     apiKeyId: null,
     warnings: prefs.warnings,
   };
+};
+
+export const getModelProviderRepo = (
+  provider: ApiKeyProvider,
+): BaseModelProviderRepo => {
+  switch (provider) {
+    case "groq":
+      return new GroqModelProviderRepo();
+    case "openai":
+      return new OpenAIModelProviderRepo();
+    case "claude":
+      return new ClaudeModelProviderRepo();
+    case "deepseek":
+      return new DeepSeekModelProviderRepo();
+    case "gemini":
+      return new GeminiModelProviderRepo();
+    case "azure":
+      return new AzureModelProviderRepo();
+    case "ollama":
+      return new OllamaModelProviderRepo();
+    case "openai-compatible":
+      return new OpenAICompatibleModelProviderRepo();
+    case "speaches":
+      return new SpeachesModelProviderRepo();
+    case "openrouter":
+      return new OpenRouterModelProviderRepo();
+    case "aldea":
+      return new AldeaModelProviderRepo();
+    case "assemblyai":
+      return new AssemblyAIModelProviderRepo();
+    case "elevenlabs":
+      return new ElevenLabsModelProviderRepo();
+    case "deepgram":
+      return new DeepgramModelProviderRepo();
+  }
 };

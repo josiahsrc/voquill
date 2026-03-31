@@ -3,7 +3,7 @@ import type { TranslationMessages } from '../../types/locale';
 export const zhCNTranslations = {
     siteTitle: "Voquill | 私有 AI 语音听写",
     siteDescription:
-      "适用于 MacOS、Windows 和 Linux 的私有开源 AI 语音听写。可本地运行、自带 API Key、使用我们的云端或进行本地/私有化部署。",
+      "WisprFlow 的开源替代方案。适用于 MacOS、Windows、Linux、iOS 和 Android 的私有开源 AI 语音听写。可本地运行、自带 API Key、使用我们的云端或进行本地/私有化部署。",
     navDemo: "演示",
     navSecurity: "安全",
     navPricing: "定价",

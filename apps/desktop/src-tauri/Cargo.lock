@@ -35,6 +35,7 @@ dependencies = [
  "reqwest",
  "rfd",
  "rodio",
+ "rust_macos_pill",
  "serde",
  "serde_json",
  "sha2",
@@ -5390,6 +5391,16 @@ dependencies = [
  "num-traits",
  "rand 0.8.5",
  "rkyv",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rust_macos_pill"
+version = "0.1.0"
+dependencies = [
+ "cocoa 0.26.1",
+ "objc",
  "serde",
  "serde_json",
 ]

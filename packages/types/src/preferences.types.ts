@@ -36,6 +36,7 @@ export type UserPreferences = {
   remoteReceiverPort: Nullable<number>;
   remoteReceiverAutoStart: boolean;
   dictationAudioDim: number;
+  pasteKeybind: Nullable<string>;
 
   // deprecated
   isEnterprise: boolean;

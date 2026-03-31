@@ -17,7 +17,6 @@ import {
   PersonRemoveOutlined,
   PrivacyTipOutlined,
   RocketLaunchOutlined,
-  RouterOutlined,
   TroubleshootOutlined,
   VolumeUpOutlined,
   WarningAmberOutlined,
@@ -48,7 +47,6 @@ import { produceAppState, useAppStore } from "../../store";
 import {
   getAllowsChangePostProcessing,
   getAllowsChangeTranscription,
-  getAllowsMultiDeviceMode,
 } from "../../utils/enterprise.utils";
 import { getAdditionalLanguageEntries } from "../../utils/keyboard.utils";
 import {
@@ -74,7 +72,6 @@ export default function SettingsPage() {
   const isEnterprise = useAppStore((state) => state.isEnterprise);
   const allowChangeTranscription = useAppStore(getAllowsChangeTranscription);
   const allowChangePostProcessing = useAppStore(getAllowsChangePostProcessing);
-  const allowMultiDevice = useAppStore(getAllowsMultiDeviceMode);
   const supportsPasteKeybinds = useAppStore(
     (state) => state.supportsPasteKeybinds,
   );
@@ -155,6 +152,12 @@ export default function SettingsPage() {
     });
   };
 
+  const openGlobalPasteKeybindDialog = () => {
+    produceAppState((draft) => {
+      draft.settings.globalPasteKeybindDialogOpen = true;
+    });
+  };
+
   const openAgentModeDialog = () => {
     produceAppState((draft) => {
       draft.settings.agentModeDialogOpen = true;
@@ -188,12 +191,6 @@ export default function SettingsPage() {
   const openMoreSettingsDialog = () => {
     produceAppState((draft) => {
       draft.settings.moreSettingsDialogOpen = true;
-    });
-  };
-
-  const openMultiDeviceDialog = () => {
-    produceAppState((draft) => {
-      draft.settings.multiDeviceDialogOpen = true;
     });
   };
 
@@ -269,18 +266,18 @@ export default function SettingsPage() {
         leading={<TroubleshootOutlined />}
         onClick={openDiagnosticsDialog}
       />
-      {supportsPasteKeybinds && (
+      {supportsPasteKeybinds === "per-app" && (
         <ListTile
           title={<FormattedMessage defaultMessage="App paste bindings" />}
           leading={<AppsOutlined />}
           onClick={openAppKeybindingsDialog}
         />
       )}
-      {allowMultiDevice && (
+      {supportsPasteKeybinds === "global" && (
         <ListTile
-          title={<FormattedMessage defaultMessage="Multi-device" />}
-          leading={<RouterOutlined />}
-          onClick={openMultiDeviceDialog}
+          title={<FormattedMessage defaultMessage="Paste binding" />}
+          leading={<AppsOutlined />}
+          onClick={openGlobalPasteKeybindDialog}
         />
       )}
       <ListTile

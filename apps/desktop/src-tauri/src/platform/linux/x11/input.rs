@@ -49,17 +49,18 @@ fn xdotool_key(combo: &str) -> Result<(), String> {
     }
 }
 
-fn simulate_paste_keystroke() -> Result<(), String> {
+fn simulate_paste_keystroke(shift: bool) -> Result<(), String> {
     if xdotool_available() {
-        log::info!("Using xdotool for paste keystroke");
-        return xdotool_key("ctrl+shift+v");
+        let combo = if shift { "ctrl+shift+v" } else { "ctrl+v" };
+        log::info!("Using xdotool for paste keystroke ({combo})");
+        return xdotool_key(combo);
     }
 
     log::info!("xdotool not available, falling back to enigo");
-    enigo_paste_keystroke()
+    enigo_paste_keystroke(shift)
 }
 
-fn enigo_paste_keystroke() -> Result<(), String> {
+fn enigo_paste_keystroke(shift: bool) -> Result<(), String> {
     let mut enigo = Enigo::new();
     enigo.key_up(Key::Shift);
     enigo.key_up(Key::Control);
@@ -67,16 +68,21 @@ fn enigo_paste_keystroke() -> Result<(), String> {
     thread::sleep(Duration::from_millis(30));
 
     enigo.key_down(Key::Control);
-    enigo.key_down(Key::Shift);
+    if shift {
+        enigo.key_down(Key::Shift);
+    }
     enigo.key_down(Key::Layout('v'));
     thread::sleep(Duration::from_millis(15));
     enigo.key_up(Key::Layout('v'));
-    enigo.key_up(Key::Shift);
+    if shift {
+        enigo.key_up(Key::Shift);
+    }
     enigo.key_up(Key::Control);
     Ok(())
 }
 
-fn paste_via_clipboard(text: &str, _keybind: Option<&str>) -> Result<(), String> {
+fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    let shift = keybind == Some("ctrl+shift+v");
     let mut clipboard =
         arboard::Clipboard::new().map_err(|err| format!("clipboard unavailable: {err}"))?;
     let previous = crate::platform::SavedClipboard::save(&mut clipboard);
@@ -91,7 +97,7 @@ fn paste_via_clipboard(text: &str, _keybind: Option<&str>) -> Result<(), String>
 
     thread::sleep(Duration::from_millis(40));
 
-    simulate_paste_keystroke()?;
+    simulate_paste_keystroke(shift)?;
 
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(800));

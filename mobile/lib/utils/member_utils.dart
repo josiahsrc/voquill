@@ -56,17 +56,17 @@ int? getFreeWordsRemaining(AppState state) {
   final config = state.config;
   final member = state.member;
   if (config == null || member == null) return null;
-  final remaining = config.freeWordsPerDay - member.wordsToday;
+  final remaining = config.freeWordsPerWeek - (member.wordsThisWeek ?? 0);
   return remaining < 0 ? 0 : remaining;
 }
 
 double? getFreeWordsProgress(AppState state) {
   final config = state.config;
   final member = state.member;
-  if (config == null || member == null || config.freeWordsPerDay == 0) {
+  if (config == null || member == null || config.freeWordsPerWeek == 0) {
     return null;
   }
-  final used = member.wordsToday / config.freeWordsPerDay;
+  final used = (member.wordsThisWeek ?? 0) / config.freeWordsPerWeek;
   return used.clamp(0.0, 1.0);
 }
 

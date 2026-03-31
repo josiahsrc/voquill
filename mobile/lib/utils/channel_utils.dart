@@ -191,6 +191,34 @@ void syncMixpanelToken() {
   });
 }
 
+Future<void> syncKeyboardAiConfig({
+  required String transcriptionMode,
+  required String postProcessingMode,
+  String? transcriptionProvider,
+  String? transcriptionApiKey,
+  String? transcriptionBaseUrl,
+  String? postProcessingProvider,
+  String? postProcessingApiKey,
+  String? postProcessingBaseUrl,
+}) async {
+  if (!_canSync) return;
+
+  try {
+    await _sharedChannel.invokeMethod('setKeyboardAiConfig', {
+      'transcriptionMode': transcriptionMode,
+      'postProcessingMode': postProcessingMode,
+      if (transcriptionProvider != null) 'transcriptionProvider': transcriptionProvider,
+      if (transcriptionApiKey != null) 'transcriptionApiKey': transcriptionApiKey,
+      if (transcriptionBaseUrl != null) 'transcriptionBaseUrl': transcriptionBaseUrl,
+      if (postProcessingProvider != null) 'postProcessingProvider': postProcessingProvider,
+      if (postProcessingApiKey != null) 'postProcessingApiKey': postProcessingApiKey,
+      if (postProcessingBaseUrl != null) 'postProcessingBaseUrl': postProcessingBaseUrl,
+    });
+  } catch (e) {
+    _logger.w('Failed to sync keyboard AI config', e);
+  }
+}
+
 Future<void> syncKeyboardDictationLanguages({
   required List<String> languages,
   required String activeLanguage,

@@ -21,6 +21,12 @@ pub(crate) fn clipboard_set(text: &str) -> Result<(), String> {
 }
 
 // --- ydotool (works on all Wayland compositors via /dev/uinput) ---
+//
+// v0.1.x: key combos as "modifier+key" (e.g. "ctrl+v")
+// v1.x:   scancode pairs as "code:1" (press) / "code:0" (release)
+//         KEY_LEFTCTRL = 29, KEY_LEFTSHIFT = 42, KEY_C = 46, KEY_V = 47
+
+use std::sync::OnceLock;
 
 fn ydotool_available() -> bool {
     Command::new("ydotool")
@@ -30,10 +36,28 @@ fn ydotool_available() -> bool {
         .is_ok()
 }
 
-fn ydotool_key(combo: &str) -> Result<(), String> {
+fn is_ydotool_v1() -> bool {
+    static CACHED: OnceLock<bool> = OnceLock::new();
+    *CACHED.get_or_init(|| {
+        Command::new("ydotool")
+            .args(["key", "--help"])
+            .output()
+            .map(|out| {
+                let combined = format!(
+                    "{}{}",
+                    String::from_utf8_lossy(&out.stdout),
+                    String::from_utf8_lossy(&out.stderr)
+                );
+                combined.contains("keycode") || combined.contains("--key-down")
+            })
+            .unwrap_or(false)
+    })
+}
+
+fn ydotool_key(args: &[&str]) -> Result<(), String> {
     let output = Command::new("ydotool")
         .arg("key")
-        .arg(combo)
+        .args(args)
         .output()
         .map_err(|err| format!("ydotool failed: {err}"))?;
 
@@ -45,8 +69,26 @@ fn ydotool_key(combo: &str) -> Result<(), String> {
     }
 }
 
+fn ydotool_paste(shift: bool) -> Result<(), String> {
+    if is_ydotool_v1() {
+        if shift {
+            ydotool_key(&["29:1", "42:1", "47:1", "47:0", "42:0", "29:0"])
+        } else {
+            ydotool_key(&["29:1", "47:1", "47:0", "29:0"])
+        }
+    } else if shift {
+        ydotool_key(&["ctrl+shift+v"])
+    } else {
+        ydotool_key(&["ctrl+v"])
+    }
+}
+
 fn ydotool_copy() -> Result<(), String> {
-    ydotool_key("ctrl+c")
+    if is_ydotool_v1() {
+        ydotool_key(&["29:1", "46:1", "46:0", "29:0"])
+    } else {
+        ydotool_key(&["ctrl+c"])
+    }
 }
 
 // --- wtype (works on Sway/Hyprland via virtual-keyboard protocol) ---
@@ -74,29 +116,20 @@ pub fn wtype_key(modifiers: &[&str], key: &str) -> Result<(), String> {
     }
 }
 
-pub fn wtype_text(text: &str) -> Result<(), String> {
-    let status = Command::new(wtype_bin()?)
-        .arg("--")
-        .arg(text)
-        .status()
-        .map_err(|err| format!("wtype failed: {err}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err("wtype exited with non-zero status".into())
-    }
-}
-
 // --- Simulate paste/copy keystrokes ---
 
-fn simulate_paste_keystroke() -> Result<(), String> {
+fn simulate_paste_keystroke(shift: bool) -> Result<(), String> {
     if ydotool_available() {
-        log::info!("Using ydotool for paste keystroke");
-        return ydotool_key("ctrl+shift+v");
+        log::info!("Using ydotool for paste keystroke (shift={shift})");
+        return ydotool_paste(shift);
     }
 
     log::info!("ydotool not available, trying wtype for paste keystroke");
-    wtype_key(&["ctrl", "shift"], "v")
+    if shift {
+        wtype_key(&["ctrl", "shift"], "v")
+    } else {
+        wtype_key(&["ctrl"], "v")
+    }
 }
 
 pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
@@ -110,18 +143,19 @@ pub(crate) fn simulate_copy_keystroke() -> Result<(), String> {
 
 pub fn paste_text(text: &str, keybind: Option<&str>) -> Result<(), String> {
     paste_via_clipboard(text, keybind).or_else(|err| {
-        log::warn!("Wayland paste failed ({err}), trying wtype text fallback");
-        wtype_text(text)
+        log::warn!("Wayland paste via keystroke failed ({err}), leaving text on clipboard");
+        clipboard_set(text)
     })
 }
 
-fn paste_via_clipboard(text: &str, _keybind: Option<&str>) -> Result<(), String> {
+fn paste_via_clipboard(text: &str, keybind: Option<&str>) -> Result<(), String> {
+    let shift = keybind == Some("ctrl+shift+v");
     let previous = clipboard_get().ok();
 
     clipboard_set(text)?;
     thread::sleep(Duration::from_millis(40));
 
-    simulate_paste_keystroke()?;
+    simulate_paste_keystroke(shift)?;
 
     if let Some(old) = previous {
         thread::spawn(move || {

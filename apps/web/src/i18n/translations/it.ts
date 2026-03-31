@@ -3,7 +3,7 @@ import type { TranslationMessages } from '../../types/locale';
 export const itTranslations = {
     siteTitle: "Voquill | Dettatura vocale IA privata",
     siteDescription:
-      "Dettatura vocale IA privata e open source per MacOS, Windows e Linux. Esegui in locale, usa la tua chiave API, il nostro cloud o distribuisci on-prem.",
+      "L'alternativa open source a WisprFlow. Dettatura vocale IA privata e open source per MacOS, Windows, Linux, iOS e Android. Esegui in locale, usa la tua chiave API, il nostro cloud o distribuisci on-prem.",
     navDemo: "Demo",
     navSecurity: "Sicurezza",
     navPricing: "Prezzi",

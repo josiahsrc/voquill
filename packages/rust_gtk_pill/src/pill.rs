@@ -1,7 +1,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use gtk::gdk;
 use gtk::glib::{self, ControlFlow};
@@ -13,37 +13,29 @@ use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
 use crate::state::{PillState, WindowMode};
 use crate::{draw, input, x11};
 
-pub fn run(receiver: Receiver<InMessage>) {
-    let use_layer_shell = gtk_layer_shell::is_supported();
-    if !use_layer_shell {
-        let display = gdk::Display::default().expect("display");
-        if display.type_().name() != "GdkX11Display" {
-            eprintln!("[pill] neither layer-shell nor X11 available");
-            std::process::exit(1);
-        }
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Backend {
+    LayerShell,
+    X11,
+    PlainWayland,
+}
 
-    let ui_scale = if !use_layer_shell {
-        let dpi = gdk::Screen::default().map(|s| s.resolution()).unwrap_or(-1.0);
-        let gdk_scale = std::env::var("GDK_SCALE")
-            .ok()
-            .and_then(|s| s.parse::<f64>().ok())
-            .unwrap_or(1.0);
-        if dpi > 96.0 {
-            (dpi / 96.0 / gdk_scale).max(1.0)
-        } else {
-            1.0
-        }
+pub fn run(receiver: Receiver<InMessage>) {
+    let backend = if gtk_layer_shell::is_supported() {
+        Backend::LayerShell
     } else {
-        1.0
+        let display = gdk::Display::default().expect("display");
+        if display.type_().name() == "GdkX11Display" {
+            Backend::X11
+        } else {
+            Backend::PlainWayland
+        }
     };
 
-    let scaled_width = (WINDOW_W_TYPING as f64 * ui_scale).ceil() as i32;
-    let scaled_height = (WINDOW_H_TYPING as f64 * ui_scale).ceil() as i32;
-    let scaled_margin = (MARGIN_BOTTOM as f64 * ui_scale).ceil() as i32;
-
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
-    window.set_default_size(scaled_width, scaled_height);
+    if backend != Backend::PlainWayland {
+        window.set_default_size(WINDOW_W_TYPING, WINDOW_H_TYPING);
+    }
     window.set_decorated(false);
     window.set_app_paintable(true);
 
@@ -54,17 +46,25 @@ pub fn run(receiver: Receiver<InMessage>) {
         }
     }
 
-    if use_layer_shell {
-        window.init_layer_shell();
-        window.set_layer(gtk_layer_shell::Layer::Overlay);
-        window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
-        window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, scaled_margin);
-        window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
-        window.set_exclusive_zone(0);
-        window.set_namespace("voquill-pill");
-    } else {
-        let x11_ui_scale = ui_scale;
-        window.connect_realize(move |window| x11::setup_x11_window(window, x11_ui_scale));
+    match backend {
+        Backend::LayerShell => {
+            window.init_layer_shell();
+            window.set_layer(gtk_layer_shell::Layer::Overlay);
+            window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
+            window.set_layer_shell_margin(gtk_layer_shell::Edge::Bottom, MARGIN_BOTTOM);
+            window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
+            window.set_exclusive_zone(0);
+            window.set_namespace("voquill-pill");
+        }
+        Backend::X11 => {
+            window.connect_realize(move |window| x11::setup_x11_window(window));
+        }
+        Backend::PlainWayland => {
+            window.set_type_hint(gdk::WindowTypeHint::Dock);
+            window.set_keep_above(true);
+            window.set_accept_focus(false);
+            window.maximize();
+        }
     }
 
     let css = gtk::CssProvider::new();
@@ -83,7 +83,9 @@ pub fn run(receiver: Receiver<InMessage>) {
 
     let overlay_widget = gtk::Overlay::new();
     let drawing_area = gtk::DrawingArea::new();
-    drawing_area.set_size_request(scaled_width, scaled_height);
+    if backend != Backend::PlainWayland {
+        drawing_area.set_size_request(WINDOW_W_TYPING, WINDOW_H_TYPING);
+    }
     overlay_widget.add(&drawing_area);
 
     let entry = gtk::Entry::new();
@@ -113,7 +115,6 @@ pub fn run(receiver: Receiver<InMessage>) {
         tooltip_t: Cell::new(0.0),
         tooltip_velocity: Cell::new(0.0),
         tooltip_width: Cell::new(0.0),
-        ui_scale,
         window_mode: Cell::new(WindowMode::Dictation),
         draw_width: Cell::new(DICTATION_WINDOW_WIDTH as f64),
         draw_height: Cell::new(DICTATION_WINDOW_HEIGHT as f64),
@@ -138,7 +139,17 @@ pub fn run(receiver: Receiver<InMessage>) {
         should_stick: Cell::new(true),
         click_regions: RefCell::new(Vec::new()),
         entry_text: RefCell::new(String::new()),
+        alloc_width: Cell::new(0.0),
+        alloc_height: Cell::new(0.0),
     });
+
+    if backend == Backend::PlainWayland {
+        let state_alloc = state.clone();
+        window.connect_size_allocate(move |_, alloc| {
+            state_alloc.alloc_width.set(alloc.width() as f64);
+            state_alloc.alloc_height.set(alloc.height() as f64);
+        });
+    }
 
     window.add_events(
         gdk::EventMask::ENTER_NOTIFY_MASK
@@ -172,12 +183,12 @@ pub fn run(receiver: Receiver<InMessage>) {
     let state_press = state.clone();
     let entry_press = entry.clone();
     let win_press = window.clone();
-    let use_ls_press = use_layer_shell;
+    let backend_press = backend;
     window.connect_button_press_event(move |_, _| {
         let is_typing = state_press.assistant_active.get()
             && *state_press.assistant_input_mode.borrow() == "type";
         if is_typing {
-            if !use_ls_press {
+            if backend_press == Backend::X11 {
                 x11::force_keyboard_focus(&win_press);
             }
             entry_press.grab_focus();
@@ -187,9 +198,9 @@ pub fn run(receiver: Receiver<InMessage>) {
 
     {
         let win_ep = window.clone();
-        let use_ls_ep = use_layer_shell;
+        let backend_ep = backend;
         entry.connect_button_press_event(move |e, _| {
-            if !use_ls_ep {
+            if backend_ep == Backend::X11 {
                 x11::force_keyboard_focus(&win_ep);
             }
             e.grab_focus();
@@ -198,7 +209,15 @@ pub fn run(receiver: Receiver<InMessage>) {
     }
 
     let state_click = state.clone();
+    let last_click: Rc<Cell<Option<Instant>>> = Rc::new(Cell::new(None));
     window.connect_button_release_event(move |_, event| {
+        let now = Instant::now();
+        if let Some(prev) = last_click.get() {
+            if now.duration_since(prev) < Duration::from_millis(150) {
+                return glib::Propagation::Proceed;
+            }
+        }
+        last_click.set(Some(now));
         let (x, y) = event.position();
         input::handle_click(&state_click, x, y);
         glib::Propagation::Proceed
@@ -261,7 +280,7 @@ pub fn run(receiver: Receiver<InMessage>) {
     let entry_tick = entry.clone();
     let quit_flag = Rc::new(Cell::new(false));
     let quit_tick = quit_flag.clone();
-    let use_ls = use_layer_shell;
+    let backend_tick = backend;
     glib::timeout_add_local(Duration::from_millis(16), move || {
         let rx = receiver.borrow();
         while let Ok(msg) = rx.try_recv() {
@@ -330,54 +349,86 @@ pub fn run(receiver: Receiver<InMessage>) {
         let is_typing = state_tick.assistant_active.get()
             && *state_tick.assistant_input_mode.borrow() == "type";
         if is_typing && !gtk::prelude::WidgetExt::is_visible(&entry_tick) {
+            let (ox, oy) = state_tick.content_offset();
+            let dw = state_tick.draw_width.get();
+            let dh = state_tick.draw_height.get();
             let panel_w = PANEL_EXPANDED_WIDTH;
-            let max_w = WINDOW_W_TYPING as f64;
-            let panel_x = (max_w - panel_w) / 2.0;
-            let margin_start = ((panel_x + PANEL_CONTENT_SIDE_INSET) * ui_scale) as i32;
-            let margin_end = ((max_w - panel_x - panel_w + PANEL_CONTENT_SIDE_INSET) * ui_scale) as i32;
-            let margin_bottom = (PANEL_BOTTOM_MARGIN * ui_scale) as i32;
+            let panel_x = (dw - panel_w) / 2.0;
+            let margin_start = (ox + panel_x + PANEL_CONTENT_SIDE_INSET) as i32;
+            let aw = state_tick.alloc_width.get();
+            let right_margin = if aw > 0.0 {
+                aw - ox - dw
+            } else {
+                WINDOW_W_TYPING as f64 - ox - dw
+            };
+            let margin_end = (right_margin + (dw - panel_x - panel_w) + PANEL_CONTENT_SIDE_INSET) as i32;
+            let ah = state_tick.alloc_height.get();
+            let bottom_margin = if ah > 0.0 {
+                ah - oy - dh
+            } else {
+                0.0
+            };
+            let margin_bottom = (bottom_margin + PANEL_BOTTOM_MARGIN) as i32;
             entry_tick.set_margin_start(margin_start);
             entry_tick.set_margin_end(margin_end);
             entry_tick.set_margin_bottom(margin_bottom);
-            entry_tick.set_height_request((PANEL_INPUT_HEIGHT * ui_scale) as i32);
+            entry_tick.set_height_request(PANEL_INPUT_HEIGHT as i32);
             entry_tick.set_visible(true);
             entry_tick.show();
-            if use_ls {
-                win_tick.set_keyboard_mode(gtk_layer_shell::KeyboardMode::OnDemand);
-                glib::idle_add_local_once({
-                    let e = entry_tick.clone();
-                    move || { e.grab_focus(); }
-                });
-            } else {
-                win_tick.set_accept_focus(true);
-                glib::timeout_add_local(Duration::from_millis(100), {
-                    let e = entry_tick.clone();
-                    let w = win_tick.clone();
-                    move || {
-                        x11::force_keyboard_focus(&w);
-                        e.grab_focus();
-                        ControlFlow::Break
-                    }
-                });
+            match backend_tick {
+                Backend::LayerShell => {
+                    win_tick.set_keyboard_mode(gtk_layer_shell::KeyboardMode::OnDemand);
+                    glib::idle_add_local_once({
+                        let e = entry_tick.clone();
+                        move || { e.grab_focus(); }
+                    });
+                }
+                Backend::X11 => {
+                    win_tick.set_accept_focus(true);
+                    glib::timeout_add_local(Duration::from_millis(100), {
+                        let e = entry_tick.clone();
+                        let w = win_tick.clone();
+                        move || {
+                            x11::force_keyboard_focus(&w);
+                            e.grab_focus();
+                            ControlFlow::Break
+                        }
+                    });
+                }
+                Backend::PlainWayland => {
+                    win_tick.set_accept_focus(true);
+                    glib::idle_add_local_once({
+                        let e = entry_tick.clone();
+                        move || { e.grab_focus(); }
+                    });
+                }
             }
         } else if !is_typing && gtk::prelude::WidgetExt::is_visible(&entry_tick) {
             entry_tick.select_region(0, 0);
             entry_tick.set_visible(false);
             entry_tick.hide();
-            if use_ls {
-                win_tick.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
-            } else {
-                win_tick.set_accept_focus(false);
+            match backend_tick {
+                Backend::LayerShell => {
+                    win_tick.set_keyboard_mode(gtk_layer_shell::KeyboardMode::None);
+                }
+                _ => {
+                    win_tick.set_accept_focus(false);
+                }
             }
         }
 
         let visibility = state_tick.visibility.get();
         let is_active = state_tick.phase.get() != Phase::Idle;
         let is_assistant = state_tick.assistant_active.get();
-        let should_show = match visibility {
-            Visibility::Hidden => is_assistant,
-            Visibility::WhileActive => is_active || is_assistant,
-            Visibility::Persistent => true,
+        let should_show = match backend_tick {
+            Backend::LayerShell | Backend::PlainWayland => {
+                state_tick.phase.get() == Phase::Recording
+            }
+            Backend::X11 => match visibility {
+                Visibility::Hidden => is_assistant,
+                Visibility::WhileActive => is_active || is_assistant,
+                Visibility::Persistent => true,
+            },
         };
         if should_show {
             win_tick.show();
@@ -396,7 +447,7 @@ pub fn run(receiver: Receiver<InMessage>) {
     entry.hide();
     ipc::send(&OutMessage::Ready);
 
-    if use_layer_shell {
+    if backend == Backend::LayerShell {
         let window_ref = window.clone();
         let quit_monitor = quit_flag.clone();
         let last_geom: Rc<Cell<(i32, i32, i32, i32)>> = Rc::new(Cell::new((0, 0, 0, 0)));

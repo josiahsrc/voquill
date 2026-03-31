@@ -4,6 +4,7 @@ pub mod db;
 pub mod domain;
 pub mod errors;
 pub mod overlay;
+pub mod pill_process;
 pub mod platform;
 pub mod state;
 pub mod system;

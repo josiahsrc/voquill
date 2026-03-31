@@ -72,8 +72,8 @@ class _LoginFormState extends State<LoginForm> {
   void initState() {
     if (Flavor.current.isEmulators) {
       _email = 'emulator@voquill.com';
-      _password = 'password';
-      _confirmPassword = 'password';
+      _password = 'P@ssw0rd!';
+      _confirmPassword = 'P@ssw0rd!';
     }
 
     super.initState();

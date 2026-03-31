@@ -9,7 +9,7 @@ use gtk::prelude::*;
 
 use crate::constants::MARGIN_BOTTOM;
 
-pub(crate) fn setup_x11_window(window: &gtk::Window, ui_scale: f64) {
+pub(crate) fn setup_x11_window(window: &gtk::Window) {
     use std::ffi::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 
     type XDisplay = c_void;
@@ -125,7 +125,7 @@ pub(crate) fn setup_x11_window(window: &gtk::Window, ui_scale: f64) {
                     let (alloc_w, alloc_h) = win_ref.size();
                     let win_w = alloc_w as f64;
                     let win_h = alloc_h as f64;
-                    let margin = MARGIN_BOTTOM as f64 * ui_scale * scale;
+                    let margin = MARGIN_BOTTOM as f64 * scale;
                     return Some((
                         (wa_x + (wa_w - win_w) / 2.0) as c_int,
                         (wa_y + wa_h - win_h - margin) as c_int,

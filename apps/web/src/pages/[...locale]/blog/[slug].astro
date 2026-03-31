@@ -3,10 +3,10 @@ import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
 import SiteFooter from '../../../components/SiteFooter.astro';
 import { getAllBlogPosts, getBlogPost, formatBlogDate } from '../../../lib/blog';
-import { locales, type Locale } from '../../../types/locale';
+import { locales, defaultLocale, type Locale } from '../../../types/locale';
 import { t } from '../../../i18n/translations';
 import { localizeHtmlInternalLinks } from '../../../utils/internal-links';
-import { localePath } from '../../../utils/paths';
+import { localePath, localeParam } from '../../../utils/paths';
 import {
 	buildBlogPostingStructuredData,
 	buildBreadcrumbStructuredData,
@@ -18,12 +18,12 @@ export function getStaticPaths() {
 	const posts = getAllBlogPosts();
 	return locales.flatMap((locale) =>
 		posts.map((post) => ({
-			params: { locale, slug: post.slug },
+			params: { locale: localeParam(locale), slug: post.slug },
 		})),
 	);
 }
 
-const locale = Astro.params.locale as Locale;
+const locale = (Astro.params.locale ?? defaultLocale) as Locale;
 const i18n = t(locale);
 const post = getBlogPost(Astro.params.slug);
 

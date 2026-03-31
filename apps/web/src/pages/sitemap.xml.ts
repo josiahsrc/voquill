@@ -7,9 +7,9 @@ import { localePath } from "../utils/paths";
 import { toAbsoluteUrl, toIsoDate, toIsoDateFromDateOnly } from "../utils/seo";
 
 const PAGE_SOURCES = {
-  home: "src/pages/[locale]/index.astro",
-  download: "src/pages/[locale]/download.astro",
-  blogIndex: "src/pages/[locale]/blog/index.astro",
+  home: "src/pages/[...locale]/index.astro",
+  download: "src/pages/[...locale]/download.astro",
+  blogIndex: "src/pages/[...locale]/blog/index.astro",
   contact: "content/contact.md",
   privacy: "content/privacy.md",
   terms: "content/terms.md",

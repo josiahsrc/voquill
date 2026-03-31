@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import type {
   HandlerInput,
   HandlerName,
@@ -6,7 +7,6 @@ import type {
   StreamHandlerName,
 } from "@voquill/functions";
 import type { LlmStreamEvent, Nullable } from "@voquill/types";
-import { invoke } from "@tauri-apps/api/core";
 import { AppState } from "../state/app.state";
 import { readNdjsonStream } from "./stream.utils";
 

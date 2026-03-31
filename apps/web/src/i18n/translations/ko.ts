@@ -3,7 +3,7 @@ import type { TranslationMessages } from '../../types/locale';
 export const koTranslations = {
     siteTitle: "Voquill | 비공개 AI 음성 받아쓰기",
     siteDescription:
-      "MacOS, Windows, Linux용 비공개 오픈 소스 AI 음성 받아쓰기. 로컬 실행, 자체 API 키 사용, 클라우드 이용 또는 온프레미스 배포.",
+      "WisprFlow의 오픈 소스 대안. MacOS, Windows, Linux, iOS, Android용 비공개 오픈 소스 AI 음성 받아쓰기. 로컬 실행, 자체 API 키 사용, 클라우드 이용 또는 온프레미스 배포.",
     navDemo: "데모",
     navSecurity: "보안",
     navPricing: "요금제",

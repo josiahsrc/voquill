@@ -1,29 +1,33 @@
+use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
+use windows::Win32::Media::Audio::{eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator};
+use windows::Win32::System::Com::{
+    CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED,
+};
+
+unsafe fn get_endpoint_volume() -> Result<IAudioEndpointVolume, windows::core::Error> {
+    let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+    let enumerator: IMMDeviceEnumerator =
+        CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
+    let device = enumerator.GetDefaultAudioEndpoint(eRender, eConsole)?;
+    device.Activate(CLSCTX_ALL, None)
+}
+
 pub fn get_system_volume() -> Result<f64, String> {
-    let output = std::process::Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-Command",
-            "(Get-AudioDevice -PlaybackVolume)",
-        ])
-        .output()
-        .map_err(|e| e.to_string())?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let volume: f64 = stdout
-        .trim()
-        .parse()
-        .map_err(|e: std::num::ParseFloatError| e.to_string())?;
-    Ok(volume / 100.0)
+    unsafe {
+        let endpoint = get_endpoint_volume().map_err(|e| e.to_string())?;
+        let level = endpoint
+            .GetMasterVolumeLevelScalar()
+            .map_err(|e| e.to_string())?;
+        Ok(level as f64)
+    }
 }
 
 pub fn set_system_volume(volume: f64) -> Result<(), String> {
-    let percent = (volume * 100.0).round() as i32;
-    std::process::Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-Command",
-            &format!("Set-AudioDevice -PlaybackVolume {percent}"),
-        ])
-        .output()
-        .map_err(|e| e.to_string())?;
-    Ok(())
+    unsafe {
+        let endpoint = get_endpoint_volume().map_err(|e| e.to_string())?;
+        endpoint
+            .SetMasterVolumeLevelScalar(volume as f32, std::ptr::null())
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }

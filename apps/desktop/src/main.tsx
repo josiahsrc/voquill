@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, getStorage } from "firebase/storage";
+import { connectDatabaseEmulator, getDatabase } from "firebase/database";
 import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { IntlProvider } from "react-intl";
@@ -44,6 +45,9 @@ const firebaseConfig: FirebaseOptions = {
     import.meta.env.VITE_FIREBASE_APP_ID ||
     "1:778214168359:web:66ee2ce5df76c8c2d77b02",
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-V6Y1RSFBQX",
+  databaseURL:
+    import.meta.env.VITE_FIREBASE_DATABASE_URL ||
+    "https://voquill-prod-default-rtdb.firebaseio.com",
 };
 
 const missingFirebaseConfigKeys = Object.entries(firebaseConfig)
@@ -78,6 +82,11 @@ if (getIsEmulators()) {
 const storage = getStorage(app);
 if (getIsEmulators()) {
   connectStorageEmulator(storage, "localhost", 9199);
+}
+
+const database = getDatabase(app);
+if (getIsEmulators()) {
+  connectDatabaseEmulator(database, "localhost", 9000);
 }
 
 const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;

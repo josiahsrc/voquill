@@ -172,6 +172,7 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             }
 
             if crate::platform::get_hotkey_strategy() == "bridge" {
+                crate::platform::init::ensure_background_services();
                 crate::system::bridge_server::start(app.handle().clone());
                 crate::platform::compositor::deploy_trigger_script(app.handle());
             }
@@ -268,6 +269,8 @@ pub fn build() -> tauri::Builder<tauri::Wry> {
             crate::commands::get_hotkey_strategy,
             crate::commands::supports_app_detection,
             crate::commands::supports_paste_keybinds,
+            crate::commands::get_native_setup_status,
+            crate::commands::run_native_setup,
             crate::commands::get_keyboard_language,
             crate::commands::conversation_create,
             crate::commands::conversation_list,

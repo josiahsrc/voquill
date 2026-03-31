@@ -1,6 +1,7 @@
 ---
 import { locales, defaultLocale, type Locale } from '../types/locale';
 import { stripLocalePrefix } from '../utils/locale.utils';
+import { localePath } from '../utils/paths';
 import {
 	DEFAULT_SOCIAL_IMAGE,
 	DEFAULT_SOCIAL_IMAGE_ALT,
@@ -47,7 +48,7 @@ const ogLocale = getOgLocale(lang);
 const pathWithoutLocale = stripLocalePrefix(Astro.url.pathname);
 const hreflangUrls = locales.map((locale) => ({
 	locale,
-	href: new URL(`/${locale}${pathWithoutLocale}`, siteBase).href,
+	href: new URL(localePath(locale, pathWithoutLocale || '/'), siteBase).href,
 }));
 const structuredDataItems = [
 	buildOrganizationStructuredData(),
@@ -374,6 +375,19 @@ const alternateOgLocales = locales
 		line-height: 1.5;
 	}
 
+	.dialog-label {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-strong);
+		margin: 0;
+	}
+
+	.dialog-label-hint {
+		font-weight: 400;
+		color: var(--text-muted);
+		font-size: 0.85rem;
+	}
+
 	.linux-code-block {
 		display: flex;
 		align-items: center;
@@ -384,12 +398,13 @@ const alternateOgLocales = locales
 		border: 1px solid var(--border);
 		font-family: monospace;
 		font-size: 0.85rem;
-		overflow-x: auto;
 	}
 
 	.linux-code-block code {
 		flex: 1;
+		min-width: 0;
 		white-space: nowrap;
+		overflow-x: auto;
 	}
 
 	.linux-copy-btn {

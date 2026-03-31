@@ -14,6 +14,7 @@ pub fn wtype_path() -> Option<&'static PathBuf> {
 
 enum Compositor {
     Gnome,
+    Kde,
     Sway,
     Hyprland,
     Unknown(String),
@@ -92,6 +93,9 @@ fn detect_compositor() -> Compositor {
         if lower.contains("gnome") {
             return Compositor::Gnome;
         }
+        if lower.contains("kde") {
+            return Compositor::Kde;
+        }
         if lower.contains("sway") {
             return Compositor::Sway;
         }
@@ -108,6 +112,9 @@ fn detect_compositor() -> Compositor {
         let procs = String::from_utf8_lossy(&output.stdout).to_lowercase();
         if procs.contains("gnome-shell") || procs.contains("mutter") {
             return Compositor::Gnome;
+        }
+        if procs.contains("kwin") || procs.contains("plasmashell") {
+            return Compositor::Kde;
         }
         if procs.lines().any(|l| l.trim() == "sway") {
             return Compositor::Sway;
@@ -132,6 +139,7 @@ pub fn sync_compositor_hotkeys(
     let compositor = detect_compositor();
     match compositor {
         Compositor::Gnome => sync_gnome(&script_path, bindings),
+        Compositor::Kde => sync_kde(&script_path, bindings),
         Compositor::Sway => sync_sway(&script_path, bindings),
         Compositor::Hyprland => sync_hyprland(&script_path, bindings),
         Compositor::Unknown(name) => {
@@ -444,6 +452,199 @@ fn sync_hyprland(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(
     let _ = Command::new("hyprctl").arg("reload").output();
     log::info!("Synced {} Hyprland compositor hotkeys", bindings.len());
     Ok(())
+}
+
+// --- KDE Plasma ---
+//
+// KDE Plasma 6 uses kglobalaccel for global shortcuts. For .desktop-file-based
+// shortcuts (external commands), the required setup is:
+//
+// 1. A .desktop file in ~/.local/share/applications/ with X-KDE-Shortcuts
+// 2. A [services][filename.desktop] entry in kglobalshortcutsrc
+// 3. kbuildsycoca6 to update the KDE service cache
+// 4. kglobalaccel restart to load the new service shortcuts
+//
+// The X-KDE-Shortcuts field is what tells KDE this .desktop file participates
+// in global shortcuts. Without it, kglobalaccel ignores the service entry.
+
+const KDE_DESKTOP_PREFIX: &str = "voquill-hotkey-";
+
+fn keys_to_kde_binding(keys: &[String]) -> String {
+    let mut modifiers = Vec::new();
+    let mut non_mod = String::new();
+
+    for key in keys {
+        if let Some((name, _)) = classify_key(key) {
+            let kde_mod = match name {
+                "super" => "Meta",
+                "ctrl" => "Ctrl",
+                "shift" => "Shift",
+                "alt" => "Alt",
+                _ => continue,
+            };
+            if !modifiers.contains(&kde_mod.to_string()) {
+                modifiers.push(kde_mod.to_string());
+            }
+        } else {
+            non_mod = extract_non_modifier_key(key);
+            if non_mod.len() == 1 {
+                non_mod = non_mod.to_uppercase();
+            } else {
+                // KDE uses PascalCase for special keys (e.g. "Space", "Escape")
+                let mut chars = non_mod.chars();
+                non_mod = match chars.next() {
+                    Some(c) => c.to_uppercase().to_string() + chars.as_str(),
+                    None => non_mod,
+                };
+            }
+        }
+    }
+
+    if modifiers.is_empty() {
+        non_mod
+    } else {
+        format!("{}+{}", modifiers.join("+"), non_mod)
+    }
+}
+
+fn kwriteconfig_cmd() -> &'static str {
+    static CACHED: OnceLock<&'static str> = OnceLock::new();
+    *CACHED.get_or_init(|| {
+        if Command::new("kwriteconfig6")
+            .arg("--help")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .is_ok()
+        {
+            "kwriteconfig6"
+        } else {
+            "kwriteconfig5"
+        }
+    })
+}
+
+fn sync_kde(script_path: &Path, bindings: &[CompositorBinding]) -> Result<(), String> {
+    let apps_dir = data_home().join("applications");
+    fs::create_dir_all(&apps_dir)
+        .map_err(|err| format!("Failed to create applications dir: {err}"))?;
+
+    let kwriteconfig = kwriteconfig_cmd();
+    let shortcuts_rc = config_home().join("kglobalshortcutsrc");
+
+    // Clean up old Voquill desktop files and their [services] entries
+    if let Ok(entries) = fs::read_dir(&apps_dir) {
+        for entry in entries.flatten() {
+            if let Some(name) = entry.file_name().to_str() {
+                if name.starts_with(KDE_DESKTOP_PREFIX) && name.ends_with(".desktop") {
+                    let _ = fs::remove_file(entry.path());
+                }
+            }
+        }
+    }
+
+    // Remove old [services] groups from kglobalshortcutsrc
+    if let Ok(content) = fs::read_to_string(&shortcuts_rc) {
+        for line in content.lines() {
+            if line.starts_with("[services][")
+                && line.ends_with(']')
+                && line.contains(KDE_DESKTOP_PREFIX)
+            {
+                // Extract the nested group name: [services][name.desktop] -> name.desktop
+                let inner = &line["[services][".len()..line.len() - 1];
+                let _ = Command::new(kwriteconfig)
+                    .args(["--file", "kglobalshortcutsrc"])
+                    .arg("--group")
+                    .arg("services")
+                    .arg("--group")
+                    .arg(inner)
+                    .args(["--key", "_launch", "--delete"])
+                    .status();
+            }
+        }
+    }
+
+    let mut synced = 0;
+    for binding in bindings {
+        if binding.keys.is_empty() {
+            continue;
+        }
+        if !has_non_modifier_key(&binding.keys) {
+            log::warn!(
+                "Skipping KDE binding for '{}': modifier-only combos are not supported",
+                binding.action_name
+            );
+            continue;
+        }
+
+        let kde_shortcut = keys_to_kde_binding(&binding.keys);
+        let desktop_name = format!("{KDE_DESKTOP_PREFIX}{}.desktop", binding.action_name);
+        let friendly = format!("Voquill {}", binding.action_name);
+
+        // Write .desktop file with X-KDE-Shortcuts so KDE recognises it
+        let desktop_path = apps_dir.join(&desktop_name);
+        let desktop_content = format!(
+            "[Desktop Entry]\n\
+             Type=Application\n\
+             Name={friendly}\n\
+             Exec={script} {action}\n\
+             NoDisplay=true\n\
+             X-KDE-Shortcuts={shortcut}\n",
+            action = binding.action_name,
+            script = script_path.display(),
+            shortcut = kde_shortcut,
+        );
+        fs::write(&desktop_path, &desktop_content)
+            .map_err(|err| format!("Failed to write KDE desktop file: {err}"))?;
+
+        // Register in [services] section of kglobalshortcutsrc
+        let _ = Command::new(kwriteconfig)
+            .args(["--file", "kglobalshortcutsrc"])
+            .arg("--group")
+            .arg("services")
+            .arg("--group")
+            .arg(&desktop_name)
+            .arg("--key")
+            .arg("_launch")
+            .arg(&kde_shortcut)
+            .status();
+
+        synced += 1;
+    }
+
+    // Rebuild sycoca cache so KDE resolves the new .desktop files
+    if Command::new("kbuildsycoca6")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_err()
+    {
+        let _ = Command::new("kbuildsycoca5")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status();
+    }
+
+    // Restart kglobalaccel so it loads the new service shortcuts.
+    // It auto-relaunches via D-Bus activation on next use.
+    let _ = Command::new("kquitapp6")
+        .arg("kglobalaccel6")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status();
+
+    log::info!("Synced {synced} KDE compositor hotkeys");
+    Ok(())
+}
+
+fn data_home() -> PathBuf {
+    if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
+        return PathBuf::from(xdg);
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        return PathBuf::from(home).join(".local/share");
+    }
+    PathBuf::from("/tmp")
 }
 
 fn config_home() -> PathBuf {

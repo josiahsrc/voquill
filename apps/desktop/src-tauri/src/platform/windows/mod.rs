@@ -19,6 +19,6 @@ pub fn supports_app_detection() -> bool {
     true
 }
 
-pub fn supports_paste_keybinds() -> bool {
-    true
+pub fn supports_paste_keybinds() -> crate::platform::PasteKeybindSupport {
+    crate::platform::PasteKeybindSupport::PerApp
 }

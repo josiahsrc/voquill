@@ -1,5 +1,29 @@
 use std::sync::Arc;
 
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeSetupResult {
+    Success,
+    RequireRestart,
+    Failed,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeSetupStatus {
+    Ready,
+    NeedsSetup,
+    NeedsRestart,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PasteKeybindSupport {
+    Disabled,
+    PerApp,
+    Global,
+}
+
 #[cfg(target_os = "linux")]
 pub mod linux;
 #[cfg(target_os = "linux")]

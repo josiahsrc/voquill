@@ -1,7 +1,7 @@
 name: app
 description: "A new Flutter project."
 publish_to: "none"
-version: 1.3.15+33
+version: 1.4.1+35
 
 environment:
   sdk: ^3.10.3
@@ -31,6 +31,7 @@ dependencies:
   http: ^1.6.0
   firebase_core: ^4.4.0
   firebase_auth: ^6.1.4
+  firebase_database: ^12.0.0
   cloud_functions: ^6.0.6
   google_sign_in: ^6.2.2
   flutter_svg: ^2.0.17
@@ -44,6 +45,8 @@ dependencies:
   purchases_ui_flutter: ^8.0.0
   flutter_dotenv: ^6.0.0
   mixpanel_flutter: ^2.5.0
+  flutter_secure_storage: ^9.2.4
+  record: ^6.2.0
 
 dev_dependencies:
   flutter_test:
