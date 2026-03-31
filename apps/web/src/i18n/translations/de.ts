@@ -3,7 +3,7 @@ import type { TranslationMessages } from '../../types/locale';
 export const deTranslations = {
     siteTitle: "Voquill | Private KI-Sprachdiktierung",
     siteDescription:
-      "Private, quelloffene KI-Sprachdiktierung für MacOS, Windows und Linux. Lokal ausführen, eigenen API-Schlüssel nutzen, unsere Cloud verwenden oder On-Prem bereitstellen.",
+      "Die Open-Source-Alternative zu WisprFlow. Private, quelloffene KI-Sprachdiktierung für MacOS, Windows, Linux, iOS und Android. Lokal ausführen, eigenen API-Schlüssel nutzen, unsere Cloud verwenden oder On-Prem bereitstellen.",
     navDemo: "Demo",
     navSecurity: "Sicherheit",
     navPricing: "Preise",

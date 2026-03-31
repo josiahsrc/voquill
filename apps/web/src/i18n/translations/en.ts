@@ -3,7 +3,7 @@ import type { TranslationMessages } from "../../types/locale";
 export const enTranslations = {
   siteTitle: "Voquill | Private AI Voice Dictation",
   siteDescription:
-    "Private, open source AI voice dictation for MacOS, Windows, and Linux. Run locally, bring your own API key, use our cloud, or deploy on-prem.",
+    "The open-source alternative to WisprFlow. Private, open source AI voice dictation for MacOS, Windows, Linux, iOS, and Android. Run locally, bring your own API key, use our cloud, or deploy on-prem.",
   navDemo: "Demo",
   navSecurity: "Security",
   navPricing: "Pricing",

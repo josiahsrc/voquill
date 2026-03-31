@@ -3,7 +3,7 @@ import type { TranslationMessages } from '../../types/locale';
 export const esTranslations = {
     siteTitle: "Voquill | Dictado por voz con IA privado",
     siteDescription:
-      "Dictado por voz con IA privado y de código abierto para MacOS, Windows y Linux. Ejecútalo localmente, usa tu propia clave API, nuestra nube o despliega on-prem.",
+      "La alternativa de código abierto a WisprFlow. Dictado por voz con IA privado y de código abierto para MacOS, Windows, Linux, iOS y Android. Ejecútalo localmente, usa tu propia clave API, nuestra nube o despliega on-prem.",
     navDemo: "Demo",
     navSecurity: "Seguridad",
     navPricing: "Precios",
