@@ -11,15 +11,12 @@ import OfflineShowcase from '../../components/OfflineShowcase.astro';
 import PricingSection from '../../components/PricingSection.astro';
 import DiscordSection from '../../components/DiscordSection.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
-import { locales, type Locale } from '../../types/locale';
+import { defaultLocale, type Locale } from '../../types/locale';
 import { t } from '../../i18n/translations';
 import { buildSoftwareApplicationStructuredData } from '../../utils/seo';
+export { getLocaleStaticPaths as getStaticPaths } from '../../utils/paths';
 
-export function getStaticPaths() {
-	return locales.map((locale) => ({ params: { locale } }));
-}
-
-const locale = Astro.params.locale as Locale;
+const locale = (Astro.params.locale ?? defaultLocale) as Locale;
 const i18n = t(locale);
 const structuredData = [buildSoftwareApplicationStructuredData(locale)];
 ---

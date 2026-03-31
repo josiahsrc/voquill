@@ -1,7 +1,7 @@
 ---
 import Header from '../../../components/Header.astro';
 import SiteFooter from '../../../components/SiteFooter.astro';
-import { locales, type Locale } from '../../../types/locale';
+import { defaultLocale, type Locale } from '../../../types/locale';
 import { t } from '../../../i18n/translations';
 import Layout from '../../../layouts/Layout.astro';
 import { formatBlogDate, getAllBlogPosts } from '../../../lib/blog';
@@ -10,12 +10,9 @@ import {
 	toAbsoluteUrl,
 } from '../../../utils/seo';
 import { localePath } from '../../../utils/paths';
+export { getLocaleStaticPaths as getStaticPaths } from '../../../utils/paths';
 
-export function getStaticPaths() {
-	return locales.map((locale) => ({ params: { locale } }));
-}
-
-const locale = Astro.params.locale as Locale;
+const locale = (Astro.params.locale ?? defaultLocale) as Locale;
 const i18n = t(locale);
 const posts = getAllBlogPosts();
 const pageTitle =

@@ -8,13 +8,13 @@
     ],
     "redirects": [
       {
-        "source": "/",
-        "destination": "/en/",
+        "source": "/en/:path*",
+        "destination": "/:path*",
         "type": 301
       },
       {
-        "source": "/download",
-        "destination": "/en/download/",
+        "source": "/en",
+        "destination": "/",
         "type": 301
       }
     ],

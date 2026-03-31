@@ -1,6 +1,7 @@
 ---
 import { locales, defaultLocale, type Locale } from '../types/locale';
 import { stripLocalePrefix } from '../utils/locale.utils';
+import { localePath } from '../utils/paths';
 import {
 	DEFAULT_SOCIAL_IMAGE,
 	DEFAULT_SOCIAL_IMAGE_ALT,
@@ -47,7 +48,7 @@ const ogLocale = getOgLocale(lang);
 const pathWithoutLocale = stripLocalePrefix(Astro.url.pathname);
 const hreflangUrls = locales.map((locale) => ({
 	locale,
-	href: new URL(`/${locale}${pathWithoutLocale}`, siteBase).href,
+	href: new URL(localePath(locale, pathWithoutLocale || '/'), siteBase).href,
 }));
 const structuredDataItems = [
 	buildOrganizationStructuredData(),

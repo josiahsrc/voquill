@@ -11,7 +11,7 @@ Voquill is built for secure voice typing, AI-assisted text cleanup, and enterpri
 
 Voquill has an active community, the product is evolving quickly, and development happens in the open through GitHub, Discord, and public docs.
 
-Localized versions of the main site are available under locale-prefixed paths such as /en/, /es/, /de/, /fr/, /it/, /ko/, /pt/, /pt-BR/, /zh-CN/, and /zh-TW/.
+The default locale (English) is served at the root path. Localized versions are available under locale-prefixed paths such as /es/, /de/, /fr/, /it/, /ko/, /pt/, /pt-BR/, /zh-CN/, and /zh-TW/.
 
 ## Core Resources
 
