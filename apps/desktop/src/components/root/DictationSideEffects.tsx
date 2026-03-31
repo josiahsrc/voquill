@@ -68,6 +68,7 @@ import {
   syncHotkeyCombosToNative,
 } from "../../utils/keyboard.utils";
 import {
+  DEFAULT_DICTATION_LIMIT_MINUTES,
   getDictationRecordingTimerDurations,
   getEffectiveDictationLimitMinutes,
   shouldEnableDictationLimit,
@@ -471,12 +472,12 @@ export const DictationSideEffects = () => {
     const state = getAppState();
     const preferences = getMyUserPreferences(state);
     const transcriptionPrefs = getTranscriptionPrefs(state);
-    if (!shouldEnableDictationLimit(transcriptionPrefs.mode)) {
-      return;
-    }
 
-    const dictationLimitMinutes =
-      getEffectiveDictationLimitMinutes(preferences);
+    const dictationLimitMinutes = shouldEnableDictationLimit(
+      transcriptionPrefs.mode,
+    )
+      ? getEffectiveDictationLimitMinutes(preferences)
+      : DEFAULT_DICTATION_LIMIT_MINUTES;
     const { warningDurationMs, autoStopDurationMs } =
       getDictationRecordingTimerDurations(dictationLimitMinutes);
 

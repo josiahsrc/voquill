@@ -94,7 +94,7 @@ export const MoreSettingsDialog = () => {
     }
 
     const parsed = Number(dictationLimitInput);
-    if (!Number.isInteger(parsed) || parsed < 0) {
+    if (!Number.isFinite(parsed) || parsed < 0) {
       setDictationLimitInput(String(dictationLimitMinutes));
       return;
     }
