@@ -25,8 +25,10 @@ const linkHref = href ?? downloadPageHref;
 	const RELEASES_API_URL =
 		'https://api.github.com/repos/voquill/voquill/releases';
 	const RELEASE_TAG_PATTERN = /^desktop-v\d/;
-	const LINUX_INSTALL_COMMAND =
+	const LINUX_APT_COMMAND =
 		'curl -fsSL https://voquill.github.io/apt/install.sh | bash';
+	const LINUX_RPM_COMMAND =
+		'curl -fsSL https://voquill.github.io/rpm/install.sh | bash';
 
 	var PLATFORM_META = {
 		mac: { name: 'macOS', icon: '/apple.svg' },
@@ -258,13 +260,17 @@ const linkHref = href ?? downloadPageHref;
 
 		dialog.innerHTML =
 			'<h2 class="dialog-title">Install Voquill on Linux</h2>' +
-			'<p class="dialog-description">Run this command in your terminal to install Voquill via APT:</p>' +
+			'<p class="dialog-description">Run one of these commands in your terminal to install Voquill:</p>' +
+			'<p class="dialog-label">APT <span class="dialog-label-hint">Debian, Ubuntu</span></p>' +
 			'<div class="linux-code-block"><code>' +
-			LINUX_INSTALL_COMMAND +
+			LINUX_APT_COMMAND +
 			'</code>' +
-			'<button type="button" class="linux-copy-btn">Copy</button></div>' +
-			'<p class="dialog-hint">Supports Debian, Ubuntu, and other APT-based distributions. After installing, upgrade anytime with:</p>' +
-			'<div class="linux-code-block"><code>sudo apt-get update && sudo apt-get upgrade voquill-desktop</code></div>' +
+			'<button type="button" class="linux-copy-btn" data-command="apt">Copy</button></div>' +
+			'<p class="dialog-label">RPM <span class="dialog-label-hint">Fedora, RHEL, openSUSE</span></p>' +
+			'<div class="linux-code-block"><code>' +
+			LINUX_RPM_COMMAND +
+			'</code>' +
+			'<button type="button" class="linux-copy-btn" data-command="rpm">Copy</button></div>' +
 			'<p class="dialog-hint">Looking for other options? Visit the <a href="' +
 			downloadPageHref +
 			'" class="inline-link">downloads page</a> for AppImage and other downloads.</p>' +
@@ -273,13 +279,16 @@ const linkHref = href ?? downloadPageHref;
 		overlay.appendChild(dialog);
 		document.body.appendChild(overlay);
 
-		var copyBtn = dialog.querySelector('.linux-copy-btn');
-		copyBtn.addEventListener('click', function () {
-			navigator.clipboard.writeText(LINUX_INSTALL_COMMAND);
-			copyBtn.textContent = 'Copied!';
-			setTimeout(function () {
-				copyBtn.textContent = 'Copy';
-			}, 2000);
+		var copyBtns = dialog.querySelectorAll('.linux-copy-btn');
+		copyBtns.forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				var command = btn.dataset.command === 'rpm' ? LINUX_RPM_COMMAND : LINUX_APT_COMMAND;
+				navigator.clipboard.writeText(command);
+				btn.textContent = 'Copied!';
+				setTimeout(function () {
+					btn.textContent = 'Copy';
+				}, 2000);
+			});
 		});
 
 		function close() {
