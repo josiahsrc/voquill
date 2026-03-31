@@ -43,9 +43,12 @@ fn is_ydotool_v1() -> bool {
             .args(["key", "--help"])
             .output()
             .map(|out| {
-                let text = String::from_utf8_lossy(&out.stdout);
-                let stderr = String::from_utf8_lossy(&out.stderr);
-                text.contains("--key-down") || stderr.contains("--key-down")
+                let combined = format!(
+                    "{}{}",
+                    String::from_utf8_lossy(&out.stdout),
+                    String::from_utf8_lossy(&out.stderr)
+                );
+                combined.contains("keycode") || combined.contains("--key-down")
             })
             .unwrap_or(false)
     })

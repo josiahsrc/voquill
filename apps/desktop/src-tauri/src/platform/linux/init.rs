@@ -27,3 +27,9 @@ pub async fn run_native_setup() -> NativeSetupResult {
         NativeSetupResult::Success
     }
 }
+
+pub fn ensure_background_services() {
+    if super::detect::is_wayland() {
+        super::wl::setup::ensure_background_services();
+    }
+}

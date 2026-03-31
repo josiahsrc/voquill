@@ -1,6 +1,9 @@
 use std::process::Command;
+use std::sync::Mutex;
 
 pub use crate::platform::{NativeSetupResult, NativeSetupStatus};
+
+static YDOTOOLD_CHILD: Mutex<Option<std::process::Child>> = Mutex::new(None);
 
 fn is_ydotool_installed() -> bool {
     Command::new("which")
@@ -24,14 +27,54 @@ fn user_in_input_group() -> bool {
         .unwrap_or(false)
 }
 
+fn uinput_accessible() -> bool {
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open("/dev/uinput")
+        .is_ok()
+}
+
 pub fn get_native_setup_status() -> NativeSetupStatus {
-    if !is_ydotool_installed() {
+    if !is_ydotool_installed() || !uinput_accessible() {
         return NativeSetupStatus::NeedsSetup;
     }
     if !user_in_input_group() {
         return NativeSetupStatus::NeedsRestart;
     }
     NativeSetupStatus::Ready
+}
+
+fn is_ydotoold_running() -> bool {
+    Command::new("sh")
+        .args(["-c", "pgrep -x ydotoold >/dev/null 2>&1"])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+pub fn ensure_background_services() {
+    if !is_ydotool_installed() || !uinput_accessible() {
+        return;
+    }
+    if is_ydotoold_running() {
+        log::info!("ydotoold already running");
+        return;
+    }
+
+    match Command::new("ydotoold")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+    {
+        Ok(child) => {
+            log::info!("Spawned ydotoold (pid {})", child.id());
+            let mut guard = YDOTOOLD_CHILD.lock().unwrap_or_else(|p| p.into_inner());
+            *guard = Some(child);
+        }
+        Err(err) => {
+            log::error!("Failed to spawn ydotoold: {err}");
+        }
+    }
 }
 
 fn detect_install_command() -> Option<&'static str> {
@@ -67,7 +110,11 @@ fn build_setup_script(username: &str) -> Result<String, String> {
     };
 
     Ok(format!(
-        "{install_cmd} && usermod -aG input {username} && (systemctl enable --now ydotoold 2>/dev/null || true)"
+        "{install_cmd} && \
+         usermod -aG input {username} && \
+         echo 'KERNEL==\"uinput\", GROUP=\"input\", MODE=\"0660\"' > /etc/udev/rules.d/99-voquill-uinput.rules && \
+         udevadm control --reload-rules && udevadm trigger /dev/uinput && \
+         (systemctl enable --now ydotoold 2>/dev/null || true)"
     ))
 }
 

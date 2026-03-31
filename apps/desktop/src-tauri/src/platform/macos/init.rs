@@ -9,3 +9,5 @@ pub fn get_native_setup_status() -> crate::platform::NativeSetupStatus {
 pub async fn run_native_setup() -> crate::platform::NativeSetupResult {
     crate::platform::NativeSetupResult::Success
 }
+
+pub fn ensure_background_services() {}
