@@ -48,10 +48,7 @@ fn is_ydotool_v1() -> bool {
                     String::from_utf8_lossy(&out.stdout),
                     String::from_utf8_lossy(&out.stderr)
                 );
-                // v1 documents scancode syntax "<keycode>:<pressed>" in its help;
-                // v0.1.x doesn't. This works across all v1 builds regardless of
-                // which flags they expose (--key-down vs --key-delay).
-                combined.contains("keycode") || combined.contains("--key-d")
+                combined.contains("keycode") || combined.contains("--key-down")
             })
             .unwrap_or(false)
     })
