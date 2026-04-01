@@ -33,7 +33,11 @@ export interface TranslationMessages {
   installLinuxOther: string;
   downloadsPage: string;
   close: string;
-  comingSoon: string;
+  downloadMobileHeading: string;
+  downloadAppStore: string;
+  downloadGooglePlay: string;
+  downloadQrIos: string;
+  downloadQrAndroid: string;
   speedBadge: string;
   speedHeading: string;
   speedDescription: string;

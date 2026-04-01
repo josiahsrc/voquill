@@ -65,6 +65,21 @@ const i18n = t(locale);
 						style="mask-image: url(/ubuntu.svg); -webkit-mask-image: url(/ubuntu.svg);"
 					></span>
 				</span>
+				<span
+					class="hero-platform-text"
+					title="iOS"
+				>iOS</span>
+				<span
+					class="hero-platform-badge"
+					role="img"
+					aria-label="Android"
+					title="Android"
+				>
+					<span
+						class="hero-platform-icon"
+						style="mask-image: url(/android.svg); -webkit-mask-image: url(/android.svg);"
+					></span>
+				</span>
 			</div>
 			<a href={localePath(locale, '/download')} class="hero-more-link">{i18n.moreDownloads}</a>
 			<a
@@ -150,6 +165,13 @@ const i18n = t(locale);
 		align-items: center;
 		justify-content: center;
 		color: var(--text-muted);
+	}
+
+	.hero-platform-text {
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--text-muted);
+		letter-spacing: -0.02em;
 	}
 
 	.hero-platform-icon {

@@ -30,6 +30,9 @@ const linkHref = href ?? downloadPageHref;
 	const LINUX_RPM_COMMAND =
 		'curl -fsSL https://voquill.github.io/rpm/install.sh | bash';
 
+	var APP_STORE_URL = 'https://apps.apple.com/us/app/voquill-ai-voice-keyboard/id6759206881';
+	var PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.voquill.mobile';
+
 	var PLATFORM_META = {
 		mac: { name: 'macOS', icon: '/apple.svg' },
 		windows: { name: 'Windows', icon: '/windows.svg' },
@@ -89,7 +92,7 @@ const linkHref = href ?? downloadPageHref;
 		return 'mac';
 	}
 
-	function isMobileDevice() {
+	function detectMobilePlatform() {
 		var nav = window.navigator;
 		var hint = nav.userAgentData
 			? (nav.userAgentData.platform || '')
@@ -97,7 +100,9 @@ const linkHref = href ?? downloadPageHref;
 		var ua = [nav.userAgent || '', hint, nav.platform || '']
 			.join(' ')
 			.toLowerCase();
-		return /iphone|ipad|ipod|android/.test(ua);
+		if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+		if (/android/.test(ua)) return 'android';
+		return null;
 	}
 
 	async function detectMacManifestKey() {
@@ -303,7 +308,7 @@ const linkHref = href ?? downloadPageHref;
 	}
 
 	async function upgradeButton(el) {
-		var mobile = isMobileDevice();
+		var mobilePlatform = detectMobilePlatform();
 		var platform = detectPlatform();
 		var meta = PLATFORM_META[platform];
 
@@ -314,16 +319,22 @@ const linkHref = href ?? downloadPageHref;
 			iconSpan.setAttribute('aria-hidden', 'true');
 			el.prepend(iconSpan);
 		}
-		iconSpan.style.maskImage = 'url(' + meta.icon + ')';
-		iconSpan.style.webkitMaskImage = 'url(' + meta.icon + ')';
 
-		if (mobile) {
-			el.removeAttribute('href');
-			el.setAttribute('disabled', '');
-			el.classList.add('btn-disabled');
-			el.textContent = 'iOS/Android coming soon';
+		if (mobilePlatform === 'ios') {
+			iconSpan.style.maskImage = 'url(/apple.svg)';
+			iconSpan.style.webkitMaskImage = 'url(/apple.svg)';
+			el.href = APP_STORE_URL;
 			return;
 		}
+		if (mobilePlatform === 'android') {
+			iconSpan.style.maskImage = 'url(/android.svg)';
+			iconSpan.style.webkitMaskImage = 'url(/android.svg)';
+			el.href = PLAY_STORE_URL;
+			return;
+		}
+
+		iconSpan.style.maskImage = 'url(' + meta.icon + ')';
+		iconSpan.style.webkitMaskImage = 'url(' + meta.icon + ')';
 
 		var label = el.querySelector('.download-button-label');
 		if (!label) {

@@ -38,7 +38,11 @@ export const zhCNTranslations = {
       "需要其他选项？请访问{link}获取 AppImage 及其他下载。",
     downloadsPage: "下载页面",
     close: "关闭",
-    comingSoon: "iOS/Android 即将推出",
+    downloadMobileHeading: "移动端",
+    downloadAppStore: "从 App Store 下载",
+    downloadGooglePlay: "从 Google Play 下载",
+    downloadQrIos: "扫码下载 Voquill iOS 版",
+    downloadQrAndroid: "扫码下载 Voquill Android 版",
     speedBadge: "比打字快 4 倍",
     speedHeading: "你的语音比键盘更快。",
     speedDescription:
