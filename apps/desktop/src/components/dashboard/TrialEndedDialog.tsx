@@ -31,7 +31,7 @@ export const TrialEndedDialog = () => {
   );
 
   const member = useAppStore(getMyMember);
-  const wordsToday = member?.wordsToday || 0;
+  const wordsThisWeek = member?.wordsThisWeek || 0;
   const wordsTotal = member?.wordsTotal || 0;
   const memberPlan = member?.plan ?? "free";
   const avgTalkingSpeedWpm = 135;
@@ -40,16 +40,16 @@ export const TrialEndedDialog = () => {
   const timeTyped = wordsTotal / avgTypingSpeedWpm;
   const totalTimeSaved = timeTyped - timeTalked;
 
-  const freeWordsPerDay = useAppStore(
-    (state) => state.config?.freeWordsPerDay ?? 1_000,
+  const freeWordsPerWeek = useAppStore(
+    (state) => state.config?.freeWordsPerWeek ?? 2_000,
   );
 
-  const wordsRemaining = Math.max(0, freeWordsPerDay - wordsToday);
-  const usagePercent = Math.min(100, (wordsToday / freeWordsPerDay) * 100);
+  const wordsRemaining = Math.max(0, freeWordsPerWeek - wordsThisWeek);
+  const usagePercent = Math.min(100, (wordsThisWeek / freeWordsPerWeek) * 100);
 
   const shouldShow =
     shouldShowUpgradeDialog &&
-    wordsToday >= MIN_WORDS_THRESHOLD &&
+    wordsThisWeek >= MIN_WORDS_THRESHOLD &&
     memberPlan !== "pro";
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export const TrialEndedDialog = () => {
     } else {
       trackPageView("upgrade_dialog_after_trial_end");
     }
-  }, [shouldShow, freeWordsPerDay, intl]);
+  }, [shouldShow, freeWordsPerWeek, intl]);
 
   const handleDismiss = async () => {
     trackButtonClick("dismiss_upgrade_dialog_after_trial_end");
@@ -170,14 +170,14 @@ export const TrialEndedDialog = () => {
                 alignItems="baseline"
               >
                 <Typography variant="body2" color="text.secondary">
-                  <FormattedMessage defaultMessage="Free plan daily limit" />
+                  <FormattedMessage defaultMessage="Free plan weekly limit" />
                 </Typography>
                 <Typography variant="body1" fontWeight={600}>
                   <FormattedMessage
                     defaultMessage="{remaining} / {total} words"
                     values={{
                       remaining: wordsRemaining.toLocaleString(),
-                      total: freeWordsPerDay.toLocaleString(),
+                      total: freeWordsPerWeek.toLocaleString(),
                     }}
                   />
                 </Typography>

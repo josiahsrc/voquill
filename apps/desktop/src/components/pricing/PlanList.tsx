@@ -195,8 +195,8 @@ export const PlanList = ({
   const proYearlyPrice = useAppStore((state) =>
     getDollarPriceFromKey(state, "pro_yearly"),
   );
-  const freeWordsPerDay = useAppStore(
-    (state) => state.config?.freeWordsPerDay ?? 1_000,
+  const freeWordsPerWeek = useAppStore(
+    (state) => state.config?.freeWordsPerWeek ?? 2_000,
   );
 
   const proYearlyPerMonth = proYearlyPrice
@@ -254,8 +254,8 @@ export const PlanList = ({
     >
       <CheckmarkRow>
         <FormattedMessage
-          defaultMessage="{freeWordsPerDay, number} free words per day"
-          values={{ freeWordsPerDay }}
+          defaultMessage="{freeWordsPerWeek, number} free words per week"
+          values={{ freeWordsPerWeek }}
         />
       </CheckmarkRow>
       <CheckmarkRow>
