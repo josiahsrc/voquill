@@ -38,7 +38,11 @@ export const koTranslations = {
       "다른 옵션을 찾고 계신가요? {link}에서 AppImage 및 기타 다운로드를 확인하세요.",
     downloadsPage: "다운로드 페이지",
     close: "닫기",
-    comingSoon: "iOS/Android 출시 예정",
+    downloadMobileHeading: "모바일",
+    downloadAppStore: "App Store에서 다운로드",
+    downloadGooglePlay: "Google Play에서 다운로드",
+    downloadQrIos: "iOS용 Voquill 다운로드 QR 코드",
+    downloadQrAndroid: "Android용 Voquill 다운로드 QR 코드",
     speedBadge: "타이핑보다 4배 빠름",
     speedHeading: "음성이 키보드를 앞지릅니다.",
     speedDescription:

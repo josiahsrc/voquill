@@ -92,6 +92,43 @@ const structuredData = [
 				<span class="download-empty">{i18n.downloadLoadingOptions}</span>
 			</article>
 		</section>
+
+		<section class="download-mobile" aria-label={i18n.downloadMobileHeading}>
+			<h2 class="download-mobile-heading">{i18n.downloadMobileHeading}</h2>
+			<div class="download-mobile-cards">
+				<article class="download-mobile-card">
+					<div class="download-card-header">
+						<span class="download-card-badge">
+							<span class="download-card-icon" style="mask-image: url(/apple.svg); -webkit-mask-image: url(/apple.svg);"></span>
+						</span>
+						<div>
+							<h3 class="download-card-title">iOS</h3>
+							<p class="download-version-meta">App Store</p>
+						</div>
+					</div>
+					<a href="https://apps.apple.com/us/app/voquill-ai-voice-keyboard/id6759206881" target="_blank" rel="noopener noreferrer" class="download-qr-link">
+						<img src="/qr-code-ios.png" alt={i18n.downloadQrIos} class="download-qr" width="200" height="200" />
+					</a>
+					<a href="https://apps.apple.com/us/app/voquill-ai-voice-keyboard/id6759206881" target="_blank" rel="noopener noreferrer" class="download-store-link">{i18n.downloadAppStore}</a>
+				</article>
+
+				<article class="download-mobile-card">
+					<div class="download-card-header">
+						<span class="download-card-badge">
+							<span class="download-card-icon" style="mask-image: url(/android.svg); -webkit-mask-image: url(/android.svg);"></span>
+						</span>
+						<div>
+							<h3 class="download-card-title">Android</h3>
+							<p class="download-version-meta">Google Play</p>
+						</div>
+					</div>
+					<a href="https://play.google.com/store/apps/details?id=com.voquill.mobile" target="_blank" rel="noopener noreferrer" class="download-qr-link">
+						<img src="/qr-code-android.png" alt={i18n.downloadQrAndroid} class="download-qr" width="200" height="200" />
+					</a>
+					<a href="https://play.google.com/store/apps/details?id=com.voquill.mobile" target="_blank" rel="noopener noreferrer" class="download-store-link">{i18n.downloadGooglePlay}</a>
+				</article>
+			</div>
+		</section>
 	</section>
 
 	<SiteFooter locale={locale} />
@@ -603,6 +640,60 @@ const structuredData = [
 		color: var(--text-muted);
 	}
 
+	.download-mobile {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+	}
+
+	.download-mobile-heading {
+		font-size: 1.4rem;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		text-align: center;
+	}
+
+	.download-mobile-cards {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 24px;
+		max-width: 640px;
+		margin: 0 auto;
+		width: 100%;
+	}
+
+	.download-mobile-card {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		align-items: flex-start;
+		padding: 24px;
+		border-radius: 24px;
+		background: var(--level1);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow-soft);
+	}
+
+	.download-qr-link {
+		display: block;
+		align-self: center;
+	}
+
+	.download-qr {
+		width: 200px;
+		height: 200px;
+		border-radius: 16px;
+	}
+
+	.download-store-link {
+		font-weight: 600;
+		color: var(--text-strong);
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 4px;
+		align-self: center;
+	}
+
 	@media (max-width: 960px) {
 		.download-options {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -615,6 +706,15 @@ const structuredData = [
 		}
 
 		.download-card {
+			padding: 20px;
+		}
+
+		.download-mobile-cards {
+			grid-template-columns: 1fr;
+			max-width: 320px;
+		}
+
+		.download-mobile-card {
 			padding: 20px;
 		}
 	}

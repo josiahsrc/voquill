@@ -38,7 +38,11 @@ export const ptBRTranslations = {
       "Procurando outras opções? Visite a {link} para AppImage e outros downloads.",
     downloadsPage: "página de downloads",
     close: "Fechar",
-    comingSoon: "iOS/Android em breve",
+    downloadMobileHeading: "Móvel",
+    downloadAppStore: "Baixar na App Store",
+    downloadGooglePlay: "Disponível no Google Play",
+    downloadQrIos: "Código QR para baixar Voquill no iOS",
+    downloadQrAndroid: "Código QR para baixar Voquill no Android",
     speedBadge: "4× mais rápido que digitar",
     speedHeading: "Sua voz é mais rápida que seu teclado.",
     speedDescription:
