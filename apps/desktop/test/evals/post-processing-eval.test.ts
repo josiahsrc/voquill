@@ -9,7 +9,6 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getGroqGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,9 +47,7 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getGroqGentextRepo(
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-  ).generateText({
+  const output = await getFireworksGentextRepo().generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -146,10 +143,21 @@ describe("post-processing evals", { retry: 0 }, () => {
       });
     });
 
+    test("dates, times, and numbers", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Let's schedule the meeting for next Tuesday at three P.M. Also, we need to order fifteen, no sixteen units of the new product by the end of the month, june thirtieth twenty twenty-four to be exact.",
+        tone: getWritingStyle("default"),
+        evals: [
+          "It should convert spoken dates, times, and numbers into their proper written numerical forms",
+        ],
+      });
+    });
+
     test("should fix things that are later corrected", async () => {
       await runPostProcessingEval({
         transcription:
-          "Hey Emily, can you go fix that thing? Excuse me, that speaker that you broke yesterday. I really need that. It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
+          "Hey Emily, can you go fix that thing excuse me, that speaker that you broke yesterday. I really need that. It's basically like a family heirloom and then you get a personal go find it and fix it. That would be great.",
         tone: getWritingStyle("default"),
         evals: [
           "it should use 'speaker' and not 'thing' since the speaker corrected themselves",
@@ -415,6 +423,28 @@ come on guys. you can do better, that was garbage.`,
           "Should sound casual and conversational, not stiff or corporate",
           "Should remove 'um' but keep all the actual content",
           "Should mention: design review, header looks great, tweak the colors",
+        ],
+      });
+    });
+
+    test("formal email to a client", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Hey Bob, just wanted to let you know that I spoke to Jennifer and she told me a few things. One, we need to make sure that we send that email out we discussed earlier today as soon as possible because Jennifer's boss is waiting on it. Number two, we need to make sure that we discuss later tonight on the proposal we need to do for Henderson. And then finally, number three, let's catch up over coffee to discuss more on the project I told you about last week. Oh, also as an aside, how are your kids doing? Best Henry.",
+        tone: getWritingStyle("email"),
+        userName: "Henry Smith",
+        evals: ["should not remove any 'just wanted to let you know'"],
+      });
+    });
+
+    test("bob email", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Hey Bob, great meeting you yesterday looking forward to next steps best emulator user",
+        tone: getWritingStyle("email"),
+        userName: "Emulator User",
+        evals: [
+          "should be formatted with newlines and follow a nice email structure",
         ],
       });
     });
