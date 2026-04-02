@@ -509,7 +509,7 @@ fn keys_to_kde_binding(keys: &[String]) -> String {
 
 fn kwriteconfig_cmd() -> &'static str {
     static CACHED: OnceLock<&'static str> = OnceLock::new();
-    *CACHED.get_or_init(|| {
+    CACHED.get_or_init(|| {
         if Command::new("kwriteconfig6")
             .arg("--help")
             .stdout(std::process::Stdio::null())
