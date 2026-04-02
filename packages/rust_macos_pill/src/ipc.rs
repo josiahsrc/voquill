@@ -72,6 +72,7 @@ pub enum InMessage {
     StyleInfo { count: u32, name: String },
     Visibility { visibility: Visibility },
     WindowSize { size: String },
+    FlashMessage { message: String },
     AssistantState {
         active: bool,
         input_mode: String,

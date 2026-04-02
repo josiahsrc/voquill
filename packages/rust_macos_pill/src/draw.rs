@@ -24,8 +24,12 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
     if state.assistant_active.get() || state.panel_open_t.get() > 0.01 {
         draw_assistant_panel(ctx, state, ww, wh);
     } else {
-        let pill_area_top = wh - PILL_AREA_HEIGHT;
-        draw_tooltip(ctx, state, ww, pill_area_top);
+        if state.flash_t.get() > 0.01 {
+            draw_flash_message(ctx, state, ww, wh);
+        } else {
+            let pill_area_top = wh - PILL_AREA_HEIGHT;
+            draw_tooltip(ctx, state, ww, pill_area_top);
+        }
     }
 
     draw_pill(ctx, state, ww, wh);
@@ -287,6 +291,54 @@ fn draw_tooltip(ctx: &Ctx, state: &PillState, ww: f64, pill_area_top: f64) {
         x: mid_x, y: tooltip_ry, w: tooltip_rx + tooltip_w - mid_x, h: TOOLTIP_HEIGHT,
         action: ClickAction::StyleForward,
     });
+}
+
+// ── Flash message ────────────────────────────────────────────────
+
+fn draw_flash_message(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
+    let flash_t = state.flash_t.get();
+    if flash_t < 0.01 {
+        return;
+    }
+
+    let message = state.flash_message.borrow();
+    if message.is_empty() {
+        return;
+    }
+
+    ctx.select_font_face("sans-serif", false, true);
+    ctx.set_font_size(12.0);
+    let text_extents = ctx.text_extents(&message);
+    let flash_w = (text_extents.width + FLASH_PADDING_H * 2.0).max(80.0);
+
+    let scale = FLASH_MIN_SCALE + (1.0 - FLASH_MIN_SCALE) * flash_t;
+    let alpha = flash_t;
+
+    let (_, pill_y, _, _) = pill_position(state, ww, wh);
+    let full_x = (ww - flash_w) / 2.0;
+    let full_y = pill_y - FLASH_GAP - FLASH_HEIGHT;
+
+    let center_x = full_x + flash_w / 2.0;
+    let center_y = full_y + FLASH_HEIGHT / 2.0;
+
+    ctx.save();
+    ctx.translate(center_x, center_y);
+    ctx.scale(scale, scale);
+    ctx.translate(-center_x, -center_y);
+
+    gfx::rounded_rect(ctx, full_x, full_y, flash_w, FLASH_HEIGHT, FLASH_RADIUS);
+    ctx.set_source_rgba(0.0, 0.0, 0.0, 0.92 * alpha);
+    ctx.fill();
+
+    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.9 * alpha);
+    ctx.select_font_face("sans-serif", false, true);
+    ctx.set_font_size(12.0);
+    let tx = full_x + (flash_w - text_extents.width) / 2.0 - text_extents.x_bearing;
+    let ty = full_y + (FLASH_HEIGHT - text_extents.height) / 2.0 - text_extents.y_bearing;
+    ctx.move_to(tx, ty);
+    ctx.show_text(&message);
+
+    ctx.restore();
 }
 
 // ── Assistant panel ───────────────────────────────────────────────

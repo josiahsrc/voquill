@@ -115,6 +115,13 @@ pub(crate) struct PillState {
 
     // Entry text (for typing mode)
     pub(crate) entry_text: RefCell<String>,
+
+    // Flash message
+    pub(crate) flash_message: RefCell<String>,
+    pub(crate) flash_visible: Cell<bool>,
+    pub(crate) flash_t: Cell<f64>,
+    pub(crate) flash_velocity: Cell<f64>,
+    pub(crate) flash_timer: Cell<f64>,
 }
 
 impl PillState {

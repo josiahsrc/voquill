@@ -279,6 +279,11 @@ fn perform_tick() {
                     ctx.state.style_count.set(count);
                     *ctx.state.style_name.borrow_mut() = name;
                 }
+                InMessage::FlashMessage { message } => {
+                    *ctx.state.flash_message.borrow_mut() = message;
+                    ctx.state.flash_visible.set(true);
+                    ctx.state.flash_timer.set(FLASH_DURATION);
+                }
                 InMessage::Visibility { visibility } => {
                     ctx.state.visibility.set(visibility);
                 }
@@ -489,6 +494,19 @@ fn tick(state: &PillState, dt: f64) {
     // Shimmer phase
     state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED * frame_scale) % 1.0);
 
+    // Flash message timer
+    if state.flash_visible.get() {
+        let remaining = state.flash_timer.get() - dt;
+        if remaining <= 0.0 {
+            state.flash_visible.set(false);
+            state.flash_timer.set(0.0);
+        } else {
+            state.flash_timer.set(remaining);
+        }
+    }
+    let flash_target = if state.flash_visible.get() { 1.0 } else { 0.0 };
+    spring_anim(&state.flash_t, &state.flash_velocity, flash_target, SPRING_STIFFNESS, dt);
+
     // Auto-scroll to bottom
     if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
         let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
@@ -686,6 +704,11 @@ unsafe fn setup(receiver: Receiver<InMessage>, embedded: bool) {
         should_stick: Cell::new(true),
         click_regions: RefCell::new(Vec::new()),
         entry_text: RefCell::new(String::new()),
+        flash_message: RefCell::new(String::new()),
+        flash_visible: Cell::new(false),
+        flash_t: Cell::new(0.0),
+        flash_velocity: Cell::new(0.0),
+        flash_timer: Cell::new(0.0),
     });
 
     // Store in thread-local
