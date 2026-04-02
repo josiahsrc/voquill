@@ -9,7 +9,7 @@ export const enTranslations = {
   navPricing: "Pricing",
   navBlog: "Blog",
   navDocs: "Docs",
-  navEnterprise: "Enterprise",
+  navBusiness: "Business",
   github: "GitHub",
   download: "Download",
   heroHeading: "Your keyboard is holding you back.",

@@ -9,7 +9,7 @@ export const deTranslations = {
     navPricing: "Preise",
     navBlog: "Blog",
     navDocs: "Dokumentation",
-    navEnterprise: "Unternehmen",
+    navBusiness: "Business",
     github: "GitHub",
     download: "Herunterladen",
     heroHeading: "Deine Tastatur bremst dich aus.",

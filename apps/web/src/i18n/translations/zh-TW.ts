@@ -9,7 +9,7 @@ export const zhTWTranslations = {
     navPricing: "定價",
     navBlog: "部落格",
     navDocs: "文件",
-    navEnterprise: "企業版",
+    navBusiness: "商務",
     github: "GitHub",
     download: "下載",
     heroHeading: "你的鍵盤正在拖你後腿。",

@@ -9,7 +9,7 @@ export const zhCNTranslations = {
     navPricing: "定价",
     navBlog: "博客",
     navDocs: "文档",
-    navEnterprise: "企业版",
+    navBusiness: "商务",
     github: "GitHub",
     download: "下载",
     heroHeading: "你的键盘正在拖你后腿。",
