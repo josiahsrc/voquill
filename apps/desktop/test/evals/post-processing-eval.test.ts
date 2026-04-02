@@ -9,6 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
+  getOpenAIGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -47,7 +48,7 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getFireworksGentextRepo().generateText({
+  const output = await getOpenAIGentextRepo().generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -123,6 +124,15 @@ describe("post-processing evals", { retry: 0 }, () => {
         evals: [
           "It should split the text into paragraphs where it makes sense, improving readability while preserving the original content and meaning",
         ],
+      });
+    });
+
+    test("blog", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Hey. So I'm gonna be writing a blog tomorrow, and the goal of this is to convert, enterprise customers Well, enterprise prospects of anyone who's out there googling for, like, WhisperFlow on prem for enterprise or something like that. We need a blog post that will take them wondering if they can run WhisperFlow on prem to realizing that the way to do that is with Vocquill.",
+        tone: getWritingStyle("default"),
+        evals: ["it cleans it up"],
       });
     });
 
