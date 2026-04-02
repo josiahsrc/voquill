@@ -73,6 +73,7 @@ pub enum InMessage {
     Visibility { visibility: Visibility },
     WindowSize { size: String },
     FlashMessage { message: String },
+    Fireworks { message: String },
     AssistantState {
         active: bool,
         input_mode: String,

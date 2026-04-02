@@ -2,7 +2,7 @@ use crate::gfx::{self, Ctx};
 use crate::ipc::{Phase, PillPermission, PillStreaming};
 
 use crate::constants::*;
-use crate::state::{ClickAction, ClickRegion, PillState};
+use crate::state::{ClickAction, ClickRegion, PillState, RocketPhase};
 
 pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
     ctx.paint_clear(view_w, view_h);
@@ -23,13 +23,9 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
 
     if state.assistant_active.get() || state.panel_open_t.get() > 0.01 {
         draw_assistant_panel(ctx, state, ww, wh);
-    } else {
-        if state.flash_t.get() > 0.01 {
-            draw_flash_message(ctx, state, ww, wh);
-        } else {
-            let pill_area_top = wh - PILL_AREA_HEIGHT;
-            draw_tooltip(ctx, state, ww, pill_area_top);
-        }
+    } else if state.flash_t.get() < 0.01 {
+        let pill_area_top = wh - PILL_AREA_HEIGHT;
+        draw_tooltip(ctx, state, ww, pill_area_top);
     }
 
     draw_pill(ctx, state, ww, wh);
@@ -40,6 +36,14 @@ pub(crate) fn draw_all(ctx: &Ctx, state: &PillState, view_w: f64, view_h: f64) {
 
     if !state.assistant_active.get() {
         draw_cancel_button(ctx, state, ww, wh);
+
+        if !state.fireworks_rockets.borrow().is_empty() {
+            draw_fireworks(ctx, state, ww, wh);
+        }
+
+        if state.flash_t.get() > 0.01 {
+            draw_flash_message(ctx, state, ww, wh);
+        }
     }
 
     ctx.restore();
@@ -339,6 +343,61 @@ fn draw_flash_message(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     ctx.show_text(&message);
 
     ctx.restore();
+}
+
+// ── Fireworks ────────────────────────────────────────────────────
+
+fn draw_fireworks(ctx: &Ctx, state: &PillState, _ww: f64, _wh: f64) {
+    let rockets = state.fireworks_rockets.borrow();
+
+    for rocket in rockets.iter() {
+        let (cr, cg, cb) = rocket.color;
+
+        // Trail
+        if rocket.trail.len() > 1 && rocket.trail_alpha > 0.01 {
+            let n = rocket.trail.len();
+            ctx.set_line_width(FIREWORKS_ROCKET_LINE_WIDTH);
+            ctx.set_line_cap_round();
+            for i in 1..n {
+                let alpha = (i as f64 / n as f64) * rocket.trail_alpha * 0.8;
+                ctx.set_source_rgba(cr, cg, cb, alpha);
+                ctx.move_to(rocket.trail[i - 1].0, rocket.trail[i - 1].1);
+                ctx.line_to(rocket.trail[i].0, rocket.trail[i].1);
+                ctx.stroke();
+            }
+        }
+
+        // Bright head while rising
+        if rocket.phase == RocketPhase::Rising {
+            let hs = FIREWORKS_HEAD_SIZE / 2.0;
+            ctx.set_source_rgba(cr, cg, cb, 0.95);
+            gfx::rounded_rect(ctx, rocket.x - hs, rocket.y - hs, FIREWORKS_HEAD_SIZE, FIREWORKS_HEAD_SIZE, hs);
+            ctx.fill();
+        }
+
+        // Sparks
+        ctx.set_line_width(FIREWORKS_SPARK_LINE_WIDTH);
+        ctx.set_line_cap_round();
+        for spark in &rocket.sparks {
+            if spark.life <= 0.0 {
+                continue;
+            }
+            let alpha = spark.life.clamp(0.0, 1.0) * 0.9;
+            ctx.set_source_rgba(cr, cg, cb, alpha);
+
+            let speed = (spark.vx * spark.vx + spark.vy * spark.vy).sqrt();
+            let line_len = (speed * 0.04).clamp(2.0, 10.0);
+            let (nx, ny) = if speed > 0.01 {
+                (spark.vx / speed, spark.vy / speed)
+            } else {
+                (0.0, -1.0)
+            };
+
+            ctx.move_to(spark.x - nx * line_len, spark.y - ny * line_len);
+            ctx.line_to(spark.x, spark.y);
+            ctx.stroke();
+        }
+    }
 }
 
 // ── Assistant panel ───────────────────────────────────────────────

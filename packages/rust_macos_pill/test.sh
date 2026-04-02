@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 cargo build --quiet 2>&1
 
-MODE="${1:-both}"  # dictation | assistant | flash | both
+MODE="${1:-both}"  # dictation | assistant | flash | fireworks | both
 
 emit_levels() {
   local duration=$1 base_amp=${2:-0.4} variance=${3:-0.4}
@@ -148,6 +148,20 @@ run_flash() {
   sleep 2
 }
 
+run_fireworks() {
+  echo '--- Fireworks: celebration ---' >&2
+  echo '{"type":"visibility","visibility":"persistent"}'
+  sleep 0.5
+
+  echo '--- Fireworks: launching ---' >&2
+  echo '{"type":"fireworks","message":"Congratulations!"}'
+  sleep 9
+
+  echo '--- Fireworks: second round ---' >&2
+  echo '{"type":"fireworks","message":"You did it!"}'
+  sleep 9
+}
+
 run_keyboard() {
   echo '--- Keyboard: typing mode (Ctrl-C to quit) ---' >&2
   echo '{"type":"visibility","visibility":"persistent"}'
@@ -169,6 +183,9 @@ run_keyboard() {
       ;;
     flash)
       run_flash
+      ;;
+    fireworks)
+      run_fireworks
       ;;
     keyboard)
       run_keyboard

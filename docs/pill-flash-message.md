@@ -134,20 +134,17 @@ Minimum width is 80px to prevent absurdly narrow banners on short messages.
 
 ### Render order in `draw_all()`
 
-The flash message and tooltip are **mutually exclusive** — only one draws per frame:
+In dictation mode, the draw order is (back to front):
 
 ```
-if not assistant_mode:
-    if flash_t > 0.01:
-        draw_flash_message(...)
-    else:
-        draw_tooltip(...)
+1. Tooltip           (only when flash_t < 0.01)
+2. Pill
+3. Cancel button
+4. Fireworks          (on top of pill, behind flash)
+5. Flash message      (on top of everything)
 ```
 
-This means:
-- When a flash appears, the tooltip immediately stops drawing.
-- When a flash fades out (`flash_t` settles below `0.01`), the tooltip resumes.
-- If the user is hovering (tooltip would normally show), the flash takes priority.
+The flash message and tooltip are **mutually exclusive** — only one draws per frame. When `flash_t >= 0.01`, the tooltip is suppressed and the flash message draws on top of fireworks (if active). When `flash_t` drops below `0.01`, the tooltip resumes.
 
 ### Drawing steps
 
@@ -199,24 +196,240 @@ echo '{"type":"visibility","visibility":"persistent"}' | cargo run
 echo '{"type":"flash_message","message":"Hello world"}'
 ```
 
+---
+
+# Pill Fireworks
+
+A celebratory particle effect that shoots firework rockets out from the pill, each exploding into radiating sparks. Accompanied by a flash message banner that persists for the duration. Only appears in dictation mode.
+
+## IPC Message
+
+```json
+{"type": "fireworks", "message": "Congratulations!"}
+```
+
+| Field     | Type   | Description                                         |
+| --------- | ------ | --------------------------------------------------- |
+| `message` | string | Text for the flash message banner shown during fireworks. |
+
+Add `Fireworks { message: String }` to the `InMessage` enum (serde tag: `fireworks`).
+
+When received, this triggers **both** the fireworks particle system **and** a flash message with a duration matching the fireworks (7 seconds instead of the normal 2.5s).
+
+## State
+
+Add the following fields to `PillState`:
+
+| Field                   | Type           | Default | Description                                 |
+| ----------------------- | -------------- | ------- | ------------------------------------------- |
+| `fireworks_active`      | `bool`         | `false` | Whether the fireworks system is running.    |
+| `fireworks_elapsed`     | `f64`          | `0.0`   | Seconds since fireworks started.            |
+| `fireworks_next_launch` | `usize`        | `0`     | Index into the launch schedule.             |
+| `fireworks_rockets`     | `Vec<Rocket>`  | `[]`    | Active rockets (rising + exploding).        |
+
+### Rocket struct
+
+```
+Rocket {
+    x, y: f64              — current position
+    vx, vy: f64            — velocity (vy negative = upward)
+    trail: Vec<(f64, f64)> — recent positions for trail rendering
+    fuse: f64              — seconds until explosion
+    phase: RocketPhase     — Rising | Exploding
+    num_sparks: usize      — sparks to generate on explosion
+    launch_index: usize    — index in FIREWORK_LAUNCHES (for deterministic variety)
+    sparks: Vec<Spark>     — explosion particles
+    trail_alpha: f64       — trail opacity (fades after explosion)
+}
+```
+
+### Spark struct
+
+```
+Spark {
+    x, y: f64    — current position
+    vx, vy: f64  — velocity (with drag)
+    life: f64    — 1.0 → 0.0 (used for alpha)
+}
+```
+
+### IPC handler
+
+When `Fireworks { message }` is received:
+
+```
+// Trigger flash message for the full duration
+flash_message  = message
+flash_visible  = true
+flash_timer    = FIREWORKS_TOTAL_DURATION  // 7.0s
+
+// Reset fireworks
+fireworks_active      = true
+fireworks_elapsed     = 0.0
+fireworks_next_launch = 0
+fireworks_rockets.clear()
+```
+
+## Constants
+
+| Constant                       | Value  | Description                                          |
+| ------------------------------ | ------ | ---------------------------------------------------- |
+| `FIREWORKS_TOTAL_DURATION`     | `7.0`  | Total duration in seconds.                           |
+| `FIREWORKS_GRAVITY`            | `40.0` | Downward acceleration (px/s²). Rockets feel this fully; sparks at 30%. |
+| `FIREWORKS_SPARK_BASE_SPEED`   | `60.0` | Base outward speed of explosion sparks (px/s).       |
+| `FIREWORKS_SPARK_LIFE`         | `0.9`  | Spark lifetime in seconds (life decrements by `dt / LIFE`). |
+| `FIREWORKS_SPARK_DRAG`         | `1.5`  | Exponential drag coefficient for sparks.             |
+| `FIREWORKS_TRAIL_MAX`          | `12`   | Max trail points stored per rocket.                  |
+| `FIREWORKS_TRAIL_FADE_RATE`    | `2.0`  | Trail alpha decay rate per second after explosion.   |
+| `FIREWORKS_ROCKET_LINE_WIDTH`  | `1.5`  | Stroke width for rocket trails.                      |
+| `FIREWORKS_SPARK_LINE_WIDTH`   | `1.0`  | Stroke width for spark lines.                        |
+
+### Launch schedule
+
+10 rockets launched at predetermined times, alternating left and right. Each entry defines the launch time, angle (degrees from vertical, negative = left), ascent speed, fuse duration, and spark count.
+
+| #  | Time | Angle | Speed | Fuse | Sparks |
+| -- | ---- | ----- | ----- | ---- | ------ |
+| 0  | 0.2s | -25   | 120   | 0.50 | 10     |
+| 1  | 0.8s | +30   | 110   | 0.55 | 8      |
+| 2  | 1.5s | -15   | 130   | 0.45 | 12     |
+| 3  | 2.2s | +40   | 100   | 0.60 | 10     |
+| 4  | 3.0s | -35   | 115   | 0.50 | 9      |
+| 5  | 3.7s | +20   | 125   | 0.50 | 11     |
+| 6  | 4.5s | -40   | 105   | 0.55 | 8      |
+| 7  | 5.2s | +15   | 130   | 0.45 | 12     |
+| 8  | 5.9s | -30   | 110   | 0.50 | 10     |
+| 9  | 6.4s | +35   | 120   | 0.55 | 9      |
+
+Velocity is computed from angle and speed:
+
+```
+vx =  speed * sin(angle_rad)
+vy = -speed * cos(angle_rad)   // negative = upward (y-down coordinate system)
+```
+
+## Physics simulation (per frame)
+
+### Rocket rising
+
+```
+vy += GRAVITY * dt            // gravity slows ascent
+x  += vx * dt
+y  += vy * dt
+trail.push((x, y))           // store position for trail
+if trail.len > TRAIL_MAX: trail.remove(0)
+fuse -= dt
+```
+
+### Explosion (fuse <= 0)
+
+Transition to `Exploding` phase. Generate N sparks evenly distributed around a circle:
+
+```
+offset = launch_index * 0.7                         // rotation offset for variety
+for i in 0..num_sparks:
+    angle  = TAU * i / num_sparks + offset
+    speed_t = ((i * 7 + 3) % num_sparks) / num_sparks  // deterministic speed variation
+    speed   = SPARK_BASE_SPEED * (0.6 + 0.8 * speed_t) // 36–84 px/s range
+    spark.vx = speed * cos(angle)
+    spark.vy = speed * sin(angle)
+    spark.life = 1.0
+```
+
+The `(i * 7 + 3) % num_sparks` formula creates deterministic pseudo-random speed variation without actual randomness, ensuring consistent visuals across platforms.
+
+### Spark update
+
+```
+drag = exp(-SPARK_DRAG * dt)  // ~0.976 per frame at 60fps
+vx *= drag
+vy *= drag
+vy += GRAVITY * 0.3 * dt     // subtle downward pull
+x  += vx * dt
+y  += vy * dt
+life -= dt / SPARK_LIFE       // 1.0 → 0.0 over SPARK_LIFE seconds
+```
+
+### Trail fade (after explosion)
+
+```
+trail_alpha -= TRAIL_FADE_RATE * dt   // fades to 0 over ~0.5s
+```
+
+### Cleanup
+
+A rocket is removed when `phase == Exploding` AND `trail_alpha <= 0.01` AND all sparks have `life <= 0.0`.
+
+The entire fireworks system deactivates when `elapsed >= TOTAL_DURATION` AND no rockets remain.
+
+## Drawing
+
+### Rocket trail
+
+Draw connected line segments between stored trail points. Older points are more transparent:
+
+```
+for i in 1..trail.len():
+    alpha = (i / trail.len()) * trail_alpha * 0.8
+    draw line from trail[i-1] to trail[i], white at alpha, width 1.5px
+```
+
+### Rocket head (rising only)
+
+A small 3x3px filled circle (rounded rect with 1.5px radius) at the rocket's current position, white at 95% opacity.
+
+### Sparks
+
+Each spark is drawn as a short line segment in its direction of travel (motion blur effect):
+
+```
+speed    = sqrt(vx² + vy²)
+line_len = clamp(speed * 0.04, 2.0, 8.0)
+nx, ny   = (vx / speed, vy / speed)    // normalized direction
+
+draw line from (x - nx * line_len, y - ny * line_len) to (x, y)
+    white at (life * 0.9), width 1.0px
+```
+
+### Coordinate space
+
+Fireworks draw in the pill's content coordinate space (after the `translate(ox, oy)` in `draw_all`). Since the window is larger than the dictation content area (600x362 vs 200x86) and there is no clip to the content bounds, rockets and sparks naturally extend into the transparent space above the pill. This is intentional — explosions happen above the content area and are visible because the window background is clear.
+
+### Visual style
+
+All firework elements are white with varying opacity, matching the pill's monochrome aesthetic. There are no colors — the effect is stylistic, using line trails and radiating spark lines rather than filled particles.
+
+## Testing
+
+```bash
+./test.sh fireworks
+```
+
+Runs two consecutive 7-second fireworks displays with different messages.
+
+---
+
 ## Platform implementation notes
 
 ### GTK pill (`rust_gtk_pill`)
 
-The GTK pill shares the same file structure (`ipc.rs`, `state.rs`, `constants.rs`, `draw.rs`, `input.rs`). To implement:
+The GTK pill shares the same file structure (`ipc.rs`, `state.rs`, `constants.rs`, `draw.rs`, `input.rs`). To implement both features:
 
-1. **`ipc.rs`** — Add `FlashMessage { message: String }` to `InMessage`.
-2. **`state.rs`** — Add the 5 flash state fields listed above.
-3. **`constants.rs`** — Add the 6 flash constants listed above.
-4. **Main event handler** — Handle `InMessage::FlashMessage` by setting message, visible, and timer.
-5. **Tick function** — Add timer countdown + `spring_anim` call for `flash_t`.
-6. **`draw.rs`** — Add `draw_flash_message()` with the same layout math. In the main draw dispatch, check `flash_t > 0.01` and draw flash instead of tooltip. The GTK pill uses Cairo for drawing, which has the same `save`/`translate`/`scale`/`restore` primitives.
-7. **`test.sh`** — Add the `flash` test mode.
+1. **`ipc.rs`** — Add `FlashMessage { message: String }` and `Fireworks { message: String }` to `InMessage`.
+2. **`state.rs`** — Add flash state fields (5 fields), fireworks state fields (4 fields), and the `Rocket`/`Spark`/`RocketPhase` structs.
+3. **`constants.rs`** — Add all flash constants (6), fireworks constants (9), `FireworkLaunch` struct, and the `FIREWORK_LAUNCHES` schedule.
+4. **Main event handler** — Handle both `FlashMessage` and `Fireworks` IPC. Fireworks triggers flash message with the longer `FIREWORKS_TOTAL_DURATION` timer.
+5. **Tick function** — Add flash timer countdown + spring anim. Add `tick_fireworks()` with the full physics simulation (launch schedule, rocket movement, explosion sparks, cleanup). Call `pill_position()` for launch origin.
+6. **`draw.rs`** — Restructure `draw_all` render order (tooltip → pill → cancel → fireworks → flash). Add `draw_flash_message()` and `draw_fireworks()`. The GTK pill uses Cairo which has the same `save`/`translate`/`scale`/`restore`, `move_to`/`line_to`/`stroke`, and `set_source_rgba` primitives.
+7. **`test.sh`** — Add `flash` and `fireworks` test modes.
 
 ### Windows pill (future)
 
 Follow the same spec. The critical pieces are:
 - The spring animation parameters (stiffness 200, critical damping).
-- The scale-from-center transform on appear/disappear.
-- Anchoring to the pill's animated Y position, not a fixed coordinate.
-- Mutual exclusion with the tooltip in the draw pass.
+- The scale-from-center transform for flash message appear/disappear.
+- Anchoring the flash message to the pill's animated Y position, not a fixed coordinate.
+- Mutual exclusion between tooltip and flash message in the draw pass.
+- The full fireworks physics: gravity, exponential spark drag, deterministic spark angle distribution.
+- Render order: fireworks behind flash message, both on top of pill.
+- Fireworks extend beyond the content area into the surrounding transparent window space.
