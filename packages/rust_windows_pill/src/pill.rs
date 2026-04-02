@@ -1,0 +1,695 @@
+use std::cell::{Cell, RefCell};
+use std::sync::mpsc::Receiver;
+
+use windows::core::*;
+use windows::Win32::Foundation::*;
+use windows::Win32::Graphics::Gdi::*;
+use windows::Win32::System::LibraryLoader::*;
+use windows::Win32::UI::Input::KeyboardAndMouse::*;
+use windows::Win32::UI::WindowsAndMessaging::*;
+
+use crate::constants::*;
+use crate::draw;
+use crate::gfx::Gfx;
+use crate::input;
+use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
+use crate::state::{PillState, Rocket, RocketPhase, Spark, WindowMode};
+
+const TIMER_ANIM: usize = 1;
+const TIMER_CURSOR: usize = 2;
+
+thread_local! {
+    static STATE: RefCell<Option<PillState>> = const { RefCell::new(None) };
+    static GFX: RefCell<Option<Gfx>> = const { RefCell::new(None) };
+    static RECEIVER: RefCell<Option<Receiver<InMessage>>> = const { RefCell::new(None) };
+    static QUIT: Cell<bool> = const { Cell::new(false) };
+    static HWND_CELL: Cell<HWND> = const { Cell::new(HWND(std::ptr::null_mut())) };
+    static TYPING_ACTIVE: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn run(receiver: Receiver<InMessage>) {
+    unsafe {
+        let _ = windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
+            windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+        );
+    }
+
+    let class_name = w!("VoquillPill");
+    let hinstance = unsafe { GetModuleHandleW(None).unwrap() };
+
+    let wc = WNDCLASSEXW {
+        cbSize: std::mem::size_of::<WNDCLASSEXW>() as u32,
+        style: CS_HREDRAW | CS_VREDRAW,
+        lpfnWndProc: Some(wndproc),
+        hInstance: hinstance.into(),
+        lpszClassName: class_name,
+        hCursor: unsafe { LoadCursorW(None, IDC_ARROW).unwrap_or_default() },
+        ..Default::default()
+    };
+    unsafe { RegisterClassExW(&wc); }
+
+    let (wx, wy) = initial_position();
+    let hwnd = unsafe {
+        CreateWindowExW(
+            WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+            class_name,
+            w!("VoquillPill"),
+            WS_POPUP,
+            wx, wy,
+            WINDOW_W_TYPING, WINDOW_H_TYPING,
+            None, None, Some(hinstance.into()), None,
+        ).unwrap()
+    };
+
+    HWND_CELL.with(|c| c.set(hwnd));
+
+    let gfx = Gfx::new(WINDOW_W_TYPING, WINDOW_H_TYPING).expect("Failed to create D2D context");
+
+    let state = PillState {
+        phase: Cell::new(Phase::Idle),
+        visibility: Cell::new(Visibility::WhileActive),
+        expand_t: Cell::new(0.0),
+        expand_velocity: Cell::new(0.0),
+        hovered: Cell::new(false),
+        wave_phase: Cell::new(0.0),
+        current_level: Cell::new(0.0),
+        target_level: Cell::new(0.0),
+        loading_offset: Cell::new(0.0),
+        pending_levels: RefCell::new(Vec::new()),
+        style_count: Cell::new(0),
+        style_name: RefCell::new(String::new()),
+        tooltip_t: Cell::new(0.0),
+        tooltip_velocity: Cell::new(0.0),
+        tooltip_width: Cell::new(0.0),
+        window_mode: Cell::new(WindowMode::Dictation),
+        draw_width: Cell::new(DICTATION_WINDOW_WIDTH as f64),
+        draw_height: Cell::new(DICTATION_WINDOW_HEIGHT as f64),
+        draw_w_velocity: Cell::new(0.0),
+        draw_h_velocity: Cell::new(0.0),
+        assistant_active: Cell::new(false),
+        assistant_input_mode: RefCell::new("voice".to_string()),
+        assistant_compact: Cell::new(true),
+        assistant_conversation_id: RefCell::new(None),
+        assistant_user_prompt: RefCell::new(None),
+        assistant_messages: RefCell::new(Vec::new()),
+        assistant_streaming: RefCell::new(None),
+        assistant_permissions: RefCell::new(Vec::new()),
+        panel_open_t: Cell::new(0.0),
+        panel_open_velocity: Cell::new(0.0),
+        kb_button_t: Cell::new(0.0),
+        kb_button_velocity: Cell::new(0.0),
+        shimmer_phase: Cell::new(0.0),
+        scroll_offset: Cell::new(0.0),
+        content_height: Cell::new(0.0),
+        viewport_height: Cell::new(0.0),
+        should_stick: Cell::new(true),
+        click_regions: RefCell::new(Vec::new()),
+        entry_text: RefCell::new(String::new()),
+        flash_message: RefCell::new(String::new()),
+        flash_visible: Cell::new(false),
+        flash_t: Cell::new(0.0),
+        flash_velocity: Cell::new(0.0),
+        flash_timer: Cell::new(0.0),
+        fireworks_active: Cell::new(false),
+        fireworks_elapsed: Cell::new(0.0),
+        fireworks_next_launch: Cell::new(0),
+        fireworks_rockets: RefCell::new(Vec::new()),
+    };
+
+    STATE.with(|s| *s.borrow_mut() = Some(state));
+    GFX.with(|g| *g.borrow_mut() = Some(gfx));
+    RECEIVER.with(|r| *r.borrow_mut() = Some(receiver));
+
+    unsafe {
+        SetTimer(Some(hwnd), TIMER_ANIM, 16, None);
+        SetTimer(Some(hwnd), TIMER_CURSOR, 60, None);
+    }
+
+    ipc::send(&OutMessage::Ready);
+
+    unsafe {
+        let mut msg = MSG::default();
+        while GetMessageW(&mut msg, None, 0, 0).into() {
+            if QUIT.with(|q| q.get()) { break; }
+            let _ = TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+    }
+}
+
+unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    match msg {
+        WM_TIMER => {
+            let timer_id = wparam.0;
+            if timer_id == TIMER_ANIM {
+                on_anim_tick(hwnd);
+            } else if timer_id == TIMER_CURSOR {
+                on_cursor_tick(hwnd);
+            }
+            LRESULT(0)
+        }
+        WM_LBUTTONUP => {
+            let x = (lparam.0 & 0xFFFF) as i16 as f64;
+            let y = ((lparam.0 >> 16) & 0xFFFF) as i16 as f64;
+            STATE.with(|s| {
+                if let Some(ref state) = *s.borrow() {
+                    input::handle_click(state, x, y);
+                }
+            });
+            LRESULT(0)
+        }
+        WM_MOUSEWHEEL => {
+            let delta = ((wparam.0 >> 16) & 0xFFFF) as i16 as f64;
+            let scroll = -delta / 120.0 * 30.0;
+            STATE.with(|s| {
+                if let Some(ref state) = *s.borrow() {
+                    input::handle_scroll(state, scroll);
+                }
+            });
+            LRESULT(0)
+        }
+        WM_CHAR => {
+            let ch = char::from_u32(wparam.0 as u32);
+            if let Some(ch) = ch {
+                STATE.with(|s| {
+                    if let Some(ref state) = *s.borrow() {
+                        if ch == '\r' || ch == '\n' {
+                            let text = state.entry_text.borrow().trim().to_string();
+                            if !text.is_empty() {
+                                ipc::send(&OutMessage::TypedMessage { text });
+                                *state.entry_text.borrow_mut() = String::new();
+                            }
+                        } else if ch == '\u{8}' {
+                            // Backspace
+                            let mut t = state.entry_text.borrow_mut();
+                            t.pop();
+                        } else if !ch.is_control() {
+                            state.entry_text.borrow_mut().push(ch);
+                        }
+                    }
+                });
+            }
+            LRESULT(0)
+        }
+        WM_KEYDOWN => {
+            if wparam.0 == VK_ESCAPE.0 as usize {
+                STATE.with(|s| {
+                    if let Some(ref state) = *s.borrow() {
+                        if state.assistant_active.get()
+                            && *state.assistant_input_mode.borrow() == "type"
+                        {
+                            ipc::send(&OutMessage::AssistantClose);
+                        }
+                    }
+                });
+            }
+            LRESULT(0)
+        }
+        WM_DESTROY => {
+            unsafe { PostQuitMessage(0); }
+            LRESULT(0)
+        }
+        _ => unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) },
+    }
+}
+
+fn on_anim_tick(hwnd: HWND) {
+    RECEIVER.with(|r| {
+        STATE.with(|s| {
+            if let (Some(ref rx), Some(ref state)) = (&*r.borrow(), &*s.borrow()) {
+                while let Ok(msg) = rx.try_recv() {
+                    process_message(msg, state, hwnd);
+                }
+            }
+        });
+    });
+
+    if QUIT.with(|q| q.get()) {
+        unsafe { DestroyWindow(hwnd).ok(); }
+        return;
+    }
+
+    STATE.with(|s| {
+        if let Some(ref state) = *s.borrow() {
+            tick(state);
+            update_visibility(hwnd, state);
+            update_typing_focus(hwnd, state);
+        }
+    });
+
+    GFX.with(|g| {
+        STATE.with(|s| {
+            if let (Some(ref mut gfx), Some(ref state)) = (&mut *g.borrow_mut(), &*s.borrow()) {
+                draw::draw_all(gfx, state);
+                update_layered(hwnd, gfx);
+            }
+        });
+    });
+}
+
+fn on_cursor_tick(hwnd: HWND) {
+    STATE.with(|s| {
+        if let Some(ref state) = *s.borrow() {
+            check_hover(hwnd, state);
+            reposition_to_cursor_monitor(hwnd);
+        }
+    });
+}
+
+fn process_message(msg: InMessage, state: &PillState, _hwnd: HWND) {
+    match msg {
+        InMessage::Phase { phase } => {
+            let prev = state.phase.get();
+            state.phase.set(phase);
+            if phase == Phase::Idle && prev != Phase::Idle {
+                state.target_level.set(0.0);
+                state.current_level.set(0.0);
+                state.wave_phase.set(0.0);
+            }
+        }
+        InMessage::Levels { levels } => {
+            *state.pending_levels.borrow_mut() = levels;
+        }
+        InMessage::StyleInfo { count, name } => {
+            state.style_count.set(count);
+            *state.style_name.borrow_mut() = name;
+        }
+        InMessage::FlashMessage { message } => {
+            *state.flash_message.borrow_mut() = message;
+            state.flash_visible.set(true);
+            state.flash_timer.set(FLASH_DURATION);
+        }
+        InMessage::Fireworks { message } => {
+            *state.flash_message.borrow_mut() = message;
+            state.flash_visible.set(true);
+            state.flash_timer.set(FIREWORKS_TOTAL_DURATION);
+            state.fireworks_active.set(true);
+            state.fireworks_elapsed.set(0.0);
+            state.fireworks_next_launch.set(0);
+            state.fireworks_rockets.borrow_mut().clear();
+        }
+        InMessage::Visibility { visibility } => {
+            state.visibility.set(visibility);
+        }
+        InMessage::WindowSize { ref size } => {
+            state.window_mode.set(WindowMode::from_str(size));
+        }
+        InMessage::AssistantState {
+            active, input_mode, compact,
+            conversation_id, user_prompt,
+            messages, streaming, permissions,
+        } => {
+            let was_active = state.assistant_active.get();
+            state.assistant_active.set(active);
+            *state.assistant_input_mode.borrow_mut() = input_mode;
+            state.assistant_compact.set(compact);
+            *state.assistant_conversation_id.borrow_mut() = conversation_id;
+            *state.assistant_user_prompt.borrow_mut() = user_prompt;
+            *state.assistant_messages.borrow_mut() = messages;
+            *state.assistant_streaming.borrow_mut() = streaming;
+            *state.assistant_permissions.borrow_mut() = permissions;
+            if active && !was_active {
+                state.should_stick.set(true);
+                state.scroll_offset.set(0.0);
+            }
+        }
+        InMessage::Quit => {
+            QUIT.with(|q| q.set(true));
+        }
+    }
+}
+
+fn tick(state: &PillState) {
+    let phase = state.phase.get();
+    let is_active = phase != Phase::Idle;
+    let is_recording = phase == Phase::Recording;
+    let is_loading = phase == Phase::Loading;
+    let hovered = state.hovered.get();
+
+    // Audio levels
+    if is_recording {
+        let levels = state.pending_levels.borrow();
+        if !levels.is_empty() {
+            let sum: f64 = levels.iter().map(|v| *v as f64).sum();
+            let avg = sum / levels.len() as f64;
+            let peak = levels.iter().copied().fold(0.0_f32, f32::max) as f64;
+            let combined = (avg * 0.9 + peak * 0.85).min(1.0);
+            let boosted = (combined.sqrt() * 1.35).min(1.0);
+            let target = state.target_level.get();
+            state.target_level.set((target * 0.25 + boosted * 0.75).min(1.0));
+        }
+    } else if is_loading {
+        let target = state.target_level.get();
+        state.target_level.set(target.max(PROCESSING_BASE_LEVEL));
+    } else {
+        state.target_level.set(0.0);
+        state.current_level.set(state.current_level.get() * 0.4);
+        if state.current_level.get() < 0.0002 {
+            state.current_level.set(0.0);
+        }
+    }
+
+    let current = state.current_level.get();
+    let target = state.target_level.get();
+    let new_current = current + (target - current) * LEVEL_SMOOTHING;
+    state.current_level.set(if new_current < 0.0002 { 0.0 } else { new_current });
+
+    let decayed = target * TARGET_DECAY_PER_FRAME;
+    state.target_level.set(if decayed < 0.0005 { 0.0 } else { decayed });
+
+    let level = state.current_level.get();
+    let base_level = if is_loading && !is_recording { PROCESSING_BASE_LEVEL } else { 0.0 };
+    let effective_level = level.max(base_level);
+    let advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * effective_level;
+    state.wave_phase.set((state.wave_phase.get() + advance) % TAU);
+
+    let expand_target = if is_active || hovered || state.assistant_active.get() { 1.0 } else { 0.0 };
+    spring_anim(&state.expand_t, &state.expand_velocity, expand_target, SPRING_STIFFNESS);
+
+    if is_loading {
+        state.loading_offset.set((state.loading_offset.get() + LOADING_SPEED) % 1.0);
+    }
+
+    let show_tooltip = !state.assistant_active.get()
+        && state.style_count.get() > 1
+        && (hovered || phase == Phase::Recording)
+        && state.expand_t.get() > 0.3;
+    let tooltip_target = if show_tooltip { 1.0 } else { 0.0 };
+    spring_anim(&state.tooltip_t, &state.tooltip_velocity, tooltip_target, SPRING_STIFFNESS);
+
+    let panel_target = if state.assistant_active.get() { 1.0 } else { 0.0 };
+    spring_anim(&state.panel_open_t, &state.panel_open_velocity, panel_target, SPRING_STIFFNESS);
+
+    let is_voice = *state.assistant_input_mode.borrow() == "voice";
+    let kb_target = if state.assistant_active.get() && is_voice { 1.0 } else { 0.0 };
+    spring_anim(&state.kb_button_t, &state.kb_button_velocity, kb_target, SPRING_STIFFNESS);
+
+    let mode = state.window_mode.get();
+    let (tw, th) = mode.dimensions();
+    spring_px(&state.draw_width, &state.draw_w_velocity, tw as f64, SPRING_STIFFNESS);
+    spring_px(&state.draw_height, &state.draw_h_velocity, th as f64, SPRING_STIFFNESS);
+
+    state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED) % 1.0);
+
+    tick_fireworks(state);
+
+    if state.flash_visible.get() {
+        let remaining = state.flash_timer.get() - SPRING_DT;
+        if remaining <= 0.0 {
+            state.flash_visible.set(false);
+            state.flash_timer.set(0.0);
+        } else {
+            state.flash_timer.set(remaining);
+        }
+    }
+    let flash_target = if state.flash_visible.get() { 1.0 } else { 0.0 };
+    spring_anim(&state.flash_t, &state.flash_velocity, flash_target, SPRING_STIFFNESS);
+
+    if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
+        let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
+        state.scroll_offset.set(max_scroll);
+    }
+}
+
+fn tick_fireworks(state: &PillState) {
+    if !state.fireworks_active.get() { return; }
+
+    let dt = SPRING_DT;
+    let elapsed = state.fireworks_elapsed.get() + dt;
+    state.fireworks_elapsed.set(elapsed);
+
+    let ww = state.draw_width.get();
+    let wh = state.draw_height.get();
+    let (_, pill_y, _, _) = draw::pill_position(state, ww, wh);
+    let origin_x = ww / 2.0;
+    let origin_y = pill_y - FLASH_GAP - FLASH_HEIGHT / 2.0;
+
+    let mut next = state.fireworks_next_launch.get();
+    let mut rockets = state.fireworks_rockets.borrow_mut();
+
+    while next < FIREWORK_LAUNCHES.len() && elapsed >= FIREWORK_LAUNCHES[next].time {
+        let launch = &FIREWORK_LAUNCHES[next];
+        let angle_rad = launch.angle_deg.to_radians();
+        let color = FIREWORK_COLORS[next % FIREWORK_COLORS.len()];
+        rockets.push(Rocket {
+            x: origin_x, y: origin_y,
+            vx: launch.speed * angle_rad.sin(),
+            vy: -launch.speed * angle_rad.cos(),
+            trail: vec![(origin_x, origin_y)],
+            fuse: launch.fuse,
+            phase: RocketPhase::Rising,
+            num_sparks: launch.num_sparks,
+            launch_index: next,
+            sparks: Vec::new(),
+            trail_alpha: 1.0,
+            color,
+        });
+        next += 1;
+    }
+    state.fireworks_next_launch.set(next);
+
+    for rocket in rockets.iter_mut() {
+        match rocket.phase {
+            RocketPhase::Rising => {
+                rocket.vy += FIREWORKS_GRAVITY * dt;
+                rocket.x += rocket.vx * dt;
+                rocket.y += rocket.vy * dt;
+                rocket.trail.push((rocket.x, rocket.y));
+                if rocket.trail.len() > FIREWORKS_TRAIL_MAX {
+                    rocket.trail.remove(0);
+                }
+                rocket.fuse -= dt;
+                if rocket.fuse <= 0.0 {
+                    rocket.phase = RocketPhase::Exploding;
+                    let offset = rocket.launch_index as f64 * 0.7;
+                    for i in 0..rocket.num_sparks {
+                        let n = rocket.num_sparks.max(1) as f64;
+                        let angle = TAU * i as f64 / n + offset;
+                        let speed_t = ((i * 7 + 3) % rocket.num_sparks.max(1)) as f64 / n;
+                        let speed = FIREWORKS_SPARK_BASE_SPEED * (0.6 + 0.8 * speed_t);
+                        rocket.sparks.push(Spark {
+                            x: rocket.x, y: rocket.y,
+                            vx: speed * angle.cos(),
+                            vy: speed * angle.sin(),
+                            life: 1.0,
+                        });
+                    }
+                }
+            }
+            RocketPhase::Exploding => {
+                for spark in rocket.sparks.iter_mut() {
+                    let drag = (-FIREWORKS_SPARK_DRAG * dt).exp();
+                    spark.vx *= drag;
+                    spark.vy *= drag;
+                    spark.vy += FIREWORKS_GRAVITY * 0.3 * dt;
+                    spark.x += spark.vx * dt;
+                    spark.y += spark.vy * dt;
+                    spark.life -= dt / FIREWORKS_SPARK_LIFE;
+                }
+                rocket.trail_alpha -= FIREWORKS_TRAIL_FADE_RATE * dt;
+                if rocket.trail_alpha < 0.0 { rocket.trail_alpha = 0.0; }
+            }
+        }
+    }
+
+    rockets.retain(|r| match r.phase {
+        RocketPhase::Rising => true,
+        RocketPhase::Exploding => r.trail_alpha > 0.01 || r.sparks.iter().any(|s| s.life > 0.0),
+    });
+
+    if elapsed >= FIREWORKS_TOTAL_DURATION && rockets.is_empty() {
+        state.fireworks_active.set(false);
+    }
+}
+
+fn update_visibility(hwnd: HWND, state: &PillState) {
+    let visibility = state.visibility.get();
+    let is_active = state.phase.get() != Phase::Idle;
+    let is_assistant = state.assistant_active.get();
+
+    let should_show = match visibility {
+        Visibility::Hidden => is_assistant,
+        Visibility::WhileActive => is_active || is_assistant,
+        Visibility::Persistent => true,
+    };
+
+    unsafe {
+        if should_show {
+            if !IsWindowVisible(hwnd).as_bool() {
+                ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+            }
+        } else if IsWindowVisible(hwnd).as_bool() {
+            ShowWindow(hwnd, SW_HIDE);
+        }
+    }
+}
+
+fn update_typing_focus(hwnd: HWND, state: &PillState) {
+    let is_typing = state.assistant_active.get()
+        && *state.assistant_input_mode.borrow() == "type";
+    let was_typing = TYPING_ACTIVE.with(|t| t.get());
+
+    if is_typing && !was_typing {
+        TYPING_ACTIVE.with(|t| t.set(true));
+        unsafe {
+            // Remove NOACTIVATE so the window can receive keyboard focus
+            let style = GetWindowLongW(hwnd, GWL_EXSTYLE) as u32;
+            SetWindowLongW(hwnd, GWL_EXSTYLE, (style & !WS_EX_NOACTIVATE.0) as i32);
+            let _ = SetForegroundWindow(hwnd);
+            let _ = SetFocus(Some(hwnd));
+        }
+    } else if !is_typing && was_typing {
+        TYPING_ACTIVE.with(|t| t.set(false));
+        unsafe {
+            let style = GetWindowLongW(hwnd, GWL_EXSTYLE) as u32;
+            SetWindowLongW(hwnd, GWL_EXSTYLE, (style | WS_EX_NOACTIVATE.0) as i32);
+        }
+    }
+}
+
+fn check_hover(hwnd: HWND, state: &PillState) {
+    let mut cursor = POINT::default();
+    unsafe { let _ = GetCursorPos(&mut cursor); }
+
+    let mut win_rect = RECT::default();
+    unsafe { let _ = GetWindowRect(hwnd, &mut win_rect); }
+
+    let (ox, oy) = state.content_offset();
+    let dw = state.draw_width.get();
+    let dh = state.draw_height.get();
+
+    // Pill position in screen coordinates
+    let (pill_x, pill_y, pill_w, pill_h) = draw::pill_position(state, dw, dh);
+    let screen_pill_x = win_rect.left as f64 + ox + pill_x;
+    let screen_pill_y = win_rect.top as f64 + oy + pill_y;
+
+    let pad = if state.hovered.get() { 24.0 } else { 8.0 };
+    let cx = cursor.x as f64;
+    let cy = cursor.y as f64;
+
+    let in_pill = cx >= screen_pill_x - pad
+        && cx <= screen_pill_x + pill_w + pad
+        && cy >= screen_pill_y - pad
+        && cy <= screen_pill_y + pill_h + pad;
+
+    let in_panel = if state.assistant_active.get() {
+        let panel_x = win_rect.left as f64 + ox;
+        let panel_y = win_rect.top as f64 + oy;
+        cx >= panel_x && cx <= panel_x + dw
+            && cy >= panel_y && cy <= panel_y + dh
+    } else {
+        false
+    };
+
+    let new_hovered = in_pill || in_panel;
+    let was_hovered = state.hovered.get();
+
+    if new_hovered != was_hovered {
+        state.hovered.set(new_hovered);
+        ipc::send(&OutMessage::Hover { hovered: new_hovered });
+    }
+}
+
+fn update_layered(hwnd: HWND, gfx: &Gfx) {
+    unsafe {
+        let size = SIZE { cx: gfx.width, cy: gfx.height };
+        let src_point = POINT { x: 0, y: 0 };
+        let blend = BLENDFUNCTION {
+            BlendOp: AC_SRC_OVER as u8,
+            BlendFlags: 0,
+            SourceConstantAlpha: 255,
+            AlphaFormat: AC_SRC_ALPHA as u8,
+        };
+        let _ = UpdateLayeredWindow(
+            hwnd,
+            None,
+            None,
+            Some(&size),
+            Some(gfx.hdc),
+            Some(&src_point),
+            COLORREF(0),
+            Some(&blend),
+            ULW_ALPHA,
+        );
+    }
+}
+
+fn initial_position() -> (i32, i32) {
+    unsafe {
+        let mut cursor = POINT::default();
+        let _ = GetCursorPos(&mut cursor);
+        let monitor = MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY);
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        let _ = GetMonitorInfoW(monitor, &mut info);
+        let wa = info.rcWork;
+        let wa_w = wa.right - wa.left;
+        let wa_h = wa.bottom - wa.top;
+        let x = wa.left + (wa_w - WINDOW_W_TYPING) / 2;
+        let y = wa.top + wa_h - WINDOW_H_TYPING - MARGIN_BOTTOM;
+        (x, y)
+    }
+}
+
+fn reposition_to_cursor_monitor(hwnd: HWND) {
+    unsafe {
+        let mut cursor = POINT::default();
+        let _ = GetCursorPos(&mut cursor);
+        let monitor = MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY);
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        let _ = GetMonitorInfoW(monitor, &mut info);
+        let wa = info.rcWork;
+        let wa_w = wa.right - wa.left;
+        let wa_h = wa.bottom - wa.top;
+        let x = wa.left + (wa_w - WINDOW_W_TYPING) / 2;
+        let y = wa.top + wa_h - WINDOW_H_TYPING - MARGIN_BOTTOM;
+
+        let mut current = RECT::default();
+        let _ = GetWindowRect(hwnd, &mut current);
+        if current.left != x || current.top != y {
+            let _ = SetWindowPos(
+                hwnd, None, x, y, 0, 0,
+                SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE,
+            );
+        }
+    }
+}
+
+fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+    let v = value.get();
+    let vel = velocity.get();
+    if v == target && vel == 0.0 { return; }
+    let damping = 2.0 * stiffness.sqrt();
+    let force = stiffness * (target - v) - damping * vel;
+    let new_vel = vel + force * SPRING_DT;
+    let new_v = v + new_vel * SPRING_DT;
+    if (new_v - target).abs() < 0.002 && new_vel.abs() < 0.5 {
+        value.set(target);
+        velocity.set(0.0);
+    } else {
+        value.set(new_v.clamp(0.0, 1.0));
+        velocity.set(if new_v < 0.0 || new_v > 1.0 { 0.0 } else { new_vel });
+    }
+}
+
+fn spring_px(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+    let v = value.get();
+    let vel = velocity.get();
+    if v == target && vel == 0.0 { return; }
+    let damping = 2.0 * stiffness.sqrt();
+    let force = stiffness * (target - v) - damping * vel;
+    let new_vel = vel + force * SPRING_DT;
+    let new_v = v + new_vel * SPRING_DT;
+    if (new_v - target).abs() < 0.5 && (new_vel * SPRING_DT).abs() < 0.5 {
+        value.set(target);
+        velocity.set(0.0);
+    } else {
+        value.set(new_v);
+        velocity.set(new_vel);
+    }
+}
