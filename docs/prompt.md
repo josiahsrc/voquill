@@ -27,7 +27,7 @@ Context:
 </style-instructions>
 
 <transcript>
-Hey Bob, great meeting you yesterday looking forward to next steps best emulator user
+Hey. So I'm gonna be writing a blog tomorrow, and the goal of this is to convert, enterprise customers Well, enterprise prospects of anyone who's out there googling for, like, WhisperFlow on prem for enterprise or something like that. We need a blog post that will take them wondering if they can run WhisperFlow on prem to realizing that the way to do that is with Vocquill.
 </transcript>
 
 Rewrite the transcript above according to the style instructions. Return ONLY the cleaned-up version of what the speaker said.
