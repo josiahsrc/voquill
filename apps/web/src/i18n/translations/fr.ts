@@ -9,7 +9,7 @@ export const frTranslations = {
     navPricing: "Tarifs",
     navBlog: "Blog",
     navDocs: "Documentation",
-    navEnterprise: "Entreprise",
+    navBusiness: "Entreprise",
     github: "GitHub",
     download: "Télécharger",
     heroHeading: "Votre clavier vous ralentit.",

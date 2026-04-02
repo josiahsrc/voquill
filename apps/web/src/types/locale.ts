@@ -10,7 +10,7 @@ export interface TranslationMessages {
   navPricing: string;
   navBlog: string;
   navDocs: string;
-  navEnterprise: string;
+  navBusiness: string;
   github: string;
   download: string;
   heroHeading: string;

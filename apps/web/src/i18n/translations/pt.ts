@@ -9,7 +9,7 @@ export const ptTranslations = {
     navPricing: "Preços",
     navBlog: "Blog",
     navDocs: "Documentação",
-    navEnterprise: "Empresas",
+    navBusiness: "Negócios",
     github: "GitHub",
     download: "Transferir",
     heroHeading: "O seu teclado está a travá-lo.",
