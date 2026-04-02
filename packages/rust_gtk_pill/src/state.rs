@@ -4,6 +4,37 @@ use crate::ipc::{Phase, PillMessage, PillPermission, PillStreaming, Visibility};
 
 use crate::constants::*;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) enum RocketPhase {
+    Rising,
+    Exploding,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Spark {
+    pub(crate) x: f64,
+    pub(crate) y: f64,
+    pub(crate) vx: f64,
+    pub(crate) vy: f64,
+    pub(crate) life: f64,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct Rocket {
+    pub(crate) x: f64,
+    pub(crate) y: f64,
+    pub(crate) vx: f64,
+    pub(crate) vy: f64,
+    pub(crate) trail: Vec<(f64, f64)>,
+    pub(crate) fuse: f64,
+    pub(crate) phase: RocketPhase,
+    pub(crate) num_sparks: usize,
+    pub(crate) launch_index: usize,
+    pub(crate) sparks: Vec<Spark>,
+    pub(crate) trail_alpha: f64,
+    pub(crate) color: (f64, f64, f64),
+}
+
 #[derive(Debug, Clone)]
 pub(crate) enum ClickAction {
     Pill,
@@ -114,6 +145,19 @@ pub(crate) struct PillState {
 
     // Entry text (for typing mode)
     pub(crate) entry_text: RefCell<String>,
+
+    // Flash message
+    pub(crate) flash_message: RefCell<String>,
+    pub(crate) flash_visible: Cell<bool>,
+    pub(crate) flash_t: Cell<f64>,
+    pub(crate) flash_velocity: Cell<f64>,
+    pub(crate) flash_timer: Cell<f64>,
+
+    // Fireworks
+    pub(crate) fireworks_active: Cell<bool>,
+    pub(crate) fireworks_elapsed: Cell<f64>,
+    pub(crate) fireworks_next_launch: Cell<usize>,
+    pub(crate) fireworks_rockets: RefCell<Vec<Rocket>>,
 
     // Actual window allocation (used by PlainWayland for fullscreen overlay positioning)
     pub(crate) alloc_width: Cell<f64>,

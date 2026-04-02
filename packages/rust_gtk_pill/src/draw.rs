@@ -5,7 +5,7 @@ use gtk::cairo;
 use crate::ipc::{Phase, PillPermission, PillStreaming};
 
 use crate::constants::*;
-use crate::state::{ClickAction, ClickRegion, PillState};
+use crate::state::{ClickAction, ClickRegion, PillState, RocketPhase};
 
 pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
     cr.set_operator(cairo::Operator::Source);
@@ -24,7 +24,7 @@ pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
 
     if state.assistant_active.get() || state.panel_open_t.get() > 0.01 {
         draw_assistant_panel(cr, state, ww, wh);
-    } else {
+    } else if state.flash_t.get() < 0.01 {
         let pill_area_top = wh - PILL_AREA_HEIGHT;
         draw_tooltip(cr, state, ww, pill_area_top);
     }
@@ -37,6 +37,14 @@ pub(crate) fn draw_all(cr: &cairo::Context, state: &PillState) {
 
     if !state.assistant_active.get() {
         draw_cancel_button(cr, state, ww, wh);
+
+        if !state.fireworks_rockets.borrow().is_empty() {
+            draw_fireworks(cr, state, ww, wh);
+        }
+
+        if state.flash_t.get() > 0.01 {
+            draw_flash_message(cr, state, ww, wh);
+        }
     }
 
     cr.restore().ok();
@@ -297,6 +305,109 @@ fn draw_tooltip(cr: &cairo::Context, state: &PillState, ww: f64, pill_area_top: 
         x: mid_x, y: tooltip_ry, w: tooltip_rx + tooltip_w - mid_x, h: TOOLTIP_HEIGHT,
         action: ClickAction::StyleForward,
     });
+}
+
+// ── Flash message ────────────────────────────────────────────────
+
+fn draw_flash_message(cr: &cairo::Context, state: &PillState, ww: f64, wh: f64) {
+    let flash_t = state.flash_t.get();
+    if flash_t < 0.01 {
+        return;
+    }
+
+    let message = state.flash_message.borrow();
+    if message.is_empty() {
+        return;
+    }
+
+    cr.select_font_face("sans-serif", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.set_font_size(12.0);
+    let text_extents = cr.text_extents(&message).unwrap();
+    let flash_w = (text_extents.width() + FLASH_PADDING_H * 2.0).max(80.0);
+
+    let scale = FLASH_MIN_SCALE + (1.0 - FLASH_MIN_SCALE) * flash_t;
+    let alpha = flash_t;
+
+    let (_, pill_y, _, _) = pill_position(state, ww, wh);
+    let full_x = (ww - flash_w) / 2.0;
+    let full_y = pill_y - FLASH_GAP - FLASH_HEIGHT;
+
+    let center_x = full_x + flash_w / 2.0;
+    let center_y = full_y + FLASH_HEIGHT / 2.0;
+
+    cr.save().ok();
+    cr.translate(center_x, center_y);
+    cr.scale(scale, scale);
+    cr.translate(-center_x, -center_y);
+
+    rounded_rect(cr, full_x, full_y, flash_w, FLASH_HEIGHT, FLASH_RADIUS);
+    cr.set_source_rgba(0.0, 0.0, 0.0, 0.92 * alpha);
+    let _ = cr.fill();
+
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.9 * alpha);
+    cr.select_font_face("sans-serif", cairo::FontSlant::Normal, cairo::FontWeight::Bold);
+    cr.set_font_size(12.0);
+    let tx = full_x + (flash_w - text_extents.width()) / 2.0 - text_extents.x_bearing();
+    let ty = full_y + (FLASH_HEIGHT - text_extents.height()) / 2.0 - text_extents.y_bearing();
+    cr.move_to(tx, ty);
+    let _ = cr.show_text(&message);
+
+    cr.restore().ok();
+}
+
+// ── Fireworks ────────────────────────────────────────────────────
+
+fn draw_fireworks(cr: &cairo::Context, state: &PillState, _ww: f64, _wh: f64) {
+    let rockets = state.fireworks_rockets.borrow();
+
+    for rocket in rockets.iter() {
+        let (rc, gc, bc) = rocket.color;
+
+        // Trail
+        if rocket.trail.len() > 1 && rocket.trail_alpha > 0.01 {
+            let n = rocket.trail.len();
+            cr.set_line_width(FIREWORKS_ROCKET_LINE_WIDTH);
+            cr.set_line_cap(cairo::LineCap::Round);
+            for i in 1..n {
+                let alpha = (i as f64 / n as f64) * rocket.trail_alpha * 0.8;
+                cr.set_source_rgba(rc, gc, bc, alpha);
+                cr.move_to(rocket.trail[i - 1].0, rocket.trail[i - 1].1);
+                cr.line_to(rocket.trail[i].0, rocket.trail[i].1);
+                let _ = cr.stroke();
+            }
+        }
+
+        // Bright head while rising
+        if rocket.phase == RocketPhase::Rising {
+            let hs = FIREWORKS_HEAD_SIZE / 2.0;
+            cr.set_source_rgba(rc, gc, bc, 0.95);
+            rounded_rect(cr, rocket.x - hs, rocket.y - hs, FIREWORKS_HEAD_SIZE, FIREWORKS_HEAD_SIZE, hs);
+            let _ = cr.fill();
+        }
+
+        // Sparks
+        cr.set_line_width(FIREWORKS_SPARK_LINE_WIDTH);
+        cr.set_line_cap(cairo::LineCap::Round);
+        for spark in &rocket.sparks {
+            if spark.life <= 0.0 {
+                continue;
+            }
+            let alpha = spark.life.clamp(0.0, 1.0) * 0.9;
+            cr.set_source_rgba(rc, gc, bc, alpha);
+
+            let speed = (spark.vx * spark.vx + spark.vy * spark.vy).sqrt();
+            let line_len = (speed * 0.04).clamp(2.0, 10.0);
+            let (nx, ny) = if speed > 0.01 {
+                (spark.vx / speed, spark.vy / speed)
+            } else {
+                (0.0, -1.0)
+            };
+
+            cr.move_to(spark.x - nx * line_len, spark.y - ny * line_len);
+            cr.line_to(spark.x, spark.y);
+            let _ = cr.stroke();
+        }
+    }
 }
 
 // ── Assistant panel ───────────────────────────────────────────────
