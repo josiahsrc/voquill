@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-BUMP_TYPE="${1:-}"
+BUMP_TYPE="${1:-patch}"
 
 if [[ "$BUMP_TYPE" != "major" && "$BUMP_TYPE" != "minor" && "$BUMP_TYPE" != "patch" ]]; then
-  echo "Usage: $0 <major|minor|patch>"
+  echo "Usage: $0 [major|minor|patch] (default: patch)"
   exit 1
 fi
 
