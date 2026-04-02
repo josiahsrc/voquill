@@ -240,6 +240,7 @@ Rocket {
     launch_index: usize    — index in FIREWORK_LAUNCHES (for deterministic variety)
     sparks: Vec<Spark>     — explosion particles
     trail_alpha: f64       — trail opacity (fades after explosion)
+    color: (f64, f64, f64) — RGB color assigned from FIREWORK_COLORS palette
 }
 ```
 
@@ -276,13 +277,33 @@ fireworks_rockets.clear()
 | ------------------------------ | ------ | ---------------------------------------------------- |
 | `FIREWORKS_TOTAL_DURATION`     | `7.0`  | Total duration in seconds.                           |
 | `FIREWORKS_GRAVITY`            | `40.0` | Downward acceleration (px/s²). Rockets feel this fully; sparks at 30%. |
-| `FIREWORKS_SPARK_BASE_SPEED`   | `60.0` | Base outward speed of explosion sparks (px/s).       |
-| `FIREWORKS_SPARK_LIFE`         | `0.9`  | Spark lifetime in seconds (life decrements by `dt / LIFE`). |
-| `FIREWORKS_SPARK_DRAG`         | `1.5`  | Exponential drag coefficient for sparks.             |
-| `FIREWORKS_TRAIL_MAX`          | `12`   | Max trail points stored per rocket.                  |
+| `FIREWORKS_SPARK_BASE_SPEED`   | `85.0` | Base outward speed of explosion sparks (px/s).       |
+| `FIREWORKS_SPARK_LIFE`         | `1.1`  | Spark lifetime in seconds (life decrements by `dt / LIFE`). |
+| `FIREWORKS_SPARK_DRAG`         | `1.2`  | Exponential drag coefficient for sparks.             |
+| `FIREWORKS_TRAIL_MAX`          | `15`   | Max trail points stored per rocket.                  |
 | `FIREWORKS_TRAIL_FADE_RATE`    | `2.0`  | Trail alpha decay rate per second after explosion.   |
-| `FIREWORKS_ROCKET_LINE_WIDTH`  | `1.5`  | Stroke width for rocket trails.                      |
-| `FIREWORKS_SPARK_LINE_WIDTH`   | `1.0`  | Stroke width for spark lines.                        |
+| `FIREWORKS_ROCKET_LINE_WIDTH`  | `1.8`  | Stroke width for rocket trails.                      |
+| `FIREWORKS_SPARK_LINE_WIDTH`   | `1.2`  | Stroke width for spark lines.                        |
+| `FIREWORKS_HEAD_SIZE`          | `4.0`  | Diameter of rocket head dot (px).                    |
+
+### Color palette
+
+Each rocket is assigned a color from `FIREWORK_COLORS` based on its launch index (`index % len`). The palette:
+
+| Index | Color       | RGB                 |
+| ----- | ----------- | ------------------- |
+| 0     | Coral red   | `(1.0, 0.4, 0.3)`  |
+| 1     | Sky blue    | `(0.3, 0.8, 1.0)`  |
+| 2     | Gold        | `(1.0, 0.85, 0.2)` |
+| 3     | Green       | `(0.4, 1.0, 0.5)`  |
+| 4     | Pink        | `(1.0, 0.5, 0.9)`  |
+| 5     | Lavender    | `(0.5, 0.6, 1.0)`  |
+| 6     | Orange      | `(1.0, 0.65, 0.2)` |
+| 7     | Cyan        | `(0.3, 1.0, 0.9)`  |
+| 8     | Hot pink    | `(1.0, 0.35, 0.5)` |
+| 9     | Purple      | `(0.7, 0.5, 1.0)`  |
+
+All drawing (trail, head, sparks) for a given rocket uses its assigned color. The flash message banner remains white text on black — only the firework particles are colored.
 
 ### Launch schedule
 
@@ -290,16 +311,16 @@ fireworks_rockets.clear()
 
 | #  | Time | Angle | Speed | Fuse | Sparks |
 | -- | ---- | ----- | ----- | ---- | ------ |
-| 0  | 0.2s | -25   | 120   | 0.50 | 10     |
-| 1  | 0.8s | +30   | 110   | 0.55 | 8      |
-| 2  | 1.5s | -15   | 130   | 0.45 | 12     |
-| 3  | 2.2s | +40   | 100   | 0.60 | 10     |
-| 4  | 3.0s | -35   | 115   | 0.50 | 9      |
-| 5  | 3.7s | +20   | 125   | 0.50 | 11     |
-| 6  | 4.5s | -40   | 105   | 0.55 | 8      |
-| 7  | 5.2s | +15   | 130   | 0.45 | 12     |
-| 8  | 5.9s | -30   | 110   | 0.50 | 10     |
-| 9  | 6.4s | +35   | 120   | 0.55 | 9      |
+| 0  | 0.2s | -25   | 140   | 0.50 | 12     |
+| 1  | 0.8s | +30   | 125   | 0.55 | 10     |
+| 2  | 1.5s | -15   | 150   | 0.45 | 14     |
+| 3  | 2.2s | +40   | 115   | 0.60 | 12     |
+| 4  | 3.0s | -35   | 130   | 0.50 | 11     |
+| 5  | 3.7s | +20   | 145   | 0.50 | 13     |
+| 6  | 4.5s | -40   | 120   | 0.55 | 10     |
+| 7  | 5.2s | +15   | 150   | 0.45 | 14     |
+| 8  | 5.9s | -30   | 125   | 0.50 | 12     |
+| 9  | 6.4s | +35   | 140   | 0.55 | 11     |
 
 Velocity is computed from angle and speed:
 
@@ -330,7 +351,7 @@ offset = launch_index * 0.7                         // rotation offset for varie
 for i in 0..num_sparks:
     angle  = TAU * i / num_sparks + offset
     speed_t = ((i * 7 + 3) % num_sparks) / num_sparks  // deterministic speed variation
-    speed   = SPARK_BASE_SPEED * (0.6 + 0.8 * speed_t) // 36–84 px/s range
+    speed   = SPARK_BASE_SPEED * (0.6 + 0.8 * speed_t) // 51–119 px/s range
     spark.vx = speed * cos(angle)
     spark.vy = speed * sin(angle)
     spark.life = 1.0
@@ -364,31 +385,42 @@ The entire fireworks system deactivates when `elapsed >= TOTAL_DURATION` AND no 
 
 ## Drawing
 
-### Rocket trail
+### Launch origin
 
-Draw connected line segments between stored trail points. Older points are more transparent:
+Rockets launch from the **center of the flash message banner**, not from the pill. This makes the fireworks appear to burst out of the message:
 
 ```
+(_, pill_y, _, _) = pill_position(state, ww, wh)
+origin_x = ww / 2.0
+origin_y = pill_y - FLASH_GAP - FLASH_HEIGHT / 2.0   // center of flash banner
+```
+
+### Rocket trail
+
+Draw connected line segments between stored trail points. Older points are more transparent, using the rocket's assigned color:
+
+```
+(cr, cg, cb) = rocket.color
 for i in 1..trail.len():
     alpha = (i / trail.len()) * trail_alpha * 0.8
-    draw line from trail[i-1] to trail[i], white at alpha, width 1.5px
+    draw line from trail[i-1] to trail[i], (cr, cg, cb) at alpha, width 1.8px
 ```
 
 ### Rocket head (rising only)
 
-A small 3x3px filled circle (rounded rect with 1.5px radius) at the rocket's current position, white at 95% opacity.
+A filled `HEAD_SIZE` x `HEAD_SIZE` circle (rounded rect with `HEAD_SIZE/2` radius) at the rocket's current position, rocket color at 95% opacity.
 
 ### Sparks
 
-Each spark is drawn as a short line segment in its direction of travel (motion blur effect):
+Each spark is drawn as a short line segment in its direction of travel (motion blur effect), using the rocket's color:
 
 ```
 speed    = sqrt(vx² + vy²)
-line_len = clamp(speed * 0.04, 2.0, 8.0)
+line_len = clamp(speed * 0.04, 2.0, 10.0)
 nx, ny   = (vx / speed, vy / speed)    // normalized direction
 
 draw line from (x - nx * line_len, y - ny * line_len) to (x, y)
-    white at (life * 0.9), width 1.0px
+    rocket color at (life * 0.9), width 1.2px
 ```
 
 ### Coordinate space
@@ -397,7 +429,7 @@ Fireworks draw in the pill's content coordinate space (after the `translate(ox, 
 
 ### Visual style
 
-All firework elements are white with varying opacity, matching the pill's monochrome aesthetic. There are no colors — the effect is stylistic, using line trails and radiating spark lines rather than filled particles.
+Each rocket has a unique color from the 10-color palette, giving a vibrant celebratory feel. The trail, head dot, and all explosion sparks for a given rocket share its assigned color. The flash message banner itself remains monochrome (white text on black background). The effect is stylistic — line trails and radiating spark lines rather than filled particles.
 
 ## Testing
 
@@ -416,10 +448,10 @@ Runs two consecutive 7-second fireworks displays with different messages.
 The GTK pill shares the same file structure (`ipc.rs`, `state.rs`, `constants.rs`, `draw.rs`, `input.rs`). To implement both features:
 
 1. **`ipc.rs`** — Add `FlashMessage { message: String }` and `Fireworks { message: String }` to `InMessage`.
-2. **`state.rs`** — Add flash state fields (5 fields), fireworks state fields (4 fields), and the `Rocket`/`Spark`/`RocketPhase` structs.
-3. **`constants.rs`** — Add all flash constants (6), fireworks constants (9), `FireworkLaunch` struct, and the `FIREWORK_LAUNCHES` schedule.
+2. **`state.rs`** — Add flash state fields (5 fields), fireworks state fields (4 fields), and the `Rocket`/`Spark`/`RocketPhase` structs. Rocket includes a `color: (f64, f64, f64)` field.
+3. **`constants.rs`** — Add all flash constants (6), fireworks constants (10 including `HEAD_SIZE`), `FireworkLaunch` struct, `FIREWORK_COLORS` palette, and the `FIREWORK_LAUNCHES` schedule.
 4. **Main event handler** — Handle both `FlashMessage` and `Fireworks` IPC. Fireworks triggers flash message with the longer `FIREWORKS_TOTAL_DURATION` timer.
-5. **Tick function** — Add flash timer countdown + spring anim. Add `tick_fireworks()` with the full physics simulation (launch schedule, rocket movement, explosion sparks, cleanup). Call `pill_position()` for launch origin.
+5. **Tick function** — Add flash timer countdown + spring anim. Add `tick_fireworks()` with the full physics simulation (launch schedule, rocket movement, explosion sparks, cleanup). Launch origin is the center of the flash message banner (computed from `pill_position()` + `FLASH_GAP` + `FLASH_HEIGHT`). Assign color from `FIREWORK_COLORS[index % len]`.
 6. **`draw.rs`** — Restructure `draw_all` render order (tooltip → pill → cancel → fireworks → flash). Add `draw_flash_message()` and `draw_fireworks()`. The GTK pill uses Cairo which has the same `save`/`translate`/`scale`/`restore`, `move_to`/`line_to`/`stroke`, and `set_source_rgba` primitives.
 7. **`test.sh`** — Add `flash` and `fireworks` test modes.
 
@@ -431,5 +463,7 @@ Follow the same spec. The critical pieces are:
 - Anchoring the flash message to the pill's animated Y position, not a fixed coordinate.
 - Mutual exclusion between tooltip and flash message in the draw pass.
 - The full fireworks physics: gravity, exponential spark drag, deterministic spark angle distribution.
+- Per-rocket colors from the `FIREWORK_COLORS` palette — trail, head, and sparks all share the rocket's color.
+- Launch origin is the flash message banner center, not the pill.
 - Render order: fireworks behind flash message, both on top of pill.
 - Fireworks extend beyond the content area into the surrounding transparent window space.
