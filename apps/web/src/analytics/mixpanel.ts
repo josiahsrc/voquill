@@ -14,4 +14,12 @@ if (token) {
 		if (!el) return;
 		mixpanel.track('Button Click', { name: el.dataset.track });
 	});
+
+	const pageLoadTime = Date.now();
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'hidden') {
+			const seconds = Math.round((Date.now() - pageLoadTime) / 1000);
+			mixpanel.track('Page Leave', { path, duration_seconds: seconds });
+		}
+	});
 }
