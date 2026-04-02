@@ -16,6 +16,15 @@ const i18n = t(locale);
 	description="State-of-the-art voice-to-text deployed inside your cloud. Your audio never leaves your network. Open-source, on-premise, enterprise-grade."
 	lang={locale}
 >
+	<Fragment slot="head">
+		<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18059615608"></script>
+		<script is:inline>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+			gtag('config', 'AW-18059615608');
+		</script>
+	</Fragment>
 	<Header locale={locale} variant="business" />
 	<BusinessPage locale={locale} />
 	<SiteFooter locale={locale} />

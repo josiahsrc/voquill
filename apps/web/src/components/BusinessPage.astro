@@ -195,6 +195,22 @@ const comparisonRows = [
 	<a href={calendarUrl} target="_blank" rel="noopener noreferrer" class="biz-cta-btn" data-track="BusinessContact">Book a 15-minute call</a>
 </section>
 
+<script>
+	document.addEventListener('click', (e) => {
+		const el = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-track="BusinessContact"]');
+		if (!el) return;
+		const url = el.href;
+		if (typeof gtag === 'function') {
+			e.preventDefault();
+			gtag('event', 'conversion', {
+				send_to: 'AW-18059615608/WPp1CMvIwpQcEPi6v6ND',
+				event_callback: () => { window.open(url, '_blank'); },
+			});
+			setTimeout(() => { window.open(url, '_blank'); }, 1000);
+		}
+	});
+</script>
+
 <style>
 	/* ── Shared ── */
 	.biz-section-label {
