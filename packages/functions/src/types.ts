@@ -136,6 +136,10 @@ type HandlerDefinitions = {
     input: EmptyObject;
     output: EmptyObject;
   };
+  "emulator/tryExtendTrial": {
+    input: { memberId: string };
+    output: EmptyObject;
+  };
 
   // term
   "term/listMyTerms": {

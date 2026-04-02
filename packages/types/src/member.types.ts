@@ -24,6 +24,8 @@ export type DatabaseMember = {
   thisMonthResetAt: FiremixTimestamp;
   isOnTrial?: Nullable<boolean>;
   trialEndsAt?: Nullable<FiremixTimestamp>;
+  trialExtensionLastClaimedAt?: FiremixTimestamp;
+  originalTrialEndsAt?: FiremixTimestamp;
 };
 
 export type Member = Replace<DatabaseMember, FiremixTimestamp, string>;
