@@ -330,6 +330,7 @@ export async function* openaiCompatibleStreamChat(
   client: OpenAI,
   model: string,
   input: LlmChatInput,
+  extraBody?: Record<string, unknown>,
 ): AsyncGenerator<LlmStreamEvent> {
   const stream = await client.chat.completions.create({
     model,
@@ -345,6 +346,7 @@ export async function* openaiCompatibleStreamChat(
     frequency_penalty: input.frequencyPenalty,
     presence_penalty: input.presencePenalty,
     seed: input.seed,
+    ...extraBody,
   });
 
   const toolCalls = new Map<
