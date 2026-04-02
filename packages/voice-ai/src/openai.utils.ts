@@ -9,6 +9,7 @@ import type {
 } from "@voquill/types";
 import { countWords, retry } from "@voquill/utilities";
 import OpenAI, { toFile } from "openai";
+import type { CustomFetch } from "./types";
 import type {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
@@ -56,7 +57,7 @@ const contentToString = (
 const createClient = (
   apiKey: string,
   baseUrl?: string,
-  customFetch?: typeof globalThis.fetch,
+  customFetch?: CustomFetch,
 ) => {
   // `dangerouslyAllowBrowser` is needed because this runs on a desktop tauri app.
   // The Tauri app doesn't run in a web browser and encrypts API keys locally, so this
@@ -121,7 +122,7 @@ export type OpenAIGenerateTextArgs = {
   prompt: string;
   imageUrls?: string[];
   jsonResponse?: JsonResponse;
-  customFetch?: typeof globalThis.fetch;
+  customFetch?: CustomFetch;
 };
 
 export type OpenAIGenerateResponseOutput = {
@@ -409,7 +410,7 @@ export type OpenAIStreamChatArgs = {
   baseUrl?: string;
   model: string;
   input: LlmChatInput;
-  customFetch?: typeof globalThis.fetch;
+  customFetch?: CustomFetch;
 };
 
 export async function* openaiStreamChat({

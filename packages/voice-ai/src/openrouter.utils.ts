@@ -9,6 +9,7 @@ import type {
   OpenRouterProviderRouting,
 } from "@voquill/types";
 import { openaiCompatibleStreamChat } from "./openai.utils";
+import type { CustomFetch } from "./types";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export const OPENROUTER_APP_NAME = "Voquill";
@@ -33,7 +34,7 @@ export const OPENROUTER_DEFAULT_MODEL = "openai/gpt-4o-mini";
  */
 const createClient = (
   apiKey: string,
-  customFetch?: typeof globalThis.fetch,
+  customFetch?: CustomFetch,
 ) => {
   return new OpenAI({
     apiKey: apiKey.trim(),
@@ -53,7 +54,7 @@ const createClient = (
 
 export type OpenRouterFetchModelsArgs = {
   apiKey: string;
-  customFetch?: typeof globalThis.fetch;
+  customFetch?: CustomFetch;
 };
 
 export type OpenRouterFetchModelsOutput = {
@@ -92,7 +93,7 @@ export const openrouterFetchModels = async ({
 // ============================================================================
 
 export type OpenRouterFetchProvidersArgs = {
-  customFetch?: typeof globalThis.fetch;
+  customFetch?: CustomFetch;
 };
 
 export type OpenRouterFetchProvidersOutput = {
@@ -136,7 +137,7 @@ export type OpenRouterGenerateTextArgs = {
   prompt: string;
   jsonResponse?: JsonResponse;
   providerRouting?: OpenRouterProviderRouting;
-  customFetch?: typeof globalThis.fetch;
+  customFetch?: CustomFetch;
 };
 
 export type OpenRouterGenerateTextOutput = {
@@ -221,7 +222,7 @@ export const openrouterGenerateTextResponse = async ({
 
 export type OpenRouterTestIntegrationArgs = {
   apiKey: string;
-  customFetch?: typeof globalThis.fetch;
+  customFetch?: CustomFetch;
 };
 
 /**
@@ -261,7 +262,7 @@ export type OpenRouterStreamChatArgs = {
   apiKey: string;
   model: string;
   input: LlmChatInput;
-  customFetch?: typeof globalThis.fetch;
+  customFetch?: CustomFetch;
 };
 
 export async function* openrouterStreamChat({

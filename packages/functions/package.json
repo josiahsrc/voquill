@@ -1,6 +1,6 @@
 {
   "name": "@voquill/functions",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Shared callable function helpers for Voquill apps.",
   "repository": {
     "type": "git",
