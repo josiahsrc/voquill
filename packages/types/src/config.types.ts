@@ -12,6 +12,7 @@ export type FullConfig = {
   proTokensPerWeek: number;
   proTokensPerMonth: number;
   toneOverrides?: Record<string, string>;
+  wordsNeededForTrialExtension: number;
 };
 
 const TOKEN_MULT = 18;
@@ -33,4 +34,5 @@ export const FULL_CONFIG: FullConfig = {
   proTokensPerDay: PRO_TOKENS_PER_WEEK,
   proTokensPerWeek: PRO_TOKENS_PER_WEEK,
   proTokensPerMonth: PRO_TOKENS_PER_WEEK * 5,
+  wordsNeededForTrialExtension: 200,
 };
