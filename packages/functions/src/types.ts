@@ -677,6 +677,12 @@ export const GetMetricsSummaryInputZod = z
   })
   .strict() satisfies z.ZodType<HandlerInput<"metrics/getSummary">>;
 
+export const TryExtendTrialInputZod = z
+  .object({
+    memberId: z.string().min(1),
+  })
+  .strict() satisfies z.ZodType<HandlerInput<"emulator/tryExtendTrial">>;
+
 type StreamHandlerDefinitions = {
   "ai/streamChat": {
     input: {
