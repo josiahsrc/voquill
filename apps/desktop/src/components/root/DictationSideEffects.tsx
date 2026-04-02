@@ -528,7 +528,7 @@ export const DictationSideEffects = () => {
         return;
       }
 
-      if (mode === "dictate") {
+      if (mode === "dictate" && !state.onboarding.dictationOverrideEnabled) {
         loadManualStyleForCurrentApp();
       }
 

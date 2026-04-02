@@ -4,10 +4,6 @@ import {
   DEEPSEEK_MODELS,
   GEMINI_GENERATE_TEXT_MODELS,
   GEMINI_TRANSCRIPTION_MODELS,
-  GENERATE_TEXT_MODELS as GROQ_GENERATE_TEXT_MODELS,
-  OPENAI_GENERATE_TEXT_MODELS,
-  OPENAI_TRANSCRIPTION_MODELS,
-  TRANSCRIPTION_MODELS as GROQ_TRANSCRIPTION_MODELS,
 } from "@voquill/voice-ai";
 import { fetch } from "@tauri-apps/plugin-http";
 import { getOllamaHeaders } from "../utils/ollama.utils";
@@ -52,6 +48,20 @@ async function fetchOpenAICompatibleModels(
     .sort();
 }
 
+function isWhisperModel(modelId: string): boolean {
+  return modelId.includes("whisper");
+}
+
+function filterFetchedModels(
+  fetched: string[],
+  allowList: readonly string[],
+): string[] {
+  if (fetched.length === 0) return [...allowList];
+  const allowed = new Set<string>(allowList);
+  const filtered = fetched.filter((m) => allowed.has(m));
+  return filtered.length > 0 ? filtered : [...allowList];
+}
+
 export class GroqModelProviderRepo extends BaseModelProviderRepo {
   supportsGenerativeTextModels(): boolean {
     return true;
@@ -73,12 +83,12 @@ export class GroqModelProviderRepo extends BaseModelProviderRepo {
     options: FetchModelsOptions,
   ): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.length > 0 ? fetched : [...GROQ_GENERATE_TEXT_MODELS];
+    return fetched.filter((m) => !isWhisperModel(m));
   }
 
   async getTranscriptionModels(options: FetchModelsOptions): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.length > 0 ? fetched : [...GROQ_TRANSCRIPTION_MODELS];
+    return fetched.filter(isWhisperModel);
   }
 }
 
@@ -103,12 +113,12 @@ export class OpenAIModelProviderRepo extends BaseModelProviderRepo {
     options: FetchModelsOptions,
   ): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.length > 0 ? fetched : [...OPENAI_GENERATE_TEXT_MODELS];
+    return fetched.filter((m) => !isWhisperModel(m));
   }
 
   async getTranscriptionModels(options: FetchModelsOptions): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.length > 0 ? fetched : [...OPENAI_TRANSCRIPTION_MODELS];
+    return fetched.filter(isWhisperModel);
   }
 }
 
@@ -194,12 +204,12 @@ export class GeminiModelProviderRepo extends BaseModelProviderRepo {
     options: FetchModelsOptions,
   ): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.length > 0 ? fetched : [...GEMINI_GENERATE_TEXT_MODELS];
+    return filterFetchedModels(fetched, GEMINI_GENERATE_TEXT_MODELS);
   }
 
   async getTranscriptionModels(options: FetchModelsOptions): Promise<string[]> {
     const fetched = await this.fetchModels(options);
-    return fetched.length > 0 ? fetched : [...GEMINI_TRANSCRIPTION_MODELS];
+    return filterFetchedModels(fetched, GEMINI_TRANSCRIPTION_MODELS);
   }
 
   private async fetchModels(options: FetchModelsOptions): Promise<string[]> {
