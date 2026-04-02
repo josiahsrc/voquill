@@ -1,5 +1,6 @@
 import {
   AZURE_OPENAI_MODELS,
+  CEREBRAS_MODELS,
   CLAUDE_MODELS,
   DEEPSEEK_MODELS,
   GEMINI_GENERATE_TEXT_MODELS,
@@ -155,6 +156,35 @@ export class ClaudeModelProviderRepo extends BaseModelProviderRepo {
   ): Promise<string[]> {
     const fetched = await this.fetchModels(options);
     return fetched.length > 0 ? fetched : [...CLAUDE_MODELS];
+  }
+
+  async getTranscriptionModels(): Promise<string[]> {
+    return [];
+  }
+}
+
+export class CerebrasModelProviderRepo extends BaseModelProviderRepo {
+  supportsGenerativeTextModels(): boolean {
+    return true;
+  }
+
+  supportsTranscriptionModels(): boolean {
+    return false;
+  }
+
+  private async fetchModels(options: FetchModelsOptions): Promise<string[]> {
+    if (!options.apiKey) return [];
+    return fetchOpenAICompatibleModels(
+      "https://api.cerebras.ai/v1/models",
+      options.apiKey,
+    );
+  }
+
+  async getGenerativeTextModels(
+    options: FetchModelsOptions,
+  ): Promise<string[]> {
+    const fetched = await this.fetchModels(options);
+    return fetched.length > 0 ? fetched : [...CEREBRAS_MODELS];
   }
 
   async getTranscriptionModels(): Promise<string[]> {

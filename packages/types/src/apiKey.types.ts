@@ -15,6 +15,7 @@ export const API_KEY_PROVIDERS = [
   "deepseek",
   "gemini",
   "claude",
+  "cerebras",
   "speaches",
 ] as const;
 export type ApiKeyProvider = (typeof API_KEY_PROVIDERS)[number];

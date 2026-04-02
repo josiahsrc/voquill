@@ -5,6 +5,7 @@ import {
   assemblyaiTestIntegration,
   azureOpenAITestIntegration,
   azureTestIntegration,
+  cerebrasTestIntegration,
   claudeTestIntegration,
   deepgramTestIntegration,
   deepseekTestIntegration,
@@ -93,6 +94,7 @@ const STANDARD_PROVIDERS: Record<
   deepseek: { displayName: "DeepSeek", testFn: deepseekTestIntegration },
   gemini: { displayName: "Gemini", testFn: geminiTestIntegration },
   claude: { displayName: "Claude", testFn: claudeTestIntegration },
+  cerebras: { displayName: "Cerebras", testFn: cerebrasTestIntegration },
 };
 
 function buildStandardConfig(provider: string): ProviderFormConfig {
