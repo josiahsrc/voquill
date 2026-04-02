@@ -8,11 +8,11 @@
     "dev": "node scripts/select-platform-dev.mjs",
     "dev:mac": "cross-env TAURI_PLATFORM=macos pnpm run dev:tauri",
     "dev:windows": "cross-env TAURI_PLATFORM=windows pnpm run dev:tauri",
-    "dev:windows:gpu": "cross-env TAURI_PLATFORM=windows pnpm run dev:tauri:gpu",
+
     "dev:linux": "cross-env TAURI_PLATFORM=linux pnpm run dev:tauri",
-    "dev:linux:gpu": "cross-env TAURI_PLATFORM=linux pnpm run dev:tauri:gpu",
-    "dev:tauri": "pnpm run prepare:sidecars && tauri dev --config src-tauri/tauri.local.conf.json",
-    "dev:tauri:gpu": "pnpm run prepare:sidecars && tauri dev --config src-tauri/tauri.local.conf.json --config src-tauri/tauri.gpu.dev.conf.json",
+
+    "dev:tauri": "pnpm run prepare:sidecars && tauri dev --config ${TAURI_DEV_CONFIG:-src-tauri/tauri.local.conf.json}",
+
     "dev:vite": "node scripts/run-vite-with-flavor.mjs dev",
     "build": "tsc && node scripts/run-vite-with-flavor.mjs build",
     "preview": "node scripts/run-vite-with-flavor.mjs preview",

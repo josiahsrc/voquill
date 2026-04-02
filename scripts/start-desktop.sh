@@ -16,6 +16,12 @@ esac
 export FLAVOR
 export VITE_FLAVOR="${FLAVOR}"
 
+case "${FLAVOR}" in
+  prod)      export TAURI_DEV_CONFIG="src-tauri/tauri.prod.conf.json" ;;
+  dev)       export TAURI_DEV_CONFIG="src-tauri/tauri.dev.conf.json" ;;
+  emulators) export TAURI_DEV_CONFIG="src-tauri/tauri.local.conf.json" ;;
+esac
+
 if [ "${FLAVOR}" = "emulators" ]; then
   if ! lsof -iTCP:9099 -sTCP:LISTEN >/dev/null 2>&1; then
     echo "Error: Firebase emulators are not running (nothing listening on port 9099)." >&2
