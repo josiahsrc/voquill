@@ -36,7 +36,7 @@ export function getOpenAIGentextRepo(model = "gpt-5.4"): BaseGenerateTextRepo {
 }
 
 export function getGroqGentextRepo(
-  model = "openai/gpt-oss-120b",
+  model = "meta-llama/llama-4-scout-17b-16e-instruct",
 ): BaseGenerateTextRepo {
   const apiKey = getGroqApiKey();
   return new GroqGenerateTextRepo(apiKey, model);
@@ -124,7 +124,7 @@ export const postProcess = async ({
   });
 
   const parsed = PROCESSED_TRANSCRIPTION_SCHEMA.parse(JSON.parse(output.text));
-  return parsed.processedTranscription;
+  return parsed.result;
 };
 
 export const toneFromPrompt = (promptTemplate: string): StyleToneConfig => ({

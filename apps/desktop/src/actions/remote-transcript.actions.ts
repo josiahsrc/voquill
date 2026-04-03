@@ -4,11 +4,11 @@ import { getTranscriptionRepo } from "../repos";
 import { getAppState, produceAppState } from "../store";
 import { createId } from "../utils/id.utils";
 import { getLogger } from "../utils/log.utils";
+import { insertLocalTranscriptOutput } from "../utils/output-routing.utils";
 import {
   getMyEffectiveUserId,
   getMyUserPreferences,
 } from "../utils/user.utils";
-import { insertLocalTranscriptOutput } from "../utils/output-routing.utils";
 import { showSnackbar } from "./app.actions";
 
 export type RemoteFinalTextReceivedPayload = {

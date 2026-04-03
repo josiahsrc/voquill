@@ -9,7 +9,7 @@ import {
 import { ToneConfig } from "../../src/utils/tone.utils";
 import {
   Eval,
-  getOpenAIGentextRepo,
+  getGroqGentextRepo,
   getWritingStyle,
   runEval,
   toneFromPrompt,
@@ -48,7 +48,7 @@ const postProcess = async ({
   const ppSystem = buildSystemPostProcessingTonePrompt(promptInput);
   const ppPrompt = buildPostProcessingPrompt(promptInput);
 
-  const output = await getOpenAIGentextRepo().generateText({
+  const output = await getGroqGentextRepo().generateText({
     system: ppSystem,
     prompt: ppPrompt,
     jsonResponse: {
@@ -59,7 +59,7 @@ const postProcess = async ({
   });
 
   const parsed = PROCESSED_TRANSCRIPTION_SCHEMA.parse(JSON.parse(output.text));
-  return parsed.processedTranscription;
+  return parsed.result;
 };
 
 const runPostProcessingEval = async ({
@@ -160,6 +160,17 @@ describe("post-processing evals", { retry: 0 }, () => {
         tone: getWritingStyle("default"),
         evals: [
           "It should convert spoken dates, times, and numbers into their proper written numerical forms",
+        ],
+      });
+    });
+
+    test("hey harry", async () => {
+      await runPostProcessingEval({
+        transcription:
+          "Hey, Harry. Hope you're doing well. Wanted to reach out to you because, we've just moved to SF, San Francisco. And we've joined this program called Y Combinator. And it's a lot of fun. They basically give you a bunch of money, and they have you start an idea together with some founders. And then, yeah, you, do the best you can. What I wanted to ask you is if I could reach out to your sister who I know is a doc just because we've been looking at solutions for them, and it'd just be good to meet with her just to if she has any point pain points, that we could solve.",
+        tone: getWritingStyle("default"),
+        evals: [
+          "It should clean up the transcript, but keep the overall wording and meaning intact",
         ],
       });
     });

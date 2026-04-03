@@ -1,5 +1,5 @@
-import type { Nullable } from "@voquill/types";
 import { invoke } from "@tauri-apps/api/core";
+import type { Nullable } from "@voquill/types";
 import { showErrorSnackbar, showSnackbar } from "../actions/app.actions";
 import { showToast } from "../actions/toast.actions";
 import {
@@ -7,7 +7,6 @@ import {
   type PostProcessMetadata,
 } from "../actions/transcribe.actions";
 import { getIntl } from "../i18n";
-import { routeTranscriptOutput } from "../utils/output-routing.utils";
 import { getAppState } from "../store";
 import type { OverlayPhase } from "../types/overlay.types";
 import type {
@@ -17,6 +16,7 @@ import type {
 } from "../types/strategy.types";
 import { getLogger } from "../utils/log.utils";
 import { getMemberExceedsLimitByState } from "../utils/member.utils";
+import { routeTranscriptOutput } from "../utils/output-routing.utils";
 import {
   applyReplacements,
   applySymbolConversions,

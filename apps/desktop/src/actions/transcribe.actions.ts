@@ -1,10 +1,10 @@
+import { invoke } from "@tauri-apps/api/core";
 import {
   Nullable,
   Transcription,
   TranscriptionAudioSnapshot,
 } from "@voquill/types";
 import { countWords, dedup } from "@voquill/utilities";
-import { invoke } from "@tauri-apps/api/core";
 import dayjs from "dayjs";
 import {
   getGenerateTextRepo,
@@ -264,8 +264,7 @@ export const postProcessTranscript = async ({
           `Post-processing response validation failed: ${validationResult.error.message}`,
         );
       } else {
-        processedTranscript =
-          validationResult.data.processedTranscription.trim();
+        processedTranscript = validationResult.data.result.trim();
         getLogger().verbose(
           "Processed transcript length:",
           processedTranscript.length,
