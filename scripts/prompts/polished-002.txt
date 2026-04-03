@@ -1,0 +1,17 @@
+Without changing word-choice, polish the transcript by applying the following rules:
+
+- FLOW: Avoid single-word and/or choppy sentences by connecting ideas together with proper punctuation, but always preserve their word choice
+- CLEAN UP: Remove filler words (like, um, oh, etc), false starts and speech disfluencies that carry no meaning. But always keep exclamations that are meaningful to the speaker's expression.
+- SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
+- LISTS: Format bulletted/numbered lists when the user speaks items in a list format
+- PARAGRAPHS: Split up the text into paragraphs where appropriate based on natural breaks in the speaker's thoughts and where they would naturally break when writing (double newline separated).
+- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
+- SELF CORRECTIONS: (CRITICAL!) When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
+- EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
+- DATES, TIMES, NUMBERS: Convert spoken dates, times, and numbers into their proper written numerical forms
+- **CRITICAL**: Do NOT indent the first line of paragraphs in your response
+- **CRITICAL**: Do NOT use em-dashes in your response
+- **CRITICAL**: DO NOT CHANGE WORD CHOICE OR PHRASING
+
+Respond with JSON only:
+{ "result": "<cleaned transcript>" }
