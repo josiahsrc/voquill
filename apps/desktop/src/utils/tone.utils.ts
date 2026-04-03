@@ -25,18 +25,15 @@ export const getDefaultSystemTones = (): Tone[] => {
           "Natural, well-written text that preserves your voice and word choices.",
       }),
       promptTemplate: `
-- FLOW: Avoid single-word and/or choppy sentences by connecting ideas together with proper punctuation, but always preserve their word choice
-- CLEAN UP: Remove filler words (like, um, oh, etc), false starts and speech disfluencies that carry no meaning. But always keep exclamations that are meaningful to the speaker's expression.
-- SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
-- LISTS: Format bulletted/numbered lists when the user speaks items in a list format
-- PARAGRAPHS: Split up the text into paragraphs where appropriate based on natural breaks in the speaker's thoughts and where they would naturally break when writing (double newline separated).
-- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
-- SELF CORRECTIONS: (CRITICAL!) When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
-- EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
-- DATES, TIMES, NUMBERS: Convert spoken dates, times, and numbers into their proper written numerical forms
-- **CRITICAL**: Do NOT indent the first line of paragraphs in your response
-- **CRITICAL**: Do NOT use em-dashes in your response
-- **CRITICAL**: DO NOT CHANGE WORD CHOICE OR PHRASING
+Without changing word-choice, clean up the transcript.
+Fix grammar, punctuation, and formatting.
+Remove filler words, false starts, and repetitions. Keep the original meaning intact.
+Break the reponse into paragraphs when appropriate.
+Format spoken lists into bulleted or numbered lists.
+Convert spoken symbols into their actual character equivalents (e.g. "hashtag" to "#", emojis, \`foo.cpp\`, etc).
+When the speaker corrects themselves, only keep the corrected version.
+Convert spoken dates, times, and numbers into their proper numerical forms.
+Do NOT use em-dash symbols (—) in your response.
       `.trim(),
       isSystem: true,
       createdAt: 0,
@@ -67,19 +64,27 @@ export const getDefaultSystemTones = (): Tone[] => {
           "Professional email formatting with a greeting, body, and sign-off.",
       }),
       promptTemplate: `
-- FORMAT: Take the transcription and format it as an email, splitting it up naturally for the greeting, body, and sign-off (do not include subject)
-- FLOW: Avoid single-word and/or choppy sentences by connecting ideas together with proper punctuation, but always preserve their word choice
-- CLEAN UP: Remove filler words (like, um, etc), false starts and speech disfluencies that carry no meaning. But always keep exclamations that are meaningful to the speaker's expression.
-- SYMBOLS: Convert spoken symbol cues to actual symbols: "hashtag [word]" or "pound sign [word]" becomes "#[word]", and "at [name]" or "at sign [name]" becomes "@[name]".
-- LISTS: Format bulletted/numbered lists when the user speaks items in a list format
-- PARAGRAPHS: Split up the text into paragraphs where appropriate based on natural breaks in the speaker's thoughts and where they would naturally break when writing (double newline separated).
-- CODE: Put backticks around code terms like filenames, function names, and code snippets (e.g. foo dot cpp becomes \`foo.cpp\`)
-- SELF CORRECTIONS: (CRITICAL!) When the speaker says something and then corrects themselves, ONLY keep the corrected version and remove the earlier one.
-- EMOJIS: Convert spoken emoji descriptions into actual emoji characters (e.g. "smiley face" becomes "😊", "thumbs up" becomes "👍", etc.)
-- DATES, TIMES, NUMBERS: Convert spoken dates, times, and numbers into their proper written numerical forms
-- **CRITICAL**: Do NOT indent the first line of paragraphs in your response
-- **CRITICAL**: Do NOT use em-dashes in your response
-- **CRITICAL**: DO NOT CHANGE WORD CHOICE OR PHRASING
+Without changing word-choice, clean up and format the transcript as an email, complete with a greeting, closing, and signature if appropriate.
+
+"""
+[Greeting],
+
+[Body of the email, cleaned up and formatted according to the guidelines below]
+
+[Closing],
+<username/>
+"""
+
+Make sure to break up the email with newlines between sections and paragraphs!
+
+Fix grammar, punctuation, and formatting.
+Remove filler words, false starts, and repetitions. Keep the original meaning intact.
+Break the reponse into paragraphs when appropriate.
+Format spoken lists into bulleted or numbered lists.
+Convert spoken symbols into their actual character equivalents (e.g. "hashtag" to "#", emojis, \`foo.cpp\`, etc).
+When the speaker corrects themselves, only keep the corrected version.
+Convert spoken dates, times, and numbers into their proper numerical forms.
+Do NOT use em-dash symbols (—) in your response.
       `.trim(),
       isSystem: true,
       createdAt: 0,
