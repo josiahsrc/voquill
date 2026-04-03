@@ -18,13 +18,13 @@ import {
   setPreferredAgentMode,
 } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
-import { CURRENT_FEATURE } from "../../utils/feature.utils";
+import { CURRENT_FEATURE_DATE } from "../../utils/feature.utils";
 import {
   AGENT_DICTATE_HOTKEY,
   getHotkeyCombosForAction,
 } from "../../utils/keyboard.utils";
 import { getEffectivePlan } from "../../utils/member.utils";
-import { getMyUserPreferences } from "../../utils/user.utils";
+import { getIsOnboarded, getMyUser } from "../../utils/user.utils";
 import { HotkeyBadge } from "../common/HotkeyBadge";
 import { AIAgentModeConfiguration } from "../settings/AIAgentModeConfiguration";
 import { HotkeySetting } from "../settings/HotkeySetting";
@@ -195,10 +195,9 @@ const ProcessorPage = () => {
 };
 
 export const FeatureReleaseDialog = () => {
-  const lastSeenFeature = useAppStore(
-    (state) => getMyUserPreferences(state)?.lastSeenFeature,
-  );
-  const myUserPrefs = useAppStore((state) => state.userPrefs);
+  const featureSeenAt = useAppStore((state) => state.local.featureSeenAt);
+  const userCreatedAt = useAppStore((state) => getMyUser(state)?.createdAt);
+  const isOnboarded = useAppStore((state) => getIsOnboarded(state));
   const isCommunity = useAppStore(
     (state) => getEffectivePlan(state) === "community",
   );
@@ -206,7 +205,11 @@ export const FeatureReleaseDialog = () => {
   const [pageIndex, setPageIndex] = useState(0);
 
   const pageCount = isCommunity ? 4 : 3;
-  const open = myUserPrefs !== null && lastSeenFeature !== CURRENT_FEATURE;
+  const open =
+    isOnboarded &&
+    !!userCreatedAt &&
+    userCreatedAt < CURRENT_FEATURE_DATE &&
+    (!featureSeenAt || featureSeenAt < CURRENT_FEATURE_DATE);
 
   useEffect(() => {
     if (open && !hasConfettiFired.current) {
@@ -221,8 +224,8 @@ export const FeatureReleaseDialog = () => {
     }
   }, [open, isCommunity]);
 
-  const handleDismiss = async () => {
-    await markFeatureSeen(CURRENT_FEATURE);
+  const handleDismiss = () => {
+    markFeatureSeen(CURRENT_FEATURE_DATE);
   };
 
   const handleNext = () => {

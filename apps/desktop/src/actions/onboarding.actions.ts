@@ -10,7 +10,6 @@ import { getAppState, produceAppState } from "../store";
 import { CURRENT_COHORT } from "../utils/analytics.utils";
 import { DEFAULT_DICTATION_LIMIT_MINUTES } from "../utils/dictation-limit.utils";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
-import { CURRENT_FEATURE } from "../utils/feature.utils";
 import {
   EMAIL_TONE_ID,
   POLISHED_TONE_ID,
@@ -183,7 +182,7 @@ export const submitOnboarding = async () => {
         agentModePreference.mode === "openclaw"
           ? agentModePreference.token
           : null,
-      lastSeenFeature: CURRENT_FEATURE,
+      lastSeenFeature: null,
       isEnterprise: getIsEnterpriseEnabled(),
       preferredMicrophone: normalizedMicrophone,
       ignoreUpdateDialog: false,

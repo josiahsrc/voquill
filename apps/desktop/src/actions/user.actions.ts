@@ -507,10 +507,10 @@ export const clearGotStartedAt = async (): Promise<void> => {
   }, "Failed to clear got started timestamp. Please try again.");
 };
 
-export const markFeatureSeen = async (feature: string): Promise<void> => {
-  await updateUserPreferences((preferences) => {
-    preferences.lastSeenFeature = feature;
-  }, "Failed to save feature seen status. Please try again.");
+export const markFeatureSeen = (featureDate: string): void => {
+  produceAppState((draft) => {
+    draft.local.featureSeenAt = featureDate;
+  });
 };
 
 export const setIgnoreUpdateDialog = async (ignore: boolean): Promise<void> => {

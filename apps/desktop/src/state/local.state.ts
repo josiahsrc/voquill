@@ -4,6 +4,7 @@ export type LocalState = {
   lastDictationReminderShownAt: number | null;
   lastDictatedAt: number | null;
   lastSeenTrialExtensionClaimedAt: string | null;
+  featureSeenAt: string | null;
 };
 
 export const INITIAL_LOCAL_STATE: LocalState = {
@@ -12,4 +13,5 @@ export const INITIAL_LOCAL_STATE: LocalState = {
   lastDictationReminderShownAt: null,
   lastDictatedAt: null,
   lastSeenTrialExtensionClaimedAt: null,
+  featureSeenAt: null,
 };
