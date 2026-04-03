@@ -11,8 +11,6 @@ import { getUserPreferencesRepo, getUserRepo } from "../repos";
 import { CloudUserRepo } from "../repos/user.repo";
 import { getAppState, produceAppState } from "../store";
 import {
-  DEFAULT_POST_PROCESSING_MODE,
-  DEFAULT_TRANSCRIPTION_MODE,
   type PostProcessingMode,
   type TranscriptionMode,
 } from "../types/ai.types";
@@ -83,11 +81,11 @@ const updateUser = async (
 
 export const createDefaultPreferences = (): UserPreferences => ({
   userId: LOCAL_USER_ID,
-  transcriptionMode: DEFAULT_TRANSCRIPTION_MODE,
+  transcriptionMode: null,
   transcriptionApiKeyId: null,
   transcriptionDevice: null,
   transcriptionModelSize: null,
-  postProcessingMode: DEFAULT_POST_PROCESSING_MODE,
+  postProcessingMode: null,
   postProcessingApiKeyId: null,
   postProcessingOllamaUrl: null,
   postProcessingOllamaModel: null,

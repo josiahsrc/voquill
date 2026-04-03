@@ -7,6 +7,11 @@ import {
   UserPreferences,
 } from "@voquill/types";
 import { countWords, getRec } from "@voquill/utilities";
+import type {
+  AgentMode,
+  PostProcessingMode,
+  TranscriptionMode,
+} from "../types/ai.types";
 import dayjs from "dayjs";
 import { detectLocale, matchSupportedLocale } from "../i18n";
 import { DEFAULT_LOCALE, type Locale } from "../i18n/config";
@@ -48,6 +53,30 @@ export const getIsDictationUnlocked = (state: AppState): boolean => {
 export const getHasCloudAccess = (state: AppState): boolean => {
   const effectivePlan = getEffectivePlan(state);
   return effectivePlan !== "community";
+};
+
+const resolveMode = <T extends string>(
+  state: AppState,
+  mode: T | null,
+  fallback: T,
+): T => {
+  return mode ?? (getHasCloudAccess(state) ? ("cloud" as T) : fallback);
+};
+
+export const getEffectiveTranscriptionMode = (
+  state: AppState,
+): TranscriptionMode => {
+  return resolveMode(state, state.settings.aiTranscription.mode, "local");
+};
+
+export const getEffectivePostProcessingMode = (
+  state: AppState,
+): PostProcessingMode => {
+  return resolveMode(state, state.settings.aiPostProcessing.mode, "none");
+};
+
+export const getEffectiveAgentMode = (state: AppState): AgentMode => {
+  return resolveMode(state, state.settings.agentMode.mode, "none");
 };
 
 export const getMyCloudUserId = (state: AppState): Nullable<string> =>
@@ -189,13 +218,14 @@ export type TranscriptionPrefs =
 
 export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
   const config = state.settings.aiTranscription;
+  const mode = getEffectiveTranscriptionMode(state);
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const cloudAvailable = getHasCloudAccess(state);
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const warnings: string[] = [];
   const allowChange = getAllowsChangeTranscription(state);
 
-  if (config.mode === "cloud" || !allowChange) {
+  if (mode === "cloud" || !allowChange) {
     if (cloudAvailable) {
       if (exceedsLimits) {
         warnings.push("Cloud transcription limit exceeded.");
@@ -209,7 +239,7 @@ export const getTranscriptionPrefs = (state: AppState): TranscriptionPrefs => {
     }
   }
 
-  if (config.mode === "api") {
+  if (mode === "api") {
     const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
     const provider = selectedApiKey?.provider;
     const noKeyRequired =
@@ -271,7 +301,7 @@ export type GenerativePrefs =
   | NoneGenerativePrefs;
 
 type GenerativeConfigInput = {
-  mode: "none" | "api" | "cloud";
+  mode: "none" | "api" | "cloud" | null;
   selectedApiKeyId: string | null;
 };
 
@@ -286,12 +316,13 @@ const getGenPrefsInternal = ({
   context: string;
   allowChange: boolean;
 }): GenerativePrefs => {
+  const mode = resolveMode(state, config.mode, "none");
   const apiKey = getRec(state.apiKeyById, config.selectedApiKeyId)?.keyFull;
   const exceedsLimits = getMemberExceedsLimitByState(state);
   const cloudAvailable = getHasCloudAccess(state);
   const warnings: string[] = [];
 
-  if (config.mode === "cloud" || !allowChange) {
+  if (mode === "cloud" || !allowChange) {
     if (cloudAvailable) {
       if (exceedsLimits) {
         warnings.push(`Cloud ${context} limit exceeded.`);
@@ -305,7 +336,7 @@ const getGenPrefsInternal = ({
     }
   }
 
-  if (config.mode === "api") {
+  if (mode === "api") {
     const selectedApiKey = getRec(state.apiKeyById, config.selectedApiKeyId);
     const provider = selectedApiKey?.provider;
     const noKeyRequired =

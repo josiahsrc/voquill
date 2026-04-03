@@ -7,7 +7,6 @@ import {
   OnboardingState,
 } from "../state/onboarding.state";
 import { getAppState, produceAppState } from "../store";
-import { DEFAULT_TRANSCRIPTION_MODE } from "../types/ai.types";
 import { CURRENT_COHORT } from "../utils/analytics.utils";
 import { DEFAULT_DICTATION_LIMIT_MINUTES } from "../utils/dictation-limit.utils";
 import { getIsEnterpriseEnabled } from "../utils/enterprise.utils";
@@ -100,12 +99,8 @@ export const submitOnboarding = async () => {
       ? preferredMicrophone
       : null;
 
-  const transcriptionPreference: TranscriptionPrefs = getTranscriptionPrefs(
-    state,
-  ) ?? {
-    mode: DEFAULT_TRANSCRIPTION_MODE,
-    apiKeyId: null,
-  };
+  const transcriptionPreference: TranscriptionPrefs =
+    getTranscriptionPrefs(state);
 
   const postProcessingPreference: GenerativePrefs = getGenerativePrefs(state);
   const agentModePreference = getAgentModePrefs(state);

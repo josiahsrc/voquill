@@ -7,6 +7,7 @@ import {
 } from "../../actions/user.actions";
 import { useAppStore } from "../../store";
 import { type AgentMode } from "../../types/ai.types";
+import { getEffectiveAgentMode } from "../../utils/user.utils";
 import {
   SegmentedControl,
   SegmentedControlOption,
@@ -23,6 +24,7 @@ export const AIAgentModeConfiguration = ({
   hideCloudOption,
 }: AIAgentModeConfigurationProps) => {
   const agentMode = useAppStore((state) => state.settings.agentMode);
+  const effectiveMode = useAppStore(getEffectiveAgentMode);
 
   const handleModeChange = useCallback((mode: AgentMode) => {
     void setPreferredAgentMode(mode);
@@ -35,7 +37,7 @@ export const AIAgentModeConfiguration = ({
   return (
     <Stack spacing={3} alignItems="flex-start" sx={{ width: "100%" }}>
       <SegmentedControl<AgentMode>
-        value={agentMode.mode}
+        value={effectiveMode}
         onChange={handleModeChange}
         options={[
           ...maybeArrayElements<SegmentedControlOption<AgentMode>>(
@@ -53,13 +55,13 @@ export const AIAgentModeConfiguration = ({
         ariaLabel="Assistant mode"
       />
 
-      {agentMode.mode === "none" && (
+      {effectiveMode === "none" && (
         <Typography variant="body2" color="text.secondary">
           <FormattedMessage defaultMessage="Assistant mode is disabled." />
         </Typography>
       )}
 
-      {agentMode.mode === "api" && (
+      {effectiveMode === "api" && (
         <ApiKeyList
           selectedApiKeyId={agentMode.selectedApiKeyId}
           onChange={handleApiKeyChange}
@@ -67,7 +69,7 @@ export const AIAgentModeConfiguration = ({
         />
       )}
 
-      {agentMode.mode === "cloud" && <VoquillCloudSetting />}
+      {effectiveMode === "cloud" && <VoquillCloudSetting />}
     </Stack>
   );
 };

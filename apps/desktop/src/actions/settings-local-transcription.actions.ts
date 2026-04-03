@@ -16,6 +16,7 @@ import {
   type LocalWhisperModel,
   normalizeTranscriptionDevice,
 } from "../utils/local-transcription.utils";
+import { getEffectiveTranscriptionMode } from "../utils/user.utils";
 import { showErrorSnackbar } from "./app.actions";
 import { setPreferredTranscriptionDevice } from "./user.actions";
 
@@ -46,7 +47,7 @@ export const refreshLocalTranscriptionDevices = async ({
   showErrors?: boolean;
 } = {}): Promise<LocalSidecarDevice[] | null> => {
   const state = getAppState();
-  if (state.settings.aiTranscription.mode !== "local") {
+  if (getEffectiveTranscriptionMode(state) !== "local") {
     return null;
   }
 
@@ -94,7 +95,7 @@ export const refreshLocalTranscriptionModelStatuses = async ({
   showErrors?: boolean;
 } = {}): Promise<LocalTranscriptionModelStatusMap | null> => {
   const state = getAppState();
-  if (state.settings.aiTranscription.mode !== "local") {
+  if (getEffectiveTranscriptionMode(state) !== "local") {
     return null;
   }
 
@@ -141,7 +142,7 @@ export const downloadLocalTranscriptionModel = async (
   model: LocalWhisperModel,
 ): Promise<void> => {
   const state = getAppState();
-  if (state.settings.aiTranscription.mode !== "local") {
+  if (getEffectiveTranscriptionMode(state) !== "local") {
     return;
   }
 
@@ -182,7 +183,7 @@ export const deleteLocalTranscriptionModel = async (
   model: LocalWhisperModel,
 ): Promise<LocalTranscriptionModelStatusMap | null> => {
   const state = getAppState();
-  if (state.settings.aiTranscription.mode !== "local") {
+  if (getEffectiveTranscriptionMode(state) !== "local") {
     return null;
   }
 

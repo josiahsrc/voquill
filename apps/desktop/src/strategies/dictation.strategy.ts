@@ -22,7 +22,11 @@ import {
   applySymbolConversions,
 } from "../utils/string.utils";
 import { getToneIdToUse, VERBATIM_TONE_ID } from "../utils/tone.utils";
-import { getMyUserPreferences } from "../utils/user.utils";
+import {
+  getEffectivePostProcessingMode,
+  getEffectiveTranscriptionMode,
+  getMyUserPreferences,
+} from "../utils/user.utils";
 import { BaseStrategy } from "./base.strategy";
 
 export class DictationStrategy extends BaseStrategy {
@@ -97,8 +101,8 @@ export class DictationStrategy extends BaseStrategy {
   validateAvailability(): Nullable<StrategyValidationError> {
     const state = getAppState();
 
-    const transcriptionMode = state.settings.aiTranscription.mode;
-    const generativeMode = state.settings.aiPostProcessing.mode;
+    const transcriptionMode = getEffectiveTranscriptionMode(state);
+    const generativeMode = getEffectivePostProcessingMode(state);
     const isCloud = transcriptionMode === "cloud" || generativeMode === "cloud";
     if (isCloud && getMemberExceedsLimitByState(state)) {
       return {
