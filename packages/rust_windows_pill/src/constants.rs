@@ -21,7 +21,6 @@ pub(crate) const ACTIVE_BG_ALPHA: f64 = 0.92;
 pub(crate) const BORDER_ALPHA: f64 = 0.3;
 
 pub(crate) const SPRING_STIFFNESS: f64 = 200.0;
-pub(crate) const SPRING_DT: f64 = 0.016;
 
 // ── Tooltip (style selector) ──────────────────────────────────────
 pub(crate) const TOOLTIP_HEIGHT: f64 = 32.0;

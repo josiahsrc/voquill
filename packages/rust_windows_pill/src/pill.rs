@@ -1,5 +1,6 @@
 use std::cell::{Cell, RefCell};
 use std::sync::mpsc::Receiver;
+use std::time::{Duration, Instant};
 
 use windows::core::*;
 use windows::Win32::Foundation::*;
@@ -15,7 +16,6 @@ use crate::input;
 use crate::ipc::{self, InMessage, OutMessage, Phase, Visibility};
 use crate::state::{ClickAction, PillState, Rocket, RocketPhase, Spark, WindowMode};
 
-const TIMER_ANIM: usize = 1;
 const TIMER_CURSOR: usize = 2;
 
 thread_local! {
@@ -23,6 +23,7 @@ thread_local! {
     static GFX: RefCell<Option<Gfx>> = const { RefCell::new(None) };
     static RECEIVER: RefCell<Option<Receiver<InMessage>>> = const { RefCell::new(None) };
     static QUIT: Cell<bool> = const { Cell::new(false) };
+    static LAST_TICK: Cell<Option<Instant>> = const { Cell::new(None) };
     static HWND_CELL: Cell<HWND> = const { Cell::new(HWND(std::ptr::null_mut())) };
     static TYPING_ACTIVE: Cell<bool> = const { Cell::new(false) };
     static EDIT_CONTAINER: Cell<HWND> = const { Cell::new(HWND(std::ptr::null_mut())) };
@@ -128,7 +129,7 @@ pub fn run(receiver: Receiver<InMessage>) {
     create_edit_overlay(hinstance, hwnd);
 
     unsafe {
-        SetTimer(Some(hwnd), TIMER_ANIM, 16, None);
+        windows::Win32::Media::timeBeginPeriod(1);
         SetTimer(Some(hwnd), TIMER_CURSOR, 60, None);
     }
 
@@ -136,12 +137,29 @@ pub fn run(receiver: Receiver<InMessage>) {
 
     unsafe {
         let mut msg = MSG::default();
-        while GetMessageW(&mut msg, None, 0, 0).into() {
+        let frame_interval = Duration::from_micros(8333); // ~120fps
+        loop {
+            while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
+                if msg.message == WM_QUIT {
+                    windows::Win32::Media::timeEndPeriod(1);
+                    return;
+                }
+                if handle_edit_message(&msg) { continue; }
+                let _ = TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
             if QUIT.with(|q| q.get()) { break; }
-            if handle_edit_message(&msg) { continue; }
-            let _ = TranslateMessage(&msg);
-            DispatchMessageW(&msg);
+
+            on_anim_tick(hwnd);
+
+            let elapsed = Instant::now().duration_since(
+                LAST_TICK.with(|c| c.get()).unwrap_or_else(Instant::now),
+            );
+            if let Some(remaining) = frame_interval.checked_sub(elapsed) {
+                std::thread::sleep(remaining);
+            }
         }
+        windows::Win32::Media::timeEndPeriod(1);
     }
 }
 
@@ -149,9 +167,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
     match msg {
         WM_TIMER => {
             let timer_id = wparam.0;
-            if timer_id == TIMER_ANIM {
-                on_anim_tick(hwnd);
-            } else if timer_id == TIMER_CURSOR {
+            if timer_id == TIMER_CURSOR {
                 on_cursor_tick(hwnd);
             }
             LRESULT(0)
@@ -279,9 +295,19 @@ fn on_anim_tick(hwnd: HWND) {
         return;
     }
 
+    let now = Instant::now();
+    let dt = LAST_TICK.with(|cell| {
+        let prev = cell.get();
+        cell.set(Some(now));
+        match prev {
+            Some(prev) => now.duration_since(prev).as_secs_f64().clamp(0.001, 0.05),
+            None => 1.0 / 60.0,
+        }
+    });
+
     STATE.with(|s| {
         if let Some(ref state) = *s.borrow() {
-            tick(state);
+            tick(state, dt);
             update_visibility(hwnd, state);
             update_typing_focus(hwnd, state);
         }
@@ -370,14 +396,15 @@ fn process_message(msg: InMessage, state: &PillState, _hwnd: HWND) {
     }
 }
 
-fn tick(state: &PillState) {
+fn tick(state: &PillState, dt: f64) {
     let phase = state.phase.get();
     let is_active = phase != Phase::Idle;
     let is_recording = phase == Phase::Recording;
     let is_loading = phase == Phase::Loading;
     let hovered = state.hovered.get();
+    let frame_scale = dt * 60.0;
 
-    // Audio levels
+    // Audio levels (frame-rate independent)
     if is_recording {
         let levels = state.pending_levels.borrow();
         if !levels.is_empty() {
@@ -387,14 +414,15 @@ fn tick(state: &PillState) {
             let combined = (avg * 0.9 + peak * 0.85).min(1.0);
             let boosted = (combined.sqrt() * 1.35).min(1.0);
             let target = state.target_level.get();
-            state.target_level.set((target * 0.25 + boosted * 0.75).min(1.0));
+            let mix = 1.0 - 0.25_f64.powf(frame_scale);
+            state.target_level.set((target * (1.0 - mix) + boosted * mix).min(1.0));
         }
     } else if is_loading {
         let target = state.target_level.get();
         state.target_level.set(target.max(PROCESSING_BASE_LEVEL));
     } else {
         state.target_level.set(0.0);
-        state.current_level.set(state.current_level.get() * 0.4);
+        state.current_level.set(state.current_level.get() * 0.4_f64.powf(frame_scale));
         if state.current_level.get() < 0.0002 {
             state.current_level.set(0.0);
         }
@@ -402,23 +430,25 @@ fn tick(state: &PillState) {
 
     let current = state.current_level.get();
     let target = state.target_level.get();
-    let new_current = current + (target - current) * LEVEL_SMOOTHING;
+    let smoothing = 1.0 - (1.0 - LEVEL_SMOOTHING).powf(frame_scale);
+    let new_current = current + (target - current) * smoothing;
     state.current_level.set(if new_current < 0.0002 { 0.0 } else { new_current });
 
-    let decayed = target * TARGET_DECAY_PER_FRAME;
+    let decay = TARGET_DECAY_PER_FRAME.powf(frame_scale);
+    let decayed = target * decay;
     state.target_level.set(if decayed < 0.0005 { 0.0 } else { decayed });
 
     let level = state.current_level.get();
     let base_level = if is_loading && !is_recording { PROCESSING_BASE_LEVEL } else { 0.0 };
     let effective_level = level.max(base_level);
-    let advance = WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * effective_level;
+    let advance = (WAVE_BASE_PHASE_STEP + WAVE_PHASE_GAIN * effective_level) * frame_scale;
     state.wave_phase.set((state.wave_phase.get() + advance) % TAU);
 
     let expand_target = if is_active || hovered || state.assistant_active.get() { 1.0 } else { 0.0 };
-    spring_anim(&state.expand_t, &state.expand_velocity, expand_target, SPRING_STIFFNESS);
+    spring_anim(&state.expand_t, &state.expand_velocity, expand_target, SPRING_STIFFNESS, dt);
 
     if is_loading {
-        state.loading_offset.set((state.loading_offset.get() + LOADING_SPEED) % 1.0);
+        state.loading_offset.set((state.loading_offset.get() + LOADING_SPEED * frame_scale) % 1.0);
     }
 
     let show_tooltip = !state.assistant_active.get()
@@ -426,26 +456,26 @@ fn tick(state: &PillState) {
         && (hovered || phase == Phase::Recording)
         && state.expand_t.get() > 0.3;
     let tooltip_target = if show_tooltip { 1.0 } else { 0.0 };
-    spring_anim(&state.tooltip_t, &state.tooltip_velocity, tooltip_target, SPRING_STIFFNESS);
+    spring_anim(&state.tooltip_t, &state.tooltip_velocity, tooltip_target, SPRING_STIFFNESS, dt);
 
     let panel_target = if state.assistant_active.get() { 1.0 } else { 0.0 };
-    spring_anim(&state.panel_open_t, &state.panel_open_velocity, panel_target, SPRING_STIFFNESS);
+    spring_anim(&state.panel_open_t, &state.panel_open_velocity, panel_target, SPRING_STIFFNESS, dt);
 
     let is_voice = *state.assistant_input_mode.borrow() == "voice";
     let kb_target = if state.assistant_active.get() && is_voice { 1.0 } else { 0.0 };
-    spring_anim(&state.kb_button_t, &state.kb_button_velocity, kb_target, SPRING_STIFFNESS);
+    spring_anim(&state.kb_button_t, &state.kb_button_velocity, kb_target, SPRING_STIFFNESS, dt);
 
     let mode = state.window_mode.get();
     let (tw, th) = mode.dimensions();
-    spring_px(&state.draw_width, &state.draw_w_velocity, tw as f64, SPRING_STIFFNESS);
-    spring_px(&state.draw_height, &state.draw_h_velocity, th as f64, SPRING_STIFFNESS);
+    spring_px(&state.draw_width, &state.draw_w_velocity, tw as f64, SPRING_STIFFNESS, dt);
+    spring_px(&state.draw_height, &state.draw_h_velocity, th as f64, SPRING_STIFFNESS, dt);
 
-    state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED) % 1.0);
+    state.shimmer_phase.set((state.shimmer_phase.get() + SHIMMER_SPEED * frame_scale) % 1.0);
 
-    tick_fireworks(state);
+    tick_fireworks(state, dt);
 
     if state.flash_visible.get() {
-        let remaining = state.flash_timer.get() - SPRING_DT;
+        let remaining = state.flash_timer.get() - dt;
         if remaining <= 0.0 {
             state.flash_visible.set(false);
             state.flash_timer.set(0.0);
@@ -454,7 +484,7 @@ fn tick(state: &PillState) {
         }
     }
     let flash_target = if state.flash_visible.get() { 1.0 } else { 0.0 };
-    spring_anim(&state.flash_t, &state.flash_velocity, flash_target, SPRING_STIFFNESS);
+    spring_anim(&state.flash_t, &state.flash_velocity, flash_target, SPRING_STIFFNESS, dt);
 
     if state.should_stick.get() && state.assistant_active.get() && !state.assistant_compact.get() {
         let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
@@ -462,10 +492,9 @@ fn tick(state: &PillState) {
     }
 }
 
-fn tick_fireworks(state: &PillState) {
+fn tick_fireworks(state: &PillState, dt: f64) {
     if !state.fireworks_active.get() { return; }
 
-    let dt = SPRING_DT;
     let elapsed = state.fireworks_elapsed.get() + dt;
     state.fireworks_elapsed.set(elapsed);
 
@@ -709,32 +738,32 @@ fn reposition_to_cursor_monitor(hwnd: HWND) {
     }
 }
 
-fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+fn spring_anim(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64, dt: f64) {
     let v = value.get();
     let vel = velocity.get();
     if v == target && vel == 0.0 { return; }
     let damping = 2.0 * stiffness.sqrt();
     let force = stiffness * (target - v) - damping * vel;
-    let new_vel = vel + force * SPRING_DT;
-    let new_v = v + new_vel * SPRING_DT;
+    let new_vel = vel + force * dt;
+    let new_v = v + new_vel * dt;
     if (new_v - target).abs() < 0.002 && new_vel.abs() < 0.5 {
         value.set(target);
         velocity.set(0.0);
     } else {
         value.set(new_v.clamp(0.0, 1.0));
-        velocity.set(if new_v < 0.0 || new_v > 1.0 { 0.0 } else { new_vel });
+        velocity.set(if !(0.0..=1.0).contains(&new_v) { 0.0 } else { new_vel });
     }
 }
 
-fn spring_px(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64) {
+fn spring_px(value: &Cell<f64>, velocity: &Cell<f64>, target: f64, stiffness: f64, dt: f64) {
     let v = value.get();
     let vel = velocity.get();
     if v == target && vel == 0.0 { return; }
     let damping = 2.0 * stiffness.sqrt();
     let force = stiffness * (target - v) - damping * vel;
-    let new_vel = vel + force * SPRING_DT;
-    let new_v = v + new_vel * SPRING_DT;
-    if (new_v - target).abs() < 0.5 && (new_vel * SPRING_DT).abs() < 0.5 {
+    let new_vel = vel + force * dt;
+    let new_v = v + new_vel * dt;
+    if (new_v - target).abs() < 0.5 && (new_vel * dt).abs() < 0.5 {
         value.set(target);
         velocity.set(0.0);
     } else {
