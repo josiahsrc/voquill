@@ -136,6 +136,8 @@ pub(crate) struct PillState {
     pub(crate) should_stick: Cell<bool>,
 
     pub(crate) click_regions: RefCell<Vec<ClickRegion>>,
+    pub(crate) mouse_x: Cell<f64>,
+    pub(crate) mouse_y: Cell<f64>,
 
     pub(crate) entry_text: RefCell<String>,
 

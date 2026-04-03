@@ -104,6 +104,8 @@ pub fn run(receiver: Receiver<InMessage>) {
         viewport_height: Cell::new(0.0),
         should_stick: Cell::new(true),
         click_regions: RefCell::new(Vec::new()),
+        mouse_x: Cell::new(-1000.0),
+        mouse_y: Cell::new(-1000.0),
         entry_text: RefCell::new(String::new()),
         flash_message: RefCell::new(String::new()),
         flash_visible: Cell::new(false),
@@ -147,6 +149,32 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
                 on_cursor_tick(hwnd);
             }
             LRESULT(0)
+        }
+        WM_MOUSEMOVE => {
+            let raw_x = (lparam.0 & 0xFFFF) as i16 as f64;
+            let raw_y = ((lparam.0 >> 16) & 0xFFFF) as i16 as f64;
+            STATE.with(|s| {
+                if let Some(ref state) = *s.borrow() {
+                    let (ox, oy) = state.content_offset();
+                    let x = raw_x - ox;
+                    let y = raw_y - oy;
+                    state.mouse_x.set(x);
+                    state.mouse_y.set(y);
+                    let regions = state.click_regions.borrow();
+                    let over_button = regions.iter().any(|r| r.contains(x, y));
+                    let cursor_id = if over_button { IDC_HAND } else { IDC_ARROW };
+                    unsafe { SetCursor(LoadCursorW(None, cursor_id).ok()); }
+                }
+            });
+            LRESULT(0)
+        }
+        WM_SETCURSOR => {
+            let hit_test = (lparam.0 & 0xFFFF) as i16;
+            if hit_test == 1 { // HTCLIENT
+                LRESULT(1)
+            } else {
+                unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
+            }
         }
         WM_LBUTTONUP => {
             let x = (lparam.0 & 0xFFFF) as i16 as f64;
@@ -587,6 +615,10 @@ fn check_hover(hwnd: HWND, state: &PillState) {
     if new_hovered != was_hovered {
         state.hovered.set(new_hovered);
         ipc::send(&OutMessage::Hover { hovered: new_hovered });
+    }
+    if !new_hovered {
+        state.mouse_x.set(-1000.0);
+        state.mouse_y.set(-1000.0);
     }
 }
 

@@ -418,9 +418,11 @@ fn draw_assistant_panel(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
         }
 
         let open_x = panel_x + PANEL_HEADER_OFFSET_LEFT + HEADER_BUTTON_SIZE + 4.0;
-        draw_panel_button(gfx, open_x, py + PANEL_HEADER_OFFSET_TOP, HEADER_BUTTON_SIZE, alpha, ButtonIcon::OpenInNew);
+        let open_y = py + PANEL_HEADER_OFFSET_TOP;
+        let open_hovered = is_mouse_over(state, open_x, open_y, HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
+        draw_panel_button(gfx, open_x, open_y, HEADER_BUTTON_SIZE, alpha, ButtonIcon::OpenInNew, open_hovered);
         state.click_regions.borrow_mut().push(ClickRegion {
-            x: open_x, y: py + PANEL_HEADER_OFFSET_TOP,
+            x: open_x, y: open_y,
             w: HEADER_BUTTON_SIZE, h: HEADER_BUTTON_SIZE,
             action: ClickAction::OpenInNew,
         });
@@ -439,7 +441,8 @@ fn draw_assistant_panel(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
             let send_x = panel_x + panel_w - PANEL_CONTENT_SIDE_INSET - send_btn_size;
             let send_y = input_y + (PANEL_INPUT_HEIGHT - send_btn_size) / 2.0;
             let has_text = !state.entry_text.borrow().trim().is_empty();
-            let text_alpha = if has_text { 0.82 } else { 0.2 };
+            let send_hovered = has_text && is_mouse_over(state, send_x, send_y, send_btn_size, send_btn_size);
+            let text_alpha = if send_hovered { 1.0 } else if has_text { 0.82 } else { 0.2 };
             let ca = [1.0, 1.0, 1.0, text_alpha * alpha];
 
             let cx = send_x + send_btn_size / 2.0;
@@ -474,11 +477,12 @@ fn draw_assistant_panel(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
     }
 
     // Close button
-    draw_panel_button(gfx, panel_x + PANEL_HEADER_OFFSET_LEFT, py + PANEL_HEADER_OFFSET_TOP,
-        HEADER_BUTTON_SIZE, alpha, ButtonIcon::Close);
+    let close_x = panel_x + PANEL_HEADER_OFFSET_LEFT;
+    let close_y = py + PANEL_HEADER_OFFSET_TOP;
+    let close_hovered = is_mouse_over(state, close_x, close_y, HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE);
+    draw_panel_button(gfx, close_x, close_y, HEADER_BUTTON_SIZE, alpha, ButtonIcon::Close, close_hovered);
     state.click_regions.borrow_mut().push(ClickRegion {
-        x: panel_x + PANEL_HEADER_OFFSET_LEFT,
-        y: py + PANEL_HEADER_OFFSET_TOP,
+        x: close_x, y: close_y,
         w: HEADER_BUTTON_SIZE, h: HEADER_BUTTON_SIZE,
         action: ClickAction::AssistantClose,
     });
@@ -644,13 +648,17 @@ fn draw_permission_card(
         let btn_w = if i == 0 { PERM_BUTTON_WIDTH + 16.0 } else { PERM_BUTTON_WIDTH };
         btn_x -= btn_w;
 
+        let hovered = is_mouse_over(state, btn_x, btn_y, btn_w, PERM_BUTTON_HEIGHT);
+        let bg_alpha = if hovered { 0.18 } else { 0.08 };
+        let border_alpha = if hovered { 0.25 } else { 0.15 };
         gfx.fill_rounded_rect(btn_x, btn_y, btn_w, PERM_BUTTON_HEIGHT, 6.0,
-            [1.0, 1.0, 1.0, 0.08 * alpha]);
+            [1.0, 1.0, 1.0, bg_alpha * alpha]);
         gfx.stroke_rounded_rect(btn_x + 0.5, btn_y + 0.5, btn_w - 1.0, PERM_BUTTON_HEIGHT - 1.0, 5.5,
-            [1.0, 1.0, 1.0, 0.15 * alpha], 1.0);
+            [1.0, 1.0, 1.0, border_alpha * alpha], 1.0);
 
+        let text_a = if hovered { 1.0 } else { *text_alpha };
         gfx.draw_text_centered(label, btn_x, btn_y, btn_w, PERM_BUTTON_HEIGHT,
-            11.0, false, [1.0, 1.0, 1.0, text_alpha * alpha]);
+            11.0, false, [1.0, 1.0, 1.0, text_a * alpha]);
 
         let action = match 2 - i {
             0 => ClickAction::PermissionDeny(perm.id.clone()),
@@ -692,8 +700,9 @@ enum ButtonIcon {
     OpenInNew,
 }
 
-fn draw_panel_button(gfx: &Gfx, x: f64, y: f64, size: f64, alpha: f64, icon: ButtonIcon) {
-    gfx.fill_rounded_rect(x, y, size, size, size / 4.0, [1.0, 1.0, 1.0, 0.06 * alpha]);
+fn draw_panel_button(gfx: &Gfx, x: f64, y: f64, size: f64, alpha: f64, icon: ButtonIcon, hovered: bool) {
+    let bg_alpha = if hovered { 0.16 } else { 0.06 };
+    gfx.fill_rounded_rect(x, y, size, size, size / 4.0, [1.0, 1.0, 1.0, bg_alpha * alpha]);
 
     let cx = x + size / 2.0;
     let cy = y + size / 2.0;
@@ -740,10 +749,13 @@ fn draw_keyboard_button(gfx: &mut Gfx, state: &PillState, ww: f64, wh: f64) {
     gfx.scale(scale, scale);
     gfx.translate(-(KB_BUTTON_SIZE / 2.0), -(KB_BUTTON_SIZE / 2.0));
 
+    let kb_hovered = is_mouse_over(state, btn_x, btn_y, KB_BUTTON_SIZE, KB_BUTTON_SIZE);
+    let kb_bg = if kb_hovered { 1.0 } else { 0.92 };
+    let kb_border = if kb_hovered { 0.5 } else { BORDER_ALPHA };
     gfx.fill_circle(KB_BUTTON_SIZE / 2.0, KB_BUTTON_SIZE / 2.0, KB_BUTTON_SIZE / 2.0,
-        [0.0, 0.0, 0.0, 0.92 * alpha]);
+        [0.0, 0.0, 0.0, kb_bg * alpha]);
     gfx.stroke_circle(KB_BUTTON_SIZE / 2.0, KB_BUTTON_SIZE / 2.0, KB_BUTTON_SIZE / 2.0 - 0.5,
-        [1.0, 1.0, 1.0, BORDER_ALPHA * alpha], 1.0);
+        [1.0, 1.0, 1.0, kb_border * alpha], 1.0);
 
     let cx = KB_BUTTON_SIZE / 2.0;
     let cy = KB_BUTTON_SIZE / 2.0;
@@ -790,7 +802,9 @@ fn draw_cancel_button(gfx: &Gfx, state: &PillState, ww: f64, wh: f64) {
     let r = (CANCEL_BUTTON_SIZE - 2.0) / 2.0;
 
     // Filled circle background (like xmark.circle.fill)
-    gfx.fill_circle(cx, cy, r, [0.46, 0.46, 0.46, 1.0]);
+    let cancel_hovered = is_mouse_over(state, btn_x, btn_y, CANCEL_BUTTON_SIZE, CANCEL_BUTTON_SIZE);
+    let cancel_brightness = if cancel_hovered { 0.6 } else { 0.46 };
+    gfx.fill_circle(cx, cy, r, [cancel_brightness, cancel_brightness, cancel_brightness, 1.0]);
 
     // X mark inside
     let s = 3.0;
@@ -846,6 +860,12 @@ fn wrap_text(gfx: &Gfx, text: &str, max_width: f64) -> Vec<String> {
         lines.push(String::new());
     }
     lines
+}
+
+fn is_mouse_over(state: &PillState, x: f64, y: f64, w: f64, h: f64) -> bool {
+    let mx = state.mouse_x.get();
+    let my = state.mouse_y.get();
+    mx >= x && mx <= x + w && my >= y && my <= y + h
 }
 
 fn lerp(a: f64, b: f64, t: f64) -> f64 {
