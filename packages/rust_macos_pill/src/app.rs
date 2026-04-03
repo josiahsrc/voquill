@@ -180,7 +180,13 @@ extern "C" fn mouse_up(_this: &Object, _sel: Sel, event: id) {
 extern "C" fn scroll_wheel(_this: &Object, _sel: Sel, event: id) {
     with_ctx(|ctx| {
         unsafe {
-            let dy: f64 = msg_send![event, deltaY];
+            let precise: bool = msg_send![event, hasPreciseScrollingDeltas];
+            let dy: f64 = if precise {
+                msg_send![event, scrollingDeltaY]
+            } else {
+                let line_dy: f64 = msg_send![event, deltaY];
+                line_dy * 30.0
+            };
             input::handle_scroll(&ctx.state, dy);
         }
     });

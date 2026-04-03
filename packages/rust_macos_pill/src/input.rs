@@ -76,10 +76,9 @@ pub(crate) fn handle_scroll(state: &PillState, delta_y: f64) {
         return;
     }
 
-    let dy = delta_y * 30.0;
     let current = state.scroll_offset.get();
     let max_scroll = (state.content_height.get() - state.viewport_height.get()).max(0.0);
-    let new_offset = (current + dy).clamp(0.0, max_scroll);
+    let new_offset = (current - delta_y).clamp(0.0, max_scroll);
     state.scroll_offset.set(new_offset);
     state.should_stick.set(max_scroll - new_offset <= 32.0);
 }

@@ -86,11 +86,6 @@ fn draw_pill(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
     ctx.set_source_rgba(0.0, 0.0, 0.0, bg_alpha);
     ctx.fill();
 
-    gfx::rounded_rect(ctx, rx + 0.5, ry + 0.5, pill_w - 1.0, pill_h - 1.0, radius - 0.5);
-    ctx.set_source_rgba(1.0, 1.0, 1.0, BORDER_ALPHA);
-    ctx.set_line_width(1.0);
-    ctx.stroke();
-
     match state.phase.get() {
         Phase::Recording if expand_t > 0.1 => {
             draw_waveform(ctx, rx, ry, pill_w, pill_h, expand_t, state);
@@ -104,6 +99,11 @@ fn draw_pill(ctx: &Ctx, state: &PillState, ww: f64, wh: f64) {
         }
         _ => {}
     }
+
+    gfx::rounded_rect(ctx, rx + 0.5, ry + 0.5, pill_w - 1.0, pill_h - 1.0, radius - 0.5);
+    ctx.set_source_rgba(1.0, 1.0, 1.0, BORDER_ALPHA);
+    ctx.set_line_width(1.0);
+    ctx.stroke();
 
     state.click_regions.borrow_mut().push(ClickRegion {
         x: rx, y: ry, w: pill_w, h: pill_h,
@@ -134,10 +134,12 @@ fn draw_waveform(
         ctx.set_line_cap_round();
         ctx.set_line_join_round();
 
-        let segments = (pill_w / 2.0).max(72.0) as i32;
+        let pad = pill_h * 0.1;
+        let wave_w = pill_w - pad * 2.0;
+        let segments = (wave_w / 2.0).max(72.0) as i32;
         for i in 0..=segments {
             let t = i as f64 / segments as f64;
-            let x = rx + pill_w * t;
+            let x = rx + pad + wave_w * t;
             let theta = config.frequency * t * TAU + phase;
             let y = baseline + amplitude * theta.sin();
 
@@ -198,22 +200,38 @@ fn draw_loading(
 
     let bar_h = 2.0;
     let bar_y = ry + (pill_h - bar_h) / 2.0;
-    let bar_w = pill_w * LOADING_BAR_WIDTH_FRAC;
-    let offset = state.loading_offset.get();
-    let bar_x = rx + (pill_w + bar_w) * offset - bar_w;
+    let pad = pill_h * 0.1;
+    let track_x = rx + pad;
+    let track_w = pill_w - pad * 2.0;
 
-    let alpha = 0.7 * expand_t;
-    ctx.draw_linear_gradient_in_rect(
-        bar_x, bar_y, bar_w, bar_h,
-        bar_x, 0.0, bar_x + bar_w, 0.0,
-        &[
-            (0.0, 1.0, 1.0, 1.0, 0.0),
-            (0.5, 1.0, 1.0, 1.0, alpha),
-            (1.0, 1.0, 1.0, 1.0, 0.0),
-        ],
-    );
+    // Track line
+    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.15 * expand_t);
+    ctx.set_line_width(bar_h);
+    ctx.set_line_cap_round();
+    ctx.move_to(track_x, bar_y + bar_h / 2.0);
+    ctx.line_to(track_x + track_w, bar_y + bar_h / 2.0);
+    ctx.stroke();
+
+    // Moving indicator
+    let indicator_w = track_w * LOADING_BAR_WIDTH_FRAC;
+    let offset = state.loading_offset.get();
+    let ind_x = track_x + (track_w + indicator_w) * offset - indicator_w;
+
+    ctx.set_source_rgba(1.0, 1.0, 1.0, 0.7 * expand_t);
+    ctx.set_line_width(bar_h);
+    ctx.set_line_cap_round();
+
+    let draw_left = ind_x.max(track_x);
+    let draw_right = (ind_x + indicator_w).min(track_x + track_w);
+    if draw_right > draw_left {
+        ctx.move_to(draw_left, bar_y + bar_h / 2.0);
+        ctx.line_to(draw_right, bar_y + bar_h / 2.0);
+        ctx.stroke();
+    }
 
     ctx.restore();
+
+    draw_edge_gradient(ctx, rx, ry, pill_w, pill_h, radius, expand_t);
 }
 
 fn draw_idle_label(ctx: &Ctx, rx: f64, ry: f64, pill_w: f64, pill_h: f64, expand_t: f64) {
