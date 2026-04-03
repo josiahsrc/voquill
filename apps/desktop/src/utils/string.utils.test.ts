@@ -6,6 +6,7 @@ import {
   getFirstAndLastName,
   getInitials,
   getStringSimilarity,
+  sanitizeIndentation,
 } from "./string.utils";
 
 describe("editDistance", () => {
@@ -502,5 +503,50 @@ describe("applySymbolConversions", () => {
 
   it("should handle empty string", () => {
     expect(applySymbolConversions("")).toBe("");
+  });
+});
+
+describe("sanitizeIndentation", () => {
+  it("removes leading spaces from each line", () => {
+    const input = "  hello\n    world\n  foo";
+    expect(sanitizeIndentation(input)).toBe("hello\nworld\nfoo");
+  });
+
+  it("removes leading tabs from each line", () => {
+    const input = "\thello\n\t\tworld";
+    expect(sanitizeIndentation(input)).toBe("hello\nworld");
+  });
+
+  it("removes mixed whitespace indentation", () => {
+    const input = "  \thello\n\t  world";
+    expect(sanitizeIndentation(input)).toBe("hello\nworld");
+  });
+
+  it("preserves empty lines", () => {
+    const input = "  hello\n\n  world";
+    expect(sanitizeIndentation(input)).toBe("hello\n\nworld");
+  });
+
+  it("preserves trailing whitespace", () => {
+    const input = "  hello  \n  world  ";
+    expect(sanitizeIndentation(input)).toBe("hello  \nworld  ");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(sanitizeIndentation("")).toBe("");
+  });
+
+  it("handles string with no indentation", () => {
+    const input = "hello\nworld";
+    expect(sanitizeIndentation(input)).toBe("hello\nworld");
+  });
+
+  it("handles single line with indentation", () => {
+    expect(sanitizeIndentation("    hello")).toBe("hello");
+  });
+
+  it("preserves multiple newlines between paragraphs", () => {
+    const input = "  paragraph one\n\n\n  paragraph two";
+    expect(sanitizeIndentation(input)).toBe("paragraph one\n\n\nparagraph two");
   });
 });

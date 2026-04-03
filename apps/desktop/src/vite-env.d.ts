@@ -12,6 +12,7 @@ interface ImportMetaEnv {
   readonly VITE_USE_EMULATORS?: string;
   readonly VITE_FLAVOR?: string;
   readonly VITE_STRIPE_PUBLIC_KEY?: string;
+  readonly VITE_NEW_SERVER_URL?: string;
 }
 
 interface ImportMeta {
